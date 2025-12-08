@@ -1,10 +1,12 @@
-﻿using System;
+﻿using Autodesk.Revit.Attributes;
+using Autodesk.Revit.UI;
+using pyRevitAssemblyBuilder.AssemblyMaker;
+using pyRevitAssemblyBuilder.SessionManager;
+using pyRevitExtensionParser;
+using System;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using System.Diagnostics;
-using Autodesk.Revit.UI;
-using Autodesk.Revit.Attributes;
-using pyRevitExtensionParser;
 
 /* Note:
  * It is necessary that this code object do not have any references to IronPython.
@@ -20,6 +22,21 @@ namespace PyRevitLoader
 	{
 		public static string LoaderPath => Path.GetDirectoryName(typeof(PyRevitLoaderApplication).Assembly.Location);
 		private static UIControlledApplication _uiControlledApplication;
+		private static UIApplication GetUIApplication(UIControlledApplication application)
+		{
+			var versionNumber = application.ControlledApplication.VersionNumber;
+			var fieldName = int.Parse(versionNumber) >= 2017 ? "m_uiapplication" : "m_application";
+			var fi = application.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
+
+			if (fi == null)
+			{
+				throw new InvalidOperationException(
+					$"Could not find field '{fieldName}' on type '{application.GetType().FullName}'. " +
+					"The Revit API internal implementation may have changed in this version.");
+			}
+
+			return (UIApplication)fi.GetValue(application);
+		}
 
 		// Hook into Revit to allow starting a command.
 		Result IExternalApplication.OnStartup(UIControlledApplication application)
@@ -32,20 +49,8 @@ namespace PyRevitLoader
 
 			try
 			{
-				// we need a UIApplication object to assign as `__revit__` in python...
-				var versionNumber = application.ControlledApplication.VersionNumber;
-				var fieldName = int.Parse(versionNumber) >= 2017 ? "m_uiapplication" : "m_application";
-				var fi = application.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
-
-				var uiApplication = (UIApplication)fi.GetValue(application);
-
-				var executor = new ScriptExecutor(uiApplication);
+				var uiApplication = GetUIApplication(application);
 				var result = ExecuteStartupScript(application);
-				if (result == Result.Failed)
-				{
-					TaskDialog.Show("Error Loading pyRevit", executor.Message);
-				}
-
 				return result;
 			}
 			catch (Exception ex)
@@ -73,14 +78,9 @@ namespace PyRevitLoader
 			}
 		}
 
-		private static Result ExecuteStartupScript(UIControlledApplication uiControlledApplication)
+	private static Result ExecuteStartupScript(UIControlledApplication uiControlledApplication)
 		{
-			// we need a UIApplication object to assign as `__revit__` in python...
-			var versionNumber = uiControlledApplication.ControlledApplication.VersionNumber;
-			var fieldName = int.Parse(versionNumber) >= 2017 ? "m_uiapplication" : "m_application";
-			var fi = uiControlledApplication.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
- // uiControlledApplication);
-			var uiApplication = (UIApplication)fi.GetValue(uiControlledApplication);
+			var uiApplication = GetUIApplication(uiControlledApplication);
 			// execute StartupScript
 			Result result = Result.Succeeded;
 			var startupScript = GetStartupScriptPath();
@@ -104,21 +104,18 @@ namespace PyRevitLoader
 				// Use the stored UIControlledApplication
 				if (_uiControlledApplication == null)
 				{
-					throw new InvalidOperationException("UIControlledApplication not available. LoadSession can only be called after OnStartup.");
+					throw new InvalidOperationException("UIControlledApplication not available." +
+						" LoadSession can only be called after OnStartup.");
 				}
 
 				var uiControlledApplication = _uiControlledApplication;
-				// we need a UIApplication object to assign as `__revit__` in python...
-				var versionNumber = uiControlledApplication.ControlledApplication.VersionNumber;
-				var fieldName = int.Parse(versionNumber) >= 2017 ? "m_uiapplication" : "m_application";
-				var fi = uiControlledApplication.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
-				var uiApplication = (UIApplication)fi.GetValue(uiControlledApplication);
+				var uiApplication = GetUIApplication(uiControlledApplication);
 
 				// Get the current Revit version
 				var revitVersion = uiControlledApplication.ControlledApplication.VersionNumber;
 
 				// Determine build strategy: use provided parameter, or read from config, or default to ILPack
-				var assemblyBuildStrategyType = typeof(pyRevitAssemblyBuilder.AssemblyMaker.AssemblyBuildStrategy);
+				var assemblyBuildStrategyType = typeof(AssemblyBuildStrategy);
 				object strategyValue;
 
 				if (!string.IsNullOrEmpty(buildStrategy))
@@ -132,19 +129,19 @@ namespace PyRevitLoader
 					try
 					{
 						var config = PyRevitConfig.Load();
-						var strategyName = config.NewLoaderRoslyn ? "Roslyn" : "ILPack";
-						strategyValue = Enum.Parse(assemblyBuildStrategyType, strategyName);
+						strategyValue = config.NewLoaderRoslyn
+							? AssemblyBuildStrategy.Roslyn
+							: AssemblyBuildStrategy.ILPack;
 					}
 					catch
 					{
-						// Final fallback: default to ILPack
-						strategyValue = Enum.Parse(assemblyBuildStrategyType, "ILPack");
+						strategyValue = AssemblyBuildStrategy.ILPack; 
 					}
 				}
 
 				// Create services using factory
-				var strategyEnum = (pyRevitAssemblyBuilder.AssemblyMaker.AssemblyBuildStrategy)strategyValue;
-				var sessionManager = pyRevitAssemblyBuilder.SessionManager.ServiceFactory.CreateSessionManagerService(
+				var strategyEnum = (AssemblyBuildStrategy)strategyValue;
+				var sessionManager = ServiceFactory.CreateSessionManagerService(
 					revitVersion,
 					strategyEnum,
 					uiApplication,
@@ -158,15 +155,28 @@ namespace PyRevitLoader
 			catch (Exception ex)
 			{
 				TaskDialog.Show("Error Loading C# Session",
-					$"An error occurred while loading the C# session:\n\n{ex.Message}\n\nCheck the output window for details.");
+					$"An error occurred while loading the C# session:\n\n{ex.Message}\n\n" +
+					$"Check the output window for details.");
 				return Result.Failed;
 			}
 		}
 		private static string GetStartupScriptPath()
 		{
-			var loaderDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+			var assemblyLocation = Assembly.GetExecutingAssembly().Location;
+			var loaderDir = Path.GetDirectoryName(assemblyLocation);
+			if (string.IsNullOrEmpty(loaderDir))
+			{
+				throw new InvalidOperationException($"Could not determine directory for assembly location: {assemblyLocation}");
+			}
+
 			var dllDir = Path.GetDirectoryName(loaderDir);
-			return Path.Combine(dllDir, string.Format("{0}.py", Assembly.GetExecutingAssembly().GetName().Name));
+			if (string.IsNullOrEmpty(dllDir))
+			{
+				throw new InvalidOperationException($"Could not determine parent directory for loader directory: {loaderDir}");
+			}
+
+			var assemblyName = Assembly.GetExecutingAssembly().GetName().Name;
+			return Path.Combine(dllDir, $"{assemblyName}.py");
 		}
 		Result IExternalApplication.OnShutdown(UIControlledApplication application)
 		{
