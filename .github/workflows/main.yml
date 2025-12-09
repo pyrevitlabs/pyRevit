@@ -67,10 +67,10 @@ jobs:
         with:
           dotnet-version: 3.1.x
 
-      - name: Prepare .NET 8.0
+      - name: Prepare .NET 10.0
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: 10.0.x
 
       - name: Prepare msbuild
         uses: microsoft/setup-msbuild@v2

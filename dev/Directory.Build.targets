@@ -2,7 +2,7 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <PropertyGroup>
         <NetFolder Condition="'$(TargetFramework)' == 'net48'">netfx</NetFolder>
-        <NetFolder Condition="'$(TargetFramework)' == 'net8.0-windows'">netcore</NetFolder>
+        <NetFolder Condition="'$(TargetFramework)' == 'net10.0-windows'">netcore</NetFolder>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -29,6 +29,6 @@
 
     <PropertyGroup>
         <RevitVersion Condition="'$(RevitVersion)' == '' and '$(TargetFramework)' == 'net48'">2017</RevitVersion>
-        <RevitVersion Condition="'$(RevitVersion)' == '' and '$(TargetFramework)' == 'net8.0-windows'">2025</RevitVersion>
+        <RevitVersion Condition="'$(RevitVersion)' == '' and '$(TargetFramework)' == 'net10.0-windows'">2025</RevitVersion>
     </PropertyGroup>
 </Project>

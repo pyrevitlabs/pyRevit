@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <Platforms>x64</Platforms>
-        <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
+        <TargetFrameworks>net48;net10.0-windows</TargetFrameworks>
     </PropertyGroup>
 
     <ItemGroup>

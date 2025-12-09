@@ -6,6 +6,6 @@
   
   <PropertyGroup>
     <RevitVersion>2026</RevitVersion>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
   </PropertyGroup>
 </Project>

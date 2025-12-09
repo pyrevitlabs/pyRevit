@@ -32,6 +32,6 @@ python_version = "3.10"
 allow_prereleases = true
 
 [scripts]
-pyrevit = "python ./dev/pyrevit.py"
+pyrevit = "python dev/pyrevit.py"
 docs = "mkdocs build"
 check-docstrings = "ruff check --fix pyrevitlib/pyrevit"

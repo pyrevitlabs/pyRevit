@@ -9,7 +9,7 @@
     <UseDefaultBin>true</UseDefaultBin>
     
     <Platforms>x64</Platforms>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     
     <PermitDeploy>true</PermitDeploy>
   </PropertyGroup>
