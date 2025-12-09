@@ -31,7 +31,7 @@ LABS_CLI = op.join(DEVPATH, "pyRevitLabs/pyRevitClI/pyRevitCLI.csproj")
 LABS_DOCTOR = op.join(DEVPATH, "pyRevitLabs/pyRevitDoctor/pyRevitDoctor.csproj")
 DEFAULT_IPY = op.join(DEVPATH, "modules/pyRevitLabs.IronPython2.sln")
 LOADERS = op.join(DEVPATH, "pyRevitLoader/pyRevitLoader.sln")
-CPYTHONRUNTIME = op.join(DEVPATH, "modules/pyRevitLabs.Python.Net.sln")
+CPYTHONRUNTIME = op.join(DEVPATH, "modules/pyRevitLabs.Python.Net/src/runtime/Python.Runtime.csproj")
 DIRECTORY_BUILD_PROPS = op.join(DEVPATH, "Directory.Build.props")
 
 # pyRevit deps
