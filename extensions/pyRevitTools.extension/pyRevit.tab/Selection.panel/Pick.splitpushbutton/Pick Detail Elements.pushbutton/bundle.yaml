@@ -3,8 +3,10 @@ title:
   fr_fr: Sélectionner les éléments de détail
   en_us: Pick Detail Elements
   de_de: Nur 2D Detail-Elemente auswählen
+  chinese_s: 选择详图图元
 tooltip:
   ru: Активирует инструмент выбора, который выбирает только 2D элементы узлов.
   fr_fr: Active l'outil de sélection qui sélectionne uniquement les éléments de détail 2D
   en_us: Activates selection tool that picks only Detail 2D elements
   de_de: Aktiviert ein besonderes Auswahlwerkzeug, das nur 2D Detail Elemente auswählt
+  chinese_s: 激活仅选择二维详图图元的选择工具

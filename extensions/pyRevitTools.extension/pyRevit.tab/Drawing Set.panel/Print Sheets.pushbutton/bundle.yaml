@@ -1,19 +1,19 @@
 tooltip:
   ru: >-
     Печатает листы по индексу листа.
-    
+
     Примечание:
     Когда используется опция 'Объединение листы в один файл'
     инструмент добавляет не печатаемый символ u'\u200e'
     (Left-To-Right Mark) в начале имен листов,
     чтобы использовать внутренний механизм печати Revit
     для корректной сортировки листов по индексу листа.
-    
+
     Убедитесь, что ваши индексы учитывают
     это при фильтрации по номерам листов.
-    
+
     Shift-Click:
-    
+
     Удаляет все непечатаемые символы из номеров листов,
     если скрипт отработал некорректно.
   fr_fr: >-
@@ -74,6 +74,7 @@ tooltip:
     Wenn Sie mit der Umschalttaste auf das Werkzeug klicken, werden alle
     nicht druckbaren Zeichen aus den Plannummern entfernt. Dies ist für den Fall, dass ein 
     Fehler bei der Ausführung dazu führt, dass diese Zeichen im Plan verbleiben.
+  chinese_s: "按图纸索引顺序打印图纸。\n\n注意：\n在 Revit 2022 及更早版本中使用 `Combine into one file`（合并为一个文件）选项时，此工具会在图纸名称的开头添加不可打印字符 u'\\u200e'（左至右标记），以促使 Revit 的内部打印引擎根据图纸索引顺序正确排序图纸。\n\n在按图纸编号筛选时，请确保您的图纸索引考虑到这一点。\n\nShift-单击：\n按住 Shift 键单击此工具，将从图纸编号中移除所有不可打印字符，以防工具出错导致这些字符残留。"
 title:
   ru: |-
     Печатать
@@ -87,3 +88,4 @@ title:
   de_de: |-
     Pläne
     drucken
+  chinese_s: 打印图纸

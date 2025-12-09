@@ -3,12 +3,13 @@ title:
   en_us: List Legends on Sheets
   ru: Показать легенды на листах
   de_de: Liste alle Legenden auf Plänen auf
+  chinese_s: 列出图纸上的图例
 tooltip:
   fr_fr: Lister les légendes sur les feuilles
   en_us: List Legends on Sheets
   ru: Показывает легенды на листах
   de_de: >-
-    Es öffnet sich ein Konsolenfenster, in dem alle Legenden aufgelistet sind, 
-    die auf einem Plan platziert wurden. Der dazugehörige Plan wird ebenfalls
+    Es öffnet sich ein Konsolenfenster, in dem alle Legenden aufgelistet sind,  die auf einem Plan platziert wurden. Der dazugehörige Plan wird ebenfalls
     angezeigt. Mit einem Klick auf die ID wird die Legende bzw Plan geöffnet. 
+  chinese_s: 列出图纸上的图例
 author: Jean-Marc Couffin

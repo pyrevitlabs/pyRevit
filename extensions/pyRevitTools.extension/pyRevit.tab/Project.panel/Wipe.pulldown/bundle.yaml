@@ -3,6 +3,7 @@ title:
   fr_fr: Nettoyage
   en_us: Wipe
   de_de: Löschen
+  chinese_s: 清除
 layout:
   - Wipe Model Components
   - Wipe Attached Constraints

@@ -3,39 +3,41 @@ title:
   fr_fr: Vérification rapide des familles
   en_us: Family QuickCheck
   de_de: Familien Schnell-Check
+  chinese_s: 族快速检查
 tooltip:
   ru: >-
     Неполная проверка для обнаружения поврежденных семейств Revit.
-    
+
     Copyright (c) 2017 Frederic Beaupere
-    
+
     github.com/frederic-beaupere
-    
+
     PR731 https://github.com/pyrevitlabs/pyRevit/pull/731
   fr_fr: >-
-     Vérification non exhaustive pour détecter les familles Revit corrompues.
-    
-     Copyright (c) 2017 Frédéric Beaupere
-    
-     github.com/frederic-beaupere
-     
-         PR731 https://github.com/pyrevitlabs/pyRevit/pull/731
+    Vérification non exhaustive pour détecter les familles Revit corrompues.
+
+    Copyright (c) 2017 Frédéric Beaupere
+
+    github.com/frederic-beaupere
+
+        PR731 https://github.com/pyrevitlabs/pyRevit/pull/731
   en_us: >-
     Non-exhaustive check to detect corrupt Revit families.
-    
+
     Copyright (c) 2017 Frederic Beaupere
-    
+
     github.com/frederic-beaupere
-    
+
     PR731 https://github.com/pyrevitlabs/pyRevit/pull/731
   de_de: >-
     Grober Check, um fehlerhafte Revit Familien aufzuspüren.
-    
+
     Copyright (c) 2017 Frederic Beaupere
-    
+
     github.com/frederic-beaupere
-    
+
     PR731 https://github.com/pyrevitlabs/pyRevit/pull/731
+  chinese_s: "非详尽检查，用于检测损坏的 Revit 族。\n版权所有 (c) 2017 Frederic Beaupere\ngithub.com/frederic-beaupere\nPR731 https://github.com/pyrevitlabs/pyRevit/pull/731"
 author:
   - Frederic Beaupere
   - '{{author}}'

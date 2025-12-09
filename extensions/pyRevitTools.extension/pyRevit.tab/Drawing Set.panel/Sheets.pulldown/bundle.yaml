@@ -3,22 +3,23 @@ title:
   en_us: Sheets
   fr_fr: Feuilles
   de_de: Pläne
+  chinese_s: 图纸
 layout:
   - Copy Views
   - Move Views
   - Pin All Viewports
   - Reorder Selected Viewport
-  - -----
+  - '-----'
   - Copy Sheets to Open Documents
   - Batch Sheet Maker
-  - -----
+  - '-----'
   - Select Sheets
   - Rename Selected Sheets
   - List TitleBlocks on Sheets
   - Set Crop Region To Selected Shape
   - Set Views Crop Box Line Weight
   - Open Selected Viewport
-  - -----
+  - '-----'
   - ReOrder Sheets
   - Rename PDF Sheets
   - Decrement Selected Sheet Numbers

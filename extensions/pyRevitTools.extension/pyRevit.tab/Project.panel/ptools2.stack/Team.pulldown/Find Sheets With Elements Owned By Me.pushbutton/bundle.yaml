@@ -3,13 +3,11 @@ title:
   fr_fr: Trouver les feuilles avec des éléments en ma possession
   en_us: Find Sheets With Elements Owned By Me
   de_de: Finde alle Pläne mit Elementen die mir gehören
+  chinese_s: 查找包含我拥有的图元的图纸
 tooltip:
   ru: Показывает все листы содержащие элементы текущего пользователя. "Принадлежащие" элементы - это элементы созданные пользователем с момента последней синхронизации.
   fr_fr: Répertorie toutes les feuilles contenant des éléments actuellement « possédés » par l'utilisateur. Les éléments « possédés » sont les éléments de l'utilisateur depuis la dernière synchronisation et la dernière version.
   en_us: Lists all sheets containing elements currently "owned" by the user. "Owned" elements are the elements by the user since the last synchronize and release.
   de_de: >-
-    Listet alle Pläne auf, die Elemente enthalten, 
-    die derzeit im "Besitz" des Benutzers sind. 
-    "Eigene" Elemente, sind die Elemente des Benutzers, 
-    die seit der letzten Synchronisierung und Freigabe 
-    verwendet wurden.
+    Listet alle Pläne auf, die Elemente enthalten,  die derzeit im "Besitz" des Benutzers sind.  "Eigene" Elemente, sind die Elemente des Benutzers,  die seit der letzten Synchronisierung und Freigabe  verwendet wurden.
+  chinese_s: 列出包含当前由用户“拥有”的图元的所有图纸。“拥有”的图元是指自上次同步并释放后，由该用户负责的图元

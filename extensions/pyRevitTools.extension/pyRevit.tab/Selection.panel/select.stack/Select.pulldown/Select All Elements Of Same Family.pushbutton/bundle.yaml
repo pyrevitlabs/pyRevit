@@ -3,9 +3,11 @@ title:
   fr_fr: Sélectionner tous les éléments de la même famille
   en_us: Select All Elements Of Same Family
   de_de: Alle Elemente der aktuell ausgewählten Familie auswählen
+  chinese_s: 选择同族的所有图元
 tooltip:
   ru: Выделяет все элементы (в модели) с одинковым семейством, что и текущий выделенный элемент.
   fr_fr: Sélectionne tous les éléments (dans le modèle) de la même famille que l'objet actuellement sélectionné
   en_us: Selects all elements (in model) of the same family as the currently selected object
   de_de: Es werden alle Elemente im Modell ausgewählt die der gleichen Familien angehören wie das aktuell ausgewählte Objekt
+  chinese_s: 选择（模型中）与当前选定对象属于同一族的所有图元
 context: selection

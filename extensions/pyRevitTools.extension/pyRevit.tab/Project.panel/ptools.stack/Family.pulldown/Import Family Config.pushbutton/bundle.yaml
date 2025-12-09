@@ -3,6 +3,7 @@ title:
   fr_fr: Importer une configuration de famille
   en_us: Import Family Config
   de_de: Familien Konfiguration importieren
+  chinese_s: 导入族配置
 tooltip:
   ru: >-
     Импортирует конфигурацию семейства из yaml файла и изменяет текущее семейство.
@@ -36,43 +37,43 @@ tooltip:
           24D"x36H":
                   Shelf Height (Upper): 3'-0"
   fr_fr: >-
-     Importez les configurations de famille à partir du fichier yaml et modifiez la famille actuelle.
-    
-     Le fichier de configuration de la famille doit être un fichier yaml,
-    
-     fournissant des informations sur les paramètres et les types à créer.
-    
-     La structure de ce fichier de configuration est la suivante :
-         paramètres:
-           <nom-paramètre> :
-                   type : <Autodesk.Revit.DB.ParameterType>
-                   catégorie : <Autodesk.Revit.DB.BuiltInParameterGroup>
-                   exemple : <vrai|faux>
-                   rapport : <true|false>
-                   formule : <chaîne>
-                   par défaut : <chaîne>
-         les types:
-           <nom-type> :
-                   <nom-paramètre> : <valeur>
-                   <nom-paramètre> : <valeur>
-                   ...
-     Exemple:
-    
-     paramètres:
-           Hauteur de l'étagère (supérieure) :
-                   type: Longueur
-                   catégorie : PG_GEOMETRY
-                   exemple : faux
-     les types:
-           24D"x36H":
-                   Hauteur de l'étagère (supérieure) : 3'-0"
+    Importez les configurations de famille à partir du fichier yaml et modifiez la famille actuelle.
+
+    Le fichier de configuration de la famille doit être un fichier yaml,
+
+    fournissant des informations sur les paramètres et les types à créer.
+
+    La structure de ce fichier de configuration est la suivante :
+        paramètres:
+          <nom-paramètre> :
+                  type : <Autodesk.Revit.DB.ParameterType>
+                  catégorie : <Autodesk.Revit.DB.BuiltInParameterGroup>
+                  exemple : <vrai|faux>
+                  rapport : <true|false>
+                  formule : <chaîne>
+                  par défaut : <chaîne>
+        les types:
+          <nom-type> :
+                  <nom-paramètre> : <valeur>
+                  <nom-paramètre> : <valeur>
+                  ...
+    Exemple:
+
+    paramètres:
+          Hauteur de l'étagère (supérieure) :
+                  type: Longueur
+                  catégorie : PG_GEOMETRY
+                  exemple : faux
+    les types:
+          24D"x36H":
+                  Hauteur de l'étagère (supérieure) : 3'-0"
   en_us: >-
     Import family configurations from yaml file and modify current family.
-    
+
     Family configuration file is expected to be a yaml file,
-    
+
     providing info about the parameters and types to be created.
-    
+
     The structure of this config file is as shown below:
         parameters:
           <parameter-name>:
@@ -88,7 +89,7 @@ tooltip:
                   <parameter-name>: <value>
                   ...
     Example:
-    
+
     parameters:
           Shelf Height (Upper):
                   type: Length
@@ -99,12 +100,12 @@ tooltip:
                   Shelf Height (Upper): 3'-0"
   de_de: >-
     Importiert die Familien Konfiguration von eine yaml Datei und passt die aktuelle Familie an.
-    
+
     Die Familien Konfiguration muss eine yaml Datei sein, die Informationen
     über die Parameter und Typen enthält, die der Familie hinzugefügt werden sollen. 
-    
+
     Die Formatierung der Konfigurationsdatei sieht folgendermaßen aus:
-    
+
     parameters:
           <parameter-name>:
                   type: <Autodesk.Revit.DB.ParameterType>
@@ -113,15 +114,15 @@ tooltip:
                   reporting: <true|false>
                   formula: <str>
                   default: <str>
-    
+
     types:
           <type-name>:
                   <parameter-name>: <value>
                   <parameter-name>: <value>
                   ...
-    
+
     Beispiel:
-    
+
     parameters:
           Shelf Height (Upper):
                   type: Length
@@ -131,5 +132,6 @@ tooltip:
     types:
           24D"x36H":
                   Shelf Height (Upper): 3'-0"
+  chinese_s: "从 yaml 文件导入族配置并修改当前族。\n族配置文件应为 yaml 文件，\n提供有关要创建的参数和类型的信息。\n此配置文件的结构如下所示：\n    parameters:\n      <parameter-name>:\n              type: <Autodesk.Revit.DB.ParameterType>\n              category: <Autodesk.Revit.DB.BuiltInParameterGroup>\n              instance: <true|false>\n              reporting: <true|false>\n              formula: <str>\n              default: <str>\n    types:\n      <type-name>:\n              <parameter-name>: <value>\n              <parameter-name>: <value>\n              ...\nExample:\nparameters:\n      Shelf Height (Upper):\n              type: Length\n              category: PG_GEOMETRY\n              instance: false\ntypes:\n      24D\"x36H\":\n              Shelf Height (Upper): 3'-0\""
 author: '{{author}}'
 context: doc-family

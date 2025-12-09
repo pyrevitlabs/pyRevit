@@ -4,13 +4,14 @@ title:
   fr_fr: Épinglage/Désépinglage massif des références
   de_de: Referenzen massenhaft (ent-)sperren
 
+  chinese_s: 批量锁定/解锁参照
 tooltip:
   en_us: |
     Allows you to select one or more categories (e.g., Grids, Levels, Links) and pin all unpinned instances in the model.
 
     Shift-Click:
     Unpins all pinned instances in the selected categories.
-    
+
   ru: |
     Позволяет выбрать одну или несколько категорий (например, оси, уровни, связи) и закрепить все незакреплённые элементы в модели.
 
@@ -28,3 +29,4 @@ tooltip:
 
     Shift-Click:
     Hebt die Anheftung aller angehefteten Elemente in den ausgewählten Kategorien auf.
+  chinese_s: "允许您选择一个或多个类别（例如，轴网、标高、链接），并锁定模型中所有未锁定的实例\nShift+单击：\n解锁所选类别中所有已锁定的实例"

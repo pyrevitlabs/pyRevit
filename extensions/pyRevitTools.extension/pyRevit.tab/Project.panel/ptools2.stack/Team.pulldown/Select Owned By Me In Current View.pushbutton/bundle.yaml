@@ -3,19 +3,13 @@ title:
   fr_fr: Sélectionner les éléments en ma possession dans la vue actuelle
   en_us: Select Owned By Me In Current View
   de_de: Wähle Elemente in aktueller Ansicht die mir gehören
+  chinese_s: 在当前视图中选择我拥有的图元
 tooltip:
   ru: Использует подсказку совместной работы для нахождения принадлежащих элементов в текущем виде. Если текущий вид является листои, то инструмент находит все виды размещенные на этом листе. "Принадлежащие" элементы - это элементы созданные пользователем с момента последней синхронизации.
   fr_fr: Utilise l'info-bulle de partage de projet pour trouver l'élément "possédé" par l'utilisateur dans la vue actuelle. Si la vue actuelle est une feuille, les outils recherchent également toutes les vues placées sur cette feuille. "Les éléments appartenant" sont les éléments édités par le utilisateur depuis la dernière synchronisation et la dernière version.
   en_us: >-
-    Uses the Worksharing tooltip to find out the element "owned" 
-    by the user in the current view. If current view is a sheet, 
-    the tools searches all the views placed on this sheet as well.
-    "Owned" elements are the elements edited by the user since the 
-    last synchronize and release.
+    Uses the Worksharing tooltip to find out the element "owned"  by the user in the current view. If current view is a sheet,  the tools searches all the views placed on this sheet as well.
+    "Owned" elements are the elements edited by the user since the  last synchronize and release.
   de_de: >-
-    Verwendet den Arbeitsteilungs-Tooltip, um das Element herauszufinden, 
-    das dem Benutzer in der aktuellen Ansicht "gehört". 
-    Wenn die aktuelle Ansicht ein Plan ist, durchsucht das Werkzeug 
-    alle Ansichten, die auf diesem Plan platziert wurden. 
-    "Eigene" Elemente sind die Elemente, die der Benutzer 
-    seit der letzten Synchronisierung und Freigabe bearbeitet hat.
+    Verwendet den Arbeitsteilungs-Tooltip, um das Element herauszufinden,  das dem Benutzer in der aktuellen Ansicht "gehört".  Wenn die aktuelle Ansicht ein Plan ist, durchsucht das Werkzeug  alle Ansichten, die auf diesem Plan platziert wurden.  "Eigene" Elemente sind die Elemente, die der Benutzer  seit der letzten Synchronisierung und Freigabe bearbeitet hat.
+  chinese_s: 利用工作共享工具提示来查找当前视图中由用户“拥有”的图元。如果当前视图是图纸，工具也会搜索放置在此图纸上的所有视图。“拥有”的图元是指自上次同步并释放后，由该用户编辑过的图元

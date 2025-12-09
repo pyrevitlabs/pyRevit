@@ -3,13 +3,14 @@ title:
   fr_fr: Copier les gabarits de vue sélectionnés vers des modèles ouverts
   en_us: Copy selected view templates to other open models
   de_de: Kopiere ausgewählte Ansichtsvorlagen in andere geöffnete Projekte
+  chinese_s: 将选定的视图样板复制到其他已打开的模型
 tooltip:
   ru: Копирует выделенные шаблоны видов в другие открытые модели.
   fr_fr: Copier les gabarits de vue sélectionnés vers d'autres modèles ouverts
   en_us: Copy selected view templates to other open models
   de_de: >-
     Es öffnet sich ein Dialogfenster, in dem alle Ansichtsvorlagen vom aktiven
-    Projekt aufgelistet werden. Alle Ansichtsvorlagen, die in ein andere Projekt 
-    kopiert werden sollen, müssen hier markiert werden. Im nächsten Dialogfenster werden
+    Projekt aufgelistet werden. Alle Ansichtsvorlagen, die in ein andere Projekt  kopiert werden sollen, müssen hier markiert werden. Im nächsten Dialogfenster werden
     alle Projekte aufgelistet, die aktuell geöffnet sind. In die hier ausgewählten
     Projekte werden die Ansichtsvorlagen übertragen. 
+  chinese_s: 将选定的视图样板复制到其他已打开的模型

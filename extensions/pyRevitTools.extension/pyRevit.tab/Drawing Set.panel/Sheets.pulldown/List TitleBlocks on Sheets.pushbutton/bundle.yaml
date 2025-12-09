@@ -3,6 +3,7 @@ title:
   fr_fr: Lister les Cartouches sur les Feuilles
   en_us: List/Select TitleBlocks on Sheets
   de_de: Liste alle Planköpfe auf Plänen auf
+  chinese_s: 列出/选择图纸上的标题栏
 tooltip:
   ru: Показывает основные надписи на выделенных листах для просмотра или выделения.
   fr_fr: >-
@@ -10,3 +11,4 @@ tooltip:
     sélection
   en_us: Lists title blocks on selected sheets for review or selection
   de_de: Listet alle Planköpfe von ausgewählten Plänen auf, um sie zu überprüfen oder auszuwählen
+  chinese_s: 列出选定图纸上的标题栏以供检查或选择

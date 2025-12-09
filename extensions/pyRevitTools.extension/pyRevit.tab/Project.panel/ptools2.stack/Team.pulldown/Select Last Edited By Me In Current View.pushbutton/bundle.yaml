@@ -3,19 +3,13 @@ title:
   fr_fr: Sélectionner les éléments édités par moi-même dans la vue actuelle
   en_us: Select Last Edited By Me In Current View
   de_de: Wähle Elemente die zuletzt von mir bearbeitet wurden in dieser Ansicht
+  chinese_s: 在当前视图中选择我最后编辑的图元
 tooltip:
   ru: Использует подсказку совместной работы для нахождения поледнего редактируемого элемента в текущем виде. Если текущий вид является листом, то инструмент ищет все виды размещенные на этом листе. Элементы "Последние редактируемые" - это элементы, редактируемые пользователем в последний раз и они отличаются от заимствованных элементом.
   fr_fr: Utilise l'info-bulle de partage de projet pour connaître l'élément « dernier modifié » par l'utilisateur dans la vue actuelle. Si la vue courante est une feuille, les outils recherchent également toutes les vues placées sur cette feuille. Les éléments "Edité en dernier" sont les derniers éléments édités par l'utilisateur et sont différents des éléments empruntés
   en_us: >-
-    Uses the Worksharing tooltip to find out the element "last edited" 
-    by the user in the current view. If current view is a sheet, the 
-    tools searches all the views placed on this sheet as well.
-    "Last Edited" elements are elements last edited by the user, 
-    and are different from borrowed elements
+    Uses the Worksharing tooltip to find out the element "last edited"  by the user in the current view. If current view is a sheet, the  tools searches all the views placed on this sheet as well.
+    "Last Edited" elements are elements last edited by the user,  and are different from borrowed elements
   de_de: >-
-    Verwendet den Arbeitsteilungs-Tooltip, um herauszufinden, welches Element 
-    durch den Benutzer in der aktuellen Ansicht zuletzt bearbeitet wurde. 
-    Wenn die aktuelle Ansicht ein Plan ist, durchsucht das Werkzeug auch 
-    alle Ansichten, die auf diesem Plan platziert wurden. "Zuletzt bearbeitete" 
-    Elemente sind Elemente, die vom Benutzer zuletzt bearbeitet wurden, 
-    und unterscheiden sich von ausgeliehenen Elementen
+    Verwendet den Arbeitsteilungs-Tooltip, um herauszufinden, welches Element  durch den Benutzer in der aktuellen Ansicht zuletzt bearbeitet wurde.  Wenn die aktuelle Ansicht ein Plan ist, durchsucht das Werkzeug auch  alle Ansichten, die auf diesem Plan platziert wurden. "Zuletzt bearbeitete"  Elemente sind Elemente, die vom Benutzer zuletzt bearbeitet wurden,  und unterscheiden sich von ausgeliehenen Elementen
+  chinese_s: 利用工作共享工具提示来查找当前视图中由用户“最后编辑”的图元。如果当前视图是图纸，工具也会搜索放置在此图纸上的所有视图。“最后编辑”的图元是指由该用户最后编辑过的图元，不同于借用图元

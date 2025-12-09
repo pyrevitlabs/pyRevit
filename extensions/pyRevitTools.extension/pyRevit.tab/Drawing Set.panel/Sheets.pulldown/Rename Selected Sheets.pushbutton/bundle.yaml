@@ -3,12 +3,13 @@ title:
   fr_fr: Renommer les Noms des Feuilles Sélectionnées
   en_us: Rename Selected Sheets
   de_de: Gewählte Pläne umbenennen (klein oder GROSS-Buchstaben)
+  chinese_s: 重命名选定图纸
 tooltip:
   ru: Изменить имена выбранных листов.
   fr_fr: Modifier les noms des feuilles sélectionnés
   en_us: Change the selected sheet names
-  de_de:  >-
+  de_de: >-
     Man kann die Pläne, die man in klein- oder GROSS-Buchstaben umbenennen möchte
-    zuvor im Projektbrowser markieren oder im erscheinenden Dialog auswählen. 
-    Nun hat man die Möglichkeit die Plannamen in Kleinbuchstaben oder Großbuchstaben
+    zuvor im Projektbrowser markieren oder im erscheinenden Dialog auswählen.  Nun hat man die Möglichkeit die Plannamen in Kleinbuchstaben oder Großbuchstaben
     umzubenennen. 
+  chinese_s: 更改选定图纸的名称

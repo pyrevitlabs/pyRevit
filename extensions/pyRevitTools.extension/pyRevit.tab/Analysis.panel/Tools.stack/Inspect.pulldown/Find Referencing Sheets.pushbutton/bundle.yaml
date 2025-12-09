@@ -3,10 +3,11 @@ title:
   fr_fr: Trouver les feuilles qui référencent la vue
   en_us: Find Referencing Sheets
   de_de: Suche alle referenzierten Pläne
+  chinese_s: 查找引用图纸
 tooltip:
   ru: >-
     Находит все связанные листы с текущим видом.
-    
+
     Особенно полезно для поиска легенд.
   fr_fr: >-
     Trouver toutes les vues qui référencent la vue active
@@ -20,4 +21,5 @@ tooltip:
     Es werden alle Pläne aufgelistet, die die aktuelle Ansicht referenzieren.
 
     Dies ist insbesondere hilfreich, um Legenden zu finden. 
+  chinese_s: "查找所有引用当前视图的图纸。\n尤其适用于查找图例"
 author: '{{author}}'

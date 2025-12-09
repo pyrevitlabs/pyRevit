@@ -3,6 +3,7 @@ title:
   fr_fr: Navigateur de Zone de Coupe
   en_us: SectionBox Navigator
   de_de: Schnittbox-Navigator
+  chinese_s: 剖面框导航器
 tooltip:
   ru: |
     Модальное окно для управления секущими коробками в 3D видах.
@@ -20,6 +21,7 @@ tooltip:
     Abgelöstes Fenster zur Navigation von Schnittboxen in 3D-Ansichten.
     Schnelles Ausrichten an Ebenen, präzises Verschieben, gleichmäßiges Erweitern/Verkleinern.
     Echtzeitvorschau beim Überfahren zeigt Änderungen vor dem Anwenden.
+  chinese_s: "用于在三维视图中导航剖面框的无模式窗口。\n快速将边界捕捉到标高，精确微调，均匀扩展/收缩。\n悬停时可实时预览更改效果，然后再应用。"
 author: wurschdhaud
 context:
   - active-3d-view

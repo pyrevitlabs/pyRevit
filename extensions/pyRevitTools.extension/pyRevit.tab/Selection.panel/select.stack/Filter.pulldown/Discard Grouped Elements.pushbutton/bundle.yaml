@@ -3,13 +3,12 @@ title:
   fr_fr: Enlève les éléments groupés
   en_us: Discard Grouped Elements
   de_de: Gruppierte Elemente von der aktuellen Auswahl ausschliessen
+  chinese_s: 排除编组图元
 tooltip:
   ru: Отбросить (не удалить) сгруппированные элементы с текущего выделения.
   fr_fr: Supprime (ne supprime pas) les éléments groupés de la sélection actuelle
   en_us: Discards (not delete) grouped elements from the current selection
   de_de: >-
-    Die aktuelle Elementauswahl wird so vermindert, 
-    dass keine gruppierte Elemente mehr in der Auswahl vorhanden sind. 
-    Die Elemente werden also nicht gelöscht, 
-    sondern nur aus der aktuellen Auswahl entfernt.
+    Die aktuelle Elementauswahl wird so vermindert,  dass keine gruppierte Elemente mehr in der Auswahl vorhanden sind.  Die Elemente werden also nicht gelöscht,  sondern nur aus der aktuellen Auswahl entfernt.
+  chinese_s: 从当前选择中排除（非删除）已编组的图元
 context: Selection

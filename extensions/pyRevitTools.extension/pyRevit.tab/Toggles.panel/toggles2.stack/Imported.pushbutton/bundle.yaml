@@ -3,11 +3,12 @@ title:
   fr_fr: Importés
   en_us: Importer
   de_de: Importe an/aus
+  chinese_s: 导入类别
 tooltip:
   ru: Переключает видимость импортированных категорий в текущем виде.
   fr_fr: Bascule la visibilité des catégories importées sur la vue actuelle
   en_us: Toggles visibility of imported categories on current view
-  de_de: >- 
-    Schaltet die importierten Kategorien in der aktuellen Ansicht sichtbar bzw 
-    unsichtbar. Im Grunde werden die Einstellungen im Dialog Sichtbarkeit/Grafiken im Tab
+  de_de: >-
+    Schaltet die importierten Kategorien in der aktuellen Ansicht sichtbar bzw  unsichtbar. Im Grunde werden die Einstellungen im Dialog Sichtbarkeit/Grafiken im Tab
     Importierte Kategorien geändert.
+  chinese_s: 在当前视图中切换导入类别的可见性
