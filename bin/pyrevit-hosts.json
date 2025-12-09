@@ -2206,5 +2206,18 @@
         "release": "2026.3",
         "target": "x64",
         "version": "26.3.0.37"
+    }, 
+    {
+        "build": "20251022_1005",
+        "meta": {
+            "schema": "1.0",
+            "source": "https://help.autodesk.com/view/RVT/2026/ENU/?guid=RevitReleaseNotes_2027_html"
+        },
+        "notes": "https://help.autodesk.com/view/RVT/2026/ENU/?guid=RevitReleaseNotes_2027_html",
+        "product": "Autodesk Revit",
+        "release": "2027",
+        "target": "x64",
+        "version": "27.0.0.302"
     }
+
 ]

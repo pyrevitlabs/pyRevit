@@ -1,0 +1,58 @@
+=== pyRevitLoader Startup Diagnostics ===
+Loader Path: C:\Users\User\Documents\GitHub\pyRevit\bin\netcore\engines\IPY2712PR
+Common Folder: C:\Users\User\Documents\GitHub\pyRevit\bin\netcore
+=== Assembly Diagnostics ===
+Assembly Location: C:\Users\User\Documents\GitHub\pyRevit\bin\netcore\engines\IPY2712PR\pyRevitLoader.dll
+Assembly Full Name: pyRevitLoader, Version=2.7.12.0, Culture=neutral, PublicKeyToken=null
+Assembly Version: 2.7.12.0
+
+=== Embedded Resources ===
+Found 1 embedded resource(s):
+  - pyRevitLoader.python_2712pr_lib.zip
+
+=== IronPython Engine Info ===
+IronPython Assembly: pyRevitLabs.IronPython, Version=2.7.12.0, Culture=neutral, PublicKeyToken=7f709c5b713576e1
+IronPython Version: 2.7.12.0
+IronPython Location: C:\Users\User\Documents\GitHub\pyRevit\bin\netcore\engines\IPY2712PR\pyRevitLabs.IronPython.dll
+
+Checking for PR variant:
+=== Embedded Library Validation ===
+Expected resource name (case-insensitive): python_2712pr_lib.zip
+Found matching resource: pyRevitLoader.python_2712pr_lib.zip
+Resource stream size: 4065722 bytes
+Zip archive validated. Contains 519 entries.
+
+Critical files check:
+  warnings.py: FOUND (1 entry/entries)
+    Path: warnings.py, Size: 15248 bytes
+    Lines 300-310 (around error location):
+    Line 300:     showwarning(message, category, filename, lineno)
+    Line 301: 
+    Line 302: 
+    Line 303: class WarningMessage(object):
+    Line 304: 
+    Line 305:     """Holds the result of a single showwarning() call."""
+    Line 306: 
+    Line 307:     _WARNING_DETAILS = ("message", "category", "filename", "lineno", "file",
+    Line 308:                         "line")
+    Line 309: 
+    Line 310:     def __init__(self, message, category, filename, lineno, file=None,
+  os.py: FOUND (2 entry/entries)
+    Path: encodings/palmos.py, Size: 3019 bytes
+    Path: os.py, Size: 26652 bytes
+  ntpath.py: FOUND (2 entry/entries)
+    Path: ntpath.py, Size: 20005 bytes
+    Path: xml/etree/ElementPath.py, Size: 9778 bytes
+
+Zip structure validation:
+  Total entries: 519
+  Python files (.py): 516
+  Directories: 0
+
+Checking for standard variant:
+=== Embedded Library Validation ===
+Expected resource name (case-insensitive): python_2712_lib.zip
+ERROR: No matching resource found!
+Available resources:
+  - pyRevitLoader.python_2712pr_lib.zip
+
