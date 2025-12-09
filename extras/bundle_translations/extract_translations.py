@@ -10,16 +10,18 @@ Configuration:
     LANGUAGE_KEY: Translation language key (e.g., 'chinese_s')
     SOURCE_LANG: Source language key (default: 'en_us')
 """
+
 import os
 from pathlib import Path
 from ruamel.yaml import YAML  # pip install ruamel.yaml
 import csv
 
 # -------- CONFIG --------
-BASE_DIR = r"C:\Program Files\pyRevit-Master\extensions\pyRevitTools.extension"  # adjust for custom installation 
+BASE_DIR = r"C:\Program Files\pyRevit-Master\extensions\pyRevitTools.extension"  # adjust for custom installation
 OUTPUT_CSV = r"C:\temp\translations.csv"  # same path as in other script
 LANGUAGE_KEY = "chinese_s"  # translation key to extract/merge
 SOURCE_LANG = "en_us"  # main source language
+ONLY_EXPORT_MISSING = False
 # ------------------------
 
 yaml = YAML()
@@ -44,8 +46,11 @@ def extract_field(path, field_name, value, results):
             first_key = next(iter(value.keys()))
             en = value[first_key]
 
-        # Existing translation to preserve
+        # Existing translation
         tr = value.get(LANGUAGE_KEY, "")
+
+        if ONLY_EXPORT_MISSING and tr:
+            return  # Skip entries that are already translated
 
         if en:
             results.append([path, field_name, en, tr])
@@ -56,6 +61,9 @@ def extract_field(path, field_name, value, results):
         print(
             f"[Scalar detected] File: {path} | Field: {field_name} | Value: '{value}'"
         )
+
+        # Scalars always represent untranslated values, so always export.
+        # (Translation tr = "")
         results.append([path, field_name, value, ""])
         return
 
