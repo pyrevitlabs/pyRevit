@@ -3,10 +3,10 @@ title:
   fr_fr: Explose et supprime les groupes sélectionnés
   en_us: Explode and remove selected groups
   de_de: Ausgewählte Gruppen auflösen und entfernen
+  chinese_s: 分解并移除选定组
 tooltip:
   ru: >-
-    Разрушает все экземпляры выделенных групп 
-    и удаляет определения групп из диспетчера проекта.
+    Разрушает все экземпляры выделенных групп  и удаляет определения групп из диспетчера проекта.
   fr_fr: >-
     Explose toutes les occurences des groupes sélectionnés et supprime
     la définition de groupe depuis le navigateur de projet
@@ -14,6 +14,6 @@ tooltip:
     Explodes all instances of the selected groups and removes
     the group definition from project browser
   de_de: >-
-    Löst im gesamten Projekt alle Exemplare der ausgewählten Gruppen 
-    auf und entfernt die Gruppe aus dem Projektbrowser. 
+    Löst im gesamten Projekt alle Exemplare der ausgewählten Gruppen  auf und entfernt die Gruppe aus dem Projektbrowser. 
+  chinese_s: 分解所选组的所有实例，并将其组定义从项目浏览器中移除
 context: selection

@@ -3,8 +3,10 @@ title:
   fr_fr: Supprimer les styles de lignes Site Designer
   en_us: Wipe Site Designer Line Styles
   de_de: Lösche die Site Designer Linienstile
+  chinese_s: 清除 Site Designer 线样式
 tooltip:
   ru: Удаляет все лишние стили линий, созданные неисправной надстройкой Site Designer.
   fr_fr: Supprime tous les styles de lignes créés par le addin défectueux Site Designer
   en_us: Deletes all extra lines styles created by the faulty Site Designer addin
   de_de: Es werden alle Linienstile gelöscht die durch das Revit Add-In Site Designer erstellt wurden
+  chinese_s: 删除由有缺陷的 Site Designer 插件创建的所有额外线样式

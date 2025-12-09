@@ -7,6 +7,7 @@ title:
     Open Referencing Sheet
   de_de: |-
     Öffne den referenzierten Plan
+  chinese_s: 打开引用图纸
 tooltip:
   ru: |-
     Открывает лист содержащий данный вид и приближает к видовому экрану.
@@ -16,3 +17,4 @@ tooltip:
     Opens the sheet containing this view and zooms to the viewport
   de_de: |-
     Es wird der Plan geöffnet, der die Ansicht enthält und zoomt auf das Ansichtsfenster
+  chinese_s: 打开包含此视图的图纸，并缩放至该视口

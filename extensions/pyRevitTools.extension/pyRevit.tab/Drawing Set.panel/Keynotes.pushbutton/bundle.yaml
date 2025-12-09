@@ -3,9 +3,9 @@ help_url: >-
 tooltip:
   ru: |-
     Управление ключевыми пометками проекта.
-    
+
     Shift+Click
-    
+
     Сбрасывает настройки и открывает окно.
   fr_fr: |-
     Gérer les notes d'identification du projet.
@@ -23,6 +23,7 @@ tooltip:
     Shift+Click
 
     Fenster Konfiguration zurücksetzen und öffnen.
+  chinese_s: "管理项目注释\n\nShift+单击\n\n重置窗口配置并打开"
 title:
   ru: |-
     Править КП
@@ -35,5 +36,6 @@ title:
   de_de: |-
     Bauelementschlüssel
     verwalten
+  chinese_s: 管理注释
 min_revit_version: 2014
 author: '{{author}}'

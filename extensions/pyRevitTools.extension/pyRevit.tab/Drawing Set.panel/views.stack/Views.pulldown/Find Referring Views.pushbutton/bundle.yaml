@@ -7,6 +7,7 @@ title:
     Open Refererring Views
   de_de: |-
     Öffne referenzierte Ansichten
+  chinese_s: 打开引用视图
 tooltip:
   ru: |-
     Показывает все виды, которые связанны с выделенными видовыми экранами или активным видом.
@@ -17,3 +18,4 @@ tooltip:
   de_de: >-
     Es werden alle Ansichten aufgelistet, die das ausgewählte Ansichtsfenster oder aktive Ansicht referenzieren.
     Achtung: Die Ausführung dieses Befehls kann sehr lange dauern und kann nicht unterbrochen werden!
+  chinese_s: 列出所有引用所选视口或活动视图的视图

@@ -3,13 +3,13 @@ title:
   fr_fr: Remplacement V/G
   en_us: Override V/G
   de_de: Element grafisch überschreiben
+  chinese_s: 替换可见性/图形
 tooltip:
   ru: Предоставляет возможности для переопределения видимости/графики на выделенных элементах.
   fr_fr: Donne des options de remplacement de visibilité/graphismes des éléments sélectionnés
   en_us: Provides options for overriding Visibility/Graphics on selected elements
   de_de: >-
-    Zunächst muss man die Elemente auswählen, die man grafisch überschreiben möchte. 
-    Anschließend stehen mehrere Optionen zur Auswahl:
+    Zunächst muss man die Elemente auswählen, die man grafisch überschreiben möchte.  Anschließend stehen mehrere Optionen zur Auswahl:
     1) Reset VG Overrides = Grafische Überschreibung zurücksetzen
     2) Halftone Selected = Mit Halbton überschreiben
     3) Solid-Line Selected = Mit Linienmuster kompakt überschreiben
@@ -19,4 +19,5 @@ tooltip:
     7) Solid-Orange Selected = Mit Farbe orange und Muster Flächenfüllung überschreiben
     8) Solid-Blue Selected = Mit Farbe blau und Muster Flächenfüllung überschreiben
     9) Dashed-Line Selected = Mit Linienmuster gestrichelt überschreiben
+  chinese_s: 提供用于替换选定图元的可见性/图形设置的选项
 context: selection

@@ -8,10 +8,11 @@ title:
   de_de: |-
     Exportiere Bauteilliste in eine CSV
 
+  chinese_s: 将明细表导出为 CSV
 tooltip:
   ru: |-
     Экспортирует выделенные спецификации в CSV файлы.
-    
+
     Shift-Click:
     Выберите путь экспорта по умолчанию.
   fr_fr: |-
@@ -27,17 +28,14 @@ tooltip:
 
     Pick from default output locations
   de_de: >-
-    Es erscheint ein Dialogfenster, um den Speicherort festzulegen. 
-    Danach erscheint ein weiteres Dialogfenster, um die Bauteillisten
+    Es erscheint ein Dialogfenster, um den Speicherort festzulegen.  Danach erscheint ein weiteres Dialogfenster, um die Bauteillisten
     auszuwählen, die exportiert werden sollen. Anschließend werden die
     ausgewählten Bauteillisten in CSV Dateien exportiert. CSV Dateien
     sind Textdateien, wobei die Werte mit Kommas voneinander getrennt sind.
 
     Shift-Click:
 
-    Es erscheint ein Dialog in dem man häufig genutzte Speichereorte auswählen kann, 
-    z.B. Desktop, Projektspeicherort, Downloads usw. Zudem kann man angeben, 
-    ob die CSV Datei nach dem Speichern geöffnet werden soll und ob die Kopfzeile 
-    übertragen werden soll.
-  
+    Es erscheint ein Dialog in dem man häufig genutzte Speichereorte auswählen kann,  z.B. Desktop, Projektspeicherort, Downloads usw. Zudem kann man angeben,  ob die CSV Datei nach dem Speichern geöffnet werden soll und ob die Kopfzeile  übertragen werden soll.
 
+
+  chinese_s: "将选定的明细表导出为 CSV 文件\n\nShift-单击：\n\n从默认输出位置中选择"

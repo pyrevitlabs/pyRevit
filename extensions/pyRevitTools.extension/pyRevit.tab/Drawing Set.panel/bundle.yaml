@@ -3,10 +3,11 @@ title:
   en_us: Drawing set
   fr_fr: Set de dessins
   de_de: Zeichnungssatz
+  chinese_s: 图纸集
 layout:
   - Sheets
   - Revision
   - Keynotes
   - views
-  - -----
+  - '-----'
   - Print Sheets

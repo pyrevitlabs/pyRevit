@@ -3,16 +3,14 @@ title:
   fr_fr: Parcourir les types
   en_us: Cycle Types
   de_de: Familien Typen durchwechseln
+  chinese_s: Cycle Types
 tooltip:
   ru: Последовательно переключает типы семейств.
   fr_fr: Parcourir les types de familles
   en_us: Cycle family types
   de_de: >-
-    Mit jedem Ausführen wird der nächste verfügbare Familien Typ ausgewählt. 
-    Das Werkzeug kann nur im Familieneditor betätigt werden! Dies ist bei 
-    der Familienerstellung hilfreich, um die einzelnen Typen schnell 
-    im Ansichtsfenster anzuschauen, ohne dass der Familientypen Dialog 
-    aufgerufen werden muss.
+    Mit jedem Ausführen wird der nächste verfügbare Familien Typ ausgewählt.  Das Werkzeug kann nur im Familieneditor betätigt werden! Dies ist bei  der Familienerstellung hilfreich, um die einzelnen Typen schnell  im Ansichtsfenster anzuschauen, ohne dass der Familientypen Dialog  aufgerufen werden muss.
+  chinese_s: 循环切换族类型
 context: doc-family
 authors:
   - '{{author}}'

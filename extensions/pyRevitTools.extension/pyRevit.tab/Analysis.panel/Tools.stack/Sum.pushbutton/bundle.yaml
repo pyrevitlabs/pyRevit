@@ -3,9 +3,11 @@ title:
   fr_fr: Somme de Totaux
   en_us: Sum Total
   de_de: Gesamtsumme
+  chinese_s: 参数求和
 tooltip:
   ru: Суммирует значения выбранного параметра по выделенным элементам. Данный инструмент обрабатывает выделенные элементы и их связанные типы и предоставляет пользователю список параметров, которые являются общими для выбранных элементов. Обрабатываются только параметры целочисленных и вещественных типов.
   fr_fr: Résume les valeurs du paramètre sélectionné sur les éléments sélectionnés. Cet outil étudie les éléments sélectionnés et leurs types associés et présente à l'utilisateur une liste de paramètres partagés entre les éléments sélectionnés. Seuls les paramètres avec des valeurs Double ou Integer sont inclus.
   en_us: Sums up the values of selected parameter on selected elements. This tool studies the selected elements and their associated types and presents the user with a list of parameters that are shared between the selected elements. Only parameters with Double or Integer values are included.
   de_de: Summiert die Werte ausgewählter Parameter für ausgewählte Elemente. Dieses Tool untersucht die ausgewählten Elemente und ihre zugehörigen Typen und präsentiert dem Benutzer eine Liste der Parameter, die von den ausgewählten Elementen gemeinsam genutzt werden. Es werden nur Parameter mit Zahlenwerten (double) oder Ganzzahl-Werten (Integer) berücksichtigt.
+  chinese_s: 对所选图元上的选定参数值进行求和。此工具会分析所选图元及其关联类型，并向用户显示所选图元之间共享的参数列表。仅包含具有双精度或整数值的参数
 context: selection

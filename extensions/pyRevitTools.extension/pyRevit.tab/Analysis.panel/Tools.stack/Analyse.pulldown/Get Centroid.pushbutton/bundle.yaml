@@ -1,7 +1,8 @@
 title:
   en_us: Get Centroid
   de_de: Schwerpunkt vom gewhälten Element markieren
-tooltip: >
+  chinese_s: 获取质心
+tooltip:
   en_us: Calculates the centroid of the selected elements geometry and places three model lines intersecting at the centroid. Config mode can be used to specify a Line Style that will be used in the future as a default.
   de_de: Berechnet den Schwerpunkt der ausgewählten Element Geometrie und platziert drei Modelllinien, die sich im Schwerpunkt schneiden. Der Konfigurationsmodus kann verwendet werden, um ein Linienstil festzulegen, der zukünftig als Standard verwendet wird. 
 author: Tamás Déri

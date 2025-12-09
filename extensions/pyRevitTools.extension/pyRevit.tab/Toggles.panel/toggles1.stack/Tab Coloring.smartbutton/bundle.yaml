@@ -3,15 +3,16 @@ title:
   fr_fr: Colorer les onglets
   en_us: Tab Coloring
   de_de: Tabs einfärben
+  chinese_s: 选项卡着色
 tooltip:
   ru: Делает все возможное для визуального разделения открытых документов.
   fr_fr: Améliore la distinction entre les documents ouverts
   en_us: Does its best at visually separating open documents
   de_de: >-
     Die Einstellungen für dieses Werkzeug befinden sich in den pyRevit Einstellungen unter
-    UI/UX -> Tab coloring. 
-    Mit diesem Befehl wird die Einfärbung aktiviert bzw deaktiviert. Die Tabs werden
+    UI/UX -> Tab coloring.  Mit diesem Befehl wird die Einfärbung aktiviert bzw deaktiviert. Die Tabs werden
     sortiert nach Projekt und Familie eingefärbt. Das verbessert den Überblick wenn man
     mehrere Projekte gleichzeitig geöffnet hat.
+  chinese_s: 尽最大努力通过视觉区分打开的文档
 min_revit_version: 2019
 context: zero-doc

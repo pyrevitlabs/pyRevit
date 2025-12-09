@@ -3,10 +3,11 @@ title:
   fr_fr: Epingler toutes les Vues
   en_us: Pin All Viewports
   de_de: Ansichtsfenster auf Plänen pinnen
+  chinese_s: 锁定所有视口
 tooltip:
   ru: |-
     Прикрепляет все видовые экраны на выделенных листах.
-    
+
     Shift-Click:
     Прикрепляет все видовые экраны на активном листе.
   fr_fr: |-
@@ -27,3 +28,4 @@ tooltip:
 
     Shift-Click:
     Sperre (Pin-Werkzeug) alle Ansichtsfenster auf dem aktiven Plan
+  chinese_s: "锁定选定图纸上的所有视口\n\nShift-单击：锁定活动图纸上的所有视口"

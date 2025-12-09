@@ -3,24 +3,14 @@ title:
   fr_fr: Supprimer les étiquettes d'élévation vides
   en_us: Wipe Empty Elevation Tags
   de_de: Lösche leere Ansichtsbeschriftungen
+  chinese_s: 清除空的立面标记
 tooltip:
   ru: >-
-    Как правило, если все марки, созданные с помощью марки 
-    уровней, удаляются из модели. Данный скрипт удалит из 
-    модели все пустые марки уровней.
+    Как правило, если все марки, созданные с помощью марки  уровней, удаляются из модели. Данный скрипт удалит из  модели все пустые марки уровней.
   fr_fr: >-
-    En général, si toutes les élévations créées par une 
-    étiquette d'élévation sont supprimées du modèle, 
-    l'étiquette d'élévation vide reste toujours à son 
-    emplacement. Ce script supprimera toutes les 
-    étiquettes d'élévation vides du modèle
+    En général, si toutes les élévations créées par une  étiquette d'élévation sont supprimées du modèle,  l'étiquette d'élévation vide reste toujours à son  emplacement. Ce script supprimera toutes les  étiquettes d'élévation vides du modèle
   en_us: >-
-    Generally if all elevations creates by an elevation tag 
-    are deleted from the model, the empty elevation tag still 
-    remains in its location. This script will delete all 
-    empty elevation tags from the model
+    Generally if all elevations creates by an elevation tag  are deleted from the model, the empty elevation tag still  remains in its location. This script will delete all  empty elevation tags from the model
   de_de: >-
-    Wenn alle Ansichten gelöscht werden, die durch eine 
-    Ansichtsbeschriftung generiert wurden, dann bleibt die 
-    leere Ansichtsbeschriftung übrig. Dieses Skript löscht alle 
-    leeren Ansichtsbeschriftungen im Modell. 
+    Wenn alle Ansichten gelöscht werden, die durch eine  Ansichtsbeschriftung generiert wurden, dann bleibt die  leere Ansichtsbeschriftung übrig. Dieses Skript löscht alle  leeren Ansichtsbeschriftungen im Modell. 
+  chinese_s: 通常，如果由立面标记创建的所有立面图都从模型中删除，空的立面标记仍会保留在原位。此脚本将从模型中删除所有空的立面标记
