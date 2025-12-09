@@ -90,7 +90,7 @@ Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detac
 [Code]
 function InitializeSetup: Boolean;
 begin
-  Dependency_AddDotNet80;
-  Dependency_AddDotNet80Desktop;
+  Dependency_AddDotNet100;
+  Dependency_AddDotNet100Desktop;
   Result := True;
 end;
