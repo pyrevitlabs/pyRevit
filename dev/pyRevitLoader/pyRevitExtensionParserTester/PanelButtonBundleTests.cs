@@ -235,6 +235,9 @@ namespace pyRevitExtensionParserTest
                 "Test DynamoBIM GUI",
                 "Test Grasshopper",
                 "Test Content Bundle",
+                "Test Content Bundle - no rfa in folder nor specifed in bundle",
+                "Test Content Bundle - rfa in same folder and specified in bundle",
+                "Test Content Bundle - with rfa outside of content folder",
                 "Test Hyperlink",
                 "Test Блог"
             };
@@ -243,7 +246,33 @@ namespace pyRevitExtensionParserTest
             CollectionAssert.AreEqual(expectedLayout, bundlePulldown.LayoutOrder);
 
             Assert.IsNotNull(bundlePulldown.Children, "Pulldown children should not be null");
-            foreach (var layoutName in expectedLayout)
+            
+            // List of layout items that have corresponding child components
+            // Note: "Test Content Bundle - no rfa in folder nor specifed in bundle" is in bundle.yaml
+            // but does not have a corresponding component directory, so it won't have a child
+            var expectedChildren = new[]
+            {
+                "Test pyRevit Bundle",
+                "Test pyRevit Button",
+                "Test Smart Button",
+                "Test C# Script",
+                "Test Direct Invoke",
+                "Test Direct Invoke (ExecParams)",
+                "Test Direct Class Invoke",
+                "Test Link Button",
+                "Test VisualBasic",
+                "Test Ruby",
+                "Test DynamoBIM",
+                "Test DynamoBIM GUI",
+                "Test Grasshopper",
+                "Test Content Bundle",
+                "Test Content Bundle - rfa in same folder and specified in bundle",
+                "Test Content Bundle - with rfa outside of content folder",
+                "Test Hyperlink",
+                "Test Блог"
+            };
+            
+            foreach (var layoutName in expectedChildren)
             {
                 var child = bundlePulldown.Children.FirstOrDefault(c => c.DisplayName == layoutName);
                 Assert.IsNotNull(child, $"Pulldown child '{layoutName}' missing");

@@ -206,6 +206,21 @@ namespace pyRevitExtensionParser
         /// </summary>
         private static void ParseTopLevelSection(string line, ParsedBundle parsed, ParserState state)
         {
+            // Handle layout list items at top level (no indentation)
+            // In pyRevit bundles, layout items often don't have leading indentation
+            if (line.StartsWith("-") && (state.CurrentSection == "layout" || state.CurrentSection == "layout_order"))
+            {
+                ParseLayoutItem(line, parsed);
+                return;
+            }
+            
+            // Handle module list items at top level
+            if (line.StartsWith("-") && state.CurrentSection == "modules")
+            {
+                ParseModuleItem(line, parsed);
+                return;
+            }
+            
             if (!line.Contains(":"))
                 return;
 
