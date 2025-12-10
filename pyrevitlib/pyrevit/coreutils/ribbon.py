@@ -897,8 +897,7 @@ class _PyRevitRibbonButton(GenericPyRevitUIContainer):
     def get_title(self):
         if self.itemdata_mode:
             return self.ui_title
-        else:
-            return self._rvtapi_object.ItemText
+        return self._rvtapi_object.ItemText
 
     def get_control_id(self):
         adwindows_obj = self.get_adwindows_object()
@@ -1029,21 +1028,21 @@ class _PyRevitRibbonComboBox(GenericPyRevitUIContainer):
         """
         try:
             adwindows_obj = self.get_adwindows_object()
-            if adwindows_obj:
-                exToolTip = self.get_rvtapi_object().ToolTip
-                if not isinstance(exToolTip, str):
-                    exToolTip = None
-                adwindows_obj.ToolTip = AdWindows.RibbonToolTip()
-                adwindows_obj.ToolTip.Title = self.ui_title
-                adwindows_obj.ToolTip.Content = exToolTip
-                _StackPanel = System.Windows.Controls.StackPanel()
-                _image = System.Windows.Controls.Image()
-                _image.Source = load_bitmapimage(tooltip_image)
-                _StackPanel.Children.Add(_image)
-                adwindows_obj.ToolTip.ExpandedContent = _StackPanel
-                adwindows_obj.ResolveToolTip()
-            else:
+            if not adwindows_obj:
                 self.tooltip_image = tooltip_image
+                return
+            exToolTip = self.get_rvtapi_object().ToolTip
+            if not isinstance(exToolTip, str):
+                exToolTip = None
+            adwindows_obj.ToolTip = AdWindows.RibbonToolTip()
+            adwindows_obj.ToolTip.Title = self.ui_title
+            adwindows_obj.ToolTip.Content = exToolTip
+            _StackPanel = System.Windows.Controls.StackPanel()
+            _image = System.Windows.Controls.Image()
+            _image.Source = load_bitmapimage(tooltip_image)
+            _StackPanel.Children.Add(_image)
+            adwindows_obj.ToolTip.ExpandedContent = _StackPanel
+            adwindows_obj.ResolveToolTip()
         except Exception as ttimage_err:
             raise PyRevitUIError(
                 "Error setting tooltip image {} | {} ".format(
@@ -1059,34 +1058,34 @@ class _PyRevitRibbonComboBox(GenericPyRevitUIContainer):
         """
         try:
             adwindows_obj = self.get_adwindows_object()
-            if adwindows_obj:
-                exToolTip = self.get_rvtapi_object().ToolTip
-                if not isinstance(exToolTip, str):
-                    exToolTip = None
-                adwindows_obj.ToolTip = AdWindows.RibbonToolTip()
-                adwindows_obj.ToolTip.Title = self.ui_title
-                adwindows_obj.ToolTip.Content = exToolTip
-                _StackPanel = System.Windows.Controls.StackPanel()
-                _video = System.Windows.Controls.MediaElement()
-                _video.Source = Uri(tooltip_video)
-                _video.LoadedBehavior = System.Windows.Controls.MediaState.Manual
-                _video.UnloadedBehavior = System.Windows.Controls.MediaState.Manual
-
-                def on_media_ended(sender, args):
-                    sender.Position = System.TimeSpan.Zero
-                    sender.Play()
-
-                _video.MediaEnded += on_media_ended
-
-                def on_loaded(sender, args):
-                    sender.Play()
-
-                _video.Loaded += on_loaded
-                _StackPanel.Children.Add(_video)
-                adwindows_obj.ToolTip.ExpandedContent = _StackPanel
-                adwindows_obj.ResolveToolTip()
-            else:
+            if not adwindows_obj:
                 self.tooltip_video = tooltip_video
+                return
+            exToolTip = self.get_rvtapi_object().ToolTip
+            if not isinstance(exToolTip, str):
+                exToolTip = None
+            adwindows_obj.ToolTip = AdWindows.RibbonToolTip()
+            adwindows_obj.ToolTip.Title = self.ui_title
+            adwindows_obj.ToolTip.Content = exToolTip
+            _StackPanel = System.Windows.Controls.StackPanel()
+            _video = System.Windows.Controls.MediaElement()
+            _video.Source = Uri(tooltip_video)
+            _video.LoadedBehavior = System.Windows.Controls.MediaState.Manual
+            _video.UnloadedBehavior = System.Windows.Controls.MediaState.Manual
+
+            def on_media_ended(sender, args):
+                sender.Position = System.TimeSpan.Zero
+                sender.Play()
+
+            _video.MediaEnded += on_media_ended
+
+            def on_loaded(sender, args):
+                sender.Play()
+
+            _video.Loaded += on_loaded
+            _StackPanel.Children.Add(_video)
+            adwindows_obj.ToolTip.ExpandedContent = _StackPanel
+            adwindows_obj.ResolveToolTip()
         except Exception as ttvideo_err:
             raise PyRevitUIError(
                 "Error setting tooltip video {} | {} ".format(
@@ -1278,37 +1277,31 @@ class _PyRevitRibbonComboBox(GenericPyRevitUIContainer):
                 )
             )
 
-    def reset_highlights(self):
-        """Reset highlight state."""
+    def _set_highlight(self, highlight_value):
+        """Set highlight value on the adwindows object.
+
+        Args:
+            highlight_value: The highlight mode value to set
+        """
         try:
             if hasattr(AdInternal.Windows, "HighlightMode"):
                 adwindows_obj = self.get_adwindows_object()
                 if adwindows_obj and hasattr(adwindows_obj, "Highlight"):
-                    adwindows_obj.Highlight = coreutils.get_enum_none(
-                        AdInternal.Windows.HighlightMode
-                    )
+                    adwindows_obj.Highlight = highlight_value
         except Exception:
             pass  # Highlights are optional, fail silently
+
+    def reset_highlights(self):
+        """Reset highlight state."""
+        self._set_highlight(coreutils.get_enum_none(AdInternal.Windows.HighlightMode))
 
     def highlight_as_new(self):
         """Highlight as new item."""
-        try:
-            if hasattr(AdInternal.Windows, "HighlightMode"):
-                adwindows_obj = self.get_adwindows_object()
-                if adwindows_obj and hasattr(adwindows_obj, "Highlight"):
-                    adwindows_obj.Highlight = AdInternal.Windows.HighlightMode.New
-        except Exception:
-            pass  # Highlights are optional, fail silently
+        self._set_highlight(AdInternal.Windows.HighlightMode.New)
 
     def highlight_as_updated(self):
         """Highlight as updated item."""
-        try:
-            if hasattr(AdInternal.Windows, "HighlightMode"):
-                adwindows_obj = self.get_adwindows_object()
-                if adwindows_obj and hasattr(adwindows_obj, "Highlight"):
-                    adwindows_obj.Highlight = AdInternal.Windows.HighlightMode.Updated
-        except Exception:
-            pass  # Highlights are optional, fail silently
+        self._set_highlight(AdInternal.Windows.HighlightMode.Updated)
 
 
 class _PyRevitRibbonGroupItem(GenericPyRevitUIContainer):
@@ -1966,16 +1959,15 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
             update_if_exists (bool, optional): Update if exists. Defaults to False.
         """
         if self.contains(item_name):
-            if update_if_exists:
-                existing_item = self._get_component(item_name)
-                existing_item.activate()
-                # Return existing item so caller can update members
-                return existing_item
-            else:
+            if not update_if_exists:
                 raise PyRevitUIError(
                     "ComboBox already exists and "
                     "update is not allowed: {}".format(item_name)
                 )
+            existing_item = self._get_component(item_name)
+            existing_item.activate()
+            # Return existing item so caller can update members
+            return existing_item
 
         # Create ComboBoxData
         combobox_data = UI.ComboBoxData(item_name)

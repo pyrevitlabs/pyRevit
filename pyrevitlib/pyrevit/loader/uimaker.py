@@ -450,86 +450,82 @@ def _produce_ui_combobox(ui_maker_params):
     Args:
         ui_maker_params (UIMakerParams): Standard parameters for making ui item.
     """
+    parent_ribbon_panel = ui_maker_params.parent_ui
+    combobox = ui_maker_params.component
+    combobox_name = getattr(combobox, "name", "unknown")
+
+    # Validate inputs first
+    if not combobox:
+        mlogger.error("Component is None")
+        return None
+    if not parent_ribbon_panel:
+        mlogger.error("Parent UI is None for: %s", combobox_name)
+        return None
+
+    # Get panel API object
     try:
-        parent_ribbon_panel = ui_maker_params.parent_ui
-        combobox = ui_maker_params.component
-        combobox_name = getattr(combobox, "name", "unknown")
-
-        # Validate inputs first
-        if not combobox:
-            mlogger.error("Component is None")
+        panel_rvtapi = parent_ribbon_panel.get_rvtapi_object()
+        if not panel_rvtapi:
+            mlogger.error("Panel Revit API object is None for: %s", combobox_name)
             return None
-        if not parent_ribbon_panel:
-            mlogger.error("Parent UI is None for: %s", combobox_name)
-            return None
+    except Exception as panel_err:
+        mlogger.error("Could not get panel Revit API object: %s", panel_err)
+        return None
 
-        # Get panel API object
-        try:
-            panel_rvtapi = parent_ribbon_panel.get_rvtapi_object()
-            if not panel_rvtapi:
-                mlogger.error("Panel Revit API object is None for: %s", combobox_name)
-                return None
-        except Exception as panel_err:
-            mlogger.error("Could not get panel Revit API object: %s", panel_err)
-            return None
+    # Create combobox
+    try:
+        parent_ribbon_panel.create_combobox(combobox_name, update_if_exists=True)
+    except Exception as create_err:
+        mlogger.exception("Error calling create_combobox: %s", create_err)
+        return None
 
-        # Create combobox
-        try:
-            parent_ribbon_panel.create_combobox(combobox_name, update_if_exists=True)
-        except Exception as create_err:
-            mlogger.error("Error calling create_combobox: %s", create_err)
-            import traceback
+    combobox_ui = parent_ribbon_panel.ribbon_item(combobox_name)
+    if not combobox_ui:
+        mlogger.error("Failed to get ComboBox UI item: %s", combobox_name)
+        return None
 
-            mlogger.error("Traceback: %s", traceback.format_exc())
-            return None
-
-        combobox_ui = parent_ribbon_panel.ribbon_item(combobox_name)
-        if not combobox_ui:
-            mlogger.error("Failed to get ComboBox UI item: %s", combobox_name)
-            return None
-
-        # Get the Revit API ComboBox object
-        try:
-            combobox_obj = combobox_ui.get_rvtapi_object()
-        except Exception as rvtapi_err:
-            mlogger.error(
-                "get_rvtapi_object() failed for %s: %s", combobox_name, rvtapi_err
-            )
-            return None
-
-        if not combobox_obj:
-            mlogger.error("get_rvtapi_object() returned None for: %s", combobox_name)
-            return None
-
-        # IMPORTANT: only bail here if it is still ComboBoxData
-        if isinstance(combobox_obj, UI.ComboBoxData):
-            return combobox_ui  # <- ONLY in this branch
-
-        # From here on we have a real Autodesk.Revit.UI.ComboBox
-
-        # Set ItemText/Title
-        # Note: In Revit, ComboBox.ItemText displays the current selected item's text in the dropdown
-        # There is no separate visible "title" label for ComboBoxes like buttons have
-        # The title from bundle.yaml is used for tooltip and identification
-        # We'll set ItemText to the title initially, but it will be overwritten when current item is set
-        combobox_title = getattr(combobox, "ui_title", None) or combobox_name
-        if combobox_title:
-            try:
-                # Set initial ItemText to title (will be overwritten when current item is set)
-                combobox_obj.ItemText = combobox_title
-            except Exception as title_err:
-                mlogger.debug("Could not set ItemText: %s", title_err)
-
-        # Set icon if available
-        parent = ui_maker_params.parent_cmp
-        icon_file = getattr(combobox, "icon_file", None) or getattr(
-            parent, "icon_file", None
+    # Get the Revit API ComboBox object
+    try:
+        combobox_obj = combobox_ui.get_rvtapi_object()
+    except Exception as rvtapi_err:
+        mlogger.error(
+            "get_rvtapi_object() failed for %s: %s", combobox_name, rvtapi_err
         )
-        if icon_file:
-            try:
-                combobox_ui.set_icon(icon_file, icon_size=ICON_MEDIUM)
-            except Exception as icon_err:
-                mlogger.debug("Error setting icon: %s", icon_err)
+        return None
+
+    if not combobox_obj:
+        mlogger.error("get_rvtapi_object() returned None for: %s", combobox_name)
+        return None
+
+    # Return early if ComboBox is still in data mode (not yet added to panel)
+    if isinstance(combobox_obj, UI.ComboBoxData):
+        return combobox_ui
+
+    # From here on we have a real Autodesk.Revit.UI.ComboBox
+
+    # Set ItemText/Title
+    # Note: In Revit, ComboBox.ItemText displays the current selected item's text in the dropdown
+    # There is no separate visible "title" label for ComboBoxes like buttons have
+    # The title from bundle.yaml is used for tooltip and identification
+    # We'll set ItemText to the title initially, but it will be overwritten when current item is set
+    combobox_title = getattr(combobox, "ui_title", None) or combobox_name
+    if combobox_title:
+        try:
+            # Set initial ItemText to title (will be overwritten when current item is set)
+            combobox_obj.ItemText = combobox_title
+        except Exception as title_err:
+            mlogger.debug("Could not set ItemText: %s", title_err)
+
+    # Set icon if available
+    parent = ui_maker_params.parent_cmp
+    icon_file = getattr(combobox, "icon_file", None) or getattr(
+        parent, "icon_file", None
+    )
+    if icon_file:
+        try:
+            combobox_ui.set_icon(icon_file, icon_size=ICON_MEDIUM)
+        except Exception as icon_err:
+            mlogger.debug("Error setting icon: %s", icon_err)
 
         # Set tooltip if available
         tooltip = getattr(combobox, "tooltip", None)
@@ -731,10 +727,7 @@ def _produce_ui_combobox(ui_maker_params):
                     if res is False:
                         combobox_ui.deactivate()
         except Exception as init_err:
-            mlogger.error("Error in __selfinit__: %s", init_err)
-            import traceback
-
-            mlogger.error("Traceback: %s", traceback.format_exc())
+            mlogger.exception("Error in __selfinit__: %s", init_err)
 
         # Ensure visible & enabled
         try:
@@ -752,19 +745,6 @@ def _produce_ui_combobox(ui_maker_params):
             mlogger.debug("Could not activate: %s", activate_err)
 
         return combobox_ui
-
-    except PyRevitException as err:
-        mlogger.error("UI error creating ComboBox: %s", err.msg)
-        import traceback
-
-        mlogger.error("Traceback: %s", traceback.format_exc())
-        return None
-    except Exception as err:
-        mlogger.error("Error creating ComboBox: %s", err)
-        import traceback
-
-        mlogger.error("Full traceback: %s", traceback.format_exc())
-        return None
 
 
 def _produce_ui_split(ui_maker_params):

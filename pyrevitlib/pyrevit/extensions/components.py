@@ -323,28 +323,29 @@ class ComboBoxGroup(GenericUICommandGroup):
         self.members = []
 
         # Read members from metadata
-        if self.meta:
-            raw_members = self.meta.get("members", [])
-            if isinstance(raw_members, list):
-                # Process list of members - preserve full dict for rich metadata (icons, tooltips, etc.)
-                processed_members = []
-                for m in raw_members:
-                    if isinstance(m, dict) or (
-                        hasattr(m, "get") and hasattr(m, "keys")
-                    ):
-                        # OrderedDict or dict format: {'id': 'settings', 'text': 'Settings', 'icon': '...', ...}
-                        # Preserve the full dictionary to keep all properties (icon, tooltip, group, etc.)
-                        processed_members.append(m)
-                    elif isinstance(m, (list, tuple)) and len(m) >= 2:
-                        # Tuple/list format: ('id', 'text') - convert to dict for consistency
-                        processed_members.append({"id": m[0], "text": m[1]})
-                    elif isinstance(m, str):
-                        # String format: 'Option 1' - convert to dict for consistency
-                        processed_members.append({"id": m, "text": m})
-                self.members = processed_members
-            elif isinstance(raw_members, dict):
-                # Dict format: {'A': 'Option A'} - convert to list of dicts
-                self.members = [{"id": k, "text": v} for k, v in raw_members.items()]
+        if not self.meta:
+            return
+        raw_members = self.meta.get("members", [])
+        if isinstance(raw_members, list):
+            # Process list of members - preserve full dict for rich metadata (icons, tooltips, etc.)
+            processed_members = []
+            for m in raw_members:
+                if isinstance(m, dict) or (
+                    hasattr(m, "get") and hasattr(m, "keys")
+                ):
+                    # OrderedDict or dict format: {'id': 'settings', 'text': 'Settings', 'icon': '...', ...}
+                    # Preserve the full dictionary to keep all properties (icon, tooltip, group, etc.)
+                    processed_members.append(m)
+                elif isinstance(m, (list, tuple)) and len(m) >= 2:
+                    # Tuple/list format: ('id', 'text') - convert to dict for consistency
+                    processed_members.append({"id": m[0], "text": m[1]})
+                elif isinstance(m, str):
+                    # String format: 'Option 1' - convert to dict for consistency
+                    processed_members.append({"id": m, "text": m})
+            self.members = processed_members
+        elif isinstance(raw_members, dict):
+            # Dict format: {'A': 'Option A'} - convert to list of dicts
+            self.members = [{"id": k, "text": v} for k, v in raw_members.items()]
 
 
 class SplitPushButtonGroup(GenericUICommandGroup):
