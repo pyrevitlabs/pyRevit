@@ -1,12 +1,214 @@
 using pyRevitExtensionParser;
+using pyRevitExtensionParserTest.TestHelpers;
 using System.IO;
 using static pyRevitExtensionParser.ExtensionParser;
 using System.Text;
 
 namespace pyRevitExtensionParserTest
 {
+    /// <summary>
+    /// Tests for panel button and bundle parsing that use on-the-fly test extensions.
+    /// These tests don't depend on any repo files.
+    /// </summary>
     [TestFixture]
-    public class PanelButtonBundleTests
+    public class PanelButtonBundleTests : TempFileTestBase
+    {
+        private IEnumerable<ParsedExtension>? _installedExtensions;
+        private string? _testExtensionPath;
+        
+        [SetUp]
+        public override void BaseSetUp()
+        {
+            base.BaseSetUp();
+            
+            // Create comprehensive test extension on-the-fly
+            _testExtensionPath = TestExtensionFactory.CreateComprehensiveTestExtension(TestTempDir);
+            _installedExtensions = ParseInstalledExtensions(new[] { _testExtensionPath });
+        }
+
+        [Test]
+        public void TestPanelButtonWithSimpleBundle()
+        {
+            if (_installedExtensions == null)
+            {
+                Assert.Fail("No test extensions loaded");
+                return;
+            }
+
+            TestContext.Out.WriteLine("=== Testing Push Button With Simple Bundle ===");
+            
+            foreach (var extension in _installedExtensions)
+            {
+                // Note: Folder name is "Selection Test.pushbutton", Name is "SelectionTest" (spaces removed)
+                var pushButton = FindComponentRecursively(extension, "SelectionTest");
+                if (pushButton != null)
+                {
+                    TestContext.Out.WriteLine($"Push Button: {pushButton.DisplayName}");
+                    TestContext.Out.WriteLine($"Name: {pushButton.Name}");
+                    TestContext.Out.WriteLine($"Type: {pushButton.Type}");
+                    TestContext.Out.WriteLine($"Bundle File: {pushButton.BundleFile ?? "None"}");
+                    TestContext.Out.WriteLine($"Title: {pushButton.Title ?? "None"}");
+                    TestContext.Out.WriteLine($"Tooltip: {pushButton.Tooltip ?? "None"}");
+                    TestContext.Out.WriteLine($"Author: {pushButton.Author ?? "None"}");
+                    
+                    Assert.AreEqual(CommandComponentType.PushButton, pushButton.Type);
+                    Assert.AreEqual("Selection Test", pushButton.DisplayName);
+                    
+                    Assert.IsNotNull(pushButton.BundleFile, "Bundle file should be present");
+                    Assert.IsTrue(pushButton.BundleFile.EndsWith("bundle.yaml"), "Bundle file should be bundle.yaml");
+                    
+                    Assert.AreEqual("Selection Test", pushButton.Title);
+                    Assert.AreEqual("Test command that requires element selection", pushButton.Tooltip);
+                    Assert.AreEqual("Test User", pushButton.Author);
+                    
+                    return;
+                }
+            }
+            
+            Assert.Fail("SelectionTest push button not found");
+        }
+
+        [Test]
+        public void TestPushButtonWithSelectionContext()
+        {
+            if (_installedExtensions == null)
+            {
+                Assert.Fail("No test extensions loaded");
+                return;
+            }
+
+            TestContext.Out.WriteLine("=== Testing Push Button With Selection Context ===");
+            
+            foreach (var extension in _installedExtensions)
+            {
+                var pushButton = FindComponentRecursively(extension, "SelectionTest");
+                if (pushButton != null)
+                {
+                    TestContext.Out.WriteLine($"Push Button: {pushButton.DisplayName}");
+                    TestContext.Out.WriteLine($"Context: {pushButton.Context ?? "None"}");
+
+                    Assert.AreEqual(CommandComponentType.PushButton, pushButton.Type);
+                    Assert.IsNotNull(pushButton.Context, "Context should be parsed from bundle.yaml");
+                    Assert.AreEqual("selection", pushButton.Context);
+                    Assert.AreEqual("Selection Test", pushButton.Title);
+                    Assert.AreEqual("Test command that requires element selection", pushButton.Tooltip);
+
+                    return;
+                }
+            }
+
+            Assert.Fail("Selection Test push button not found");
+        }
+
+        [Test]
+        public void TestButtonTitleWithNewlineEscapeSequence()
+        {
+            // Create a temporary test button with \n in the title
+            var tempDir = Path.Combine(TestTempDir, "TestNewlineTitle.extension");
+            var tabDir = Path.Combine(tempDir, "TestTab.tab");
+            var panelDir = Path.Combine(tabDir, "TestPanel.panel");
+            var buttonDir = Path.Combine(panelDir, "TestNewlineButton.pushbutton");
+            
+            Directory.CreateDirectory(buttonDir);
+            
+            var scriptPath = Path.Combine(buttonDir, "script.py");
+            // Test with \n in the title
+            File.WriteAllText(scriptPath, @"__title__ = 'Generate\nAPI Stubs'
+print('test')");
+            
+            // Parse the extension
+            var extensions = ParseInstalledExtensions(new[] { tempDir });
+            var extension = extensions.FirstOrDefault();
+            
+            Assert.IsNotNull(extension, "Extension should be parsed");
+            
+            var testButton = FindComponentRecursively(extension, "TestNewlineButton");
+            Assert.IsNotNull(testButton, "TestNewlineButton should be found");
+            
+            // Verify that \n is converted to an actual newline
+            Assert.IsNotNull(testButton.Title, "Title should not be null");
+            Assert.That(testButton.Title, Does.Contain("\n"), "Title should contain an actual newline character");
+            Assert.That(testButton.Title, Is.EqualTo("Generate\nAPI Stubs"), "Title should have newline properly parsed");
+            
+            // Verify it's NOT the literal \n string
+            Assert.That(testButton.Title, Does.Not.Contain("\\n"), "Title should not contain literal \\n");
+            
+            TestContext.Out.WriteLine($"Title successfully parsed with newline: '{testButton.Title}'");
+        }
+
+        [Test]
+        public void TestButtonWithVariousEscapeSequences()
+        {
+            // Test various Python escape sequences
+            var tempDir = Path.Combine(TestTempDir, "TestEscapeSequences.extension");
+            var tabDir = Path.Combine(tempDir, "TestTab.tab");
+            var panelDir = Path.Combine(tabDir, "TestPanel.panel");
+            var buttonDir = Path.Combine(panelDir, "TestButton.pushbutton");
+            
+            Directory.CreateDirectory(buttonDir);
+            
+            var scriptPath = Path.Combine(buttonDir, "script.py");
+            // Test with various escape sequences - use raw Python string literals
+            var scriptContent = new StringBuilder();
+            scriptContent.AppendLine("__title__ = 'Line1\\nLine2\\tTab'");
+            scriptContent.AppendLine("__author__ = \"Test's Author\"");
+            scriptContent.AppendLine("__doc__ = 'Backslash: \\\\'");
+            scriptContent.AppendLine("print('test')");
+            File.WriteAllText(scriptPath, scriptContent.ToString());
+            
+            // Parse the extension
+            var extensions = ParseInstalledExtensions(new[] { tempDir });
+            var extension = extensions.FirstOrDefault();
+            
+            Assert.IsNotNull(extension, "Extension should be parsed");
+            
+            var testButton = FindComponentRecursively(extension, "TestButton");
+            Assert.IsNotNull(testButton, "TestButton should be found");
+            
+            // Verify newline and tab are converted
+            Assert.That(testButton.Title, Is.EqualTo("Line1\nLine2\tTab"), "Title should have \\n and \\t converted");
+            
+            // Verify single quote (no escape needed when using double quotes in Python)
+            Assert.That(testButton.Author, Is.EqualTo("Test's Author"), "Author should preserve single quote");
+            
+            // Verify backslash escape
+            Assert.That(testButton.Tooltip, Is.EqualTo("Backslash: \\"), "Tooltip should have \\\\ converted to single backslash");
+            
+            TestContext.Out.WriteLine($"Title: '{testButton.Title}'");
+            TestContext.Out.WriteLine($"Author: '{testButton.Author}'");
+            TestContext.Out.WriteLine($"Tooltip: '{testButton.Tooltip}'");
+        }
+
+        // Helper method to find components recursively
+        private ParsedComponent? FindComponentRecursively(ParsedComponent? parent, string componentName)
+        {
+            if (parent == null || string.IsNullOrEmpty(componentName))
+                return null;
+                
+            if (parent.Name == componentName)
+                return parent;
+
+            if (parent.Children != null)
+            {
+                foreach (var child in parent.Children)
+                {
+                    var found = FindComponentRecursively(child, componentName);
+                    if (found != null)
+                        return found;
+                }
+            }
+
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Tests for panel button and bundle parsing that specifically test features from
+    /// pyRevitDevTools extension (Debug.panel, BundleTests.pulldown, etc.)
+    /// These tests require the repo's pyRevitDevTools.extension directory.
+    /// </summary>
+    [TestFixture]
+    public class DevToolsPanelButtonTests
     {
         private IEnumerable<ParsedExtension>? _installedExtensions;
         
@@ -57,47 +259,6 @@ namespace pyRevitExtensionParserTest
             }
             
             Assert.Fail("Logs push button not found");
-        }
-
-        [Test]
-        public void TestPanelButtonWithSimpleBundle()
-        {
-            if (_installedExtensions == null)
-            {
-                Assert.Fail("No test extensions loaded");
-                return;
-            }
-
-            TestContext.Out.WriteLine("=== Testing Push Button With Simple Bundle ===");
-            
-            foreach (var extension in _installedExtensions)
-            {
-                var pushButton = FindComponentRecursively(extension, "SelectionTest");
-                if (pushButton != null)
-                {
-                    TestContext.Out.WriteLine($"Push Button: {pushButton.DisplayName}");
-                    TestContext.Out.WriteLine($"Name: {pushButton.Name}");
-                    TestContext.Out.WriteLine($"Type: {pushButton.Type}");
-                    TestContext.Out.WriteLine($"Bundle File: {pushButton.BundleFile ?? "None"}");
-                    TestContext.Out.WriteLine($"Title: {pushButton.Title ?? "None"}");
-                    TestContext.Out.WriteLine($"Tooltip: {pushButton.Tooltip ?? "None"}");
-                    TestContext.Out.WriteLine($"Author: {pushButton.Author ?? "None"}");
-                    
-                    Assert.AreEqual(CommandComponentType.PushButton, pushButton.Type);
-                    Assert.AreEqual("Selection Test", pushButton.DisplayName);
-                    
-                    Assert.IsNotNull(pushButton.BundleFile, "Bundle file should be present");
-                    Assert.IsTrue(pushButton.BundleFile.EndsWith("bundle.yaml"), "Bundle file should be bundle.yaml");
-                    
-                    Assert.AreEqual("Selection Test", pushButton.Title);
-                    Assert.AreEqual("Test command that requires element selection", pushButton.Tooltip);
-                    Assert.AreEqual("Test User", pushButton.Author);
-                    
-                    return;
-                }
-            }
-            
-            Assert.Fail("SelectionTest push button not found");
         }
 
         [Test]
@@ -288,38 +449,6 @@ namespace pyRevitExtensionParserTest
         }
 
         [Test]
-        public void TestPushButtonWithSelectionContext()
-        {
-            if (_installedExtensions == null)
-            {
-                Assert.Fail("No test extensions loaded");
-                return;
-            }
-
-            TestContext.Out.WriteLine("=== Testing Push Button With Selection Context ===");
-            
-            foreach (var extension in _installedExtensions)
-            {
-                var pushButton = FindComponentRecursively(extension, "SelectionTest");
-                if (pushButton != null)
-                {
-                    TestContext.Out.WriteLine($"Push Button: {pushButton.DisplayName}");
-                    TestContext.Out.WriteLine($"Context: {pushButton.Context ?? "None"}");
-
-                    Assert.AreEqual(CommandComponentType.PushButton, pushButton.Type);
-                    Assert.IsNotNull(pushButton.Context, "Context should be parsed from bundle.yaml");
-                    Assert.AreEqual("selection", pushButton.Context);
-                    Assert.AreEqual("Selection Test", pushButton.Title);
-                    Assert.AreEqual("Test command that requires element selection", pushButton.Tooltip);
-
-                    return;
-                }
-            }
-
-            Assert.Fail("Selection Test push button not found");
-        }
-
-        [Test]
         public void TestBundleTestsPulldownFromDevToolsExtension()
         {
             var devToolsExtensionPath = TestConfiguration.TestExtensionPath;
@@ -460,101 +589,6 @@ namespace pyRevitExtensionParserTest
                 {
                     PrintAllComponents(child, depth + 1);
                 }
-            }
-        }
-
-        [Test]
-        public void TestButtonTitleWithNewlineEscapeSequence()
-        {
-            // Create a temporary test button with \n in the title
-            var tempDir = Path.Combine(Path.GetTempPath(), "TestNewlineTitle.extension");
-            var tabDir = Path.Combine(tempDir, "TestTab.tab");
-            var panelDir = Path.Combine(tabDir, "TestPanel.panel");
-            var buttonDir = Path.Combine(panelDir, "TestNewlineButton.pushbutton");
-            
-            try
-            {
-                Directory.CreateDirectory(buttonDir);
-                
-                var scriptPath = Path.Combine(buttonDir, "script.py");
-                // Test with \n in the title
-                File.WriteAllText(scriptPath, @"__title__ = 'Generate\nAPI Stubs'
-print('test')");
-                
-                // Parse the extension
-                var extensions = ParseInstalledExtensions(new[] { tempDir });
-                var extension = extensions.FirstOrDefault();
-                
-                Assert.IsNotNull(extension, "Extension should be parsed");
-                
-                var testButton = FindComponentRecursively(extension, "TestNewlineButton");
-                Assert.IsNotNull(testButton, "TestNewlineButton should be found");
-                
-                // Verify that \n is converted to an actual newline
-                Assert.IsNotNull(testButton.Title, "Title should not be null");
-                Assert.That(testButton.Title, Does.Contain("\n"), "Title should contain an actual newline character");
-                Assert.That(testButton.Title, Is.EqualTo("Generate\nAPI Stubs"), "Title should have newline properly parsed");
-                
-                // Verify it's NOT the literal \n string
-                Assert.That(testButton.Title, Does.Not.Contain("\\n"), "Title should not contain literal \\n");
-                
-                TestContext.Out.WriteLine($"Title successfully parsed with newline: '{testButton.Title}'");
-            }
-            finally
-            {
-                if (Directory.Exists(tempDir))
-                    Directory.Delete(tempDir, true);
-            }
-        }
-
-        [Test]
-        public void TestButtonWithVariousEscapeSequences()
-        {
-            // Test various Python escape sequences
-            var tempDir = Path.Combine(Path.GetTempPath(), "TestEscapeSequences.extension");
-            var tabDir = Path.Combine(tempDir, "TestTab.tab");
-            var panelDir = Path.Combine(tabDir, "TestPanel.panel");
-            var buttonDir = Path.Combine(panelDir, "TestButton.pushbutton");
-            
-            try
-            {
-                Directory.CreateDirectory(buttonDir);
-                
-                var scriptPath = Path.Combine(buttonDir, "script.py");
-                // Test with various escape sequences - use raw Python string literals
-                var scriptContent = new StringBuilder();
-                scriptContent.AppendLine("__title__ = 'Line1\\nLine2\\tTab'");
-                scriptContent.AppendLine("__author__ = \"Test's Author\"");
-                scriptContent.AppendLine("__doc__ = 'Backslash: \\\\'");
-                scriptContent.AppendLine("print('test')");
-                File.WriteAllText(scriptPath, scriptContent.ToString());
-                
-                // Parse the extension
-                var extensions = ParseInstalledExtensions(new[] { tempDir });
-                var extension = extensions.FirstOrDefault();
-                
-                Assert.IsNotNull(extension, "Extension should be parsed");
-                
-                var testButton = FindComponentRecursively(extension, "TestButton");
-                Assert.IsNotNull(testButton, "TestButton should be found");
-                
-                // Verify newline and tab are converted
-                Assert.That(testButton.Title, Is.EqualTo("Line1\nLine2\tTab"), "Title should have \\n and \\t converted");
-                
-                // Verify single quote (no escape needed when using double quotes in Python)
-                Assert.That(testButton.Author, Is.EqualTo("Test's Author"), "Author should preserve single quote");
-                
-                // Verify backslash escape
-                Assert.That(testButton.Tooltip, Is.EqualTo("Backslash: \\"), "Tooltip should have \\\\ converted to single backslash");
-                
-                TestContext.Out.WriteLine($"Title: '{testButton.Title}'");
-                TestContext.Out.WriteLine($"Author: '{testButton.Author}'");
-                TestContext.Out.WriteLine($"Tooltip: '{testButton.Tooltip}'");
-            }
-            finally
-            {
-                if (Directory.Exists(tempDir))
-                    Directory.Delete(tempDir, true);
             }
         }
     }

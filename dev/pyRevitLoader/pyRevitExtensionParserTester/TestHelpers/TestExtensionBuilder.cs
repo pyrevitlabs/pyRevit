@@ -332,4 +332,228 @@ namespace pyRevitExtensionParserTest.TestHelpers
             return this;
         }
     }
+
+    /// <summary>
+    /// Provides pre-built test extension structures for common test scenarios.
+    /// These methods create comprehensive extension structures that can be shared across tests.
+    /// </summary>
+    public static class TestExtensionFactory
+    {
+        /// <summary>
+        /// Creates a comprehensive test extension with multiple localized buttons, pulldowns, 
+        /// tooltips, icons, and other features that were previously in TestPanelOne/Two/Three.
+        /// </summary>
+        public static string CreateComprehensiveTestExtension(string basePath)
+        {
+            var builder = new TestExtensionBuilder(basePath, "TestExtension");
+            builder.Create();
+
+            var tabBuilder = builder.AddTab("TestTab");
+
+            // === Panel One: Localization Tests ===
+            var panelOne = tabBuilder.AddPanel("LocalizationPanel");
+            
+            // Button with full localization (replaces PanelOneButton1)
+            panelOne.AddPushButton("LocalizedButton", "print('localized')", @"title:
+  fr_fr: TEST TITLE 1 FR
+  en_us: TEST TITLE 1 EN
+  de_de: TEST TITLE 1 DE
+tooltip: 
+  fr_fr: >-
+    TEST TOOLTIP FR
+  en_us: >-
+    TEST TOOLTIP EN
+  de_de: >-
+    TEST TOOLTIP DE
+author: Roman Golev");
+
+            // Button without bundle (replaces PanelOneButton2)
+            panelOne.AddPushButton("SimpleButton", "print('simple')");
+
+            // Panel button (replaces Debug Dialog Config.panelbutton in TestPanelOne)
+            CreatePanelButton(panelOne.PanelPath, "LocalizationConfig", "print('config')", @"title: Localization Config
+tooltip: Configure localization settings
+author: Test Author");
+
+            // === Panel Two: Pulldown and Tooltip Tests ===
+            var panelTwo = tabBuilder.AddPanel("PulldownPanel");
+
+            // Pulldown with layout, children, and localized content (replaces TestPulldown)
+            var pulldown = panelTwo.AddPulldown("TestPulldown", @"layout:
+  - SubButton2
+  - SubButton1
+tooltip:
+  en_us: This is a test tooltip for the pulldown button
+title:
+  en_us: Test Pulldown
+author: Test Author");
+            
+            // Add child buttons to pulldown
+            pulldown.AddPushButton("SubButton1", "print('sub1')", @"title:
+  en_us: Sub Button One
+tooltip:
+  en_us: This is the first sub-button in the pulldown.
+author: Test Author");
+
+            pulldown.AddPushButton("SubButton2", "print('sub2')", @"title:
+  en_us: Sub Button Two
+tooltip:
+  en_us: This is the second sub-button in the pulldown.
+author: Test Author");
+
+            // About button with multiple locales (replaces TestAbout)
+            panelTwo.AddPushButton("TestAbout", "print('about')", @"title:
+  en_us: About pyRevit
+  ru: О pyRevit
+
+tooltip:
+  ru: >-
+    О pyRevit. Открывает сайт блога pyRevit.
+  en_us: >-
+    About pyRevit. Opens the pyRevit blog website. You can find detailed information on how pyRevit works, updates about the new tools and changes, and a lot of other information there.
+  fr_fr: >-
+    À propos de pyRevit. Ouvre le site web du blog pyRevit.
+  es_es: >-
+    Sobre pyRevit. Abre el blog online de pyRevit.
+
+author: test_doc");
+
+            // Create icon files for TestAbout
+            var aboutButtonPath = Path.Combine(panelTwo.PanelPath, "TestAbout.pushbutton");
+            TestExtensionBuilder.CreateTestIcon(Path.Combine(aboutButtonPath, "icon.png"), 32, 32);
+            TestExtensionBuilder.CreateTestIcon(Path.Combine(aboutButtonPath, "icon.dark.png"), 32, 32);
+
+            // Tooltip test button with multiline (replaces TestTooltip)
+            var tooltipButtonPath = panelTwo.AddPushButton("TestTooltip", "print('tooltip')", @"title:
+  en_us: Test Tooltip Button
+  ru: Тестовая Кнопка Подсказки
+tooltip:
+  en_us: >-
+    This is a test tooltip in English. It should show only this English text
+    and not include any other language versions or raw YAML content.
+  ru: >-
+    Это тестовая подсказка на русском языке.
+author: Test Author");
+
+            // Create icons for TestTooltip
+            var tooltipBtnPath = Path.Combine(panelTwo.PanelPath, "TestTooltip.pushbutton");
+            TestExtensionBuilder.CreateTestIcon(Path.Combine(tooltipBtnPath, "icon.png"), 32, 32);
+            TestExtensionBuilder.CreateTestIcon(Path.Combine(tooltipBtnPath, "icon.dark.png"), 32, 32);
+
+            // Selection context button (replaces SelectionTest from ParserTests.panel)
+            // Note: Using "Selection Test" with space to match folder name convention "Selection Test.pushbutton"
+            panelTwo.AddPushButton("Selection Test", "print('selection')", @"title: Selection Test
+tooltip: Test command that requires element selection
+author: Test User
+context: selection");
+
+            // === Panel Three: Stack Tests ===
+            var panelThree = tabBuilder.AddPanel("StackPanel");
+            var stackPath = Path.Combine(panelThree.PanelPath, "test_stack.stack");
+            Directory.CreateDirectory(stackPath);
+            
+            TestExtensionBuilder.CreatePushButton(stackPath, "StackButton1", "print('stack1')");
+            TestExtensionBuilder.CreatePushButton(stackPath, "StackButton2", "print('stack2')");
+
+            return builder.ExtensionPath;
+        }
+
+        /// <summary>
+        /// Creates a panel button component.
+        /// </summary>
+        public static string CreatePanelButton(string parentDir, string buttonName, string scriptContent = "pass", string? bundleYaml = null)
+        {
+            var buttonDir = Path.Combine(parentDir, $"{buttonName}.panelbutton");
+            Directory.CreateDirectory(buttonDir);
+            File.WriteAllText(Path.Combine(buttonDir, "script.py"), scriptContent);
+            
+            if (!string.IsNullOrEmpty(bundleYaml))
+            {
+                File.WriteAllText(Path.Combine(buttonDir, "bundle.yaml"), bundleYaml);
+            }
+            
+            return buttonDir;
+        }
+
+        /// <summary>
+        /// Creates a test extension specifically for icon-related tests.
+        /// Uses existing icons from Debug.panel in pyRevitDevTools.
+        /// </summary>
+        public static string CreateIconTestExtension(string basePath)
+        {
+            var builder = new TestExtensionBuilder(basePath, "IconTestExtension");
+            builder.Create();
+
+            var tabBuilder = builder.AddTab("IconTab");
+            var panel = tabBuilder.AddPanel("IconPanel");
+
+            // Button with both light and dark icons
+            var btn1Path = panel.AddPushButton("ButtonWithIcons", "print('icons')").PanelPath;
+            var button1Dir = Path.Combine(btn1Path, "ButtonWithIcons.pushbutton");
+            TestExtensionBuilder.CreateTestIcon(Path.Combine(button1Dir, "icon.png"), 32, 32);
+            TestExtensionBuilder.CreateTestIcon(Path.Combine(button1Dir, "icon.dark.png"), 32, 32);
+
+            // Button with only light icon
+            panel.AddPushButton("ButtonLightOnly", "print('light only')");
+            var button2Dir = Path.Combine(panel.PanelPath, "ButtonLightOnly.pushbutton");
+            TestExtensionBuilder.CreateTestIcon(Path.Combine(button2Dir, "icon.png"), 32, 32);
+
+            // Button with no icons
+            panel.AddPushButton("ButtonNoIcons", "print('no icons')");
+
+            // Button with icon_ prefix variants
+            panel.AddPushButton("ButtonIconVariants", "print('variants')");
+            var button4Dir = Path.Combine(panel.PanelPath, "ButtonIconVariants.pushbutton");
+            TestExtensionBuilder.CreateTestIcon(Path.Combine(button4Dir, "icon_small.png"), 16, 16);
+            TestExtensionBuilder.CreateTestIcon(Path.Combine(button4Dir, "icon_large.png"), 32, 32);
+
+            return builder.ExtensionPath;
+        }
+
+        /// <summary>
+        /// Creates a test extension for separator and slideout tests.
+        /// </summary>
+        public static string CreateSeparatorTestExtension(string basePath)
+        {
+            var builder = new TestExtensionBuilder(basePath, "SeparatorTestExtension");
+            builder.Create();
+
+            var tabBuilder = builder.AddTab("SeparatorTab");
+            
+            // Panel with separator in layout
+            var panelWithSeparator = tabBuilder.AddPanel("PanelWithSeparator");
+            panelWithSeparator.WithBundleYaml(@"layout:
+  - Button1
+  - '-----'
+  - Button2");
+            panelWithSeparator.AddPushButton("Button1", "print('btn1')");
+            panelWithSeparator.AddPushButton("Button2", "print('btn2')");
+
+            // Panel with slideout marker
+            var panelWithSlideout = tabBuilder.AddPanel("PanelWithSlideout");
+            panelWithSlideout.WithBundleYaml(@"layout:
+  - MainButton
+  - '>>>>>'
+  - SlideoutButton");
+            panelWithSlideout.AddPushButton("MainButton", "print('main')");
+            panelWithSlideout.AddPushButton("SlideoutButton", "print('slideout')");
+
+            // Panel with multiple separators
+            var panelMultipleSeparators = tabBuilder.AddPanel("MultipleSeparatorsPanel");
+            panelMultipleSeparators.WithBundleYaml(@"layout:
+  - First
+  - '-----'
+  - Second  
+  - '-----'
+  - Third
+  - '-----'
+  - Fourth");
+            panelMultipleSeparators.AddPushButton("First", "print('1')");
+            panelMultipleSeparators.AddPushButton("Second", "print('2')");
+            panelMultipleSeparators.AddPushButton("Third", "print('3')");
+            panelMultipleSeparators.AddPushButton("Fourth", "print('4')");
+
+            return builder.ExtensionPath;
+        }
+    }
 }

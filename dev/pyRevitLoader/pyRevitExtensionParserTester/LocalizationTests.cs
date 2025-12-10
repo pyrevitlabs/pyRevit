@@ -9,56 +9,57 @@ namespace pyRevitExtensionParserTest
     public class LocalizationTests : TempFileTestBase
     {
         [Test]
-        public void TestPanelOneButton1LocalizedBundle()
+        public void TestLocalizedButtonBundle()
         {
-            var testBundlePath = Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "..", "..", "..", "..", "..", "extensions", "pyRevitDevTools.extension");
+            // Create test extension on-the-fly instead of using repo files
+            var extensionPath = TestExtensionFactory.CreateComprehensiveTestExtension(TestTempDir);
             
             // Parse extensions
-            var extensions = ParseInstalledExtensions(new[] { testBundlePath });
+            var extensions = ParseInstalledExtensions(new[] { extensionPath });
             
-            TestContext.Out.WriteLine("=== Testing PanelOneButton1 Localized Bundle ===");
+            TestContext.Out.WriteLine("=== Testing LocalizedButton Localized Bundle ===");
             
             foreach (var extension in extensions)
             {
                 if (extension == null) continue;
                 
-                var panelOneButton1 = FindComponentRecursively(extension, "PanelOneButton1");
-                if (panelOneButton1 != null)
+                var localizedButton = FindComponentRecursively(extension, "LocalizedButton");
+                if (localizedButton != null)
                 {
-                    TestContext.Out.WriteLine($"Button: {panelOneButton1.DisplayName}");
-                    TestContext.Out.WriteLine($"Name: {panelOneButton1.Name}");
-                    TestContext.Out.WriteLine($"Title: {panelOneButton1.Title}");
-                    TestContext.Out.WriteLine($"Tooltip: {panelOneButton1.Tooltip}");
-                    TestContext.Out.WriteLine($"Author: {panelOneButton1.Author}");
-                    TestContext.Out.WriteLine($"Bundle File: {panelOneButton1.BundleFile}");
+                    TestContext.Out.WriteLine($"Button: {localizedButton.DisplayName}");
+                    TestContext.Out.WriteLine($"Name: {localizedButton.Name}");
+                    TestContext.Out.WriteLine($"Title: {localizedButton.Title}");
+                    TestContext.Out.WriteLine($"Tooltip: {localizedButton.Tooltip}");
+                    TestContext.Out.WriteLine($"Author: {localizedButton.Author}");
+                    TestContext.Out.WriteLine($"Bundle File: {localizedButton.BundleFile}");
                     
                     // Verify the component was found and has a bundle
-                    Assert.IsNotNull(panelOneButton1.BundleFile);
-                    Assert.IsTrue(File.Exists(panelOneButton1.BundleFile));
-                    Assert.AreEqual(CommandComponentType.PushButton, panelOneButton1.Type);
+                    Assert.IsNotNull(localizedButton.BundleFile);
+                    Assert.IsTrue(File.Exists(localizedButton.BundleFile));
+                    Assert.AreEqual(CommandComponentType.PushButton, localizedButton.Type);
                     
                     // Verify localized content (should default to en_us)
-                    Assert.AreEqual("TEST TITLE 1 EN", panelOneButton1.Title);
-                    Assert.AreEqual("TEST TOOLTIP EN", panelOneButton1.Tooltip);
-                    Assert.AreEqual("Roman Golev", panelOneButton1.Author);
+                    Assert.AreEqual("TEST TITLE 1 EN", localizedButton.Title);
+                    Assert.AreEqual("TEST TOOLTIP EN", localizedButton.Tooltip);
+                    Assert.AreEqual("Roman Golev", localizedButton.Author);
                     
                     // Test localization features
-                    Assert.IsNotNull(panelOneButton1.LocalizedTitles);
-                    Assert.IsNotNull(panelOneButton1.LocalizedTooltips);
-                    Assert.IsTrue(panelOneButton1.HasLocalizedContent);
+                    Assert.IsNotNull(localizedButton.LocalizedTitles);
+                    Assert.IsNotNull(localizedButton.LocalizedTooltips);
+                    Assert.IsTrue(localizedButton.HasLocalizedContent);
                     
                     // Test different locale access
-                    Assert.AreEqual("TEST TITLE 1 FR", panelOneButton1.GetLocalizedTitle("fr_fr"));
-                    Assert.AreEqual("TEST TITLE 1 DE", panelOneButton1.GetLocalizedTitle("de_de"));
-                    Assert.AreEqual("TEST TOOLTIP FR", panelOneButton1.GetLocalizedTooltip("fr_fr"));
-                    Assert.AreEqual("TEST TOOLTIP DE", panelOneButton1.GetLocalizedTooltip("de_de"));
+                    Assert.AreEqual("TEST TITLE 1 FR", localizedButton.GetLocalizedTitle("fr_fr"));
+                    Assert.AreEqual("TEST TITLE 1 DE", localizedButton.GetLocalizedTitle("de_de"));
+                    Assert.AreEqual("TEST TOOLTIP FR", localizedButton.GetLocalizedTooltip("fr_fr"));
+                    Assert.AreEqual("TEST TOOLTIP DE", localizedButton.GetLocalizedTooltip("de_de"));
                     
                     // Test fallback to en_us for non-existent locale
-                    Assert.AreEqual("TEST TITLE 1 EN", panelOneButton1.GetLocalizedTitle("es_es"));
-                    Assert.AreEqual("TEST TOOLTIP EN", panelOneButton1.GetLocalizedTooltip("es_es"));
+                    Assert.AreEqual("TEST TITLE 1 EN", localizedButton.GetLocalizedTitle("es_es"));
+                    Assert.AreEqual("TEST TOOLTIP EN", localizedButton.GetLocalizedTooltip("es_es"));
                     
                     // Test available locales
-                    var availableLocales = panelOneButton1.AvailableLocales.ToList();
+                    var availableLocales = localizedButton.AvailableLocales.ToList();
                     Assert.Contains("en_us", availableLocales);
                     Assert.Contains("fr_fr", availableLocales);
                     Assert.Contains("de_de", availableLocales);
@@ -70,7 +71,7 @@ namespace pyRevitExtensionParserTest
                 }
             }
             
-            Assert.Fail("PanelOneButton1 not found");
+            Assert.Fail("LocalizedButton not found");
         }
         
         [Test]

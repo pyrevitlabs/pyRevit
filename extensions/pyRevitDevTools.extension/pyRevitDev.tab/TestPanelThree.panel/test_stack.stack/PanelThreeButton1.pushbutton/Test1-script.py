@@ -1,1 +1,0 @@
-print("panel three button 1")

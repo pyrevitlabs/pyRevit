@@ -1,19 +1,23 @@
 ﻿using pyRevitExtensionParser;
+using pyRevitExtensionParserTest.TestHelpers;
 using System.IO;
 using NUnit.Framework;
 using static pyRevitExtensionParser.ExtensionParser;
 
 namespace pyRevitExtensionParserTest
 {
-	internal class ParsedComponentTests
+	[TestFixture]
+	internal class ParsedComponentTests : TempFileTestBase
 	{
         private IEnumerable<ParsedExtension>? _installedExtensions;
+        private string? _testExtensionPath;
         
         [SetUp]
         public void Setup()
         {
-            var testBundlePath = Path.Combine(TestContext.CurrentContext.TestDirectory, "..", "..", "..", "..", "..", "..", "extensions", "pyRevitDevTools.extension");
-            _installedExtensions = ParseInstalledExtensions(new[] { testBundlePath });
+            // Create comprehensive test extension on-the-fly
+            _testExtensionPath = TestExtensionFactory.CreateComprehensiveTestExtension(TestTempDir);
+            _installedExtensions = ParseInstalledExtensions(new[] { _testExtensionPath });
         }
 
         [Test]

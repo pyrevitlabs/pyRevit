@@ -11,6 +11,11 @@ namespace pyRevitExtensionParserTest.TestHelpers
     public abstract class TempFileTestBase
     {
         /// <summary>
+        /// Set to false to preserve test artifacts for inspection.
+        /// </summary>
+        protected const bool CleanupAfterTest = true;
+
+        /// <summary>
         /// Gets the temporary directory path for the current test.
         /// This directory is created fresh for each test and deleted in TearDown.
         /// </summary>
@@ -26,7 +31,7 @@ namespace pyRevitExtensionParserTest.TestHelpers
         [TearDown]
         public virtual void BaseTearDown()
         {
-            if (!string.IsNullOrEmpty(TestTempDir) && Directory.Exists(TestTempDir))
+            if (CleanupAfterTest && !string.IsNullOrEmpty(TestTempDir) && Directory.Exists(TestTempDir))
             {
                 try
                 {
@@ -37,6 +42,10 @@ namespace pyRevitExtensionParserTest.TestHelpers
                     // Best effort cleanup - some files may be locked
                     TestContext.Out.WriteLine($"Warning: Could not fully clean up temp directory: {TestTempDir}");
                 }
+            }
+            else if (!CleanupAfterTest)
+            {
+                TestContext.Out.WriteLine($"Test artifacts preserved at: {TestTempDir}");
             }
         }
 
