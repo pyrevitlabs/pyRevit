@@ -3,9 +3,11 @@ title:
   fr_fr: Calcul Surface Moyenne
   en_us: Calculate Average Area
   de_de: Berechne die durchschnittliche Fläche
+  chinese_s: 计算平均面积
 tooltip:
   ru: Находит все Помещения/Зоны/Пространства с одинаковыми названиями для выбранного помещения, зоны или поверхности и вычисляет среднее значение площади этого пространства.
   fr_fr: Trouver tous les pièces/surfaces et espaces avec un nom identique à la pièce sélectionnée et calcul la surface moyenne de ce type d'espace
   en_us: Find all Rooms/Areas/Spaces with identical names to the select room, area or space and calculates the average area of that space type
-  de_de: Suche alle Räume/Flächen/MEP-Räume mit identischen Namen mit dem ausgewählten Raum, Fläche oder MEP-Raum und berechnet die durchschnittliche Fläche von diesem Raumart. 
+  de_de: Suche alle Räume/Flächen/MEP-Räume mit identischen Namen mit dem ausgewählten Raum, Fläche oder MEP-Raum und berechnet die durchschnittliche Fläche von diesem Raumart.
+  chinese_s: 查找与所选房间、面积或空间同名的所有房间/面积/空间，并计算该空间类型的平均面积。
 context: selection

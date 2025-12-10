@@ -4,6 +4,7 @@ title:
   fr_fr: Copier des Feuilles vers des Documents Ouverts
   en_us: Copy Sheets To Open Documents
   de_de: Kopiere Pläne in andere geöffnete Projekte
+  chinese_s: 将图纸复制到已打开的文档
 tooltip:
   ru: >-
     Копирует выделенные или текущий лист(ы) в другие открытые проекты в
@@ -25,9 +26,6 @@ tooltip:
     needs to duplicate an existing one to create a new Legend)
     The tool does not copy model views (floorplans, elevations, sections, ...)
   de_de: >-
-    Kopiert die/den ausgewählte(n) oder aktuelle(n) Pläne/Plan in andere, derzeit 
-    in Revit geöffnete Projekte. Stellen Sie sicher, dass in den Zielprojekten 
-    mindestens eine Legendenansicht existiert (die Revit-API bietet keine Methode 
-    zum Erstellen von Legenden. Daher muss dieses Skript eine vorhandene Legende 
-    duplizieren, um eine neue Legende zu erstellen)
+    Kopiert die/den ausgewählte(n) oder aktuelle(n) Pläne/Plan in andere, derzeit  in Revit geöffnete Projekte. Stellen Sie sicher, dass in den Zielprojekten  mindestens eine Legendenansicht existiert (die Revit-API bietet keine Methode  zum Erstellen von Legenden. Daher muss dieses Skript eine vorhandene Legende  duplizieren, um eine neue Legende zu erstellen)
     Das Werkzeug kopiert keine Modellansichten (Grundrisse, Ansichten, Schnitte usw.).
+  chinese_s: 将选定或当前的图纸复制到当前在 Revit 中打开的其他项目。请确保目标文档至少有一个图例视图（Revit API 不提供创建图例视图的方法，因此此脚本需要复制现有图例以创建新图例）。该工具不复制模型视图（楼层平面、立面、剖面等）

@@ -3,14 +3,15 @@ title:
   fr_fr: Renommer les feuilles PDF
   en_us: Rename PDF Sheets
   de_de: PDF Pläne umbenennen
+  chinese_s: 重命名 PDF 图纸
 tooltip:
   ru: >-
     Переименовывает PDF листы напечатанные из Revit и удаляет имя модели
     из PDF имен. Данный инструмент запрашивает папку содержащую файл.
-    
-    
+
+
     Shift-Click:
-    
+
     Переименовать файлы на рабочем столе.
   fr_fr: >-
     Renommer les feuilles PDF imprimées à partir de Revit et supprimer le nom du
@@ -31,11 +32,11 @@ tooltip:
     Rename files on Desktop
   de_de: >-
     Zunächst wird man aufgefordert einen Ordner auszuwählen, in denen die PDF Dateien liegen.
-    Die PDF Pläne werden umbenannt und der name der Zentraldatei wird von den PDF Datei 
-    Bezeichnungen entfernt. 
+    Die PDF Pläne werden umbenannt und der name der Zentraldatei wird von den PDF Datei  Bezeichnungen entfernt. 
 
 
     Shift-Click:
 
     PDF Dateien auf dem Desktop werden umbenannt
+  chinese_s: "重命名从 Revit 打印的 PDF 图纸，并从 PDF 名称中移除中心模型名称。该工具将要求指定包含文件的文件夹\n\nShift-单击：重命名桌面上的文件"
 context: zero-doc

@@ -3,6 +3,7 @@ title:
   fr_fr: Remplacement
   en_us: Override
   de_de: Überschreiben
+  chinese_s: 替换
 layout:
   - Edit
   - Override

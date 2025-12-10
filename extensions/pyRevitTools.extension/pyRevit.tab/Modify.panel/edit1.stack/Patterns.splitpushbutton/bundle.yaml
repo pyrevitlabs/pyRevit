@@ -3,6 +3,7 @@ title:
   en_us: Patterns
   fr_fr: Hachures
   de_de: Muster
+  chinese_s: 填充图案
 layout:
   - Make Pattern
   - Batch Import PAT Files

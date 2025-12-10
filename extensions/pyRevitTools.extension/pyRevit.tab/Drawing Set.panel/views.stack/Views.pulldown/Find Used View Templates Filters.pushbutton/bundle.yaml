@@ -3,8 +3,10 @@ title:
   fr_fr: Trouver les filtres de gabarits de vue utilisés
   en_us: Find Used View Templates Filters
   de_de: Finde verwendete Ansichtsvorlagen Filter
+  chinese_s: 查找已使用的视图样板过滤器
 tooltip:
   ru: Показывает все шаблоны видов и фильтры, которые были применены к ним.
   fr_fr: Répertorie tous les gabartis de vue et les filtres qui ont été attribués à chacun
   en_us: Lists all view templates and the filters that has been assigned to each
   de_de: Es werden alle Ansichtvorlagen und die darauf angewendeten Filter aufgelistet
+  chinese_s: 列出所有视图样板及其已分配的过滤器

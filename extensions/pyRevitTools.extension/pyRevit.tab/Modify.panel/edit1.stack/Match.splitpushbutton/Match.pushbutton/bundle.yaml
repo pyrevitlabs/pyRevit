@@ -4,12 +4,13 @@ title:
   fr_fr: Correspondance
   en_us: Match
   de_de: Grafische Überschreibung kopieren
+  chinese_s: 匹配
 tooltip:
   ru: >-
     Выберите исходный объект, который содержит переопределение графики элемента, с которым вы хотите сверить, а затем выберите объекты назначения один за другим и этот инструмент будет сверять переопределение графики.
-    
+
     Shift-Click:
-    
+
     Показывает настройки сверки.
   fr_fr: >-
     Choisissez l'objet source qui a le remplacement graphique d'élément auquel vous souhaitez faire correspondre, puis choisissez les objets de destination un par un et cet outil fera correspondre les remplacements graphiques
@@ -26,15 +27,10 @@ tooltip:
 
     Shows Match Config window
   de_de: >-
-    Bevor man den Befehl ausführt sollte man die Einstellungen prüfen (siehe unten) 
-    und damit entscheiden welche Art von grafischen Überschreibungen kopiert werden sollen.
-    Nach dem Ausführen des Befehls muss man ein Element als Quelle auswählen. Anschließend 
-    kann man einzeln weitere Elemente anklicken. Damit werden die grafischen Überschreibungen 
-    auf die Elemente kopiert. Danach muss man in der Optionsleiste auf den Button 
-    "Fertig stellen" klicken, um den Befehl abzuschliessen. Mit der Taste ESC kann man 
-    den Befehl abbrechen. 
+    Bevor man den Befehl ausführt sollte man die Einstellungen prüfen (siehe unten)  und damit entscheiden welche Art von grafischen Überschreibungen kopiert werden sollen.
+    Nach dem Ausführen des Befehls muss man ein Element als Quelle auswählen. Anschließend  kann man einzeln weitere Elemente anklicken. Damit werden die grafischen Überschreibungen  auf die Elemente kopiert. Danach muss man in der Optionsleiste auf den Button  "Fertig stellen" klicken, um den Befehl abzuschliessen. Mit der Taste ESC kann man  den Befehl abbrechen. 
 
     Shift-Click:
 
-    Es wird ein Dialog mit Einstellungen angezeigt, mit denen man Festlegen kann, 
-    welche Art von grafischen Überschreibungen kopiert werden sollen
+    Es wird ein Dialog mit Einstellungen angezeigt, mit denen man Festlegen kann,  welche Art von grafischen Überschreibungen kopiert werden sollen
+  chinese_s: "拾取包含您希望匹配的图元图形替换的源对象，然后逐一拾取目标对象，此工具将匹配图形替换\n\nShift+单击：\n显示匹配配置窗口"

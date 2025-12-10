@@ -4,8 +4,10 @@ title:
   fr_fr: Trouver les feuilles montrant l'élément sélectionné
   en_us: Find sheets showing selected element
   de_de: Finde Pläne die das Element anzeigen
+  chinese_s: 查找显示所选图元的图纸
 tooltip:
   ru: Выводит все листы и виды, на которых видны выбранные элементы.
   fr_fr: Lister toutes les feuilles et vues dans lesquelles l'élément sélectionné est visible
   en_us: Lists all sheets and views that the selected elements is visible in
   de_de: Es werden alle Pläne und die dazugehörigen Ansichten aufgelistet, auf denen das/die Element(e) sichtbar sind
+  chinese_s: 列出所选图元可见的所有图纸和视图

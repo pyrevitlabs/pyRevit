@@ -5,7 +5,7 @@ verify_ssl = true
 
 [dev-packages]
 mypy = "*"
-pylint = "==4.0.2"
+pylint = "==4.0.4"
 
 [packages]
 docopt = "*"

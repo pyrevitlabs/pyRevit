@@ -3,21 +3,23 @@ title:
   fr_fr: Charger les familles
   en_us: Load Families
   de_de: Familien laden
+  chinese_s: 加载族
 tooltip:
   ru: >-
     Данный инструмент дает Вам возможность загружать несколько семейств из папки и ее подпапок.
-    
+
     Вы можете загрузить семейство со всеми его типами или выбрать типы для каждого семейства.
   fr_fr: >-
     Cet outil vous donne la possibilité de charger plusieurs familles à partir d'un dossier et de ses sous-dossiers. 
-    
+
     Vous pouvez choisir de charger la famille avec tous ses types, ou sélectionner des types pour chaque famille.
   en_us: >-
     This tool gives you the option to load multiple Families from a folder and its subfolders.
-    
+
     You can choose to load the Family with all its Types, or select Types for each Family.
   de_de: >-
     Mit diesem Werkzeug können Sie mehrere Familien aus einem Ordner und seinen Unterordnern laden.
-    
+
     Sie können wählen, ob Sie die Familie mit allen Typen laden möchten oder die Typen für jede Familie auswählen möchten.
+  chinese_s: "此工具为您提供从文件夹及其子文件夹加载多个族的选项。\n您可以选择加载族及其所有类型，或为每个族单独选择要加载的类型。"
 author: Hikmet Deniz Kibar

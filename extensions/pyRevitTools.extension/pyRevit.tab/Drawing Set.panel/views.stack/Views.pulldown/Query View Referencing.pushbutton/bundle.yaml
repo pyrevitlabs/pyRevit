@@ -7,6 +7,7 @@ title:
     Query View Referencing
   de_de: |-
     Untersuche Ansichten auf Referenzierung
+  chinese_s: 查询视图引用状态
 tooltip:
   ru: |-
     Запрашивает все выделенные виды и определяет связанны они или нет.
@@ -15,8 +16,5 @@ tooltip:
   en_us: |-
     Query all selected views and determine if referenced or not
   de_de: >-
-    Es erscheint ein Auswahldialog mit den verfügbaren Ansichten im aktiven Projekt. 
-    Die ausgewählten Ansichten werden daraufhin untersucht, ob diese referenziert werden 
-    (z.B. in einem Detailausschnitt mit referenzierter Ansicht oder eine Ansichtsreferenz 
-    Beschriftung) oder nicht. Achtung: Die Ausführung von diesem Befehl kann nicht 
-    unterbrochen werden und dauert unter Umständen lange!
+    Es erscheint ein Auswahldialog mit den verfügbaren Ansichten im aktiven Projekt.  Die ausgewählten Ansichten werden daraufhin untersucht, ob diese referenziert werden  (z.B. in einem Detailausschnitt mit referenzierter Ansicht oder eine Ansichtsreferenz  Beschriftung) oder nicht. Achtung: Die Ausführung von diesem Befehl kann nicht  unterbrochen werden und dauert unter Umständen lange!
+  chinese_s: 查询所选视图是否被引用

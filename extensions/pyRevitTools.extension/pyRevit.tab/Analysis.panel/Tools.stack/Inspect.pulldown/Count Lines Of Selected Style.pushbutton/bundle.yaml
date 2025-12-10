@@ -4,6 +4,7 @@ title:
   fr_fr: Compter les lignes d'un style choisi
   en_us: Count lines of selected style
   de_de: Zähle die Linien des ausgewählten Stils
+  chinese_s: 统计选定线样式的线数量
 tooltip:
   ru: >-
     Считает все линии в модели с таким же стилем выделенной линии.
@@ -25,3 +26,4 @@ tooltip:
 
 
     CTRL-Click: Listet jede übereinstimmende Linie auf
+  chinese_s: "统计模型中所有与所选线样式匹配的线\n\nCTRL-单击：列出每一条匹配的线"

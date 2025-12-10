@@ -3,13 +3,12 @@ title:
   fr_fr: Changer les styles de lignes
   en_us: Convert line styles
   de_de: Linienstile konvertieren
+  chinese_s: 转换线样式
 tooltip:
   ru: >-
     Данный инструмент конвертирует стили линий. Запустите инструмент,
-    выберите линию со стилем, который нужно заменить, а затем выберите 
-    строку со стилем типа интерфейса. Скрипт исправит стили линий в модели.
-    ОДНАКО, линии, которые являются частью группы, не будут затронуты. См. также 
-    инструмент "Встряхнуть заполненные области".
+    выберите линию со стилем, который нужно заменить, а затем выберите  строку со стилем типа интерфейса. Скрипт исправит стили линий в модели.
+    ОДНАКО, линии, которые являются частью группы, не будут затронуты. См. также  инструмент "Встряхнуть заполненные области".
   fr_fr: >-
     Il s'agit d'un outil pour convertir les styles de ligne. Exécutez l'outil,
     sélectionnez une ligne avec le style à remplacer, puis
@@ -26,17 +25,12 @@ tooltip:
     Also see the "Shake Filled Regions" tool
   de_de: >-
     Beim Ausführen dieses Werkzeugs öffnet sich ein Dialogfenster mit zwei
-    Spalten, die jeweils die im aktiven Projekt verfügbaren Linienstile anzeigen. 
-    Auf der Linken Seite sind die Linienstile die in einen Linienstil auf der rechten
-    Seite umgewandelt werden. Durch markieren von Zeilen auf beiden Seiten, können mit 
-    einem Klick auf den Button Convert Selected Styles Konvertierungspärchen gebildet werden, die
+    Spalten, die jeweils die im aktiven Projekt verfügbaren Linienstile anzeigen.  Auf der Linken Seite sind die Linienstile die in einen Linienstil auf der rechten
+    Seite umgewandelt werden. Durch markieren von Zeilen auf beiden Seiten, können mit  einem Klick auf den Button Convert Selected Styles Konvertierungspärchen gebildet werden, die
     darunter angezeigt werden. Die Hierarchisch untergeordneten Linienstile werden in den
-    übergeordnete Linienstil umgewandelt. Linien, die sich in Gruppen befinden, können 
-    mit diesem Skript nicht umgewandelt werden (API Limitation)
-    Im unteren Teil stehen diverse Konvrtierungsoptionen zur Auswahl: 
-    1) Detail Linien konvertieren 
-    2) Modelllinien konvertieren
-    3) Linien in gefüllten Bereichen konvertieren (Gefüllte Bereiche müssen mit dem 
-    pyRevit Werkzeug "Gefüllte Bereiche regenerieren" aktualisiert werden)
+    übergeordnete Linienstil umgewandelt. Linien, die sich in Gruppen befinden, können  mit diesem Skript nicht umgewandelt werden (API Limitation)
+    Im unteren Teil stehen diverse Konvrtierungsoptionen zur Auswahl:  1) Detail Linien konvertieren  2) Modelllinien konvertieren
+    3) Linien in gefüllten Bereichen konvertieren (Gefüllte Bereiche müssen mit dem  pyRevit Werkzeug "Gefüllte Bereiche regenerieren" aktualisiert werden)
     4) Achtung: Gruppierte Linien werden nicht unterstützt!
     5) Linienstil(e) nach dem Konvertieren löschen
+  chinese_s: 这是一个转换线样式的工具。运行工具，选择一条具有待替换样式的线，然后选择一条具有目标类型的线。脚本将修正模型中的线样式，但属于组一部分的线不会受影响。另请参见“刷新填充区域”工具

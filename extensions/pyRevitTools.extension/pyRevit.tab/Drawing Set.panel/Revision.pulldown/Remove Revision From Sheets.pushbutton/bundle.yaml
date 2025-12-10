@@ -3,6 +3,7 @@ title:
   fr_fr: Enlève une Révision des Feuilles
   en_us: Remove Revision From Sheets
   de_de: Entferne Änderung von Plänen
+  chinese_s: 从图纸中移除修订
 tooltip:
   ru: >-
     Выделите изменение и данный скрипт удалит
@@ -15,5 +16,5 @@ tooltip:
     Select a revision from the list of revisions and this script will remove
     that revision from all sheets if it has not been "clouded" on the sheet
   de_de: >-
-    Wählen Sie eine Änderung aus der Liste der Änderungen aus und dieses Skript 
-    entfernt diese Änderung von allen Plänen, wenn sie nicht auf dem Plan „eingewolkt“ wurde
+    Wählen Sie eine Änderung aus der Liste der Änderungen aus und dieses Skript  entfernt diese Änderung von allen Plänen, wenn sie nicht auf dem Plan „eingewolkt“ wurde
+  chinese_s: 从修订列表中选择一个修订，如果该修订在图纸上未被“云线标记”，此脚本将从所有图纸中移除该修订

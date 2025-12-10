@@ -881,6 +881,13 @@ def _produce_ui_stacks(ui_maker_params):
         try:
             parent_ui_panel.close_stack()
             mlogger.debug("Closed stack: %s", stack_cmp.name)
+            for component in stack_cmp:
+                if hasattr(component, 'highlight_type') and component.highlight_type:
+                    # Get the UI item for this component
+                    ui_item = parent_ui_panel.button(component.name)
+                    if ui_item:
+                        _set_highlights(component, ui_item)
+            mlogger.debug("Set highlights on stack: %s", stack_cmp.name)
             return stack_cmp
         except PyRevitException as err:
             mlogger.error("Error creating stack | %s", err)

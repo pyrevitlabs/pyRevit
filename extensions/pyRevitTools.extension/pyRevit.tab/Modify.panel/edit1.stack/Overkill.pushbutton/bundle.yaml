@@ -3,11 +3,13 @@ title:
   fr_fr: Overkill
   en_us: Overkill
   de_de: Linien Aufräumen
+  chinese_s: 删除重叠线
 tooltip:
   ru: Удаляет линии, перекрывающиеся другими линиями (аналогично AutoCAD Подчистить).
   fr_fr: Efface les lignes qui se superposent avec d'autres lignes (Similaire à la fonction Overkill dans Autocad)
   en_us: Deletes the lines overlapped by other lines (similar to AutoCAD Overkill)
   de_de: Löscht die Linien die von anderen Linien überlagert werden (ähnlich wie der AutoCAD Befehl -AufRäum)
+  chinese_s: 删除被其他线重叠的线（功能类似于 AutoCAD 的 Overkill 命令）
 author: >-
   tylerk
 

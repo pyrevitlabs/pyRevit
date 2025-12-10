@@ -3,13 +3,11 @@ title:
   fr_fr: Sélectionner tous les nuages d'une révision spécifique
   en_us: Select All Clouds Of Specific Revision
   de_de: Alle Wolken einer bestimmten Änderung auswählen
+  chinese_s: 选择特定修订的所有云线
 tooltip:
   ru: Выделяет все пометочные облака в конкретным изменении. Это полезно для установки параметра или коментария сразу для всех пометочных облаков.
   fr_fr: Sélectionne tous les nuages de révision d'une révision spécifique. Ceci est utile pour définir un paramètre ou un commentaire sur tous les nuages de révision à la fois
   en_us: Selects all revision clouds of a sepecific revision. This is helpful for setting a parameter or comment on all the revision clouds at once
   de_de: >-
-    Es erscheint ein Dialog mit allen im Projekt vorhandenen Änderungen. 
-    Sie müssen eine Änderung (Revision) auswählen und pyRevit wählt alle 
-    dazugehörigen Änderungswolken im Projekt aus. Dies ist hilfreich, 
-    um einen Parameter oder einen Kommentar für alle Änderungswolken 
-    einer bestimmten Änderung auf einmal zu setzen
+    Es erscheint ein Dialog mit allen im Projekt vorhandenen Änderungen.  Sie müssen eine Änderung (Revision) auswählen und pyRevit wählt alle  dazugehörigen Änderungswolken im Projekt aus. Dies ist hilfreich,  um einen Parameter oder einen Kommentar für alle Änderungswolken  einer bestimmten Änderung auf einmal zu setzen
+  chinese_s: 选择特定修订的所有修订云线。这有助于一次性为所有修订云线设置参数或添加注释

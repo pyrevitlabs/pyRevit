@@ -3,13 +3,12 @@ title:
   fr_fr: Ajouter les éléments étiquetés
   en_us: Add Tagged Elements
   de_de: Elemente von Beschriftungen der Auswahl hinzufügen
+  chinese_s: 添加带标记的图元
 tooltip:
   ru: Выберите марки а данный инструмент добавит связанные элементы к выделению. Это особенно полезно для выдеделения элементов и их марок.
   fr_fr: Sélectionnez une série d'étiquettes et cet outil ajoutera leurs éléments associés à la sélection. Ceci est particulièrement utile pour isoler des éléments et leurs étiquettes
   en_us: Select a series of tags and this tool will add their associated elements to selection. This is especially useful for isolating elements and their tags
   de_de: >-
-    Wählen Sie Beschriftungen aus und dieses Werkzeug fügt 
-    die dazugehörigen beschrifteten Elemente zur aktuellen 
-    Auswahl hinzu. Dies ist besonders nützlich, um Elemente 
-    und ihre Beschriftungen zu isolieren
+    Wählen Sie Beschriftungen aus und dieses Werkzeug fügt  die dazugehörigen beschrifteten Elemente zur aktuellen  Auswahl hinzu. Dies ist besonders nützlich, um Elemente  und ihre Beschriftungen zu isolieren
+  chinese_s: 选择一系列标记，此工具会将其关联的图元添加到选择集中。这对于隔离图元及其标记特别有用
 context: selection

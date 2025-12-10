@@ -3,43 +3,14 @@ title:
   fr_fr: Supprimer les éléments de modèle
   en_us: Wipe Model Components
   de_de: Lösche best. Modell Komponenten
+  chinese_s: 清除模型构件
 tooltip:
   ru: >-
-    Данный инструмент поможет Вам удалить ненужную информацию 
-    из модели при отправке подрядчику или консультату. 
-    Запустите инструмент и выделите категории, которые вы 
-    хотите удалить из модели. Затем нажмите "Очистить модель" 
-    и инструмент удалит категории. Вы можете увидеть некоторые 
-    ошибки или предупреждения от процесса Revit 
-    (поскольку это очень разрушительный процесс), 
-    но в целом они не должны привести к сбою сценария.
+    Данный инструмент поможет Вам удалить ненужную информацию  из модели при отправке подрядчику или консультату.  Запустите инструмент и выделите категории, которые вы  хотите удалить из модели. Затем нажмите "Очистить модель"  и инструмент удалит категории. Вы можете увидеть некоторые  ошибки или предупреждения от процесса Revit  (поскольку это очень разрушительный процесс),  но в целом они не должны привести к сбою сценария.
   fr_fr: >-
-    Cet outil vous aide à supprimer des informations 
-    supplémentaires inutiles dans le modèle lors de l'envoi à 
-    un entrepreneur ou un consultant. Exécutez les outils et 
-    sélectionnez les catégories que vous souhaitez supprimer 
-    du modèle. Appuyez ensuite sur "Effacer le modèle" et le 
-    processus passera par chaque catégorie et les supprimera. 
-    Vous pouvez voir des erreurs ou des avertissements de Revit 
-    (puisqu'il s'agit d'un processus très destructeur), 
-    mais en général, ils ne devraient pas faire planter le script.
+    Cet outil vous aide à supprimer des informations  supplémentaires inutiles dans le modèle lors de l'envoi à  un entrepreneur ou un consultant. Exécutez les outils et  sélectionnez les catégories que vous souhaitez supprimer  du modèle. Appuyez ensuite sur "Effacer le modèle" et le  processus passera par chaque catégorie et les supprimera.  Vous pouvez voir des erreurs ou des avertissements de Revit  (puisqu'il s'agit d'un processus très destructeur),  mais en général, ils ne devraient pas faire planter le script.
   en_us: >-
-    This tools helps you to remove extra unnecessary information 
-    in the model when sending to a contractor or consultant. 
-    Run the tools and select the categories that you'd like to 
-    be removed from the model. Then hit "Wipe Model" and the 
-    process will go through each category and will remove them. 
-    You might see some errors or warnings from Revit (since 
-    this is a very destructive) process but generally they 
-    should not crash the script.
+    This tools helps you to remove extra unnecessary information  in the model when sending to a contractor or consultant.  Run the tools and select the categories that you'd like to  be removed from the model. Then hit "Wipe Model" and the  process will go through each category and will remove them.  You might see some errors or warnings from Revit (since  this is a very destructive) process but generally they  should not crash the script.
   de_de: >-
-    Dieses Werkzeug hilft Ihnen dabei, unnötige Informationen aus 
-    dem Modell zu entfernen, z.B. wenn Sie das Modell an einen 
-    Auftragnehmer oder Berater weitergeben möchten. 
-    Führen Sie das Skript aus und wählen Sie die Kategorien, die  
-    aus dem Modell entfernt werden sollen. Klicken Sie dann auf 
-    den Button "Wipe Model" um die Auswahl zu bestätigen. 
-    Anschließend startet der Prozess und löscht die gewählten Elemente. 
-    Möglicherweise werden einige Fehler oder Warnungen von Revit 
-    angezeigt (da es sich um einen sehr zerstörerischen Prozess handelt), 
-    aber das Skript sollte normalerweise nicht abstürzen.
+    Dieses Werkzeug hilft Ihnen dabei, unnötige Informationen aus  dem Modell zu entfernen, z.B. wenn Sie das Modell an einen  Auftragnehmer oder Berater weitergeben möchten.  Führen Sie das Skript aus und wählen Sie die Kategorien, die   aus dem Modell entfernt werden sollen. Klicken Sie dann auf  den Button "Wipe Model" um die Auswahl zu bestätigen.  Anschließend startet der Prozess und löscht die gewählten Elemente.  Möglicherweise werden einige Fehler oder Warnungen von Revit  angezeigt (da es sich um einen sehr zerstörerischen Prozess handelt),  aber das Skript sollte normalerweise nicht abstürzen.
+  chinese_s: 此工具帮助您在将模型发送给承包商或顾问时，移除模型中额外的不必要信息。运行工具，选择您希望从模型中移除的类别，然后点击“清除模型”。该过程将遍历每个类别并将其移除。您可能会看到来自 Revit 的一些错误或警告（因为这是一个破坏性操作），但通常不会导致脚本崩溃。

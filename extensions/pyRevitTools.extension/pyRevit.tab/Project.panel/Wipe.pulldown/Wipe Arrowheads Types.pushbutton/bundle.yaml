@@ -4,6 +4,7 @@ title:
   ru: Удалить типы засечек
   de_de: Lösche best. Pfeilspitzen Typen
 
+  chinese_s: 清除箭头符号类型
 tooltip:
   fr_fr: Supprimer les têtes de flèches de manière radicale
   en_us: Wipe selected arrow-head types
@@ -13,3 +14,4 @@ tooltip:
     Wählen Sie alle Pfeilspitztypen aus, die gelöscht werden sollen
     und bestätigen Sie mit dem Button Select. Anschließend erscheint
     ein Konsolenfenster mit Informationen zu den gelöschten Typen.
+  chinese_s: 清除选定的箭头符号类型
