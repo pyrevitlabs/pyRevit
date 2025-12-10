@@ -20,6 +20,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="TestHelpers\TempFileTestBase.cs" />
+    <Compile Include="TestHelpers\TestExtensionBuilder.cs" />
     <Compile Include="DarkIconTests.cs" />
     <Compile Include="TestConfiguration.cs" />
     <Compile Include="LocalizationTests.cs" />

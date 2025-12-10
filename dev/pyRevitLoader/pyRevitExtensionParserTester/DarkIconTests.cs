@@ -1,4 +1,5 @@
 using pyRevitExtensionParser;
+using pyRevitExtensionParserTest.TestHelpers;
 using System.IO;
 using static pyRevitExtensionParser.ExtensionParser;
 using System.Drawing.Imaging;
@@ -9,30 +10,8 @@ namespace pyRevitExtensionParserTest
     /// Tests for icon functionality. Only icon.png (Standard) and icon.dark.png (DarkStandard) are supported.
     /// </summary>
     [TestFixture]
-    public class DarkIconTests
+    public class DarkIconTests : TempFileTestBase
     {
-        private List<string> _createdTestFiles = new List<string>();
-        
-        [TearDown]
-        public void TearDown()
-        {
-            // Clean up any test files we created
-            foreach (var file in _createdTestFiles)
-            {
-                if (File.Exists(file))
-                {
-                    try
-                    {
-                        File.Delete(file);
-                    }
-                    catch
-                    {
-                        // Ignore cleanup errors
-                    }
-                }
-            }
-            _createdTestFiles.Clear();
-        }
 
         [Test]
         public void TestDarkIconDetection_OnlyIconDarkPngIsSupported()
@@ -40,7 +19,6 @@ namespace pyRevitExtensionParserTest
             TestContext.Out.WriteLine("=== Testing Dark Icon Detection ===");
             TestContext.Out.WriteLine("Only 'icon.dark.png' pattern is recognized as dark icon.");
 
-            var tempDir = Path.GetTempPath();
             var testIcons = new Dictionary<string, bool>
             {
                 // Only icon.dark.png should be detected as dark
@@ -62,9 +40,8 @@ namespace pyRevitExtensionParserTest
 
             foreach (var testCase in testIcons)
             {
-                var iconPath = Path.Combine(tempDir, testCase.Key);
+                var iconPath = Path.Combine(TestTempDir, testCase.Key);
                 CreateTestIcon(iconPath, 32, 32);
-                _createdTestFiles.Add(iconPath);
 
                 var icon = new ComponentIcon(iconPath);
                 
@@ -86,7 +63,6 @@ namespace pyRevitExtensionParserTest
             TestContext.Out.WriteLine("=== Testing Icon Type Classification ===");
             TestContext.Out.WriteLine("Only Standard and DarkStandard icon types are supported.");
 
-            var tempDir = Path.GetTempPath();
             var testIcons = new Dictionary<string, IconType>
             {
                 // Standard icons (icon.png)
@@ -107,9 +83,8 @@ namespace pyRevitExtensionParserTest
 
             foreach (var testCase in testIcons)
             {
-                var iconPath = Path.Combine(tempDir, testCase.Key);
+                var iconPath = Path.Combine(TestTempDir, testCase.Key);
                 CreateTestIcon(iconPath, 32, 32);
-                _createdTestFiles.Add(iconPath);
 
                 var icon = new ComponentIcon(iconPath);
                 
@@ -130,17 +105,14 @@ namespace pyRevitExtensionParserTest
         {
             TestContext.Out.WriteLine("=== Testing ComponentIconCollection ===");
 
-            var tempDir = Path.GetTempPath();
             var collection = new ComponentIconCollection();
 
             // Create light and dark icons
-            var iconPath = Path.Combine(tempDir, "icon.png");
-            var darkIconPath = Path.Combine(tempDir, "icon.dark.png");
+            var iconPath = Path.Combine(TestTempDir, "icon.png");
+            var darkIconPath = Path.Combine(TestTempDir, "icon.dark.png");
             
             CreateTestIcon(iconPath, 32, 32, Color.Blue);
             CreateTestIcon(darkIconPath, 32, 32, Color.Orange);
-            _createdTestFiles.Add(iconPath);
-            _createdTestFiles.Add(darkIconPath);
 
             var lightIcon = new ComponentIcon(iconPath);
             var darkIcon = new ComponentIcon(darkIconPath);
@@ -239,17 +211,14 @@ namespace pyRevitExtensionParserTest
         {
             TestContext.Out.WriteLine("=== Testing Theme-Aware Icon Selection ===");
 
-            var tempDir = Path.GetTempPath();
             var collection = new ComponentIconCollection();
 
             // Create light and dark icons
-            var iconPath = Path.Combine(tempDir, "icon.png");
-            var darkIconPath = Path.Combine(tempDir, "icon.dark.png");
+            var iconPath = Path.Combine(TestTempDir, "icon.png");
+            var darkIconPath = Path.Combine(TestTempDir, "icon.dark.png");
             
             CreateTestIcon(iconPath, 32, 32, Color.Blue);
             CreateTestIcon(darkIconPath, 32, 32, Color.Orange);
-            _createdTestFiles.Add(iconPath);
-            _createdTestFiles.Add(darkIconPath);
 
             var lightIcon = new ComponentIcon(iconPath);
             var darkIcon = new ComponentIcon(darkIconPath);

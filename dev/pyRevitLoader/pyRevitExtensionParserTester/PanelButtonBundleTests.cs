@@ -9,34 +9,12 @@ namespace pyRevitExtensionParserTest
     public class PanelButtonBundleTests
     {
         private IEnumerable<ParsedExtension>? _installedExtensions;
-        private List<string> _createdTestFiles = new List<string>();
         
         [SetUp]
         public void Setup()
         {
             var testBundlePath = TestConfiguration.TestExtensionPath;
             _installedExtensions = ParseInstalledExtensions(new[] { testBundlePath });
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            // Clean up any test files we created
-            foreach (var file in _createdTestFiles)
-            {
-                if (File.Exists(file))
-                {
-                    try
-                    {
-                        File.Delete(file);
-                    }
-                    catch
-                    {
-                        // Ignore cleanup errors
-                    }
-                }
-            }
-            _createdTestFiles.Clear();
         }
 
         [Test]
@@ -268,7 +246,7 @@ namespace pyRevitExtensionParserTest
                     
                     // Verify bundle metadata was parsed
                     Assert.AreEqual("Panel Configuration", panelButton.Title);
-                    Assert.AreEqual("Test command that requires element selection and debug settings", panelButton.Tooltip);
+                    Assert.AreEqual("Configure panel display options and debug settings", panelButton.Tooltip);
                     Assert.AreEqual("Test User", panelButton.Author);
                     
                     // Test completed successfully
