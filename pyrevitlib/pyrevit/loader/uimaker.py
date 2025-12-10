@@ -21,10 +21,6 @@ from pyrevit.userconfig import user_config
 
 mlogger = get_logger(__name__)
 
-# Enable verbose logging to see WARNING messages (can be removed later)
-# Uncomment the line below to see all log messages:
-# mlogger.set_verbose_mode()
-
 
 CONFIG_SCRIPT_TITLE_POSTFIX = "\u25CF"
 
@@ -178,12 +174,12 @@ def _produce_ui_slideout(ui_maker_params):
         try:
             if hasattr(parent_ui_item, "get_rvtapi_object"):
                 existing_items = parent_ui_item.get_rvtapi_object().GetItems()
-                mlogger.warning(
+                mlogger.debug(
                     "SLIDEOUT: Panel has %d items before adding slideout",
                     len(existing_items),
                 )
                 for idx, item in enumerate(existing_items):
-                    mlogger.warning(
+                    mlogger.debug(
                         "SLIDEOUT: Existing item %d: %s (type: %s)",
                         idx,
                         getattr(item, "Name", "unknown"),
@@ -192,10 +188,10 @@ def _produce_ui_slideout(ui_maker_params):
         except Exception as log_err:
             mlogger.debug("SLIDEOUT: Could not log existing items: %s", log_err)
 
-        mlogger.warning("SLIDEOUT: Adding slide out to: %s", parent_ui_item)
+        mlogger.debug("SLIDEOUT: Adding slide out to: %s", parent_ui_item)
         try:
             parent_ui_item.add_slideout()
-            mlogger.warning("SLIDEOUT: Slideout added successfully")
+            mlogger.debug("SLIDEOUT: Slideout added successfully")
         except PyRevitException as err:
             mlogger.error("UI error: %s", err.msg)
 
@@ -613,8 +609,8 @@ def _produce_ui_combobox(ui_maker_params):
 
                 # Add member to ComboBox first (returns ComboBoxMember object)
                 try:
-                    member = combobox_ui.add_item(member_data)
-                    if not member:
+                    member_obj = combobox_ui.add_item(member_data)
+                    if not member_obj:
                         mlogger.warning("AddItem returned None for: %s", member_text)
                         continue
 
@@ -631,7 +627,7 @@ def _produce_ui_combobox(ui_maker_params):
 
                             if op.exists(icon_path):
                                 button_icon = ribbon.ButtonIcons(icon_path)
-                                member.Image = button_icon.small_bitmap
+                                member_obj.Image = button_icon.small_bitmap
                             else:
                                 mlogger.warning("Icon file not found: %s", icon_path)
                         except Exception as member_icon_err:
@@ -640,25 +636,25 @@ def _produce_ui_combobox(ui_maker_params):
                             )
 
                     # Set member group if available
-                    if member_group and hasattr(member, "GroupName"):
+                    if member_group and hasattr(member_obj, "GroupName"):
                         try:
-                            member.GroupName = member_group
+                            member_obj.GroupName = member_group
                         except Exception as group_err:
                             mlogger.debug("Error setting member group: %s", group_err)
 
                     # Set member tooltip if available
-                    if member_tooltip and hasattr(member, "ToolTip"):
+                    if member_tooltip and hasattr(member_obj, "ToolTip"):
                         try:
-                            member.ToolTip = member_tooltip
+                            member_obj.ToolTip = member_tooltip
                         except Exception as tooltip_err:
                             mlogger.debug(
                                 "Error setting member tooltip: %s", tooltip_err
                             )
 
                     # Set member extended tooltip if available
-                    if member_tooltip_ext and hasattr(member, "LongDescription"):
+                    if member_tooltip_ext and hasattr(member_obj, "LongDescription"):
                         try:
-                            member.LongDescription = member_tooltip_ext
+                            member_obj.LongDescription = member_tooltip_ext
                         except Exception as tooltip_ext_err:
                             mlogger.debug(
                                 "Error setting member extended tooltip: %s",
@@ -666,7 +662,7 @@ def _produce_ui_combobox(ui_maker_params):
                             )
 
                     # Set member tooltip image if available
-                    if member_tooltip_image and hasattr(member, "ToolTipImage"):
+                    if member_tooltip_image and hasattr(member_obj, "ToolTipImage"):
                         try:
                             # Resolve tooltip image path (relative to bundle directory or absolute)
                             if combobox.directory and not op.isabs(
@@ -682,7 +678,7 @@ def _produce_ui_combobox(ui_maker_params):
                                 from pyrevit.coreutils.ribbon import load_bitmapimage
 
                                 tooltip_bitmap = load_bitmapimage(tooltip_image_path)
-                                member.ToolTipImage = tooltip_bitmap
+                                member_obj.ToolTipImage = tooltip_bitmap
                         except Exception as tooltip_image_err:
                             mlogger.debug(
                                 "Error setting member tooltip image: %s",
@@ -1020,9 +1016,9 @@ def _recursively_produce_ui_items(ui_maker_params):
             if not parent_name:
                 try:
                     parent_name = str(type(ui_maker_params.parent_ui))
-                except:
+                except Exception:
                     parent_name = "unknown"
-            mlogger.warning(
+            mlogger.debug(
                 "BUILDING COMPONENT: %s parent: %s", sub_cmp.name, parent_name
             )
 

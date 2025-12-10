@@ -1171,7 +1171,10 @@ class _PyRevitRibbonComboBox(GenericPyRevitUIContainer):
             member_data (UI.ComboBoxMemberData): Member data to add
 
         Returns:
-            (UI.ComboBoxMember): The created ComboBoxMember object, or None
+            (UI.ComboBoxMember): The created ComboBoxMember object, or None.
+            None is returned if the ComboBox is in itemdata_mode (i.e., when
+            the underlying Revit API object is not available and items cannot
+            be added directly).
         """
         if not self.itemdata_mode:
             try:
@@ -1189,6 +1192,9 @@ class _PyRevitRibbonComboBox(GenericPyRevitUIContainer):
 
         Args:
             member_data_list (list): List of UI.ComboBoxMemberData objects
+
+        Returns:
+            None
         """
         if not self.itemdata_mode:
             try:
@@ -1200,7 +1206,14 @@ class _PyRevitRibbonComboBox(GenericPyRevitUIContainer):
                 )
 
     def add_separator(self):
-        """Add a separator to the ComboBox dropdown list."""
+        """Add a separator to the ComboBox dropdown list.
+
+        Returns:
+            None
+
+        Raises:
+            PyRevitUIError: If adding the separator fails.
+        """
         if not self.itemdata_mode:
             try:
                 self._rvtapi_object.AddSeparator()
