@@ -40,7 +40,7 @@ namespace pyRevitExtensionParserTest
         }
 
         [Test]
-        public void TestPanelButtonWithoutBundle()
+        public void TestPushButtonWithoutBundle()
         {
             if (_installedExtensions == null)
             {
@@ -48,7 +48,199 @@ namespace pyRevitExtensionParserTest
                 return;
             }
 
-            TestContext.Out.WriteLine("=== Testing Panel Button Without Bundle File ===");
+            TestContext.Out.WriteLine("=== Testing Push Button Without Bundle File ===");
+            
+            foreach (var extension in _installedExtensions)
+            {
+                var pushButton = FindComponentRecursively(extension, "Logs");
+                if (pushButton != null)
+                {
+                    TestContext.Out.WriteLine($"Push Button: {pushButton.DisplayName}");
+                    TestContext.Out.WriteLine($"Name: {pushButton.Name}");
+                    TestContext.Out.WriteLine($"Type: {pushButton.Type}");
+                    TestContext.Out.WriteLine($"Script Path: {pushButton.ScriptPath}");
+                    TestContext.Out.WriteLine($"Bundle File: {pushButton.BundleFile ?? "None"}");
+                    TestContext.Out.WriteLine($"Title: {pushButton.Title ?? "None"}");
+                    TestContext.Out.WriteLine($"Tooltip: {pushButton.Tooltip ?? "None"}");
+                    TestContext.Out.WriteLine($"Author: {pushButton.Author ?? "None"}");
+                    
+                    // Verify basic push button properties
+                    Assert.AreEqual(CommandComponentType.PushButton, pushButton.Type);
+                    Assert.IsNotNull(pushButton.ScriptPath);
+                    Assert.IsTrue(pushButton.ScriptPath.EndsWith("script.py"));
+                    Assert.AreEqual("Logs", pushButton.DisplayName);
+                    
+                    // Should have no bundle file
+                    Assert.IsNull(pushButton.BundleFile);
+                    
+                    // Test completed successfully
+                    return;
+                }
+            }
+            
+            Assert.Fail("Logs push button not found");
+        }
+
+        [Test]
+        public void TestPanelButtonWithSimpleBundle()
+        {
+            if (_installedExtensions == null)
+            {
+                Assert.Fail("No test extensions loaded");
+                return;
+            }
+
+            TestContext.Out.WriteLine("=== Testing Push Button With Simple Bundle ===");
+            
+            foreach (var extension in _installedExtensions)
+            {
+                var pushButton = FindComponentRecursively(extension, "SelectionTest");
+                if (pushButton != null)
+                {
+                    TestContext.Out.WriteLine($"Push Button: {pushButton.DisplayName}");
+                    TestContext.Out.WriteLine($"Name: {pushButton.Name}");
+                    TestContext.Out.WriteLine($"Type: {pushButton.Type}");
+                    TestContext.Out.WriteLine($"Bundle File: {pushButton.BundleFile ?? "None"}");
+                    TestContext.Out.WriteLine($"Title: {pushButton.Title ?? "None"}");
+                    TestContext.Out.WriteLine($"Tooltip: {pushButton.Tooltip ?? "None"}");
+                    TestContext.Out.WriteLine($"Author: {pushButton.Author ?? "None"}");
+                    
+                    Assert.AreEqual(CommandComponentType.PushButton, pushButton.Type);
+                    Assert.AreEqual("Selection Test", pushButton.DisplayName);
+                    
+                    Assert.IsNotNull(pushButton.BundleFile, "Bundle file should be present");
+                    Assert.IsTrue(pushButton.BundleFile.EndsWith("bundle.yaml"), "Bundle file should be bundle.yaml");
+                    
+                    Assert.AreEqual("Selection Test", pushButton.Title);
+                    Assert.AreEqual("Test command that requires element selection", pushButton.Tooltip);
+                    Assert.AreEqual("Test User", pushButton.Author);
+                    
+                    return;
+                }
+            }
+            
+            Assert.Fail("SelectionTest push button not found");
+        }
+
+        [Test]
+        public void TestPanelButtonWithMultilingualBundle()
+        {
+            if (_installedExtensions == null)
+            {
+                Assert.Fail("No test extensions loaded");
+                return;
+            }
+
+            TestContext.Out.WriteLine("=== Testing Panel Button With Multilingual Bundle ===");
+
+            foreach (var extension in _installedExtensions)
+            {
+                var panelButton = FindComponentRecursively(extension, "DebugDialogConfig");
+                if (panelButton != null)
+                {
+                    var locales = panelButton.AvailableLocales == null
+                        ? new List<string>()
+                        : new List<string>(panelButton.AvailableLocales);
+
+                    TestContext.Out.WriteLine($"Panel Button: {panelButton.DisplayName}");
+                    TestContext.Out.WriteLine($"Locales: {(locales.Count == 0 ? "None" : string.Join(", ", locales))}");
+
+                    Assert.AreEqual(CommandComponentType.PanelButton, panelButton.Type);
+                    Assert.IsTrue(panelButton.HasLocalizedContent, "Expected localized content in bundle.yaml");
+
+                    Assert.IsNotNull(panelButton.LocalizedTitles, "Localized titles should be present");
+                    Assert.IsTrue(panelButton.LocalizedTitles.ContainsKey("en_us"));
+                    Assert.IsTrue(panelButton.LocalizedTitles.ContainsKey("fr"));
+                    Assert.IsTrue(panelButton.LocalizedTitles.ContainsKey("de"));
+
+                    Assert.IsNotNull(panelButton.LocalizedTooltips, "Localized tooltips should be present");
+                    Assert.IsTrue(panelButton.LocalizedTooltips.ContainsKey("en_us"));
+                    Assert.IsTrue(panelButton.LocalizedTooltips.ContainsKey("fr"));
+                    Assert.IsTrue(panelButton.LocalizedTooltips.ContainsKey("de"));
+
+                    var frTitle = panelButton.GetLocalizedTitle("fr");
+                    var deTitle = panelButton.GetLocalizedTitle("de");
+                    Assert.AreEqual("Configuration du Panneau", frTitle);
+                    Assert.AreEqual("Panelkonfiguration", deTitle);
+
+                    var frTooltip = panelButton.GetLocalizedTooltip("fr");
+                    var deTooltip = panelButton.GetLocalizedTooltip("de");
+                    Assert.IsNotNull(frTooltip);
+                    Assert.IsNotNull(deTooltip);
+                    StringAssert.Contains("options", frTooltip);
+                    StringAssert.Contains("panneau", frTooltip);
+                    StringAssert.Contains("Panel", deTooltip);
+                    StringAssert.Contains("Debug", deTooltip);
+
+                    CollectionAssert.Contains(locales, "en_us");
+                    CollectionAssert.Contains(locales, "fr");
+                    CollectionAssert.Contains(locales, "de");
+
+                    return;
+                }
+            }
+
+            Assert.Fail("DebugDialogConfig panel button not found");
+        }
+
+        [Test]
+        public void TestPulldownWithComplexBundle()
+        {
+            if (_installedExtensions == null)
+            {
+                Assert.Fail("No test extensions loaded");
+                return;
+            }
+
+            TestContext.Out.WriteLine("=== Testing Pulldown With Complex Bundle ===");
+            
+            foreach (var extension in _installedExtensions)
+            {
+                var pulldown = FindComponentRecursively(extension, "BundleTests");
+                if (pulldown != null)
+                {
+                    TestContext.Out.WriteLine($"Pulldown: {pulldown.DisplayName}");
+                    TestContext.Out.WriteLine($"Name: {pulldown.Name}");
+                    TestContext.Out.WriteLine($"Type: {pulldown.Type}");
+                    TestContext.Out.WriteLine($"Bundle File: {pulldown.BundleFile ?? "None"}");
+                    TestContext.Out.WriteLine($"Highlight: {pulldown.Highlight ?? "None"}");
+                    TestContext.Out.WriteLine($"Layout Order Count: {pulldown.LayoutOrder?.Count ?? 0}");
+                    
+                    // Verify pulldown properties
+                    Assert.AreEqual(CommandComponentType.PullDown, pulldown.Type);
+                    Assert.AreEqual("Bundle Tests", pulldown.DisplayName);
+                    
+                    // Bundle file should be present
+                    Assert.IsNotNull(pulldown.BundleFile, "Bundle file should be present");
+                    Assert.IsTrue(pulldown.BundleFile.EndsWith("bundle.yaml"), "Bundle file should be bundle.yaml");
+                    
+                    // Verify complex bundle features
+                    Assert.AreEqual("new", pulldown.Highlight, "Highlight should be 'new'");
+                    Assert.IsNotNull(pulldown.LayoutOrder, "Layout order should be parsed");
+                    Assert.IsTrue(pulldown.LayoutOrder.Count > 0, "Layout order should have items");
+                    
+                    // Verify layout contains expected items
+                    Assert.IsTrue(pulldown.LayoutOrder.Contains("Test pyRevit Bundle"), "Layout should contain 'Test pyRevit Bundle'");
+                    Assert.IsTrue(pulldown.LayoutOrder.Contains("Test pyRevit Button"), "Layout should contain 'Test pyRevit Button'");
+                    
+                    // Test completed successfully
+                    return;
+                }
+            }
+            
+            Assert.Fail("BundleTests pulldown not found");
+        }
+
+        [Test]
+        public void TestPanelButtonWithBundle()
+        {
+            if (_installedExtensions == null)
+            {
+                Assert.Fail("No test extensions loaded");
+                return;
+            }
+
+            TestContext.Out.WriteLine("=== Testing Panel Button With Bundle File ===");
             
             foreach (var extension in _installedExtensions)
             {
@@ -70,8 +262,14 @@ namespace pyRevitExtensionParserTest
                     Assert.IsTrue(panelButton.ScriptPath.EndsWith("script.py"));
                     Assert.AreEqual("Debug Dialog Config", panelButton.DisplayName);
                     
-                    // Should have no bundle file initially
-                    Assert.IsNull(panelButton.BundleFile);
+                    // Bundle file should be present and parsed
+                    Assert.IsNotNull(panelButton.BundleFile, "Bundle file should be present");
+                    Assert.IsTrue(panelButton.BundleFile.EndsWith("bundle.yaml"), "Bundle file should be bundle.yaml");
+                    
+                    // Verify bundle metadata was parsed
+                    Assert.AreEqual("Panel Configuration", panelButton.Title);
+                    Assert.AreEqual("Test command that requires element selection and debug settings", panelButton.Tooltip);
+                    Assert.AreEqual("Test User", panelButton.Author);
                     
                     // Test completed successfully
                     return;
@@ -82,119 +280,65 @@ namespace pyRevitExtensionParserTest
         }
 
         [Test]
-        public void TestPanelButtonWithSimpleBundle()
-        {
-            TestContext.Out.WriteLine("=== Testing Panel Button With Simple Bundle ===");
-            TestContext.Out.WriteLine("This test validates that bundle.yaml files with simple content are parsed correctly.");
-            TestContext.Out.WriteLine("\nNote: This test requires an existing bundle.yaml file to validate parsing.");
-            TestContext.Out.WriteLine("To enable this test, create a bundle.yaml file with the following structure:");
-            TestContext.Out.WriteLine("---");
-            TestContext.Out.WriteLine("title:");
-            TestContext.Out.WriteLine("  en_us: Panel Settings");
-            TestContext.Out.WriteLine("tooltips:");
-            TestContext.Out.WriteLine("  en_us: Configure panel display options");
-            TestContext.Out.WriteLine("author: Test Framework");
-            TestContext.Out.WriteLine("min_revit_ver: 2019");
-            
-            Assert.Inconclusive("This test requires manual setup of bundle.yaml files. See test output for instructions.");
-        }
-
-        [Test]
-        public void TestPanelButtonWithMultilingualBundle()
-        {
-            TestContext.Out.WriteLine("=== Testing Panel Button With Multilingual Bundle ===");
-            TestContext.Out.WriteLine("This test validates multilingual support in bundle.yaml files.");
-            TestContext.Out.WriteLine("\nTo enable this test, ensure a bundle.yaml with multilingual content exists.");
-            TestContext.Out.WriteLine("Example multilingual bundle structure:");
-            TestContext.Out.WriteLine("---");
-            TestContext.Out.WriteLine("title:");
-            TestContext.Out.WriteLine("  en_us: Panel Configuration");
-            TestContext.Out.WriteLine("  fr: Configuration du Panneau");
-            TestContext.Out.WriteLine("  de: Panel-Konfiguration");
-            TestContext.Out.WriteLine("tooltips:");
-            TestContext.Out.WriteLine("  en_us: Configure various display and behavior options");
-            TestContext.Out.WriteLine("author: Your Name");
-            
-            Assert.Inconclusive("This test requires manual setup of multilingual bundle.yaml files.");
-        }
-
-        [Test]
-        public void TestPanelButtonWithComplexBundle()
-        {
-            TestContext.Out.WriteLine("=== Testing Panel Button With Complex Bundle ===");
-            TestContext.Out.WriteLine("This test validates complex bundle.yaml features including:");
-            TestContext.Out.WriteLine("  - Multiline tooltips");
-            TestContext.Out.WriteLine("  - Layout ordering");
-            TestContext.Out.WriteLine("  - Multiple metadata fields");
-            TestContext.Out.WriteLine("\\nExample complex bundle structure:");
-            TestContext.Out.WriteLine("---");
-            TestContext.Out.WriteLine("title:");
-            TestContext.Out.WriteLine("  en_us: Advanced Panel Configuration");
-            TestContext.Out.WriteLine("tooltips:");
-            TestContext.Out.WriteLine("  en_us: >-");
-            TestContext.Out.WriteLine("    This is an advanced panel configuration");
-            TestContext.Out.WriteLine("    with multiline tooltip support.");
-            TestContext.Out.WriteLine("author: Your Name");
-            TestContext.Out.WriteLine("min_revit_ver: 2021");
-            TestContext.Out.WriteLine("layout_order:");
-            TestContext.Out.WriteLine("  - \\\"Button1\\\"");
-            TestContext.Out.WriteLine("  - \\\"Button2\\\"");
-            TestContext.Out.WriteLine("  - \\\">>>>>\\\"");
-            
-            Assert.Inconclusive("This test requires manual setup of complex bundle.yaml files.");
-        }
-
-        [Test]
-        public void TestCreateNewPanelButton()
-        {
-            TestContext.Out.WriteLine("=== Testing New Panel Button Creation ===");
-            TestContext.Out.WriteLine("This test validates that the parser can detect newly created panel buttons.");
-            TestContext.Out.WriteLine("\\nNote: Dynamic button creation during tests is not supported.");
-            TestContext.Out.WriteLine("To test panel button parsing, create a .panelbutton directory with:");
-            TestContext.Out.WriteLine("  1. script.py file with __title__, __author__, and command logic");
-            TestContext.Out.WriteLine("  2. bundle.yaml file with metadata");
-            TestContext.Out.WriteLine("\\nExample directory structure:");
-            TestContext.Out.WriteLine("  MyButton.panelbutton/");
-            TestContext.Out.WriteLine("    ├── script.py");
-            TestContext.Out.WriteLine("    ├── bundle.yaml");
-            TestContext.Out.WriteLine("    └── icon.png (optional)");
-            
-            Assert.Inconclusive("This test requires manual creation of panel button directories.");
-        }
-
-        [Test]
         public void TestPanelButtonWithContextAvailability()
         {
+            if (_installedExtensions == null)
+            {
+                Assert.Fail("No test extensions loaded");
+                return;
+            }
+
             TestContext.Out.WriteLine("=== Testing Panel Button With Context Availability ===");
-            TestContext.Out.WriteLine("This test validates context/availability parsing in bundle.yaml files.");
-            TestContext.Out.WriteLine("\nExample bundle with context:");
-            TestContext.Out.WriteLine("---");
-            TestContext.Out.WriteLine("title:");
-            TestContext.Out.WriteLine("  en_us: Zero-Doc Command");
-            TestContext.Out.WriteLine("context: zero-doc");
-            TestContext.Out.WriteLine("\nSupported context values:");
-            TestContext.Out.WriteLine("  - zero-doc: Available when no document is open");
-            TestContext.Out.WriteLine("  - selection: Requires element selection");
-            TestContext.Out.WriteLine("  - zerodoc: Alternative spelling");
             
-            Assert.Inconclusive("This test requires manual setup of bundle.yaml with context property.");
+            foreach (var extension in _installedExtensions)
+            {
+                var panelButton = FindComponentRecursively(extension, "DebugDialogConfig");
+                if (panelButton != null)
+                {
+                    TestContext.Out.WriteLine($"Panel Button: {panelButton.DisplayName}");
+                    TestContext.Out.WriteLine($"Context: {panelButton.Context ?? "None"}");
+
+                    Assert.AreEqual(CommandComponentType.PanelButton, panelButton.Type);
+                    Assert.IsNotNull(panelButton.Context, "Context should be parsed from bundle.yaml");
+                    Assert.AreEqual("zero-doc", panelButton.Context);
+
+                    return;
+                }
+            }
+
+            Assert.Fail("DebugDialogConfig panel button not found");
         }
 
         [Test]
-        public void TestPanelButtonWithSelectionContext()
+        public void TestPushButtonWithSelectionContext()
         {
-            TestContext.Out.WriteLine("=== Testing Panel Button With Selection Context ===");
-            TestContext.Out.WriteLine("This test validates selection context parsing in bundle.yaml files.");
-            TestContext.Out.WriteLine("\nExample bundle with selection context:");
-            TestContext.Out.WriteLine("---");
-            TestContext.Out.WriteLine("title:");
-            TestContext.Out.WriteLine("  en_us: Selection Command");
-            TestContext.Out.WriteLine("context: selection");
-            TestContext.Out.WriteLine("\nWhen context is 'selection':");
-            TestContext.Out.WriteLine("  - Command requires elements to be selected");
-            TestContext.Out.WriteLine("  - Button is disabled when no selection");
+            if (_installedExtensions == null)
+            {
+                Assert.Fail("No test extensions loaded");
+                return;
+            }
+
+            TestContext.Out.WriteLine("=== Testing Push Button With Selection Context ===");
             
-            Assert.Inconclusive("This test requires manual setup of bundle.yaml with selection context.");
+            foreach (var extension in _installedExtensions)
+            {
+                var pushButton = FindComponentRecursively(extension, "SelectionTest");
+                if (pushButton != null)
+                {
+                    TestContext.Out.WriteLine($"Push Button: {pushButton.DisplayName}");
+                    TestContext.Out.WriteLine($"Context: {pushButton.Context ?? "None"}");
+
+                    Assert.AreEqual(CommandComponentType.PushButton, pushButton.Type);
+                    Assert.IsNotNull(pushButton.Context, "Context should be parsed from bundle.yaml");
+                    Assert.AreEqual("selection", pushButton.Context);
+                    Assert.AreEqual("Selection Test", pushButton.Title);
+                    Assert.AreEqual("Test command that requires element selection", pushButton.Tooltip);
+
+                    return;
+                }
+            }
+
+            Assert.Fail("Selection Test push button not found");
         }
 
         [Test]
