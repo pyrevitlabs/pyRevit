@@ -25,6 +25,56 @@ mlogger = get_logger(__name__)
 CONFIG_SCRIPT_TITLE_POSTFIX = "\u25CF"
 
 
+def _sanitize_script_file(script_file_path):
+    """Sanitize non-ASCII characters in a Python script file.
+    
+    Reads the file, replaces common non-ASCII characters with ASCII equivalents,
+    and writes it back. This prevents SyntaxError when loading scripts without
+    encoding declarations.
+    
+    Args:
+        script_file_path (str): Path to the script file to sanitize.
+    
+    Returns:
+        bool: True if file was sanitized, False if no changes were needed.
+    """
+    try:
+        # Read file with UTF-8 encoding, fallback to latin-1 if needed
+        try:
+            with open(script_file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+        except UnicodeDecodeError:
+            with open(script_file_path, 'r', encoding='latin-1') as f:
+                content = f.read()
+        
+        original_content = content
+        
+        # Replace common non-ASCII characters with ASCII equivalents
+        # Em dash, en dash -> regular dash
+        content = content.replace('\u2014', '-')  # em dash
+        content = content.replace('\u2013', '-')  # en dash
+        # Smart quotes -> regular quotes
+        content = content.replace('\u2018', "'")  # left single quotation mark
+        content = content.replace('\u2019', "'")  # right single quotation mark
+        content = content.replace('\u201C', '"')  # left double quotation mark
+        content = content.replace('\u201D', '"')  # right double quotation mark
+        # Other common non-ASCII characters
+        content = content.replace('\u2026', '...')  # horizontal ellipsis
+        content = content.replace('\u00A0', ' ')   # non-breaking space
+        
+        # Only write back if content changed
+        if content != original_content:
+            # Write back with UTF-8 encoding
+            with open(script_file_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+            mlogger.debug("Sanitized non-ASCII characters in: %s", script_file_path)
+            return True
+        return False
+    except Exception as sanitize_err:
+        mlogger.warning("Error sanitizing script file %s: %s", script_file_path, sanitize_err)
+        return False
+
+
 class UIMakerParams:
     """UI maker parameters.
 
@@ -754,17 +804,36 @@ def _produce_ui_combobox(ui_maker_params):
                 if search_path not in current_paths:
                     sys.path.append(search_path)
 
+            # Sanitize non-ASCII characters before loading
+            _sanitize_script_file(combobox_script_file)
+
             imported_script = imp.load_source(
                 combobox_unique_name, combobox_script_file
             )
             sys.path = current_paths
 
             if hasattr(imported_script, "__selfinit__"):
+                mlogger.warning(
+                    "[ComboBox Script Load] '%s': Calling __selfinit__ function",
+                    combobox_name,
+                )
                 res = imported_script.__selfinit__(
                     combobox, combobox_ui, HOST_APP.uiapp
                 )
                 if res is False:
                     combobox_ui.deactivate()
+            else:
+                mlogger.warning(
+                    "[ComboBox Script Load] '%s': Script loaded but __selfinit__ function not found",
+                    combobox_name,
+                )
+        else:
+            mlogger.warning(
+                "[ComboBox Script Load] '%s': Skipping script load - script_file=%s, unique_name=%s",
+                combobox_name,
+                combobox_script_file,
+                combobox_unique_name,
+            )
     except Exception as init_err:
         mlogger.exception("Error in __selfinit__: %s", init_err)
 
