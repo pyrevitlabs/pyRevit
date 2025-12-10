@@ -4,7 +4,6 @@ namespace pyRevitExtensionParserTester
 {
     /// <summary>
     /// Unit tests for AssemblyBuilderService.
-    /// Note: These tests require Revit API mocking for full implementation.
     /// </summary>
     [TestFixture]
     public class AssemblyBuilderServiceTests
