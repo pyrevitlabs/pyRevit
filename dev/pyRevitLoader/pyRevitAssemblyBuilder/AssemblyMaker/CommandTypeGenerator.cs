@@ -43,7 +43,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                     ? string.Empty
                     : Path.GetDirectoryName(cmd.ScriptPath);
 
-                var searchPathsList = new System.Collections.Generic.List<string>();
+                var searchPathsList = new List<string>();
                 if (!string.IsNullOrEmpty(scriptDir))
                     searchPathsList.Add(scriptDir);
                 
@@ -56,7 +56,8 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 // Add all library extension directories
                 if (libraryExtensions != null)
                 {
-                    foreach (var libExt in libraryExtensions)
+                    var libExtList = libraryExtensions.ToList();
+                    foreach (var libExt in libExtList)
                     {
                         if (!string.IsNullOrEmpty(libExt.Directory))
                             searchPathsList.Add(libExt.Directory);
@@ -158,16 +159,19 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             if (_runtimeAsm == null)
             {
                 var loaderDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                var probeDir = Path.GetFullPath(Path.Combine(loaderDir, "..", ".."));
-                var candidate = Directory.EnumerateFiles(probeDir, $"{RuntimeNamePrefix}.*.dll", SearchOption.TopDirectoryOnly)
-                                          .FirstOrDefault();
-                if (candidate != null)
+                if (loaderDir != null)
                 {
+                    var probeDir = Path.GetFullPath(Path.Combine(loaderDir, "..", ".."));
+                    var candidate = Directory.EnumerateFiles(probeDir, $"{RuntimeNamePrefix}.*.dll", SearchOption.TopDirectoryOnly)
+                                              .FirstOrDefault();
+                    if (candidate != null)
+                    {
 #if NETFRAMEWORK
-                    _runtimeAsm = Assembly.LoadFrom(candidate);
+                        _runtimeAsm = Assembly.LoadFrom(candidate);
 #else
-                    _runtimeAsm = AssemblyLoadContext.Default.LoadFromAssemblyPath(candidate);
+                        _runtimeAsm = AssemblyLoadContext.Default.LoadFromAssemblyPath(candidate);
 #endif
+                    }
                 }
             }
 
@@ -233,7 +237,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             string scriptDir = string.IsNullOrEmpty(cmd.ScriptPath) ? string.Empty : (Path.GetDirectoryName(cmd.ScriptPath) ?? string.Empty);
             string extensionDir = extension.Directory ?? string.Empty;
             
-            var searchPathsList = new System.Collections.Generic.List<string>
+            var searchPathsList = new List<string>
             {
                 scriptDir
             };
@@ -251,10 +255,11 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 }
             }
             
-            searchPathsList.Add(Path.Combine(extensionDir, "..", "..", "pyrevitlib"));
-            searchPathsList.Add(Path.Combine(extensionDir, "..", "..", "site-packages"));
+            searchPathsList.Add(Path.Combine(extension.Directory, "..", "..", "pyrevitlib"));
+            searchPathsList.Add(Path.Combine(extension.Directory, "..", "..", "site-packages"));
             
-            string searchPaths = string.Join(";", searchPathsList.Where(p => !string.IsNullOrEmpty(p)));
+            var filteredPaths = searchPathsList.Where(p => !string.IsNullOrEmpty(p)).ToList();
+            string searchPaths = string.Join(";", filteredPaths);
             
             // Get context from component, default to "(zero-doc)" if not specified
             string context = !string.IsNullOrEmpty(cmd.Context) ? $"({cmd.Context})" : "(zero-doc)";
@@ -459,7 +464,8 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             if (!string.IsNullOrEmpty(extension?.Directory) && !searchPaths.Contains(extension.Directory))
                 searchPaths.Add(extension.Directory);
 
-            foreach (var path in searchPaths.Where(p => !string.IsNullOrEmpty(p)))
+            var validPaths = searchPaths.Where(p => !string.IsNullOrEmpty(p)).ToList();
+            foreach (var path in validPaths)
             {
                 foreach (var candidate in candidateNames)
                 {

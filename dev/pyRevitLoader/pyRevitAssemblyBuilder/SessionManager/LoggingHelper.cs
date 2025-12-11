@@ -26,8 +26,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         {
             try
             {
-                if (_pythonLogger != null)
-                    _pythonLogger.info(message);
+                (_pythonLogger ?? throw new InvalidOperationException("Python logger is not initialized")).info(message);
             }
             catch { }
         }
@@ -40,8 +39,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         {
             try
             {
-                if (_pythonLogger != null)
-                    _pythonLogger.debug(message);
+                (_pythonLogger ?? throw new InvalidOperationException("Python logger is not initialized")).debug(message);
             }
             catch { }
         }
@@ -54,8 +52,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         {
             try
             {
-                if (_pythonLogger != null)
-                    _pythonLogger.error(message);
+                (_pythonLogger ?? throw new InvalidOperationException("Python logger is not initialized")).error(message);
             }
             catch { }
         }
@@ -68,8 +65,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         {
             try
             {
-                if (_pythonLogger != null)
-                    _pythonLogger.warning(message);
+                (_pythonLogger ?? throw new InvalidOperationException("Python logger is not initialized")).warning(message);
             }
             catch { }
         }

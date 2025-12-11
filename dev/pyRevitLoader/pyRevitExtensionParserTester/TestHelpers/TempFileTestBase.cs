@@ -13,7 +13,7 @@ namespace pyRevitExtensionParserTest.TestHelpers
         /// <summary>
         /// Set to false to preserve test artifacts for inspection.
         /// </summary>
-        protected const bool CleanupAfterTest = true;
+        protected static bool CleanupAfterTest = true;
 
         /// <summary>
         /// Gets the temporary directory path for the current test.

@@ -103,7 +103,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 
             // Use build strategy as seed to differentiate DLLs built with different strategies
             // This ensures DLLs are only regenerated when extension structure changes or build strategy changes
-            string strategySeed = _buildStrategy == AssemblyBuildStrategy.ILPack ? "ILPack" : "Roslyn";
+            string strategySeed = _buildStrategy.ToString();
             string hash = GetStableHash(extension.GetHash(strategySeed) + _revitVersion).Substring(0, 16);
             string fileName = $"pyRevit_{_revitVersion}_{hash}_{extension.Name}.dll";
 
@@ -178,9 +178,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                     var modulePath = extension.FindModuleDll(moduleName, cmd);
                     
                     if (string.IsNullOrEmpty(modulePath))
-                    {
                         continue;
-                    }
 
                     // Skip if already loaded
                     if (loadedModules.Contains(modulePath))
@@ -203,9 +201,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             // Update the environment dictionary with loaded module paths
             // This matches pythonic loader's sessioninfo.update_loaded_pyrevit_referenced_modules()
             if (loadedModules.Count > 0)
-            {
                 UpdateReferencedAssemblies(loadedModules);
-            }
         }
 
         /// <summary>
@@ -219,29 +215,16 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 // Get the environment dictionary from AppDomain
                 const string envDictKey = SessionManager.Constants.ENV_DICT_KEY;
                 const string refedAssmsKey = SessionManager.Constants.REFED_ASSMS_KEY;
-                
-                var envDict = AppDomain.CurrentDomain.GetData(envDictKey);
+
+                var envDict = AppDomain.CurrentDomain.GetData(envDictKey) as IDictionary<object, object>;
                 if (envDict == null)
-                {
                     return;
-                }
-
-                // Use reflection to access the dictionary
-                var dictType = envDict.GetType();
-                var containsMethod = dictType.GetMethod("Contains", new[] { typeof(object) });
-                var getItemMethod = dictType.GetMethod("get_Item", new[] { typeof(object) });
-                var setItemMethod = dictType.GetMethod("set_Item", new[] { typeof(object), typeof(object) });
-
-                if (containsMethod == null || getItemMethod == null || setItemMethod == null)
-                {
-                    return;
-                }
 
                 // Get existing referenced assemblies
                 var existingAssemblies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                if ((bool)containsMethod.Invoke(envDict, new object[] { refedAssmsKey }))
+                if (envDict.ContainsKey(refedAssmsKey))
                 {
-                    var existingValue = (string)getItemMethod.Invoke(envDict, new object[] { refedAssmsKey });
+                    var existingValue = envDict[refedAssmsKey] as string;
                     if (!string.IsNullOrEmpty(existingValue))
                     {
                         foreach (var path in existingValue.Split(Path.PathSeparator))
@@ -257,7 +240,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 
                 // Update the environment dictionary
                 var updatedValue = string.Join(Path.PathSeparator.ToString(), existingAssemblies);
-                setItemMethod.Invoke(envDict, new object[] { refedAssmsKey, updatedValue });
+                envDict[refedAssmsKey] = updatedValue;
             }
             catch (Exception ex)
             {
@@ -294,9 +277,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             {
                 logger.Error("Roslyn compilation failed for: {0}", extension.Name);
                 foreach (var diagnostic in result.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error))
-                {
                     logger.Error("  {0}", diagnostic.ToString());
-                }
                 throw new Exception("Roslyn compilation failed.");
             }
         }
@@ -318,10 +299,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 .FirstOrDefault();
 
             if (runtimePath != null)
-            {
                 Assembly.LoadFrom(runtimePath);
-
-            }
             var generator = new ReflectionEmitCommandTypeGenerator();
             var asmName = new AssemblyName(extension.Name) { Version = new Version(1, 0, 0, 0) };
             string moduleName = Path.GetFileNameWithoutExtension(outputPath);

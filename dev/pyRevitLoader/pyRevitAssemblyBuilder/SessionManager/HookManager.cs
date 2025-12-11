@@ -1,4 +1,5 @@
 ﻿using pyRevitExtensionParser;
+using pyRevitLabs.NLog;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,6 +9,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
 {
     public class HookManager
     {
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+
         public void RegisterHooks(ParsedExtension extension)
         {
             if (extension == null)
@@ -18,12 +21,12 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
             foreach (var hook in hooks)
             {
-                Console.WriteLine($"[pyRevit] Found hook script: {hook}");
+                logger.Debug("Found hook script: {0}", hook);
             }
 
             foreach (var check in checks)
             {
-                Console.WriteLine($"[pyRevit] Found check script: {check}");
+                logger.Debug("Found check script: {0}", check);
             }
 
             // Future: implement actual execution logic for scripts if needed

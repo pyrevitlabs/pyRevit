@@ -40,8 +40,15 @@ namespace pyRevitExtensionParser
         /// </summary>
         private struct CachedBundle
         {
-            public ParsedBundle Bundle;
-            public DateTime LastModified;
+            /// <summary>
+            /// Gets or sets the parsed bundle data.
+            /// </summary>
+            public ParsedBundle Bundle { get; set; }
+
+            /// <summary>
+            /// Gets or sets the last modification time of the bundle file.
+            /// </summary>
+            public DateTime LastModified { get; set; }
         }
 
         /// <summary>
@@ -425,31 +432,31 @@ namespace pyRevitExtensionParser
             switch (key)
             {
                 case "clean":
-                    parsed.Engine.Clean = rawValue.ToLowerInvariant() == "true";
+                    parsed.Engine.Clean = rawValue.Equals("true", StringComparison.InvariantCultureIgnoreCase);
                     break;
                 case "full_frame":
-                    parsed.Engine.FullFrame = rawValue.ToLowerInvariant() == "true";
+                    parsed.Engine.FullFrame = rawValue.Equals("true", StringComparison.InvariantCultureIgnoreCase);
                     break;
                 case "persistent":
-                    parsed.Engine.Persistent = rawValue.ToLowerInvariant() == "true";
+                    parsed.Engine.Persistent = rawValue.Equals("true", StringComparison.InvariantCultureIgnoreCase);
                     break;
                 case "mainthread":
-                    parsed.Engine.MainThread = rawValue.ToLowerInvariant() == "true";
+                    parsed.Engine.MainThread = rawValue.Equals("true", StringComparison.InvariantCultureIgnoreCase);
                     break;
                 case "automate":
-                    parsed.Engine.Automate = rawValue.ToLowerInvariant() == "true";
+                    parsed.Engine.Automate = rawValue.Equals("true", StringComparison.InvariantCultureIgnoreCase);
                     break;
                 case "dynamo_path":
                     parsed.Engine.DynamoPath = StripQuotes(rawValue);
                     break;
                 case "dynamo_path_exec":
-                    parsed.Engine.DynamoPathExec = rawValue.ToLowerInvariant() == "true";
+                    parsed.Engine.DynamoPathExec = rawValue.Equals("true", StringComparison.InvariantCultureIgnoreCase);
                     break;
                 case "dynamo_path_check_existing":
-                    parsed.Engine.DynamoPathCheckExisting = rawValue.ToLowerInvariant() == "true";
+                    parsed.Engine.DynamoPathCheckExisting = rawValue.Equals("true", StringComparison.InvariantCultureIgnoreCase);
                     break;
                 case "dynamo_force_manual_run":
-                    parsed.Engine.DynamoForceManualRun = rawValue.ToLowerInvariant() == "true";
+                    parsed.Engine.DynamoForceManualRun = rawValue.Equals("true", StringComparison.InvariantCultureIgnoreCase);
                     break;
                 case "dynamo_model_nodes_info":
                     parsed.Engine.DynamoModelNodesInfo = StripQuotes(rawValue);

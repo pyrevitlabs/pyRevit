@@ -1,7 +1,7 @@
 using System;
 using Autodesk.Revit.UI;
 using pyRevitAssemblyBuilder.AssemblyMaker;
-using pyRevitExtensionParser;
+using pyRevitAssemblyBuilder.UIManager;
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
@@ -52,10 +52,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <summary>
         /// Creates a SessionManagerService instance with all required dependencies.
         /// </summary>
-        /// <param name="revitVersion">The Revit version number.</param>
-        /// <param name="buildStrategy">The build strategy to use.</param>
+        /// <param name="revitVersion">The Revit version number (e.g., "2024").</param>
+        /// <param name="buildStrategy">The build strategy to use for assembly generation.</param>
         /// <param name="uiApplication">The Revit UIApplication instance.</param>
-        /// <param name="outputWindow">Optional output window for logging.</param>
+        /// <param name="pythonLogger">Optional Python logger instance for integration with pyRevit's logging system.</param>
         /// <returns>A new SessionManagerService instance.</returns>
         public static SessionManagerService CreateSessionManagerService(
             string revitVersion,
