@@ -97,6 +97,10 @@ def main():
             print(f"ERROR reading {yaml_file}: {e}")
 
     # write CSV
+    output_dir = os.path.dirname(OUTPUT_CSV)
+    if output_dir and not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    
     with open(OUTPUT_CSV, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(["yaml_file", "key_type", SOURCE_LANG, LANGUAGE_KEY])
