@@ -720,7 +720,7 @@ def _produce_ui_combobox(ui_maker_params):
     # The title from bundle.yaml is used for tooltip and identification
     # We'll set ItemText to the title initially, but it will be overwritten when current item is set
     combobox_title = getattr(combobox, "ui_title", None) or combobox_name
-    if combobox_title:
+    if not combobox_ui.current and combobox_title:
         try:
             # Set initial ItemText to title (will be overwritten when current item is set)
             combobox_obj.ItemText = combobox_title
