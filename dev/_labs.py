@@ -1,9 +1,14 @@
 """Manage pyRevit labs tasks"""
 # pylint: disable=invalid-name,broad-except
 import sys
+import io
 import os.path as op
 import logging
 from typing import Dict, Optional
+
+# Configure UTF-8 encoding for console output
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 # dev scripts
 from scripts import utils
