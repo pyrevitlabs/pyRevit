@@ -3,6 +3,7 @@
 import sys
 import imp
 import os.path as op
+import codecs
 
 from pyrevit import HOST_APP, EXEC_PARAMS, PyRevitException
 from pyrevit.coreutils import assmutils
@@ -41,10 +42,10 @@ def _sanitize_script_file(script_file_path):
     try:
         # Read file with UTF-8 encoding, fallback to latin-1 if needed
         try:
-            with open(script_file_path, 'r', encoding='utf-8') as f:
+            with codecs.open(script_file_path, 'r', 'utf-8') as f:
                 content = f.read()
-        except UnicodeDecodeError:
-            with open(script_file_path, 'r', encoding='latin-1') as f:
+        except (UnicodeDecodeError, LookupError):
+            with codecs.open(script_file_path, 'r', 'latin-1') as f:
                 content = f.read()
         
         original_content = content
@@ -65,7 +66,7 @@ def _sanitize_script_file(script_file_path):
         # Only write back if content changed
         if content != original_content:
             # Write back with UTF-8 encoding
-            with open(script_file_path, 'w', encoding='utf-8') as f:
+            with codecs.open(script_file_path, 'w', 'utf-8') as f:
                 f.write(content)
             mlogger.debug("Sanitized non-ASCII characters in: %s", script_file_path)
             return True
