@@ -34,8 +34,8 @@ func main() {
 			"env": complete.Command{
 				Sub: complete.Commands{},
 				Flags: complete.Flags{
-					"--log":  complete.PredictNothing,
 					"--json": complete.PredictNothing,
+					"--log":  complete.PredictNothing,
 					"--help": complete.PredictNothing,
 				},
 			},
@@ -49,12 +49,12 @@ func main() {
 				Sub: complete.Commands{},
 				Flags: complete.Flags{
 					"--branch":   complete.PredictNothing,
-					"--help":     complete.PredictNothing,
-					"--log":      complete.PredictNothing,
+					"--image":    complete.PredictNothing,
 					"--password": complete.PredictNothing,
 					"--token":    complete.PredictNothing,
+					"--log":      complete.PredictNothing,
 					"--dest":     complete.PredictNothing,
-					"--image":    complete.PredictNothing,
+					"--help":     complete.PredictNothing,
 				},
 			},
 			"clones": complete.Command{
@@ -119,16 +119,16 @@ func main() {
 					"origin": complete.Command{
 						Sub: complete.Commands{},
 						Flags: complete.Flags{
-							"--log":   complete.PredictNothing,
 							"--reset": complete.PredictNothing,
+							"--log":   complete.PredictNothing,
 						},
 					},
 					"update": complete.Command{
 						Sub: complete.Commands{},
 						Flags: complete.Flags{
 							"--log":      complete.PredictNothing,
-							"--password": complete.PredictNothing,
 							"--token":    complete.PredictNothing,
+							"--password": complete.PredictNothing,
 						},
 					},
 					"deployments": complete.Command{
@@ -149,17 +149,17 @@ func main() {
 					"default": complete.Command{
 						Sub: complete.Commands{},
 						Flags: complete.Flags{
-							"--installed": complete.PredictNothing,
 							"--attached":  complete.PredictNothing,
+							"--installed": complete.PredictNothing,
 							"--allusers":  complete.PredictNothing,
 						},
 					},
 				},
 				Flags: complete.Flags{
-					"--installed": complete.PredictNothing,
-					"--help":      complete.PredictNothing,
 					"--attached":  complete.PredictNothing,
+					"--installed": complete.PredictNothing,
 					"--allusers":  complete.PredictNothing,
+					"--help":      complete.PredictNothing,
 				},
 			},
 			"attached": complete.Command{
@@ -186,28 +186,28 @@ func main() {
 					"ui": complete.Command{
 						Sub: complete.Commands{},
 						Flags: complete.Flags{
-							"--dest":     complete.PredictNothing,
-							"--password": complete.PredictNothing,
 							"--token":    complete.PredictNothing,
 							"--log":      complete.PredictNothing,
+							"--password": complete.PredictNothing,
+							"--dest":     complete.PredictNothing,
 						},
 					},
 					"lib": complete.Command{
 						Sub: complete.Commands{},
 						Flags: complete.Flags{
-							"--dest":     complete.PredictNothing,
-							"--password": complete.PredictNothing,
 							"--token":    complete.PredictNothing,
 							"--log":      complete.PredictNothing,
+							"--password": complete.PredictNothing,
+							"--dest":     complete.PredictNothing,
 						},
 					},
 				},
 				Flags: complete.Flags{
-					"--help":     complete.PredictNothing,
-					"--log":      complete.PredictNothing,
 					"--password": complete.PredictNothing,
 					"--token":    complete.PredictNothing,
+					"--log":      complete.PredictNothing,
 					"--dest":     complete.PredictNothing,
+					"--help":     complete.PredictNothing,
 				},
 			},
 			"extensions": complete.Command{
@@ -237,8 +237,8 @@ func main() {
 					"origin": complete.Command{
 						Sub: complete.Commands{},
 						Flags: complete.Flags{
-							"--log":   complete.PredictNothing,
 							"--reset": complete.PredictNothing,
+							"--log":   complete.PredictNothing,
 						},
 					},
 					"paths": complete.Command{
@@ -246,8 +246,8 @@ func main() {
 							"forget": complete.Command{
 								Sub: complete.Commands{},
 								Flags: complete.Flags{
-									"--log": complete.PredictNothing,
 									"--all": complete.PredictNothing,
+									"--log": complete.PredictNothing,
 								},
 							},
 							"add": complete.Command{
@@ -279,8 +279,8 @@ func main() {
 							"forget": complete.Command{
 								Sub: complete.Commands{},
 								Flags: complete.Flags{
-									"--log": complete.PredictNothing,
 									"--all": complete.PredictNothing,
+									"--log": complete.PredictNothing,
 								},
 							},
 							"add": complete.Command{
@@ -299,8 +299,8 @@ func main() {
 						Sub: complete.Commands{},
 						Flags: complete.Flags{
 							"--log":      complete.PredictNothing,
-							"--password": complete.PredictNothing,
 							"--token":    complete.PredictNothing,
+							"--password": complete.PredictNothing,
 						},
 					},
 				},
@@ -366,15 +366,15 @@ func main() {
 					"fileinfo": complete.Command{
 						Sub: complete.Commands{},
 						Flags: complete.Flags{
+							"--rft": complete.PredictNothing,
 							"--rte": complete.PredictNothing,
 							"--csv": complete.PredictNothing,
-							"--rft": complete.PredictNothing,
 						},
 					},
 				},
 				Flags: complete.Flags{
-					"--installed": complete.PredictNothing,
 					"--supported": complete.PredictNothing,
+					"--installed": complete.PredictNothing,
 					"--help":      complete.PredictNothing,
 				},
 			},
@@ -386,12 +386,12 @@ func main() {
 					},
 				},
 				Flags: complete.Flags{
-					"--models":       complete.PredictNothing,
-					"--help":         complete.PredictNothing,
 					"--purge":        complete.PredictNothing,
-					"--import":       complete.PredictNothing,
-					"--allowdialogs": complete.PredictNothing,
 					"--revit":        complete.PredictNothing,
+					"--allowdialogs": complete.PredictNothing,
+					"--models":       complete.PredictNothing,
+					"--import":       complete.PredictNothing,
+					"--help":         complete.PredictNothing,
 				},
 			},
 			"caches": complete.Command{
@@ -853,11 +853,11 @@ func main() {
 			},
 		},
 		Flags: complete.Flags{
+			"--debug":   complete.PredictNothing,
+			"--verbose": complete.PredictNothing,
+			"--usage":   complete.PredictNothing,
 			"--version": complete.PredictNothing,
 			"--help":    complete.PredictNothing,
-			"--debug":   complete.PredictNothing,
-			"--usage":   complete.PredictNothing,
-			"--verbose": complete.PredictNothing,
 		},
 	}
 	complete.New("pyrevit", pyrevit).Run()

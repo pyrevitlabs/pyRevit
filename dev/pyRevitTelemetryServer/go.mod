@@ -1,6 +1,8 @@
 module pyrevittelemetryserver
 
-go 1.17
+go 1.23.0
+
+toolchain go1.24.4
 
 require (
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
@@ -15,6 +17,9 @@ require (
 	github.com/satori/go.uuid v1.2.0
 	go.mongodb.org/mongo-driver v1.11.1
 	pkg.re/essentialkaos/ek.v10 v12.32.0+incompatible
+)
+
+require (
 
 	// Indirect dependencies
 	github.com/golang-sql/civil v0.0.0-20190719163853-cb61b32ac6fe // indirect
