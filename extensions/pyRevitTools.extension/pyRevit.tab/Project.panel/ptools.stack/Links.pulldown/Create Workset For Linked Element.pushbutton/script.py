@@ -33,7 +33,7 @@ def main():
     if len(selection) > 0:
         if not doc.IsWorkshared and doc.CanEnableWorksharing:
             doc.EnableWorksharing("Shared Levels and Grids", "Workset1")
-        
+
         for el in selection:
             linked_model_name = ""
             if isinstance(el, DB.RevitLinkInstance):
