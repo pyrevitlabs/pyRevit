@@ -4,8 +4,10 @@ title:
   ru: Очистить выделенные семейства
   de_de: Lösche Familien der ausgew. Elemente
 
+  chinese_s: 清除选定族
 tooltip:
   fr_fr: Supprime les familles sélectionnées
   en_us: Wipe families of selected instances
   ru: Очищает выделенные экземпляры семейств
   de_de: Es werden alle Familien von den ausgewählten Exemplaren aus dem Modell gelöscht
+  chinese_s: 清除选定实例所属的族

@@ -3,13 +3,12 @@ title:
   fr_fr: Efface les schémas de données
   en_us: Wipe Data Schema
   de_de: Lösche best. Daten Schemas
+  chinese_s: 清除数据模式
 tooltip:
   ru: Очищает выделенную data schema и ее сущности.
   fr_fr: Supprime les schémas de données sélectionnés et ses entités
   en_us: Erase selected data schema and its entities
   de_de: >-
-    Es erscheint ein Auswahldialog mit allen verfügbaren Daten 
-    Schemen im Projekt. Wählen Sie die Daten Schemen aus, die 
-    Sie löschen wollen und bestätigen Sie die Auswahl mit dem 
-    Button Select. Achtung: Die Daten Schemen werden von Add-Ins
+    Es erscheint ein Auswahldialog mit allen verfügbaren Daten  Schemen im Projekt. Wählen Sie die Daten Schemen aus, die  Sie löschen wollen und bestätigen Sie die Auswahl mit dem  Button Select. Achtung: Die Daten Schemen werden von Add-Ins
     verwendet, um Daten zu speichern!
+  chinese_s: 清除选定的数据模式及其包含的实体

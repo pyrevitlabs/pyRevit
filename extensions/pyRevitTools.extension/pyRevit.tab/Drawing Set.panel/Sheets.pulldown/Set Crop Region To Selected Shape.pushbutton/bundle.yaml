@@ -2,13 +2,13 @@ title:
   ru: Установить границу обрезки на выделенной форме
   fr_fr: Définir la zone cadrée sur la forme sélectionnée
   en_us: Set Crop Region To Selected Shape
-  de_de: Zuschneidebereich der Ansicht von Detaillinien übernehmen 
+  de_de: Zuschneidebereich der Ansicht von Detaillinien übernehmen
+  chinese_s: 将裁剪区域设置为选定形状
 tooltip:
   ru: >-
     Начертите желаемую границу обрезки в виде замкнутого многоугольника
     на листе (используя линию детализации). Затем выберите границу и видовой экран
-    и запустите скрипт. Данный скрипт применит начерченную границу к виду 
-    на выделенном видовом экране.
+    и запустите скрипт. Данный скрипт применит начерченную границу к виду  на выделенном видовом экране.
   fr_fr: >-
     Dessinez la limite de cadrage souhaitée sous forme de polygone fermé sur
     votre feuille (à l'aide de lignes de détail). Sélectionnez ensuite la limite
@@ -20,13 +20,9 @@ tooltip:
     the script. This script will apply the drafted boundary to the view of the
     selected viewport
   de_de: >-
-    Zunächst muss auf dem Plan mit Detaillinien der gewünschte Zuscheidebereich 
-    skizziert werden. Es muss eine geschlossene Schleife sein. Zudem darf der
-    Zuschneidebereich nicht von einem Bildausschnitt gesteuert werden. Nun wählt 
-    man die gezeichneten Detaillinien aus und wählt zusätzlich auf dem Plan die 
-    platzierte Ansicht aus, von der man den Zuschneidebereich anpassen möchte. 
-    Nun startet man dieses Skript und der Zuschneidebereich der gewählten Ansicht
+    Zunächst muss auf dem Plan mit Detaillinien der gewünschte Zuscheidebereich  skizziert werden. Es muss eine geschlossene Schleife sein. Zudem darf der
+    Zuschneidebereich nicht von einem Bildausschnitt gesteuert werden. Nun wählt  man die gezeichneten Detaillinien aus und wählt zusätzlich auf dem Plan die  platzierte Ansicht aus, von der man den Zuschneidebereich anpassen möchte.  Nun startet man dieses Skript und der Zuschneidebereich der gewählten Ansicht
     wird die Form der Detaillinien annehmen. Anschließend sollte man die Detaillinien
     manuell löschen (optional). Dieses Skript erstellt den Zuschneidebereich im Skizzen
-    Modus. Man kann den Zuschneidebereich jederzeit wieder zurücksetzen, wenn man das 
-    Ansichtsfenster auswählt.
+    Modus. Man kann den Zuschneidebereich jederzeit wieder zurücksetzen, wenn man das  Ansichtsfenster auswählt.
+  chinese_s: 在图纸上绘制所需的裁剪边界作为闭合多边形（使用详图线）。然后选择该边界和目标视口并运行脚本。此脚本将把绘制的边界应用到所选视口的视图

@@ -3,10 +3,11 @@ title:
   fr_fr: Placer une borne sur l'origine
   en_us: Place origin marker
   de_de: Setze eine Ursprungsmarkierung
+  chinese_s: 放置原点标记
 tooltip:
   ru: Размещает маркер (крест) в начало координат на 0,0,0.
   fr_fr: Place une borne en forme de croix sur l'origine de la terre 0,0,0
   en_us: Place a cross marker at the Earth origin at 0,0,0
   de_de: >-
-    Erstellt eine Ursprungsmarkierung mit 2 sich kreuzenden 
-    Detaillinien auf der interenen Koordinate 0,0,0
+    Erstellt eine Ursprungsmarkierung mit 2 sich kreuzenden  Detaillinien auf der interenen Koordinate 0,0,0
+  chinese_s: 在坐标（0,0,0）的地球原点处放置一个十字标记

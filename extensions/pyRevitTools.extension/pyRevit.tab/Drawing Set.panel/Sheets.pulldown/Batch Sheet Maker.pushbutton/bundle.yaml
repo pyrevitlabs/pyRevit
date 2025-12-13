@@ -4,10 +4,10 @@ title:
   fr_fr: Création de Feuilles en Groupe
   en_us: Batch Sheet Maker
   de_de: Plangenerator
+  chinese_s: 批量图纸生成器
 tooltip:
   ru: >-
-    Введите наименование и номера листов в поле для ввода 
-    и данный скрипт создаст их все сразу.
+    Введите наименование и номера листов в поле для ввода  и данный скрипт создаст их все сразу.
   fr_fr: >-
     Entrez les noms et les numéros de feuilles dans la zone de texte et cet
     outil les créera toutes
@@ -15,6 +15,6 @@ tooltip:
     Enter sheet names and numbers in the text box and this tool will create all
     at once
   de_de: >-
-    Geben Sie die Plannamen und -nummern in das Textfeld ein, und dieses Skript 
-    erstellt alle Pläne auf einmal
-    
+    Geben Sie die Plannamen und -nummern in das Textfeld ein, und dieses Skript  erstellt alle Pläne auf einmal
+
+  chinese_s: 在文本框中输入图纸名称和编号，此工具将一次性创建所有图纸

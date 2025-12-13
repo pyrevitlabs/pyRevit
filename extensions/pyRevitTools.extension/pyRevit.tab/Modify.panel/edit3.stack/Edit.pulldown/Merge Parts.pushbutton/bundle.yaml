@@ -3,10 +3,12 @@ title:
   fr_fr: Assembler les parts
   en_us: Merge parts
   de_de: Teile vereinigen
+  chinese_s: 合并零件
 tooltip:
   ru: Объединяет выделенные части в один элемент.
   fr_fr: Assembler les parts sélectionnées dans un élément
   en_us: Merge selected parts into one element
   de_de: Die ausgewählten Teile werden in ein Element vereinigt
+  chinese_s: 将选定的零件合并为一个图元
 author: '{{author}}'
 context: selection

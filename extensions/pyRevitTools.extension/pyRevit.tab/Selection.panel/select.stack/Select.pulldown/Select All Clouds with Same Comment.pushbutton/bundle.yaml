@@ -3,12 +3,12 @@ title:
   fr_fr: Sélectionner tous les nuages de révision avec le même commentaire
   en_us: Select All Clouds with Same Comment
   de_de: Alle Wolken mit identischem Kommentar auswählen
+  chinese_s: 选择具有相同注释的所有云线
 tooltip:
   ru: Выделяет все пометочные облака в модели с комментарием выделенного пометочного облака.
   fr_fr: Sélectionne tous les nuages de révision dans le modèle avec le commentaire correspondant au nuage de révision sélectionné
   en_us: Selects all revision clouds in the model with comment matching selected revision cloud
   de_de: >-
-    Wählen Sie eine einzele Änderungswolke aus, die einen Kommentar enthält. 
-    Wenn der Befehl ausgeführt wird, werden alle Änderungswolken im 
-    Modell ausgewählt, die den gleichen Kommentar enthalten
+    Wählen Sie eine einzele Änderungswolke aus, die einen Kommentar enthält.  Wenn der Befehl ausgeführt wird, werden alle Änderungswolken im  Modell ausgewählt, die den gleichen Kommentar enthalten
+  chinese_s: 选择模型中注释与所选修订云线相匹配的所有修订云线
 context: selection

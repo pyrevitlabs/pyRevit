@@ -4,6 +4,7 @@ title:
   fr_fr: Importer les paramètres depuis Excel
   ru: Импорт параметров из Excel
 
+  chinese_s: 从 Excel 导入参数
 tooltip:
   en_us: >-
     Imports element parameter values from a previously exported Excel file.
@@ -25,5 +26,6 @@ tooltip:
     Файл должен содержать допустимые идентификаторы элементов и значения параметров в настроенном типе единиц.
     Параметры только для чтения и неподдерживаемые параметры будут пропущены. Статус редактируемости пользователем игнорируется.
 
+  chinese_s: 从先前导出的 Excel 文件导入图元参数值。该文件必须包含有效的图元 ID 以及符合已配置单位类型的参数值。只读和不支持的参数将被跳过。用户可修改的状态将被忽略。
 author: wurschdhaud
 min_revit_version: 2022

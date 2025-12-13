@@ -3,8 +3,10 @@ title:
   fr_fr: Rechercher et sélectionner des éléments sans étiquettes
   en_us: Find And Select Entities Without Tags
   de_de: Nur Elemente ohne Beschriftung auswählen
+  chinese_s: 查找并选择无关联标记的图元
 tooltip:
   ru: Выделяет элементы без связанных марок в текущем виде.
   fr_fr: Sélectionne les éléments sans étiquettes associées dans la vue actuelle
   en_us: Selects elements with no associated tags in current view
   de_de: Es werden in der aktuellen Ansicht alle Elemente ausgewählt, die nicht beschriftet wurden
+  chinese_s: 在当前视图中选择没有关联标记的图元

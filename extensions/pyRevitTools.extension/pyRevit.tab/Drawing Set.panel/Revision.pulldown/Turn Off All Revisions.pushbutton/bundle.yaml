@@ -3,8 +3,10 @@ title:
   fr_fr: Eteindre toutes les révisions
   en_us: Turn Off all revisions
   de_de: Alle Änderungen ausblenden
+  chinese_s: 关闭所有修订
 tooltip:
   ru: Устанавливает параметр видимости изменений на 'Нет' для всех изменений.
   fr_fr: Définit le paramètre de visibilité des révisions sur Aucun pour toutes les révisions
   en_us: Sets the revision visibility parameter to None for all revisions
   de_de: Setzt im Dialog Planausgabe/Änderungen bei allen Änderungen den Sichtbarkeitsparameter "Anzeigen" auf "Keine"
+  chinese_s: 将所有修订的修订可见性参数设置为“无”

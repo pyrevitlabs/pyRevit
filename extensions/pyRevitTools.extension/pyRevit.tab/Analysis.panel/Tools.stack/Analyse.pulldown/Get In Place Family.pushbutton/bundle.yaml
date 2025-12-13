@@ -3,10 +3,12 @@ title:
   fr_fr: Familles InSitu
   en_us: Get in place families
   de_de: Alle Projektfamilien zählen u. in 3D anzeigen
+  chinese_s: 获取内建族
 tooltip:
   ru: Получает общее количество семейств в контексте текущего документа и создает новый 3D вид с именем InPlace Families, в котором изолирует их.
   fr_fr: Obtenez un nombre total et des types de familles in situ dans le document actuel et créez une nouvelle vue 3D nommée Familles InPlace pour les isoler
   en_us: Get a total count and types of In Place Family in the current document and create a new 3Dview named InPlace Families isolate them
   de_de: Es wird die Gesamtanzahl und die Arten von Projektfamilien im aktuellen Projekt in der Konsole ausgegeben. Zudem wird eine 3D Ansicht "InPlace Families" erstellt, die alle Projektfamilien isoliert darstellt.
+  chinese_s: 获取当前文档中内建族的总数与类型，并创建一个名为“内建族”的新三维视图以将其隔离
 author: 'Jean-Marc Couffin'
 contact: 'https://github.com/jmcouffin'

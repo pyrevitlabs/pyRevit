@@ -3,8 +3,10 @@ title:
   fr_fr: Cherche et trouve les éléments sans dimensions
   en_us: Find And Select Entities Without Dimensions
   de_de: Nur Elemente ohne Bemaßungsreferenzen auswählen
+  chinese_s: 查找并选择无关联标注的图元
 tooltip:
   ru: Выделяет элементы без связанных размеров в текущем виде.
   fr_fr: Sélectionne les éléments sans dimensions associées dans la vue actuelle
   en_us: Selects elements with no associated dimensions in current view
   de_de: Wählt Elemente aus, die in der aktuellen Ansicht keine Bemaßungen referenzieren
+  chinese_s: 在当前视图中选择没有关联标注的图元

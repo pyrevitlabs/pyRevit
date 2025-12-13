@@ -4,6 +4,7 @@ title:
   fr_fr: Exporter les paramètres vers Excel
   ru: Экспорт параметров в Excel
 
+  chinese_s: 将参数导出到 Excel
 tooltip:
   en_us: |
     Exports element parameters of schedules to an Excel file.
@@ -57,5 +58,6 @@ tooltip:
     - текущий вид
     - выбор
 
+  chinese_s: "将明细表中的图元参数导出到 Excel 文件。\n您可以选择要包含哪些参数。参数值将转换为项目单位，以便后续重新导入。\n只读和不支持的参数会被标记并锁定。\n\nShift+单击可选择高级导出范围：\n- 明细表\n- 文档 - 全部\n- 文档 - 类型\n- 文档 - 实例\n- 当前视图\n- 选择"
 author: wurschdhaud
 min_revit_version: 2022
