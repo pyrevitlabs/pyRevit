@@ -1,49 +1,33 @@
 using pyRevitExtensionParser;
+using pyRevitExtensionParserTest.TestHelpers;
 using System.IO;
-using NUnit.Framework;
 using static pyRevitExtensionParser.ExtensionParser;
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Text;
 
 namespace pyRevitExtensionParserTest
 {
+    /// <summary>
+    /// Tests for panel button and bundle parsing that use on-the-fly test extensions.
+    /// These tests don't depend on any repo files.
+    /// </summary>
     [TestFixture]
-    public class PanelButtonBundleTests
+    public class PanelButtonBundleTests : TempFileTestBase
     {
         private IEnumerable<ParsedExtension>? _installedExtensions;
-        private List<string> _createdTestFiles = new List<string>();
+        private string? _testExtensionPath;
         
         [SetUp]
-        public void Setup()
+        public override void BaseSetUp()
         {
-            var testBundlePath = Path.Combine(TestContext.CurrentContext.TestDirectory, "Resources", "TestBundleExtension.extension");
-            _installedExtensions = ParseInstalledExtensions(new[] { testBundlePath });
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            // Clean up any test files we created
-            foreach (var file in _createdTestFiles)
-            {
-                if (File.Exists(file))
-                {
-                    try
-                    {
-                        File.Delete(file);
-                    }
-                    catch
-                    {
-                        // Ignore cleanup errors
-                    }
-                }
-            }
-            _createdTestFiles.Clear();
+            base.BaseSetUp();
+            
+            // Create comprehensive test extension on-the-fly
+            _testExtensionPath = TestExtensionFactory.CreateComprehensiveTestExtension(TestTempDir);
+            _installedExtensions = ParseInstalledExtensions(new[] { _testExtensionPath });
         }
 
         [Test]
-        public void TestPanelButtonWithoutBundle()
+        public void TestPanelButtonWithSimpleBundle()
         {
             if (_installedExtensions == null)
             {
@@ -51,7 +35,351 @@ namespace pyRevitExtensionParserTest
                 return;
             }
 
-            TestContext.Out.WriteLine("=== Testing Panel Button Without Bundle File ===");
+            TestContext.Out.WriteLine("=== Testing Push Button With Simple Bundle ===");
+            
+            foreach (var extension in _installedExtensions)
+            {
+                // Note: Folder name is "Selection Test.pushbutton", Name is "SelectionTest" (spaces removed)
+                var pushButton = FindComponentRecursively(extension, "SelectionTest");
+                if (pushButton != null)
+                {
+                    TestContext.Out.WriteLine($"Push Button: {pushButton.DisplayName}");
+                    TestContext.Out.WriteLine($"Name: {pushButton.Name}");
+                    TestContext.Out.WriteLine($"Type: {pushButton.Type}");
+                    TestContext.Out.WriteLine($"Bundle File: {pushButton.BundleFile ?? "None"}");
+                    TestContext.Out.WriteLine($"Title: {pushButton.Title ?? "None"}");
+                    TestContext.Out.WriteLine($"Tooltip: {pushButton.Tooltip ?? "None"}");
+                    TestContext.Out.WriteLine($"Author: {pushButton.Author ?? "None"}");
+                    
+                    Assert.AreEqual(CommandComponentType.PushButton, pushButton.Type);
+                    Assert.AreEqual("Selection Test", pushButton.DisplayName);
+                    
+                    Assert.IsNotNull(pushButton.BundleFile, "Bundle file should be present");
+                    Assert.IsTrue(pushButton.BundleFile.EndsWith("bundle.yaml"), "Bundle file should be bundle.yaml");
+                    
+                    Assert.AreEqual("Selection Test", pushButton.Title);
+                    Assert.AreEqual("Test command that requires element selection", pushButton.Tooltip);
+                    Assert.AreEqual("Test User", pushButton.Author);
+                    
+                    return;
+                }
+            }
+            
+            Assert.Fail("SelectionTest push button not found");
+        }
+
+        [Test]
+        public void TestPushButtonWithSelectionContext()
+        {
+            if (_installedExtensions == null)
+            {
+                Assert.Fail("No test extensions loaded");
+                return;
+            }
+
+            TestContext.Out.WriteLine("=== Testing Push Button With Selection Context ===");
+            
+            foreach (var extension in _installedExtensions)
+            {
+                var pushButton = FindComponentRecursively(extension, "SelectionTest");
+                if (pushButton != null)
+                {
+                    TestContext.Out.WriteLine($"Push Button: {pushButton.DisplayName}");
+                    TestContext.Out.WriteLine($"Context: {pushButton.Context ?? "None"}");
+
+                    Assert.AreEqual(CommandComponentType.PushButton, pushButton.Type);
+                    Assert.IsNotNull(pushButton.Context, "Context should be parsed from bundle.yaml");
+                    Assert.AreEqual("selection", pushButton.Context);
+                    Assert.AreEqual("Selection Test", pushButton.Title);
+                    Assert.AreEqual("Test command that requires element selection", pushButton.Tooltip);
+
+                    return;
+                }
+            }
+
+            Assert.Fail("Selection Test push button not found");
+        }
+
+        [Test]
+        public void TestButtonTitleWithNewlineEscapeSequence()
+        {
+            // Create a temporary test button with \n in the title
+            var tempDir = Path.Combine(TestTempDir, "TestNewlineTitle.extension");
+            var tabDir = Path.Combine(tempDir, "TestTab.tab");
+            var panelDir = Path.Combine(tabDir, "TestPanel.panel");
+            var buttonDir = Path.Combine(panelDir, "TestNewlineButton.pushbutton");
+            
+            Directory.CreateDirectory(buttonDir);
+            
+            var scriptPath = Path.Combine(buttonDir, "script.py");
+            // Test with \n in the title
+            File.WriteAllText(scriptPath, @"__title__ = 'Generate\nAPI Stubs'
+print('test')");
+            
+            // Parse the extension
+            var extensions = ParseInstalledExtensions(new[] { tempDir });
+            var extension = extensions.FirstOrDefault();
+            
+            Assert.IsNotNull(extension, "Extension should be parsed");
+            
+            var testButton = FindComponentRecursively(extension, "TestNewlineButton");
+            Assert.IsNotNull(testButton, "TestNewlineButton should be found");
+            
+            // Verify that \n is converted to an actual newline
+            Assert.IsNotNull(testButton.Title, "Title should not be null");
+            Assert.That(testButton.Title, Does.Contain("\n"), "Title should contain an actual newline character");
+            Assert.That(testButton.Title, Is.EqualTo("Generate\nAPI Stubs"), "Title should have newline properly parsed");
+            
+            // Verify it's NOT the literal \n string
+            Assert.That(testButton.Title, Does.Not.Contain("\\n"), "Title should not contain literal \\n");
+            
+            TestContext.Out.WriteLine($"Title successfully parsed with newline: '{testButton.Title}'");
+        }
+
+        [Test]
+        public void TestButtonWithVariousEscapeSequences()
+        {
+            // Test various Python escape sequences
+            var tempDir = Path.Combine(TestTempDir, "TestEscapeSequences.extension");
+            var tabDir = Path.Combine(tempDir, "TestTab.tab");
+            var panelDir = Path.Combine(tabDir, "TestPanel.panel");
+            var buttonDir = Path.Combine(panelDir, "TestButton.pushbutton");
+            
+            Directory.CreateDirectory(buttonDir);
+            
+            var scriptPath = Path.Combine(buttonDir, "script.py");
+            // Test with various escape sequences - use raw Python string literals
+            var scriptContent = new StringBuilder();
+            scriptContent.AppendLine("__title__ = 'Line1\\nLine2\\tTab'");
+            scriptContent.AppendLine("__author__ = \"Test's Author\"");
+            scriptContent.AppendLine("__doc__ = 'Backslash: \\\\'");
+            scriptContent.AppendLine("print('test')");
+            File.WriteAllText(scriptPath, scriptContent.ToString());
+            
+            // Parse the extension
+            var extensions = ParseInstalledExtensions(new[] { tempDir });
+            var extension = extensions.FirstOrDefault();
+            
+            Assert.IsNotNull(extension, "Extension should be parsed");
+            
+            var testButton = FindComponentRecursively(extension, "TestButton");
+            Assert.IsNotNull(testButton, "TestButton should be found");
+            
+            // Verify newline and tab are converted
+            Assert.That(testButton.Title, Is.EqualTo("Line1\nLine2\tTab"), "Title should have \\n and \\t converted");
+            
+            // Verify single quote (no escape needed when using double quotes in Python)
+            Assert.That(testButton.Author, Is.EqualTo("Test's Author"), "Author should preserve single quote");
+            
+            // Verify backslash escape
+            Assert.That(testButton.Tooltip, Is.EqualTo("Backslash: \\"), "Tooltip should have \\\\ converted to single backslash");
+            
+            TestContext.Out.WriteLine($"Title: '{testButton.Title}'");
+            TestContext.Out.WriteLine($"Author: '{testButton.Author}'");
+            TestContext.Out.WriteLine($"Tooltip: '{testButton.Tooltip}'");
+        }
+
+        // Helper method to find components recursively
+        private ParsedComponent? FindComponentRecursively(ParsedComponent? parent, string componentName)
+        {
+            if (parent == null || string.IsNullOrEmpty(componentName))
+                return null;
+                
+            if (parent.Name == componentName)
+                return parent;
+
+            if (parent.Children != null)
+            {
+                foreach (var child in parent.Children)
+                {
+                    var found = FindComponentRecursively(child, componentName);
+                    if (found != null)
+                        return found;
+                }
+            }
+
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Tests for panel button and bundle parsing that specifically test features from
+    /// pyRevitDevTools extension (Debug.panel, BundleTests.pulldown, etc.)
+    /// These tests require the repo's pyRevitDevTools.extension directory.
+    /// </summary>
+    [TestFixture]
+    public class DevToolsPanelButtonTests
+    {
+        private IEnumerable<ParsedExtension>? _installedExtensions;
+        
+        [SetUp]
+        public void Setup()
+        {
+            var testBundlePath = TestConfiguration.TestExtensionPath;
+            _installedExtensions = ParseInstalledExtensions(new[] { testBundlePath });
+        }
+
+        [Test]
+        public void TestPushButtonWithoutBundle()
+        {
+            if (_installedExtensions == null)
+            {
+                Assert.Fail("No test extensions loaded");
+                return;
+            }
+
+            TestContext.Out.WriteLine("=== Testing Push Button Without Bundle File ===");
+            
+            foreach (var extension in _installedExtensions)
+            {
+                var pushButton = FindComponentRecursively(extension, "Logs");
+                if (pushButton != null)
+                {
+                    TestContext.Out.WriteLine($"Push Button: {pushButton.DisplayName}");
+                    TestContext.Out.WriteLine($"Name: {pushButton.Name}");
+                    TestContext.Out.WriteLine($"Type: {pushButton.Type}");
+                    TestContext.Out.WriteLine($"Script Path: {pushButton.ScriptPath}");
+                    TestContext.Out.WriteLine($"Bundle File: {pushButton.BundleFile ?? "None"}");
+                    TestContext.Out.WriteLine($"Title: {pushButton.Title ?? "None"}");
+                    TestContext.Out.WriteLine($"Tooltip: {pushButton.Tooltip ?? "None"}");
+                    TestContext.Out.WriteLine($"Author: {pushButton.Author ?? "None"}");
+                    
+                    // Verify basic push button properties
+                    Assert.AreEqual(CommandComponentType.PushButton, pushButton.Type);
+                    Assert.IsNotNull(pushButton.ScriptPath);
+                    Assert.IsTrue(pushButton.ScriptPath.EndsWith("script.py"));
+                    Assert.AreEqual("Logs", pushButton.DisplayName);
+                    
+                    // Should have no bundle file
+                    Assert.IsNull(pushButton.BundleFile);
+                    
+                    // Test completed successfully
+                    return;
+                }
+            }
+            
+            Assert.Fail("Logs push button not found");
+        }
+
+        [Test]
+        public void TestPanelButtonWithMultilingualBundle()
+        {
+            if (_installedExtensions == null)
+            {
+                Assert.Fail("No test extensions loaded");
+                return;
+            }
+
+            TestContext.Out.WriteLine("=== Testing Panel Button With Multilingual Bundle ===");
+
+            foreach (var extension in _installedExtensions)
+            {
+                var panelButton = FindComponentRecursively(extension, "DebugDialogConfig");
+                if (panelButton != null)
+                {
+                    var locales = panelButton.AvailableLocales == null
+                        ? new List<string>()
+                        : new List<string>(panelButton.AvailableLocales);
+
+                    TestContext.Out.WriteLine($"Panel Button: {panelButton.DisplayName}");
+                    TestContext.Out.WriteLine($"Locales: {(locales.Count == 0 ? "None" : string.Join(", ", locales))}");
+
+                    Assert.AreEqual(CommandComponentType.PanelButton, panelButton.Type);
+                    Assert.IsTrue(panelButton.HasLocalizedContent, "Expected localized content in bundle.yaml");
+
+                    Assert.IsNotNull(panelButton.LocalizedTitles, "Localized titles should be present");
+                    Assert.IsTrue(panelButton.LocalizedTitles.ContainsKey("en_us"));
+                    Assert.IsTrue(panelButton.LocalizedTitles.ContainsKey("fr"));
+                    Assert.IsTrue(panelButton.LocalizedTitles.ContainsKey("de"));
+
+                    Assert.IsNotNull(panelButton.LocalizedTooltips, "Localized tooltips should be present");
+                    Assert.IsTrue(panelButton.LocalizedTooltips.ContainsKey("en_us"));
+                    Assert.IsTrue(panelButton.LocalizedTooltips.ContainsKey("fr"));
+                    Assert.IsTrue(panelButton.LocalizedTooltips.ContainsKey("de"));
+
+                    var frTitle = panelButton.GetLocalizedTitle("fr");
+                    var deTitle = panelButton.GetLocalizedTitle("de");
+                    Assert.AreEqual("Configuration du Panneau", frTitle);
+                    Assert.AreEqual("Panelkonfiguration", deTitle);
+
+                    var frTooltip = panelButton.GetLocalizedTooltip("fr");
+                    var deTooltip = panelButton.GetLocalizedTooltip("de");
+                    Assert.IsNotNull(frTooltip);
+                    Assert.IsNotNull(deTooltip);
+                    StringAssert.Contains("options", frTooltip);
+                    StringAssert.Contains("panneau", frTooltip);
+                    StringAssert.Contains("Panel", deTooltip);
+                    StringAssert.Contains("Debug", deTooltip);
+
+                    CollectionAssert.Contains(locales, "en_us");
+                    CollectionAssert.Contains(locales, "fr");
+                    CollectionAssert.Contains(locales, "de");
+
+                    return;
+                }
+            }
+
+            Assert.Fail("DebugDialogConfig panel button not found");
+        }
+
+        [Test]
+        public void TestPulldownWithComplexBundle()
+        {
+            if (_installedExtensions == null)
+            {
+                Assert.Fail("No test extensions loaded");
+                return;
+            }
+
+            TestContext.Out.WriteLine("=== Testing Pulldown With Complex Bundle ===");
+            
+            foreach (var extension in _installedExtensions)
+            {
+                var pulldown = FindComponentRecursively(extension, "BundleTests");
+                if (pulldown != null)
+                {
+                    TestContext.Out.WriteLine($"Pulldown: {pulldown.DisplayName}");
+                    TestContext.Out.WriteLine($"Name: {pulldown.Name}");
+                    TestContext.Out.WriteLine($"Type: {pulldown.Type}");
+                    TestContext.Out.WriteLine($"Bundle File: {pulldown.BundleFile ?? "None"}");
+                    TestContext.Out.WriteLine($"Highlight: {pulldown.Highlight ?? "None"}");
+                    TestContext.Out.WriteLine($"Layout Order Count: {pulldown.LayoutOrder?.Count ?? 0}");
+                    
+                    // Verify pulldown properties
+                    Assert.AreEqual(CommandComponentType.PullDown, pulldown.Type);
+                    Assert.AreEqual("Bundle Tests", pulldown.DisplayName);
+                    
+                    // Bundle file should be present
+                    Assert.IsNotNull(pulldown.BundleFile, "Bundle file should be present");
+                    Assert.IsTrue(pulldown.BundleFile.EndsWith("bundle.yaml"), "Bundle file should be bundle.yaml");
+                    
+                    // Verify complex bundle features
+                    Assert.AreEqual("new", pulldown.Highlight, "Highlight should be 'new'");
+                    Assert.IsNotNull(pulldown.LayoutOrder, "Layout order should be parsed");
+                    Assert.IsTrue(pulldown.LayoutOrder.Count > 0, "Layout order should have items");
+                    
+                    // Verify layout contains expected items
+                    Assert.IsTrue(pulldown.LayoutOrder.Contains("Test pyRevit Bundle"), "Layout should contain 'Test pyRevit Bundle'");
+                    Assert.IsTrue(pulldown.LayoutOrder.Contains("Test pyRevit Button"), "Layout should contain 'Test pyRevit Button'");
+                    
+                    // Test completed successfully
+                    return;
+                }
+            }
+            
+            Assert.Fail("BundleTests pulldown not found");
+        }
+
+        [Test]
+        public void TestPanelButtonWithBundle()
+        {
+            if (_installedExtensions == null)
+            {
+                Assert.Fail("No test extensions loaded");
+                return;
+            }
+
+            TestContext.Out.WriteLine("=== Testing Panel Button With Bundle File ===");
             
             foreach (var extension in _installedExtensions)
             {
@@ -73,8 +401,14 @@ namespace pyRevitExtensionParserTest
                     Assert.IsTrue(panelButton.ScriptPath.EndsWith("script.py"));
                     Assert.AreEqual("Debug Dialog Config", panelButton.DisplayName);
                     
-                    // Should have no bundle file initially
-                    Assert.IsNull(panelButton.BundleFile);
+                    // Bundle file should be present and parsed
+                    Assert.IsNotNull(panelButton.BundleFile, "Bundle file should be present");
+                    Assert.IsTrue(panelButton.BundleFile.EndsWith("bundle.yaml"), "Bundle file should be bundle.yaml");
+                    
+                    // Verify bundle metadata was parsed
+                    Assert.AreEqual("Panel Configuration", panelButton.Title);
+                    Assert.AreEqual("Configure panel display options and debug settings", panelButton.Tooltip);
+                    Assert.AreEqual("Test User", panelButton.Author);
                     
                     // Test completed successfully
                     return;
@@ -85,515 +419,39 @@ namespace pyRevitExtensionParserTest
         }
 
         [Test]
-        public void TestPanelButtonWithSimpleBundle()
-        {
-            var testBundlePath = Path.Combine(TestContext.CurrentContext.TestDirectory, "Resources", "TestBundleExtension.extension");
-            var panelButtonPath = Path.Combine(testBundlePath, "TestBundleTab.tab", "TestPanelOne.panel", "Debug Dialog Config.panelbutton");
-            var bundlePath = Path.Combine(panelButtonPath, "bundle.yaml");
-            
-            var bundleContent = @"title:
-  en_us: Panel Settings
-tooltips:
-  en_us: Configure panel display options
-author: Test Framework
-min_revit_ver: 2019
-";
-
-            try
-            {
-                File.WriteAllText(bundlePath, bundleContent);
-                _createdTestFiles.Add(bundlePath);
-                
-                // Re-parse extensions
-                var extensions = ParseInstalledExtensions(new[] { testBundlePath });
-                
-                TestContext.Out.WriteLine("=== Testing Panel Button With Simple Bundle ===");
-                
-                foreach (var extension in extensions)
-                {
-                    var panelButton = FindComponentRecursively(extension, "DebugDialogConfig");
-                    if (panelButton != null)
-                    {
-                        TestContext.Out.WriteLine($"Panel Button: {panelButton.DisplayName}");
-                        TestContext.Out.WriteLine($"Bundle File: {panelButton.BundleFile}");
-                        TestContext.Out.WriteLine($"Title: {panelButton.Title}");
-                        TestContext.Out.WriteLine($"Tooltip: {panelButton.Tooltip}");
-                        TestContext.Out.WriteLine($"Author: {panelButton.Author}");
-                        
-                        // Verify bundle data was parsed
-                        Assert.IsNotNull(panelButton.BundleFile);
-                        Assert.IsTrue(File.Exists(panelButton.BundleFile));
-                        Assert.AreEqual("Panel Settings", panelButton.Title);
-                        Assert.AreEqual("Configure panel display options", panelButton.Tooltip);
-                        Assert.AreEqual("Test Framework", panelButton.Author);
-                        
-                        // Test completed successfully
-                        return;
-                    }
-                }
-                
-                Assert.Fail("Panel button not found after adding bundle");
-            }
-            catch (NUnit.Framework.SuccessException)
-            {
-                // Re-throw success exceptions
-                throw;
-            }
-            catch (Exception ex)
-            {
-                Assert.Fail($"Test failed with exception: {ex.Message}");
-            }
-        }
-
-        [Test]
-        public void TestPanelButtonWithMultilingualBundle()
-        {
-            var testBundlePath = Path.Combine(TestContext.CurrentContext.TestDirectory, "Resources", "TestBundleExtension.extension");
-            var panelButtonPath = Path.Combine(testBundlePath, "TestBundleTab.tab", "TestPanelOne.panel", "Debug Dialog Config.panelbutton");
-            var bundlePath = Path.Combine(panelButtonPath, "bundle.yaml");
-            
-            var bundleContent = @"title:
-  en_us: Panel Configuration
-  fr: Configuration du Panneau
-  de: Panel-Konfiguration
-tooltips:
-  en_us: >-
-    This panel button allows you to configure
-    various display and behavior options for
-    the current panel.
-  fr: >-
-    Ce bouton de panneau vous permet de configurer
-    diverses options d'affichage et de comportement
-    pour le panneau actuel.
-author: Multilingual Test
-min_revit_ver: 2020
-";
-
-            try
-            {
-                File.WriteAllText(bundlePath, bundleContent);
-                _createdTestFiles.Add(bundlePath);
-                
-                // Re-parse extensions
-                var extensions = ParseInstalledExtensions(new[] { testBundlePath });
-                
-                TestContext.Out.WriteLine("=== Testing Panel Button With Multilingual Bundle ===");
-                
-                foreach (var extension in extensions)
-                {
-                    var panelButton = FindComponentRecursively(extension, "DebugDialogConfig");
-                    if (panelButton != null)
-                    {
-                        TestContext.Out.WriteLine($"Panel Button: {panelButton.DisplayName}");
-                        TestContext.Out.WriteLine($"Title: {panelButton.Title}");
-                        TestContext.Out.WriteLine($"Tooltip: {panelButton.Tooltip}");
-                        TestContext.Out.WriteLine($"Author: {panelButton.Author}");
-                        
-                        // Should default to en_us locale
-                        Assert.AreEqual("Panel Configuration", panelButton.Title);
-                        Assert.IsTrue(panelButton.Tooltip.Contains("panel button"));
-                        Assert.IsTrue(panelButton.Tooltip.Contains("configure"));
-                        Assert.AreEqual("Multilingual Test", panelButton.Author);
-                        
-                        // Verify multiline tooltip is properly parsed (no YAML artifacts)
-                        Assert.IsFalse(panelButton.Tooltip.Contains("en_us:"));
-                        Assert.IsFalse(panelButton.Tooltip.Contains(">-"));
-                        
-                        // Test completed successfully
-                        return;
-                    }
-                }
-                
-                Assert.Fail("Panel button not found after adding multilingual bundle");
-            }
-            catch (NUnit.Framework.SuccessException)
-            {
-                // Re-throw success exceptions
-                throw;
-            }
-            catch (Exception ex)
-            {
-                Assert.Fail($"Test failed with exception: {ex.Message}");
-            }
-        }
-
-        [Test]
-        public void TestPanelButtonWithComplexBundle()
-        {
-            var testBundlePath = Path.Combine(TestContext.CurrentContext.TestDirectory, "Resources", "TestBundleExtension.extension");
-            var panelButtonPath = Path.Combine(testBundlePath, "TestBundleTab.tab", "TestPanelOne.panel", "Debug Dialog Config.panelbutton");
-            var bundlePath = Path.Combine(panelButtonPath, "bundle.yaml");
-            
-            TestContext.Out.WriteLine($"Test bundle path: {testBundlePath}");
-            TestContext.Out.WriteLine($"Path exists: {Directory.Exists(testBundlePath)}");
-            TestContext.Out.WriteLine($"Panel button path exists: {Directory.Exists(panelButtonPath)}");
-            
-            var bundleContent = @"title:
-  en_us: Advanced Panel Configuration
-tooltips:
-  en_us: >-
-    This is an advanced panel configuration button that provides
-    access to detailed settings for panel layout, behavior,
-    and appearance customization.
-    
-    Features include:
-    - Layout ordering
-    - Visual themes
-    - Behavior settings
-    - Performance options
-author: Advanced Test Suite
-min_revit_ver: 2021
-layout_order:
-  - ""PanelOneButton1""
-  - ""PanelOneButton2""
-  - "">>>>>"" 
-  - ""Debug Dialog Config""
-";
-
-            try
-            {
-                File.WriteAllText(bundlePath, bundleContent);
-                _createdTestFiles.Add(bundlePath);
-                
-                TestContext.Out.WriteLine("=== Testing Panel Button With Complex Bundle ===");
-                
-                // Re-parse extensions with better error handling
-                IEnumerable<ParsedExtension>? extensions = null;
-                try
-                {
-                    extensions = ParseInstalledExtensions(new[] { testBundlePath });
-                    TestContext.Out.WriteLine("ParseInstalledExtensions call completed");
-                }
-                catch (Exception parseEx)
-                {
-                    Assert.Fail($"Failed to parse extensions: {parseEx.Message}");
-                    return;
-                }
-                
-                if (extensions == null)
-                {
-                    Assert.Fail("Extensions collection is null");
-                    return;
-                }
-                
-                // Use a more defensive enumeration approach
-                List<ParsedExtension> extensionsList = new List<ParsedExtension>();
-                try
-                {
-                    foreach (var ext in extensions)
-                    {
-                        if (ext != null)
-                        {
-                            extensionsList.Add(ext);
-                        }
-                        else
-                        {
-                            TestContext.Out.WriteLine("Warning: Found null extension during enumeration");
-                        }
-                    }
-                    TestContext.Out.WriteLine($"Extension count: {extensionsList.Count}");
-                }
-                catch (Exception enumEx)
-                {
-                    Assert.Fail($"Failed to enumerate extensions: {enumEx.Message}\nStack trace: {enumEx.StackTrace}");
-                    return;
-                }
-                
-                if (extensionsList.Count == 0)
-                {
-                    Assert.Fail($"No extensions found at path: {testBundlePath}");
-                    return;
-                }
-                
-                foreach (var extension in extensionsList)
-                {
-                    TestContext.Out.WriteLine($"Extension: {extension.Name}");
-                    
-                    var panelButton = FindComponentRecursively(extension, "DebugDialogConfig");
-                    if (panelButton != null)
-                    {
-                        TestContext.Out.WriteLine($"Panel Button: {panelButton.DisplayName}");
-                        TestContext.Out.WriteLine($"Title: {panelButton.Title}");
-                        TestContext.Out.WriteLine($"Author: {panelButton.Author}");
-                        TestContext.Out.WriteLine($"Tooltip Length: {panelButton.Tooltip?.Length ?? 0} characters");
-                        TestContext.Out.WriteLine($"Layout Order: {panelButton.LayoutOrder?.Count ?? 0} items");
-                        
-                        if (panelButton.LayoutOrder != null)
-                        {
-                            TestContext.Out.WriteLine("Layout Order Items:");
-                            foreach (var item in panelButton.LayoutOrder)
-                            {
-                                TestContext.Out.WriteLine($"  - {item}");
-                            }
-                        }
-                        
-                        // Verify complex bundle data
-                        Assert.AreEqual("Advanced Panel Configuration", panelButton.Title);
-                        Assert.AreEqual("Advanced Test Suite", panelButton.Author);
-                        Assert.IsNotNull(panelButton.Tooltip);
-                        Assert.IsTrue(panelButton.Tooltip.Contains("advanced panel configuration"));
-                        Assert.IsTrue(panelButton.Tooltip.Contains("Features include"));
-                        
-                        // Verify layout order parsing
-                        Assert.IsNotNull(panelButton.LayoutOrder);
-                        Assert.Greater(panelButton.LayoutOrder.Count, 0);
-                        Assert.Contains("PanelOneButton1", panelButton.LayoutOrder);
-                        Assert.Contains(">>>>>", panelButton.LayoutOrder);
-                        
-                        // Test completed successfully
-                        return;
-                    }
-                    else
-                    {
-                        TestContext.Out.WriteLine("DebugDialogConfig component not found, available components:");
-                        PrintAllComponents(extension, 0);
-                    }
-                }
-                
-                Assert.Fail("Panel button not found after adding complex bundle");
-            }
-            catch (NUnit.Framework.SuccessException)
-            {
-                // Re-throw success exceptions
-                throw;
-            }
-            catch (Exception ex)
-            {
-                TestContext.Out.WriteLine($"Exception details: {ex}");
-                Assert.Fail($"Test failed with exception: {ex.Message}");
-            }
-        }
-
-        [Test]
-        public void TestCreateNewPanelButton()
-        {
-            var testBundlePath = Path.Combine(TestContext.CurrentContext.TestDirectory, "Resources", "TestBundleExtension.extension");
-            var newPanelButtonPath = Path.Combine(testBundlePath, "TestBundleTab.tab", "TestPanelTwo.panel", "Test Panel Config.panelbutton");
-            var scriptPath = Path.Combine(newPanelButtonPath, "script.py");
-            var bundlePath = Path.Combine(newPanelButtonPath, "bundle.yaml");
-            
-            var scriptContent = @"""""""Test panel configuration button.""""""
-
-from pyrevit import script
-logger = script.get_logger()
-
-__title__ = """"""Test Panel Config""""""
-__author__ = """"""Test Creator""""""
-__doc__ = """"""Test panel configuration functionality.""""""
-
-logger.info('Panel config button executed')
-print('Panel configuration executed successfully.')
-";
-
-            var bundleContent = @"title:
-  en_us: Test Panel Config
-tooltips:
-  en_us: Test panel configuration button
-author: Test Creator
-min_revit_ver: 2019
-";
-
-            try
-            {
-                Directory.CreateDirectory(newPanelButtonPath);
-                File.WriteAllText(scriptPath, scriptContent);
-                File.WriteAllText(bundlePath, bundleContent);
-                _createdTestFiles.Add(scriptPath);
-                _createdTestFiles.Add(bundlePath);
-                
-                // Re-parse extensions
-                var extensions = ParseInstalledExtensions(new[] { testBundlePath });
-                
-                TestContext.Out.WriteLine("=== Testing New Panel Button Creation ===");
-                
-                foreach (var extension in extensions)
-                {
-                    var newPanelButton = FindComponentRecursively(extension, "TestPanelConfig");
-                    if (newPanelButton != null)
-                    {
-                        TestContext.Out.WriteLine($"New Panel Button: {newPanelButton.DisplayName}");
-                        TestContext.Out.WriteLine($"Name: {newPanelButton.Name}");
-                        TestContext.Out.WriteLine($"Type: {newPanelButton.Type}");
-                        TestContext.Out.WriteLine($"Script Path: {newPanelButton.ScriptPath}");
-                        TestContext.Out.WriteLine($"Bundle File: {newPanelButton.BundleFile}");
-                        TestContext.Out.WriteLine($"Title: {newPanelButton.Title}");
-                        TestContext.Out.WriteLine($"Tooltip: {newPanelButton.Tooltip}");
-                        TestContext.Out.WriteLine($"Author: {newPanelButton.Author}");
-                        
-                        // Verify new panel button properties
-                        Assert.AreEqual(CommandComponentType.PanelButton, newPanelButton.Type);
-                        Assert.AreEqual("Test Panel Config", newPanelButton.DisplayName);
-                        Assert.IsNotNull(newPanelButton.ScriptPath);
-                        Assert.IsNotNull(newPanelButton.BundleFile);
-                        Assert.AreEqual("Test Panel Config", newPanelButton.Title);
-                        Assert.AreEqual("Test panel configuration button", newPanelButton.Tooltip);
-                        Assert.AreEqual("Test Creator", newPanelButton.Author);
-                        
-                        // Test completed successfully
-                        return;
-                    }
-                }
-                
-                Assert.Fail("New panel button not found after creation");
-            }
-            catch (NUnit.Framework.SuccessException)
-            {
-                // Re-throw success exceptions
-                throw;
-            }
-            catch (Exception ex)
-            {
-                Assert.Fail($"Test failed with exception: {ex.Message}");
-            }
-            finally
-            {
-                // Clean up directory
-                try
-                {
-                    if (Directory.Exists(newPanelButtonPath))
-                    {
-                        Directory.Delete(newPanelButtonPath, true);
-                    }
-                }
-                catch
-                {
-                    // Ignore cleanup errors
-                }
-            }
-        }
-
-        [Test]
         public void TestPanelButtonWithContextAvailability()
         {
-            var testBundlePath = Path.Combine(TestContext.CurrentContext.TestDirectory, "Resources", "TestBundleExtension.extension");
-            var panelButtonPath = Path.Combine(testBundlePath, "TestBundleTab.tab", "TestPanelOne.panel", "Debug Dialog Config.panelbutton");
-            var bundlePath = Path.Combine(panelButtonPath, "bundle.yaml");
+            if (_installedExtensions == null)
+            {
+                Assert.Fail("No test extensions loaded");
+                return;
+            }
+
+            TestContext.Out.WriteLine("=== Testing Panel Button With Context Availability ===");
             
-            var bundleContent = @"title:
-  en_us: Test Zero-Doc Command
-tooltip:
-  en_us: This command should be available when no document is open
-author: Context Test Framework
-context: zero-doc
-min_revit_version: 2019
-";
-
-            try
+            foreach (var extension in _installedExtensions)
             {
-                File.WriteAllText(bundlePath, bundleContent);
-                _createdTestFiles.Add(bundlePath);
-                
-                // Re-parse extensions
-                var extensions = ParseInstalledExtensions(new[] { testBundlePath });
-                
-                TestContext.Out.WriteLine("=== Testing Panel Button With Context Availability ===");
-                
-                foreach (var extension in extensions)
+                var panelButton = FindComponentRecursively(extension, "DebugDialogConfig");
+                if (panelButton != null)
                 {
-                    var panelButton = FindComponentRecursively(extension, "DebugDialogConfig");
-                    if (panelButton != null)
-                    {
-                        TestContext.Out.WriteLine($"Panel Button: {panelButton.DisplayName}");
-                        TestContext.Out.WriteLine($"Context: {panelButton.Context ?? "None"}");
-                        TestContext.Out.WriteLine($"Availability Type: {panelButton.Availability.ContextType}");
-                        TestContext.Out.WriteLine($"Is Zero-Doc Available: {panelButton.Availability.IsZeroDocAvailable}");
-                        TestContext.Out.WriteLine($"Requires Selection: {panelButton.Availability.RequiresSelection}");
-                        
-                        // Verify context was parsed correctly
-                        Assert.IsNotNull(panelButton.Context);
-                        Assert.AreEqual("zero-doc", panelButton.Context);
-                        Assert.AreEqual(AvailabilityContext.ZeroDoc, panelButton.Availability.ContextType);
-                        Assert.IsTrue(panelButton.Availability.IsZeroDocAvailable);
-                        Assert.IsFalse(panelButton.Availability.RequiresSelection);
-                        
-                        // Test completed successfully
-                        return;
-                    }
-                }
-                
-                Assert.Fail("Panel button not found after adding context bundle");
-            }
-            catch (NUnit.Framework.SuccessException)
-            {
-                // Re-throw success exceptions
-                throw;
-            }
-            catch (Exception ex)
-            {
-                Assert.Fail($"Test failed with exception: {ex.Message}");
-            }
-        }
+                    TestContext.Out.WriteLine($"Panel Button: {panelButton.DisplayName}");
+                    TestContext.Out.WriteLine($"Context: {panelButton.Context ?? "None"}");
 
-        [Test]
-        public void TestPanelButtonWithSelectionContext()
-        {
-            var testBundlePath = Path.Combine(TestContext.CurrentContext.TestDirectory, "Resources", "TestBundleExtension.extension");
-            var panelButtonPath = Path.Combine(testBundlePath, "TestBundleTab.tab", "TestPanelOne.panel", "Debug Dialog Config.panelbutton");
-            var bundlePath = Path.Combine(panelButtonPath, "bundle.yaml");
-            
-            var bundleContent = @"title:
-  en_us: Test Selection Command
-tooltip:
-  en_us: This command requires element selection
-author: Context Test Framework
-context: selection
-min_revit_version: 2019
-";
+                    Assert.AreEqual(CommandComponentType.PanelButton, panelButton.Type);
+                    Assert.IsNotNull(panelButton.Context, "Context should be parsed from bundle.yaml");
+                    Assert.AreEqual("zero-doc", panelButton.Context);
 
-            try
-            {
-                File.WriteAllText(bundlePath, bundleContent);
-                _createdTestFiles.Add(bundlePath);
-                
-                // Re-parse extensions
-                var extensions = ParseInstalledExtensions(new[] { testBundlePath });
-                
-                TestContext.Out.WriteLine("=== Testing Panel Button With Selection Context ===");
-                
-                foreach (var extension in extensions)
-                {
-                    var panelButton = FindComponentRecursively(extension, "DebugDialogConfig");
-                    if (panelButton != null)
-                    {
-                        TestContext.Out.WriteLine($"Panel Button: {panelButton.DisplayName}");
-                        TestContext.Out.WriteLine($"Context: {panelButton.Context ?? "None"}");
-                        TestContext.Out.WriteLine($"Availability Type: {panelButton.Availability.ContextType}");
-                        TestContext.Out.WriteLine($"Is Zero-Doc Available: {panelButton.Availability.IsZeroDocAvailable}");
-                        TestContext.Out.WriteLine($"Requires Selection: {panelButton.Availability.RequiresSelection}");
-                        
-                        // Verify context was parsed correctly
-                        Assert.IsNotNull(panelButton.Context);
-                        Assert.AreEqual("selection", panelButton.Context);
-                        Assert.AreEqual(AvailabilityContext.Selection, panelButton.Availability.ContextType);
-                        Assert.IsFalse(panelButton.Availability.IsZeroDocAvailable);
-                        Assert.IsTrue(panelButton.Availability.RequiresSelection);
-                        
-                        // Test completed successfully
-                        return;
-                    }
+                    return;
                 }
-                
-                Assert.Fail("Panel button not found after adding selection context bundle");
             }
-            catch (NUnit.Framework.SuccessException)
-            {
-                // Re-throw success exceptions
-                throw;
-            }
-            catch (Exception ex)
-            {
-                Assert.Fail($"Test failed with exception: {ex.Message}");
-            }
+
+            Assert.Fail("DebugDialogConfig panel button not found");
         }
 
         [Test]
         public void TestBundleTestsPulldownFromDevToolsExtension()
         {
-            var repoRoot = Path.GetFullPath(Path.Combine(
-                TestContext.CurrentContext.TestDirectory,
-                "..", "..", "..", "..", "..", ".."));
-
-            var devToolsExtensionPath = Path.Combine(repoRoot, "extensions", "pyRevitDevTools.extension");
+            var devToolsExtensionPath = TestConfiguration.TestExtensionPath;
             if (!Directory.Exists(devToolsExtensionPath))
             {
                 Assert.Inconclusive("pyRevitDevTools extension directory is missing");
@@ -628,6 +486,9 @@ min_revit_version: 2019
                 "Test DynamoBIM GUI",
                 "Test Grasshopper",
                 "Test Content Bundle",
+                "Test Content Bundle - no rfa in folder nor specifed in bundle",
+                "Test Content Bundle - rfa in same folder and specified in bundle",
+                "Test Content Bundle - with rfa outside of content folder",
                 "Test Hyperlink",
                 "Test Блог"
             };
@@ -636,7 +497,33 @@ min_revit_version: 2019
             CollectionAssert.AreEqual(expectedLayout, bundlePulldown.LayoutOrder);
 
             Assert.IsNotNull(bundlePulldown.Children, "Pulldown children should not be null");
-            foreach (var layoutName in expectedLayout)
+            
+            // List of layout items that have corresponding child components
+            // Note: "Test Content Bundle - no rfa in folder nor specifed in bundle" is in bundle.yaml
+            // but does not have a corresponding component directory, so it won't have a child
+            var expectedChildren = new[]
+            {
+                "Test pyRevit Bundle",
+                "Test pyRevit Button",
+                "Test Smart Button",
+                "Test C# Script",
+                "Test Direct Invoke",
+                "Test Direct Invoke (ExecParams)",
+                "Test Direct Class Invoke",
+                "Test Link Button",
+                "Test VisualBasic",
+                "Test Ruby",
+                "Test DynamoBIM",
+                "Test DynamoBIM GUI",
+                "Test Grasshopper",
+                "Test Content Bundle",
+                "Test Content Bundle - rfa in same folder and specified in bundle",
+                "Test Content Bundle - with rfa outside of content folder",
+                "Test Hyperlink",
+                "Test Блог"
+            };
+            
+            foreach (var layoutName in expectedChildren)
             {
                 var child = bundlePulldown.Children.FirstOrDefault(c => c.DisplayName == layoutName);
                 Assert.IsNotNull(child, $"Pulldown child '{layoutName}' missing");
@@ -702,50 +589,6 @@ min_revit_version: 2019
                 {
                     PrintAllComponents(child, depth + 1);
                 }
-            }
-        }
-
-        [Test]
-        public void TestButtonTitleWithNewlineEscapeSequence()
-        {
-            // Create a temporary test button with \n in the title
-            var tempDir = Path.Combine(Path.GetTempPath(), "TestNewlineTitle.extension");
-            var tabDir = Path.Combine(tempDir, "TestTab.tab");
-            var panelDir = Path.Combine(tabDir, "TestPanel.panel");
-            var buttonDir = Path.Combine(panelDir, "TestNewlineButton.pushbutton");
-            
-            try
-            {
-                Directory.CreateDirectory(buttonDir);
-                
-                var scriptPath = Path.Combine(buttonDir, "script.py");
-                // Test with \n in the title
-                File.WriteAllText(scriptPath, @"__title__ = 'Generate\nAPI Stubs'
-print('test')");
-                
-                // Parse the extension
-                var extensions = ParseInstalledExtensions(new[] { tempDir });
-                var extension = extensions.FirstOrDefault();
-                
-                Assert.IsNotNull(extension, "Extension should be parsed");
-                
-                var testButton = FindComponentRecursively(extension, "TestNewlineButton");
-                Assert.IsNotNull(testButton, "TestNewlineButton should be found");
-                
-                // Verify that \n is converted to an actual newline
-                Assert.IsNotNull(testButton.Title, "Title should not be null");
-                Assert.That(testButton.Title, Does.Contain("\n"), "Title should contain an actual newline character");
-                Assert.That(testButton.Title, Is.EqualTo("Generate\nAPI Stubs"), "Title should have newline properly parsed");
-                
-                // Verify it's NOT the literal \n string
-                Assert.That(testButton.Title, Does.Not.Contain("\\n"), "Title should not contain literal \\n");
-                
-                TestContext.Out.WriteLine($"Title successfully parsed with newline: '{testButton.Title}'");
-            }
-            finally
-            {
-                if (Directory.Exists(tempDir))
-                    Directory.Delete(tempDir, true);
             }
         }
     }

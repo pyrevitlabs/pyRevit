@@ -1,4 +1,5 @@
 using System;
+using pyRevitLabs.NLog;
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
@@ -7,6 +8,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
     /// </summary>
     public static class RevitThemeDetector
     {
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+
         /// <summary>
         /// Detects the current Revit UI theme
         /// </summary>
@@ -15,48 +18,21 @@ namespace pyRevitAssemblyBuilder.SessionManager
         {
             try
             {
-                // Try to use Revit 2024+ UIThemeManager API
-                var uiThemeManagerType = Type.GetType("Autodesk.Revit.UI.UIThemeManager, RevitAPIUI");
-                if (uiThemeManagerType != null)
-                {
-                    var currentThemeProperty = uiThemeManagerType.GetProperty("CurrentTheme", 
-                        System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-                    
-                    if (currentThemeProperty != null)
-                    {
-                        var currentTheme = currentThemeProperty.GetValue(null);
-                        
-                        // Get the UITheme enum type to compare against
-                        var uiThemeType = Type.GetType("Autodesk.Revit.UI.UITheme, RevitAPIUI");
-                        if (uiThemeType != null)
-                        {
-                            // Get the Dark enum value
-                            var darkThemeValue = Enum.Parse(uiThemeType, "Dark");
-                            
-                            // Compare the current theme with Dark theme
-                            var isDark = currentTheme.Equals(darkThemeValue);
-                            
-                            Console.WriteLine($"Revit theme detected: {currentTheme} -> isDark: {isDark}");
-                            return isDark;
-                        }
-                        else
-                        {
-                            // Fallback: try string comparison if we can't get the enum type
-                            var themeString = currentTheme.ToString();
-                            var isDark = themeString.Contains("Dark");
-                            Console.WriteLine($"Revit theme detected via string: {themeString} -> isDark: {isDark}");
-                            return isDark;
-                        }
-                    }
-                }
-                
-                // Fallback: Try to detect theme through system settings or other methods
-                Console.WriteLine("UIThemeManager not available, falling back to light theme");
+#if (REVIT2019 || REVIT2020 || REVIT2021 || REVIT2022 || REVIT2023)
+                // UIThemeManager not available before Revit 2024
+                logger.Debug("UIThemeManager not available in this Revit version, falling back to light theme");
                 return false;
+#else
+                // Use Revit 2024+ UIThemeManager API directly
+                var currentTheme = Autodesk.Revit.UI.UIThemeManager.CurrentTheme;
+                var isDark = currentTheme == Autodesk.Revit.UI.UITheme.Dark;
+                logger.Debug("Revit theme detected: {0} -> isDark: {1}", currentTheme, isDark);
+                return isDark;
+#endif
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error detecting Revit theme: {ex.Message}");
+                logger.Error("Error detecting Revit theme: {0}", ex.Message);
                 // Default to light theme if detection fails
                 return false;
             }

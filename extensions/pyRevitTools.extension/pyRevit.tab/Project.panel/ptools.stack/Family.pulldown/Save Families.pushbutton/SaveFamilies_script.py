@@ -1,5 +1,7 @@
+# -*- coding: utf-8 -*-
 """Saves chosen families from the project"""
 # pylint: disable=import-error,invalid-name,broad-except
+import os
 import os.path as op
 from pyrevit import revit, DB
 from pyrevit import forms
@@ -27,18 +29,41 @@ if family_dict:
     if selected_families:
         dest_folder = forms.pick_folder()
         if dest_folder:
-            selected_option = forms.CommandSwitchWindow.show(
+            overwrite_option = forms.CommandSwitchWindow.show(
                 ["Skip Existing Families", "Overwrite Existing Families"],
                 message="Choose what to do with existing families:",
             )
-            overwrite_exst = selected_option == "Overwrite Existing Families"
+            if not overwrite_option:
+                script.exit()
+
+            subfolder_option = forms.CommandSwitchWindow.show(
+                ["Save to a single folder", "Create subfolders by category"],
+                message="Choose how to organize saved families:",
+            )
+            if not subfolder_option:
+                script.exit()
+
+            overwrite_exst = overwrite_option == "Overwrite Existing Families"
+            create_subfolders = subfolder_option == "Create subfolders by category"
+
             save_opts = DB.SaveAsOptions()
             save_opts.OverwriteExistingFile = overwrite_exst
             total_work = len(selected_families)
             for idx, family in enumerate(
                     [family_dict[x] for x in selected_families]
                 ):
-                family_filepath = op.join(dest_folder, family.Name + ".rfa")
+                target_dir = dest_folder
+                if create_subfolders:
+                    category_name = family.FamilyCategory.Name or "Unknown"
+                    target_dir = op.join(dest_folder, category_name)
+                    if not op.exists(target_dir):
+                        try:
+                            os.makedirs(target_dir)
+                        except OSError as ex:
+                            target_dir = dest_folder
+                            logger.error("Failed to create directory %s | %s", target_dir, ex)
+                            continue
+                family_filepath = op.join(target_dir, family.Name + ".rfa")
                 if not overwrite_exst and op.exists(family_filepath):
                     logger.info(
                         "Skipping existing family %s ...", family_filepath

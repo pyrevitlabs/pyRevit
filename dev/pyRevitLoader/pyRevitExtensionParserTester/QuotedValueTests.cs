@@ -1,29 +1,20 @@
 using pyRevitExtensionParser;
+using pyRevitExtensionParserTest.TestHelpers;
 using System.IO;
-using NUnit.Framework;
 
 namespace pyRevitExtensionParserTest
 {
     [TestFixture]
-    internal class QuotedValueTests
+    internal class QuotedValueTests : TempFileTestBase
     {
         private string _tempTestFile;
 
         [SetUp]
-        public void Setup()
+        public override void BaseSetUp()
         {
-            // Create a temporary test file
-            _tempTestFile = Path.GetTempFileName();
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            // Clean up the temporary file
-            if (File.Exists(_tempTestFile))
-            {
-                File.Delete(_tempTestFile);
-            }
+            base.BaseSetUp();
+            // Create a temporary test file in the test temp directory
+            _tempTestFile = Path.Combine(TestTempDir, "test.yaml");
         }
 
         [Test]

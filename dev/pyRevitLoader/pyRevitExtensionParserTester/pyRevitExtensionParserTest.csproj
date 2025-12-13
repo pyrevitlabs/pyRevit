@@ -12,7 +12,7 @@
 	<UseLoader>false</UseLoader>
 	<UseIronPython>false</UseIronPython>
     <UseRevit>false</UseRevit>
-    <UseAssemblyBuilder>false</UseAssemblyBuilder>
+    <UseAssemblyBuilder>true</UseAssemblyBuilder>
     <UseExtensionParser>true</UseExtensionParser>
     <LangVersion>latest</LangVersion>
 	<!-- Suppress NUnit analyzer suggestions for classic assertion model -->
@@ -20,7 +20,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="TestHelpers\TempFileTestBase.cs" />
+    <Compile Include="TestHelpers\TestExtensionBuilder.cs" />
     <Compile Include="DarkIconTests.cs" />
+    <Compile Include="TestConfiguration.cs" />
     <Compile Include="LocalizationTests.cs" />
     <Compile Include="PanelButtonAndIconTests.cs" />
     <Compile Include="PanelBackgroundTests.cs" />
@@ -40,6 +43,11 @@
     <Compile Include="SeparatorTests.cs" />
     <Compile Include="DebugPanelCustomTitleTest.cs" />
     <Compile Include="CSharpScriptTests.cs" />
+    <Compile Include="DynamoScriptTests.cs" />
+    <Compile Include="ExtensionManagerServiceTests.cs" />
+    <Compile Include="AssemblyBuilderServiceTests.cs" />
+    <Compile Include="SessionManagerIntegrationTests.cs" />
+    <Compile Include="PythonScriptMultiLangTest.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -51,14 +59,21 @@
     <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Using Include="NUnit.Framework" />
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <Reference Include="pyRevitLabs.NLog">
+      <HintPath>..\..\libs\netfx\pyRevitLabs.NLog.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
+    <Reference Include="pyRevitLabs.NLog">
+      <HintPath>..\..\libs\netcore\pyRevitLabs.NLog.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Resources\**\*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <Using Include="NUnit.Framework" />
   </ItemGroup>
 
 </Project>

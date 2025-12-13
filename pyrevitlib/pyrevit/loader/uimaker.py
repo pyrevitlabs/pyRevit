@@ -540,8 +540,9 @@ def _produce_ui_panelpushbutton(ui_maker_params):
             tooltip_media=panelpushbutton.media_file,
             ctxhelpurl=panelpushbutton.help_url,
             avail_class_name=panelpushbutton.avail_class_name,
-            update_if_exists=True)
-
+            update_if_exists=True,
+            ui_title=_make_ui_title(panelpushbutton))
+        
         panelpushbutton_ui = parent_ui_item.button(panelpushbutton.name)
 
         _set_highlights(panelpushbutton, panelpushbutton_ui)
@@ -569,8 +570,8 @@ def _produce_ui_panels(ui_maker_params):
 
     mlogger.debug('Producing ribbon panel: %s', panel)
     try:
-        parent_ui_tab.create_ribbon_panel(panel.name, update_if_exists=True)
-        panel_ui = parent_ui_tab.ribbon_panel(panel.name)
+        parent_ui_tab.create_ribbon_panel(panel.ui_title, update_if_exists=True)
+        panel_ui = parent_ui_tab.ribbon_panel(panel.ui_title)
 
         # set backgrounds
         panel_ui.reset_backgrounds()

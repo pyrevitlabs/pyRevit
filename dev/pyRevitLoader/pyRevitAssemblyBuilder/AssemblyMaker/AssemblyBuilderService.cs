@@ -12,34 +12,53 @@ using Microsoft.CodeAnalysis.CSharp;
 using Lokad.ILPack;
 using System.Text;
 using pyRevitExtensionParser;
+using pyRevitLabs.NLog;
 
 namespace pyRevitAssemblyBuilder.AssemblyMaker
 {
+    /// <summary>
+    /// Enumeration of available assembly build strategies.
+    /// </summary>
     public enum AssemblyBuildStrategy
     {
+        /// <summary>
+        /// Build using Roslyn compiler (C# code generation).
+        /// </summary>
         Roslyn,
+        /// <summary>
+        /// Build using ILPack (Reflection.Emit with IL packing).
+        /// </summary>
         ILPack
     }
 
+    /// <summary>
+    /// Service for building extension assemblies from parsed extensions.
+    /// </summary>
     public class AssemblyBuilderService
     {
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
         private readonly string _revitVersion;
         private readonly AssemblyBuildStrategy _buildStrategy;
         private static readonly string _executingAssemblyLocation = Assembly.GetExecutingAssembly().Location;
         private static readonly string _baseDir = Path.GetDirectoryName(_executingAssemblyLocation);
-        private static readonly string _appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AssemblyBuilderService"/> class.
+        /// </summary>
+        /// <param name="revitVersion">The Revit version number (e.g., "2024").</param>
+        /// <param name="buildStrategy">The build strategy to use for creating assemblies.</param>
+        /// <exception cref="ArgumentNullException">Thrown when revitVersion is null.</exception>
         public AssemblyBuilderService(string revitVersion, AssemblyBuildStrategy buildStrategy)
         {
             _revitVersion = revitVersion ?? throw new ArgumentNullException(nameof(revitVersion));
             _buildStrategy = buildStrategy;
 
-#if !NETFRAMEWORK
             if (_buildStrategy == AssemblyBuildStrategy.ILPack)
             {
                 // On .NET Core, hook into AssemblyLoadContext to resolve Lokad.ILPack two folders up
                 var baseDir = _baseDir;
                 var ilPackPath = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "Lokad.ILPack.dll"));
+#if !NETFRAMEWORK
                 AssemblyLoadContext.Default.Resolving += (context, name) =>
                 {
                     if (string.Equals(name.Name, "Lokad.ILPack", StringComparison.OrdinalIgnoreCase)
@@ -49,13 +68,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                     }
                     return null;
                 };
-            }
 #else
-            if (_buildStrategy == AssemblyBuildStrategy.ILPack)
-            {
-                // On .NET Framework, hook into AppDomain to resolve Lokad.ILPack two folders up
-                var baseDir = _baseDir;
-                var ilPackPath = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "Lokad.ILPack.dll"));
                 AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
                 {
                     var name = new AssemblyName(args.Name).Name;
@@ -66,10 +79,18 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                     }
                     return null;
                 };
-            }
 #endif
+            }
         }
 
+        /// <summary>
+        /// Builds an assembly for the specified extension.
+        /// </summary>
+        /// <param name="extension">The parsed extension to build an assembly for.</param>
+        /// <param name="libraryExtensions">Optional collection of library extensions to include as references.</param>
+        /// <returns>Information about the built assembly.</returns>
+        /// <exception cref="ArgumentNullException">Thrown when extension is null.</exception>
+        /// <exception cref="Exception">Thrown when assembly building fails.</exception>
         public ExtensionAssemblyInfo BuildExtensionAssembly(ParsedExtension extension, IEnumerable<ParsedExtension> libraryExtensions = null)
         {
             if (extension == null)
@@ -82,7 +103,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 
             // Use build strategy as seed to differentiate DLLs built with different strategies
             // This ensures DLLs are only regenerated when extension structure changes or build strategy changes
-            string strategySeed = _buildStrategy == AssemblyBuildStrategy.ILPack ? "ILPack" : "Roslyn";
+            string strategySeed = _buildStrategy.ToString();
             string hash = GetStableHash(extension.GetHash(strategySeed) + _revitVersion).Substring(0, 16);
             string fileName = $"pyRevit_{_revitVersion}_{hash}_{extension.Name}.dll";
 
@@ -97,22 +118,25 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             // Check if assembly file already exists (hash-based caching)
             if (File.Exists(outputPath))
             {
+                logger.Debug("Found cached assembly: {0}", outputPath);
                 try
                 {
-                    // Verify the assembly is valid by reading its name
                     var assemblyName = AssemblyName.GetAssemblyName(outputPath);
-                    
                     return new ExtensionAssemblyInfo(extension.Name, outputPath, isReloading: false);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
                     // If file is corrupted or invalid, delete it and rebuild
+                    logger.Debug("Cached assembly file is corrupted or invalid: {0}", outputPath);
+                    logger.Debug("Exception: {0}", ex.Message);
                     try
                     {
                         File.Delete(outputPath);
+                        logger.Debug("Deleted corrupted assembly file: {0}", outputPath);
                     }
-                    catch
+                    catch (Exception deleteEx)
                     {
+                        logger.Warn("Failed to delete corrupted assembly file: {0} | {1}", outputPath, deleteEx.Message);
                         // Ignore delete errors, build will overwrite
                     }
                 }
@@ -129,7 +153,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             }
             catch
             {
-                throw; // Re-throw the original exception
+                throw;
             }
         }
 
@@ -154,9 +178,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                     var modulePath = extension.FindModuleDll(moduleName, cmd);
                     
                     if (string.IsNullOrEmpty(modulePath))
-                    {
                         continue;
-                    }
 
                     // Skip if already loaded
                     if (loadedModules.Contains(modulePath))
@@ -167,10 +189,11 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                         // Load the module DLL into the AppDomain
                         Assembly.LoadFrom(modulePath);
                         loadedModules.Add(modulePath);
+                        logger.Debug("Loaded module: {0}", modulePath);
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
-                        // Silently ignore module load failures
+                        logger.Error("Failed to load module: {0} | {1}", modulePath, ex.Message);
                     }
                 }
             }
@@ -178,9 +201,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             // Update the environment dictionary with loaded module paths
             // This matches pythonic loader's sessioninfo.update_loaded_pyrevit_referenced_modules()
             if (loadedModules.Count > 0)
-            {
                 UpdateReferencedAssemblies(loadedModules);
-            }
         }
 
         /// <summary>
@@ -192,31 +213,18 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             try
             {
                 // Get the environment dictionary from AppDomain
-                const string envDictKey = "PYREVITEnvVarsDict";
-                const string refedAssmsKey = "PYREVIT_REFEDASSMS";
-                
-                var envDict = AppDomain.CurrentDomain.GetData(envDictKey);
+                const string envDictKey = SessionManager.Constants.ENV_DICT_KEY;
+                const string refedAssmsKey = SessionManager.Constants.REFED_ASSMS_KEY;
+
+                var envDict = AppDomain.CurrentDomain.GetData(envDictKey) as IDictionary<object, object>;
                 if (envDict == null)
-                {
                     return;
-                }
-
-                // Use reflection to access the dictionary
-                var dictType = envDict.GetType();
-                var containsMethod = dictType.GetMethod("Contains", new[] { typeof(object) });
-                var getItemMethod = dictType.GetMethod("get_Item", new[] { typeof(object) });
-                var setItemMethod = dictType.GetMethod("set_Item", new[] { typeof(object), typeof(object) });
-
-                if (containsMethod == null || getItemMethod == null || setItemMethod == null)
-                {
-                    return;
-                }
 
                 // Get existing referenced assemblies
                 var existingAssemblies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                if ((bool)containsMethod.Invoke(envDict, new object[] { refedAssmsKey }))
+                if (envDict.ContainsKey(refedAssmsKey))
                 {
-                    var existingValue = (string)getItemMethod.Invoke(envDict, new object[] { refedAssmsKey });
+                    var existingValue = envDict[refedAssmsKey] as string;
                     if (!string.IsNullOrEmpty(existingValue))
                     {
                         foreach (var path in existingValue.Split(Path.PathSeparator))
@@ -232,19 +240,28 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 
                 // Update the environment dictionary
                 var updatedValue = string.Join(Path.PathSeparator.ToString(), existingAssemblies);
-                setItemMethod.Invoke(envDict, new object[] { refedAssmsKey, updatedValue });
+                envDict[refedAssmsKey] = updatedValue;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Silently ignore environment dictionary update failures
+                logger.Error("Failed to update referenced assemblies in AppDomain: {0}", ex.Message);
             }
         }
 
+        /// <summary>
+        /// Builds an extension assembly using the Roslyn compiler (C# code generation approach).
+        /// </summary>
+        /// <param name="extension">The parsed extension to build.</param>
+        /// <param name="outputPath">The output path for the compiled assembly.</param>
+        /// <param name="libraryExtensions">Optional library extensions to reference.</param>
+        /// <exception cref="Exception">Thrown when Roslyn compilation fails.</exception>
         private void BuildWithRoslyn(ParsedExtension extension, string outputPath, IEnumerable<ParsedExtension> libraryExtensions)
         {
             var generator = new RoslynCommandTypeGenerator();
             string code = generator.GenerateExtensionCode(extension, _revitVersion, libraryExtensions);
-            File.WriteAllText(Path.Combine(Path.GetDirectoryName(outputPath), $"{extension.Name}.cs"), code);
+            var csPath = Path.Combine(Path.GetDirectoryName(outputPath), $"{extension.Name}.cs");
+            File.WriteAllText(csPath, code);
+            logger.Debug("Generated C# code file: {0}", csPath);
 
             var tree = CSharpSyntaxTree.ParseText(code);
             var compilation = CSharpCompilation.Create(
@@ -258,11 +275,19 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             
             if (!result.Success)
             {
-                HandleCompilationErrors(result.Diagnostics);
+                logger.Error("Roslyn compilation failed for: {0}", extension.Name);
+                foreach (var diagnostic in result.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error))
+                    logger.Error("  {0}", diagnostic.ToString());
                 throw new Exception("Roslyn compilation failed.");
             }
         }
 
+        /// <summary>
+        /// Builds an extension assembly using ILPack (Reflection.Emit with IL packing approach).
+        /// </summary>
+        /// <param name="extension">The parsed extension to build.</param>
+        /// <param name="outputPath">The output path for the compiled assembly.</param>
+        /// <param name="libraryExtensions">Optional library extensions to reference.</param>
         private void BuildWithILPack(ParsedExtension extension, string outputPath, IEnumerable<ParsedExtension> libraryExtensions)
         {
             // Load runtime for dependecy (Probably temparary due to future implementation of env loader in C#)
@@ -274,10 +299,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 .FirstOrDefault();
 
             if (runtimePath != null)
-            {
                 Assembly.LoadFrom(runtimePath);
-
-            }
             var generator = new ReflectionEmitCommandTypeGenerator();
             var asmName = new AssemblyName(extension.Name) { Version = new Version(1, 0, 0, 0) };
             string moduleName = Path.GetFileNameWithoutExtension(outputPath);
@@ -301,6 +323,13 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 #endif
         }
 
+        /// <summary>
+        /// Resolves and returns the metadata references required for Roslyn compilation.
+        /// </summary>
+        /// <remarks>
+        /// Includes references to core .NET assemblies, Revit API assemblies, and pyRevit runtime.
+        /// </remarks>
+        /// <returns>A list of metadata references for the Roslyn compiler.</returns>
         private List<MetadataReference> ResolveRoslynReferences()
         {
             string baseDir = _baseDir;
@@ -317,13 +346,24 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             return refs;
         }
 
-        private static void HandleCompilationErrors(IEnumerable<Diagnostic> diagnostics)
-        {
-            // Compilation errors will be handled by the calling method
-            // This method is kept for potential future error handling
-        }
-
-        // TODO: Implement a proper hashing module
+        /// <summary>
+        /// Generates a stable SHA1 hash from the input string.
+        /// </summary>
+        /// <remarks>
+        /// This method creates a deterministic hash that is used for assembly caching.
+        /// The hash is computed using SHA1 algorithm and returns a 40-character hexadecimal string.
+        /// The input should include:
+        /// - Extension structure hash (from extension.GetHash())
+        /// - Build strategy seed ("ILPack" or "Roslyn")
+        /// - Revit version
+        /// 
+        /// This ensures that assemblies are only regenerated when:
+        /// 1. The extension structure changes
+        /// 2. The build strategy changes (ILPack vs Roslyn)
+        /// 3. The Revit version changes
+        /// </remarks>
+        /// <param name="input">The string to hash, typically a concatenation of extension hash, strategy seed, and Revit version.</param>
+        /// <returns>A 40-character lowercase hexadecimal string representing the SHA1 hash.</returns>
         private static string GetStableHash(string input)
         {
             using var sha1 = System.Security.Cryptography.SHA1.Create();
@@ -331,19 +371,17 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             return BitConverter.ToString(hash).Replace("-", string.Empty).ToLowerInvariant();
         }
 
+        /// <summary>
+        /// Loads an assembly into the current AppDomain.
+        /// </summary>
+        /// <param name="info">Information about the assembly to load.</param>
+        /// <exception cref="FileNotFoundException">Thrown when the assembly file is not found.</exception>
+        /// <exception cref="Exception">Thrown when assembly loading fails.</exception>
         public void LoadAssembly(ExtensionAssemblyInfo info)
         {
             if (!File.Exists(info.Location))
                 throw new FileNotFoundException("Assembly not found", info.Location);
-                
-            try
-            {
-                Assembly.LoadFrom(info.Location);
-            }
-            catch
-            {
-                throw;
-            }
+            Assembly.LoadFrom(info.Location);
         }
     }
 }

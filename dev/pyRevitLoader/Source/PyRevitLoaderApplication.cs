@@ -1,11 +1,12 @@
-﻿using System;
-using System.IO;
-using System.Reflection;
+﻿using Autodesk.Revit.Attributes;
 using Autodesk.Revit.UI;
-using Autodesk.Revit.Attributes;
 using pyRevitAssemblyBuilder.AssemblyMaker;
 using pyRevitAssemblyBuilder.SessionManager;
 using pyRevitExtensionParser;
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Reflection;
 
 /* Note:
  * It is necessary that this code object do not have any references to IronPython.
@@ -15,177 +16,172 @@ using pyRevitExtensionParser;
  */
 namespace PyRevitLoader
 {
-    [Regeneration(RegenerationOption.Manual)]
-    [Transaction(TransactionMode.Manual)]
-    class PyRevitLoaderApplication : IExternalApplication
-    {
-        public static string LoaderPath => Path.GetDirectoryName(typeof(PyRevitLoaderApplication).Assembly.Location);
-        
-        // Store the UIControlledApplication for later use
-        private static UIControlledApplication _uiControlledApplication;
+	[Regeneration(RegenerationOption.Manual)]
+	[Transaction(TransactionMode.Manual)]
+	class PyRevitLoaderApplication : IExternalApplication
+	{
+		public static string LoaderPath => Path.GetDirectoryName(typeof(PyRevitLoaderApplication).Assembly.Location);
+		private static UIControlledApplication _uiControlledApplication;
+		private static UIApplication GetUIApplication(UIControlledApplication application)
+		{
+			var versionNumber = application.ControlledApplication.VersionNumber;
+			var fieldName = int.Parse(versionNumber) >= 2017 ? "m_uiapplication" : "m_application";
+			var fi = application.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
 
-        // Hook into Revit to allow starting a command.
-        Result IExternalApplication.OnStartup(UIControlledApplication application)
-        {
-            // Store the UIControlledApplication for later use
-            _uiControlledApplication = application;
-            
-            LoadAssembliesInFolder(LoaderPath);
-            // We need to also looad dlls from two folders up
-            var commonFolder = Path.GetDirectoryName(Path.GetDirectoryName(LoaderPath));
-            LoadAssembliesInFolder(commonFolder);
+			if (fi == null)
+			{
+				throw new InvalidOperationException(
+					$"Could not find field '{fieldName}' on type '{application.GetType().FullName}'. " +
+					"The Revit API internal implementation may have changed in this version.");
+			}
 
-            try
-            {
-                // we need a UIApplication object to assign as `__revit__` in python...
-                var versionNumber = application.ControlledApplication.VersionNumber;
-                var fieldName = int.Parse(versionNumber) >= 2017 ? "m_uiapplication" : "m_application";
-                var fi = application.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
+			return (UIApplication)fi.GetValue(application);
+		}
 
-                var uiApplication = (UIApplication)fi.GetValue(application);
+		// Hook into Revit to allow starting a command.
+		Result IExternalApplication.OnStartup(UIControlledApplication application)
+		{
+			_uiControlledApplication = application;
+			LoadAssembliesInFolder(LoaderPath);
+			// We also need to load dlls from two folders up
+			var commonFolder = Path.GetDirectoryName(Path.GetDirectoryName(LoaderPath));
+			LoadAssembliesInFolder(commonFolder);
 
-                var executor = new ScriptExecutor(uiApplication);
-                var result = ExecuteStartupScript(application);
-                if (result == Result.Failed)
-                {
-                    TaskDialog.Show("Error Loading pyRevit", executor.Message);
-                }
+			try
+			{
+				var uiApplication = GetUIApplication(application);
+				var result = ExecuteStartupScript(application);
+				return result;
+			}
+			catch (Exception ex)
+			{
+				TaskDialog.Show("Error Loading Startup Script", ex.ToString());
+				return Result.Failed;
+			}
+		}
 
-                return result;
-            }
-            catch (Exception ex)
-            {
-                TaskDialog.Show("Error Loading Startup Script", ex.ToString());
-                return Result.Failed;
-            }
-        }
+		private static void LoadAssembliesInFolder(string folder)
+		{
+			// load all engine assemblies
+			// this is to ensure pyRevit is loaded on its own assemblies
+			foreach (var engineDll in Directory.GetFiles(folder, "*.dll"))
+			{
+				try
+				{
+					Assembly.LoadFrom(engineDll);
+				}
+				catch (Exception ex)
+				{
+					// Log assembly load failures - some assemblies may fail to load and that's acceptable
+					Trace.WriteLine($"Failed to load assembly '{engineDll}': {ex.Message}");
+				}
+			}
+		}
 
-        private static void LoadAssembliesInFolder(string folder)
-        {
-            // load all engine assemblies
-            // this is to ensure pyRevit is loaded on its own assemblies
-            foreach (var engineDll in Directory.GetFiles(folder, "*.dll"))
-            {
-                try
-                {
-                    Assembly.LoadFrom(engineDll);
-                }
-                catch
-                {
+	private static Result ExecuteStartupScript(UIControlledApplication uiControlledApplication)
+		{
+			var uiApplication = GetUIApplication(uiControlledApplication);
+			// execute StartupScript
+			Result result = Result.Succeeded;
+			var startupScript = GetStartupScriptPath();
+			if (startupScript != null)
+			{
+				var executor = new ScriptExecutor(uiApplication);
+				result = executor.ExecuteScript(startupScript);
+				if (result == Result.Failed)
+				{
+					TaskDialog.Show("Error Loading pyRevit", executor.Message);
+				}
+			}
 
-                }
-            }
-        }
+			return result;
+		}
 
-        private static Result ExecuteStartupScript(UIControlledApplication uiControlledApplication)
-        {
-            // Always execute Python startup script
-            // The Python script will determine whether to use C# or Python session management
-            // based on the configuration
-            return ExecuteStartUpPython(uiControlledApplication);
-        }
+		public static Result LoadSession(object pythonLogger = null, string buildStrategy = null)
+		{
+			try
+			{
+				// Use the stored UIControlledApplication
+				if (_uiControlledApplication == null)
+				{
+					throw new InvalidOperationException("UIControlledApplication not available." +
+						" LoadSession can only be called after OnStartup.");
+				}
 
-        public static Result ExecuteStartUpPython(UIControlledApplication uiControlledApplication)
-        {
-            // we need a UIApplication object to assign as `__revit__` in python...
-            var versionNumber = uiControlledApplication.ControlledApplication.VersionNumber;
-            var fieldName = int.Parse(versionNumber) >= 2017 ? "m_uiapplication" : "m_application";
-            var fi = uiControlledApplication.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
+				var uiControlledApplication = _uiControlledApplication;
+				var uiApplication = GetUIApplication(uiControlledApplication);
 
-            var uiApplication = (UIApplication)fi.GetValue(uiControlledApplication);
-            // execute StartupScript
-            Result result = Result.Succeeded;
-            var startupScript = GetStartupScriptPath();
-            if (startupScript != null)
-            {
-                var executor = new ScriptExecutor(uiApplication); // uiControlledApplication);
-                result = executor.ExecuteScript(startupScript);
-                if (result == Result.Failed)
-                {
-                    TaskDialog.Show("Error Loading pyRevit", executor.Message);
-                }
-            }
+				// Get the current Revit version
+				var revitVersion = uiControlledApplication.ControlledApplication.VersionNumber;
 
-            return result;
-        }
+				// Determine build strategy: use provided parameter, or read from config, or default to ILPack
+				var assemblyBuildStrategyType = typeof(AssemblyBuildStrategy);
+				object strategyValue;
 
-        public static Result LoadSession(object outputWindow = null)
-        {
-            try
-            {
-                // Use the stored UIControlledApplication
-                if (_uiControlledApplication == null)
-                {
-                    throw new InvalidOperationException("UIControlledApplication not available. LoadSession can only be called after OnStartup.");
-                }
-                
-                var uiControlledApplication = _uiControlledApplication;
-                // we need a UIApplication object to assign as `__revit__` in python...
-                var versionNumber = uiControlledApplication.ControlledApplication.VersionNumber;
-                var fieldName = int.Parse(versionNumber) >= 2017 ? "m_uiapplication" : "m_application";
-                var fi = uiControlledApplication.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
+				if (!string.IsNullOrEmpty(buildStrategy))
+				{
+					// Use provided build strategy from Python
+					strategyValue = Enum.Parse(assemblyBuildStrategyType, buildStrategy);
+				}
+				else
+				{
+					// Fallback: read from config
+					try
+					{
+						var config = PyRevitConfig.Load();
+						strategyValue = config.NewLoaderRoslyn
+							? AssemblyBuildStrategy.Roslyn
+							: AssemblyBuildStrategy.ILPack;
+					}
+					catch
+					{
+						strategyValue = AssemblyBuildStrategy.ILPack; 
+					}
+				}
 
-                var uiApplication = (UIApplication)fi.GetValue(uiControlledApplication);
+				// Create services using factory
+				var strategyEnum = (AssemblyBuildStrategy)strategyValue;
+				var sessionManager = ServiceFactory.CreateSessionManagerService(
+					revitVersion,
+					strategyEnum,
+					uiApplication,
+					pythonLogger);
 
-                // Get the current Revit version
-                var revitVersion = uiControlledApplication.ControlledApplication.VersionNumber;
+				// Load the session using the C# SessionManagerService
+				sessionManager.LoadSession();
 
-                // Create the build strategy enum value - default to ILPack
-                var assemblyBuildStrategyType = typeof(pyRevitAssemblyBuilder.AssemblyMaker.AssemblyBuildStrategy);
-                var strategyValue = Enum.Parse(assemblyBuildStrategyType, "ILPack");
+				return Result.Succeeded;
+			}
+			catch (Exception ex)
+			{
+				TaskDialog.Show("Error Loading C# Session",
+					$"An error occurred while loading the C# session:\n\n{ex.Message}\n\n" +
+					$"Check the output window for details.");
+				return Result.Failed;
+			}
+		}
+		private static string GetStartupScriptPath()
+		{
+			var assemblyLocation = Assembly.GetExecutingAssembly().Location;
+			var loaderDir = Path.GetDirectoryName(assemblyLocation);
+			if (string.IsNullOrEmpty(loaderDir))
+			{
+				throw new InvalidOperationException($"Could not determine directory for assembly location: {assemblyLocation}");
+			}
 
-                // Instantiate the services (following the same pattern as Python code)
-                var assemblyBuilderServiceType = typeof(pyRevitAssemblyBuilder.AssemblyMaker.AssemblyBuilderService);
-                var assemblyBuilder = Activator.CreateInstance(
-                    assemblyBuilderServiceType,
-                    revitVersion,
-                    strategyValue
-                );
+			var dllDir = Path.GetDirectoryName(loaderDir);
+			if (string.IsNullOrEmpty(dllDir))
+			{
+				throw new InvalidOperationException($"Could not determine parent directory for loader directory: {loaderDir}");
+			}
 
-                var extensionManagerServiceType = typeof(pyRevitAssemblyBuilder.SessionManager.ExtensionManagerService);
-                var extensionManager = Activator.CreateInstance(extensionManagerServiceType);
-
-                var hookManagerType = typeof(pyRevitAssemblyBuilder.SessionManager.HookManager);
-                var hookManager = Activator.CreateInstance(hookManagerType);
-
-                var uiManagerServiceType = typeof(pyRevitAssemblyBuilder.SessionManager.UIManagerService);
-                var uiManager = Activator.CreateInstance(
-                    uiManagerServiceType,
-                    uiApplication
-                );
-
-                var sessionManagerServiceType = typeof(pyRevitAssemblyBuilder.SessionManager.SessionManagerService);
-                var sessionManager = Activator.CreateInstance(
-                    sessionManagerServiceType,
-                    assemblyBuilder,
-                    extensionManager,
-                    hookManager,
-                    uiManager,
-                    outputWindow
-                );
-
-                // Load the session using the C# SessionManagerService
-                var loadSessionMethod = sessionManagerServiceType.GetMethod("LoadSession");
-                loadSessionMethod.Invoke(sessionManager, null);
-
-                return Result.Succeeded;
-            }
-            catch (Exception ex)
-            {
-                TaskDialog.Show("Error Loading C# Session", ex.ToString());
-                return Result.Failed;
-            }
-        }
-        private static string GetStartupScriptPath()
-        {
-            var loaderDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            var dllDir = Path.GetDirectoryName(loaderDir);
-            return Path.Combine(dllDir, string.Format("{0}.py", Assembly.GetExecutingAssembly().GetName().Name));
-        }
-        Result IExternalApplication.OnShutdown(UIControlledApplication application)
-        {
-            // FIXME: deallocate the python shell...
-            return Result.Succeeded;
-        }
-    }
+			var assemblyName = Assembly.GetExecutingAssembly().GetName().Name;
+			return Path.Combine(dllDir, $"{assemblyName}.py");
+		}
+		Result IExternalApplication.OnShutdown(UIControlledApplication application)
+		{
+			// FIXME: deallocate the python shell...
+			return Result.Succeeded;
+		}
+	}
 }

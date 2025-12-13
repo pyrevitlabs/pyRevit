@@ -50,8 +50,7 @@ from pyrevit.coreutils import appdata
 from pyrevit.coreutils import configparser
 from pyrevit.coreutils import logger
 from pyrevit.versionmgr import upgrade
-
-
+# pylint: disable=C0103,C0413,W0703
 DEFAULT_CSV_SEPARATOR = ','
 
 
@@ -315,19 +314,68 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             CONSTS.ConfigsNewLoaderKey,
             value=state
         )
+    
     @property
     def use_roslyn_loader(self):
-        """Whether to use a Roslyn loader."""
+        """Whether to use Roslyn build strategy."""
         return self.core.get_option(
             CONSTS.ConfigsUseRoslynKey,
             default_value=CONSTS.ConfigsUseRoslynDefault,
         )
+    
     @use_roslyn_loader.setter
     def use_roslyn_loader(self, state):
         self.core.set_option(
             CONSTS.ConfigsUseRoslynKey,
             value=state
         )
+    
+    @property
+    def output_close_others(self):
+        """Whether to close other output windows."""
+        return self.core.get_option(
+            CONSTS.ConfigsCloseOtherOutputsKey,
+            default_value=CONSTS.ConfigsCloseOtherOutputsDefault,
+        )
+
+    @output_close_others.setter
+    def output_close_others(self, state):
+        self.core.set_option(
+            CONSTS.ConfigsCloseOtherOutputsKey,
+            value=state
+        )
+
+    @property
+    def output_close_mode_enum(self):
+        """Output window closing mode as enum (CurrentCommand | CloseAll)."""
+        value = self.core.get_option(
+            CONSTS.ConfigsCloseOutputModeKey,
+            default_value=CONSTS.ConfigsCloseOutputModeDefault,
+        )
+        if not value:
+            value = CONSTS.ConfigsCloseOutputModeDefault
+
+        value_lc = str(value).lower()
+
+        if value_lc == str(CONSTS.ConfigsCloseOutputModeCloseAll).lower():
+            return PyRevit.OutputCloseMode.CloseAll
+        else:
+            return PyRevit.OutputCloseMode.CurrentCommand
+
+    @output_close_mode_enum.setter
+    def output_close_mode_enum(self, mode):
+        """Store string in INI, mapped from enum."""
+        if mode == PyRevit.OutputCloseMode.CloseAll:
+            self.core.set_option(
+                CONSTS.ConfigsCloseOutputModeKey,
+                value=CONSTS.ConfigsCloseOutputModeCloseAll
+            )
+        else:
+            self.core.set_option(
+                CONSTS.ConfigsCloseOutputModeKey,
+                value=CONSTS.ConfigsCloseOutputModeCurrentCommand
+            )
+
     @property
     def cpython_engine_version(self):
         """CPython engine version to use."""
@@ -884,7 +932,6 @@ mlogger.debug('Using %s config file: %s', CONFIG_TYPE, CONFIG_FILE)
 # this pushes reading settings at first import of this module.
 try:
     verify_configs(CONFIG_FILE)
-    print('Using config file: %s', CONFIG_FILE)
     user_config = PyRevitConfig(cfg_file_path=CONFIG_FILE,
                                 config_type=CONFIG_TYPE)
     upgrade.upgrade_user_config(user_config)

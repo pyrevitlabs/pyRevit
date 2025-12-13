@@ -1,9 +1,5 @@
-using pyRevitExtensionParser;
 using System.IO;
-using NUnit.Framework;
 using static pyRevitExtensionParser.ExtensionParser;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace pyRevitExtensionParserTest
 {

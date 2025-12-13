@@ -1,4 +1,5 @@
 ﻿using pyRevitExtensionParser;
+using pyRevitLabs.NLog;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,40 +9,34 @@ namespace pyRevitAssemblyBuilder.SessionManager
 {
     public class HookManager
     {
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+
         public void RegisterHooks(ParsedExtension extension)
         {
             if (extension == null)
                 return;
 
-            var hooks = GetHookScripts(extension);
-            var checks = GetCheckScripts(extension);
+            var hooks = GetScriptsFromDirectory(extension, "hooks");
+            var checks = GetScriptsFromDirectory(extension, "checks");
 
             foreach (var hook in hooks)
             {
-                Console.WriteLine($"[pyRevit] Found hook script: {hook}");
+                logger.Debug("Found hook script: {0}", hook);
             }
 
             foreach (var check in checks)
             {
-                Console.WriteLine($"[pyRevit] Found check script: {check}");
+                logger.Debug("Found check script: {0}", check);
             }
 
             // Future: implement actual execution logic for scripts if needed
         }
 
-        private IEnumerable<string> GetHookScripts(ParsedExtension extension)
+        private IEnumerable<string> GetScriptsFromDirectory(ParsedExtension extension, string subdirectory)
         {
-            var hooksPath = Path.Combine(extension.Directory, "hooks");
-            return Directory.Exists(hooksPath)
-                ? Directory.GetFiles(hooksPath)
-                : Enumerable.Empty<string>();
-        }
-
-        private IEnumerable<string> GetCheckScripts(ParsedExtension extension)
-        {
-            var checksPath = Path.Combine(extension.Directory, "checks");
-            return Directory.Exists(checksPath)
-                ? Directory.GetFiles(checksPath)
+            var scriptsPath = Path.Combine(extension.Directory, subdirectory);
+            return Directory.Exists(scriptsPath)
+                ? Directory.GetFiles(scriptsPath)
                 : Enumerable.Empty<string>();
         }
     }

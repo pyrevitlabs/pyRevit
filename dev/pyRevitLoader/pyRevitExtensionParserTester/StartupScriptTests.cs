@@ -16,8 +16,7 @@ namespace pyRevitExtensionParserTest
         [SetUp]
         public void Setup()
         {
-            // Use the test bundle from Resources folder
-            _testBundlePath = Path.Combine(TestContext.CurrentContext.TestDirectory, "Resources", "TestBundleExtension.extension");
+            _testBundlePath = TestConfiguration.TestExtensionPath;
             var extensions = ParseInstalledExtensions(new[] { _testBundlePath });
             _testExtension = extensions.FirstOrDefault()!;
         }
@@ -80,10 +79,15 @@ namespace pyRevitExtensionParserTest
             
             // Assert
             Assert.IsNotEmpty(content, "Startup script should have content");
-            Assert.That(content, Does.Contain("Testing bundle startup"), 
-                "Startup script should contain expected test content");
+            // Check for content that actually exists in the pyRevitDevTools startup.py
+            Assert.That(content, Does.Contain("startup.py"), 
+                "Startup script should be a valid Python startup script");
+            Assert.That(content, Does.Contain("pyrevit") | Does.Contain("pyRevit"), 
+                "Startup script should reference pyRevit");
             
-            TestContext.Out.WriteLine($"Startup script content:\n{content}");
+            TestContext.Out.WriteLine($"Startup script found at: {startupScript}");
+            TestContext.Out.WriteLine($"Content length: {content.Length} characters");
+            TestContext.Out.WriteLine($"First 200 characters:\n{content.Substring(0, Math.Min(200, content.Length))}...");
         }
 
         [Test]

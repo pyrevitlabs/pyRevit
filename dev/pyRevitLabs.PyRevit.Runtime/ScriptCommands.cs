@@ -273,16 +273,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // 3: ----------------------------------------------------------------------------------------------------
             #region Execute and log results
-
             // Executing the script and logging the results
+            // Get script executor and Execute the script
             var env = new EnvDictionary();
-            int result = -1;
-            
-            // Initialize ScriptExecutor before executing scripts
-            ScriptExecutor.Initialize();
-            
-            // Execute the script
-            result = ScriptExecutor.ExecuteScript(
+            int result = ScriptExecutor.ExecuteScript(
                 ScriptData,
                 ScriptRuntimeConfigs,
                 new ScriptExecutorConfigs {

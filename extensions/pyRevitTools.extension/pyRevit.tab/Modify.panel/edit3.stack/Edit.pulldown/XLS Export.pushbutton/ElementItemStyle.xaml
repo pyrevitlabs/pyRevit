@@ -1,0 +1,87 @@
+<ControlTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Border BorderThickness="0,0,0,1" 
+            BorderBrush="#E0E0E0"
+            Padding="8,0"
+            Margin="0">
+        <!-- Background color based on is_type -->
+        <Border.Style>
+            <Style TargetType="Border">
+                <Style.Triggers>
+                    <DataTrigger Binding="{Binding is_type}" Value="True">
+                        <Setter Property="Background" Value="#FFE3F2FD"/>
+                    </DataTrigger>
+                    <DataTrigger Binding="{Binding is_type}" Value="False">
+                        <Setter Property="Background" Value="#FFF5F5F5"/>
+                    </DataTrigger>
+                </Style.Triggers>
+            </Style>
+        </Border.Style>
+        
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <!-- Element label -->
+            <TextBlock Grid.Column="0" 
+                       Text="{Binding label}"
+                       VerticalAlignment="Center"
+                       TextWrapping="Wrap"
+                       Margin="0,0,10,0">
+            </TextBlock>
+            
+            <!-- Count badge -->
+            <Border Grid.Column="1"
+                    Background="#9E9E9E"
+                    Height="18"
+                    Margin="0,0,6,0"
+                    Padding="6,2"
+                    CornerRadius="9"
+                    VerticalAlignment="Center">
+                <TextBlock Text="{Binding count}" 
+                           Foreground="White" 
+                           FontSize="10"
+                           FontWeight="Bold"/>
+            </Border>
+            
+            <!-- Type/Instance badge -->
+            <Border Grid.Column="2"
+                    Height="18"
+                    Padding="8,2"
+                    CornerRadius="3"
+                    VerticalAlignment="Center">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding is_type}" Value="True">
+                                <Setter Property="Background" Value="#2196F3"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding is_type}" Value="False">
+                                <Setter Property="Background" Value="#757575"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <TextBlock Foreground="White" 
+                           FontSize="10"
+                           FontWeight="Bold">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding is_type}" Value="True">
+                                    <Setter Property="Text" Value="TYPE"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding is_type}" Value="False">
+                                    <Setter Property="Text" Value="INSTANCE"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Border>
+        </Grid>
+    </Border>
+</ControlTemplate>

@@ -70,7 +70,7 @@ WPF_VISIBLE = framework.Windows.Visibility.Visible
 XAML_FILES_DIR = op.dirname(__file__)
 
 
-ParamDef = namedtuple("ParamDef", ["name", "istype", "definition", "isreadonly"])
+ParamDef = namedtuple("ParamDef", ["name", "istype", "definition", "isreadonly", "isunit", "storagetype"])
 """Parameter definition tuple.
 
 Attributes:
@@ -78,6 +78,8 @@ Attributes:
     istype (bool): true if type parameter, otherwise false
     definition (Autodesk.Revit.DB.Definition): parameter definition object
     isreadonly (bool): true if the parameter value can't be edited
+    isunit (bool): true if its ForgeTypeId is measurable
+    storagetype (Autodesk.Revit.DB.Storagetype): String, Integer, Double or ElementId
 """
 
 
@@ -1016,6 +1018,22 @@ class SelectFromList(TemplateUserInputWindow):
         else:
             return self._context
 
+    def _get_all_ctx(self):
+        """Get all context items across all groups"""
+        ctx = self._context
+        if ctx is None:
+            return
+
+        if isinstance(ctx, dict):
+            for group_items in ctx.values():
+                for item in group_items:
+                    yield item
+        elif isinstance(ctx, (list, tuple, set)):
+            for item in ctx:
+                yield item
+        else:
+            yield ctx
+
     def _list_options(self, option_filter=None):
         if option_filter:
             self.checkall_b.Content = "Check"
@@ -1062,12 +1080,12 @@ class SelectFromList(TemplateUserInputWindow):
     def _get_options(self):
         if self.multiselect:
             if self.return_all:
-                return [x for x in self._get_active_ctx()]
+                return list(self._get_all_ctx())
             else:
                 return self._unwrap_options(
                     [
                         x
-                        for x in self._get_active_ctx()
+                        for x in self._get_all_ctx()
                         if x.state or x in self.list_lb.SelectedItems
                     ]
                 )
@@ -2735,6 +2753,12 @@ def select_parameters(
                     istype=False,
                     definition=x.Definition,
                     isreadonly=x.IsReadOnly,
+                    isunit=(
+                        DB.UnitUtils.IsMeasurableSpec(x.Definition.GetDataType())
+                        if HOST_APP.is_newer_than(2022, True)
+                        else False
+                    ),
+                    storagetype=x.StorageType,
                 )
                 for x in src_element.Parameters
                 if x.StorageType != non_storage_type
@@ -2752,6 +2776,12 @@ def select_parameters(
                         istype=True,
                         definition=x.Definition,
                         isreadonly=x.IsReadOnly,
+                        isunit=(
+                            DB.UnitUtils.IsMeasurableSpec(x.Definition.GetDataType())
+                            if HOST_APP.is_newer_than(2022, True)
+                            else False
+                        ),
+                        storagetype=x.StorageType,
                     )
                     for x in src_type.Parameters
                     if x.StorageType != non_storage_type
