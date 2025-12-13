@@ -6,12 +6,12 @@
         <None Remove="obj\**" />
     </ItemGroup>
     
-    <ItemGroup Condition="$(UseLoader)==True">
+    <ItemGroup Condition="'$(UseLoader)' == 'true'">
         <Compile Include="..\Source\PyRevitLoaderApplication.cs" Link="Source\PyRevitLoaderApplication.cs"/>
         <Compile Include="..\Source\ScriptExecutor.cs" Link="Source\ScriptExecutor.cs"/>
     </ItemGroup>
 
-    <ItemGroup Condition="$(UseRunner)==True">
+    <ItemGroup Condition="'$(UseRunner)' == 'true'">
         <Compile Include="..\Source\PyRevitRunnerApplication.cs" Link="Source\PyRevitRunnerApplication.cs"/>
         <Compile Include="..\Source\PyRevitRunnerCommand.cs" Link="Source\PyRevitRunnerCommand.cs"/>
         <Compile Include="..\Source\ScriptExecutor.cs" Link="Source\ScriptExecutor.cs"/>
