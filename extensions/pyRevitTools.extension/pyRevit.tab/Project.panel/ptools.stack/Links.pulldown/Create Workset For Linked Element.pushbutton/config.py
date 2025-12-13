@@ -1,6 +1,6 @@
 from pyrevit import script, forms
 from script import main
-my_config = script.get_config("Create Workset For Linked Element")
+my_config = script.get_config()
 
 set_type_ws = my_config.get_option("set_type_ws", False)
 set_all = my_config.get_option("set_all", False)
