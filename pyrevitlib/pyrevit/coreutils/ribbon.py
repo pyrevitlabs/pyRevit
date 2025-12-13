@@ -1983,7 +1983,7 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
         pyrvt_combobox.set_dirty_flag()
         self._add_component(pyrvt_combobox)
         pyrvt_combobox.activate()
-
+        return pyrvt_combobox
     def create_panel_push_button(
         self,
         button_name,
