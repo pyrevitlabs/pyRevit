@@ -3,8 +3,10 @@ title:
   fr_fr: Créer un Jeu de Feuilles Révisées
   en_us: Create Revised Sheet Set
   de_de: Erstelle ein Planänderungssatz
+  chinese_s: 创建修订图纸集
 tooltip:
   ru: Выберите изменение из списка и данный скрипт создаст набор листов печати для листов с изменениями в выбранных изменениях и назначит новый комплект листов в качестве набора для печати по умолчанию.
   fr_fr: Sélectionnez une révision dans la liste des révisions et ce script créera un jeu de feuilles d'impression pour les feuilles révisées sous la révision sélectionnée, et affectera le nouveau jeu de feuilles comme jeu d'impression par défaut
   en_us: Select a revision from the list of revisions and this script will create a print sheet set for the revised sheets under the selected revision, and will assign the new sheet set as the default print set
   de_de: Wählen Sie eine Änderung aus der Liste der Planänderungen aus, und dieses Script erstellt einen Drucksatz für die überarbeiteten Pläne unter der ausgewählten Änderung und weist den neuen Plansatz als Standarddrucksatz zu
+  chinese_s: 从修订列表中选择一个修订，此脚本将为该修订下的已修订图纸创建一个打印图纸集，并将新图纸集设为默认打印集

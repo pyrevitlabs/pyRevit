@@ -3,8 +3,10 @@ title:
   fr_fr: Effacer tous les paramètres de projet
   en_us: Wipe All Project Parameters
   de_de: Lösche alle Projektparameter
+  chinese_s: 清除所有项目参数
 tooltip:
   ru: Очищает все параметры проекта.
   fr_fr: Effacer tous les paramètres de projet
   en_us: Wipe All Project Parameters
   de_de: Es werden alle Projektparameter im aktiven Projekt gelöscht!
+  chinese_s: 清除所有项目参数

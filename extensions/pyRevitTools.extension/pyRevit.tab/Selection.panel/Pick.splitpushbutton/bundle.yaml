@@ -3,6 +3,7 @@ title:
   fr_fr: Choisir
   en_us: Pick
   de_de: Auswahl
+  chinese_s: 选择
 layout:
   - Pick
   - Pick Detail Elements

@@ -4,8 +4,10 @@ title:
   fr_fr: Trouver les vues montrant l'élément sélectionné
   en_us: Find views showing selected element
   de_de: Suche alle Ansichten mit gewähltem Element
+  chinese_s: 查找显示所选图元的视图
 tooltip:
   ru: Выводит все виды, на которых видны выбранные элементы.
   fr_fr: Lister toutes les vues dans lesquelles l'élément sélectionné est visible
   en_us: Lists all views that the selected elements is visible in
   de_de: Es werden alle Ansichten aufgelistet, in denen das gewählte Element sichtbar ist
+  chinese_s: 列出所选图元可见的所有视图

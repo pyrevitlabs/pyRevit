@@ -3,9 +3,11 @@ title:
   fr_fr: Sélectionner les murs empilés
   en_us: Select SubWalls of Stacked Walls
   de_de: Alle UnterWände von geschichteten Wände auswählen
+  chinese_s: 选择叠层墙的子墙
 tooltip:
   ru: Выделить ряд составных стен. Запустите данный инструмент и он заменит выделение стенами из выделенных составных стен.
   fr_fr: Sélectionnez une série de murs empilés. Exécutez cet outil et il remplacera la sélection par des sous-murs des murs empilés sélectionnés
   en_us: Select a series of stacked walls. Run this tool and it will replace the selection with sub-walls of the selected stacked walls
-  de_de: Wählen Sie mehrere geschichtete Wände aus. Wenn sie dann dieses Skript ausführen wird die Auswahl mit unter-Wänden der geschichteten Wände ersetzt 
+  de_de: Wählen Sie mehrere geschichtete Wände aus. Wenn sie dann dieses Skript ausführen wird die Auswahl mit unter-Wänden der geschichteten Wände ersetzt
+  chinese_s: 选择一系列叠层墙。运行此工具，它将用所选叠层墙的子墙替换当前选择集
 context: selection

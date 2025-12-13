@@ -7,6 +7,7 @@ title:
     Query View Sheet Placement
   de_de: |-
     Suche Ansichten ohne Plan Platzierung
+  chinese_s: 查询视图图纸放置情况
 tooltip:
   ru: |-
     Показывает виды, которые не были размещены ни на одном листе.
@@ -16,3 +17,4 @@ tooltip:
     Lists views that have not been placed on any sheets
   de_de: |-
     Listet alle Ansichten auf, die bisher noch nicht auf Plänen platziert wurden
+  chinese_s: 列出未放置在任何图纸上的视图

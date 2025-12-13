@@ -3,16 +3,16 @@ title:
   en_us: Include or exclude template parameters
   ru: Включить или исключить параметры шаблона
   de_de: Ansichtsvorlagenparameter aktivieren o. deaktivieren
-tooltip: 
+  chinese_s: 包含或排除样板参数
+tooltip:
   fr_fr: Inclure ou exclure les paramètres du gabarit de vue - non fonctionnel pour les gabarits de vue 3D
   en_us: Include or exclude template parameters, not functional for 3D view templates
   ru: Включает или исключает параметры шаблона, не работает с 3D шаблонами видов.
   de_de: >-
-    Es wird ein Auswahldialog mit im Projekt verfügbaren Ansichtsvorlagen angezeigt. 
-    Im nächsten Dialogfenster kann man die Parameter der Ansichtseigenschaften auswählen, 
-    die man für die gewählten Ansichtsvorlagen aktivieren oder deaktivieren möchte. Der
+    Es wird ein Auswahldialog mit im Projekt verfügbaren Ansichtsvorlagen angezeigt.  Im nächsten Dialogfenster kann man die Parameter der Ansichtseigenschaften auswählen,  die man für die gewählten Ansichtsvorlagen aktivieren oder deaktivieren möchte. Der
     Vorteil dieses Skript ist es, dass man die Einstellungen auf mehrere Ansichtsvorlagen
     gleichzeitig anwenden kann.
     Hinweis: Diese Skript kann nicht auf 3D Ansichtsvorlagen angewendet werden, obwohl diese
     im Auswahldialog angezeigt werden! 
+  chinese_s: 包含或排除视图样板参数。此功能对三维视图样板无效
 author: Jean-Marc Couffin

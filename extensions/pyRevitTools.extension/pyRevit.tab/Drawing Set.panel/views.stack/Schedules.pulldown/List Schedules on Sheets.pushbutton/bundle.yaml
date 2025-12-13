@@ -3,12 +3,12 @@ title:
   en_us: List Schedules on Sheets
   ru: Показать спецификации на листах
   de_de: Liste alle Bauteillisten auf Plänen auf
+  chinese_s: 列出图纸上的明细表
 tooltip:
   fr_fr: Lister les nomenclatures sur les feuilles
   en_us: List Schedules on Sheets
   ru: Показывает спецификации на листах.
   de_de: >-
-    Es öffnet sich ein Konsolenfenster, in dem alle Bauteillisten aufgelistet sind, 
-    die auf einem Plan platziert wurden. Die dazugehörige Plannummer und der Planname 
-    wird ebenfalls aufgelistet. 
+    Es öffnet sich ein Konsolenfenster, in dem alle Bauteillisten aufgelistet sind,  die auf einem Plan platziert wurden. Die dazugehörige Plannummer und der Planname  wird ebenfalls aufgelistet. 
+  chinese_s: 列出图纸上的明细表
 author: Jean-Marc Couffin

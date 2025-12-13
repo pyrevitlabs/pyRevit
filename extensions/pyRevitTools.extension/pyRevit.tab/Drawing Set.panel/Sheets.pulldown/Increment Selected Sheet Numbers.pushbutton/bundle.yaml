@@ -3,10 +3,10 @@ title:
   fr_fr: Incrémenter les Numéros des Feuilles Sélectionnées
   en_us: Increment Selected Sheet Numbers
   de_de: Erhöhe die ausgewählten Plannummern
+  chinese_s: 递增选定图纸编号
 tooltip:
   ru: >-
-    Увеличивает номер листа на один. Изменение листа будет выведено, 
-    если в настройках pyRevit ведение журнала установлено значение Verbose.
+    Увеличивает номер листа на один. Изменение листа будет выведено,  если в настройках pyRevit ведение журнала установлено значение Verbose.
   fr_fr: >-
     Augmente de un le numéro de feuille des feuilles sélectionnées. Le
     changement de nom de feuille sera imprimé si la journalisation est définie
@@ -17,3 +17,4 @@ tooltip:
   de_de: >-
     Erhöht die Plannummer des ausgewählten Plans um eins. Die Änderung des Plannamens
     wird gedruckt, wenn die Protokollierung in den pyRevit-Einstellungen auf Verbose eingestellt ist.
+  chinese_s: 将所选图纸的图纸编号加一。如果在 pyRevit 设置中将日志记录设置为“详细”，将打印图纸名称更改

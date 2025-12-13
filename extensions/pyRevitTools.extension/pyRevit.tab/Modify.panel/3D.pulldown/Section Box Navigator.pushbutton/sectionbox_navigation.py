@@ -153,7 +153,7 @@ def find_next_grid_in_direction(start_point, direction_vector, grids, tolerance)
             else:
                 # Regular DB.Grid - access Curve directly
                 curve = grid.Curve
-                
+
             if not curve or not isinstance(curve, DB.Line):
                 continue
         except (AttributeError, Exception):

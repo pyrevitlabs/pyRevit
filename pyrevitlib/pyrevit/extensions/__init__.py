@@ -161,6 +161,7 @@ PANEL_PUSH_BUTTON_POSTFIX = '.panelbutton'
 NOGUI_COMMAND_POSTFIX = '.nobutton'
 CONTENT_BUTTON_POSTFIX = '.content'
 URL_BUTTON_POSTFIX = '.urlbutton'
+COMBOBOX_POSTFIX = '.combobox'
 
 # known bundle sub-directories
 COMP_LIBRARY_DIR_NAME = 'lib'

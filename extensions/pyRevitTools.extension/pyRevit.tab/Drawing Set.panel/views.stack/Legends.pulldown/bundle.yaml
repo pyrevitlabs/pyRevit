@@ -3,18 +3,19 @@ title:
   en_us: Legends
   fr_fr: Légendes
   de_de: Legenden
+  chinese_s: 图例
 layout:
   - Copy Legends to Other Documents
   - Copy Legends as Drafting to Other Documents
-  - -----
+  - '-----'
   - Convert Drafting to Legend
   - Convert Legend to Drafting
-  - -----
+  - '-----'
   - List Legends on Sheets
-  - -----
+  - '-----'
   - Find Unused Keynotes
   - Open Keynotes File
-  - -----
+  - '-----'
   - 3D
   - Section
   - Top

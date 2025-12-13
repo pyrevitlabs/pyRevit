@@ -7,6 +7,7 @@ title:
   de_de: |-
     Offene Tabs schliessen
 
+  chinese_s: 关闭标签页
 tooltip:
   ru: |-
     Закрывает все виды, кроме выделенных.
@@ -16,10 +17,9 @@ tooltip:
     Close everything but the selected views.
   de_de: >-
     Es öffnet sich ein Auswahlfenster, das die geöffneten Tabs (Ansichten)
-    vom aktiven Projekt auflistet. Alle im Dialog markierten Ansichten bleiben 
-    geöffnet und alle anderen Tabs werden geschlossen. 
-
+    vom aktiven Projekt auflistet. Alle im Dialog markierten Ansichten bleiben  geöffnet und alle anderen Tabs werden geschlossen. 
+  chinese_s: 关闭除选定视图外的所有标签页
 authors:
   - thumDer
   - Johannes Domeier
-  
+

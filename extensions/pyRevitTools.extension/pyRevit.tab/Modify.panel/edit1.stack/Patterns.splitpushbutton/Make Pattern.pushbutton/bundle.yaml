@@ -12,20 +12,20 @@ title:
   de_de: |-
     Füllmuster
     erstellen
+  chinese_s: "创建\n填充图案"
 tooltip:
   ru: >-
     Начертите свой узор штриховки в узлах использующих линию детализации, кривые, окружности
     или эллипсы, или даже цветовые области.
-    
+
     Выделите линии штриховки и кривые и запустите данный инструмент. Дайте название штриховки
     и нажмите "Create Pattern". Инструмент запросит Вас выбрать границы штриховки. Инструмент будет обрабатывать
     входные линии, округляя кривые и сплайны более меньшими линиями для нахождения лучших углов для этих линий
-    и сгенерирует штриховку. Он так же считывает штриховки из выделенных залитых областей 
-    и объединит с выделенными линиями детализации.
-    
-    
+    и сгенерирует штриховку. Он так же считывает штриховки из выделенных залитых областей  и объединит с выделенными линиями детализации.
+
+
     СОВЕТ: Вы можете экспортировать существующие штриховки, если не были выбраны линии.
-    
+
     ХИТРОСТЬ: Вы можете преобразовать существующие типы штриховки, выбрав только цветовую область
     и создав противоположный тип штриховки (выбрав рисунок закрашенной области и создания штриховки модели).
 
@@ -69,11 +69,11 @@ tooltip:
     Wählen Sie die Linien und -kurven aus und führen Sie dieses Werkzeug aus. Geben Sie dem Füllmuster einen
     Namen und klicken Sie auf „Muster erstellen“ (Create Pattern). Das Werkzeug fordert Sie auf, die Begrenzungspunkte
     (äußerste Ecken) des Musters auszuwählen. Das Werkzeug verarbeitet die eingegebenen Linien, wandelt
-    die Kurven und Splines in kleineren gerade Linien um und findet die beste Anordnung um das 
-    gewünschte Muster zu erzeugen. Es liest auch die Muster von den verwendeten gefüllten Bereichen
+    die Kurven und Splines in kleineren gerade Linien um und findet die beste Anordnung um das  gewünschte Muster zu erzeugen. Es liest auch die Muster von den verwendeten gefüllten Bereichen
     aus und integriert dessen Linien in das neue Füllmuster.
 
     TIPP: Sie können vorhandene Füllmuster exportieren, wenn keine Linien ausgewählt sind.
 
     TRICK: Sie können vorhandene Füllmustertypen (Modell / Zeichenmuster) umwandeln, indem Sie einen gefüllten Bereich auswählen
     und den entsprechenden anderen Füllmustertyp damit erstellen.
+  chinese_s: "使用详图线、曲线、圆或椭圆，甚至填充区域，在详图视图中绘制您的填充图案单元\n\n选择图案的线和曲线，然后运行此工具。为图案命名并点击“创建图案”。工具将要求您拾取图案的边界角点。工具会处理输入的线，将曲线和样条曲线近似处理为较短的线段，为这些线段寻找最佳角度，并最终生成图案。它还会读取所选填充区域的图案，并将其与选定的详图线结合。\n\n提示： 如果未选择任何线，您可以导出现有的图案。\n\n技巧： 您可以仅选择一个填充区域来转换现有的图案类型，并创建相反的图案类型（例如，选定的绘图填充区域可以创建模型填充图案，反之亦然）。"

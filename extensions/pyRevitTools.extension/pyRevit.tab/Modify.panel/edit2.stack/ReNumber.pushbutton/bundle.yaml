@@ -3,10 +3,12 @@ title:
   fr_fr: Renuméroter
   en_us: Renumber
   de_de: Umummerieren
+  chinese_s: 重新编号
 tooltip:
   ru: Перенумеровать пронумерованные элементы в порядке выделения.
   fr_fr: Renuméroter les éléments dans l'ordre de sélection
   en_us: ReNumber numbered elements in order of selection
   de_de: Elemente werden mit der Reihenfolge der Auswahl neu nummeriert
+  chinese_s: 按照选择顺序，为已编号的图元重新编号
 author: '{{author}}'
 

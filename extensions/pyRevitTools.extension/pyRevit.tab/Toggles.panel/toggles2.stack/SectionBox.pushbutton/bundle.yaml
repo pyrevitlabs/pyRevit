@@ -3,6 +3,7 @@ title:
   fr_fr: Zone de coupe
   en_us: Section Box
   de_de: 3D-Schnittbereich
+  chinese_s: 剖面框
 tooltip:
   ru: >-
     Переключает либо видимость, либо активность границы 3D-вида в текущем 3D виде —
@@ -21,3 +22,4 @@ tooltip:
     des 3D-Schnittbereichs in der aktuellen 3D-Ansicht um — je nach Konfiguration.
     Im Aktivmodus wird der aktuelle Bereich beim Deaktivieren gespeichert und beim
     erneuten Aktivieren wiederhergestellt.
+  chinese_s: 在当前三维视图中切换剖面框的可见性或活动状态（具体取决于配置）。在活动模式下，禁用时会保存当前框体状态，重新启用时则恢复
