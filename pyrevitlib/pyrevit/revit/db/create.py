@@ -346,7 +346,6 @@ def load_family2(family_file, doc=None):
         return fam_symbols
 
     fam = ret_ref.Value
-    fam_symbol_ids = fam.GetFamilySymbolIds()
     for fam_symbol_id in fam.GetFamilySymbolIds():
         fam_symbol = doc.GetElement(fam_symbol_id)
         fam_symbols.append(fam_symbol)
