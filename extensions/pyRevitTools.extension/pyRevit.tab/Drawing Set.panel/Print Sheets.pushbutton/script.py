@@ -679,6 +679,26 @@ class PrintSheetsWindow(forms.WPFWindow):
         self._setup_docs_list()
         self._setup_naming_formats()
 
+        self._all_sheets_list = list(self.sheets_lb.ItemsSource) if self.sheets_lb.ItemsSource else []
+        self.sheetsearch_tb.TextChanged += self.sheet_search_changed
+
+    def sheet_search_changed(self, sender, args):
+        """Filter the sheets list by text in sheetsearch_tb (case-insensitive)."""
+        search_text = self.sheetsearch_tb.Text.strip().lower()
+        if not self._all_sheets_list:
+            return
+
+        if not search_text:
+            self.sheets_lb.ItemsSource = self._all_sheets_list
+        else:
+            filtered = []
+            for sheet in self._all_sheets_list:
+                number = sheet.number.lower() if sheet.number else ''
+                name = sheet.name.lower() if sheet.name else ''
+                if search_text in number or search_text in name:
+                    filtered.append(sheet)
+            self.sheets_lb.ItemsSource = filtered
+
     # doc and schedule
     @property
     def selected_doc(self):
