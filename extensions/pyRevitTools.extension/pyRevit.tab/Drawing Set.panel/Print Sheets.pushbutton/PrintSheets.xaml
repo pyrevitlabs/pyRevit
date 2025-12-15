@@ -157,8 +157,10 @@
                     <StackPanel>
                         <CheckBox x:Name="reverse_cb" IsChecked="False" Click="options_changed">Reverse Print Order</CheckBox>
                         <StackPanel x:Name="order_sp" Margin="0,5,0,0">
-                            <CheckBox x:Name="placeholder_cb" IsChecked="True" Click="options_changed">Show Non-Printable Sheets (Grayed Out)</CheckBox>
-                            <CheckBox x:Name="indexspace_cb" Margin="0,5,0,0" IsChecked="True" Click="options_changed">Include Non-Printable Sheets in Indexing</CheckBox>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                <CheckBox x:Name="placeholder_cb" IsChecked="True" Click="options_changed">Show Non-Printable Sheets (Grayed Out)</CheckBox>
+                                <CheckBox x:Name="indexspace_cb" Margin="20,0,0,0" IsChecked="True" Click="options_changed">Include Non-Printable Sheets in Indexing</CheckBox>
+                            </StackPanel>
                             <DockPanel Margin="0,5,0,0" Height="24" >
                                 <TextBlock Text="Index Digits" Width="80" VerticalAlignment="Center" DockPanel.Dock="Left" />
                                 <Slider x:Name="index_slider" Margin="10,0,0,0"
@@ -186,22 +188,47 @@
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                                 <CheckBox x:Name="combine_cb" DockPanel.Dock="Right" Margin="0,0,50,0" IsChecked="False" IsEnabled="True" Checked="options_changed" Unchecked="options_changed">Combine Into One PDF</CheckBox>
                                 <CheckBox x:Name="export_dwg" DockPanel.Dock="Right" Margin="0,0,0,0" IsChecked="False" IsEnabled="True" Checked="options_changed" Unchecked="options_changed">Export DWG</CheckBox>
+                                <CheckBox x:Name="lastprintsetting_cb" DockPanel.Dock="Right" Margin="415,0,0,0" IsChecked="False" IsEnabled="True" Checked="lastprintsetting_cb_changed" Unchecked="lastprintsetting_cb_changed" VerticalAlignment="Center">Load Last Print Settings?</CheckBox>
                             </StackPanel>
-                            <DockPanel x:Name="namingformat_dp" Margin="0,5,0,0" Height="24" >
-                                <TextBlock Text="Naming Format" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                <Button Content="Edit Formats" DockPanel.Dock="Right" Width="100" BorderThickness="0,1,1,1" BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}" Click="edit_formats"/>
-                                <ComboBox x:Name="namingformat_cb" FontFamily="Consolas" VerticalContentAlignment="Center" SelectionChanged="options_changed" >
+                            <DockPanel x:Name="namingformat_dp" Margin="0,5,0,0" Height="24">
+                                <TextBlock Text="Naming Format"
+                                        VerticalAlignment="Center"
+                                        Margin="0,0,10,0"/>
+
+                                <Button Content="Edit Formats"
+                                        DockPanel.Dock="Right"
+                                        Width="100"
+                                        BorderThickness="0,1,1,1"
+                                        BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
+                                        Click="edit_formats"/>
+
+                                <ComboBox x:Name="namingformat_cb"
+                                        FontFamily="Consolas"
+                                        VerticalContentAlignment="Center"
+                                        SelectionChanged="options_changed">
+
                                     <ComboBox.ItemTemplate>
                                         <DataTemplate>
                                             <StackPanel Orientation="Horizontal">
                                                 <Border Padding="5,1,5,1">
-                                                    <TextBlock Text="{Binding name}"/>
+                                                    <TextBlock Text="{Binding name}">
+                                                        <TextBlock.ContextMenu>
+                                                            <ContextMenu
+                                                                DataContext="{Binding PlacementTarget.DataContext,
+                                                                                    RelativeSource={RelativeSource Self}}">
+                                                                <MenuItem Header="Copy naming format"
+                                                                        Click="copy_naming_format"/>
+                                                            </ContextMenu>
+                                                        </TextBlock.ContextMenu>
+                                                    </TextBlock>
                                                 </Border>
                                             </StackPanel>
                                         </DataTemplate>
                                     </ComboBox.ItemTemplate>
+
                                 </ComboBox>
                             </DockPanel>
+
                             <DockPanel Margin="0,5,0,0" Height="24" >
                                 <TextBlock Text="Printer" VerticalAlignment="Center" Margin="0,0,10,0"/>
                                 <ComboBox x:Name="printers_cb" SelectionChanged="printers_changed"/>
@@ -260,7 +287,15 @@
                   EnableRowVirtualization="True"
                   VirtualizingPanel.IsVirtualizing="True"
                   VirtualizingPanel.VirtualizationMode="Recycling"
+                  SelectionMode="Extended"
+                  SelectionUnit="FullRow"
                   SelectionChanged="sheet_selection_changed">
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <Setter Property="IsSelected" Value="{Binding is_selected, Mode=TwoWay}" />
+                </Style>
+            </DataGrid.RowStyle>
+
             <DataGrid.Resources>
                 <ContextMenu x:Key="ItemContextMenu">
                     <MenuItem  Header="Copy Sheet File Name(s)" Click="copy_filenames" />
