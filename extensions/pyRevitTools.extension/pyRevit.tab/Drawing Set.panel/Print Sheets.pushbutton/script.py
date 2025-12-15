@@ -24,7 +24,7 @@ to remain.
 import re
 import os.path as op
 import codecs
-import os, datetime, locale
+import os, datetime, locale, ConfigParser
 from collections import namedtuple
 
 from pyrevit import HOST_APP
@@ -675,15 +675,64 @@ class PrintSheetsWindow(forms.WPFWindow):
         self.project_info = revit.query.get_project_info(doc=revit.doc)
         self.sheet_cat_id = \
             revit.query.get_category(DB.BuiltInCategory.OST_Sheets).Id
+        
+        self.documents_cb.SelectionChanged += self.documents_cb_selection_changed
 
         self._setup_docs_list()
         self._setup_naming_formats()
 
+        self._apply_projectinfo_naming_format_default()
+
         self._all_sheets_list = list(self.sheets_lb.ItemsSource) if self.sheets_lb.ItemsSource else []
         self.sheetsearch_tb.TextChanged += self.sheet_search_changed
 
+        self._check_last_print_settings_available()
+
+
+    def documents_cb_selection_changed(self, sender, args):
+        """Enable last print settings only if the selected document is the host document."""
+        selected_doc = self.selected_doc
+        if not selected_doc:
+            self.lastprintsetting_cb.IsEnabled = False
+            self.lastprintsetting_cb.IsChecked = False
+            return
+
+        if selected_doc == revit.doc:
+            self._check_last_print_settings_available(selected_doc)
+        else:
+            self.lastprintsetting_cb.IsEnabled = False
+            self.lastprintsetting_cb.IsChecked = False
+
+
+    def copy_naming_format(self, sender, args):
+        try:
+            naming_format = sender.DataContext
+            if not naming_format:
+                return
+            
+            script.clipboard_copy(naming_format.name)
+
+        except Exception as e:
+            logger.error("Failed to copy naming format: %s", e)
+            
+
+    def _apply_projectinfo_naming_format_default(self):
+        pi = self.selected_doc.ProjectInformation
+        param = pi.LookupParameter("Naming Format") if pi else None
+        param_value = param.AsString() if param else None
+
+        selected_item = next(
+            (nf for nf in self.namingformat_cb.ItemsSource if nf.name == param_value),
+            None
+        )
+
+        if not selected_item and self.namingformat_cb.ItemsSource:
+            selected_item = self.namingformat_cb.ItemsSource[0]
+
+        self.namingformat_cb.SelectedItem = selected_item
+
+
     def sheet_search_changed(self, sender, args):
-        """Filter the sheets list by text in sheetsearch_tb (case-insensitive)."""
         search_text = self.sheetsearch_tb.Text.strip().lower()
         if not self._all_sheets_list:
             return
@@ -698,6 +747,167 @@ class PrintSheetsWindow(forms.WPFWindow):
                 if search_text in number or search_text in name:
                     filtered.append(sheet)
             self.sheets_lb.ItemsSource = filtered
+
+
+    def _check_last_print_settings_available(self, doc=None):
+        """Enable last print settings only if saved settings exist for the given document."""
+        self.lastprintsetting_cb.IsEnabled = False
+        self.lastprintsetting_cb.IsChecked = False
+
+        if doc is None:
+            doc = self.selected_doc
+        if not doc or not doc.PathName or not os.path.exists(self.SETTINGS_FILE):
+            return
+
+        proj_name = os.path.basename(doc.PathName)
+        config = ConfigParser.ConfigParser()
+        config.read(self.SETTINGS_FILE)
+
+        if not config.has_section(proj_name):
+            return
+
+        try:
+            saved_document = config.get(proj_name, "selected_document")
+        except Exception:
+            saved_document = None
+
+        if saved_document and saved_document == doc.PathName:
+            self.lastprintsetting_cb.IsEnabled = True
+
+
+
+    SETTINGS_FILE = os.path.join(os.getenv('APPDATA'), "pyRevit", "Saved_Print_Settings_Config.ini")
+
+    def get_project_key(self):
+        if self.selected_doc and hasattr(self.selected_doc, "PathName") and self.selected_doc.PathName:
+            return os.path.basename(self.selected_doc.PathName)
+        return None
+    
+
+    def save_current_settings(self):
+        if not self.selected_doc or not self.selected_doc.ProjectInformation:
+            return
+
+        if self.selected_doc != revit.doc:
+            return
+
+        proj_name = self.get_project_key()
+        if not proj_name:
+            return
+
+        config = ConfigParser.ConfigParser()
+        if os.path.exists(self.SETTINGS_FILE):
+            config.read(self.SETTINGS_FILE)
+
+        if not config.has_section(proj_name):
+            config.add_section(proj_name)
+
+        try:
+            config.set(proj_name, "naming_format", getattr(self.selected_naming_format, "name", ""))
+            config.set(proj_name, "printer", str(self.printers_cb.SelectedItem or ""))
+            config.set(proj_name, "print_setting", getattr(self.selected_print_setting, "name", ""))
+            config.set(proj_name, "combine_print", str(bool(self.combine_cb.IsChecked)))
+            config.set(proj_name, "reverse_print", str(bool(self.reverse_cb.IsChecked)))
+            config.set(proj_name, "export_dwg", str(bool(self.export_dwg.IsChecked)))
+            config.set(proj_name, "show_placeholders", str(bool(self.placeholder_cb.IsChecked)))
+            config.set(proj_name, "include_placeholders", str(bool(self.indexspace_cb.IsChecked)))
+            config.set(proj_name, "index_start", str(self.index_start))
+            config.set(proj_name, "index_digits", str(self.index_slider.Value))
+
+            selected_sheet_numbers = [s.number for s in self._all_sheets_list if getattr(s, 'is_selected', False)]
+            config.set(proj_name, "selected_sheets", ",".join(selected_sheet_numbers))
+
+            config.set(proj_name, "selected_document", str(self.selected_doc.PathName))
+            config.set(proj_name, "selected_schedule", str(self.schedules_cb.SelectedItem or ""))
+
+            folder = os.path.dirname(self.SETTINGS_FILE)
+            if folder and not os.path.exists(folder):
+                os.makedirs(folder)
+
+            with open(self.SETTINGS_FILE, "w") as f:
+                config.write(f)
+
+
+        except Exception as e:
+            logger.error("Failed to save print settings: %s", e)
+
+
+
+
+    def load_saved_settings(self):
+        self.lastprintsetting_cb.IsEnabled = False 
+
+        if not os.path.exists(self.SETTINGS_FILE) or not self.selected_doc or not self.selected_doc.ProjectInformation:
+            return
+
+        proj_name = self.get_project_key()
+        config = ConfigParser.ConfigParser()
+        config.read(self.SETTINGS_FILE)
+
+        if not config.has_section(proj_name):
+            return 
+
+        self.lastprintsetting_cb.IsEnabled = True 
+
+        def safe_get(key, default=None):
+            try:
+                return config.get(proj_name, key)
+            except:
+                return default
+
+        def safe_getbool(key, default=False):
+            try:
+                return config.getboolean(proj_name, key)
+            except:
+                return default
+
+        try:
+            naming_format_name = safe_get("naming_format")
+            if naming_format_name:
+                self.namingformat_cb.SelectedItem = next(
+                    (nf for nf in self.namingformat_cb.ItemsSource if getattr(nf, "name", None) == naming_format_name),
+                    self.namingformat_cb.SelectedItem 
+                )
+
+            printer = safe_get("printer")
+            if printer and printer in self.printers_cb.ItemsSource:
+                self.printers_cb.SelectedItem = printer
+
+            print_setting_name = safe_get("print_setting")
+            if print_setting_name:
+                self.printsettings_cb.SelectedItem = next(
+                    (ps for ps in self.printsettings_cb.ItemsSource if getattr(ps, "name", None) == print_setting_name),
+                    self.printsettings_cb.SelectedItem
+                )
+
+            self.combine_cb.IsChecked = safe_getbool("combine_print", self.combine_cb.IsChecked)
+            self.reverse_cb.IsChecked = safe_getbool("reverse_print", self.reverse_cb.IsChecked)
+            self.export_dwg.IsChecked = safe_getbool("export_dwg", self.export_dwg.IsChecked)
+            self.placeholder_cb.IsChecked = safe_getbool("show_placeholders", self.placeholder_cb.IsChecked)
+            self.indexspace_cb.IsChecked = safe_getbool("include_placeholders", self.indexspace_cb.IsChecked)
+            self.indexstart_tb.Text = safe_get("index_start", self.indexstart_tb.Text)
+            try:
+                self.index_slider.Value = int(safe_get("index_digits", self.index_slider.Value))
+            except (ValueError, TypeError):
+                self.index_slider.Value = self.index_slider.Value
+
+            sheet_numbers_str = safe_get("selected_sheets", "")
+            selected_numbers = sheet_numbers_str.split(",") if sheet_numbers_str else []
+            for sheet in self._all_sheets_list:
+                sheet.is_selected = sheet.number in selected_numbers
+
+            self.sheets_lb.ItemsSource = list(self._all_sheets_list)
+            self.lastprintsetting_cb.IsEnabled = False
+
+
+        except Exception as e:
+            logger.error("Failed to load saved print settings: %s", e)
+
+
+    def lastprintsetting_cb_changed(self, sender, args):
+        if self.lastprintsetting_cb.IsChecked:
+            self.load_saved_settings()
+
 
     # doc and schedule
     @property
@@ -1634,6 +1844,7 @@ class PrintSheetsWindow(forms.WPFWindow):
             script.clipboard_copy('\n'.join(filenames))
 
     def print_sheets(self, sender, args):
+        self.save_current_settings()
         if self.sheet_list:
             selected_only = False
             if self.selected_sheets:
