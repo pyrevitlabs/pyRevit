@@ -852,7 +852,7 @@ class PrintSheetsWindow(forms.WPFWindow):
         def safe_get(key, default=None):
             try:
                 return config.get(proj_name, key)
-            except:
+            except Exception:
                 return default
 
         def safe_getbool(key, default=False):
