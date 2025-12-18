@@ -116,7 +116,7 @@ class GenericUIComponent(GenericComponent):
 
         Examples:
             for 'pyRevit.extension/pyRevit.tab/Edit.panel/Flip doors.pushbutton'
-            unique name would be: 'pyrevit-pyrevit-edit-flipdoors'.
+            unique name would be: 'pyrevit_pyrevit_edit_flipdoors'.
         """
         pieces = []
         inside_ext = False

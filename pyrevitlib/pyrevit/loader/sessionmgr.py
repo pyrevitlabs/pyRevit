@@ -302,6 +302,9 @@ def _new_session_csharp():
         # Check if the result indicates success (Result.Succeeded = 0)
         if hasattr(result, 'value__') and result.value__ == 0:
             mlogger.info('C# session loading completed successfully')
+            # Register loaded pyRevit assemblies with sessioninfo
+            # so find_pyrevitcmd can locate commands
+            _register_loaded_pyrevit_assemblies()
         else:
             mlogger.error('C# session loading returned failure result')
             mlogger.info('Falling back to Python session creation...')
@@ -311,6 +314,63 @@ def _new_session_csharp():
         mlogger.error('Error in C# session creation: %s', cs_ex)
         mlogger.info('Falling back to Python session creation...')
         _new_session()
+
+
+def _register_loaded_pyrevit_assemblies():
+    """Find and register pyRevit assemblies loaded by the C# session manager.
+    
+    Scans all loaded assemblies in the current AppDomain to find pyRevit
+    extension assemblies and registers them with sessioninfo so 
+    find_pyrevitcmd can locate commands.
+    
+    Detection methods:
+    - Roslyn-built assemblies: name starts with 'pyRevit_'
+    - ILPack-built assemblies: contain types derived from ScriptCommand
+    """
+    pyrevit_assemblies = []
+    script_command_base = None
+    
+    # First, try to get the ScriptCommand base type for ILPack detection
+    try:
+        script_command_base = runtime_types.get_runtime_types().ScriptCommand
+    except Exception:
+        mlogger.debug('Could not get ScriptCommand type for assembly detection')
+    
+    for assembly in framework.AppDomain.CurrentDomain.GetAssemblies():
+        try:
+            assembly_name = assembly.GetName().Name
+            if not assembly_name:
+                continue
+                
+            # Method 1: Roslyn-built assemblies have name pattern pyRevit_{version}_{hash}_{extName}
+            if assembly_name.startswith('pyRevit_'):
+                pyrevit_assemblies.append(assembly_name)
+                mlogger.debug('Found pyRevit assembly (Roslyn): %s', assembly_name)
+                continue
+            
+            # Method 2: ILPack-built assemblies use extension name directly
+            # Check if assembly contains ScriptCommand-derived types
+            if script_command_base:
+                try:
+                    for asm_type in assembly.GetTypes():
+                        if (asm_type.IsClass 
+                            and not asm_type.IsAbstract 
+                            and script_command_base.IsAssignableFrom(asm_type)):
+                            pyrevit_assemblies.append(assembly_name)
+                            mlogger.debug('Found pyRevit assembly (ILPack): %s', assembly_name)
+                            break
+                except Exception:
+                    # GetTypes() can fail for some assemblies
+                    continue
+                    
+        except Exception:
+            # Some assemblies might not have accessible names
+            continue
+    
+    if pyrevit_assemblies:
+        sessioninfo.set_loaded_pyrevit_assemblies(pyrevit_assemblies)
+        mlogger.debug('Registered %d pyRevit assemblies with sessioninfo', 
+                      len(pyrevit_assemblies))
 
 
 def load_session():
@@ -548,7 +608,7 @@ def find_pyrevitcmd(pyrevitcmd_unique_id):
 
     Examples:
         ```python
-        cmd = find_pyrevitcmd('pyRevitCorepyRevitpyRevittoolsReload')
+        cmd = find_pyrevitcmd('pyrevitcore_pyrevit_pyrevit_tools_reload')
         command_instance = cmd()
         command_instance.Execute() # Provide commandData, message, elements
         ```
