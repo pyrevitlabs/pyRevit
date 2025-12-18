@@ -58,25 +58,3 @@ basepublic = [
     'pyRevitfile',
 ]
 basex = ['bin', 'extensions', 'pyrevitlib', 'site-packages', 'pyRevitfile']
-base = [
-    'bin',
-    'extensions/pyRevitCore.extension',
-    'extensions/pyRevitTags.extension',
-    'extensions/pyRevitTools.extension',
-    'extensions/extensions.json',
-    'pyrevitlib',
-    'site-packages',
-    'pyRevitfile',
-]
-basepublic = [
-    'bin',
-    'extensions/pyRevitCore.extension',
-    'extensions/pyRevitTags.extension',
-    'extensions/pyRevitTools.extension',
-    'extensions/pyRevitTutor.extension',
-    'extensions/extensions.json',
-    'pyrevitlib',
-    'site-packages',
-    'pyRevitfile',
-]
-basex = ['bin', 'extensions', 'pyrevitlib', 'site-packages', 'pyRevitfile']
