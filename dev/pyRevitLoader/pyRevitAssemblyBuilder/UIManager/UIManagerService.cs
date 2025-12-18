@@ -163,12 +163,35 @@ namespace pyRevitAssemblyBuilder.UIManager
             var panel = _uiApp.GetRibbonPanels(tabName)
                 .FirstOrDefault(p => p.Name == panelText)
                 ?? _uiApp.CreateRibbonPanel(tabName, panelText);
-            
+
             // Apply background colors if specified
             ApplyPanelBackgroundColors(panel, component, tabName);
-            
+
             foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
                 RecursivelyBuildUI(child, component, panel, tabName, assemblyInfo);
+        }
+
+        /// <summary>
+        /// Checks if a ribbon item with the specified name already exists in the panel.
+        /// </summary>
+        /// <param name="panel">The ribbon panel to check.</param>
+        /// <param name="itemName">The unique name/id of the item to check for.</param>
+        /// <returns>True if the item already exists, false otherwise.</returns>
+        private bool ItemExistsInPanel(RibbonPanel panel, string itemName)
+        {
+            if (panel == null || string.IsNullOrEmpty(itemName))
+                return false;
+
+            try
+            {
+                var existingItems = panel.GetItems();
+                return existingItems.Any(item => item.Name == itemName);
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug(ex, "Error checking if item '{0}' exists in panel.", itemName);
+                return false;
+            }
         }
 
         private void EnsureSlideOutApplied(ParsedComponent parentComponent,RibbonPanel parentPanel)
@@ -215,107 +238,122 @@ namespace pyRevitAssemblyBuilder.UIManager
                     BuildStack(component, parentPanel, assemblyInfo);
                     break;
                 case CommandComponentType.PanelButton:
-                    var panelBtnData = CreatePushButton(component, assemblyInfo);
-                    var panelBtn = parentPanel.AddItem(panelBtnData) as PushButton;
-                    if (panelBtn != null)
+                    if (!ItemExistsInPanel(parentPanel, component.UniqueId))
                     {
-                        ApplyIconToPushButtonThemeAware(panelBtn, component);
-                        if (!string.IsNullOrEmpty(component.Tooltip))
-                            panelBtn.ToolTip = component.Tooltip;
-                        ApplyHighlightToButton(panelBtn, component);
-                        ModifyToPanelButton(tabName, parentPanel, panelBtn);
+                        var panelBtnData = CreatePushButton(component, assemblyInfo);
+                        var panelBtn = parentPanel.AddItem(panelBtnData) as PushButton;
+                        if (panelBtn != null)
+                        {
+                            ApplyIconToPushButtonThemeAware(panelBtn, component);
+                            if (!string.IsNullOrEmpty(component.Tooltip))
+                                panelBtn.ToolTip = component.Tooltip;
+                            ApplyHighlightToButton(panelBtn, component);
+                            ModifyToPanelButton(tabName, parentPanel, panelBtn);
+                        }
                     }
                     break;
                 case CommandComponentType.PushButton:
                 case CommandComponentType.SmartButton:
                 case CommandComponentType.UrlButton:
                 case CommandComponentType.InvokeButton:
-                    var pbData = CreatePushButton(component, assemblyInfo);
-                    var btn = parentPanel.AddItem(pbData) as PushButton;
-                    if (btn != null)
+                    if (!ItemExistsInPanel(parentPanel, component.UniqueId))
                     {
-                        ApplyIconToPushButtonThemeAware(btn, component);
-                        if (!string.IsNullOrEmpty(component.Tooltip))
-                            btn.ToolTip = component.Tooltip;
-                        ApplyHighlightToButton(btn, component);
+                        var pbData = CreatePushButton(component, assemblyInfo);
+                        var btn = parentPanel.AddItem(pbData) as PushButton;
+                        if (btn != null)
+                        {
+                            ApplyIconToPushButtonThemeAware(btn, component);
+                            if (!string.IsNullOrEmpty(component.Tooltip))
+                                btn.ToolTip = component.Tooltip;
+                            ApplyHighlightToButton(btn, component);
+                        }
                     }
                     break;
                 case CommandComponentType.LinkButton:
-                    var linkData = CreateLinkButton(component);
-                    if (linkData != null)
+                    if (!ItemExistsInPanel(parentPanel, component.UniqueId))
                     {
-                        var linkBtn = parentPanel.AddItem(linkData) as PushButton;
-                        if (linkBtn != null)
+                        var linkData = CreateLinkButton(component);
+                        if (linkData != null)
                         {
-                            ApplyIconToPushButtonThemeAware(linkBtn, component);
-                            if (!string.IsNullOrEmpty(component.Tooltip))
-                                linkBtn.ToolTip = component.Tooltip;
-                            ApplyHighlightToButton(linkBtn, component);
+                            var linkBtn = parentPanel.AddItem(linkData) as PushButton;
+                            if (linkBtn != null)
+                            {
+                                ApplyIconToPushButtonThemeAware(linkBtn, component);
+                                if (!string.IsNullOrEmpty(component.Tooltip))
+                                    linkBtn.ToolTip = component.Tooltip;
+                                ApplyHighlightToButton(linkBtn, component);
+                            }
                         }
                     }
                     break;
 
                 case CommandComponentType.PullDown:
-                    CreatePulldown(component, parentPanel, tabName, assemblyInfo, true);
+                    if (!ItemExistsInPanel(parentPanel, component.UniqueId))
+                    {
+                        CreatePulldown(component, parentPanel, tabName, assemblyInfo, true);
+                    }
                     break;
 
                 case CommandComponentType.SplitButton:
                 case CommandComponentType.SplitPushButton:
-                    // Use Title from bundle.yaml if available, otherwise fall back to DisplayName
-                    var splitButtonText = !string.IsNullOrEmpty(component.Title) ? component.Title : component.DisplayName;
-                    var splitData = new SplitButtonData(component.UniqueId, splitButtonText);
-                    var splitBtn = parentPanel.AddItem(splitData) as SplitButton;
-                    if (splitBtn != null)
+                    if (!ItemExistsInPanel(parentPanel, component.UniqueId))
                     {
-                        // Apply icon to split button
-                        ApplyIconToSplitButtonThemeAware(splitBtn, component);
-                        
-                        // Assign tooltip to the split button itself
-                        if (!string.IsNullOrEmpty(component.Tooltip))
-                            splitBtn.ToolTip = component.Tooltip;
-                        
-                        // Apply highlight to the split button itself
-                        ApplyHighlightToButton(splitBtn, component);
-
-                        foreach (var sub in component.Children ?? Enumerable.Empty<ParsedComponent>())
+                        // Use Title from bundle.yaml if available, otherwise fall back to DisplayName
+                        var splitButtonText = !string.IsNullOrEmpty(component.Title) ? component.Title : component.DisplayName;
+                        var splitData = new SplitButtonData(component.UniqueId, splitButtonText);
+                        var splitBtn = parentPanel.AddItem(splitData) as SplitButton;
+                        if (splitBtn != null)
                         {
-                            if (sub.Type == CommandComponentType.Separator)
+                            // Apply icon to split button
+                            ApplyIconToSplitButtonThemeAware(splitBtn, component);
+
+                            // Assign tooltip to the split button itself
+                            if (!string.IsNullOrEmpty(component.Tooltip))
+                                splitBtn.ToolTip = component.Tooltip;
+
+                            // Apply highlight to the split button itself
+                            ApplyHighlightToButton(splitBtn, component);
+
+                            foreach (var sub in component.Children ?? Enumerable.Empty<ParsedComponent>())
                             {
-                                // Add separator to split button
-                                try 
-                                { 
-                                    splitBtn.AddSeparator(); 
-                                } 
-                                catch (Exception ex)
+                                if (sub.Type == CommandComponentType.Separator)
                                 {
-                                    _logger.Debug(ex, "Failed to add separator to split button '{0}'.", splitButtonText);
-                                }
-                            }
-                            else if (sub.Type == CommandComponentType.PushButton ||
-                                     sub.Type == CommandComponentType.UrlButton ||
-                                     sub.Type == CommandComponentType.InvokeButton)
-                            {
-                                var subBtn = splitBtn.AddPushButton(CreatePushButton(sub, assemblyInfo));
-                                if (subBtn != null)
-                                {
-                                    ApplyIconToPushButtonThemeAware(subBtn, sub, component);
-                                    if (!string.IsNullOrEmpty(sub.Tooltip))
-                                        subBtn.ToolTip = sub.Tooltip;
-                                    ApplyHighlightToButton(subBtn, sub);
-                                }
-                            }
-                            else if (sub.Type == CommandComponentType.LinkButton)
-                            {
-                                var subLinkData = CreateLinkButton(sub);
-                                if (subLinkData != null)
-                                {
-                                    var linkSubBtn = splitBtn.AddPushButton(subLinkData);
-                                    if (linkSubBtn != null)
+                                    // Add separator to split button
+                                    try 
+                                    { 
+                                        splitBtn.AddSeparator(); 
+                                    } 
+                                    catch (Exception ex)
                                     {
-                                        ApplyIconToPushButtonThemeAware(linkSubBtn, sub, component);
+                                        _logger.Debug(ex, "Failed to add separator to split button '{0}'.", splitButtonText);
+                                    }
+                                }
+                                else if (sub.Type == CommandComponentType.PushButton ||
+                                         sub.Type == CommandComponentType.UrlButton ||
+                                         sub.Type == CommandComponentType.InvokeButton)
+                                {
+                                    var subBtn = splitBtn.AddPushButton(CreatePushButton(sub, assemblyInfo));
+                                    if (subBtn != null)
+                                    {
+                                        ApplyIconToPushButtonThemeAware(subBtn, sub, component);
                                         if (!string.IsNullOrEmpty(sub.Tooltip))
-                                            linkSubBtn.ToolTip = sub.Tooltip;
-                                        ApplyHighlightToButton(linkSubBtn, sub);
+                                            subBtn.ToolTip = sub.Tooltip;
+                                        ApplyHighlightToButton(subBtn, sub);
+                                    }
+                                }
+                                else if (sub.Type == CommandComponentType.LinkButton)
+                                {
+                                    var subLinkData = CreateLinkButton(sub);
+                                    if (subLinkData != null)
+                                    {
+                                        var linkSubBtn = splitBtn.AddPushButton(subLinkData);
+                                        if (linkSubBtn != null)
+                                        {
+                                            ApplyIconToPushButtonThemeAware(linkSubBtn, sub, component);
+                                            if (!string.IsNullOrEmpty(sub.Tooltip))
+                                                linkSubBtn.ToolTip = sub.Tooltip;
+                                            ApplyHighlightToButton(linkSubBtn, sub);
+                                        }
                                     }
                                 }
                             }
@@ -363,6 +401,13 @@ namespace pyRevitAssemblyBuilder.UIManager
 
             foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
             {
+                // Skip if this item already exists in the panel (e.g., during reload)
+                if (ItemExistsInPanel(parentPanel, child.UniqueId))
+                {
+                    _logger.Debug("Skipping stack item '{0}' - already exists in panel.", child.UniqueId);
+                    return; // If any item exists, the whole stack was already added
+                }
+
                 if (child.Type == CommandComponentType.PushButton ||
                     child.Type == CommandComponentType.SmartButton ||
                     child.Type == CommandComponentType.UrlButton ||
