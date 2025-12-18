@@ -82,7 +82,7 @@ namespace pyRevitExtensionParser
             get
             {
                 var value = _ini.IniReadValue("core", "new_loader");
-                return bool.TryParse(value, out var result) ? result : false;
+                return bool.TryParse(value, out var result) ? result : true;
             }
             set
             {
@@ -93,19 +93,19 @@ namespace pyRevitExtensionParser
         /// Gets or sets whether the Roslyn-based C# script loader is enabled.
         /// </summary>
         /// <remarks>
-        /// Defaults to false if not configured or if the value cannot be parsed.
+        /// Defaults to true if not configured or if the value cannot be parsed.
         /// Requires <see cref="NewLoader"/> to be enabled to take effect.
         /// </remarks>
         public bool NewLoaderRoslyn
         {
             get
             {
-                var value = _ini.IniReadValue("core", "new_loader_roslyn");
-                return bool.TryParse(value, out var result) ? result : false;
+                var value = _ini.IniReadValue("core", "use_roslyn_loader");
+                return bool.TryParse(value, out var result) ? result : true;
             }
             set
             {
-                _ini.IniWriteValue("core", "new_loader_roslyn", value ? TrueString : FalseString);
+                _ini.IniWriteValue("core", "use_roslyn_loader", value ? TrueString : FalseString);
             }
         }
         
