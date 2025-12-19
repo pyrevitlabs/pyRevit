@@ -324,8 +324,9 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             if (runtimePath != null)
                 Assembly.LoadFrom(runtimePath);
             var generator = new ReflectionEmitCommandTypeGenerator();
-            var asmName = new AssemblyName(extension.Name) { Version = new Version(1, 0, 0, 0) };
-            string moduleName = Path.GetFileNameWithoutExtension(outputPath);
+            string assemblyNameStr = Path.GetFileNameWithoutExtension(outputPath);
+            var asmName = new AssemblyName(assemblyNameStr) { Version = new Version(1, 0, 0, 0) };
+            string moduleName = assemblyNameStr;
 
 #if NETFRAMEWORK
             var asmBuilder = AppDomain.CurrentDomain.DefineDynamicAssembly(
