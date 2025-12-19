@@ -55,31 +55,54 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 
             if (_buildStrategy == AssemblyBuildStrategy.ILPack)
             {
-                // On .NET Core, hook into AssemblyLoadContext to resolve Lokad.ILPack two folders up
+                // Resolve Lokad.ILPack from two folders up
                 var baseDir = _baseDir;
                 var ilPackPath = Path.GetFullPath(Path.Combine(baseDir, "..", "..", "Lokad.ILPack.dll"));
+                
+                // Try to load directly first, only set up resolver if needed
+                if (File.Exists(ilPackPath))
+                {
+                    try
+                    {
 #if !NETFRAMEWORK
-                AssemblyLoadContext.Default.Resolving += (context, name) =>
-                {
-                    if (string.Equals(name.Name, "Lokad.ILPack", StringComparison.OrdinalIgnoreCase)
-                        && File.Exists(ilPackPath))
-                    {
-                        return context.LoadFromAssemblyPath(ilPackPath);
-                    }
-                    return null;
-                };
+                        AssemblyLoadContext.Default.LoadFromAssemblyPath(ilPackPath);
 #else
-                AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
-                {
-                    var name = new AssemblyName(args.Name).Name;
-                    if (string.Equals(name, "Lokad.ILPack", StringComparison.OrdinalIgnoreCase)
-                        && File.Exists(ilPackPath))
-                    {
-                        return Assembly.LoadFrom(ilPackPath);
-                    }
-                    return null;
-                };
+                        Assembly.LoadFrom(ilPackPath);
 #endif
+                    }
+                    catch
+                    {
+                        // If direct load fails, set up resolver with auto-unsubscribe
+#if !NETFRAMEWORK
+                        Func<AssemblyLoadContext, AssemblyName, Assembly> resolver = null;
+                        resolver = (context, name) =>
+                        {
+                            if (string.Equals(name.Name, "Lokad.ILPack", StringComparison.OrdinalIgnoreCase))
+                            {
+                                // Unsubscribe after resolving to avoid performance impact
+                                AssemblyLoadContext.Default.Resolving -= resolver;
+                                return context.LoadFromAssemblyPath(ilPackPath);
+                            }
+                            return null;
+                        };
+                        AssemblyLoadContext.Default.Resolving += resolver;
+#else
+                        ResolveEventHandler resolver = null;
+                        resolver = (sender, args) =>
+                        {
+                            var name = new AssemblyName(args.Name).Name;
+                            if (string.Equals(name, "Lokad.ILPack", StringComparison.OrdinalIgnoreCase))
+                            {
+                                // Unsubscribe after resolving to avoid performance impact
+                                AppDomain.CurrentDomain.AssemblyResolve -= resolver;
+                                return Assembly.LoadFrom(ilPackPath);
+                            }
+                            return null;
+                        };
+                        AppDomain.CurrentDomain.AssemblyResolve += resolver;
+#endif
+                    }
+                }
             }
         }
 
