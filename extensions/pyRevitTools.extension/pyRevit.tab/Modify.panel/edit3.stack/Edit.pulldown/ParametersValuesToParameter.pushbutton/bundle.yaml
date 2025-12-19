@@ -1,0 +1,15 @@
+title:
+  fr_fr: Copier les valeurs de plusieurs paramètres vers un paramètre sélectionné
+  en_us: Copy the values of several parameters to a chosen parameter
+  ru: Копировать значения параметров в выбранный параметр
+  de_de: Werte mehrerer Parameter in einen ausgewählten Parameter kopieren
+  es_es: Copiar los valores de varios parámetros a un parámetro seleccionado
+  chinese_s: 将多个参数的值复制到指定参数
+tooltip:
+  fr_fr: Sélection de la catégorie, puis des paramètres de la catégories d'intérêt, et concatainer la donnée dans un paramètre choisi
+  en_us: Selection of the category, then the parameters of the category of interest, and concatenating the data into a chosen parameter
+  ru: Выбор категории, затем параметров категории интереса, и конкатенация данных в выбранный параметр
+  de_de: Auswahl der Kategorie, dann der Parameter der Kategorie von Interesse, und Konkatenation der Daten in einen ausgewählten Parameter
+  es_es: Selección de la categoría, luego los parámetros de la categoría de interés, y concatenación de los datos en un parámetro seleccionado
+  chinese_s: 选择类别，然后选择该类别中需要处理的参数，并将数据串联后填入指定的参数
+author: Jean-Marc Couffin

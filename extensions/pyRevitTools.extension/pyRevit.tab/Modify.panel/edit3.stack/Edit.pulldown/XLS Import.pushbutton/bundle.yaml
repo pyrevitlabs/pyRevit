@@ -1,0 +1,31 @@
+title:
+  en_us: Import Parameters from Excel
+  de_de: Parameter aus Excel importieren
+  fr_fr: Importer les paramètres depuis Excel
+  ru: Импорт параметров из Excel
+
+  chinese_s: 从 Excel 导入参数
+tooltip:
+  en_us: >-
+    Imports element parameter values from a previously exported Excel file.
+    The file must contain valid element IDs and parameter values in configured unittype.
+    Read-only and unsupported parameters will be skipped. User-modifiable status is ignored.
+
+  de_de: >-
+    Importiert Werte von Elementparametern aus einer zuvor exportierten Excel-Datei.
+    Die Datei muss gültige Element-IDs und Parameterwerte im konfigurierten Einheitentyp enthalten.
+    Schreibgeschützte und nicht unterstützte Parameter werden übersprungen. Der Benutzer-Bearbeitbarkeitsstatus wird ignoriert.
+
+  fr_fr: >-
+    Importe les valeurs des paramètres d’éléments depuis un fichier Excel précédemment exporté.
+    Le fichier doit contenir des identifiants d’éléments valides et des valeurs de paramètres dans le type d’unité configuré.
+    Les paramètres en lecture seule ou non pris en charge seront ignorés. Le statut modifiable par l’utilisateur est ignoré.
+
+  ru: >-
+    Импортирует значения параметров элементов из ранее экспортированного файла Excel.
+    Файл должен содержать допустимые идентификаторы элементов и значения параметров в настроенном типе единиц.
+    Параметры только для чтения и неподдерживаемые параметры будут пропущены. Статус редактируемости пользователем игнорируется.
+
+  chinese_s: 从先前导出的 Excel 文件导入图元参数值。该文件必须包含有效的图元 ID 以及符合已配置单位类型的参数值。只读和不支持的参数将被跳过。用户可修改的状态将被忽略。
+author: wurschdhaud
+min_revit_version: 2022

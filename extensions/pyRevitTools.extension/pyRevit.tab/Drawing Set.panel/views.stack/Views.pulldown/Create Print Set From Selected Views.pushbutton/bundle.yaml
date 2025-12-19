@@ -3,13 +3,12 @@ title:
   fr_fr: Créer des impressions depuis les vues sélectionnées
   en_us: Creates print set from selected views
   de_de: Erstellt einen Drucksatz mit ausgewählten Ansichten
+  chinese_s: 从选定视图创建打印集
 tooltip:
   ru: Создает набор печати из выделенных видов.
   fr_fr: Créer des impressions depuis les vues sélectionnées
   en_us: Creates print set from selected views
   de_de: >-
     Es öffnet sich ein Auswahldialog, in dem die Ansichten für
-    den neuen Drucksatz ausgewählt werden müssen. Im nächsten 
-    Dialog kann der Name des Drucksatzes eingegeben werden. 
-    Im Drucken Dialog von Revit kann dieser neu erstellte 
-    Drucksatz ausgewählt werden. 
+    den neuen Drucksatz ausgewählt werden müssen. Im nächsten  Dialog kann der Name des Drucksatzes eingegeben werden.  Im Drucken Dialog von Revit kann dieser neu erstellte  Drucksatz ausgewählt werden. 
+  chinese_s: 从选定视图创建打印集

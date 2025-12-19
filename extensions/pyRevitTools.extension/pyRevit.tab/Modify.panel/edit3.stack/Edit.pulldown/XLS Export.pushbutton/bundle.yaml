@@ -1,0 +1,63 @@
+title:
+  en_us: Export Parameters to Excel
+  de_de: Parameter nach Excel exportieren
+  fr_fr: Exporter les paramètres vers Excel
+  ru: Экспорт параметров в Excel
+
+  chinese_s: 将参数导出到 Excel
+tooltip:
+  en_us: |
+    Exports element parameters of schedules to an Excel file.
+    You can choose which parameters to include. Parameter values are converted into project units for later reimport. 
+    Read-only and unsupported parameters are marked and locked.
+
+    shift-click allows an advanced export scope to be selected:
+    - schedule
+    - document - all
+    - document - types
+    - document - instances
+    - current view
+    - selection
+
+  de_de: |
+    Exportiert Elementparameter aus Bauteillisten in eine Excel-Datei.
+    Sie können auswählen, welche Parameter einbezogen werden sollen. Die Parameterwerte werden in die Projekteinheiten konvertiert, um einen späteren Reimport zu ermöglichen.
+    Schreibgeschützte und nicht unterstützte Parameter werden gekennzeichnet und gesperrt.
+
+    Mit Shift-Klick kann ein erweiterter Exportbereich ausgewählt werden:
+    - Bauteilliste
+    - Dokument - alle
+    - Dokument - Typen
+    - Dokument - Instanzen
+    - Aktuelle Ansicht
+    - Auswahl
+
+  fr_fr: |
+    Exporte les paramètres des éléments à partir des nomenclatures vers un fichier Excel.
+    Vous pouvez choisir les paramètres à inclure. Les valeurs sont converties en unités du projet pour permettre une réimportation ultérieure.
+    Les paramètres en lecture seule ou non pris en charge sont signalés et verrouillés.
+
+    Un clic avec la touche Maj permet de sélectionner une portée d’exportation avancée :
+    - nomenclature
+    - document - tout
+    - document - types
+    - document - instances
+    - vue actuelle
+    - sélection
+
+  ru: |
+    Экспортирует параметры элементов из спецификаций в файл Excel.
+    Вы можете выбрать, какие параметры включать. Значения параметров преобразуются в проектные единицы для последующего импорта.
+    Параметры только для чтения и неподдерживаемые параметры отмечаются и блокируются.
+
+    При нажатии Shift при клике можно выбрать расширенную область экспорта:
+    - спецификация
+    - документ - все
+    - документ - типы
+    - документ - экземпляры
+    - текущий вид
+    - выбор
+
+  chinese_s: "将明细表中的图元参数导出到 Excel 文件。\n您可以选择要包含哪些参数。参数值将转换为项目单位，以便后续重新导入。\n只读和不支持的参数会被标记并锁定。\n\nShift+单击可选择高级导出范围：\n- 明细表\n- 文档 - 全部\n- 文档 - 类型\n- 文档 - 实例\n- 当前视图\n- 选择"
+author: wurschdhaud
+min_revit_version: 2022

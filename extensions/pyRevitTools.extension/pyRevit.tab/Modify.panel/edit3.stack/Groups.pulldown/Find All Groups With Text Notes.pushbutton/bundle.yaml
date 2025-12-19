@@ -3,8 +3,10 @@ title:
   fr_fr: Trouver tous les groupes avec des notes textuelles
   en_us: Find all groups with text notes
   de_de: Finde alle Detailgruppen mit Text
+  chinese_s: 查找所有包含文字注释的组
 tooltip:
   ru: Показывает все группы, которые включают в себя текстовые примечания. Данный инструмент полезен для проверки правописания.
   fr_fr: Liste tous les groupes de détail qui incluent une note textuelle. Utile pour la correction orthographique.
   en_us: List all detail groups that include a text element inside them. This is helpful for spell checking.
   de_de: Listet alle Detailgruppen auf, die ein Textelement enthalten. Dies ist hilfreich für die Rechtschreibprüfung.
+  chinese_s: 列出内部包含文本元素的所有详图组。这对于拼写检查很有帮助。

@@ -3,12 +3,34 @@ title:
   fr_fr: Créer un sous-projet pour les fichiers liés
   en_us: Create Workset For Linked Element
   de_de: Erstelle Bearbeitungsbereich für verlinktes Element
+  chinese_s: 为链接图元创建工作集
 tooltip:
-  ru: Данный инструмент создаст рабочий набор для выделенного связанного элемента на основе его имени. Если модель не является совместной, она будет преобразована в модель для совмесного использования.
-  fr_fr: Cet outil créera un sous-projet pour le fichier lié sélectionné en fonction de son nom. Si le modèle n'est pas partagé, il sera converti en modèle partagé
-  en_us: This tool will create a workset for the selected linked element base on its name. If the model is not workshared, it will be converted to workshared model
+  ru: >-
+    Этот инструмент создаст рабочий набор для выбранного связанного элемента на основе его имени.  Если модель не является совместной, она будет преобразована в совместную модель.
+    Настройки позволяют:
+    - обрабатывать все элементы, а не только выбранные
+    - устанавливать рабочий набор также для типа элемента
+    - использовать собственные префиксы
+
+  fr_fr: >-
+    Cet outil créera un sous-projet (workset) pour l'élément lié sélectionné en fonction de son nom.  Si le modèle n'est pas encore partagé, il sera converti en modèle partagé.
+    Paramètres disponibles :
+    - appliquer à tous les éléments au lieu des seuls sélectionnés
+    - affecter aussi le type d'élément
+    - utiliser des préfixes personnalisés
+
+  en_us: >-
+    This tool will create a workset for the selected linked element based on its name.  If the model is not workshared, it will be converted into a workshared model.
+    Configurable options:
+    - include all elements instead of only selected ones
+    - apply workset to the element type as well
+    - use custom prefixes
+
   de_de: >-
-    Dieses Werkzeug erstellt ein Bearbeitungsbereich für das 
-    ausgewählte verknüpfte Element auf der Grundlage seines Namens. 
-    Wenn das Modell keine Arbeitsteilung verwendet, 
-    wird es in ein Modell mir Arbeitsteilung umgewandelt. 
+    Dieses Werkzeug erstellt ein Bearbeitungsbereich für das  ausgewählte verknüpfte Element auf der Grundlage seines Namens.  Wenn das Modell keine Arbeitsteilung verwendet,  wird es in ein Modell mit Arbeitsteilung umgewandelt.
+    Konfiguration für:
+    - alle Elemente anstatt nur gewählte
+    - auch der Typ des Elements wird gesetzt
+    - spezifische Prefixes
+
+  chinese_s: 此工具将根据所选链接图元的名称为其创建一个工作集。如果模型不是工作共享模型，它将被转换为工作共享模型。可配置选项包括：- 包含所有图元而非仅所选图元 - 同时将工作集应用于图元类型 - 使用自定义前缀

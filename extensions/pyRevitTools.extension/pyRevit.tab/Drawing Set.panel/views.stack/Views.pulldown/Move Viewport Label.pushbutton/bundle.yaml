@@ -8,6 +8,7 @@ title:
   ru: |-
     Переместить метку окна
 
+  chinese_s: 移动视口标签
 tooltip:
   fr_fr: |-
     Déplacer le Titre de la Fenêtre
@@ -22,9 +23,10 @@ tooltip:
     Переместить метку окна
     https://discourse.pyrevitlabs.io/t/i-developed-a-tool-need-help-to-get-it-into-the-new-release-of-pyrevit/7639/3
 
+  chinese_s: "移动视口标签\nhttps://discourse.pyrevitlabs.io/t/i-developed-a-tool-need-help-to-get-it-into-the-new-release-of-pyrevit/7639/3"
 authors:
   - Tim Hevel
   - Jean-Marc Couffin (C# to python and refactor)
 
 min_revit_version: 2022
-context: active-sheet 
+context: active-sheet

@@ -3,8 +3,10 @@ title:
   fr_fr: Trouver toutes les Feuilles Révisées
   en_us: Find All Revised Sheets
   de_de: FInde alle geänderten Pläne
+  chinese_s: 查找所有已修订图纸
 tooltip:
   ru: Показывает все листы с изменениями.
   fr_fr: Liste toutes les feuilles révisées comportant n'importe qu'elle révision
   en_us: Lists all sheets revised under any revision
   de_de: Es werden alle Pläne aufgelistet die mit einer beliebigen Änderung markiert wurden
+  chinese_s: 列出在任何修订下被修订的所有图纸

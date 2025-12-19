@@ -3,8 +3,14 @@ title:
   fr_fr: Active la Révision sur les Feuilles
   en_us: Set Revision On Sheets
   de_de: Aktiviere eine Änderung auf Plänen
+  chinese_s: 在图纸上设置修订
 tooltip:
-  ru: Выделите изменение и данный скрипт установит данное изменение для всех листов в модели как дополнительное изменение.
-  fr_fr: Sélectionnez une révision dans la liste des révisions et ce script définit cette révision sur toutes les feuilles du modèle en tant que révision supplémentaire
-  en_us: Select a revision from the list of revisions and this script set that revision on all sheets in the model as an additional revision
-  de_de: Wählen Sie eine Änderung aus der Liste der Änderungen aus und dieses Skript setzt diese Änderungen auf allen Plänen im Modell als zusätzliche Änderung
+  ru: >-
+    Выделите изменение из списка изменений, и данный скрипт установит это изменение для всех листов в модели как дополнительное изменение. Shift+Клик пропускает проверку на выпуск.
+  fr_fr: >-
+    Sélectionnez une révision dans la liste des révisions et ce script définit cette révision sur toutes les feuilles du modèle en tant que révision supplémentaire.   Maj+Clic contourne la vérification de publication.
+  en_us: >-
+    Select a revision from the list of revisions and this script set that revision on all sheets in the model as an additional revision.   Shift+Click bypasses the issued check.
+  de_de: >-
+    Wählen Sie eine Änderung aus der Liste der Änderungen aus und dieses Skript setzt diese Änderung auf allen Plänen im Modell als zusätzliche Änderung. Umschalt+Klick umgeht die Ausgabekontrolle.
+  chinese_s: 从修订列表中选择一个修订，此脚本将在模型中的所有图纸上将该修订设置为附加修订。Shift+单击可绕过已发布检查

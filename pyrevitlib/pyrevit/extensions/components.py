@@ -1,4 +1,5 @@
 """Base classes for pyRevit extension components."""
+
 import os
 import os.path as op
 import json
@@ -16,12 +17,12 @@ from pyrevit.extensions.genericcomps import GenericUICommand
 from pyrevit import versionmgr
 
 
-#pylint: disable=W0703,C0302,C0103
+# pylint: disable=W0703,C0302,C0103
 mlogger = get_logger(__name__)
 
 
-EXT_HASH_VALUE_KEY = 'dir_hash_value'
-EXT_HASH_VERSION_KEY = 'pyrvt_version'
+EXT_HASH_VALUE_KEY = "dir_hash_value"
+EXT_HASH_VERSION_KEY = "pyrvt_version"
 
 
 # Derived classes here correspond to similar elements in Revit ui.
@@ -31,11 +32,13 @@ EXT_HASH_VERSION_KEY = 'pyrvt_version'
 # ------------------------------------------------------------------------------
 class NoButton(GenericUICommand):
     """This is not a button."""
+
     type_id = exts.NOGUI_COMMAND_POSTFIX
 
 
 class NoScriptButton(GenericUICommand):
     """Base for buttons that doesn't run a script."""
+
     def __init__(self, cmp_path=None, needs_commandclass=False):
         # using classname otherwise exceptions in superclasses won't show
         GenericUICommand.__init__(self, cmp_path=cmp_path, needs_script=False)
@@ -43,16 +46,17 @@ class NoScriptButton(GenericUICommand):
         # read metadata from metadata file
         if self.meta:
             # get the target assembly from metadata
-            self.assembly = \
-                self.meta.get(exts.MDATA_LINK_BUTTON_ASSEMBLY, None)
+            self.assembly = self.meta.get(exts.MDATA_LINK_BUTTON_ASSEMBLY, None)
 
             # get the target command class from metadata
-            self.command_class = \
-                self.meta.get(exts.MDATA_LINK_BUTTON_COMMAND_CLASS, None)
+            self.command_class = self.meta.get(
+                exts.MDATA_LINK_BUTTON_COMMAND_CLASS, None
+            )
 
             # get the target command class from metadata
-            self.avail_command_class = \
-                self.meta.get(exts.MDATA_LINK_BUTTON_AVAIL_COMMAND_CLASS, None)
+            self.avail_command_class = self.meta.get(
+                exts.MDATA_LINK_BUTTON_AVAIL_COMMAND_CLASS, None
+            )
 
             # for invoke buttons there is no script source so
             # assign the metadata file to the script
@@ -66,13 +70,14 @@ class NoScriptButton(GenericUICommand):
         if self.directory and needs_commandclass and not self.command_class:
             mlogger.error("%s does not specify target command class.", self)
 
-        mlogger.debug('%s assembly.class: %s.%s',
-                      self, self.assembly, self.command_class)
+        mlogger.debug(
+            "%s assembly.class: %s.%s", self, self.assembly, self.command_class
+        )
 
     def get_target_assembly(self, required=False):
         assm_file = self.assembly.lower()
         if not assm_file.endswith(framework.ASSEMBLY_FILE_TYPE):
-            assm_file += '.' + framework.ASSEMBLY_FILE_TYPE
+            assm_file += "." + framework.ASSEMBLY_FILE_TYPE
 
         # try finding assembly for this specific host version
         target_asm_by_host = self.find_bundle_module(assm_file, by_host=True)
@@ -86,32 +91,31 @@ class NoScriptButton(GenericUICommand):
         if required:
             mlogger.error("%s can not find target assembly.", self)
 
-        return ''
+        return ""
 
 
 class LinkButton(NoScriptButton):
     """Link button."""
+
     type_id = exts.LINK_BUTTON_POSTFIX
 
     def __init__(self, cmp_path=None):
         # using classname otherwise exceptions in superclasses won't show
-        NoScriptButton.__init__(
-            self,
-            cmp_path=cmp_path,
-            needs_commandclass=True
-            )
+        NoScriptButton.__init__(self, cmp_path=cmp_path, needs_commandclass=True)
 
         if self.context:
             mlogger.warn(
-                "Linkbutton bundles do not support \"context:\". "
-                "Use \"availability_class:\" instead and specify name of "
-                "availability class in target assembly | %s", self
-                )
+                'Linkbutton bundles do not support "context:". '
+                'Use "availability_class:" instead and specify name of '
+                "availability class in target assembly | %s",
+                self,
+            )
             self.context = None
 
 
 class InvokeButton(NoScriptButton):
     """Invoke button."""
+
     type_id = exts.INVOKE_BUTTON_POSTFIX
 
     def __init__(self, cmp_path=None):
@@ -121,65 +125,137 @@ class InvokeButton(NoScriptButton):
 
 class PushButton(GenericUICommand):
     """Push button."""
+
     type_id = exts.PUSH_BUTTON_POSTFIX
 
 
 class PanelPushButton(GenericUICommand):
     """Panel push button."""
+
     type_id = exts.PANEL_PUSH_BUTTON_POSTFIX
 
 
 class SmartButton(GenericUICommand):
     """Smart button."""
+
     type_id = exts.SMART_BUTTON_POSTFIX
 
 
 class ContentButton(GenericUICommand):
     """Content Button."""
+
     type_id = exts.CONTENT_BUTTON_POSTFIX
 
     def __init__(self, cmp_path=None):
         # using classname otherwise exceptions in superclasses won't show
-        GenericUICommand.__init__(
-            self,
-            cmp_path=cmp_path,
-            needs_script=False
-            )
+        GenericUICommand.__init__(self, cmp_path=cmp_path, needs_script=False)
+
+        # Initialize content paths
+        self.content = None
+        self.content_alt = None
+
+        # Try to get content file from metadata first
+        if self.meta:
+            content_from_meta = self.meta.get(exts.MDATA_CONTENT, None)
+            if content_from_meta:
+                resolved_path = self._resolve_content_path(content_from_meta)
+                if resolved_path:
+                    self.script_file = resolved_path
+                else:
+                    mlogger.error(
+                        "Content file specified in metadata not found: %s",
+                        content_from_meta,
+                    )
+
+            alt_content_from_meta = self.meta.get(exts.MDATA_CONTENT_ALT, None)
+            if alt_content_from_meta:
+                resolved_alt_path = self._resolve_content_path(alt_content_from_meta)
+                if resolved_alt_path:
+                    self.config_script_file = resolved_alt_path
+                else:
+                    mlogger.error(
+                        "Alternative content file specified in metadata not found: %s",
+                        alt_content_from_meta,
+                    )
+
+        # Fall back to naming convention if not found in metadata
         # find content file
-        self.script_file = \
-            self.find_bundle_file([
-                exts.CONTENT_VERSION_POSTFIX.format(
-                    version=HOST_APP.version
-                    ),
-                ])
         if not self.script_file:
-            self.script_file = \
-                self.find_bundle_file([
-                    exts.CONTENT_POSTFIX,
-                    ])
+            self.script_file = self.find_bundle_file(
+                [
+                    exts.CONTENT_VERSION_POSTFIX.format(version=HOST_APP.version),
+                ]
+            )
+            if not self.script_file:
+                self.script_file = self.find_bundle_file(
+                    [
+                        exts.CONTENT_POSTFIX,
+                    ]
+                )
         # requires at least one bundles
         if self.directory and not self.script_file:
-            mlogger.error('Command %s: Does not have content file.', self)
-            self.script_file = ''
+            mlogger.error("Command %s: Does not have content file.", self)
+            self.script_file = ""
 
         # find alternative content file
-        self.config_script_file = \
-            self.find_bundle_file([
-                exts.ALT_CONTENT_VERSION_POSTFIX.format(
-                    version=HOST_APP.version
-                    ),
-                ])
         if not self.config_script_file:
-            self.config_script_file = \
-                self.find_bundle_file([
-                    exts.ALT_CONTENT_POSTFIX,
-                    ])
+            self.config_script_file = self.find_bundle_file(
+                [
+                    exts.ALT_CONTENT_VERSION_POSTFIX.format(version=HOST_APP.version),
+                ]
+            )
+            if not self.config_script_file:
+                self.config_script_file = self.find_bundle_file(
+                    [
+                        exts.ALT_CONTENT_POSTFIX,
+                    ]
+                )
         if not self.config_script_file:
             self.config_script_file = self.script_file
+
+    def _resolve_content_path(self, path):
+        # Check if it's an absolute path
+        if op.isabs(path):
+            if op.exists(path):
+                if not path.lower().endswith(exts.CONTENT_FILE_FORMAT):
+                    mlogger.error(
+                        "Content file must be a Revit family (.rfa): %s", path
+                    )
+                    return None
+                return path
+            else:
+                mlogger.error("Content file specified in metadata not found: %s", path)
+                return None
+
+        # Treat as relative to bundle directory
+        if self.directory:
+            # Normalize the path to handle .. and . properly
+            bundle_path = op.normpath(op.join(self.directory, path))
+            if op.exists(bundle_path):
+                if not bundle_path.lower().endswith(exts.CONTENT_FILE_FORMAT):
+                    mlogger.error(
+                        "Content file must be a Revit family (.rfa): %s", bundle_path
+                    )
+                    return None
+                return bundle_path
+            else:
+                mlogger.error(
+                    "Content file specified in metadata not found: %s (resolved to: %s)",
+                    path,
+                    bundle_path,
+                )
+                return None
+
+        mlogger.error(
+            "Content file specified in metadata not found: %s (no bundle directory)",
+            path,
+        )
+        return None
 
 
 class URLButton(GenericUICommand):
     """URL button."""
+
     type_id = exts.URL_BUTTON_POSTFIX
 
     def __init__(self, cmp_path=None):
@@ -189,8 +265,7 @@ class URLButton(GenericUICommand):
         # read metadata from metadata file
         if self.meta:
             # get the target url from metadata
-            self.target_url = \
-                self.meta.get(exts.MDATA_URL_BUTTON_HYPERLINK, None)
+            self.target_url = self.meta.get(exts.MDATA_URL_BUTTON_HYPERLINK, None)
             # for url buttons there is no script source so
             # assign the metadata file to the script
             self.script_file = self.config_script_file = self.meta_file
@@ -200,7 +275,7 @@ class URLButton(GenericUICommand):
         if self.directory and not self.target_url:
             mlogger.error("%s does not specify target url.", self)
 
-        mlogger.debug('%s target url: %s', self, self.target_url)
+        mlogger.debug("%s target url: %s", self, self.target_url)
 
     def get_target_url(self):
         return self.target_url or ""
@@ -212,6 +287,7 @@ class GenericUICommandGroup(GenericUIContainer):
     Command groups only include commands.
     These classes can include GenericUICommand as sub components.
     """
+
     allowed_sub_cmps = [GenericUICommand, NoScriptButton]
 
     @property
@@ -219,12 +295,11 @@ class GenericUICommandGroup(GenericUIContainer):
         # stacks don't have control id
         if self.parent_ctrl_id:
             deepend_parent_id = self.parent_ctrl_id.replace(
-                '_%CustomCtrl',
-                '_%CustomCtrl_%CustomCtrl'
+                "_%CustomCtrl", "_%CustomCtrl_%CustomCtrl"
             )
-            return deepend_parent_id + '%{}'.format(self.name)
+            return deepend_parent_id + "%{}".format(self.name)
         else:
-            return '%{}%'.format(self.name)
+            return "%{}%".format(self.name)
 
     def has_commands(self):
         for component in self:
@@ -234,16 +309,54 @@ class GenericUICommandGroup(GenericUIContainer):
 
 class PullDownButtonGroup(GenericUICommandGroup):
     """Pulldown button group."""
+
     type_id = exts.PULLDOWN_BUTTON_POSTFIX
+
+
+class ComboBoxGroup(GenericUICommandGroup):
+    """ComboBox group."""
+
+    type_id = exts.COMBOBOX_POSTFIX
+
+    def __init__(self, cmp_path=None):
+        GenericUICommandGroup.__init__(self, cmp_path=cmp_path)
+        self.members = []
+
+        # Read members from metadata
+        if not self.meta:
+            return
+        raw_members = self.meta.get("members", [])
+        if isinstance(raw_members, list):
+            # Process list of members - preserve full dict for rich metadata (icons, tooltips, etc.)
+            processed_members = []
+            for m in raw_members:
+                if isinstance(m, dict) or (
+                    hasattr(m, "get") and hasattr(m, "keys")
+                ):
+                    # OrderedDict or dict format: {'id': 'settings', 'text': 'Settings', 'icon': '...', ...}
+                    # Preserve the full dictionary to keep all properties (icon, tooltip, group, etc.)
+                    processed_members.append(m)
+                elif isinstance(m, (list, tuple)) and len(m) >= 2:
+                    # Tuple/list format: ('id', 'text') - convert to dict for consistency
+                    processed_members.append({"id": m[0], "text": m[1]})
+                elif isinstance(m, str):
+                    # String format: 'Option 1' - convert to dict for consistency
+                    processed_members.append({"id": m, "text": m})
+            self.members = processed_members
+        elif isinstance(raw_members, dict):
+            # Dict format: {'A': 'Option A'} - convert to list of dicts
+            self.members = [{"id": k, "text": v} for k, v in raw_members.items()]
 
 
 class SplitPushButtonGroup(GenericUICommandGroup):
     """Split push button group."""
+
     type_id = exts.SPLITPUSH_BUTTON_POSTFIX
 
 
 class SplitButtonGroup(GenericUICommandGroup):
     """Split button group."""
+
     type_id = exts.SPLIT_BUTTON_POSTFIX
 
 
@@ -252,15 +365,15 @@ class GenericStack(GenericUIContainer):
 
     Stacks include GenericUICommand, or GenericUICommandGroup.
     """
+
     type_id = exts.STACK_BUTTON_POSTFIX
 
-    allowed_sub_cmps = \
-        [GenericUICommandGroup, GenericUICommand, NoScriptButton]
+    allowed_sub_cmps = [GenericUICommandGroup, GenericUICommand, NoScriptButton]
 
     @property
     def control_id(self):
         # stacks don't have control id
-        return self.parent_ctrl_id if self.parent_ctrl_id else ''
+        return self.parent_ctrl_id if self.parent_ctrl_id else ""
 
     def has_commands(self):
         for component in self:
@@ -274,6 +387,7 @@ class GenericStack(GenericUIContainer):
 
 class StackButtonGroup(GenericStack):
     """Stack buttons group."""
+
     type_id = exts.STACK_BUTTON_POSTFIX
 
 
@@ -282,32 +396,36 @@ class Panel(GenericUIContainer):
 
     Panels include GenericStack, GenericUICommand, or GenericUICommandGroup
     """
+
     type_id = exts.PANEL_POSTFIX
-    allowed_sub_cmps = \
-        [GenericStack, GenericUICommandGroup, GenericUICommand, NoScriptButton]
+    allowed_sub_cmps = [
+        GenericStack,
+        GenericUICommandGroup,
+        GenericUICommand,
+        NoScriptButton,
+    ]
 
     def __init__(self, cmp_path=None):
         # using classname otherwise exceptions in superclasses won't show
         GenericUIContainer.__init__(self, cmp_path=cmp_path)
-        self.panel_background = \
-            self.title_background = \
-                self.slideout_background = None
+        self.panel_background = self.title_background = self.slideout_background = None
         # read metadata from metadata file
         if self.meta:
             # check for background color configs
-            self.panel_background = \
-                self.meta.get(exts.MDATA_BACKGROUND_KEY, None)
+            self.panel_background = self.meta.get(exts.MDATA_BACKGROUND_KEY, None)
             if self.panel_background:
                 if isinstance(self.panel_background, dict):
                     self.title_background = self.panel_background.get(
-                        exts.MDATA_BACKGROUND_TITLE_KEY, None)
+                        exts.MDATA_BACKGROUND_TITLE_KEY, None
+                    )
                     self.slideout_background = self.panel_background.get(
-                        exts.MDATA_BACKGROUND_SLIDEOUT_KEY, None)
+                        exts.MDATA_BACKGROUND_SLIDEOUT_KEY, None
+                    )
                     self.panel_background = self.panel_background.get(
-                        exts.MDATA_BACKGROUND_PANEL_KEY, None)
+                        exts.MDATA_BACKGROUND_PANEL_KEY, None
+                    )
                 elif not isinstance(self.panel_background, str):
-                    mlogger.error(
-                        "%s bad background definition in metadata.", self)
+                    mlogger.error("%s bad background definition in metadata.", self)
 
     def has_commands(self):
         for component in self:
@@ -331,13 +449,15 @@ class Panel(GenericUIContainer):
         else:
             # if child is a stack item, check its children too
             for component in self:
-                if isinstance(component, GenericStack) \
-                        and component.contains(item_name):
+                if isinstance(component, GenericStack) and component.contains(
+                    item_name
+                ):
                     return True
 
 
 class Tab(GenericUIContainer):
     """Tab container for Panels."""
+
     type_id = exts.TAB_POSTFIX
     allowed_sub_cmps = [Panel]
 
@@ -350,6 +470,7 @@ class Tab(GenericUIContainer):
 
 class Extension(GenericUIContainer):
     """UI Tools extension."""
+
     type_id = exts.ExtensionTypes.UI_EXTENSION.POSTFIX
     allowed_sub_cmps = [Tab]
 
@@ -366,35 +487,39 @@ class Extension(GenericUIContainer):
         #   cache only saves the png address and not the contents so they'll
         #   get loaded everytime
         #       see http://stackoverflow.com/a/5141710/2350244
-        pat = '(\\' + exts.TAB_POSTFIX + ')|(\\' + exts.PANEL_POSTFIX + ')'
-        pat += '|(\\' + exts.PULLDOWN_BUTTON_POSTFIX + ')'
-        pat += '|(\\' + exts.SPLIT_BUTTON_POSTFIX + ')'
-        pat += '|(\\' + exts.SPLITPUSH_BUTTON_POSTFIX + ')'
-        pat += '|(\\' + exts.STACK_BUTTON_POSTFIX + ')'
-        pat += '|(\\' + exts.PUSH_BUTTON_POSTFIX + ')'
-        pat += '|(\\' + exts.SMART_BUTTON_POSTFIX + ')'
-        pat += '|(\\' + exts.LINK_BUTTON_POSTFIX + ')'
-        pat += '|(\\' + exts.PANEL_PUSH_BUTTON_POSTFIX + ')'
-        pat += '|(\\' + exts.PANEL_PUSH_BUTTON_POSTFIX + ')'
-        pat += '|(\\' + exts.CONTENT_BUTTON_POSTFIX + ')'
+        pat = "(\\" + exts.TAB_POSTFIX + ")|(\\" + exts.PANEL_POSTFIX + ")"
+        pat += "|(\\" + exts.PULLDOWN_BUTTON_POSTFIX + ")"
+        pat += "|(\\" + exts.SPLIT_BUTTON_POSTFIX + ")"
+        pat += "|(\\" + exts.SPLITPUSH_BUTTON_POSTFIX + ")"
+        pat += "|(\\" + exts.STACK_BUTTON_POSTFIX + ")"
+        pat += "|(\\" + exts.PUSH_BUTTON_POSTFIX + ")"
+        pat += "|(\\" + exts.SMART_BUTTON_POSTFIX + ")"
+        pat += "|(\\" + exts.LINK_BUTTON_POSTFIX + ")"
+        pat += "|(\\" + exts.PANEL_PUSH_BUTTON_POSTFIX + ")"
+        pat += "|(\\" + exts.PANEL_PUSH_BUTTON_POSTFIX + ")"
+        pat += "|(\\" + exts.CONTENT_BUTTON_POSTFIX + ")"
+        pat += "|(\\" + exts.COMBOBOX_POSTFIX + ")"
         # tnteresting directories
-        pat += '|(\\' + exts.COMP_LIBRARY_DIR_NAME + ')'
-        pat += '|(\\' + exts.COMP_HOOKS_DIR_NAME + ')'
+        pat += "|(\\" + exts.COMP_LIBRARY_DIR_NAME + ")"
+        pat += "|(\\" + exts.COMP_HOOKS_DIR_NAME + ")"
         # search for scripts, setting files (future support), and layout files
-        patfile = '(\\' + exts.PYTHON_SCRIPT_FILE_FORMAT + ')'
-        patfile += '|(\\' + exts.CSHARP_SCRIPT_FILE_FORMAT + ')'
-        patfile += '|(\\' + exts.VB_SCRIPT_FILE_FORMAT + ')'
-        patfile += '|(\\' + exts.RUBY_SCRIPT_FILE_FORMAT + ')'
-        patfile += '|(\\' + exts.DYNAMO_SCRIPT_FILE_FORMAT + ')'
-        patfile += '|(\\' + exts.GRASSHOPPER_SCRIPT_FILE_FORMAT + ')'
-        patfile += '|(\\' + exts.GRASSHOPPERX_SCRIPT_FILE_FORMAT + ')'
-        patfile += '|(\\' + exts.CONTENT_FILE_FORMAT + ')'
-        patfile += '|(\\' + exts.YAML_FILE_FORMAT + ')'
-        patfile += '|(\\' + exts.JSON_FILE_FORMAT + ')'
+        patfile = "(\\" + exts.PYTHON_SCRIPT_FILE_FORMAT + ")"
+        patfile += "|(\\" + exts.CSHARP_SCRIPT_FILE_FORMAT + ")"
+        patfile += "|(\\" + exts.VB_SCRIPT_FILE_FORMAT + ")"
+        patfile += "|(\\" + exts.RUBY_SCRIPT_FILE_FORMAT + ")"
+        patfile += "|(\\" + exts.DYNAMO_SCRIPT_FILE_FORMAT + ")"
+        patfile += "|(\\" + exts.GRASSHOPPER_SCRIPT_FILE_FORMAT + ")"
+        patfile += "|(\\" + exts.GRASSHOPPERX_SCRIPT_FILE_FORMAT + ")"
+        patfile += "|(\\" + exts.CONTENT_FILE_FORMAT + ")"
+        patfile += "|(\\" + exts.YAML_FILE_FORMAT + ")"
+        patfile += "|(\\" + exts.JSON_FILE_FORMAT + ")"
         from pyrevit.revit import ui
-        return coreutils.calculate_dir_hash(self.directory, pat, patfile) + str(ui.get_current_theme())
 
-    def _update_from_directory(self):   #pylint: disable=W0221
+        return coreutils.calculate_dir_hash(self.directory, pat, patfile) + str(
+            ui.get_current_theme()
+        )
+
+    def _update_from_directory(self):  # pylint: disable=W0221
         # using classname otherwise exceptions in superclasses won't show
         GenericUIContainer._update_from_directory(self)
         self.pyrvt_version = versionmgr.get_pyrevit_version().get_formatted()
@@ -417,12 +542,14 @@ class Extension(GenericUIContainer):
 
     @property
     def startup_script(self):
-        return self.find_bundle_file([
-            exts.PYTHON_EXT_STARTUP_FILE,
-            exts.CSHARP_EXT_STARTUP_FILE,
-            exts.VB_EXT_STARTUP_FILE,
-            exts.RUBY_EXT_STARTUP_FILE,
-        ])
+        return self.find_bundle_file(
+            [
+                exts.PYTHON_EXT_STARTUP_FILE,
+                exts.CSHARP_EXT_STARTUP_FILE,
+                exts.VB_EXT_STARTUP_FILE,
+                exts.RUBY_EXT_STARTUP_FILE,
+            ]
+        )
 
     def get_hash(self):
         return coreutils.get_str_hash(safe_strtype(self.get_cache_data()))
@@ -436,13 +563,15 @@ class Extension(GenericUIContainer):
     def get_manifest(self):
         manifest_file = self.get_manifest_file()
         if manifest_file:
-            with codecs.open(manifest_file, 'r', 'utf-8') as mfile:
+            with codecs.open(manifest_file, "r", "utf-8") as mfile:
                 try:
                     manifest_cfg = json.load(mfile)
                     return manifest_cfg
                 except Exception as manfload_err:
-                    print('Can not parse ext manifest file: {} '
-                          '| {}'.format(manifest_file, manfload_err))
+                    print(
+                        "Can not parse ext manifest file: {} "
+                        "| {}".format(manifest_file, manfload_err)
+                    )
                     return
 
     def configure(self):
@@ -457,8 +586,9 @@ class Extension(GenericUIContainer):
             for item in os.listdir(self.binary_path):
                 item_path = op.join(self.binary_path, item)
                 item_name = item.lower()
-                if op.isfile(item_path) \
-                        and item_name.endswith(framework.ASSEMBLY_FILE_TYPE):
+                if op.isfile(item_path) and item_name.endswith(
+                    framework.ASSEMBLY_FILE_TYPE
+                ):
                     modules.append(item_path)
         return modules
 
@@ -482,6 +612,7 @@ class Extension(GenericUIContainer):
 
 class LibraryExtension(GenericComponent):
     """Library extension."""
+
     type_id = exts.ExtensionTypes.LIB_EXTENSION.POSTFIX
 
     def __init__(self, cmp_path=None):
@@ -493,8 +624,9 @@ class LibraryExtension(GenericComponent):
             self.name = op.splitext(op.basename(self.directory))[0]
 
     def __repr__(self):
-        return '<type_id \'{}\' name \'{}\' @ \'{}\'>'\
-            .format(self.type_id, self.name, self.directory)
+        return "<type_id '{}' name '{}' @ '{}'>".format(
+            self.type_id, self.name, self.directory
+        )
 
     @classmethod
     def matches(cls, component_path):

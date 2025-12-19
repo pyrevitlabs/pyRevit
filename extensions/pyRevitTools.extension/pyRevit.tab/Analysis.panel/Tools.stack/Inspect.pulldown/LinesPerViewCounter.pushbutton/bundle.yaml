@@ -3,9 +3,11 @@ title:
   fr_fr: Compteur de lignes par vue
   en_us: Lines Per View Counter
   de_de: Anzahl der Linien je Ansicht
+  chinese_s: 视图线数统计器
 tooltip:
   ru: Перечислите отсортированное количество строк детализации для всех видов со строками детализации. Нажмите SHIFT + щелчок, чтобы получить счетчик ссылок Revit.
   fr_fr: Lister classée du nombre de lignes de détail par vue contenant des lignes de détail. Utilisez SHIFT+Click pour obtenir le décompte pour les fichiers liés.
   en_us: List sorted Detail Line Counts for all views with Detail Lines. Press SHIFT+Click to get the count for Revit Links
-  de_de: Es werden für alle Ansichten die Anzahl der Detaillinien ermittelt. SHIFT+Click drücken, um auch die Anzahl von Revit Verknüpfungen zu erhalten. 
+  de_de: Es werden für alle Ansichten die Anzahl der Detaillinien ermittelt. SHIFT+Click drücken, um auch die Anzahl von Revit Verknüpfungen zu erhalten.
+  chinese_s: 列出所有包含详图线的视图的详图线数量（排序）。按住 SHIFT 单击可获取 Revit 链接的线数
 author: 'Original by Frederic Beaupere; Improvements by Jean-Marc Couffin'

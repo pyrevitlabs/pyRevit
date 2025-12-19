@@ -2,10 +2,9 @@
 
 # pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 import math
-from System import Int64
 
 from pyrevit import PyRevitException
-from pyrevit import revit, DB, HOST_APP
+from pyrevit import revit, DB
 from pyrevit.framework import List
 from pyrevit.coreutils import logger
 from pyrevit.coreutils import moduleutils
@@ -686,15 +685,8 @@ class FilterOverridesAction(basetypes.CopyPasteStateAction):
             view_template = view.Document.GetElement(view.ViewTemplateId)
             non_controlled_params = view_template.GetNonControlledTemplateParameterIds()
             # check if filters are controlled by template
-            if HOST_APP.is_newer_than(2025):
-                filter_vis_graphics_parameter_id = DB.ElementId(
-                    Int64(DB.BuiltInParameter.VIS_GRAPHICS_FILTERS)
-                )
-            else:
-                filter_vis_graphics_parameter_id = DB.ElementId(
-                    int(DB.BuiltInParameter.VIS_GRAPHICS_FILTERS)
-                )
-            if filter_vis_graphics_parameter_id not in non_controlled_params:
+            if DB.ElementId(DB.BuiltInParameter.VIS_GRAPHICS_FILTERS) \
+                    not in non_controlled_params:
                 return True
         return False
 

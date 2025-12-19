@@ -2,7 +2,9 @@ title:
   fr_fr: Synchroniser
   en_us: Synchronize
   de_de: Synchronisieren
-tooltip: 
+  ru: Синхронизация
+  chinese_s: 同步
+tooltip:
   fr_fr: >-
     Remplace le bouton de synchronisation
 
@@ -14,13 +16,23 @@ tooltip:
   de_de: >-
     Dieses Skript ersetzt den Synchronisierungsfunktion von Revit
 
-    Shift+Click: 
-    Wenn man mit gedrückte Shift Taste auf den Befehl klickt 
-    kann man das automatische Schliessen von Ansichten vor 
-    dem synchronisieren und das Öffnen der Startansicht 
-    aktivieren bzw deaktivieren. Es stehen folgenden Optionen 
-    zur Auswahl:
+    Shift+Click:  Wenn man mit gedrückte Shift Taste auf den Befehl klickt  kann man das automatische Schliessen von Ansichten vor  dem synchronisieren und das Öffnen der Startansicht  aktivieren bzw deaktivieren. Es stehen folgenden Optionen  zur Auswahl:
     1) Close them and call it a day (Ansichten werden und bleiben geschlossen)
     2) Close them but reopen them right after (Ansichten werden geschlossen und nach dem synchronisieren wieder geöffnet)
     3) Don't touch my views (Ansichten bleiben beim Synchronisieren geöffnet)
+  ru: >-
+    Заменяет кнопку синхронизации
+
+    Shift+Клик: включает или отключает закрытие неактивных окон и активацию стартового вида
+
+
+    Доступны следующие опции:
+
+    "Close them and call it a day" – виды будут закрыты.
+
+    "Close them but reopen them right after" – виды будут закрыты, но после синхронизации снова откроются.
+
+    "Don't touch my views" – виды при синхронизации останутся открытыми.
+
+  chinese_s: "替换同步按钮\nShift+单击： 启用或禁用关闭非活动窗口以及激活起始视图"
 author: Aniket Dikshit, Jean-Marc Couffin

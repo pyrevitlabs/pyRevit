@@ -57,6 +57,23 @@
     <system:String x:Key="CoreSettings.Development.Description">Misc options for pyRevit development</system:String>
     <system:String x:Key="CoreSettings.Development.LoadBeta">Load Beta Tools (Scripts with __beta__ = True, Reload is required)</system:String>
 
+    <system:String x:Key="CoreSettings.CloseOtherConsoles">Close other open consoles</system:String>
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.Description">
+        If enabled, pyRevit will close other output consoles when a new script is run.
+        This helps to reduce the number of open output windows. Activate this option, unless you want to compare
+        multiple output data.
+    </system:String>
+
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.Current">Current command consoles</system:String>
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.Current.Description">
+        Close all console windows associated with the current running command.
+    </system:String>
+
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.CloseAll">All consoles</system:String>
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.CloseAll.Description">
+        Close all currently open console windows, even those that are not associated with the running command.
+    </system:String>
+
     <system:String x:Key="CoreSettings.Caching">Caching</system:String>
     <system:String x:Key="CoreSettings.Caching.Button">Reset Caching to default</system:String>
     <system:Double x:Key="CoreSettings.Caching.Button.With">200</system:Double>

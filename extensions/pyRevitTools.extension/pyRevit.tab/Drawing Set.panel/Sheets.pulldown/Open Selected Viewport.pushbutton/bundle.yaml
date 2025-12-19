@@ -3,11 +3,11 @@ title:
   fr_fr: Ouvrir les Vues Sélectionnées
   en_us: Open Selected Viewports
   de_de: Öffne Ansicht des ausgewählten Ansichtsfensters
+  chinese_s: 打开选定视口
 tooltip:
   ru: >-
     Открывает вид, связанный с выбранным видовым экраном.
-    Вы можете назначить ярлык для этого инструмента 
-    и этой быстрый способ открыть виды при работе с листами.
+    Вы можете назначить ярлык для этого инструмента  и этой быстрый способ открыть виды при работе с листами.
   fr_fr: >-
     Ouvre la vue associée à la fenêtre sélectionnée. Vous pouvez attribuer un
     raccourci à cet outil et c'est un moyen rapide d'ouvrir les vues lorsque
@@ -17,6 +17,5 @@ tooltip:
     shortcut to this tool and this is a quick way top open the views when
     working on sheets
   de_de: >-
-    Öffnet die Ansicht des aktuell ausgewählten Ansichtsfensters auf einem Plan. 
-    Es ist empfehlenswert für dieses Skript ein Tastaturkürzel zu vergeben, um 
-    schnell zu Ansichten zu wechseln, wenn man auf einem Plan ist.  
+    Öffnet die Ansicht des aktuell ausgewählten Ansichtsfensters auf einem Plan.  Es ist empfehlenswert für dieses Skript ein Tastaturkürzel zu vergeben, um  schnell zu Ansichten zu wechseln, wenn man auf einem Plan ist.  
+  chinese_s: 打开与所选视口关联的视图。您可为该工具分配快捷键，这是在处理图纸时快速打开视图的方法

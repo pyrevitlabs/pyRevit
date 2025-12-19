@@ -3,8 +3,10 @@ title:
   fr_fr: Correspondance de peinture
   en_us: Match paint
   de_de: Eingefärbtes Material kopieren
+  chinese_s: 匹配涂料
 tooltip:
   ru: Выберите материал с окрашенной поверхностью и примените для других поверхностей.
   fr_fr: Permet d'appliquer le matériau paint d'une surface sur une autre surface
   en_us: Pickup painted surface material and apply to other surfaces
   de_de: Übernimmt ein eingefärbtes Oberflächen Material und kopiert es auf eine andere Fläche
+  chinese_s: 拾取已涂刷的表面材质，并将其应用到其他表面

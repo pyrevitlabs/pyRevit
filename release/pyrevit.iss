@@ -1,8 +1,9 @@
 #define MyAppName "pyRevit"
 #define MyAppUUID "f2a3da53-6f34-41d5-abbd-389ffa7f4d5f"
-#define MyAppVersion "5.2.0.25181"
+#define MyAppVersion "5.3.1.25308"
 #define MyAppPublisher "pyRevitLabs"
 #define MyAppURL "pyrevitlabs.io"
+#include "CodeDependencies.iss"
 
 [Setup]
 ; App information
@@ -20,7 +21,6 @@ DefaultGroupName={#MyAppName}
 DisableDirPage=auto
 DisableStartupPrompt=yes
 DisableProgramGroupPage=yes
-ArchitecturesInstallIn64BitMode=x64
 ChangesEnvironment=yes
 ;     path
 DefaultDirName={userappdata}\{#MyAppName}-Master
@@ -38,6 +38,7 @@ DisableWelcomePage=no
 WizardStyle=classic
 WizardImageFile=.\pyrevit.bmp
 WizardSmallImageFile=.\pyrevit-banner.bmp
+ArchitecturesInstallIn64BitMode=x64
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -85,3 +86,11 @@ Filename: "{app}\bin\pyrevit.exe"; Description: "Attaching this clone..."; Param
 [UninstallRun]
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "ClearCaches"; Parameters: "caches clear --all"; Flags: runhidden
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detach --all"; Flags: runhidden
+
+[Code]
+function InitializeSetup: Boolean;
+begin
+  Dependency_AddDotNet80;
+  Dependency_AddDotNet80Desktop;
+  Result := True;
+end;

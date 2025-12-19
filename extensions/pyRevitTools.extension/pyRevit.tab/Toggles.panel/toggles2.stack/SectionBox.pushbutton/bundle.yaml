@@ -1,15 +1,25 @@
 title:
-  ru: Границы 3D вида
+  ru: Края 3D вида
   fr_fr: Zone de coupe
   en_us: Section Box
   de_de: 3D-Schnittbereich
+  chinese_s: 剖面框
 tooltip:
-  ru: Переключает видимость границы 3D вида в текущем 3D виде.
-  fr_fr: Bascule la visibilité de la zone de coupe dans la vue 3D actuelle
-  en_us: Toggles visibility of section box in current 3D view
+  ru: >-
+    Переключает либо видимость, либо активность границы 3D-вида в текущем 3D виде —
+    в зависимости от конфигурации. При выборе режима активности, область сохраняется при отключении
+    и восстанавливается при повторном включении.
+  fr_fr: >-
+    Bascule soit la visibilité, soit l’activation de la boîte de coupe dans la vue 3D actuelle —
+    selon la configuration. En mode d’activation, la zone actuelle est enregistrée lorsqu'elle est désactivée
+    et restaurée lorsqu'elle est réactivée.
+  en_us: >-
+    Toggles either the visibility or the active state of the section box in the current 3D view —
+    depending on configuration. In active mode, the current box is saved when disabled
+    and restored when re-enabled.
   de_de: >-
-    Dieses Werkzeug überschreibt in dieser Ansicht die Sichtbarkeit
-    des 3D-Schnittbereiches. Wenn man nochmals auf das Werkzeug klickt 
-    wird die Sichtbareit invertiert. Dies funktioniert nicht, wenn die
-    Kategorie 3D-Schnittbereiche in den Sichtbarkeit/Grafiken 
-    oder über Filter ausgeschalten wurde. 
+    Dieses Werkzeug schaltet entweder die Sichtbarkeit oder den aktiven Zustand
+    des 3D-Schnittbereichs in der aktuellen 3D-Ansicht um — je nach Konfiguration.
+    Im Aktivmodus wird der aktuelle Bereich beim Deaktivieren gespeichert und beim
+    erneuten Aktivieren wiederhergestellt.
+  chinese_s: 在当前三维视图中切换剖面框的可见性或活动状态（具体取决于配置）。在活动模式下，禁用时会保存当前框体状态，重新启用时则恢复

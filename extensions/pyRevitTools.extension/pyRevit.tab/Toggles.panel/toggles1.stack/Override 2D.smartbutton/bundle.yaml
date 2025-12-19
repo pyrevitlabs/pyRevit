@@ -3,13 +3,12 @@ title:
   en_us: Highlight 2D
   ru: Подсветить 2D
   de_de: 2D hervorheben
+  chinese_s: 高亮显示二维图元
 tooltip:
   fr_fr: Suriligner les éléments 2D elements en Rouge
   en_us: Higlight 2D elements in red
   ru: Подсвечивает 2D элементы красным цветом
   de_de: >-
-    2D Elemente werden in der aktuellen Ansicht mit rot hervorgehoben. 
-    Es handelt sich dabei um eine grafische Überschreibung der Elemente. 
-    Wenn man nochmals auf das Werkzeug klickt, wird die grafische 
-    Überschreibung wieder rückgängig gemacht.
+    2D Elemente werden in der aktuellen Ansicht mit rot hervorgehoben.  Es handelt sich dabei um eine grafische Überschreibung der Elemente.  Wenn man nochmals auf das Werkzeug klickt, wird die grafische  Überschreibung wieder rückgängig gemacht.
+  chinese_s: 将二维图元以红色高亮显示
 author: Jean-Marc Couffin

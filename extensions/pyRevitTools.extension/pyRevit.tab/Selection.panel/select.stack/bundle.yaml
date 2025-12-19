@@ -3,6 +3,7 @@ title:
   fr_fr: Sélectionner
   en_us: Select
   de_de: Auswahl
+  chinese_s: 选择
 layout:
   - Isolate
   - Filter

@@ -3,9 +3,11 @@ title:
   fr_fr: Trouver tous les groupes contenant le groupe sélectionné
   en_us: Find all groups containing selected group
   de_de: Finde alle Gruppen, die die ausgewählte Gruppe enthalten
+  chinese_s: 查找包含选定组的所有组
 tooltip:
   ru: Показывает все группы, которые включают выделенный элемент группы как вложенную группу.
   fr_fr: Liste tous les groupes comprenant l'élément du groupe sélectionné comme un groupe imbriqué
   en_us: List all groups that includethe selected group element as a nested group
   de_de: Es werden alle Gruppen aufgelistet, die die aktuell ausgewählte Gruppe als verschachtelte Gruppe beinhalten
+  chinese_s: 列出所有将选定组图元作为嵌套组包含在内的组
 context: selection

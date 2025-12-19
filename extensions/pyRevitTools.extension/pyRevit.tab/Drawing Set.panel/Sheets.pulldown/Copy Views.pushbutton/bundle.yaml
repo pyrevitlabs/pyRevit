@@ -5,12 +5,12 @@ title:
     sélectionnées
   en_us: Copy Viewports (Legends) To Other Sheets
   de_de: Kopiere Legenden auf andere Pläne
+  chinese_s: 复制视口（图例）到其他图纸
 tooltip:
   ru: >-
     Откройте исходный лист. Запустите данный скрипт и выделите листы назначения.
     Выделите видовые экраны и нажмите кнопку Finish на панели свойств. Выделенные виды
-    будут добавлены в листы назначения. Если вид или спецификация уже существует 
-    на этом листе, расположение и тип будут обновлены.
+    будут добавлены в листы назначения. Если вид или спецификация уже существует  на этом листе, расположение и тип будут обновлены.
   fr_fr: >-
     Ouvrez la feuille source. Exécutez ce script et sélectionnez les feuilles de
     destination. Sélectionnez Vues et appuyez sur le bouton Terminer dans la
@@ -23,9 +23,5 @@ tooltip:
     will be added to the destination sheets. If the view or schedule already
     exists on that sheet, the location and type will be updated
   de_de: >-
-    Öffnen Sie den Plan der als Quelle dienen soll. Führen Sie dieses Skript aus 
-    und wählen Sie den Plan bzw Pläne aus, der/die als Ziel dienen soll(en). 
-    Wählen Sie Ansichten und klicken Sie auf den Button Fertigstellen in der 
-    Eigenschaftsleiste. Die ausgewählten Ansichten werden zu den Zielplänen 
-    hinzugefügt. Wenn die Ansicht oder die Bauteilliste bereits auf diesem Plan 
-    vorhanden ist, werden die Position und der Typ aktualisiert
+    Öffnen Sie den Plan der als Quelle dienen soll. Führen Sie dieses Skript aus  und wählen Sie den Plan bzw Pläne aus, der/die als Ziel dienen soll(en).  Wählen Sie Ansichten und klicken Sie auf den Button Fertigstellen in der  Eigenschaftsleiste. Die ausgewählten Ansichten werden zu den Zielplänen  hinzugefügt. Wenn die Ansicht oder die Bauteilliste bereits auf diesem Plan  vorhanden ist, werden die Position und der Typ aktualisiert
+  chinese_s: 打开源图纸。运行此脚本并选择目标图纸。选择视口并在属性栏上点击“完成”按钮。所选视图将被添加到目标图纸。如果该视图或明细表已存在于该图纸上，其位置和类型将被更新

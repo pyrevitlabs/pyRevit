@@ -1,0 +1,24 @@
+title:
+  fr_fr: Relier les textures
+  en_us: Relink Textures
+  es_es: Volver a vincular texturas
+  ru: Повторно связать текстуры
+  de_de: Texturen erneut verknüpfen
+  chinese_s: 重链材质
+tooltip:
+  fr_fr: >-
+    Etape 1 : Cliquez pour sélectionner les dossiers de textures. Si l'emplacement des textures manquantes est inconnu, sélectionnez le disque complet (ex : C:).
+  en_us: >-
+    Step 1: Click to select texture folders. If the location of missing textures is unknown, select the entire drive (e.g. C:).
+    Step 2: Click the button again to relink textures. The process may take several minutes.
+  es_es: >-
+    Paso 1: Haga clic para seleccionar las carpetas de texturas. Si se desconoce la ubicación de las texturas faltantes, seleccione toda la unidad (por ejemplo, C:).
+    Paso 2: Haga clic en el botón nuevamente para volver a vincular las texturas. El proceso puede tardar varios minutos.
+  ru: >-
+    Шаг 1: Нажмите, чтобы выбрать папки с текстурами. Если местоположение отсутствующих текстур неизвестно, выберите весь диск (например, C:).
+    Шаг 2: Нажмите кнопку еще раз, чтобы повторно связать текстуры. Процесс может занять несколько минут.
+  de_de: >-
+    Schritt 1: Klicken Sie, um Texturordner auszuwählen. Wenn der Speicherort der fehlenden Texturen unbekannt ist, wählen Sie das gesamte Laufwerk aus (z. B. C:).
+    Schritt 2: Klicken Sie erneut auf die Schaltfläche, um die Texturen erneut zu verknüpfen. Der Vorgang kann mehrere Minuten dauern.
+  chinese_s: 步骤1：单击以选择材质文件夹。若缺失材质的位置未知，可选择整个驱动器（例如C:）。步骤2：再次单击按钮以重新链接材质。此过程可能需要几分钟
+author: Roi Hason @ Swich Design

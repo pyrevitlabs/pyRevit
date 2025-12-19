@@ -1,0 +1,40 @@
+title:
+  fr_fr: Basculer les bulles de quadrillage par direction
+  en_us: Toggle Grid Bubbles by Direction
+  de_de: Rasterlinien-Symbole nach Richtung umschalten
+  ru: Переключить марки осей сетки по направлению
+  chinese_s: 按方向切换轴网气泡
+tooltip:
+  fr_fr: >-
+    Basculer les bulles (symboles) de quadrillage dans la vue active par direction. 
+
+    Si la commande est exécutée sans sélection préalable de quadrillage, tous les quadrillages de la vue active
+    seront impactés, sinon seuls les quadrillages sélectionnés seront affectés.
+
+    Fonctionne aussi bien en vue en plan et plafond qu'en coupe et élévation.
+
+  en_us: >-
+    Toggle grid bubbles in the active view by direction. 
+
+    If the command is run without prior selection of grids, all grids in the active view
+    will be affected, otherwise only the selected grids will be affected.
+
+    Works in both plan/ceiling views as well as section/elevation views.
+  de_de: >-
+    Rasterlinien-Symbole in der aktiven Ansicht nach Richtung umschalten. 
+
+    Wenn der Befehl ohne vorherige Auswahl von Rasterlinien ausgeführt wird,  werden alle Rasterlinien in der aktiven Ansicht betroffen sein,  andernfalls werden nur die ausgewählten Rasterlinien betroffen sein.
+
+    Funktioniert sowohl in Grundriss- und Deckenansichten als auch in Schnitt- und Ansichtsansichten.
+  ru: >-
+    Переключение пузырьков (символов) сетки в активном виде по направлению.
+
+    Если команда выполняется без предварительного выбора сетки, будут затронуты все сетки активного вида,
+    в противном случае будут изменены только выбранные сетки.
+
+    Работает как в плане и виде потолка, так и в разрезе и на фасаде.
+  chinese_s: "在活动视图中按方向切换轴网气泡的显示\n如果运行命令前未选择任何轴网，则将影响活动视图中的所有轴网；否则仅影响选定的轴网"
+author: Mohamed Asli
+min_revit_version: 2016
+engine:
+  clean: true

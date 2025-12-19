@@ -1,84 +1,83 @@
 from pyrevit import revit, script, DB
 
 doc = revit.doc
-# currView = revit.active_view
-
-# Get the output window
+logger = script.get_logger()
 output = script.get_output()
 output.close_others()
 
+elements = revit.query.get_elements_by_class(DB.FamilyInstance, doc=doc)
 
-# Get Elements of the FamilyInstance Class
-elements = (
-    DB.FilteredElementCollector(doc)
-    .OfClass(DB.FamilyInstance)
-    .WhereElementIsNotElementType()
-    .ToElements()
-)
-
-grand_total = []
-table_data = []
-elements_name = []
-elements_count = []
-elements_category = []
-elements_type = []
-
-opt = DB.Options()
+# Storage
+processed_types = {}  # typeId: {name, coarse, medium, fine}
 
 for element in elements:
-    total_triangles = []
     typeId = element.GetTypeId()
-    if typeId not in elements_type:
-        elements_type.append(typeId)
-        geometry_set = element.get_Geometry(opt)
-        try:
-            for geometry in geometry_set:
-                if isinstance(geometry, DB.Solid) and geometry.Faces.Size > 0:
-                    nbrtriangle = sum(
-                        [
-                            f.Triangulate().NumTriangles
-                            for f in geometry.Faces
-                            if f.Triangulate() is not None
-                        ]
-                    )
-                    total_triangles.append(nbrtriangle)
-                elif isinstance(geometry, DB.GeometryInstance):
-                    for instObj in geometry.SymbolGeometry:
-                        if isinstance(instObj, DB.Solid) and instObj.Faces.Size > 0:
-                            nbrtriangle = sum(
-                                [
-                                    f.Triangulate().NumTriangles
-                                    for f in instObj.Faces
-                                    if f.Triangulate() is not None
-                                ]
-                            )
-                            total_triangles.append(nbrtriangle)
-                else:
-                    pass
-            geometry_set.Dispose()
-            total_triangles = sum(total_triangles)
-            if total_triangles != 0:
-                elements_count.append(total_triangles)
-                elements_name.append(
-                    output.linkify(element.Id)
-                    + "**"
-                    + element.Name
-                    + "** (*Category*: "
-                    + element.Category.Name
-                    + ")"
-                )
-                grand_total.append(total_triangles)
-        except:
-            pass
 
-# adding grand total and making a dictionary out of it
-elements_count.append(sum(grand_total))
-elements_name.append("Grand Total")
-my_dict = dict(zip(elements_name, elements_count))
+    if typeId not in processed_types:
+        element_name = (
+            output.linkify(element.Id)
+            + "**"
+            + element.Name
+            + "** (*Category*: "
+            + element.Category.Name
+            + ")"
+        )
 
-# output as a table
+        # Process each detail level
+        counts = {}
+        for level_name, opt in [
+            ("coarse", DB.ViewDetailLevel.Coarse),
+            ("medium", DB.ViewDetailLevel.Medium),
+            ("fine", DB.ViewDetailLevel.Fine),
+        ]:
+            try:
+                geom_objs = revit.query.get_geometry(element, detail_level=opt)
+
+                # Filter for solids and count triangles
+                total_triangles = 0
+                for geom in geom_objs:
+                    if isinstance(geom, DB.Solid) and geom.Faces.Size > 0:
+                        for face in geom.Faces:
+                            mesh = face.Triangulate()
+                            if mesh is not None:
+                                total_triangles += mesh.NumTriangles
+
+                counts[level_name] = total_triangles
+            except Exception:
+                counts[level_name] = 0
+
+        # Only add if at least one level has triangles
+        if any(counts.values()):
+            processed_types[typeId] = {
+                "name": element_name,
+                "coarse": counts["coarse"],
+                "medium": counts["medium"],
+                "fine": counts["fine"],
+            }
+
+# Prepare table data
+table_data = []
+for type_info in processed_types.values():
+    table_data.append(
+        [type_info["name"], type_info["coarse"], type_info["medium"], type_info["fine"]]
+    )
+
+# Add grand totals
+if table_data:
+    grand_coarse = sum([row[1] for row in table_data])
+    grand_medium = sum([row[2] for row in table_data])
+    grand_fine = sum([row[3] for row in table_data])
+
+    table_data.append(["Grand Total", grand_coarse, grand_medium, grand_fine])
+else:
+    logger.error("No families with solid geometry found")
+    script.exit()
+
+# Sort by fine detail count (or change to coarse/medium as needed)
+table_data_sorted = sorted(table_data[:-1], key=lambda x: x[3]) + [table_data[-1]]
+
 output.print_table(
-    sorted(my_dict.items(), key=lambda item: item[1]),
-    ["Name", "Count"],
+    table_data_sorted,
+    ["Name", "Coarse", "Medium", "Fine"],
     last_line_style="color:white;font-weight: bolder; background-color: gray;",
 )

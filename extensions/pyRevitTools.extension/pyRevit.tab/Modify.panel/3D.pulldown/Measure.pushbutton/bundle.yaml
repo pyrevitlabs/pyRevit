@@ -1,0 +1,17 @@
+title:
+  ru: 3D Измерение
+  fr_fr: Mesure 3D
+  en_us: 3D Measure
+  de_de: 3D Messen
+  chinese_s: 三维测量
+tooltip:
+  ru: Измерение расстояний между двумя точками с визуальными помощниками и историей измерений, результаты копируются в буфер обмена при закрытии окна
+  fr_fr: Mesurer les distances entre deux points avec des aides visuelles et un historique des mesures, les résultats sont copiés dans le presse-papiers à la fermeture de la fenêtre
+  en_us: Measure distances between two points with visual aids and measurement history, the results are copied to the clipboard at the closing of the window
+  de_de: Abstände zwischen zwei Punkten messen mit visuellen Hilfslinien und Messhistorie, die Ergebnisse werden in die Zwischenablage kopiert, wenn die Fenster geschlossen wird
+  chinese_s: 测量两点之间的距离，提供视觉辅助和测量历史记录。关闭窗口时，结果将复制到剪贴板
+author: wurschdhaud
+context:
+  - doc-project
+engine:
+  persistent: true

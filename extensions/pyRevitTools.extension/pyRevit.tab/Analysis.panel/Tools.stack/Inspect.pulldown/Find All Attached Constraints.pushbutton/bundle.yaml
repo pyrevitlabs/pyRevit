@@ -4,8 +4,10 @@ title:
   fr_fr: Trouver toutes les contraintes attachées
   en_us: Find all attached constraints
   de_de: Finde alle verbundenen Abhängigkeiten
+  chinese_s: 查找所有附着约束
 tooltip:
   ru: Находит все зависимости, связанные с выделенным элементом.
   fr_fr: Trouver toutes les contraintes attachées à l'élément sélectionné
   en_us: Find all constraints attached to the selected element
-  de_de: Finde alle Abhängigkeiten die mit dem gewählten Element verbunden sind  
+  de_de: Finde alle Abhängigkeiten die mit dem gewählten Element verbunden sind
+  chinese_s: 查找附着到所选图元的所有约束

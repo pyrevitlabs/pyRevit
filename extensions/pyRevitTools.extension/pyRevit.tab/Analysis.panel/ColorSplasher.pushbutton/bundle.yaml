@@ -1,14 +1,18 @@
 title:
-  fr_fr:  |-
+  fr_fr: |-
     Color
     Splasher
-  en_us:  |-
+  en_us: |-
     Color
     Splasher
-  de_de:  |-
+  de_de: |-
     Color
     Splasher
-tooltip: 
+  ru: |-
+    Цветовое
+    Выделение
+  chinese_s: 自动着色器
+tooltip:
   fr_fr: >-
     Color Splasher permet de colorer les éléments de la vue active en fonction de leurs valeurs de paramètre. Il permet également la création d'une légende ou d'une liste de filtres de vue.
 
@@ -34,8 +38,19 @@ tooltip:
     First Dynamo - Python edition December 2023: Nonica by Estudio Alonso Candau SLP - Jaime Alonso Candau - See specific non-commercial license agreement for Nonica in the script
 
     Refaktorisiert, pyRevit-ed und die Ansichtsfilter Erstellung wurde von Jean-Marc Couffin hinzugefügt, December 2023
-    
+
+  ru: >-
+    Цветовое Выделение позволяет раскрашивать элементы активного вида в зависимости от значений их параметров. Также есть возможность создать легенду или список фильтров вида.
+
+    Основано на ColorSplasher от BIMOne — лицензия MIT — © 2021 BIM One Inc.
+
+    Первая версия на Dynamo–Python, декабрь 2023: Nonica от Estudio Alonso Candau SLP — Jaime Alonso Candau. См. отдельное лицензионное соглашение для Nonica (некоммерческое использование) в скрипте.
+
+    Переработка, адаптация под pyRevit и добавление функции создания фильтров вида — Jean-Marc Couffin, декабрь 2023.
+
+  chinese_s: "自动着色器允许您根据图元的参数值，为当前视图中的图元着色。它还可以创建图例或视图过滤器列表\n\n基于 BIMOne 开发的 ColorSplasher - MIT 许可证 - 版权所有 © 2021 BIM One Inc。\n首个 Dynamo - Python 版本（2023年12月）：由 Estudio Alonso Candau SLP 的 Jaime Alonso Candau 开发的 Nonica - 具体非商业许可协议请参见脚本内说明。\n由 Jean-Marc Couffin 于 2023年12月进行重构、适配 pyRevit 并增加了视图过滤器创建功能的版本"
 author: BIMOne Inc.(2021), Nonica (Jaime Alonso Candau - 2023), BIMOne Inc. (Jean-Marc Couffin - 2023)
 engine:
+  clean: true
   persistent: true
   full_frame: true

@@ -3,8 +3,10 @@ title:
   fr_fr: Supprimer les filtres de vue inutilisés
   en_us: Wipe Unused Filters
   de_de: Lösche nicht verwendete Filter
+  chinese_s: 清除未使用的过滤器
 tooltip:
   ru: Удаляет все фильтры параметров вида которые не были использованы ни в одном из представлений.
   fr_fr: Supprime tous les filtres de paramètres de vue qui n'ont été répertoriés dans aucune vue. Cela inclut aussi les feuilles
   en_us: Deletes all view parameter filters that has not been listed on any views. This includes sheets as well
   de_de: Es erscheint ein Auswahldialog, mit dem Ansichtsparameterfilter ausgewählt werden können, die in keiner Ansicht aufgeführt sind. Dies schließt auch Pläne mit ein. Alle im Dialog ausgewählten Ansichtsfilter werden gelöscht.
+  chinese_s: 删除所有未在任何视图中列出的视图参数过滤器。这同样包括图纸

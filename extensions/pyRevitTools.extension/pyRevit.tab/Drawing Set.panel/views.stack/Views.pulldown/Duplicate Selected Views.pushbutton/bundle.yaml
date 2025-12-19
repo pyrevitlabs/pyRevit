@@ -7,6 +7,7 @@ title:
     Duplicate Selected Views
   de_de: |-
     Dupliziere ausgewählte Ansichten
+  chinese_s: 批量复制视图
 tooltip:
   ru: Пакетно копирует выделенные виды с/без детализации.
   fr_fr: |-
@@ -20,3 +21,4 @@ tooltip:
     "Mit Detaillierung", "Ohne Detaillierung" oder als "Abhängige Ansicht"
     dupliziert werden. Hinweis: Nicht alle Ansichten können als "Abhängige
     Ansicht dupliziert werden" (z.B. 3D Ansichten). 
+  chinese_s: 批量复制选定视图，可选择包含或不包含详图

@@ -3,7 +3,8 @@ title:
   fr_fr: Obtenir les ouvertures
   en_us: Get Openings
   de_de: Öffnungen ermitteln
-tooltip: >
+  chinese_s: 获取洞口
+tooltip:
   en_us: |
     Scans through the project for openings. A list with clickable links will be presented. Open a 3D view to access and see the selected openings. A selection filter will be created or updated to select all openings with one click.
   de_de: |

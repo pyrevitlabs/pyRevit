@@ -4,14 +4,14 @@ title:
   fr_fr: Orienter la zone de coupe sur la face
   en_us: Orient section box to face
   de_de: 3D-Schnittbereich auf eine Fläche ausrichten
+  chinese_s: 将剖面框对齐到面
 tooltip:
   ru: Выравнивает границы 3D вида текущего 3D вида по выделенной границе.
   fr_fr: Aligne la zone de coupe de la vue 3D actuelle sur la face sélectionnée
   en_us: Aligns the section box of the current 3D view to selected face
   de_de: >-
     Damit diese Funktion verwendet werden kann, muss der 3D-Schnittbereich in
-    der aktiven 3D Ansicht aktiviert sein. Nach dem Ausführen des Befehls muss eine 
-    Fläche im Modell ausgewählt werden. Mit der TAB Taste kann man zwischen angrenzenden
-    Flächen durchwechseln. Eine Seite des 3D-Schnittbereichs übernimmt die 
-    Ausrichtung der gewählten Fläche!
+    der aktiven 3D Ansicht aktiviert sein. Nach dem Ausführen des Befehls muss eine  Fläche im Modell ausgewählt werden. Mit der TAB Taste kann man zwischen angrenzenden
+    Flächen durchwechseln. Eine Seite des 3D-Schnittbereichs übernimmt die  Ausrichtung der gewählten Fläche!
+  chinese_s: 将当前三维视图的剖面框与选定的面对齐
 context: active-3d-view

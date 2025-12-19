@@ -1,0 +1,28 @@
+title:
+  ru: Выделить все объекты, проходящие через фильтр
+  fr_fr: Sélectionner tous les objets correspondant au filtre
+  en_us: Select All Objects Passing Filter
+  de_de: Alle Objekte auswählen, die dem Filter entsprechen
+  chinese_s: 选择所有通过过滤器的图元
+tooltip:
+  ru: >-
+    Выделяет все элементы, проходящие через один или несколько выбранных фильтров
+    и отображающиеся в активном виде.
+    Полезно для быстрой фильтрации объектов по заданным условиям.
+    Можно настроить для выбора элементов во всём проекте, исключения вложенных элементов или инверсии фильтра.
+  fr_fr: >-
+    Sélectionne tous les éléments correspondant à un ou plusieurs filtres choisis,
+    visibles dans la vue active.
+    Utile pour filtrer rapidement selon des critères définis.
+    Peut être configuré pour les éléments du projet entier, exclure les éléments imbriqués, ou inverser le filtre.
+  en_us: >-
+    Selects all elements that pass one or more selected filters
+    and are visible in the active view.
+    Useful for quickly filtering elements based on predefined conditions.
+    Can be configured for elements in project instead of view, excluding nested, reverse the filter.
+  de_de: >-
+    Wählt alle Elemente aus, die einem oder mehreren ausgewählten Filtern entsprechen
+    und in der aktuellen Ansicht sichtbar sind.
+    Praktisch für eine schnelle Filterung basierend auf vordefinierten Kriterien.
+    Kann so konfiguriert werden, dass Elemente im gesamten Projekt ausgewählt werden, verschachtelte ausgeschlossen oder der Filter umgekehrt wird.
+  chinese_s: 选择活动视图中可见且满足一个或多个选定过滤器条件的所有图元。此功能便于基于预定义条件快速筛选图元。可配置为选择项目中的图元（而非仅限于视图），并可排除嵌套图元或反转过滤条件

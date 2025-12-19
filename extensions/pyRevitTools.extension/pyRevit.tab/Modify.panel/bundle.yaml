@@ -3,9 +3,10 @@ title:
   fr_fr: Modifier
   en_us: Modify
   de_de: Ändern
+  chinese_s: 修改
 layout:
   - edit1
   - edit2
   - edit3
-  - -----
+  - '-----'
   - 3D
