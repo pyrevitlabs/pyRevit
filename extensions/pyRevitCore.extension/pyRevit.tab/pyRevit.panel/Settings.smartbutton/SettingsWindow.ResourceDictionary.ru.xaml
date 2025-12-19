@@ -59,8 +59,9 @@
     <system:String x:Key="CoreSettings.Development.LoadBeta">Загружать бета-инструменты (Скрипты с __beta__ = True, требуется перезапуск)</system:String>
  
     <system:String x:Key="CoreSettings.Loader">Загрузчик</system:String>
+    <system:String x:Key="CoreSettings.Loader.Description">Настройка механизма загрузки сборок pyRevit. Новый загрузчик — это реализация на C#, которая позволяет использовать стратегию сборки Roslyn</system:String>
     <system:String x:Key="CoreSettings.Loader.NewLoader">Использовать новую версию загрузчика pyRevit (бета)</system:String>
-    <system:String x:Key="CoreSettings.Loader.RoslynLoader">Использовать загрузчик RoslynLoader</system:String>
+    <system:String x:Key="CoreSettings.Loader.RoslynLoader">Использовать стратегию сборки Roslyn (Рекомендуется)</system:String>
 
     <system:String x:Key="CoreSettings.CloseOtherConsoles">Закрывать другие открытые консоли</system:String>
     <system:String x:Key="CoreSettings.CloseOtherConsoles.Description">
