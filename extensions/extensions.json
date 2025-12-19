@@ -231,6 +231,19 @@
             "builtin": "False",
             "type": "extension",
             "rocket_mode_compatible": "False",
+            "name": "Revitesse",
+            "description": "A set of useful tools for eliminating redundancy.",
+            "author": "Ramy Maher",
+            "author_profile": "https://de.linkedin.com/in/ramyamaher",
+            "url": "https://github.com/ramyamaher/Revitesse.git",
+            "website": "https://revitesse.com/",
+            "image": "",
+            "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "type": "extension",
+            "rocket_mode_compatible": "true",
             "name": "CostEstimates",
             "description": "Automate quantity takeoffs and cost estimation inside Autodesk Revit with pyRevit.",
             "author": "Wachama J. Swana",
@@ -240,7 +253,5 @@
             "image": "",
             "dependencies": []
         }
-
-        
     ]
 }
