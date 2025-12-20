@@ -866,16 +866,16 @@ namespace pyRevitAssemblyBuilder.UIManager
                 // Apply icon to the ComboBox itself
                 ApplyIconToComboBoxThemeAware(comboBox, component);
 
-                // Execute __selfinit__ script if present (similar to SmartButton pattern)
+                // Execute event handler setup script if present
                 if (_comboBoxScriptInitializer != null)
                 {
                     try
                     {
-                        _comboBoxScriptInitializer.ExecuteSelfInit(component, comboBox);
+                        _comboBoxScriptInitializer.ExecuteEventHandlerSetup(component, comboBox);
                     }
                     catch (Exception scriptEx)
                     {
-                        _logger.Warn(scriptEx, "ComboBox script initialization failed for '{0}'.", comboBoxText);
+                        _logger.Warn(scriptEx, "ComboBox event handler setup failed for '{0}'.", comboBoxText);
                     }
                 }
 

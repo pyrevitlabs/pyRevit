@@ -1,16 +1,124 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using Autodesk.Revit.UI;
 using pyRevitExtensionParser;
 using pyRevitLabs.NLog;
+using RevitComboBoxMember = Autodesk.Revit.UI.ComboBoxMember;
 
 namespace pyRevitAssemblyBuilder.UIManager
 {
     /// <summary>
-    /// Handles execution of __selfinit__ scripts for ComboBox components.
+    /// Context object providing access to ComboBox state and data.
+    /// This C# class is passed directly to Python event handlers.
+    /// </summary>
+    public class ComboBoxContext
+    {
+        private readonly ComboBox _comboBox;
+        private readonly ParsedComponent _component;
+        private readonly UIApplication _uiApp;
+        private readonly Dictionary<string, object> _userData = new Dictionary<string, object>();
+
+        public ComboBoxContext(ComboBox comboBox, ParsedComponent component, UIApplication uiApp)
+        {
+            _comboBox = comboBox;
+            _component = component;
+            _uiApp = uiApp;
+        }
+
+        /// <summary>Gets the raw Revit ComboBox API object.</summary>
+        public ComboBox combobox => _comboBox;
+
+        /// <summary>Gets the currently selected ComboBoxMember.</summary>
+        public RevitComboBoxMember current_item => _comboBox?.Current;
+
+        /// <summary>Gets the text of the currently selected item.</summary>
+        public string current_value => current_item?.ItemText ?? string.Empty;
+
+        /// <summary>Gets the name/id of the currently selected item.</summary>
+        public string current_name => current_item?.Name ?? string.Empty;
+
+        /// <summary>Gets all items in the ComboBox.</summary>
+        public IList<RevitComboBoxMember> items => _comboBox?.GetItems() ?? (IList<RevitComboBoxMember>)new List<RevitComboBoxMember>();
+
+        /// <summary>Gets the number of items in the ComboBox.</summary>
+        public int item_count => items.Count;
+
+        /// <summary>Gets the text values of all items.</summary>
+        public IList<string> item_texts => items.Select(i => i.ItemText).ToList();
+
+        /// <summary>Gets the names/ids of all items.</summary>
+        public IList<string> item_names => items.Select(i => i.Name).ToList();
+
+        /// <summary>Gets the Revit UIApplication instance.</summary>
+        public UIApplication uiapp => _uiApp;
+
+        /// <summary>Gets the component's bundle directory.</summary>
+        public string directory => _component?.Directory ?? string.Empty;
+
+        /// <summary>Gets the component name.</summary>
+        public string name => _component?.Name ?? string.Empty;
+
+        /// <summary>Gets the component display name.</summary>
+        public string display_name => _component?.DisplayName ?? string.Empty;
+
+        /// <summary>Gets the user data dictionary for storing custom data between events.</summary>
+        public Dictionary<string, object> user_data => _userData;
+
+        /// <summary>
+        /// Sets the current selection by name or text.
+        /// </summary>
+        /// <param name="item_name_or_text">The Name or ItemText of the item to select.</param>
+        /// <returns>True if item was found and selected.</returns>
+        public bool set_current(string item_name_or_text)
+        {
+            if (_comboBox == null) return false;
+
+            foreach (var item in items)
+            {
+                if (item.Name == item_name_or_text || item.ItemText == item_name_or_text)
+                {
+                    try
+                    {
+                        _comboBox.Current = item;
+                        return true;
+                    }
+                    catch
+                    {
+                        return false;
+                    }
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Gets an item by its Name.
+        /// </summary>
+        /// <param name="itemName">The Name to search for.</param>
+        /// <returns>The item or null.</returns>
+        public RevitComboBoxMember get_item_by_name(string itemName)
+        {
+            return items.FirstOrDefault(i => i.Name == itemName);
+        }
+
+        /// <summary>
+        /// Gets an item by its ItemText.
+        /// </summary>
+        /// <param name="text">The ItemText to search for.</param>
+        /// <returns>The item or null.</returns>
+        public RevitComboBoxMember get_item_by_text(string text)
+        {
+            return items.FirstOrDefault(i => i.ItemText == text);
+        }
+    }
+
+    /// <summary>
+    /// Handles execution of ComboBox event handler scripts.
+    /// Supports: __cmb_on_change__, __cmb_dropdown_close__, __cmb_dropdown_open__
     /// Uses reflection to access IronPython since the assembly doesn't directly reference it.
     /// </summary>
     public class ComboBoxScriptInitializer
@@ -23,24 +131,15 @@ namespace pyRevitAssemblyBuilder.UIManager
         private static Assembly _microsoftScriptingAssembly;
         private static Type _pythonType;
         private static MethodInfo _createEngineMethod;
-        private static MethodInfo _createModuleMethod;
-        private static MethodInfo _getBuiltinModuleMethod;
         private static bool _initialized;
         private static bool _initializationFailed;
         
-        /// <summary>
-        /// Initializes a new instance of the ComboBoxScriptInitializer.
-        /// </summary>
-        /// <param name="uiApp">The Revit UIApplication instance.</param>
         public ComboBoxScriptInitializer(UIApplication uiApp)
         {
             _uiApp = uiApp;
             EnsureInitialized();
         }
 
-        /// <summary>
-        /// Initializes the IronPython reflection types (cached for performance).
-        /// </summary>
         private void EnsureInitialized()
         {
             if (_initialized || _initializationFailed)
@@ -48,7 +147,6 @@ namespace pyRevitAssemblyBuilder.UIManager
 
             try
             {
-                // Find IronPython assemblies from loaded assemblies
                 foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
                 {
                     var name = assembly.GetName().Name;
@@ -68,12 +166,11 @@ namespace pyRevitAssemblyBuilder.UIManager
 
                 if (_ironPythonAssembly == null)
                 {
-                    _logger.Warn("IronPython assembly not found in loaded assemblies. ComboBox scripts will not be executed.");
+                    _logger.Warn("IronPython assembly not found. ComboBox scripts will not be executed.");
                     _initializationFailed = true;
                     return;
                 }
 
-                // Get the Python hosting type
                 _pythonType = _ironPythonAssembly.GetType("IronPython.Hosting.Python");
                 if (_pythonType == null)
                 {
@@ -82,16 +179,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                     return;
                 }
 
-                // Cache the methods we need
                 _createEngineMethod = _pythonType.GetMethod("CreateEngine", new Type[0]);
-                _createModuleMethod = _pythonType.GetMethod("CreateModule", 
-                    new[] { typeof(object).Assembly.GetType("Microsoft.Scripting.Hosting.ScriptEngine") ?? 
-                            _microsoftScriptingAssembly?.GetType("Microsoft.Scripting.Hosting.ScriptEngine"), 
-                            typeof(string) });
-                _getBuiltinModuleMethod = _pythonType.GetMethod("GetBuiltinModule",
-                    new[] { typeof(object).Assembly.GetType("Microsoft.Scripting.Hosting.ScriptEngine") ??
-                            _microsoftScriptingAssembly?.GetType("Microsoft.Scripting.Hosting.ScriptEngine") });
-
                 _initialized = true;
                 _logger.Debug("ComboBoxScriptInitializer initialized successfully.");
             }
@@ -102,13 +190,13 @@ namespace pyRevitAssemblyBuilder.UIManager
             }
         }
 
+        // Keep engines alive for ComboBoxes with event handlers
+        private static readonly List<object> _activeEngines = new List<object>();
+
         /// <summary>
-        /// Executes the __selfinit__ function in a ComboBox script file.
+        /// Executes event handler setup for a ComboBox script file.
         /// </summary>
-        /// <param name="component">The parsed ComboBox component.</param>
-        /// <param name="comboBox">The Revit ComboBox control.</param>
-        /// <returns>True if initialization succeeded, false otherwise.</returns>
-        public bool ExecuteSelfInit(ParsedComponent component, ComboBox comboBox)
+        public bool ExecuteEventHandlerSetup(ParsedComponent component, ComboBox comboBox)
         {
             if (_initializationFailed || !_initialized)
             {
@@ -116,20 +204,19 @@ namespace pyRevitAssemblyBuilder.UIManager
                 return false;
             }
 
-            // Find script.py in the component directory
             var scriptPath = FindScriptPath(component);
             if (string.IsNullOrEmpty(scriptPath))
             {
                 _logger.Debug($"No script.py found for ComboBox '{component.DisplayName}'.");
-                return true; // Not an error - script is optional
+                return true;
             }
 
             object engine = null;
+            bool handlersWired = false;
             try
             {
-                _logger.Info($"Executing __selfinit__ for ComboBox '{component.DisplayName}' from '{scriptPath}'");
+                _logger.Info($"Setting up event handlers for ComboBox '{component.DisplayName}' from '{scriptPath}'");
                 
-                // Create IronPython engine using reflection
                 engine = _createEngineMethod.Invoke(null, null);
                 if (engine == null)
                 {
@@ -140,31 +227,12 @@ namespace pyRevitAssemblyBuilder.UIManager
                 var engineType = engine.GetType();
                 
                 // Set up search paths
-                var searchPaths = BuildSearchPaths(component);
-                _logger.Debug($"Search paths: {string.Join(", ", searchPaths)}");
-                
-                var getSearchPathsMethod = engineType.GetMethod("GetSearchPaths");
-                var setSearchPathsMethod = engineType.GetMethod("SetSearchPaths");
-                
-                if (getSearchPathsMethod != null && setSearchPathsMethod != null)
-                {
-                    var paths = getSearchPathsMethod.Invoke(engine, null) as ICollection<string>;
-                    if (paths != null)
-                    {
-                        foreach (var path in searchPaths)
-                        {
-                            paths.Add(path);
-                        }
-                        setSearchPathsMethod.Invoke(engine, new[] { paths });
-                    }
-                }
+                SetupSearchPaths(engine, engineType, component);
 
-                // Create a scope/module
+                // Create scope
                 var createModuleMethod = _pythonType.GetMethod("CreateModule", 
-                    BindingFlags.Public | BindingFlags.Static,
-                    null,
-                    new[] { engineType, typeof(string) },
-                    null);
+                    BindingFlags.Public | BindingFlags.Static, null,
+                    new[] { engineType, typeof(string) }, null);
                 
                 var scope = createModuleMethod?.Invoke(null, new[] { engine, "__main__" });
                 if (scope == null)
@@ -174,49 +242,22 @@ namespace pyRevitAssemblyBuilder.UIManager
                 }
 
                 var scopeType = scope.GetType();
-                
-                // Find methods carefully to avoid ambiguous match
                 var setVariableMethod = FindMethod(scopeType, "SetVariable", typeof(string), typeof(object));
                 var containsVariableMethod = FindMethod(scopeType, "ContainsVariable", typeof(string));
                 var getVariableMethod = FindMethod(scopeType, "GetVariable", typeof(string));
 
                 // Set up built-in variables
-                var getBuiltinMethod = _pythonType.GetMethod("GetBuiltinModule",
-                    BindingFlags.Public | BindingFlags.Static,
-                    null,
-                    new[] { engineType },
-                    null);
-                
-                if (getBuiltinMethod != null)
-                {
-                    var builtin = getBuiltinMethod.Invoke(null, new[] { engine });
-                    if (builtin != null && setVariableMethod != null)
-                    {
-                        var builtinSetVar = FindMethod(builtin.GetType(), "SetVariable", typeof(string), typeof(object));
-                        builtinSetVar?.Invoke(builtin, new object[] { "__revit__", _uiApp });
-                    }
-                }
+                SetupBuiltins(engine, engineType);
 
-                // Load Revit API assemblies into the engine
-                var runtimeProperty = engineType.GetProperty("Runtime");
-                var runtime = runtimeProperty?.GetValue(engine);
-                if (runtime != null)
-                {
-                    var loadAssemblyMethod = FindMethod(runtime.GetType(), "LoadAssembly", typeof(Assembly));
-                    if (loadAssemblyMethod != null)
-                    {
-                        loadAssemblyMethod.Invoke(runtime, new object[] { typeof(Autodesk.Revit.DB.Document).Assembly });
-                        loadAssemblyMethod.Invoke(runtime, new object[] { typeof(Autodesk.Revit.UI.TaskDialog).Assembly });
-                    }
-                }
+                // Load Revit API assemblies
+                LoadRevitAssemblies(engine, engineType);
 
                 // Set __file__ variable
                 setVariableMethod?.Invoke(scope, new object[] { "__file__", scriptPath });
 
                 // Execute the script file
-                _logger.Debug("Creating script source from file...");
+                _logger.Debug("Executing script file...");
                 var createScriptSourceMethod = FindMethod(engineType, "CreateScriptSourceFromFile", typeof(string), typeof(Encoding));
-                
                 var scriptSource = createScriptSourceMethod?.Invoke(engine, new object[] { scriptPath, Encoding.UTF8 });
                 if (scriptSource == null)
                 {
@@ -224,7 +265,6 @@ namespace pyRevitAssemblyBuilder.UIManager
                     return false;
                 }
 
-                _logger.Debug("Executing script file...");
                 var executeMethod = FindMethod(scriptSource.GetType(), "Execute", scopeType);
                 try
                 {
@@ -234,164 +274,211 @@ namespace pyRevitAssemblyBuilder.UIManager
                 {
                     var innerEx = scriptEx.InnerException;
                     _logger.Error($"Script execution error: {innerEx?.Message ?? scriptEx.Message}");
-                    _logger.Error($"Script error details: {innerEx?.ToString() ?? scriptEx.ToString()}");
                     return false;
                 }
 
-                // Now check if __selfinit__ is defined and call it
-                if (containsVariableMethod != null && (bool)containsVariableMethod.Invoke(scope, new object[] { "__selfinit__" }))
+                // Check for event handlers
+                bool hasOnChange = (bool)(containsVariableMethod?.Invoke(scope, new object[] { "__cmb_on_change__" }) ?? false);
+                bool hasDropdownClose = (bool)(containsVariableMethod?.Invoke(scope, new object[] { "__cmb_dropdown_close__" }) ?? false);
+                bool hasDropdownOpen = (bool)(containsVariableMethod?.Invoke(scope, new object[] { "__cmb_dropdown_open__" }) ?? false);
+
+                if (!hasOnChange && !hasDropdownClose && !hasDropdownOpen)
                 {
-                    _logger.Debug("Found __selfinit__ function, preparing to call it...");
-                    var selfInitFunc = getVariableMethod?.Invoke(scope, new object[] { "__selfinit__" });
-                    if (selfInitFunc != null)
+                    _logger.Debug($"No event handlers found in script for ComboBox '{component.DisplayName}'.");
+                    return true;
+                }
+
+                _logger.Debug("Found event handlers, setting up ComboBox context...");
+
+                // Create the C# context object - passed directly to Python
+                var ctx = new ComboBoxContext(comboBox, component, _uiApp);
+
+                // Get operations for invoking Python functions
+                var operationsProperty = engineType.GetProperty("Operations");
+                var operations = operationsProperty?.GetValue(engine);
+                var invokeMethod = operations != null ? 
+                    FindMethod(operations.GetType(), "Invoke", typeof(object), typeof(object[])) : null;
+
+                // Wire up event handlers
+                if (hasOnChange)
+                {
+                    var handler = getVariableMethod?.Invoke(scope, new object[] { "__cmb_on_change__" });
+                    if (handler != null && invokeMethod != null)
                     {
-                        // Create wrappers using Python code that accesses C# objects directly
-                        // Note: We pass the C# objects directly and access them in Python
-                        var wrapperCode = $@"
-class _ComboBoxUIWrapper:
-    def __init__(self, cmb):
-        self._cmb = cmb
-    def get_rvtapi_object(self):
-        return self._cmb
-    def activate(self):
-        pass
-    def deactivate(self):
-        pass
-
-class _ComponentWrapper:
-    def __init__(self):
-        self.directory = '{EscapeForPython(component.Directory ?? string.Empty)}'
-        self.name = '{EscapeForPython(component.Name ?? string.Empty)}'
-        self.display_name = '{EscapeForPython(component.DisplayName ?? string.Empty)}'
-        self.unique_name = '{EscapeForPython(component.UniqueId ?? string.Empty)}'
-        self.script_file = '{EscapeForPython(scriptPath)}'
-        self.module_paths = []
-
-_ui_wrapper = _ComboBoxUIWrapper(_raw_combobox)
-_component = _ComponentWrapper()
-";
-                        // Set the raw combobox variable
-                        setVariableMethod?.Invoke(scope, new object[] { "_raw_combobox", comboBox });
-                        
-                        // Execute wrapper code
-                        _logger.Debug("Creating wrapper objects...");
-                        var createFromStringMethod = FindMethod(engineType, "CreateScriptSourceFromString", typeof(string));
-                        var wrapperSource = createFromStringMethod?.Invoke(engine, new object[] { wrapperCode });
-                        
-                        try
+                        comboBox.CurrentChanged += (sender, args) =>
                         {
-                            executeMethod?.Invoke(wrapperSource, new[] { scope });
-                        }
-                        catch (TargetInvocationException wrapperEx)
-                        {
-                            var innerEx = wrapperEx.InnerException;
-                            _logger.Error($"Wrapper code error: {innerEx?.Message ?? wrapperEx.Message}");
-                            _logger.Error($"Wrapper code: {wrapperCode}");
-                            return false;
-                        }
-
-                        // Get the wrapper
-                        var uiWrapper = getVariableMethod?.Invoke(scope, new object[] { "_ui_wrapper" });
-                        var componentWrapper = getVariableMethod?.Invoke(scope, new object[] { "_component" });
-
-                        // Call __selfinit__(component, ui_wrapper, uiapp)
-                        // We need to use IronPython's operation to call the function
-                        var operationsProperty = engineType.GetProperty("Operations");
-                        var operations = operationsProperty?.GetValue(engine);
-                        
-                        if (operations != null)
-                        {
-                            var invokeMethod = FindMethod(operations.GetType(), "Invoke", typeof(object), typeof(object[]));
-                            
-                            _logger.Debug("Calling __selfinit__...");
                             try
                             {
-                                var result = invokeMethod?.Invoke(operations, 
-                                    new object[] { selfInitFunc, new object[] { componentWrapper, uiWrapper, _uiApp } });
-
-                                // Check result - if False, log warning
-                                if (result is bool boolResult && !boolResult)
-                                {
-                                    _logger.Warn($"__selfinit__ returned False for ComboBox '{component.DisplayName}'.");
-                                    return false;
-                                }
-
-                                _logger.Info($"__selfinit__ executed successfully for ComboBox '{component.DisplayName}'.");
-                                return true;
+                                invokeMethod.Invoke(operations, new object[] { handler, new object[] { sender, args, ctx } });
                             }
-                            catch (TargetInvocationException invokeEx)
+                            catch (Exception ex)
                             {
-                                var innerEx = invokeEx.InnerException;
-                                _logger.Error($"__selfinit__ call error: {innerEx?.Message ?? invokeEx.Message}");
-                                _logger.Error($"__selfinit__ error details: {innerEx?.ToString() ?? invokeEx.ToString()}");
-                                return false;
+                                _logger.Error($"Error in __cmb_on_change__: {ex.Message}");
                             }
-                        }
-                        else
-                        {
-                            _logger.Error("Failed to get engine Operations for calling __selfinit__.");
-                        }
+                        };
+                        _logger.Debug("Wired __cmb_on_change__ handler");
+                        handlersWired = true;
                     }
                 }
-                else
+
+                if (hasDropdownClose)
                 {
-                    _logger.Debug($"No __selfinit__ function found in script for ComboBox '{component.DisplayName}'.");
+                    var handler = getVariableMethod?.Invoke(scope, new object[] { "__cmb_dropdown_close__" });
+                    if (handler != null && invokeMethod != null)
+                    {
+                        comboBox.DropDownClosed += (sender, args) =>
+                        {
+                            try
+                            {
+                                invokeMethod.Invoke(operations, new object[] { handler, new object[] { sender, args, ctx } });
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.Error($"Error in __cmb_dropdown_close__: {ex.Message}");
+                            }
+                        };
+                        _logger.Debug("Wired __cmb_dropdown_close__ handler");
+                        handlersWired = true;
+                    }
+                }
+
+                if (hasDropdownOpen)
+                {
+                    var handler = getVariableMethod?.Invoke(scope, new object[] { "__cmb_dropdown_open__" });
+                    if (handler != null && invokeMethod != null)
+                    {
+                        comboBox.DropDownOpened += (sender, args) =>
+                        {
+                            try
+                            {
+                                invokeMethod.Invoke(operations, new object[] { handler, new object[] { sender, args, ctx } });
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.Error($"Error in __cmb_dropdown_open__: {ex.Message}");
+                            }
+                        };
+                        _logger.Debug("Wired __cmb_dropdown_open__ handler");
+                        handlersWired = true;
+                    }
+                }
+
+                // Keep engine alive if handlers were wired
+                if (handlersWired)
+                {
+                    _activeEngines.Add(engine);
+                    _logger.Info($"Event handlers set up successfully for ComboBox '{component.DisplayName}'.");
                 }
 
                 return true;
             }
             catch (Exception ex)
             {
-                // Unwrap TargetInvocationException to get the real error
                 var actualException = ex;
                 while (actualException is TargetInvocationException tie && tie.InnerException != null)
-                {
                     actualException = tie.InnerException;
-                }
                 
-                _logger.Error($"Error executing __selfinit__ for ComboBox '{component.DisplayName}': {actualException.Message}");
-                _logger.Error($"Full exception: {actualException}");
+                _logger.Error($"Error setting up event handlers for ComboBox '{component.DisplayName}': {actualException.Message}");
+                
+                // Cleanup engine on error
+                if (!handlersWired)
+                    CleanupEngine(engine);
+                
                 return false;
             }
-            finally
+        }
+
+        private void SetupSearchPaths(object engine, Type engineType, ParsedComponent component)
+        {
+            var getSearchPathsMethod = engineType.GetMethod("GetSearchPaths");
+            var setSearchPathsMethod = engineType.GetMethod("SetSearchPaths");
+            
+            if (getSearchPathsMethod != null && setSearchPathsMethod != null)
             {
-                // Clean up the engine
-                if (engine != null)
+                var paths = getSearchPathsMethod.Invoke(engine, null) as ICollection<string>;
+                if (paths != null && !string.IsNullOrEmpty(component.Directory))
                 {
-                    try
-                    {
-                        var runtimeProperty = engine.GetType().GetProperty("Runtime");
-                        var runtime = runtimeProperty?.GetValue(engine);
-                        var shutdownMethod = FindMethodByName(runtime?.GetType(), "Shutdown");
-                        shutdownMethod?.Invoke(runtime, null);
-                    }
-                    catch
-                    {
-                        // Ignore cleanup errors
-                    }
+                    paths.Add(component.Directory);
+                    var libPath = Path.Combine(component.Directory, "lib");
+                    if (Directory.Exists(libPath))
+                        paths.Add(libPath);
+                    setSearchPathsMethod.Invoke(engine, new[] { paths });
                 }
             }
         }
-        
-        /// <summary>
-        /// Finds a method by name and parameter types, handling ambiguous matches.
-        /// </summary>
+
+        private void SetupBuiltins(object engine, Type engineType)
+        {
+            var getBuiltinMethod = _pythonType.GetMethod("GetBuiltinModule",
+                BindingFlags.Public | BindingFlags.Static, null, new[] { engineType }, null);
+            
+            if (getBuiltinMethod != null)
+            {
+                var builtin = getBuiltinMethod.Invoke(null, new[] { engine });
+                if (builtin != null)
+                {
+                    var builtinSetVar = FindMethod(builtin.GetType(), "SetVariable", typeof(string), typeof(object));
+                    builtinSetVar?.Invoke(builtin, new object[] { "__revit__", _uiApp });
+                }
+            }
+        }
+
+        private void LoadRevitAssemblies(object engine, Type engineType)
+        {
+            var runtimeProperty = engineType.GetProperty("Runtime");
+            var runtime = runtimeProperty?.GetValue(engine);
+            if (runtime != null)
+            {
+                var loadAssemblyMethod = FindMethod(runtime.GetType(), "LoadAssembly", typeof(Assembly));
+                if (loadAssemblyMethod != null)
+                {
+                    loadAssemblyMethod.Invoke(runtime, new object[] { typeof(Autodesk.Revit.DB.Document).Assembly });
+                    loadAssemblyMethod.Invoke(runtime, new object[] { typeof(Autodesk.Revit.UI.TaskDialog).Assembly });
+                }
+            }
+        }
+
+        private void CleanupEngine(object engine)
+        {
+            if (engine == null) return;
+            try
+            {
+                var runtimeProperty = engine.GetType().GetProperty("Runtime");
+                var runtime = runtimeProperty?.GetValue(engine);
+                var shutdownMethod = FindMethodByName(runtime?.GetType(), "Shutdown");
+                shutdownMethod?.Invoke(runtime, null);
+            }
+            catch { /* Ignore cleanup errors */ }
+        }
+
+        private string FindScriptPath(ParsedComponent component)
+        {
+            if (string.IsNullOrEmpty(component.Directory))
+                return null;
+
+            var scriptPath = Path.Combine(component.Directory, "script.py");
+            if (File.Exists(scriptPath))
+                return scriptPath;
+
+            if (!string.IsNullOrEmpty(component.ScriptPath) && File.Exists(component.ScriptPath))
+                return component.ScriptPath;
+
+            return null;
+        }
+
         private static MethodInfo FindMethod(Type type, string name, params Type[] parameterTypes)
         {
             if (type == null) return null;
             
             try
             {
-                // First try the direct approach
                 return type.GetMethod(name, parameterTypes);
             }
             catch (AmbiguousMatchException)
             {
-                // If ambiguous, search manually
                 foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
                 {
                     if (method.Name != name) continue;
-                    
                     var parameters = method.GetParameters();
                     if (parameters.Length != parameterTypes.Length) continue;
                     
@@ -405,28 +492,21 @@ _component = _ComponentWrapper()
                             break;
                         }
                     }
-                    
                     if (match) return method;
                 }
-                
                 return null;
             }
         }
         
-        /// <summary>
-        /// Finds a method by name only (for parameterless methods).
-        /// </summary>
         private static MethodInfo FindMethodByName(Type type, string name)
         {
             if (type == null) return null;
-            
             try
             {
                 return type.GetMethod(name, Type.EmptyTypes);
             }
             catch (AmbiguousMatchException)
             {
-                // Return first matching method with no parameters
                 foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
                 {
                     if (method.Name == name && method.GetParameters().Length == 0)
@@ -435,61 +515,5 @@ _component = _ComponentWrapper()
                 return null;
             }
         }
-        
-        /// <summary>
-        /// Escapes a string for use in Python string literals.
-        /// </summary>
-        private static string EscapeForPython(string value)
-        {
-            if (string.IsNullOrEmpty(value))
-                return string.Empty;
-            
-            return value
-                .Replace("\\", "\\\\")
-                .Replace("'", "\\'")
-                .Replace("\r", "\\r")
-                .Replace("\n", "\\n");
-        }
-
-        /// <summary>
-        /// Finds the script.py path for a ComboBox component.
-        /// </summary>
-        private string FindScriptPath(ParsedComponent component)
-        {
-            if (string.IsNullOrEmpty(component.Directory))
-                return null;
-
-            // Check for script.py in the component directory
-            var scriptPath = Path.Combine(component.Directory, "script.py");
-            if (File.Exists(scriptPath))
-                return scriptPath;
-
-            // Also check ScriptPath from component
-            if (!string.IsNullOrEmpty(component.ScriptPath) && File.Exists(component.ScriptPath))
-                return component.ScriptPath;
-
-            return null;
-        }
-
-        /// <summary>
-        /// Builds search paths for the script execution.
-        /// </summary>
-        private List<string> BuildSearchPaths(ParsedComponent component)
-        {
-            var paths = new List<string>();
-            
-            if (!string.IsNullOrEmpty(component.Directory))
-            {
-                paths.Add(component.Directory);
-                
-                // Add lib subdirectory if it exists
-                var libPath = Path.Combine(component.Directory, "lib");
-                if (Directory.Exists(libPath))
-                    paths.Add(libPath);
-            }
-
-            return paths;
-        }
-
     }
 }
