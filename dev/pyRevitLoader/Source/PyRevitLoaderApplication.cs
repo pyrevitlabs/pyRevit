@@ -1,4 +1,4 @@
-﻿using Autodesk.Revit.Attributes;
+using Autodesk.Revit.Attributes;
 using Autodesk.Revit.UI;
 using pyRevitAssemblyBuilder.AssemblyMaker;
 using pyRevitAssemblyBuilder.SessionManager;
@@ -114,33 +114,43 @@ namespace PyRevitLoader
 				// Get the current Revit version
 				var revitVersion = uiControlledApplication.ControlledApplication.VersionNumber;
 
-				// Determine build strategy: use provided parameter, or read from config, or default to ILPack
-				var assemblyBuildStrategyType = typeof(AssemblyBuildStrategy);
-				object strategyValue;
+			// Determine build strategy: use provided parameter, or read from config, or default to ILPack
+			AssemblyBuildStrategy strategyEnum;
 
-				if (!string.IsNullOrEmpty(buildStrategy))
+			if (!string.IsNullOrEmpty(buildStrategy))
+			{
+				// Use provided build strategy from Python
+				// Safely parse the enum value by comparing against known values
+				var buildStrategyLower = buildStrategy.ToLowerInvariant();
+				if (buildStrategyLower == "roslyn")
 				{
-					// Use provided build strategy from Python
-					strategyValue = Enum.Parse(assemblyBuildStrategyType, buildStrategy);
+					strategyEnum = AssemblyBuildStrategy.Roslyn;
+				}
+				else if (buildStrategyLower == "ilpack")
+				{
+					strategyEnum = AssemblyBuildStrategy.ILPack;
 				}
 				else
 				{
-					// Fallback: read from config
-					try
-					{
-						var config = PyRevitConfig.Load();
-						strategyValue = config.NewLoaderRoslyn
-							? AssemblyBuildStrategy.Roslyn
-							: AssemblyBuildStrategy.ILPack;
-					}
-					catch
-					{
-						strategyValue = AssemblyBuildStrategy.ILPack; 
-					}
+					// Default to default strategy
+					strategyEnum = AssemblyBuildStrategy.Roslyn;
 				}
-
-				// Create services using factory
-				var strategyEnum = (AssemblyBuildStrategy)strategyValue;
+			}
+			else
+			{
+				// Fallback: read from config
+				try
+				{
+					var config = PyRevitConfig.Load();
+					strategyEnum = config.NewLoaderRoslyn
+						? AssemblyBuildStrategy.Roslyn
+						: AssemblyBuildStrategy.ILPack;
+				}
+				catch
+				{
+					strategyEnum = AssemblyBuildStrategy.ILPack; 
+				}
+			}
 				var sessionManager = ServiceFactory.CreateSessionManagerService(
 					revitVersion,
 					strategyEnum,

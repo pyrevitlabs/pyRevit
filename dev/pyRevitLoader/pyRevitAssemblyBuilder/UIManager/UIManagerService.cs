@@ -1287,9 +1287,29 @@ namespace pyRevitAssemblyBuilder.UIManager
                     object highlightModeValue = null;
 
                     if (highlightValue == "new")
-                        highlightModeValue = Enum.Parse(highlightModeType, "New");
+                    {
+                        var enumValues = Enum.GetValues(highlightModeType);
+                        foreach (var enumValue in enumValues)
+                        {
+                            if (enumValue.ToString() == "New")
+                            {
+                                highlightModeValue = enumValue;
+                                break;
+                            }
+                        }
+                    }
                     else if (highlightValue == "updated")
-                        highlightModeValue = Enum.Parse(highlightModeType, "Updated");
+                    {
+                        var enumValues = Enum.GetValues(highlightModeType);
+                        foreach (var enumValue in enumValues)
+                        {
+                            if (enumValue.ToString() == "Updated")
+                            {
+                                highlightModeValue = enumValue;
+                                break;
+                            }
+                        }
+                    }
 
                     if (highlightModeValue != null)
                         highlightProperty.SetValue(adwButton, highlightModeValue);
