@@ -6,7 +6,7 @@ using System.Reflection;
 using System.Text;
 using Autodesk.Revit.UI;
 using pyRevitExtensionParser;
-using pyRevitLabs.NLog;
+using pyRevitAssemblyBuilder.SessionManager;
 using RevitComboBoxMember = Autodesk.Revit.UI.ComboBoxMember;
 
 namespace pyRevitAssemblyBuilder.UIManager
@@ -123,7 +123,7 @@ namespace pyRevitAssemblyBuilder.UIManager
     /// </summary>
     public class ComboBoxScriptInitializer
     {
-        private readonly Logger _logger = LogManager.GetCurrentClassLogger();
+        private readonly LoggingHelper _logger;
         private readonly UIApplication _uiApp;
         
         // Cached reflection types and methods for IronPython
@@ -134,9 +134,10 @@ namespace pyRevitAssemblyBuilder.UIManager
         private static bool _initialized;
         private static bool _initializationFailed;
         
-        public ComboBoxScriptInitializer(UIApplication uiApp)
+        public ComboBoxScriptInitializer(UIApplication uiApp, object pythonLogger)
         {
             _uiApp = uiApp;
+            _logger = new LoggingHelper(pythonLogger);
             EnsureInitialized();
         }
 
@@ -166,7 +167,7 @@ namespace pyRevitAssemblyBuilder.UIManager
 
                 if (_ironPythonAssembly == null)
                 {
-                    _logger.Warn("IronPython assembly not found. ComboBox scripts will not be executed.");
+                    _logger.Warning("IronPython assembly not found. ComboBox scripts will not be executed.");
                     _initializationFailed = true;
                     return;
                 }
@@ -174,7 +175,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                 _pythonType = _ironPythonAssembly.GetType("IronPython.Hosting.Python");
                 if (_pythonType == null)
                 {
-                    _logger.Warn("IronPython.Hosting.Python type not found.");
+                    _logger.Warning("IronPython.Hosting.Python type not found.");
                     _initializationFailed = true;
                     return;
                 }
@@ -185,7 +186,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Failed to initialize ComboBoxScriptInitializer.");
+                _logger.Error($"Failed to initialize ComboBoxScriptInitializer: {ex.Message}");
                 _initializationFailed = true;
             }
         }
@@ -286,7 +287,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                 {
                     _logger.Debug($"No event handlers found in script for ComboBox '{component.DisplayName}'.");
                     return true;
-                }
+                        }
 
                 _logger.Debug("Found event handlers, setting up ComboBox context...");
 
@@ -294,8 +295,8 @@ namespace pyRevitAssemblyBuilder.UIManager
                 var ctx = new ComboBoxContext(comboBox, component, _uiApp);
 
                 // Get operations for invoking Python functions
-                var operationsProperty = engineType.GetProperty("Operations");
-                var operations = operationsProperty?.GetValue(engine);
+                        var operationsProperty = engineType.GetProperty("Operations");
+                        var operations = operationsProperty?.GetValue(engine);
                 var invokeMethod = operations != null ? 
                     FindMethod(operations.GetType(), "Invoke", typeof(object), typeof(object[])) : null;
 
@@ -318,7 +319,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                         };
                         _logger.Debug("Wired __cmb_on_change__ handler");
                         handlersWired = true;
-                    }
+                                }
                 }
 
                 if (hasDropdownClose)
@@ -354,9 +355,9 @@ namespace pyRevitAssemblyBuilder.UIManager
                                 invokeMethod.Invoke(operations, new object[] { handler, new object[] { sender, args, ctx } });
                             }
                             catch (Exception ex)
-                            {
+                        {
                                 _logger.Error($"Error in __cmb_dropdown_open__: {ex.Message}");
-                            }
+                        }
                         };
                         _logger.Debug("Wired __cmb_dropdown_open__ handler");
                         handlersWired = true;
@@ -441,15 +442,15 @@ namespace pyRevitAssemblyBuilder.UIManager
         private void CleanupEngine(object engine)
         {
             if (engine == null) return;
-            try
-            {
-                var runtimeProperty = engine.GetType().GetProperty("Runtime");
-                var runtime = runtimeProperty?.GetValue(engine);
-                var shutdownMethod = FindMethodByName(runtime?.GetType(), "Shutdown");
-                shutdownMethod?.Invoke(runtime, null);
-            }
+                    try
+                    {
+                        var runtimeProperty = engine.GetType().GetProperty("Runtime");
+                        var runtime = runtimeProperty?.GetValue(engine);
+                        var shutdownMethod = FindMethodByName(runtime?.GetType(), "Shutdown");
+                        shutdownMethod?.Invoke(runtime, null);
+                    }
             catch { /* Ignore cleanup errors */ }
-        }
+                }
 
         private string FindScriptPath(ParsedComponent component)
         {

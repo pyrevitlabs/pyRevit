@@ -12,7 +12,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Lokad.ILPack;
 using System.Text;
 using pyRevitExtensionParser;
-using pyRevitLabs.NLog;
+using pyRevitAssemblyBuilder.SessionManager;
 
 namespace pyRevitAssemblyBuilder.AssemblyMaker
 {
@@ -36,7 +36,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
     /// </summary>
     public class AssemblyBuilderService
     {
-        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+        private readonly LoggingHelper _logger;
         private readonly string _revitVersion;
         private readonly AssemblyBuildStrategy _buildStrategy;
         private static readonly string _executingAssemblyLocation = Assembly.GetExecutingAssembly().Location;
@@ -47,11 +47,13 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         /// </summary>
         /// <param name="revitVersion">The Revit version number (e.g., "2024").</param>
         /// <param name="buildStrategy">The build strategy to use for creating assemblies.</param>
-        /// <exception cref="ArgumentNullException">Thrown when revitVersion is null.</exception>
-        public AssemblyBuilderService(string revitVersion, AssemblyBuildStrategy buildStrategy)
+        /// <param name="pythonLogger">The Python logger instance.</param>
+        /// <exception cref="ArgumentNullException">Thrown when revitVersion or pythonLogger is null.</exception>
+        public AssemblyBuilderService(string revitVersion, AssemblyBuildStrategy buildStrategy, object pythonLogger)
         {
             _revitVersion = revitVersion ?? throw new ArgumentNullException(nameof(revitVersion));
             _buildStrategy = buildStrategy;
+            _logger = new LoggingHelper(pythonLogger ?? throw new ArgumentNullException(nameof(pythonLogger)));
 
             if (_buildStrategy == AssemblyBuildStrategy.ILPack)
             {
@@ -141,7 +143,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             // Check if assembly file already exists (hash-based caching)
             if (File.Exists(outputPath))
             {
-                logger.Debug("Found cached assembly: {0}", outputPath);
+                _logger.Debug($"Found cached assembly: {outputPath}");
                 try
                 {
                     var assemblyName = AssemblyName.GetAssemblyName(outputPath);
@@ -150,16 +152,16 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 catch (Exception ex)
                 {
                     // If file is corrupted or invalid, delete it and rebuild
-                    logger.Debug("Cached assembly file is corrupted or invalid: {0}", outputPath);
-                    logger.Debug("Exception: {0}", ex.Message);
+                    _logger.Debug($"Cached assembly file is corrupted or invalid: {outputPath}");
+                    _logger.Debug($"Exception: {ex.Message}");
                     try
                     {
                         File.Delete(outputPath);
-                        logger.Debug("Deleted corrupted assembly file: {0}", outputPath);
+                        _logger.Debug($"Deleted corrupted assembly file: {outputPath}");
                     }
                     catch (Exception deleteEx)
                     {
-                        logger.Warn("Failed to delete corrupted assembly file: {0} | {1}", outputPath, deleteEx.Message);
+                        _logger.Warning($"Failed to delete corrupted assembly file: {outputPath} | {deleteEx.Message}");
                         // Ignore delete errors, build will overwrite
                     }
                 }
@@ -212,11 +214,11 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                         // Load the module DLL into the AppDomain
                         Assembly.LoadFrom(modulePath);
                         loadedModules.Add(modulePath);
-                        logger.Debug("Loaded module: {0}", modulePath);
+                        _logger.Debug($"Loaded module: {modulePath}");
                     }
                     catch (Exception ex)
                     {
-                        logger.Error("Failed to load module: {0} | {1}", modulePath, ex.Message);
+                        _logger.Error($"Failed to load module: {modulePath} | {ex.Message}");
                     }
                 }
             }
@@ -267,7 +269,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             }
             catch (Exception ex)
             {
-                logger.Error("Failed to update referenced assemblies in AppDomain: {0}", ex.Message);
+                _logger.Error($"Failed to update referenced assemblies in AppDomain: {ex.Message}");
             }
         }
 
@@ -284,7 +286,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             string code = generator.GenerateExtensionCode(extension, _revitVersion, libraryExtensions);
             var csPath = Path.Combine(Path.GetDirectoryName(outputPath), $"{extension.Name}.cs");
             File.WriteAllText(csPath, code);
-            logger.Debug("Generated C# code file: {0}", csPath);
+            _logger.Debug($"Generated C# code file: {csPath}");
 
             var tree = CSharpSyntaxTree.ParseText(code);
             var compilation = CSharpCompilation.Create(
@@ -298,9 +300,9 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             
             if (!result.Success)
             {
-                logger.Error("Roslyn compilation failed for: {0}", extension.Name);
+                _logger.Error($"Roslyn compilation failed for: {extension.Name}");
                 foreach (var diagnostic in result.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error))
-                    logger.Error("  {0}", diagnostic.ToString());
+                    _logger.Error($"  {diagnostic}");
                 throw new Exception("Roslyn compilation failed.");
             }
         }

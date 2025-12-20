@@ -15,10 +15,11 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// </summary>
         /// <param name="revitVersion">The Revit version number.</param>
         /// <param name="buildStrategy">The build strategy to use.</param>
+        /// <param name="pythonLogger">The Python logger instance.</param>
         /// <returns>A new AssemblyBuilderService instance.</returns>
-        public static AssemblyBuilderService CreateAssemblyBuilderService(string revitVersion, AssemblyBuildStrategy buildStrategy)
+        public static AssemblyBuilderService CreateAssemblyBuilderService(string revitVersion, AssemblyBuildStrategy buildStrategy, object pythonLogger)
         {
-            return new AssemblyBuilderService(revitVersion, buildStrategy);
+            return new AssemblyBuilderService(revitVersion, buildStrategy, pythonLogger);
         }
 
         /// <summary>
@@ -33,20 +34,22 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <summary>
         /// Creates a HookManager instance.
         /// </summary>
+        /// <param name="pythonLogger">The Python logger instance.</param>
         /// <returns>A new HookManager instance.</returns>
-        public static HookManager CreateHookManager()
+        public static HookManager CreateHookManager(object pythonLogger)
         {
-            return new HookManager();
+            return new HookManager(pythonLogger);
         }
 
         /// <summary>
         /// Creates a UIManagerService instance.
         /// </summary>
         /// <param name="uiApplication">The Revit UIApplication instance.</param>
+        /// <param name="pythonLogger">The Python logger instance.</param>
         /// <returns>A new UIManagerService instance.</returns>
-        public static UIManagerService CreateUIManagerService(UIApplication uiApplication)
+        public static UIManagerService CreateUIManagerService(UIApplication uiApplication, object pythonLogger)
         {
-            return new UIManagerService(uiApplication);
+            return new UIManagerService(uiApplication, pythonLogger);
         }
 
         /// <summary>
@@ -55,18 +58,18 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <param name="revitVersion">The Revit version number (e.g., "2024").</param>
         /// <param name="buildStrategy">The build strategy to use for assembly generation.</param>
         /// <param name="uiApplication">The Revit UIApplication instance.</param>
-        /// <param name="pythonLogger">Optional Python logger instance for integration with pyRevit's logging system.</param>
+        /// <param name="pythonLogger">The Python logger instance for integration with pyRevit's logging system.</param>
         /// <returns>A new SessionManagerService instance.</returns>
         public static SessionManagerService CreateSessionManagerService(
             string revitVersion,
             AssemblyBuildStrategy buildStrategy,
             UIApplication uiApplication,
-            object pythonLogger = null)
+            object pythonLogger)
         {
-            var assemblyBuilder = CreateAssemblyBuilderService(revitVersion, buildStrategy);
+            var assemblyBuilder = CreateAssemblyBuilderService(revitVersion, buildStrategy, pythonLogger);
             var extensionManager = CreateExtensionManagerService();
-            var hookManager = CreateHookManager();
-            var uiManager = CreateUIManagerService(uiApplication);
+            var hookManager = CreateHookManager(pythonLogger);
+            var uiManager = CreateUIManagerService(uiApplication, pythonLogger);
 
             return new SessionManagerService(
                 assemblyBuilder, 

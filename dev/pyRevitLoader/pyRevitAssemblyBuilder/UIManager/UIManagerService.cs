@@ -14,7 +14,6 @@ using RibbonItem = Autodesk.Revit.UI.RibbonItem;
 using RevitComboBoxMember = Autodesk.Revit.UI.ComboBoxMember;
 using static pyRevitExtensionParser.ExtensionParser;
 using pyRevitExtensionParser;
-using pyRevitLabs.NLog;
 using pyRevitAssemblyBuilder.SessionManager;
 
 namespace pyRevitAssemblyBuilder.UIManager
@@ -24,10 +23,11 @@ namespace pyRevitAssemblyBuilder.UIManager
     /// </summary>
     public class UIManagerService
     {
-        private readonly Logger _logger = LogManager.GetCurrentClassLogger();
+        private readonly LoggingHelper _logger;
         private readonly UIApplication _uiApp;
         private ParsedExtension _currentExtension;
         private ComboBoxScriptInitializer _comboBoxScriptInitializer;
+        private readonly RevitThemeDetector _themeDetector;
 
         /// <summary>
         /// Gets the UIApplication instance used by this service.
@@ -38,10 +38,13 @@ namespace pyRevitAssemblyBuilder.UIManager
         /// Initializes a new instance of the <see cref="UIManagerService"/> class.
         /// </summary>
         /// <param name="uiApp">The Revit UIApplication instance.</param>
-        public UIManagerService(UIApplication uiApp)
+        /// <param name="pythonLogger">The Python logger instance.</param>
+        public UIManagerService(UIApplication uiApp, object pythonLogger)
         {
             _uiApp = uiApp;
-            _comboBoxScriptInitializer = new ComboBoxScriptInitializer(uiApp);
+            _logger = new LoggingHelper(pythonLogger ?? throw new ArgumentNullException(nameof(pythonLogger)));
+            _comboBoxScriptInitializer = new ComboBoxScriptInitializer(uiApp, pythonLogger);
+            _themeDetector = new RevitThemeDetector(pythonLogger);
         }
 
         /// <summary>
@@ -53,13 +56,13 @@ namespace pyRevitAssemblyBuilder.UIManager
         {
             if (extension == null)
             {
-                _logger.Warn("Cannot build UI: extension is null.");
+                _logger.Warning("Cannot build UI: extension is null.");
                 return;
             }
             
             if (assemblyInfo == null)
             {
-                _logger.Warn($"Cannot build UI for extension '{extension.Name}': assemblyInfo is null.");
+                _logger.Warning($"Cannot build UI for extension '{extension.Name}': assemblyInfo is null.");
                 return;
             }
             
@@ -89,19 +92,19 @@ namespace pyRevitAssemblyBuilder.UIManager
         {
             if (component == null)
             {
-                _logger.Warn("Cannot build UI: component is null.");
+                _logger.Warning("Cannot build UI: component is null.");
                 return;
             }
             
             if (assemblyInfo == null)
             {
-                _logger.Warn("Cannot build UI: assemblyInfo is null.");
+                _logger.Warning("Cannot build UI: assemblyInfo is null.");
                 return;
             }
             
             if (string.IsNullOrEmpty(tabName))
             {
-                _logger.Warn($"Cannot build UI for component '{component.DisplayName}': tabName is null or empty.");
+                _logger.Warning($"Cannot build UI for component '{component.DisplayName}': tabName is null or empty.");
                 return;
             }
             
@@ -147,7 +150,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             catch (Exception ex)
             {
                 // Tab may already exist, which is acceptable - log at debug level
-                _logger.Debug(ex, "Failed to create ribbon tab '{0}'. Tab may already exist.", tabText);
+                _logger.Debug($"Failed to create ribbon tab '{tabText}'. Tab may already exist. Exception: {ex.Message}");
             }
             foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
                 RecursivelyBuildUI(child, component, null, tabText, assemblyInfo);
@@ -192,7 +195,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             }
             catch (Exception ex)
             {
-                _logger.Debug(ex, "Error checking if item '{0}' exists in panel.", itemName);
+                _logger.Debug($"Error checking if item '{itemName}' exists in panel. Exception: {ex.Message}");
                 return false;
             }
         }
@@ -208,7 +211,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                 catch (Exception ex)
                 {
                     // Slideout may already exist or panel may not support it - log at debug level
-                    _logger.Debug(ex, "Failed to add slideout to panel '{0}'.", parentPanel.Name);
+                    _logger.Debug($"Failed to add slideout to panel '{parentPanel.Name}'. Exception: {ex.Message}");
                 }
             }
         }
@@ -232,7 +235,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                         catch (Exception ex)
                         {
                             // Separator addition may fail in some contexts - log at debug level
-                            _logger.Debug(ex, "Failed to add separator to panel '{0}'.", parentPanel.Name);
+                            _logger.Debug($"Failed to add separator to panel '{parentPanel.Name}'. Exception: {ex.Message}");
                         }
                     }
                     break;
@@ -328,7 +331,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                                     } 
                                     catch (Exception ex)
                                     {
-                                        _logger.Debug(ex, "Failed to add separator to split button '{0}'.", splitButtonText);
+                                        _logger.Debug($"Failed to add separator to split button '{splitButtonText}'. Exception: {ex.Message}");
                                     }
                                 }
                                 else if (sub.Type == CommandComponentType.PushButton ||
@@ -397,7 +400,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             catch (Exception ex)
             {
                 // Button modification is non-critical, but log for debugging
-                _logger.Debug(ex, "Failed to modify button '{0}' to panel button in tab '{1}'.", panelBtn.ItemText, tabName);
+                _logger.Debug($"Failed to modify button '{panelBtn.ItemText}' to panel button in tab '{tabName}'. Exception: {ex.Message}");
             }
         }
 
@@ -414,7 +417,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                 // Skip if this item already exists in the panel (e.g., during reload)
                 if (ItemExistsInPanel(parentPanel, child.UniqueId))
                 {
-                    _logger.Debug("Skipping stack item '{0}' - already exists in panel.", child.UniqueId);
+                    _logger.Debug($"Skipping stack item '{child.UniqueId}' - already exists in panel.");
                     return; // If any item exists, the whole stack was already added
                 }
 
@@ -490,7 +493,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                                     } 
                                     catch (Exception ex)
                                     {
-                                        _logger.Debug(ex, "Failed to add separator to pulldown button in stack.");
+                                        _logger.Debug($"Failed to add separator to pulldown button in stack. Exception: {ex.Message}");
                                     }
                                 }
                                 else if (sub.Type == CommandComponentType.PushButton ||
@@ -547,7 +550,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                     } 
                     catch (Exception ex)
                     {
-                        _logger.Debug(ex, "Failed to add separator to pulldown button '{0}'.", pulldownText);
+                        _logger.Debug($"Failed to add separator to pulldown button '{pulldownText}'. Exception: {ex.Message}");
                     }
                 }
                 else if (sub.Type == CommandComponentType.PushButton ||
@@ -661,7 +664,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             }
             catch (Exception ex)
             {
-                _logger.Debug(ex, "Failed to resolve assembly path for LinkButton '{0}'.", component.DisplayName);
+                _logger.Debug($"Failed to resolve assembly path for LinkButton '{component.DisplayName}'. Exception: {ex.Message}");
                 return null;
             }
         }
@@ -763,7 +766,7 @@ namespace pyRevitAssemblyBuilder.UIManager
         {
             if (parentPanel == null)
             {
-                _logger.Warn("Cannot create ComboBox '{0}': parent panel is null.", component.DisplayName);
+                _logger.Warning($"Cannot create ComboBox '{component.DisplayName}': parent panel is null.");
                 return;
             }
 
@@ -779,7 +782,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                 var comboBox = parentPanel.AddItem(comboBoxData) as ComboBox;
                 if (comboBox == null)
                 {
-                    _logger.Warn("Failed to create ComboBox '{0}'.", comboBoxText);
+                    _logger.Warning($"Failed to create ComboBox '{comboBoxText}'.");
                     return;
                 }
 
@@ -798,7 +801,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                     }
                     catch (Exception ex)
                     {
-                        _logger.Debug(ex, "Could not set ItemText for ComboBox '{0}'.", comboBoxText);
+                        _logger.Debug($"Could not set ItemText for ComboBox '{comboBoxText}'. Exception: {ex.Message}");
                     }
                 }
 
@@ -844,7 +847,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                         }
                         catch (Exception ex)
                         {
-                            _logger.Debug(ex, "Error adding member '{0}' to ComboBox '{1}'.", member.Text, comboBoxText);
+                            _logger.Debug($"Error adding member '{member.Text}' to ComboBox '{comboBoxText}'. Exception: {ex.Message}");
                         }
                     }
 
@@ -858,7 +861,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                         }
                         catch (Exception ex)
                         {
-                            _logger.Debug(ex, "Could not set current item for ComboBox '{0}'.", comboBoxText);
+                            _logger.Debug($"Could not set current item for ComboBox '{comboBoxText}'. Exception: {ex.Message}");
                         }
                     }
                 }
@@ -875,15 +878,15 @@ namespace pyRevitAssemblyBuilder.UIManager
                     }
                     catch (Exception scriptEx)
                     {
-                        _logger.Warn(scriptEx, "ComboBox event handler setup failed for '{0}'.", comboBoxText);
+                        _logger.Warning($"ComboBox event handler setup failed for '{comboBoxText}'. Exception: {scriptEx.Message}");
                     }
                 }
 
-                _logger.Debug("Successfully created ComboBox '{0}' with {1} members.", comboBoxText, component.Members?.Count ?? 0);
+                _logger.Debug($"Successfully created ComboBox '{comboBoxText}' with {component.Members?.Count ?? 0} members.");
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Failed to create ComboBox '{0}'.", component.DisplayName);
+                _logger.Error($"Failed to create ComboBox '{component.DisplayName}'. Exception: {ex.Message}");
             }
         }
 
@@ -897,7 +900,7 @@ namespace pyRevitAssemblyBuilder.UIManager
 
             try
             {
-                var isDarkTheme = RevitThemeDetector.IsDarkTheme();
+                var isDarkTheme = _themeDetector.IsDarkTheme();
                 var icon = GetBestIconForSizeWithTheme(component, 16, isDarkTheme);
 
                 if (icon != null)
@@ -911,7 +914,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             }
             catch (Exception ex)
             {
-                _logger.Debug(ex, "Failed to apply icon to ComboBox '{0}'.", component.DisplayName);
+                _logger.Debug($"Failed to apply icon to ComboBox '{component.DisplayName}'. Exception: {ex.Message}");
             }
         }
 
@@ -943,7 +946,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             }
             catch (Exception ex)
             {
-                _logger.Debug(ex, "Failed to apply icon to ComboBox member '{0}'.", memberDef.Text);
+                _logger.Debug($"Failed to apply icon to ComboBox member '{memberDef.Text}'. Exception: {ex.Message}");
             }
         }
 
@@ -971,7 +974,7 @@ namespace pyRevitAssemblyBuilder.UIManager
 
             try
             {
-                var isDarkTheme = RevitThemeDetector.IsDarkTheme();
+                var isDarkTheme = _themeDetector.IsDarkTheme();
 
                 // Get the best icons for large and small sizes with theme awareness
                 var largeIcon = GetBestIconForSizeWithTheme(component, 32, isDarkTheme);
@@ -997,7 +1000,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             }
             catch (Exception ex)
             {
-                _logger.Debug(ex, "Failed to apply icon to push button '{0}'.", component.DisplayName);
+                _logger.Debug($"Failed to apply icon to push button '{component.DisplayName}'. Exception: {ex.Message}");
             }
         }
 
@@ -1012,7 +1015,7 @@ namespace pyRevitAssemblyBuilder.UIManager
 
             try
             {
-                var isDarkTheme = RevitThemeDetector.IsDarkTheme();
+                var isDarkTheme = _themeDetector.IsDarkTheme();
 
                 // For pulldown buttons, use fixed 16x16 size for consistent appearance
                 // This ensures pulldown icons remain at the expected size regardless of DPI scaling
@@ -1045,7 +1048,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             }
             catch (Exception ex)
             {
-                _logger.Debug(ex, "Failed to apply icon to push button '{0}'.", component.DisplayName);
+                _logger.Debug($"Failed to apply icon to push button '{component.DisplayName}'. Exception: {ex.Message}");
             }
         }
 
@@ -1072,7 +1075,7 @@ namespace pyRevitAssemblyBuilder.UIManager
 
             try
             {
-                var isDarkTheme = RevitThemeDetector.IsDarkTheme();
+                var isDarkTheme = _themeDetector.IsDarkTheme();
 
                 // For pulldown sub-buttons, use fixed 16x16 size for consistency with pulldown appearance
                 const int pulldownSubButtonIconSize = 16;
@@ -1094,7 +1097,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             }
             catch (Exception ex)
             {
-                _logger.Debug(ex, "Failed to apply icon to push button '{0}'.", component.DisplayName);
+                _logger.Debug($"Failed to apply icon to push button '{component.DisplayName}'. Exception: {ex.Message}");
             }
         }
 
@@ -1108,7 +1111,7 @@ namespace pyRevitAssemblyBuilder.UIManager
 
             try
             {
-                var isDarkTheme = RevitThemeDetector.IsDarkTheme();
+                var isDarkTheme = _themeDetector.IsDarkTheme();
 
                 // Get the best icons for large and small sizes with theme awareness
                 var largeIcon = GetBestIconForSizeWithTheme(component, 32, isDarkTheme);
@@ -1135,7 +1138,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             }
             catch (Exception ex)
             {
-                _logger.Debug(ex, "Failed to apply icon to split button '{0}'.", component.DisplayName);
+                _logger.Debug($"Failed to apply icon to split button '{component.DisplayName}'. Exception: {ex.Message}");
             }
         }
 
@@ -1198,7 +1201,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             }
             catch (Exception ex)
             {
-                _logger.Debug(ex, "Failed to load bitmap source from '{0}'.", imagePath);
+                _logger.Debug($"Failed to load bitmap source from '{imagePath}'. Exception: {ex.Message}");
                 return null;
             }
         }
@@ -1250,7 +1253,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             }
             catch (Exception ex)
             {
-                _logger.Debug(ex, "Failed to adjust DPI for bitmap source.");
+                _logger.Debug($"Failed to adjust DPI for bitmap source. Exception: {ex.Message}");
                 return source; // Return original if adjustment fails
             }
         }
@@ -1293,7 +1296,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                 }
             }
             catch (Exception ex)            {
-                _logger.Debug(ex, "Failed to apply highlight to button '{0}'.", revitButton?.ItemText ?? "unknown");
+                _logger.Debug($"Failed to apply highlight to button '{revitButton?.ItemText ?? "unknown"}'. Exception: {ex.Message}");
             }
         }
 
@@ -1330,7 +1333,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             }
             catch (Exception ex)
             {
-                _logger.Debug(ex, "Failed to get Autodesk.Windows button for '{0}'.", revitButton?.ItemText ?? "unknown");
+                _logger.Debug($"Failed to get Autodesk.Windows button for '{revitButton?.ItemText ?? "unknown"}'. Exception: {ex.Message}");
             }
 
             return null;
@@ -1376,7 +1379,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             }
             catch (Exception ex)
             {
-                _logger.Debug(ex, "Failed to convert ARGB color string '{0}' to SolidColorBrush.", argbColor);
+                _logger.Debug($"Failed to convert ARGB color string '{argbColor}' to SolidColorBrush. Exception: {ex.Message}");
                 return null;
             }
         }
@@ -1400,7 +1403,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             }
             catch (Exception ex)
             {
-                _logger.Debug(ex, "Failed to get Autodesk.Windows panel for '{0}' in tab '{1}'.", revitPanel?.Name ?? "unknown", tabName);
+                _logger.Debug($"Failed to get Autodesk.Windows panel for '{revitPanel?.Name ?? "unknown"}' in tab '{tabName}'. Exception: {ex.Message}");
                 return null;
             }
         }
@@ -1463,7 +1466,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             }
             catch (Exception ex)
             {
-                _logger.Debug(ex, "Failed to apply background colors to panel '{0}' in tab '{1}'.", revitPanel?.Name ?? "unknown", tabName);
+                _logger.Debug($"Failed to apply background colors to panel '{revitPanel?.Name ?? "unknown"}' in tab '{tabName}'. Exception: {ex.Message}");
             }
         }
 

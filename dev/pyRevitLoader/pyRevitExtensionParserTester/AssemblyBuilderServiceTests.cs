@@ -10,11 +10,14 @@ namespace pyRevitExtensionParserTester
     {
         private AssemblyBuilderService _service;
         private const string TestRevitVersion = "2024";
+        private object _mockPythonLogger;
 
         [SetUp]
         public void SetUp()
         {
-            _service = new AssemblyBuilderService(TestRevitVersion, AssemblyBuildStrategy.ILPack);
+            // Create a mock python logger (can be null for tests or a mock object)
+            _mockPythonLogger = new MockPythonLogger();
+            _service = new AssemblyBuilderService(TestRevitVersion, AssemblyBuildStrategy.ILPack, _mockPythonLogger);
         }
 
         [Test]
@@ -22,14 +25,14 @@ namespace pyRevitExtensionParserTester
         {
             // Act & Assert
             Assert.Throws<ArgumentNullException>(() => 
-                new AssemblyBuilderService(null, AssemblyBuildStrategy.ILPack));
+                new AssemblyBuilderService(null, AssemblyBuildStrategy.ILPack, _mockPythonLogger));
         }
 
         [Test]
         public void Constructor_WithValidParameters_CreatesInstance()
         {
             // Act
-            var service = new AssemblyBuilderService(TestRevitVersion, AssemblyBuildStrategy.Roslyn);
+            var service = new AssemblyBuilderService(TestRevitVersion, AssemblyBuildStrategy.Roslyn, _mockPythonLogger);
 
             // Assert
             Assert.IsNotNull(service);
@@ -48,6 +51,17 @@ namespace pyRevitExtensionParserTester
         // - Mock Revit API dependencies
         // - Test file system setup
         // These are complex integration tests that require significant setup.
+    }
+
+    /// <summary>
+    /// Mock Python logger for testing purposes.
+    /// </summary>
+    public class MockPythonLogger
+    {
+        public void debug(string message) { }
+        public void info(string message) { }
+        public void warning(string message) { }
+        public void error(string message) { }
     }
 }
 

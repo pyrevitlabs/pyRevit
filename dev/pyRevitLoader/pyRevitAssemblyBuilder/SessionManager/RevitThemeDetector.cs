@@ -1,38 +1,42 @@
 using System;
-using pyRevitLabs.NLog;
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
     /// <summary>
     /// Utility for detecting Revit's UI theme
     /// </summary>
-    public static class RevitThemeDetector
+    public class RevitThemeDetector
     {
-        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+        private readonly LoggingHelper _logger;
+
+        public RevitThemeDetector(object pythonLogger)
+        {
+            _logger = new LoggingHelper(pythonLogger ?? throw new ArgumentNullException(nameof(pythonLogger)));
+        }
 
         /// <summary>
         /// Detects the current Revit UI theme
         /// </summary>
         /// <returns>True if the current theme is dark, false if light or cannot be determined</returns>
-        public static bool IsDarkTheme()
+        public bool IsDarkTheme()
         {
             try
             {
 #if (REVIT2019 || REVIT2020 || REVIT2021 || REVIT2022 || REVIT2023)
                 // UIThemeManager not available before Revit 2024
-                logger.Debug("UIThemeManager not available in this Revit version, falling back to light theme");
+                _logger.Debug("UIThemeManager not available in this Revit version, falling back to light theme");
                 return false;
 #else
                 // Use Revit 2024+ UIThemeManager API directly
                 var currentTheme = Autodesk.Revit.UI.UIThemeManager.CurrentTheme;
                 var isDark = currentTheme == Autodesk.Revit.UI.UITheme.Dark;
-                logger.Debug("Revit theme detected: {0} -> isDark: {1}", currentTheme, isDark);
+                _logger.Debug($"Revit theme detected: {currentTheme} -> isDark: {isDark}");
                 return isDark;
 #endif
             }
             catch (Exception ex)
             {
-                logger.Error("Error detecting Revit theme: {0}", ex.Message);
+                _logger.Error($"Error detecting Revit theme: {ex.Message}");
                 // Default to light theme if detection fails
                 return false;
             }
@@ -41,7 +45,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <summary>
         /// Gets a string representation of the current theme
         /// </summary>
-        public static string GetThemeName()
+        public string GetThemeName()
         {
             return IsDarkTheme() ? "Dark" : "Light";
         }
