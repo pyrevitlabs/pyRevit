@@ -11,6 +11,7 @@ using Autodesk.Windows;
 using RibbonPanel = Autodesk.Revit.UI.RibbonPanel;
 using RibbonButton = Autodesk.Windows.RibbonButton;
 using RibbonItem = Autodesk.Revit.UI.RibbonItem;
+using RevitComboBoxMember = Autodesk.Revit.UI.ComboBoxMember;
 using static pyRevitExtensionParser.ExtensionParser;
 using pyRevitExtensionParser;
 using pyRevitLabs.NLog;
@@ -26,6 +27,7 @@ namespace pyRevitAssemblyBuilder.UIManager
         private readonly Logger _logger = LogManager.GetCurrentClassLogger();
         private readonly UIApplication _uiApp;
         private ParsedExtension _currentExtension;
+        private ComboBoxScriptInitializer _comboBoxScriptInitializer;
 
         /// <summary>
         /// Gets the UIApplication instance used by this service.
@@ -39,6 +41,7 @@ namespace pyRevitAssemblyBuilder.UIManager
         public UIManagerService(UIApplication uiApp)
         {
             _uiApp = uiApp;
+            _comboBoxScriptInitializer = new ComboBoxScriptInitializer(uiApp);
         }
 
         /// <summary>
@@ -358,6 +361,13 @@ namespace pyRevitAssemblyBuilder.UIManager
                                 }
                             }
                         }
+                    }
+                    break;
+
+                case CommandComponentType.ComboBox:
+                    if (!ItemExistsInPanel(parentPanel, component.UniqueId))
+                    {
+                        CreateComboBox(component, parentPanel);
                     }
                     break;
             }
@@ -742,6 +752,199 @@ namespace pyRevitAssemblyBuilder.UIManager
             foreach (char c in name)
                 sb.Append(char.IsLetterOrDigit(c) ? c : '_');
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Creates a ComboBox control in the ribbon panel with its members.
+        /// </summary>
+        /// <param name="component">The ComboBox component definition.</param>
+        /// <param name="parentPanel">The panel to add the ComboBox to.</param>
+        private void CreateComboBox(ParsedComponent component, RibbonPanel parentPanel)
+        {
+            if (parentPanel == null)
+            {
+                _logger.Warn("Cannot create ComboBox '{0}': parent panel is null.", component.DisplayName);
+                return;
+            }
+
+            try
+            {
+                // Use Title from bundle.yaml if available, otherwise fall back to DisplayName
+                var comboBoxText = !string.IsNullOrEmpty(component.Title) ? component.Title : component.DisplayName;
+                
+                // Create ComboBoxData
+                var comboBoxData = new ComboBoxData(component.UniqueId);
+                
+                // Add ComboBox to panel
+                var comboBox = parentPanel.AddItem(comboBoxData) as ComboBox;
+                if (comboBox == null)
+                {
+                    _logger.Warn("Failed to create ComboBox '{0}'.", comboBoxText);
+                    return;
+                }
+
+                // Set tooltip if available
+                if (!string.IsNullOrEmpty(component.Tooltip))
+                {
+                    comboBox.ToolTip = component.Tooltip;
+                }
+
+                // Set ItemText (initial display text)
+                if (!string.IsNullOrEmpty(comboBoxText))
+                {
+                    try
+                    {
+                        comboBox.ItemText = comboBoxText;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Debug(ex, "Could not set ItemText for ComboBox '{0}'.", comboBoxText);
+                    }
+                }
+
+                // Add members to ComboBox
+                if (component.Members != null && component.Members.Count > 0)
+                {
+                    foreach (var member in component.Members)
+                    {
+                        if (string.IsNullOrEmpty(member.Id) || string.IsNullOrEmpty(member.Text))
+                        {
+                            _logger.Debug("Skipping ComboBox member with missing id or text.");
+                            continue;
+                        }
+
+                        try
+                        {
+                            // Create member data
+                            var memberData = new ComboBoxMemberData(member.Id, member.Text);
+                            
+                            // Set group name on data before adding (GroupName is read-only on ComboBoxMember)
+                            if (!string.IsNullOrEmpty(member.Group))
+                            {
+                                memberData.GroupName = member.Group;
+                            }
+                            
+                            // Add member to ComboBox
+                            var addedMember = comboBox.AddItem(memberData);
+                            
+                            if (addedMember != null)
+                            {
+                                // Set member tooltip if available
+                                if (!string.IsNullOrEmpty(member.Tooltip))
+                                {
+                                    addedMember.ToolTip = member.Tooltip;
+                                }
+
+                                // Set member icon if available
+                                if (!string.IsNullOrEmpty(member.Icon))
+                                {
+                                    ApplyIconToComboBoxMember(addedMember, member, component);
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.Debug(ex, "Error adding member '{0}' to ComboBox '{1}'.", member.Text, comboBoxText);
+                        }
+                    }
+
+                    // Set current selection to first item
+                    var items = comboBox.GetItems();
+                    if (items != null && items.Count > 0)
+                    {
+                        try
+                        {
+                            comboBox.Current = items[0];
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.Debug(ex, "Could not set current item for ComboBox '{0}'.", comboBoxText);
+                        }
+                    }
+                }
+
+                // Apply icon to the ComboBox itself
+                ApplyIconToComboBoxThemeAware(comboBox, component);
+
+                // Execute __selfinit__ script if present (similar to SmartButton pattern)
+                if (_comboBoxScriptInitializer != null)
+                {
+                    try
+                    {
+                        _comboBoxScriptInitializer.ExecuteSelfInit(component, comboBox);
+                    }
+                    catch (Exception scriptEx)
+                    {
+                        _logger.Warn(scriptEx, "ComboBox script initialization failed for '{0}'.", comboBoxText);
+                    }
+                }
+
+                _logger.Debug("Successfully created ComboBox '{0}' with {1} members.", comboBoxText, component.Members?.Count ?? 0);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Failed to create ComboBox '{0}'.", component.DisplayName);
+            }
+        }
+
+        /// <summary>
+        /// Applies icon to a ComboBox with theme awareness.
+        /// </summary>
+        private void ApplyIconToComboBoxThemeAware(ComboBox comboBox, ParsedComponent component)
+        {
+            if (!component.HasValidIcons)
+                return;
+
+            try
+            {
+                var isDarkTheme = RevitThemeDetector.IsDarkTheme();
+                var icon = GetBestIconForSizeWithTheme(component, 16, isDarkTheme);
+
+                if (icon != null)
+                {
+                    var bitmap = LoadBitmapSource(icon.FilePath, 16);
+                    if (bitmap != null)
+                    {
+                        comboBox.Image = bitmap;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug(ex, "Failed to apply icon to ComboBox '{0}'.", component.DisplayName);
+            }
+        }
+
+        /// <summary>
+        /// Applies icon to a ComboBox member.
+        /// </summary>
+        private void ApplyIconToComboBoxMember(RevitComboBoxMember member, pyRevitExtensionParser.ComboBoxMember memberDef, ParsedComponent parentComponent)
+        {
+            if (string.IsNullOrEmpty(memberDef.Icon))
+                return;
+
+            try
+            {
+                // Resolve icon path (relative to bundle directory or absolute)
+                var iconPath = memberDef.Icon;
+                if (!Path.IsPathRooted(iconPath) && !string.IsNullOrEmpty(parentComponent.Directory))
+                {
+                    iconPath = Path.Combine(parentComponent.Directory, memberDef.Icon);
+                }
+
+                if (File.Exists(iconPath))
+                {
+                    var bitmap = LoadBitmapSource(iconPath, 16);
+                    if (bitmap != null)
+                    {
+                        member.Image = bitmap;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug(ex, "Failed to apply icon to ComboBox member '{0}'.", memberDef.Text);
+            }
         }
 
         #region Icon Management

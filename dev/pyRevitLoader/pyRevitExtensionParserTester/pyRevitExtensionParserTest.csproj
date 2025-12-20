@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -48,6 +48,7 @@
     <Compile Include="AssemblyBuilderServiceTests.cs" />
     <Compile Include="SessionManagerIntegrationTests.cs" />
     <Compile Include="PythonScriptMultiLangTest.cs" />
+    <Compile Include="ComboBoxTests.cs" />
   </ItemGroup>
 
   <ItemGroup>

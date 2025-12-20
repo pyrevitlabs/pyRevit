@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -466,7 +466,8 @@ namespace pyRevitExtensionParser
                     LocalizedTitles = finalLocalizedTitles.Count > 0 ? finalLocalizedTitles : null,
                     LocalizedTooltips = finalLocalizedTooltips.Count > 0 ? finalLocalizedTooltips : null,
                     Directory = dir,
-                    Engine = bundleInComponent?.Engine
+                    Engine = bundleInComponent?.Engine,
+                    Members = bundleInComponent?.Members ?? new List<ComboBoxMember>()
                 });
             }
 
@@ -849,7 +850,8 @@ namespace pyRevitExtensionParser
             UrlButton,
             ContentButton,
             NoButton,
-            Separator
+            Separator,
+            ComboBox
         }
 
         public static class CommandComponentTypeExtensions
@@ -872,6 +874,7 @@ namespace pyRevitExtensionParser
                     case ".urlbutton": return CommandComponentType.UrlButton;
                     case ".content": return CommandComponentType.ContentButton;
                     case ".nobutton": return CommandComponentType.NoButton;
+                    case ".combobox": return CommandComponentType.ComboBox;
                     default: return CommandComponentType.Unknown;
                 }
             }
@@ -894,6 +897,7 @@ namespace pyRevitExtensionParser
                 case CommandComponentType.UrlButton: return ".urlbutton";
                 case CommandComponentType.ContentButton: return ".content";
                 case CommandComponentType.NoButton: return ".nobutton";
+                case CommandComponentType.ComboBox: return ".combobox";
                 default: return string.Empty;
             }
         }

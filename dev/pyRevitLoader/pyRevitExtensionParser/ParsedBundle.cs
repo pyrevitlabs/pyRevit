@@ -226,5 +226,23 @@ namespace pyRevitExtensionParser
         /// </code>
         /// </example>
         public List<string> Modules { get; set; } = new List<string>();
+
+        /// <summary>
+        /// Gets or sets the list of members for ComboBox controls.
+        /// </summary>
+        /// <remarks>
+        /// <para>Only applicable for .combobox bundles.</para>
+        /// <para>Each member defines an option in the ComboBox dropdown.</para>
+        /// </remarks>
+        /// <example>
+        /// <code>
+        /// members:
+        ///   - id: "one"
+        ///     text: "Option One"
+        ///   - id: "two"
+        ///     text: "Option Two"
+        /// </code>
+        /// </example>
+        public List<ComboBoxMember> Members { get; set; } = new List<ComboBoxMember>();
     }
 }

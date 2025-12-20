@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -197,6 +197,11 @@ namespace pyRevitExtensionParser
                 {
                     ParseSecondLevelItem(line, raw, parsed, state);
                 }
+                else if (raw.StartsWith("    ") || raw.StartsWith("\t\t"))
+                {
+                    // Third level - for member properties and nested configurations
+                    ParseThirdLevelItem(line, parsed, state);
+                }
             }
 
             // Handle any remaining multiline content at end of file
@@ -225,6 +230,22 @@ namespace pyRevitExtensionParser
             if (line.StartsWith("-") && state.CurrentSection == "modules")
             {
                 ParseModuleItem(line, parsed);
+                return;
+            }
+
+            // Handle member list items at top level (for .combobox bundles)
+            if (line.StartsWith("-") && state.CurrentSection == "members")
+            {
+                // Start a new member
+                state.CurrentMember = new ComboBoxMember();
+                parsed.Members.Add(state.CurrentMember);
+                
+                // Check if this line also contains the first property (e.g., "- id: one")
+                var memberContent = line.Substring(1).Trim();
+                if (memberContent.Contains(":"))
+                {
+                    ParseMemberProperty(memberContent, state);
+                }
                 return;
             }
             
@@ -304,6 +325,30 @@ namespace pyRevitExtensionParser
             if (state.CurrentSection == "modules" && line.StartsWith("-"))
             {
                 ParseModuleItem(line, parsed);
+                return;
+            }
+
+            // Member list items for ComboBox
+            if (state.CurrentSection == "members")
+            {
+                if (line.StartsWith("-"))
+                {
+                    // Start a new member
+                    state.CurrentMember = new ComboBoxMember();
+                    parsed.Members.Add(state.CurrentMember);
+                    
+                    // Check if this line also contains the first property (e.g., "- id: one")
+                    var memberContent = line.Substring(1).Trim();
+                    if (memberContent.Contains(":"))
+                    {
+                        ParseMemberProperty(memberContent, state);
+                    }
+                }
+                else if (line.Contains(":") && state.CurrentMember != null)
+                {
+                    // Parse member property
+                    ParseMemberProperty(line, state);
+                }
                 return;
             }
 
@@ -488,6 +533,57 @@ namespace pyRevitExtensionParser
         }
 
         /// <summary>
+        /// Parses third-level items (indented with 4 spaces or 2 tabs).
+        /// Used for member properties in ComboBox.
+        /// </summary>
+        private static void ParseThirdLevelItem(string line, ParsedBundle parsed, ParserState state)
+        {
+            // Member properties for ComboBox
+            if (state.CurrentSection == "members" && state.CurrentMember != null && line.Contains(":"))
+            {
+                ParseMemberProperty(line, state);
+            }
+        }
+
+        /// <summary>
+        /// Parses a single ComboBox member property.
+        /// </summary>
+        private static void ParseMemberProperty(string line, ParserState state)
+        {
+            if (state.CurrentMember == null)
+                return;
+
+            var colonIndex = line.IndexOf(':');
+            if (colonIndex <= 0)
+                return;
+
+            var key = line.Substring(0, colonIndex).Trim().ToLowerInvariant();
+            var value = StripQuotes(line.Substring(colonIndex + 1).Trim());
+
+            switch (key)
+            {
+                case "id":
+                    state.CurrentMember.Id = value;
+                    break;
+                case "text":
+                    state.CurrentMember.Text = value;
+                    break;
+                case "icon":
+                    state.CurrentMember.Icon = value;
+                    break;
+                case "tooltip":
+                    state.CurrentMember.Tooltip = value;
+                    break;
+                case "group":
+                    state.CurrentMember.Group = value;
+                    break;
+                case "tooltip_image":
+                    state.CurrentMember.TooltipImage = value;
+                    break;
+            }
+        }
+
+        /// <summary>
         /// Strips surrounding quotes and processes escape sequences.
         /// </summary>
         /// <param name="value">The string value to process.</param>
@@ -619,6 +715,11 @@ namespace pyRevitExtensionParser
             public bool IsLiteralMultiline { get; set; }
             public bool IsFoldedMultiline { get; set; }
             public List<string> MultilineContent { get; set; } = new List<string>();
+            
+            /// <summary>
+            /// Current ComboBox member being parsed (for .combobox bundles)
+            /// </summary>
+            public ComboBoxMember CurrentMember { get; set; }
 
             public void ResetMultiline()
             {

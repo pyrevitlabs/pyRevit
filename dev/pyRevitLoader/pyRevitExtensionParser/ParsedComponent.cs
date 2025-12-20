@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using static pyRevitExtensionParser.ExtensionParser;
 
@@ -114,6 +114,15 @@ namespace pyRevitExtensionParser
                 return locales;
             }
         }
+
+        /// <summary>
+        /// List of members for ComboBox controls.
+        /// </summary>
+        /// <remarks>
+        /// Only populated for components of type ComboBox.
+        /// Each member represents an option in the dropdown.
+        /// </remarks>
+        public List<ComboBoxMember> Members { get; set; } = new List<ComboBoxMember>();
 
         /// <summary>
         /// Gets the localized title for the specified locale, with fallback logic
