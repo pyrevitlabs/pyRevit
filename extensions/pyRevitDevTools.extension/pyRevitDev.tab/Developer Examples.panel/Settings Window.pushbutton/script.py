@@ -103,10 +103,10 @@ output.set_title("Settings Window Test Results")
 if settings_window.show_settings(settings, section="develop_test_section", title="Advanced Tool Settings"):
     output.print_md("## Settings Window Test Results\n")
     output.print_md("**Status:** Settings saved successfully! :white_check_mark:\n")
-    
+
     # Retrieve saved values from config
     config = script.get_config("develop_test_section")
-    
+
     # Build table data with saved values
     table_data = []
     for setting in settings:
@@ -114,10 +114,10 @@ if settings_window.show_settings(settings, section="develop_test_section", title
         label = setting.get("label", name)
         setting_type = setting.get("type", "string")
         default = setting.get("default", "")
-        
+
         # Get saved value or show default if not saved
         saved_value = config.get_option(name, default)
-        
+
         # Format value for display
         if setting_type == "bool":
             display_value = "True" if saved_value else "False"
@@ -127,14 +127,14 @@ if settings_window.show_settings(settings, section="develop_test_section", title
             display_value = "*Empty*"
         else:
             display_value = str(saved_value)
-        
+
         table_data.append([
             label,
             name,
             setting_type,
             display_value
         ])
-    
+
     # Display results table
     output.print_table(
         table_data=table_data,
@@ -142,10 +142,10 @@ if settings_window.show_settings(settings, section="develop_test_section", title
         title="Saved Settings",
         formats=["", "", "", ""]
     )
-    
+
     output.print_md("\n---\n")
     output.print_md("**Note:** Values shown above are retrieved from the config file after saving.")
-    
+
 else:
     output.print_md("## Settings Window Test Results\n")
     output.print_md("**Status:** Settings dialog was canceled. :x:\n")

@@ -170,7 +170,7 @@ COMP_HOOKS_DIR_NAME = 'hooks'
 COMP_CHECKS_DIR_NAME = 'checks'
 
 # unique ids
-UNIQUE_ID_SEPARATOR = '-'
+UNIQUE_ID_SEPARATOR = '_'
 
 # bundle layout elements
 SEPARATOR_IDENTIFIER = '---'

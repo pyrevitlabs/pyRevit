@@ -642,6 +642,116 @@ def _add_combobox_members(combobox_ui, combobox):
             mlogger.warning("Error adding member: %s", add_err)
 
 
+def setup_combobox(combobox, ui_item, uiapp, script_globals):
+    """Set up ComboBox event handlers from script globals.
+    
+    This function looks for special global variables in the script and
+    wires them up as event handlers for the ComboBox.
+    
+    Recognized global variables:
+        - __cmb_on_change__(sender, args, ctx): Called when selection changes
+        - __cmb_dropdown_close__(sender, args, ctx): Called when dropdown closes
+        - __cmb_dropdown_open__(sender, args, ctx): Called when dropdown opens
+    
+    Args:
+        combobox: The parsed component metadata
+        ui_item: The pyRevit UI wrapper for the ComboBox
+        uiapp: The Revit UIApplication instance
+        script_globals (dict): The globals() dict from the script
+        
+    Returns:
+        (bool): True if setup succeeded, False otherwise
+    """
+    try:
+        cmb = ui_item.get_rvtapi_object() if hasattr(ui_item, 'get_rvtapi_object') else None
+        if not cmb:
+            mlogger.debug("Could not get ComboBox API object")
+            return False
+        
+        # Create context object
+        ctx = components.ComboBoxContext(combobox, ui_item, uiapp, cmb)
+        
+        # Get event handlers from script globals
+        on_change = script_globals.get('__cmb_on_change__')
+        on_dropdown_close = script_globals.get('__cmb_dropdown_close__')
+        on_dropdown_open = script_globals.get('__cmb_dropdown_open__')
+        
+        handlers_found = False
+        
+        # Wire up CurrentChanged event
+        if callable(on_change):
+            handlers_found = True
+            def current_changed_handler(sender, args):
+                try:
+                    on_change(sender, args, ctx)
+                except Exception as ex:
+                    mlogger.error("Error in __cmb_on_change__: %s", ex)
+            
+            cmb.CurrentChanged += current_changed_handler
+            # Keep reference alive
+            if hasattr(ui_item, '__dict__'):
+                ui_item._cmb_current_changed_handler = current_changed_handler
+            mlogger.debug("Wired __cmb_on_change__ handler")
+        
+        # Wire up DropDownClosed event
+        if callable(on_dropdown_close) and hasattr(cmb, 'DropDownClosed'):
+            handlers_found = True
+            def dropdown_closed_handler(sender, args):
+                try:
+                    on_dropdown_close(sender, args, ctx)
+                except Exception as ex:
+                    mlogger.error("Error in __cmb_dropdown_close__: %s", ex)
+            
+            cmb.DropDownClosed += dropdown_closed_handler
+            if hasattr(ui_item, '__dict__'):
+                ui_item._cmb_dropdown_closed_handler = dropdown_closed_handler
+            mlogger.debug("Wired __cmb_dropdown_close__ handler")
+        
+        # Wire up DropDownOpened event
+        if callable(on_dropdown_open) and hasattr(cmb, 'DropDownOpened'):
+            handlers_found = True
+            def dropdown_opened_handler(sender, args):
+                try:
+                    on_dropdown_open(sender, args, ctx)
+                except Exception as ex:
+                    mlogger.error("Error in __cmb_dropdown_open__: %s", ex)
+            
+            cmb.DropDownOpened += dropdown_opened_handler
+            if hasattr(ui_item, '__dict__'):
+                ui_item._cmb_dropdown_opened_handler = dropdown_opened_handler
+            mlogger.debug("Wired __cmb_dropdown_open__ handler")
+        
+        # Store context on ui_item for later access
+        if hasattr(ui_item, '__dict__'):
+            ui_item._cmb_context = ctx
+        
+        if handlers_found:
+            mlogger.info("ComboBox handlers set up successfully for '%s'", 
+                        getattr(combobox, 'display_name', str(combobox)))
+        else:
+            mlogger.debug("No ComboBox event handlers found in script globals")
+        
+        return True
+        
+    except Exception as ex:
+        mlogger.error("Error setting up ComboBox handlers: %s", ex)
+        return False
+
+
+def get_combobox_context(ui_item):
+    """Get the ComboBoxContext for a UI item.
+    
+    Args:
+        ui_item: The pyRevit UI wrapper for the ComboBox
+        
+    Returns:
+        (ComboBoxContext): The context object or None
+    """
+    if hasattr(ui_item, '_cmb_context'):
+        return ui_item._cmb_context
+    return None
+
+
 def _produce_ui_combobox(ui_maker_params):
     """Create a ComboBox with full property support.
 
@@ -733,7 +843,8 @@ def _produce_ui_combobox(ui_maker_params):
         except Exception as current_err:
             mlogger.debug("Error setting current item: %s", current_err)
 
-    # Call __selfinit__ on script (SmartButton pattern)
+    # Load ComboBox script and set up event handlers
+    # Uses pattern: __cmb_on_change__, __cmb_dropdown_close__, __cmb_dropdown_open__
     try:
         combobox_script_file = getattr(combobox, "script_file", None)
         combobox_unique_name = getattr(combobox, "unique_name", None)
@@ -759,30 +870,29 @@ def _produce_ui_combobox(ui_maker_params):
             )
             sys.path = current_paths
 
-            if hasattr(imported_script, "__selfinit__"):
-                mlogger.warning(
-                    "[ComboBox Script Load] '%s': Calling __selfinit__ function",
-                    combobox_name,
-                )
-                res = imported_script.__selfinit__(
-                    combobox, combobox_ui, HOST_APP.uiapp
-                )
-                if res is False:
-                    combobox_ui.deactivate()
-            else:
-                mlogger.warning(
-                    "[ComboBox Script Load] '%s': Script loaded but __selfinit__ function not found",
-                    combobox_name,
-                )
+            mlogger.debug(
+                "[ComboBox Script Load] '%s': Setting up event handlers",
+                combobox_name,
+            )
+            script_globals = {
+                name: getattr(imported_script, name)
+                for name in dir(imported_script)
+                if not name.startswith('_') or name.startswith('__cmb_')
+            }
+            res = setup_combobox(
+                combobox, combobox_ui, HOST_APP.uiapp, script_globals
+            )
+            if res is False:
+                combobox_ui.deactivate()
         else:
-            mlogger.warning(
+            mlogger.debug(
                 "[ComboBox Script Load] '%s': Skipping script load - script_file=%s, unique_name=%s",
                 combobox_name,
                 combobox_script_file,
                 combobox_unique_name,
             )
     except Exception as init_err:
-        mlogger.exception("Error in __selfinit__: %s", init_err)
+        mlogger.exception("Error loading ComboBox script: %s", init_err)
 
     # Ensure visible & enabled
     try:

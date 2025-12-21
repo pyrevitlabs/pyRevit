@@ -9,7 +9,6 @@ from pyrevit import forms
 from pyrevit import script
 from pyrevit.userconfig import user_config
 
-
 logger = script.get_logger()
 
 

@@ -57,6 +57,11 @@
     <system:String x:Key="CoreSettings.Development.Description">Options diverses pour le développement de pyRevit</system:String>
     <system:String x:Key="CoreSettings.Development.LoadBeta">Charger les outils bêta (Scripts avec __beta__ = True, le rechargement est requis)</system:String>
 
+    <system:String x:Key="CoreSettings.Loader">Chargeur</system:String>
+    <system:String x:Key="CoreSettings.Loader.Description">Configurer le mécanisme de chargement des assemblies de pyRevit. Le nouveau chargeur est une implémentation C# et permet d'utiliser la stratégie de compilation Roslyn</system:String>
+    <system:String x:Key="CoreSettings.Loader.NewLoader">Active une nouvelle version du chargeur pyRevit (bêta)</system:String>
+    <system:String x:Key="CoreSettings.Loader.RoslynLoader">Utiliser la stratégie de compilation Roslyn (Recommandé)</system:String>
+
     <system:String x:Key="CoreSettings.CloseOtherConsoles">Fermer les consoles ouvertes</system:String>
     <system:String x:Key="CoreSettings.CloseOtherConsoles.Description">
         Si activé, pyRevit fermera les autres consoles de sortie lors de l'exécution d'un nouveau script.

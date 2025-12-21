@@ -631,3 +631,241 @@ class LibraryExtension(GenericComponent):
     @classmethod
     def matches(cls, component_path):
         return component_path.lower().endswith(cls.type_id)
+
+
+class ComboBoxContext(object):
+    """Context object providing access to ComboBox state and data.
+    
+    This object is passed to event handlers and provides a convenient
+    interface to access the current ComboBox state.
+    
+    Attributes:
+        combobox: The raw Revit ComboBox API object
+        component: The parsed component metadata
+        ui_item: The pyRevit UI wrapper for the ComboBox
+        uiapp: The Revit UIApplication instance
+    """
+    
+    def __init__(self, component, ui_item, uiapp, combobox=None):
+        """Initialize the ComboBoxContext.
+        
+        Args:
+            component: The parsed component metadata
+            ui_item: The pyRevit UI wrapper for the ComboBox
+            uiapp: The Revit UIApplication instance
+            combobox: The raw Revit ComboBox API object (optional)
+        """
+        self._component = component
+        self._ui_item = ui_item
+        self._uiapp = uiapp
+        self._combobox = combobox
+        self._user_data = {}
+    
+    @property
+    def combobox(self):
+        """Get the raw Revit ComboBox API object.
+        
+        Returns:
+            (Autodesk.Revit.UI.ComboBox): The Revit ComboBox control
+        """
+        if self._combobox:
+            return self._combobox
+        if self._ui_item and hasattr(self._ui_item, 'get_rvtapi_object'):
+            return self._ui_item.get_rvtapi_object()
+        return None
+    
+    @property
+    def current_item(self):
+        """Get the currently selected ComboBoxMemberData.
+        
+        Returns:
+            (Autodesk.Revit.UI.ComboBoxMemberData): Current selected item or None
+        """
+        cmb = self.combobox
+        if cmb and hasattr(cmb, 'Current'):
+            return cmb.Current
+        return None
+    
+    @property
+    def current_value(self):
+        """Get the text of the currently selected item.
+        
+        Returns:
+            (str): The ItemText of the current selection, or empty string
+        """
+        item = self.current_item
+        if item and hasattr(item, 'ItemText'):
+            return item.ItemText
+        return ""
+    
+    @property
+    def current_name(self):
+        """Get the name/id of the currently selected item.
+        
+        Returns:
+            (str): The Name of the current selection, or empty string
+        """
+        item = self.current_item
+        if item and hasattr(item, 'Name'):
+            return item.Name
+        return ""
+    
+    @property
+    def items(self):
+        """Get all items in the ComboBox.
+        
+        Returns:
+            (list): List of ComboBoxMemberData items
+        """
+        cmb = self.combobox
+        if cmb and hasattr(cmb, 'GetItems'):
+            return list(cmb.GetItems())
+        return []
+    
+    @property
+    def item_count(self):
+        """Get the number of items in the ComboBox.
+        
+        Returns:
+            (int): Number of items
+        """
+        return len(self.items)
+    
+    @property
+    def item_texts(self):
+        """Get the text values of all items.
+        
+        Returns:
+            (list[str]): List of item text values
+        """
+        return [item.ItemText for item in self.items if hasattr(item, 'ItemText')]
+    
+    @property
+    def item_names(self):
+        """Get the names/ids of all items.
+        
+        Returns:
+            (list[str]): List of item names
+        """
+        return [item.Name for item in self.items if hasattr(item, 'Name')]
+    
+    @property
+    def component(self):
+        """Get the parsed component metadata.
+        
+        Returns:
+            The component metadata object
+        """
+        return self._component
+    
+    @property
+    def ui_item(self):
+        """Get the pyRevit UI wrapper.
+        
+        Returns:
+            The pyRevit UI wrapper for the ComboBox
+        """
+        return self._ui_item
+    
+    @property
+    def uiapp(self):
+        """Get the Revit UIApplication instance.
+        
+        Returns:
+            (Autodesk.Revit.UI.UIApplication): The UIApplication
+        """
+        return self._uiapp
+    
+    @property
+    def directory(self):
+        """Get the component's bundle directory.
+        
+        Returns:
+            (str): Path to the component directory
+        """
+        if hasattr(self._component, 'directory'):
+            return self._component.directory
+        return ""
+    
+    @property
+    def name(self):
+        """Get the component name.
+        
+        Returns:
+            (str): Component name
+        """
+        if hasattr(self._component, 'name'):
+            return self._component.name
+        return ""
+    
+    @property
+    def display_name(self):
+        """Get the component display name.
+        
+        Returns:
+            (str): Component display name
+        """
+        if hasattr(self._component, 'display_name'):
+            return self._component.display_name
+        return ""
+    
+    @property
+    def user_data(self):
+        """Get the user data dictionary for storing custom data.
+        
+        Returns:
+            (dict): Dictionary for storing custom data between events
+        """
+        return self._user_data
+    
+    def set_current(self, item_name_or_text):
+        """Set the current selection by name or text.
+        
+        Args:
+            item_name_or_text (str): The Name or ItemText of the item to select
+            
+        Returns:
+            (bool): True if item was found and selected
+        """
+        cmb = self.combobox
+        if not cmb:
+            return False
+            
+        for item in self.items:
+            if (hasattr(item, 'Name') and item.Name == item_name_or_text) or \
+               (hasattr(item, 'ItemText') and item.ItemText == item_name_or_text):
+                try:
+                    cmb.Current = item
+                    return True
+                except Exception as ex:
+                    mlogger.debug("Error setting current item: %s", ex)
+                    return False
+        return False
+    
+    def get_item_by_name(self, name):
+        """Get an item by its Name.
+        
+        Args:
+            name (str): The Name to search for
+            
+        Returns:
+            (ComboBoxMemberData): The item or None
+        """
+        for item in self.items:
+            if hasattr(item, 'Name') and item.Name == name:
+                return item
+        return None
+    
+    def get_item_by_text(self, text):
+        """Get an item by its ItemText.
+        
+        Args:
+            text (str): The ItemText to search for
+            
+        Returns:
+            (ComboBoxMemberData): The item or None
+        """
+        for item in self.items:
+            if hasattr(item, 'ItemText') and item.ItemText == text:
+                return item
+        return None

@@ -1,0 +1,11 @@
+title:
+  en_us: Panel Configuration
+  fr: Configuration du Panneau
+  de: Panelkonfiguration
+tooltips:
+  en_us: Configure panel display options and debug settings
+  fr: Configurer les options d'affichage du panneau et les paramètres de débogage
+  de: Optionen für die Panelanzeige und Debug-Einstellungen konfigurieren
+author: Test User
+min_revit_version: 2019
+context: zero-doc

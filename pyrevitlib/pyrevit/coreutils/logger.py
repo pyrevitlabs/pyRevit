@@ -347,7 +347,6 @@ def get_logger(logger_name):
         logger.addHandler(get_stdout_hndlr())
         logger.propagate = False
         logger.addHandler(get_file_hndlr())
-
         loggers.update({logger_name: logger})
         return logger
 
