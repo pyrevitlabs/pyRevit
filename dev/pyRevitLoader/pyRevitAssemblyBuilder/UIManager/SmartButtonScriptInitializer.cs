@@ -89,30 +89,92 @@ namespace pyRevitAssemblyBuilder.UIManager
 
         /// <summary>
         /// Creates a bitmap from file path with specified size.
-        /// Uses simple and reliable loading without complex DPI calculations.
+        /// Matches the pythonic loader's ButtonIcons.create_bitmap behavior:
+        /// - Doubles icon size and DPI for proper HiDPI rendering
+        /// - Applies screen scale factor for proper display on scaled monitors
         /// </summary>
         private System.Windows.Media.Imaging.BitmapSource CreateBitmap(string iconPath, int iconSize)
         {
             try
             {
+                // Match pythonic loader: double size and DPI
+                int adjustedIconSize = iconSize * 2;
+                double adjustedDpi = UIManagerConstants.DEFAULT_DPI * 2;
+                
+                // Get screen scale factor (matches HOST_APP.proc_screen_scalefactor)
+                double screenScaling = GetScreenScaleFactor();
+                
                 // Read file bytes to avoid file locking issues
                 var fileBytes = File.ReadAllBytes(iconPath);
                 using (var memoryStream = new MemoryStream(fileBytes))
                 {
-                    var bitmap = new System.Windows.Media.Imaging.BitmapImage();
-                    bitmap.BeginInit();
-                    bitmap.StreamSource = memoryStream;
-                    bitmap.DecodePixelWidth = iconSize;
-                    bitmap.DecodePixelHeight = iconSize;
-                    bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-                    bitmap.EndInit();
-                    bitmap.Freeze();
-                    return bitmap;
+                    // Decode at adjusted size with screen scaling
+                    var baseImage = new System.Windows.Media.Imaging.BitmapImage();
+                    baseImage.BeginInit();
+                    baseImage.StreamSource = memoryStream;
+                    baseImage.DecodePixelHeight = (int)(adjustedIconSize * screenScaling);
+                    baseImage.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                    baseImage.EndInit();
+                    baseImage.Freeze();
+                    
+                    // Get image data for creating properly DPI-scaled bitmap
+                    int imageSize = baseImage.PixelWidth;
+                    var imageFormat = baseImage.Format;
+                    int bytesPerPixel = (baseImage.Format.BitsPerPixel + 7) / 8;
+                    int stride = imageSize * bytesPerPixel;
+                    int arraySize = stride * imageSize;
+                    
+                    byte[] imageData = new byte[arraySize];
+                    baseImage.CopyPixels(imageData, stride, 0);
+                    
+                    // Create bitmap with proper DPI (matches pythonic loader)
+                    int scaledSize = (int)(adjustedIconSize * screenScaling);
+                    double scaledDpi = adjustedDpi * screenScaling;
+                    
+                    var bitmapSource = System.Windows.Media.Imaging.BitmapSource.Create(
+                        scaledSize,
+                        scaledSize,
+                        scaledDpi,
+                        scaledDpi,
+                        imageFormat,
+                        baseImage.Palette,
+                        imageData,
+                        stride
+                    );
+                    bitmapSource.Freeze();
+                    return bitmapSource;
                 }
             }
             catch
             {
                 return null;
+            }
+        }
+        
+        /// <summary>
+        /// Gets the screen scale factor for the current process.
+        /// Matches HOST_APP.proc_screen_scalefactor in the pythonic loader.
+        /// Uses WPF DPI detection to avoid System.Windows.Forms dependency.
+        /// </summary>
+        private double GetScreenScaleFactor()
+        {
+            try
+            {
+                // Get system DPI using WPF
+                var dpiXProperty = typeof(System.Windows.SystemParameters).GetProperty("DpiX", 
+                    BindingFlags.NonPublic | BindingFlags.Static);
+                
+                if (dpiXProperty != null)
+                {
+                    int dpiX = (int)dpiXProperty.GetValue(null, null);
+                    return dpiX / UIManagerConstants.DEFAULT_DPI;
+                }
+                
+                return 1.0;
+            }
+            catch
+            {
+                return 1.0;
             }
         }
 
