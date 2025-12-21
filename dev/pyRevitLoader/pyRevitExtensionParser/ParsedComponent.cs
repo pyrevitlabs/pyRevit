@@ -33,6 +33,49 @@ namespace pyRevitExtensionParser
         public EngineConfig Engine { get; set; }
         
         /// <summary>
+        /// Path to the config script (config.py, config.cs, etc.) if it exists.
+        /// When no separate config script exists, this equals ScriptPath.
+        /// </summary>
+        public string ConfigScriptPath { get; set; }
+        
+        /// <summary>
+        /// Whether this component has a separate config script (config.py differs from script.py).
+        /// Used to add the dot indicator (●) to button titles.
+        /// </summary>
+        public bool HasConfigScript => 
+            !string.IsNullOrEmpty(ConfigScriptPath) && 
+            !string.IsNullOrEmpty(ScriptPath) && 
+            !string.Equals(ConfigScriptPath, ScriptPath, System.StringComparison.OrdinalIgnoreCase);
+        
+        /// <summary>
+        /// Path to the "on" state icon for toggle/smart buttons.
+        /// Used when the button is in the activated/on state.
+        /// </summary>
+        public string OnIconPath { get; set; }
+        
+        /// <summary>
+        /// Path to the dark theme "on" state icon for toggle/smart buttons.
+        /// </summary>
+        public string OnIconDarkPath { get; set; }
+        
+        /// <summary>
+        /// Path to the "off" state icon for toggle/smart buttons.
+        /// Used when the button is in the deactivated/off state.
+        /// </summary>
+        public string OffIconPath { get; set; }
+        
+        /// <summary>
+        /// Path to the dark theme "off" state icon for toggle/smart buttons.
+        /// </summary>
+        public string OffIconDarkPath { get; set; }
+        
+        /// <summary>
+        /// Whether this component has on/off state icons for toggle functionality.
+        /// </summary>
+        public bool HasToggleIcons => 
+            !string.IsNullOrEmpty(OnIconPath) || !string.IsNullOrEmpty(OffIconPath);
+        
+        /// <summary>
         /// Panel background color (ARGB hex format, e.g., '#BB005591')
         /// </summary>
         public string PanelBackground { get; set; }

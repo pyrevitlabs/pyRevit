@@ -129,7 +129,9 @@ namespace pyRevitAssemblyBuilder.UIManager
         // Cached reflection types and methods for IronPython
         private static Assembly _ironPythonAssembly;
         private static Assembly _microsoftScriptingAssembly;
+        private static Assembly _pyRevitLoaderAssembly;
         private static Type _pythonType;
+        private static Type _scriptExecutorType;
         private static MethodInfo _createEngineMethod;
         private static bool _initialized;
         private static bool _initializationFailed;
@@ -162,6 +164,10 @@ namespace pyRevitAssemblyBuilder.UIManager
                         {
                             _microsoftScriptingAssembly = assembly;
                         }
+                        else if (name.StartsWith("pyRevitLoader", StringComparison.OrdinalIgnoreCase))
+                        {
+                            _pyRevitLoaderAssembly = assembly;
+                        }
                     }
                 }
 
@@ -181,6 +187,13 @@ namespace pyRevitAssemblyBuilder.UIManager
                 }
 
                 _createEngineMethod = _pythonType.GetMethod("CreateEngine", new Type[0]);
+                
+                // Get PyRevitLoader.ScriptExecutor.AddEmbeddedLib method for adding the standard library
+                if (_pyRevitLoaderAssembly != null)
+                {
+                    _scriptExecutorType = _pyRevitLoaderAssembly.GetType("PyRevitLoader.ScriptExecutor");
+                }
+                
                 _initialized = true;
                 _logger.Debug("ComboBoxScriptInitializer initialized successfully.");
             }
@@ -227,6 +240,12 @@ namespace pyRevitAssemblyBuilder.UIManager
 
                 var engineType = engine.GetType();
                 
+                // Add embedded Python standard library (critical for imports like os, sys, etc.)
+                AddEmbeddedLib(engine);
+                
+                // Load Revit API assemblies into the runtime (before search paths for proper resolution)
+                LoadRevitAssemblies(engine, engineType);
+                
                 // Set up search paths
                 SetupSearchPaths(engine, engineType, component);
 
@@ -249,9 +268,6 @@ namespace pyRevitAssemblyBuilder.UIManager
 
                 // Set up built-in variables
                 SetupBuiltins(engine, engineType);
-
-                // Load Revit API assemblies
-                LoadRevitAssemblies(engine, engineType);
 
                 // Set __file__ variable
                 setVariableMethod?.Invoke(scope, new object[] { "__file__", scriptPath });
@@ -400,12 +416,124 @@ namespace pyRevitAssemblyBuilder.UIManager
                 if (paths != null && !string.IsNullOrEmpty(component.Directory))
                 {
                     paths.Add(component.Directory);
+                    _logger.Debug($"Added component directory to search paths: {component.Directory}");
+                    
                     var libPath = Path.Combine(component.Directory, "lib");
                     if (Directory.Exists(libPath))
+                    {
                         paths.Add(libPath);
+                        _logger.Debug($"Added lib directory to search paths: {libPath}");
+                    }
+                    
+                    // Find pyrevitlib using multiple strategies
+                    string pyrevitLibFound = FindPyRevitLib(component.Directory);
+                    if (!string.IsNullOrEmpty(pyrevitLibFound) && !paths.Contains(pyrevitLibFound))
+                    {
+                        paths.Add(pyrevitLibFound);
+                        _logger.Debug($"Added pyrevitlib to search paths: {pyrevitLibFound}");
+                        
+                        // Also add site-packages if it exists
+                        var pyrevitRoot = Path.GetDirectoryName(pyrevitLibFound);
+                        if (!string.IsNullOrEmpty(pyrevitRoot))
+                        {
+                            var sitePackagesPath = Path.Combine(pyrevitRoot, "site-packages");
+                            if (Directory.Exists(sitePackagesPath) && !paths.Contains(sitePackagesPath))
+                            {
+                                paths.Add(sitePackagesPath);
+                                _logger.Debug($"Added site-packages to search paths: {sitePackagesPath}");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        _logger.Warning($"Could not find pyrevitlib directory");
+                    }
+                    
                     setSearchPathsMethod.Invoke(engine, new[] { paths });
                 }
             }
+        }
+        
+        /// <summary>
+        /// Finds the pyrevitlib directory using multiple strategies.
+        /// </summary>
+        private string FindPyRevitLib(string componentDirectory)
+        {
+            _logger.Debug($"Looking for pyrevitlib starting from: {componentDirectory}");
+            
+            // Strategy 1: Navigate up from component directory
+            if (!string.IsNullOrEmpty(componentDirectory))
+            {
+                var current = new DirectoryInfo(componentDirectory);
+                int depth = 0;
+                while (current != null && depth < 20)
+                {
+                    var pyrevitLibPath = Path.Combine(current.FullName, "pyrevitlib");
+                    if (Directory.Exists(pyrevitLibPath))
+                    {
+                        _logger.Info($"Found pyrevitlib via component traversal: {pyrevitLibPath}");
+                        return pyrevitLibPath;
+                    }
+                    current = current.Parent;
+                    depth++;
+                }
+            }
+            
+            // Strategy 2: Find from pyRevitLoader assembly location
+            if (_pyRevitLoaderAssembly != null)
+            {
+                try
+                {
+                    var loaderPath = _pyRevitLoaderAssembly.Location;
+                    _logger.Debug($"pyRevitLoader assembly location: {loaderPath}");
+                    if (!string.IsNullOrEmpty(loaderPath))
+                    {
+                        var loaderDir = new DirectoryInfo(Path.GetDirectoryName(loaderPath));
+                        var current = loaderDir?.Parent?.Parent?.Parent?.Parent;
+                        if (current != null)
+                        {
+                            var pyrevitLibPath = Path.Combine(current.FullName, "pyrevitlib");
+                            if (Directory.Exists(pyrevitLibPath))
+                            {
+                                _logger.Info($"Found pyrevitlib via loader assembly: {pyrevitLibPath}");
+                                return pyrevitLibPath;
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.Debug($"Error finding pyrevitlib from loader assembly: {ex.Message}");
+                }
+            }
+            
+            // Strategy 3: Try from this assembly's location
+            try
+            {
+                var thisAssemblyPath = Assembly.GetExecutingAssembly().Location;
+                _logger.Debug($"This assembly location: {thisAssemblyPath}");
+                if (!string.IsNullOrEmpty(thisAssemblyPath))
+                {
+                    var thisDir = new DirectoryInfo(Path.GetDirectoryName(thisAssemblyPath));
+                    var current = thisDir?.Parent?.Parent?.Parent?.Parent;
+                    if (current != null)
+                    {
+                        var pyrevitLibPath = Path.Combine(current.FullName, "pyrevitlib");
+                        if (Directory.Exists(pyrevitLibPath))
+                        {
+                            _logger.Info($"Found pyrevitlib via this assembly: {pyrevitLibPath}");
+                            return pyrevitLibPath;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug($"Error finding pyrevitlib from this assembly: {ex.Message}");
+            }
+            
+            _logger.Warning("All strategies failed to find pyrevitlib");
+            return null;
         }
 
         private void SetupBuiltins(object engine, Type engineType)
@@ -421,6 +549,48 @@ namespace pyRevitAssemblyBuilder.UIManager
                     var builtinSetVar = FindMethod(builtin.GetType(), "SetVariable", typeof(string), typeof(object));
                     builtinSetVar?.Invoke(builtin, new object[] { "__revit__", _uiApp });
                 }
+            }
+        }
+
+        /// <summary>
+        /// Adds the embedded Python standard library to the engine.
+        /// This allows importing standard modules like os, sys, etc.
+        /// </summary>
+        private void AddEmbeddedLib(object engine)
+        {
+            try
+            {
+                if (_scriptExecutorType == null)
+                {
+                    _logger.Debug("PyRevitLoader.ScriptExecutor type not found. Standard library may not be available.");
+                    return;
+                }
+
+                // Create an instance of ScriptExecutor and call AddEmbeddedLib
+                var scriptExecutorInstance = Activator.CreateInstance(_scriptExecutorType);
+                if (scriptExecutorInstance == null)
+                {
+                    _logger.Debug("Failed to create ScriptExecutor instance.");
+                    return;
+                }
+
+                // Find the AddEmbeddedLib method - it takes a ScriptEngine parameter
+                var addEmbeddedLibMethod = _scriptExecutorType.GetMethod("AddEmbeddedLib", 
+                    BindingFlags.Public | BindingFlags.Instance);
+                
+                if (addEmbeddedLibMethod != null)
+                {
+                    addEmbeddedLibMethod.Invoke(scriptExecutorInstance, new[] { engine });
+                    _logger.Debug("Successfully added embedded Python standard library.");
+                }
+                else
+                {
+                    _logger.Debug("AddEmbeddedLib method not found on ScriptExecutor.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug($"Error adding embedded library: {ex.Message}");
             }
         }
 

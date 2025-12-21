@@ -49,6 +49,7 @@
     <Compile Include="SessionManagerIntegrationTests.cs" />
     <Compile Include="PythonScriptMultiLangTest.cs" />
     <Compile Include="ComboBoxTests.cs" />
+    <Compile Include="SmartButtonTests.cs" />
   </ItemGroup>
 
   <ItemGroup>

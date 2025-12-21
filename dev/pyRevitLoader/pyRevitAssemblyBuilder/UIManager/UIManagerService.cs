@@ -27,6 +27,7 @@ namespace pyRevitAssemblyBuilder.UIManager
         private readonly UIApplication _uiApp;
         private ParsedExtension _currentExtension;
         private ComboBoxScriptInitializer _comboBoxScriptInitializer;
+        private SmartButtonScriptInitializer _smartButtonScriptInitializer;
         private readonly RevitThemeDetector _themeDetector;
 
         /// <summary>
@@ -44,6 +45,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             _uiApp = uiApp;
             _logger = new LoggingHelper(pythonLogger ?? throw new ArgumentNullException(nameof(pythonLogger)));
             _comboBoxScriptInitializer = new ComboBoxScriptInitializer(uiApp, pythonLogger);
+            _smartButtonScriptInitializer = new SmartButtonScriptInitializer(uiApp, pythonLogger);
             _themeDetector = new RevitThemeDetector(pythonLogger);
         }
 
@@ -152,8 +154,38 @@ namespace pyRevitAssemblyBuilder.UIManager
                 // Tab may already exist, which is acceptable - log at debug level
                 _logger.Debug($"Failed to create ribbon tab '{tabText}'. Tab may already exist. Exception: {ex.Message}");
             }
+            
+            // Mark the tab as a pyRevit tab so toggle_icon can find it at runtime
+            TagTabAsPyRevit(tabText);
+            
             foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
                 RecursivelyBuildUI(child, component, null, tabText, assemblyInfo);
+        }
+
+        /// <summary>
+        /// Tags a ribbon tab with the pyRevit identifier so the pyrevit.script.toggle_icon() function
+        /// can find and update buttons at runtime.
+        /// </summary>
+        private void TagTabAsPyRevit(string tabName)
+        {
+            try
+            {
+                var ribbon = ComponentManager.Ribbon;
+                if (ribbon?.Tabs == null)
+                    return;
+
+                // Find the tab by Title (display name) since that's how tabs are identified
+                var tab = ribbon.Tabs.FirstOrDefault(t => t.Title == tabName || t.Id == tabName);
+                if (tab != null)
+                {
+                    tab.Tag = UIManagerConstants.PyRevitTabIdentifier;
+                    _logger.Debug($"Tagged tab '{tabName}' as pyRevit tab for runtime icon toggling");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug($"Failed to tag tab '{tabName}' as pyRevit tab. Exception: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -244,7 +276,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                     BuildStack(component, parentPanel, assemblyInfo);
                     break;
                 case CommandComponentType.PanelButton:
-                    if (!ItemExistsInPanel(parentPanel, component.UniqueId))
+                    if (!ItemExistsInPanel(parentPanel, component.Name))
                     {
                         var panelBtnData = CreatePushButton(component, assemblyInfo);
                         var panelBtn = parentPanel.AddItem(panelBtnData) as PushButton;
@@ -259,10 +291,9 @@ namespace pyRevitAssemblyBuilder.UIManager
                     }
                     break;
                 case CommandComponentType.PushButton:
-                case CommandComponentType.SmartButton:
                 case CommandComponentType.UrlButton:
                 case CommandComponentType.InvokeButton:
-                    if (!ItemExistsInPanel(parentPanel, component.UniqueId))
+                    if (!ItemExistsInPanel(parentPanel, component.Name))
                     {
                         var pbData = CreatePushButton(component, assemblyInfo);
                         var btn = parentPanel.AddItem(pbData) as PushButton;
@@ -275,8 +306,34 @@ namespace pyRevitAssemblyBuilder.UIManager
                         }
                     }
                     break;
+                    
+                case CommandComponentType.SmartButton:
+                    if (!ItemExistsInPanel(parentPanel, component.Name))
+                    {
+                        var sbData = CreatePushButton(component, assemblyInfo);
+                        var smartBtn = parentPanel.AddItem(sbData) as PushButton;
+                        if (smartBtn != null)
+                        {
+                            // Apply initial icon (may be overridden by __selfinit__)
+                            ApplyIconToPushButtonThemeAware(smartBtn, component);
+                            if (!string.IsNullOrEmpty(component.Tooltip))
+                                smartBtn.ToolTip = component.Tooltip;
+                            ApplyHighlightToButton(smartBtn, component);
+                            
+                            // Execute __selfinit__ for SmartButton
+                            // This allows the script to set initial icon state (on/off) and other customizations
+                            var shouldActivate = _smartButtonScriptInitializer.ExecuteSelfInit(component, smartBtn);
+                            if (!shouldActivate)
+                            {
+                                // If __selfinit__ returns False, disable the button
+                                smartBtn.Enabled = false;
+                                _logger.Debug($"SmartButton '{component.DisplayName}' deactivated by __selfinit__.");
+                            }
+                        }
+                    }
+                    break;
                 case CommandComponentType.LinkButton:
-                    if (!ItemExistsInPanel(parentPanel, component.UniqueId))
+                    if (!ItemExistsInPanel(parentPanel, component.Name))
                     {
                         var linkData = CreateLinkButton(component);
                         if (linkData != null)
@@ -294,7 +351,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                     break;
 
                 case CommandComponentType.PullDown:
-                    if (!ItemExistsInPanel(parentPanel, component.UniqueId))
+                    if (!ItemExistsInPanel(parentPanel, component.Name))
                     {
                         CreatePulldown(component, parentPanel, tabName, assemblyInfo, true);
                     }
@@ -302,11 +359,11 @@ namespace pyRevitAssemblyBuilder.UIManager
 
                 case CommandComponentType.SplitButton:
                 case CommandComponentType.SplitPushButton:
-                    if (!ItemExistsInPanel(parentPanel, component.UniqueId))
+                    if (!ItemExistsInPanel(parentPanel, component.Name))
                     {
-                        // Use Title from bundle.yaml if available, otherwise fall back to DisplayName
-                        var splitButtonText = !string.IsNullOrEmpty(component.Title) ? component.Title : component.DisplayName;
-                        var splitData = new SplitButtonData(component.UniqueId, splitButtonText);
+                        // Use Title from bundle.yaml if available, with config script indicator if applicable
+                        var splitButtonText = GetButtonTextWithConfigIndicator(component);
+                        var splitData = new SplitButtonData(component.Name, splitButtonText);
                         var splitBtn = parentPanel.AddItem(splitData) as SplitButton;
                         if (splitBtn != null)
                         {
@@ -368,7 +425,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                     break;
 
                 case CommandComponentType.ComboBox:
-                    if (!ItemExistsInPanel(parentPanel, component.UniqueId))
+                    if (!ItemExistsInPanel(parentPanel, component.Name))
                     {
                         CreateComboBox(component, parentPanel);
                     }
@@ -470,6 +527,17 @@ namespace pyRevitAssemblyBuilder.UIManager
                             if (!string.IsNullOrEmpty(origComponent.Tooltip))
                                 pushBtn.ToolTip = origComponent.Tooltip;
                             ApplyHighlightToButton(pushBtn, origComponent);
+                            
+                            // Execute __selfinit__ for SmartButtons in stack
+                            if (origComponent.Type == CommandComponentType.SmartButton)
+                            {
+                                var shouldActivate = _smartButtonScriptInitializer.ExecuteSelfInit(origComponent, pushBtn);
+                                if (!shouldActivate)
+                                {
+                                    pushBtn.Enabled = false;
+                                    _logger.Debug($"SmartButton '{origComponent.DisplayName}' in stack deactivated by __selfinit__.");
+                                }
+                            }
                         }
                         
                         if (ribbonItem is PulldownButton pdBtn)
@@ -588,13 +656,16 @@ namespace pyRevitAssemblyBuilder.UIManager
         private PushButtonData CreatePushButton(ParsedComponent component, ExtensionAssemblyInfo assemblyInfo)
         {
             // Use Title from bundle.yaml if available, otherwise fall back to DisplayName
-            var buttonText = !string.IsNullOrEmpty(component.Title) ? component.Title : component.DisplayName;
+            var buttonText = GetButtonTextWithConfigIndicator(component);
             
             // Ensure the class name matches what the CommandTypeGenerator creates
             var className = SanitizeClassName(component.UniqueId);
             
+            // Use component.Name as the button's internal name to match what the runtime uses
+            // for CommandName. This allows script.toggle_icon() to find the button at runtime.
+            // The pythonic loader also uses component.name for both.
             var pushButtonData = new PushButtonData(
-                component.UniqueId,
+                component.Name,
                 buttonText,
                 assemblyInfo.Location,
                 className);
@@ -607,6 +678,24 @@ namespace pyRevitAssemblyBuilder.UIManager
             }
 
             return pushButtonData;
+        }
+
+        /// <summary>
+        /// Gets the button text with config script indicator (dot) if the component has a separate config script.
+        /// </summary>
+        /// <param name="component">The component to get text for.</param>
+        /// <returns>The button text, with dot indicator if applicable.</returns>
+        private string GetButtonTextWithConfigIndicator(ParsedComponent component)
+        {
+            var baseText = !string.IsNullOrEmpty(component.Title) ? component.Title : component.DisplayName;
+            
+            // Add dot indicator if component has a separate config script
+            if (component.HasConfigScript)
+            {
+                return $"{baseText} {UIManagerConstants.ConfigScriptTitlePostfix}";
+            }
+            
+            return baseText;
         }
 
         /// <summary>
@@ -634,7 +723,8 @@ namespace pyRevitAssemblyBuilder.UIManager
                 }
 
                 // Use Title from bundle.yaml if available, otherwise fall back to DisplayName
-                var buttonText = !string.IsNullOrEmpty(component.Title) ? component.Title : component.DisplayName;
+                // Also add config script indicator if applicable
+                var buttonText = GetButtonTextWithConfigIndicator(component);
 
                 // Get assembly name to construct fully qualified class names
                 var assemblyName = Path.GetFileNameWithoutExtension(assemblyPath);
@@ -901,11 +991,11 @@ namespace pyRevitAssemblyBuilder.UIManager
             try
             {
                 var isDarkTheme = _themeDetector.IsDarkTheme();
-                var icon = GetBestIconForSizeWithTheme(component, 16, isDarkTheme);
+                var icon = GetBestIconForSizeWithTheme(component, UIManagerConstants.ICON_SMALL, isDarkTheme);
 
                 if (icon != null)
                 {
-                    var bitmap = LoadBitmapSource(icon.FilePath, 16);
+                    var bitmap = LoadBitmapSource(icon.FilePath, UIManagerConstants.ICON_SMALL);
                     if (bitmap != null)
                     {
                         comboBox.Image = bitmap;
@@ -937,7 +1027,7 @@ namespace pyRevitAssemblyBuilder.UIManager
 
                 if (File.Exists(iconPath))
                 {
-                    var bitmap = LoadBitmapSource(iconPath, 16);
+                    var bitmap = LoadBitmapSource(iconPath, UIManagerConstants.ICON_SMALL);
                     if (bitmap != null)
                     {
                         member.Image = bitmap;
@@ -977,12 +1067,12 @@ namespace pyRevitAssemblyBuilder.UIManager
                 var isDarkTheme = _themeDetector.IsDarkTheme();
 
                 // Get the best icons for large and small sizes with theme awareness
-                var largeIcon = GetBestIconForSizeWithTheme(component, 32, isDarkTheme);
-                var smallIcon = GetBestIconForSizeWithTheme(component, 16, isDarkTheme);
+                var largeIcon = GetBestIconForSizeWithTheme(component, UIManagerConstants.ICON_LARGE, isDarkTheme);
+                var smallIcon = GetBestIconForSizeWithTheme(component, UIManagerConstants.ICON_SMALL, isDarkTheme);
 
                 if (largeIcon != null)
                 {
-                    var largeBitmap = LoadBitmapSource(largeIcon.FilePath, 32);
+                    var largeBitmap = LoadBitmapSource(largeIcon.FilePath, UIManagerConstants.ICON_LARGE);
                     if (largeBitmap != null)
                     {
                         button.LargeImage = largeBitmap;
@@ -991,7 +1081,7 @@ namespace pyRevitAssemblyBuilder.UIManager
 
                 if (smallIcon != null)
                 {
-                    var smallBitmap = LoadBitmapSource(smallIcon.FilePath, 16);
+                    var smallBitmap = LoadBitmapSource(smallIcon.FilePath, UIManagerConstants.ICON_SMALL);
                     if (smallBitmap != null)
                     {
                         button.Image = smallBitmap;
@@ -1017,29 +1107,28 @@ namespace pyRevitAssemblyBuilder.UIManager
             {
                 var isDarkTheme = _themeDetector.IsDarkTheme();
 
-                // For pulldown buttons, use fixed 16x16 size for consistent appearance
+                // For pulldown buttons, use ICON_SMALL size for consistent appearance
                 // This ensures pulldown icons remain at the expected size regardless of DPI scaling
-                const int pulldownIconSize = 16;
                 
-                // Get the best icons for pulldown buttons with fixed 16x16 size
-                var smallIcon = GetBestIconForSizeWithTheme(component, pulldownIconSize, isDarkTheme);
+                // Get the best icons for pulldown buttons with fixed small size
+                var smallIcon = GetBestIconForSizeWithTheme(component, UIManagerConstants.ICON_SMALL, isDarkTheme);
                 // For the main pulldown button, also get a larger icon for LargeImage property
-                var largeIcon = GetBestIconForSizeWithTheme(component, 32, isDarkTheme);
+                var largeIcon = GetBestIconForSizeWithTheme(component, UIManagerConstants.ICON_LARGE, isDarkTheme);
 
-                // Set the large image (32x32) for the main pulldown button
+                // Set the large image for the main pulldown button
                 if (largeIcon != null)
                 {
-                    var largeBitmap = LoadBitmapSource(largeIcon.FilePath, 32);
+                    var largeBitmap = LoadBitmapSource(largeIcon.FilePath, UIManagerConstants.ICON_LARGE);
                     if (largeBitmap != null)
                     {
                         button.LargeImage = largeBitmap;
                     }
                 }
 
-                // Set the small image (16x16) for the main pulldown button
+                // Set the small image for the main pulldown button
                 if (smallIcon != null)
                 {
-                    var smallBitmap = LoadBitmapSource(smallIcon.FilePath, pulldownIconSize);
+                    var smallBitmap = LoadBitmapSource(smallIcon.FilePath, UIManagerConstants.ICON_SMALL);
                     if (smallBitmap != null)
                     {
                         button.Image = smallBitmap;
@@ -1077,15 +1166,14 @@ namespace pyRevitAssemblyBuilder.UIManager
             {
                 var isDarkTheme = _themeDetector.IsDarkTheme();
 
-                // For pulldown sub-buttons, use fixed 16x16 size for consistency with pulldown appearance
-                const int pulldownSubButtonIconSize = 16;
+                // For pulldown sub-buttons, use ICON_SMALL size for consistency with pulldown appearance
                 
-                // Get the best icon for pulldown sub-buttons with fixed 16x16 size
-                var smallIcon = GetBestIconForSizeWithTheme(component, pulldownSubButtonIconSize, isDarkTheme);
+                // Get the best icon for pulldown sub-buttons
+                var smallIcon = GetBestIconForSizeWithTheme(component, UIManagerConstants.ICON_SMALL, isDarkTheme);
 
                 if (smallIcon != null)
                 {
-                    var smallBitmap = LoadBitmapSource(smallIcon.FilePath, pulldownSubButtonIconSize);
+                    var smallBitmap = LoadBitmapSource(smallIcon.FilePath, UIManagerConstants.ICON_SMALL);
                     if (smallBitmap != null)
                     {
                         // For pulldown sub-buttons, set both properties to ensure visibility
@@ -1114,12 +1202,12 @@ namespace pyRevitAssemblyBuilder.UIManager
                 var isDarkTheme = _themeDetector.IsDarkTheme();
 
                 // Get the best icons for large and small sizes with theme awareness
-                var largeIcon = GetBestIconForSizeWithTheme(component, 32, isDarkTheme);
-                var smallIcon = GetBestIconForSizeWithTheme(component, 16, isDarkTheme);
+                var largeIcon = GetBestIconForSizeWithTheme(component, UIManagerConstants.ICON_LARGE, isDarkTheme);
+                var smallIcon = GetBestIconForSizeWithTheme(component, UIManagerConstants.ICON_SMALL, isDarkTheme);
 
                 if (largeIcon != null)
                 {
-                    var largeBitmap = LoadBitmapSource(largeIcon.FilePath, 32);
+                    var largeBitmap = LoadBitmapSource(largeIcon.FilePath, UIManagerConstants.ICON_LARGE);
                     if (largeBitmap != null)
                     {
                         button.LargeImage = largeBitmap;
@@ -1128,11 +1216,10 @@ namespace pyRevitAssemblyBuilder.UIManager
 
                 if (smallIcon != null)
                 {
-                    var smallBitmap = LoadBitmapSource(smallIcon.FilePath, 16);
+                    var smallBitmap = LoadBitmapSource(smallIcon.FilePath, UIManagerConstants.ICON_SMALL);
                     if (smallBitmap != null)
                     {
                         button.Image = smallBitmap;
-                        
                     }
                 }
             }

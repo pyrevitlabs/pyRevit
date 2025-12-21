@@ -9,6 +9,7 @@
     <ItemGroup Condition="'$(UseLoader)' == 'true'">
         <Compile Include="..\Source\PyRevitLoaderApplication.cs" Link="Source\PyRevitLoaderApplication.cs"/>
         <Compile Include="..\Source\ScriptExecutor.cs" Link="Source\ScriptExecutor.cs"/>
+        <Compile Include="..\Source\SmartButtonExecutor.cs" Link="Source\SmartButtonExecutor.cs"/>
     </ItemGroup>
 
     <ItemGroup Condition="'$(UseRunner)' == 'true'">

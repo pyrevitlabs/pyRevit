@@ -384,6 +384,31 @@ namespace pyRevitExtensionParser
                         scriptPath = yaml;
                 }
 
+                // Look for config script (config.py, config.cs, etc.)
+                string configScriptPath = null;
+                var configExtensions = new[] { ".py", ".cs", ".vb", ".rb", ".dyn", ".gh", ".ghx" };
+                var allDirFiles = GetFilesInDirectory(dir, "*", SearchOption.TopDirectoryOnly);
+                foreach (var configExt in configExtensions)
+                {
+                    var configFile = $"config{configExt}";
+                    configScriptPath = allDirFiles.FirstOrDefault(f => 
+                        Path.GetFileName(f).Equals(configFile, StringComparison.OrdinalIgnoreCase));
+                    if (configScriptPath != null)
+                        break;
+                }
+                // If no separate config script found, use the main script path
+                if (configScriptPath == null)
+                    configScriptPath = scriptPath;
+                
+                // Look for on/off icons for smartbuttons and toggle buttons
+                string onIconPath = null, onIconDarkPath = null, offIconPath = null, offIconDarkPath = null;
+                if (componentType == CommandComponentType.SmartButton || 
+                    componentType == CommandComponentType.PushButton)
+                {
+                    // Parse on/off icons with theme support
+                    (onIconPath, onIconDarkPath, offIconPath, offIconDarkPath) = ParseToggleIcons(dir);
+                }
+
                 var bundleFile = Path.Combine(dir, "bundle.yaml");
                 var children = ParseComponents(dir, extensionName, fullPath);
 
@@ -443,6 +468,7 @@ namespace pyRevitExtensionParser
                     Name = namePart,
                     DisplayName = displayName,
                     ScriptPath = scriptPath,
+                    ConfigScriptPath = configScriptPath,
                     Tooltip = doc ?? "",
                     UniqueId = SanitizeClassName(fullPath.ToLowerInvariant()),
                     Type = componentType,
@@ -467,7 +493,11 @@ namespace pyRevitExtensionParser
                     LocalizedTooltips = finalLocalizedTooltips.Count > 0 ? finalLocalizedTooltips : null,
                     Directory = dir,
                     Engine = bundleInComponent?.Engine,
-                    Members = bundleInComponent?.Members ?? new List<ComboBoxMember>()
+                    Members = bundleInComponent?.Members ?? new List<ComboBoxMember>(),
+                    OnIconPath = onIconPath,
+                    OnIconDarkPath = onIconDarkPath,
+                    OffIconPath = offIconPath,
+                    OffIconDarkPath = offIconDarkPath
                 });
             }
 
@@ -832,6 +862,47 @@ namespace pyRevitExtensionParser
                 default:
                     return 19;
             }
+        }
+
+        /// <summary>
+        /// Parses on/off toggle icons for smartbuttons and toggle buttons.
+        /// Looks for on.png, on.dark.png, off.png, off.dark.png in the component directory.
+        /// </summary>
+        /// <param name="componentDirectory">The directory containing the component</param>
+        /// <returns>Tuple of (onIconPath, onIconDarkPath, offIconPath, offIconDarkPath)</returns>
+        private static (string onIconPath, string onIconDarkPath, string offIconPath, string offIconDarkPath) ParseToggleIcons(string componentDirectory)
+        {
+            string onIconPath = null, onIconDarkPath = null, offIconPath = null, offIconDarkPath = null;
+
+            if (!Directory.Exists(componentDirectory))
+                return (null, null, null, null);
+
+            try
+            {
+                var files = GetFilesInDirectory(componentDirectory, "*", SearchOption.TopDirectoryOnly);
+                
+                foreach (var file in files)
+                {
+                    var fileName = Path.GetFileName(file).ToLowerInvariant();
+                    
+                    // Check for on icons
+                    if (fileName == "on.png" || fileName == "on.ico")
+                        onIconPath = file;
+                    else if (fileName == "on.dark.png" || fileName == "on.dark.ico")
+                        onIconDarkPath = file;
+                    // Check for off icons
+                    else if (fileName == "off.png" || fileName == "off.ico")
+                        offIconPath = file;
+                    else if (fileName == "off.dark.png" || fileName == "off.dark.ico")
+                        offIconDarkPath = file;
+                }
+            }
+            catch
+            {
+                // If we can't read the directory, just return nulls
+            }
+
+            return (onIconPath, onIconDarkPath, offIconPath, offIconDarkPath);
         }
         public enum CommandComponentType
         {

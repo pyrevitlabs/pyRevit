@@ -81,6 +81,9 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 
                 string arguments = CommandGenerationUtilities.BuildCommandArguments(extension, cmd, revitVersion);
 
+                // Get config script path - use ConfigScriptPath if different from ScriptPath, otherwise use ScriptPath
+                string configScriptPath = cmd.ConfigScriptPath ?? scriptPath;
+                
                 // — Command class —
                 sb.AppendLine("[Regeneration(RegenerationOption.Manual)]");
                 sb.AppendLine("[Transaction(TransactionMode.Manual)]");
@@ -88,7 +91,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 sb.AppendLine("{");
                 sb.AppendLine($"    public {safeClassName}() : base(");
                 sb.AppendLine($"        @\"{EscapeForVerbatim(scriptPath)}\",");
-                sb.AppendLine($"        @\"{EscapeForVerbatim(scriptPath)}\",");  // configScriptPath - defaults to scriptPath when no separate config exists
+                sb.AppendLine($"        @\"{EscapeForVerbatim(configScriptPath)}\",");  // configScriptPath - use actual config script if exists
                 sb.AppendLine($"        @\"{EscapeForVerbatim(searchPaths)}\",");
                 sb.AppendLine($"        @\"{EscapeForVerbatim(arguments)}\",");
                 sb.AppendLine($"        \"\",");
@@ -226,7 +229,8 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 
             // Prepare the 13 args - ensure all values are non-null for Ldstr
             string scriptPath = cmd.ScriptPath ?? string.Empty;
-            string configPath = scriptPath;  // defaults to scriptPath when no separate config exists
+            // Use ConfigScriptPath if different from ScriptPath, otherwise use ScriptPath
+            string configPath = cmd.ConfigScriptPath ?? scriptPath;
             
             // Build search paths matching Python's behavior:
             // 1. Script's own directory
