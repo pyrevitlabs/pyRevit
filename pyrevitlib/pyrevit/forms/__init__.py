@@ -1654,6 +1654,8 @@ class ProgressBar(TemplatePromptBar):
         self._hostwnd = None
         self._host_task_pbar = None
 
+        self._update_pbar()
+
     def _prepare(self):
         self._hostwnd = revit.ui.get_mainwindow()
         if self._hostwnd:
