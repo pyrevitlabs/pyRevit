@@ -326,9 +326,9 @@ def load_family2(family_file, doc=None):
         doc (DB.Document) : Optional. If not specified DOCS.doc used.
 
     Returns:
-        list[DB.FamilySymbol] : list of all Family symbols or empty list if error occured.
+        list[DB.FamilySymbol] : list of all Family symbols or empty list if error occurred.
 
-    NOTE! If Family already loaded then "error occured" and empty list returned.
+    NOTE! If Family already loaded then "error occurred" and empty list returned.
 
     WARNING! This function MUST be used within a transaction!
 
@@ -342,7 +342,7 @@ def load_family2(family_file, doc=None):
     res = doc.LoadFamily(family_file, FamilyLoaderOptionsHandler(), ret_ref)
 
     if ( res != True ):
-        mlogger.debug("Cann't load Family from file=%s. It's may be OK if Family already loaded.", family_file)
+        mlogger.debug("Can't load Family from file=%s. It may be OK if Family already loaded.", family_file)
         return fam_symbols
 
     fam = ret_ref.Value
