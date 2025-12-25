@@ -317,6 +317,41 @@ def load_family(family_file, doc=None):
     return doc.LoadFamily(family_file, FamilyLoaderOptionsHandler(), ret_ref)
 
 
+def load_family2(family_file, doc=None):
+    """
+    Loads Family from specified file
+
+    Args:
+        family_file (str) : Required. Fully qualified filename of the Family file, usually ending in .rfa.
+        doc (DB.Document) : Optional. If not specified DOCS.doc used.
+
+    Returns:
+        list[DB.FamilySymbol] : list of all Family symbols or empty list if error occurred.
+
+    NOTE! If Family already loaded then "error occurred" and empty list returned.
+
+    WARNING! This function MUST be used within a transaction!
+
+    """
+    doc = doc or DOCS.doc
+    ret_ref = clr.Reference[DB.Family]()
+    mlogger.debug('Loading family from: %s', family_file)
+
+    fam_symbols = []
+
+    res = doc.LoadFamily(family_file, FamilyLoaderOptionsHandler(), ret_ref)
+
+    if ( res != True ):
+        mlogger.debug("Can't load Family from file=%s. It may be OK if Family already loaded.", family_file)
+        return fam_symbols
+
+    fam = ret_ref.Value
+    for fam_symbol_id in fam.GetFamilySymbolIds():
+        fam_symbol = doc.GetElement(fam_symbol_id)
+        fam_symbols.append(fam_symbol)
+    return fam_symbols
+
+
 def enable_worksharing(levels_workset_name='Shared Levels and Grids',
                        default_workset_name='Workset1',
                        doc=None):
