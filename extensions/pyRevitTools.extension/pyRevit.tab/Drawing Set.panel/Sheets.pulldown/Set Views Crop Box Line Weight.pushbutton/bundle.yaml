@@ -3,7 +3,7 @@ title:
   fr_fr: Changer l'épaisseur de la Zone Cadrée
   ru: Установить толщину линии границы обрезки
   chinese_s: 设置裁剪框线宽
-  es_es: Set Crop Box Line Weight
+  es_es: Establecer grosor de línea de caja de recorte
   de_de: Linienstärke vom Zuschneidebereich ändern
 tooltip:
   en_us: Set Crop Box Line Weight for selected views and views placed on sheets
