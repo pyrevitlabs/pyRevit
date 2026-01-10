@@ -6,17 +6,17 @@ title:
   es_es: Limpiar
   de_de: Löschen
 layout:
-- Wipe Model Components
-- Wipe Attached Constraints
-- Wipe Selected Families
-- Wipe Site Designer Line Styles
-- Wipe Unpurgable Viewport Types
-- Wipe Data Schema
-- Wipe Collab Cache
-- Wipe SubCategories
-- Wipe Unused Filters
-- Wipe Unused View Templates
-- Wipe Empty Elevation Tags
-- Wipe Empty Tags
-- Wipe Arrowheads Types
-- Wipe All Project Parameters
+  - Wipe Model Components
+  - Wipe Attached Constraints
+  - Wipe Selected Families
+  - Wipe Site Designer Line Styles
+  - Wipe Unpurgable Viewport Types
+  - Wipe Data Schema
+  - Wipe Collab Cache
+  - Wipe SubCategories
+  - Wipe Unused Filters
+  - Wipe Unused View Templates
+  - Wipe Empty Elevation Tags
+  - Wipe Empty Tags
+  - Wipe Arrowheads Types
+  - Wipe All Project Parameters
