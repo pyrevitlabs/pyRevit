@@ -1,17 +1,17 @@
 help_url: '{{docpath}}-JDgiP3gK9Y'
 title:
-  ru: ПереЗначить
-  fr_fr: ReValoriser
   en_us: ReValue
+  fr_fr: ReValoriser
+  ru: ПереЗначить
+  chinese_s: 重设值
+  es_es: Revalorizar
   de_de: Hochzählen
 tooltip:
-  ru: Переформировать значение строковых параметров (очень удобно для переименования элементов).
-  fr_fr: Reformater les valeurs textuelles des paramètres (Super pratique pour renommer des éléments)
   en_us: Reformat parameter string values (Super handy for renaming elements)
+  fr_fr: Reformater les valeurs textuelles des paramètres (Super pratique pour renommer des éléments)
+  ru: Переформировать значение строковых параметров (очень удобно для переименования элементов).
+  chinese_s: 重新格式化参数字符串值（对重命名图元超级有用）
+  es_es: Reformatear valores de cadena de parámetros (Muy útil para renombrar elementos)
   de_de: >-
-    Textparameterwerte von bestimmten Element Kategorien (Räume, MEP-Räume, 
-    Türen, Türen<-Räume, Wände, Fenster, Parkplatz, Ebenen, Raster) können 
-    damit mit neuen Werten versehen werden. Dabei muss ein Startwert angegeben 
-    werden. pyRevit zählt dann automatisch hoch und übernimmt dabei die Reihenfolge 
-    der nacheinander angeklickten Elemente.
+    Textparameterwerte von bestimmten Element Kategorien (Räume, MEP-Räume,  Türen, Türen<-Räume, Wände, Fenster, Parkplatz, Ebenen, Raster) können  damit mit neuen Werten versehen werden. Dabei muss ein Startwert angegeben  werden. pyRevit zählt dann automatisch hoch und übernimmt dabei die Reihenfolge  der nacheinander angeklickten Elemente.
 context: selection

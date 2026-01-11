@@ -1,19 +1,24 @@
 title:
-  ru: Удалить изменения с листов
-  fr_fr: Enlève une Révision des Feuilles
   en_us: Remove Revision From Sheets
+  fr_fr: Enlève une Révision des Feuilles
+  ru: Удалить изменения с листов
+  chinese_s: 从图纸中移除修订
+  es_es: Eliminar revisión de hojas
   de_de: Entferne Änderung von Plänen
 tooltip:
-  ru: >-
-    Выделите изменение и данный скрипт удалит
-    данное изменение со всех листов если оно не было сделано инструментом пометочное облако.
+  en_us: >-
+    Select a revision from the list of revisions and this script will remove
+    that revision from all sheets if it has not been "clouded" on the sheet
   fr_fr: >-
     Sélectionnez une révision de la liste des révisions et ce script va retirer
     la révision de toutes les feuilles si aucun nuage de révision n'a été
     positionné sur la feuille
-  en_us: >-
-    Select a revision from the list of revisions and this script will remove
-    that revision from all sheets if it has not been "clouded" on the sheet
+  ru: >-
+    Выделите изменение и данный скрипт удалит
+    данное изменение со всех листов если оно не было сделано инструментом пометочное облако.
+  chinese_s: 从修订列表中选择一个修订，如果该修订在图纸上未被“云线标记”，此脚本将从所有图纸中移除该修订
+  es_es: >-
+    Seleccione una revisión de la lista de revisiones y este script eliminará
+    esa revisión de todas las hojas si no ha sido "nublada" en la hoja
   de_de: >-
-    Wählen Sie eine Änderung aus der Liste der Änderungen aus und dieses Skript 
-    entfernt diese Änderung von allen Plänen, wenn sie nicht auf dem Plan „eingewolkt“ wurde
+    Wählen Sie eine Änderung aus der Liste der Änderungen aus und dieses Skript  entfernt diese Änderung von allen Plänen, wenn sie nicht auf dem Plan „eingewolkt“ wurde

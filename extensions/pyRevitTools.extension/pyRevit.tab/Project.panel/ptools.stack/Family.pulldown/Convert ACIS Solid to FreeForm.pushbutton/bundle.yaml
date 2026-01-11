@@ -1,28 +1,34 @@
 context: doc-family
 title:
-  ru: Конвертировать тело ACIS в формообразующую
-  fr_fr: Convertir solid ACIS en forme FreeForm
   en_us: Convert ACIS Solid to FreeForm
+  fr_fr: Convertir solid ACIS en forme FreeForm
+  ru: Конвертировать тело ACIS в формообразующую
+  chinese_s: 将 ACIS 实体转换为自由形状
+  es_es: Convertir sólido ACIS a forma libre
   de_de: Konvertiere ACIS Solid in FreeForm
 tooltip:
-  ru: >-
-    Конвертирует тело ACIS в формообразующий элемент, создает
-    элемент произвольной формы из Ваших выделенных импортированных
-    тел геометрии ACIS SAT, поэтому вы можете превратить ее в Void/Solid, 
-    легко применяя материалы и получая доступ к ее фигуре.
-  fr_fr: >-
-    Convertir ACIS Solid en FreeForm crée des éléments FreeForm à partir de votre
-    géométrie solide importée ACIS SAT sélectionnée, vous pouvez donc la transformer en
-    Void / Solid applique facilement les matériaux et accède à ses poignées de forme
   en_us: >-
     Convert ACIS Solid to FreeForm Element creates FreeForm elements from your
     selected imported acis SAT solid geometry, so you can turn it into
     Void/Solid apply materials easily and get access to its shape handles
+  fr_fr: >-
+    Convertir ACIS Solid en FreeForm crée des éléments FreeForm à partir de votre
+    géométrie solide importée ACIS SAT sélectionnée, vous pouvez donc la transformer en
+    Void / Solid applique facilement les matériaux et accède à ses poignées de forme
+  ru: >-
+    Конвертирует тело ACIS в формообразующий элемент, создает
+    элемент произвольной формы из Ваших выделенных импортированных
+    тел геометрии ACIS SAT, поэтому вы можете превратить ее в Void/Solid,  легко применяя материалы и получая доступ к ее фигуре.
+  chinese_s: 将 ACIS 实体转换为自由形状图元，可从您选定的已导入 ACIS SAT 实体几何图形创建自由形状图元，从而可轻松将其转为空心/实心、应用材质，并可访问其形状控制柄
+  es_es: >-
+    Convertir sólido ACIS a elemento de forma libre crea elementos de forma libre a partir de su
+    geometría sólida importada ACIS SAT seleccionada, para que pueda convertirlo en
+    Vacío/Sólido, aplicar materiales fácilmente y obtener acceso a sus controles de forma
   de_de: >-
     Dieser Befehl konvertiert ein ACIS Solid (importierte SAT Geometrie) in ein FreeForm Element.
     Dadurch kann es in ein Körper bzw. Abzugskörper umgewandelt werden und
     Materialien können leichter vergeben werden. Zudem hat man dadurch Zugriff auf die
-    Geometrie Formgriffe. 
+    Geometrie Formgriffe.
 authors:
   - '{{author}}'
   - Frederic Beaupere

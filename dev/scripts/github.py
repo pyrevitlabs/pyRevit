@@ -49,7 +49,7 @@ def get_ticket(ticket: str):
         ticket_labels = []
         if labels := issue.get("labels", []):
             ticket_labels = [
-                LabelInfo(name=x["name"], description=x["description"])
+                LabelInfo(name=x["name"], description=x.get("description") or "")
                 for x in labels
             ]
         else:

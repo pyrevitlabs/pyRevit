@@ -1,16 +1,15 @@
 tooltip:
-  ru: Самый лучший интерфейс!
   en_us: The best interface ever!
+  fr_fr: La meilleure interface!
+  ru: Самый лучший интерфейс!
+  chinese_s: 最好的界面！
   es_es: Lo mejor que hay!
   de_de: Öffnet das Eingabefeld für die Suche!
-  fr_fr: La meilleure interface!
 title:
-  ru: Поиск
   en_us: 'Search'
-  fa: 'جستجو'
-  bg: 'Търси'
-  nl_nl: 'Zoek'
   fr_fr: 'Rechercher'
-  de_de: 'Suche'
+  ru: Поиск
+  chinese_s: 搜索
   es_es: "Buscar"
+  de_de: 'Suche'
 context: zero-doc

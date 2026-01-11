@@ -1,17 +1,19 @@
 title:
-  ru: Переименовать PDF листы
-  fr_fr: Renommer les feuilles PDF
   en_us: Rename PDF Sheets
+  fr_fr: Renommer les feuilles PDF
+  ru: Переименовать PDF листы
+  chinese_s: 重命名 PDF 图纸
+  es_es: Renombrar hojas PDF
   de_de: PDF Pläne umbenennen
 tooltip:
-  ru: >-
-    Переименовывает PDF листы напечатанные из Revit и удаляет имя модели
-    из PDF имен. Данный инструмент запрашивает папку содержащую файл.
-    
-    
+  en_us: >-
+    Renames PDF sheets printed from Revit and removes the Central model name
+    from the PDF names. The tool will ask for a folder containing the file.
+
+
     Shift-Click:
-    
-    Переименовать файлы на рабочем столе.
+
+    Rename files on Desktop
   fr_fr: >-
     Renommer les feuilles PDF imprimées à partir de Revit et supprimer le nom du
     modèle Central des noms PDF. L'outil demandera un dossier contenant le
@@ -21,18 +23,26 @@ tooltip:
     Shift-Click:
 
     Renommer les fichiers sur le Bureau
-  en_us: >-
-    Renames PDF sheets printed from Revit and removes the Central model name
-    from the PDF names. The tool will ask for a folder containing the file.
+  ru: >-
+    Переименовывает PDF листы напечатанные из Revit и удаляет имя модели
+    из PDF имен. Данный инструмент запрашивает папку содержащую файл.
 
 
     Shift-Click:
 
-    Rename files on Desktop
+    Переименовать файлы на рабочем столе.
+  chinese_s: "重命名从 Revit 打印的 PDF 图纸，并从 PDF 名称中移除中心模型名称。该工具将要求指定包含文件的文件夹\n\nShift-单击：重命名桌面上的文件"
+  es_es: >-
+    Renombra las hojas PDF impresas desde Revit y elimina el nombre del modelo central
+    de los nombres PDF. La herramienta pedirá una carpeta que contenga el archivo.
+
+
+    Shift-Clic:
+
+    Renombrar archivos en el Escritorio
   de_de: >-
     Zunächst wird man aufgefordert einen Ordner auszuwählen, in denen die PDF Dateien liegen.
-    Die PDF Pläne werden umbenannt und der name der Zentraldatei wird von den PDF Datei 
-    Bezeichnungen entfernt. 
+    Die PDF Pläne werden umbenannt und der name der Zentraldatei wird von den PDF Datei  Bezeichnungen entfernt. 
 
 
     Shift-Click:

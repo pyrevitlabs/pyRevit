@@ -1,12 +1,16 @@
 context: selection
 title:
-  ru: Найти связанные элементы
-  fr_fr: Trouver les éléments référencés
   en_us: Find referenced elements
+  fr_fr: Trouver les éléments référencés
+  ru: Найти связанные элементы
+  chinese_s: 查找引用的图元
+  es_es: Encontrar elementos referenciados
   de_de: Finde alle referenzierten Elemente
 tooltip:
-  ru: Выводит все элементы, которые связаны с выделенным элементом. Например, элементы маркировки или размеров.
-  fr_fr: Lister tous les éléments qui sont liés à l'élément sélectionné. Par exemple, les étiquettes et les dimensions
   en_us: Lists all the elements that are tied to the selected element. For example elements tags or dimensions
+  fr_fr: Lister tous les éléments qui sont liés à l'élément sélectionné. Par exemple, les étiquettes et les dimensions
+  ru: Выводит все элементы, которые связаны с выделенным элементом. Например, элементы маркировки или размеров.
+  chinese_s: 列出所有与所选图元关联的图元。例如，该图元的标记或尺寸标注
+  es_es: Lista todos los elementos que están vinculados al elemento seleccionado. Por ejemplo, etiquetas de elementos o dimensiones
   de_de: Es werden alle Elemente aufgelistet, die von dem ausgewählten Element referenziert werden. Das können bei einer Wand z.B. Fenster, Türen, Bemaßungen, Beschriftungen usw sein. Das sind also alle Abhängigkeiten der verloren gehen würden, wenn man das Element löschen würde. Dadurch hat man insbesondere einen guten Überblick, welche Elemente durch das Löschen auf anderen Ansichten verloren gehen würden.
 help_url: '{{docpath}}4IlvCkoOolw'

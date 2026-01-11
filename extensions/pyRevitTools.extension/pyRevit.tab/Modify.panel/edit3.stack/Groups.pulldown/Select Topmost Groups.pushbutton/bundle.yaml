@@ -1,33 +1,43 @@
 title:
-  ru: Выбрать самую верхнюю группу
-  fr_fr: Sélectionner les groupes supérieurs
   en_us: Select topmost groups
+  fr_fr: Sélectionner les groupes supérieurs
+  ru: Выбрать самую верхнюю группу
+  chinese_s: 选择最高层级的组
+  es_es: Seleccionar grupos superiores
   de_de: Oberste übergeordnete Gruppe auswählen
 tooltip:
-  ru: >-
-    Выделяет экземпляры групп, которые содержат выделенные элементы.
-    По умолчанию исключает несгруппированные элементы из выделения.
-    
-    Shift+Click:
-    Включить несгруппированные элементы.
-  fr_fr: >-
-    Sélectionne les occurences du groupe qui contiennent les éléments sélectionnés
-    Par défaut, les éléments non groupés sont exclus de la sélection
-  
-    Shift+Click:
-
-    Inclure les éléments non-groupés
   en_us: >-
     Selects group instances, which contain selected elements
     By default excludes not-grouped elements from selection
-  
+
     Shift+Click:
 
     Include not-grouped elements
+  fr_fr: >-
+    Sélectionne les occurences du groupe qui contiennent les éléments sélectionnés
+    Par défaut, les éléments non groupés sont exclus de la sélection
+
+    Shift+Click:
+
+    Inclure les éléments non-groupés
+  ru: >-
+    Выделяет экземпляры групп, которые содержат выделенные элементы.
+    По умолчанию исключает несгруппированные элементы из выделения.
+
+    Shift+Click:
+    Включить несгруппированные элементы.
+  chinese_s: "选择包含选定图元的组实例。默认情况下，选择集中会排除未编组的图元。\nShift+单击：\n包含未编组的"
+  es_es: >-
+    Selecciona instancias de grupos, que contienen elementos seleccionados
+    Por defecto excluye elementos no agrupados de la selección
+
+    Shift+Clic:
+
+    Incluir elementos no agrupados
   de_de: >-
     Wählt Gruppeninstanzen aus, die die ausgewähltne Elemente enthalten
     Schließt standardmäßig nicht gruppierte Elemente von der Auswahl aus
-  
+
     Shift+Click:
 
     Nicht gruppierte Elemente einbeziehen

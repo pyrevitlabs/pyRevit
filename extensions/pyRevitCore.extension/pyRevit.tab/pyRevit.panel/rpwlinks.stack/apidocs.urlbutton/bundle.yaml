@@ -1,11 +1,15 @@
 title:
-  ru: apidocs
-  en_us: apidocs
-  es_es: apidocs
-  de_de: apidocs
+  en_us: apidocs.co
+  fr_fr: apidocs.co
+  ru: apidocs.co
+  chinese_s: apidocs.co
+  es_es: apidocs.co
+  de_de: apidocs.co
 tooltip:
-  ru: Открывает последнюю версию документации Revit на apidocs.co.
   en_us: Opens the latest version of Revit on apidocs.co
+  fr_fr: Ouvre la dernière version de Revit sur apidocs.co
+  ru: Открывает последнюю версию документации Revit на apidocs.co.
+  chinese_s: 打开 apidocs.co 上的最新版本的 Revit
   es_es: Abre la última version de Revit en apidocs.co
   de_de: Öffnet die aktuelle Revit Version auf apidocs.co
 hyperlink: "https://apidocs.co/apps/revit/latest"

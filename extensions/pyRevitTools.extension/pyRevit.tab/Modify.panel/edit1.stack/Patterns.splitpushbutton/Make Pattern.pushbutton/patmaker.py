@@ -1,5 +1,7 @@
+# -*- coding: utf-8 -*-
 """Create patterns based on AutoCAD .pat standard."""
 #pylint: disable=import-error,invalid-name
+import io
 import os.path as op
 import re
 from math import sqrt, pi, sin, cos, degrees
@@ -719,7 +721,7 @@ def _export_pat(revit_pat, export_dir):
     pat_file_name = coreutils.cleanup_filename(revit_pat.name)
     pat_file_path = op.join(export_dir, '{}.pat'.format(pat_file_name))
     logger.debug('Exporting pattern to: %s', pat_file_path)
-    with open(pat_file_path, 'w') as pat_file:
+    with io.open(pat_file_path, 'w', encoding='utf-8') as pat_file:
         pat_file.write(pat_file_contents)
 
 

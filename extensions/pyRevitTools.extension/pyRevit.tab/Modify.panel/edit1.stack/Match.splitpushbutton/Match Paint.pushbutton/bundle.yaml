@@ -1,10 +1,14 @@
 title:
-  ru: Сверить цвет
-  fr_fr: Correspondance de peinture
   en_us: Match paint
+  fr_fr: Correspondance de peinture
+  ru: Сверить цвет
+  chinese_s: 匹配涂料
+  es_es: Coincidir pintura
   de_de: Eingefärbtes Material kopieren
 tooltip:
-  ru: Выберите материал с окрашенной поверхностью и примените для других поверхностей.
-  fr_fr: Permet d'appliquer le matériau paint d'une surface sur une autre surface
   en_us: Pickup painted surface material and apply to other surfaces
+  fr_fr: Permet d'appliquer le matériau paint d'une surface sur une autre surface
+  ru: Выберите материал с окрашенной поверхностью и примените для других поверхностей.
+  chinese_s: 拾取已涂刷的表面材质，并将其应用到其他表面
+  es_es: Recoger material de superficie pintado y aplicarlo a otras superficies
   de_de: Übernimmt ein eingefärbtes Oberflächen Material und kopiert es auf eine andere Fläche

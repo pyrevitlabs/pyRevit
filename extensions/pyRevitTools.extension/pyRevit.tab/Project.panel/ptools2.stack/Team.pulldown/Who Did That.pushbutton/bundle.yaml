@@ -1,15 +1,18 @@
 title:
-  ru: Кто сделал это??
-  fr_fr: Qui a fait ça??
   en_us: Who did that??
+  fr_fr: Qui a fait ça??
+  ru: Кто сделал это??
+  chinese_s: 这是谁做的？？
+  es_es: ¿Quién hizo eso??
   de_de: Wer hat das getan??
 tooltip:
-  ru: Выясните, кто внес конкретные изменения в модель.
-  fr_fr: Trouver qui a fait un changement spécifique dans le modèle.
   en_us: Figure out who made specific changes in the model.
+  fr_fr: Trouver qui a fait un changement spécifique dans le modèle.
+  ru: Выясните, кто внес конкретные изменения в модель.
+  chinese_s: 找出模型中特定更改的负责人
+  es_es: Averiguar quién hizo cambios específicos en el modelo.
   de_de: Hiermit kann man herausfinden wer bestimmte Änderungen am Modell vorgenommen hat.
 author: >-
-    Frederic Beaupere
-    
-    {{author}}
-    
+  Frederic Beaupere
+
+  {{author}}

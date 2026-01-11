@@ -1,16 +1,16 @@
 title:
-  ru: Разворот
-  fr_fr: Inverser
   en_us: Flip
+  fr_fr: Inverser
+  ru: Разворот
+  chinese_s: 翻转
+  es_es: Voltear
   de_de: Umdrehen
 tooltip:
-  ru: Предоставляет настройки для разворота выделенных элементов.
-  fr_fr: Fournit des options pour symétriser (Main/Face) des éléments sélectionnés
   en_us: Provides options for flipping (Hand/Face) selected elements
+  fr_fr: Fournit des options pour symétriser (Main/Face) des éléments sélectionnés
+  ru: Предоставляет настройки для разворота выделенных элементов.
+  chinese_s: 为选定的图元提供翻转选项（翻转方向/翻转面）
+  es_es: Proporciona opciones para voltear (Mano/Cara) elementos seleccionados
   de_de: >-
-    Dieser Befehl bietet die Möglichkeit ausgewählte Elemente umzudrehen: 
-    1) Flip Hand 
-    2) Flip Facing (Ausrichtung umkehren) 
-    3) Flip Wall Location Line (Basislinie der Wand umkehren) 
-    4) Flip Wall On CenterLine (Wand an Kernachse umkehren)
+    Dieser Befehl bietet die Möglichkeit ausgewählte Elemente umzudrehen:  1) Flip Hand  2) Flip Facing (Ausrichtung umkehren)  3) Flip Wall Location Line (Basislinie der Wand umkehren)  4) Flip Wall On CenterLine (Wand an Kernachse umkehren)
 context: selection

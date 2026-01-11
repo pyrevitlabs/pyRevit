@@ -1,15 +1,15 @@
 title:
-  fr_fr: Supprimer les têtes de flèches de manière radicale
   en_us: Wipe ArrowHeads type
-  ru: Удалить типы засечек
-  de_de: Lösche best. Pfeilspitzen Typen
-
-tooltip:
   fr_fr: Supprimer les têtes de flèches de manière radicale
+  ru: Удалить типы засечек
+  chinese_s: 清除箭头符号类型
+  es_es: Limpiar tipo de puntas de flecha
+  de_de: Lösche best. Pfeilspitzen Typen
+tooltip:
   en_us: Wipe selected arrow-head types
+  fr_fr: Supprimer les têtes de flèches de manière radicale
   ru: Удаляет выделенные типы засечек
+  chinese_s: 清除选定的箭头符号类型
+  es_es: Limpiar tipos de puntas de flecha seleccionados
   de_de: >-
-    Es erscheint ein Auswahldialog mit allen Pfeilspitztypen im Projekt.
-    Wählen Sie alle Pfeilspitztypen aus, die gelöscht werden sollen
-    und bestätigen Sie mit dem Button Select. Anschließend erscheint
-    ein Konsolenfenster mit Informationen zu den gelöschten Typen.
+    Es erscheint ein Auswahldialog mit allen Pfeilspitztypen im Projekt. Wählen Sie alle Pfeilspitztypen aus, die gelöscht werden sollen und bestätigen Sie mit dem Button Select. Anschließend erscheint ein Konsolenfenster mit Informationen zu den gelöschten Typen.

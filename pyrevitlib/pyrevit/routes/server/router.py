@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Route dictionary."""
 #pylint: disable=import-error,invalid-name,broad-except
 import re

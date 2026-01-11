@@ -1,14 +1,16 @@
 title:
-  ru: Выделить группу элементов
-  fr_fr: Sélectionner les éléments d'un groupe
   en_us: Select Group Elements
+  fr_fr: Sélectionner les éléments d'un groupe
+  ru: Выделить группу элементов
+  chinese_s: 选择组内图元
+  es_es: Seleccionar elementos del grupo
   de_de: Alle Elemente der gewählten Gruppe(n) auswählen
 tooltip:
-  ru: Заменяет теущее выделение элементами внутри групп.
-  fr_fr: Remplace la sélection actuelle par des éléments à l'intérieur des groupes
   en_us: Replaces current selection with elements inside the groups
+  fr_fr: Remplace la sélection actuelle par des éléments à l'intérieur des groupes
+  ru: Заменяет теущее выделение элементами внутри групп.
+  chinese_s: 用组内部的图元替换当前选择集
+  es_es: Reemplaza la selección actual con elementos dentro de los grupos
   de_de: >-
-    Wählen Sie eine Gruppe oder mehrere Gruppen aus. 
-    Dieser Befehl ersetz die aktuelle Auswahl mit den 
-    Elementen, die sich in den Gruppen befinden.
+    Wählen Sie eine Gruppe oder mehrere Gruppen aus.  Dieser Befehl ersetz die aktuelle Auswahl mit den  Elementen, die sich in den Gruppen befinden.
 context: selection

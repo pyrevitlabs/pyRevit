@@ -1,32 +1,39 @@
 title:
-  ru: Выбрать
-  fr_fr: Sélectionner
   en_us: Pick
+  fr_fr: Sélectionner
+  ru: Выбрать
+  chinese_s: 选择
+  es_es: Elegir
   de_de: El.n.Kat.ausw.
 tooltip:
-  ru: >-
-    Активирует инструмент выделения, который выбирает определенный тип элемента.
-    
-    Shift-Click:
-    
-    Выбрать избранное из всех доступных категорий.
-  fr_fr: >-
-    Active l'outil de sélection qui sélectionne un type d'élément spécifique
-
-     Shift-Clic :
-
-     Choisissez vos favoris dans toutes les catégories disponibles
   en_us: >-
     Activates selection tool that picks a specific type of element
 
     Shift-Click:
 
     Pick favorites from all available categories
-  de_de: >-
-    Aktiviert ein besonderes Auswahlwerkzeug, 
-    das nur einen bestimmten Typ von Elementen auswählt. 
+  fr_fr: >-
+    Active l'outil de sélection qui sélectionne un type d'élément spécifique
+
+     Shift-Clic :
+
+     Choisissez vos favoris dans toutes les catégories disponibles
+  ru: >-
+    Активирует инструмент выделения, который выбирает определенный тип элемента.
 
     Shift-Click:
 
-    In einem Auswahldialog kann man gezielt Kategorien auswählen, 
-    die dann mit dem Auswahlwerkzeug auswählbar sind.
+    Выбрать избранное из всех доступных категорий.
+  chinese_s: "激活可选择特定类型图元的选择工具\nShift+单击：\n从所有可用类别中选取收藏的图元"
+  es_es: >-
+    Activa la herramienta de selección que elige un tipo específico de elemento
+
+    Shift-Clic:
+
+    Elegir favoritos de todas las categorías disponibles
+  de_de: >-
+    Aktiviert ein besonderes Auswahlwerkzeug,  das nur einen bestimmten Typ von Elementen auswählt. 
+
+    Shift-Click:
+
+    In einem Auswahldialog kann man gezielt Kategorien auswählen,  die dann mit dem Auswahlwerkzeug auswählbar sind.

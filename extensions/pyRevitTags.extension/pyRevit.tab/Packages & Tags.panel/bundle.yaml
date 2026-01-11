@@ -1,3 +1,10 @@
+title:
+  en_us: Packages & Tags
+  fr_fr: Paquets et étiquettes
+  ru: Пакеты и метки
+  chinese_s: 包和标签
+  es_es: Paquetes y etiquetas
+  de_de: Pakete & Tags
 layout:
   - Manage Packages
   - Manage Tags

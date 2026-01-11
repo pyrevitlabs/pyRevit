@@ -1,10 +1,14 @@
 title:
-  ru: Выделить все текстовые примечания
-  fr_fr: Sélectionner toutes les notes textuelles
   en_us: Select All Text Notes
+  fr_fr: Sélectionner toutes les notes textuelles
+  ru: Выделить все текстовые примечания
+  chinese_s: 选择所有文字注释
+  es_es: Seleccionar todas las notas de texto
   de_de: Alle Text Elemente im Projekt auswählen
 tooltip:
-  ru: Выделяет все текстовые заметки в модели. Это полезно для проверки правописания.
-  fr_fr: Sélectionne tous les éléments de catégorie note textuelle dans le modèle. Ceci est utile pour la vérification orthographique.
   en_us: Selects all Text Note elements in the model. This is helpful for spell checking.
-  de_de: Es werden alle Text Elemente im Modell ausgewählt. Dies ist insbesondere für die Rechtschreibprüfung hilfreich. 
+  fr_fr: Sélectionne tous les éléments de catégorie note textuelle dans le modèle. Ceci est utile pour la vérification orthographique.
+  ru: Выделяет все текстовые заметки в модели. Это полезно для проверки правописания.
+  chinese_s: 选择模型中的所有文字注释图元。此功能有助于进行拼写检查
+  es_es: Selecciona todos los elementos de nota de texto en el modelo. Esto es útil para la verificación ortográfica.
+  de_de: Es werden alle Text Elemente im Modell ausgewählt. Dies ist insbesondere für die Rechtschreibprüfung hilfreich.

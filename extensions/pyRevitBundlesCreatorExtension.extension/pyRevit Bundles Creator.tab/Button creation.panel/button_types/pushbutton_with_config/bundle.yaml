@@ -1,8 +1,14 @@
 title:
-  en_us: english title
-  fr_fr: french title
-  es_es: spanish title
+  en_us: Pushbutton with config
+  fr_fr: Bouton avec configuration
+  ru: Кнопка с конфигурацией
+  chinese_s: Pushbutton with config
+  es_es: Botón con configuración
+  de_de: Pushbutton mit Konfiguration
 tooltip:
-  fr_fr: "Contrôle qualité, utilisez shift click pour configurer les tests"
   en_us: Quality control use shift+click to configure the tests
+  fr_fr: "Contrôle qualité, utilisez shift click pour configurer les tests"
+  ru: Контроль качества, используйте shift+click для настройки тестов
+  chinese_s: 质量控制，使用 shift+click 配置测试
   es_es: "Control de calidad, usa shift+click para configurar las pruebas"
+  de_de: Qualitätskontrolle, verwenden Sie shift+click, um die Tests zu konfigurieren

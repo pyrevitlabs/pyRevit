@@ -1,12 +1,15 @@
 title:
-  ru: Выделить листы
-  fr_fr: Sélectionner les feuilles
   en_us: Select Sheets
+  fr_fr: Sélectionner les feuilles
+  ru: Выделить листы
+  chinese_s: 选择图纸
+  es_es: Seleccionar hojas
   de_de: Pläne auswählen
 tooltip:
-  ru: Выделить несколько листов из списка.
-  fr_fr: Sélectionnez plusieurs feuilles depusi une liste
   en_us: Select multiple sheets from a list
+  fr_fr: Sélectionnez plusieurs feuilles depusi une liste
+  ru: Выделить несколько листов из списка.
+  chinese_s: 从列表中选择多张图纸
+  es_es: Seleccionar múltiples hojas de una lista
   de_de: >-
-    Es öffnet sich ein Dialog, in dem man Pläne auswählen kann. 
-    Diese Funktion ist vergleichbar, mit der Auswahl von Plänen im Projektbrowser.
+    Es öffnet sich ein Dialog, in dem man Pläne auswählen kann.  Diese Funktion ist vergleichbar, mit der Auswahl von Plänen im Projektbrowser.

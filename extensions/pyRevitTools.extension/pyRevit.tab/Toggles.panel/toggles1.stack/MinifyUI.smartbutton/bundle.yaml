@@ -1,36 +1,40 @@
 title:
-  ru: Мини-ть RevitUI
-  fr_fr: Minimiser UI Revit
   en_us: Minify Revit UI
+  fr_fr: Minimiser UI Revit
+  ru: Мини-ть RevitUI
+  chinese_s: 简化 Revit 界面
+  es_es: Minify Revit UI
   de_de: Revit UI minimieren
 tooltip:
-  ru: >-
-    Минимизирует список открытых вкладок Revit.
-    
-    Shift+Click:
-    
-    Настроить, какие вкладки должны быть скрыты в мини-режиме.
-  fr_fr: >-
-     Réduire la liste des onglets Revit ouverts
-    
-     Shift+Clic :
-    
-     Personnalisez les onglets à masquer en mode minimisé
   en_us: >-
     Reduce the list of open Revit tabs
-    
+
     Shift+Click:
-    
+
+    Customize which tabs should be hidden in minified mode
+  fr_fr: >-
+    Réduire la liste des onglets Revit ouverts
+
+    Shift+Clic :
+
+    Personnalisez les onglets à masquer en mode minimisé
+  ru: >-
+    Минимизирует список открытых вкладок Revit.
+
+    Shift+Click:
+
+    Настроить, какие вкладки должны быть скрыты в мини-режиме.
+  chinese_s: "减少打开的 Revit 选项卡列表\nShift+单击：\n自定义在简化模式下应隐藏哪些选项卡"
+  es_es: >-
+    Reduce the list of open Revit tabs
+
+    Shift+Click:
+
     Customize which tabs should be hidden in minified mode
   de_de: >-
-    Die Aktivierung reduziert die Anzahl der Registerkarten der Revit Multifunktionsleiste. 
-    Welche Registerkarten bei der Aktivierung ausgeblendet werden, 
-    wird in den Einstellungen festgelegt. Die Einstellungen öffnet man, 
-    indem man mit gedrückter Shift-Taste auf das Werkzeug klickt.
-    
+    Die Aktivierung reduziert die Anzahl der Registerkarten der Revit Multifunktionsleiste.  Welche Registerkarten bei der Aktivierung ausgeblendet werden,  wird in den Einstellungen festgelegt. Die Einstellungen öffnet man,  indem man mit gedrückter Shift-Taste auf das Werkzeug klickt.
+
     Shift+Click:
-    
-    Es öffnet sich ein Auswahldialog mit allen verfügbaren Registerkarten. 
-    Alle Register die hier ausgewählt werden, werden ausgeblendet, 
-    wenn man den Befehl "Revit UI minimieren" aktiviert. 
+
+    Es öffnet sich ein Auswahldialog mit allen verfügbaren Registerkarten.  Alle Register die hier ausgewählt werden, werden ausgeblendet,  wenn man den Befehl "Revit UI minimieren" aktiviert.
 context: zero-doc

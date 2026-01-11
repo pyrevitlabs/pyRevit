@@ -1,37 +1,20 @@
 title:
-  ru: Встряхнуть цветовые области
-  fr_fr: Agiter les zones remplies
   en_us: Shake filled regions
+  fr_fr: Agiter les zones remplies
+  ru: Встряхнуть цветовые области
+  chinese_s: 刷新填充区域
+  es_es: Regenerar regiones rellenas
   de_de: Gefüllte Bereiche regenerieren
 tooltip:
-  ru: >-
-    Перемещает все цветовые области на выделенных видах вперед и 
-    назад на небольшую велечину, чтобы подтолкнуть Revit к повторному 
-    созданию цветовой области и обновлению вида. Данный инструмент 
-    предназначен для использовании в сочетании с инструментом 
-    "Конвертировать стили линий". Инструмент преобразования обновляет 
-    стили внутри цветовой области, но в настоящее время не меняет 
-    цветовую область (Revit аварийно завершает работу на больших моделях).
-  fr_fr: >-
-    Déplace puis replace toutes les zones remplies dans les vues 
-    sélectionnées afin de forcer Revit à régénérer les vues. Cet 
-    outil est conçu pour être utilisé avec l'outil "Convertir les 
-    styles de lignes". L'outil de conversion met à jour les styles 
-    de lignes dans les zones remplies mais n'agite pas les zones 
-    remplies (Revit tend à crasher sur les grands modèles)
   en_us: >-
-    Moves all Filled Regions on the seleced views back-and-forth by a tiny 
-    amount to push Revit to regenerate the filled region and update the 
-    display. This tool is meant to be used in conjunction with the 
-    "Convert Line Styles" tool. The convert tool updates the line 
-    styles inside Filled region but does not currently shake the 
-    filled regions (Revit crashes on large models.)
+    Moves all Filled Regions on the seleced views back-and-forth by a tiny  amount to push Revit to regenerate the filled region and update the  display. This tool is meant to be used in conjunction with the  "Convert Line Styles" tool. The convert tool updates the line  styles inside Filled region but does not currently shake the  filled regions (Revit crashes on large models.)
+  fr_fr: >-
+    Déplace puis replace toutes les zones remplies dans les vues  sélectionnées afin de forcer Revit à régénérer les vues. Cet  outil est conçu pour être utilisé avec l'outil "Convertir les  styles de lignes". L'outil de conversion met à jour les styles  de lignes dans les zones remplies mais n'agite pas les zones  remplies (Revit tend à crasher sur les grands modèles)
+  ru: >-
+    Перемещает все цветовые области на выделенных видах вперед и  назад на небольшую велечину, чтобы подтолкнуть Revit к повторному  созданию цветовой области и обновлению вида. Данный инструмент  предназначен для использовании в сочетании с инструментом  "Конвертировать стили линий". Инструмент преобразования обновляет  стили внутри цветовой области, но в настоящее время не меняет  цветовую область (Revit аварийно завершает работу на больших моделях).
+  chinese_s: 将选定视图中的所有填充区域轻微来回移动，以促使 Revit 重新生成填充区域并更新显示。此工具需与“转换线样式”工具配合使用。转换工具会更新填充区域内的线样式，但目前不会自动刷新填充区域（在大模型上直接刷新会导致 Revit 崩溃）
+  es_es: >-
+    Mueve todas las Regiones Rellenas en las vistas seleccionadas de un lado a otro en una pequeña cantidad para forzar a Revit a regenerar la región rellena y actualizar la visualización. Esta herramienta está diseñada para usarse en conjunto con la herramienta "Convertir estilos de línea". La herramienta de conversión actualiza los estilos de línea dentro de la Región Rellena pero actualmente no regenera las regiones rellenas (Revit se bloquea en modelos grandes).
   de_de: >-
-    Verschiebt alle gefüllten Bereiche in den ausgewählten Ansichten 
-    um ein winziges Stück und wieder zurück, damit Revit den gefüllten 
-    Bereich regeneriert und die Darstellung aktualisiert.  
-    Dieses Werkzeug wird im Anschluss an das Werkzeug „Linienstile 
-    konvertieren“ verwendet. Denn das Werkzeug „Linienstile Konvertieren“ 
-    kann auch die Linienstile innerhalb der gefüllten Bereiche Aktualisieren.
-    Die Regenierung der gefüllten Bereiche muss jedoch separat 
-    durchgeführt werden, damit Revit bei großen Modellen nicht abstürzt.
+    Verschiebt alle gefüllten Bereiche in den ausgewählten Ansichten  um ein winziges Stück und wieder zurück, damit Revit den gefüllten  Bereich regeneriert und die Darstellung aktualisiert.   Dieses Werkzeug wird im Anschluss an das Werkzeug „Linienstile  konvertieren“ verwendet. Denn das Werkzeug „Linienstile Konvertieren“  kann auch die Linienstile innerhalb der gefüllten Bereiche Aktualisieren.
+    Die Regenierung der gefüllten Bereiche muss jedoch separat  durchgeführt werden, damit Revit bei großen Modellen nicht abstürzt.

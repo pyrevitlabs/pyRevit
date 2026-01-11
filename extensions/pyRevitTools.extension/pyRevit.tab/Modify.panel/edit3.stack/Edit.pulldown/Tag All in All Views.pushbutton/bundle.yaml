@@ -1,10 +1,14 @@
 title:
-  ru: Маркировать всё на виде
-  fr_fr: Etiqueter dans toutes les vues
   en_us: Tag in all views
+  fr_fr: Etiqueter dans toutes les vues
+  ru: Маркировать всё на виде
+  chinese_s: 在所有视图中标记
+  es_es: Etiquetar en todas las vistas
   de_de: Beschrifte (MEP-)Räume in allen Ansichten
 tooltip:
-  ru: Маркирует все выделенные типы элементов на всех видах.
-  fr_fr: Etiqueter les éléments d'un type sélectionné dans toutes les vues
   en_us: Tag all chosen element types in all views
+  fr_fr: Etiqueter les éléments d'un type sélectionné dans toutes les vues
+  ru: Маркирует все выделенные типы элементов на всех видах.
+  chinese_s: 在所有视图中，为所有已选定的图元类型添加标记
+  es_es: Etiquetar todos los tipos de elementos elegidos en todas las vistas
   de_de: Es werden alle Räume oder MEP-Räume in allen Ansichten beschriftet

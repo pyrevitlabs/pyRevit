@@ -1,11 +1,15 @@
 title:
-  ru: Репо
   en_us: Repo
-  es_es: Repo
-  de_de: Repo
+  fr_fr: Dépôt
+  ru: Репо
+  chinese_s: 仓库
+  es_es: Repositorio
+  de_de: Repository
 tooltip:
-  ru: Открывает страницу git репозитория.
   en_us: Opens the git repository page
+  fr_fr: Ouvre la page du dépôt git
+  ru: Открывает страницу git репозитория.
+  chinese_s: 打开 git 仓库页面
   es_es: 'Abre la página del repositorio de git'
   de_de: Öffnet die Git Repository Seite
 context: zero-doc

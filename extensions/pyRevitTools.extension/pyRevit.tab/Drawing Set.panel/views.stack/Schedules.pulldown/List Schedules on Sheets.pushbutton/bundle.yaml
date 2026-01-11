@@ -1,14 +1,16 @@
 title:
-  fr_fr: Lister les nomenclatures sur les feuilles
   en_us: List Schedules on Sheets
+  fr_fr: Lister les nomenclatures sur les feuilles
   ru: Показать спецификации на листах
+  chinese_s: 列出图纸上的明细表
+  es_es: Listar tablas en hojas
   de_de: Liste alle Bauteillisten auf Plänen auf
 tooltip:
-  fr_fr: Lister les nomenclatures sur les feuilles
   en_us: List Schedules on Sheets
+  fr_fr: Lister les nomenclatures sur les feuilles
   ru: Показывает спецификации на листах.
+  chinese_s: 列出图纸上的明细表
+  es_es: Listar tablas en hojas
   de_de: >-
-    Es öffnet sich ein Konsolenfenster, in dem alle Bauteillisten aufgelistet sind, 
-    die auf einem Plan platziert wurden. Die dazugehörige Plannummer und der Planname 
-    wird ebenfalls aufgelistet. 
+    Es öffnet sich ein Konsolenfenster, in dem alle Bauteillisten aufgelistet sind,  die auf einem Plan platziert wurden. Die dazugehörige Plannummer und der Planname  wird ebenfalls aufgelistet.
 author: Jean-Marc Couffin

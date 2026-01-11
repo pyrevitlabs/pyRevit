@@ -1,10 +1,14 @@
 title:
-  ru: Найти одинаковые номера помещений
-  fr_fr: Trouver les numéros de pièces identiques
   en_us: Find identical room numbers
+  fr_fr: Trouver les numéros de pièces identiques
+  ru: Найти одинаковые номера помещений
+  chinese_s: 查找相同房间编号
+  es_es: Encontrar números de habitación idénticos
   de_de: Finde identische Raum Nummern
 tooltip:
-  ru: Находит и выводит помещения с одинаковыми номерами.
-  fr_fr: Trouver et lister les pièces avec un numéro identique
   en_us: Finds and lists rooms with identical numbers
+  fr_fr: Trouver et lister les pièces avec un numéro identique
+  ru: Находит и выводит помещения с одинаковыми номерами.
+  chinese_s: 查找并列出编号相同的房间
+  es_es: Encuentra y lista las habitaciones con números idénticos
   de_de: Es werden alle alle Räume mit identischen Nummern aufgelistet

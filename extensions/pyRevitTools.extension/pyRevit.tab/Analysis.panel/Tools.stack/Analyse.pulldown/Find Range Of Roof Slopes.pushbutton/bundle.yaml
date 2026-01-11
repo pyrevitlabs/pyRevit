@@ -1,10 +1,14 @@
 title:
-  ru: Найти диапазоны уклонов крыш
-  fr_fr: Trouver la pente des toitures
   en_us: Find Range of Roof Slopes
+  fr_fr: Trouver la pente des toitures
+  ru: Найти диапазоны уклонов крыш
+  chinese_s: 统计屋顶坡度
+  es_es: Encontrar rangos de pendientes de techo
   de_de: Liste alle Dachneigungen auf
 tooltip:
-  ru: Список всех уклонов крыш в модели. Данный инструмент анализурет уклоны крыш, созданных из профиля. Крыши сделанные выдавливанием и крыши сделанные формобразующим способом не включаются в анализ.
-  fr_fr: Répertorie toutes les pentes de toit du modèle. Cet outil analyse les pentes définies dans les toits créés à partir d'un profil. Les toits d'extrusion et les toits créés à partir de faces de volume ne sont pas inclus dans l'analyse
   en_us: Lists all roof slopes in the model. This tool analyzes the slopes defined in roofs created from a profile. Extrusion roofs and roofs created from Mass faces are not included in the analysis
-  de_de: Listet alle Dachneigungen im Modell auf. Diese Werkzeug analysiert die Dachneigungen im Modell, von Dächern, die mit "Dach über Grundfläche" (mit einer Skizze) erstellt wurden. Dächer die mit "Dach über Extrusion" oder "Dach über Fläche" erstellt wurden, werden nicht aufgelistet. 
+  fr_fr: Répertorie toutes les pentes de toit du modèle. Cet outil analyse les pentes définies dans les toits créés à partir d'un profil. Les toits d'extrusion et les toits créés à partir de faces de volume ne sont pas inclus dans l'analyse
+  ru: Список всех уклонов крыш в модели. Данный инструмент анализурет уклоны крыш, созданных из профиля. Крыши сделанные выдавливанием и крыши сделанные формобразующим способом не включаются в анализ.
+  chinese_s: 列出模型中的所有屋顶坡度。此工具会分析通过轮廓创建的屋顶中定义的坡度，拉伸屋顶和通过体量面创建的屋顶不包含在分析范围内。
+  es_es: Lista todas las pendientes de techo en el modelo. Esta herramienta analiza las pendientes definidas en techos creados a partir de un perfil. Los techos hechos por extrusión y los techos creados a partir de caras de volumen no están incluidos en el análisis
+  de_de: Listet alle Dachneigungen im Modell auf. Diese Werkzeug analysiert die Dachneigungen im Modell, von Dächern, die mit "Dach über Grundfläche" (mit einer Skizze) erstellt wurden. Dächer die mit "Dach über Extrusion" oder "Dach über Fläche" erstellt wurden, werden nicht aufgelistet.

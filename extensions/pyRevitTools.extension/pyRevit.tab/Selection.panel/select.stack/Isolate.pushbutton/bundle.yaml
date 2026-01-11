@@ -1,25 +1,30 @@
 title:
-  ru: Изолировать
-  fr_fr: Isoler
   en_us: Isolate
+  fr_fr: Isoler
+  ru: Изолировать
+  chinese_s: 隔离
+  es_es: Aislar
   de_de: Isolieren
 tooltip:
-  ru: >-
-    Изолирует определенные элементы в текущем виде
-    
-    и переводит вид в режим изоляции элементов.
-  fr_fr: >-
-    Isole des éléments spécifiques dans la vue actuelle et
-
-    met la vue en mode 'élément isolé'
   en_us: >-
     Isolates specific elements in current view and
 
     put the view in isolate element mode
+  fr_fr: >-
+    Isole des éléments spécifiques dans la vue actuelle et
+
+    met la vue en mode 'élément isolé'
+  ru: >-
+    Изолирует определенные элементы в текущем виде
+
+    и переводит вид в режим изоляции элементов.
+  chinese_s: 在当前视图中隔离特定图元，并将视图置于“隔离图元”模式
+  es_es: >-
+    Aísla elementos específicos en la vista actual y
+
+    pone la vista en modo de aislamiento de elementos
   de_de: >-
-    Isloiert spezifische Elemente in der aktuellen Ansicht 
-    und stellt die Ansicht in den Isloationsmodus um. 
-    Es werden folgende Kategorien als Schnellauswahl angeboten:
+    Isloiert spezifische Elemente in der aktuellen Ansicht  und stellt die Ansicht in den Isloationsmodus um.  Es werden folgende Kategorien als Schnellauswahl angeboten:
     1) Flächenbegrenzungen
     2) Fenster
     3) Geschossdecken
@@ -35,4 +40,4 @@ tooltip:
 
     Shift-Select:
     Es können in einem Auswahldialog gezielt Kategorien festgelegt werden,
-    die isoliert werden sollen. 
+    die isoliert werden sollen.

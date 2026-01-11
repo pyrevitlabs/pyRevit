@@ -1,0 +1,13 @@
+title:
+  en_us: Analysis
+  fr_fr: Analyse
+  ru: Анализ
+  chinese_s: 分析
+  es_es: Análisis
+  de_de: Analyse
+layout:
+  - analysis1
+  - analysis2
+  - analysis3
+  - '-----'
+  - 3D

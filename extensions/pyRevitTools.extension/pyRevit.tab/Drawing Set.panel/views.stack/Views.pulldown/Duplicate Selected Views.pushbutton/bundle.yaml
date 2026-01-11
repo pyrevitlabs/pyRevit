@@ -1,22 +1,28 @@
 title:
-  ru: |-
-    Копирует выделенные виды
-  fr_fr: |-
-    Dupliquer les vues sélectionnées
   en_us: |-
     Duplicate Selected Views
+  fr_fr: |-
+    Dupliquer les vues sélectionnées
+  ru: |-
+    Копирует выделенные виды
+  chinese_s: 批量复制视图
+  es_es: |-
+    Duplicar vistas seleccionadas
   de_de: |-
     Dupliziere ausgewählte Ansichten
 tooltip:
-  ru: Пакетно копирует выделенные виды с/без детализации.
-  fr_fr: |-
-    Dupliquer les vues sélectionnées avec ou sans détails
   en_us: |-
     Batch duplicates the selected views with or without detailing
+  fr_fr: |-
+    Dupliquer les vues sélectionnées avec ou sans détails
+  ru: Пакетно копирует выделенные виды с/без детализации.
+  chinese_s: 批量复制选定视图，可选择包含或不包含详图
+  es_es: |-
+    Duplica por lotes las vistas seleccionadas con o sin detallado
   de_de: |-
     Man wählt bereits im Projektbrowser die gewünschten Ansichten aus
     oder es erscheint ein Auswahldialog, in dem man die gewünschten
     Ansichten auswählen kann. Die gewählten Ansichten können entweder
     "Mit Detaillierung", "Ohne Detaillierung" oder als "Abhängige Ansicht"
     dupliziert werden. Hinweis: Nicht alle Ansichten können als "Abhängige
-    Ansicht dupliziert werden" (z.B. 3D Ansichten). 
+    Ansicht dupliziert werden" (z.B. 3D Ansichten).

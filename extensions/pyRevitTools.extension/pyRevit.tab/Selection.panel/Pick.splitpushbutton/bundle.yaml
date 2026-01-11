@@ -1,7 +1,9 @@
 title:
-  ru: Выбрать
-  fr_fr: Choisir
   en_us: Pick
+  fr_fr: Choisir
+  ru: Выбрать
+  chinese_s: 选择
+  es_es: Elegir
   de_de: Auswahl
 layout:
   - Pick

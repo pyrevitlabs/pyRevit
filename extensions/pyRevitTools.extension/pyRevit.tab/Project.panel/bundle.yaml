@@ -1,3 +1,10 @@
+title:
+  en_us: Project
+  fr_fr: Projet
+  ru: Проект
+  chinese_s: 项目
+  es_es: Proyecto
+  de_de: Projekt
 layout:
   - Preflight Checks
   - ptools2

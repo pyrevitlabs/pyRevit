@@ -1,29 +1,34 @@
 title:
-  ru: |-
-    Создать спецификацию из CSV
-  fr_fr: |-
-    Créer une nomenclature à partir d'un CSV
   en_us: |-
     Create schedule from CSV
+  fr_fr: |-
+    Créer une nomenclature à partir d'un CSV
+  ru: |-
+    Создать спецификацию из CSV
+  chinese_s: 从 CSV 创建明细表
+  es_es: |-
+    Crear tabla desde CSV
   de_de: |-
     Erstelle Bauteilschlüsselliste mit einer CSV
-  
 tooltip:
-  ru: |-
-    Импортировать существующий CSV-файл в качестве спецификации.
-    
-      - Первая CSV строка должна быть наименование полей
-    
-      - Первое CSV поле дожно быть "Ключевое имя"
-    
-      Пример CSV:
-      Ключевое имя, Параметр1, Параметр2
-      
-      A,Значение11,Значение12
-      
-      B,Значение21,Значение22
-      
-      C,Значение31,Значение32
+  en_us: |-
+    Import existing CSV file as a key schedule
+
+
+      - First CSV row must be field names
+
+      - First CSV field must be "Key Name"
+
+
+      CSV Example:
+
+      Key Name,Parameter1 Name,Parameter2 Name
+
+      A,Value11,Value12
+
+      B,Value21,Value22
+
+      C,Value32,Value32
   fr_fr: |-
     Importer un fichier CSV existant en tant que programme clé
 
@@ -42,39 +47,55 @@ tooltip:
         B,Valeur21,Valeur22
 
         C,Valeur32,Valeur32
-  en_us: |-
-      Import existing CSV file as a key schedule
+  ru: |-
+    Импортировать существующий CSV-файл в качестве спецификации.
+
+      - Первая CSV строка должна быть наименование полей
+
+      - Первое CSV поле дожно быть "Ключевое имя"
+
+      Пример CSV:
+      Ключевое имя, Параметр1, Параметр2
+      
+      A,Значение11,Значение12
+      
+      B,Значение21,Значение22
+      
+      C,Значение31,Значение32
+  chinese_s: "将现有 CSV 文件导入为Key明细表\n\n\n- CSV 第一行必须是字段名称\n\n- CSV 第一个字段必须是“Key Name”\n\n\nCSV 示例：\n\n  Key Name,Parameter1 Name,Parameter2 Name\n\n  A,Value11,Value12\n\n  B,Value21,Value22\n\n  C,Value32,Value32"
+  es_es: |-
+    Importar archivo CSV existente como tabla de claves
 
 
-        - First CSV row must be field names
+      - La primera fila CSV debe ser nombres de campos
 
-        - First CSV field must be "Key Name"
+      - El primer campo CSV debe ser "Key Name"
 
 
-        CSV Example:
+      Ejemplo CSV:
 
-        Key Name,Parameter1 Name,Parameter2 Name
+      Key Name,Parameter1 Name,Parameter2 Name
 
-        A,Value11,Value12
+      A,Value11,Value12
 
-        B,Value21,Value22
+      B,Value21,Value22
 
-        C,Value32,Value32
+      C,Value32,Value32
   de_de: |-
-      Importiere eine existierende CSV Datei als Schlüsselliste
+    Importiere eine existierende CSV Datei als Schlüsselliste
 
 
-        - Die erste CSV Reihe muss die Feldnamen enthalten
+      - Die erste CSV Reihe muss die Feldnamen enthalten
 
-        - Das erste CSV Feld muss "Schlüsselname" sein
+      - Das erste CSV Feld muss "Schlüsselname" sein
 
 
-        CSV Example:
+      CSV Example:
 
-        Schlüsselname,Parameter1 Name,Parameter2 Name
+      Schlüsselname,Parameter1 Name,Parameter2 Name
 
-        A,Wert11,Wert12
+      A,Wert11,Wert12
 
-        B,Wert21,Wert22
+      B,Wert21,Wert22
 
-        C,Wert32,Wert32
+      C,Wert32,Wert32

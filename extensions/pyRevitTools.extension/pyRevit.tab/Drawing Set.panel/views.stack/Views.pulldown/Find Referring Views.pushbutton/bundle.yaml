@@ -1,19 +1,25 @@
 title:
-  ru: |-
-    Открыть связанные виды
-  fr_fr: |-
-    Ouvrir les vues en référence
   en_us: |-
     Open Refererring Views
+  fr_fr: |-
+    Ouvrir les vues en référence
+  ru: |-
+    Открыть связанные виды
+  chinese_s: 打开引用视图
+  es_es: |-
+    Abrir vistas referenciadas
   de_de: |-
     Öffne referenzierte Ansichten
 tooltip:
-  ru: |-
-    Показывает все виды, которые связанны с выделенными видовыми экранами или активным видом.
-  fr_fr: |-
-    Répertorier toutes les vues faisant référence aux fenêtres sélectionnées ou à la vue active
   en_us: |-
     List all view that are referring the selected viewports or active view
+  fr_fr: |-
+    Répertorier toutes les vues faisant référence aux fenêtres sélectionnées ou à la vue active
+  ru: |-
+    Показывает все виды, которые связанны с выделенными видовыми экранами или активным видом.
+  chinese_s: 列出所有引用所选视口或活动视图的视图
+  es_es: |-
+    Lista todas las vistas que están referenciando las ventanas gráficas seleccionadas o la vista activa
   de_de: >-
     Es werden alle Ansichten aufgelistet, die das ausgewählte Ansichtsfenster oder aktive Ansicht referenzieren.
     Achtung: Die Ausführung dieses Befehls kann sehr lange dauern und kann nicht unterbrochen werden!

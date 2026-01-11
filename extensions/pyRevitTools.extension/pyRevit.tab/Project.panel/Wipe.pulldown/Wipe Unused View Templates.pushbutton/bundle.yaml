@@ -1,10 +1,14 @@
 title:
-  ru: Очистить неиспользуемые шаблоны видов
-  fr_fr: Supprimer les gabarits de vue inutilisés
   en_us: Wipe Unused View Templates
+  fr_fr: Supprimer les gabarits de vue inutilisés
+  ru: Очистить неиспользуемые шаблоны видов
+  chinese_s: 清除未使用的视图样板
+  es_es: Limpiar plantillas de vista no utilizadas
   de_de: Lösche best. nicht verwendete Ansichtsvorlagen
 tooltip:
-  ru: Удаляет все неиспользованные шаблоны видов (Любой шаблон вида, не назначенный к виду).
-  fr_fr: Supprime tous les gabarits de vue inutilisés (Tout gabarit de vue qui n'a pas été affecté à une vue)
   en_us: Deletes all unused view templates (Any view template that has not been assigned to a view)
+  fr_fr: Supprime tous les gabarits de vue inutilisés (Tout gabarit de vue qui n'a pas été affecté à une vue)
+  ru: Удаляет все неиспользованные шаблоны видов (Любой шаблон вида, не назначенный к виду).
+  chinese_s: 删除所有未使用的视图样板（即未分配给任何视图的视图样板）
+  es_es: Elimina todas las plantillas de vista no utilizadas (Cualquier plantilla de vista que no haya sido asignada a una vista)
   de_de: Es erscheint ein Auswahldialog, in dem nicht verwendete Ansichtsvorlagen ausgewählt werden können. Alle im Dialog ausgewählten Ansichtsvorlagen werden gelöscht.

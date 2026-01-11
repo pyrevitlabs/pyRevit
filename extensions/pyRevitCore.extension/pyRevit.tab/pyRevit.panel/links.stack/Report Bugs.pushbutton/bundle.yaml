@@ -1,11 +1,15 @@
 title:
-  ru: Сообщить об ошибках
   en_us: Report Bugs
+  fr_fr: Signaler les bugs
+  ru: Сообщить об ошибках
+  chinese_s: 报告错误
   es_es: Reportar Errores
   de_de: Bugs auf GitHub melden
 tooltip:
-  ru: Открывает issue на github, чтобы сообщать о багах и ошибках.
   en_us: Opens the issue tracker on github to report bugs and issues
+  fr_fr: Ouvre le suivi des problèmes sur GitHub pour signaler des bugs et des problèmes
+  ru: Открывает issue на github, чтобы сообщать о багах и ошибках.
+  chinese_s: 打开 GitHub 上的问题跟踪器，报告错误和问题
   es_es: Abre el seguimiento de incidencias en github para reportar problemas y errores
-  de_de: Öffnet den Issue Tracker auf GitHub, um Fehler, Bugs und Probleme zu melden. Auf "New issue" klicken, um ein Bericht zu erstellen. 
+  de_de: Öffnet den Issue Tracker auf GitHub, um Fehler, Bugs und Probleme zu melden. Auf "New issue" klicken, um ein Bericht zu erstellen.
 context: zero-doc

@@ -1,7 +1,9 @@
 title:
-  ru: Очистить
-  fr_fr: Nettoyage
   en_us: Wipe
+  fr_fr: Nettoyage
+  ru: Очистить
+  chinese_s: 清除
+  es_es: Limpiar
   de_de: Löschen
 layout:
   - Wipe Model Components

@@ -1,36 +1,28 @@
 title:
-  ru: О программе
   en_us: About
-  en_gb: About
   fr_fr: A Propos
-  de_de: Über
-  nl_nl: Over
-  pt_br: Sobre pyRevit
+  ru: О программе
+  chinese_s: 关于
   es_es: Sobre
-  fa: درباره
+  de_de: Über
 tooltip:
-  ru: >-
-    О pyRevit. Открывает сайт блога pyRevit. Вы можете найти
-    детализированную информацию как pyRevit работает, обновления 
-    о новых инструментах и изменениях и много другой информации.
-    
-    
-    Автор перевода:
-    
-    Бисеув Олжас (dosymep)
-    
-    почта: dosymep@gmail.com
-    
-    github: https://github.com/dosymep
   en_us: >-
-    About pyRevit. Opens the pyRevit blog website. You can find
-    detailed information on how pyRevit works, updates about the
-    new tools and changes, and a lot of other information there.
+    About pyRevit. Opens the pyRevit blog website. You can find detailed information on how pyRevit works, updates about the new tools and changes, and a lot of other information there.
   fr_fr: >-
-    À propos de pyRevit. Ouvre le site web du blog pyRevit. Vous pouvez y trouver
-    des informations détaillées sur le fonctionnement de pyRevit, des mises à jour sur les
-    nouveaux outils et les changements, et beaucoup d'autres informations.
+    À propos de pyRevit. Ouvre le site web du blog pyRevit. Vous pouvez y trouver des informations détaillées sur le fonctionnement de pyRevit, des mises à jour sur les nouveaux outils et les changements, et beaucoup d'autres informations.
+  ru: >-
+    О pyRevit. Открывает сайт блога pyRevit. Вы можете найти детализированную информацию как pyRevit работает, обновления  о новых инструментах и изменениях и много другой информации.
+
+
+    Автор перевода:
+
+    Бисеув Олжас (dosymep)
+
+    почта: dosymep@gmail.com
+  chinese_s: >-
+    关于 pyRevit。打开 pyRevit 博客网站。您可以在此找到 pyRevit 工作原理的详细信息、新工具和更改的更新，以及许多其他信息。
   es_es: >-
-    Sobre pyRevit. Abre el blog online de pyRevit. Puedes encontrar información detallada del
-    funcionamiento de pyRevit, actualizaciones y cambios de las herramientas, y mucha otra información.
+    Sobre pyRevit. Abre el blog online de pyRevit. Puedes encontrar información detallada del funcionamiento de pyRevit, actualizaciones y cambios de las herramientas, y mucha otra información.
+  de_de: >-
+    Über pyRevit. Öffnet die pyRevit-Blog-Website. Sie finden dort detaillierte Informationen darüber, wie pyRevit funktioniert, Updates zu den neuen Tools und Änderungen sowie viele weitere Informationen.
 context: zero-doc

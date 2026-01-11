@@ -1,49 +1,60 @@
 title:
-  ru: Выделить все объекты выделенного типа
-  fr_fr: Sélectionner tous les objets du type sélectionné
   en_us: Select All Objects Of Selected Type
+  fr_fr: Sélectionner tous les objets du type sélectionné
+  ru: Выделить все объекты выделенного типа
+  chinese_s: 选择选定类型的所有图元
+  es_es: Seleccionar todos los objetos del tipo seleccionado
   de_de: Alle Objekte des aktuell gewählten Typs auswählen
 tooltip:
-  ru: >-
-    Выделяет все элементы с одинаковым типом, что и текущий выделенный элемент
-    
-    и печатает их идентификаторы (отсортированные по владельцу вида
-    
-    если они могут отображаться на видах).
-    
-    Shift-Click:
-    
-    Показать результаты.
-  fr_fr: >-
-     Sélectionnez tous les éléments du même type que l'élément sélectionné
-    
-     et rapporte leurs identifiants (triés par la vue propriétaire s'ils
-    
-     sont des objets spécifiques à la vue)
-    
-     Shift-Clic :
-    
-     Montrer les résultats
   en_us: >-
     Select all elements of the same type as selected element
-    
+
     and reports their IDs (sorted by the owner view if they
-    
+
     are View Specific objects)
-    
+
     Shift-Click:
-    
+
     Show Results
+  fr_fr: >-
+    Sélectionnez tous les éléments du même type que l'élément sélectionné
+
+    et rapporte leurs identifiants (triés par la vue propriétaire s'ils
+
+    sont des objets spécifiques à la vue)
+
+    Shift-Clic :
+
+    Montrer les résultats
+  ru: >-
+    Выделяет все элементы с одинаковым типом, что и текущий выделенный элемент
+
+    и печатает их идентификаторы (отсортированные по владельцу вида
+
+    если они могут отображаться на видах).
+
+    Shift-Click:
+
+    Показать результаты.
+  chinese_s: "选择与选定图元类型相同的所有图元，并报告其ID（如果它们是视图专有图元，则按所属视图排序）
+
+    Shift+单击：
+
+    显示结果"
+  es_es: >-
+    Seleccionar todos los elementos del mismo tipo que el elemento seleccionado
+
+    y reporta sus IDs (ordenados por la vista propietaria si son
+
+    objetos específicos de vista)
+
+    Shift-Clic:
+
+    Mostrar resultados
   de_de: >-
-    Wählen Sie zunächst ein Element aus und danach starten 
-    Sie das Skript. Es werden dann alle Elemente des gleichen 
-    Typs ausgewählt. 
+    Wählen Sie zunächst ein Element aus und danach starten  Sie das Skript. Es werden dann alle Elemente des gleichen  Typs ausgewählt. 
         
     Shift-Click:
-    
-    Die durch das Skript ausgewählten Elemente werden in der 
-    Konsole mit anklickbaren IDs angezeigt. Zudem werden IDs 
-    der Exemplare angezeigt. Sortiert werden die Elemente 
-    nach der Ansicht, wenn es sich um ansichtsspezifische 
-    Elemente handelt. 
+
+    Die durch das Skript ausgewählten Elemente werden in der  Konsole mit anklickbaren IDs angezeigt. Zudem werden IDs  der Exemplare angezeigt. Sortiert werden die Elemente  nach der Ansicht, wenn es sich um ansichtsspezifische  Elemente handelt.
 context: selection

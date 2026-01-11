@@ -1,17 +1,19 @@
 help_url: '{{docpath}}b050tpp4vCE&t=42s'
 title:
-  ru: Расположить границы 3D вида по грани
-  fr_fr: Orienter la zone de coupe sur la face
   en_us: Orient section box to face
+  fr_fr: Orienter la zone de coupe sur la face
+  ru: Расположить границы 3D вида по грани
+  chinese_s: 将剖面框对齐到面
+  es_es: Orientar caja de sección a cara
   de_de: 3D-Schnittbereich auf eine Fläche ausrichten
 tooltip:
-  ru: Выравнивает границы 3D вида текущего 3D вида по выделенной границе.
-  fr_fr: Aligne la zone de coupe de la vue 3D actuelle sur la face sélectionnée
   en_us: Aligns the section box of the current 3D view to selected face
+  fr_fr: Aligne la zone de coupe de la vue 3D actuelle sur la face sélectionnée
+  ru: Выравнивает границы 3D вида текущего 3D вида по выделенной границе.
+  chinese_s: 将当前三维视图的剖面框与选定的面对齐
+  es_es: Alinea la caja de sección de la vista 3D actual a la cara seleccionada
   de_de: >-
     Damit diese Funktion verwendet werden kann, muss der 3D-Schnittbereich in
-    der aktiven 3D Ansicht aktiviert sein. Nach dem Ausführen des Befehls muss eine 
-    Fläche im Modell ausgewählt werden. Mit der TAB Taste kann man zwischen angrenzenden
-    Flächen durchwechseln. Eine Seite des 3D-Schnittbereichs übernimmt die 
-    Ausrichtung der gewählten Fläche!
+    der aktiven 3D Ansicht aktiviert sein. Nach dem Ausführen des Befehls muss eine  Fläche im Modell ausgewählt werden. Mit der TAB Taste kann man zwischen angrenzenden
+    Flächen durchwechseln. Eine Seite des 3D-Schnittbereichs übernimmt die  Ausrichtung der gewählten Fläche!
 context: active-3d-view

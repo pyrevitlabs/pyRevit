@@ -1,0 +1,18 @@
+title:
+  en_us: Panel Configuration
+  fr_fr: Panel Configuration
+  ru: Настройка панели
+  chinese_s: 面板配置
+  es_es: Configuración del panel
+  de_de: Panelkonfiguration
+tooltips:
+  en_us: Configure panel display options and debug settings
+  fr: Configurer les options d'affichage du panneau et les paramtres de débogage
+  ru: Настроить опции отображения панели и настройки отладки
+  chinese_s: 配置面板显示选项和调试设置
+  es_es: Configurar opciones de visualización del panel y ajustes de depuración
+  de_de: Panelanzeigeoptionen und Debug-Einstellungen konfigurieren
+  de: Optionen für die Panelanzeige und Debug-Einstellungen konfigurieren
+author: Test User
+min_revit_version: 2019
+context: zero-doc

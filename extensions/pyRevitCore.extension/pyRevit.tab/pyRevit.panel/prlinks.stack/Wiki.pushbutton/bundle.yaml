@@ -1,11 +1,15 @@
 title:
-  ru: Wiki
   en_us: Wiki
+  fr_fr: Wiki
+  ru: Wiki
+  chinese_s: 维基
   es_es: Wiki
   de_de: Wiki
 tooltip:
-  ru: Открывает страницу wiki.
   en_us: Opens the wiki page
+  fr_fr: Ouvre la page wiki
+  ru: Открывает страницу wiki.
+  chinese_s: 打开 wiki 页面
   es_es: 'Abre la página de wiki.'
   de_de: Öffnet die Wiki Seite von pyRevit
 context: zero-doc

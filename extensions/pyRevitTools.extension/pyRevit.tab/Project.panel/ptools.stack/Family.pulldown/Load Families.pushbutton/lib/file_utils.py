@@ -1,8 +1,10 @@
+# -*- coding: utf-8 -*-
 """ Module to search for files in a directory """
 #pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 import re
-import pathlib
+import os
 import itertools
+import fnmatch
 
 from pyrevit import script, forms
 
@@ -49,10 +51,12 @@ class FileFinder:
         pattern : str
             Glob pattern
         """
-        result = pathlib.Path(self.directory).rglob(pattern)
-        for path in result:
-            logger.debug('Found file: {}'.format(path))
-            self.paths.add(str(path))
+        for root, _, files in os.walk(self.directory):
+            for filename in fnmatch.filter(files, pattern):
+                path = os.path.join(root, filename)
+                logger.debug('Found file: {}'.format(path))
+                self.paths.add(path)
+
         if len(self.paths) == 0:
             logger.debug(
                 'No {} files in "{}" found.'.format(pattern, self.directory))

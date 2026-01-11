@@ -1,3 +1,10 @@
+title:
+  en_us: Test Panel Background
+  fr_fr: Arrière-plan du panneau de test
+  ru: Фон тестовой панели
+  chinese_s: 测试面板背景
+  es_es: Fondo del panel de prueba
+  de_de: Test-Panel-Hintergrund
 layout:
   - ButtonA
 

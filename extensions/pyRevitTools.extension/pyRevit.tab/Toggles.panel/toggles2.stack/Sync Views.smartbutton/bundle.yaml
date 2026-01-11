@@ -1,30 +1,36 @@
 title:
-  ru: Синхро-ть виды
-  fr_fr: Synchro Vues
   en_us: Sync Views
+  fr_fr: Synchro Vues
+  ru: Синхро-ть виды
+  chinese_s: 同步视图
+  es_es: Sincronizar vistas
   de_de: Ansichten synchr.
 tooltip:
-  ru: >-
-    Синхронизирует виды. Это означает, при панорамировании и масштабировании,
-    а так же при переключении между видами плана и отраженный план потолка, 
-    данный инструмент сохраняет виды в одной и той же увеличенной области,
-    чтобы вы могли продолжать работать в той же области без необходимости повторного
-    панорамирования. Данный инструмент лучше всего работает, когда виды максимизированы.
-  fr_fr: >-
-     Gardez les vues synchronisées. Cela signifie que lorsque vous effectuez un panoramique, un zoom et
-     basculez entre les vues Plan et Plans de plafond, cet outil conservera les vues
-     dans la même zone zoomée afin que vous puissiez continuer à travailler dans le même
-     zone sans avoir besoin de zoomer et de faire un panoramique à nouveau.
-     Cet outil fonctionne mieux lorsque les vues sont maximisées
   en_us: >-
     Keep views synchronized. This means that as you pan and zoom and
     switch between Plan and RCP views, this tool will keep the views
     in the same zoomed area so you can keep working in the same
     area without the need to zoom and pan again.
     This tool works best when the views are maximized
+  fr_fr: >-
+    Gardez les vues synchronisées. Cela signifie que lorsque vous effectuez un panoramique, un zoom et
+    basculez entre les vues Plan et Plans de plafond, cet outil conservera les vues
+    dans la même zone zoomée afin que vous puissiez continuer à travailler dans le même
+    zone sans avoir besoin de zoomer et de faire un panoramique à nouveau.
+    Cet outil fonctionne mieux lorsque les vues sont maximisées
+  ru: >-
+    Синхронизирует виды. Это означает, при панорамировании и масштабировании,
+    а так же при переключении между видами плана и отраженный план потолка,  данный инструмент сохраняет виды в одной и той же увеличенной области,
+    чтобы вы могли продолжать работать в той же области без необходимости повторного
+    панорамирования. Данный инструмент лучше всего работает, когда виды максимизированы.
+  chinese_s: 保持视图同步。这意味着当您在平面视图和天花板反射平面视图之间平移、缩放和切换时，此工具将使这些视图保持在相同的缩放区域，从而让您能在同一区域继续工作，无需再次缩放和平移。当视图最大化时，此工具效果最佳
+  es_es: >-
+    Mantener vistas sincronizadas. Esto significa que al desplazar y escalar, y
+    cambiar entre vistas planas y reflejadas, este herramienta mantendrá las vistas
+    en la misma área escalada para que pueda continuar trabajando en el mismo
+    área sin necesidad de escalar y desplazar nuevamente.
+    Esta herramienta funciona mejor cuando las vistas están maximizadas
   de_de: >-
     Halten Sie die Ansichten synchronisiert. Das bedeutet, dass Sie beim Schwenken und Zoomen und
     zwischen der Grundriss- und der Deckenansicht wechseln, hält dieses Werkzeug die Ansichten
-    in der gleichen Zoomstufe, so dass Sie im selben Bereich weiterarbeiten Bereich arbeiten können, 
-    ohne dass Sie erneut zoomen und schwenken müssen. Dieses Werkzeug funktioniert am besten, 
-    wenn die Ansichten maximiert sind.
+    in der gleichen Zoomstufe, so dass Sie im selben Bereich weiterarbeiten Bereich arbeiten können,  ohne dass Sie erneut zoomen und schwenken müssen. Dieses Werkzeug funktioniert am besten,  wenn die Ansichten maximiert sind.

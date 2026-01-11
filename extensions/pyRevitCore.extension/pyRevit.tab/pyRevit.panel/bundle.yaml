@@ -1,3 +1,10 @@
+title:
+  en_us: pyRevit
+  fr_fr: pyRevit
+  ru: pyRevit
+  chinese_s: pyRevit
+  es_es: pyRevit
+  de_de: pyRevit
 layout:
   - tools
   - ">>>>>"

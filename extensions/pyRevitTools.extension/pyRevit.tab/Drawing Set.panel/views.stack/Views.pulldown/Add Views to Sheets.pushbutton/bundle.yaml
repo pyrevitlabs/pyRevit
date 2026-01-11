@@ -1,37 +1,42 @@
 title:
-  ru: Добавить виды на листы
-  fr_fr: Ajouter des vues aux feuilles
   en_us: Add Views to Sheets
+  fr_fr: Ajouter des vues aux feuilles
+  ru: Добавить виды на листы
+  chinese_s: 将视图添加到图纸
+  es_es: Agregar vistas a hojas
   de_de: Füge Ansichten Plänen hinzu
 tooltip:
-  ru: >-
-    Добавляет выделенные листы (фрагменты, секции, фасады) в выделенные листы. Модель видов будет добавлена только в первый выделенный лист, поскольку они не могут существовать на нескольких листах. Данная команда по умолчанию использует активный вид, если не выбраны никакие виды.
-    
-    Shift+Click:
-    
-    Выберите исходные виды из списка вместо выделенных или активного вида
-  fr_fr: >-
-     Ajoute les vues sélectionnées (légendes, coupes, élévations) aux feuilles sélectionnées. Les vues de modèle ne seront ajoutées qu'à la première feuille sélectionnée car elles ne peuvent pas exister sur plusieurs feuilles. La commande passe par défaut à la vue active si aucune vue n'est sélectionnée
-    
-     Shift+Clic :
-    
-     Choisissez les vues source dans la liste au lieu de la sélection ou de la vue active
   en_us: >-
     Adds the selected views (callouts, sections, elevations) to the selected sheets. Model views will only be added to the first selected sheet since they can not exist on multiple sheets. The command defaults to active view if no views are selected
-    
+
     Shift+Click:
-    
+
     Pick source views from list instead of selection or active view
-  de_de: >-
-    Es öffnet sich ein Auswahldialog mit verfügbaren Ansichten im Projekt. 
-    Die ausgewählten Ansichten (callouts, sections, elevations) werden
-    den im nächsten Dialogfenster auswählbaren Plänen hinzugefügt. 
-    Modellansichten werden nur dem ersten ausgewählten Plan hinzugefügt, 
-    da diese nicht auf mehreren Plänen gleichzeitig platziert werden 
-    können. Der Befehl verwendet die aktive Ansicht, falls im Auswahldialog
-    keine Ansichten ausgewählt wurden.
-    
+  fr_fr: >-
+    Ajoute les vues sélectionnées (légendes, coupes, élévations) aux feuilles sélectionnées. Les vues de modèle ne seront ajoutées qu'à la première feuille sélectionnée car elles ne peuvent pas exister sur plusieurs feuilles. La commande passe par défaut à la vue active si aucune vue n'est sélectionnée
+
+    Shift+Clic :
+
+    Choisissez les vues source dans la liste au lieu de la sélection ou de la vue active
+  ru: >-
+    Добавляет выделенные листы (фрагменты, секции, фасады) в выделенные листы. Модель видов будет добавлена только в первый выделенный лист, поскольку они не могут существовать на нескольких листах. Данная команда по умолчанию использует активный вид, если не выбраны никакие виды.
+
     Shift+Click:
-    
+
+    Выберите исходные виды из списка вместо выделенных или активного вида
+  chinese_s: "将选定的视图（详图、剖面、立面）添加到选定的图纸。模型视图只能添加到第一张选定的图纸，因为它们不能存在于多张图纸上。如果未选择视图，该命令默认为活动视图\nShift+单击：\n从列表中选择源视图，而不是通过选择或活动视图"
+  es_es: >-
+    Agrega las vistas seleccionadas (llamadas, secciones, alzados) a las hojas seleccionadas. Las vistas de modelo solo se agregarán a la primera hoja seleccionada ya que no pueden existir en múltiples hojas. El comando usa la vista activa por defecto si no se seleccionan vistas
+
+    Shift+Clic:
+
+    Elegir vistas fuente de la lista en lugar de la selección o la vista activa
+  de_de: >-
+    Es öffnet sich ein Auswahldialog mit verfügbaren Ansichten im Projekt.  Die ausgewählten Ansichten (callouts, sections, elevations) werden
+    den im nächsten Dialogfenster auswählbaren Plänen hinzugefügt.  Modellansichten werden nur dem ersten ausgewählten Plan hinzugefügt,  da diese nicht auf mehreren Plänen gleichzeitig platziert werden  können. Der Befehl verwendet die aktive Ansicht, falls im Auswahldialog
+    keine Ansichten ausgewählt wurden.
+
+    Shift+Click:
+
     Wähle die Ansichten vom Quellprojekt aus einer Liste aus, ansatt der Auswahl im Projekt oder die aktive Ansicht
 author: 'Dan Mapes'

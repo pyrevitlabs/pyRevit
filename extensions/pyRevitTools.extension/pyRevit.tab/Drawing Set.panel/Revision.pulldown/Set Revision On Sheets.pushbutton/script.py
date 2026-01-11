@@ -1,10 +1,12 @@
 """Set selected revisions on selected sheets."""
 
-from pyrevit import revit, DB
+from pyrevit import revit, DB, EXEC_PARAMS
 from pyrevit import forms
 
 # define a filterfunc to filter out issued revisions
 def filterfunc(rev):
+    if EXEC_PARAMS.config_mode:
+        return True
     return rev.Issued == False
 
 revisions = forms.select_revisions(button_name='Select Revision',

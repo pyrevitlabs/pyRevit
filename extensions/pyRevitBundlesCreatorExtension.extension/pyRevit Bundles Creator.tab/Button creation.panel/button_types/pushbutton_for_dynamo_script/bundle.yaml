@@ -1,10 +1,16 @@
 engine: 
   clean: true
 title:
-  en_us: english title
-  fr_fr: french title
-  es_es: spanish title
-tooltip: 
-  en_us: english tooltip
-  fr_fr: french tooltip
-  es_es: spanish tooltip
+  en_us: Pushbutton for Dynamo Script
+  fr_fr: Bouton pour Dynamo Script
+  ru: Кнопка для Dynamo Script
+  chinese_s: Pushbutton for Dynamo Script
+  es_es: Botón para Dynamo Script
+  de_de: Pushbutton für Dynamo Script
+tooltip:
+  en_us: Pushbutton for Dynamo Script
+  fr_fr: Bouton pour Dynamo Script
+  ru: Кнопка для Dynamo Script
+  chinese_s: Pushbutton for Dynamo Script
+  es_es: Botón para Dynamo Script
+  de_de: Pushbutton für Dynamo Script

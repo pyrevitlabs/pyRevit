@@ -1,10 +1,14 @@
 title:
-  ru: Найти все листы с отстутвующими номерами изменений
-  fr_fr: Trouver toutes les Feuilles avec un Numéro de Révision Manquant
   en_us: Find All Sheets Missing Revision Number
+  fr_fr: Trouver toutes les Feuilles avec un Numéro de Révision Manquant
+  ru: Найти все листы с отстутвующими номерами изменений
+  chinese_s: 查找所有缺少修订编号的图纸
+  es_es: Encontrar todas las hojas con número de revisión faltante
   de_de: Finde alle Pläne mit fehlender Änderungsnummer
 tooltip:
-  ru: Иногда, когда пометочное облако размещается внутри вида (вместо листа) и вид размещается на листе, спецификация изменений на листе не обновляет номер пометочного облака внутри вставленого вида в лист. Данный скрипт проверяет спецификацию листов с изменениями действительно перечислены все изменения, показанные в видах этого листа.
-  fr_fr: Parfois, lorsqu'un nuage de révision est placé dans une vue (au lieu d'une feuille) et que la vue est placée sur une feuille, le calendrier de révision sur la feuille n'est pas mis à jour avec le numéro de révision du nuage à l'intérieur de la vue feuille. Ce script vérifie que le calendrier de révision de la feuille répertorie réellement toutes les révisions affichées dans les vues de cette feuille.
   en_us: Sometimes when a revision cloud is placed inside a view (instead of a sheet) and the view is placed on a sheet, the revision schedule on the sheet does not get updated with the revision number of the cloud inside the sheeted view. This script verifies that the sheet revision schedule is actually listing all the revisions shown inside the views of that sheet
+  fr_fr: Parfois, lorsqu'un nuage de révision est placé dans une vue (au lieu d'une feuille) et que la vue est placée sur une feuille, le calendrier de révision sur la feuille n'est pas mis à jour avec le numéro de révision du nuage à l'intérieur de la vue feuille. Ce script vérifie que le calendrier de révision de la feuille répertorie réellement toutes les révisions affichées dans les vues de cette feuille.
+  ru: Иногда, когда пометочное облако размещается внутри вида (вместо листа) и вид размещается на листе, спецификация изменений на листе не обновляет номер пометочного облака внутри вставленого вида в лист. Данный скрипт проверяет спецификацию листов с изменениями действительно перечислены все изменения, показанные в видах этого листа.
+  chinese_s: 有时，当修订云线放置在视图内（而非图纸上）且该视图被放置在图纸上时，图纸上的修订明细表不会更新以包含该图纸化视图内云线的修订编号。此脚本用于验证图纸修订明细表是否确实列出了该图纸视图内显示的所有修订
+  es_es: A veces, cuando una nube de revisión se coloca dentro de una vista (en lugar de una hoja) y la vista se coloca en una hoja, el programa de revisiones en la hoja no se actualiza con el número de revisión de la nube dentro de la vista en la hoja. Este script verifica que el programa de revisiones de la hoja realmente esté listando todas las revisiones mostradas dentro de las vistas de esa hoja
   de_de: Wenn eine Änderungswolke in einer Ansicht (statt in einem Plan) platziert wird und die Ansicht auf einem Plan platziert wird, wird die Änderungsliste auf dem Plan manchmal nicht mit der Änderungsnummer der Wolke in der Planansicht aktualisiert. Dieses Skript prüft, ob die Änderungsliste des Plans tatsächlich alle Änderungen auflistet, die in den Ansichten auf dem Plan angezeigt werden

@@ -21,7 +21,7 @@ if selected_views:
                     int(DB.BuiltInCategory.OST_Views) \
                     and (view.CanBePrinted):
                 if HOST_APP.is_newer_than(2016):
-                    view.SetUnderlayRange(DB.ElementId(-1), DB.ElementId(-1))
+                    view.SetUnderlayRange(DB.ElementId.InvalidElementId, DB.ElementId.InvalidElementId)
                 else:
                     p = view.get_Parameter(
                         DB.BuiltInParameter.VIEW_UNDERLAY_ID

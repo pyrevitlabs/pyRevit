@@ -1,7 +1,9 @@
 title:
-  ru: Выделить
-  fr_fr: Sélectionner
   en_us: Select
+  fr_fr: Sélectionner
+  ru: Выделить
+  chinese_s: 选择
+  es_es: Seleccionar
   de_de: Auswahl
 layout:
   - Isolate

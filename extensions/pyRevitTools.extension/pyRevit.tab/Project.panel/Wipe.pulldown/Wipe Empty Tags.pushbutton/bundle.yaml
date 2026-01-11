@@ -1,31 +1,39 @@
 title:
-  ru: Удалить пустые марки
-  fr_fr: Enlever les étiquettes vides
   en_us: Remove Empty Tags
+  fr_fr: Enlever les étiquettes vides
+  ru: Удалить пустые марки
+  chinese_s: 移除空标记
+  es_es: Eliminar etiquetas vacías
   de_de: Lösche alle leeren Beschriftungen
 tooltip:
-  ru: >-
-    Удаляет пустые парки на текущем виде.
-    
-    Shift+Click:
-    
-    Удалить марки на выделенных видах.
-  fr_fr: >-
-     Supprime les étiquettes vides dans la vue actuelle
-
-     Maj+Clic:
-
-     Supprimer les étiquettes dans les vues sélectionnées
   en_us: >-
     Removes empty tags in current view
 
     Shift+Click:
 
     Remove tags in selected views
+  fr_fr: >-
+    Supprime les étiquettes vides dans la vue actuelle
+
+    Maj+Clic:
+
+    Supprimer les étiquettes dans les vues sélectionnées
+  ru: >-
+    Удаляет пустые парки на текущем виде.
+
+    Shift+Click:
+
+    Удалить марки на выделенных видах.
+  chinese_s: "移除当前视图中的空标记\nShift+单击：\n移除选定视图中的标记"
+  es_es: >-
+    Elimina etiquetas vacías en la vista actual
+
+    Shift+Clic:
+
+    Eliminar etiquetas en vistas seleccionadas
   de_de: >-
     Es werden alle leeren Beschriftungen in der aktuellen Ansicht gelöscht
 
     Shift+Click:
 
-    Es erscheint ein Auswahldialog mit verfügbaren Ansichten im Projekt. 
-    Auf den ausgewählten Ansichten werden alle leeren Beschriftungen gelöscht
+    Es erscheint ein Auswahldialog mit verfügbaren Ansichten im Projekt.  Auf den ausgewählten Ansichten werden alle leeren Beschriftungen gelöscht

@@ -1,12 +1,16 @@
 title:
-  ru: Отобразить список элементов выбранного уровня(ов)
-  fr_fr: Lister les éléments du ou des niveau(x) sélectionné(s)
   en_us: List Elements of Selected Level(s)
+  fr_fr: Lister les éléments du ou des niveau(x) sélectionné(s)
+  ru: Отобразить список элементов выбранного уровня(ов)
+  chinese_s: 列出选定标高上的图元
+  es_es: Listar elementos del nivel(es) seleccionado(s)
   de_de: Liste alle Elemente der ausgewählten Ebene(n) auf
 tooltip:
-  ru: Отображает все элементы на выделенных уровнях.
-  fr_fr: Lister les éléments du ou des niveau(x) sélectionné(s)
   en_us: List all Elements of the selected level(s)
+  fr_fr: Lister les éléments du ou des niveau(x) sélectionné(s)
+  ru: Отображает все элементы на выделенных уровнях.
+  chinese_s: 列出所选标高上的所有图元
+  es_es: Lista todos los elementos del nivel(es) seleccionado(s)
   de_de: Es werden alle Elemente der ausgewählten Ebene(n) aufgelistet
 author: 'Frederic Beaupere'
 contact: 'https://github.com/frederic-beaupere'

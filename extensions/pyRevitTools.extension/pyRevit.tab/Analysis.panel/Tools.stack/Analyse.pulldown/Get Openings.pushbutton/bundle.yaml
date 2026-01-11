@@ -1,13 +1,21 @@
 title:
-  ru: Получить отверстия
-  fr_fr: Obtenir les ouvertures
   en_us: Get Openings
+  fr_fr: Obtenir les ouvertures
+  ru: Получить отверстия
+  chinese_s: 获取洞口
+  es_es: Obtener aberturas
   de_de: Öffnungen ermitteln
-tooltip: >
+tooltip:
   en_us: |
     Scans through the project for openings. A list with clickable links will be presented. Open a 3D view to access and see the selected openings. A selection filter will be created or updated to select all openings with one click.
-  de_de: |
-    Durchsucht das Projekt nach Öffnungen. Eine Liste mit anklickbaren Links wird angezeigt. Öffnen Sie eine 3D-Ansicht, um auf die ausgewählten Öffnungen zuzugreifen und diese zu sehen. Es wird ein Auswahlfilter erstellt oder aktualisiert, um alle Öffnungen mit einem Klick auszuwählen.
   fr_fr: |
     Examine le projet à la recherche d'ouvertures. Une liste avec des liens cliquables sera présentée. Ouvrez une vue 3D pour accéder et voir les ouvertures sélectionnées. Un filtre de sélection sera créé ou mis à jour pour sélectionner toutes les ouvertures en un seul clic.
+  ru: |
+    Сканирует проект на наличие отверстий. Будет представлен список с кликабельными ссылками. Откройте 3D вид для доступа и просмотра выбранных отверстий. Будет создан или обновлен фильтр выбора для выбора всех отверстий одним щелчком.
+  chinese_s: |
+    扫描项目中的洞口。将显示一个包含可点击链接的列表。打开三维视图以访问和查看选定的洞口。将创建或更新选择过滤器，以便一键选择所有洞口。
+  es_es: |
+    Escanea el proyecto en busca de aberturas. Se presentará una lista con enlaces clicables. Abra una vista 3D para acceder y ver las aberturas seleccionadas. Se creará o actualizará un filtro de selección para seleccionar todas las aberturas con un solo clic.
+  de_de: |
+    Durchsucht das Projekt nach Öffnungen. Eine Liste mit anklickbaren Links wird angezeigt. Öffnen Sie eine 3D-Ansicht, um auf die ausgewählten Öffnungen zuzugreifen und diese zu sehen. Es wird ein Auswahlfilter erstellt oder aktualisiert, um alle Öffnungen mit einem Klick auszuwählen.
 authors: Jakob Steiner, inspired by the initial work of Andreas Draxl, Mohamed Bedair, special thanks to Erik Frits

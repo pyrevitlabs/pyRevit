@@ -1,27 +1,20 @@
 title:
-  ru: Безопасно изменить тип элемента
-  fr_fr: Changer le type d'élément de façon sécuritaire
   en_us: Change element type safely
+  fr_fr: Changer le type d'élément de façon sécuritaire
+  ru: Безопасно изменить тип элемента
+  chinese_s: 安全更改图元类型
+  es_es: Cambiar tipo de elemento de forma segura
   de_de: Elementtyp auf sichere Weise ändern
 tooltip:
-  ru: >-
-    Изменяет тип выбранных элементов на тип выбранного элемента, сохраняя при этом
-    значение всех параметров экземпляра. Сначала выберите все элементы, для которых
-    вы хотите изменить тип, и запустите этот инструмент. Затем выберите элемент с типом
-    исходного элемента.
-  fr_fr: >-
-    Changer le type des éléments sélectionnés par le type de l'élément
-    sélectionné, tout en maintenant les valeurs des paramètres d'occurence.
-    Sélectionnez tous les éléments dont vous souhaitez changer le type et lancer
-    l'outil. Puis sélectionner le type d'élément source.
   en_us: >-
-    Changes element type of the selected elements to a the element type of a
-    picked element, while maintaining the values of all instance parameters.
-    First select all the elements that you want to change the type for and run
-    this tool. Then select the element that has the source element type
+    Changes element type of the selected elements to a the element type of a picked element, while maintaining the values of all instance parameters. First select all the elements that you want to change the type for and run this tool. Then select the element that has the source element type
+  fr_fr: >-
+    Changer le type des éléments sélectionnés par le type de l'élément sélectionné, tout en maintenant les valeurs des paramètres d'occurence. Sélectionnez tous les éléments dont vous souhaitez changer le type et lancer l'outil. Puis sélectionner le type d'élément source.
+  ru: >-
+    Изменяет тип выбранных элементов на тип выбранного элемента, сохраняя при этом значение всех параметров экземпляра. Сначала выберите все элементы, для которых вы хотите изменить тип, и запустите этот инструмент. Затем выберите элемент с типом исходного элемента.
+  chinese_s: 将选定图元的类型更改为所拾取图元的类型，同时保留所有实例参数的值。首先选择所有需要更改类型的图元并运行此工具，然后选择具有源图元类型的图元
+  es_es: >-
+    Cambia el tipo de elemento de los elementos seleccionados al tipo de elemento de un elemento seleccionado, manteniendo los valores de todos los parámetros de instancia. Primero seleccione todos los elementos para los que desea cambiar el tipo y ejecute esta herramienta. Luego seleccione el elemento que tiene el tipo de elemento fuente
   de_de: >-
-    Markieren Sie zunächst alle Elemente, deren Typ Sie ändern möchten und führen Sie dann
-    dieses Skript aus. Danach müssen Sie auf das Element klicken, das dem gewünschten
-    Typ entspricht. Mit diesem Werkzeug bleiben alle Exemplarparameter beim 
-    Ändern des Typs erhalten!
+    Markieren Sie zunächst alle Elemente, deren Typ Sie ändern möchten und führen Sie dann dieses Skript aus. Danach müssen Sie auf das Element klicken, das dem gewünschten Typ entspricht. Mit diesem Werkzeug bleiben alle Exemplarparameter beim  Ändern des Typs erhalten!
 context: selection

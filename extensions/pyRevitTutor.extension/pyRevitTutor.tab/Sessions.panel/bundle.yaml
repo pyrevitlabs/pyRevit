@@ -1,3 +1,10 @@
+title:
+  en_us: Sessions
+  fr_fr: Sessions
+  ru: Сессии
+  chinese_s: 会话
+  es_es: Sesiones
+  de_de: Sitzungen
 layout:
   - Session 2
   - Session 4

@@ -12,7 +12,9 @@ body:
         Please make a little effort, do your research and [ask questions the smart way](http://www.catb.org/~esr/faqs/smart-questions.html#beprecise).
         **If you didn't fill the form properly or lie about the pre-flight checks, the issue could be closed without any explanation!** 
         ## 🚧🚧 Revit 2025 🚧🚧
-        pyRevit 4.8.x is not compatible with Revit 2025. If you really need it, you can try (**at your own risk!**) the WIP version that you can find at [this page](https://www.pyrevitlabs.io/)
+        pyRevit 4.8.x is not compatible with Revit 2025. 
+        Use pyRevit 5.0.0+, it is backwards compatible.
+        Latest WIP version can be found at [this page](https://www.pyrevitlabs.io/)
         ## 🚧 SentinelOne 🚧
         If you have SentinelOne installed as an antivirus, **look no further**.
         **You will need to create exceptions for Revit and pyRevit**, both on the software and the %appdata% folders. ask your IT guy to do that.

@@ -1,10 +1,14 @@
 title:
-  ru: Открыть текущий журнал проекта
-  fr_fr: Ouvrir le log du projet central actuel
   en_us: Open Current Project Central Log
+  fr_fr: Ouvrir le log du projet central actuel
+  ru: Открыть текущий журнал проекта
+  chinese_s: 打开当前项目的中央日志
+  es_es: Abrir el log central del proyecto actual
   de_de: Öffnet das Änderungsprotokoll der Projektdatei
 tooltip:
-  ru: Открывает журнал текущего совместного проекта.
-  fr_fr: Ouvre le log central du projet partagé en cours
   en_us: Opens the central log for the current workshared project
-  de_de: Öffnet das Änderungsprotkoll der aktiven Projektdatei. Die Arbeitsteilung muss dafür aktiviert sein, da ansonstten kein Protokoll vorhanden ist. 
+  fr_fr: Ouvre le log central du projet partagé en cours
+  ru: Открывает журнал текущего совместного проекта.
+  chinese_s: 打开当前项目的中央日志
+  es_es: Abre el log central del proyecto actual
+  de_de: Öffnet das Änderungsprotkoll der aktiven Projektdatei. Die Arbeitsteilung muss dafür aktiviert sein, da ansonstten kein Protokoll vorhanden ist.

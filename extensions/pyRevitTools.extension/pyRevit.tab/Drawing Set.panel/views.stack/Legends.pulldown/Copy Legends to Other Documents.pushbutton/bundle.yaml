@@ -1,17 +1,16 @@
 help_url: '{{docpath}}ThzcRM_Tj8g'
 title:
-  ru: Копировать легенды в другие документы
-  fr_fr: Copier les légendes dans les autres documents
   en_us: Copy legends to others documents
+  fr_fr: Copier les légendes dans les autres documents
+  ru: Копировать легенды в другие документы
+  chinese_s: 将图例复制到其他文档
+  es_es: Copiar leyendas a otros documentos
   de_de: Kopiere Legenden in ein anderes Projekt
 tooltip:
-  ru: Копирует легенды в другие документы.
-  fr_fr: Copier les légendes dans les autres documents
   en_us: Copy legends to others documents
+  fr_fr: Copier les légendes dans les autres documents
+  ru: Копирует легенды в другие документы.
+  chinese_s: 将图例复制到其他文档
+  es_es: Copiar leyendas a otros documentos
   de_de: >-
-    Zunächst muss ein Projekt als Quelle definiert werden, durch die aktive Ansicht. 
-    Beim Ausführen des Befehls öffnet sich ein Auswahldialog mit aktuell parallel 
-    geöffneten Projekten. Im nächsten Dialog können Legendenansichten ausgewählt 
-    werden, die in das zuvor gewählten Projekte kopiert werden sollen. Auf den 
-    Legenden dürfen keine Legendenkomponenten platziert sein, da ansonsten das 
-    Skript nicht funktioniert. 
+    Zunächst muss ein Projekt als Quelle definiert werden, durch die aktive Ansicht.  Beim Ausführen des Befehls öffnet sich ein Auswahldialog mit aktuell parallel  geöffneten Projekten. Im nächsten Dialog können Legendenansichten ausgewählt  werden, die in das zuvor gewählten Projekte kopiert werden sollen. Auf den  Legenden dürfen keine Legendenkomponenten platziert sein, da ansonsten das  Skript nicht funktioniert.

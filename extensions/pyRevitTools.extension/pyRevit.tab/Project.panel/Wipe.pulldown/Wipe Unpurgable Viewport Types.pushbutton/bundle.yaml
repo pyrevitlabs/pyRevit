@@ -1,31 +1,19 @@
 title:
-  ru: Очистить неочищаемые типы видовых экранов
-  fr_fr: Supprimer les types de fenêtres non-purgeables
   en_us: Wipe Unpurgeable Viewport Types
+  fr_fr: Supprimer les types de fenêtres non-purgeables
+  ru: Очистить неочищаемые типы видовых экранов
+  chinese_s: 清除不可清理的视口类型
+  es_es: Limpiar tipos de ventana gráfica no purgables
   de_de: Lösche nicht löschbare Ansichtsfenster Typen
 tooltip:
-  ru: >-
-    Запрашивает пользователя выбрать типы видовых экранов 
-    для преобразования и тип видового экрана для замены. 
-    Я сделал этот инструмент, чтобы решить проблему с 
-    дублированием типов видовых экранов во время 
-    проектирования и превращением их в неудаляемые 
-    типы окон просмотра.
-  fr_fr: >-
-    Demande à l'utilisateur de sélectionner les types de 
-    vues à convertir et le type de vues à remplacer. J'ai 
-    fait cet outil pour résoudre un problème avec les types 
-    de vues qui se dupliquent au cours d'un projet et 
-    deviendraient des types de fenêtres non purgeables
   en_us: >-
-    Asks user to select the viewport types to be converted 
-    and the viewport type to be replaced with. I made this 
-    tool to fix a problem with viewport types duplicating 
-    themselves during a project and would become unpurgable 
-    viewport types
+    Asks user to select the viewport types to be converted  and the viewport type to be replaced with. I made this  tool to fix a problem with viewport types duplicating  themselves during a project and would become unpurgable  viewport types
+  fr_fr: >-
+    Demande à l'utilisateur de sélectionner les types de  vues à convertir et le type de vues à remplacer. J'ai  fait cet outil pour résoudre un problème avec les types  de vues qui se dupliquent au cours d'un projet et  deviendraient des types de fenêtres non purgeables
+  ru: >-
+    Запрашивает пользователя выбрать типы видовых экранов  для преобразования и тип видового экрана для замены.  Я сделал этот инструмент, чтобы решить проблему с  дублированием типов видовых экранов во время  проектирования и превращением их в неудаляемые  типы окон просмотра.
+  chinese_s: 要求用户选择需要转换的视口类型以及要替换成的目标视口类型。我创建此工具是为了解决视口类型在项目期间自我复制并变成不可清理的视口类型的问题
+  es_es: >-
+    Solicita al usuario que seleccione los tipos de ventana gráfica a convertir y el tipo de ventana gráfica con el que reemplazar. Creé esta herramienta para solucionar un problema con tipos de ventana gráfica que se duplican durante un proyecto y se convertirían en tipos de ventana gráfica no purgables
   de_de: >-
-    Der Benutzer wird aufgefordert, die zu konvertierenden Ansichtsfenstertypen auszuwählen 
-    und den Ansichtsfenstertyp, der den zurvor gewählten Ansichtsfenstertyp ersetzen soll. 
-    Dieses Skript wurde erstellt, um Ansichtsfenstertypen zu löschen,
-    die sich im Projektverlauf selbst dupliziert haben und über die normale
-    Benutzeroberfläche nicht mehr gelöscht werden können.
+    Der Benutzer wird aufgefordert, die zu konvertierenden Ansichtsfenstertypen auszuwählen  und den Ansichtsfenstertyp, der den zurvor gewählten Ansichtsfenstertyp ersetzen soll.  Dieses Skript wurde erstellt, um Ansichtsfenstertypen zu löschen, die sich im Projektverlauf selbst dupliziert haben und über die normale Benutzeroberfläche nicht mehr gelöscht werden können.

@@ -1,30 +1,43 @@
 title:
-  ru: Выделить вертикальные/горизонтальные профили
-  fr_fr: Sélectionner les profils verticaux/horizontaux
   en_us: Select Vertical/Horizontal Reveals
+  fr_fr: Sélectionner les profils verticaux/horizontaux
+  ru: Выделить вертикальные/горизонтальные профили
+  chinese_s: 选择垂直/水平凹槽
+  es_es: Seleccionar ranuras verticales/horizontales
   de_de: Alle horizontale / vertikalen Wandfugen auswählen
 tooltip:
-  ru: >-
-    Выделяет все вертикальные (по умолчанию) или горизонтальные профили в проекте.
-    
-    Shift-Click:
-    
-    Выделить горизонтальные профили.
-  fr_fr: >-
-     Sélectionne tous les profils verticaux (par défaut) ou horizontaux dans le projet
-    
-     Shift-Click:
-    
-     Sélectionnez les profils horizontaux
   en_us: >-
     Selects all vertical(default) or horizontal reveals in the project
-    
+
     Shift-Click:
-    
+
     Select horizontal reveals
+  fr_fr: >-
+    Sélectionne tous les profils verticaux (par défaut) ou horizontaux dans le projet
+
+    Shift-Click:
+
+    Sélectionnez les profils horizontaux
+  ru: >-
+    Выделяет все вертикальные (по умолчанию) или горизонтальные профили в проекте.
+
+    Shift-Click:
+
+    Выделить горизонтальные профили.
+  chinese_s: "选择项目中的所有垂直（默认）或水平凹槽
+
+    Shift+单击：
+
+    选择水平凹槽"
+  es_es: >-
+    Selecciona todas las ranuras verticales (predeterminado) u horizontales en el proyecto
+
+    Shift-Clic:
+
+    Seleccionar ranuras horizontales
   de_de: >-
     Es werden alle vertikalen Wandfugen ausgewählt (Standardeinstellung)
-    
+
     Shift-Click:
-    
-    Mit gedrückter Shift Taste auf das Werkzeug werden alle horizontalen Wandfugen ausgewählt. 
+
+    Mit gedrückter Shift Taste auf das Werkzeug werden alle horizontalen Wandfugen ausgewählt.

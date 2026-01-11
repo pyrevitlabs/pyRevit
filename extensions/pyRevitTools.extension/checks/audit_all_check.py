@@ -154,7 +154,9 @@ class SheetViewInfo:
     """Handles sheets and views metrics."""
 
     def __init__(self, document, sheets_set, views):
-        schedules = [schedule for schedule in views if schedule.ViewType == DB.ViewType.Schedule]
+        schedules = [
+            schedule for schedule in views if schedule.ViewType == DB.ViewType.Schedule
+        ]
         self.sheets_count = len(sheets_set)
         self.views_count = len(views)
         self.views_floorplans_count = sum(
@@ -217,10 +219,14 @@ class SheetViewInfo:
             1 for x in views if x.ViewType == DB.ViewType.SystemsAnalysisReport
         )
         self.views_not_on_sheets = sum(
-            1 for x in views if x.GetPlacementOnSheetStatus() == DB.ViewPlacementOnSheetStatus.NotPlaced
+            1
+            for x in views
+            if x.GetPlacementOnSheetStatus() == DB.ViewPlacementOnSheetStatus.NotPlaced
         )
         self.schedules_not_sheeted_count = sum(
-            1 for x in schedules if x.GetPlacementOnSheetStatus() == DB.ViewPlacementOnSheetStatus.NotPlaced
+            1
+            for x in schedules
+            if x.GetPlacementOnSheetStatus() == DB.ViewPlacementOnSheetStatus.NotPlaced
         )
         self.copied_views_count = cnt.count_copied_views(views)
 
@@ -229,16 +235,15 @@ class ViewTemplateFilterInfo:
     """Manages view templates and filters."""
 
     def __init__(self, document, views):
-        filters = q.get_all_view_templates(document)
-        self.view_templates_count = len(filters)
+        view_template_list = q.get_all_view_templates(document)
+        self.view_templates_count = len(view_template_list)
         self.unused_view_templates_count = cnt.count_unused_view_templates(
             views, document
         )
-        self.all_filters_count = len(
-            q.get_elements_by_class(DB.ParameterFilterElement, doc=document)
-        )
+        filters_list = q.get_elements_by_class(DB.ParameterFilterElement, doc=document)
+        self.all_filters_count = len(filters_list)
         self.unused_view_filters_count = cnt.count_unused_filters_in_views(
-            views, filters
+            views, filters_list
         )
 
 
@@ -519,17 +524,22 @@ class ReportData:
 
         sheets_set = q.get_sheets(doc=document)
         views = q.get_elements_by_categories(
-            [DB.BuiltInCategory.OST_Views,
-             DB.BuiltInCategory.OST_Sections,
-             DB.BuiltInCategory.OST_Schedules,
-             DB.BuiltInCategory.OST_PipeSchedules,
-             DB.BuiltInCategory.OST_HVAC_Load_Schedules,
-             ], doc=document
+            [
+                DB.BuiltInCategory.OST_Views,
+                DB.BuiltInCategory.OST_Sections,
+                DB.BuiltInCategory.OST_Schedules,
+                DB.BuiltInCategory.OST_PipeSchedules,
+                DB.BuiltInCategory.OST_HVAC_Load_Schedules,
+            ],
+            doc=document,
         )
         views_without_templates = []
         for v in views:
-            if hasattr(v, "IsTemplate") and v.IsTemplate is False and \
-               v.ViewType not in INVALID_VIEW_TYPES:
+            if (
+                hasattr(v, "IsTemplate")
+                and v.IsTemplate is False
+                and v.ViewType not in INVALID_VIEW_TYPES
+            ):
                 views_without_templates.append(v)
             # else:
             #     print(v.Name, v.Category.Name)

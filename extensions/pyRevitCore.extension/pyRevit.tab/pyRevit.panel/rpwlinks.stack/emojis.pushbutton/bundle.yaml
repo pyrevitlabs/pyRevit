@@ -1,11 +1,15 @@
 title:
-  ru: emojis
   en_us: emojis
+  fr_fr: emojis
+  ru: emojis
+  chinese_s: 表情符号
   es_es: emojis
   de_de: emojis
 tooltip:
-  ru: Печатает все доступные эмоджи с сокращенными кодами.
   en_us: Prints all available emojis with shorthand codes
+  fr_fr: Affiche tous les emojis disponibles avec leurs codes abrégés
+  ru: Печатает все доступные эмоджи с сокращенными кодами.
+  chinese_s: 打印所有可用的 emojis 及其缩写代码
   es_es: Imprime todos los emojis disponibles con codigo de caracteres
   de_de: Druckt in die Konsole alle verfügbaren Emojis mit dem dazugehörigen Code
 context: zero-doc

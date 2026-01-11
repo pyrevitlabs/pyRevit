@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Revit-aware event handler."""
 #pylint: disable=import-error,invalid-name,broad-except
 import sys

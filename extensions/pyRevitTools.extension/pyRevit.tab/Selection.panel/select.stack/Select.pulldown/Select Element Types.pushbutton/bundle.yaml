@@ -1,42 +1,33 @@
 title:
-  ru: Выделить типы элементов
-  fr_fr: Sélectionner les types de l'élément
   en_us: Select Element Types
+  fr_fr: Sélectionner les types de l'élément
+  ru: Выделить типы элементов
+  chinese_s: 选择图元类型
+  es_es: Seleccionar tipos de elementos
   de_de: Wähle Element Typen aus
-  es_es: Seleccionar los Typos de Elementos
 tooltip:
-  ru: >
-    Этот инструмент позволяет выбрать ElementTypes указанной категории.
-    Примечание:
-    ElementTypes не идентифицируются в пользовательском интерфейсе Revit при выборе. 
-    Это означает, что они видны в окне фильтра Revit, 
-    но нет способа узнать, является ли это элементом или ElementType
-    так как Revit отображает категорию указанного элемента или ElementType.
   en_us: >
     This tool allows you to select ElementTypes of a specified category.
-    Note: 
-    ElementTypes aren't identified in the Revit UI when selected. 
-    Meaning they are visible in the filter window of Revit, 
-    but there is no way to know if it is an Element or an ElementType
-    as Revit displays the Category of the said Element or ElementType. 
+    Note:  ElementTypes aren't identified in the Revit UI when selected.  Meaning they are visible in the filter window of Revit,  but there is no way to know if it is an Element or an ElementType
+    as Revit displays the Category of the said Element or ElementType.
   fr_fr: >
     Cet outil vous permet de sélectionner les ElementTypes d'une catégorie spécifiée.
     Note:
-    Les ElementTypes ne sont pas identifiés dans l'interface utilisateur de Revit lorsqu'ils sont sélectionnés. 
-    Cela signifie qu'ils sont visibles dans la fenêtre de filtre de Revit, 
-    mais il n'y a aucun moyen de savoir s'il s'agit d'un Element ou d'un ElementType
+    Les ElementTypes ne sont pas identifiés dans l'interface utilisateur de Revit lorsqu'ils sont sélectionnés.  Cela signifie qu'ils sont visibles dans la fenêtre de filtre de Revit,  mais il n'y a aucun moyen de savoir s'il s'agit d'un Element ou d'un ElementType
     car Revit affiche la Catégorie de l'Element ou de l'ElementType en question.
+  ru: >
+    Этот инструмент позволяет выбрать ElementTypes указанной категории.
+    Примечание:
+    ElementTypes не идентифицируются в пользовательском интерфейсе Revit при выборе.  Это означает, что они видны в окне фильтра Revit,  но нет способа узнать, является ли это элементом или ElementType
+    так как Revit отображает категорию указанного элемента или ElementType.
+  chinese_s: 此工具允许您选择指定类别的图元类型。注意：选择图元类型时，Revit 用户界面不会进行标识。这意味着它们会显示在 Revit 的过滤器窗口中，但由于 Revit 仅显示该图元或图元类型的类别，因此无法区分选中的是图元还是图元类型
   es_es: >
     Esta herramienta le permite seleccionar ElementTypes de una categoría especificada.
     Nota:
-    Los ElementTypes no se identifican en la interfaz de usuario de Revit cuando se seleccionan. 
-    Esto significa que son visibles en la ventana de filtro de Revit, 
-    pero no hay forma de saber si es un Elemento o un ElementType
-    ya que Revit muestra la Categoría del Elemento o ElementType en cuestión.  
+    Los ElementTypes no se identifican en la interfaz de usuario de Revit cuando se seleccionan.  Esto significa que son visibles en la ventana de filtro de Revit,  pero no hay forma de saber si es un Elemento o un ElementType
+    ya que Revit muestra la Categoría del Elemento o ElementType en cuestión.
   de_de: >
     Mit diesem Tool können Sie ElementTypes einer bestimmten Kategorie auswählen.
     Hinweis:
-    ElementTypes werden in der Revit-Benutzeroberfläche nicht identifiziert, wenn sie ausgewählt werden. 
-    Das bedeutet, dass sie im Filterfenster von Revit sichtbar sind, 
-    aber es gibt keine Möglichkeit zu wissen, ob es sich um ein Element oder einen ElementType handelt
+    ElementTypes werden in der Revit-Benutzeroberfläche nicht identifiziert, wenn sie ausgewählt werden.  Das bedeutet, dass sie im Filterfenster von Revit sichtbar sind,  aber es gibt keine Möglichkeit zu wissen, ob es sich um ein Element oder einen ElementType handelt
     da Revit die Kategorie des betreffenden Elements oder Elementtyps anzeigt.

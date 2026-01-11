@@ -1,19 +1,17 @@
 title:
-  ru: Изменить текст
-  fr_fr: Remplacement texte
   en_us: Merge / Adjust text elements
+  fr_fr: Remplacement texte
+  ru: Изменить текст
+  chinese_s: 合并/调整文本元素
+  es_es: Fusionar / Ajustar elementos de texto
   de_de: Texte zusammenführen / anpassen
 tooltip:
-  ru: Предоставляет возможности для переопределения видимости/графики на выделенных текстовых примечаниях.
-  fr_fr: Donne des options pour le remplacement graphiques des notes textuelles sélectionnés
   en_us: Provides options for merging or adjusting the style of selected text notes
+  fr_fr: Donne des options pour le remplacement graphiques des notes textuelles sélectionnés
+  ru: Предоставляет возможности для переопределения видимости/графики на выделенных текстовых примечаниях.
+  chinese_s: 提供用于合并或调整选定文字注释样式的选项
+  es_es: Proporciona opciones para fusionar o ajustar el estilo de notas de texto seleccionadas
   de_de: >-
-    Damit der Befehl angewendet kann, muss zunächst mindestens ein Text Element ausgewählt werden. 
-    Nach dem Ausführen stehen dem Anwender mehrere Optionen zur Auswahl, die auf die zurvor
-    gewählten Textelemente angewendet werden: 
-    1) Merge (Mehrere ausgewählte Text Elemente Zusammenführen) 
-    2) Remove Returns (Umbrüche entfernen) 
-    3) Text To Lower (Text in Kleinbuchstaben umwandeln) 
-    4) Text To Title Case 
-    5) Text to Upper (Text in Großbuchstaben umwandeln)
+    Damit der Befehl angewendet kann, muss zunächst mindestens ein Text Element ausgewählt werden.  Nach dem Ausführen stehen dem Anwender mehrere Optionen zur Auswahl, die auf die zurvor
+    gewählten Textelemente angewendet werden:  1) Merge (Mehrere ausgewählte Text Elemente Zusammenführen)  2) Remove Returns (Umbrüche entfernen)  3) Text To Lower (Text in Kleinbuchstaben umwandeln)  4) Text To Title Case  5) Text to Upper (Text in Großbuchstaben umwandeln)
 context: OST_TextNotes

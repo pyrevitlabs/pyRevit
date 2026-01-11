@@ -1,9 +1,14 @@
 title:
-  en_us: english title
-  fr_fr: french title
-  es_es: spanish title
-tooltip: 
-  en_us: english tooltip
-  fr_fr: french tooltip
-  es_es: spanish tooltip
-# highlight: new
+  en_us: Content Button
+  fr_fr: Bouton de contenu
+  ru: Кнопка контента
+  chinese_s: 内容按钮
+  es_es: Botón de contenido
+  de_de: Inhaltsschaltfläche
+tooltip:
+  en_us: Content Button
+  fr_fr: Bouton de contenu
+  ru: Кнопка контента
+  chinese_s: 内容按钮
+  es_es: Botón de contenido
+  de_de: Inhaltsschaltfläche

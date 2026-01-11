@@ -1,7 +1,6 @@
 """Handle creation of output window helper links."""
 
 from pyrevit.compat import safe_strtype, get_elementid_value_func
-from pyrevit import DB
 from pyrevit.coreutils.logger import get_logger
 
 
@@ -63,7 +62,21 @@ def make_link(element_ids, contents=None):
     link_title = ', '.join(strids)
 
     if len(reviturl) >= 2000:
-        alertjs = 'alert(&quot;Url was too long and discarded!&quot;);'
+        total_length = 0
+        max_elements = 0
+        elementquery_parts = ['element[]=' + strid for strid in strids]
+        for i, part in enumerate(elementquery_parts):
+            if i > 0:
+                total_length += 1  # for '&'
+            total_length += len(part)
+            if total_length >= 2000:
+                break
+            max_elements += 1
+
+        alertjs = \
+            'alert(&quot;URL was too long ({} characters). Maximum allowed is 2000. '\
+            'Only {} out of {} elements could fit.&quot;);'\
+            .format(len(reviturl), max_elements, len(strids))
         linkattrs_select = 'href="#" onClick="{}"'.format(alertjs)
         linkattrs_show = linkattrs_select
     else:

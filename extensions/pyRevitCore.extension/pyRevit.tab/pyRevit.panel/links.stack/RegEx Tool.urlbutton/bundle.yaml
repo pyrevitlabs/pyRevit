@@ -1,11 +1,15 @@
 title:
-  ru: RegEx Tool
   en_us: RegEx Tool
+  fr_fr: RegEx Tool
+  ru: RegEx Tool
+  chinese_s: RegEx 工具
   es_es: Herramiento RegEx
   de_de: RegExr.com Webseite
 tooltip:
-  ru: Открывает сайт RegExr, которы используется для создания и тестирования регулярных выражений.
   en_us: Opens RegExr website that is used to create and test regular expressions
+  fr_fr: Ouvre le site web RegExr qui est utilisé pour créer et tester des expressions régulières
+  ru: Открывает сайт RegExr, которы используется для создания и тестирования регулярных выражений.
+  chinese_s: 打开 RegExr 网站，用于创建和测试正则表达式
   es_es: Abre la página web de RegExr que se usa para crear y probar expresiones regulares
   de_de: Öffnet die Webseite RegExr.com auf der man Reguläre Ausdrücke erstellen und testen kann
 hyperlink: "http://regexr.com/"

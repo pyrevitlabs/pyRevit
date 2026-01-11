@@ -14,10 +14,9 @@ views = DB.FilteredElementCollector(revit.doc)\
           .WhereElementIsNotElementType()\
           .ToElements()
 
-ELEMENT_ID_NULL = DB.ElementId(-1)
 
 def elementid_has_value(p):
-    return p.AsElementId() != ELEMENT_ID_NULL
+    return p.AsElementId() != DB.ElementId.InvalidElementId
 
 
 def find_views_with_underlay(invert=False):

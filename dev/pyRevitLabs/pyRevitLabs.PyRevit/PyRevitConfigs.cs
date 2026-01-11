@@ -35,6 +35,12 @@ namespace pyRevitLabs.PyRevit
         Debug
     }
 
+    public enum OutputCloseMode
+    {
+        CurrentCommand,
+        CloseAll
+    }
+
     public static class PyRevitConfigs
     {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
@@ -129,6 +135,9 @@ namespace pyRevitLabs.PyRevit
 
                 try
                 {
+                    var directory = Path.GetDirectoryName(targetFile);
+                    if (!string.IsNullOrEmpty(directory))
+                        CommonUtils.EnsurePath(directory);
                     File.WriteAllText(targetFile, File.ReadAllText(sourceFile));
                 }
                 catch (Exception ex)
@@ -500,6 +509,45 @@ namespace pyRevitLabs.PyRevit
         {
             var cfg = GetConfigFile();
             cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsLoadBetaKey, state);
+        }
+
+        // close other outputs config
+        public static bool GetCloseOtherOutputs()
+        {
+            var cfg = GetConfigFile();
+            var status = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsCloseOtherOutputsKey);
+            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsCloseOtherOutputsDefault;
+        }
+
+        public static void SetCloseOtherOutputs(bool state)
+        {
+            var cfg = GetConfigFile();
+            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsCloseOtherOutputsKey, state);
+        }
+
+        public static OutputCloseMode GetCloseOutputMode()
+        {
+            var cfg = GetConfigFile();
+            var raw = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsCloseOutputModeKey);
+
+            var s = (raw ?? PyRevitConsts.ConfigsCloseOutputModeDefault).Trim().Trim('"', '\'');
+
+            if (s.Equals(PyRevitConsts.ConfigsCloseOutputModeCloseAll, StringComparison.InvariantCultureIgnoreCase))
+            {
+                return OutputCloseMode.CloseAll;
+            }
+
+            return OutputCloseMode.CurrentCommand;
+        }
+
+        public static void SetCloseOutputMode(OutputCloseMode mode)
+        {
+            var cfg = GetConfigFile();
+            var value = (mode == OutputCloseMode.CloseAll)
+                ? PyRevitConsts.ConfigsCloseOutputModeCloseAll
+                : PyRevitConsts.ConfigsCloseOutputModeCurrentCommand;
+
+            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsCloseOutputModeKey, value);
         }
 
         // cpythonengine

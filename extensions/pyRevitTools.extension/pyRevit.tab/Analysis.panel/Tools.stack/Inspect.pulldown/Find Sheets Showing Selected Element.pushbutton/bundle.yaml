@@ -1,11 +1,15 @@
 context: selection
 title:
-  ru: Найти листы, на которых видны выделенные элементы
-  fr_fr: Trouver les feuilles montrant l'élément sélectionné
   en_us: Find sheets showing selected element
+  fr_fr: Trouver les feuilles montrant l'élément sélectionné
+  ru: Найти листы, на которых видны выделенные элементы
+  chinese_s: 查找显示所选图元的图纸
+  es_es: Encontrar hojas que muestran el elemento seleccionado
   de_de: Finde Pläne die das Element anzeigen
 tooltip:
-  ru: Выводит все листы и виды, на которых видны выбранные элементы.
-  fr_fr: Lister toutes les feuilles et vues dans lesquelles l'élément sélectionné est visible
   en_us: Lists all sheets and views that the selected elements is visible in
+  fr_fr: Lister toutes les feuilles et vues dans lesquelles l'élément sélectionné est visible
+  ru: Выводит все листы и виды, на которых видны выбранные элементы.
+  chinese_s: 列出所选图元可见的所有图纸和视图
+  es_es: Lista todas las hojas y vistas en las que los elementos seleccionados son visibles
   de_de: Es werden alle Pläne und die dazugehörigen Ansichten aufgelistet, auf denen das/die Element(e) sichtbar sind

@@ -151,33 +151,12 @@ while successful_records < MAX_RECORDS:
 #     if "is restricted by" not in str(ex):
 #         ERRORS.append(str(ex))
 
-# # verify inserted records  ====================================================
-# PASSED_INSERT_TEST = True
-# for record_log in ADDED_RECORDS:
-#     print('Verifying: {}'.format(record_log))
-#     try:
-#         rfields = conn.ReadRecord(record_log[0], record_log[1], record_log[2])
-#         if not rfields:
-#             ERRORS.append('Failed reading record: {}'.format(record_log[2]))
-#             PASSED_INSERT_TEST = False
-#         if not rfields['record_text'] == record_log[3]:
-#             ERRORS.append(
-#                 'Failed record text matching: {} \"{}\" != \"{}\"'
-#                 .format(record_log[2], rfields['record_text'], record_log[3])
-#                 )
-#             PASSED_INSERT_TEST = False
-#     except Exception as ex:
-#         print(ex)
-#         ERRORS.append(str(ex))
-#         PASSED_INSERT_TEST = False
-
-# if ERRORS:
-#     print('[ FAIL ] %s has failures:' % (requester))
-#     for error in ERRORS:
-#         print(error)
-
-# if PASSED_INSERT_TEST:
-#     print('[  OK  ] %s passed all read tests for %s records'
-#           % (requester, len(ADDED_RECORDS)))
-# else:
-#     print('[ FAIL ] %s failed some read tests.' % (requester))
+# verify inserted records  ====================================================
+for record_log in ADDED_RECORDS:
+    rfields = conn.ReadRecord(record_log[0], record_log[1], record_log[2])
+    assert rfields, 'Failed reading record: {}'.format(record_log[2])
+    assert rfields['record_text'] == record_log[3], (
+        'Failed record text matching: {} "{}" != "{}"'
+        .format(record_log[2], rfields['record_text'], record_log[3])
+        )
+print('[  OK  ] %s passed all read tests for %s records' % (requester, len(ADDED_RECORDS)))

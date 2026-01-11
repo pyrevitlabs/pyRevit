@@ -1,15 +1,18 @@
 title:
-  ru: Изменить В/Г
-  fr_fr: Remplacement V/G
   en_us: Override V/G
+  fr_fr: Remplacement V/G
+  ru: Изменить В/Г
+  chinese_s: 替换可见性/图形
+  es_es: Sobrescribir V/G
   de_de: Element grafisch überschreiben
 tooltip:
-  ru: Предоставляет возможности для переопределения видимости/графики на выделенных элементах.
-  fr_fr: Donne des options de remplacement de visibilité/graphismes des éléments sélectionnés
   en_us: Provides options for overriding Visibility/Graphics on selected elements
+  fr_fr: Donne des options de remplacement de visibilité/graphismes des éléments sélectionnés
+  ru: Предоставляет возможности для переопределения видимости/графики на выделенных элементах.
+  chinese_s: 提供用于替换选定图元的可见性/图形设置的选项
+  es_es: Proporciona opciones para sobrescribir Visibilidad/Gráficos en elementos seleccionados
   de_de: >-
-    Zunächst muss man die Elemente auswählen, die man grafisch überschreiben möchte. 
-    Anschließend stehen mehrere Optionen zur Auswahl:
+    Zunächst muss man die Elemente auswählen, die man grafisch überschreiben möchte.  Anschließend stehen mehrere Optionen zur Auswahl:
     1) Reset VG Overrides = Grafische Überschreibung zurücksetzen
     2) Halftone Selected = Mit Halbton überschreiben
     3) Solid-Line Selected = Mit Linienmuster kompakt überschreiben

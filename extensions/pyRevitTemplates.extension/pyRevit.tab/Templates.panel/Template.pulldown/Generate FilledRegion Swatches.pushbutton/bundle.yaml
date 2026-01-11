@@ -1,8 +1,14 @@
 title:
-  ru: Генерировать образцы цветовых областей
   en_us: Generate FilledRegion Swatches
+  fr_fr: Créer des légendes de motifs de surfaces
+  ru: Генерировать образцы цветовых областей
+  chinese_s: 生成填充区域样本
+  es_es: Generar muestras de regiones rellenas
   de_de: Erstelle Musterflächen von allen gefüllten Bereichen
 tooltip:
-  ru: Генерирует образцы цветовых областей в активном представлении.
   en_us: Generate filledregion swatches in active view
-  de_de: Es werden in der aktiven Zeichenansicht Musterflächen mit den im Projekt verfügbaren gefüllten Bereich Typen erstellt. Zudem werden die Musterflächen mit dem Namen beschriftet. 
+  fr_fr: Générer des légendes de motifs de surfaces dans la vue active
+  ru: Генерирует образцы цветовых областей в активном представлении.
+  chinese_s: 在活动视图中生成填充区域样本
+  es_es: Generar muestras de regiones rellenas en la vista activa
+  de_de: Es werden in der aktiven Zeichenansicht Musterflächen mit den im Projekt verfügbaren gefüllten Bereich Typen erstellt. Zudem werden die Musterflächen mit dem Namen beschriftet.

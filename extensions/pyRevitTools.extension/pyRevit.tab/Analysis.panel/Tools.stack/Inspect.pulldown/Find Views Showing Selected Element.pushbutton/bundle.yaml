@@ -1,11 +1,15 @@
 context: selection
 title:
-  ru: Найти виды, на которых видны выделенные элементы
-  fr_fr: Trouver les vues montrant l'élément sélectionné
   en_us: Find views showing selected element
+  fr_fr: Trouver les vues montrant l'élément sélectionné
+  ru: Найти виды, на которых видны выделенные элементы
+  chinese_s: 查找显示所选图元的视图
+  es_es: Encontrar vistas que muestran el elemento seleccionado
   de_de: Suche alle Ansichten mit gewähltem Element
 tooltip:
-  ru: Выводит все виды, на которых видны выбранные элементы.
-  fr_fr: Lister toutes les vues dans lesquelles l'élément sélectionné est visible
   en_us: Lists all views that the selected elements is visible in
+  fr_fr: Lister toutes les vues dans lesquelles l'élément sélectionné est visible
+  ru: Выводит все виды, на которых видны выбранные элементы.
+  chinese_s: 列出所选图元可见的所有视图
+  es_es: Lista todas las vistas en las que los elementos seleccionados son visibles
   de_de: Es werden alle Ansichten aufgelistet, in denen das gewählte Element sichtbar ist

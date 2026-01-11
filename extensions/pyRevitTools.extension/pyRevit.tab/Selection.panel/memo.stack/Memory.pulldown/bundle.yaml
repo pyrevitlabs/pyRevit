@@ -1,7 +1,9 @@
 title:
-  ru: Память
-  fr_fr: Mémoire
   en_us: Memory
+  fr_fr: Mémoire
+  ru: Память
+  chinese_s: 内存
+  es_es: Memoria
   de_de: Auswahlspeicher
 layout:
   - Next

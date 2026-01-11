@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 r"""Python wrapper for Autodesk Revit Server.
 
 Example:
@@ -21,6 +22,7 @@ import os.path as op
 import uuid
 import getpass
 import socket
+import urllib
 
 # third party modules
 import requests
@@ -45,6 +47,14 @@ sroots = {"2012": "/RevitServerAdminRESTService/AdminRESTService.svc",
           "2016": "/RevitServerAdminRESTService2016/AdminRESTService.svc",
           "2017": "/RevitServerAdminRESTService2017/AdminRESTService.svc",
           "2018": "/RevitServerAdminRESTService2018/AdminRESTService.svc",
+          "2019": "/RevitServerAdminRESTService2019/AdminRESTService.svc",
+          "2020": "/RevitServerAdminRESTService2020/AdminRESTService.svc",
+          "2021": "/RevitServerAdminRESTService2021/AdminRESTService.svc",
+          "2022": "/RevitServerAdminRESTService2022/AdminRESTService.svc",
+          "2023": "/RevitServerAdminRESTService2023/AdminRESTService.svc",
+          "2024": "/RevitServerAdminRESTService2024/AdminRESTService.svc",
+          "2025": "/RevitServerAdminRESTService2025/AdminRESTService.svc",
+          "2026": "/RevitServerAdminRESTService2026/AdminRESTService.svc",
           }
 
 
@@ -154,7 +164,7 @@ class RevitServer(object):
         if rootcmd:
             req_url = self._base_uri + command
         else:
-            req_url = self._base_uri + '/' + self._api_path(node_uri) + command
+            req_url = self._base_uri + '/' + urllib.quote(self._api_path(node_uri).encode('utf-8')) + command
 
         # send to server
         try:

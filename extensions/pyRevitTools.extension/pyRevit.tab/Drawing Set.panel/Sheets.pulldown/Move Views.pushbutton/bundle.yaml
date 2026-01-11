@@ -1,25 +1,28 @@
 title:
-  ru: Переместить видовые экраны (модель, узел) на другие листы
-  fr_fr: Déplacer les fenêtres sélectionnées vers les feuilles sélectionnées
   en_us: Move Viewports (Model, Detail) To Other Sheets
+  fr_fr: Déplacer les fenêtres sélectionnées vers les feuilles sélectionnées
+  ru: Переместить видовые экраны (модель, узел) на другие листы
+  chinese_s: 移动视口（模型、详图）到其他图纸
+  es_es: Mover ventanas gráficas (modelo, detalle) a otras hojas
   de_de: Verschiebe platzierte Ansichten auf andere Pläne
 tooltip:
-  ru: >-
-    Откройте исходный лист. Запустите данный скрипт и выделите лист назначения.
-    Выделите видовые экраны и нажмите кнопку Finish на панели свойств.
-    Выделенные виды будут перемещены на лист назначения.
+  en_us: >-
+    Open the source sheet. Run this script and select destination sheet. Select
+    Viewports and push Finish button on the properties bar. The selected views
+    will be MOVED to the destination sheet
   fr_fr: >-
     Ouvrez la feuille source. Exécutez ce script et sélectionnez la feuille de
     destination. Sélectionnez les vues et appuyez sur le bouton Terminer dans la
     barre de propriétés. Les vues sélectionnées seront déplacées vers la feuille
     de destination
-  en_us: >-
-    Open the source sheet. Run this script and select destination sheet. Select
-    Viewports and push Finish button on the properties bar. The selected views
-    will be MOVED to the destination sheet
+  ru: >-
+    Откройте исходный лист. Запустите данный скрипт и выделите лист назначения.
+    Выделите видовые экраны и нажмите кнопку Finish на панели свойств.
+    Выделенные виды будут перемещены на лист назначения.
+  chinese_s: 打开源图纸。运行此脚本并选择目标图纸。选择视口并在属性栏上点击“完成”按钮。所选视图将被移动到目标图纸
+  es_es: >-
+    Abra la hoja fuente. Ejecute este script y seleccione la hoja de destino. Seleccione
+    las ventanas gráficas y presione el botón Finalizar en la barra de propiedades. Las vistas seleccionadas
+    se MOVERÁN a la hoja de destino
   de_de: >-
-    Öffnen Sie den Plan auf dem die Ansicht bereits platziert wurde (Quelle). 
-    Führen Sie dieses Skript aus und wählen Sie den Plan aus (Ziel) auf den 
-    die Ansicht verschoben werden soll. Wählen Sie auf dem Plan die/den Ansicht(en) 
-    aus und klicken Sie in der Optionsleiste auf den "Fertig stellen" Button. Die 
-    zuvor ausgewählten Ansichten werden auf den gewählten Plan verschoben. 
+    Öffnen Sie den Plan auf dem die Ansicht bereits platziert wurde (Quelle).  Führen Sie dieses Skript aus und wählen Sie den Plan aus (Ziel) auf den  die Ansicht verschoben werden soll. Wählen Sie auf dem Plan die/den Ansicht(en)  aus und klicken Sie in der Optionsleiste auf den "Fertig stellen" Button. Die  zuvor ausgewählten Ansichten werden auf den gewählten Plan verschoben.

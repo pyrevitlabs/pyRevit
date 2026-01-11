@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Utility functions and types."""
 #pylint: disable=import-error,invalid-name,broad-except
 #pylint: disable=unused-import,useless-object-inheritance

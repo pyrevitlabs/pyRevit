@@ -1,62 +1,184 @@
 """Read and Write STL Binary and ASCII Files."""
-#
-# import struct
-#
-#
-# def load(inputfile):
-#     pass
-#
-#
-# def dump(outputfile):
-#     struct.pack('<I', bboxe_count * 12)
-#     for bbox in bboxes:
-#         minx = bbox.Min.X
-#         miny = bbox.Min.Y
-#         minz = bbox.Min.Z
-#         maxx = bbox.Max.X
-#         maxy = bbox.Max.Y
-#         maxz = bbox.Max.Z
-#         facets = [
-#             [(0.0, -1.0, 0.0), [(minx, miny, minz),
-#                                 (maxx, miny, minz),
-#                                 (minx, miny, maxz)]],
-#             [(0.0, -1.0, 0.0), [(minx, miny, maxz),
-#                                 (maxx, miny, minz),
-#                                 (maxx, miny, maxz)]],
-#             [(0.0, 1.0, 0.0), [(minx, maxy, minz),
-#                                (maxx, maxy, minz),
-#                                (minx, maxy, maxz)]],
-#             [(0.0, 1.0, 0.0), [(minx, maxy, maxz),
-#                                (maxx, maxy, minz),
-#                                (maxx, maxy, maxz)]],
-#             [(-1.0, 0.0, 0.0), [(minx, miny, minz),
-#                                 (minx, miny, maxz),
-#                                 (minx, maxy, minz)]],
-#             [(-1.0, 0.0, 0.0), [(minx, maxy, minz),
-#                                 (minx, miny, maxz),
-#                                 (minx, maxy, maxz)]],
-#             [(1.0, 0.0, 0.0), [(maxx, miny, minz),
-#                                (maxx, miny, maxz),
-#                                (maxx, maxy, minz)]],
-#             [(1.0, 0.0, 0.0), [(maxx, maxy, minz),
-#                                (maxx, miny, maxz),
-#                                (maxx, maxy, maxz)]],
-#             [(0.0, 0.0, -1.0), [(minx, miny, minz),
-#                                 (minx, maxy, minz),
-#                                 (maxx, miny, minz)]],
-#             [(0.0, 0.0, -1.0), [(maxx, miny, minz),
-#                                 (minx, maxy, minz),
-#                                 (maxx, maxy, minz)]],
-#             [(0.0, 0.0, 1.0), [(minx, miny, maxz),
-#                                (minx, maxy, maxz),
-#                                (maxx, miny, maxz)]],
-#             [(0.0, 0.0, 1.0), [(maxx, miny, maxz),
-#                                (minx, maxy, maxz),
-#                                (maxx, maxy, maxz)]],
-#             ]
-#         for facet in facets:
-#             bboxfile.write(struct.pack('<3f', *facet[0]))
-#             for vertix in facet[1]:
-#                 bboxfile.write(struct.pack('<3f', *vertix))
-#             # attribute byte count (should be 0 per specs)
-#             bboxfile.write('\0\0')
+
+import struct
+import os.path as op
+
+
+class STLMesh(object):
+    """Container for STL mesh data."""
+
+    def __init__(self):
+        self.triangles = []
+
+    def add_triangle(self, normal, vertices):
+        """Add a triangle to the mesh.
+
+        Args:
+            normal: tuple of 3 floats (nx, ny, nz)
+            vertices: list of 3 tuples, each with 3 floats (x, y, z)
+        """
+        self.triangles.append({"normal": normal, "vertices": vertices})
+
+
+def load(filepath):
+    """Load an STL file (binary or ASCII).
+
+    Args:
+        filepath: path to the STL file
+
+    Returns:
+        STLMesh object containing the mesh data
+    """
+    if not op.exists(filepath):
+        raise IOError("File not found: {0}".format(filepath))
+
+    # Try to determine if file is binary or ASCII
+    with open(filepath, "rb") as f:
+        header = f.read(80)
+        # ASCII files start with "solid"
+        if header.startswith(b"solid") or header.startswith(b"SOLID"):
+            # Could be ASCII, but need to verify
+            f.seek(0)
+            try:
+                # Try reading as ASCII
+                first_line = f.readline().decode("ascii", errors="strict")
+                if first_line.strip().startswith("solid"):
+                    f.seek(0)
+                    return _load_ascii(f)
+            except (UnicodeDecodeError, ValueError):
+                pass
+
+        # If not ASCII, load as binary
+        f.seek(0)
+        return _load_binary(f)
+
+
+def _load_binary(file_handle):
+    """Load a binary STL file.
+
+    Args:
+        file_handle: open file handle
+
+    Returns:
+        STLMesh object
+    """
+    mesh = STLMesh()
+
+    # Read 80-byte header (ignored)
+    header = file_handle.read(80)
+
+    # Read number of triangles
+    triangle_count_data = file_handle.read(4)
+    if len(triangle_count_data) < 4:
+        raise ValueError("Invalid STL file: cannot read triangle count")
+
+    triangle_count = struct.unpack("<I", triangle_count_data)[0]
+
+    # Read each triangle
+    for i in range(triangle_count):
+        # Each triangle is 50 bytes:
+        # - 3 floats for normal (12 bytes)
+        # - 3 vertices * 3 floats each (36 bytes)
+        # - 1 uint16 attribute (2 bytes, usually unused)
+
+        triangle_data = file_handle.read(50)
+        if len(triangle_data) < 50:
+            raise ValueError(
+                "Invalid STL file: incomplete triangle data at triangle {0}".format(i)
+            )
+
+        # Unpack normal (3 floats)
+        normal = struct.unpack("<3f", triangle_data[0:12])
+
+        # Unpack vertices (3 vertices * 3 floats)
+        v1 = struct.unpack("<3f", triangle_data[12:24])
+        v2 = struct.unpack("<3f", triangle_data[24:36])
+        v3 = struct.unpack("<3f", triangle_data[36:48])
+
+        vertices = [v1, v2, v3]
+
+        # Attribute bytes (ignored)
+        # attr = struct.unpack('<H', triangle_data[48:50])[0]
+
+        mesh.add_triangle(normal, vertices)
+
+    return mesh
+
+
+def _load_ascii(file_handle):
+    """Load an ASCII STL file.
+
+    Args:
+        file_handle: open file handle
+
+    Returns:
+        STLMesh object
+    """
+    mesh = STLMesh()
+
+    current_normal = None
+    current_vertices = []
+    in_facet = False
+
+    for line in file_handle:
+        line = line.strip()
+
+        if not line:
+            continue
+
+        # Handle both bytes and str (for Python 2/3 compatibility)
+        if isinstance(line, bytes):
+            line = line.decode("ascii", errors="ignore")
+
+        line = line.lower()
+        parts = line.split()
+
+        if not parts:
+            continue
+
+        if parts[0] == "facet" and len(parts) >= 5 and parts[1] == "normal":
+            in_facet = True
+            current_normal = (float(parts[2]), float(parts[3]), float(parts[4]))
+            current_vertices = []
+
+        elif parts[0] == "vertex" and len(parts) >= 4:
+            vertex = (float(parts[1]), float(parts[2]), float(parts[3]))
+            current_vertices.append(vertex)
+
+        elif parts[0] == "endfacet":
+            if in_facet and current_normal and len(current_vertices) == 3:
+                mesh.add_triangle(current_normal, current_vertices)
+            in_facet = False
+            current_normal = None
+            current_vertices = []
+
+    return mesh
+
+
+def dump(outputfile, mesh):
+    """Save mesh to binary STL file.
+
+    Args:
+        outputfile: path to output file
+        mesh: STLMesh object to save
+    """
+    with open(outputfile, "wb") as f:
+        # Write 80-byte header
+        header = b"Binary STL file generated by pyRevit"
+        header = header + b" " * (80 - len(header))
+        f.write(header[:80])
+
+        # Write triangle count
+        f.write(struct.pack("<I", len(mesh.triangles)))
+
+        # Write each triangle
+        for triangle in mesh.triangles:
+            # Write normal
+            f.write(struct.pack("<3f", *triangle["normal"]))
+
+            # Write vertices
+            for vertex in triangle["vertices"]:
+                f.write(struct.pack("<3f", *vertex))
+
+            # Write attribute byte count (0)
+            f.write(struct.pack("<H", 0))

@@ -1,0 +1,40 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="3D Measure Tool" Height="500" Width="350" ShowInTaskbar="False" Topmost="True"
+        ResizeMode="CanResize">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Current Measurement Section -->
+        <GroupBox Header="Current Measurement" Grid.Row="0" Padding="10" Margin="0,0,0,10">
+            <StackPanel>
+                <TextBlock x:Name="point1_text" Text="Point 1: Not selected" TextWrapping="Wrap" Margin="0,0,0,5"/>
+                <TextBlock x:Name="point2_text" Text="Point 2: Not selected" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                
+                <Separator Margin="0,5"/>
+                
+                <TextBlock x:Name="dx_text" Margin="0,5,0,2" TextAlignment="Right" FontFamily="Consolas" FontWeight="SemiBold"/>
+                <TextBlock x:Name="dy_text" Margin="0,2" TextAlignment="Right" FontFamily="Consolas" FontWeight="SemiBold"/>
+                <TextBlock x:Name="dz_text" Margin="0,2" TextAlignment="Right" FontFamily="Consolas" FontWeight="SemiBold"/>
+                <TextBlock x:Name="diagonal_text" Margin="0,2" TextAlignment="Right" FontWeight="Bold" FontSize="14"/>
+                <TextBlock x:Name="slope_text" Margin="0,2" TextAlignment="Right" FontFamily="Consolas" FontWeight="SemiBold"/>
+                <TextBlock x:Name="project_unit_text" Text="" Visibility="Collapsed" Foreground="Red" FontWeight="Bold" Margin="0,5,0,2"/>
+            </StackPanel>
+        </GroupBox>
+        
+        <!-- Measurement History -->
+        <GroupBox Header="Measurement History" Grid.Row="2" Padding="5" Margin="0,0,0,10">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <TextBlock x:Name="history_text" Text="No measurements yet" TextWrapping="Wrap" FontFamily="Consolas" FontSize="11"/>
+            </ScrollViewer>
+        </GroupBox>
+        
+        <!-- Status Text -->
+        <TextBlock Grid.Row="3" x:Name="status_text" Text="Press ESC to exit" TextAlignment="Center" FontWeight="Bold" Margin="0,10,0,0" Foreground="Gray"/>
+    </Grid>
+</Window>

@@ -1,22 +1,25 @@
 title:
-  ru:
-    Найти виды по фильтру
+  en_us: |-
+    Search Views By Filter
   fr_fr: |-
     Rechercher les vues par filtrage
-  en_us: |-
-   Search Views By Filter
+  ru: Найти виды по фильтру
+  chinese_s: 按过滤器搜索视图
+  es_es: |-
+    Buscar vistas por filtro
   de_de: |-
-   Suche Ansichten mit/ohne Unterlagen o. Ansichtsvorlagen
+    Suche Ansichten mit/ohne Unterlagen o. Ansichtsvorlagen
 tooltip:
-  ru: Показывает все виды на основе параметра поиска.
-  fr_fr: |-
-    Lister les vues à partir d'options de recherche
   en_us: |-
     Lists views based on a search option
+  fr_fr: |-
+    Lister les vues à partir d'options de recherche
+  ru: Показывает все виды на основе параметра поиска.
+  chinese_s: 根据搜索选项列出视图
+  es_es: |-
+    Lista vistas basadas en una opción de búsqueda
   de_de: >-
-    Es werden alle Ansichten mit dazugehöriger ID aufgelistet die 
-    den ausgewählten Kriterien entsprechen. 
-    Kriterien die zur Auswahl stehen:
+    Es werden alle Ansichten mit dazugehöriger ID aufgelistet die  den ausgewählten Kriterien entsprechen.  Kriterien die zur Auswahl stehen:
     1) Mit Unterlage
     2) Ohne Unterlage
     3) Mit Ansichtsvorlage

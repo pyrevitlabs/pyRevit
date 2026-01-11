@@ -1,19 +1,34 @@
 title:
-  ru: >-
-    Править
-    
-    листы
   en_us: >-
     Manage
-  
+
     Packages
+  fr_fr: >-
+    Gérer
+
+    Paquets
+  ru: >-
+    Править
+
+    листы
+  chinese_s: >-
+    管理
+
+    包
+  es_es: >-
+    Gestionar
+
+    Paquetes
   de_de: >-
-    Pakete
-  
+    Pakete 
+
     verwalten
 tooltip:
-  ru: Управляет пакетами листов.
   en_us: Manage sheet packages
+  fr_fr: Gérer les paquets de feuilles
+  ru: Управляет пакетами листов.
+  chinese_s: 管理图纸包
+  es_es: Gestionar paquetes de planos
   de_de: Plan Pakete verwalten.
 help_url: '{{docpath}}po0lCldSGmk'
 author: '{{author}}'

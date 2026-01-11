@@ -1,11 +1,15 @@
 title:
-  ru: Icons8
   en_us: Icons8
+  fr_fr: Icons8
+  ru: Icons8
+  chinese_s: Icons8 网站
   es_es: Icons8
   de_de: Icons8 Webseite
 tooltip:
-  ru: Открывает сайт, который предоставляет иконки для инструментов.
   en_us: Opens the website that is providing the icons for the tools
+  fr_fr: Ouvre le site web qui fournit les icônes pour les outils
+  ru: Открывает сайт, который предоставляет иконки для инструментов.
+  chinese_s: 打开提供工具图标的网站
   es_es: Abre la página web que provee los iconos para las herramientas
   de_de: Öffnet die Webseite, die die Icons für die Werkzeuge bereitstellt
 hyperlink: "https://icons8.com/icon/set/revit/windows"

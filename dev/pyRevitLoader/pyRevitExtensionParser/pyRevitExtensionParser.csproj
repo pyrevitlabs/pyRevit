@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <DisableImplicitProps>true</DisableImplicitProps>
+        <DisableImplicitTargets>true</DisableImplicitTargets>
+        <AssemblyName>pyRevitExtensionParser</AssemblyName>
+        <RootNamespace>pyRevitExtensionParser</RootNamespace>
+        <UseRevit>false</UseRevit>
+        <UseAssemblyBuilder>false</UseAssemblyBuilder>
+        <IronPythonVersion>IPY342</IronPythonVersion>
+        <Version>3.4.2</Version>
+        <UseLoader>false</UseLoader>
+        <UseIronPython>false</UseIronPython>
+        <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
+        <!-- Deploy to both IPY342 and IPY2712PR directories -->
+        <DeployToAllVersions>true</DeployToAllVersions>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.Json.dll" Private="false" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Include="BundleParser.cs" />
+      <Compile Include="ComboBoxMember.cs" />
+      <Compile Include="CommandAvailability.cs" />
+      <Compile Include="ComponentIcon.cs" />
+      <Compile Include="ParsedBundle.cs" />
+      <Compile Include="ParsedComponent.cs" />
+      <Compile Include="ParsedExtension.cs" />
+      <Compile Include="PyRevitConfig.cs" />
+      <Compile Include="ExtensionParser.cs" />
+      <Compile Include="IniFile.cs" />
+    </ItemGroup>
+
+</Project>

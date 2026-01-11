@@ -1,19 +1,34 @@
 title:
-  ru: >-
-    Пометить
-  
-    выделенное
   en_us: >-
     Tag
-  
+
     Selected
+  fr_fr: >-
+    Étiquete
+
+    Sélectionnée
+  ru: >-
+    Пометить
+
+    выделенное
+  chinese_s: >-
+    标记
+
+    选定的
+  es_es: >-
+    Etiqueta
+
+    Seleccionada
   de_de: >-
     Ausgewählte
-  
+
     taggen
 tooltip:
-  ru: Применяет марку к выделенным элементам.
   en_us: Apply tag to selected elements. First you need to create a project parameter 'DOCTAG' and apply it to the project categories
+  fr_fr: Appliquer une étiquette aux éléments sélectionnés. Vous devez d'abord créer un paramètre de projet 'DOCTAG' et l'appliquer aux catégories du projet
+  ru: Применяет марку к выделенным элементам.
+  chinese_s: 将标签应用到选定的元素。首先需要创建项目参数 'DOCTAG' 并将其应用到项目类别
+  es_es: Aplicar etiqueta a los elementos seleccionados. Primero necesitas crear un parámetro de proyecto 'DOCTAG' y aplicarlo a las categorías del proyecto
   de_de: Tags auf ausgewählte Elemente anwenden. Bevor das Tag Werkzeug verwendet werden kann, muss ein Projektparameter 'DOCTAG' erstellt werden und auf alle Kategorien angewendet werden.
 help_url: '{{docpath}}FYNDSAypWlg'
 author: '{{author}}'

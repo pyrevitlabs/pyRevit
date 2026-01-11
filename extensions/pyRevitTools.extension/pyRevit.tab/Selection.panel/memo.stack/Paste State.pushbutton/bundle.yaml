@@ -1,42 +1,52 @@
 title:
-  ru: Вставить
-  fr_fr: Coller l'état
   en_us: Paste State
+  fr_fr: Coller l'état
+  ru: Вставить
+  chinese_s: 粘贴状态
+  es_es: Pegar estado
   de_de: Zustand einfügen
 tooltip:
-  ru: >-
-    Применяет скопированное состояние к активному виду.
-    
-    Это работает в сочетании с инструментом "Копировать состояние".
-    
-    Shift-Click:
-    
-    Показать дополнительные настройки.
-  fr_fr: >-
-   Applique l'état copié à la vue active
-   
-   Cela fonctionne en conjonction avec l'outil Copier l'état
-   
-   Shift-Clic :
-   
-   Afficher les options supplémentaires
   en_us: >-
     Applies the copied state to the active view
-    
+
     This works in conjunction with the Copy State tool
-    
+
     Shift-Click:
-    
+
     Show additional options
+  fr_fr: >-
+    Applique l'état copié à la vue active
+
+    Cela fonctionne en conjonction avec l'outil Copier l'état
+
+    Shift-Clic :
+
+    Afficher les options supplémentaires
+  ru: >-
+    Применяет скопированное состояние к активному виду.
+
+    Это работает в сочетании с инструментом "Копировать состояние".
+
+    Shift-Click:
+
+    Показать дополнительные настройки.
+  chinese_s: "将复制的状态应用到活动视图\n此工具需与“复制状态”工具配合使用\nShift+单击：\n显示附加选项"
+  es_es: >-
+    Aplica el estado copiado a la vista activa
+
+    Esto funciona en conjunto con la herramienta Copiar estado
+
+    Shift-Clic:
+
+    Mostrar opciones adicionales
   de_de: >-
-    Fügt den zuvor gespeicherten Zustand einer Ansicht, 
-    in die aktive Ansicht ein. Dieses Werkzeug wird in
+    Fügt den zuvor gespeicherten Zustand einer Ansicht,  in die aktive Ansicht ein. Dieses Werkzeug wird in
     Kombination mit dem pyRevit Werkzeug "Zustand kopieren"
     verwendet. 
-    
+
     Shift-Click:
-    
-    Zeigt zusätzliche Optionen an, z.B. Filter in Ansichtsvorlagen übertragen oder 
+
+    Zeigt zusätzliche Optionen an, z.B. Filter in Ansichtsvorlagen übertragen oder
 author: >-
   Gui Talarico
 

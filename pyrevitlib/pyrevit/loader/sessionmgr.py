@@ -43,6 +43,9 @@ from pyrevit import DB, UI, revit
 #pylint: disable=W0703,C0302,C0103,no-member
 mlogger = logger.get_logger(__name__)
 
+# Build strategy constant (Roslyn is the only supported strategy)
+BUILD_STRATEGY_ROSLYN = "Roslyn"
+
 
 AssembledExtension = namedtuple('AssembledExtension', ['ext', 'assm'])
 
@@ -248,12 +251,105 @@ def _new_session():
         uimaker.reflow_pyrevit_ui()
 
 
+def _new_session_csharp():
+    """Create a new session using the C# SessionManagerService."""
+    try:
+        # Check if the new loader should be used
+        if not user_config.new_loader:
+            mlogger.debug('New loader disabled. Using Python session creation.')
+            _new_session()
+            return
+        
+        # Always use Roslyn build strategy
+        build_strategy = BUILD_STRATEGY_ROSLYN
+        mlogger.info('Using %s build strategy for C# session manager', build_strategy)
+        
+        # Find the PyRevitLoaderApplication type from loaded assemblies
+        loaded_assemblies = framework.AppDomain.CurrentDomain.GetAssemblies()
+        loader_app_type = None
+        
+        for assembly in loaded_assemblies:
+            try:
+                assembly_name = assembly.GetName().Name
+                if assembly_name.startswith('pyRevitLoader'):
+                    loader_app_type = assembly.GetType('PyRevitLoader.PyRevitLoaderApplication')
+                    if loader_app_type:
+                        mlogger.debug('Found PyRevitLoaderApplication in assembly: %s', assembly.Location)
+                        break
+            except Exception:
+                # Some assemblies might not have accessible location/name
+                continue
+        
+        if not loader_app_type:
+            mlogger.error('PyRevitLoaderApplication not found in loaded assemblies')
+            mlogger.info('Falling back to Python session creation...')
+            _new_session()
+            return
+        
+        # Get the LoadSession method
+        load_session_method = loader_app_type.GetMethod('LoadSession')
+        if not load_session_method:
+            mlogger.error('LoadSession method not found in PyRevitLoaderApplication')
+            mlogger.info('Falling back to Python session creation...')
+            _new_session()
+            return
+        
+        # Call the LoadSession method with logger and build strategy
+        mlogger.info('Loading session using C# LoadSession method...')
+        result = load_session_method.Invoke(None, framework.Array[object]([mlogger, build_strategy]))
+        
+        # Check if the result indicates success (Result.Succeeded = 0)
+        if hasattr(result, 'value__') and result.value__ == 0:
+            mlogger.info('C# session loading completed successfully')
+            # Register loaded pyRevit assemblies with sessioninfo
+            # so find_pyrevitcmd can locate commands
+            _register_loaded_pyrevit_assemblies()
+        else:
+            mlogger.error('C# session loading returned failure result')
+            mlogger.info('Falling back to Python session creation...')
+            _new_session()
+        
+    except Exception as cs_ex:
+        mlogger.error('Error in C# session creation: %s', cs_ex)
+        mlogger.info('Falling back to Python session creation...')
+        _new_session()
+
+
+def _register_loaded_pyrevit_assemblies():
+    """Find and register pyRevit assemblies loaded by the C# session manager.
+    
+    Scans all loaded assemblies in the current AppDomain to find pyRevit
+    extension assemblies (name pattern: pyRevit_{version}_{hash}_{extName})
+    and registers them with sessioninfo so find_pyrevitcmd can locate commands.
+    """
+    pyrevit_assemblies = []
+    
+    for assembly in framework.AppDomain.CurrentDomain.GetAssemblies():
+        try:
+            assembly_name = assembly.GetName().Name
+            if assembly_name and assembly_name.startswith('pyRevit_'):
+                pyrevit_assemblies.append(assembly_name)
+                mlogger.debug('Found pyRevit assembly: %s', assembly_name)
+        except Exception:
+            continue
+    
+    if pyrevit_assemblies:
+        sessioninfo.set_loaded_pyrevit_assemblies(pyrevit_assemblies)
+        mlogger.info('Registered %d pyRevit assemblies', len(pyrevit_assemblies))
+    else:
+        mlogger.warning('No pyRevit assemblies found')
+
+
 def load_session():
     """Handles loading/reloading of the pyRevit addin and extensions.
 
     To create a proper ui, pyRevit extensions needs to be properly parsed and
     a dll assembly needs to be created. This function handles these tasks
     through interactions with .extensions, .loader.asmmaker, and .loader.uimaker.
+
+    Load session now takes a light parameter that will skip the assembly creation
+    and UI creation. This is for the case when pyRevitAssemblyMaker.dll is 
+    used to create the assembly and UI
 
     Examples:
         ```python
@@ -282,7 +378,12 @@ def load_session():
     _perform_onsessionloadstart_ops()
 
     # create a new session
-    _new_session()
+    if not user_config.new_loader:
+        mlogger.info('Creating new pyRevit session with pyRevitLoader.py...')
+        _new_session()
+    else:
+        mlogger.info('Creating new Session with pyRevitAssemblyMaker.dll...')
+        _new_session_csharp()
 
     # perform post-load tasks
     _perform_onsessionloadcomplete_ops()
@@ -434,7 +535,8 @@ def find_all_commands(category_set=None, cache=True):
                     pyrvt_availtype = None
 
                     if not tname.endswith(runtime.CMD_AVAIL_NAME_POSTFIX)\
-                            and runtime.RUNTIME_NAMESPACE not in tname:
+                            and runtime.RUNTIME_NAMESPACE not in tname \
+                            and pyrvt_type.IsSubclassOf(runtime.CMD_EXECUTOR_TYPE):
                         for exported_type in all_exported_types:
                             if exported_type.Name == availtname:
                                 pyrvt_availtype = exported_type
@@ -474,7 +576,7 @@ def find_pyrevitcmd(pyrevitcmd_unique_id):
 
     Examples:
         ```python
-        cmd = find_pyrevitcmd('pyRevitCorepyRevitpyRevittoolsReload')
+        cmd = find_pyrevitcmd('pyrevitcore_pyrevit_pyrevit_tools_reload')
         command_instance = cmd()
         command_instance.Execute() # Provide commandData, message, elements
         ```

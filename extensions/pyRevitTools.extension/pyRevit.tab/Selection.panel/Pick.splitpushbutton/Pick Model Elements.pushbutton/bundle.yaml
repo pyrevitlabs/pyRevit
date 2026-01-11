@@ -1,10 +1,14 @@
 title:
-  ru: Выбрать элементы модели
-  fr_fr: Sélectionner des éléments de modèle
   en_us: Pick Model Elements
+  fr_fr: Sélectionner des éléments de modèle
+  ru: Выбрать элементы модели
+  chinese_s: 选择模型图元
+  es_es: Elegir elementos de modelo
   de_de: Nur Modell Elemente auswählen
 tooltip:
-  ru: Активирует инструмент выбора, который выбирает только элементы модели.
-  fr_fr: Active l'outil de sélection qui choisit seulement les éléments de modèle
   en_us: Activates selection tool that picks only Model elements
+  fr_fr: Active l'outil de sélection qui choisit seulement les éléments de modèle
+  ru: Активирует инструмент выбора, который выбирает только элементы модели.
+  chinese_s: 激活仅选择模型图元的选择工具
+  es_es: Activa la herramienta de selección que elige solo elementos de modelo
   de_de: Aktiviert ein besonderes Auswahlwerkzeug, das nur Modell Elemente auswählt

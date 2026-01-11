@@ -1,27 +1,23 @@
 title:
-  ru: Сопоставить заголовк листа в открытх документах
-  fr_fr: Faire correspondre le titre sur la feuille dans les modèles ouverts
   en_us: Match Title On Sheet in Open Docs
+  fr_fr: Faire correspondre le titre sur la feuille dans les modèles ouverts
+  ru: Сопоставить заголовк листа в открытх документах
+  chinese_s: 匹配打开文档中的图纸标题
+  es_es: Coincidir título en hoja en documentos abiertos
   de_de: Übernehme "Titel auf Plan" Wert in geöffnete Modelle
 tooltip:
-  ru: >-
-    Сопоставляет значение названия листа всех видов в открытых 
-    документах с текущим документом, поэтому все виды с совпадающими 
-    именами будут иметь сопадающее значение названия листа.
-  fr_fr: >-
-    Fait correspondre à la valeur « Titre sur la feuille » de toutes 
-    les vues dans les documents ouverts au document actuel afin que 
-    toutes les vues avec des noms correspondants aient des valeurs
-    « Titre sur la feuille » correspondantes
   en_us: >-
-    Matches the "Title On Sheet" value of all views in open documents 
-    to current document so all views with matching names will have 
-    matching "Title On Sheet" values
+    Matches the "Title On Sheet" value of all views in open documents  to current document so all views with matching names will have  matching "Title On Sheet" values
+  fr_fr: >-
+    Fait correspondre à la valeur « Titre sur la feuille » de toutes  les vues dans les documents ouverts au document actuel afin que  toutes les vues avec des noms correspondants aient des valeurs
+    « Titre sur la feuille » correspondantes
+  ru: >-
+    Сопоставляет значение названия листа всех видов в открытых  документах с текущим документом, поэтому все виды с совпадающими  именами будут иметь сопадающее значение названия листа.
+  chinese_s: 将当前文档中所有视图的“图纸上的标题”值与所有打开文档进行匹配，使名称相同的视图具有相同的“图纸上的标题”值
+  es_es: >-
+    Coincide el valor "Título en hoja" de todas las vistas en documentos abiertos  con el documento actual para que todas las vistas con nombres coincidentes tengan  valores "Título en hoja" coincidentes
   de_de: >-
     Damit mit dieses Werkzeug funktioniert, müssen mindestens 2 Projekte
-    geöffnet sein. Das aktive Projekt ist die Quelle. Es werden die 
-    Ansichtsnamen zwischen den geöffneten Projekten verglichen. 
-    Wenn in den anderen geöffneten Projekten ein Ansichtsname mit dem Quellprojekt
+    geöffnet sein. Das aktive Projekt ist die Quelle. Es werden die  Ansichtsnamen zwischen den geöffneten Projekten verglichen.  Wenn in den anderen geöffneten Projekten ein Ansichtsname mit dem Quellprojekt
     übereinstimmt, dann wird der Parameterwert vom Parameter "Titel auf Plan"
-    vom Quellprojekt auf die Zielprojekte übernommen. Damit haben alle 
-    Ansichten projektübergreifend den gleichen Titel auf einem Plan.
+    vom Quellprojekt auf die Zielprojekte übernommen. Damit haben alle  Ansichten projektübergreifend den gleichen Titel auf einem Plan.

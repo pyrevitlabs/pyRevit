@@ -1,10 +1,14 @@
 title:
-  ru: Очистить неиспользуемые фильтры
-  fr_fr: Supprimer les filtres de vue inutilisés
   en_us: Wipe Unused Filters
+  fr_fr: Supprimer les filtres de vue inutilisés
+  ru: Очистить неиспользуемые фильтры
+  chinese_s: 清除未使用的过滤器
+  es_es: Limpiar filtros no utilizados
   de_de: Lösche nicht verwendete Filter
 tooltip:
-  ru: Удаляет все фильтры параметров вида которые не были использованы ни в одном из представлений.
-  fr_fr: Supprime tous les filtres de paramètres de vue qui n'ont été répertoriés dans aucune vue. Cela inclut aussi les feuilles
   en_us: Deletes all view parameter filters that has not been listed on any views. This includes sheets as well
+  fr_fr: Supprime tous les filtres de paramètres de vue qui n'ont été répertoriés dans aucune vue. Cela inclut aussi les feuilles
+  ru: Удаляет все фильтры параметров вида которые не были использованы ни в одном из представлений.
+  chinese_s: 删除所有未在任何视图中列出的视图参数过滤器。这同样包括图纸
+  es_es: Elimina todos los filtros de parámetros de vista que no se han listado en ninguna vista. Esto también incluye hojas
   de_de: Es erscheint ein Auswahldialog, mit dem Ansichtsparameterfilter ausgewählt werden können, die in keiner Ansicht aufgeführt sind. Dies schließt auch Pläne mit ein. Alle im Dialog ausgewählten Ansichtsfilter werden gelöscht.

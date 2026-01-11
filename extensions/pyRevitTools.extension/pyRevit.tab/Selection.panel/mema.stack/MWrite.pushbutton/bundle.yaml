@@ -1,26 +1,30 @@
 help_url: '{{docpath}}pAM-ARIXXLw'
 title:
-  ru: ПЗаписать
-  fr_fr: MEcrire
   en_us: MWrite
+  fr_fr: MEcrire
+  ru: ПЗаписать
+  chinese_s: M写入
+  es_es: MEscribir
   de_de: Sp.mit.El.überschr.
 tooltip:
+  en_us: >-
+    Clear memory and Append current selection
+
+    Works like the MC and M+ button in a calculator. This is a project-dependent memory. Every project has its own selection memory saved in %appdata%/pyRevit folder as *.pym files
+  fr_fr: >-
+    Effacer la mémoire et ajouter la sélection actuelle
+
+    Fonctionne comme les boutons MC et M+ d'une calculatrice. Il s'agit d'une mémoire dépendante du projet. Chaque projet a sa propre mémoire de sélection enregistrée dans le dossier %appdata%/pyRevit en tant que fichiers *.pym
   ru: >-
     Перезаписывает в память проекта выделенные элементы.
 
     Работает как кнопки MC и M+ в калькуляторе. Память зависит от каждого проекта. Каждый проект имеет свою память, которая записывается в %appdata%/pyRevit директорию как *.pym файлы.
-  fr_fr: >-
-     Effacer la mémoire et ajouter la sélection actuelle
-    
-     Fonctionne comme les boutons MC et M+ d'une calculatrice. Il s'agit d'une mémoire dépendante du projet. Chaque projet a sa propre mémoire de sélection enregistrée dans le dossier %appdata%/pyRevit en tant que fichiers *.pym
-  en_us: >-
-    Clear memory and Append current selection
-    
-    Works like the MC and M+ button in a calculator. This is a project-dependent memory. Every project has its own selection memory saved in %appdata%/pyRevit folder as *.pym files
+  chinese_s: "清除内存并追加当前选择\n功能类似于计算器上的 MC 和 M+ 按钮组合。此为项目相关的内存。每个项目都有自己的选择内存，保存在 %appdata%/pyRevit 文件夹中，格式为 *.pym 文件"
+  es_es: >-
+    Limpiar memoria y agregar selección actual
+
+    Funciona como los botones MC y M+ en una calculadora. Esta es una memoria dependiente del proyecto. Cada proyecto tiene su propia memoria de selección guardada en la carpeta %appdata%/pyRevit como archivos *.pym
   de_de: >-
     Löscht den Speicher und schreibt die aktuelle Auswahl in den Speicher
-    Funktioniert wie die MC und M+ Taste auf dem Taschenrechner. 
-    Dies ist ein Projekt-abhängiger Speicher. 
-    Jedes Projekt hat seinen eigenen Auswahlspeicher, 
-    der im Ordner %appdata%/pyRevit als *.pym Datei gespeichert wird.
+    Funktioniert wie die MC und M+ Taste auf dem Taschenrechner.  Dies ist ein Projekt-abhängiger Speicher.  Jedes Projekt hat seinen eigenen Auswahlspeicher,  der im Ordner %appdata%/pyRevit als *.pym Datei gespeichert wird.
 context: Selection

@@ -1,9 +1,15 @@
 title:
-  ru: Экспорт марок
   en_us: Export Tagged
+  fr_fr: Exporter les étiquettes
+  ru: Экспортировать марки
+  chinese_s: 导出标签
+  es_es: Exportar etiquetas
   de_de: Getaggte exportieren
 tooltip:
-  ru: Управляет пакетами листов.
   en_us: Manage sheet packages
+  fr_fr: Gérer les paquets de feuilles
+  ru: Управляет пакетами листов.
+  chinese_s: 管理图纸包
+  es_es: Gestionar paquetes de planos
   de_de: Plan Pakete verwalten.
 author: '{{author}}'

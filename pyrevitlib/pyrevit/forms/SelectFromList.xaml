@@ -132,7 +132,7 @@
                       ItemTemplate="{DynamicResource ItemContainerTemplate}"
                       ItemsPanel="{DynamicResource ItemsPanelTemplate}"
                       VirtualizingStackPanel.IsVirtualizing="True"
-                      VirtualizingStackPanel.VirtualizationMode="Recycling"
+                      VirtualizingStackPanel.VirtualizationMode="Standard"
                       ScrollViewer.CanContentScroll="True"/>
             <GridSplitter x:Name="infoSplitter" Grid.Column="1" VerticalAlignment="Stretch"  HorizontalAlignment="Stretch" ResizeDirection="Columns" Visibility="Collapsed" />
             <ScrollViewer x:Name="infoPanel" Grid.Column="2" Visibility="Collapsed">

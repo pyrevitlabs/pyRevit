@@ -1,14 +1,17 @@
 title:
-  ru: Удалить подложку у выделенных видов
-  fr_fr: Enlève les fonds de plans des vues sélectionnées
   en_us: Remove Underlay From Selected Views
+  fr_fr: Enlève les fonds de plans des vues sélectionnées
+  ru: Удалить подложку у выделенных видов
+  chinese_s: 从选定视图中移除底图
+  es_es: Eliminar fondo de las vistas seleccionadas
   de_de: Entferne die Unterlage von gewählten Ansichten
 tooltip:
-  ru: Удаляет подложку у выделенных видов.
-  fr_fr: Enlève les fonds de plans des vues sélectionnées
   en_us: Removes Underlay From Selected Views
+  fr_fr: Enlève les fonds de plans des vues sélectionnées
+  ru: Удаляет подложку у выделенных видов.
+  chinese_s: 从选定视图中移除底图
+  es_es: Elimina el fondo de las vistas seleccionadas
   de_de: >-
     Entweder man wählt im Projektbrowser bereits die Ansichten aus
-    oder es erscheint ein Auswahldialog mit verfübaren Ansichten im 
-    Projekt. Von den ausgewählten Ansichten wird die Unterlage
-    entfernt. 
+    oder es erscheint ein Auswahldialog mit verfübaren Ansichten im  Projekt. Von den ausgewählten Ansichten wird die Unterlage
+    entfernt.

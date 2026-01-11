@@ -1,20 +1,22 @@
 title:
-  ru: Семейство
-  fr_fr: Famille
   en_us: Family
+  fr_fr: Famille
+  ru: Семейство
+  chinese_s: 族
+  es_es: Familia
   de_de: Familie
 layout:
   - Family QuickCheck
-  - -----
+  - '-----'
   - Convert ACIS Solid to FreeForm
   - Convert Family To Face Host Based
   - Convert Imported 3D CAD
-  - -----
+  - '-----'
   - Export Family Config
   - Import Family Config
-  - -----
+  - '-----'
   - Wipe Family Parameters
-  - -----
+  - '-----'
   - Load Families
   - Save Families
   - Load More Types

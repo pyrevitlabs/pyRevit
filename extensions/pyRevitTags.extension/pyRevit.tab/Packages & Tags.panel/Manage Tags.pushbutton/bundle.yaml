@@ -1,19 +1,34 @@
 title:
-  ru: >-
-    Править
-  
-    марки
   en_us: >-
     Manage
 
     Tags
+  fr_fr: >-
+    Gérer
+
+    Étiquettes
+  ru: >-
+    Править
+
+    марки
+  chinese_s: >-
+    管理
+
+    标签
+  es_es: >-
+    Gestionar
+
+    Etiquetas
   de_de: >-
     Tags
 
     verwalten
 tooltip:
-  ru: Управляет марками в проекте или выделенными элементами.
   en_us: Manage tags in project or selected elements. First you need to create a project parameter 'DOCTAG' and apply it to the project categories
+  fr_fr: Gérer les étiquettes dans le projet ou les éléments sélectionnés. Vous devez d'abord créer un paramètre de projet 'DOCTAG' et l'appliquer aux catégories du projet
+  ru: Управляет марками в проекте или выделенными элементами.
+  chinese_s: 管理项目或选定元素中的标签。首先需要创建项目参数 'DOCTAG' 并将其应用到项目类别
+  es_es: Gestionar etiquetas en el proyecto o los elementos seleccionados. Primero necesitas crear un parámetro de proyecto 'DOCTAG' y aplicarlo a las categorías del proyecto
   de_de: Alle Tags im Projekt verwalten oder nur von aktuell ausgewählten Elementen. Bevor das Tag Werkzeug verwendet werden kann, muss ein Projektparameter 'DOCTAG' erstellt werden und auf alle Kategorien angewendet werden.
 help_url: '{{docpath}}FYNDSAypWlg'
 author: '{{author}}'

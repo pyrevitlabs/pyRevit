@@ -1,22 +1,24 @@
 title:
-  ru: |-
-    Запросить связанные виды
-  fr_fr: |-
-    Rechercher référencement des vues
   en_us: |-
     Query View Referencing
+  fr_fr: |-
+    Rechercher référencement des vues
+  ru: |-
+    Запросить связанные виды
+  chinese_s: 查询视图引用状态
+  es_es: |-
+    Consultar referenciado de vista
   de_de: |-
     Untersuche Ansichten auf Referenzierung
 tooltip:
-  ru: |-
-    Запрашивает все выделенные виды и определяет связанны они или нет.
-  fr_fr: |-
-    Interroger toutes les vues sélectionnées et déterminer si elles sont référencées ou non
   en_us: |-
     Query all selected views and determine if referenced or not
+  fr_fr: |-
+    Interroger toutes les vues sélectionnées et déterminer si elles sont référencées ou non
+  ru: |-
+    Запрашивает все выделенные виды и определяет связанны они или нет.
+  chinese_s: 查询所选视图是否被引用
+  es_es: |-
+    Consulta todas las vistas seleccionadas y determina si están referenciadas o no
   de_de: >-
-    Es erscheint ein Auswahldialog mit den verfügbaren Ansichten im aktiven Projekt. 
-    Die ausgewählten Ansichten werden daraufhin untersucht, ob diese referenziert werden 
-    (z.B. in einem Detailausschnitt mit referenzierter Ansicht oder eine Ansichtsreferenz 
-    Beschriftung) oder nicht. Achtung: Die Ausführung von diesem Befehl kann nicht 
-    unterbrochen werden und dauert unter Umständen lange!
+    Es erscheint ein Auswahldialog mit den verfügbaren Ansichten im aktiven Projekt.  Die ausgewählten Ansichten werden daraufhin untersucht, ob diese referenziert werden  (z.B. in einem Detailausschnitt mit referenzierter Ansicht oder eine Ansichtsreferenz  Beschriftung) oder nicht. Achtung: Die Ausführung von diesem Befehl kann nicht  unterbrochen werden und dauert unter Umständen lange!

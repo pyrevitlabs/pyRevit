@@ -1,21 +1,24 @@
 """Utility functions to support forms module."""
 
 from pyrevit import framework
-from pyrevit.framework import wpf, Controls, Imaging
+from pyrevit.framework import wpf, Controls, Imaging, Uri, UriKind
 
 
 def bitmap_from_file(bitmap_file):
     """Create BitmapImage from a bitmap file.
 
     Args:
-        bitmap_file (str): path to bitmap file
+        bitmap_file (str): absolute path to bitmap file
 
     Returns:
         (BitmapImage): bitmap image object
     """
     bitmap = Imaging.BitmapImage()
     bitmap.BeginInit()
-    bitmap.UriSource = framework.Uri(bitmap_file)
+    success, uri = Uri.TryCreate(bitmap_file, UriKind.RelativeOrAbsolute)
+    if not success or uri is None:
+        raise ValueError("Failed to create Uri from file path: {}".format(bitmap_file))
+    bitmap.UriSource = uri
     bitmap.CacheOption = Imaging.BitmapCacheOption.OnLoad
     bitmap.CreateOptions = Imaging.BitmapCreateOptions.IgnoreImageCache
     bitmap.EndInit()

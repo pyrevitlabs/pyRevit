@@ -1,10 +1,14 @@
 title:
-  ru: Очистить файлы памяти
-  fr_fr: Purger les fichiers Mémoire
   en_us: Purge Memory Files
+  fr_fr: Purger les fichiers Mémoire
+  ru: Очистить файлы памяти
+  chinese_s: 清除内存文件
+  es_es: Purgar archivos de memoria
   de_de: Speicherdateien löschen
 tooltip:
-  ru: Удаляет всю папку временных файлов данных выбора. Это очистит всю память выбора.
-  fr_fr: Supprime tout le dossier des fichiers de données de sélection temporaire. Cela effacera toutes les mémoires de sélection
   en_us: Deletes all the temporary selection data files folder. This will clear all selection memories
+  fr_fr: Supprime tout le dossier des fichiers de données de sélection temporaire. Cela effacera toutes les mémoires de sélection
+  ru: Удаляет всю папку временных файлов данных выбора. Это очистит всю память выбора.
+  chinese_s: 删除所有临时选择数据文件文件夹。这将清除所有选择内存
+  es_es: Elimina toda la carpeta de archivos de datos de selección temporal. Esto limpiará todas las memorias de selección
   de_de: Löscht alle temporären Auswahldaten Dateien Ordner. Dies löscht den gesamten Auswahl Speicher

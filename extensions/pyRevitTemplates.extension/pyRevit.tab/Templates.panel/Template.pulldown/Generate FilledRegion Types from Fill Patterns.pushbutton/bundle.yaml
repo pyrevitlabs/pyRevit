@@ -1,8 +1,14 @@
 title:
-  ru: Генерировать типы цветовых областей из штриховок
   en_us: Generate FilledRegion Types from Fill Patterns
+  fr_fr: Créer des zones de remplissage à partir des motifs de hachures
+  ru: Генерировать типы цветовых областей из штриховок
+  chinese_s: 生成填充区域类型从填充模式
+  es_es: Generar tipos de regiones rellenas desde patrones de relleno
   de_de: Erstellen neue GefüllteBereich Typen von Füllmustern
 tooltip:
+  en_us: Generate FilledRegion Types from Fill Patterns
+  fr_fr: Créer des zones de remplissage à partir des motifs de hachures
   ru: Генерирует образцы цветовых областей.
-  en_us: Generate FilledRegion Swatches
-  de_de: Alle im Projekt vorhandene Füllmuster (Zeichen+Modell) werden als neue Gefüllte Bereich Typen angelegt. Die Namen werden übernommen. 
+  chinese_s: 生成填充区域样本
+  es_es: Generar muestras de regiones rellenas
+  de_de: Alle im Projekt vorhandene Füllmuster (Zeichen+Modell) werden als neue Gefüllte Bereich Typen angelegt. Die Namen werden übernommen.

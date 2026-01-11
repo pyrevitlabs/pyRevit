@@ -1,10 +1,14 @@
 title:
-  ru: Создать параллельный разрез
-  fr_fr: Créer une coupe parallèle
   en_us: Create Parallel Section
+  fr_fr: Créer une coupe parallèle
+  ru: Создать параллельный разрез
+  chinese_s: 创建平行剖面
+  es_es: Crear sección paralela
   de_de: Erstelle einen parallelen Schnitt
 tooltip:
-  ru: Создает разрез, параллельный плоскости выделенных стен.
-  fr_fr: Créer une coupe parallèle au plan des murs ou de l'élément planaire sélectionné
   en_us: Create section parallel to the plane of selected walls or planar element
+  fr_fr: Créer une coupe parallèle au plan des murs ou de l'élément planaire sélectionné
+  ru: Создает разрез, параллельный плоскости выделенных стен.
+  chinese_s: 创建与选定墙或平面图元平面平行的剖面
+  es_es: Crear sección paralela al plano de las paredes seleccionadas o elemento planar
   de_de: Es wird ein paralleler Schnitt zu der aktuell ausgewählten Element erstellt (z.B. Wand)

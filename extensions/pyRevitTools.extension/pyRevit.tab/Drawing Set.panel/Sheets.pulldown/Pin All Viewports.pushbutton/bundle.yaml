@@ -1,24 +1,32 @@
 title:
-  ru: Прикрепить все видовые экраны
-  fr_fr: Epingler toutes les Vues
   en_us: Pin All Viewports
+  fr_fr: Epingler toutes les Vues
+  ru: Прикрепить все видовые экраны
+  chinese_s: 锁定所有视口
+  es_es: Fijar todas las ventanas gráficas
   de_de: Ansichtsfenster auf Plänen pinnen
 tooltip:
-  ru: |-
-    Прикрепляет все видовые экраны на выделенных листах.
-    
-    Shift-Click:
-    Прикрепляет все видовые экраны на активном листе.
-  fr_fr: |-
-    Épingler toutes les vues sur les feuilles sélectionnées.
-
-    Shift-Click:
-    Épingler toutes les fenêtres sur la feuille active
   en_us: |-
     Pins all viewports on selected sheets.
 
     Shift-Click:
     Pin all viewports on active sheet
+  fr_fr: |-
+    Épingler toutes les vues sur les feuilles sélectionnées.
+
+    Shift-Click:
+    Épingler toutes les fenêtres sur la feuille active
+  ru: |-
+    Прикрепляет все видовые экраны на выделенных листах.
+
+    Shift-Click:
+    Прикрепляет все видовые экраны на активном листе.
+  chinese_s: "锁定选定图纸上的所有视口\n\nShift-单击：锁定活动图纸上的所有视口"
+  es_es: |-
+    Fija todas las ventanas gráficas en las hojas seleccionadas.
+
+    Shift-Clic:
+    Fijar todas las ventanas gráficas en la hoja activa
   de_de: |-
     Es erscheint ein Dialog auf dem Pläne ausgewählt werden können. 
     Auf allen ausgewählten Plänen werden die Ansichtsfenster gesperrt 

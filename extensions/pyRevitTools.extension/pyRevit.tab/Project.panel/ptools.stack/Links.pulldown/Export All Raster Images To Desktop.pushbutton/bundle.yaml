@@ -1,10 +1,14 @@
 title:
-  ru: Экспортировать все изображения
-  fr_fr: Exporter toutes les images
   en_us: Export All Raster Images
+  fr_fr: Exporter toutes les images
+  ru: Экспортировать все изображения
+  chinese_s: 导出所有光栅图像
+  es_es: Exportar todas las imágenes raster
   de_de: Exportiere alle Rasterbilder
 tooltip:
-  ru: Экспортирует все исходные импортированные изображения по выбранному пути и добавляет размер файла к имени типа изображения.
-  fr_fr: Exporte toutes les images importées d'origine vers le chemin choisi et ajoute la taille du fichier au nom du type d'image
   en_us: Exports all original imported images to chosen path and adds file size to image type name
+  fr_fr: Exporte toutes les images importées d'origine vers le chemin choisi et ajoute la taille du fichier au nom du type d'image
+  ru: Экспортирует все исходные импортированные изображения по выбранному пути и добавляет размер файла к имени типа изображения.
+  chinese_s: 将所有原始导入的图像导出到指定路径，并将文件大小添加到图像类型名称中
+  es_es: Exporta todas las imágenes importadas originales a la ruta elegida y agrega el tamaño del archivo al nombre del tipo de imagen
   de_de: Es werden alle originalen importierten Rasterbilder in eine auswählbaren Pfad exportiert und fügt die Dateigröße dem Bildtypnamen hinzu

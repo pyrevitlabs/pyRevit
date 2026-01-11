@@ -1,10 +1,14 @@
 title:
-  ru: Найти используемые шаблоны видов в фильтрах
-  fr_fr: Trouver les filtres de gabarits de vue utilisés
   en_us: Find Used View Templates Filters
+  fr_fr: Trouver les filtres de gabarits de vue utilisés
+  ru: Найти используемые шаблоны видов в фильтрах
+  chinese_s: 查找已使用的视图样板过滤器
+  es_es: Encontrar filtros de plantillas de vista utilizados
   de_de: Finde verwendete Ansichtsvorlagen Filter
 tooltip:
-  ru: Показывает все шаблоны видов и фильтры, которые были применены к ним.
-  fr_fr: Répertorie tous les gabartis de vue et les filtres qui ont été attribués à chacun
   en_us: Lists all view templates and the filters that has been assigned to each
+  fr_fr: Répertorie tous les gabartis de vue et les filtres qui ont été attribués à chacun
+  ru: Показывает все шаблоны видов и фильтры, которые были применены к ним.
+  chinese_s: 列出所有视图样板及其已分配的过滤器
+  es_es: Lista todas las plantillas de vista y los filtros que se han asignado a cada una
   de_de: Es werden alle Ansichtvorlagen und die darauf angewendeten Filter aufgelistet

@@ -1,0 +1,9 @@
+title: Test ComboBox
+tooltip: Test ComboBox functionality
+icon: icon.png
+members:
+  - id: "one"
+    text: "One"
+  - id: "two"
+    text: "Two"
+

@@ -1,10 +1,14 @@
 title:
-  ru: Создать отчет изменений
-  fr_fr: Générer un Rapport des Révisions
   en_us: Generate Revision Report
+  fr_fr: Générer un Rapport des Révisions
+  ru: Создать отчет изменений
+  chinese_s: 生成修订报告
+  es_es: Generar informe de revisiones
   de_de: Erstelle einen Änderungsbericht
 tooltip:
-  ru: Создаст отчет для всех изменений в текущем проекте.
-  fr_fr: Génère un rapport de toutes les révisions dans le projet actuel
   en_us: Generates a report from all revisions in current project
+  fr_fr: Génère un rapport de toutes les révisions dans le projet actuel
+  ru: Создаст отчет для всех изменений в текущем проекте.
+  chinese_s: 根据当前项目中的所有修订生成报告
+  es_es: Genera un informe de todas las revisiones en el proyecto actual
   de_de: Es wird ein Bericht erstellt in dem alle Änderungen im aktuellen Projekt aufgelistet werden

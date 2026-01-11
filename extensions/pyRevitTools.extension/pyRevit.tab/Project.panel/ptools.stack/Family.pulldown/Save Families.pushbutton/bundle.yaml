@@ -1,10 +1,14 @@
 title:
-  ru: Сохранить семейства
-  fr_fr: Sauvegarder les familles
   en_us: Save Families
+  fr_fr: Sauvegarder les familles
+  ru: Сохранить семейства
+  chinese_s: 保存族
+  es_es: Guardar familias
   de_de: Familien speichern
 tooltip:
-  ru: Сохраняет выбранные семейства из проекта.
-  fr_fr: Sauvegarder les familles sélectionnées dans le projet
   en_us: Saves chosen families from the project
+  fr_fr: Sauvegarder les familles sélectionnées dans le projet
+  ru: Сохраняет выбранные семейства из проекта.
+  chinese_s: 从项目中保存选定的族
+  es_es: Guarda las familias elegidas del proyecto
   de_de: Speichert die im Projekt ausgewählten Familien

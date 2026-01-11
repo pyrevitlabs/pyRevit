@@ -1,25 +1,56 @@
 title:
-  ru: >-
-    Задать
-    
-    раб. набор
-  fr_fr: >-
-    Active
-    
-    Sous-Projet
   en_us: >-
     Set
-    
+
     Workset
+  fr_fr: >-
+    Active
+
+    Sous-Projet
+  ru: >-
+    Задать
+
+    раб. набор
+  chinese_s: "设置\n工作集"
+  es_es: >-
+    Establecer
+
+    Área de trabajo
   de_de: >-
     Set
-    
+
     Workset
 tooltip:
-  ru: Устанавливает текущий рабочий набор из выделения.
-  fr_fr: Rend le sous-projet de la sélection actuel actif
-  en_us: Sets the active workset from the selection
-  de_de: In einem Auswahldialog kann der aktive Bearbeitungsbereich (Workset) festgelegt werden
-context: selection
-author: 'Jean-Marc Couffin'
-contact: 'https://github.com/jmcouffin'
+  en_us: >-
+    Sets the active workset from the selection.
+
+    Shift + Click
+
+    Can be configured to also set Workplane to the elements schedule level, Phase of current View.
+  fr_fr: >-
+    Rend le sous-projet de la sélection actif.
+
+    Shift + Clic
+
+    Pour configurer le plan de travail selon le niveau de l'élément dans le tableau, et la phase de la vue active.
+  ru: >-
+    Устанавливает текущий рабочий набор из выделения.
+
+    Shift + Click
+
+    Может также настроить рабочую плоскость по уровню спецификации элемента и фазу текущего вида.
+  chinese_s: "根据选择来设置活动工作集\nShift + 单击：\n可配置为同时将工作平面设置为图元的标高，并匹配当前视图的阶段。"
+  es_es: >-
+    Establece el área de trabajo activa desde la selección.
+
+    Shift + Clic
+
+    Se puede configurar para también establecer el Plano de trabajo al nivel del programa de elementos, Fase de la vista actual.
+  de_de: >-
+    In einem Auswahldialog kann der aktive Bearbeitungsbereich (Workset) festgelegt werden.
+
+    Shift + Klick
+
+    Optional kann auch die Arbeitsebene entsprechend dem Ebenenparameter und die Phase der aktuellen Ansicht gesetzt werden.
+author: 'Jean-Marc Couffin, Wurschdhaud (extra functionality)'
+contact: 'https://github.com/jmcouffin, https://github.com/Wurschdhaud'

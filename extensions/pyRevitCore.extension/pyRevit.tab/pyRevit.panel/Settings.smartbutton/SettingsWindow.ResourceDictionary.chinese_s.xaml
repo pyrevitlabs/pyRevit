@@ -1,0 +1,386 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <system:String x:Key="Title">pyRevit 设置</system:String>
+    <system:String x:Key="CoreSettings.Title">核心设置</system:String>
+    <system:String x:Key="CoreSettings.General">常规</system:String>
+    <system:String x:Key="CoreSettings.RocketMode">火箭模式 &#x1F680; (需要重新加载)</system:String>
+    <system:String x:Key="CoreSettings.RocketMode.Description">
+        这是 pyRevit 火箭模式的开关。
+        如果启用，pyRevit 将为每个支持火箭模式的扩展使用共享引擎。
+        对于 pyRevit 开发者来说，
+        这意味着您的自定义 Python 模块不应使用任何
+        保留来自 Revit 信息的模块级变量，例如
+        活动文档、元素信息等。
+        为什么使用火箭模式？巨大的速度提升！！
+    </system:String>
+
+    <system:String x:Key="CoreSettings.CheckUpdates">启动时检查更新</system:String>
+    <system:String x:Key="CoreSettings.CheckUpdates.Description">
+        如果激活，pyRevit 将在 Revit 启动时检查所有已安装扩展的更新。
+        如果未检测到互联网连接，将跳过更新检查。
+    </system:String>
+
+    <system:String x:Key="CoreSettings.Engines">引擎</system:String>
+    <system:String x:Key="CoreSettings.ActiveEngine">活动引擎：</system:String>
+    <system:String x:Key="CoreSettings.ActiveCPythonEngine">活动 CPython 引擎：</system:String>
+    <system:String x:Key="CoreSettings.UsingCPython">使用 CPython：</system:String>
+
+    <system:String x:Key="CoreSettings.UsingCPython.Description1">
+        pyRevit 可以使用 CPython (x64) 引擎来运行命令，而不是活动的 IronPython 引擎。这意味着所有
+        CPython 模块（例如 numpy、scipy）都可以在 Revit 环境中使用。请注意，Revit 是 x64 程序，
+        只能与 x64 版本的 CPython 一起使用。
+    </system:String>
+
+    <system:String x:Key="CoreSettings.UsingCPython.Description2">
+        CPython 引擎随 pyRevit 一起提供，因此您不需要在机器上安装它。但是，如果
+        您打算使用第三方库，请确保您安装了与这里选择的引擎相同版本的 CPython。
+    </system:String>
+
+    <system:String x:Key="CoreSettings.UsingCPython.Description3">
+        PYTHONPATH 环境变量必须指向 "site-packages" 目录，以便可以找到和加载
+        使用 "pip" 包管理器安装的模块。
+    </system:String>
+
+    <system:String x:Key="CoreSettings.UsingCPython.Description4">
+        要使用 CPython 运行脚本，脚本文件的第一行必须是：
+    </system:String>
+
+    <system:String x:Key="CoreSettings.UsingCPython.Description5">
+        更改引擎后保存设置，然后重新启动 Revit。
+    </system:String>
+
+    <system:String x:Key="CoreSettings.Development">开发</system:String>
+    <system:String x:Key="CoreSettings.Development.Description">pyRevit 开发的各种选项</system:String>
+    <system:String x:Key="CoreSettings.Development.LoadBeta">加载 Beta 工具（__beta__ = True 的脚本，需要重新加载）</system:String>
+
+    <system:String x:Key="CoreSettings.CloseOtherConsoles">关闭其他打开的控制台</system:String>
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.Description">
+        如果启用，pyRevit 将在运行新脚本时关闭其他输出控制台。
+        这有助于减少打开的输出窗口数量。激活此选项，除非您想比较
+        多个输出数据。
+    </system:String>
+
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.Current">当前命令控制台</system:String>
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.Current.Description">
+        关闭与当前正在运行的命令关联的所有控制台窗口。
+    </system:String>
+
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.CloseAll">所有控制台</system:String>
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.CloseAll.Description">
+        关闭当前打开的所有控制台窗口，即使它们与正在运行的命令无关。
+    </system:String>
+
+    <system:String x:Key="CoreSettings.Caching">缓存</system:String>
+    <system:String x:Key="CoreSettings.Caching.Button">重置缓存为默认值</system:String>
+    <system:Double x:Key="CoreSettings.Caching.Button.With">200</system:Double>
+
+    <system:String x:Key="CoreSettings.Caching.Description">
+        pyRevit 缓存扩展数据以便更快地运行。
+        此部分控制缓存类型。
+        更改此设置后需要重新启动。
+    </system:String>
+
+
+    <system:String x:Key="CoreSettings.BinaryCache">二进制缓存</system:String>
+    <system:String x:Key="CoreSettings.BinaryCache.Description">
+        二进制缓存是最快的，但缓存文件不可读
+        且对调试不太有用。
+    </system:String>
+
+    <system:String x:Key="CoreSettings.ASCIICache">ASCII 缓存</system:String>
+    <system:String x:Key="CoreSettings.ASCIICache.Description">
+        ASCII 缓存文件是 JSON 文件，可读。
+        它们对调试非常有用。
+    </system:String>
+
+    <system:String x:Key="EnvironmentVariables.Title">环境变量</system:String>
+    <system:String x:Key="EnvironmentVariables.Description">
+        环境变量在当前应用程序域 (AppDomain) 中设置，
+        可供脚本使用。它们用作设置
+        报告模式的全局标志，也由脚本（例如 Sync Views）用来设置其当前切换状态。
+        这些变量可通过 pyrevit.script 模块由脚本访问。
+    </system:String>
+
+    <system:String x:Key="EnvironmentVariables.ListView.VariableName">变量名</system:String>
+    <system:String x:Key="EnvironmentVariables.ListView.VariableValue">值</system:String>
+
+    <system:String x:Key="ReportingLevels.Title">报告级别</system:String>
+    <system:String x:Key="ReportingLevels.Button">重置报告级别为默认值</system:String>
+    <system:Double x:Key="ReportingLevels.Button.Width">200</system:Double>
+
+    <system:String x:Key="ReportingLevels.NoReporting">无报告 (logging.WARNING 及以上)</system:String>
+    <system:String x:Key="ReportingLevels.NoReporting.Description">
+        不会从日志系统打印报告。
+        这意味着 pyRevit 不会在
+        Revit 启动时显示输出窗口，所有 INFO 消息将被抑制。
+        只会打印警告、错误和严重错误。
+    </system:String>
+
+    <system:String x:Key="ReportingLevels.Verbose">详细 (logging.INFO 及以上)</system:String>
+    <system:String x:Key="ReportingLevels.Verbose.Description">
+        详细报告打开输出窗口并仅打印信息消息。
+        这些消息旨在提供有关
+        当前 pyRevit 会话的最基本必要信息。
+    </system:String>
+
+    <system:String x:Key="ReportingLevels.Verbose.Timeout.Start">如果没有错误，在</system:String>
+    <system:String x:Key="ReportingLevels.Verbose.Timeout.Finish">秒后关闭启动窗口。（设置为 0 以保持打开）</system:String>
+
+    <system:String x:Key="ReportingLevels.Debug">调试模式 (logging.DEBUG 及以上)</system:String>
+    <system:String x:Key="ReportingLevels.Debug.Description">
+        这将激活 pyRevit 调试模式，使所有组件和脚本能够
+        报告其调试消息。通常这会导致非常冗长的报告并
+        增加脚本运行时间，但对调试非常有用。
+        仅用于调试目的时激活此选项。
+    </system:String>
+
+    <system:String x:Key="ReportingLevels.FileDebug">文件调试日志</system:String>
+    <system:String x:Key="ReportingLevels.FileDebug.Description">
+        这将激活 pyRevit 文件调试模式。会话期间的所有调试消息
+        （来自加载器或工具）将写入 pyRevit appdata 文件夹中的日志文件。
+        这些文件按 Revit 会话标记，并在每次 Revit 加载时自动清理。
+    </system:String>
+
+    <system:String x:Key="StartupChecks.Title">启动检查</system:String>
+    <system:String x:Key="StartupChecks.Description">
+        您可以设置所需的主机构建号。
+        如果 pyRevit 在
+        具有不同构建号的主机上运行，将显示警告。设置为空
+        以禁用
+    </system:String>
+
+    <system:String x:Key="StartupChecks.Build">所需构建号 (build)：</system:String>
+    <system:String x:Key="StartupChecks.Build.Button">设置为当前主机构建号</system:String>
+    <system:String x:Key="StartupChecks.Build.Button.ToolTip">将所需构建号设置为当前主机构建号</system:String>
+    <system:Double x:Key="StartupChecks.Build.Button.Width">200</system:Double>
+
+    <system:String x:Key="StartupChecks.MinimumSpace">主机驱动器上的最小可用空间（以 GB 为单位）：</system:String>
+    <system:String x:Key="StartupChecks.MinimumSpace.Description">
+        您可以设置主机驱动器上的最小可用空间。
+        如果可用空间小于
+        最小值，pyRevit 将显示警告。设置为 0 以禁用。
+    </system:String>
+
+    <system:String x:Key="Routes.Title">路由</system:String>
+    <system:String x:Key="Routes.Docs">查看 pyRevit 路由文档</system:String>
+    <system:String x:Key="Routes.Description">
+        路由服务器是作为 pyRevit 一部分在 python 中实现的 HTTP API 微框架和服务器。服务器附带
+        一个受 python flask 启发的 python 模块 (pyrevit.routes)，提供必要的函数、
+        类型和装饰器，以便在您的扩展中轻松定义您自己的 API。
+    </system:String>
+
+    <system:String x:Key="Routes.Check">路由服务器 (Beta)</system:String>
+    <system:String x:Key="Routes.RestAPI">REST API 设置</system:String>
+    <system:String x:Key="Routes.RestAPI.Check">pyrevit-core/</system:String>
+
+    <system:String x:Key="Routes.RestAPI.Check.Docs">
+        查看 pyRevit 运行时 API 文档
+    </system:String>
+
+    <system:String x:Key="Routes.RestAPI.Check.Description">
+        pyRevitCore 扩展实现了基本的 REST API 来管理 pyRevit 环境
+    </system:String>
+
+    <system:String x:Key="Telemetry.Title">遥测</system:String>
+    <system:String x:Key="Telemetry.Description">
+        遥测系统记录 pyRevit 扩展下工具的使用情况。
+        您可以激活遥测并将数据发送到服务器（pyRevit 有内置的遥测服务器），
+        或发送到给定目录中的一系列 JSON 文件。如果激活，系统将发送遥测记录
+        到此处提供的目标。将任何字段留空以禁用向该目标发送遥测记录。
+    </system:String>
+
+    <system:String x:Key="Telemetry.Settings">全局遥测设置</system:String>
+    <system:String x:Key="Telemetry.Settings.UseUTC">使用 UTC 时间戳</system:String>
+    <system:String x:Key="Telemetry.ScriptTelemetry">脚本遥测</system:String>
+    <system:String x:Key="Telemetry.SendTelemetry">发送遥测用于</system:String>
+    <system:String x:Key="Telemetry.Hooks">钩子</system:String>
+    <system:String x:Key="Telemetry.CommandBundles">命令包</system:String>
+    <system:String x:Key="Telemetry.ServerUrl">脚本遥测服务器 URL 或 API 端点</system:String>
+    <system:String x:Key="Telemetry.ServerUrl.Example">示例</system:String>
+    <system:String x:Key="Telemetry.ServerUrl.Description">
+        如果在此处提供目标目录，pyRevit 会为每个 pyRevit 会话创建一个新的 JSON 文件，以避免创建可能
+        减慢遥测服务的大型文件。会话 ID 会添加到 JSON 文件名中。
+    </system:String>
+
+    <system:String x:Key="Telemetry.Application">应用程序遥测</system:String>
+    <system:String x:Key="Telemetry.Application.Description">
+        应用程序遥测系统将从事件处理程序收集的事件信息发送到下面列出的遥测服务器。
+        您可以为下面列出的每个事件切换事件日志记录。
+    </system:String>
+
+    <system:String x:Key="Telemetry.Application.ServerUrl">
+        应用程序遥测服务器 URL 或 API 端点（例如 http://telemetryserver.io）：
+    </system:String>
+
+    <system:String x:Key="Telemetry.Application.ToggleAll">全部切换</system:String>
+    <system:Double x:Key="Telemetry.Application.ToggleAll.Width">80</system:Double>
+
+    <system:String x:Key="Telemetry.JsonFile">当前遥测 JSON 文件：</system:String>
+    <system:String x:Key="Telemetry.JsonFile.Button">打开文件夹</system:String>
+    <system:Double x:Key="Telemetry.JsonFile.Button.Width">90</system:Double>
+    <system:String x:Key="Telemetry.JsonFile.Button.ToolTip">打开当前遥测文件夹</system:String>
+    <system:String x:Key="Telemetry.DataFolder">脚本遥测数据文件夹（例如 C:\pyRevitTelemetry）：</system:String>
+    <system:String x:Key="Telemetry.DataFolder.Button.ToolTip">选择遥测文件夹</system:String>
+    <system:String x:Key="Telemetry.Reset.Button">重置</system:String>
+    <system:Double x:Key="Telemetry.Reset.Button.Width">48</system:Double>
+    <system:String x:Key="Telemetry.Reset.Button.ToolTip">将遥测文件夹重置为默认值</system:String>
+    <system:String x:Key="Telemetry.Events">选择活动应用程序遥测事件</system:String>
+
+    <system:String x:Key="SupportedRevitVersions.Title">支持的 Revit 版本</system:String>
+    <system:String x:Key="SupportedRevitVersions.Description">
+        您可以从此处禁用或启用已安装的
+        Revit 版本的 pyRevit。这实际上会从 %appdata%/Autodesk/Revit/Addins 文件夹中删除
+        pyRevit.addin 清单文件。请注意，如果此处列出的任何 Revit 版本标记为
+        &lt;current&gt; 或 &lt;all users&gt;，则对它们的连接将是只读的且无法更改。
+    </system:String>
+
+    <system:String x:Key="UI-UX.Title">UI / UX</system:String>
+    <system:String x:Key="UI-UX.Description">
+        此部分提供与用户界面 (UI) 和用户体验 (UX) 相关的所有设置。
+    </system:String>
+
+    <system:String x:Key="UI-UX.RegionSettings">区域设置</system:String>
+    <system:String x:Key="UI-UX.SelectLanguage">选择 UI 语言：</system:String>
+    <system:String x:Key="UI-UX.RegionSettingsLink">帮助翻译 pyRevit</system:String>
+
+    <system:String x:Key="UI-UX.TabColoring">选项卡着色</system:String>
+    <system:String x:Key="UI-UX.ColoringStyle">着色样式</system:String>
+    <system:String x:Key="UI-UX.ColorizeOpenDocuments">为打开的文档着色</system:String>
+    <system:String x:Key="UI-UX.KeepOpenTabs">按文档排序保持打开的选项卡</system:String>
+
+    <system:String x:Key="UI-UX.ProjectTabStyle">项目选项卡样式</system:String>
+    <system:Double x:Key="UI-UX.ProjectTabStyle.Width">100</system:Double>
+
+    <system:String x:Key="UI-UX.FamilyTabStyle">族选项卡样式</system:String>
+    <system:Double x:Key="UI-UX.FamilyTabStyle.Width">100</system:Double>
+
+    <system:String x:Key="UI-UX.ProjectSample1">项目 1</system:String>
+    <system:String x:Key="UI-UX.ProjectSample2">项目 2</system:String>
+
+    <system:String x:Key="UI-UX.FamilySample1">族 1</system:String>
+    <system:String x:Key="UI-UX.FamilySample2">族 2</system:String>
+
+    <system:String x:Key="UI-UX.ColoringTheme">着色主题</system:String>
+    <system:String x:Key="UI-UX.ColoringTheme.Description1">
+        选择一系列颜色以在文档选项卡打开时应用。
+    </system:String>
+    <system:String x:Key="UI-UX.ColoringTheme.Description2">
+        "按顺序"组中的颜色将按打开顺序应用于文档。当所有颜色都用完时，将不再应用选项卡着色。
+    </system:String>
+    <system:String x:Key="UI-UX.ColoringTheme.Description3">
+        "按筛选器"组中的颜色将应用于与给定名称筛选器匹配的选项卡。如果筛选器匹配
+        任何选项卡名称，按筛选器的颜色将优先于该选项卡的按顺序颜色。
+    </system:String>
+
+    <system:String x:Key="UI-UX.ColoringTheme.Reset">重置</system:String>
+    <GridLength x:Key="UI-UX.ColoringTheme.Reset.Width">50</GridLength>
+    <GridLength x:Key="UI-UX.ColoringTheme.Reset.Width2">190</GridLength>
+
+    <system:String x:Key="UI-UX.ColoringTheme.ByOrder">按顺序</system:String>
+    <system:Double x:Key="UI-UX.ColoringTheme.ByOrder.Width">55</system:Double>
+
+    <system:String x:Key="UI-UX.ColoringTheme.ByFilter">按筛选器</system:String>
+    <system:Double x:Key="UI-UX.ColoringTheme.ByFilter.Width">55</system:Double>
+
+    <system:String x:Key="UI-UX.ColoringTheme.FilterRegex">筛选器 (Regex)</system:String>
+    <GridLength x:Key="UI-UX.ColoringTheme.FilterRegex.Width">80</GridLength>
+    <GridLength x:Key="UI-UX.ColoringTheme.FilterRegex.Width2">160</GridLength>
+
+    <system:String x:Key="UI-UX.ColoringTheme.Parallax">
+        感谢 Parallax 团队提供 "Parallax Tabbed Views"
+    </system:String>
+
+    <system:String x:Key="UI-UX.OutputWindow">输出窗口</system:String>
+    <system:String x:Key="UI-UX.OutputStyling">输出样式 (CSS 样式表)</system:String>
+    <system:String x:Key="UI-UX.PickCssToolTip">选择 CSS 样式表以覆盖默认值。</system:String>
+    <system:String x:Key="UI-UX.ResetCss">重置</system:String>
+    <system:Double x:Key="UI-UX.ResetCss.Width">50</system:Double>
+    <system:String x:Key="UI-UX.ResetCssToolTip">将 CSS 样式表重置为默认值。</system:String>
+    <system:String x:Key="UI-UX.AddToolDebug">向工具提示添加工具调试信息，例如类和程序集名称</system:String>
+
+    <system:String x:Key="Extensions.Title">自定义扩展目录</system:String>
+    <system:String x:Key="Extensions.Description">
+        pyRevit 可以在自定义文件夹中搜索扩展。
+        您可以在任何目录中设置自定义扩展，并在此处添加目录地址。
+        pyRevit 在启动时搜索这些文件夹并加载扩展。这有助于将
+        自定义扩展与 pyRevit 的默认扩展文件夹解耦，这样您可以在不
+        担心自己的扩展文件夹的情况下升级/删除 pyRevit。
+    </system:String>
+
+    <system:String x:Key="Extensions.Info">需要重新加载才能使更改生效。</system:String>
+    <system:String x:Key="Extensions.Button.Add">添加文件夹</system:String>
+    <system:String x:Key="Extensions.Button.Remove">删除所选</system:String>
+    <system:String x:Key="Extensions.Button.RemoveAll">删除全部</system:String>
+    <system:String x:Key="Extensions.Button.Reveal">在资源管理器中显示</system:String>
+
+    <system:String x:Key="Settings.Title">导入 / 导出设置</system:String>
+    <system:String x:Key="Settings.Import">导入设置</system:String>
+    <system:String x:Key="Settings.Export">导出设置</system:String>
+
+    <system:String x:Key="JustSave">仅保存设置</system:String>
+    <system:String x:Key="SaveAndReload">保存设置并重新加载</system:String>
+
+    <system:String x:Key="Events.TypeEvent" xml:space="preserve">API 事件类型：           </system:String>
+    <system:String x:Key="Events.pyRevitHook" xml:space="preserve">pyRevit 事件/钩子名称：  {}</system:String>
+    <system:String x:Key="Events.NotSupport">此 Revit 版本不支持</system:String>
+
+    <system:String x:Key="Events.CommandExecuted" xml:space="preserve">命令已执行
+</system:String>
+    <system:String x:Key="Events.CommandExecuted.EventType" xml:space="preserve">事件类型：               journal-command-exec
+</system:String>
+    <system:String x:Key="Events.CommandExecuted.TracksExecution" xml:space="preserve">跟踪活动日志文件中命令的执行。包括：
+</system:String>
+    <system:String x:Key="Events.CommandExecuted.BuiltinCommands" xml:space="preserve">  内置命令（例如 ID_OBJECTS_WALL）
+</system:String>
+    <system:String x:Key="Events.CommandExecuted.ThirdPartyCommands" xml:space="preserve">  第三方命令（例如 CustomCtrl_%CustomCtrl_%Site Designer%Modify%Sidewalk）
+</system:String>
+    <system:String x:Key="Events.CommandExecuted.pyRevitCommands" xml:space="preserve">  pyRevit 命令（例如 CustomCtrl_%CustomCtrl_%pyRevit%pyRevit%Settings）
+</system:String>
+
+    <system:String x:Key="RevitAttachment.Current">&lt;当前&gt;</system:String>
+    <system:String x:Key="RevitAttachment.AllUsers">&lt;所有用户&gt;</system:String>
+    <system:String x:Key="RevitAttachment.NotAttached">&lt;未附加&gt;</system:String>
+    <system:String x:Key="RevitAttachment.NotInstalled">&lt;未安装&gt;</system:String>
+
+    <system:String x:Key="Engines.WasChanged">
+        活动引擎已更改。
+        重新启动 Revit 以使此更改生效。
+    </system:String>
+
+    <system:String x:Key="Engines.CPython.WasChanged">
+        活动 CPython 引擎已更改。
+        重新启动 Revit 以使此更改生效。
+    </system:String>
+
+    <system:String x:Key="Telemetry.Status">未知状态。单击此处进行测试</system:String>
+
+    <system:String x:Key="Routes.Changed">
+        路由服务器设置已更改。
+        需要重新加载 pyRevit 才能使此更改
+        生效。您想现在重新加载吗？
+    </system:String>
+
+    <system:String x:Key="Routes.RestChanged">
+        pyRevit Core REST API 设置已更改。
+        需要重新加载 pyRevit 才能使此更改生效。
+        您想现在重新加载吗？
+    </system:String>
+
+    <system:String x:Key="UI-UX.LangChanged">
+        UI 语言已更改。需要重新加载 pyRevit
+        才能使此更改生效。您想
+        现在重新加载吗？
+    </system:String>
+
+    <system:String x:Key="UI-UX.NeedReload">
+        pyRevit UI 配置已更改。需要重新加载 pyRevit
+        才能使此更改生效。您想
+        现在重新加载吗？
+    </system:String>
+
+    <system:String x:Key="pyRevit.AdminInstall">pyRevit 设置由您的管理员设置。</system:String>
+
+</ResourceDictionary>

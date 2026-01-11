@@ -1,11 +1,13 @@
 title:
-  ru: Изменить
-  fr_fr: Modifier
   en_us: Modify
+  fr_fr: Modifier
+  ru: Изменить
+  chinese_s: 修改
+  es_es: Modificar
   de_de: Ändern
 layout:
   - edit1
   - edit2
   - edit3
-  - -----
+  - '-----'
   - 3D

@@ -1,32 +1,11 @@
 title:
-  ru: Сравнить виды
-  fr_fr: Comparer les vues de détail
   en_us: Compare Detail Views
+  fr_fr: Comparer les vues de détail
+  ru: Сравнить виды
+  chinese_s: 比较详图视图
+  es_es: Comparar vistas de detalle
   de_de: Detailansichten vergleichen
 tooltip:
-  ru: >-
-    Сравнение двух видов путем сравнения содержимого друг с другом. По умолчанию 
-    данный инструмент не учитывает типы элементов. Например, два текстовых элемента
-    с одинаковым текстом, но с разными стилями считаются одинаковыми. Однако это можно изменить, 
-    нажав SHIFT. Если виды не совпадают, будут выбраны все различные элементы. Данный инструмент 
-    полезен при сравнении скопированных видов.
-    
-    
-    SHIFT-Click:
-    
-    Включить типы элементов при сравнении видов.
-  fr_fr: >-
-    Comparé deux vues en comparant les contenus les uns par rapport aux autres. Par défaut
-    cet outil ne fait pas attention aux types d'éléments. Par exemple, deux textes
-    ayant le même contenu mais avec des styles différents sont considérés
-    égal. Ceci peut cependant être remplacé en utilisant le SHIFT-Click. Si les vues 
-    ne correspondent pas, tous les différents éléments seront sélectionnés. Cet outil est utile
-    lors de la comparaison de vues de détail en double
-
-
-    SHIFT-Click:
-
-    Inclure les types d'élément dans la comparaison des vues
   en_us: >-
     Compared two views by comparing the contents against each other. By default
     this tool does not pay attention to the element types. For example, two text
@@ -39,13 +18,40 @@ tooltip:
     SHIFT-Click:
 
     Include Element Types in comparing views
+  fr_fr: >-
+    Comparé deux vues en comparant les contenus les uns par rapport aux autres. Par défaut
+    cet outil ne fait pas attention aux types d'éléments. Par exemple, deux textes
+    ayant le même contenu mais avec des styles différents sont considérés
+    égal. Ceci peut cependant être remplacé en utilisant le SHIFT-Click. Si les vues  ne correspondent pas, tous les différents éléments seront sélectionnés. Cet outil est utile
+    lors de la comparaison de vues de détail en double
+
+
+    SHIFT-Click:
+
+    Inclure les types d'élément dans la comparaison des vues
+  ru: >-
+    Сравнение двух видов путем сравнения содержимого друг с другом. По умолчанию  данный инструмент не учитывает типы элементов. Например, два текстовых элемента
+    с одинаковым текстом, но с разными стилями считаются одинаковыми. Однако это можно изменить,  нажав SHIFT. Если виды не совпадают, будут выбраны все различные элементы. Данный инструмент  полезен при сравнении скопированных видов.
+
+
+    SHIFT-Click:
+
+    Включить типы элементов при сравнении видов.
+  chinese_s: "通过相互比较内容来对比两个视图。默认情况下，此工具不关注图元类型。例如，两个内容相同但样式不同的文字图元将被视为相等。但这可以通过按住 SHIFT 键单击来覆盖。如果视图不匹配，所有不同的图元将被选中。此工具在比较重复的详图视图时很有用\n\nSHIFT-单击：在比较视图时包含图元类型"
+  es_es: >-
+    Compara dos vistas comparando sus contenidos entre sí. Por defecto
+    esta herramienta no presta atención a los tipos de elementos. Por ejemplo, dos elementos
+    de texto que tienen el mismo contenido pero con diferentes estilos se consideran
+    iguales. Sin embargo, esto se puede anular usando SHIFT-Clic. Si las vistas no
+    coinciden, se seleccionarán todos los elementos diferentes. Esta herramienta es útil
+    al comparar vistas de detalle duplicadas
+
+
+    SHIFT-Clic:
+
+    Incluir tipos de elementos al comparar vistas
   de_de: >-
-    Vergleicht zwei Ansichten, indem es die Inhalte gegeneinander abgleicht. Standardmäßig 
-    berücksichtigt dieses Werkzeug die Elementtypen nicht. So werden beispielsweise zwei 
-    Textelemente mit gleichem Inhalt, aber unterschiedlichem Stil als gleichwertig betrachtet. 
-    Dies kann jedoch mit dem SHIFT-Klick außer Kraft gesetzt werden. Wenn die Ansichten 
-    nicht übereinstimmen, werden alle unterschiedlichen Elemente ausgewählt. Dieses Werkzeug 
-    ist hilfreich beim Vergleich von doppelten Detailansichten
+    Vergleicht zwei Ansichten, indem es die Inhalte gegeneinander abgleicht. Standardmäßig  berücksichtigt dieses Werkzeug die Elementtypen nicht. So werden beispielsweise zwei  Textelemente mit gleichem Inhalt, aber unterschiedlichem Stil als gleichwertig betrachtet.  Dies kann jedoch mit dem SHIFT-Klick außer Kraft gesetzt werden. Wenn die Ansichten  nicht übereinstimmen, werden alle unterschiedlichen Elemente ausgewählt. Dieses Werkzeug  ist hilfreich beim Vergleich von doppelten Detailansichten
 
 
     SHIFT-Click:

@@ -1,11 +1,15 @@
 title:
-  ru: Получить RVT инфу
-  fr_fr: Obtenir les infos d'un RVT
   en_us: Get RVT Info
+  fr_fr: Obtenir les infos d'un RVT
+  ru: Получить RVT инфу
+  chinese_s: 获取 RVT 文件信息
+  es_es: Obtener información RVT
   de_de: Infos einer RVT Datei abrufen
 tooltip:
-  ru: Получает информацию из RVT файла.
-  fr_fr: Obtenir les informations d'un fichier RVT
   en_us: Get information from a RVT file
+  fr_fr: Obtenir les informations d'un fichier RVT
+  ru: Получает информацию из RVT файла.
+  chinese_s: 从 RVT 文件中获取信息
+  es_es: Obtener información de un archivo RVT
   de_de: Man kann eine RVT Datei auswählen und bekommt Informationen dazu angezeigt
 context: zero-doc

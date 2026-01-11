@@ -1,37 +1,50 @@
 title:
-  ru: Выделить похожие элементы в текущем виде
-  fr_fr: Sélectionner les éléments similaires dans la vue active
   en_us: Select Similar Elements In Active View
+  fr_fr: Sélectionner les éléments similaires dans la vue active
+  ru: Выделить похожие элементы в текущем виде
+  chinese_s: 在活动视图中选择类似图元
+  es_es: Seleccionar elementos similares en la vista activa
   de_de: Ähnliche Elemente in der aktiven Ansicht auswählen
 tooltip:
-  ru: >-
-    Выделяет похожие элементы в текущих
-    
-    выделенных элементов в текущем виде.
-    
-    Shift-Click:
-    
-    Выделяет во всем проекте.
-  fr_fr: >-
-     Sélectionne des éléments similaires aux éléments
-    
-     actuels sélectionnés dans la vue active
-    
-     Shift-Click :
-     
-     sélectionner dans l'ensemble du projet
   en_us: >-
     Selects elements similar to the currently
-    
+
     selected elements in the active view
-    
+
     Shift-Click :
-    
+
     select in whole project
+  fr_fr: >-
+    Sélectionne des éléments similaires aux éléments
+
+    actuels sélectionnés dans la vue active
+
+    Shift-Click :
+
+    sélectionner dans l'ensemble du projet
+  ru: >-
+    Выделяет похожие элементы в текущих
+
+    выделенных элементов в текущем виде.
+
+    Shift-Click:
+
+    Выделяет во всем проекте.
+  chinese_s: "在活动视图中，选择与当前选定图元类似的图元
+
+    Shift+单击：
+
+    在整个项目中选择类似图元"
+  es_es: >-
+    Selecciona elementos similares a los elementos actualmente seleccionados en la vista activa
+
+    Shift-Clic:
+
+    seleccionar en todo el proyecto
   de_de: >-
     Es werden in der aktiven Ansicht die Elemente ausgewählt die dem aktuell gewähltem Element ähnlich sind. 
-    
+
     Shift-Click :
-    
-    Es werden im gesamten Modell die Elemente ausgewählt die dem aktuell gewähltem Element ähnlich sind. 
+
+    Es werden im gesamten Modell die Elemente ausgewählt die dem aktuell gewähltem Element ähnlich sind.
 context: selection

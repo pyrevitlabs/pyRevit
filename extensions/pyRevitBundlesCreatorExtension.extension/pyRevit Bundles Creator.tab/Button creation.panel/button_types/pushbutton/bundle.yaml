@@ -1,9 +1,14 @@
 title:
-  en_us: english title
-  fr_fr: french title
-  es_es: spanish title
-tooltip: 
-  en_us: english tooltip
-  fr_fr: french tooltip
-  es_es: spanish tooltip
-# highlight: new
+  en_us: Pushbutton
+  fr_fr: Bouton Pushbutton
+  ru: Кнопка Pushbutton
+  chinese_s: Pushbutton 按钮
+  es_es: Botón Pushbutton
+  de_de: Pushbutton Schaltfläche
+tooltip:
+  en_us: Pushbutton
+  fr_fr: Bouton Pushbutton
+  ru: Кнопка Pushbutton
+  chinese_s: Pushbutton 按钮
+  es_es: Botón Pushbutton
+  de_de: Pushbutton Schaltfläche

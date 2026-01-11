@@ -1,13 +1,15 @@
 title:
-  ru: Показать DWG
-  fr_fr: Lister les fichier DWG
   en_us: List DWGs
+  fr_fr: Lister les fichier DWG
+  ru: Показать DWG
+  chinese_s: 列出 DWG 文件
+  es_es: Listar DWG
   de_de: Liste DWGs auf
 tooltip:
-  ru: Показывает все сявзанные и импортированные экземпляры DWG с рабочими наборами и создателем.
-  fr_fr: Répertorie toutes les instances DWG liées et importées avec les sous-projets et le créateur
   en_us: Lists all linked and imported DWG instances with worksets and creator
+  fr_fr: Répertorie toutes les instances DWG liées et importées avec les sous-projets et le créateur
+  ru: Показывает все сявзанные и импортированные экземпляры DWG с рабочими наборами и создателем.
+  chinese_s: 列出所有链接和导入的 DWG 实例，并显示其工作集和创建者
+  es_es: Lista todas las instancias DWG vinculadas e importadas con áreas de trabajo y creador
   de_de: Es werden alle verknüpften und importierten DWG Instanzen aufgelistet mit Bearbeitungsbereich und Ersteller
 author: 'Frederic Beaupere'
-
-

@@ -1,12 +1,16 @@
 title:
-  ru: Показать/Выделить основные надписи на листах
-  fr_fr: Lister les Cartouches sur les Feuilles
   en_us: List/Select TitleBlocks on Sheets
+  fr_fr: Lister les Cartouches sur les Feuilles
+  ru: Показать/Выделить основные надписи на листах
+  chinese_s: 列出/选择图纸上的标题栏
+  es_es: Listar/Seleccionar bloques de título en hojas
   de_de: Liste alle Planköpfe auf Plänen auf
 tooltip:
-  ru: Показывает основные надписи на выделенных листах для просмотра или выделения.
+  en_us: Lists title blocks on selected sheets for review or selection
   fr_fr: >-
     Répertorie les cartouches sur les feuilles sélectionnées pour examen ou
     sélection
-  en_us: Lists title blocks on selected sheets for review or selection
+  ru: Показывает основные надписи на выделенных листах для просмотра или выделения.
+  chinese_s: 列出选定图纸上的标题栏以供检查或选择
+  es_es: Lista los bloques de título en las hojas seleccionadas para revisión o selección
   de_de: Listet alle Planköpfe von ausgewählten Plänen auf, um sie zu überprüfen oder auszuwählen

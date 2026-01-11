@@ -1,11 +1,15 @@
 title:
-  fr_fr: Créer des boutons
   en_us: Create Buttons
+  fr_fr: Créer des boutons
   ru: Создать кнопки
-  es_es: Creador de botones
+  chinese_s: 创建按钮
+  es_es: Crear botones
+  de_de: Buttons erstellen
 tooltip:
-  fr_fr: Créer des boutons
   en_us: Create Buttons
+  fr_fr: Créer des boutons
   ru: Создает кнопки.
-  es_es: Creador de botones
+  chinese_s: 创建按钮
+  es_es: Crear botones
+  de_de: Buttons erstellen
 context: zero-doc

@@ -1,23 +1,30 @@
 title:
-  ru: Найти связанные листы
-  fr_fr: Trouver les feuilles qui référencent la vue
   en_us: Find Referencing Sheets
+  fr_fr: Trouver les feuilles qui référencent la vue
+  ru: Найти связанные листы
+  chinese_s: 查找引用图纸
+  es_es: Encontrar hojas que referencian
   de_de: Suche alle referenzierten Pläne
 tooltip:
-  ru: >-
-    Находит все связанные листы с текущим видом.
-    
-    Особенно полезно для поиска легенд.
-  fr_fr: >-
-    Trouver toutes les vues qui référencent la vue active
-
-    Utile en particulier pour trouver les légendes
   en_us: >-
     Find all sheets referencing the current view
 
     Especially useful for finding legends
+  fr_fr: >-
+    Trouver toutes les vues qui référencent la vue active
+
+    Utile en particulier pour trouver les légendes
+  ru: >-
+    Находит все связанные листы с текущим видом.
+
+    Особенно полезно для поиска легенд.
+  chinese_s: "查找所有引用当前视图的图纸。\n尤其适用于查找图例"
+  es_es: >-
+    Encontrar todas las hojas que referencian la vista actual
+
+    Especialmente útil para encontrar leyendas
   de_de: >-
     Es werden alle Pläne aufgelistet, die die aktuelle Ansicht referenzieren.
 
-    Dies ist insbesondere hilfreich, um Legenden zu finden. 
+    Dies ist insbesondere hilfreich, um Legenden zu finden.
 author: '{{author}}'

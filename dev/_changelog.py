@@ -26,7 +26,7 @@ class ChangeClass:
         self._label = label
         self._aspect_type = None
         self._aspect_pattern = ChangeClass.DefaultPattern
-        if m := re.match(r".*\[(.+?)(->(.+?))?\].*", label.description):
+        if label.description and (m := re.match(r".*\[(.+?)(->(.+?))?\].*", label.description)):
             self._aspect_type = m.groups()[0]
             if pattern := m.groups()[2]:
                 self._aspect_pattern = f"- {pattern}"
@@ -125,7 +125,7 @@ class Change:
             return [
                 ChangeClass(x)
                 for x in self._ticketdata.labels
-                if "[subsystem" in x.description
+                if x.description and "[subsystem" in x.description
             ]
         return []
 
@@ -136,7 +136,7 @@ class Change:
             return [
                 ChangeClass(x)
                 for x in self._ticketdata.labels
-                if "[class" in x.description
+                if x.description and "[class" in x.description
             ]
         return []
 

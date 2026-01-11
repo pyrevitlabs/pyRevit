@@ -1,12 +1,14 @@
 title:
-  ru: Чертежный набор
   en_us: Drawing set
   fr_fr: Set de dessins
+  ru: Чертежный набор
+  chinese_s: 图纸集
+  es_es: Conjunto de dibujos
   de_de: Zeichnungssatz
 layout:
   - Sheets
   - Revision
   - Keynotes
   - views
-  - -----
+  - '-----'
   - Print Sheets

@@ -1,13 +1,15 @@
 title:
+  en_us: Blog
+  fr_fr: Blog
   ru: Блог
-  en_us: "Blog"
-  fa: "وبلاگ"
-  ar: "بلاگ"
-  es_es: 'Blog'
-  de_de: "Blog"
+  chinese_s: 博客
+  es_es: Blog
+  de_de: Blog
 tooltip:
-  ru: Открывает блог pyRevit.
   en_us: Opens the pyRevit blog.
+  fr_fr: Ouvre le blog de pyRevit.
+  ru: Открывает блог pyRevit.
+  chinese_s: 打开 pyRevit 博客。
   es_es: Abre el blog de pyRevit.
   de_de: Öffnet den pyRevit Blog.
 context: zero-doc

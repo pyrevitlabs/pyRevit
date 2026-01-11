@@ -1,7 +1,9 @@
 title:
-  ru: Штриховки
   en_us: Patterns
   fr_fr: Hachures
+  ru: Штриховки
+  chinese_s: 填充图案
+  es_es: Patrones
   de_de: Muster
 layout:
   - Make Pattern

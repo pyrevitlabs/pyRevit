@@ -1,14 +1,17 @@
 title:
-  ru: Конвертировать легенду в чертеж
-  fr_fr: Convertir les légendes en vues de dessin
   en_us: Convert legend to drafting
+  fr_fr: Convertir les légendes en vues de dessin
+  ru: Конвертировать легенду в чертеж
+  chinese_s: 将图例视图转换为详图视图
+  es_es: Convertir leyenda a vista de detalle
   de_de: Legendenansicht in Zeichenansicht umwandeln
 tooltip:
-  ru: Конвертирует выделенные легенды в чертеж.
-  fr_fr: Convertir les légendes sélectionnée en vues de dessin
   en_us: Converts selected legend views to detail views
+  fr_fr: Convertir les légendes sélectionnée en vues de dessin
+  ru: Конвертирует выделенные легенды в чертеж.
+  chinese_s: 将选定的图例视图转换为详图视图
+  es_es: Convierte las vistas de leyenda seleccionadas en vistas de detalle
   de_de: >-
-    Es erscheint ein Dialog auf dem alle Legendenansichten zur Auswahl stehen. 
-    Die hier ausgewählten Legendenansichten werden nach der Bestätigung mit "Select"
+    Es erscheint ein Dialog auf dem alle Legendenansichten zur Auswahl stehen.  Die hier ausgewählten Legendenansichten werden nach der Bestätigung mit "Select"
     in Zeichenansichten umgewandelt. Achtung: Legendenkomponenten dürfen nicht
     auf der Legendansicht platziert sein!

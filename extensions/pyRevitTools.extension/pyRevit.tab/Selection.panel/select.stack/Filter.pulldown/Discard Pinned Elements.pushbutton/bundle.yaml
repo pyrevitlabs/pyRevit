@@ -1,15 +1,16 @@
 title:
-  ru: Отбросить прикрепленные элементы
-  fr_fr: Enlève les éléments épinglés
   en_us: Discard Pinned Elements
+  fr_fr: Enlève les éléments épinglés
+  ru: Отбросить прикрепленные элементы
+  chinese_s: 排除锁定图元
+  es_es: Descartar elementos fijados
   de_de: Gepinnte Elemente von der aktuellen Auswahl ausschliessen
 tooltip:
-  ru: Отбросить (не удалить) прикрепленные элементы с текущего выделения.
-  fr_fr: Enlève (ne supprime pas) les éléments épinglés de la sélection courante
   en_us: Discards (not delete) pinned elements from current selection
+  fr_fr: Enlève (ne supprime pas) les éléments épinglés de la sélection courante
+  ru: Отбросить (не удалить) прикрепленные элементы с текущего выделения.
+  chinese_s: 从当前选择中排除（非删除）已锁定的图元
+  es_es: Descarta (no elimina) elementos fijados de la selección actual
   de_de: >-
-    Die aktuelle Elementauswahl wird so vermindert, 
-    dass keine gepinnte Elemente mehr in der Auswahl vorhanden sind. 
-    Die Elemente werden also nicht gelöscht, 
-    sondern nur aus der aktuellen Auswahl entfernt.
+    Die aktuelle Elementauswahl wird so vermindert,  dass keine gepinnte Elemente mehr in der Auswahl vorhanden sind.  Die Elemente werden also nicht gelöscht,  sondern nur aus der aktuellen Auswahl entfernt.
 context: Selection

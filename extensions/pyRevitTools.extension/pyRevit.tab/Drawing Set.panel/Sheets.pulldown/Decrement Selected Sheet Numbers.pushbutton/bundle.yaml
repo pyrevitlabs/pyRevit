@@ -1,19 +1,24 @@
 title:
-  ru: Уменьшить номер выделенного листа
-  fr_fr: Décrémenter les Numéros des Feuilles Sélectionnées
   en_us: Decrement Selected Sheet Numbers
+  fr_fr: Décrémenter les Numéros des Feuilles Sélectionnées
+  ru: Уменьшить номер выделенного листа
+  chinese_s: 递减选定图纸编号
+  es_es: Decrementar números de hojas seleccionadas
   de_de: Verkleinere die gewählten Plannummern
 tooltip:
-  ru: >-
-    Уменьшает номер листа на один. Изменение листа будет выведено, 
-    если в настройках pyRevit ведение журнала установлено значение Verbose.
+  en_us: >-
+    Decreases the sheet number of the selected sheets by one. The sheet name
+    change will be printed if logging is set to Verbose in pyRevit settings
   fr_fr: >-
     Diminue de un le numéro de feuille des feuilles sélectionnées. Le changement
     de nom de feuille sera imprimé si la journalisation est définie sur Verbose
     dans les paramètres pyRevit
-  en_us: >-
-    Decreases the sheet number of the selected sheets by one. The sheet name
-    change will be printed if logging is set to Verbose in pyRevit settings
+  ru: >-
+    Уменьшает номер листа на один. Изменение листа будет выведено,  если в настройках pyRevit ведение журнала установлено значение Verbose.
+  chinese_s: 将所选图纸的图纸编号减一。如果在 pyRevit 设置中将日志记录设置为“详细”，将打印图纸名称更改
+  es_es: >-
+    Disminuye el número de hoja de las hojas seleccionadas en uno. El cambio
+    de nombre de hoja se imprimirá si el registro está configurado en Verbose en la configuración de pyRevit
   de_de: >-
     Verringert die Plannummer der ausgewählten Pläne um eins. Die Änderung des Plannamens
     wird gedruckt, wenn die Protokollierung in den pyRevit-Einstellungen auf Verbose eingestellt ist.

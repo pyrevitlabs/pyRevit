@@ -1,3 +1,10 @@
+title:
+  en_us: Selection
+  fr_fr: Sélection
+  ru: Выборка
+  chinese_s: 选择
+  es_es: Selección
+  de_de: Auswahl
 layout:
   - Pick
   - Set Workset

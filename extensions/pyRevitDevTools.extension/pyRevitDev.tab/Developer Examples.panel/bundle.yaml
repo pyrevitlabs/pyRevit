@@ -1,5 +1,12 @@
-title: Developer Examples
+title:
+  en_us: Developer Examples
+  fr_fr: Exemples de développeur
+  ru: Примеры разработчика
+  chinese_s: 开发者示例
+  es_es: Ejemplos de desarrollador
+  de_de: Entwicklerbeispiele
 layout:
   - CLR
   - Inspect IExporter
   - DirectContext3D
+  - Settings Window

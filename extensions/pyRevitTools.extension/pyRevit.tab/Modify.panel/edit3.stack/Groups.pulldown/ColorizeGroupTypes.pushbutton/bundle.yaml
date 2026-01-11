@@ -1,24 +1,11 @@
 title:
-  ru: Раскрасить типы групп
-  fr_fr: Colorer les types de groupes
   en_us: Colorize Group Types
+  fr_fr: Colorer les types de groupes
+  ru: Раскрасить типы групп
+  chinese_s: 着色组类型
+  es_es: Colorear tipos de grupos
   de_de: Gruppentypen einfärben
 tooltip:
-  ru: |-
-    Переопределяет графику в экземплярах групп на выделенных видах или активном виде
-    таким образом, чтобы все экземпляры одного и того же типа группы были отмечены одним цветом.
-    Вы можете выбрать несколько представлений перед запуском инструмента для расскраски всех типов групп.
-    
-    Заметка:
-    Группы только с одним экземпляром на виде будут расскрашены в серый цвет.
-  fr_fr: |-
-    Remplace les graphismes des occurences de groupes sur les vues sélectionnées ou
-    la vue active de telle sorte que toutes les occurences du même type de groupe
-    sont identifiées de la même couleur. Vous pouvez sélectionner plusieurs vues avant
-    exécuter l'outil pour coloriser les types de groupes dans chacune
-
-    Noter:
-    Les groupes avec une seule occurence dans les vues seront colorés en gris
   en_us: |-
     Overrides graphics of groups instances on selected views or
     active view in such way that all instances of the same group type
@@ -27,6 +14,30 @@ tooltip:
 
     Note:
     Groups with only 1 instance on views will be colored in gray
+  fr_fr: |-
+    Remplace les graphismes des occurences de groupes sur les vues sélectionnées ou
+    la vue active de telle sorte que toutes les occurences du même type de groupe
+    sont identifiées de la même couleur. Vous pouvez sélectionner plusieurs vues avant
+    exécuter l'outil pour coloriser les types de groupes dans chacune
+
+    Noter:
+    Les groupes avec une seule occurence dans les vues seront colorés en gris
+  ru: |-
+    Переопределяет графику в экземплярах групп на выделенных видах или активном виде
+    таким образом, чтобы все экземпляры одного и того же типа группы были отмечены одним цветом.
+    Вы можете выбрать несколько представлений перед запуском инструмента для расскраски всех типов групп.
+
+    Заметка:
+    Группы только с одним экземпляром на виде будут расскрашены в серый цвет.
+  chinese_s: "替换选定视图或活动视图中组实例的图形外观，使同一组类型的所有实例均以相同颜色标记。您可以在运行工具前选择多个视图，以便一次性为所有这些视图中的组类型着色\n注意：\n视图中仅存在一个实例的组将显示为灰色。"
+  es_es: |-
+    Sobrescribe la gráfica de instancias de grupos en vistas seleccionadas o
+    vista activa de tal manera que todas las instancias del mismo tipo de grupo
+    están marcadas con el mismo color. Puede seleccionar múltiples vistas antes de
+    ejecutar la herramienta para colorear los tipos de grupos en todas ellas a la vez
+
+    Nota:
+    Los grupos con solo 1 instancia en las vistas se colorearán en gris
   de_de: |-
     Zunächst markiert man im Projektbrowser die Ansichten, auf denen man die 
     Elementgrafiken von Gruppen überschreiben möchte. Wenn keine Ansichten 

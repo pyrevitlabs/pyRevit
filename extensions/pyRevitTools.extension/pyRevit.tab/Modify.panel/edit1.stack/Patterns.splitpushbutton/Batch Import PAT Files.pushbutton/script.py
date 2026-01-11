@@ -1,6 +1,8 @@
+# -*- coding: utf-8 -*-
 """Batch import AutoCAD PAT files into Revit model."""
 
 import math
+import io
 from collections import namedtuple
 
 from pyrevit import framework
@@ -43,7 +45,7 @@ def extract_patdefs(patfile):
     active_type = ''
     active_grids = []
     print('Extracting patterns from {}'.format(patfile))
-    with open(patfile, 'r') as patf:
+    with io.open(patfile, 'r', encoding='utf-8') as patf:
         for patline in patf.readlines():
             logger.debug('processing line: {}'.format(patline))
             # skip if patline is a comment line

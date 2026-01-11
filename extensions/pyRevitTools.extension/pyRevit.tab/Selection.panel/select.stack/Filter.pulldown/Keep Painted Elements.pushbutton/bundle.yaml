@@ -1,16 +1,16 @@
 title:
-  ru: Удержать раскрашенные элементы
-  fr_fr: Conserve les éléments peints
   en_us: Keep Painted Elements
+  fr_fr: Conserve les éléments peints
+  ru: Удержать раскрашенные элементы
+  chinese_s: 保留已涂刷图元
+  es_es: Mantener elementos pintados
   de_de: Nur Elemente mit gefärbten Flächen in aktueller Auswahl belassen
 tooltip:
-  ru: Удерживает элементы с расскрашенными гранями в текущем выделении и отфильтровывает все остальное.
-  fr_fr: Conserve les éléments avec des faces peintes dans la sélection actuelle et filtre tout le reste.
   en_us: Keeps elements with painted faces in current selection and filters everything else out.
+  fr_fr: Conserve les éléments avec des faces peintes dans la sélection actuelle et filtre tout le reste.
+  ru: Удерживает элементы с расскрашенными гранями в текущем выделении и отфильтровывает все остальное.
+  chinese_s: 在当前选择中保留表面已涂刷的图元，并过滤掉其他所有图元
+  es_es: Mantiene elementos con caras pintadas en la selección actual y filtra todo lo demás.
   de_de: >-
-    Die aktuelle Elementauswahl wird so vermindert, 
-    dass nur Elemente in der Auswahl verbleiben, 
-    die eingefärbte Flächen haben. 
-    Die Elemente werden also nicht gelöscht, 
-    sondern nur aus der aktuellen Auswahl entfernt.
+    Die aktuelle Elementauswahl wird so vermindert,  dass nur Elemente in der Auswahl verbleiben,  die eingefärbte Flächen haben.  Die Elemente werden also nicht gelöscht,  sondern nur aus der aktuellen Auswahl entfernt.
 context: Selection

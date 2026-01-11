@@ -1,3 +1,5 @@
+
+# -*- coding: utf-8 -*-
 """Handles http api routing and serving with usage similar to flask."""
 #pylint: disable=import-error,invalid-name,broad-except,dangerous-default-value,missing-docstring
 from pyrevit import HOST_APP, PyRevitException

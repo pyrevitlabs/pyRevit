@@ -1,11 +1,15 @@
 context: selection
 title:
-  ru: Найти все связанные зависимости
-  fr_fr: Trouver toutes les contraintes attachées
   en_us: Find all attached constraints
+  fr_fr: Trouver toutes les contraintes attachées
+  ru: Найти все связанные зависимости
+  chinese_s: 查找所有附着约束
+  es_es: Encontrar todas las restricciones adjuntas
   de_de: Finde alle verbundenen Abhängigkeiten
 tooltip:
-  ru: Находит все зависимости, связанные с выделенным элементом.
-  fr_fr: Trouver toutes les contraintes attachées à l'élément sélectionné
   en_us: Find all constraints attached to the selected element
-  de_de: Finde alle Abhängigkeiten die mit dem gewählten Element verbunden sind  
+  fr_fr: Trouver toutes les contraintes attachées à l'élément sélectionné
+  ru: Находит все зависимости, связанные с выделенным элементом.
+  chinese_s: 查找附着到所选图元的所有约束
+  es_es: Encontrar todas las restricciones adjuntas al elemento seleccionado
+  de_de: Finde alle Abhängigkeiten die mit dem gewählten Element verbunden sind

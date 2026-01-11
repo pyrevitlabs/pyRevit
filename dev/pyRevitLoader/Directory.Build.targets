@@ -6,18 +6,20 @@
         <None Remove="obj\**" />
     </ItemGroup>
     
-    <ItemGroup Condition="$(UseRunner)=='' OR $(UseRunner)==False">
+    <ItemGroup Condition="'$(UseLoader)' == 'true'">
         <Compile Include="..\Source\PyRevitLoaderApplication.cs" Link="Source\PyRevitLoaderApplication.cs"/>
         <Compile Include="..\Source\ScriptExecutor.cs" Link="Source\ScriptExecutor.cs"/>
+        <Compile Include="..\Source\SmartButtonExecutor.cs" Link="Source\SmartButtonExecutor.cs"/>
+        <Compile Include="..\Source\ComboBoxExecutor.cs" Link="Source\ComboBoxExecutor.cs"/>
     </ItemGroup>
 
-    <ItemGroup Condition="$(UseRunner)==True">
+    <ItemGroup Condition="'$(UseRunner)' == 'true'">
         <Compile Include="..\Source\PyRevitRunnerApplication.cs" Link="Source\PyRevitRunnerApplication.cs"/>
         <Compile Include="..\Source\PyRevitRunnerCommand.cs" Link="Source\PyRevitRunnerCommand.cs"/>
         <Compile Include="..\Source\ScriptExecutor.cs" Link="Source\ScriptExecutor.cs"/>
     </ItemGroup>
 
-    <ItemGroup Condition="$(IronPythonVersion.Contains('PR'))">
+    <ItemGroup Condition="'$(UseIronPython)' != 'false' AND $(IronPythonVersion.Contains('PR'))">
         <Reference Include="IronPython" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\pyRevitLabs.IronPython.dll"/>
         <Reference Include="IronPython.Modules" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\pyRevitLabs.IronPython.Modules.dll"/>
         <Reference Include="IronPython.SQLite" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\pyRevitLabs.IronPython.SQLite.dll"/>
@@ -26,27 +28,63 @@
         <Reference Include="Microsoft.Scripting" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\pyRevitLabs.Microsoft.Scripting.dll"/>
     </ItemGroup>
 
-    <ItemGroup Condition="!$(IronPythonVersion.Contains('PR'))">
+    <ItemGroup Condition="'$(UseIronPython)' != 'false' AND !$(IronPythonVersion.Contains('PR'))">
         <PackageReference Include="IronPython" Version="$(Version)"/>
     </ItemGroup>
     
     <ItemGroup>
         <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="Microsoft.CSharp"/>
     </ItemGroup>
-
-    <ItemGroup>
+    
+    <ItemGroup Condition="'$(UseAssemblyBuilder)' == 'true'">
+        <ProjectReference Include="..\pyRevitAssemblyBuilder\pyRevitAssemblyBuilder.csproj" />
+    </ItemGroup>
+    
+    <ItemGroup Condition="'$(UseExtensionParser)' == 'true'">
+        <ProjectReference Include="..\pyRevitExtensionParser\pyRevitExtensionParser.csproj" />
+    </ItemGroup>
+    
+    <ItemGroup Condition="'$(UseIronPython)' != 'false'">
         <EmbeddedResource Include="$(IronPythonStdLibDir)\$(IronPythonStdLib)"/>
     </ItemGroup>
-
+    
+    <ItemGroup Condition="'$(UseRoslyn)' == 'true'">
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.13.0" />
+    </ItemGroup>
+    
     <Target Name="Deploy" AfterTargets="AfterBuild">
         <ItemGroup>
             <AllFilesToCopy Include="$(TargetDir)\**\*.dll"
-                            Exclude="$(TargetDir)\**\Xceed.Wpf.AvalonDock.dll" />
+                            Exclude="$(TargetDir)\**\Xceed.Wpf.AvalonDock.dll;
+                                     $(TargetDir)\**\Microsoft.CodeAnalysis.dll;
+                                     $(TargetDir)\**\Microsoft.CodeAnalysis.CSharp.dll;
+                                     $(TargetDir)\**\Microsoft.CodeAnalysis.CSharp.resources.dll;
+                                     $(TargetDir)\**\Microsoft.CodeAnalysis.resources.dll;
+                                     $(TargetDir)\**\System.*.dll"
+                            Condition="'$(IsTestProject)' != 'true'"/>
         </ItemGroup>
+        
+        <!-- Default deployment to single version -->
         <Copy SourceFiles="@(AllFilesToCopy)" 
-                DestinationFolder="$(PyRevitEnginesDir)\$(IronPythonVersion)" />
+                DestinationFolder="$(PyRevitEnginesDir)\$(IronPythonVersion)" 
+                Condition="'$(DeployToAllVersions)' != 'true'" />
         <Message Importance="high" 
-                Text="$(MSBuildProjectName) -> Copy to $([System.IO.Path]::GetFullPath('$(PyRevitEnginesDir)\$(IronPythonVersion)'))" />
+                Text="$(MSBuildProjectName) -> Copy to $([System.IO.Path]::GetFullPath('$(PyRevitEnginesDir)\$(IronPythonVersion)'))"
+                Condition="'$(DeployToAllVersions)' != 'true'" />
+        
+        <!-- Multi-version deployment for shared components -->
+        <Copy SourceFiles="@(AllFilesToCopy)" 
+                DestinationFolder="$(PyRevitEnginesDir)\IPY342" 
+                Condition="'$(DeployToAllVersions)' == 'true'" />
+        <Message Importance="high" 
+                Text="$(MSBuildProjectName) -> Copy to $([System.IO.Path]::GetFullPath('$(PyRevitEnginesDir)\IPY342'))"
+                Condition="'$(DeployToAllVersions)' == 'true'" />
+        <Copy SourceFiles="@(AllFilesToCopy)" 
+                DestinationFolder="$(PyRevitEnginesDir)\IPY2712PR" 
+                Condition="'$(DeployToAllVersions)' == 'true'" />
+        <Message Importance="high" 
+                Text="$(MSBuildProjectName) -> Copy to $([System.IO.Path]::GetFullPath('$(PyRevitEnginesDir)\IPY2712PR'))"
+                Condition="'$(DeployToAllVersions)' == 'true'" />
     </Target>
 
 </Project>

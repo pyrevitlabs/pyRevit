@@ -1,12 +1,17 @@
 title:
-  en_us: english title
-  fr_fr: french title
-  es_es: spanish title
-tooltip: 
-  en_us: english tooltip
-  fr_fr: french tooltip
-  es_es: spanish tooltip
-# highlight: new
+  en_us: Invoke C# DLL Button
+  fr_fr: Bouton Invoke C# DLL
+  ru: Кнопка Invoke C# DLL
+  chinese_s: Invoke C# DLL 按钮
+  es_es: Botón Invoke C# DLL
+  de_de: Invoke C# DLL Schaltfläche 
+tooltip:
+  en_us: Invoke C# DLL Button
+  fr_fr: Douton Invoke C# DLL
+  ru: Кнопка Invoke C# DLL
+  chinese_s: Invoke C# DLL 按钮
+  es_es: Botón Invoke C# DLL
+  de_de: Invoke C# DLL Schaltfläche 
 context: zero-doc
 assembly: AliTpyRevitConcepts.dll
 command_class:

@@ -1,22 +1,26 @@
 title:
-  ru: Откройте выделенные видовые экраны
-  fr_fr: Ouvrir les Vues Sélectionnées
   en_us: Open Selected Viewports
+  fr_fr: Ouvrir les Vues Sélectionnées
+  ru: Откройте выделенные видовые экраны
+  chinese_s: 打开选定视口
+  es_es: Abrir ventanas gráficas seleccionadas
   de_de: Öffne Ansicht des ausgewählten Ansichtsfensters
 tooltip:
-  ru: >-
-    Открывает вид, связанный с выбранным видовым экраном.
-    Вы можете назначить ярлык для этого инструмента 
-    и этой быстрый способ открыть виды при работе с листами.
-  fr_fr: >-
-    Ouvre la vue associée à la fenêtre sélectionnée. Vous pouvez attribuer un
-    raccourci à cet outil et c'est un moyen rapide d'ouvrir les vues lorsque
-    vous travaillez sur des feuilles
   en_us: >-
     Opens the view associated to the selected viewport. You can assign a
     shortcut to this tool and this is a quick way top open the views when
     working on sheets
+  fr_fr: >-
+    Ouvre la vue associée à la fenêtre sélectionnée. Vous pouvez attribuer un
+    raccourci à cet outil et c'est un moyen rapide d'ouvrir les vues lorsque
+    vous travaillez sur des feuilles
+  ru: >-
+    Открывает вид, связанный с выбранным видовым экраном.
+    Вы можете назначить ярлык для этого инструмента  и этой быстрый способ открыть виды при работе с листами.
+  chinese_s: 打开与所选视口关联的视图。您可为该工具分配快捷键，这是在处理图纸时快速打开视图的方法
+  es_es: >-
+    Abre la vista asociada a la ventana gráfica seleccionada. Puede asignar un
+    atajo a esta herramienta y esta es una forma rápida de abrir las vistas cuando
+    se trabaja en hojas
   de_de: >-
-    Öffnet die Ansicht des aktuell ausgewählten Ansichtsfensters auf einem Plan. 
-    Es ist empfehlenswert für dieses Skript ein Tastaturkürzel zu vergeben, um 
-    schnell zu Ansichten zu wechseln, wenn man auf einem Plan ist.  
+    Öffnet die Ansicht des aktuell ausgewählten Ansichtsfensters auf einem Plan.  Es ist empfehlenswert für dieses Skript ein Tastaturkürzel zu vergeben, um  schnell zu Ansichten zu wechseln, wenn man auf einem Plan ist.

@@ -1,0 +1,93 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+	<DisableImplicitProps>true</DisableImplicitProps>
+	<DisableImplicitTargets>true</DisableImplicitTargets>
+	<IronPythonVersion>IPY342</IronPythonVersion>
+	<Version>3.4.2</Version>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+	<UseLoader>false</UseLoader>
+	<UseIronPython>false</UseIronPython>
+    <UseRevit>false</UseRevit>
+    <UseAssemblyBuilder>true</UseAssemblyBuilder>
+    <UseExtensionParser>true</UseExtensionParser>
+    <LangVersion>latest</LangVersion>
+	<!-- Suppress NUnit analyzer suggestions for classic assertion model -->
+	<NoWarn>$(NoWarn);NUnit2005;NUnit2006</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="TestHelpers\TempFileTestBase.cs" />
+    <Compile Include="TestHelpers\TestExtensionBuilder.cs" />
+    <Compile Include="DarkIconTests.cs" />
+    <Compile Include="TestConfiguration.cs" />
+    <Compile Include="LocalizationTests.cs" />
+    <Compile Include="PanelButtonAndIconTests.cs" />
+    <Compile Include="PanelBackgroundTests.cs" />
+    <Compile Include="IconParsingTests.cs" />
+    <Compile Include="IconFunctionalityTests.cs" />
+    <Compile Include="BundleTooltipFixTest.cs" />
+    <Compile Include="ComponentValidationTests.cs" />
+    <Compile Include="PanelButtonBundleTests.cs" />
+    <Compile Include="ParsedBundleTests.cs" />
+    <Compile Include="ParsedComponentTests.cs" />
+    <Compile Include="ParserBasicTests.cs" />
+    <Compile Include="DiagnosticTests.cs" />
+    <Compile Include="QuotedValueTests.cs" />
+    <Compile Include="QuoteDebuggingTest.cs" />
+    <Compile Include="FullIntegrationQuoteTest.cs" />
+    <Compile Include="StartupScriptTests.cs" />
+    <Compile Include="SeparatorTests.cs" />
+    <Compile Include="DebugPanelCustomTitleTest.cs" />
+    <Compile Include="CSharpScriptTests.cs" />
+    <Compile Include="DynamoScriptTests.cs" />
+    <Compile Include="ExtensionManagerServiceTests.cs" />
+    <Compile Include="AssemblyBuilderServiceTests.cs" />
+    <Compile Include="SessionManagerIntegrationTests.cs" />
+    <Compile Include="PythonScriptMultiLangTest.cs" />
+    <Compile Include="ComboBoxTests.cs" />
+    <Compile Include="SmartButtonTests.cs" />
+    <Compile Include="TemplateInheritanceTests.cs" />
+    <Compile Include="ControlIdTests.cs" />
+    <Compile Include="MultilineTitleTest.cs" />
+    <Compile Include="UrlButtonTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="NUnit" Version="3.14.0" />
+    <PackageReference Include="NUnit.Analyzers" Version="3.9.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
+    <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <Reference Include="pyRevitLabs.NLog">
+      <HintPath>..\..\libs\netfx\pyRevitLabs.NLog.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="pyRevitLabs.Json">
+      <HintPath>..\..\libs\netfx\pyRevitLabs.Json.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
+    <Reference Include="pyRevitLabs.NLog">
+      <HintPath>..\..\libs\netcore\pyRevitLabs.NLog.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="pyRevitLabs.Json">
+      <HintPath>..\..\libs\netcore\pyRevitLabs.Json.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="NUnit.Framework" />
+  </ItemGroup>
+
+</Project>

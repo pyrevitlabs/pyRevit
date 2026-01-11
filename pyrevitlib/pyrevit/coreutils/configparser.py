@@ -52,9 +52,9 @@ class PyRevitConfigSectionParser(object):
                         # but is not encapsulated in quotes
                         # e.g. option = C:\Users\Desktop
                         value = value.strip()
-                        if not value.startswith('(') \
-                                or not value.startswith('[') \
-                                or not value.startswith('{'):
+                        if (not value.startswith('(')
+                                and not value.startswith('[')
+                                and not value.startswith('{')):
                             value = "\"%s\"" % value
                         return json.loads(value)  #pylint: disable=W0123
             except Exception:

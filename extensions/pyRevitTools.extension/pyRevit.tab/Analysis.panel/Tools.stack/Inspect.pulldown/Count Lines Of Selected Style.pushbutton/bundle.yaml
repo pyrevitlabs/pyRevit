@@ -1,25 +1,33 @@
 context: selection
 title:
-  ru: Посчитать линии выделенного стиля
-  fr_fr: Compter les lignes d'un style choisi
   en_us: Count lines of selected style
+  fr_fr: Compter les lignes d'un style choisi
+  ru: Посчитать линии выделенного стиля
+  chinese_s: 统计选定线样式的线数量
+  es_es: Contar líneas del estilo seleccionado
   de_de: Zähle die Linien des ausgewählten Stils
 tooltip:
-  ru: >-
-    Считает все линии в модели с таким же стилем выделенной линии.
-
-
-    CTRL-Click: Выводит найденные линии.
-  fr_fr: >-
-    Compte toutes les lignes du modèle avec un style correspondant à la ligne sélectionnée
-
-
-    CTRL-Click: Lister toutes les lignes correspondantes
   en_us: >-
     Counts all lines in the model with matching style to the selected line
 
 
     CTRL-Click: Lists every matching line
+  fr_fr: >-
+    Compte toutes les lignes du modèle avec un style correspondant à la ligne sélectionnée
+
+
+    CTRL-Click: Lister toutes les lignes correspondantes
+  ru: >-
+    Считает все линии в модели с таким же стилем выделенной линии.
+
+
+    CTRL-Click: Выводит найденные линии.
+  chinese_s: "统计模型中所有与所选线样式匹配的线\n\nCTRL-单击：列出每一条匹配的线"
+  es_es: >-
+    Cuenta todas las líneas del modelo con estilo coincidente a la línea seleccionada
+
+
+    CTRL-Clic: Lista cada línea coincidente
   de_de: >-
     Zählt alle Linien im Modell, deren Stil mit dem der ausgewählten Linie übereinstimmt
 

@@ -1,24 +1,28 @@
 title:
-  ru: ПУдалить
-  fr_fr: MDéduire
   en_us: MDeduct
+  fr_fr: MDéduire
+  ru: ПУдалить
+  chinese_s: M减去
+  es_es: MDeducir
   de_de: Aktuelle Auswahl vom Speicher abziehen
 tooltip:
-  ru: >-
-    Удаляет выбранные элементы из памяти проекта.
-    
-    Работает как кнопка M- в калькуляторе. Память зависит от каждого проекта. Каждый проект имеет свою память, которая записывается в %appdata%/pyRevit директорию как *.pym файлы.
-  fr_fr: >-
-     Déduit la sélection de la mémoire en gardant le reste
-    
-     Fonctionne comme le bouton M- d'une calculatrice. Il s'agit d'une mémoire dépendante du projet. Chaque projet a sa propre mémoire de sélection enregistrée dans le dossier %appdata%/pyRevit en tant que fichiers *.pym
   en_us: >-
     Deducts selection from memory keeping the rest
-    
+
     Works like the M- button in a calculator. This is a project-dependent memory. Every project has its own selection memory saved in %appdata%/pyRevit folder as *.pym files
+  fr_fr: >-
+    Déduit la sélection de la mémoire en gardant le reste
+
+    Fonctionne comme le bouton M- d'une calculatrice. Il s'agit d'une mémoire dépendante du projet. Chaque projet a sa propre mémoire de sélection enregistrée dans le dossier %appdata%/pyRevit en tant que fichiers *.pym
+  ru: >-
+    Удаляет выбранные элементы из памяти проекта.
+
+    Работает как кнопка M- в калькуляторе. Память зависит от каждого проекта. Каждый проект имеет свою память, которая записывается в %appdata%/pyRevit директорию как *.pym файлы.
+  chinese_s: "从内存中减去当前选择，同时保留其余部分\n功能类似于计算器上的 M- 按钮。此为项目相关的内存。每个项目都有自己的选择内存，保存在 %appdata%/pyRevit 文件夹中，格式为 *.pym 文件"
+  es_es: >-
+    Deduce la selección de la memoria manteniendo el resto
+
+    Funciona como el botón M- en una calculadora. Esta es una memoria dependiente del proyecto. Cada proyecto tiene su propia memoria de selección guardada en la carpeta %appdata%/pyRevit como archivos *.pym
   de_de: >-
     Zieht die aktuelle Auswahl vom Speicher ab. Der Rest verbleibt im Speicher
-    Funktioniert wie die M- Taste auf dem Taschenrechner. 
-    Dies ist ein Projekt-abhängiger Speicher. 
-    Jedes Projekt hat seinen eigenen Auswahlspeicher, 
-    der im Ordner %appdata%/pyRevit als *.pym Datei gespeichert wird.
+    Funktioniert wie die M- Taste auf dem Taschenrechner.  Dies ist ein Projekt-abhängiger Speicher.  Jedes Projekt hat seinen eigenen Auswahlspeicher,  der im Ordner %appdata%/pyRevit als *.pym Datei gespeichert wird.

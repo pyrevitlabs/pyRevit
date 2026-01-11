@@ -1,3 +1,10 @@
+title:
+  en_us: Debug
+  fr_fr: Débogage
+  ru: Отладка
+  chinese_s: 调试
+  es_es: Depuración
+  de_de: Debuggen
 layout:
   - Logs
   - -----
@@ -7,5 +14,7 @@ layout:
   - Context Tests
   - Misc Tests[title:Third-Party\nUnit Tests]
   - Debug Dialog Config
+  - -----
+  - Test ComboBox
 
 template_test: Bundle liquid templating works (https://www.youtube.com/watch?v=)

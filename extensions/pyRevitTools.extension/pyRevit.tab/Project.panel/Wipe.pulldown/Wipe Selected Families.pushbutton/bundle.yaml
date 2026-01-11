@@ -1,11 +1,14 @@
 title:
-  fr_fr: Supprimer les familles sélectionnées
   en_us: Wipe Selected Families
+  fr_fr: Supprimer les familles sélectionnées
   ru: Очистить выделенные семейства
+  chinese_s: 清除选定族
+  es_es: Limpiar familias seleccionadas
   de_de: Lösche Familien der ausgew. Elemente
-
 tooltip:
-  fr_fr: Supprime les familles sélectionnées
   en_us: Wipe families of selected instances
+  fr_fr: Supprime les familles sélectionnées
   ru: Очищает выделенные экземпляры семейств
+  chinese_s: 清除选定实例所属的族
+  es_es: Limpiar familias de instancias seleccionadas
   de_de: Es werden alle Familien von den ausgewählten Exemplaren aus dem Modell gelöscht

@@ -1,18 +1,24 @@
 title:
-  ru: |-
-    Запросить размещенные виды на листе
-  fr_fr: |-
-    Rechercher les vues non placées
   en_us: |-
     Query View Sheet Placement
+  fr_fr: |-
+    Rechercher les vues non placées
+  ru: |-
+    Запросить размещенные виды на листе
+  chinese_s: 查询视图图纸放置情况
+  es_es: |-
+    Consultar colocación de vista en hoja
   de_de: |-
     Suche Ansichten ohne Plan Platzierung
 tooltip:
-  ru: |-
-    Показывает виды, которые не были размещены ни на одном листе.
-  fr_fr: |-
-    Répertorie les vues qui n'ont été placées sur aucune feuille
   en_us: |-
     Lists views that have not been placed on any sheets
+  fr_fr: |-
+    Répertorie les vues qui n'ont été placées sur aucune feuille
+  ru: |-
+    Показывает виды, которые не были размещены ни на одном листе.
+  chinese_s: 列出未放置在任何图纸上的视图
+  es_es: |-
+    Lista las vistas que no han sido colocadas en ninguna hoja
   de_de: |-
     Listet alle Ansichten auf, die bisher noch nicht auf Plänen platziert wurden

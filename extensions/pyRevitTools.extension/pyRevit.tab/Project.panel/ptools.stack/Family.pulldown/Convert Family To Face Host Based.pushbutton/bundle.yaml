@@ -1,42 +1,19 @@
 title:
-  ru: Конвертировать семейство в размещаемые на гранях
-  fr_fr: Convertir la famille en famille par face
   en_us: Convert Family To Face Host Based
+  fr_fr: Convertir la famille en famille par face
+  ru: Конвертировать семейство в размещаемые на гранях
+  chinese_s: 将族转换为基于面主体
+  es_es: Convertir familia a basada en cara
   de_de: Konvertiere Familien in flächenbasierte Familien
 tooltip:
-  ru: >-
-    Данный скрипт удаляет все экземпляры выделенных семейств и 
-    пытается конвертировать семейство в размещаемое на гранях. 
-    Могут быть конвертированы только семейства Устройства связи, 
-    Датчики, Воздуховоды, Электрооборудование, Электроприборы, 
-    Системы пожарной сигнализации, Осветительная аппаратура, 
-    Осветительные приборы, Механическое оборудование, Устройства 
-    цепей вызова медперсонала, Сантехнические приборы, 
-    Предохранительное устройства, Спринклеры, Телефонные устройства.
-  fr_fr: >-
-    Ce script supprime toutes les instances de l'élément sélectionné 
-    Famille et essaie de convertir la famille en famille hébergée 
-    par face. Seules les familles de CommunicationDevices, DataDevices, 
-    DuctTerminal, ElectricalEquipments, ElectricalFixtures, 
-    FireAlarmDevices, LightingDevices, LightingFixtures, 
-    MechanicalEquipments, NurseCallDevices, PlumbingFixtures, 
-    SecurityDevices, Sprinklers, TelephoneDevices peuvent 
-    être converties
   en_us: >-
-    This script removes all instances of the selected element 
-    Family and tries to convert the family into face host based. 
-    Only families of CommunicationDevices, DataDevices, 
-    DuctTerminal, ElectricalEquipment, ElectricalFixtures, 
-    FireAlarmDevices, LightingDevices, LightingFixtures, 
-    MechanicalEquipment, NurseCallDevices, PlumbingFixtures, 
-    SecurityDevices, Sprinklers, TelephoneDevices can be 
-    converted
+    This script removes all instances of the selected element  Family and tries to convert the family into face host based.  Only families of CommunicationDevices, DataDevices,  DuctTerminal, ElectricalEquipment, ElectricalFixtures,  FireAlarmDevices, LightingDevices, LightingFixtures,  MechanicalEquipment, NurseCallDevices, PlumbingFixtures,  SecurityDevices, Sprinklers, TelephoneDevices can be  converted
+  fr_fr: >-
+    Ce script supprime toutes les instances de l'élément sélectionné  Famille et essaie de convertir la famille en famille hébergée  par face. Seules les familles de CommunicationDevices, DataDevices,  DuctTerminal, ElectricalEquipments, ElectricalFixtures,  FireAlarmDevices, LightingDevices, LightingFixtures,  MechanicalEquipments, NurseCallDevices, PlumbingFixtures,  SecurityDevices, Sprinklers, TelephoneDevices peuvent  être converties
+  ru: >-
+    Данный скрипт удаляет все экземпляры выделенных семейств и  пытается конвертировать семейство в размещаемое на гранях.  Могут быть конвертированы только семейства Устройства связи,  Датчики, Воздуховоды, Электрооборудование, Электроприборы,  Системы пожарной сигнализации, Осветительная аппаратура,  Осветительные приборы, Механическое оборудование, Устройства  цепей вызова медперсонала, Сантехнические приборы,  Предохранительное устройства, Спринклеры, Телефонные устройства.
+  chinese_s: 此脚本将移除所选图元族的所有实例，并尝试将该族转换为基于面主体的族。仅以下类别的族可以转换：通讯设备、数据设备、风道末端、电气设备、电气装置、火灾报警设备、照明设备、照明装置、机械设备、护士呼叫设备、卫浴装置、安全设备、洒水装置、电话设备
+  es_es: >-
+    Este script elimina todas las instancias de la Familia de elemento seleccionada e intenta convertir la familia en basada en cara. Solo las familias de CommunicationDevices, DataDevices, DuctTerminal, ElectricalEquipment, ElectricalFixtures, FireAlarmDevices, LightingDevices, LightingFixtures, MechanicalEquipment, NurseCallDevices, PlumbingFixtures, SecurityDevices, Sprinklers, TelephoneDevices pueden ser convertidas
   de_de: >-
-    Dieses Skript entfernt alle Exemplare des ausgewählten  
-    Familie und versucht, die Familie in eine flächebasierte 
-    Familie umzuwandeln. Nur Familien der Kategorien 
-    Kommunikationsgeräte, Datengeräte, Luftkanalformteile, 
-    EletrischeAusstattung, Elektroinstallationen, Brandmelder, 
-    Lichtschalter, Leuchten, HLS-Bauteile, Notrufgeräte, 
-    Sanitärinstallationen, Sicherheitsgeräte, Sprinkler 
-    und Telefongeräte können umgewandelt werden. 
+    Dieses Skript entfernt alle Exemplare des ausgewählten   Familie und versucht, die Familie in eine flächebasierte  Familie umzuwandeln. Nur Familien der Kategorien  Kommunikationsgeräte, Datengeräte, Luftkanalformteile,  EletrischeAusstattung, Elektroinstallationen, Brandmelder,  Lichtschalter, Leuchten, HLS-Bauteile, Notrufgeräte,  Sanitärinstallationen, Sicherheitsgeräte, Sprinkler  und Telefongeräte können umgewandelt werden.

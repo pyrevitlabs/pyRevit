@@ -1,11 +1,15 @@
 title:
-  ru: Удержать элементы рамещенные на связанной модели
-  fr_fr: Eléments hébergés sur un modèle lié
   en_us: Elements Hosted On Linked Model
+  fr_fr: Eléments hébergés sur un modèle lié
+  ru: Удержать элементы рамещенные на связанной модели
+  chinese_s: 基于链接模型的图元
+  es_es: Elementos alojados en modelo vinculado
   de_de: Aufwahl auf Elemente mit verknüpftem Modell als Host reduzieren
 tooltip:
-  ru: Просматривает текущие выделенные элементы и сохраняет те, которые размещены на связанной модели.
-  fr_fr: Examine les éléments de la sélection actuelle et conserve ceux hébergés sur une surface de modèle liée
   en_us: Looks into the current selection elements and keeps the ones hosted on a linked model surface
+  fr_fr: Examine les éléments de la sélection actuelle et conserve ceux hébergés sur une surface de modèle liée
+  ru: Просматривает текущие выделенные элементы и сохраняет те, которые размещены на связанной модели.
+  chinese_s: 检查当前选择中的图元，并保留那些基于链接模型表面的图元
+  es_es: Examina los elementos de la selección actual y mantiene los que están alojados en una superficie de modelo vinculado
   de_de: Untersucht die aktuelle Auswahl an Elementen und behält nur Elemente in der Auswahl, die auf einer Fläche eines verknüpften Modells gehostet sind.
 context: Selection

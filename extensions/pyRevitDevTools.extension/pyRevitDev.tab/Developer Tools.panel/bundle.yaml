@@ -1,3 +1,10 @@
+title:
+  en_us: Developer Tools
+  fr_fr: Outils de développeur
+  ru: Инструменты разработчика
+  chinese_s: 开发者工具
+  es_es: Herramientas de desarrollador
+  de_de: Entwicklertools
 layout:
   - Developer Docs
   - Generate API Stubs

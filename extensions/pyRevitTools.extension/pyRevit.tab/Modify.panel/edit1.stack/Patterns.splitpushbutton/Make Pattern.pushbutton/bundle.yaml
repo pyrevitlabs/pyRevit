@@ -1,79 +1,74 @@
 help_url: '{{docpath}}H7b8hjHbauE&t=8s&list=PLc_1PNcpnV57FWI6G8Cd09umHpSOzvamf'
 title:
-  ru: |-
-    Создать
-    узор
-  fr_fr: |-
-    Créer
-    Hachure
   en_us: |-
     Make
     Pattern
+  fr_fr: |-
+    Créer
+    Hachure
+  ru: |-
+    Создать
+    узор
+  chinese_s: "创建\n填充图案"
+  es_es: |-
+    Crear
+    Patrón
   de_de: |-
     Füllmuster
     erstellen
 tooltip:
-  ru: >-
-    Начертите свой узор штриховки в узлах использующих линию детализации, кривые, окружности
-    или эллипсы, или даже цветовые области.
-    
-    Выделите линии штриховки и кривые и запустите данный инструмент. Дайте название штриховки
-    и нажмите "Create Pattern". Инструмент запросит Вас выбрать границы штриховки. Инструмент будет обрабатывать
-    входные линии, округляя кривые и сплайны более меньшими линиями для нахождения лучших углов для этих линий
-    и сгенерирует штриховку. Он так же считывает штриховки из выделенных залитых областей 
-    и объединит с выделенными линиями детализации.
-    
-    
-    СОВЕТ: Вы можете экспортировать существующие штриховки, если не были выбраны линии.
-    
-    ХИТРОСТЬ: Вы можете преобразовать существующие типы штриховки, выбрав только цветовую область
-    и создав противоположный тип штриховки (выбрав рисунок закрашенной области и создания штриховки модели).
-
-  fr_fr: >-
-    Dessinez votre motif dans une vue détaillée en utilisant des lignes de détail, des courbes, des cercles
-    ou des ellipses, voire des régions remplies
-
-    Sélectionnez les lignes et les courbes du motif et exécutez cet outil. Donnez au motif un
-    nom et appuyez sur "Créer un modèle". L'outil vous demande de choisir les
-    coins du motif. L'outil traitera les lignes d'entrée,
-    les courbes et les splines avec des lignes plus petites et trouvera les meilleurs angles pour
-    ces lignes et générera un motif. Il lit également les
-    zones remplies sélectionnées et les combine avec les lignes de détail sélectionnées
-
-    TRUC: vous pouvez exporter des motifs existants si aucune ligne n'est sélectionnée
-
-    ASTUCE: vous pouvez convertir des types de motifs existants en sélectionnant une région remplie
-    uniquement et créez le type de motif opposé (zone remplie de dessin sélectionnée
-    et créer une hachure de modèle)
   en_us: >-
-    Draw your pattern tile in a detail view using detail lines, curves, circles
-    or ellipses, or even filled regions
+    Draw your pattern tile in a detail view using detail lines, curves, circles or ellipses, or even filled regions
 
-    Select the pattern lines and curves and run this tool. Give the pattern a
-    name and hit "Create Pattern". The tool asks you to pick the boundary
-    corners of the pattern. The tool will process the input lines, approximates
-    the curves and splines with smaller lines and finds the best angles for
-    these lines and will generate a pattern. It also reads the patterns from
-    selected filled regions and will combine with selected detail lines
+    Select the pattern lines and curves and run this tool. Give the pattern a name and hit "Create Pattern". The tool asks you to pick the boundary corners of the pattern. The tool will process the input lines, approximates the curves and splines with smaller lines and finds the best angles for these lines and will generate a pattern. It also reads the patterns from selected filled regions and will combine with selected detail lines
 
 
     TIP: You can export existing patterns if no lines are selected
 
 
-    TRICK: You can convert existing pattern types by selecting a filled region
-    only and create the opposite pattern type (selected drafting filled region
-  de_de: >-
-    Zeichnen Sie Ihre Musterkachel in einer Detailansicht mit Detaillinien, Kurven, Kreisen
-    oder Ellipsen oder sogar mit gefüllten Bereichen
+    TRICK: You can convert existing pattern types by selecting a filled region only and create the opposite pattern type (selected drafting filled region
+  fr_fr: >-
+    Dessinez votre motif dans une vue détaillée en utilisant des lignes de détail, des courbes, des cercles ou des ellipses, voire des régions remplies
 
-    Wählen Sie die Linien und -kurven aus und führen Sie dieses Werkzeug aus. Geben Sie dem Füllmuster einen
-    Namen und klicken Sie auf „Muster erstellen“ (Create Pattern). Das Werkzeug fordert Sie auf, die Begrenzungspunkte
-    (äußerste Ecken) des Musters auszuwählen. Das Werkzeug verarbeitet die eingegebenen Linien, wandelt
-    die Kurven und Splines in kleineren gerade Linien um und findet die beste Anordnung um das 
-    gewünschte Muster zu erzeugen. Es liest auch die Muster von den verwendeten gefüllten Bereichen
-    aus und integriert dessen Linien in das neue Füllmuster.
+    Sélectionnez les lignes et les courbes du motif et exécutez cet outil. Donnez au motif un nom et appuyez sur "Créer un modèle". L'outil vous demande de choisir les coins du motif. L'outil traitera les lignes d'entrée, les courbes et les splines avec des lignes plus petites et trouvera les meilleurs angles pour ces lignes et générera un motif. Il lit également les zones remplies sélectionnées et les combine avec les lignes de détail sélectionnées
+
+    TRUC: vous pouvez exporter des motifs existants si aucune ligne n'est sélectionnée
+
+    ASTUCE: vous pouvez convertir des types de motifs existants en sélectionnant une région remplie uniquement et créez le type de motif opposé (zone remplie de dessin sélectionnée et créer une hachure de modèle)
+  ru: >-
+    Начертите свой узор штриховки в узлах использующих линию детализации, кривые, окружности или эллипсы, или даже цветовые области.
+
+    Выделите линии штриховки и кривые и запустите данный инструмент. Дайте название штриховки и нажмите "Create Pattern". Инструмент запросит Вас выбрать границы штриховки. Инструмент будет обрабатывать входные линии, округляя кривые и сплайны более меньшими линиями для нахождения лучших углов для этих линий и сгенерирует штриховку. Он так же считывает штриховки из выделенных залитых областей  и объединит с выделенными линиями детализации.
+
+
+    СОВЕТ: Вы можете экспортировать существующие штриховки, если не были выбраны линии.
+
+    ХИТРОСТЬ: Вы можете преобразовать существующие типы штриховки, выбрав только цветовую область и создав противоположный тип штриховки (выбрав рисунок закрашенной области и создания штриховки модели).
+  chinese_s: "使用详图线、曲线、圆或椭圆，甚至填充区域，在详图视图中绘制您的填充图案单元
+
+
+    选择图案的线和曲线，然后运行此工具。为图案命名并点击“创建图案”。工具将要求您拾取图案的边界角点。工具会处理输入的线，将曲线和样条曲线近似处理为较短的线段，为这些线段寻找最佳角度，并最终生成图案。它还会读取所选填充区域的图案，并将其与选定的详图线结合。
+
+
+    提示： 如果未选择任何线，您可以导出现有的图案。
+
+
+    技巧： 您可以仅选择一个填充区域来转换现有的图案类型，并创建相反的图案类型（例如，选定的绘图填充区域可以创建模型填充图案，反之亦然）。"
+  es_es: >-
+    Dibuje su mosaico de patrón en una vista de detalle usando líneas de detalle, curvas, círculos o elipses, o incluso regiones rellenas
+
+    Seleccione las líneas y curvas del patrón y ejecute esta herramienta. Dé un nombre al patrón y presione "Crear Patrón". La herramienta le pedirá que elija las esquinas del límite del patrón. La herramienta procesará las líneas de entrada, aproximará las curvas y splines con líneas más pequeñas y encontrará los mejores ángulos para estas líneas y generará un patrón. También lee los patrones de regiones rellenas seleccionadas y los combinará con líneas de detalle seleccionadas
+
+
+    CONSEJO: Puede exportar patrones existentes si no se seleccionan líneas
+
+
+    TRUCO: Puede convertir tipos de patrón existentes seleccionando solo una región rellena y crear el tipo de patrón opuesto (región rellena de dibujo seleccionada
+  de_de: >-
+    Zeichnen Sie Ihre Musterkachel in einer Detailansicht mit Detaillinien, Kurven, Kreisen oder Ellipsen oder sogar mit gefüllten Bereichen
+
+    Wählen Sie die Linien und -kurven aus und führen Sie dieses Werkzeug aus. Geben Sie dem Füllmuster einen Namen und klicken Sie auf „Muster erstellen“ (Create Pattern). Das Werkzeug fordert Sie auf, die Begrenzungspunkte (äußerste Ecken) des Musters auszuwählen. Das Werkzeug verarbeitet die eingegebenen Linien, wandelt die Kurven und Splines in kleineren gerade Linien um und findet die beste Anordnung um das  gewünschte Muster zu erzeugen. Es liest auch die Muster von den verwendeten gefüllten Bereichen aus und integriert dessen Linien in das neue Füllmuster.
 
     TIPP: Sie können vorhandene Füllmuster exportieren, wenn keine Linien ausgewählt sind.
 
-    TRICK: Sie können vorhandene Füllmustertypen (Modell / Zeichenmuster) umwandeln, indem Sie einen gefüllten Bereich auswählen
-    und den entsprechenden anderen Füllmustertyp damit erstellen.
+    TRICK: Sie können vorhandene Füllmustertypen (Modell / Zeichenmuster) umwandeln, indem Sie einen gefüllten Bereich auswählen und den entsprechenden anderen Füllmustertyp damit erstellen.

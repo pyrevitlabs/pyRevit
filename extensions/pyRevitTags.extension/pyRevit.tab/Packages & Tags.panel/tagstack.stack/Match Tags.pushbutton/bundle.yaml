@@ -1,9 +1,15 @@
 title:
-  ru: Сверить марки
   en_us: Match Tags
+  fr_fr: Faire correspondre les étiquettes
+  ru: Сверить марки
+  chinese_s: 匹配标签
+  es_es: Correspondir etiquetas
   de_de: Tags übertragen
 tooltip:
-  ru: Сравнивает марки между выделенными элементами.
   en_us: Match Tags between selected elements. First you need to create a project parameter 'DOCTAG' and apply it to the project categories
+  fr_fr: Faire correspondre les étiquettes entre les éléments sélectionnés. Vous devez d'abord créer un paramètre de projet 'DOCTAG' et l'appliquer aux catégories du projet
+  ru: Сравнивает марки между выделенными элементами. Первым делом нужно создать проектный параметр 'DOCTAG' и применить его к категориям проекта.
+  chinese_s: 比较选定元素之间的标签。首先需要创建项目参数 'DOCTAG' 并将其应用到项目类别
+  es_es: Correspondir etiquetas entre los elementos seleccionados. Primero necesitas crear un parámetro de proyecto 'DOCTAG' y aplicarlo a las categorías del proyecto
   de_de: Tags zwischen den ausgewählten Elementen übertragen. Bevor das Tag Werkzeug verwendet werden kann, muss ein Projektparameter 'DOCTAG' erstellt werden und auf alle Kategorien angewendet werden.
 author: '{{author}}'

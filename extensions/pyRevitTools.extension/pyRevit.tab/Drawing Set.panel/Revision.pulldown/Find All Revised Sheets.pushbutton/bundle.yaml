@@ -1,10 +1,14 @@
 title:
-  ru: Найти все листы с изменениями
-  fr_fr: Trouver toutes les Feuilles Révisées
   en_us: Find All Revised Sheets
+  fr_fr: Trouver toutes les Feuilles Révisées
+  ru: Найти все листы с изменениями
+  chinese_s: 查找所有已修订图纸
+  es_es: Encontrar todas las hojas revisadas
   de_de: FInde alle geänderten Pläne
 tooltip:
-  ru: Показывает все листы с изменениями.
-  fr_fr: Liste toutes les feuilles révisées comportant n'importe qu'elle révision
   en_us: Lists all sheets revised under any revision
+  fr_fr: Liste toutes les feuilles révisées comportant n'importe qu'elle révision
+  ru: Показывает все листы с изменениями.
+  chinese_s: 列出在任何修订下被修订的所有图纸
+  es_es: Lista todas las hojas revisadas bajo cualquier revisión
   de_de: Es werden alle Pläne aufgelistet die mit einer beliebigen Änderung markiert wurden

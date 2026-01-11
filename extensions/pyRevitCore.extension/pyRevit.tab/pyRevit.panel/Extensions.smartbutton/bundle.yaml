@@ -1,11 +1,15 @@
 title:
-  ru: Расширения
   en_us: Extensions
+  fr_fr: Extensions
+  ru: Расширения
+  chinese_s: 扩展
   es_es: Extensiones
   de_de: Erweiterungen
 tooltip:
-  ru: Добавляет или удаляет pyRevit расширения.
   en_us: Add or remove pyRevit extensions
+  fr_fr: Ajouter ou supprimer des extensions pyRevit
+  ru: Добавляет или удаляет pyRevit расширения.
+  chinese_s: 添加或删除 pyRevit 扩展
   es_es: Agrega o quita extensiones de pyRevit
   de_de: Erweiterungen hinzufügen oder entfernen
 context: zero-doc

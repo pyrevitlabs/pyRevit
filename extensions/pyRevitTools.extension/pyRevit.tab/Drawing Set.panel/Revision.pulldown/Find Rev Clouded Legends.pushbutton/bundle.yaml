@@ -1,12 +1,16 @@
 title:
-  ru: Найти легенды с пометочными облаками
-  fr_fr: Rechercher des légendes avec nuages ​​de révision
   en_us: Find Legends with Revision Clouds
+  fr_fr: Rechercher des légendes avec nuages ​​de révision
+  ru: Найти легенды с пометочными облаками
+  chinese_s: 查找带修订云线的图例
+  es_es: Encontrar leyendas con nubes de revisión
   de_de: Finde alle Legenden mit Änderungswolken
 tooltip:
-  ru: Показывает все легенды с пометочными облаками на них. Легенты с пометочными облаками не будут запускать индексацию листов, на котором они размещены, и поэтому данный инструмент будет полезен.
-  fr_fr: Répertorie toutes les légendes avec des nuages ​​de révision dessus. Les légendes avec des nuages ​​de révision ne déclencheront pas l'index de la feuille sur laquelle elles sont placées et c'est pourquoi cet outil est utile
   en_us: Lists all legends with revision clouds on them. Legends with revision clouds will not trigger the sheet index of the sheet they are placed on and that is why this tool is useful
+  fr_fr: Répertorie toutes les légendes avec des nuages ​​de révision dessus. Les légendes avec des nuages ​​de révision ne déclencheront pas l'index de la feuille sur laquelle elles sont placées et c'est pourquoi cet outil est utile
+  ru: Показывает все легенды с пометочными облаками на них. Легенты с пометочными облаками не будут запускать индексацию листов, на котором они размещены, и поэтому данный инструмент будет полезен.
+  chinese_s: 列出所有带有修订云线的图例。带有修订云线的图例不会触发它们所在图纸的图纸索引，因此此工具很有用
+  es_es: Lista todas las leyendas con nubes de revisión en ellas. Las leyendas con nubes de revisión no activarán el índice de la hoja en la que están colocadas y por eso esta herramienta es útil
   de_de: Listet alle Legenden mit Änderungswolken auf. Legenden mit Änderungswolken lösen nicht den Planindex des Plan aus, auf dem sie platziert sind, weshalb dieses Werkzeug nützlich ist
 author: 'Frederic Beaupere'
 contact: 'https://github.com/frederic-beaupere'

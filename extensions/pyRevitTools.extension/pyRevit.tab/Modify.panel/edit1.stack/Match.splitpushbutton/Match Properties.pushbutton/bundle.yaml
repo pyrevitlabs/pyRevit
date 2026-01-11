@@ -1,23 +1,11 @@
 title:
-  ru: Сверить параметры
-  fr_fr: Correspondance des propriétés
   en_us: Match properties
+  fr_fr: Correspondance des propriétés
+  ru: Сверить параметры
+  chinese_s: 匹配属性
+  es_es: Coincidir propiedades
   de_de: Kopiere Eigenschaften
 tooltip:
-  ru: >-
-    Сверяет параметры экземпляра или типа между элементами и их типами.
-    
-    
-    Shift+Click:
-    
-    Повторно применить предыдущую сверку параметров.
-  fr_fr: >-
-    Fait correspondre les paramètres d'instance et de type entre les éléments et leurs types
-
-
-    Shift+Click:
-
-    Applique les propriétés précédemment appliquées
   en_us: >-
     Match instance or type properties between elements and their types
 
@@ -25,15 +13,32 @@ tooltip:
     Shift+Click:
 
     Reapply the previous matched properties
+  fr_fr: >-
+    Fait correspondre les paramètres d'instance et de type entre les éléments et leurs types
+
+
+    Shift+Click:
+
+    Applique les propriétés précédemment appliquées
+  ru: >-
+    Сверяет параметры экземпляра или типа между элементами и их типами.
+
+
+    Shift+Click:
+
+    Повторно применить предыдущую сверку параметров.
+  chinese_s: "在图元及其类型之间匹配实例属性或类型属性\n\nShift+单击：\n重新应用之前匹配的属性"
+  es_es: >-
+    Coincidir propiedades de instancia o tipo entre elementos y sus tipos
+
+
+    Shift+Clic:
+
+    Reaplicar las propiedades coincidentes anteriores
   de_de: >-
-    Zunächst wählt man ein Element als Quelle aus und startet dann den Befehl. 
-    Im ersten Dialogfenster werden alle Exemplar und Typeneigeschaften des Elements
-    aufgelistet. Alle hier selektierten Eigenschaften werden auf die Zielelemente 
-    übertragen. Nachdem man auf den Button "Select" geklickt hat, erscheint in der 
-    Titelleiste von Revit ein orangener Balken, mit dem Hinweis, dass man nun Elemente
-    auswählen soll auf die die Eigenschaften übertragen werden sollen. Es können 
-    mehrere Elemente nacheinander angeklickt werden, auf die die gewählten 
-    Eigenschaften übertragen werden. Mit ESC kann man den Befehl abschliessen. 
+    Zunächst wählt man ein Element als Quelle aus und startet dann den Befehl.  Im ersten Dialogfenster werden alle Exemplar und Typeneigeschaften des Elements
+    aufgelistet. Alle hier selektierten Eigenschaften werden auf die Zielelemente  übertragen. Nachdem man auf den Button "Select" geklickt hat, erscheint in der  Titelleiste von Revit ein orangener Balken, mit dem Hinweis, dass man nun Elemente
+    auswählen soll auf die die Eigenschaften übertragen werden sollen. Es können  mehrere Elemente nacheinander angeklickt werden, auf die die gewählten  Eigenschaften übertragen werden. Mit ESC kann man den Befehl abschliessen. 
 
     Shift+Click:
 

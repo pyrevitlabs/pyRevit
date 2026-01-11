@@ -1,3 +1,10 @@
+title:
+  en_us: Test Panel Colors
+  fr_fr: Couleurs du panneau de test
+  ru: Цвета тестовой панели
+  chinese_s: 测试面板颜色
+  es_es: Colores del panel de prueba
+  de_de: Test-Panel-Farben
 layout:
   - ButtonA
   - ">>>"

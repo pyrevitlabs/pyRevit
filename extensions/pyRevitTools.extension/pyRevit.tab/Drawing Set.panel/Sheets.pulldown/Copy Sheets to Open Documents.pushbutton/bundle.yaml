@@ -1,16 +1,18 @@
 help_url: '{{docpath}}9Q-J6mWBYJI&t=17s'
 title:
-  ru: Копировать листы в открытые документы
-  fr_fr: Copier des Feuilles vers des Documents Ouverts
   en_us: Copy Sheets To Open Documents
+  fr_fr: Copier des Feuilles vers des Documents Ouverts
+  ru: Копировать листы в открытые документы
+  chinese_s: 将图纸复制到已打开的文档
+  es_es: Copiar hojas a documentos abiertos
   de_de: Kopiere Pläne in andere geöffnete Projekte
 tooltip:
-  ru: >-
-    Копирует выделенные или текущий лист(ы) в другие открытые проекты в
-    Revit. Убедитесь, что копируемые документы имеют хотя бы одно легенду
-    (Revit API не предоставляет метод для создание легенд, поэтому данному скрипту
-    необходимо скопировать уже существующую легенду, чтобы создать новую).
-    Инструмент не копирует виды модели (планы этажей, фасады, разрезы и т.д.).
+  en_us: >-
+    Copies selected or current sheet(s) to other projects currently open in
+    Revit. Make sure the destination documents have at least one Legend view
+    (Revit API does not provide a method to create Legend views so this script
+    needs to duplicate an existing one to create a new Legend)
+    The tool does not copy model views (floorplans, elevations, sections, ...)
   fr_fr: >-
     Copie les feuilles sélectionnées ou en cours dans d'autres projets
     actuellement ouverts dans Revit. Assurez-vous que les documents de
@@ -18,16 +20,19 @@ tooltip:
     méthode pour créer des vues Légende, ce script doit donc dupliquer une vue
     existante pour créer une nouvelle Légende)
     L'outil ne copie pas les vues du modèle (plans d'étage, élévations, coupes, ...).
-  en_us: >-
-    Copies selected or current sheet(s) to other projects currently open in
-    Revit. Make sure the destination documents have at least one Legend view
-    (Revit API does not provide a method to create Legend views so this script
-    needs to duplicate an existing one to create a new Legend)
-    The tool does not copy model views (floorplans, elevations, sections, ...)
+  ru: >-
+    Копирует выделенные или текущий лист(ы) в другие открытые проекты в
+    Revit. Убедитесь, что копируемые документы имеют хотя бы одно легенду
+    (Revit API не предоставляет метод для создание легенд, поэтому данному скрипту
+    необходимо скопировать уже существующую легенду, чтобы создать новую).
+    Инструмент не копирует виды модели (планы этажей, фасады, разрезы и т.д.).
+  chinese_s: 将选定或当前的图纸复制到当前在 Revit 中打开的其他项目。请确保目标文档至少有一个图例视图（Revit API 不提供创建图例视图的方法，因此此脚本需要复制现有图例以创建新图例）。该工具不复制模型视图（楼层平面、立面、剖面等）
+  es_es: >-
+    Copia las hojas seleccionadas o actuales a otros proyectos actualmente abiertos en
+    Revit. Asegúrese de que los documentos de destino tengan al menos una vista de Leyenda
+    (la API de Revit no proporciona un método para crear vistas de Leyenda, por lo que este script
+    necesita duplicar una existente para crear una nueva Leyenda)
+    La herramienta no copia vistas de modelo (plantas, alzados, secciones, ...)
   de_de: >-
-    Kopiert die/den ausgewählte(n) oder aktuelle(n) Pläne/Plan in andere, derzeit 
-    in Revit geöffnete Projekte. Stellen Sie sicher, dass in den Zielprojekten 
-    mindestens eine Legendenansicht existiert (die Revit-API bietet keine Methode 
-    zum Erstellen von Legenden. Daher muss dieses Skript eine vorhandene Legende 
-    duplizieren, um eine neue Legende zu erstellen)
+    Kopiert die/den ausgewählte(n) oder aktuelle(n) Pläne/Plan in andere, derzeit  in Revit geöffnete Projekte. Stellen Sie sicher, dass in den Zielprojekten  mindestens eine Legendenansicht existiert (die Revit-API bietet keine Methode  zum Erstellen von Legenden. Daher muss dieses Skript eine vorhandene Legende  duplizieren, um eine neue Legende zu erstellen)
     Das Werkzeug kopiert keine Modellansichten (Grundrisse, Ansichten, Schnitte usw.).

@@ -1,11 +1,15 @@
 title:
-  ru: Показать выделение в виде ссылок
-  fr_fr: Liste de sélection sous forme de liens cliquables
   en_us: List Selection as Clickable Links
+  fr_fr: Liste de sélection sous forme de liens cliquables
+  ru: Показать выделение в виде ссылок
+  chinese_s: 将选择集列为可点击链接
+  es_es: Listar selección como enlaces clicables
   de_de: Ausgewählte Elemente als anklickbare Links anzeigen
 tooltip:
-  ru: Показывает выделенные элементы ввиде ссылок. Это быстрый способ выделять ряд элементов.
-  fr_fr: Répertorie les identifiants d'éléments sélectionnés sous forme de liens cliquables. C'est un moyen rapide de parcourir une série d'éléments
   en_us: Lists the selected element ids as clickable links. This is a quick way to go through a series of elements
+  fr_fr: Répertorie les identifiants d'éléments sélectionnés sous forme de liens cliquables. C'est un moyen rapide de parcourir une série d'éléments
+  ru: Показывает выделенные элементы ввиде ссылок. Это быстрый способ выделять ряд элементов.
+  chinese_s: 将选定图元的ID列为可点击链接。这是快速浏览一系列图元的方法
+  es_es: Lista los IDs de los elementos seleccionados como enlaces clicables. Esta es una forma rápida de revisar una serie de elementos
   de_de: Die aktuell ausgewählten Elemente werden in einer Konsole aufgelistet. Zu jedem Element Namen wird die Element-ID als anklickbarer Link angezeigt
 context: selection

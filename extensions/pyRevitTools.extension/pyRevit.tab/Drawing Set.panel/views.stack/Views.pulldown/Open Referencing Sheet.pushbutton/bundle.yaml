@@ -1,18 +1,24 @@
 title:
-  ru: |-
-    Открыть связанные листы
-  fr_fr: |-
-    Ouvrir la feuille en référence
   en_us: |-
     Open Referencing Sheet
+  fr_fr: |-
+    Ouvrir la feuille en référence
+  ru: |-
+    Открыть связанные листы
+  chinese_s: 打开引用图纸
+  es_es: |-
+    Abrir hoja referenciada
   de_de: |-
     Öffne den referenzierten Plan
 tooltip:
-  ru: |-
-    Открывает лист содержащий данный вид и приближает к видовому экрану.
-  fr_fr: |-
-    Ouvre la feuille contenant cette vue et effectue un zoom sur la fenêtre
   en_us: |-
     Opens the sheet containing this view and zooms to the viewport
+  fr_fr: |-
+    Ouvre la feuille contenant cette vue et effectue un zoom sur la fenêtre
+  ru: |-
+    Открывает лист содержащий данный вид и приближает к видовому экрану.
+  chinese_s: 打开包含此视图的图纸，并缩放至该视口
+  es_es: |-
+    Abre la hoja que contiene esta vista y hace zoom a la ventana gráfica
   de_de: |-
     Es wird der Plan geöffnet, der die Ansicht enthält und zoomt auf das Ansichtsfenster

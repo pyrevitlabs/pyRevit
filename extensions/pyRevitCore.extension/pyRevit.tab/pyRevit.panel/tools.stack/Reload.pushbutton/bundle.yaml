@@ -1,18 +1,17 @@
 tooltip:
-  ru: Находит папки со скриптами и создает кнопки новых криптов или новых устанновленных расширений.
   en_us: Searches the script folders and create buttons for the new script or newly installed extensions
   fr_fr: Recherche de nouveaux scripts dans le dossier de scripts et crée de nouveau bouton ou ajoute une nouvelle extension
+  ru: Находит папки со скриптами и создает кнопки новых криптов или новых устанновленных расширений.
+  chinese_s: 搜索脚本文件夹并创建按钮，用于新的脚本或新安装的扩展
   es_es: 'Busca las carpetas de código y crea botones para los nuevos códigos o nuevas extensiones instaladas'
   de_de: Durchsucht die Skript Verzeichnisse und erstellt Buttons für neue Skripte oder neu installierte Erweiterungen
 engine:
   clean: true
 title:
-  ru: Обновить
   en_us: 'Reload'
-  fa: 'بارگذاری مجدد'
-  bg: 'Презареди'
-  nl_nl: 'Herladen'
   fr_fr: 'Recharger'
+  ru: Обновить
+  chinese_s: 重新加载
   es_es: 'Recargar'
   de_de: 'Neu laden'
 context: zero-doc

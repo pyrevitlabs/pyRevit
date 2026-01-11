@@ -1,25 +1,28 @@
 title:
-  ru: Закрыть вкладки
-  fr_fr: |-
-    Fermer les onglets
   en_us: |-
     Close Tabs
+  fr_fr: |-
+    Fermer les onglets
+  ru: Закрыть вкладки
+  chinese_s: 关闭标签页
+  es_es: |-
+    Cerrar pestañas
   de_de: |-
     Offene Tabs schliessen
-
 tooltip:
-  ru: |-
-    Закрывает все виды, кроме выделенных.
-  fr_fr: |-
-    Fermez tout sauf les vues sélectionnées.
   en_us: |-
     Close everything but the selected views.
+  fr_fr: |-
+    Fermez tout sauf les vues sélectionnées.
+  ru: |-
+    Закрывает все виды, кроме выделенных.
+  chinese_s: 关闭除选定视图外的所有标签页
+  es_es: |-
+    Cerrar todo excepto las vistas seleccionadas.
   de_de: >-
     Es öffnet sich ein Auswahlfenster, das die geöffneten Tabs (Ansichten)
-    vom aktiven Projekt auflistet. Alle im Dialog markierten Ansichten bleiben 
-    geöffnet und alle anderen Tabs werden geschlossen. 
-
+    vom aktiven Projekt auflistet. Alle im Dialog markierten Ansichten bleiben  geöffnet und alle anderen Tabs werden geschlossen.
 authors:
   - thumDer
   - Johannes Domeier
-  
+

@@ -1,17 +1,16 @@
 help_url: '{{docpath}}ThzcRM_Tj8g'
 title:
-  ru: Копировать легенды как чертеж в другие документы
-  fr_fr: Copier les légendes comme vues de dessin dans les document ouverts
   en_us: Copy Legends as Drafting to Other Documents
+  fr_fr: Copier les légendes comme vues de dessin dans les document ouverts
+  ru: Копировать легенды как чертеж в другие документы
+  chinese_s: 将图例复制为详图到其他文档
+  es_es: Copiar leyendas como vistas de detalle a otros documentos
   de_de: Kopiere Legenden als Zeichenansicht in andere Projekte
 tooltip:
-  ru: Конвертирует выделенные легены в чертеж и копирует их во все открыте проекты в Revit.
-  fr_fr: Convertit les vues de légende sélectionnées en vues de détail et les copie dans tous les projets actuellement ouverts dans Revit
   en_us: Converts selected legend views to detail views and copies them to all projects currently open in Revit
+  fr_fr: Convertit les vues de légende sélectionnées en vues de détail et les copie dans tous les projets actuellement ouverts dans Revit
+  ru: Конвертирует выделенные легены в чертеж и копирует их во все открыте проекты в Revit.
+  chinese_s: 将选定的图例视图转换为详图视图，并将其复制到当前在 Revit 中打开的所有项目
+  es_es: Convierte las vistas de leyenda seleccionadas en vistas de detalle y las copia a todos los proyectos actualmente abiertos en Revit
   de_de: >-
-    Zunächst muss ein Projekt als Quelle definiert werden, durch die aktive Ansicht. 
-    Beim Ausführen des Befehls öffnet sich ein Auswahldialog mit aktuell parallel 
-    geöffneten Projekten. Im nächsten Dialog können Legendenansichten ausgewählt 
-    werden in Zeichenansichten umgewandelt und in zuvor gewählten Projekte kopiert 
-    werden. Auf den Legenden dürfen keine Legendenkomponenten platziert sein, da 
-    ansonsten das Skript nicht funktioniert. 
+    Zunächst muss ein Projekt als Quelle definiert werden, durch die aktive Ansicht.  Beim Ausführen des Befehls öffnet sich ein Auswahldialog mit aktuell parallel  geöffneten Projekten. Im nächsten Dialog können Legendenansichten ausgewählt  werden in Zeichenansichten umgewandelt und in zuvor gewählten Projekte kopiert  werden. Auf den Legenden dürfen keine Legendenkomponenten platziert sein, da  ansonsten das Skript nicht funktioniert.

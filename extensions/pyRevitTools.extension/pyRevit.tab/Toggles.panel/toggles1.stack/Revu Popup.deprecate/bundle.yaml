@@ -1,11 +1,15 @@
 title:
-  ru: Revu Popup
-  fr_fr: Revu Popup
   en_us: Revu Popup
+  fr_fr: Revu Popup
+  ru: Revu Popup
+  chinese_s: Revu 弹窗
+  es_es: Revu Popup
   de_de: Revu Popup
 tooltip:
-  ru: Включает и отключает запрос принтера Revu PDF для имени файла. Иконка показывает текущее состояние этого параметра.
-  fr_fr: Active et désactive l'invite de l'imprimante PDF Revu pour l'option de nom de fichier. L'icône indique l'état actuel de ce paramètre.
   en_us: Enables and disables the Revu PDF Printer prompt for filename option. The Icon shows the current state of this setting.
+  fr_fr: Active et désactive l'invite de l'imprimante PDF Revu pour l'option de nom de fichier. L'icône indique l'état actuel de ce paramètre.
+  ru: Включает и отключает запрос принтера Revu PDF для имени файла. Иконка показывает текущее состояние этого параметра.
+  chinese_s: 启用或禁用 Revu PDF 打印机关于文件名选项的提示。图标显示此设置的当前状态
+  es_es: Enables and disables the Revu PDF Printer prompt for filename option. The Icon shows the current state of this setting.
   de_de: Aktiviert und deaktiviert die Revu PDF Drucker Aufforderung für Dateinamen. Das Icon zeigt den aktuellen Status dieser Einstellung an.
 context: zero-doc

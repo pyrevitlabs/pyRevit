@@ -1,8 +1,14 @@
 title:
-  ru: Найти неиспользуемые ключевые пометки
   en_us: Find Unused Keynotes
+  fr_fr: Find Unused Keynotes
+  ru: Найти неиспользуемые ключевые пометки
+  chinese_s: 查找未使用的注释
+  es_es: Encontrar notas clave no utilizadas
   de_de: Suche nach nicht verwendeten Bauelementschlüsseln
 tooltip:
-  ru: Показывает ключевые пометки, которые не используются в этой модели.
   en_us: Lists keynotes that have not been used in this model
+  fr_fr: Lists keynotes that have not been used in this model
+  ru: Показывает ключевые пометки, которые не используются в этой модели.
+  chinese_s: 列出此模型中未使用的注释
+  es_es: Lista las notas clave que no se han utilizado en este modelo
   de_de: Listet alle Bauelementschlüssel auf, die in diesem Modell nicht verwendet werden

@@ -1,12 +1,15 @@
 title:
-  ru: Перенумеровать
-  fr_fr: Renuméroter
   en_us: Renumber
+  fr_fr: Renuméroter
+  ru: Перенумеровать
+  chinese_s: 重新编号
+  es_es: Renumerar
   de_de: Umummerieren
 tooltip:
-  ru: Перенумеровать пронумерованные элементы в порядке выделения.
-  fr_fr: Renuméroter les éléments dans l'ordre de sélection
   en_us: ReNumber numbered elements in order of selection
+  fr_fr: Renuméroter les éléments dans l'ordre de sélection
+  ru: Перенумеровать пронумерованные элементы в порядке выделения.
+  chinese_s: 按照选择顺序，为已编号的图元重新编号
+  es_es: Renumerar elementos numerados en orden de selección
   de_de: Elemente werden mit der Reihenfolge der Auswahl neu nummeriert
 author: '{{author}}'
-

@@ -1,31 +1,40 @@
 title:
-  ru: Предыдущий
-  fr_fr: Précédent
   en_us: Prev
+  fr_fr: Précédent
+  ru: Предыдущий
+  chinese_s: 上一个
+  es_es: Anterior
   de_de: Vorheriges Element im Speicher wählen
 tooltip:
-  ru: >-
-    Выбрать предыдущий элемент в памяти выбора.
-    
+  en_us: >-
+    Select previous element in selection memory.
+
     Click +1
 
     Shift+Click +10
   fr_fr: >-
-     Sélectionnez l'élément précédent dans la mémoire de sélection.
-    
-     Cliquez sur +1
-    
-     Shift+Clic +10
-  en_us: >-
-    Select previous element in selection memory.
-    
+    Sélectionnez l'élément précédent dans la mémoire de sélection.
+
+    Cliquez sur +1
+
+    Shift+Clic +10
+  ru: >-
+    Выбрать предыдущий элемент в памяти выбора.
+
     Click +1
-    
+
     Shift+Click +10
+  chinese_s: "在选择内存中选择上一个图元。\n单击：+1\nShift+单击：+10"
+  es_es: >-
+    Seleccionar elemento anterior en la memoria de selección.
+
+    Clic +1
+
+    Shift+Clic +10
   de_de: >-
     Wählt das vorherige Element im Speicher aus
-    
+
     Click +1
-    
+
     Shift+Click +10
     Wählt das 10. Element im Speicher aus

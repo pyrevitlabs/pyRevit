@@ -1,7 +1,9 @@
 title:
-  ru: Переопределение
-  fr_fr: Remplacement
   en_us: Override
+  fr_fr: Remplacement
+  ru: Переопределение
+  chinese_s: 替换
+  es_es: Sobrescribir
   de_de: Überschreiben
 layout:
   - Edit

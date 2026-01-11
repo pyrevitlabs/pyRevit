@@ -1,11 +1,13 @@
-"""Idempotent operations to ensure a datbase object exists."""
+"""Idempotent operations to ensure a database object exists."""
 import os.path as op
+
+from System import Int64
 
 from pyrevit import HOST_APP, DOCS, PyRevitException
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit import DB
-from pyrevit.revit import db
+from pyrevit.compat import get_elementid_from_value_func
 from pyrevit.revit.db import query
 from pyrevit.revit.db import create
 from pyrevit.revit.db import transaction    #pylint: disable=E0611
@@ -13,7 +15,7 @@ from pyrevit.revit.db import transaction    #pylint: disable=E0611
 
 #pylint: disable=W0703,C0302,C0103
 mlogger = get_logger(__name__)
-
+get_elementid_from_value = get_elementid_from_value_func()
 
 def ensure_sharedparam(sparam_name, sparam_categories, sparam_group,
                        load_param=True, allow_vary_betwen_groups=False,
@@ -75,8 +77,8 @@ def ensure_element_ids(mixed_list):
             element_id_list.append(item.Id)
         elif hasattr(item, 'Id') and isinstance(item.Id, DB.ElementId):
             element_id_list.append(item.Id)
-        elif isinstance(item, int):
-            element_id_list.append(DB.ElementId(item))
+        elif isinstance(item, (int, Int64)):
+            element_id_list.append(get_elementid_from_value(item))
 
     return element_id_list
 
@@ -97,7 +99,7 @@ def ensure_text_type(name,
                      bold=False,
                      italic=False,
                      underline=False,
-                     with_factor=1.0,
+                     width_factor=1.0,
                      doc=None):
     doc = doc or DOCS.doc
     # check if type exists
@@ -113,7 +115,7 @@ def ensure_text_type(name,
         bold=bold,
         italic=italic,
         underline=underline,
-        with_factor=with_factor,
+        width_factor=width_factor,
         doc=doc)
 
 

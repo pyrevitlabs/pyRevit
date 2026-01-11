@@ -1,9 +1,15 @@
 title:
-  en_us: english title
-  fr_fr: french title
-  es_es: spanish title
-tooltip: 
-  en_us: english tooltip
-  fr_fr: french tooltip
-  es_es: spanish tooltip
+  en_us: URL Button
+  fr_fr: Bouton URL
+  ru: URL Button
+  chinese_s: URL Button
+  es_es: Botón URL
+  de_de: URL Schaltfläche
+tooltip:
+  en_us: URL Button
+  fr_fr: Bouton URL
+  ru: URL кнопка
+  chinese_s: URL 按钮
+  es_es: Botón URL
+  de_de: URL Schaltfläche
 hyperlink: https://www.notion.so/Developer-Docs-2c88f3ecccde422d9504e20b6b9e04f8
