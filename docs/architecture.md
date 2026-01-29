@@ -31,6 +31,21 @@ Whether you want to create tools, troubleshoot issues, or contribute code, under
     - A small server (written in Go) that tracks usage data of pyRevit tools.
     - Stores data in MongoDB or PostgreSQL for business intelligence.
 
+### pyrevit.forms facade (PR1)
+
+`pyrevit.forms` is split into a lightweight facade and engine-specific backends:
+
+- Facade: `pyrevitlib/pyrevit/forms/__init__.py` routes based on `pyrevit.compat.IRONPY`.
+- IronPython backend: `pyrevitlib/pyrevit/forms/_ipy_forms.py` (no behavior changes).
+- CPython backend: `pyrevitlib/pyrevit/forms/_cpy_forms.py` (PR1 stubs only).
+
+CPython contract (PR1):
+
+- `import pyrevit.forms` succeeds.
+- Unsupported symbols raise `PyRevitCPythonNotSupported("pyrevit.forms.<symbol>")`
+  from `pyrevitlib/pyrevit/__init__.py` (not `ImportError` or `AttributeError`).
+- The facade stays free of WPF/clr imports; CPython dialog support lands later.
+
 ## How pyRevit Loads in Revit
 
 !!! tip "TL;DR:"
