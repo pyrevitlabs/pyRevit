@@ -1,5 +1,9 @@
 #! python3
-"""Regression tests."""
+"""CPython regression tests.
+
+Validates PR1 contract for pyrevit.forms: import succeeds under CPython and
+unsupported symbols raise PyRevitCPythonNotSupported("pyrevit.forms.<symbol>").
+"""
 
 import unittest
 from pyrevit.unittests.runner import run_test_case
@@ -19,13 +23,38 @@ class TestClass(unittest.TestCase):
         )
 
     def test_pyrevit_forms(self):
-        """PyRevit forms compatibility with CPython."""
+        """PR1 forms contract: no UI dialogs invoked in stub phase."""
+        from pyrevit import PyRevitCPythonNotSupported
         try:
-            from pyrevit.forms import show_balloon
-            show_balloon("It works!", "pyRevit forms is working under CPython")
+            from pyrevit import forms
         except Exception as err:
-            print(err)
-            self.fail(err)
+            self.fail("pyrevit.forms import failed: {}".format(err))
+
+        try:
+            forms.ask_for_string("Test")
+            self.fail("Expected PyRevitCPythonNotSupported for ask_for_string")
+        except PyRevitCPythonNotSupported as err:
+            self.assertEqual(
+                "pyrevit.forms.ask_for_string",
+                err.feature_name
+            )
+        except (ImportError, AttributeError) as err:
+            self.fail("Unexpected error type for stubbed API: {}".format(err))
+        except Exception as err:
+            self.fail("Unexpected error type for stubbed API: {}".format(err))
+
+        try:
+            getattr(forms, "does_not_exist")
+            self.fail("Expected PyRevitCPythonNotSupported for missing symbol")
+        except PyRevitCPythonNotSupported as err:
+            self.assertEqual(
+                "pyrevit.forms.does_not_exist",
+                err.feature_name
+            )
+        except (ImportError, AttributeError) as err:
+            self.fail("Unexpected error type for missing symbol: {}".format(err))
+        except Exception as err:
+            self.fail("Unexpected error type for missing symbol: {}".format(err))
 
     def test_ouput_markdown(self):
         """Issue #2130."""

@@ -1,8 +1,6 @@
 ﻿"""pyrevit.forms facade.
 
-Routes to the IronPython backend (`_ipy_forms`) when `pyrevit.compat.IRONPY`
-is true. Under CPython, imports succeed by routing to `_cpy_forms` and
-unsupported symbols raise `PyRevitCPythonNotSupported("pyrevit.forms.<symbol>")`.
+Routes to engine-specific backends based on `pyrevit.compat.IRONPY`.
 """
 
 from pyrevit.compat import IRONPY
