@@ -549,7 +549,15 @@ class PyRevitOutputWindow(object):
         html_code = coreutils.prepare_html_str(markdown_html)
         print(html_code, end="")
         if PY3:
-            sys.stdout.flush()
+            # Under CPython in Revit, sys.stdout may be a .NET-backed ScriptIO
+            # with `Flush()` but no `flush()`.
+            flush = getattr(sys.stdout, "flush", None)
+            if callable(flush):
+                flush()
+            else:
+                Flush = getattr(sys.stdout, "Flush", None)
+                if callable(Flush):
+                    Flush()
 
 
     def print_table(self, table_data, columns=None, formats=None,
