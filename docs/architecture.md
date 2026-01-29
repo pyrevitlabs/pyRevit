@@ -37,7 +37,7 @@ Whether you want to create tools, troubleshoot issues, or contribute code, under
 
 - Facade: `pyrevitlib/pyrevit/forms/__init__.py` routes based on `pyrevit.compat.IRONPY`.
 - IronPython backend: `pyrevitlib/pyrevit/forms/_ipy_forms.py` (no behavior changes).
-- CPython backend: `pyrevitlib/pyrevit/forms/_cpy_forms.py` (PR1 stubs only).
+- CPython backend: `pyrevitlib/pyrevit/forms/_cpy_forms.py`.
 
 CPython contract (PR1):
 
