@@ -23,7 +23,7 @@ class TestClass(unittest.TestCase):
         )
 
     def test_pyrevit_forms(self):
-        """PR1 forms contract: no UI dialogs invoked in stub phase."""
+        """No UI dialogs invoked in stub phase."""
         from pyrevit import PyRevitCPythonNotSupported
         try:
             from pyrevit import forms
