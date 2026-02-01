@@ -1,5 +1,4 @@
-﻿# -*- coding: UTF-8 -*-
-"""IronPython WPF forms backend for pyrevit.forms."""
+﻿"""IronPython WPF forms backend for pyrevit.forms."""
 
 # pylint: disable=consider-using-f-string,wrong-import-position
 

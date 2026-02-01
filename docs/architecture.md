@@ -36,8 +36,8 @@ Whether you want to create tools, troubleshoot issues, or contribute code, under
 `pyrevit.forms` is a lightweight facade that selects an engine-specific backend:
 
 - Facade: `pyrevitlib/pyrevit/forms/__init__.py` routes based on `pyrevit.compat.IRONPY`.
-- IronPython backend: `pyrevitlib/pyrevit/forms/_ipy_forms.py`.
-- CPython backend: `pyrevitlib/pyrevit/forms/_cpy_forms.py`.
+- IronPython backend: `pyrevitlib/pyrevit/forms/_ipy.py`.
+- CPython backend: `pyrevitlib/pyrevit/forms/_cpy.py`.
 
 Current CPython behavior:
 

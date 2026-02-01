@@ -7,11 +7,11 @@ from pyrevit.compat import IRONPY
 
 if IRONPY:
     # pylint: disable=wildcard-import,unused-wildcard-import
-    from ._ipy_forms import *  # noqa: F401,F403
+    from ._ipy import *  # noqa: F401,F403
 else:
     # pylint: disable=wildcard-import,unused-wildcard-import
-    from ._cpy_forms import *  # noqa: F401,F403
-    from . import _cpy_forms as _backend
+    from ._cpy import *  # noqa: F401,F403
+    from . import _cpy as _backend
     from pyrevit import PyRevitCPythonNotSupported
 
     __all__ = list(getattr(_backend, "__all__", []))
