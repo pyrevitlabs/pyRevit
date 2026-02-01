@@ -1,0 +1,39 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:v="clr-namespace:System;assembly=mscorlib">
+    <v:String x:Key="Window.Title">Administrador de Extensiones pyRevit</v:String>
+    <v:String x:Key="ExtensionList.TextBlock">Lista de Paquetes de Extensión Registrados:</v:String>
+    <v:String x:Key="ExtensionInfo.DevelopedByLink">Desarrollado por: </v:String>
+    <v:String x:Key="ExtensionInfo.RepositoryLink">Repositorio: </v:String>
+    <v:String x:Key="ExtensionSettings.PrivateRepositoryCheck">El Repositorio Git es Privado (Proporcionar Credenciales de Cuenta)</v:String>
+    <v:String x:Key="ExtensionSettings.GroupName">Configuración del Paquete de Extensión:</v:String>
+    <v:String x:Key="ExtensionSettings.Username">Nombre de usuario: </v:String>
+    <v:String x:Key="ExtensionSettings.Password">Contraseña (o Token de Acceso): </v:String>
+    <v:String x:Key="Buttons.UpdateExtension">Actualizar Configuración de Extensión</v:String>
+    <v:String x:Key="Buttons.InstallExtension">Instalar Extensión</v:String>
+    <v:String x:Key="Buttons.EnableExtension">Habilitar Extensión</v:String>
+    <v:String x:Key="Buttons.RemoveExtension">Eliminar Extensión</v:String>
+    <v:String x:Key="Buttons.ToggleButton.Enable">Habilitar</v:String>
+    <v:String x:Key="Buttons.ToggleButton.Disable">Deshabilitar</v:String>
+    <v:String x:Key="ExtensionsList.ColumnName">Nombre</v:String>
+    <v:String x:Key="ExtensionsList.ColumnType">Tipo</v:String>
+    <v:String x:Key="ExtensionsList.ColumnAuthor">Autor</v:String>
+    <v:String x:Key="ExtensionsList.ColumnBuiltin">Integrado</v:String>
+    <v:String x:Key="ExtensionsList.ColumnRocketMode">Modo Cohete</v:String>
+    <v:String x:Key="ExtensionsList.ColumnInstalled">Instalado</v:String>
+    <v:String x:Key="ExtensionsList.ColumnStatus">Estado</v:String>
+    <v:String x:Key="ExtensionsList.ColumnLastCommit">Última Confirmación</v:String>
+    <v:String x:Key="ExtensionsList.GitRepository">URL del Repositorio Git</v:String>
+    <v:String x:Key="Extension.Enabled">Habilitado</v:String>
+    <v:String x:Key="Extension.Disabled">Deshabilitado</v:String>
+    <v:String x:Key="Extension.Installed">Sí</v:String>
+    <v:String x:Key="Extension.NotInstalled">No</v:String>
+    <v:String x:Key="Extension.TypeUnknown">Desconocido</v:String>
+    <v:String x:Key="Extension.TypeUITools">Herramientas de UI de Revit</v:String>
+    <v:String x:Key="Extension.TypeIronLibrary">Biblioteca IronPython</v:String>
+    <v:String x:Key="Extension.InstallPath">Instalar en: {}</v:String>
+    <v:String xml:space="preserve" x:Key="Extension.InstalledPath">Instalado en:
+{}</v:String>
+    <v:String x:Key="Extension.Dependencies">Dependencias:</v:String>
+</ResourceDictionary>

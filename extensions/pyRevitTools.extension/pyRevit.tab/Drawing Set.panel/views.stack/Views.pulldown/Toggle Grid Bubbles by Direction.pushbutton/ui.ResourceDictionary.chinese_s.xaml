@@ -1,0 +1,22 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">切换网格气泡</system:String>
+    <system:String x:Key="HeaderTitle">切换网格气泡</system:String>
+    
+    <system:String x:Key="OperationScopeHeader">操作范围</system:String>
+    
+    <system:String x:Key="ToggleAllHeader">切换所有活动网格</system:String>
+    <system:String x:Key="ShowAll">全部显示</system:String>
+    <system:String x:Key="HideAll">全部隐藏</system:String>
+    
+    <system:String x:Key="ToggleByDirectionHeader">按方向切换活动网格</system:String>
+    <system:String x:Key="Top">顶部</system:String>
+    <system:String x:Key="Left">左侧</system:String>
+    <system:String x:Key="Right">右侧</system:String>
+    <system:String x:Key="Bottom">底部</system:String>
+    
+    <system:String x:Key="Back">返回</system:String>
+    <system:String x:Key="Cancel">取消</system:String>
+    <system:String x:Key="OK">确定</system:String>
+</ResourceDictionary>

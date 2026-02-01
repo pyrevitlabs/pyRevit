@@ -246,6 +246,39 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // set event arguments for engine
             builtin.SetVariable("__eventsender__", runtime.ScriptRuntimeConfigs.EventSender);
             builtin.SetVariable("__eventargs__", runtime.ScriptRuntimeConfigs.EventArgs);
+
+            // Prevent user-provided variables from overwriting reserved pyRevit built-ins
+            var reservedBuiltinNames = new HashSet<string> {
+                "__execid__",
+                "__timestamp__",
+                "__cachedengine__",
+                "__cachedengineid__",
+                "__scriptruntime__",
+                "__revit__",
+                "__commanddata__",
+                "__elements__",
+                "__uibutton__",
+                "__commandpath__",
+                "__configcommandpath__",
+                "__commandname__",
+                "__commandbundle__",
+                "__commandextension__",
+                "__commanduniqueid__",
+                "__commandcontrolid__",
+                "__forceddebugmode__",
+                "__shiftclick__",
+                "__result__",
+                "__eventsender__",
+                "__eventargs__"
+            };
+
+            if (runtime.ScriptRuntimeConfigs?.Variables != null) {
+                foreach (var variable in runtime.ScriptRuntimeConfigs.Variables) {
+                    if (reservedBuiltinNames.Contains(variable.Key))
+                        continue;
+                    builtin.SetVariable(variable.Key, variable.Value);
+                }
+            }
         }
 
         private void SetupSearchPaths(ref ScriptRuntime runtime) {

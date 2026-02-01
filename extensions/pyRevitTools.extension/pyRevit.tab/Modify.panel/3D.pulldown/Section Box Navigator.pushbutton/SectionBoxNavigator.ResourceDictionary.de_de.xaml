@@ -1,0 +1,127 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Schnittbox-Navigator</system:String>
+    
+    <system:String x:Key="LevelNavigation">Ebenen-Navigation</system:String>
+    <system:String x:Key="TopUp">Oben ↑</system:String>
+    <system:String x:Key="TopDown">Oben ↓</system:String>
+    <system:String x:Key="BottomUp">Unten ↑</system:String>
+    <system:String x:Key="BottomDown">Unten ↓</system:String>
+    <system:String x:Key="BoxUp">Box ↑</system:String>
+    <system:String x:Key="BoxDown">Box ↓</system:String>
+    <system:String x:Key="Level">Ebene</system:String>
+    <system:String x:Key="Nudge">Verschieben</system:String>
+    <system:String x:Key="Amount">Betrag:</system:String>
+    <system:String x:Key="Loading">Lädt...</system:String>
+    
+    <system:String x:Key="ViewAlignment">Ansichtsausrichtung</system:String>
+    <system:String x:Key="Align2DView">2D-Ansicht ausrichten</system:String>
+    
+    <system:String x:Key="GridNavigation">Raster-Navigation</system:String>
+    <system:String x:Key="Bigger">Größer</system:String>
+    <system:String x:Key="Smaller">Kleiner</system:String>
+    <system:String x:Key="WestOut">← W</system:String>
+    <system:String x:Key="NorthOut">↑ N</system:String>
+    <system:String x:Key="SouthOut">↓ S</system:String>
+    <system:String x:Key="EastOut">→ O</system:String>
+    <system:String x:Key="WestIn">→ W</system:String>
+    <system:String x:Key="NorthIn">↓ N</system:String>
+    <system:String x:Key="SouthIn">↑ S</system:String>
+    <system:String x:Key="EastIn">← O</system:String>
+    <system:String x:Key="Grid">Raster</system:String>
+    
+    <system:String x:Key="ExpandShrinkControls">Erweitern/Verkleinern</system:String>
+    <system:String x:Key="Expand">Erweitern +</system:String>
+    <system:String x:Key="Shrink">Verkleinern -</system:String>
+    
+    <system:String x:Key="Actions">Aktionen</system:String>
+    <system:String x:Key="ToggleBox">Box umschalten</system:String>
+    <system:String x:Key="UnHideBox">Box (ein-/aus)blenden</system:String>
+    <system:String x:Key="AlignBox">Box ausrichten</system:String>
+    
+    <system:String x:Key="VerticalPositionStatus">Vertikale Positionsstatus</system:String>
+    <system:String x:Key="Top">Oben:</system:String>
+    <system:String x:Key="Bottom">Unten:</system:String>
+    <system:String x:Key="Position">Position:</system:String>
+    
+    <system:String x:Key="GridNavigationStatus">Raster-Navigationsstatus</system:String>
+    <system:String x:Key="ExpandShrinkActionsStatus">Erweitern/Verkleinern + Aktionsstatus</system:String>
+    
+    <system:String x:Key="Settings">Einstellungen</system:String>
+    <system:String x:Key="ShowPreviewOnHover">Vorschau beim Überfahren anzeigen</system:String>
+    <system:String x:Key="UpdateUIOnEvents">UI bei Ereignissen aktualisieren</system:String>
+    <system:String x:Key="IncludeLinkedLevelsAndGrids">Verknüpfte Ebenen und Raster einbeziehen</system:String>
+    
+    <!-- Dynamic UI strings -->
+    <system:String x:Key="AlignWith3DView">Mit 3D-Ansicht ausrichten</system:String>
+    <system:String x:Key="AlignWith2DView">Mit 2D-Ansicht ausrichten</system:String>
+    <system:String x:Key="NoSectionBoxActive">Keine aktive Schnittbox</system:String>
+    <system:String x:Key="AboveTopFormat">Über Oben: {0} @ {1}</system:String>
+    <system:String x:Key="NoLevelAboveTop">Keine Ebene über oben</system:String>
+    <system:String x:Key="BelowTopFormat">Unter Oben: {0} @ {1}</system:String>
+    <system:String x:Key="NoLevelBelowTop">Keine Ebene unter oben</system:String>
+    <system:String x:Key="TopOfBoxFormat">Oben der Box: {0}</system:String>
+    <system:String x:Key="AboveBottomFormat">Über Unten: {0} @ {1}</system:String>
+    <system:String x:Key="NoLevelAboveBottom">Keine Ebene über unten</system:String>
+    <system:String x:Key="BelowBottomFormat">Unter Unten: {0} @ {1}</system:String>
+    <system:String x:Key="NoLevelBelowBottom">Keine Ebene unter unten</system:String>
+    <system:String x:Key="BottomOfBoxFormat">Unten der Box: {0}</system:String>
+    <system:String x:Key="LengthLabelAdjust">Längenbezeichnung (in Projekteinheiten anpassen):</system:String>
+    
+    <!-- Status messages -->
+    <system:String x:Key="CannotFindLevelsInDirection">Kann keine Ebenen in dieser Richtung finden</system:String>
+    <system:String x:Key="WouldCreateInvalidBox">Würde ungültige Box erstellen</system:String>
+    <system:String x:Key="NoLevelFoundInDirection">Keine Ebene in dieser Richtung gefunden</system:String>
+    <system:String x:Key="BoxMovedFormat">Box verschoben {0}: Oben zu '{1}', Unten zu '{2}'</system:String>
+    <system:String x:Key="TopMovedFormat">Oben verschoben {0} zur Ebene '{1}'</system:String>
+    <system:String x:Key="BottomMovedFormat">Unten verschoben {0} zur Ebene '{1}'</system:String>
+    <system:String x:Key="NudgedFormat">Verschoben {0} um {1} {2}</system:String>
+    <system:String x:Key="Expanded">Erweitert</system:String>
+    <system:String x:Key="Shrunk">Verkleinert</system:String>
+    <system:String x:Key="ExpandedShrunkByFormat">um {0} in alle Richtungen</system:String>
+    <system:String x:Key="CouldNotDetermineFace">Kann zu bewegende Fläche nicht bestimmen.</system:String>
+    <system:String x:Key="NoGridFoundFormat">Kein Raster in Richtung {0} gefunden.</system:String>
+    <system:String x:Key="AlreadyAtGridLine">Bereits an Rasterlinie.</system:String>
+    <system:String x:Key="MovedToGridFormat">Zum Raster '{0}' in Richtung {1} verschoben</system:String>
+    <system:String x:Key="NudgedInDirectionFormat">Verschoben {0} in Richtung {1}</system:String>
+    <system:String x:Key="CouldNotGetViewRange">Kann Ansichtsbereichsinformationen nicht abrufen.</system:String>
+    <system:String x:Key="CouldNotGetCropBox">Kann Zuschnittbox aus Schnitt nicht abrufen.</system:String>
+    <system:String x:Key="NoCropboxOrElements">Keine Zuschnittbox oder Elemente gefunden, um Bereichsbox zu erweitern</system:String>
+    <system:String x:Key="ApplySectionBoxFormat">Schnittbox aus Ansicht '{0}' anwenden?</system:String>
+    <system:String x:Key="ConfirmSectionBox">Schnittbox bestätigen</system:String>
+    <system:String x:Key="SectionBoxAlignedFormat">Schnittbox mit Ansicht '{0}' ausgerichtet</system:String>
+    <system:String x:Key="CropBoxAlignedFormat">Zuschnittbox mit Ansicht '{0}' ausgerichtet</system:String>
+    <system:String x:Key="UnsupportedViewType">Nicht unterstützter Ansichtstyp.</system:String>
+    <system:String x:Key="Activated">aktiviert</system:String>
+    <system:String x:Key="Deactivated">deaktiviert</system:String>
+    <system:String x:Key="BoxToggleFailed">Box-Umschaltung fehlgeschlagen</system:String>
+    <system:String x:Key="Hidden">versteckt</system:String>
+    <system:String x:Key="Unhidden">sichtbar</system:String>
+    <system:String x:Key="ErrorInBoxVisibility">Fehler bei Box-Sichtbarkeit</system:String>
+    <system:String x:Key="SectionBoxAlignedToFace">Schnittbox mit Fläche ausgerichtet</system:String>
+    <system:String x:Key="FailedToAlignToFaceFormat">Ausrichtung mit Fläche fehlgeschlagen: {0}</system:String>
+    <system:String x:Key="InvalidSectionBoxDimensions">Ungültige Schnittbox-Dimensionen.</system:String>
+    <system:String x:Key="PleaseEnterValidNumber">Bitte geben Sie eine gültige Zahl ein</system:String>
+    <system:String x:Key="AnErrorOccurredFormat">Ein Fehler ist aufgetreten: {0}</system:String>
+    <system:String x:Key="PleaseEnterNudgeAmount">Bitte geben Sie einen Verschiebungsbetrag ein</system:String>
+    <system:String x:Key="AmountMustBeGreaterThanZero">Betrag muss größer als 0 sein</system:String>
+    <system:String x:Key="PleaseEnterValidNumberForExpansion">Bitte geben Sie eine gültige Zahl für den Erweiterungsbetrag ein</system:String>
+    <system:String x:Key="AnErrorOccurredWhileExpandingFormat">Fehler beim Erweitern: {0}</system:String>
+    <system:String x:Key="PleaseEnterShrinkAmount">Bitte geben Sie einen Verkleinerungsbetrag ein</system:String>
+    <system:String x:Key="ShrinkAmountMustBeGreaterThanZero">Verkleinerungsbetrag muss größer als 0 sein</system:String>
+    <system:String x:Key="PleaseEnterValidNumberForShrink">Bitte geben Sie eine gültige Zahl für den Verkleinerungsbetrag ein</system:String>
+    <system:String x:Key="AnErrorOccurredWhileShrinkingFormat">Fehler beim Verkleinern: {0}</system:String>
+    <system:String x:Key="Select2DViewForSectionBox">2D-Ansicht für Schnittbox auswählen</system:String>
+    <system:String x:Key="Select3DViewToCopyFrom">3D-Ansicht zum Kopieren auswählen</system:String>
+    <system:String x:Key="CouldNotExtractViewInformation">Ansichtsinformationen konnten nicht extrahiert werden.</system:String>
+    <system:String x:Key="View3DHasNoSectionBox">3D-Ansicht hat keine Schnittbox.</system:String>
+    <system:String x:Key="Unknown">Unbekannt</system:String>
+    
+    <!-- Alert messages -->
+    <system:String x:Key="StoredSectionBoxFound">Gespeicherte SectionBox für diese Ansicht gefunden! Wiederherstellen?</system:String>
+    <system:String x:Key="RestoreSectionBox">Schnittbox wiederherstellen</system:String>
+    <system:String x:Key="NoSectionBoxMessage">Die aktuelle Ansicht hat keine aktive oder gespeicherte Schnittbox.</system:String>
+    <system:String x:Key="NoSectionBoxTitle">Keine Schnittbox</system:String>
+    <system:String x:Key="ErrorTitle">Fehler</system:String>
+</ResourceDictionary>

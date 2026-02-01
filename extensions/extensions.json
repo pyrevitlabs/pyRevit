@@ -239,6 +239,19 @@
             "website": "https://revitesse.com/",
             "image": "",
             "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "type": "extension",
+            "rocket_mode_compatible": "true",
+            "name": "CostEstimates",
+            "description": "Automate quantity takeoffs and cost estimation inside Autodesk Revit with pyRevit.",
+            "author": "Wachama J. Swana",
+            "author_profile": "https://www.linkedin.com/in/wachama-j-swana-a937081b4/",
+            "url": "https://github.com/SwanaWJ/pyrevit-CostEstimates.git",
+            "website": "",
+            "image": "",
+            "dependencies": []
         }
     ]
 }

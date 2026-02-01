@@ -1,0 +1,127 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Section Box Navigator</system:String>
+    
+    <system:String x:Key="LevelNavigation">Level Navigation</system:String>
+    <system:String x:Key="TopUp">Top ↑</system:String>
+    <system:String x:Key="TopDown">Top ↓</system:String>
+    <system:String x:Key="BottomUp">Bottom ↑</system:String>
+    <system:String x:Key="BottomDown">Bottom ↓</system:String>
+    <system:String x:Key="BoxUp">Box ↑</system:String>
+    <system:String x:Key="BoxDown">Box ↓</system:String>
+    <system:String x:Key="Level">Level</system:String>
+    <system:String x:Key="Nudge">Nudge</system:String>
+    <system:String x:Key="Amount">Amount:</system:String>
+    <system:String x:Key="Loading">Loading...</system:String>
+    
+    <system:String x:Key="ViewAlignment">View alignment</system:String>
+    <system:String x:Key="Align2DView">Align 2D View</system:String>
+    
+    <system:String x:Key="GridNavigation">Grid Navigation</system:String>
+    <system:String x:Key="Bigger">Bigger</system:String>
+    <system:String x:Key="Smaller">Smaller</system:String>
+    <system:String x:Key="WestOut">← W</system:String>
+    <system:String x:Key="NorthOut">↑ N</system:String>
+    <system:String x:Key="SouthOut">↓ S</system:String>
+    <system:String x:Key="EastOut">→ E</system:String>
+    <system:String x:Key="WestIn">→ W</system:String>
+    <system:String x:Key="NorthIn">↓ N</system:String>
+    <system:String x:Key="SouthIn">↑ S</system:String>
+    <system:String x:Key="EastIn">← E</system:String>
+    <system:String x:Key="Grid">Grid</system:String>
+    
+    <system:String x:Key="ExpandShrinkControls">Expand/Shrink Controls</system:String>
+    <system:String x:Key="Expand">Expand +</system:String>
+    <system:String x:Key="Shrink">Shrink -</system:String>
+    
+    <system:String x:Key="Actions">Actions</system:String>
+    <system:String x:Key="ToggleBox">Toggle Box</system:String>
+    <system:String x:Key="UnHideBox">(Un-)Hide Box</system:String>
+    <system:String x:Key="AlignBox">Align Box</system:String>
+    
+    <system:String x:Key="VerticalPositionStatus">Vertical Position Status</system:String>
+    <system:String x:Key="Top">Top:</system:String>
+    <system:String x:Key="Bottom">Bottom:</system:String>
+    <system:String x:Key="Position">Position:</system:String>
+    
+    <system:String x:Key="GridNavigationStatus">Grid Navigation Status</system:String>
+    <system:String x:Key="ExpandShrinkActionsStatus">Expand/Shrink + Actions Status</system:String>
+    
+    <system:String x:Key="Settings">Settings</system:String>
+    <system:String x:Key="ShowPreviewOnHover">Show preview on hover</system:String>
+    <system:String x:Key="UpdateUIOnEvents">Update UI on Events</system:String>
+    <system:String x:Key="IncludeLinkedLevelsAndGrids">Include Linked Levels and Grids</system:String>
+    
+    <!-- Dynamic UI strings -->
+    <system:String x:Key="AlignWith3DView">Align with 3D View</system:String>
+    <system:String x:Key="AlignWith2DView">Align with 2D View</system:String>
+    <system:String x:Key="NoSectionBoxActive">No section box active</system:String>
+    <system:String x:Key="AboveTopFormat">Above Top: {0} @ {1}</system:String>
+    <system:String x:Key="NoLevelAboveTop">No level above top</system:String>
+    <system:String x:Key="BelowTopFormat">Below Top: {0} @ {1}</system:String>
+    <system:String x:Key="NoLevelBelowTop">No level below top</system:String>
+    <system:String x:Key="TopOfBoxFormat">Top of Box: {0}</system:String>
+    <system:String x:Key="AboveBottomFormat">Above Bottom: {0} @ {1}</system:String>
+    <system:String x:Key="NoLevelAboveBottom">No level above bottom</system:String>
+    <system:String x:Key="BelowBottomFormat">Below Bottom: {0} @ {1}</system:String>
+    <system:String x:Key="NoLevelBelowBottom">No level below bottom</system:String>
+    <system:String x:Key="BottomOfBoxFormat">Bottom of Box: {0}</system:String>
+    <system:String x:Key="LengthLabelAdjust">Length Label (adjust in Project Units):</system:String>
+    
+    <!-- Status messages -->
+    <system:String x:Key="CannotFindLevelsInDirection">Cannot find levels in that direction</system:String>
+    <system:String x:Key="WouldCreateInvalidBox">Would create invalid box</system:String>
+    <system:String x:Key="NoLevelFoundInDirection">No level found in that direction</system:String>
+    <system:String x:Key="BoxMovedFormat">Box moved {0}: Top to '{1}', Bottom to '{2}'</system:String>
+    <system:String x:Key="TopMovedFormat">Top moved {0} to level '{1}'</system:String>
+    <system:String x:Key="BottomMovedFormat">Bottom moved {0} to level '{1}'</system:String>
+    <system:String x:Key="NudgedFormat">Nudged {0} by {1} {2}</system:String>
+    <system:String x:Key="Expanded">Expanded</system:String>
+    <system:String x:Key="Shrunk">Shrunk</system:String>
+    <system:String x:Key="ExpandedShrunkByFormat">by {0} in all directions</system:String>
+    <system:String x:Key="CouldNotDetermineFace">Could not determine face to move.</system:String>
+    <system:String x:Key="NoGridFoundFormat">No grid found in {0} direction.</system:String>
+    <system:String x:Key="AlreadyAtGridLine">Already at grid line.</system:String>
+    <system:String x:Key="MovedToGridFormat">Moved to grid '{0}' in {1} direction</system:String>
+    <system:String x:Key="NudgedInDirectionFormat">Nudged {0} in {1} direction</system:String>
+    <system:String x:Key="CouldNotGetViewRange">Could not get view range information.</system:String>
+    <system:String x:Key="CouldNotGetCropBox">Could not get crop box from section.</system:String>
+    <system:String x:Key="NoCropboxOrElements">No cropbox or elements found to extend scopebox to</system:String>
+    <system:String x:Key="ApplySectionBoxFormat">Apply section box from view '{0}'?</system:String>
+    <system:String x:Key="ConfirmSectionBox">Confirm Section Box</system:String>
+    <system:String x:Key="SectionBoxAlignedFormat">Section box aligned to view '{0}'</system:String>
+    <system:String x:Key="CropBoxAlignedFormat">Crop box aligned to view '{0}'</system:String>
+    <system:String x:Key="UnsupportedViewType">Unsupported view type.</system:String>
+    <system:String x:Key="Activated">activated</system:String>
+    <system:String x:Key="Deactivated">deactivated</system:String>
+    <system:String x:Key="BoxToggleFailed">Box toggle failed</system:String>
+    <system:String x:Key="Hidden">hidden</system:String>
+    <system:String x:Key="Unhidden">unhidden</system:String>
+    <system:String x:Key="ErrorInBoxVisibility">Error in Box visibility</system:String>
+    <system:String x:Key="SectionBoxAlignedToFace">Section box aligned to face</system:String>
+    <system:String x:Key="FailedToAlignToFaceFormat">Failed to align to face: {0}</system:String>
+    <system:String x:Key="InvalidSectionBoxDimensions">Invalid section box dimensions.</system:String>
+    <system:String x:Key="PleaseEnterValidNumber">Please enter a valid number</system:String>
+    <system:String x:Key="AnErrorOccurredFormat">An error occurred: {0}</system:String>
+    <system:String x:Key="PleaseEnterNudgeAmount">Please enter a nudge amount</system:String>
+    <system:String x:Key="AmountMustBeGreaterThanZero">Amount must be greater than 0</system:String>
+    <system:String x:Key="PleaseEnterValidNumberForExpansion">Please enter a valid number for expansion amount</system:String>
+    <system:String x:Key="AnErrorOccurredWhileExpandingFormat">An error occurred while expanding: {0}</system:String>
+    <system:String x:Key="PleaseEnterShrinkAmount">Please enter a shrink amount</system:String>
+    <system:String x:Key="ShrinkAmountMustBeGreaterThanZero">Shrink amount must be greater than 0</system:String>
+    <system:String x:Key="PleaseEnterValidNumberForShrink">Please enter a valid number for shrink amount</system:String>
+    <system:String x:Key="AnErrorOccurredWhileShrinkingFormat">An error occurred while shrinking: {0}</system:String>
+    <system:String x:Key="Select2DViewForSectionBox">Select 2D View for Section Box</system:String>
+    <system:String x:Key="Select3DViewToCopyFrom">Select 3D View to Copy From</system:String>
+    <system:String x:Key="CouldNotExtractViewInformation">Could not extract view information.</system:String>
+    <system:String x:Key="View3DHasNoSectionBox">3D view has no section box.</system:String>
+    <system:String x:Key="Unknown">Unknown</system:String>
+    
+    <!-- Alert messages -->
+    <system:String x:Key="StoredSectionBoxFound">Stored SectionBox for this view found! Restore?</system:String>
+    <system:String x:Key="RestoreSectionBox">Restore Section Box</system:String>
+    <system:String x:Key="NoSectionBoxMessage">The current view doesn't have an active or stored section box.</system:String>
+    <system:String x:Key="NoSectionBoxTitle">No Section Box</system:String>
+    <system:String x:Key="ErrorTitle">Error</system:String>
+</ResourceDictionary>

@@ -1,0 +1,14 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Werte neu zuweisen</system:String>
+    <system:String x:Key="Parameter">Parameter:</system:String>
+    <system:String x:Key="Guide">Anleitung</system:String>
+    <system:String x:Key="GuideText">Nach Format: Geben Sie das vorhandene Muster der Werte im ersten Feld und ein neues Format im zweiten Feld an. Wenn der Wert beispielsweise "OVERALL 1ST FLOOR" ist, kann das erste Feld "{type} {lvl}ST {name}" enthalten. Das Tool passt das angegebene Format an den Wert an und extrahiert die Teile entsprechend. Mit dem zweiten Feld können Sie diese extrahierten Teile neu anordnen. In diesem Beispiel wird durch Angabe von "LEVEL {lvl} - {type} {name} PLAN" im zweiten Feld der Wert auf "LEVEL 1 - OVERALL FLOOR PLAN" neu zugewiesen&#x0a;&#x0a;Nach regulärem Ausdruck: Wenn das erste Feld keinen Formatfinder "{}" enthält, arbeitet das Tool im Suchen/Ersetzen-Modus mit Unterstützung für reguläre Ausdrücke.</system:String>
+    <system:String x:Key="OriginalPattern">Ursprüngliches Muster:</system:String>
+    <system:String x:Key="NewPattern">Neues Muster:</system:String>
+    <system:String x:Key="ApplyNewValues">Neue Werte anwenden</system:String>
+    <system:String x:Key="MarkSelectedAsFinal">Ausgewählte als endgültig markieren</system:String>
+    <system:String x:Key="OldValue">Alter Wert</system:String>
+    <system:String x:Key="NewValue">Neuer Wert</system:String>
+</ResourceDictionary>

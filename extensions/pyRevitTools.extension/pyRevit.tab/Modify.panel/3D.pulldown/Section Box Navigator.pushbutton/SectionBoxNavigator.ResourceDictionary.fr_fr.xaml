@@ -1,0 +1,127 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Navigateur de Boîte de Coupe</system:String>
+    
+    <system:String x:Key="LevelNavigation">Navigation par Niveau</system:String>
+    <system:String x:Key="TopUp">Haut ↑</system:String>
+    <system:String x:Key="TopDown">Haut ↓</system:String>
+    <system:String x:Key="BottomUp">Bas ↑</system:String>
+    <system:String x:Key="BottomDown">Bas ↓</system:String>
+    <system:String x:Key="BoxUp">Boîte ↑</system:String>
+    <system:String x:Key="BoxDown">Boîte ↓</system:String>
+    <system:String x:Key="Level">Niveau</system:String>
+    <system:String x:Key="Nudge">Déplacer</system:String>
+    <system:String x:Key="Amount">Montant :</system:String>
+    <system:String x:Key="Loading">Chargement...</system:String>
+    
+    <system:String x:Key="ViewAlignment">Alignement de la Vue</system:String>
+    <system:String x:Key="Align2DView">Aligner la Vue 2D</system:String>
+    
+    <system:String x:Key="GridNavigation">Navigation par Grille</system:String>
+    <system:String x:Key="Bigger">Plus Grand</system:String>
+    <system:String x:Key="Smaller">Plus Petit</system:String>
+    <system:String x:Key="WestOut">← O</system:String>
+    <system:String x:Key="NorthOut">↑ N</system:String>
+    <system:String x:Key="SouthOut">↓ S</system:String>
+    <system:String x:Key="EastOut">→ E</system:String>
+    <system:String x:Key="WestIn">→ O</system:String>
+    <system:String x:Key="NorthIn">↓ N</system:String>
+    <system:String x:Key="SouthIn">↑ S</system:String>
+    <system:String x:Key="EastIn">← E</system:String>
+    <system:String x:Key="Grid">Grille</system:String>
+    
+    <system:String x:Key="ExpandShrinkControls">Contrôles d'Expansion/Rétrécissement</system:String>
+    <system:String x:Key="Expand">Agrandir +</system:String>
+    <system:String x:Key="Shrink">Rétrécir -</system:String>
+    
+    <system:String x:Key="Actions">Actions</system:String>
+    <system:String x:Key="ToggleBox">Basculer la Boîte</system:String>
+    <system:String x:Key="UnHideBox">(Dé)masquer la Boîte</system:String>
+    <system:String x:Key="AlignBox">Aligner la Boîte</system:String>
+    
+    <system:String x:Key="VerticalPositionStatus">Statut de Position Verticale</system:String>
+    <system:String x:Key="Top">Haut :</system:String>
+    <system:String x:Key="Bottom">Bas :</system:String>
+    <system:String x:Key="Position">Position :</system:String>
+    
+    <system:String x:Key="GridNavigationStatus">Statut de Navigation par Grille</system:String>
+    <system:String x:Key="ExpandShrinkActionsStatus">Statut d'Expansion/Rétrécissement + Actions</system:String>
+    
+    <system:String x:Key="Settings">Paramètres</system:String>
+    <system:String x:Key="ShowPreviewOnHover">Afficher l'aperçu au survol</system:String>
+    <system:String x:Key="UpdateUIOnEvents">Mettre à jour l'interface lors des événements</system:String>
+    <system:String x:Key="IncludeLinkedLevelsAndGrids">Inclure les Niveaux et Grilles Liés</system:String>
+    
+    <!-- Dynamic UI strings -->
+    <system:String x:Key="AlignWith3DView">Aligner avec la Vue 3D</system:String>
+    <system:String x:Key="AlignWith2DView">Aligner avec la Vue 2D</system:String>
+    <system:String x:Key="NoSectionBoxActive">Aucune boîte de coupe active</system:String>
+    <system:String x:Key="AboveTopFormat">Au-dessus du Haut : {0} @ {1}</system:String>
+    <system:String x:Key="NoLevelAboveTop">Aucun niveau au-dessus du haut</system:String>
+    <system:String x:Key="BelowTopFormat">En-dessous du Haut : {0} @ {1}</system:String>
+    <system:String x:Key="NoLevelBelowTop">Aucun niveau en-dessous du haut</system:String>
+    <system:String x:Key="TopOfBoxFormat">Haut de la Boîte : {0}</system:String>
+    <system:String x:Key="AboveBottomFormat">Au-dessus du Bas : {0} @ {1}</system:String>
+    <system:String x:Key="NoLevelAboveBottom">Aucun niveau au-dessus du bas</system:String>
+    <system:String x:Key="BelowBottomFormat">En-dessous du Bas : {0} @ {1}</system:String>
+    <system:String x:Key="NoLevelBelowBottom">Aucun niveau en-dessous du bas</system:String>
+    <system:String x:Key="BottomOfBoxFormat">Bas de la Boîte : {0}</system:String>
+    <system:String x:Key="LengthLabelAdjust">Étiquette de Longueur (ajuster dans les Unités du Projet) :</system:String>
+    
+    <!-- Status messages -->
+    <system:String x:Key="CannotFindLevelsInDirection">Impossible de trouver des niveaux dans cette direction</system:String>
+    <system:String x:Key="WouldCreateInvalidBox">Créerait une boîte invalide</system:String>
+    <system:String x:Key="NoLevelFoundInDirection">Aucun niveau trouvé dans cette direction</system:String>
+    <system:String x:Key="BoxMovedFormat">Boîte déplacée {0} : Haut vers '{1}', Bas vers '{2}'</system:String>
+    <system:String x:Key="TopMovedFormat">Haut déplacé {0} vers le niveau '{1}'</system:String>
+    <system:String x:Key="BottomMovedFormat">Bas déplacé {0} vers le niveau '{1}'</system:String>
+    <system:String x:Key="NudgedFormat">Déplacé {0} de {1} {2}</system:String>
+    <system:String x:Key="Expanded">Agrandi</system:String>
+    <system:String x:Key="Shrunk">Rétréci</system:String>
+    <system:String x:Key="ExpandedShrunkByFormat">de {0} dans toutes les directions</system:String>
+    <system:String x:Key="CouldNotDetermineFace">Impossible de déterminer la face à déplacer.</system:String>
+    <system:String x:Key="NoGridFoundFormat">Aucune grille trouvée dans la direction {0}.</system:String>
+    <system:String x:Key="AlreadyAtGridLine">Déjà à la ligne de grille.</system:String>
+    <system:String x:Key="MovedToGridFormat">Déplacé vers la grille '{0}' dans la direction {1}</system:String>
+    <system:String x:Key="NudgedInDirectionFormat">Déplacé {0} dans la direction {1}</system:String>
+    <system:String x:Key="CouldNotGetViewRange">Impossible d'obtenir les informations de plage de vue.</system:String>
+    <system:String x:Key="CouldNotGetCropBox">Impossible d'obtenir la boîte de recadrage de la section.</system:String>
+    <system:String x:Key="NoCropboxOrElements">Aucune boîte de recadrage ou éléments trouvés pour étendre la boîte de portée</system:String>
+    <system:String x:Key="ApplySectionBoxFormat">Appliquer la boîte de coupe de la vue '{0}' ?</system:String>
+    <system:String x:Key="ConfirmSectionBox">Confirmer la Boîte de Coupe</system:String>
+    <system:String x:Key="SectionBoxAlignedFormat">Boîte de coupe alignée avec la vue '{0}'</system:String>
+    <system:String x:Key="CropBoxAlignedFormat">Boîte de recadrage alignée avec la vue '{0}'</system:String>
+    <system:String x:Key="UnsupportedViewType">Type de vue non pris en charge.</system:String>
+    <system:String x:Key="Activated">activé</system:String>
+    <system:String x:Key="Deactivated">désactivé</system:String>
+    <system:String x:Key="BoxToggleFailed">Échec du basculement de la boîte</system:String>
+    <system:String x:Key="Hidden">masqué</system:String>
+    <system:String x:Key="Unhidden">démasqué</system:String>
+    <system:String x:Key="ErrorInBoxVisibility">Erreur dans la visibilité de la boîte</system:String>
+    <system:String x:Key="SectionBoxAlignedToFace">Boîte de coupe alignée avec la face</system:String>
+    <system:String x:Key="FailedToAlignToFaceFormat">Échec de l'alignement avec la face : {0}</system:String>
+    <system:String x:Key="InvalidSectionBoxDimensions">Dimensions de boîte de coupe invalides.</system:String>
+    <system:String x:Key="PleaseEnterValidNumber">Veuillez entrer un nombre valide</system:String>
+    <system:String x:Key="AnErrorOccurredFormat">Une erreur s'est produite : {0}</system:String>
+    <system:String x:Key="PleaseEnterNudgeAmount">Veuillez entrer un montant de déplacement</system:String>
+    <system:String x:Key="AmountMustBeGreaterThanZero">Le montant doit être supérieur à 0</system:String>
+    <system:String x:Key="PleaseEnterValidNumberForExpansion">Veuillez entrer un nombre valide pour le montant d'expansion</system:String>
+    <system:String x:Key="AnErrorOccurredWhileExpandingFormat">Une erreur s'est produite lors de l'expansion : {0}</system:String>
+    <system:String x:Key="PleaseEnterShrinkAmount">Veuillez entrer un montant de rétrécissement</system:String>
+    <system:String x:Key="ShrinkAmountMustBeGreaterThanZero">Le montant de rétrécissement doit être supérieur à 0</system:String>
+    <system:String x:Key="PleaseEnterValidNumberForShrink">Veuillez entrer un nombre valide pour le montant de rétrécissement</system:String>
+    <system:String x:Key="AnErrorOccurredWhileShrinkingFormat">Une erreur s'est produite lors du rétrécissement : {0}</system:String>
+    <system:String x:Key="Select2DViewForSectionBox">Sélectionner la Vue 2D pour la Boîte de Coupe</system:String>
+    <system:String x:Key="Select3DViewToCopyFrom">Sélectionner la Vue 3D à Copier</system:String>
+    <system:String x:Key="CouldNotExtractViewInformation">Impossible d'extraire les informations de vue.</system:String>
+    <system:String x:Key="View3DHasNoSectionBox">La vue 3D n'a pas de boîte de coupe.</system:String>
+    <system:String x:Key="Unknown">Inconnu</system:String>
+    
+    <!-- Alert messages -->
+    <system:String x:Key="StoredSectionBoxFound">SectionBox stockée pour cette vue trouvée ! Restaurer ?</system:String>
+    <system:String x:Key="RestoreSectionBox">Restaurer la Boîte de Coupe</system:String>
+    <system:String x:Key="NoSectionBoxMessage">La vue actuelle n'a pas de boîte de coupe active ou stockée.</system:String>
+    <system:String x:Key="NoSectionBoxTitle">Aucune Boîte de Coupe</system:String>
+    <system:String x:Key="ErrorTitle">Erreur</system:String>
+</ResourceDictionary>

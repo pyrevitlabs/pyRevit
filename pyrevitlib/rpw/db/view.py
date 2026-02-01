@@ -183,7 +183,7 @@ class ViewFamily(BaseObjectWrapper):
     AreaPlan, CeilingPlan, CostReport
     Detail, Drafting, Elevation
     FloorPlan, GraphicalColumnSchedule, ImageView, Legend
-    LoadsReport, PanelSchedule, PressureLossReport
+    LoadsReport, PanelSchedule, PresureLossReport (API spelling; pressure loss report)
     Schedule, Section, Sheet, StructuralPlan
     ThreeDimensional, Walkthrough
     """

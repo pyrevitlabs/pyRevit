@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
@@ -172,12 +172,12 @@ namespace pyRevitCLI {
                 foreach (var modelPath in File.ReadAllLines(targetFile))
                     modelFiles.Add(modelPath);
             }
-            // otherwise just work on this model
-            else
+            // otherwise just work on this model (if provided)
+            else if (!string.IsNullOrWhiteSpace(targetFile))
                 modelFiles.Add(targetFile);
 
 
-            // verify all models are accessible
+            // verify all models are accessible (only if models were provided)
             foreach (string modelFile in modelFiles)
                 if (!CommonUtils.VerifyFile(modelFile))
                     throw new Exception($"Model does not exist at \"{modelFile}\"");
@@ -210,7 +210,7 @@ namespace pyRevitCLI {
                 }
 
                 // if could not determine revit version from given files,
-                // use latest version
+                // use latest version (or specified version if provided)
                 if (revitYearNumber == 0)
                     revitYearNumber = RevitProduct.ListInstalledProducts().Max(r => r.ProductYear);
             }

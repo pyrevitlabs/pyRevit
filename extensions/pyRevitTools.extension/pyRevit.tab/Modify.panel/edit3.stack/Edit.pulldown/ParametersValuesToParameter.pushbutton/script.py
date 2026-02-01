@@ -150,6 +150,28 @@ def get_localized_texts():
             ),
             "elements_failed": "{} элементов не удалось обновить.",
         },
+        "Brazilian_Portuguese": {
+            "window_title": "Params2Param - Copiar Valores de Parâmetros",
+            "select_category": "Selecionar Categoria:",
+            "source_parameters": "Parâmetros de Origem (Selecione múltiplos se necessário):",
+            "target_parameter": "Parâmetro de Destino (Selecione um):",
+            "insert_separators": "Inserir separadores entre os valores de parâmetros separados por espaços.",
+            "add_spaces": "Adicionar espaços aos separadores:",
+            "none": "Nenhum",
+            "before": "Antes",
+            "after": "Depois",
+            "before_and_after": "Antes e Depois",
+            "execute": "Executar",
+            "cancel": "Cancelar",
+            "invalid_category": "Categoria selecionada inválida",
+            "no_elements": "Nenhum elemento encontrado",
+            "select_category_error": "Por favor, selecione uma categoria",
+            "no_elements_error": "Nenhum elemento encontrado para a categoria selecionada",
+            "select_source_error": "Por favor, selecione ao menos um parâmetro de origem",
+            "select_target_error": "Por favor, selecione um parâmetro de destino",
+            "elements_updated": "{} elementos atualizados com valores de parâmetros de [{}] para o parâmetro '{}'",
+            "elements_failed": "Falha ao atualizar {} elementos.",
+        },
     }
 
     # Default to English if language not found
@@ -202,7 +224,7 @@ def get_parameter_value(element, parameter_name):
     return ""
 
 
-def create_parameter_value(element, parameter_names, separator="-",
+def create_parameter_value(element, parameter_names, separator="",
                            space_option="beforeafter"):
     """Create combined parameter value from multiple parameters with
     separators and spacing options."""
@@ -219,7 +241,7 @@ def create_parameter_value(element, parameter_names, separator="-",
     if " " in separator.strip():
         separators = separator.split()
     else:
-        separators = [separator.strip()] if separator.strip() else ["-"]
+        separators = [separator.strip()] if separator.strip() else [""]
 
     # Combine values with cycling separators
     combined = values[0]
@@ -283,7 +305,7 @@ class Params2ParamWindow(forms.WPFWindow):
 
             # Set default separator
             if self.separatorTextBox:
-                self.separatorTextBox.Text = "-"
+                self.separatorTextBox.Text = ""
 
             # Set localized text for UI elements
             self.set_localized_texts()
@@ -462,13 +484,11 @@ class Params2ParamWindow(forms.WPFWindow):
                         continue
 
                     # Combined value from source parameters with separators
-                    separator = "-"
+                    separator = ""
                     try:
-                        if (self.separatorTextBox and
-                                self.separatorTextBox.Text.strip()):
+                        if self.separatorTextBox and self.separatorTextBox.Text.strip():
                             separator = self.separatorTextBox.Text.strip()
                     except (AttributeError, Exception):
-                        # If separator textbox is not available, use default
                         pass
 
                     space_option = "beforeafter"  # default

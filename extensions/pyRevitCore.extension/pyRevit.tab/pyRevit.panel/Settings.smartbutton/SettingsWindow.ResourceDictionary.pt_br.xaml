@@ -1,0 +1,392 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <system:String x:Key="Title">Configurações do pyRevit</system:String>
+    <system:String x:Key="CoreSettings.Title">Configurações principais</system:String>
+    <system:String x:Key="CoreSettings.General">Geral</system:String>
+    <system:String x:Key="CoreSettings.RocketMode">Rocket Mode &#x1F680; (Recarregamento necessário)</system:String>
+    <system:String x:Key="CoreSettings.RocketMode.Description">
+        Esta é a chave para o Modo Foguete do pyRevit.
+        Se ativado, o pyRevit usará um mecanismo compartilhado para cada extensão
+        que suporte o modo Foguete. Para desenvolvedores pyRevit,
+        isso significa que seus módulos python personalizados não devem usar nenhuma
+        variável de nível de módulo que retenha informações do Revit, como
+        o documento ativo, informações de elementos, etc.
+        Por que Modo Foguete? Aumento de velocidade enorrrrrme!!
+    </system:String>
+
+    <system:String x:Key="CoreSettings.CheckUpdates">Verificar atualizações na inicialização</system:String>
+    <system:String x:Key="CoreSettings.CheckUpdates.Description">
+        Se ativado, o pyRevit verificará atualizações para todas as extensões instaladas
+        na inicialização do Revit. Se nenhuma conexão com a internet for detectada, a verificação de atualização será ignorada.
+    </system:String>
+
+    <system:String x:Key="CoreSettings.Engines">Mecanismos</system:String>
+    <system:String x:Key="CoreSettings.ActiveEngine">Mecanismo ativo:</system:String>
+    <system:String x:Key="CoreSettings.ActiveCPythonEngine">Mecanismo CPython ativo:</system:String>
+    <system:String x:Key="CoreSettings.UsingCPython">Usando CPython:</system:String>
+
+    <system:String x:Key="CoreSettings.UsingCPython.Description1">
+        O pyRevit pode usar um mecanismo CPython (x64) para executar um comando em vez do mecanismo IronPython ativo. Isso significa que todos
+        os módulos CPython (por exemplo, numpy, scipy) podem ser usados dentro do ambiente Revit. Observe que o Revit é um programa x64 e
+        só funcionará com a versão x64 do CPython.
+            </system:String>
+
+    <system:String x:Key="CoreSettings.UsingCPython.Description2">
+        O mecanismo CPython é instalado com o pyRevit, então você não precisa tê-lo instalado em sua máquina. No entanto, se
+        você pretende usar bibliotecas de terceiros, certifique-se de ter a mesma versão do CPython como o mecanismo
+        selecionado aqui, instalado em sua máquina.
+    </system:String>
+
+    <system:String x:Key="CoreSettings.UsingCPython.Description3">
+        A variável de ambiente PYTHONPATH deve apontar para o diretório "site-packages", para que os módulos
+        instalados com o gerenciador de pacotes "pip" possam ser encontrados e carregados.
+    </system:String>
+
+    <system:String x:Key="CoreSettings.UsingCPython.Description4">
+        Para executar um script com CPython, a primeira linha do arquivo de script deve ser:
+    </system:String>
+
+    <system:String x:Key="CoreSettings.UsingCPython.Description5">
+    Salve as configurações após alterar o mecanismo e reinicie o Revit.
+    </system:String>
+
+    <system:String x:Key="CoreSettings.Development">Desenvolvimento</system:String>
+    <system:String x:Key="CoreSettings.Development.Description">Opções diversas para desenvolvimento do pyRevit</system:String>
+    <system:String x:Key="CoreSettings.Development.LoadBeta">Carregar ferramentas beta (Scripts com __beta__ = True, recarregamento necessário)</system:String>
+
+    <system:String x:Key="CoreSettings.Loader">Carregador</system:String>
+    <system:String x:Key="CoreSettings.Loader.Description">Configurar o mecanismo de carregamento de montagem do pyRevit. O novo carregador é uma implementação C# que usa a estratégia de compilação Roslyn</system:String>
+    <system:String x:Key="CoreSettings.Loader.NewLoader">Ativa o novo carregador pyRevit (beta) (Reinicialização do Revit necessária)</system:String>
+
+    <system:String x:Key="CoreSettings.CloseOtherConsoles">Fechar outros consoles abertos</system:String>
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.Description">
+        Se ativado, o pyRevit fechará outros consoles de saída quando um novo script for executado.
+        Isso ajuda a reduzir o número de janelas de saída abertas. Ative esta opção, a menos que você queira comparar
+        vários dados de saída.
+    </system:String>
+
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.Toggle">Minimizar o número de consoles abertos:</system:String>
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.Current">Consoles de comando atuais</system:String>
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.Current.Description">
+        Fechar todas as janelas de console associadas ao comando em execução atual.
+    </system:String>
+
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.CloseAll">Todos os consoles</system:String>
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.CloseAll.Description">
+        Fechar todas as janelas de console abertas atualmente, mesmo aquelas que não estão associadas ao comando em execução.
+    </system:String>
+
+    <system:String x:Key="CoreSettings.Caching">Cache</system:String>
+    <system:String x:Key="CoreSettings.Caching.Button">Redefinir cache para o padrão</system:String>
+    <system:Double x:Key="CoreSettings.Caching.Button.With">200</system:Double>
+
+    <system:String x:Key="CoreSettings.Caching.Description">
+        O pyRevit armazena em cache os dados da extensão para que possa ser executado mais rapidamente.
+        Esta seção controla o tipo de cache.
+        A reinicialização é necessária após alterar esta configuração.
+    </system:String>
+
+
+    <system:String x:Key="CoreSettings.BinaryCache">Cache binário</system:String>
+    <system:String x:Key="CoreSettings.BinaryCache.Description">
+        O cache binário é o mais rápido, mas os arquivos de cache não são legíveis por humanos
+        e não são muito úteis para depuração.
+    </system:String>
+
+    <system:String x:Key="CoreSettings.ASCIICache">Cache ASCII</system:String>
+    <system:String x:Key="CoreSettings.ASCIICache.Description">
+        Os arquivos de cache ASCII são arquivos JSON e são legíveis por humanos.
+        Eles são muito úteis para fins de depuração.
+    </system:String>
+
+    <system:String x:Key="EnvironmentVariables.Title">Variáveis de ambiente</system:String>
+    <system:String x:Key="EnvironmentVariables.Description">
+        As Variáveis de Ambiente são definidas no Domínio de Aplicativo atual (AppDomain) e 
+        estão disponíveis para scripts. Elas são usadas como sinalizadores globais para definir
+        o modo de relatório e também por scripts (por exemplo, Sincronizar Vistas) para definir seu estado de alternância atual.
+        Essas variáveis são acessíveis por scripts através do módulo pyrevit.script.
+    </system:String>
+
+    <system:String x:Key="EnvironmentVariables.ListView.VariableName">Nome da variável</system:String>
+    <system:String x:Key="EnvironmentVariables.ListView.VariableValue">Valor</system:String>
+
+    <system:String x:Key="ReportingLevels.Title">Níveis de relatório</system:String>
+    <system:String x:Key="ReportingLevels.Button">Redefinir nível de relatório para o padrão</system:String>
+    <system:Double x:Key="ReportingLevels.Button.Width">200</system:Double>
+
+    <system:String x:Key="ReportingLevels.NoReporting">Sem relatório (logging.WARNING e acima)</system:String>
+    <system:String x:Key="ReportingLevels.NoReporting.Description">
+        Nenhum relatório será impresso pelo sistema de log.
+        Isso significa que o pyRevit não mostrará a janela de saída na
+        inicialização do Revit e todas as mensagens INFO serão suprimidas.
+        Apenas Avisos, Erros e Erros Críticos serão impressos.
+    </system:String>
+
+    <system:String x:Key="ReportingLevels.Verbose">Detalhado (logging.INFO e acima)</system:String>
+    <system:String x:Key="ReportingLevels.Verbose.Description">
+        Relatórios detalhados abrem a janela de saída e imprimem apenas as mensagens de informação.
+        Essas mensagens destinam-se a fornecer as informações básicas necessárias sobre
+        a sessão atual do pyRevit para o usuário.
+    </system:String>
+
+    <system:String x:Key="ReportingLevels.Verbose.Timeout.Start">Se não houver erros, fechar a janela de inicialização após</system:String>
+    <system:String x:Key="ReportingLevels.Verbose.Timeout.Finish">segundos. (Defina como 0 para mantê-la aberta de qualquer maneira)</system:String>
+
+    <system:String x:Key="ReportingLevels.Debug">Modo de depuração (logging.DEBUG e acima)</system:String>
+    <system:String x:Key="ReportingLevels.Debug.Description">
+        Isso ativa o modo de depuração do pyRevit, que permite que todos os componentes e scripts
+        relatem suas mensagens de depuração. Geralmente, isso causa um relatório muito extenso e
+        aumenta o tempo de execução do script, mas é muito valioso para depuração.
+        Ative isso apenas para fins de depuração.
+    </system:String>
+
+    <system:String x:Key="ReportingLevels.FileDebug">Log de depuração em arquivo</system:String>
+    <system:String x:Key="ReportingLevels.FileDebug.Description">
+        Isso ativa o modo de depuração de arquivo do pyRevit. Todas as mensagens de depuração durante uma sessão
+        (do carregador ou ferramentas) serão gravadas em um arquivo de log na pasta appdata do pyRevit.
+        Esses arquivos são marcados pela sessão do Revit e são limpos automaticamente a cada carregamento do Revit.
+    </system:String>
+
+    <system:String x:Key="StartupChecks.Title">Verificações de inicialização</system:String>
+    <system:String x:Key="StartupChecks.Description">
+        Você pode definir o número de compilação do host necessário.
+        O pyRevit mostrará um aviso se estiver sendo executado
+        em um host com número de compilação diferente. Defina como vazio
+        para desativar
+    </system:String>
+
+    <system:String x:Key="StartupChecks.Build">Número da versão necessária (build):</system:String>
+    <system:String x:Key="StartupChecks.Build.Button">Definir para o número de versão do host atual</system:String>
+    <system:String x:Key="StartupChecks.Build.Button.ToolTip">Definir o número de versão necessário para o número de versão do host atual</system:String>
+    <system:Double x:Key="StartupChecks.Build.Button.Width">200</system:Double>
+
+    <system:String x:Key="StartupChecks.MinimumSpace">Espaço livre mínimo na unidade host (em Gigabytes):</system:String>
+    <system:String x:Key="StartupChecks.MinimumSpace.Description">
+        Você pode definir o espaço livre mínimo na unidade host.
+        O pyRevit mostrará um aviso se o espaço livre for menor
+        que o valor mínimo. Defina como 0 para desativar.
+    </system:String>
+
+    <system:String x:Key="Routes.Title">Rotas</system:String>
+    <system:String x:Key="Routes.Docs">Ver documentação de Rotas do pyRevit</system:String>
+    <system:String x:Key="Routes.Description">
+        O servidor de rotas é uma microestrutura de API HTTP e servidor implementado em python como parte do pyRevit. O servidor é acompanhado
+        por um módulo python (pyrevit.routes) que é inspirado no python flask e fornece funções necessárias,
+        tipos e decoradores para definir facilmente suas próprias APIs em suas extensões.
+    </system:String>
+
+    <system:String x:Key="Routes.Check">Servidor de Rotas (Beta)</system:String>
+    <system:String x:Key="Routes.RestAPI">Configurações da API REST</system:String>
+    <system:String x:Key="Routes.RestAPI.Check">pyrevit-core/</system:String>
+
+    <system:String x:Key="Routes.RestAPI.Check.Docs">
+        Ver documentação da API de Runtime do pyRevit
+    </system:String>
+
+    <system:String x:Key="Routes.RestAPI.Check.Description">
+                A extensão pyRevitCore implementa uma API REST básica para gerenciar o ambiente pyRevit
+    </system:String>
+
+    <system:String x:Key="Telemetry.Title">Telemetria</system:String>
+    <system:String x:Key="Telemetry.Description">
+        Sistema de telemetria, registra cada uso de ferramentas em qualquer uma das extensões pyRevit.
+        Você pode ativar a telemetria e enviar os dados para um servidor (o pyRevit tem um servidor de telemetria integrado),
+        ou para uma série de arquivos JSON em um diretório especificado. Se ativado, o sistema enviará registros de telemetria
+        para os destinos fornecidos aqui. Deixe qualquer um dos campos em branco para desativar o envio de registros de telemetria para esse destino.
+    </system:String>
+
+    <system:String x:Key="Telemetry.Settings">Configurações globais de telemetria</system:String>
+    <system:String x:Key="Telemetry.Settings.UseUTC">Usar carimbos de data/hora UTC</system:String>
+    <system:String x:Key="Telemetry.ScriptTelemetry">Telemetria de script</system:String>
+    <system:String x:Key="Telemetry.SendTelemetry">Enviar telemetria para</system:String>
+    <system:String x:Key="Telemetry.Hooks">Ganchos (Hooks)</system:String>
+    <system:String x:Key="Telemetry.CommandBundles">Pacotes de comando</system:String>
+    <system:String x:Key="Telemetry.ServerUrl">URL do servidor de telemetria de script ou ponto de extremidade da API</system:String>
+    <system:String x:Key="Telemetry.ServerUrl.Example">Exemplo</system:String>
+    <system:String x:Key="Telemetry.ServerUrl.Description">
+        Se um diretório de destino for fornecido aqui, o pyRevit cria um novo arquivo JSON para cada sessão do pyRevit para evitar a criação de arquivos grandes que
+        potencialmente diminuiriam a velocidade do serviço de telemetria. O id da sessão é adicionado ao nome do arquivo JSON.
+    </system:String>
+
+    <system:String x:Key="Telemetry.Application">Telemetria do aplicativo</system:String>
+    <system:String x:Key="Telemetry.Application.Description">
+        Sistema de Telemetria de Aplicativo, envia informações de eventos coletadas de manipuladores de eventos para o servidor de telemetria listado abaixo.
+        Você pode alternar o registro de eventos para cada um dos eventos listados abaixo.
+    </system:String>
+
+    <system:String x:Key="Telemetry.Application.ServerUrl">
+        URL do servidor de telemetria do aplicativo ou ponto de extremidade da API (ex: http://telemetryserver.io):
+    </system:String>
+
+    <system:String x:Key="Telemetry.Application.ToggleAll">Alternar tudo</system:String>
+    <system:Double x:Key="Telemetry.Application.ToggleAll.Width">80</system:Double>
+
+    <system:String x:Key="Telemetry.JsonFile">Arquivo JSON de telemetria atual:</system:String>
+    <system:String x:Key="Telemetry.JsonFile.Button">Abrir pasta</system:String>
+    <system:Double x:Key="Telemetry.JsonFile.Button.Width">90</system:Double>
+    <system:String x:Key="Telemetry.JsonFile.Button.ToolTip">Abrir a pasta de telemetria atual</system:String>
+    <system:String x:Key="Telemetry.DataFolder">Pasta de dados de telemetria de script (ex: C:\pyRevitTelemetry):</system:String>
+    <system:String x:Key="Telemetry.DataFolder.Button.ToolTip">Escolha uma pasta para telemetria</system:String>
+    <system:String x:Key="Telemetry.Reset.Button">Redefinir</system:String>
+    <system:Double x:Key="Telemetry.Reset.Button.Width">48</system:Double>
+    <system:String x:Key="Telemetry.Reset.Button.ToolTip">Redefinir pasta de telemetria para o padrão</system:String>
+    <system:String x:Key="Telemetry.Events">Selecionar eventos de telemetria de aplicativo ativos</system:String>
+
+    <system:String x:Key="SupportedRevitVersions.Title">Versões suportadas do Revit</system:String>
+    <system:String x:Key="SupportedRevitVersions.Description">
+        Você pode desativar ou ativar o pyRevit para versões instaladas 
+        do Revit aqui. Isso remove efetivamente o arquivo de manifesto 
+        pyRevit.addin das pastas %appdata%/Autodesk/Revit/Addins. Observe que o anexo a qualquer uma das versões do Revit listadas aqui será somente leitura e não poderá ser alterado, se estiver
+        marcado com &lt;current&gt; ou &lt;all users&gt;
+    </system:String>
+
+    <system:String x:Key="UI-UX.Title">IU / UX</system:String>
+    <system:String x:Key="UI-UX.Description">
+        Esta seção fornece todas as configurações relacionadas à Interface do Usuário (IU) e Experiência do Usuário (UX).
+    </system:String>
+
+    <system:String x:Key="UI-UX.RegionSettings">Configurações regionais</system:String>
+    <system:String x:Key="UI-UX.SelectLanguage">Selecionar idioma da interface:</system:String>
+    <system:String x:Key="UI-UX.RegionSettingsLink">Ajuda na tradução do pyRevit</system:String>
+
+    <system:String x:Key="UI-UX.TabColoring">Coloração de abas</system:String>
+    <system:String x:Key="UI-UX.ColoringStyle">Estilo de coloração</system:String>
+    <system:String x:Key="UI-UX.ColorizeOpenDocuments">Colorir documentos abertos</system:String>
+    <system:String x:Key="UI-UX.KeepOpenTabs">Manter abas abertas classificadas por documento</system:String>
+
+    <system:String x:Key="UI-UX.ProjectTabStyle">Estilo de aba de projeto</system:String>
+    <system:Double x:Key="UI-UX.ProjectTabStyle.Width">100</system:Double>
+
+    <system:String x:Key="UI-UX.FamilyTabStyle">Estilo de aba de família</system:String>
+    <system:Double x:Key="UI-UX.FamilyTabStyle.Width">100</system:Double>
+
+    <system:String x:Key="UI-UX.ProjectSample1">Projeto 1</system:String>
+    <system:String x:Key="UI-UX.ProjectSample2">Projeto 2</system:String>
+
+    <system:String x:Key="UI-UX.FamilySample1">Família 2</system:String>
+    <system:String x:Key="UI-UX.FamilySample2">Família 2</system:String>
+
+    <system:String x:Key="UI-UX.ColoringTheme">Tema de coloração</system:String>
+    <system:String x:Key="UI-UX.ColoringTheme.Description1">
+        Selecione uma série de cores a serem aplicadas às abas do documento à medida que abrem.
+    </system:String>
+    <system:String x:Key="UI-UX.ColoringTheme.Description2">
+        As cores no grupo "Por ordem" serão aplicadas aos documentos na ordem em que abrirem. Quando todas as cores forem usadas, nenhuma coloração de aba será aplicada.
+    </system:String>
+    <system:String x:Key="UI-UX.ColoringTheme.Description3">
+        As cores no grupo "Por filtro" serão aplicadas às abas que correspondem ao filtro de nome fornecido. Se um filtro corresponder
+        a qualquer um dos nomes das abas, a cor por filtro terá prioridade sobre a cor por ordem dessa aba.
+    </system:String>
+
+    <system:String x:Key="UI-UX.ColoringTheme.Reset">Redefinir</system:String>
+    <GridLength x:Key="UI-UX.ColoringTheme.Reset.Width">50</GridLength>
+    <GridLength x:Key="UI-UX.ColoringTheme.Reset.Width2">190</GridLength>
+
+    <system:String x:Key="UI-UX.ColoringTheme.ByOrder">Por ordem</system:String>
+    <system:Double x:Key="UI-UX.ColoringTheme.ByOrder.Width">55</system:Double>
+
+    <system:String x:Key="UI-UX.ColoringTheme.ByFilter">Por filtro</system:String>
+    <system:Double x:Key="UI-UX.ColoringTheme.ByFilter.Width">55</system:Double>
+
+    <system:String x:Key="UI-UX.ColoringTheme.FilterRegex">Filtro (Regex)</system:String>
+    <GridLength x:Key="UI-UX.ColoringTheme.FilterRegex.Width">80</GridLength>
+    <GridLength x:Key="UI-UX.ColoringTheme.FilterRegex.Width2">160</GridLength>
+
+    <system:String x:Key="UI-UX.ColoringTheme.Parallax">
+        Kudos to Parallax Team for "Parallax Tabbed Views"
+    </system:String>
+
+    <system:String x:Key="UI-UX.OutputWindow">Janela de saída</system:String>
+    <system:String x:Key="UI-UX.OutputStyling">Estilo de saída (Folha de estilo CSS)</system:String>
+    <system:String x:Key="UI-UX.PickCssToolTip">Escolha uma folha de estilo CSS para substituir o padrão.</system:String>
+    <system:String x:Key="UI-UX.ResetCss">Redefinir</system:String> 
+    <system:Double x:Key="UI-UX.ResetCss.Width">50</system:Double>
+    <system:String x:Key="UI-UX.ResetCssToolTip">Redefinir folha de estilo CSS para o padrão.</system:String>
+    <system:String x:Key="UI-UX.AddToolDebug">Adicionar informações de depuração da ferramenta às dicas de ferramentas, por exemplo, nomes de classe e montagem</system:String>
+
+    <system:String x:Key="Extensions.Title">Diretórios de extensão personalizados</system:String>
+    <system:String x:Key="Extensions.Description">
+        O pyRevit pode procurar extensões em pastas personalizadas.
+        Você pode configurar suas extensões personalizadas em qualquer diretório e adicionar o endereço do diretório aqui.
+        O pyRevit pesquisa essas pastas na inicialização e carrega as extensões. Isso ajuda a desacoplar as
+        extensões personalizadas da pasta de extensão padrão do pyRevit para que você possa atualizar/remover o pyRevit sem
+        se preocupar com suas próprias pastas de extensão.
+    </system:String>
+
+    <system:String x:Key="Extensions.Info">Recarregamento é necessário para que as alterações entrem em vigor.</system:String>
+    <system:String x:Key="Extensions.Button.Add">Adicionar pasta</system:String>
+    <system:String x:Key="Extensions.Button.Remove">Remover selecionados</system:String>
+    <system:String x:Key="Extensions.Button.RemoveAll">Remover todos</system:String>
+    <system:String x:Key="Extensions.Button.Reveal">Revelar no Explorer</system:String>
+
+    <system:String x:Key="Settings.Title">Importar / Exportar configurações</system:String>
+    <system:String x:Key="Settings.Import">Importar configurações</system:String>
+    <system:String x:Key="Settings.Export">Exportar configurações</system:String>
+
+    <system:String x:Key="JustSave">Apenas salvar configurações</system:String>
+    <system:String x:Key="SaveAndReload">Salvar configurações e recarregar</system:String>
+
+    <system:String x:Key="Events.TypeEvent" xml:space="preserve">Tipo de evento de API:</system:String>
+    <system:String x:Key="Events.pyRevitHook" xml:space="preserve">pyRevit Event/Hook Name:  {}</system:String>
+    <system:String x:Key="Events.NotSupport">Não suportado nesta versão do Revit</system:String>
+
+    <system:String x:Key="Events.CommandExecuted" xml:space="preserve">Comando executado
+</system:String>
+    <system:String x:Key="Events.CommandExecuted.EventType" xml:space="preserve">Tipo de Evento:               journal-command-exec
+</system:String>
+    <system:String x:Key="Events.CommandExecuted.TracksExecution" xml:space="preserve">Rastreia a execução de comandos do arquivo de diário (journal) ativo. Inclui:
+</system:String>
+    <system:String x:Key="Events.CommandExecuted.BuiltinCommands" xml:space="preserve">  Comandos Integrados (ex: ID_OBJECTS_WALL)
+</system:String>
+    <system:String x:Key="Events.CommandExecuted.ThirdPartyCommands" xml:space="preserve">  Comandos de terceiros (ex: CustomCtrl_%CustomCtrl_%Site Designer%Modify%Sidewalk)
+</system:String>
+    <system:String x:Key="Events.CommandExecuted.pyRevitCommands" xml:space="preserve">  Comandos pyRevit (ex: CustomCtrl_%CustomCtrl_%pyRevit%pyRevit%Settings)
+</system:String>
+
+    <system:String x:Key="RevitAttachment.Current">&lt;atual&gt;</system:String>
+    <system:String x:Key="RevitAttachment.AllUsers">&lt;todos os usuários&gt;</system:String>
+    <system:String x:Key="RevitAttachment.NotAttached">&lt;Não anexado&gt;</system:String>
+    <system:String x:Key="RevitAttachment.NotInstalled">&lt;Não instalado&gt;</system:String>
+
+    <system:String x:Key="Engines.WasChanged">
+        O mecanismo ativo mudou.
+        Reinicie o Revit para que esta alteração entre em vigor.
+    </system:String>
+
+    <system:String x:Key="Engines.CPython.WasChanged">
+        O mecanismo CPython ativo mudou.
+        Reinicie o Revit para que esta alteração entre em vigor.
+    </system:String>
+
+    <system:String x:Key="Telemetry.Status">Status desconhecido. Clique aqui para testar</system:String>
+
+    <system:String x:Key="Routes.Changed">
+        A configuração do servidor de rotas mudou.
+        Recarregar o pyRevit é necessário para que esta alteração entre em
+        vigor. Deseja recarregar agora?
+    </system:String>
+
+    <system:String x:Key="Routes.RestChanged">
+        A configuração da API REST do pyRevit Core mudou.
+        Recarregar o pyRevit é necessário para que esta alteração entre em vigor.
+        Deseja recarregar agora?
+    </system:String>
+
+    <system:String x:Key="UI-UX.LangChanged">
+        O idioma da IU mudou. Recarregar o pyRevit é
+        necessário para que esta alteração entre em vigor. Deseja
+        recarregar agora?
+    </system:String>
+
+    <system:String x:Key="UI-UX.NeedReload">
+        A Configuração da IU do pyRevit mudou. Recarregar o pyRevit é
+        necessário para que esta alteração entre em vigor. Deseja
+        recarregar agora?
+    </system:String>
+
+    <system:String x:Key="pyRevit.AdminInstall">As configurações do pyRevit são definidas pelo seu administrador.</system:String>
+
+</ResourceDictionary>

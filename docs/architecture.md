@@ -25,6 +25,7 @@ Whether you want to create tools, troubleshoot issues, or contribute code, under
 4. **pyRevit Command-Line Interface (CLI)**
     - A tool for managing configurations, running scripts in bulk, and troubleshooting.
     - Useful for corporate setups and advanced users.
+    - The `pyrevit env` report includes the configured CPython engine version (`activeCpythonEngineVersion` in JSON).
 
 5. **Telemetry Server**
     - A small server (written in Go) that tracks usage data of pyRevit tools.

@@ -17,7 +17,7 @@ ParamDef = namedtuple("ParamDef", ["name", "type", "spec"])
 
 
 def is_calculable_param(param):
-    if HOST_APP.is_newer_than(2022) and not param.Definition.GetDataType().TypeId:
+    if HOST_APP.is_newer_than(2021) and not param.Definition.GetDataType().TypeId:
         return False
 
     if param.StorageType == DB.StorageType.Double:
@@ -32,14 +32,14 @@ def is_calculable_param(param):
 
 
 def get_definition_type(definition):
-    if HOST_APP.is_newer_than(2022):
+    if HOST_APP.is_newer_than(2021):
         return definition.GetDataType()
     else:
         return definition.ParameterType
 
 
 def get_definition_spec(definition):
-    if HOST_APP.is_newer_than(2022):
+    if HOST_APP.is_newer_than(2021):
         return DB.LabelUtils.GetLabelForSpec(definition.GetDataType())
     else:
         return definition.ParameterType
@@ -76,12 +76,12 @@ def calc_param_total(element_list, param_name):
 
 def format_value(total, unit_type):
     format_options = revit.doc.GetUnits().GetFormatOptions(unit_type)
-    try:
-        units = format_options.DisplayUnits
-        label = DB.LabelUtils.GetLabelFor(units)
-    except AttributeError:
+    if HOST_APP.is_newer_than(2021):
         units = format_options.GetUnitTypeId()
         label = DB.LabelUtils.GetLabelForUnit(units)
+    else:
+        units = format_options.DisplayUnits
+        label = DB.LabelUtils.GetLabelFor(units)
     return "{} {}".format(DB.UnitUtils.ConvertFromInternalUnits(total, units), label)
 
 

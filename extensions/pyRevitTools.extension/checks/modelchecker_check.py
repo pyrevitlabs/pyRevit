@@ -5,7 +5,15 @@ from pyrevit import coreutils
 from pyrevit import revit, DB
 from pyrevit.compat import get_elementid_value_func
 
+import sys
+import os
+# Add current directory to path for local imports
+_current_dir = os.path.dirname(os.path.abspath(__file__))
+if _current_dir not in sys.path:
+    sys.path.insert(0, _current_dir)
+
 from pyrevit.preflight import PreflightTestCase
+from check_translations import DocstringMeta
 
 # webpage with explanations of bad practices in revit maybe it could be configurable in the future?
 WIKI_ARTICLE = "https://www.modelical.com/en/gdocs/revit-arc-best-practices/"
@@ -259,8 +267,9 @@ def checkModel(doc, output):
     projectClient = project_info_collector.ClientName
     get_elementid_value = get_elementid_value_func()
     if len(name) == 0:
+        from check_translations import get_check_translation
         # name = "Not saved file"
-        printedName = "Not saved file"
+        printedName = get_check_translation("ModelCheckerNotSavedFile")
     else:
         try:
             central_path = revit.query.get_central_path(doc)
@@ -278,7 +287,8 @@ def checkModel(doc, output):
             except:
                 # detached file
                 printedName = file_path
-    output.print_md("# **MODEL CHECKER**")
+    from check_translations import get_check_translation
+    output.print_md("# **{}**".format(get_check_translation("ModelCheckerTitle")))
     output.print_md("---")
 
     # first JS to avoid error in IE output window when at first run
@@ -731,16 +741,17 @@ def checkModel(doc, output):
     ### Dashaboard starts here ###
 
     ## RVT file dashboard section
-    output.print_md("# RVT File<br />")
+    from check_translations import get_check_translation
+    output.print_md("# {}<br />".format(get_check_translation("ModelCheckerRVTFile")))
     projectInfo = "Current file name: "+ printedName + "<br />Project Name: " + projectName + "<br />Project Number: " + str(projectNumber) + "<br />Client Name: " + projectClient
     output.print_md(projectInfo)
 
     ## RVT Links dashboard section
     # print RVT links names
     output.print_md("---")
-    output.print_md("# RVT Links")
+    output.print_md("# {}".format(get_check_translation("ModelCheckerRVTLinks")))
     if not len(rvtlinks_id_collector):
-        output.print_md("No links")
+        output.print_md(get_check_translation("ModelCheckerNoLinks"))
     else:
         rvtlinkdocsNameFormated, rvtlink_instance_name_formated = [], []
         for i, j in zip(rvtlinkdocsName, rvtlink_instance_name):
@@ -748,7 +759,11 @@ def checkModel(doc, output):
             rvtlink_instance_name_formated.append(j)
         rvtlinks_data = zip(*[rvtlinkdocsNameFormated, rvtlink_instance_name_formated, rvtlink_instance_pinned])
 
-        output.print_table(rvtlinks_data, columns=['Instance File Name', 'Instance Name', 'Pinned status'], formats=None, title='', last_line_style='')
+        output.print_table(rvtlinks_data, columns=[
+            get_check_translation("ModelCheckerInstanceFileName"),
+            get_check_translation("ModelCheckerInstanceName"),
+            get_check_translation("ModelCheckerPinnedStatus")
+        ], formats=None, title='', last_line_style='')
         # Make row
         htmlRowRVTlinks = (
             dashboardRectMaker(rvtlinksCount, "RVTLinks", rvtlinksTres) + 
@@ -759,7 +774,7 @@ def checkModel(doc, output):
     output.print_md("---")
     ## Views dashboard section
     # print Views section header
-    output.print_md("# Views")
+    output.print_md("# {}".format(get_check_translation("ModelCheckerViews")))
 
     # Make row
     htmlRowViews = (
@@ -789,7 +804,7 @@ def checkModel(doc, output):
 
     ## Schedule dashboard section
     # print Schedules section header
-    output.print_md("# Schedules")
+    output.print_md("# {}".format(get_check_translation("ModelCheckerSchedules")))
 
     # Make row
     htmlRowSchedules = (
@@ -816,7 +831,7 @@ def checkModel(doc, output):
 
     ## Warnings dashboard section
     # print Warnings section header
-    output.print_md("# Warnings")
+    output.print_md("# {}".format(get_check_translation("ModelCheckerWarnings")))
     # Make row
     if allWarningsCount != 0:
         htmlRowWarnings = (
@@ -847,11 +862,11 @@ def checkModel(doc, output):
         set_w.backgroundColor = COLORS
         chartWarnings.draw()
     else:
-        output.print_md("No warnings, good job!")
+        output.print_md(get_check_translation("ModelCheckerNoWarnings"))
 
     ## Materials dashboard section
     # print Materials section header
-    output.print_md("# Materials")
+    output.print_md("# {}".format(get_check_translation("ModelCheckerMaterials")))
 
     # Make row
     htmlRowMaterials = (
@@ -863,7 +878,7 @@ def checkModel(doc, output):
 
     ## Line patterns dashboard section
     # print Line patterns section header
-    output.print_md("# Line patterns")
+    output.print_md("# {}".format(get_check_translation("ModelCheckerLinePatterns")))
 
     # Make row
     htmlRowLinePatterns = (dashboardRectMaker(
@@ -874,7 +889,7 @@ def checkModel(doc, output):
 
     ## DWGs dashboard section
     # print DWGs section header
-    output.print_md("# DWGs")
+    output.print_md("# {}".format(get_check_translation("ModelCheckerDWGs")))
 
     # Make row
     htmlRowDWGs = (dashboardRectMaker(
@@ -1017,7 +1032,7 @@ def checkModel(doc, output):
 
     ## Text Notes dashboard section
     # print Text Notes section header
-    output.print_md("# Text Notes")
+    output.print_md("# {}".format(get_check_translation("ModelCheckerTextNotes")))
 
     # Make row
     htmlRowTextNotes = (dashboardRectMaker(
@@ -1033,7 +1048,7 @@ def checkModel(doc, output):
 
     ## System families dashboard section
     # print System families section header
-    output.print_md("# System Families")
+    output.print_md("# {}".format(get_check_translation("ModelCheckerSystemFamilies")))
 
     # Make row
     htmlRowTextNotes = (dashboardRectMaker(
@@ -1054,7 +1069,7 @@ def checkModel(doc, output):
 
     ## Groups dashboard section
     # print Groups section header
-    output.print_md("# Groups")
+    output.print_md("# {}".format(get_check_translation("ModelCheckerGroups")))
     # Make row
     htmlRowGroupsTypes = (
         dashboardRectMaker(
@@ -1081,7 +1096,7 @@ def checkModel(doc, output):
 
     ## Reference Planes dashboard section
     # print Reference Planes section header
-    output.print_md("# Reference Planes")
+    output.print_md("# {}".format(get_check_translation("ModelCheckerReferencePlanes")))
     # Make row
     htmlRowRefPlanes = (
         dashboardRectMaker(
@@ -1099,14 +1114,17 @@ def checkModel(doc, output):
 
     ## Phases dashboard section
     # print Phases section header
-    output.print_md("# Phases\n")
+    output.print_md("# {}\n".format(get_check_translation("ModelCheckerPhases")))
     rvtlinkdocsName.insert(0,printedName)
     filePhases = rvtlinkdocsName,[','.join(i) for i in phase]
-    output.print_table(zip(*filePhases), columns=["Instance File Name","Phases"], formats=None, title='', last_line_style='')
+    output.print_table(zip(*filePhases), columns=[
+        get_check_translation("ModelCheckerInstanceFileName"),
+        get_check_translation("ModelCheckerPhases")
+    ], formats=None, title='', last_line_style='')
 
     ## Elements count dashboard section
     # print Elements count section header
-    output.print_md("# Elements count")
+    output.print_md("# {}".format(get_check_translation("ModelCheckerElementsCount")))
 
     # Make row
     htmlRowElementsCount = (dashboardRectMaker(
@@ -1210,31 +1228,14 @@ def checkModel(doc, output):
             chartWorksets.draw()
 
 class ModelChecker(PreflightTestCase):
-    """
-    Revit model quality check
-    The QC tools returns you with the following data:
-        Revit file: Name and Project Information
-        Revit links: list, count and pinned status
-        Views: number, number of copied views, number of views not on sheet
-        Schedules: number and not on sheet number
-        Sheets: number
-        Warnings: Total number, Critical warnings list based on predefined list of critical warnings
-        Materials count
-        Line patterns count
-        DWGs: Imported count, linked count, dwgs in 3D count
-        Loadable families: count, in place family count, non parametric families count
-        Text notes: with factor changed count, all caps text notes count
-        System families: ramps count, architectural columns count, elements with analytical model option enabled
-        Groups: detail group types count, detail group instances count, model group types count, model groups instances count
-        Reference planes: not named count, ref planes count
-        Elements count
-        Phases: list of phases for current document and linked files
-        Element count per category donut chart
-        Element count per workset donut chart
-        In place family count per category donut chart
-    """
-
-    name = "Model Checker"
+    __metaclass__ = DocstringMeta
+    _docstring_key = "CheckDescription_ModelChecker"
+    
+    @property
+    def name(self):
+        from check_translations import get_check_translation
+        return get_check_translation("CheckName_ModelChecker")
+    
     author = "David Vadkerti, Jean-Marc Couffin"
 
 
@@ -1243,5 +1244,6 @@ class ModelChecker(PreflightTestCase):
         checkModel(doc, output)
         endtime = timer.get_time()
         endtime_hms = str(datetime.timedelta(seconds=endtime))
-        endtime_hms_claim = "Transaction took " + endtime_hms
+        from check_translations import get_check_translation
+        endtime_hms_claim = "{} {}".format(get_check_translation("TransactionTook"), endtime_hms)
         print(endtime_hms_claim)

@@ -1,0 +1,48 @@
+# Test ComboBox - Demonstrates ALL bundle.yaml configuration options
+# This serves as a reference for all available ComboBox features
+
+title: Test ComboBox
+tooltip: Test ComboBox - demonstrates all pyRevit ComboBox features
+tooltip_ext: |
+  This ComboBox demonstrates:
+  - Static members from bundle.yaml
+  - Dynamic members added via script
+  - Grouped items with separators
+  - Member icons and tooltips
+  - All three ComboBox events
+help_url: https://pyrevitlabs.notion.site/Developer-Docs
+
+# Members defined here are added BEFORE __selfinit__ runs
+# Use groups to organize items visually in the dropdown
+members:
+  # Group 1: Basic items (minimal configuration - no icons)
+  - id: basic_one
+    text: Basic One
+    group: Basic Items
+    tooltip: A basic item with minimal configuration
+
+  - id: basic_two
+    text: Basic Two
+    group: Basic Items
+    tooltip: Another basic item
+
+  # Group 2: Rich items (full metadata - icons, tooltips, images)
+  - id: rich_item
+    text: Rich Item
+    group: Rich Items
+    icon: rich_item.png
+    tooltip: Item with all properties set
+    tooltipImage: rich_item_preview.png
+    longDescription: |
+      This item demonstrates all available member properties:
+      - Custom icon
+      - Custom tooltip
+      - Long description (this text)
+      - Tooltip preview image
+      - Group assignment
+
+  - id: another_rich
+    text: Another Rich Item
+    group: Rich Items
+    icon: another_rich.png
+    tooltip: Second rich item for testing

@@ -57,6 +57,10 @@
     <system:String x:Key="CoreSettings.Development">Разработка</system:String>
     <system:String x:Key="CoreSettings.Development.Description">Разные настройки разработки pyRevit</system:String>
     <system:String x:Key="CoreSettings.Development.LoadBeta">Загружать бета-инструменты (Скрипты с __beta__ = True, требуется перезапуск)</system:String>
+ 
+    <system:String x:Key="CoreSettings.Loader">Загрузчик</system:String>
+    <system:String x:Key="CoreSettings.Loader.Description">Настройка механизма загрузки сборок pyRevit. Новый загрузчик — это реализация на C#, которая использует стратегию сборки Roslyn</system:String>
+    <system:String x:Key="CoreSettings.Loader.NewLoader">Использовать новую версию загрузчика pyRevit (бета) (Требуется перезапуск Revit)</system:String>
 
     <system:String x:Key="CoreSettings.CloseOtherConsoles">Закрывать другие открытые консоли</system:String>
     <system:String x:Key="CoreSettings.CloseOtherConsoles.Description">
@@ -65,6 +69,7 @@
         не требуется сравнивать данные из нескольких окон вывода.
     </system:String>
 
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.Toggle">Сократить число открытых консолей:</system:String>
     <system:String x:Key="CoreSettings.CloseOtherConsoles.Current">Консоли текущей команды</system:String>
     <system:String x:Key="CoreSettings.CloseOtherConsoles.Current.Description">
         Закрыть все окна консоли, связанные с текущей выполняемой командой.

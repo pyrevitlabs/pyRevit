@@ -1,0 +1,299 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="AuthorLabel">Autor</system:String>
+    <system:String x:Key="ExtensionLabel">Extensão</system:String>
+    <system:String x:Key="SelectPreflightCheckTitle">Selecionar verificação preliminar</system:String>
+    <system:String x:Key="RunCheckButton">Executar verificação</system:String>
+    
+    <!-- Check Names -->
+    <system:String x:Key="CheckName_GridsDataLister">Listar dados de eixos</system:String>
+    <system:String x:Key="CheckName_LevelsDataLister">Listar dados de níveis</system:String>
+    <system:String x:Key="CheckName_ReferencePlanLister">Listar planos de referência</system:String>
+    <system:String x:Key="CheckName_SchedulesNotOnSheet">Listar tabelas não inseridas em folhas</system:String>
+    <system:String x:Key="CheckName_ElementsPerWorksets">Verificar elementos por worksets</system:String>
+    <system:String x:Key="CheckName_10MileRadar">Radar de 10 milhas</system:String>
+    <system:String x:Key="CheckName_ModelChecker">Verificador de modelo</system:String>
+    <system:String x:Key="CheckName_RVTLinksWarnings">Avisos de vínculos RVT</system:String>
+    <system:String x:Key="CheckName_AuditAll">Auditar tudo (incluindo vínculos)</system:String>
+    <system:String x:Key="CheckName_CADAudit">Auditoria CAD</system:String>
+    <system:String x:Key="CheckName_NamingConvention">Convenção de nomenclatura</system:String>
+    
+    <!-- Check Descriptions (Docstrings) -->
+    <system:String x:Key="CheckDescription_GridsDataLister">Lista eixos, se estão fixados, com caixa de escopo ou nomeados
+
+Esta ferramenta de CQ retorna os seguintes dados:
+    Contagem de eixos, nome, tipo, status de fixação</system:String>
+    <system:String x:Key="CheckDescription_LevelsDataLister">Lista níveis, se estão fixados, com caixa de escopo ou nomeados e sua elevação.
+
+Esta ferramenta de CQ retorna os seguintes dados:
+    Contagem de níveis, nome, tipo, status de fixação, caixa de escopo e elevação.</system:String>
+    <system:String x:Key="CheckDescription_ReferencePlanLister">Lista todos os planos de referência no modelo
+Esta ferramenta de CQ retorna os seguintes dados:
+    Contagem de planos de referência, vínculo para, nome</system:String>
+    <system:String x:Key="CheckDescription_SchedulesNotOnSheet">Lista todas as tabelas não colocadas em uma folha
+Esta ferramenta de CQ retorna os seguintes dados:
+    Tipo, Id + link e nome da Tabela com a capacidade de clicar no link para abrir a tabela</system:String>
+    <system:String x:Key="CheckDescription_ElementsPerWorksets">Verificação de qualidade do modelo Revit
+A ferramenta de CQ retorna os seguintes dados:
+    - Tabela de todos os elementos por workset incluindo nome da categoria, nome do elemento e id do elemento
+    - Gráfico de rosca da contagem de elementos por workset</system:String>
+    <system:String x:Key="CheckDescription_10MileRadar">Verifica as extensões de todos os elementos no modelo.
+Este Verificador de modelo verifica rapidamente as extensões do modelo Revit. 
+Colocar extensões de modelo a mais de 10 Mi (16KM) da origem interna 
+do projeto pode levar a problemas de precisão, tolerância, 
+desempenho e exibição da viewport. Esta verificação garante que o 
+modelo permaneça dentro de um raio de 10 milhas da origem interna.
+
+O caso de teste examina o seguinte, relatando extensões 
+em relação à origem interna do projeto. O script prioriza 
+com base na suposição de que a maioria dos problemas de extensão do modelo está
+relacionada ao seguinte:
+
+    - A distância entre o ponto base do projeto e a origem interna
+    - A distância entre o ponto de pesquisa e a origem interna
+    - A caixa de delimitação da vista 3D
+    - A caixa de delimitação dos objetos da opção de projeto
+    - A caixa de delimitação dos vínculos CAD e RVT
+    - A caixa de delimitação de todos os elementos no modelo</system:String>
+    <system:String x:Key="CheckDescription_ModelChecker">Verificação de qualidade do modelo Revit
+A ferramenta de CQ retorna os seguintes dados:
+    Arquivo Revit: Nome e Informações do projeto
+    Vínculos Revit: lista, contagem e status de fixação
+    Vistas: número, número de vistas copiadas, número de vistas não na folha
+    Tabelas: número e número não na folha
+    Folhas: número
+    Avisos: Número total, Lista de avisos críticos com base em lista predefinida de avisos críticos
+    Contagem de materiais
+    Contagem de padrões de linha
+    DWGs: Contagem importada, contagem vinculada, contagem de dwgs em 3D
+    Famílias carregáveis: contagem, contagem de famílias no local, contagem de famílias não paramétricas
+    Notas de texto: com contagem de fator alterado, contagem de notas de texto em maiúsculas
+    Famílias de sistema: contagem de rampas, contagem de colunas arquitetônicas, elementos com opção de modelo analítico ativada
+    Grupos: contagem de tipos de grupo de detalhes, contagem de instâncias de grupo de detalhes, contagem de tipos de grupo de modelo, contagem de instâncias de grupos de modelo
+    Planos de referência: contagem não nomeada, contagem de planos de ref
+    Contagem de elementos
+    Fases: lista de fases para o documento atual e arquivos vinculados</system:String>
+    <system:String x:Key="CheckDescription_RVTLinksWarnings">Controle de qualidade de vínculos Revit - Avisos
+    Avisos em arquivos vinculados:
+    - Descrição,
+    - Ids,
+    - Contagem
+
+    !! Revit 2018 + apenas !!
+    !!Carregue vínculos antes de usar!!</system:String>
+    <system:String x:Key="CheckDescription_AuditAll">Auditoria preliminar de todos os modelos, incluindo modelos vinculados.
+!!Os vínculos devem estar carregados.!!
+Esta ferramenta de CQ retorna os seguintes dados:
+- nome do projeto, número, cliente, fases, worksets
+- contagem de elementos
+- contagem de elementos purgar
+- contagem de todos os avisos
+- contagem de avisos críticos
+- contagem de vínculos rvt
+- contagem de elementos de modelo analítico ativados
+- contagem de ambientes
+- contagem de ambientes não colocados
+- contagem de ambientes não delimitados
+- contagem de folhas
+- contagem de vistas por Tipo de Vista
+- vistas não em folhas
+- contagem de tabelas não em folhas
+- contagem de vistas copiadas
+- contagem de modelos de vista
+- contagem de modelos de vista não utilizados
+- contagem de filtros
+- contagem de filtros de vista não utilizados
+- contagem de materiais
+- contagem de padrões de linha
+- contagem de dwgs
+- contagem de dwg vinculados
+- contagem de dwg importados
+- contagem de família no local
+- contagem de famílias não paramétricas
+- contagem de família
+- contagem de subcategorias de importações
+- contagem de tipos de modelos genéricos
+- contagem de componentes de detalhe
+- contagem de tipos de notas de texto
+- tipos de notas de texto com fator de largura != 1
+- contagem de notas de texto
+- notas de texto com maiúsculas aplicadas
+- notas de texto com fundo sólido
+- contagem de grupos de detalhes
+- contagem de tipos de grupos de detalhes
+- contagem de grupo de modelo
+- contagem de tipo de grupo de modelo
+- contagem de planos de referência
+- contagem de planos de referência sem nome
+- contagem de linhas de detalhe
+- contagem de tipos de cota
+- contagem de cota
+- contagem de sobreposições de cota
+- contagem de nuvens de revisão</system:String>
+    <system:String x:Key="CheckDescription_CADAudit">Auditoria preliminar de CAD importado e vinculado
+Esta ferramenta de CQ retorna os seguintes dados:
+    Instância de vínculo CAD e informações de tipo
+
+    O controle de qualidade inclui informações e alertas para:
+      O status dos vínculos (Carregado, Não encontrado, Descarregado...)
+      Se um CAD está em um plano de trabalho do modelo ou apenas em uma única vista
+      Se um CAD está vinculado ou importado
+      Se CADs foram duplicados
+      O nome do local compartilhado do CAD
+
+      Recurso: A saída permite navegar para os CADs encontrados</system:String>
+    <system:String x:Key="CheckDescription_NamingConvention">Verifica se os nomes de tipo de família estão em conformidade com uma lista especificada,
+conforme definido por uma lista de tipos de parede no Revit.</system:String>
+    
+    <!-- Common Output Strings -->
+    <system:String x:Key="GridsDataLister">Lista de dados de eixos</system:String>
+    <system:String x:Key="LevelsDataLister">Lista de dados de níveis</system:String>
+    <system:String x:Key="NumberOfGrids">Número de eixos</system:String>
+    <system:String x:Key="NumberOfLevels">Número de níveis</system:String>
+    <system:String x:Key="Grids">Eixos</system:String>
+    <system:String x:Key="Levels">Níveis</system:String>
+    <system:String x:Key="Name">Nome</system:String>
+    <system:String x:Key="Type">Tipo</system:String>
+    <system:String x:Key="Pinned">Fixado</system:String>
+    <system:String x:Key="ScopeBox">Caixa de escopo</system:String>
+    <system:String x:Key="Elevation">Elevação</system:String>
+    <system:String x:Key="ReferencePlanes">Planos de referência</system:String>
+    <system:String x:Key="ReferencePlanesCount">Planos de referência:</system:String>
+    <system:String x:Key="SchedulesNotOnSheets">TABELAS NÃO EM NENHUMA FOLHA</system:String>
+    <system:String x:Key="TransactionTook">A transação demorou</system:String>
+    <system:String x:Key="NameLabel">NOME:</system:String>
+    <system:String x:Key="IdLabel">ID:</system:String>
+    <system:String x:Key="TypeLabel">TIPO:</system:String>
+    <system:String x:Key="WorksetName">Nome do workset</system:String>
+    <system:String x:Key="ElementCategory">Categoria do elemento</system:String>
+    <system:String x:Key="ElementName">Nome do elemento</system:String>
+    <system:String x:Key="ElementId">Id do elemento</system:String>
+    <system:String x:Key="ElementCountByWorkset">Contagem de elementos por workset</system:String>
+    
+    <!-- Radar Check Strings -->
+    <system:String x:Key="RadarCheckingModelPlacement">Verificando posicionamento e coordenadas do modelo</system:String>
+    <system:String x:Key="RadarBasePointMoreThan">Ponto base é mais de</system:String>
+    <system:String x:Key="RadarSurveyPointMoreThan">Ponto de pesquisa é mais de</system:String>
+    <system:String x:Key="RadarSurveyPointLessThan">Ponto de pesquisa é menos de</system:String>
+    <system:String x:Key="RadarProjectBasePointCoords">Coordenadas do ponto base do projeto para origem interna</system:String>
+    <system:String x:Key="RadarSurveyPointCoords">Coordenadas do ponto de pesquisa para origem interna</system:String>
+    <system:String x:Key="RadarBaseToSurveyDeltaX">Delta X do ponto base do projeto para pesquisa</system:String>
+    <system:String x:Key="RadarBaseToSurveyDeltaY">Delta Y do ponto base do projeto para pesquisa</system:String>
+    <system:String x:Key="RadarPlanarDistance">Distância planar entre ponto base e ponto de pesquisa</system:String>
+    <system:String x:Key="RadarTotalDistance">Distância total entre ponto base e ponto de pesquisa</system:String>
+    <system:String x:Key="RadarProjectElevation">Elevação do projeto (Distância vertical do ponto base)</system:String>
+    <system:String x:Key="RadarProjectCoordinates">Coordenadas e distâncias do projeto</system:String>
+    <system:String x:Key="RadarPoints">Pontos</system:String>
+    <system:String x:Key="RadarChecking3DViewBBox">Verificando as extensões da caixa de delimitação da vista 3D</system:String>
+    <system:String x:Key="Radar3DViewBBoxMoreThan">Caixa de delimitação da vista 3D se estende mais de</system:String>
+    <system:String x:Key="Radar3DViewBBoxLessThan">Caixa de delimitação da vista 3D está localizada a menos de</system:String>
+    <system:String x:Key="RadarCheckingDesignOptions">Verificando as extensões dos objetos da opção de projeto</system:String>
+    <system:String x:Key="RadarDesignOptionsMoreThan">Objetos da opção de projeto estão localizados a mais de</system:String>
+    <system:String x:Key="RadarShowingFirst10">Mostrando os primeiros 10 objetos</system:String>
+    <system:String x:Key="RadarManualInvestigation">Investigação manual é necessária</system:String>
+    <system:String x:Key="RadarAllObjectsLessThan">Todos os objetos estão localizados a menos de</system:String>
+    <system:String x:Key="RadarCheckingCADRVT">Verificando as extensões dos vínculos CAD e RVT</system:String>
+    <system:String x:Key="RadarAllCADRVTLessThan">Todos os vínculos CAD e RVT estão localizados a menos de</system:String>
+    <system:String x:Key="RadarDistantObjectsDetected">Objetos distantes ainda estão sendo detectados!</system:String>
+    <system:String x:Key="RadarFurtherAnalysis">Análise adicional necessária.</system:String>
+    <system:String x:Key="RadarCheckingEverything">Verificando tudo, vai demorar um pouco.</system:String>
+    <system:String x:Key="RadarPleaseBePatient">Por favor, seja paciente.</system:String>
+    <system:String x:Key="RadarElementsMoreThan">Elementos abaixo estão localizados a mais de</system:String>
+    <system:String x:Key="RadarAllTestsCompleted">Todos os testes concluídos, revise os resultados acima.</system:String>
+    <system:String x:Key="Radar10MilesAway">10 Mi (16KM) de distância da Origem Interna.</system:String>
+    <system:String x:Key="RadarNoObjectInDesignOption">Nenhum objeto em qualquer opção de projeto está localizado a mais de</system:String>
+    <system:String x:Key="RadarIsPartOf">Faz parte de</system:String>
+    <system:String x:Key="RadarXYZCoordinates">Coordenadas XYZ</system:String>
+    <system:String x:Key="RadarDistance">Distância</system:String>
+    <system:String x:Key="RadarAngle">ÂNGULO (°)</system:String>
+    
+    <!-- Model Checker Strings -->
+    <system:String x:Key="ModelCheckerTitle">VERIFICADOR DE MODELO</system:String>
+    <system:String x:Key="ModelCheckerRVTFile">Arquivo RVT</system:String>
+    <system:String x:Key="ModelCheckerRVTLinks">Vínculos RVT</system:String>
+    <system:String x:Key="ModelCheckerNoLinks">Sem vínculos</system:String>
+    <system:String x:Key="ModelCheckerInstanceFileName">Nome do arquivo de instância</system:String>
+    <system:String x:Key="ModelCheckerInstanceName">Nome da instância</system:String>
+    <system:String x:Key="ModelCheckerPinnedStatus">Status de fixação</system:String>
+    <system:String x:Key="ModelCheckerViews">Vistas</system:String>
+    <system:String x:Key="ModelCheckerViewTemplates">Modelos de vista</system:String>
+    <system:String x:Key="ModelCheckerSchedules">Tabelas</system:String>
+    <system:String x:Key="ModelCheckerSheets">Folhas</system:String>
+    <system:String x:Key="ModelCheckerWarnings">Avisos</system:String>
+    <system:String x:Key="ModelCheckerNoWarnings">Sem avisos, bom trabalho!</system:String>
+    <system:String x:Key="ModelCheckerMaterials">Materiais</system:String>
+    <system:String x:Key="ModelCheckerLinePatterns">Padrões de linha</system:String>
+    <system:String x:Key="ModelCheckerDWGs">DWGs</system:String>
+    <system:String x:Key="ModelCheckerLoadableFamilies">Famílias carregáveis</system:String>
+    <system:String x:Key="ModelCheckerTextNotes">Notas de texto</system:String>
+    <system:String x:Key="ModelCheckerSystemFamilies">Famílias de sistema</system:String>
+    <system:String x:Key="ModelCheckerGroups">Grupos</system:String>
+    <system:String x:Key="ModelCheckerReferencePlanes">Planos de referência</system:String>
+    <system:String x:Key="ModelCheckerPhases">Fases</system:String>
+    <system:String x:Key="ModelCheckerElementsCount">Contagem de elementos</system:String>
+    <system:String x:Key="ModelCheckerNotSavedFile">Arquivo não salvo</system:String>
+    
+    <!-- Model Checker Warnings Strings -->
+    <system:String x:Key="RVTLinksWarningChecker">Vínculos RVT - Verificador de avisos</system:String>
+    <system:String x:Key="RVTLinksWarningsCount">Contagem de avisos</system:String>
+    <system:String x:Key="RVTLinksWarningsDetails">Detalhes dos avisos</system:String>
+    <system:String x:Key="RVTLinksFileName">Nome do arquivo</system:String>
+    <system:String x:Key="RVTLinksWarningsCountLabel">Contagem de avisos</system:String>
+    <system:String x:Key="RVTLinksWarningsLabel">Avisos</system:String>
+    <system:String x:Key="RVTLinksIds">Ids</system:String>
+    <system:String x:Key="RVTLinksLoadAllLinks">Carregue todos os vínculos, a ferramenta destina-se a modelos com vínculos carregados</system:String>
+    <system:String x:Key="RVTLinksLoadAtLeastOne">Carregue pelo menos um vínculo, a ferramenta destina-se a modelos com vínculos carregados</system:String>
+    
+    <!-- Audit All Strings -->
+    <system:String x:Key="AuditAllMainFileInfos">Informações do arquivo principal</system:String>
+    <system:String x:Key="AuditAllLinkedFilesInfos">Informações dos arquivos vinculados</system:String>
+    <system:String x:Key="AuditAllProjectName">Nome do projeto</system:String>
+    <system:String x:Key="AuditAllProjectNumber">Número do projeto</system:String>
+    <system:String x:Key="AuditAllClientName">Nome do cliente</system:String>
+    <system:String x:Key="AuditAllProjectPhases">Fases do projeto</system:String>
+    <system:String x:Key="AuditAllWorksets">Worksets</system:String>
+    <system:String x:Key="AuditAllLinkedFileName">Nome do arquivo vinculado</system:String>
+    <system:String x:Key="AuditAllLoadedStatus">Status carregado</system:String>
+    <system:String x:Key="AuditAllLinks">Vínculos</system:String>
+    <system:String x:Key="AuditAllLinksNotPinned">Vínculos não fixados</system:String>
+    
+    <!-- CAD Audit Strings -->
+    <system:String x:Key="CADAuditInstances">Auditar instâncias CAD:</system:String>
+    <system:String x:Key="CADAuditInProject">neste projeto</system:String>
+    <system:String x:Key="CADAuditInActiveView">apenas na vista ativa</system:String>
+    <system:String x:Key="CADAuditCancel">CANCELAR</system:String>
+    <system:String x:Key="CADAuditOK">OK</system:String>
+    <system:String x:Key="CADAuditTitle">Auditoria de instâncias CAD no projeto atual</system:String>
+    <system:String x:Key="CADAuditNoInstances">Nenhuma instância CAD encontrada</system:String>
+    <system:String x:Key="CADAuditSelect">Selecionar</system:String>
+    <system:String x:Key="CADAuditPreflightAudit">Auditoria preliminar de CAD importado e vinculado</system:String>
+    <system:String x:Key="CADAuditNo">Não</system:String>
+    <system:String x:Key="CADAuditSelectZoom">Selecionar/Zoom</system:String>
+    <system:String x:Key="CADAuditDWGInstance">Instância DWG</system:String>
+    <system:String x:Key="CADAuditLoadedStatus">Status carregado</system:String>
+    <system:String x:Key="CADAuditWorkplaneOrView">Plano de trabalho ou vista única</system:String>
+    <system:String x:Key="CADAuditDuplicate">Duplicar</system:String>
+    <system:String x:Key="CADAuditCreatorUser">Usuário criador</system:String>
+    <system:String x:Key="CADAuditLocationSiteName">Nome do local do terreno</system:String>
+    <system:String x:Key="CADAuditInstancesFound">Instâncias CAD encontradas.</system:String>
+    <system:String x:Key="CADAuditCheckRunOn">A verificação foi executada em</system:String>
+    <system:String x:Key="CADAuditActiveView">a vista ativa</system:String>
+    <system:String x:Key="CADAuditWholeModel">o modelo inteiro</system:String>
+    <system:String x:Key="CADAuditExplanations">Explicações para avisos</system:String>
+    <system:String x:Key="CADAuditLoadedStatusExplanation">Status carregado...........: alerta se um CAD for importado, em vez de vinculado</system:String>
+    <system:String x:Key="CADAuditWorkplaneExplanation">Plano de trabalho ou vista única: alerta se um CAD for colocado em uma única vista com a opção 'apenas vista ativa' em vez de em um plano de trabalho do modelo</system:String>
+    <system:String x:Key="CADAuditDuplicateExplanation">Duplicar...............: alerta se um CAD for colocado mais de uma vez (vinculado ou importado) caso não seja intencional</system:String>
+    <system:String x:Key="CADAuditCheckDuration">Duração da verificação</system:String>
+    <system:String x:Key="CADAuditShowView">Mostrar a vista</system:String>
+    
+    <!-- Naming Convention Strings -->
+    <system:String x:Key="NamingConventionReport">Relatório de convenção de nomenclatura do modelo</system:String>
+    <system:String x:Key="NamingConventionWallCheck">Verificação de convenção de nomenclatura de parede</system:String>
+    <system:String x:Key="NamingConventionWallType">Tipo de parede</system:String>
+    <system:String x:Key="NamingConventionCount">Contagem</system:String>
+    <system:String x:Key="NamingConventionStatus">Status</system:String>
+    <system:String x:Key="NamingConventionWrongName">Nome errado</system:String>
+    <system:String x:Key="NamingConventionIncorrectlyNamed">Tipos de parede nomeados incorretamente encontrados:</system:String>
+    <system:String x:Key="NamingConventionNoFileSelected">Nenhum arquivo JSON selecionado.</system:String>
+</ResourceDictionary>
