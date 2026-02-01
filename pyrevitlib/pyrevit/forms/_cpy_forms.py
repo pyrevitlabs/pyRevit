@@ -1,4 +1,4 @@
-"""CPython stub backend for pyrevit.forms (PR1).
+"""CPython stub backend for pyrevit.forms.
 
 This module provides stub-only symbols. All stubs raise
 PyRevitCPythonNotSupported with a stable feature name string and do not
@@ -10,7 +10,7 @@ ProgressBar, ask_for_string, ask_for_unique_string, ask_for_one_item,
 ask_for_date, ask_for_number_slider, pick_file, pick_folder, show_balloon.
 """
 
-from pyrevit import PyRevitCPythonNotSupported as _PyRevitCPythonNotSupported
+from pyrevit import PyRevitCPythonNotSupported
 
 __all__ = [
     "WPFWindow",
@@ -30,7 +30,7 @@ __all__ = [
 
 
 def _raise_not_supported(feature_name):
-    raise _PyRevitCPythonNotSupported(feature_name)
+    raise PyRevitCPythonNotSupported(feature_name)
 
 
 class _NotSupportedBase(object):

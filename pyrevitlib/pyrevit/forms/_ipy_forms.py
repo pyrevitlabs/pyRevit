@@ -1,11 +1,5 @@
 ﻿# -*- coding: UTF-8 -*-
-"""Reusable WPF forms for pyRevit.
-
-Examples:
-    ```python
-    from pyrevit.forms import WPFWindow
-    ```
-"""
+"""IronPython WPF forms backend for pyrevit.forms."""
 
 # pylint: disable=consider-using-f-string,wrong-import-position
 

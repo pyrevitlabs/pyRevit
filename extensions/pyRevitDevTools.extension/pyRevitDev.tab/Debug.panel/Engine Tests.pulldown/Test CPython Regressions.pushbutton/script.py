@@ -1,7 +1,7 @@
 #! python3
 """CPython regression tests.
 
-Validates PR1 contract for pyrevit.forms: import succeeds under CPython and
+Validates contract for pyrevit.forms: import succeeds under CPython and
 unsupported symbols raise PyRevitCPythonNotSupported("pyrevit.forms.<symbol>").
 """
 
@@ -22,14 +22,17 @@ class TestClass(unittest.TestCase):
             "{} is not a BuiltInParameter".format(type(element))
         )
 
-    def test_pyrevit_forms(self):
-        """No UI dialogs invoked in stub phase."""
-        from pyrevit import PyRevitCPythonNotSupported
+    def test_pyrevit_forms_import(self):
+        """pyrevit.forms imports under CPython."""
         try:
-            from pyrevit import forms
+            from pyrevit import forms  # noqa: F401
         except Exception as err:
             self.fail("pyrevit.forms import failed: {}".format(err))
 
+    def test_pyrevit_forms_ask_for_string_raises(self):
+        """ask_for_string raises PyRevitCPythonNotSupported under CPython."""
+        from pyrevit import PyRevitCPythonNotSupported
+        from pyrevit import forms
         try:
             forms.ask_for_string("Test")
             self.fail("Expected PyRevitCPythonNotSupported for ask_for_string")
@@ -38,11 +41,13 @@ class TestClass(unittest.TestCase):
                 "pyrevit.forms.ask_for_string",
                 err.feature_name
             )
-        except (ImportError, AttributeError) as err:
-            self.fail("Unexpected error type for stubbed API: {}".format(err))
         except Exception as err:
             self.fail("Unexpected error type for stubbed API: {}".format(err))
 
+    def test_pyrevit_forms_missing_symbol_raises(self):
+        """Missing symbols raise PyRevitCPythonNotSupported under CPython."""
+        from pyrevit import PyRevitCPythonNotSupported
+        from pyrevit import forms
         try:
             getattr(forms, "does_not_exist")
             self.fail("Expected PyRevitCPythonNotSupported for missing symbol")
@@ -51,8 +56,6 @@ class TestClass(unittest.TestCase):
                 "pyrevit.forms.does_not_exist",
                 err.feature_name
             )
-        except (ImportError, AttributeError) as err:
-            self.fail("Unexpected error type for missing symbol: {}".format(err))
         except Exception as err:
             self.fail("Unexpected error type for missing symbol: {}".format(err))
 
