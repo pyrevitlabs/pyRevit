@@ -1,16 +1,12 @@
 title:
-  ru: Настройки
   en_us: Settings
   fr_fr: Paramètres
+  ru: Настройки
+  chinese_s: 设置
   es_es: 'Configuración'
   de_de: Einstellungen
+  pt_br: Configurações
 tooltip:
-  ru: >-
-    Показывает окно настроек pyRevit. Вы можете настраивать как pyRevit загружает и устанавливает некоторые параметры.
-    
-    Shift-Click:
-
-    Показать файл конфигурации в проводнике.
   en_us: >-
     Shows the preferences window for pyRevit. You can customize how pyRevit loads and set some basic parameters here.
 
@@ -23,20 +19,36 @@ tooltip:
     Shift-Click:
 
     Affiche le fichier de configuration dans l'explorateur.
+  ru: >-
+    Показывает окно настроек pyRevit. Вы можете настраивать как pyRevit загружает и устанавливает некоторые параметры.
+
+    Shift-Click:
+
+    Показать файл конфигурации в проводнике.
+  chinese_s: >-
+    显示 pyRevit 的首选项窗口。您可以在此处自定义 pyRevit 的加载方式并设置一些基本参数。
+
+    Shift-Click:
+
+    在资源管理器中显示配置文件。
   es_es: >-
     Muestra la ventana de preferencias de pyRevit. Puedes personalizar la forma en carga pyRevit así como definir configuraciones base.
 
     Shift-Click:
 
     Muestra el archivo de configuración en el explorador.
-    
-    Muestra la ventana de preferencias de pyRevit. Puedes personalizar la forma en carga pyRevit así como definir configuraciones base
   de_de: >-
     Zeigt den Einstellungsdialog von pyRevit an. Hier kannst du einstellen, wie pyRevit geladen wird und einige weitere Basiseinstellungen ändern. 
 
     Shift-Click:
 
-    Zeigt die Konfigurationsdatei im Explorer an. 
+    Zeigt die Konfigurationsdatei im Explorer an.
+  pt_br: >-
+    Mostra a janela de preferências do pyRevit. Você pode personalizar como o pyRevit carrega e definir alguns parâmetros básicos aqui.
+    
+    Shift-Clique:
+    
+    Mostra o arquivo de configuração no explorer.
 context: zero-doc
 engine:
   clean: true

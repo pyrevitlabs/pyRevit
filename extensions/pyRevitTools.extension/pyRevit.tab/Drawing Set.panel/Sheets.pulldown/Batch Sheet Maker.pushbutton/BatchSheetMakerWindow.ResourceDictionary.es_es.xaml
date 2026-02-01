@@ -1,0 +1,20 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Creador de hojas por lotes</system:String>
+    
+    <system:String x:Key="InstructionsLine1">Ingrese la lista de números y nombres de hojas en este formato:</system:String>
+    <system:String x:Key="SheetNumberLabel">número-de-hoja</system:String>
+    <system:String x:Key="TAB">TAB</system:String>
+    <system:String x:Key="SheetNameLabel">nombre-de-hoja</system:String>
+    <system:String x:Key="SheetNameExample">NOMBRE DE LA HOJA</system:String>
+    <system:String x:Key="InstructionsLine2">Múltiples hojas con nombres idénticos pueden ser listadas con rangos de números de hojas:</system:String>
+    <system:String x:Key="RangeOfSheetNumbers">Rango de números de hojas:</system:String>
+    <system:String x:Key="RangeExample">ej. A103--A106 o A103::A106</system:String>
+    <system:String x:Key="ListOfSheetNumbers">Lista de números de hojas:</system:String>
+    <system:String x:Key="ListExample">ej. A104,A105 o A104;A105</system:String>
+    
+    <system:String x:Key="CreateSheets">Crear hojas</system:String>
+    <system:String x:Key="CreatePlaceholders">Crear marcadores de posición</system:String>
+    <system:String x:Key="CreateButton">Crear</system:String>
+</ResourceDictionary>

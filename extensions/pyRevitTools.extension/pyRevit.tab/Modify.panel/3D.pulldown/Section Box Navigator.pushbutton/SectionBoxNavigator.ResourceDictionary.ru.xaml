@@ -1,0 +1,127 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Навигатор Бокса Сечения</system:String>
+    
+    <system:String x:Key="LevelNavigation">Навигация по Уровням</system:String>
+    <system:String x:Key="TopUp">Верх ↑</system:String>
+    <system:String x:Key="TopDown">Верх ↓</system:String>
+    <system:String x:Key="BottomUp">Низ ↑</system:String>
+    <system:String x:Key="BottomDown">Низ ↓</system:String>
+    <system:String x:Key="BoxUp">Бокс ↑</system:String>
+    <system:String x:Key="BoxDown">Бокс ↓</system:String>
+    <system:String x:Key="Level">Уровень</system:String>
+    <system:String x:Key="Nudge">Сдвиг</system:String>
+    <system:String x:Key="Amount">Величина:</system:String>
+    <system:String x:Key="Loading">Загрузка...</system:String>
+    
+    <system:String x:Key="ViewAlignment">Выравнивание Вида</system:String>
+    <system:String x:Key="Align2DView">Выровнять 2D Вид</system:String>
+    
+    <system:String x:Key="GridNavigation">Навигация по Сетке</system:String>
+    <system:String x:Key="Bigger">Больше</system:String>
+    <system:String x:Key="Smaller">Меньше</system:String>
+    <system:String x:Key="WestOut">← З</system:String>
+    <system:String x:Key="NorthOut">↑ С</system:String>
+    <system:String x:Key="SouthOut">↓ Ю</system:String>
+    <system:String x:Key="EastOut">→ В</system:String>
+    <system:String x:Key="WestIn">→ З</system:String>
+    <system:String x:Key="NorthIn">↓ С</system:String>
+    <system:String x:Key="SouthIn">↑ Ю</system:String>
+    <system:String x:Key="EastIn">← В</system:String>
+    <system:String x:Key="Grid">Сетка</system:String>
+    
+    <system:String x:Key="ExpandShrinkControls">Управление Расширением/Сжатием</system:String>
+    <system:String x:Key="Expand">Расширить +</system:String>
+    <system:String x:Key="Shrink">Сжать -</system:String>
+    
+    <system:String x:Key="Actions">Действия</system:String>
+    <system:String x:Key="ToggleBox">Переключить Бокс</system:String>
+    <system:String x:Key="UnHideBox">(Скрыть/Показать) Бокс</system:String>
+    <system:String x:Key="AlignBox">Выровнять Бокс</system:String>
+    
+    <system:String x:Key="VerticalPositionStatus">Статус Вертикальной Позиции</system:String>
+    <system:String x:Key="Top">Верх:</system:String>
+    <system:String x:Key="Bottom">Низ:</system:String>
+    <system:String x:Key="Position">Позиция:</system:String>
+    
+    <system:String x:Key="GridNavigationStatus">Статус Навигации по Сетке</system:String>
+    <system:String x:Key="ExpandShrinkActionsStatus">Статус Расширения/Сжатия + Действия</system:String>
+    
+    <system:String x:Key="Settings">Настройки</system:String>
+    <system:String x:Key="ShowPreviewOnHover">Показать предпросмотр при наведении</system:String>
+    <system:String x:Key="UpdateUIOnEvents">Обновлять интерфейс при событиях</system:String>
+    <system:String x:Key="IncludeLinkedLevelsAndGrids">Включить Связанные Уровни и Сетки</system:String>
+    
+    <!-- Dynamic UI strings -->
+    <system:String x:Key="AlignWith3DView">Выровнять с 3D Видом</system:String>
+    <system:String x:Key="AlignWith2DView">Выровнять с 2D Видом</system:String>
+    <system:String x:Key="NoSectionBoxActive">Нет активного бокса сечения</system:String>
+    <system:String x:Key="AboveTopFormat">Выше Верха: {0} @ {1}</system:String>
+    <system:String x:Key="NoLevelAboveTop">Нет уровня выше верха</system:String>
+    <system:String x:Key="BelowTopFormat">Ниже Верха: {0} @ {1}</system:String>
+    <system:String x:Key="NoLevelBelowTop">Нет уровня ниже верха</system:String>
+    <system:String x:Key="TopOfBoxFormat">Верх Бокса: {0}</system:String>
+    <system:String x:Key="AboveBottomFormat">Выше Низа: {0} @ {1}</system:String>
+    <system:String x:Key="NoLevelAboveBottom">Нет уровня выше низа</system:String>
+    <system:String x:Key="BelowBottomFormat">Ниже Низа: {0} @ {1}</system:String>
+    <system:String x:Key="NoLevelBelowBottom">Нет уровня ниже низа</system:String>
+    <system:String x:Key="BottomOfBoxFormat">Низ Бокса: {0}</system:String>
+    <system:String x:Key="LengthLabelAdjust">Метка Длины (настроить в Единицах Проекта):</system:String>
+    
+    <!-- Status messages -->
+    <system:String x:Key="CannotFindLevelsInDirection">Не удается найти уровни в этом направлении</system:String>
+    <system:String x:Key="WouldCreateInvalidBox">Создаст недопустимый бокс</system:String>
+    <system:String x:Key="NoLevelFoundInDirection">Уровень в этом направлении не найден</system:String>
+    <system:String x:Key="BoxMovedFormat">Бокс перемещен {0}: Верх к '{1}', Низ к '{2}'</system:String>
+    <system:String x:Key="TopMovedFormat">Верх перемещен {0} к уровню '{1}'</system:String>
+    <system:String x:Key="BottomMovedFormat">Низ перемещен {0} к уровню '{1}'</system:String>
+    <system:String x:Key="NudgedFormat">Сдвинут {0} на {1} {2}</system:String>
+    <system:String x:Key="Expanded">Расширен</system:String>
+    <system:String x:Key="Shrunk">Сжат</system:String>
+    <system:String x:Key="ExpandedShrunkByFormat">на {0} во всех направлениях</system:String>
+    <system:String x:Key="CouldNotDetermineFace">Не удалось определить грань для перемещения.</system:String>
+    <system:String x:Key="NoGridFoundFormat">Сетка в направлении {0} не найдена.</system:String>
+    <system:String x:Key="AlreadyAtGridLine">Уже на линии сетки.</system:String>
+    <system:String x:Key="MovedToGridFormat">Перемещен к сетке '{0}' в направлении {1}</system:String>
+    <system:String x:Key="NudgedInDirectionFormat">Сдвинут {0} в направлении {1}</system:String>
+    <system:String x:Key="CouldNotGetViewRange">Не удалось получить информацию о диапазоне вида.</system:String>
+    <system:String x:Key="CouldNotGetCropBox">Не удалось получить рамку обрезки из сечения.</system:String>
+    <system:String x:Key="NoCropboxOrElements">Не найдено рамки обрезки или элементов для расширения области видимости</system:String>
+    <system:String x:Key="ApplySectionBoxFormat">Применить бокс сечения из вида '{0}'?</system:String>
+    <system:String x:Key="ConfirmSectionBox">Подтвердить Бокс Сечения</system:String>
+    <system:String x:Key="SectionBoxAlignedFormat">Бокс сечения выровнен с видом '{0}'</system:String>
+    <system:String x:Key="CropBoxAlignedFormat">Рамка обрезки выровнена с видом '{0}'</system:String>
+    <system:String x:Key="UnsupportedViewType">Неподдерживаемый тип вида.</system:String>
+    <system:String x:Key="Activated">активирован</system:String>
+    <system:String x:Key="Deactivated">деактивирован</system:String>
+    <system:String x:Key="BoxToggleFailed">Переключение бокса не удалось</system:String>
+    <system:String x:Key="Hidden">скрыт</system:String>
+    <system:String x:Key="Unhidden">показан</system:String>
+    <system:String x:Key="ErrorInBoxVisibility">Ошибка видимости бокса</system:String>
+    <system:String x:Key="SectionBoxAlignedToFace">Бокс сечения выровнен с гранью</system:String>
+    <system:String x:Key="FailedToAlignToFaceFormat">Не удалось выровнять с гранью: {0}</system:String>
+    <system:String x:Key="InvalidSectionBoxDimensions">Недопустимые размеры бокса сечения.</system:String>
+    <system:String x:Key="PleaseEnterValidNumber">Пожалуйста, введите действительное число</system:String>
+    <system:String x:Key="AnErrorOccurredFormat">Произошла ошибка: {0}</system:String>
+    <system:String x:Key="PleaseEnterNudgeAmount">Пожалуйста, введите величину сдвига</system:String>
+    <system:String x:Key="AmountMustBeGreaterThanZero">Величина должна быть больше 0</system:String>
+    <system:String x:Key="PleaseEnterValidNumberForExpansion">Пожалуйста, введите действительное число для величины расширения</system:String>
+    <system:String x:Key="AnErrorOccurredWhileExpandingFormat">Ошибка при расширении: {0}</system:String>
+    <system:String x:Key="PleaseEnterShrinkAmount">Пожалуйста, введите величину сжатия</system:String>
+    <system:String x:Key="ShrinkAmountMustBeGreaterThanZero">Величина сжатия должна быть больше 0</system:String>
+    <system:String x:Key="PleaseEnterValidNumberForShrink">Пожалуйста, введите действительное число для величины сжатия</system:String>
+    <system:String x:Key="AnErrorOccurredWhileShrinkingFormat">Ошибка при сжатии: {0}</system:String>
+    <system:String x:Key="Select2DViewForSectionBox">Выбрать 2D Вид для Бокса Сечения</system:String>
+    <system:String x:Key="Select3DViewToCopyFrom">Выбрать 3D Вид для Копирования</system:String>
+    <system:String x:Key="CouldNotExtractViewInformation">Не удалось извлечь информацию о виде.</system:String>
+    <system:String x:Key="View3DHasNoSectionBox">3D вид не имеет бокса сечения.</system:String>
+    <system:String x:Key="Unknown">Неизвестно</system:String>
+    
+    <!-- Alert messages -->
+    <system:String x:Key="StoredSectionBoxFound">Найден сохраненный SectionBox для этого вида! Восстановить?</system:String>
+    <system:String x:Key="RestoreSectionBox">Восстановить Бокс Сечения</system:String>
+    <system:String x:Key="NoSectionBoxMessage">Текущий вид не имеет активного или сохраненного бокса сечения.</system:String>
+    <system:String x:Key="NoSectionBoxTitle">Нет Бокса Сечения</system:String>
+    <system:String x:Key="ErrorTitle">Ошибка</system:String>
+</ResourceDictionary>

@@ -1,6 +1,10 @@
 title:
   en_us: Test pyRevit Bundle (Custom Title)
+  fr_fr: Tester le bundle pyRevit (Titre personnalisé)
+  ru: Тестировать пакет pyRevit (Настраиваемый заголовок)
   chinese_s: 测试包
+  es_es: Probar paquete pyRevit (Título personalizado)
+  de_de: Test pyRevit Bundle (Titel personalisiert)
 tooltip: |
   Test pyRevit Bundle Tooltip
   {{template_test}}

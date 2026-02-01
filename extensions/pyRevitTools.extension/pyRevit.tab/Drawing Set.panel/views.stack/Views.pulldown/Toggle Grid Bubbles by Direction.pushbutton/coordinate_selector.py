@@ -31,15 +31,15 @@ class CoordinateSystemSelector(forms.WPFWindow):
         angle = int(self.angle_slider.Value)
         self.angle_display.Text = "{}°".format(angle)
 
-        # Angle descriptions
+        # Angle descriptions - using translated strings from resource dictionary
         descriptions = {
-            1: "Very strict - only perfectly aligned grids",
-            5: "Tight - good for precise grid layouts",
-            10: "Moderate - good for most cases",
-            15: "Relaxed - includes slightly angled grids",
-            25: "Permissive - includes more angled grids",
-            35: "Very permissive - includes most orientations",
-            40: "Maximum tolerance - includes heavily angled grids",
+            1: self.get_locale_string("AngleDescription1"),
+            5: self.get_locale_string("AngleDescription5"),
+            10: self.get_locale_string("AngleDescription10"),
+            15: self.get_locale_string("AngleDescription15"),
+            25: self.get_locale_string("AngleDescription25"),
+            35: self.get_locale_string("AngleDescription35"),
+            40: self.get_locale_string("AngleDescription40"),
         }
 
         # Find closest description

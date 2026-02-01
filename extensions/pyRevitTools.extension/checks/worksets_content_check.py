@@ -4,7 +4,15 @@ import datetime
 from pyrevit import coreutils
 from pyrevit import DB
 
+import sys
+import os
+# Add current directory to path for local imports
+_current_dir = os.path.dirname(os.path.abspath(__file__))
+if _current_dir not in sys.path:
+    sys.path.insert(0, _current_dir)
+
 from pyrevit.preflight import PreflightTestCase
+from check_translations import DocstringMeta
 
 # LISTS
 # COLORS for chart.js graphs - chartCategories.randomize_colors() sometimes
@@ -186,8 +194,14 @@ def checkModel(doc, output):
                 data.append(element_data)
 
     # sort by workset name
+    from check_translations import get_check_translation
     data = sorted(data, key=lambda x: x[0])
-    output.print_table(data, columns=['Workset Name', 'Element Category', 'Element Name', 'Element Id'])
+    output.print_table(data, columns=[
+        get_check_translation("WorksetName"),
+        get_check_translation("ElementCategory"),
+        get_check_translation("ElementName"),
+        get_check_translation("ElementId")
+    ])
 
     # sorting results in chart legend
     worksets_names.sort()
@@ -203,7 +217,7 @@ def checkModel(doc, output):
         chartWorksets = output.make_doughnut_chart()
         chartWorksets.options.title = {
             "display": True,
-            "text": "Element Count by Workset",
+            "text": get_check_translation("ElementCountByWorkset"),
             "fontSize": 25,
             "fontColor": "#000",
             "fontStyle": "bold",
@@ -225,14 +239,14 @@ def checkModel(doc, output):
 
 
 class ModelChecker(PreflightTestCase):
-    """
-    Revit model quality check
-    The QC tools returns you with the following data:
-        - Table of all elements by workset including category name, element name and element id
-        - Element count per workset donut chart
-    """
-
-    name = "Elements per Worksets check"
+    __metaclass__ = DocstringMeta
+    _docstring_key = "CheckDescription_ElementsPerWorksets"
+    
+    @property
+    def name(self):
+        from check_translations import get_check_translation
+        return get_check_translation("CheckName_ElementsPerWorksets")
+    
     author = "Jean-Marc Couffin"
 
     def startTest(self, doc, output):
@@ -240,5 +254,6 @@ class ModelChecker(PreflightTestCase):
         checkModel(doc, output)
         endtime = timer.get_time()
         endtime_hms = str(datetime.timedelta(seconds=endtime))
-        endtime_hms_claim = "Transaction took " + endtime_hms
+        from check_translations import get_check_translation
+        endtime_hms_claim = "{} {}".format(get_check_translation("TransactionTook"), endtime_hms)
         print(endtime_hms_claim)

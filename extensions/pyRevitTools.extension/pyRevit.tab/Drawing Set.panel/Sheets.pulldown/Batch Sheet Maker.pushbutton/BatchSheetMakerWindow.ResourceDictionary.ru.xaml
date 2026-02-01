@@ -1,0 +1,20 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Массовое создание листов</system:String>
+    
+    <system:String x:Key="InstructionsLine1">Введите список номеров и имен листов в следующем формате:</system:String>
+    <system:String x:Key="SheetNumberLabel">номер-листа</system:String>
+    <system:String x:Key="TAB">TAB</system:String>
+    <system:String x:Key="SheetNameLabel">имя-листа</system:String>
+    <system:String x:Key="SheetNameExample">ИМЯ ЛИСТА</system:String>
+    <system:String x:Key="InstructionsLine2">Несколько листов с одинаковыми именами могут быть перечислены с диапазонами номеров листов:</system:String>
+    <system:String x:Key="RangeOfSheetNumbers">Диапазон номеров листов:</system:String>
+    <system:String x:Key="RangeExample">напр. A103--A106 или A103::A106</system:String>
+    <system:String x:Key="ListOfSheetNumbers">Список номеров листов:</system:String>
+    <system:String x:Key="ListExample">напр. A104,A105 или A104;A105</system:String>
+    
+    <system:String x:Key="CreateSheets">Создать листы</system:String>
+    <system:String x:Key="CreatePlaceholders">Создать заполнители</system:String>
+    <system:String x:Key="CreateButton">Создать</system:String>
+</ResourceDictionary>

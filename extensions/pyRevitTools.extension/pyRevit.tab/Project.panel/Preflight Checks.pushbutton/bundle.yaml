@@ -1,25 +1,38 @@
 title:
-  ru: >-
-    Пред
-    
-    проверки
   en_us: >-
     Preflight
-  
+
     Checks
+  fr_fr: >-
+    Preflight
+
+    Checks
+  ru: >-
+    Пред
+
+    проверки
+  chinese_s: "预检\n检查"
+  es_es: >-
+    Verificaciones
+
+    previas
   de_de: >-
     Modell
-  
+
+    Checks
+  pt_br: >-
+    Preflight
+    
     Checks
 tooltip:
-  ru: Запустить встроенные или настраеваемые предварительные проверки вашей модели.
-  fr_fr: Lance des validations preflight incluses ou personnalisées sur vos fichiers. Shift + click pour configurer loutil la première fois.
   en_us: Run builtin or custom preflight checks on your models. Shift + click to configure the tool the first time.
+  fr_fr: Lance des validations preflight incluses ou personnalisées sur vos fichiers. Shift + click pour configurer loutil la première fois.
+  ru: Запустить встроенные или настраеваемые предварительные проверки вашей модели.
+  chinese_s: 在您的模型上运行内置的或自定义的预检检查。首次使用时，请按 Shift + 单击以配置此工具
+  es_es: Ejecutar verificaciones previas integradas o personalizadas en sus modelos. Shift + clic para configurar la herramienta la primera vez.
   de_de: >-
-    Führe integrierte oder selbst erstellte Modell-Checks ("Preflight-Checks") aus. 
-    Mit der Taste F1 erhält man zu der Funktionalität auf der Hilfe Seite 
-    ausführliche Informationen!
-
+    Führe integrierte oder selbst erstellte Modell-Checks ("Preflight-Checks") aus.  Mit der Taste F1 erhält man zu der Funktionalität auf der Hilfe Seite  ausführliche Informationen!
+  pt_br: Execute preflight checks integradas ou personalizadas em seus modelos. Shift + clique para configurar a ferramenta na primeira vez.
 authors:
   - '{{author}}'
 help_url: https://www.notion.so/pyrevitlabs/Extension-Checks-0cf10ac6717b41f2915fe3341f05a223

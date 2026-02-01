@@ -1,0 +1,34 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Grid Bubble Setup</system:String>
+    <system:String x:Key="HeaderTitle">Grid Bubble Setup</system:String>
+    <system:String x:Key="Subtitle">Configure coordinate system and angle tolerance</system:String>
+    
+    <system:String x:Key="CoordinateSystemHeader">Coordinate System</system:String>
+    <system:String x:Key="AllGrids">All grids</system:String>
+    <system:String x:Key="AllGridsDescription">Toggles all grids in the active view</system:String>
+    <system:String x:Key="TrueNorth">True North</system:String>
+    <system:String x:Key="TrueNorthDescription">Uses true north orientation</system:String>
+    <system:String x:Key="ProjectNorth">Project North</system:String>
+    <system:String x:Key="ProjectNorthDescription">Uses project coordinate system (applies the 'Angle to True North')</system:String>
+    <system:String x:Key="ViewOrientation">View/Scope Box Orientation</system:String>
+    <system:String x:Key="ViewOrientationDescription">Uses current view orientation and scope boxes</system:String>
+    
+    <system:String x:Key="AngleToleranceHeader">Angle Tolerance</system:String>
+    <system:String x:Key="StrictLabel">1° (Strict)</system:String>
+    <system:String x:Key="PermissiveLabel">40° (Permissive)</system:String>
+    <system:String x:Key="HowThisWorks">How this works</system:String>
+    <system:String x:Key="HowThisWorksDescription">Controls how closely grids must align with the chosen coordinate system. Lower values = only straight grids. Higher values = includes angled grids.</system:String>
+    
+    <system:String x:Key="AngleDescription1">Very strict - only perfectly aligned grids</system:String>
+    <system:String x:Key="AngleDescription5">Tight - good for precise grid layouts</system:String>
+    <system:String x:Key="AngleDescription10">Moderate - good for most cases</system:String>
+    <system:String x:Key="AngleDescription15">Relaxed - includes slightly angled grids</system:String>
+    <system:String x:Key="AngleDescription25">Permissive - includes more angled grids</system:String>
+    <system:String x:Key="AngleDescription35">Very permissive - includes most orientations</system:String>
+    <system:String x:Key="AngleDescription40">Maximum tolerance - includes heavily angled grids</system:String>
+    
+    <system:String x:Key="Cancel">Cancel</system:String>
+    <system:String x:Key="Continue">Continue</system:String>
+</ResourceDictionary>

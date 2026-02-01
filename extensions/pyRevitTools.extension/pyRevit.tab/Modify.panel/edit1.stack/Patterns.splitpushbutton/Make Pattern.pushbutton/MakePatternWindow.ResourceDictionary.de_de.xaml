@@ -1,0 +1,26 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Muster Erstellen</system:String>
+    
+    <system:String x:Key="EnterNewPatternName">Neuen Musternamen Eingeben</system:String>
+    <system:String x:Key="SelectPatternToExport">Zu Exportierendes Muster Auswählen</system:String>
+    
+    <system:String x:Key="ExportPATFile">PAT-Datei Exportieren</system:String>
+    <system:String x:Key="CreatePattern">Muster Erstellen</system:String>
+    <system:String x:Key="NoLineworkSelected">Keine Linien Ausgewählt</system:String>
+    <system:String x:Key="IncompatibleViewType">Inkompatibler Ansichtstyp</system:String>
+    
+    <system:String x:Key="ResolverOptions">Auflösungsoptionen</system:String>
+    <system:String x:Key="CreateFilledRegion">Gefüllte Region Erstellen</system:String>
+    <system:String x:Key="UseHighestResolution">Höchste Auflösung Verwenden</system:String>
+    <system:String x:Key="CapturedViewScale">Erfasste Ansichtsmaßstab</system:String>
+    <system:String x:Key="ScaleMultiplier">Maßstabsmultiplikator</system:String>
+    <system:String x:Key="RotationInDegrees">Rotation (in Grad)</system:String>
+    <system:String x:Key="FlipHorizontally">Horizontal Spiegeln</system:String>
+    <system:String x:Key="FlipVertically">Vertikal Spiegeln</system:String>
+    
+    <system:String x:Key="PatternType">Mustertyp</system:String>
+    <system:String x:Key="DetailPattern">Detailmuster</system:String>
+    <system:String x:Key="ModelPattern">Modellmuster</system:String>
+</ResourceDictionary>

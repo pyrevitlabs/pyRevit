@@ -1,25 +1,37 @@
 title:
-  ru: Навигатор Секущей Коробки
-  fr_fr: Navigateur de Zone de Coupe
   en_us: SectionBox Navigator
+  fr_fr: Navigateur de Zone de Coupe
+  ru: Навигатор Секущей Коробки
+  chinese_s: 剖面框导航器
+  es_es: Navegador de caja de sección
   de_de: Schnittbox-Navigator
+  pt_br: Navegador de Caixa de Corte
 tooltip:
-  ru: |
-    Модальное окно для управления секущими коробками в 3D видах.
-    Быстрое перемещение границ по уровням, точная настройка, расширение/сжатие.
-    Предварительный просмотр изменений при наведении курсора.
-  fr_fr: |
-    Fenêtre modale pour gérer les zones de coupe dans les vues 3D.
-    Alignement rapide sur les niveaux, ajustements précis, expansion/réduction.
-    Aperçu des modifications au survol de la souris.
   en_us: |
     Modeless window for section box navigation in 3D views.
     Quickly snap boundaries to levels, nudge precisely, expand/shrink uniformly.
     Real-time preview on hover shows changes before applying.
+  fr_fr: |
+    Fenêtre modale pour gérer les zones de coupe dans les vues 3D.
+    Alignement rapide sur les niveaux, ajustements précis, expansion/réduction.
+    Aperçu des modifications au survol de la souris.
+  ru: |
+    Модальное окно для управления секущими коробками в 3D видах.
+    Быстрое перемещение границ по уровням, точная настройка, расширение/сжатие.
+    Предварительный просмотр изменений при наведении курсора.
+  chinese_s: "用于在三维视图中导航剖面框的无模式窗口。\n快速将边界捕捉到标高，精确微调，均匀扩展/收缩。\n悬停时可实时预览更改效果，然后再应用。"
+  es_es: |
+    Ventana no modal para navegación de caja de sección en vistas 3D.
+    Ajuste rápido de límites a niveles, ajuste preciso, expandir/contraer uniformemente.
+    Vista previa en tiempo real al pasar el mouse muestra los cambios antes de aplicarlos.
   de_de: |
     Abgelöstes Fenster zur Navigation von Schnittboxen in 3D-Ansichten.
     Schnelles Ausrichten an Ebenen, präzises Verschieben, gleichmäßiges Erweitern/Verkleinern.
     Echtzeitvorschau beim Überfahren zeigt Änderungen vor dem Anwenden.
+  pt_br: |-
+    Janela não modal para navegação da caixa de corte em vistas 3D. Ajuste rapidamente os limites 
+    aos níveis, utilize o deslocamento preciso (nudge) e expanda ou reduza uniformemente. 
+    A visualização em tempo real ao passar o cursor (hover) mostra as alterações antes da aplicação.
 author: wurschdhaud
 context:
   - active-3d-view

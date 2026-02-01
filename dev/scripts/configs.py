@@ -31,7 +31,7 @@ LABS_CLI = op.join(DEVPATH, "pyRevitLabs/pyRevitClI/pyRevitCLI.csproj")
 LABS_DOCTOR = op.join(DEVPATH, "pyRevitLabs/pyRevitDoctor/pyRevitDoctor.csproj")
 DEFAULT_IPY = op.join(DEVPATH, "modules/pyRevitLabs.IronPython2.sln")
 LOADERS = op.join(DEVPATH, "pyRevitLoader/pyRevitLoader.sln")
-CPYTHONRUNTIME = op.join(DEVPATH, "modules/pyRevitLabs.Python.Net.sln")
+CPYTHONRUNTIME = op.join(DEVPATH, "modules/pyRevitLabs.Python.Net/src/runtime/Python.Runtime.csproj")
 DIRECTORY_BUILD_PROPS = op.join(DEVPATH, "Directory.Build.props")
 
 # pyRevit deps
@@ -78,6 +78,12 @@ PYREVIT_MODULE_PATH = op.join(PYREVIT_LIBS_PATH, "pyrevit")
 # the relative source paths defined inside the api file and fails
 PYREVIT_UPGRADE_CODE = "92cd1cdd-85c6-438f-ad0a-67b08d59cc41"
 PYREVIT_CLI_UPGRADE_CODE = "618520c4-0c3a-4e8d-8e8a-b74db3f3592b"
+
+# Stable product codes for Inno Setup installers
+# These GUIDs must match the AppId values defined in the .iss files
+# They should never change to ensure proper version detection and upgrade behavior
+PYREVIT_INNO_PRODUCT_CODE = "f2a3da53-6f34-41d5-abbd-389ffa7f4d5f"
+PYREVIT_CLI_INNO_PRODUCT_CODE = "9557b432-cf79-4ece-91cf-b8f996c88b47"
 
 DISTRIBUTE_PATH = op.join(ROOT, "dist")
 RELEASE_PATH = op.join(ROOT, "release")

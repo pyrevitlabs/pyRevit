@@ -174,6 +174,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
             SetVariable(builtins, "__eventsender__", runtime.ScriptRuntimeConfigs.EventSender);
             SetVariable(builtins, "__eventargs__", runtime.ScriptRuntimeConfigs.EventArgs);
 
+            if (runtime.ScriptRuntimeConfigs?.Variables != null) {
+                foreach (var variable in runtime.ScriptRuntimeConfigs.Variables) {
+                    SetVariable(builtins, variable.Key, variable.Value);
+                }
+            }
+
             module.SetBuiltins(builtins);
         }
 

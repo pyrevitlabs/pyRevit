@@ -311,10 +311,76 @@ def create_revision_sheetset(revisions,
 
 
 def load_family(family_file, doc=None):
+    """
+    Loads Family from specified file
+
+    Args:
+        family_file (str): Required. Fully qualified filename of the Family file, usually ending in .rfa.
+        doc (DB.Document): Optional. If not specified DOCS.doc used.
+
+    Returns:
+        list[DB.FamilySymbol]: list of all Family symbols. Returns symbols whether the family
+        was just loaded or already existed in the document. Returns empty list only if the
+        family file cannot be loaded and the family is not found in the document.
+
+    WARNING! This function MUST be used within a transaction!
+
+    Changed:
+        Previously returned bool (True on success, False on failure).
+        Now returns list[DB.FamilySymbol] (non-empty list on success, empty list on failure).
+        The return value is still truthy/falsy compatible for boolean checks.
+        
+        Improved behavior: If family is already loaded, the function now retrieves and returns
+        the existing family's symbols instead of returning an empty list.
+
+    Example:
+        from pyrevit.revit.db import create, transaction
+        
+        family_path = r"C:\\Families\\MyFamily.rfa"
+        with transaction.Transaction('Load Family'):
+            symbols = create.load_family(family_path)
+            if symbols:
+                print("Found {} symbol(s)".format(len(symbols)))
+                for symbol in symbols:
+                    print("  - {}".format(symbol.Family.Name))
+            else:
+                print("Family file not found or failed to load")
+
+    """
     doc = doc or DOCS.doc
-    mlogger.debug('Loading family from: %s', family_file)
     ret_ref = clr.Reference[DB.Family]()
-    return doc.LoadFamily(family_file, FamilyLoaderOptionsHandler(), ret_ref)
+    mlogger.debug('Loading family from: %s', family_file)
+
+    fam_symbols = []
+
+    res = doc.LoadFamily(family_file, FamilyLoaderOptionsHandler(), ret_ref)
+
+    if not res:
+        # Family may already be loaded - check if ret_ref has the family
+        if ret_ref.Value:
+            fam = ret_ref.Value
+            mlogger.debug("Family already loaded, retrieving symbols from document: %s", family_file)
+        else:
+            # Try to find existing family by name from file path
+            family_name = coreutils.get_file_name(family_file)
+            mlogger.debug("Family may already be loaded, attempting to retrieve by name: %s", family_name)
+            existing_families = query.get_family(family_name, doc=doc)
+            if existing_families:
+                # Get symbols from the first matching family
+                # get_family returns FamilySymbol elements, which is what we need
+                return list(existing_families)
+            else:
+                mlogger.debug("Cannot load Family from file=%s and family not found in document.", family_file)
+                return fam_symbols
+    else:
+        fam = ret_ref.Value
+
+    # Collect symbols from the family
+    for fam_symbol_id in fam.GetFamilySymbolIds():
+        fam_symbol = doc.GetElement(fam_symbol_id)
+        if fam_symbol:
+            fam_symbols.append(fam_symbol)
+    return fam_symbols
 
 
 def enable_worksharing(levels_workset_name='Shared Levels and Grids',

@@ -1,0 +1,120 @@
+{
+  "script": {
+    "en_us": {
+      "Worksharing.Enable.Message": "The document doesn't have worksharing enabled.\nEnable it?",
+      "Worksharing.Enable.Options": ["Yes", "No"],
+      "Worksharing.Enable.Error": "The script cannot run in a document without worksharing.",
+      "Worksharing.Enable.Error.Title": "The script has stopped",
+      "Transaction.Name": "Create Workset(s) for linked model(s)",
+      "Alert.NoLinksFound.Message": "No links found in the document.",
+      "Alert.SelectOne.Message": "At least one linked element must be selected."
+    },
+    "fr_fr": {
+      "Worksharing.Enable.Message": "Le partage de projet n'est pas activé pour ce document.\nL'activer ?",
+      "Worksharing.Enable.Options": ["Oui", "Non"],
+      "Worksharing.Enable.Error": "Le script ne peut pas s'exécuter dans un document sans partage de projet.",
+      "Worksharing.Enable.Error.Title": "Le script s'est arrêté",
+      "Transaction.Name": "Créer des sous-projets pour les modèles liés",
+      "Alert.NoLinksFound.Message": "Aucun lien trouvé dans le document.",
+      "Alert.SelectOne.Message": "Au moins un élément lié doit être sélectionné."
+    },
+    "ru": {
+      "Worksharing.Enable.Message": "Документ без совместной работы.\nВключить её?",
+      "Worksharing.Enable.Options": ["Да", "Нет"],
+      "Worksharing.Enable.Error": "Скрипт не может работать в документе без совместной работы.",
+      "Worksharing.Enable.Error.Title": "Скрипт остановлен",
+      "Transaction.Name": "Создание рабочих наборов для связанных моделей",
+      "Alert.NoLinksFound.Message": "В документе нет связанных файлов.",
+      "Alert.SelectOne.Message": "Необходимо выбрать хотя бы один элемент связи."
+    },
+    "chinese_s": {
+      "Worksharing.Enable.Message": "文档未启用工作共享。\n要启用它吗？",
+      "Worksharing.Enable.Options": ["是", "否"],
+      "Worksharing.Enable.Error": "该脚本无法在没有工作共享的文档中运行。",
+      "Worksharing.Enable.Error.Title": "脚本已停止",
+      "Transaction.Name": "为链接模型创建工作集",
+      "Alert.NoLinksFound.Message": "在文档中找不到链接。",
+      "Alert.SelectOne.Message": "必须至少选择一个链接元素。"
+    },
+    "es_es": {
+      "Worksharing.Enable.Message": "El documento no tiene activada la compartición de proyecto.\n¿Activarla?",
+      "Worksharing.Enable.Options": ["Sí", "No"],
+      "Worksharing.Enable.Error": "El script no puede ejecutarse en un documento sin compartición de proyecto.",
+      "Worksharing.Enable.Error.Title": "El script se ha detenido",
+      "Transaction.Name": "Crear subproyectos para modelos vinculados",
+      "Alert.NoLinksFound.Message": "No se encontraron vínculos en el documento.",
+      "Alert.SelectOne.Message": "Se debe seleccionar al menos un elemento vinculado."
+    },
+    "de_de": {
+      "Worksharing.Enable.Message": "Die Bearbeitungsbereiche sind für das Dokument nicht aktiviert.\nAktivieren?",
+      "Worksharing.Enable.Options": ["Ja", "Nein"],
+      "Worksharing.Enable.Error": "Das Skript kann nicht in einem Dokument ohne Bearbeitungsbereiche ausgeführt werden.",
+      "Worksharing.Enable.Error.Title": "Das Skript wurde angehalten",
+      "Transaction.Name": "Bearbeitungsbereiche für verknüpfte Modelle erstellen",
+      "Alert.NoLinksFound.Message": "Keine Verknüpfungen im Dokument gefunden.",
+      "Alert.SelectOne.Message": "Es muss mindestens ein verknüpftes Element ausgewählt werden."
+    }
+  },
+  "config": {
+    "en_us": {
+      "Options.WindowTitle": "Select Options",
+      "Options.Select.Button": "Save Selection",
+      "Options.SetTypeWorkset.Text": "Set Workset for Type",
+      "Options.SetAll.Text": "Collect all Links",
+      "Options.CustomPrefixRvt.Text": "Custom Prefix for RVT",
+      "Options.CustomPrefixDwg.Text": "Custom Prefix for DWG",
+      "PrefixRvt.Prompt": "Pick a Prefix for RVTs",
+      "PrefixDwg.Prompt": "Pick a Prefix for DWGs"
+    },
+    "fr_fr": {
+      "Options.WindowTitle": "Sélectionner les options",
+      "Options.Select.Button": "Enregistrer la sélection",
+      "Options.SetTypeWorkset.Text": "Définir le sous-projet pour le type",
+      "Options.SetAll.Text": "Collecter tous les liens",
+      "Options.CustomPrefixRvt.Text": "Préfixe personnalisé pour RVT",
+      "Options.CustomPrefixDwg.Text": "Préfixe personnalisé pour DWG",
+      "PrefixRvt.Prompt": "Choisissez un préfixe pour les RVT",
+      "PrefixDwg.Prompt": "Choisissez un préfixe pour les DWG"
+    },
+    "ru": {
+      "Options.WindowTitle": "Выберите параметры",
+      "Options.Select.Button": "Сохранить выбор",
+      "Options.SetTypeWorkset.Text": "Назначить рабочий набор и для типоразмера связи",
+      "Options.SetAll.Text": "Применить ко всем связям",
+      "Options.CustomPrefixRvt.Text": "Пользовательский префикс для RVT",
+      "Options.CustomPrefixDwg.Text": "Пользовательский префикс для DWG",
+      "PrefixRvt.Prompt": "Выберите префикс для RVT",
+      "PrefixDwg.Prompt": "Выберите префикс для DWG"
+    },
+    "chinese_s": {
+      "Options.WindowTitle": "选择选项",
+      "Options.Select.Button": "保存选择",
+      "Options.SetTypeWorkset.Text": "为类型设置工作集",
+      "Options.SetAll.Text": "收集所有链接",
+      "Options.CustomPrefixRvt.Text": "RVT 的自定义前缀",
+      "Options.CustomPrefixDwg.Text": "DWG 的自定义前缀",
+      "PrefixRvt.Prompt": "为 RVT 选择一个前缀",
+      "PrefixDwg.Prompt": "为 DWG 选择一个前缀"
+    },
+    "es_es": {
+      "Options.WindowTitle": "Seleccionar opciones",
+      "Options.Select.Button": "Guardar selección",
+      "Options.SetTypeWorkset.Text": "Establecer subproyecto para tipo",
+      "Options.SetAll.Text": "Recopilar todos los vínculos",
+      "Options.CustomPrefixRvt.Text": "Prefijo personalizado para RVT",
+      "Options.CustomPrefixDwg.Text": "Prefijo personalizado para DWG",
+      "PrefixRvt.Prompt": "Elija un prefijo para los RVT",
+      "PrefixDwg.Prompt": "Elija un prefijo para los DWG"
+    },
+    "de_de": {
+      "Options.WindowTitle": "Optionen auswählen",
+      "Options.Select.Button": "Auswahl speichern",
+      "Options.SetTypeWorkset.Text": "Bearbeitungsbereich für Typ festlegen",
+      "Options.SetAll.Text": "Alle Verknüpfungen sammeln",
+      "Options.CustomPrefixRvt.Text": "Benutzerdefiniertes Präfix für RVT",
+      "Options.CustomPrefixDwg.Text": "Benutzerdefiniertes Präfix für DWG",
+      "PrefixRvt.Prompt": "Wählen Sie ein Präfix für RVTs",
+      "PrefixDwg.Prompt": "Wählen Sie ein Präfix für DWGs"
+    }
+  }
+}

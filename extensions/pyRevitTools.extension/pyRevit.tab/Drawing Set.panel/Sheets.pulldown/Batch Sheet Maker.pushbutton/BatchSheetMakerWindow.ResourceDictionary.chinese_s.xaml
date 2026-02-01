@@ -1,0 +1,20 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">批量创建图纸</system:String>
+    
+    <system:String x:Key="InstructionsLine1">按以下格式输入图纸编号和名称列表：</system:String>
+    <system:String x:Key="SheetNumberLabel">图纸编号</system:String>
+    <system:String x:Key="TAB">TAB</system:String>
+    <system:String x:Key="SheetNameLabel">图纸名称</system:String>
+    <system:String x:Key="SheetNameExample">图纸名称</system:String>
+    <system:String x:Key="InstructionsLine2">具有相同名称的多个图纸可以使用图纸编号范围列出：</system:String>
+    <system:String x:Key="RangeOfSheetNumbers">图纸编号范围：</system:String>
+    <system:String x:Key="RangeExample">例如：A103--A106 或 A103::A106</system:String>
+    <system:String x:Key="ListOfSheetNumbers">图纸编号列表：</system:String>
+    <system:String x:Key="ListExample">例如：A104,A105 或 A104;A105</system:String>
+    
+    <system:String x:Key="CreateSheets">创建图纸</system:String>
+    <system:String x:Key="CreatePlaceholders">创建占位符</system:String>
+    <system:String x:Key="CreateButton">创建</system:String>
+</ResourceDictionary>

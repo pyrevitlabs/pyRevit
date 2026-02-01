@@ -1,0 +1,299 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="AuthorLabel">Author</system:String>
+    <system:String x:Key="ExtensionLabel">Extension</system:String>
+    <system:String x:Key="SelectPreflightCheckTitle">Select Preflight Check</system:String>
+    <system:String x:Key="RunCheckButton">Run Check</system:String>
+    
+    <!-- Check Names -->
+    <system:String x:Key="CheckName_GridsDataLister">Grids Data Lister</system:String>
+    <system:String x:Key="CheckName_LevelsDataLister">Levels Data Lister</system:String>
+    <system:String x:Key="CheckName_ReferencePlanLister">Reference Plan Lister</system:String>
+    <system:String x:Key="CheckName_SchedulesNotOnSheet">Schedules not on sheet lister</system:String>
+    <system:String x:Key="CheckName_ElementsPerWorksets">Elements per Worksets check</system:String>
+    <system:String x:Key="CheckName_10MileRadar">10 Mile Radar</system:String>
+    <system:String x:Key="CheckName_ModelChecker">Model Checker</system:String>
+    <system:String x:Key="CheckName_RVTLinksWarnings">RVTLinks warnings</system:String>
+    <system:String x:Key="CheckName_AuditAll">Audit All (Including Links)</system:String>
+    <system:String x:Key="CheckName_CADAudit">CAD Audit</system:String>
+    <system:String x:Key="CheckName_NamingConvention">Naming Convention</system:String>
+    
+    <!-- Check Descriptions (Docstrings) -->
+    <system:String x:Key="CheckDescription_GridsDataLister">List grids, if they are pinned, scoped boxed, or named
+
+This QC tools returns you with the following data:
+    Grids count, name, type, pinned status</system:String>
+    <system:String x:Key="CheckDescription_LevelsDataLister">List levels, if they are pinned, scoped boxed, or named and its elevation.
+
+This QC tools returns you with the following data:
+    Levels count, name, type, pinned status, scope box, and elevation.</system:String>
+    <system:String x:Key="CheckDescription_ReferencePlanLister">List all reference planes in the model
+This QC tools returns you with the following data:
+    Reference planes count, link to, name</system:String>
+    <system:String x:Key="CheckDescription_SchedulesNotOnSheet">List all schedules not placed on a sheet
+This QC tools returns you with the following data:
+    Type, Id + link and Schedule name with the ability to click on the link to open the schedule</system:String>
+    <system:String x:Key="CheckDescription_ElementsPerWorksets">Revit model quality check
+The QC tools returns you with the following data:
+    - Table of all elements by workset including category name, element name and element id
+    - Element count per workset donut chart</system:String>
+    <system:String x:Key="CheckDescription_10MileRadar">Checks the extents of all elements in the model.
+This Model Checker swiftly verifies the extents of the Revit model. 
+Placing model extents more than 10 Mi (16KM) from the project's 
+internal origin can lead to issues with accuracy, tolerance, 
+performance, and viewport display. This check ensures that the 
+model remains within a 10-mile radius of the internal origin.
+
+The test case examines the following, reporting extents 
+concerning the project's internal origin. The script prioritizes 
+based on the assumption that most model extent issues are
+related to the following:
+
+    - The distance between project basepoint and internal origin
+    - The distance between survey point and  internal origin
+    - The bounding box of the 3D view
+    - The bounding box of the design option objects
+    - The bounding box of the CAD and RVT links
+    - The bounding box of all elements in the model</system:String>
+    <system:String x:Key="CheckDescription_ModelChecker">Revit model quality check
+The QC tools returns you with the following data:
+    Revit file: Name and Project Information
+    Revit links: list, count and pinned status
+    Views: number, number of copied views, number of views not on sheet
+    Schedules: number and not on sheet number
+    Sheets: number
+    Warnings: Total number, Critical warnings list based on predefined list of critical warnings
+    Materials count
+    Line patterns count
+    DWGs: Imported count, linked count, dwgs in 3D count
+    Loadable families: count, in place family count, non parametric families count
+    Text notes: with factor changed count, all caps text notes count
+    System families: ramps count, architectural columns count, elements with analytical model option enabled
+    Groups: detail group types count, detail group instances count, model group types count, model groups instances count
+    Reference planes: not named count, ref planes count
+    Elements count
+    Phases: list of phases for current document and linked files</system:String>
+    <system:String x:Key="CheckDescription_RVTLinksWarnings">Revit links Quality control - Warnings
+    Warnings in linked files:
+    - Description,
+    - Ids,
+    - Count
+
+    !! Revit 2018 + only !!
+    !!Load links before using!!</system:String>
+    <system:String x:Key="CheckDescription_AuditAll">Preflight audit of all models, including linked models.
+!!Links must be loaded.!!
+This QC tools returns the following data:
+- project name, number, client, phases, worksets
+- element count
+- purgeable elements count
+- all warnings count
+- critical warnings count
+- rvtlinks count
+- activated analytical model elements count
+- rooms count
+- unplaced rooms count
+- unbounded rooms count
+- sheets count
+- views count per ViewType
+- views not on sheets
+- schedules not sheeted count
+- copied views count
+- view templates count
+- unused view templates count
+- filters count
+- unused view filters count
+- materials count
+- line patterns count
+- dwgs count
+- linked dwg count
+- imported dwg count
+- inplace family count
+- not parametric families count
+- family count
+- imports subcats count
+- generic models types count
+- detail components count
+- text notes types count
+- text notes types with width factor != 1
+- text notes count
+- text notes with allCaps applied
+- text notes with solid background
+- detail groups count
+- detail groups types count
+- model group count
+- model group type count
+- reference planes count
+- unnamed reference planes count
+- detail lines count
+- dimension types count
+- dimension count
+- dimension overrides count
+- revision clouds count</system:String>
+    <system:String x:Key="CheckDescription_CADAudit">Preflight audit of imported and linked CAD
+This QC tools returns the following data:
+    CAD link instance and type information
+
+    Quality control includes information and alerts for:
+      The status of links (Loaded, Not found, Unloaded...)
+      Whether a CAD is on a model workplane or just a single view
+      Whether a CAD is linked or imported
+      Whether CADs have been duplicated
+      The CAD's shared location name
+
+      Feature: The output allows navigating to the found CADs</system:String>
+    <system:String x:Key="CheckDescription_NamingConvention">Verifies whether family type names conform to a specified list,
+as defined by a wall type list within Revit.</system:String>
+    
+    <!-- Common Output Strings -->
+    <system:String x:Key="GridsDataLister">Grids Data Lister</system:String>
+    <system:String x:Key="LevelsDataLister">Levels Data Lister</system:String>
+    <system:String x:Key="NumberOfGrids">Number of grids</system:String>
+    <system:String x:Key="NumberOfLevels">Number of levels</system:String>
+    <system:String x:Key="Grids">Grids</system:String>
+    <system:String x:Key="Levels">Levels</system:String>
+    <system:String x:Key="Name">Name</system:String>
+    <system:String x:Key="Type">Type</system:String>
+    <system:String x:Key="Pinned">Pinned</system:String>
+    <system:String x:Key="ScopeBox">Scope Box</system:String>
+    <system:String x:Key="Elevation">Elevation</system:String>
+    <system:String x:Key="ReferencePlanes">Reference planes</system:String>
+    <system:String x:Key="ReferencePlanesCount">Reference planes:</system:String>
+    <system:String x:Key="SchedulesNotOnSheets">SCHEDULES NOT ON ANY SHEETS</system:String>
+    <system:String x:Key="TransactionTook">Transaction took</system:String>
+    <system:String x:Key="NameLabel">NAME:</system:String>
+    <system:String x:Key="IdLabel">ID:</system:String>
+    <system:String x:Key="TypeLabel">TYPE:</system:String>
+    <system:String x:Key="WorksetName">Workset Name</system:String>
+    <system:String x:Key="ElementCategory">Element Category</system:String>
+    <system:String x:Key="ElementName">Element Name</system:String>
+    <system:String x:Key="ElementId">Element Id</system:String>
+    <system:String x:Key="ElementCountByWorkset">Element Count by Workset</system:String>
+    
+    <!-- Radar Check Strings -->
+    <system:String x:Key="RadarCheckingModelPlacement">Checking model placement and coordinates</system:String>
+    <system:String x:Key="RadarBasePointMoreThan">Base Point is more than</system:String>
+    <system:String x:Key="RadarSurveyPointMoreThan">Survey Point is more than</system:String>
+    <system:String x:Key="RadarSurveyPointLessThan">Survey Point is less than</system:String>
+    <system:String x:Key="RadarProjectBasePointCoords">Project Base Point Coordinates to Internal Origin</system:String>
+    <system:String x:Key="RadarSurveyPointCoords">Survey Point Coordinates to Internal Origin</system:String>
+    <system:String x:Key="RadarBaseToSurveyDeltaX">Project Base Point to Survey Delta X</system:String>
+    <system:String x:Key="RadarBaseToSurveyDeltaY">Project Base Point to Survey Delta Y</system:String>
+    <system:String x:Key="RadarPlanarDistance">Planar Distance between Base Point and Survey Point</system:String>
+    <system:String x:Key="RadarTotalDistance">Total Distance between Base Point and Survey Point</system:String>
+    <system:String x:Key="RadarProjectElevation">Project Elevation (Base Point Vertical Distance)</system:String>
+    <system:String x:Key="RadarProjectCoordinates">Project Coordinates and Distances</system:String>
+    <system:String x:Key="RadarPoints">Points</system:String>
+    <system:String x:Key="RadarChecking3DViewBBox">Checking the extents of the 3D view bounding box</system:String>
+    <system:String x:Key="Radar3DViewBBoxMoreThan">3D View Bounding Box extends more than</system:String>
+    <system:String x:Key="Radar3DViewBBoxLessThan">3D View Bounding Box is located less than</system:String>
+    <system:String x:Key="RadarCheckingDesignOptions">Checking the extents of the design option objects</system:String>
+    <system:String x:Key="RadarDesignOptionsMoreThan">Design Option Objects are located more than</system:String>
+    <system:String x:Key="RadarShowingFirst10">Showing the first 10 objects</system:String>
+    <system:String x:Key="RadarManualInvestigation">Manual investigation is required</system:String>
+    <system:String x:Key="RadarAllObjectsLessThan">All Objects are located less than</system:String>
+    <system:String x:Key="RadarCheckingCADRVT">Checking the extents of the CAD and RVT links</system:String>
+    <system:String x:Key="RadarAllCADRVTLessThan">All CAD and RVT Links are located less than</system:String>
+    <system:String x:Key="RadarDistantObjectsDetected">Distant objects are still being detected!</system:String>
+    <system:String x:Key="RadarFurtherAnalysis">Further Analysis Required.</system:String>
+    <system:String x:Key="RadarCheckingEverything">Checking everything, It is going to take a while.</system:String>
+    <system:String x:Key="RadarPleaseBePatient">Please be patient.</system:String>
+    <system:String x:Key="RadarElementsMoreThan">Elements below are located more than</system:String>
+    <system:String x:Key="RadarAllTestsCompleted">All tests completed, Review the results above.</system:String>
+    <system:String x:Key="Radar10MilesAway">10 Mi (16KM) away from the Internal Origin.</system:String>
+    <system:String x:Key="RadarNoObjectInDesignOption">No object in any design option is located more than</system:String>
+    <system:String x:Key="RadarIsPartOf">Is part of</system:String>
+    <system:String x:Key="RadarXYZCoordinates">XYZ Coordinates</system:String>
+    <system:String x:Key="RadarDistance">Distance</system:String>
+    <system:String x:Key="RadarAngle">ANGLE (°)</system:String>
+    
+    <!-- Model Checker Strings -->
+    <system:String x:Key="ModelCheckerTitle">MODEL CHECKER</system:String>
+    <system:String x:Key="ModelCheckerRVTFile">RVT File</system:String>
+    <system:String x:Key="ModelCheckerRVTLinks">RVT Links</system:String>
+    <system:String x:Key="ModelCheckerNoLinks">No links</system:String>
+    <system:String x:Key="ModelCheckerInstanceFileName">Instance File Name</system:String>
+    <system:String x:Key="ModelCheckerInstanceName">Instance Name</system:String>
+    <system:String x:Key="ModelCheckerPinnedStatus">Pinned status</system:String>
+    <system:String x:Key="ModelCheckerViews">Views</system:String>
+    <system:String x:Key="ModelCheckerViewTemplates">View Templates</system:String>
+    <system:String x:Key="ModelCheckerSchedules">Schedules</system:String>
+    <system:String x:Key="ModelCheckerSheets">Sheets</system:String>
+    <system:String x:Key="ModelCheckerWarnings">Warnings</system:String>
+    <system:String x:Key="ModelCheckerNoWarnings">No warnings, good job!</system:String>
+    <system:String x:Key="ModelCheckerMaterials">Materials</system:String>
+    <system:String x:Key="ModelCheckerLinePatterns">Line patterns</system:String>
+    <system:String x:Key="ModelCheckerDWGs">DWGs</system:String>
+    <system:String x:Key="ModelCheckerLoadableFamilies">Loadable Families</system:String>
+    <system:String x:Key="ModelCheckerTextNotes">Text Notes</system:String>
+    <system:String x:Key="ModelCheckerSystemFamilies">System Families</system:String>
+    <system:String x:Key="ModelCheckerGroups">Groups</system:String>
+    <system:String x:Key="ModelCheckerReferencePlanes">Reference Planes</system:String>
+    <system:String x:Key="ModelCheckerPhases">Phases</system:String>
+    <system:String x:Key="ModelCheckerElementsCount">Elements count</system:String>
+    <system:String x:Key="ModelCheckerNotSavedFile">Not saved file</system:String>
+    
+    <!-- Model Checker Warnings Strings -->
+    <system:String x:Key="RVTLinksWarningChecker">RVTV Links - Warning checker</system:String>
+    <system:String x:Key="RVTLinksWarningsCount">Warnings count</system:String>
+    <system:String x:Key="RVTLinksWarningsDetails">Warnings details</system:String>
+    <system:String x:Key="RVTLinksFileName">File Name</system:String>
+    <system:String x:Key="RVTLinksWarningsCountLabel">Warnings count</system:String>
+    <system:String x:Key="RVTLinksWarningsLabel">Warnings</system:String>
+    <system:String x:Key="RVTLinksIds">Ids</system:String>
+    <system:String x:Key="RVTLinksLoadAllLinks">Load all the links, the tool is meant for models with loaded links</system:String>
+    <system:String x:Key="RVTLinksLoadAtLeastOne">Load at least one link, the tool is meant for models with loaded links</system:String>
+    
+    <!-- Audit All Strings -->
+    <system:String x:Key="AuditAllMainFileInfos">Main File Infos</system:String>
+    <system:String x:Key="AuditAllLinkedFilesInfos">Linked Files Infos</system:String>
+    <system:String x:Key="AuditAllProjectName">Project Name</system:String>
+    <system:String x:Key="AuditAllProjectNumber">Project Number</system:String>
+    <system:String x:Key="AuditAllClientName">Client Name</system:String>
+    <system:String x:Key="AuditAllProjectPhases">Project Phases</system:String>
+    <system:String x:Key="AuditAllWorksets">Worksets</system:String>
+    <system:String x:Key="AuditAllLinkedFileName">Linked File Name</system:String>
+    <system:String x:Key="AuditAllLoadedStatus">Loaded Status</system:String>
+    <system:String x:Key="AuditAllLinks">Links</system:String>
+    <system:String x:Key="AuditAllLinksNotPinned">Links not pinned</system:String>
+    
+    <!-- CAD Audit Strings -->
+    <system:String x:Key="CADAuditInstances">Audit CAD instances:</system:String>
+    <system:String x:Key="CADAuditInProject">in this project</system:String>
+    <system:String x:Key="CADAuditInActiveView">in only the active view</system:String>
+    <system:String x:Key="CADAuditCancel">CANCEL</system:String>
+    <system:String x:Key="CADAuditOK">OK</system:String>
+    <system:String x:Key="CADAuditTitle">Audit of CAD instances in the current project</system:String>
+    <system:String x:Key="CADAuditNoInstances">No CAD instances found</system:String>
+    <system:String x:Key="CADAuditSelect">Select</system:String>
+    <system:String x:Key="CADAuditPreflightAudit">Preflight audit of imported and linked CAD</system:String>
+    <system:String x:Key="CADAuditNo">No</system:String>
+    <system:String x:Key="CADAuditSelectZoom">Select/Zoom</system:String>
+    <system:String x:Key="CADAuditDWGInstance">DWG instance</system:String>
+    <system:String x:Key="CADAuditLoadedStatus">Loaded status</system:String>
+    <system:String x:Key="CADAuditWorkplaneOrView">Workplane or single view</system:String>
+    <system:String x:Key="CADAuditDuplicate">Duplicate</system:String>
+    <system:String x:Key="CADAuditCreatorUser">Creator user</system:String>
+    <system:String x:Key="CADAuditLocationSiteName">Location site name</system:String>
+    <system:String x:Key="CADAuditInstancesFound">CAD instances found.</system:String>
+    <system:String x:Key="CADAuditCheckRunOn">The check was run on</system:String>
+    <system:String x:Key="CADAuditActiveView">the active view</system:String>
+    <system:String x:Key="CADAuditWholeModel">the whole model</system:String>
+    <system:String x:Key="CADAuditExplanations">Explanations for warnings</system:String>
+    <system:String x:Key="CADAuditLoadedStatusExplanation">Loaded status...........: alert if a CAD is imported, rather than linked</system:String>
+    <system:String x:Key="CADAuditWorkplaneExplanation">Workplane or single view: alert if a CAD is placed on a single view with the option 'active view only' rather than on a model workplane</system:String>
+    <system:String x:Key="CADAuditDuplicateExplanation">Duplicate...............: alert if a CAD is placed more than once (whether linked or imported) in case it is unintentinal</system:String>
+    <system:String x:Key="CADAuditCheckDuration">Check duration</system:String>
+    <system:String x:Key="CADAuditShowView">Show the view</system:String>
+    
+    <!-- Naming Convention Strings -->
+    <system:String x:Key="NamingConventionReport">Model Naming Convention Report</system:String>
+    <system:String x:Key="NamingConventionWallCheck">Naming Convention Wall Check</system:String>
+    <system:String x:Key="NamingConventionWallType">Wall Type</system:String>
+    <system:String x:Key="NamingConventionCount">Count</system:String>
+    <system:String x:Key="NamingConventionStatus">Status</system:String>
+    <system:String x:Key="NamingConventionWrongName">Wrong Name</system:String>
+    <system:String x:Key="NamingConventionIncorrectlyNamed">Incorrectly Named Wall Types Found:</system:String>
+    <system:String x:Key="NamingConventionNoFileSelected">No JSON file selected.</system:String>
+</ResourceDictionary>

@@ -5,7 +5,7 @@ import logging
 
 #pylint: disable=W0703,C0302,C0103
 from pyrevit import EXEC_PARAMS, USER_DESKTOP
-from pyrevit.compat import safe_strtype
+from pyrevit.compat import safe_strtype, PY3, IRONPY3
 from pyrevit import PYREVIT_VERSION_APP_DIR, PYREVIT_FILE_PREFIX_STAMPED
 from pyrevit import coreutils
 from pyrevit.coreutils import envvars
@@ -108,7 +108,20 @@ class LoggerWrapper(logging.Logger):
         self._filelogstate = False
         self._curlevel = DEFAULT_LOGGING_LEVEL
 
-    def _log(self, level, msg, args, exc_info=None, extra=None): #pylint: disable=W0221
+    def findCaller(self, stack_info=False, stacklevel=1):
+        """Override findCaller for IronPython 3 compatibility.
+        
+        IronPython 3.4 has issues with stack frame inspection that causes
+        IndexError when the logging module tries to find caller information.
+        This override returns safe default values for IronPython 3.
+        """
+        if IRONPY3:
+            return ("(unknown)", 0, "(unknown)", None)
+        else:
+            return logging.Logger.findCaller(self)
+
+    def _log(self, level, msg, args, exc_info=None, extra=None,
+             stack_info=False, stacklevel=1): #pylint: disable=W0221
         self._has_errors = (self._has_errors or level >= logging.ERROR)
 
         # any report other than logging.INFO level,
@@ -120,20 +133,58 @@ class LoggerWrapper(logging.Logger):
             msg_str = msg_str.replace(op.sep, '/')
         else:
             msg_str = msg
-        logging.Logger._log(self, level, msg_str, args,
-                            exc_info=exc_info, extra=extra)
+        
+        # IronPython 3 has issues with stack frame inspection in logging
+        # Use a custom implementation that bypasses problematic code paths
+        if IRONPY3:
+            # Create LogRecord directly without stack inspection
+            record = logging.LogRecord(
+                self.name, level, "(unknown)", 0, msg_str, args, exc_info,
+                func="(unknown)"
+            )
+            if extra:
+                for key in extra:
+                    record.__dict__[key] = extra[key]
+            # Directly call our callHandlers to avoid logging internals
+            self.callHandlers(record)
+        else:
+            logging.Logger._log(self, level, msg_str, args,
+                                exc_info=exc_info, extra=extra)
 
     def callHandlers(self, record):
         """Override logging.Logger.callHandlers."""
         for hdlr in self.handlers:
-            # stream-handler only records based on current level
-            if isinstance(hdlr, logging.StreamHandler) \
-                    and record.levelno >= self._curlevel:
-                hdlr.handle(record)
-            # file-handler must record everything
-            elif isinstance(hdlr, logging.FileHandler) \
-                    and self._filelogstate:
-                hdlr.handle(record)
+            try:
+                # stream-handler only records based on current level
+                if isinstance(hdlr, logging.StreamHandler) \
+                        and record.levelno >= self._curlevel:
+                    if IRONPY3:
+                        # Direct write for IronPython 3 to avoid handler internals
+                        try:
+                            msg = hdlr.format(record)
+                            hdlr.stream.write(msg + '\n')
+                            hdlr.stream.flush()
+                        except Exception:
+                            pass
+                    else:
+                        hdlr.handle(record)
+                # file-handler must record everything
+                elif isinstance(hdlr, logging.FileHandler) \
+                        and self._filelogstate:
+                    if IRONPY3:
+                        # Direct write for IronPython 3 to avoid handler internals
+                        try:
+                            msg = hdlr.format(record)
+                            hdlr.stream.write(msg + '\n')
+                            hdlr.stream.flush()
+                        except Exception:
+                            pass
+                    else:
+                        hdlr.handle(record)
+            except Exception:
+                # Silently ignore handler errors for IronPython 3
+                if not IRONPY3:
+                    raise
 
     def isEnabledFor(self, level):
         """Override logging.Logger.isEnabledFor."""
@@ -347,7 +398,6 @@ def get_logger(logger_name):
         logger.addHandler(get_stdout_hndlr())
         logger.propagate = False
         logger.addHandler(get_file_hndlr())
-
         loggers.update({logger_name: logger})
         return logger
 

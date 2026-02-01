@@ -1,6 +1,6 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Convert Line Styles"
+        Title="{DynamicResource Title}"
         Width="800" Height="700"
         ResizeMode="CanResizeWithGrip" ShowInTaskbar="False" WindowStartupLocation="CenterScreen"
         ScrollViewer.VerticalScrollBarVisibility="Disabled"
@@ -48,13 +48,13 @@
             <RowDefinition Height="2*" MinHeight="300"/>
         </Grid.RowDefinitions>
         <DockPanel Grid.Column="0" Grid.Row="0" Margin="0,0,5,0">
-            <Label DockPanel.Dock="Top" FontWeight="Bold" Padding="0,0,0,5" Content="From Style"/>
+            <Label DockPanel.Dock="Top" FontWeight="Bold" Padding="0,0,0,5" Content="{DynamicResource FromStyle}"/>
             <ListBox x:Name="fromStyles"
                      SelectionMode="Single" SelectionChanged="style_selection_changed"
                      ItemTemplate="{DynamicResource LineStyleTemplate}"/>
         </DockPanel>
         <DockPanel Grid.Column="1" Grid.Row="0" Margin="5,0,0,0">
-            <Label DockPanel.Dock="Top" FontWeight="Bold" Padding="0,0,0,5" Content="To Style"/>
+            <Label DockPanel.Dock="Top" FontWeight="Bold" Padding="0,0,0,5" Content="{DynamicResource ToStyle}"/>
             <ListBox x:Name="toStyles"
                      SelectionMode="Single" SelectionChanged="style_selection_changed"
                      ItemTemplate="{DynamicResource LineStyleTemplate}"/>
@@ -62,17 +62,17 @@
         <Button x:Name="addConvert_b"
                 Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1"
                 Width="150" Height="30" Margin="10" IsEnabled="False"
-                Content="Convert Selected Styles" Click="add_convert"/>
+                Content="{DynamicResource ConvertSelectedStyles}" Click="add_convert"/>
         <DockPanel Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="2">
-            <Button DockPanel.Dock="Bottom" Click="convert_styles" Margin="0,10,0,0" Content="Convert Style(s)" IsDefault="True" Height="35"/>
-            <GroupBox DockPanel.Dock="Bottom" Header="Convert Options" Margin="0,10,0,0">
+            <Button DockPanel.Dock="Bottom" Click="convert_styles" Margin="0,10,0,0" Content="{DynamicResource ConvertStyles}" IsDefault="True" Height="35"/>
+            <GroupBox DockPanel.Dock="Bottom" Header="{DynamicResource ConvertOptions}" Margin="0,10,0,0">
                 <StackPanel Margin="5">
-                    <CheckBox x:Name="convertDetailLines" Margin="0,5,0,0" IsChecked="True" Content="Convert Detail Lines" />
-                    <CheckBox x:Name="convertModelLines" Margin="0,5,0,0" IsChecked="True" Content="Convert Model Lines" />
-                    <CheckBox x:Name="convertSketchLines" Margin="0,5,0,0" IsChecked="False" Content="Convert Filled Region Lines (Filled Regions Need Shaking)" />
+                    <CheckBox x:Name="convertDetailLines" Margin="0,5,0,0" IsChecked="True" Content="{DynamicResource ConvertDetailLines}" />
+                    <CheckBox x:Name="convertModelLines" Margin="0,5,0,0" IsChecked="True" Content="{DynamicResource ConvertModelLines}" />
+                    <CheckBox x:Name="convertSketchLines" Margin="0,5,0,0" IsChecked="False" Content="{DynamicResource ConvertFilledRegionLines}" />
                     <!--<CheckBox x:Name="shakeFilledRegions" Margin="0,5,0,0" IsChecked="False" Content="Shake Filled Regions (Could take a long time)" IsEnabled="{Binding ElementName=convertSketchLines, Path=IsChecked}"/>-->
-                    <CheckBox x:Name="convertGroupedLines" Margin="0,5,0,0" IsChecked="False" IsEnabled="False" Content="Convert Grouped Lines (No API Support)" />
-                    <CheckBox x:Name="deleteFromStyle" Margin="0,5,0,0" IsChecked="False" Content="Delete Converted Style(s) When Done" />
+                    <CheckBox x:Name="convertGroupedLines" Margin="0,5,0,0" IsChecked="False" IsEnabled="False" Content="{DynamicResource ConvertGroupedLines}" />
+                    <CheckBox x:Name="deleteFromStyle" Margin="0,5,0,0" IsChecked="False" Content="{DynamicResource DeleteConvertedStyles}" />
                 </StackPanel>
             </GroupBox>
             <!--<StackPanel DockPanel.Dock="Right" Width="30" Margin="10,0,0,0">

@@ -5,8 +5,16 @@ from pyrevit import coreutils
 from pyrevit import script
 from pyrevit import revit, DB
 
+import sys
+import os
+# Add current directory to path for local imports
+_current_dir = os.path.dirname(os.path.abspath(__file__))
+if _current_dir not in sys.path:
+    sys.path.insert(0, _current_dir)
+
 from pyrevit.preflight import PreflightTestCase
 from pyrevit.compat import safe_strtype
+from check_translations import DocstringMeta
 
 WIKI_ARTICLE = ""
 
@@ -279,7 +287,8 @@ def path2fileName(file_path, divider):
 def checkModel(doc, output):
     """Check given model"""
 
-    output.print_md("# **RVTV Links - Warning checker**")
+    from check_translations import get_check_translation
+    output.print_md("# **{}**".format(get_check_translation("RVTLinksWarningChecker")))
     output.print_md("---")
 
     # first JS to avoid error in IE output window when at first run
@@ -363,7 +372,7 @@ def checkModel(doc, output):
 
             ## Warnings file dashboard section
             # output.print_md(str(fileWarnings))
-            output.print_md("# Warnings count<br />")
+            output.print_md("# {}<br />".format(get_check_translation("RVTLinksWarningsCount")))
 
             # Doughnut pie
             chartWarnings = output.make_doughnut_chart()
@@ -385,42 +394,45 @@ def checkModel(doc, output):
             # tables
             output.print_table(
                 links_warnings_count,
-                columns=["File Name", "Warnings count"],
+                columns=[
+                    get_check_translation("RVTLinksFileName"),
+                    get_check_translation("RVTLinksWarningsCountLabel")
+                ],
                 formats=None,
                 title="",
                 last_line_style="",
             )
-            output.print_md("# Warnings details<br />")
+            output.print_md("# {}<br />".format(get_check_translation("RVTLinksWarningsDetails")))
             output.print_table(
                 zip(*fileWarnings),
-                columns=["File Name", "Warnings", "Ids"],
+                columns=[
+                    get_check_translation("RVTLinksFileName"),
+                    get_check_translation("RVTLinksWarningsLabel"),
+                    get_check_translation("RVTLinksIds")
+                ],
                 formats=None,
                 title="",
                 last_line_style="",
             )
         else:
             output.print_md(
-                "<b>Load all the links, the tool is meant for models with <ins>loaded</ins> links</b>"
+                "<b>{}</b>".format(get_check_translation("RVTLinksLoadAllLinks"))
             )
     else:
         output.print_md(
-            "<b>Load at least one link, the tool is meant for models with <ins>loaded</ins> links </b>"
+            "<b>{}</b>".format(get_check_translation("RVTLinksLoadAtLeastOne"))
         )
 
 
 class ModelChecker(PreflightTestCase):
-    """
-    Revit links Quality control - Warnings
-        Warnings in linked files:
-        - Description,
-        - Ids,
-        - Count
-
-        !! Revit 2018 + only !!
-        !!Load links before using!!
-    """
-
-    name = "RVTLinks warnings"
+    __metaclass__ = DocstringMeta
+    _docstring_key = "CheckDescription_RVTLinksWarnings"
+    
+    @property
+    def name(self):
+        from check_translations import get_check_translation
+        return get_check_translation("CheckName_RVTLinksWarnings")
+    
     author = "Jean-Marc Couffin"
 
 
@@ -429,5 +441,6 @@ class ModelChecker(PreflightTestCase):
         checkModel(doc, output)
         endtime = timer.get_time()
         endtime_hms = str(datetime.timedelta(seconds=endtime))
-        endtime_hms_claim = "Transaction took " + endtime_hms
+        from check_translations import get_check_translation
+        endtime_hms_claim = "{} {}".format(get_check_translation("TransactionTook"), endtime_hms)
         print (endtime_hms_claim)

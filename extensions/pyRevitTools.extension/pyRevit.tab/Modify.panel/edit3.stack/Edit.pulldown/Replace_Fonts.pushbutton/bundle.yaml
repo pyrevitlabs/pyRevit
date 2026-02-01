@@ -1,12 +1,16 @@
 title:
   en_us: Font Replacement
   fr_fr: Remplacement de police de caractère
+  ru: Замена шрифта
+  chinese_s: 字体替换
   es_es: Reemplazo de fuente
   de_de: Schriftart ersetzen
-  ru: Замена шрифта
+  pt_br: Substituição de Fonte
 tooltip:
   en_us: Font Replacement for Dimensions, Text Notes Types and inside Families (All optional)
   fr_fr: Remplacement de police de caractère pour les dimensions, les types de notes de texte et à l'intérieur des familles (tous facultatifs)
+  ru: Замена шрифта для размеров, типов текстовых заметок и внутри семейств (все необязательные)
+  chinese_s: 为标注、文字注释类型以及族内的文字进行字体替换（所有选项均可选）
   es_es: Reemplazo de fuente para dimensiones, tipos de notas de texto y dentro de familias (todos opcionales)
   de_de: Schriftart ersetzen für Dimensionen, Textnotiztypen und innerhalb von Familien (alle optional)
-  ru: Замена шрифта для размеров, типов текстовых заметок и внутри семейств (все необязательные)
+  pt_br: Substituição de fonte para Cotas, Tipos de Notas de Texto e dentro de Famílias (Todos opcionais)
