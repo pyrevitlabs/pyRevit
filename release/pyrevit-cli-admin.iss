@@ -15,7 +15,7 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-AppCopyright=Copyright © 2014-2025 pyRevitLabs.io
+AppCopyright=Copyright © 2014-2026 pyRevitLabs.io
 LicenseFile=..\LICENSE.txt
 ; Installer
 DefaultGroupName={#MyAppName}
