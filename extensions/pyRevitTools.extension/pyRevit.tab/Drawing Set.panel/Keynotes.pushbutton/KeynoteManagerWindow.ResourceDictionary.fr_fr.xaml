@@ -1,0 +1,125 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Gérer les Notes Clé</system:String>
+    
+    <system:String x:Key="ImportKeynotes">Importer les Notes Clé</system:String>
+    <system:String x:Key="ImportKeynotesInfo">Importer les notes clé depuis le fichier standard de notes clé de Revit</system:String>
+    
+    <system:String x:Key="ExportKeynotes">Tout Exporter</system:String>
+    <system:String x:Key="ExportKeynotesInfo">Exporter les notes clé vers le fichier standard de notes clé de Revit</system:String>
+    
+    <system:String x:Key="ExportVisibleKeynotes">ou Visibles</system:String>
+    <system:String x:Key="ExportVisibleKeynotesInfo">Exporter les notes clé listées vers le fichier standard de notes clé de Revit</system:String>
+
+    <system:String x:Key="RefreshKeynotes">Actualiser</system:String>
+    <system:String x:Key="RefreshKeynotesInfo">Recharge le fichier de notes clé et met à jour les notes clé selon les modifications</system:String>
+   
+    <system:String x:Key="ChangeKeynote">Changer le fichier de notes clé.</system:String>
+    <system:String x:Key="ShowKeynote">Afficher le fichier de notes clé.</system:String>
+    
+    <system:String x:Key="UpdateKeynote">Mettre à jour le Modèle</system:String>
+    <system:String x:Key="UpdateKeynoteInfo">Recharge le fichier de notes clé et met à jour les notes clé selon les modifications</system:String>
+
+    <system:String x:Key="CategoryKeynotes">Catégories</system:String>
+    <system:String x:Key="AddKeynoteCategory">Ajouter une nouvelle catégorie de notes clé</system:String>
+    <system:String x:Key="EditKeynoteCategory">Modifier la catégorie sélectionnée</system:String>
+    <system:String x:Key="RemoveKeynoteCategory">Supprimer la catégorie sélectionnée</system:String>
+    <system:String x:Key="ReKeyKeynoteCategory">Changer la clé pour la catégorie sélectionnée</system:String>
+    <system:String x:Key="ShowChangeKeynoteCategoryHistory">Afficher l'historique des modifications de catégorie</system:String>
+
+    <system:String x:Key="Keynotes">Notes Clé</system:String>
+    <system:String x:Key="AddKeynote">Ajouter une nouvelle note clé</system:String>
+    <system:String x:Key="SearchKeynote">Rechercher les instances de la note clé sélectionnée</system:String>
+    <system:String x:Key="EditKeynote">Modifier la note clé sélectionnée</system:String>
+    <system:String x:Key="RemoveKeynote">Supprimer la note clé sélectionnée</system:String>
+    <system:String x:Key="AddChildKeynote">Ajouter une nouvelle note clé comme enfant de la note clé sélectionnée</system:String>
+    <system:String x:Key="DuplicateKeynote">Dupliquer la note clé sélectionnée</system:String>
+    <system:String x:Key="ChangeKeyKeynote">Changer la clé de la note clé sélectionnée</system:String>
+    <system:String x:Key="ChangeCategoryKeynote">Changer la catégorie de la note clé sélectionnée</system:String>
+    <system:String x:Key="ShowChangeKeynoteHistory">Afficher l'historique des modifications de note clé</system:String>
+
+    <system:String x:Key="PlaceKeynote">Placer</system:String>
+    <system:String x:Key="UserKeynotes">Notes Clé Utilisateur</system:String>
+    <system:String x:Key="ElementKeynotes">Notes Clé d'Élément</system:String>
+    <system:String x:Key="MaterialKeynotes">Notes Clé de Matériau</system:String>
+
+    <system:String x:Key="KeynotesHistory">Historique des Notes Clé</system:String>
+    <system:String x:Key="EnableHistory">Activer l'Historique</system:String>
+    <system:String x:Key="EnableHistoryInfo">Activer le suivi de l'historique sur les notes clé.</system:String>
+    
+    <GridLength x:Key="RightPanelWidth">190</GridLength>
+    <GridLength x:Key="RefreshKeynotesWidth">90</GridLength>
+    
+    
+    <system:String x:Key="AllCategories">-- TOUTES LES CATÉGORIES --</system:String>
+    <system:String x:Key="ADCLockedLocalFile">Le fichier de notes clé est en cours de modification et verrouillé par : {}. Veuillez réessayer plus tard</system:String>
+    <system:String x:Key="ADCLockedLocalFileNone">Impossible d'obtenir le fichier de notes clé depuis {}</system:String>
+    <system:String x:Key="ADCNotAvailable">
+        Ce modèle utilise un fichier de notes clé qui semble être 
+        géré par {long} ({short}). Mais {short} n'est pas 
+        en cours d'exécution, ou n'est pas installé. Veuillez installer/exécuter 
+        {short} et ouvrir à nouveau le gestionnaire de notes clé
+    </system:String>
+    
+    <system:String x:Key="SetKeynoteFileTransactionName">Définir le Fichier de Notes Clé</system:String>
+    <system:String x:Key="KeynoteFileNotExists">Le fichier de notes clé n'est pas accessible. Veuillez sélectionner un fichier de notes clé.</system:String>
+    <system:String x:Key="KeynoteFileNotSetup">Le fichier de notes clé n'est pas configuré.</system:String>
+    <system:String x:Key="KeynoteFileIsReadOnly">Le fichier de notes clé est en lecture seule.</system:String>
+    
+    <system:String x:Key="KeynoteFileConnectionFailed" xml:space="preserve">Le fichier de notes clé existant doit être converti en un format utilisable par cet outil. Le fichier de notes clé résultant reste lisible par Revit et peut être partagé avec d'autres projets. Les utilisateurs ne doivent PAS apporter de modifications au fichier de notes clé existant pendant le processus de conversion.
+Êtes-vous sûr de vouloir convertir ?
+    </system:String>
+    
+    <system:String x:Key="KeynoteFileConnectionConvert">Convertir</system:String>
+    <system:String x:Key="KeynoteFileConnectionSelectOther">Sélectionner un autre fichier de notes clé</system:String>
+    <system:String x:Key="KeynoteFileConnectionHelp">Donnez-moi plus d'informations</system:String>
+    <system:String x:Key="KeynoteFileConversionCompleted">Conversion terminée !</system:String>
+    <system:String x:Key="KeynoteFileConversionFailed">Conversion échouée ! %s</system:String>
+    <system:String x:Key="KeynoteFileNotConversion">Le fichier de notes clé n'a pas encore été converti.</system:String>
+    <system:String x:Key="KeynoteFileLaunchAgain">Relancez l'outil pour gérer les notes clé.</system:String>
+    
+    <system:String x:Key="KeynoteFileBackupException">Erreur lors de la sauvegarde du fichier de notes clé existant.</system:String>
+    <system:String x:Key="KeynoteFilePreparingException">Erreur lors de la préparation du nouveau fichier de notes clé.</system:String>
+    
+    <system:String x:Key="EnterUniqueKey">Entrez une Clé Unique</system:String>
+    <system:String x:Key="ChooseUniqueKey">Choisir une Nouvelle Clé</system:String>
+    <system:String x:Key="SelectParentCategory">Sélectionner la Catégorie Parente</system:String>
+    
+    <system:String x:Key="SelectFilter">Sélectionner un Filtre</system:String>
+    
+    <system:String x:Key="KeynoteLockedUnknownUser">et utilisateur inconnu</system:String>
+    <system:String x:Key="KeynoteLocked">
+        La catégorie est verrouillée et est en cours d'édition par {}. 
+        Attendez que leurs modifications soient validées. 
+        En attendant, vous pouvez utiliser ou modifier les notes clé 
+        sous cette catégorie.
+    </system:String>
+    
+    <system:String x:Key="CategoryLockedUnknownUser">et utilisateur inconnu</system:String>
+    <system:String x:Key="CategoryLocked">
+        La catégorie est verrouillée et est en cours d'édition par {}. 
+        Attendez que leurs modifications soient validées.
+    </system:String>
+    
+    <system:String x:Key="CategoryChildrenLocked">Au moins une note clé dans cette catégorie est verrouillée. Attendez que les modifications soient validées.</system:String>
+    <system:String x:Key="CategoryHasChildren">La catégorie "%s" n'est pas vide. Supprimez d'abord toutes ses notes clé.</system:String>
+    <system:String x:Key="CategoryUsed">La catégorie "%s" est utilisée dans le modèle. Impossible de supprimer.</system:String>
+    <system:String x:Key="PromptToDeleteCategory">Êtes-vous sûr de vouloir supprimer la catégorie "%s" ?</system:String>
+    
+    <system:String x:Key="KeynoteHasChildren">La note clé "%s" a des sous-notes clé. Supprimez d'abord toutes ses sous-notes clé.</system:String>
+    <system:String x:Key="KeynoteUsed">"La note clé "%s" est utilisée dans le modèle. Impossible de supprimer.</system:String>
+    <system:String x:Key="PromptToDeleteKeynote">Êtes-vous sûr de vouloir supprimer la note clé "%s" ?</system:String>
+    
+    <system:String x:Key="ReKeyKeynoteTransaction">Réassigner la Clé de Note Clé {}</system:String>
+    <system:String x:Key="ReKeyKeynoteChildrenLocked">Au moins une note clé enfant de cette note clé est verrouillée. Attendez que les modifications soient validées.</system:String>
+    <system:String x:Key="ReCatKeynoteChildrenLocked">Au moins une note clé enfant de cette note clé est verrouillée. Attendez que les modifications soient validées.</system:String>
+    
+    
+    <system:String x:Key="KeynoteName">{} "{}" Note Clé @ "{}"</system:String>
+    <system:String x:Key="LastEditKeynote"> - Dernière Modification Par "{}"</system:String>
+    <system:String x:Key="UpdateKeynotesTransactionName">Mettre à jour les Notes Clé</system:String>
+    <system:String x:Key="ComingSoon">Pas encore implémenté. Bientôt disponible.</system:String>
+    <system:String x:Key="SkipDuplicates">Voulez-vous que je saute les doublons s'il y en a ?</system:String>
+    <system:String x:Key="MainException">Création de la fenêtre du gestionnaire de notes clé</system:String>
+</ResourceDictionary>

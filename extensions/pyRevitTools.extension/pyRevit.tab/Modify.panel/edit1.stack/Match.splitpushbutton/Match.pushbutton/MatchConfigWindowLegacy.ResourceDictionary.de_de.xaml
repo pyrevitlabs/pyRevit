@@ -1,0 +1,37 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Zu Abgleichende Optionen Auswählen:</system:String>
+    
+    <system:String x:Key="ElementGraphicsOverrides">Elementgrafik-Überschreibungen:</system:String>
+    <system:String x:Key="Halftone">Halbton</system:String>
+    <system:String x:Key="Transparency">Transparenz</system:String>
+    
+    <system:String x:Key="ProjectionOptions">Projektions-Optionen:</system:String>
+    <system:String x:Key="ProjectionLineColor">Projektions-Linienfarbe</system:String>
+    <system:String x:Key="ProjectionLinePattern">Projektions-Linienmuster</system:String>
+    <system:String x:Key="ProjectionLineWeight">Projektions-Linienstärke</system:String>
+    <system:String x:Key="ProjectionFillColor">Projektions-Füllfarbe</system:String>
+    <system:String x:Key="ProjectionFillPattern">Projektions-Füllmuster</system:String>
+    <system:String x:Key="ProjectionFillPatternVisibility">Projektions-Füllmuster-Sichtbarkeit</system:String>
+    
+    <system:String x:Key="CutOptions">Schnitt-Optionen:</system:String>
+    <system:String x:Key="CutLineColor">Schnitt-Linienfarbe</system:String>
+    <system:String x:Key="CutLinePattern">Schnitt-Linienmuster</system:String>
+    <system:String x:Key="CutLineWeight">Schnitt-Linienstärke</system:String>
+    <system:String x:Key="CutFillColor">Schnitt-Füllfarbe</system:String>
+    <system:String x:Key="CutFillPattern">Schnitt-Füllmuster</system:String>
+    <system:String x:Key="CutFillPatternVisibility">Schnitt-Füllmuster-Sichtbarkeit</system:String>
+    
+    <system:String x:Key="DimensionOverrides">Bemaßungsüberschreibungen:</system:String>
+    <system:String x:Key="ReplacedValue">Ersetzter Wert</system:String>
+    <system:String x:Key="TextPosition">Textposition</system:String>
+    <system:String x:Key="AboveValue">Wert Oben</system:String>
+    <system:String x:Key="BelowValue">Wert Unten</system:String>
+    <system:String x:Key="PrefixValue">Präfix-Wert</system:String>
+    <system:String x:Key="PostfixValue">Postfix-Wert</system:String>
+    
+    <system:String x:Key="CheckAll">Alle Auswählen</system:String>
+    <system:String x:Key="CheckNone">Alle Abwählen</system:String>
+    <system:String x:Key="SaveOptions">Optionen Speichern</system:String>
+</ResourceDictionary>

@@ -2,7 +2,15 @@
 
 from pyrevit import script, revit, DB, DOCS
 
+import sys
+import os
+# Add current directory to path for local imports
+_current_dir = os.path.dirname(os.path.abspath(__file__))
+if _current_dir not in sys.path:
+    sys.path.insert(0, _current_dir)
+
 from pyrevit.preflight import PreflightTestCase
+from check_translations import DocstringMeta
 
 from System.Windows import Window # Used for cancel button
 from rpw.ui.forms import (FlexForm, Label, Separator, Button) # RPW
@@ -61,16 +69,17 @@ def get_cad_site(cad_inst):
 
 def get_user_input():
     """ create RPW input FlexForm for user choice of collection mode (coll_mode) whole model or just active view """
+    from check_translations import get_check_translation
     flexform_comp = [
-        Label("Audit CAD instances:"),
-        RadioButton("model", "in this project", True, GroupName="grp"), # GroupName implemented in class through kwargs
-        RadioButton("active_view", "in only the active view", False, GroupName="grp"),
+        Label(get_check_translation("CADAuditInstances")),
+        RadioButton("model", get_check_translation("CADAuditInProject"), True, GroupName="grp"), # GroupName implemented in class through kwargs
+        RadioButton("active_view", get_check_translation("CADAuditInActiveView"), False, GroupName="grp"),
         Separator(),
-        Button("CANCEL", on_click=cancel_clicked),
-        Button("OK"),
+        Button(get_check_translation("CADAuditCancel"), on_click=cancel_clicked),
+        Button(get_check_translation("CADAuditOK")),
     ]
 
-    user_input = FlexForm("Audit of CAD instances in the current project", flexform_comp, Width=500, Height=200) # returns a FlexForm object
+    user_input = FlexForm(get_check_translation("CADAuditTitle"), flexform_comp, Width=500, Height=200) # returns a FlexForm object
     user_input.show()
     user_input_dict = user_input.values # This is a dictionary
     if not user_input_dict:
@@ -123,9 +132,20 @@ def check_model(doc, output):
     
     coll_mode = get_user_input()["active_view"]
     
+    from check_translations import get_check_translation
     table_data = [] # store array for table formatted output
-    row_head = ["No", "Select/Zoom", "DWG instance", "Loaded status", "Workplane or single view", "Duplicate", "Workset", "Creator user", "Location site name"] # output table first and last row
-    row_no_cad = ["-", "-", "No CAD instances found", "-", "-", "-", "-", "-", "-"] # output table row for when no CAD found
+    row_head = [
+        get_check_translation("CADAuditNo"),
+        get_check_translation("CADAuditSelectZoom"),
+        get_check_translation("CADAuditDWGInstance"),
+        get_check_translation("CADAuditLoadedStatus"),
+        get_check_translation("CADAuditWorkplaneOrView"),
+        get_check_translation("CADAuditDuplicate"),
+        get_check_translation("AuditAllWorksets"),
+        get_check_translation("CADAuditCreatorUser"),
+        get_check_translation("CADAuditLocationSiteName")
+    ] # output table first and last row
+    row_no_cad = ["-", "-", get_check_translation("CADAuditNoInstances"), "-", "-", "-", "-", "-", "-"] # output table row for when no CAD found
     cad_instances = collect_cadinstances(coll_mode)
     if not cad_instances:
         table_data.append(row_no_cad)
@@ -137,7 +157,7 @@ def check_model(doc, output):
     
             table_row = [
                 count,
-                output.linkify(cad_id, title="Select"),
+                output.linkify(cad_id, title=get_check_translation("CADAuditSelect")),
                 cad_name,
                 get_load_stat(cad, cad.IsLinked), # loaded status
             ]
@@ -156,7 +176,7 @@ def check_model(doc, output):
             table_row.append(get_cad_site(cad)) # Extract site name from location
             table_data.append(table_row)
     table_data.append(row_head)  
-    output.print_md("## Preflight audit of imported and linked CAD")
+    output.print_md("## {}".format(get_check_translation("CADAuditPreflightAudit")))
     output.print_table(table_data=table_data,
                    title="",
                    columns=row_head,
@@ -164,42 +184,33 @@ def check_model(doc, output):
                    last_line_style='background-color:#233749;color:white;font-weight:bold')
     
     # Summary output section:
-    link_to_view = output.linkify(ac_view.Id, title="Show the view")
-    print("{} CAD instances found.".format(len(cad_instances or [])))
+    link_to_view = output.linkify(ac_view.Id, title=get_check_translation("CADAuditShowView"))
+    print("{} {}".format(len(cad_instances or []), get_check_translation("CADAuditInstancesFound")))
     if coll_mode: # if active view only
-        summary_msg = "the active view ('{}') {}".format(ac_view.Name, link_to_view)
+        summary_msg = "{} ('{}') {}".format(get_check_translation("CADAuditActiveView"), ac_view.Name, link_to_view)
     else:
-        summary_msg = "the whole model ({})".format(doc.Title)
-    print("The check was run on {}".format(summary_msg))
-    output.print_md("##Explanations for warnings :warning:")
-    print("Loaded status...........: alert if a CAD is imported, rather than linked")
-    print("Workplane or single view: alert if a CAD is placed on a single view with the option 'active view only' rather than on a model workplane")
-    print("Duplicate...............: alert if a CAD is placed more than once (whether linked or imported) in case it is unintentinal")
+        summary_msg = "{} ({})".format(get_check_translation("CADAuditWholeModel"), doc.Title)
+    print("{} {}".format(get_check_translation("CADAuditCheckRunOn"), summary_msg))
+    output.print_md("##{} :warning:".format(get_check_translation("CADAuditExplanations")))
+    print(get_check_translation("CADAuditLoadedStatusExplanation"))
+    print(get_check_translation("CADAuditWorkplaneExplanation"))
+    print(get_check_translation("CADAuditDuplicateExplanation"))
 
     # Display check duration
     endtime = timer.get_time()
     endtime_hms = str(timedelta(seconds=endtime))
-    endtime_hms_claim = " \n\nCheck duration " + endtime_hms[0:7] # Remove seconods decimals from string
+    endtime_hms_claim = " \n\n{} {}".format(get_check_translation("CADAuditCheckDuration"), endtime_hms[0:7]) # Remove seconods decimals from string
     print(endtime_hms_claim)
 
 class ModelChecker(PreflightTestCase):
-    """
-    Preflight audit of imported and linked CAD
-    This QC tools returns the following data:
-        CAD link instance and type information
-
-        Quality control includes information and alerts for:
-          The status of links (Loaded, Not found, Unloaded...)
-          Whether a CAD is on a model workplane or just a single view
-          Whether a CAD is linked or imported
-          Whether CADs have been duplicated
-          The CAD's shared location name
-
-          Feature: The output allows navigating to the found CADs
-
-    """
-
-    name = "CAD Audit"
+    __metaclass__ = DocstringMeta
+    _docstring_key = "CheckDescription_CADAudit"
+    
+    @property
+    def name(self):
+        from check_translations import get_check_translation
+        return get_check_translation("CheckName_CADAudit")
+    
     author = "Kevin Salmon"
 
 

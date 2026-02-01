@@ -1,0 +1,299 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="AuthorLabel">Автор</system:String>
+    <system:String x:Key="ExtensionLabel">Расширение</system:String>
+    <system:String x:Key="SelectPreflightCheckTitle">Выбрать предварительную проверку</system:String>
+    <system:String x:Key="RunCheckButton">Запустить проверку</system:String>
+    
+    <!-- Check Names -->
+    <system:String x:Key="CheckName_GridsDataLister">Список данных сетки</system:String>
+    <system:String x:Key="CheckName_LevelsDataLister">Список данных уровней</system:String>
+    <system:String x:Key="CheckName_ReferencePlanLister">Список опорных плоскостей</system:String>
+    <system:String x:Key="CheckName_SchedulesNotOnSheet">Список спецификаций не на листах</system:String>
+    <system:String x:Key="CheckName_ElementsPerWorksets">Проверка элементов по рабочим наборам</system:String>
+    <system:String x:Key="CheckName_10MileRadar">Радар 10 миль</system:String>
+    <system:String x:Key="CheckName_ModelChecker">Проверка модели</system:String>
+    <system:String x:Key="CheckName_RVTLinksWarnings">Предупреждения RVT-связей</system:String>
+    <system:String x:Key="CheckName_AuditAll">Полная проверка (включая связи)</system:String>
+    <system:String x:Key="CheckName_CADAudit">Проверка CAD</system:String>
+    <system:String x:Key="CheckName_NamingConvention">Соглашение об именовании</system:String>
+    
+    <!-- Check Descriptions (Docstrings) -->
+    <system:String x:Key="CheckDescription_GridsDataLister">Список сеток, если они закреплены, в области видимости или названы
+
+Этот инструмент контроля качества возвращает следующие данные:
+    Количество сеток, имя, тип, статус закрепления</system:String>
+    <system:String x:Key="CheckDescription_LevelsDataLister">Список уровней, если они закреплены, в области видимости или названы и их отметка.
+
+Этот инструмент контроля качества возвращает следующие данные:
+    Количество уровней, имя, тип, статус закрепления, область видимости и отметка.</system:String>
+    <system:String x:Key="CheckDescription_ReferencePlanLister">Список всех опорных плоскостей в модели
+Этот инструмент контроля качества возвращает следующие данные:
+    Количество опорных плоскостей, ссылка на, имя</system:String>
+    <system:String x:Key="CheckDescription_SchedulesNotOnSheet">Список всех спецификаций, не размещенных на листе
+Этот инструмент контроля качества возвращает следующие данные:
+    Тип, Id + ссылка и имя спецификации с возможностью нажать на ссылку для открытия спецификации</system:String>
+    <system:String x:Key="CheckDescription_ElementsPerWorksets">Проверка качества модели Revit
+Инструмент контроля качества возвращает следующие данные:
+    - Таблица всех элементов по рабочему набору, включая имя категории, имя элемента и id элемента
+    - Круговая диаграмма количества элементов по рабочему набору</system:String>
+    <system:String x:Key="CheckDescription_10MileRadar">Проверяет границы всех элементов в модели.
+Этот проверщик модели быстро проверяет границы модели Revit. 
+Размещение границ модели более чем в 10 милях (16 км) от внутреннего 
+начала координат проекта может привести к проблемам с точностью, допусками, 
+производительностью и отображением видов. Эта проверка гарантирует, что 
+модель остается в радиусе 10 миль от внутреннего начала координат.
+
+Тестовый случай исследует следующее, сообщая о границах 
+относительно внутреннего начала координат проекта. Скрипт приоритизирует 
+на основе предположения, что большинство проблем с границами модели
+связаны со следующим:
+
+    - Расстояние между базовой точкой проекта и внутренним началом координат
+    - Расстояние между точкой съемки и внутренним началом координат
+    - Ограничивающий параллелепипед 3D-вида
+    - Ограничивающий параллелепипед объектов вариантов проектирования
+    - Ограничивающий параллелепипед связей CAD и RVT
+    - Ограничивающий параллелепипед всех элементов в модели</system:String>
+    <system:String x:Key="CheckDescription_ModelChecker">Проверка качества модели Revit
+Инструмент контроля качества возвращает следующие данные:
+    Файл Revit: Имя и информация о проекте
+    Связи Revit: список, количество и статус закрепления
+    Виды: количество, количество скопированных видов, количество видов не на листе
+    Спецификации: количество и количество не на листе
+    Листы: количество
+    Предупреждения: Общее количество, список критических предупреждений на основе предопределенного списка критических предупреждений
+    Количество материалов
+    Количество типов линий
+    DWG: Количество импортированных, количество связанных, количество dwg в 3D
+    Загружаемые семейства: количество, количество семейств на месте, количество непараметрических семейств
+    Текстовые заметки: количество с измененным коэффициентом, количество текстовых заметок заглавными буквами
+    Системные семейства: количество пандусов, количество архитектурных колонн, элементы с включенной опцией аналитической модели
+    Группы: количество типов групп деталей, количество экземпляров групп деталей, количество типов групп моделей, количество экземпляров групп моделей
+    Опорные плоскости: количество неназванных, количество опорных плоскостей
+    Количество элементов
+    Фазы: список фаз для текущего документа и связанных файлов</system:String>
+    <system:String x:Key="CheckDescription_RVTLinksWarnings">Контроль качества связей Revit - Предупреждения
+    Предупреждения в связанных файлах:
+    - Описание,
+    - ID,
+    - Количество
+
+    !! Только Revit 2018 + !!
+    !!Загрузите связи перед использованием!!</system:String>
+    <system:String x:Key="CheckDescription_AuditAll">Предварительная проверка всех моделей, включая связанные модели.
+!!Связи должны быть загружены.!!
+Этот инструмент контроля качества возвращает следующие данные:
+- имя проекта, номер, клиент, фазы, рабочие наборы
+- количество элементов
+- количество элементов, подлежащих очистке
+- общее количество предупреждений
+- количество критических предупреждений
+- количество связей rvt
+- количество активированных элементов аналитической модели
+- количество помещений
+- количество неразмещенных помещений
+- количество неограниченных помещений
+- количество листов
+- количество видов по типу вида
+- виды не на листах
+- количество спецификаций не на листах
+- количество скопированных видов
+- количество шаблонов видов
+- количество неиспользуемых шаблонов видов
+- количество фильтров
+- количество неиспользуемых фильтров видов
+- количество материалов
+- количество типов линий
+- количество dwg
+- количество связанных dwg
+- количество импортированных dwg
+- количество семейств на месте
+- количество непараметрических семейств
+- количество семейств
+- количество подкатегорий импорта
+- количество типов общих моделей
+- количество компонентов деталей
+- количество типов текстовых заметок
+- количество типов текстовых заметок с коэффициентом ширины != 1
+- количество текстовых заметок
+- текстовые заметки с примененными заглавными буквами
+- текстовые заметки с сплошным фоном
+- количество групп деталей
+- количество типов групп деталей
+- количество групп моделей
+- количество типов групп моделей
+- количество опорных плоскостей
+- количество неназванных опорных плоскостей
+- количество линий деталей
+- количество типов размеров
+- количество размеров
+- количество переопределений размеров
+- количество облаков пересмотра</system:String>
+    <system:String x:Key="CheckDescription_CADAudit">Предварительная проверка импортированных и связанных CAD
+Этот инструмент контроля качества возвращает следующие данные:
+    Информация об экземпляре и типе связи CAD
+
+    Контроль качества включает информацию и предупреждения для:
+      Статус связей (Загружено, Не найдено, Выгружено...)
+      Находится ли CAD на рабочей плоскости модели или только на одном виде
+      Является ли CAD связанным или импортированным
+      Были ли CAD дублированы
+      Имя общего местоположения CAD
+
+      Функция: Вывод позволяет переходить к найденным CAD</system:String>
+    <system:String x:Key="CheckDescription_NamingConvention">Проверяет, соответствуют ли имена типов семейств указанному списку,
+как определено списком типов стен в Revit.</system:String>
+    
+    <!-- Common Output Strings -->
+    <system:String x:Key="GridsDataLister">Список данных сетки</system:String>
+    <system:String x:Key="LevelsDataLister">Список данных уровней</system:String>
+    <system:String x:Key="NumberOfGrids">Количество сеток</system:String>
+    <system:String x:Key="NumberOfLevels">Количество уровней</system:String>
+    <system:String x:Key="Grids">Сетки</system:String>
+    <system:String x:Key="Levels">Уровни</system:String>
+    <system:String x:Key="Name">Имя</system:String>
+    <system:String x:Key="Type">Тип</system:String>
+    <system:String x:Key="Pinned">Закреплено</system:String>
+    <system:String x:Key="ScopeBox">Область видимости</system:String>
+    <system:String x:Key="Elevation">Отметка</system:String>
+    <system:String x:Key="ReferencePlanes">Опорные плоскости</system:String>
+    <system:String x:Key="ReferencePlanesCount">Опорные плоскости:</system:String>
+    <system:String x:Key="SchedulesNotOnSheets">СПЕЦИФИКАЦИИ НЕ НА ЛИСТАХ</system:String>
+    <system:String x:Key="TransactionTook">Транзакция заняла</system:String>
+    <system:String x:Key="NameLabel">ИМЯ:</system:String>
+    <system:String x:Key="IdLabel">ID:</system:String>
+    <system:String x:Key="TypeLabel">ТИП:</system:String>
+    <system:String x:Key="WorksetName">Имя рабочего набора</system:String>
+    <system:String x:Key="ElementCategory">Категория элемента</system:String>
+    <system:String x:Key="ElementName">Имя элемента</system:String>
+    <system:String x:Key="ElementId">ID элемента</system:String>
+    <system:String x:Key="ElementCountByWorkset">Количество элементов по рабочему набору</system:String>
+    
+    <!-- Radar Check Strings -->
+    <system:String x:Key="RadarCheckingModelPlacement">Проверка размещения модели и координат</system:String>
+    <system:String x:Key="RadarBasePointMoreThan">Базовая точка находится более чем</system:String>
+    <system:String x:Key="RadarSurveyPointMoreThan">Точка съемки находится более чем</system:String>
+    <system:String x:Key="RadarSurveyPointLessThan">Точка съемки находится менее чем</system:String>
+    <system:String x:Key="RadarProjectBasePointCoords">Координаты базовой точки проекта относительно внутреннего начала координат</system:String>
+    <system:String x:Key="RadarSurveyPointCoords">Координаты точки съемки относительно внутреннего начала координат</system:String>
+    <system:String x:Key="RadarBaseToSurveyDeltaX">Дельта X от базовой точки проекта до точки съемки</system:String>
+    <system:String x:Key="RadarBaseToSurveyDeltaY">Дельта Y от базовой точки проекта до точки съемки</system:String>
+    <system:String x:Key="RadarPlanarDistance">Плоскостное расстояние между базовой точкой и точкой съемки</system:String>
+    <system:String x:Key="RadarTotalDistance">Общее расстояние между базовой точкой и точкой съемки</system:String>
+    <system:String x:Key="RadarProjectElevation">Отметка проекта (вертикальное расстояние базовой точки)</system:String>
+    <system:String x:Key="RadarProjectCoordinates">Координаты и расстояния проекта</system:String>
+    <system:String x:Key="RadarPoints">Точки</system:String>
+    <system:String x:Key="RadarChecking3DViewBBox">Проверка границ ограничивающего параллелепипеда 3D-вида</system:String>
+    <system:String x:Key="Radar3DViewBBoxMoreThan">Ограничивающий параллелепипед 3D-вида простирается более чем</system:String>
+    <system:String x:Key="Radar3DViewBBoxLessThan">Ограничивающий параллелепипед 3D-вида расположен менее чем</system:String>
+    <system:String x:Key="RadarCheckingDesignOptions">Проверка границ объектов вариантов проектирования</system:String>
+    <system:String x:Key="RadarDesignOptionsMoreThan">Объекты вариантов проектирования расположены более чем</system:String>
+    <system:String x:Key="RadarShowingFirst10">Показаны первые 10 объектов</system:String>
+    <system:String x:Key="RadarManualInvestigation">Требуется ручное исследование</system:String>
+    <system:String x:Key="RadarAllObjectsLessThan">Все объекты расположены менее чем</system:String>
+    <system:String x:Key="RadarCheckingCADRVT">Проверка границ связей CAD и RVT</system:String>
+    <system:String x:Key="RadarAllCADRVTLessThan">Все связи CAD и RVT расположены менее чем</system:String>
+    <system:String x:Key="RadarDistantObjectsDetected">Удаленные объекты все еще обнаруживаются!</system:String>
+    <system:String x:Key="RadarFurtherAnalysis">Требуется дальнейший анализ.</system:String>
+    <system:String x:Key="RadarCheckingEverything">Проверка всего, это займет некоторое время.</system:String>
+    <system:String x:Key="RadarPleaseBePatient">Пожалуйста, будьте терпеливы.</system:String>
+    <system:String x:Key="RadarElementsMoreThan">Элементы ниже расположены более чем</system:String>
+    <system:String x:Key="RadarAllTestsCompleted">Все тесты завершены, просмотрите результаты выше.</system:String>
+    <system:String x:Key="Radar10MilesAway">10 миль (16 км) от внутреннего начала координат.</system:String>
+    <system:String x:Key="RadarNoObjectInDesignOption">Ни один объект в вариантах проектирования не расположен более чем</system:String>
+    <system:String x:Key="RadarIsPartOf">Является частью</system:String>
+    <system:String x:Key="RadarXYZCoordinates">Координаты XYZ</system:String>
+    <system:String x:Key="RadarDistance">Расстояние</system:String>
+    <system:String x:Key="RadarAngle">УГОЛ (°)</system:String>
+    
+    <!-- Model Checker Strings -->
+    <system:String x:Key="ModelCheckerTitle">ПРОВЕРКА МОДЕЛИ</system:String>
+    <system:String x:Key="ModelCheckerRVTFile">Файл RVT</system:String>
+    <system:String x:Key="ModelCheckerRVTLinks">Связи RVT</system:String>
+    <system:String x:Key="ModelCheckerNoLinks">Нет связей</system:String>
+    <system:String x:Key="ModelCheckerInstanceFileName">Имя файла экземпляра</system:String>
+    <system:String x:Key="ModelCheckerInstanceName">Имя экземпляра</system:String>
+    <system:String x:Key="ModelCheckerPinnedStatus">Статус закрепления</system:String>
+    <system:String x:Key="ModelCheckerViews">Виды</system:String>
+    <system:String x:Key="ModelCheckerViewTemplates">Шаблоны видов</system:String>
+    <system:String x:Key="ModelCheckerSchedules">Спецификации</system:String>
+    <system:String x:Key="ModelCheckerSheets">Листы</system:String>
+    <system:String x:Key="ModelCheckerWarnings">Предупреждения</system:String>
+    <system:String x:Key="ModelCheckerNoWarnings">Нет предупреждений, отлично!</system:String>
+    <system:String x:Key="ModelCheckerMaterials">Материалы</system:String>
+    <system:String x:Key="ModelCheckerLinePatterns">Типы линий</system:String>
+    <system:String x:Key="ModelCheckerDWGs">DWG</system:String>
+    <system:String x:Key="ModelCheckerLoadableFamilies">Загружаемые семейства</system:String>
+    <system:String x:Key="ModelCheckerTextNotes">Текстовые заметки</system:String>
+    <system:String x:Key="ModelCheckerSystemFamilies">Системные семейства</system:String>
+    <system:String x:Key="ModelCheckerGroups">Группы</system:String>
+    <system:String x:Key="ModelCheckerReferencePlanes">Опорные плоскости</system:String>
+    <system:String x:Key="ModelCheckerPhases">Фазы</system:String>
+    <system:String x:Key="ModelCheckerElementsCount">Количество элементов</system:String>
+    <system:String x:Key="ModelCheckerNotSavedFile">Файл не сохранен</system:String>
+    
+    <!-- Model Checker Warnings Strings -->
+    <system:String x:Key="RVTLinksWarningChecker">Связи RVT - Проверка предупреждений</system:String>
+    <system:String x:Key="RVTLinksWarningsCount">Количество предупреждений</system:String>
+    <system:String x:Key="RVTLinksWarningsDetails">Детали предупреждений</system:String>
+    <system:String x:Key="RVTLinksFileName">Имя файла</system:String>
+    <system:String x:Key="RVTLinksWarningsCountLabel">Количество предупреждений</system:String>
+    <system:String x:Key="RVTLinksWarningsLabel">Предупреждения</system:String>
+    <system:String x:Key="RVTLinksIds">ID</system:String>
+    <system:String x:Key="RVTLinksLoadAllLinks">Загрузите все связи, инструмент предназначен для моделей с загруженными связями</system:String>
+    <system:String x:Key="RVTLinksLoadAtLeastOne">Загрузите хотя бы одну связь, инструмент предназначен для моделей с загруженными связями</system:String>
+    
+    <!-- Audit All Strings -->
+    <system:String x:Key="AuditAllMainFileInfos">Информация об основном файле</system:String>
+    <system:String x:Key="AuditAllLinkedFilesInfos">Информация о связанных файлах</system:String>
+    <system:String x:Key="AuditAllProjectName">Имя проекта</system:String>
+    <system:String x:Key="AuditAllProjectNumber">Номер проекта</system:String>
+    <system:String x:Key="AuditAllClientName">Имя клиента</system:String>
+    <system:String x:Key="AuditAllProjectPhases">Фазы проекта</system:String>
+    <system:String x:Key="AuditAllWorksets">Рабочие наборы</system:String>
+    <system:String x:Key="AuditAllLinkedFileName">Имя связанного файла</system:String>
+    <system:String x:Key="AuditAllLoadedStatus">Статус загрузки</system:String>
+    <system:String x:Key="AuditAllLinks">Связи</system:String>
+    <system:String x:Key="AuditAllLinksNotPinned">Связи не закреплены</system:String>
+    
+    <!-- CAD Audit Strings -->
+    <system:String x:Key="CADAuditInstances">Проверка экземпляров CAD:</system:String>
+    <system:String x:Key="CADAuditInProject">в этом проекте</system:String>
+    <system:String x:Key="CADAuditInActiveView">только в активном виде</system:String>
+    <system:String x:Key="CADAuditCancel">ОТМЕНА</system:String>
+    <system:String x:Key="CADAuditOK">ОК</system:String>
+    <system:String x:Key="CADAuditTitle">Проверка экземпляров CAD в текущем проекте</system:String>
+    <system:String x:Key="CADAuditNoInstances">Экземпляры CAD не найдены</system:String>
+    <system:String x:Key="CADAuditSelect">Выбрать</system:String>
+    <system:String x:Key="CADAuditPreflightAudit">Предварительная проверка импортированных и связанных CAD</system:String>
+    <system:String x:Key="CADAuditNo">Нет</system:String>
+    <system:String x:Key="CADAuditSelectZoom">Выбрать/Масштабировать</system:String>
+    <system:String x:Key="CADAuditDWGInstance">Экземпляр DWG</system:String>
+    <system:String x:Key="CADAuditLoadedStatus">Статус загрузки</system:String>
+    <system:String x:Key="CADAuditWorkplaneOrView">Рабочая плоскость или один вид</system:String>
+    <system:String x:Key="CADAuditDuplicate">Дубликат</system:String>
+    <system:String x:Key="CADAuditCreatorUser">Пользователь-создатель</system:String>
+    <system:String x:Key="CADAuditLocationSiteName">Имя участка расположения</system:String>
+    <system:String x:Key="CADAuditInstancesFound">Найдены экземпляры CAD.</system:String>
+    <system:String x:Key="CADAuditCheckRunOn">Проверка была запущена на</system:String>
+    <system:String x:Key="CADAuditActiveView">активном виде</system:String>
+    <system:String x:Key="CADAuditWholeModel">всей модели</system:String>
+    <system:String x:Key="CADAuditExplanations">Объяснения предупреждений</system:String>
+    <system:String x:Key="CADAuditLoadedStatusExplanation">Статус загрузки...........: предупреждение, если CAD импортирован, а не связан</system:String>
+    <system:String x:Key="CADAuditWorkplaneExplanation">Рабочая плоскость или один вид: предупреждение, если CAD размещен на одном виде с опцией 'только активный вид', а не на рабочей плоскости модели</system:String>
+    <system:String x:Key="CADAuditDuplicateExplanation">Дубликат...............: предупреждение, если CAD размещен более одного раза (связан или импортирован) в случае непреднамеренного размещения</system:String>
+    <system:String x:Key="CADAuditCheckDuration">Длительность проверки</system:String>
+    <system:String x:Key="CADAuditShowView">Показать вид</system:String>
+    
+    <!-- Naming Convention Strings -->
+    <system:String x:Key="NamingConventionReport">Отчет о соглашении об именовании модели</system:String>
+    <system:String x:Key="NamingConventionWallCheck">Проверка соглашения об именовании стен</system:String>
+    <system:String x:Key="NamingConventionWallType">Тип стены</system:String>
+    <system:String x:Key="NamingConventionCount">Количество</system:String>
+    <system:String x:Key="NamingConventionStatus">Статус</system:String>
+    <system:String x:Key="NamingConventionWrongName">Неправильное имя</system:String>
+    <system:String x:Key="NamingConventionIncorrectlyNamed">Найдены неправильно названные типы стен:</system:String>
+    <system:String x:Key="NamingConventionNoFileSelected">JSON файл не выбран.</system:String>
+</ResourceDictionary>

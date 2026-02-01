@@ -57,6 +57,10 @@
     <system:String x:Key="CoreSettings.Development.Description">Options diverses pour le développement de pyRevit</system:String>
     <system:String x:Key="CoreSettings.Development.LoadBeta">Charger les outils bêta (Scripts avec __beta__ = True, le rechargement est requis)</system:String>
 
+    <system:String x:Key="CoreSettings.Loader">Chargeur</system:String>
+    <system:String x:Key="CoreSettings.Loader.Description">Configurer le mécanisme de chargement des assemblies de pyRevit. Le nouveau chargeur est une implémentation C# qui utilise la stratégie de compilation Roslyn</system:String>
+    <system:String x:Key="CoreSettings.Loader.NewLoader">Active une nouvelle version du chargeur pyRevit (bêta) (Le redémarrage de Revit est requis)</system:String>
+
     <system:String x:Key="CoreSettings.CloseOtherConsoles">Fermer les consoles ouvertes</system:String>
     <system:String x:Key="CoreSettings.CloseOtherConsoles.Description">
         Si activé, pyRevit fermera les autres consoles de sortie lors de l'exécution d'un nouveau script.
@@ -64,6 +68,7 @@
         voulez comparer les sorties de plusieurs scripts.
     </system:String>
 
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.Toggle">Réduire le nombre de consoles ouvertes:</system:String>
     <system:String x:Key="CoreSettings.CloseOtherConsoles.Current">Consoles de la commande actuelle</system:String>
     <system:String x:Key="CoreSettings.CloseOtherConsoles.Current.Description">
         Fermer toutes les fenêtres de console associées à la commande en cours d'exécution.

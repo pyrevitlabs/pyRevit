@@ -1,23 +1,22 @@
 title:
-  ru: Края 3D вида
-  fr_fr: Zone de coupe
   en_us: Section Box
+  fr_fr: Zone de coupe
+  ru: Края 3D вида
+  chinese_s: 剖面框
+  es_es: Caja de sección
   de_de: 3D-Schnittbereich
+  pt_br: Caixa de Corte
 tooltip:
-  ru: >-
-    Переключает либо видимость, либо активность границы 3D-вида в текущем 3D виде —
-    в зависимости от конфигурации. При выборе режима активности, область сохраняется при отключении
-    и восстанавливается при повторном включении.
-  fr_fr: >-
-    Bascule soit la visibilité, soit l’activation de la boîte de coupe dans la vue 3D actuelle —
-    selon la configuration. En mode d’activation, la zone actuelle est enregistrée lorsqu'elle est désactivée
-    et restaurée lorsqu'elle est réactivée.
   en_us: >-
-    Toggles either the visibility or the active state of the section box in the current 3D view —
-    depending on configuration. In active mode, the current box is saved when disabled
-    and restored when re-enabled.
+    Toggles either the visibility or the active state of the section box in the current 3D view — depending on configuration. In active mode, the current box is saved when disabled and restored when re-enabled.
+  fr_fr: >-
+    Bascule soit la visibilité, soit l’activation de la boîte de coupe dans la vue 3D actuelle — selon la configuration. En mode d’activation, la zone actuelle est enregistrée lorsqu'elle est désactivée et restaurée lorsqu'elle est réactivée.
+  ru: >-
+    Переключает либо видимость, либо активность границы 3D-вида в текущем 3D виде — в зависимости от конфигурации. При выборе режима активности, область сохраняется при отключении и восстанавливается при повторном включении.
+  chinese_s: 在当前三维视图中切换剖面框的可见性或活动状态（具体取决于配置）。在活动模式下，禁用时会保存当前框体状态，重新启用时则恢复
+  es_es: >-
+    Alterna la visibilidad o el estado activo de la caja de sección en la vista 3D actual — según la configuración. En modo activo, la caja actual se guarda cuando se desactiva y se restaura cuando se vuelve a activar.
   de_de: >-
-    Dieses Werkzeug schaltet entweder die Sichtbarkeit oder den aktiven Zustand
-    des 3D-Schnittbereichs in der aktuellen 3D-Ansicht um — je nach Konfiguration.
-    Im Aktivmodus wird der aktuelle Bereich beim Deaktivieren gespeichert und beim
-    erneuten Aktivieren wiederhergestellt.
+    Dieses Werkzeug schaltet entweder die Sichtbarkeit oder den aktiven Zustand des 3D-Schnittbereichs in der aktuellen 3D-Ansicht um — je nach Konfiguration. Im Aktivmodus wird der aktuelle Bereich beim Deaktivieren gespeichert und beim erneuten Aktivieren wiederhergestellt.
+  pt_br: >-
+    Alterna a visibilidade ou o estado ativo da caixa de corte na vista 3D atual — dependendo da configuração. No modo ativo, a caixa atual é salva quando desabilitada e restaurada quando reabilitada.

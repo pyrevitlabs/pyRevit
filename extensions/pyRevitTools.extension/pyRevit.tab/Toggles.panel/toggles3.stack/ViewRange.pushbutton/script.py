@@ -738,10 +738,12 @@ class MainWindow(forms.WPFWindow):
     def __init__(self):
         forms.WPFWindow.__init__(self, "MainWindow.xaml")
         self.Closed += self.window_closed
+        script.restore_window_position(self)
         # Events are now handled via @events.handle decorators
         server.add_server()
 
     def window_closed(self, sender, args):
+        script.save_window_position(self)
         server.remove_server()
         refresh_event.Raise()
         # Stop all registered events using the events API

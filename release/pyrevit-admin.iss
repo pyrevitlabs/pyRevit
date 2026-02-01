@@ -1,6 +1,6 @@
 #define MyAppName "pyRevit"
 #define MyAppUUID "f2a3da53-6f34-41d5-abbd-389ffa7f4d5f"
-#define MyAppVersion "5.3.1.25308"
+#define MyAppVersion "6.0.0.26032"
 #define MyAppPublisher "pyRevitLabs"
 #define MyAppURL "pyrevitlabs.io"
 #include "CodeDependencies.iss"
@@ -78,19 +78,56 @@ Source: "..\pyRevitfile"; DestDir: "{app}"; Flags: ignoreversion; Components: co
 Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\bin"
 
 [Run]
-Filename: "{app}\bin\pyrevit.exe"; Description: "Clearning caches..."; Parameters: "caches clear --all"; Flags: runhidden runascurrentuser
-Filename: "{app}\bin\pyrevit.exe"; Description: "Detach existing clones..."; Parameters: "detach --all"; Flags: runhidden runascurrentuser
-Filename: "{app}\bin\pyrevit.exe"; Description: "Registering this clone..."; Parameters: "clones add this master --force"; Flags: runhidden runascurrentuser
-Filename: "{app}\bin\pyrevit.exe"; Description: "Attaching this clone..."; Parameters: "attach master default --installed"; Flags: runhidden runascurrentuser
+Filename: "{app}\bin\pyrevit.exe"; Description: "Clearning caches..."; Parameters: "caches clear --all"; Flags: runhidden
+Filename: "{app}\bin\pyrevit.exe"; Description: "Detach existing clones..."; Parameters: "detach --all"; Flags: runhidden
+Filename: "{app}\bin\pyrevit.exe"; Description: "Registering this clone..."; Parameters: "clones add this master --force"; Flags: runhidden
+Filename: "{app}\bin\pyrevit.exe"; Description: "Attaching this clone..."; Parameters: "attach master default --installed --allusers"; Flags: runhidden
 
 [UninstallRun]
-Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "ClearCaches"; Parameters: "caches clear --all"; Flags: runhidden runascurrentuser
-Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detach --all"; Flags: runhidden runascurrentuser
+Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "ClearCaches"; Parameters: "caches clear --all"; Flags: runhidden
+Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detach --all"; Flags: runhidden
 
 [Code]
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  ProgramDataPyRevit: String;
+  MarkerPath: String;
+begin
+  if CurStep = ssPostInstall then
+  begin
+    ProgramDataPyRevit := ExpandConstant('{commonappdata}\pyRevit');
+    MarkerPath := ProgramDataPyRevit + '\install_all_users';
+    if ForceDirectories(ProgramDataPyRevit) then
+      SaveStringToFile(MarkerPath, 'AllUsers', False)
+    else
+    begin
+      Log('Could not create ProgramData\pyRevit for install_all_users marker');
+      MsgBox('Warning: Could not create all-users marker file. Config will use per-user scope.', mbInformation, MB_OK);
+    end;
+  end;
+end;
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  MarkerPath: String;
+begin
+  if CurUninstallStep = usPostUninstall then
+  begin
+    MarkerPath := ExpandConstant('{commonappdata}\pyRevit\install_all_users');
+    if FileExists(MarkerPath) and DeleteFile(MarkerPath) then
+      Log('Removed install_all_users marker')
+    else if FileExists(MarkerPath) then
+      Log('Could not remove install_all_users marker: ' + MarkerPath);
+  end;
+end;
+
 function InitializeSetup: Boolean;
 begin
+  // .NET 8 for Revit 2025-2026
   Dependency_AddDotNet80;
   Dependency_AddDotNet80Desktop;
+  // .NET 10 for Revit 2027+
+  Dependency_AddDotNet100;
+  Dependency_AddDotNet100Desktop;
   Result := True;
 end;
