@@ -2,10 +2,12 @@
   <PropertyGroup>
     <AssemblyName>pyRevitLoader</AssemblyName>
     <RootNamespace>pyRevitLoader</RootNamespace>
-    
     <DefineConstants>$(DefineConstants);PYREVITLABS_ENGINE</DefineConstants>
     <IronPythonVersion>IPY2712PR</IronPythonVersion>
     <IronPythonStdLib>python_2712pr_lib.zip</IronPythonStdLib>
+    <UseLoader>true</UseLoader>
+    <UseAssemblyBuilder>true</UseAssemblyBuilder>
+    <UseExtensionParser>true</UseExtensionParser>
     <Version>2.7.12</Version>
   </PropertyGroup>
 </Project>

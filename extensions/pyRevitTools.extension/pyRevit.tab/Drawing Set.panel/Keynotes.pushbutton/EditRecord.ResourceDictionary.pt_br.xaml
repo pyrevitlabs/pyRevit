@@ -1,0 +1,51 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Editar Nota-chave</system:String>
+    <system:String x:Key="KeynoteTitle">Chave da Nota</system:String>
+    <system:String x:Key="ParentTitle">Dono da Nota-chave</system:String>
+    <system:String x:Key="ApplyChanges">Aplicar Alterações</system:String>
+    <system:String x:Key="UpperInfo">TUDO MAIÚSCULA</system:String>
+    <system:String x:Key="LowerInfo">tudo minúscula</system:String>
+    <system:String x:Key="TitleCaseInfo">Iniciais Em Maiúscula</system:String>
+    <system:String x:Key="SentenceCaseInfo">Primeira letra maiúscula</system:String>
+    <system:String x:Key="TranslateInfo">Traduzir</system:String>
+    <system:String x:Key="TemplatesInfo">Modelos</system:String>
+    
+    
+    <system:String x:Key="AddCategoryTitle">Adicionar Categoria</system:String>
+    <system:String x:Key="CreateCategoryKey">Criar Chave da Categoria</system:String>
+    <system:String x:Key="AddCategoryApply">Adicionar Categoria</system:String>
+    
+    <system:String x:Key="EditCategoryTitle">Editar Categoria</system:String>
+    <system:String x:Key="EditCategoryKey">Chave da Categoria</system:String>
+    <system:String x:Key="EditCategoryApply">Atualizar Categoria</system:String>
+    
+    <system:String x:Key="AddKeynoteTitle">Adicionar Nota-chave</system:String>
+    <system:String x:Key="CreateKeynoteKey">Criar Chave da Nota</system:String>
+    <system:String x:Key="AddKeynoteApply">Adicionar Nota-chave</system:String>
+    
+    <system:String x:Key="EditKeynoteTitle">Editar Nota-chave</system:String>
+    <system:String x:Key="EditKeynoteKey">Chave da Nota</system:String>
+    <system:String x:Key="EditKeynoteApply">Atualizar Nota-chave</system:String>
+    
+    
+    <system:String x:Key="CategoryKeyValidate">A categoria deve ter uma chave única.</system:String>
+    <system:String x:Key="CategoryTitleValidate">A categoria deve ter um título.</system:String>
+    <system:String x:Key="CategoryTitleRemoved">O título existente foi removido. A categoria deve ter um título.</system:String>
+    
+    <system:String x:Key="KeynoteKeyValidate">A nota-chave deve ter uma chave única.</system:String>
+    <system:String x:Key="KeynoteTextValidate">A nota-chave deve ter um texto.</system:String>
+    <system:String x:Key="KeynoteParentValidate">A nota-chave deve ter um pai.</system:String>
+    <system:String x:Key="KeynoteTextRemoved">O texto existente foi removido. A nota-chave deve ter um texto.</system:String>
+    
+    <system:String x:Key="EnterUniqueKey">Insira uma Chave Única</system:String>
+    <system:String x:Key="PickParent">Escolher pai...</system:String>
+    
+    <system:String x:Key="SelectTemplate">Selecionar Modelo</system:String>
+    <system:String x:Key="TemplateReserved">-- reservado para uso futuro --</system:String>
+    <system:String x:Key="TemplateDontUse">!! não use !!</system:String>
+    <system:String x:Key="ComingSoon">Ainda não implementado. Em breve.</system:String>
+    
+    
+</ResourceDictionary>

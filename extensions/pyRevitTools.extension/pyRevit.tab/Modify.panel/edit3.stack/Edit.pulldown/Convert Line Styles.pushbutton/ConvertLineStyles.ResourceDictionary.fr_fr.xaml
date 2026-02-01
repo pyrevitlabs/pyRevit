@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Convertir les Styles de Ligne</system:String>
+    <system:String x:Key="FromStyle">Depuis le Style</system:String>
+    <system:String x:Key="ToStyle">Vers le Style</system:String>
+    <system:String x:Key="ConvertSelectedStyles">Convertir les Styles Sélectionnés</system:String>
+    <system:String x:Key="ConvertStyles">Convertir le(s) Style(s)</system:String>
+    <system:String x:Key="ConvertOptions">Options de Conversion</system:String>
+    <system:String x:Key="ConvertDetailLines">Convertir les Lignes de Détail</system:String>
+    <system:String x:Key="ConvertModelLines">Convertir les Lignes de Modèle</system:String>
+    <system:String x:Key="ConvertFilledRegionLines">Convertir les Lignes de Région Remplie (Les Régions Remplies Nécessitent un Secouement)</system:String>
+    <system:String x:Key="ConvertGroupedLines">Convertir les Lignes Groupées (Pas de Support API)</system:String>
+    <system:String x:Key="DeleteConvertedStyles">Supprimer le(s) Style(s) Converti(s) une Fois Terminé</system:String>
+</ResourceDictionary>

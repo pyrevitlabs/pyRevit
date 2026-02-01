@@ -1,6 +1,14 @@
 # -*- coding: UTF-8 -*-
+import sys
+import os
+# Add current directory to path for local imports
+_current_dir = os.path.dirname(os.path.abspath(__file__))
+if _current_dir not in sys.path:
+    sys.path.insert(0, _current_dir)
+
 from pyrevit import script, revit, DB, DOCS
 from pyrevit.preflight import PreflightTestCase
+from check_translations import DocstringMeta
 
 doc = DOCS.doc
 
@@ -56,29 +64,38 @@ def grids_scoped(document=doc):
 
 
 def checkModel(doc, output):
+    from check_translations import get_check_translation
     output = script.get_output()
     output.close_others()
-    output.print_md("# Grids Data Lister")
+    output.print_md("# {}".format(get_check_translation("GridsDataLister")))
     count = grids_count()
-    output.print_md("## Number of grids: {0}".format(count))
+    output.print_md("## {0}: {1}".format(get_check_translation("NumberOfGrids"), count))
     names = grids_names() # [1,2,3,4]
     types = grids_types() # [bubble, bubble, bubble, bubble]
     pinned = grids_pinned() # [True, False, True, False]
     scoper = grids_scoped() # [Name of scope, Name of scope, Name of scope, Name of scope]
-    output.print_table(table_data=zip(names, types, pinned, scoper), title="Grids", columns=["Name", "Type", "Pinned", "Scope Box"])
+    output.print_table(
+        table_data=zip(names, types, pinned, scoper),
+        title=get_check_translation("Grids"),
+        columns=[
+            get_check_translation("Name"),
+            get_check_translation("Type"),
+            get_check_translation("Pinned"),
+            get_check_translation("ScopeBox")
+        ]
+    )
 
 
 
 class ModelChecker(PreflightTestCase):
-    """
-    List grids, if they are pinned, scoped boxed, or named
-
-    This QC tools returns you with the following data:
-        Grids count, name, type, pinned status
-
-    """
-
-    name = "Grids Data Lister"
+    __metaclass__ = DocstringMeta
+    _docstring_key = "CheckDescription_GridsDataLister"
+    
+    @property
+    def name(self):
+        from check_translations import get_check_translation
+        return get_check_translation("CheckName_GridsDataLister")
+    
     author = "Jean-Marc Couffin"
 
 

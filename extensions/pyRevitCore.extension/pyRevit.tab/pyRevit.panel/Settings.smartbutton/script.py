@@ -156,6 +156,8 @@ class SettingsWindow(forms.WPFWindow):
         self.minhostdrivefreespace_tb.Text = str(user_config.min_host_drivefreespace)
 
         self.loadbetatools_cb.IsChecked = user_config.load_beta
+        
+        self.new_loader.IsChecked = user_config.new_loader
 
         self.minimize_consoles_cb.IsChecked = user_config.output_close_others
 
@@ -516,6 +518,10 @@ class SettingsWindow(forms.WPFWindow):
         """Callback method for resetting cache config to defaults"""
         self.bincache_rb.IsChecked = True
 
+    def new_loader_changed(self, sender, args):
+        """Callback method for when new_loader toggle changes"""
+        pass
+
     def copy_envvar_value(self, sender, args):
         """Callback method for copying selected env var value to clipboard"""
         script.clipboard_copy(self.envvars_lb.SelectedItem.Value)
@@ -855,6 +861,7 @@ class SettingsWindow(forms.WPFWindow):
             user_config.min_host_drivefreespace = 0
 
         user_config.load_beta = self.loadbetatools_cb.IsChecked
+        user_config.new_loader = self.new_loader.IsChecked
 
         user_config.output_close_others = self.minimize_consoles_cb.IsChecked
         if self.closewindows_current_rb.IsChecked:

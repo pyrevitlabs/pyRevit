@@ -1,0 +1,100 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <!-- Window Title -->
+    <system:String x:Key="ColorSplasher.Title">Окраска Элементов по Значению Параметра</system:String>
+
+    <!-- Section Labels -->
+    <system:String x:Key="ColorSplasher.Labels.CategorySelection">Выбор Категории</system:String>
+    <system:String x:Key="ColorSplasher.Labels.ParameterSelection">Выбор Параметра</system:String>
+    <system:String x:Key="ColorSplasher.Labels.ValuesColorAssignment">Назначение Цветов Значениям</system:String>
+    <system:String x:Key="ColorSplasher.Labels.ManageSchemes">Управление Схемами</system:String>
+    <system:String x:Key="ColorSplasher.Labels.GenerateColors">Генерация Цветов</system:String>
+    <system:String x:Key="ColorSplasher.Labels.ApplySettings">Применить Настройки</system:String>
+
+    <!-- Buttons -->
+    <system:String x:Key="ColorSplasher.Buttons.SaveLoadScheme">Сохранить / Загрузить Цветовую Схему</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.GradientColors">Градиентные Цвета</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.RandomColors">Случайные Цвета</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.SetColors">Установить Цвета</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.Reset">Сбросить</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.CreateLegend">Создать Легенду</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.CreateViewFilters">Создать Фильтры Вида</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.SelectAll">Выбрать Все</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.SelectNone">Снять Выбор</system:String>
+
+    <!-- Checkboxes -->
+    <system:String x:Key="ColorSplasher.Checkboxes.ApplyLineColor">Применить Цвет Линии</system:String>
+    <system:String x:Key="ColorSplasher.Checkboxes.ApplyForegroundPattern">Применить Цвет Узора Переднего Плана</system:String>
+    <system:String x:Key="ColorSplasher.Checkboxes.ApplyBackgroundPattern">Применить Цвет Узора Фона</system:String>
+    <system:String x:Key="ColorSplasher.Checkboxes.ApplyBackgroundPattern.RequiresRevit2019">Применить Цвет Узора Фона (Требуется Revit 2019 или новее)</system:String>
+
+    <!-- Tooltips -->
+    <system:String x:Key="ColorSplasher.Tooltips.CategorySelection">Выберите категорию, чтобы начать окраску.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.ParameterSelection">Выберите параметр для окраски элементов в зависимости от его значения.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.ValuesColorAssignment">Переназначьте цвета, нажав на их значение.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.SaveLoadScheme">Сохраните текущую цветовую схему или загрузите существующую.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.GradientColors">На основе цвета первого и последнего значения переназначьте градиентные цвета всем значениям.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.RandomColors">Переназначьте новые случайные цвета всем значениям.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.SetColors">Замените цвета для каждого элемента в виде.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.Reset">Сбросьте цвета в вашем виде Revit до начального состояния.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.CreateLegend">Создайте новый вид легенды для всех значений и их цветов.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.CreateViewFilters">Создайте фильтры вида и правила для всех значений и их цветов.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.ApplyLineColor">При включении применяет цвет к цвету линии проекции.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.ApplyForegroundPattern">При включении применяет цвет к цветам узора переднего плана поверхности и разреза.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.ApplyBackgroundPattern">При включении применяет цвет к цветам узора фона поверхности и разреза. Требуется Revit 2019 или новее.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.SearchParameters">Введите текст для поиска и фильтрации параметров.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.SelectAll">Выбрать все элементы из всех значений параметров.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.SelectNone">Очистить текущий выбор в Revit.</system:String>
+
+    <!-- Messages -->
+    <system:String x:Key="ColorSplasher.Messages.SelectCategoryHere">Выберите Категорию Здесь!</system:String>
+    <system:String x:Key="ColorSplasher.Messages.SelectCategory">Выбрать Категорию</system:String>
+    <system:String x:Key="ColorSplasher.Messages.SelectParameter">Выбрать Параметр</system:String>
+    <system:String x:Key="ColorSplasher.Messages.SpacesColorScheme">*Помещения могут требовать цветовую схему в виде.</system:String>
+    <system:String x:Key="ColorSplasher.Messages.NoCategorySelected">Пожалуйста, выберите категорию для сброса цветов.</system:String>
+    <system:String x:Key="ColorSplasher.Messages.NoLegendView">Для создания новой легенды вам нужно иметь хотя бы одну. Пожалуйста, создайте вид легенды.</system:String>
+    <system:String x:Key="ColorSplasher.Messages.NoItemsForLegend">Нет элементов для создания легенды. Пожалуйста, выберите категорию и параметр со значениями.</system:String>
+    <system:String x:Key="ColorSplasher.Messages.LegendCreated">Легенда успешно создана: {0}</system:String>
+    <system:String x:Key="ColorSplasher.Messages.LegendFailed">Не удалось создать легенду: {0}</system:String>
+    <system:String x:Key="ColorSplasher.Messages.FilterNotSupported">Создание фильтров для этого типа параметра не поддерживается.</system:String>
+    <system:String x:Key="ColorSplasher.Messages.FilterCreationFailed">Фильтры вида не были созданы. Выбранный параметр не предоставляется Revit, и правила не могут быть созданы.</system:String>
+    <system:String x:Key="ColorSplasher.Messages.ViewTypeNotSupported">Настройки видимости не могут быть изменены в видах {0}. Пожалуйста, измените текущий вид.</system:String>
+    <system:String x:Key="ColorSplasher.Messages.UnableToAccessDocument">Невозможно получить доступ к документу Revit</system:String>
+    <system:String x:Key="ColorSplasher.Messages.UnableToAccessDocument.Content">Пожалуйста, убедитесь, что проект Revit открыт, и попробуйте снова.</system:String>
+
+    <!-- Placeholders -->
+    <system:String x:Key="ColorSplasher.Placeholders.SearchParameters">Поиск Параметров...</system:String>
+    <system:String x:Key="ColorSplasher.Placeholders.SelectCategoryAndParameter">Выберите категорию и параметр, чтобы увидеть значения параметров</system:String>
+    <system:String x:Key="ColorSplasher.Messages.ShiftClickToSelect">Shift+Клик для выбора элементов</system:String>
+
+    <!-- Save/Load Dialog -->
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.Title">Сохранить / Загрузить Цветовую Схему</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.IfLoading">Если Загрузка Цветовой Схемы:</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.LoadByValue">Загрузить по Значению Параметра.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.LoadByValue.Tooltip">Только при загрузке. Это загрузит цветовую схему на основе Значения, которое элемент имел при сохранении.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.LoadByPosition">Загрузить по Позиции в Окне.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.LoadByPosition.Tooltip">Только при загрузке. Это загрузит цветовую схему на основе Позиции, которую элемент имел при сохранении.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.SaveButton">Сохранить Цветовую Схему</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.LoadButton">Загрузить Цветовую Схему</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.IfLoading.Tooltip">Только при загрузке.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.SaveTitle">Указать Путь для Сохранения Цветовой Схемы</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.LoadTitle">Указать Путь для Загрузки Цветовой Схемы</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.NoColorsDetected">Цвета Не Обнаружены</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.NoColorsDetected.Message">Список значений в главном окне пуст. Пожалуйста, выберите категорию и параметр для добавления элементов с цветами.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.NoValuesDetected">Значения Не Обнаружены</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.NoValuesDetected.Message">Список значений в главном окне пуст. Пожалуйста, выберите категорию и параметр для добавления элементов для применения цветов.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.ErrorSaving">Ошибка при Сохранении Схемы</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.ErrorLoading">Ошибка при Загрузке Схемы</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.FileDoesNotExist">Файл не существует.</system:String>
+
+    <!-- TaskDialog Titles -->
+    <system:String x:Key="ColorSplasher.TaskDialog.Title">Окраска Элементов по Параметру</system:String>
+    <system:String x:Key="ColorSplasher.TaskDialog.Error">Ошибка Color Splasher</system:String>
+
+    <!-- Legend Name Prefix -->
+    <system:String x:Key="ColorSplasher.LegendNamePrefix">Color Splasher - </system:String>
+
+</ResourceDictionary>

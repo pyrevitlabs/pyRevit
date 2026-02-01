@@ -1,0 +1,34 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Outil de Mesure 3D</system:String>
+    
+    <system:String x:Key="CurrentMeasurement">Mesure Actuelle</system:String>
+    <system:String x:Key="Point1NotSelected">Point 1 : Non sélectionné</system:String>
+    <system:String x:Key="Point2NotSelected">Point 2 : Non sélectionné</system:String>
+    <system:String x:Key="MeasurementHistory">Historique des Mesures</system:String>
+    <system:String x:Key="NoMeasurementsYet">Aucune mesure pour le moment</system:String>
+    <system:String x:Key="PressESCToExit">Appuyez sur ESC pour quitter</system:String>
+    
+    <system:String x:Key="Point1Format">Point 1 : {}</system:String>
+    <system:String x:Key="Point2Format">Point 2 : {}</system:String>
+    <system:String x:Key="DeltaXFormat">ΔX : {:>15}</system:String>
+    <system:String x:Key="DeltaYFormat">ΔY : {:>15}</system:String>
+    <system:String x:Key="DeltaZFormat">ΔZ : {:>15}</system:String>
+    <system:String x:Key="DiagonalFormat">Diagonale : {}</system:String>
+    <system:String x:Key="SlopeFormat">Pente : {}</system:String>
+    
+    <system:String x:Key="MeasurementHistoryEntry">Mesure {} :\n  P1 : {}\n  P2 : {}\n  ΔX : {:>15}\n  ΔY : {:>15}\n  ΔZ : {:>15}\n  Diagonale : {}\n  Pente : {}</system:String>
+    
+    <system:String x:Key="Alert3DViewRequired">Veuillez activer une vue 3D avant d'utiliser l'outil de Mesure 3D.</system:String>
+    <system:String x:Key="Alert3DViewRequiredTitle">Vue 3D Requise</system:String>
+    <system:String x:Key="WarningBarPickFirstPoint">Sélectionner le premier point</system:String>
+    <system:String x:Key="WarningBarPickSecondPoint">Sélectionner le deuxième point</system:String>
+    <system:String x:Key="AlertMeasurementCancelled">Mesure annulée en raison d'une opération invalide. Veuillez réessayer.</system:String>
+    <system:String x:Key="AlertMeasurementErrorTitle">Erreur de Mesure</system:String>
+    <system:String x:Key="AlertUnexpectedError">Une erreur inattendue s'est produite lors de la mesure. Consultez le journal pour plus de détails.</system:String>
+    <system:String x:Key="ToastMeasurementsCopied">Les mesures sont dans le Presse-papiers !</system:String>
+    <system:String x:Key="ToastMeasure3DTitle">Mesure 3D</system:String>
+    <system:String x:Key="ProjectUnitLengthUnits">Unités de Longueur (ajuster dans les Unités du Projet) : \n</system:String>
+    <system:String x:Key="ProjectUnitSlopeUnits">Unités de Pente (ajuster dans les Unités du Projet) : \n</system:String>
+</ResourceDictionary>

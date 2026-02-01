@@ -1,0 +1,37 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Select Options to Match:</system:String>
+    
+    <system:String x:Key="ElementGraphicsOverrides">Element Graphics Overrides:</system:String>
+    <system:String x:Key="Halftone">Halftone</system:String>
+    <system:String x:Key="Transparency">Transparency</system:String>
+    
+    <system:String x:Key="ProjectionOptions">Projection Options:</system:String>
+    <system:String x:Key="ProjectionLineColor">Projection Line Color</system:String>
+    <system:String x:Key="ProjectionLinePattern">Projection Line Pattern</system:String>
+    <system:String x:Key="ProjectionLineWeight">Projection Line Weight</system:String>
+    <system:String x:Key="ProjectionFillColor">Projection Fill Color</system:String>
+    <system:String x:Key="ProjectionFillPattern">Projection Fill Pattern</system:String>
+    <system:String x:Key="ProjectionFillPatternVisibility">Projection Fill Pattern Visibility</system:String>
+    
+    <system:String x:Key="CutOptions">Cut Options:</system:String>
+    <system:String x:Key="CutLineColor">Cut Line Color</system:String>
+    <system:String x:Key="CutLinePattern">Cut Line Pattern</system:String>
+    <system:String x:Key="CutLineWeight">Cut Line Weight</system:String>
+    <system:String x:Key="CutFillColor">Cut Fill Color</system:String>
+    <system:String x:Key="CutFillPattern">Cut Fill Pattern</system:String>
+    <system:String x:Key="CutFillPatternVisibility">Cut Fill Pattern Visibility</system:String>
+    
+    <system:String x:Key="DimensionOverrides">Dimension Overrides:</system:String>
+    <system:String x:Key="ReplacedValue">Replaced Value</system:String>
+    <system:String x:Key="TextPosition">Text Position</system:String>
+    <system:String x:Key="AboveValue">Above Value</system:String>
+    <system:String x:Key="BelowValue">Below Value</system:String>
+    <system:String x:Key="PrefixValue">Prefix Value</system:String>
+    <system:String x:Key="PostfixValue">Postfix Value</system:String>
+    
+    <system:String x:Key="CheckAll">Check All</system:String>
+    <system:String x:Key="CheckNone">Check None</system:String>
+    <system:String x:Key="SaveOptions">Save Options</system:String>
+</ResourceDictionary>

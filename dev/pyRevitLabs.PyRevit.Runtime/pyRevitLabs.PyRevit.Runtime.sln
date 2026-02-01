@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.1.32421.90
@@ -22,6 +22,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime.2025", "2025\pyRevitLabs.PyRevit.Runtime.2025.csproj", "{E1FC3F88-7E97-49EF-8D03-7F449B6AFB40}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime.2026", "2026\pyRevitLabs.PyRevit.Runtime.2026.csproj", "{85D65215-0AB0-93BF-291A-EF0BD2269244}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.PyRevit.Runtime.2027", "2027\pyRevitLabs.PyRevit.Runtime.2027.csproj", "{A7F21C27-3E89-4D10-B5F2-9E8C6A1B0D27}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -111,6 +113,14 @@ Global
 		{85D65215-0AB0-93BF-291A-EF0BD2269244}.Release IPY2712PR|x64.Build.0 = Release IPY2712PR|x64
 		{85D65215-0AB0-93BF-291A-EF0BD2269244}.Release IPY342|x64.ActiveCfg = Release IPY342|x64
 		{85D65215-0AB0-93BF-291A-EF0BD2269244}.Release IPY342|x64.Build.0 = Release IPY342|x64
+		{A7F21C27-3E89-4D10-B5F2-9E8C6A1B0D27}.Debug IPY2712PR|x64.ActiveCfg = Debug IPY2712PR|x64
+		{A7F21C27-3E89-4D10-B5F2-9E8C6A1B0D27}.Debug IPY2712PR|x64.Build.0 = Debug IPY2712PR|x64
+		{A7F21C27-3E89-4D10-B5F2-9E8C6A1B0D27}.Debug IPY342|x64.ActiveCfg = Debug IPY342|x64
+		{A7F21C27-3E89-4D10-B5F2-9E8C6A1B0D27}.Debug IPY342|x64.Build.0 = Debug IPY342|x64
+		{A7F21C27-3E89-4D10-B5F2-9E8C6A1B0D27}.Release IPY2712PR|x64.ActiveCfg = Release IPY2712PR|x64
+		{A7F21C27-3E89-4D10-B5F2-9E8C6A1B0D27}.Release IPY2712PR|x64.Build.0 = Release IPY2712PR|x64
+		{A7F21C27-3E89-4D10-B5F2-9E8C6A1B0D27}.Release IPY342|x64.ActiveCfg = Release IPY342|x64
+		{A7F21C27-3E89-4D10-B5F2-9E8C6A1B0D27}.Release IPY342|x64.Build.0 = Release IPY342|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

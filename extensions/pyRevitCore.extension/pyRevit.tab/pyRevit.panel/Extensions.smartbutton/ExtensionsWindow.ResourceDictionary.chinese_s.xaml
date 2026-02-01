@@ -1,0 +1,39 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:v="clr-namespace:System;assembly=mscorlib">
+    <v:String x:Key="Window.Title">pyRevit 扩展管理器</v:String>
+    <v:String x:Key="ExtensionList.TextBlock">已注册扩展包列表：</v:String>
+    <v:String x:Key="ExtensionInfo.DevelopedByLink">开发者：</v:String>
+    <v:String x:Key="ExtensionInfo.RepositoryLink">存储库：</v:String>
+    <v:String x:Key="ExtensionSettings.PrivateRepositoryCheck">Git 存储库是私有的（提供帐户凭据）</v:String>
+    <v:String x:Key="ExtensionSettings.GroupName">扩展包设置：</v:String>
+    <v:String x:Key="ExtensionSettings.Username">用户名：</v:String>
+    <v:String x:Key="ExtensionSettings.Password">密码（或访问令牌）：</v:String>
+    <v:String x:Key="Buttons.UpdateExtension">更新扩展设置</v:String>
+    <v:String x:Key="Buttons.InstallExtension">安装扩展</v:String>
+    <v:String x:Key="Buttons.EnableExtension">启用扩展</v:String>
+    <v:String x:Key="Buttons.RemoveExtension">删除扩展</v:String>
+    <v:String x:Key="Buttons.ToggleButton.Enable">启用</v:String>
+    <v:String x:Key="Buttons.ToggleButton.Disable">禁用</v:String>
+    <v:String x:Key="ExtensionsList.ColumnName">名称</v:String>
+    <v:String x:Key="ExtensionsList.ColumnType">类型</v:String>
+    <v:String x:Key="ExtensionsList.ColumnAuthor">作者</v:String>
+    <v:String x:Key="ExtensionsList.ColumnBuiltin">内置</v:String>
+    <v:String x:Key="ExtensionsList.ColumnRocketMode">火箭模式</v:String>
+    <v:String x:Key="ExtensionsList.ColumnInstalled">已安装</v:String>
+    <v:String x:Key="ExtensionsList.ColumnStatus">状态</v:String>
+    <v:String x:Key="ExtensionsList.ColumnLastCommit">最后提交</v:String>
+    <v:String x:Key="ExtensionsList.GitRepository">Git 存储库 URL</v:String>
+    <v:String x:Key="Extension.Enabled">已启用</v:String>
+    <v:String x:Key="Extension.Disabled">已禁用</v:String>
+    <v:String x:Key="Extension.Installed">是</v:String>
+    <v:String x:Key="Extension.NotInstalled">否</v:String>
+    <v:String x:Key="Extension.TypeUnknown">未知</v:String>
+    <v:String x:Key="Extension.TypeUITools">Revit UI 工具</v:String>
+    <v:String x:Key="Extension.TypeIronLibrary">IronPython 库</v:String>
+    <v:String x:Key="Extension.InstallPath">安装到：{}</v:String>
+    <v:String xml:space="preserve" x:Key="Extension.InstalledPath">安装位置：
+{}</v:String>
+    <v:String x:Key="Extension.Dependencies">依赖项：</v:String>
+</ResourceDictionary>

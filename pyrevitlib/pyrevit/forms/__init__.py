@@ -1,3 +1,4 @@
+# -*- coding: UTF-8 -*-
 """Reusable WPF forms for pyRevit.
 
 Examples:
@@ -662,13 +663,21 @@ class TemplateUserInputWindow(WPFWindow):
     """
 
     xaml_source = "BaseWindow.xaml"
+    default_title_key = "pyRevit.DefaultWindowTitle"
 
     def __init__(self, context, title, width, height, **kwargs):
         """Initialize user input window."""
         WPFWindow.__init__(
             self, op.join(XAML_FILES_DIR, self.xaml_source), handle_esc=True
         )
-        self.Title = title or "pyRevit"
+        if title:
+            self.Title = title
+        else:
+            try:
+                localized_title = self.get_locale_string(self.default_title_key)
+            except wpf.ResourceReferenceKeyNotFoundException:
+                localized_title = None
+            self.Title = localized_title if isinstance(localized_title, str) else "User Input"
         self.Width = width
         self.Height = height
 
@@ -694,7 +703,7 @@ class TemplateUserInputWindow(WPFWindow):
     def show(
         cls,
         context,  # pylint: disable=W0221
-        title="User Input",
+        title=None,
         width=DEFAULT_INPUTWINDOW_WIDTH,
         height=DEFAULT_INPUTWINDOW_HEIGHT,
         **kwargs
@@ -878,6 +887,7 @@ class SelectFromList(TemplateUserInputWindow):
     in_check = False
     in_uncheck = False
     xaml_source = "SelectFromList.xaml"
+    default_title_key = "SelectFromList.DefaultTitle"
 
     @property
     def use_regex(self):
@@ -886,9 +896,18 @@ class SelectFromList(TemplateUserInputWindow):
 
     def _setup(self, **kwargs):
         # custom button name?
-        button_name = kwargs.get("button_name", "Select")
-        if button_name:
+        button_name = kwargs.get("button_name", None)
+        if button_name is not None:
+            # Only override Content when caller provides a custom button name.
+            # When button_name is None, let the XAML DynamicResource binding
+            # defined in SelectFromList.xaml control the button content.
             self.select_b.Content = button_name
+        else:
+            # Use localized default, falling back to generic text if resource is missing
+            try:
+                self.select_b.Content = self.get_locale_string("SelectFromList.Select.Button")
+            except wpf.ResourceReferenceKeyNotFoundException:
+                self.select_b.Content = "Select"
 
         # attribute to use as name?
         self._nameattr = kwargs.get("name_attr", None)
@@ -918,8 +937,20 @@ class SelectFromList(TemplateUserInputWindow):
             self.show_element(self.reset_b)
 
         # context group title?
-        self.ctx_groups_title = kwargs.get("group_selector_title", "List Group")
-        self.ctx_groups_title_tb.Text = self.ctx_groups_title
+        self.ctx_groups_title = kwargs.get("group_selector_title")
+        if self.ctx_groups_title:
+            self.ctx_groups_title_tb.Text = self.ctx_groups_title
+        else:
+            # Let XAML DynamicResource provide the actual Text value.
+            # The python-side self.ctx_groups_title is used for internal logic
+            # and needs a safe fallback.
+            try:
+                self.ctx_groups_title = self.get_locale_string(
+                    "SelectFromList.GroupSelector.Label"
+                )
+            except wpf.ResourceReferenceKeyNotFoundException:
+                mlogger.warning("Missing resource key for group selector title.")
+                self.ctx_groups_title = "Groups"
 
         self.ctx_groups_active = kwargs.get("default_group", None)
 
@@ -1036,9 +1067,18 @@ class SelectFromList(TemplateUserInputWindow):
 
     def _list_options(self, option_filter=None):
         if option_filter:
-            self.checkall_b.Content = "Check"
-            self.uncheckall_b.Content = "Uncheck"
-            self.toggleall_b.Content = "Toggle"
+            try:
+                self.checkall_b.Content = self.get_locale_string("SelectFromList.Check.Button")
+            except wpf.ResourceReferenceKeyNotFoundException:
+                self.checkall_b.Content = "Check"
+            try:
+                self.uncheckall_b.Content = self.get_locale_string("SelectFromList.Uncheck.Button")
+            except wpf.ResourceReferenceKeyNotFoundException:
+                self.uncheckall_b.Content = "Uncheck"
+            try:
+                self.toggleall_b.Content = self.get_locale_string("SelectFromList.Toggle.Button")
+            except wpf.ResourceReferenceKeyNotFoundException:
+                self.toggleall_b.Content = "Toggle"
             # get a match score for every item and sort high to low
             fuzzy_matches = sorted(
                 [
@@ -1060,9 +1100,19 @@ class SelectFromList(TemplateUserInputWindow):
                 [x[0] for x in fuzzy_matches if x[1] >= 80]
             )
         else:
-            self.checkall_b.Content = "Check All"
-            self.uncheckall_b.Content = "Uncheck All"
-            self.toggleall_b.Content = "Toggle All"
+            try:
+                self.checkall_b.Content = self.get_locale_string("SelectFromList.CheckAll.Button")
+            except wpf.ResourceReferenceKeyNotFoundException:
+                self.checkall_b.Content = "Check All"
+            try:
+                self.uncheckall_b.Content = self.get_locale_string("SelectFromList.UncheckAll.Button")
+            except wpf.ResourceReferenceKeyNotFoundException:
+                self.uncheckall_b.Content = "Uncheck All"
+            try:
+                self.toggleall_b.Content = self.get_locale_string("SelectFromList.ToggleAll.Button")
+            except wpf.ResourceReferenceKeyNotFoundException:
+                self.toggleall_b.Content = "Toggle All"
+
             self.list_lb.ItemsSource = ObservableCollection[TemplateListItem](
                 self._get_active_ctx()
             )
@@ -1202,7 +1252,7 @@ class SelectFromList(TemplateUserInputWindow):
     def show(
         cls,
         context,
-        title="User Input",
+        title=None,
         width=DEFAULT_INPUTWINDOW_WIDTH,
         height=DEFAULT_INPUTWINDOW_HEIGHT,
         exitscript=False,
@@ -1653,6 +1703,8 @@ class ProgressBar(TemplatePromptBar):
         self._title = kwargs.get("title", "{value}/{max_value}")
         self._hostwnd = None
         self._host_task_pbar = None
+
+        self._update_pbar()
 
     def _prepare(self):
         self._hostwnd = revit.ui.get_mainwindow()
@@ -2255,7 +2307,10 @@ def select_sheets(
         sheetset_ops = sorted(
             [SheetOption(x) for x in sheetset_sheets], key=lambda x: x.number
         )
-        all_ops[sheetset.Name] = sheetset_ops
+        if sheetset.Name == 'All Sheets':
+            all_ops["[" + sheetset.Name + "]"] = sheetset_ops
+        else:
+            all_ops[sheetset.Name] = sheetset_ops
 
     # ask user for multiple sheets
     selected_sheets = SelectFromList.show(

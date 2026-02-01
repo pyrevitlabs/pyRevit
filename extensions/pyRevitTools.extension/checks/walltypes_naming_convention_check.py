@@ -10,10 +10,16 @@ from pyrevit.forms import pick_file
 from Autodesk.Revit.DB import BuiltInCategory, FilteredElementCollector
 
 # Set up preflight for model check
-from pyrevit.preflight import PreflightTestCase
-
-# Load wall list from JSON file
+import sys
 import os
+# Add current directory to path for local imports
+_current_dir = os.path.dirname(os.path.abspath(__file__))
+if _current_dir not in sys.path:
+    sys.path.insert(0, _current_dir)
+
+from pyrevit.preflight import PreflightTestCase
+from check_translations import DocstringMeta
+
 import json
 
 def pick_json():
@@ -25,7 +31,8 @@ def pick_json():
 
     # Check if a file was selected
     if not json_file_path:
-        raise FileNotFoundError("No JSON file selected.")
+        from check_translations import get_check_translation
+        raise FileNotFoundError(get_check_translation("NamingConventionNoFileSelected"))
 
     # Load JSON data
     with open(json_file_path, "r") as f:
@@ -42,7 +49,8 @@ def check_model(doc, output):
     Checks if wall types in the model match the allowed wall names list.
     Displays summary with correct and incorrect wall names.
     """
-    output.print_md('# Model Naming Convention Report')
+    from check_translations import get_check_translation
+    output.print_md('# {}'.format(get_check_translation("NamingConventionReport")))
 
     # Get all wall elements and their names
     walls = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Walls).WhereElementIsNotElementType().ToElements()
@@ -57,31 +65,37 @@ def check_model(doc, output):
 
     # Prepare data for output table
     data = [
-        (wall_type, count, "Wrong Name" if wall_type in wrong_wall_names else "")
+        (wall_type, count, get_check_translation("NamingConventionWrongName") if wall_type in wrong_wall_names else "")
         for wall_type, count in wall_counts.items()
     ]
 
     # Print table and highlight incorrect wall names
     output.print_table(
         table_data=data,
-        title="Naming Convention Wall Check",
-        columns=["Wall Type", "Count", "Status"],
+        title=get_check_translation("NamingConventionWallCheck"),
+        columns=[
+            get_check_translation("NamingConventionWallType"),
+            get_check_translation("NamingConventionCount"),
+            get_check_translation("NamingConventionStatus")
+        ],
         formats=['', '{}', '']
     )
 
     if wrong_wall_names:
-        output.print_md('## Incorrectly Named Wall Types Found:')
+        output.print_md('## {}'.format(get_check_translation("NamingConventionIncorrectlyNamed")))
         for wrong in wrong_wall_names:
             print_red(output, wrong)
 
 
 class ModelChecker(PreflightTestCase):
-    """
-    Verifies whether family type names conform to a specified list,
-    as defined by a wall type list within Revit.
-    """
-
-    name = "Naming Convention"
+    __metaclass__ = DocstringMeta
+    _docstring_key = "CheckDescription_NamingConvention"
+    
+    @property
+    def name(self):
+        from check_translations import get_check_translation
+        return get_check_translation("CheckName_NamingConvention")
+    
     author = "Andreas Draxl"
 
     def startTest(self, doc, output):
@@ -89,7 +103,8 @@ class ModelChecker(PreflightTestCase):
         check_model(doc, output)
         endtime = timer.get_time()
         endtime_hms = str(datetime.timedelta(seconds=endtime))
-        print("Transaction took {}".format(endtime_hms))
+        from check_translations import get_check_translation
+        print("{} {}".format(get_check_translation("TransactionTook"), endtime_hms))
 
 
 # Initialize variables

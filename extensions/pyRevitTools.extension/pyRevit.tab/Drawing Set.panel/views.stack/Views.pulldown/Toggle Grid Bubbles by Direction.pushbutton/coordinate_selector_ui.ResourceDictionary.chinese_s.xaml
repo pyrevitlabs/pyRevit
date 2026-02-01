@@ -1,0 +1,34 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">网格气泡设置</system:String>
+    <system:String x:Key="HeaderTitle">网格气泡设置</system:String>
+    <system:String x:Key="Subtitle">配置坐标系和角度容差</system:String>
+    
+    <system:String x:Key="CoordinateSystemHeader">坐标系</system:String>
+    <system:String x:Key="AllGrids">所有网格</system:String>
+    <system:String x:Key="AllGridsDescription">切换活动视图中的所有网格</system:String>
+    <system:String x:Key="TrueNorth">正北</system:String>
+    <system:String x:Key="TrueNorthDescription">使用正北方向</system:String>
+    <system:String x:Key="ProjectNorth">项目北</system:String>
+    <system:String x:Key="ProjectNorthDescription">使用项目坐标系（应用"与正北的角度"）</system:String>
+    <system:String x:Key="ViewOrientation">视图/范围框方向</system:String>
+    <system:String x:Key="ViewOrientationDescription">使用当前视图方向和范围框</system:String>
+    
+    <system:String x:Key="AngleToleranceHeader">角度容差</system:String>
+    <system:String x:Key="StrictLabel">1°（严格）</system:String>
+    <system:String x:Key="PermissiveLabel">40°（宽松）</system:String>
+    <system:String x:Key="HowThisWorks">工作原理</system:String>
+    <system:String x:Key="HowThisWorksDescription">控制网格必须与所选坐标系对齐的紧密程度。较低值 = 仅直线网格。较高值 = 包括角度网格。</system:String>
+    
+    <system:String x:Key="AngleDescription1">非常严格 - 仅完全对齐的网格</system:String>
+    <system:String x:Key="AngleDescription5">紧密 - 适用于精确的网格布局</system:String>
+    <system:String x:Key="AngleDescription10">中等 - 适用于大多数情况</system:String>
+    <system:String x:Key="AngleDescription15">宽松 - 包括略微倾斜的网格</system:String>
+    <system:String x:Key="AngleDescription25">宽松 - 包括更多倾斜的网格</system:String>
+    <system:String x:Key="AngleDescription35">非常宽松 - 包括大多数方向</system:String>
+    <system:String x:Key="AngleDescription40">最大容差 - 包括严重倾斜的网格</system:String>
+    
+    <system:String x:Key="Cancel">取消</system:String>
+    <system:String x:Key="Continue">继续</system:String>
+</ResourceDictionary>

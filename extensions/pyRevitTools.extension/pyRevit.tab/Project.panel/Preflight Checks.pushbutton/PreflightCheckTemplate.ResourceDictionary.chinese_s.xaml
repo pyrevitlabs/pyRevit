@@ -1,0 +1,296 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="AuthorLabel">作者</system:String>
+    <system:String x:Key="ExtensionLabel">扩展</system:String>
+    <system:String x:Key="SelectPreflightCheckTitle">选择预检检查</system:String>
+    <system:String x:Key="RunCheckButton">运行检查</system:String>
+    
+    <!-- Check Names -->
+    <system:String x:Key="CheckName_GridsDataLister">网格数据列表</system:String>
+    <system:String x:Key="CheckName_LevelsDataLister">标高数据列表</system:String>
+    <system:String x:Key="CheckName_ReferencePlanLister">参照平面列表</system:String>
+    <system:String x:Key="CheckName_SchedulesNotOnSheet">未放置在图纸上的明细表列表</system:String>
+    <system:String x:Key="CheckName_ElementsPerWorksets">工作集元素检查</system:String>
+    <system:String x:Key="CheckName_10MileRadar">10英里雷达</system:String>
+    <system:String x:Key="CheckName_ModelChecker">模型检查器</system:String>
+    <system:String x:Key="CheckName_RVTLinksWarnings">RVT链接警告</system:String>
+    <system:String x:Key="CheckName_AuditAll">全面审核（包括链接）</system:String>
+    <system:String x:Key="CheckName_CADAudit">CAD审核</system:String>
+    <system:String x:Key="CheckName_NamingConvention">命名约定</system:String>
+    
+    <!-- Check Descriptions (Docstrings) -->
+    <system:String x:Key="CheckDescription_GridsDataLister">列出网格，如果它们被固定、在范围框内或已命名
+
+此质量控制工具返回以下数据:
+    网格数量、名称、类型、固定状态</system:String>
+    <system:String x:Key="CheckDescription_LevelsDataLister">列出标高，如果它们被固定、在范围框内或已命名及其高程。
+
+此质量控制工具返回以下数据:
+    标高数量、名称、类型、固定状态、范围框和高程。</system:String>
+    <system:String x:Key="CheckDescription_ReferencePlanLister">列出模型中的所有参照平面
+此质量控制工具返回以下数据:
+    参照平面数量、链接到、名称</system:String>
+    <system:String x:Key="CheckDescription_SchedulesNotOnSheet">列出所有未放置在图纸上的明细表
+此质量控制工具返回以下数据:
+    类型、Id + 链接和明细表名称，能够单击链接打开明细表</system:String>
+    <system:String x:Key="CheckDescription_ElementsPerWorksets">Revit模型质量检查
+质量控制工具返回以下数据:
+    - 按工作集列出的所有元素表，包括类别名称、元素名称和元素ID
+    - 每个工作集的元素数量环形图</system:String>
+    <system:String x:Key="CheckDescription_10MileRadar">检查模型中所有元素的范围。
+此模型检查器快速验证Revit模型的范围。 
+将模型范围放置在距离项目内部原点超过10英里（16公里）的位置
+可能导致精度、容差、性能和视口显示问题。此检查确保
+模型保持在内部原点的10英里半径内。
+
+测试用例检查以下内容，报告与项目内部原点相关的范围。
+脚本根据大多数模型范围问题与以下内容相关的假设进行优先级排序:
+
+    - 项目基点和内部原点之间的距离
+    - 测量点和内部原点之间的距离
+    - 3D视图的边界框
+    - 设计选项对象的边界框
+    - CAD和RVT链接的边界框
+    - 模型中所有元素的边界框</system:String>
+    <system:String x:Key="CheckDescription_ModelChecker">Revit模型质量检查
+质量控制工具返回以下数据:
+    Revit文件: 名称和项目信息
+    Revit链接: 列表、数量和固定状态
+    视图: 数量、复制的视图数量、不在图纸上的视图数量
+    明细表: 数量和不在图纸上的数量
+    图纸: 数量
+    警告: 总数、基于预定义关键警告列表的关键警告列表
+    材料数量
+    线型图案数量
+    DWG: 导入数量、链接数量、3D中的dwg数量
+    可载入族: 数量、就地族数量、非参数族数量
+    文字注释: 因子更改的数量、全大写文字注释数量
+    系统族: 坡道数量、建筑柱数量、启用分析模型选项的元素
+    组: 详图组类型数量、详图组实例数量、模型组类型数量、模型组实例数量
+    参照平面: 未命名数量、参照平面数量
+    元素数量
+    阶段: 当前文档和链接文件的阶段列表</system:String>
+    <system:String x:Key="CheckDescription_RVTLinksWarnings">Revit链接质量控制 - 警告
+    链接文件中的警告:
+    - 描述,
+    - ID,
+    - 数量
+
+    !! 仅限 Revit 2018 + !!
+    !!使用前请加载链接!!</system:String>
+    <system:String x:Key="CheckDescription_AuditAll">所有模型的预检审核，包括链接模型。
+!!必须加载链接。!!
+此质量控制工具返回以下数据:
+- 项目名称、编号、客户、阶段、工作集
+- 元素数量
+- 可清除元素数量
+- 所有警告数量
+- 关键警告数量
+- rvt链接数量
+- 激活的分析模型元素数量
+- 房间数量
+- 未放置房间数量
+- 未边界房间数量
+- 图纸数量
+- 每个视图类型的视图数量
+- 不在图纸上的视图
+- 未放置在图纸上的明细表数量
+- 复制的视图数量
+- 视图模板数量
+- 未使用的视图模板数量
+- 过滤器数量
+- 未使用的视图过滤器数量
+- 材料数量
+- 线型图案数量
+- dwg数量
+- 链接的dwg数量
+- 导入的dwg数量
+- 就地族数量
+- 非参数族数量
+- 族数量
+- 导入子类别数量
+- 常规模型类型数量
+- 详图构件数量
+- 文字注释类型数量
+- 宽度因子 != 1的文字注释类型数量
+- 文字注释数量
+- 应用全大写的文字注释
+- 实心背景的文字注释
+- 详图组数量
+- 详图组类型数量
+- 模型组数量
+- 模型组类型数量
+- 参照平面数量
+- 未命名参照平面数量
+- 详图线数量
+- 尺寸标注类型数量
+- 尺寸标注数量
+- 尺寸标注替代数量
+- 修订云线数量</system:String>
+    <system:String x:Key="CheckDescription_CADAudit">导入和链接CAD的预检审核
+此质量控制工具返回以下数据:
+    CAD链接实例和类型信息
+
+    质量控制包括以下信息和警报:
+      链接状态（已加载、未找到、已卸载...）
+      CAD是否在模型工作平面上或仅在单个视图上
+      CAD是链接还是导入
+      CAD是否已重复
+      CAD的共享位置名称
+
+      功能: 输出允许导航到找到的CAD</system:String>
+    <system:String x:Key="CheckDescription_NamingConvention">验证族类型名称是否符合指定列表,
+如Revit中的墙类型列表所定义。</system:String>
+    
+    <!-- Common Output Strings -->
+    <system:String x:Key="GridsDataLister">网格数据列表</system:String>
+    <system:String x:Key="LevelsDataLister">标高数据列表</system:String>
+    <system:String x:Key="NumberOfGrids">网格数量</system:String>
+    <system:String x:Key="NumberOfLevels">标高数量</system:String>
+    <system:String x:Key="Grids">网格</system:String>
+    <system:String x:Key="Levels">标高</system:String>
+    <system:String x:Key="Name">名称</system:String>
+    <system:String x:Key="Type">类型</system:String>
+    <system:String x:Key="Pinned">已固定</system:String>
+    <system:String x:Key="ScopeBox">范围框</system:String>
+    <system:String x:Key="Elevation">高程</system:String>
+    <system:String x:Key="ReferencePlanes">参照平面</system:String>
+    <system:String x:Key="ReferencePlanesCount">参照平面：</system:String>
+    <system:String x:Key="SchedulesNotOnSheets">未放置在图纸上的明细表</system:String>
+    <system:String x:Key="TransactionTook">事务耗时</system:String>
+    <system:String x:Key="NameLabel">名称：</system:String>
+    <system:String x:Key="IdLabel">ID：</system:String>
+    <system:String x:Key="TypeLabel">类型：</system:String>
+    <system:String x:Key="WorksetName">工作集名称</system:String>
+    <system:String x:Key="ElementCategory">元素类别</system:String>
+    <system:String x:Key="ElementName">元素名称</system:String>
+    <system:String x:Key="ElementId">元素ID</system:String>
+    <system:String x:Key="ElementCountByWorkset">按工作集的元素数量</system:String>
+    
+    <!-- Radar Check Strings -->
+    <system:String x:Key="RadarCheckingModelPlacement">检查模型位置和坐标</system:String>
+    <system:String x:Key="RadarBasePointMoreThan">基点超过</system:String>
+    <system:String x:Key="RadarSurveyPointMoreThan">测量点超过</system:String>
+    <system:String x:Key="RadarSurveyPointLessThan">测量点小于</system:String>
+    <system:String x:Key="RadarProjectBasePointCoords">项目基点坐标到内部原点</system:String>
+    <system:String x:Key="RadarSurveyPointCoords">测量点坐标到内部原点</system:String>
+    <system:String x:Key="RadarBaseToSurveyDeltaX">项目基点到测量点增量X</system:String>
+    <system:String x:Key="RadarBaseToSurveyDeltaY">项目基点到测量点增量Y</system:String>
+    <system:String x:Key="RadarPlanarDistance">基点和测量点之间的平面距离</system:String>
+    <system:String x:Key="RadarTotalDistance">基点和测量点之间的总距离</system:String>
+    <system:String x:Key="RadarProjectElevation">项目高程（基点垂直距离）</system:String>
+    <system:String x:Key="RadarProjectCoordinates">项目坐标和距离</system:String>
+    <system:String x:Key="RadarPoints">点</system:String>
+    <system:String x:Key="RadarChecking3DViewBBox">检查3D视图边界框的范围</system:String>
+    <system:String x:Key="Radar3DViewBBoxMoreThan">3D视图边界框延伸超过</system:String>
+    <system:String x:Key="Radar3DViewBBoxLessThan">3D视图边界框位于小于</system:String>
+    <system:String x:Key="RadarCheckingDesignOptions">检查设计选项对象的范围</system:String>
+    <system:String x:Key="RadarDesignOptionsMoreThan">设计选项对象位于超过</system:String>
+    <system:String x:Key="RadarShowingFirst10">显示前10个对象</system:String>
+    <system:String x:Key="RadarManualInvestigation">需要手动调查</system:String>
+    <system:String x:Key="RadarAllObjectsLessThan">所有对象位于小于</system:String>
+    <system:String x:Key="RadarCheckingCADRVT">检查CAD和RVT链接的范围</system:String>
+    <system:String x:Key="RadarAllCADRVTLessThan">所有CAD和RVT链接位于小于</system:String>
+    <system:String x:Key="RadarDistantObjectsDetected">仍在检测到 distant 对象！</system:String>
+    <system:String x:Key="RadarFurtherAnalysis">需要进一步分析。</system:String>
+    <system:String x:Key="RadarCheckingEverything">检查所有内容，这需要一些时间。</system:String>
+    <system:String x:Key="RadarPleaseBePatient">请耐心等待。</system:String>
+    <system:String x:Key="RadarElementsMoreThan">以下元素位于超过</system:String>
+    <system:String x:Key="RadarAllTestsCompleted">所有测试完成，请查看上面的结果。</system:String>
+    <system:String x:Key="Radar10MilesAway">距离内部原点10英里（16公里）。</system:String>
+    <system:String x:Key="RadarNoObjectInDesignOption">任何设计选项中的对象都不超过</system:String>
+    <system:String x:Key="RadarIsPartOf">属于</system:String>
+    <system:String x:Key="RadarXYZCoordinates">XYZ坐标</system:String>
+    <system:String x:Key="RadarDistance">距离</system:String>
+    <system:String x:Key="RadarAngle">角度（°）</system:String>
+    
+    <!-- Model Checker Strings -->
+    <system:String x:Key="ModelCheckerTitle">模型检查器</system:String>
+    <system:String x:Key="ModelCheckerRVTFile">RVT文件</system:String>
+    <system:String x:Key="ModelCheckerRVTLinks">RVT链接</system:String>
+    <system:String x:Key="ModelCheckerNoLinks">无链接</system:String>
+    <system:String x:Key="ModelCheckerInstanceFileName">实例文件名</system:String>
+    <system:String x:Key="ModelCheckerInstanceName">实例名称</system:String>
+    <system:String x:Key="ModelCheckerPinnedStatus">固定状态</system:String>
+    <system:String x:Key="ModelCheckerViews">视图</system:String>
+    <system:String x:Key="ModelCheckerViewTemplates">视图模板</system:String>
+    <system:String x:Key="ModelCheckerSchedules">明细表</system:String>
+    <system:String x:Key="ModelCheckerSheets">图纸</system:String>
+    <system:String x:Key="ModelCheckerWarnings">警告</system:String>
+    <system:String x:Key="ModelCheckerNoWarnings">无警告，做得好！</system:String>
+    <system:String x:Key="ModelCheckerMaterials">材质</system:String>
+    <system:String x:Key="ModelCheckerLinePatterns">线型图案</system:String>
+    <system:String x:Key="ModelCheckerDWGs">DWG</system:String>
+    <system:String x:Key="ModelCheckerLoadableFamilies">可载入族</system:String>
+    <system:String x:Key="ModelCheckerTextNotes">文字注释</system:String>
+    <system:String x:Key="ModelCheckerSystemFamilies">系统族</system:String>
+    <system:String x:Key="ModelCheckerGroups">组</system:String>
+    <system:String x:Key="ModelCheckerReferencePlanes">参照平面</system:String>
+    <system:String x:Key="ModelCheckerPhases">阶段</system:String>
+    <system:String x:Key="ModelCheckerElementsCount">元素数量</system:String>
+    <system:String x:Key="ModelCheckerNotSavedFile">未保存的文件</system:String>
+    
+    <!-- Model Checker Warnings Strings -->
+    <system:String x:Key="RVTLinksWarningChecker">RVTV链接 - 警告检查器</system:String>
+    <system:String x:Key="RVTLinksWarningsCount">警告数量</system:String>
+    <system:String x:Key="RVTLinksWarningsDetails">警告详情</system:String>
+    <system:String x:Key="RVTLinksFileName">文件名</system:String>
+    <system:String x:Key="RVTLinksWarningsCountLabel">警告数量</system:String>
+    <system:String x:Key="RVTLinksWarningsLabel">警告</system:String>
+    <system:String x:Key="RVTLinksIds">ID</system:String>
+    <system:String x:Key="RVTLinksLoadAllLinks">加载所有链接，此工具适用于具有已加载链接的模型</system:String>
+    <system:String x:Key="RVTLinksLoadAtLeastOne">至少加载一个链接，此工具适用于具有已加载链接的模型</system:String>
+    
+    <!-- Audit All Strings -->
+    <system:String x:Key="AuditAllMainFileInfos">主文件信息</system:String>
+    <system:String x:Key="AuditAllLinkedFilesInfos">链接文件信息</system:String>
+    <system:String x:Key="AuditAllProjectName">项目名称</system:String>
+    <system:String x:Key="AuditAllProjectNumber">项目编号</system:String>
+    <system:String x:Key="AuditAllClientName">客户名称</system:String>
+    <system:String x:Key="AuditAllProjectPhases">项目阶段</system:String>
+    <system:String x:Key="AuditAllWorksets">工作集</system:String>
+    <system:String x:Key="AuditAllLinkedFileName">链接文件名</system:String>
+    <system:String x:Key="AuditAllLoadedStatus">加载状态</system:String>
+    <system:String x:Key="AuditAllLinks">链接</system:String>
+    <system:String x:Key="AuditAllLinksNotPinned">未固定的链接</system:String>
+    
+    <!-- CAD Audit Strings -->
+    <system:String x:Key="CADAuditInstances">审核CAD实例：</system:String>
+    <system:String x:Key="CADAuditInProject">在此项目中</system:String>
+    <system:String x:Key="CADAuditInActiveView">仅在活动视图中</system:String>
+    <system:String x:Key="CADAuditCancel">取消</system:String>
+    <system:String x:Key="CADAuditOK">确定</system:String>
+    <system:String x:Key="CADAuditTitle">当前项目中的CAD实例审核</system:String>
+    <system:String x:Key="CADAuditNoInstances">未找到CAD实例</system:String>
+    <system:String x:Key="CADAuditSelect">选择</system:String>
+    <system:String x:Key="CADAuditPreflightAudit">导入和链接CAD的预检审核</system:String>
+    <system:String x:Key="CADAuditNo">编号</system:String>
+    <system:String x:Key="CADAuditSelectZoom">选择/缩放</system:String>
+    <system:String x:Key="CADAuditDWGInstance">DWG实例</system:String>
+    <system:String x:Key="CADAuditLoadedStatus">加载状态</system:String>
+    <system:String x:Key="CADAuditWorkplaneOrView">工作平面或单一视图</system:String>
+    <system:String x:Key="CADAuditDuplicate">重复</system:String>
+    <system:String x:Key="CADAuditCreatorUser">创建者用户</system:String>
+    <system:String x:Key="CADAuditLocationSiteName">位置站点名称</system:String>
+    <system:String x:Key="CADAuditInstancesFound">个CAD实例。</system:String>
+    <system:String x:Key="CADAuditCheckRunOn">检查运行于</system:String>
+    <system:String x:Key="CADAuditActiveView">活动视图</system:String>
+    <system:String x:Key="CADAuditWholeModel">整个模型</system:String>
+    <system:String x:Key="CADAuditExplanations">警告说明</system:String>
+    <system:String x:Key="CADAuditLoadedStatusExplanation">加载状态...........：如果CAD是导入的而不是链接的，则发出警报</system:String>
+    <system:String x:Key="CADAuditWorkplaneExplanation">工作平面或单一视图：如果CAD放置在单一视图上，选项为"仅活动视图"，而不是模型工作平面上，则发出警报</system:String>
+    <system:String x:Key="CADAuditDuplicateExplanation">重复...............：如果CAD被放置多次（无论是链接还是导入），以防意外，则发出警报</system:String>
+    <system:String x:Key="CADAuditCheckDuration">检查持续时间</system:String>
+    <system:String x:Key="CADAuditShowView">显示视图</system:String>
+    
+    <!-- Naming Convention Strings -->
+    <system:String x:Key="NamingConventionReport">模型命名约定报告</system:String>
+    <system:String x:Key="NamingConventionWallCheck">命名约定墙检查</system:String>
+    <system:String x:Key="NamingConventionWallType">墙类型</system:String>
+    <system:String x:Key="NamingConventionCount">数量</system:String>
+    <system:String x:Key="NamingConventionStatus">状态</system:String>
+    <system:String x:Key="NamingConventionWrongName">错误名称</system:String>
+    <system:String x:Key="NamingConventionIncorrectlyNamed">发现命名错误的墙类型：</system:String>
+    <system:String x:Key="NamingConventionNoFileSelected">未选择JSON文件。</system:String>
+</ResourceDictionary>

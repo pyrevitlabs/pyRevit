@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
@@ -105,6 +105,7 @@ namespace pyRevitCLI {
                         { "installed", RevitProduct.ListInstalledProducts() },
                         { "running", RevitController.ListRunningRevits() },
                         { "pyrevitDataDir", PyRevitLabsConsts.PyRevitPath },
+                        { "activeCpythonEngineVersion", PyRevitConfigs.GetCpythonEngineVersion() },
                         { "userEnv", new Dictionary<string, object>() {
                                 { "osVersion", UserEnv.GetWindowsVersion() },
                                 { "execUser", string.Format("{0}\\{1}", Environment.UserDomainName, Environment.UserName) },
@@ -132,6 +133,8 @@ namespace pyRevitCLI {
 
         internal static void
         MakeEnvReport(bool json) {
+            RevitProductData.RefreshIfStale();
+            PyRevitProductData.RefreshIfStale();
             if (json)
                 Console.WriteLine(CreateEnvJson());
             else {
@@ -178,6 +181,8 @@ namespace pyRevitCLI {
                 Console.WriteLine("No .Net-Core Target Packs are installed.");
             }
 
+            Console.WriteLine(string.Format("Active CPython Engine Version: {0}",
+                                            PyRevitConfigs.GetCpythonEngineVersion()));
             Console.WriteLine(string.Format("pyRevit CLI v{0}", PyRevitCLI.CLIInfoVersion));
         }
 

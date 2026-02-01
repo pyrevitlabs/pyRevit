@@ -1,185 +1,573 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Section Box Navigator" Height="870" Width="320" 
+        Title="{DynamicResource Title}" Height="700" Width="560" 
         ShowInTaskbar="False" Topmost="True"
         ScrollViewer.VerticalScrollBarVisibility="Disabled">
+    <Window.Resources>
+        <Style TargetType="Button">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Background" Value="#FFDDDDDD"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}" 
+                                CornerRadius="5"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <!-- Hover -->
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FFBEE6FD"/>
+                            </Trigger>
+
+                            <!-- Pressed -->
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FFB0D8F9"/>
+                            </Trigger>
+
+                            <!-- Disabled -->
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="GroupBox">
+            <Setter Property="BorderBrush" Value="#F0F0F0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        
+        <!-- Style for dropdown button (the arrow part of split button) -->
+        <Style x:Key="DropdownButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Width" Value="20"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+        
+        <!-- Style for level menu items -->
+        <Style x:Key="LevelMenuItemStyle" TargetType="Button">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Height" Value="25"/>
+            <Setter Property="Padding" Value="10,2"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}" 
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FFBEE6FD"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FFB0D8F9"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
     <Grid Margin="15">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
 
-        <!-- Status Information -->
-        <GroupBox Header="Current Status" Grid.Row="0" Margin="0,0,0,10">
-            <StackPanel Margin="5">
-                <TextBlock x:Name="project_unit_text" Text="" Visibility="Collapsed" Foreground="Red" FontWeight="Bold" Margin="0,5,0,2"/>
-                <TextBlock x:Name="txtTopLevel" Text="Top: Loading..." Margin="0,2"/>
-                <TextBlock x:Name="txtTopPosition" Text="Position: ..." Margin="0,2"/>
-                <TextBlock x:Name="txtBottomLevel" Text="Bottom: Loading..." Margin="0,2"/>
-                <TextBlock x:Name="txtBottomPosition" Text="Position: ..." Margin="0,2"/>
-            </StackPanel>
-        </GroupBox>
+        <!-- Row 0: Controls -->
+        
+        <!-- Column 0: Level Navigation + View Alignment -->
+        <Grid Grid.Row="0" Grid.Column="0" Margin="0,0,5,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <!-- Level Navigation Controls -->
+            <GroupBox Grid.Row="0" Margin="0,0,0,10">
+                <GroupBox.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock>🏢</TextBlock>
+                        <TextBlock FontWeight="Bold" Margin="5,0,0,0" Text="{DynamicResource LevelNavigation}"/>
+                    </StackPanel>
+                </GroupBox.Header>
+                <StackPanel Margin="5">
+                    <!-- Navigation Buttons -->
+                    <Grid Margin="0,0,0,5">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
-        <!-- Level Navigation Buttons -->
-        <GroupBox Header="Level Navigation" Grid.Row="1" Margin="0,0,0,10">
-            <Grid Margin="5">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
+                        <!-- Top Controls with Split Button -->
+                        <Grid Grid.Row="0" Grid.Column="0" Margin="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Button x:Name="btnTopUp" Content="{DynamicResource TopUp}" 
+                                    Height="30" Click="btn_top_up_click" Tag="top-up"
+                                    MouseEnter="btn_preview_enter" MouseLeave="btn_preview_leave"
+                                    Grid.Column="0"/>
+                            <Button x:Name="btnTopUpDropdown" Content="▼" 
+                                    Style="{StaticResource DropdownButtonStyle}"
+                                    Height="30" Click="btn_top_up_dropdown_click"
+                                    Grid.Column="1" Margin="1,0,0,0"/>
+                            <Popup x:Name="popupTopUp" 
+                                   PlacementTarget="{Binding ElementName=btnTopUp}"
+                                   Placement="Bottom"
+                                   StaysOpen="False"
+                                   AllowsTransparency="True">
+                                <Border Background="White" BorderBrush="#CCCCCC" BorderThickness="1">
+                                    <ScrollViewer MaxHeight="200" VerticalScrollBarVisibility="Auto">
+                                        <StackPanel x:Name="menuTopUp" Background="White"/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        
+                        <Grid Grid.Row="0" Grid.Column="1" Margin="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Button x:Name="btnTopDown" Content="{DynamicResource TopDown}" 
+                                    Height="30" Click="btn_top_down_click" Tag="top-down"
+                                    MouseEnter="btn_preview_enter" MouseLeave="btn_preview_leave"
+                                    Grid.Column="0"/>
+                            <Button x:Name="btnTopDownDropdown" Content="▼" 
+                                    Style="{StaticResource DropdownButtonStyle}"
+                                    Height="30" Click="btn_top_down_dropdown_click"
+                                    Grid.Column="1" Margin="1,0,0,0"/>
+                            <Popup x:Name="popupTopDown" 
+                                   PlacementTarget="{Binding ElementName=btnTopDown}"
+                                   Placement="Bottom"
+                                   StaysOpen="False"
+                                   AllowsTransparency="True">
+                                <Border Background="White" BorderBrush="#CCCCCC" BorderThickness="1">
+                                    <ScrollViewer MaxHeight="200" VerticalScrollBarVisibility="Auto">
+                                        <StackPanel x:Name="menuTopDown" Background="White"/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
 
-                <!-- Top Controls -->
-                <Button Content="Top ↑" Grid.Row="0" Grid.Column="0" 
-                        Height="30" Margin="2" Click="btn_top_up_click"
-                        MouseEnter="btn_preview_level_box_enter" MouseLeave="btn_preview_leave"/>
-                <Button Content="Top ↓" Grid.Row="0" Grid.Column="1" 
-                        Height="30" Margin="2" Click="btn_top_down_click"
-                        MouseEnter="btn_preview_level_box_enter" MouseLeave="btn_preview_leave"/>
+                        <!-- Bottom Controls with Split Button -->
+                        <Grid Grid.Row="1" Grid.Column="0" Margin="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Button x:Name="btnBottomUp" Content="{DynamicResource BottomUp}" 
+                                    Height="30" Click="btn_bottom_up_click" Tag="bottom-up"
+                                    MouseEnter="btn_preview_enter" MouseLeave="btn_preview_leave"
+                                    Grid.Column="0"/>
+                            <Button x:Name="btnBottomUpDropdown" Content="▼" 
+                                    Style="{StaticResource DropdownButtonStyle}"
+                                    Height="30" Click="btn_bottom_up_dropdown_click"
+                                    Grid.Column="1" Margin="1,0,0,0"/>
+                            <Popup x:Name="popupBottomUp" 
+                                   PlacementTarget="{Binding ElementName=btnBottomUp}"
+                                   Placement="Bottom"
+                                   StaysOpen="False"
+                                   AllowsTransparency="True">
+                                <Border Background="White" BorderBrush="#CCCCCC" BorderThickness="1">
+                                    <ScrollViewer MaxHeight="200" VerticalScrollBarVisibility="Auto">
+                                        <StackPanel x:Name="menuBottomUp" Background="White"/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        
+                        <Grid Grid.Row="1" Grid.Column="1" Margin="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Button x:Name="btnBottomDown" Content="{DynamicResource BottomDown}" 
+                                    Height="30" Click="btn_bottom_down_click" Tag="bottom-down"
+                                    MouseEnter="btn_preview_enter" MouseLeave="btn_preview_leave"
+                                    Grid.Column="0"/>
+                            <Button x:Name="btnBottomDownDropdown" Content="▼" 
+                                    Style="{StaticResource DropdownButtonStyle}"
+                                    Height="30" Click="btn_bottom_down_dropdown_click"
+                                    Grid.Column="1" Margin="1,0,0,0"/>
+                            <Popup x:Name="popupBottomDown" 
+                                   PlacementTarget="{Binding ElementName=btnBottomDown}"
+                                   Placement="Bottom"
+                                   StaysOpen="False"
+                                   AllowsTransparency="True">
+                                <Border Background="White" BorderBrush="#CCCCCC" BorderThickness="1">
+                                    <ScrollViewer MaxHeight="200" VerticalScrollBarVisibility="Auto">
+                                        <StackPanel x:Name="menuBottomDown" Background="White"/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
 
-                <!-- Bottom Controls -->
-                <Button Content="Bottom ↑" Grid.Row="1" Grid.Column="0" 
-                        Height="30" Margin="2" Click="btn_bottom_up_click"
-                        MouseEnter="btn_preview_level_box_enter" MouseLeave="btn_preview_leave"/>
-                <Button Content="Bottom ↓" Grid.Row="1" Grid.Column="1" 
-                        Height="30" Margin="2" Click="btn_bottom_down_click"
-                        MouseEnter="btn_preview_level_box_enter" MouseLeave="btn_preview_leave"/>
+                        <!-- Box Navigation with Split Button -->
+                        <Grid Grid.Row="2" Grid.Column="0" Margin="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Button x:Name="btnBoxUp" Content="{DynamicResource BoxUp}" 
+                                    Height="30" Click="btn_box_up_click" Tag="both-up"
+                                    MouseEnter="btn_preview_enter" MouseLeave="btn_preview_leave"
+                                    Grid.Column="0"/>
+                            <Button x:Name="btnBoxUpDropdown" Content="▼" 
+                                    Style="{StaticResource DropdownButtonStyle}"
+                                    Height="30" Click="btn_box_up_dropdown_click"
+                                    Grid.Column="1" Margin="1,0,0,0"/>
+                            <Popup x:Name="popupBoxUp" 
+                                   PlacementTarget="{Binding ElementName=btnBoxUp}"
+                                   Placement="Bottom"
+                                   StaysOpen="False"
+                                   AllowsTransparency="True">
+                                <Border Background="White" BorderBrush="#CCCCCC" BorderThickness="1">
+                                    <ScrollViewer MaxHeight="200" VerticalScrollBarVisibility="Auto">
+                                        <StackPanel x:Name="menuBoxUp" Background="White"/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        
+                        <Grid Grid.Row="2" Grid.Column="1" Margin="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Button x:Name="btnBoxDown" Content="{DynamicResource BoxDown}" 
+                                    Height="30" Click="btn_box_down_click" Tag="both-down"
+                                    MouseEnter="btn_preview_enter" MouseLeave="btn_preview_leave"
+                                    Grid.Column="0"/>
+                            <Button x:Name="btnBoxDownDropdown" Content="▼" 
+                                    Style="{StaticResource DropdownButtonStyle}"
+                                    Height="30" Click="btn_box_down_dropdown_click"
+                                    Grid.Column="1" Margin="1,0,0,0"/>
+                            <Popup x:Name="popupBoxDown" 
+                                   PlacementTarget="{Binding ElementName=btnBoxDown}"
+                                   Placement="Bottom"
+                                   StaysOpen="False"
+                                   AllowsTransparency="True">
+                                <Border Background="White" BorderBrush="#CCCCCC" BorderThickness="1">
+                                    <ScrollViewer MaxHeight="200" VerticalScrollBarVisibility="Auto">
+                                        <StackPanel x:Name="menuBoxDown" Background="White"/>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                    </Grid>
 
-                <!-- Box Navigation -->
-                <Button Content="Box ↑" Grid.Row="2" Grid.Column="0" 
-                        Height="30" Margin="2" Click="btn_box_up_click"
-                        MouseEnter="btn_preview_level_box_enter" MouseLeave="btn_preview_leave"/>
-                <Button Content="Box ↓" Grid.Row="2" Grid.Column="1" 
-                        Height="30" Margin="2" Click="btn_box_down_click"
-                        MouseEnter="btn_preview_level_box_enter" MouseLeave="btn_preview_leave"/>
-            </Grid>
-        </GroupBox>
+                    <!-- Mode Selection Radio Buttons -->
+                    <StackPanel Orientation="Horizontal" Margin="0,5,0,5" HorizontalAlignment="Center">
+                        <RadioButton x:Name="rbLevel" Content="{DynamicResource Level}" 
+                                    GroupName="LevelNudgeMode" IsChecked="True" Margin="0,0,15,0"
+                                    Checked="rb_level_mode_changed"/>
+                        <RadioButton x:Name="rbLevelNudge" Content="{DynamicResource Nudge}" 
+                                    GroupName="LevelNudgeMode" Margin="0,0,0,0"
+                                    Checked="rb_level_mode_changed"/>
+                    </StackPanel>
 
-        <!-- Nudge Controls -->
-        <GroupBox Header="Nudge Controls" Grid.Row="2" Margin="0,0,0,10">
-            <StackPanel Margin="5">
-                <Grid Margin="0,5">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Text="Amount:" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                    <TextBox x:Name="txtNudgeAmount" Grid.Column="1" 
-                             Text="500" Height="25" VerticalContentAlignment="Center"/>
-                    <TextBlock x:Name="txtNudgeUnit" Grid.Column="2" 
-                               Text="Loading..." VerticalAlignment="Center" Margin="5,0,0,0"/>
-                </Grid>
-                
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
+                    <!-- Nudge Amount Input (for Nudge mode) -->
+                    <Grid Margin="0,5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{DynamicResource Amount}" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <TextBox x:Name="txtLevelNudgeAmount" Grid.Column="1" 
+                                Text="500" Height="25" VerticalContentAlignment="Center"/>
+                        <TextBlock x:Name="txtLevelNudgeUnit" Grid.Column="2" 
+                                Text="{DynamicResource Loading}" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                    </Grid>
+                </StackPanel>
+            </GroupBox>
 
-                    <!-- Top Nudge -->
-                    <Button Content="Top +↑" Grid.Row="0" Grid.Column="0" 
-                            Height="30" Margin="2" Click="btn_nudge_top_up_click"
-                            MouseEnter="btn_preview_nudge_enter" MouseLeave="btn_preview_leave"/>
-                    <Button Content="Top -↓" Grid.Row="0" Grid.Column="1" 
-                            Height="30" Margin="2" Click="btn_nudge_top_down_click"
-                            MouseEnter="btn_preview_nudge_enter" MouseLeave="btn_preview_leave"/>
+            <!-- 2D View alignment-->
+            <GroupBox Grid.Row="1" Margin="0,0,0,0">
+                <GroupBox.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock>📐</TextBlock>
+                        <TextBlock FontWeight="Bold" Margin="5,0,0,0" Text="{DynamicResource ViewAlignment}"/>
+                    </StackPanel>
+                </GroupBox.Header>
+                <Button x:Name="btnAlignToView" Content="{DynamicResource Align2DView}" 
+                        Margin="5" Click="btn_align_box_to_view_click"/>
+            </GroupBox>
+        </Grid>
 
-                    <!-- Bottom Nudge -->
-                    <Button Content="Bottom +↑" Grid.Row="1" Grid.Column="0" 
-                            Height="30" Margin="2" Click="btn_nudge_bottom_up_click"
-                            MouseEnter="btn_preview_nudge_enter" MouseLeave="btn_preview_leave"/>
-                    <Button Content="Bottom -↓" Grid.Row="1" Grid.Column="1" 
-                            Height="30" Margin="2" Click="btn_nudge_bottom_down_click"
-                            MouseEnter="btn_preview_nudge_enter" MouseLeave="btn_preview_leave"/>
-                </Grid>
-            </StackPanel>
-        </GroupBox>
+        <!-- Column 1: Grid Navigation + Expand/Shrink -->
+        <Grid Grid.Row="0" Grid.Column="1" Margin="5,0,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            
+            <!-- Grid Navigation -->
+            <GroupBox Grid.Row="0" Margin="0,0,0,10">
+                <GroupBox.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock>▦</TextBlock>
+                        <TextBlock FontWeight="Bold" Margin="5,0,0,0" Text="{DynamicResource GridNavigation}"/>
+                    </StackPanel>
+                </GroupBox.Header>
+                <StackPanel Margin="5">
+                    <!-- Direction Buttons in Grid Layout -->
+                    <Grid Margin="0,0,0,5">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
-        <!-- Expansion Controls -->
-        <GroupBox Header="Expand/Shrink Controls" Grid.Row="3" Margin="0,0,0,10">
-            <StackPanel Margin="5">
-                <Grid Margin="0,5">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Text="Amount:" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                    <TextBox x:Name="txtExpandAmount" Grid.Column="1" 
-                             Text="500" Height="25" VerticalContentAlignment="Center"/>
-                    <TextBlock x:Name="txtExpandUnit" Grid.Column="2" 
-                               Text="Loading..." VerticalAlignment="Center" Margin="5,0,0,0"/>
-                </Grid>
-                
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
+                        <TextBlock Text="{DynamicResource Bigger}"
+                                Grid.Row="0" Grid.Column="0"
+                                VerticalAlignment="Center"
+                                Margin="0,0,5,0"/>
+                        <!-- Top Row: W, N, S, E outward buttons -->
+                        <Button Content="{DynamicResource WestOut}" Grid.Row="0" Grid.Column="1" 
+                                Height="30" Margin="1" Click="btn_grid_west_out_click" Tag="west-out"
+                                MouseEnter="btn_preview_enter" MouseLeave="btn_preview_leave"/>
+                        <Button Content="{DynamicResource NorthOut}" Grid.Row="0" Grid.Column="2" 
+                                Height="30" Margin="1" Click="btn_grid_north_out_click" Tag="north-out"
+                                MouseEnter="btn_preview_enter" MouseLeave="btn_preview_leave"/>
+                        <Button Content="{DynamicResource SouthOut}" Grid.Row="0" Grid.Column="3" 
+                                Height="30" Margin="1" Click="btn_grid_south_out_click" Tag="south-out"
+                                MouseEnter="btn_preview_enter" MouseLeave="btn_preview_leave"/>
+                        <Button Content="{DynamicResource EastOut}" Grid.Row="0" Grid.Column="4" 
+                                Height="30" Margin="1" Click="btn_grid_east_out_click" Tag="east-out"
+                                MouseEnter="btn_preview_enter" MouseLeave="btn_preview_leave"/>
 
-                    <!-- Buttons -->
-                    <Button Content="Expand +" Grid.Row="0" Grid.Column="0" 
-                            Height="30" Margin="2" Click="btn_expansion_top_up_click"
-                            MouseEnter="btn_preview_expansion_enter" MouseLeave="btn_preview_leave"/>
-                    <Button Content="Shrink -" Grid.Row="0" Grid.Column="1" 
-                            Height="30" Margin="2" Click="btn_expansion_top_down_click"
-                            MouseEnter="btn_preview_expansion_enter" MouseLeave="btn_preview_leave"/>
+                        <TextBlock Text="{DynamicResource Smaller}"
+                                Grid.Row="1" Grid.Column="0"
+                                VerticalAlignment="Center"
+                                Margin="0,0,5,0"/>
+                        <!-- Bottom Row: W, N, S, E inward buttons -->
+                        <Button Content="{DynamicResource WestIn}" Grid.Row="1" Grid.Column="1" 
+                                Height="30" Margin="1" Click="btn_grid_west_in_click" Tag="west-in"
+                                MouseEnter="btn_preview_enter" MouseLeave="btn_preview_leave"/>
+                        <Button Content="{DynamicResource NorthIn}" Grid.Row="1" Grid.Column="2" 
+                                Height="30" Margin="1" Click="btn_grid_north_in_click" Tag="north-in"
+                                MouseEnter="btn_preview_enter" MouseLeave="btn_preview_leave"/>
+                        <Button Content="{DynamicResource SouthIn}" Grid.Row="1" Grid.Column="3" 
+                                Height="30" Margin="1" Click="btn_grid_south_in_click" Tag="south-in"
+                                MouseEnter="btn_preview_enter" MouseLeave="btn_preview_leave"/>
+                        <Button Content="{DynamicResource EastIn}" Grid.Row="1" Grid.Column="4" 
+                                Height="30" Margin="1" Click="btn_grid_east_in_click" Tag="east-in"
+                                MouseEnter="btn_preview_enter" MouseLeave="btn_preview_leave"/>
+                    </Grid>
 
-                </Grid>
-            </StackPanel>
-        </GroupBox>
+                    <!-- Mode Selection Radio Buttons -->
+                    <StackPanel Orientation="Horizontal" Margin="0,5,0,5" HorizontalAlignment="Center">
+                        <RadioButton x:Name="rbGrid" Content="{DynamicResource Grid}" 
+                                    GroupName="GridNudgeMode" IsChecked="True" Margin="0,0,15,0"/>
+                        <RadioButton x:Name="rbGridNudge" Content="{DynamicResource Nudge}" 
+                                    GroupName="GridNudgeMode" Margin="0,0,0,0"/>
+                    </StackPanel>
 
-        <!-- Preview/Autoupdate Toggle -->
-        <GroupBox Header="Settings" Grid.Row="4" Margin="0,0,0,10">
-            <StackPanel>
-                <CheckBox x:Name="chkPreview" Content="Show preview on hover" 
-                        Margin="5" IsChecked="True"/>
-                <CheckBox x:Name="chkAutoupdate" Content="Autoupdate UI on Events" 
-                        Margin="5" IsChecked="True"/>
-            </StackPanel>
-        </GroupBox>
+                    <!-- Nudge Amount Input (for Nudge mode) -->
+                    <Grid Margin="0,5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{DynamicResource Amount}" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <TextBox x:Name="txtGridNudgeAmount" Grid.Column="1" 
+                                Text="500" Height="25" VerticalContentAlignment="Center"/>
+                        <TextBlock x:Name="txtGridNudgeUnit" Grid.Column="2" 
+                                   Text="mm" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                    </Grid>
+                </StackPanel>
+            </GroupBox>
+            
+            <!-- Expansion Controls -->
+            <GroupBox Grid.Row="1" Margin="0,0,0,10">
+                <GroupBox.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock>⬍</TextBlock>
+                        <TextBlock FontWeight="Bold" Margin="5,0,0,0" Text="{DynamicResource ExpandShrinkControls}"/>
+                    </StackPanel>
+                </GroupBox.Header>
+                <StackPanel Margin="5">
+                    <Grid Margin="0,5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{DynamicResource Amount}" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                        <TextBox x:Name="txtExpandAmount" Grid.Column="1" 
+                                Text="500" Height="25" VerticalContentAlignment="Center"/>
+                        <TextBlock x:Name="txtExpandUnit" Grid.Column="2" 
+                                Text="{DynamicResource Loading}" VerticalAlignment="Center" Margin="5,0,0,0"/>
+                    </Grid>
+                    
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
-        <!-- Action Buttons -->
-        <GroupBox Header="Actions" Grid.Row="5" Margin="0,0,0,10">
-            <UniformGrid Columns="3" Margin="0,0,0,2" HorizontalAlignment="Stretch">
-                <Button x:Name="btnToggleBox" Content="Toggle Box" 
-                        Height="35" Margin="2" Click="btn_toggle_box_click"
+                        <!-- Buttons -->
+                        <Button Content="{DynamicResource Expand}" Grid.Row="0" Grid.Column="0" 
+                                Height="30" Margin="2" Click="btn_expansion_top_up_click" Tag="box-expand"
+                                MouseEnter="btn_preview_enter" MouseLeave="btn_preview_leave"/>
+                        <Button Content="{DynamicResource Shrink}" Grid.Row="0" Grid.Column="1" 
+                                Height="30" Margin="2" Click="btn_expansion_top_down_click" Tag="box-shrink"
+                                MouseEnter="btn_preview_enter" MouseLeave="btn_preview_leave"/>
+                    </Grid>
+                </StackPanel>
+            </GroupBox>
+        </Grid>
+
+        <!-- Row 1: Actions (full width) -->
+        <GroupBox Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,0,0,10">
+            <GroupBox.Header>
+                <TextBlock FontWeight="Bold" Text="{DynamicResource Actions}"/>
+            </GroupBox.Header>
+            <UniformGrid Columns="3" Margin="5,0,5,2" HorizontalAlignment="Stretch">
+                <Button x:Name="btnToggleBox" Content="{DynamicResource ToggleBox}" 
+                        Margin="2" Click="btn_toggle_box_click" Tag="box-toggle"
                         MouseEnter="btn_preview_enter" MouseLeave="btn_preview_leave"/>
-                <Button x:Name="btnHideBox" Content="(Un-)Hide Box" 
-                        Height="35" Margin="2" Click="btn_hide_box_click"/>
-                <Button x:Name="btnAlignBoxToFace" Content="Align Box" 
-                        Height="35" Margin="2" Click="btn_align_box_to_face_click"/>
+                <Button x:Name="btnHideBox" Content="{DynamicResource UnHideBox}" 
+                        Margin="2" Click="btn_hide_box_click"/>
+                <Button x:Name="btnAlignBoxToFace" Content="{DynamicResource AlignBox}" 
+                        Margin="2" Click="btn_align_box_to_face_click"/>
             </UniformGrid>
         </GroupBox>
 
-        <!-- 2D View alignment-->
-        <GroupBox Header="View alignment" Grid.Row="6" Margin="0,0,0,10">
-            <Button x:Name="btnAlignToView" Content="Align with 2D View" 
-                    Height="35" Margin="2" Click="btn_align_box_to_view_click"/>
+        <!-- Row 2: Status Sections -->
+        
+        <!-- Column 0: Vertical Position Status -->
+        <GroupBox Grid.Row="2" Grid.Column="0" Margin="0,0,5,10" VerticalAlignment="Stretch" Background="#F5F5F5">
+            <GroupBox.Header>
+                <TextBlock FontWeight="Bold" Text="{DynamicResource VerticalPositionStatus}"/>
+            </GroupBox.Header>
+            <Grid Margin="5">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <StackPanel Grid.Row="0">
+                    <TextBlock x:Name="project_unit_text" Text="" Visibility="Collapsed" Foreground="Red" FontWeight="Bold" Margin="0,5,0,2"/>
+                    <TextBlock x:Name="txtTopLevelAbove" Margin="0,2" FontSize="10">
+                        <Run Text="{DynamicResource Top}"/>
+                        <Run Text=" Loading..."/>
+                    </TextBlock>
+                    <TextBlock x:Name="txtTopPosition" Margin="0,2" Foreground="DarkBlue">
+                        <Run Text="{DynamicResource Position}"/>
+                        <Run Text=" ..."/>
+                    </TextBlock>
+                    <TextBlock x:Name="txtTopLevelBelow" Margin="0,2" FontSize="10">
+                        <Run Text="{DynamicResource Top}"/>
+                        <Run Text=" Loading..."/>
+                    </TextBlock>
+                    <Separator Margin="0,2" />
+                    <TextBlock x:Name="txtBottomLevelAbove" Margin="0,2" FontSize="10">
+                        <Run Text="{DynamicResource Bottom}"/>
+                        <Run Text=" Loading..."/>
+                    </TextBlock>
+                    <TextBlock x:Name="txtBottomPosition" Margin="0,2" Foreground="DarkBlue">
+                        <Run Text="{DynamicResource Position}"/>
+                        <Run Text=" ..."/>
+                    </TextBlock>
+                    <TextBlock x:Name="txtBottomLevelBelow" Margin="0,2" FontSize="10">
+                        <Run Text="{DynamicResource Bottom}"/>
+                        <Run Text=" Loading..."/>
+                    </TextBlock>
+                    <Separator Margin="0,2" />
+                    <TextBlock x:Name="txtVerticalStatus" Text="" Margin="0,5,0,0" TextWrapping="Wrap" Foreground="Black"/>
+                </StackPanel>
+            </Grid>
         </GroupBox>
 
-        <!-- Refresh Button -->
-        <Button Content="Refresh" Grid.Row="7" 
-                Height="30" Margin="0" VerticalAlignment="Bottom"
-                Click="btn_refresh_click"/>
+        <!-- Column 1: Grid Navigation Status + Expand/Shrink + Actions Status (each half height) -->
+        <Grid Grid.Row="2" Grid.Column="1" Margin="5,0,0,10" VerticalAlignment="Stretch">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="5"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            
+            <!-- Grid Navigation Status (top half) -->
+            <GroupBox Grid.Row="0" VerticalAlignment="Stretch" Background="#F5F5F5">
+                <GroupBox.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock>▦</TextBlock>
+                        <TextBlock FontWeight="Bold" Margin="5,0,0,0" Text="{DynamicResource GridNavigationStatus}"/>
+                    </StackPanel>
+                </GroupBox.Header>
+                <Grid Margin="5">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock x:Name="txtGridStatus" Grid.Row="0" Text="-" Margin="0,2" TextWrapping="Wrap" Foreground="Black"/>
+                </Grid>
+            </GroupBox>
+
+            <!-- Expand/Shrink + Actions Status (bottom half) -->
+            <GroupBox Grid.Row="2" VerticalAlignment="Stretch" Background="#F5F5F5">
+                <GroupBox.Header>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock>⬍</TextBlock>
+                        <TextBlock FontWeight="Bold" Margin="5,0,0,0" Text="{DynamicResource ExpandShrinkActionsStatus}"/>
+                    </StackPanel>
+                </GroupBox.Header>
+                <Grid Margin="5">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <TextBlock x:Name="txtExpandActionsStatus" Grid.Row="0" Text="-" Margin="0,2" TextWrapping="Wrap" Foreground="Black"/>
+                </Grid>
+            </GroupBox>
+        </Grid>
+
+        <!-- Row 3: Settings (full width) -->
+        <GroupBox Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,0,0,10">
+            <GroupBox.Header>
+                <TextBlock FontWeight="Bold" Text="{DynamicResource Settings}"/>
+            </GroupBox.Header>
+            <StackPanel Orientation="Horizontal" Margin="5">
+                <CheckBox x:Name="chkPreview" Content="{DynamicResource ShowPreviewOnHover}" 
+                        Margin="5" IsChecked="True"/>
+                <CheckBox x:Name="chkAutoupdate" Content="{DynamicResource UpdateUIOnEvents}" 
+                        Margin="5" IsChecked="True"/>
+                <CheckBox x:Name="chkIncludeLinks" Content="{DynamicResource IncludeLinkedLevelsAndGrids}" 
+                        Margin="5" IsChecked="False"
+                        Checked="chkIncludeLinks_checked" Unchecked="chkIncludeLinks_checked"/>
+            </StackPanel>
+        </GroupBox>
     </Grid>
 </Window>

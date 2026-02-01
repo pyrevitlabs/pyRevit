@@ -1,0 +1,18 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Форматы именования</system:String>
+    
+    <system:String x:Key="NamingFormats">Форматы именования</system:String>
+    <system:String x:Key="Save">Сохранить</system:String>
+    <system:String x:Key="Duplicate">Дублировать</system:String>
+    <system:String x:Key="Delete">Удалить</system:String>
+    
+    <system:String x:Key="FormatTitle">Название формата</system:String>
+    <system:String x:Key="FormatTitleDescription">Это название этого конкретного формата именования. Дайте формату описательное название, которое легко понять и найти. Например: "City of Portland ePermit"</system:String>
+    
+    <system:String x:Key="Template">Шаблон</system:String>
+    <system:String x:Key="TemplateDescription">Это фактический шаблон формата именования. Каждый "{}" (тег) представляет значение, которое будет заполнено при создании имени для PDF-файла. Выберите из тегов, перечисленных ниже, и перетащите их в это поле.</system:String>
+    
+    <system:String x:Key="DragAndDropHint">Перетащите из форматировщиков ниже. Наведите курсор на форматировщик для описания</system:String>
+</ResourceDictionary>

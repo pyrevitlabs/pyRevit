@@ -1,14 +1,21 @@
 title:
-  ru: Установить изменение на листах
-  fr_fr: Active la Révision sur les Feuilles
   en_us: Set Revision On Sheets
+  fr_fr: Active la Révision sur les Feuilles
+  ru: Установить изменение на листах
+  chinese_s: 在图纸上设置修订
+  es_es: Establecer revisión en hojas
   de_de: Aktiviere eine Änderung auf Plänen
+  pt_br: Definir Revisão nas Folhas
 tooltip:
-  ru: >-
-    Выделите изменение из списка изменений, и данный скрипт установит это изменение для всех листов в модели как дополнительное изменение. Shift+Клик пропускает проверку на выпуск.
-  fr_fr: >-
-    Sélectionnez une révision dans la liste des révisions et ce script définit cette révision sur toutes les feuilles du modèle en tant que révision supplémentaire.   Maj+Clic contourne la vérification de publication.
   en_us: >-
     Select a revision from the list of revisions and this script set that revision on all sheets in the model as an additional revision.   Shift+Click bypasses the issued check.
+  fr_fr: >-
+    Sélectionnez une révision dans la liste des révisions et ce script définit cette révision sur toutes les feuilles du modèle en tant que révision supplémentaire.   Maj+Clic contourne la vérification de publication.
+  ru: >-
+    Выделите изменение из списка изменений, и данный скрипт установит это изменение для всех листов в модели как дополнительное изменение. Shift+Клик пропускает проверку на выпуск.
+  chinese_s: 从修订列表中选择一个修订，此脚本将在模型中的所有图纸上将该修订设置为附加修订。Shift+单击可绕过已发布检查
+  es_es: >-
+    Seleccione una revisión de la lista de revisiones y este script establecerá esa revisión en todas las hojas del modelo como una revisión adicional. Shift+Click omite la verificación de emisión.
   de_de: >-
     Wählen Sie eine Änderung aus der Liste der Änderungen aus und dieses Skript setzt diese Änderung auf allen Plänen im Modell als zusätzliche Änderung. Umschalt+Klick umgeht die Ausgabekontrolle.
+  pt_br: Selecione uma revisão da lista de revisões e este script define essa revisão em todas as folhas do modelo como uma revisão adicional.   Shift+Clique ignora a verificação de emitido.
