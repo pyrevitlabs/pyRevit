@@ -57,6 +57,10 @@
     <system:String x:Key="CoreSettings.Development.Description">Misc options for pyRevit development</system:String>
     <system:String x:Key="CoreSettings.Development.LoadBeta">Load Beta Tools (Scripts with __beta__ = True, Reload is required)</system:String>
 
+    <system:String x:Key="CoreSettings.Loader">Loader</system:String>
+    <system:String x:Key="CoreSettings.Loader.Description">Configure pyRevit's assembly loading mechanism. The new loader is a C# implementation that uses Roslyn build strategy</system:String>
+    <system:String x:Key="CoreSettings.Loader.NewLoader">Enables new pyRevit loader (beta) (Restarting Revit is required)</system:String>
+
     <system:String x:Key="CoreSettings.CloseOtherConsoles">Close other open consoles</system:String>
     <system:String x:Key="CoreSettings.CloseOtherConsoles.Description">
         If enabled, pyRevit will close other output consoles when a new script is run.
@@ -64,6 +68,7 @@
         multiple output data.
     </system:String>
 
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.Toggle">Minimize the number of open consoles:</system:String>
     <system:String x:Key="CoreSettings.CloseOtherConsoles.Current">Current command consoles</system:String>
     <system:String x:Key="CoreSettings.CloseOtherConsoles.Current.Description">
         Close all console windows associated with the current running command.

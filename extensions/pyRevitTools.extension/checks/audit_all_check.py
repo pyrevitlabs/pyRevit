@@ -19,7 +19,15 @@ from pyrevit.script import get_config, get_logger
 from pyrevit.forms import alert, show_balloon
 from pyrevit.output.cards import card_builder, create_frame
 from pyrevit.revit.db import ProjectInfo as RevitProjectInfo
+import sys
+import os
+# Add current directory to path for local imports
+_current_dir = os.path.dirname(os.path.abspath(__file__))
+if _current_dir not in sys.path:
+    sys.path.insert(0, _current_dir)
+
 from pyrevit.preflight import PreflightTestCase
+from check_translations import DocstringMeta
 import pyrevit.revit.db.query as q
 import pyrevit.revit.db.count as cnt
 
@@ -50,7 +58,8 @@ FILE_INFO_HEADERS = [
     "Pinned status",
 ]
 
-VALID_VIEW_TYPES = [
+# Base list excludes view types that may be added/removed by Revit version
+_VALID_VIEW_TYPES_BASE = [
     DB.ViewType.FloorPlan,
     DB.ViewType.CeilingPlan,
     DB.ViewType.Elevation,
@@ -66,13 +75,18 @@ VALID_VIEW_TYPES = [
     DB.ViewType.Detail,
     DB.ViewType.CostReport,
     DB.ViewType.LoadsReport,
-    DB.ViewType.PresureLossReport,
     DB.ViewType.ColumnSchedule,
     DB.ViewType.PanelSchedule,
     DB.ViewType.Walkthrough,
     DB.ViewType.Rendering,
-    DB.ViewType.SystemsAnalysisReport,
 ]
+_PresureLossReport = getattr(DB.ViewType, "PresureLossReport", None)
+_SystemsAnalysisReport = getattr(DB.ViewType, "SystemsAnalysisReport", None)
+VALID_VIEW_TYPES = list(_VALID_VIEW_TYPES_BASE)
+if _PresureLossReport is not None:
+    VALID_VIEW_TYPES.insert(VALID_VIEW_TYPES.index(DB.ViewType.LoadsReport) + 1, _PresureLossReport)
+if _SystemsAnalysisReport is not None:
+    VALID_VIEW_TYPES.append(_SystemsAnalysisReport)
 
 INVALID_VIEW_TYPES = [
     DB.ViewType.Undefined,
@@ -200,8 +214,10 @@ class SheetViewInfo:
         self.views_loads_report_count = sum(
             1 for x in views if x.ViewType == DB.ViewType.LoadsReport
         )
-        self.views_presure_loss_report_count = sum(
-            1 for x in views if x.ViewType == DB.ViewType.PresureLossReport
+        self.views_presure_loss_report_count = (
+            sum(1 for x in views if x.ViewType == _PresureLossReport)
+            if _PresureLossReport is not None
+            else 0
         )
         self.views_column_schedule_count = sum(
             1 for x in views if x.ViewType == DB.ViewType.ColumnSchedule
@@ -215,8 +231,10 @@ class SheetViewInfo:
         self.views_rendering_count = sum(
             1 for x in views if x.ViewType == DB.ViewType.Rendering
         )
-        self.views_systems_analysis_report_count = sum(
-            1 for x in views if x.ViewType == DB.ViewType.SystemsAnalysisReport
+        self.views_systems_analysis_report_count = (
+            sum(1 for x in views if x.ViewType == _SystemsAnalysisReport)
+            if _SystemsAnalysisReport is not None
+            else 0
         )
         self.views_not_on_sheets = sum(
             1
@@ -939,8 +957,20 @@ def audit_document(doc, output):
             "N/A",
             "N/A",
         ]
-        output.print_md("# Main File Infos")
-        output.print_table([project_info], columns=FILE_INFO_HEADERS)
+        from check_translations import get_check_translation
+        output.print_md("# {}".format(get_check_translation("AuditAllMainFileInfos")))
+        translated_headers = [
+            get_check_translation("AuditAllProjectName"),
+            get_check_translation("AuditAllProjectNumber"),
+            get_check_translation("AuditAllClientName"),
+            get_check_translation("AuditAllProjectPhases"),
+            get_check_translation("AuditAllWorksets"),
+            get_check_translation("AuditAllLinkedFileName"),
+            get_check_translation("ModelCheckerInstanceName"),
+            get_check_translation("AuditAllLoadedStatus"),
+            get_check_translation("ModelCheckerPinnedStatus")
+        ]
+        output.print_table([project_info], columns=translated_headers)
 
         # Linked files infos
         links_cards = ""
@@ -968,12 +998,12 @@ def audit_document(doc, output):
             )
             links_documents_data.append(link_document_data)
         if link_data:
-            output.print_md("# Linked Files Infos")
-            output.print_table(link_data, columns=FILE_INFO_HEADERS)
+            output.print_md("# {}".format(get_check_translation("AuditAllLinkedFilesInfos")))
+            output.print_table(link_data, columns=translated_headers)
             links_cards = card_builder(
-                50, data.links_info.rvtlinks_count, " Links"
+                50, data.links_info.rvtlinks_count, " {}".format(get_check_translation("AuditAllLinks"))
             ) + card_builder(
-                0, data.links_info.rvtlinks_unpinned_count, " Links not pinned"
+                0, data.links_info.rvtlinks_unpinned_count, " {}".format(get_check_translation("AuditAllLinksNotPinned"))
             )
 
         output.print_md(
@@ -985,7 +1015,7 @@ def audit_document(doc, output):
         data.export_to_csv()
 
         if data.rvtlinks_elements_items:
-            output.print_md("# RVTLinks")
+            output.print_md("# {}".format(get_check_translation("ModelCheckerRVTLinks")))
             for link_doc_data in links_documents_data:
                 generate_rvt_links_report(link_doc_data, output)
     except Exception as e:
@@ -1008,13 +1038,14 @@ def generate_rvt_links_report(link_document_data, output):
     output.print_md("## " + doc_clean_name)
     output.print_md("___")
     links_data = ""
+    from check_translations import get_check_translation
     if link_document_data.rvtlinks_elements_items:
         links_data = card_builder(
-            50, link_document_data.links_info.rvtlinks_count, " Links"
+            50, link_document_data.links_info.rvtlinks_count, " {}".format(get_check_translation("AuditAllLinks"))
         ) + card_builder(
             0,
             link_document_data.links_info.rvtlinks_unpinned_count,
-            " Links not pinned",
+            " {}".format(get_check_translation("AuditAllLinksNotPinned")),
         )
     html_content = generate_html_content(link_document_data, links_data)
     output.print_html(html_content)
@@ -1022,59 +1053,14 @@ def generate_rvt_links_report(link_document_data, output):
 
 
 class ModelChecker(PreflightTestCase):
-    """
-    Preflight audit of all models, including linked models.
-    !!Links must be loaded.!!
-    This QC tools returns the following data:
-    - project name, number, client, phases, worksets
-    - element count
-    - purgeable elements count
-    - all warnings count
-    - critical warnings count
-    - rvtlinks count
-    - activated analytical model elements count
-    - rooms count
-    - unplaced rooms count
-    - unbounded rooms count
-    - sheets count
-    - views count per ViewType
-    - views not on sheets
-    - schedules not sheeted count
-    - copied views count
-    - view templates count
-    - unused view templates count
-    - filters count
-    - unused view filters count
-    - materials count
-    - line patterns count
-    - dwgs count
-    - linked dwg count
-    - imported dwg count
-    - inplace family count
-    - not parametric families count
-    - family count
-    - imports subcats count
-    - generic models types count
-    - detail components count
-    - text notes types count
-    - text notes types with width factor != 1
-    - text notes count
-    - text notes with allCaps applied
-    - text notes with solid background
-    - detail groups count
-    - detail groups types count
-    - model group count
-    - model group type count
-    - reference planes count
-    - unnamed reference planes count
-    - detail lines count
-    - dimension types count
-    - dimension count
-    - dimension overrides count
-    - revision clouds count
-    """
-
-    name = "Audit All (Including Links)"
+    __metaclass__ = DocstringMeta
+    _docstring_key = "CheckDescription_AuditAll"
+    
+    @property
+    def name(self):
+        from check_translations import get_check_translation
+        return get_check_translation("CheckName_AuditAll")
+    
     author = "Jean-Marc Couffin"
 
     def setUp(self, doc, output):

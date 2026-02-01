@@ -5,7 +5,7 @@ Imports System.Diagnostics
 Imports Autodesk.Revit.UI
 Imports Autodesk.Revit.DB
 
-Imports PyRevitLabs.PyRevit.Runtime
+Imports pyRevitLabs.PyRevit.Runtime.Shared
 Imports pyRevitLabs.NLog
 
 Public Class HelloWorld

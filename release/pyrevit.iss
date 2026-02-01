@@ -1,6 +1,6 @@
 #define MyAppName "pyRevit"
 #define MyAppUUID "f2a3da53-6f34-41d5-abbd-389ffa7f4d5f"
-#define MyAppVersion "5.3.1.25308"
+#define MyAppVersion "6.0.0.26032"
 #define MyAppPublisher "pyRevitLabs"
 #define MyAppURL "pyrevitlabs.io"
 #include "CodeDependencies.iss"
@@ -73,9 +73,10 @@ Source: "..\pyRevitfile"; DestDir: "{app}"; Flags: ignoreversion; Components: co
 [Registry]
 ; Uninstaller does not undo this change
 ; Multiple installs keep adding the path
+; When run as admin, HKCU would be the elevated user's; PATH is set in CurStepChanged via ExecAsOriginalUser instead.
 ; https://stackoverflow.com/a/3431379/2350244
 ; https://stackoverflow.com/a/9962307/2350244 (mod path module)
-Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\bin"
+Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\bin"; Check: NotAdminAndPathNotExists
 
 [Run]
 Filename: "{app}\bin\pyrevit.exe"; Description: "Clearning caches..."; Parameters: "caches clear --all"; Flags: runhidden
@@ -88,9 +89,53 @@ Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "ClearCaches"; Parameters: "caches
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detach --all"; Flags: runhidden
 
 [Code]
+function NotAdminAndPathNotExists: Boolean;
+var
+  OrigPath: String;
+  AppPath: String;
+begin
+  Result := not IsAdmin;
+  if Result then
+  begin
+    AppPath := ExpandConstant('{app}\bin');
+    if RegQueryStringValue(HKCU, 'Environment', 'Path', OrigPath) then
+      Result := Pos(';' + Uppercase(AppPath) + ';', ';' + Uppercase(OrigPath) + ';') = 0;
+  end;
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  Params: String;
+  InstallPathEscaped: String;
+  ResultCode: Integer;
+begin
+  if (CurStep = ssPostInstall) and IsAdmin then
+  begin
+    InstallPathEscaped := ExpandConstant('{app}\bin');
+    StringChangeEx(InstallPathEscaped, '''', '''''', True);
+    Params := '-NoProfile -ExecutionPolicy Bypass -Command "' +
+      '$appPath = ''' + InstallPathEscaped + ''';' +
+      '$userPath = [Environment]::GetEnvironmentVariable(''Path'', ''User'');' +
+      'if ($userPath -notlike "' + '"*$appPath*"' + '") {' +
+      '  [Environment]::SetEnvironmentVariable(''Path'', $userPath + '';'' + $appPath, ''User'')' +
+      '}"';
+    if ExecAsOriginalUser(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'), Params, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and (ResultCode = 0) then
+      Log('Added install path to original user PATH')
+    else
+    begin
+      Log('ExecAsOriginalUser failed or non-zero exit when adding PATH');
+      MsgBox('pyRevit was installed, but the installer could not update the original user PATH environment variable.' + #13#10 + #13#10 + 'You may need to manually add the following folder to your user PATH, or re-run the installer without administrative privileges:' + #13#10 + '  ' + ExpandConstant('{app}\bin'), mbError, MB_OK);
+    end;
+  end;
+end;
+
 function InitializeSetup: Boolean;
 begin
+  // .NET 8 for Revit 2025-2026
   Dependency_AddDotNet80;
   Dependency_AddDotNet80Desktop;
+  // .NET 10 for Revit 2027+
+  Dependency_AddDotNet100;
+  Dependency_AddDotNet100Desktop;
   Result := True;
 end;

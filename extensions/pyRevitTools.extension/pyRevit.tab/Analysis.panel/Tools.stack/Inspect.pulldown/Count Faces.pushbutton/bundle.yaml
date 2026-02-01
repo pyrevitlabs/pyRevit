@@ -1,11 +1,17 @@
 title:
-  fr_fr: Décompte des Triangles par type de famille
   en_us: Triangles count per family type
-  de_de: Anzahl der Dreiecke je Familietyp ausgeben
+  fr_fr: Décompte des Triangles par type de famille
   ru: Количество треугольников по типам семейств
+  chinese_s: 按族类型统计三角形面数
+  es_es: Triangles count per family type
+  de_de: Anzahl der Dreiecke je Familietyp ausgeben
+  pt_br: Contagem de Triângulos por Tipo de Família
 tooltip:
-  fr_fr: Compte de Triangles par type de famille. Le résultat est un tableau classé du plus petit nombre de faces au plus grand, avec un grand total.
   en_us: Triangles count per family type. The result is a table sorted from the smallest number of faces to the largest, with a grand total.
-  de_de: Anzahl der Dreiecke je Familien Typ. Das Ergebnis ist eine Tabelle, sortiert von der kleinsten Anzahl an Dreiecken zu der größten Anzahl an Dreiecken und die Gesamtanzahl. 
+  fr_fr: Compte de Triangles par type de famille. Le résultat est un tableau classé du plus petit nombre de faces au plus grand, avec un grand total.
   ru: Количество треугольников по типам семейств. Результат - таблица, отсортированная от наименьшего числа граней к наибольшему, с итоговой суммой.
+  chinese_s: 按族类型统计三角形面数。结果是一个按面数从少到多排序的表格，并包含总计
+  es_es: Recuento de triángulos por tipo de familia. El resultado es una tabla ordenada desde el menor número de caras hasta el mayor, con un total general.
+  de_de: Anzahl der Dreiecke je Familien Typ. Das Ergebnis ist eine Tabelle, sortiert von der kleinsten Anzahl an Dreiecken zu der größten Anzahl an Dreiecken und die Gesamtanzahl.
+  pt_br: Contagem de triângulos por tipo de família. O resultado é uma tabela ordenada do menor número de faces para o maior, com um total geral.
 author: Jean-Marc Couffin, thanks to BIMOne Inc. who allowed me to share this script

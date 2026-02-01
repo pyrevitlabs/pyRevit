@@ -71,17 +71,17 @@ class MakePatternWindow(forms.WPFWindow):
 
         if not self._selection:
             self.resolver_ops.IsEnabled = False
-            self.create_b.Content = "No Linework Selected"
+            self.create_b.Content = self.get_locale_string("NoLineworkSelected")
             self.create_b.IsEnabled = False
             self._export_only = True
-            self.prompt_lb.Content = "Select Pattern to Export"
+            self.prompt_lb.Content = self.get_locale_string("SelectPatternToExport")
 
         if revit.active_view.ViewType not in acceptable_viewtypes:
             self.resolver_ops.IsEnabled = False
-            self.create_b.Content = "Incompatible View Type"
+            self.create_b.Content = self.get_locale_string("IncompatibleViewType")
             self.create_b.IsEnabled = False
             self._export_only = True
-            self.prompt_lb.Content = "Select Pattern to Export"
+            self.prompt_lb.Content = self.get_locale_string("SelectPatternToExport")
 
         self.setup_patnames()
         self.setup_export_units()

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
@@ -33,6 +33,9 @@ namespace pyRevitLabs.Common {
 
         public const string TargetBranch = OriginalRepoDefaultBranch;
         //public const string TargetBranch = @"develop/newexec";
+
+        /// <summary>Branch used only for downloading pyrevit-hosts.json (develop has latest host data).</summary>
+        public const string HostsFileBranch = "develop";
 
         // consts for the official pyRevit repo
         public const string OriginalRepoName = ProductName;

@@ -1,0 +1,34 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">3D 测量工具</system:String>
+    
+    <system:String x:Key="CurrentMeasurement">当前测量</system:String>
+    <system:String x:Key="Point1NotSelected">点 1：未选择</system:String>
+    <system:String x:Key="Point2NotSelected">点 2：未选择</system:String>
+    <system:String x:Key="MeasurementHistory">测量历史</system:String>
+    <system:String x:Key="NoMeasurementsYet">尚无测量</system:String>
+    <system:String x:Key="PressESCToExit">按 ESC 退出</system:String>
+    
+    <system:String x:Key="Point1Format">点 1：{}</system:String>
+    <system:String x:Key="Point2Format">点 2：{}</system:String>
+    <system:String x:Key="DeltaXFormat">ΔX：{:>15}</system:String>
+    <system:String x:Key="DeltaYFormat">ΔY：{:>15}</system:String>
+    <system:String x:Key="DeltaZFormat">ΔZ：{:>15}</system:String>
+    <system:String x:Key="DiagonalFormat">对角线：{}</system:String>
+    <system:String x:Key="SlopeFormat">坡度：{}</system:String>
+    
+    <system:String x:Key="MeasurementHistoryEntry">测量 {}：\n  P1：{}\n  P2：{}\n  ΔX：{:>15}\n  ΔY：{:>15}\n  ΔZ：{:>15}\n  对角线：{}\n  坡度：{}</system:String>
+    
+    <system:String x:Key="Alert3DViewRequired">请在使用 3D 测量工具之前激活 3D 视图。</system:String>
+    <system:String x:Key="Alert3DViewRequiredTitle">需要 3D 视图</system:String>
+    <system:String x:Key="WarningBarPickFirstPoint">选择第一个点</system:String>
+    <system:String x:Key="WarningBarPickSecondPoint">选择第二个点</system:String>
+    <system:String x:Key="AlertMeasurementCancelled">由于无效操作，测量已取消。请重试。</system:String>
+    <system:String x:Key="AlertMeasurementErrorTitle">测量错误</system:String>
+    <system:String x:Key="AlertUnexpectedError">测量期间发生意外错误。请查看日志以获取详细信息。</system:String>
+    <system:String x:Key="ToastMeasurementsCopied">测量已复制到剪贴板！</system:String>
+    <system:String x:Key="ToastMeasure3DTitle">3D 测量</system:String>
+    <system:String x:Key="ProjectUnitLengthUnits">长度单位（在项目单位中调整）：\n</system:String>
+    <system:String x:Key="ProjectUnitSlopeUnits">坡度单位（在项目单位中调整）：\n</system:String>
+</ResourceDictionary>

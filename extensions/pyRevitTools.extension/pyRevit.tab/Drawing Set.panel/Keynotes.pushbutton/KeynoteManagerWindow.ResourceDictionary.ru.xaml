@@ -48,7 +48,7 @@
     <system:String x:Key="EnableHistory">Включить историю</system:String>
     <system:String x:Key="EnableHistoryInfo">Включить отслеживание истории КП.</system:String>
     
-    <GridLength x:Key="RightPanelWidth">160</GridLength>
+    <GridLength x:Key="RightPanelWidth">190</GridLength>
     <GridLength x:Key="RefreshKeynotesWidth">80</GridLength>
     
     <system:String x:Key="AllCategories">-- ВСЕ КАТЕГОРИИ --</system:String>

@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="15.0">
     <PropertyGroup>
-        <Version>5.3.1.25308</Version>
+        <Version>6.0.0.26032</Version>
         <Copyright>Copyright © 2014-2025</Copyright>
         <Company>pyRevitLabs.io</Company>
     </PropertyGroup>

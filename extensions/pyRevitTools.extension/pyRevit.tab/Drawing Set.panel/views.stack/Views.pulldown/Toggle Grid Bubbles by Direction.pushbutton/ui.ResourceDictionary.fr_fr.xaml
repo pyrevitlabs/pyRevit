@@ -1,0 +1,22 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Activer/Désactiver les Bulles de Grille</system:String>
+    <system:String x:Key="HeaderTitle">Activer/Désactiver les Bulles de Grille</system:String>
+    
+    <system:String x:Key="OperationScopeHeader">Portée de l'Opération</system:String>
+    
+    <system:String x:Key="ToggleAllHeader">Activer/désactiver toutes les grilles actives</system:String>
+    <system:String x:Key="ShowAll">Tout Afficher</system:String>
+    <system:String x:Key="HideAll">Tout Masquer</system:String>
+    
+    <system:String x:Key="ToggleByDirectionHeader">Activer/désactiver les grilles actives par direction</system:String>
+    <system:String x:Key="Top">Haut</system:String>
+    <system:String x:Key="Left">Gauche</system:String>
+    <system:String x:Key="Right">Droite</system:String>
+    <system:String x:Key="Bottom">Bas</system:String>
+    
+    <system:String x:Key="Back">Retour</system:String>
+    <system:String x:Key="Cancel">Annuler</system:String>
+    <system:String x:Key="OK">OK</system:String>
+</ResourceDictionary>

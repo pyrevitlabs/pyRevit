@@ -1,0 +1,43 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Imprimer les Feuilles</system:String>
+    
+    <system:String x:Key="Model">Modèle</system:String>
+    <system:String x:Key="LinkedPrefix">Lié : </system:String>
+    <system:String x:Key="SheetIndex">Index des Feuilles</system:String>
+    
+    <system:String x:Key="SheetOrdering">Ordre des Feuilles</system:String>
+    <system:String x:Key="ReversePrintOrder">Inverser l'Ordre d'Impression</system:String>
+    <system:String x:Key="ShowNonPrintableSheets">Afficher les Feuilles Non Imprimables (Grisées)</system:String>
+    <system:String x:Key="IncludeNonPrintableInIndexing">Inclure les Feuilles Non Imprimables dans l'Indexation</system:String>
+    <system:String x:Key="IndexDigits">Chiffres d'Index</system:String>
+    <system:String x:Key="IndexStart">Début d'Index</system:String>
+    <system:String x:Key="Reset">Réinitialiser</system:String>
+    
+    <system:String x:Key="SheetPrinting">Impression des Feuilles</system:String>
+    <system:String x:Key="CombineIntoOnePDF">Combiner en Un Seul PDF</system:String>
+    <system:String x:Key="ExportDWG">Exporter DWG</system:String>
+    <system:String x:Key="NamingFormat">Format de Nommage</system:String>
+    <system:String x:Key="EditFormats">Modifier les Formats</system:String>
+    <system:String x:Key="Printer">Imprimante</system:String>
+    <system:String x:Key="PageSettings">Paramètres de Page</system:String>
+    <system:String x:Key="IncompatibleWithPrinter">Incompatible avec l'imprimante</system:String>
+    
+    <system:String x:Key="ListOfSheets">Liste des feuilles dans l'index de feuilles sélectionné</system:String>
+    <system:String x:Key="SetPrintSettings">Définir les Paramètres d'Impression</system:String>
+    <system:String x:Key="ResetPrintSettings">Réinitialiser les Paramètres d'Impression</system:String>
+    <system:String x:Key="Guide">Guide</system:String>
+    <system:String x:Key="GuideText">Les paramètres d'impression peuvent être définis sur les types de cartouche. Créez un paramètre de type "Print Setting" (de type Texte) sur une famille de cartouche, et définissez la valeur du paramètre au nom du paramètre d'impression souhaité. Lors de l'utilisation de "Variable Paper Size", cet outil assignera automatiquement le bon paramètre d'impression en fonction de la valeur de ce paramètre</system:String>
+    
+    <system:String x:Key="KudosToRyan">Remerciements à Ryan McCullough pour PrintFromIndex</system:String>
+    
+    <system:String x:Key="CopySheetFileNames">Copier le(s) Nom(s) de Fichier de Feuille</system:String>
+    
+    <system:String x:Key="PrintIndex">Index d'Impression</system:String>
+    <system:String x:Key="SheetNumber">Numéro de Feuille</system:String>
+    <system:String x:Key="SheetName">Nom de Feuille</system:String>
+    <system:String x:Key="SheetRevision">Révision de Feuille (Trier par Date)</system:String>
+    <system:String x:Key="PrintSetting">Paramètre d'Impression</system:String>
+    <system:String x:Key="FileName">Nom de Fichier</system:String>
+</ResourceDictionary>
