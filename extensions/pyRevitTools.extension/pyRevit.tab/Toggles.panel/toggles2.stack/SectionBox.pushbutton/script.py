@@ -1,7 +1,5 @@
 """Toggles visibility of section box in current 3D view"""
 
-import pickle
-
 from pyrevit import framework
 from pyrevit import revit, DB, script
 from pyrevit.compat import get_elementid_value_func
@@ -11,7 +9,7 @@ active_view = revit.active_view
 active_view_id_value = get_elementid_value(active_view.Id)
 
 logger = script.get_logger()
-datafile = script.get_document_data_file("SectionBox", "pym")
+DATA_SLOTNAME = "SectionBox"
 
 my_config = script.get_config()
 scope = my_config.get_option("scope", "Visibility")
@@ -50,21 +48,17 @@ def toggle_sectionbox_active():
         logger.error("Not a 3D view. Operation canceled.")
         return
 
-    sectionbox_active_state = active_view.IsSectionBoxActive
-
     try:
-        with open(datafile, "rb") as f:
-            view_boxes = pickle.load(f)
+        view_boxes = script.load_data(DATA_SLOTNAME)
     except Exception:
         view_boxes = {}
 
-    if sectionbox_active_state:
+    if active_view.IsSectionBoxActive:
         try:
             sectionbox = active_view.GetSectionBox()
             if sectionbox:
                 view_boxes[active_view_id_value] = revit.serialize(sectionbox)
-                with open(datafile, "wb") as f:
-                    pickle.dump(view_boxes, f)
+                script.store_data(DATA_SLOTNAME, view_boxes)
             active_view.IsSectionBoxActive = False
         except Exception as e:
             logger.error("Error saving section box: {}".format(e))

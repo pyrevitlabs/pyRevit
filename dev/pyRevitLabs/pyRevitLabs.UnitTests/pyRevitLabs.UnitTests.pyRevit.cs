@@ -1,4 +1,4 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.IO;
 using System.Collections.Generic;
@@ -114,6 +114,13 @@ namespace pyRevitLabs.UnitTests.pyRevit {
             catch (Exception ex) {
                 Assert.Fail(ex.Message);
             }
+        }
+
+        [TestMethod()]
+        public void HostFileURL_UsesDevelopBranch_Test() {
+            var url = RevitProductData.HostFileURL;
+            Assert.IsTrue(url.Contains("develop"), "HostFileURL should use develop branch. URL: " + url);
+            Assert.IsTrue(url.Contains("pyrevit-hosts.json"), "HostFileURL should point to pyrevit-hosts.json. URL: " + url);
         }
     }
 }

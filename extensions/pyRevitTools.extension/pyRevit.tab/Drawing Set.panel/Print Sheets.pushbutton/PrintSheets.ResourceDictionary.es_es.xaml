@@ -1,0 +1,43 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Imprimir Hojas</system:String>
+    
+    <system:String x:Key="Model">Modelo</system:String>
+    <system:String x:Key="LinkedPrefix">Vinculado: </system:String>
+    <system:String x:Key="SheetIndex">Índice de Hojas</system:String>
+    
+    <system:String x:Key="SheetOrdering">Orden de Hojas</system:String>
+    <system:String x:Key="ReversePrintOrder">Invertir Orden de Impresión</system:String>
+    <system:String x:Key="ShowNonPrintableSheets">Mostrar Hojas No Imprimibles (Atenuadas)</system:String>
+    <system:String x:Key="IncludeNonPrintableInIndexing">Incluir Hojas No Imprimibles en la Indexación</system:String>
+    <system:String x:Key="IndexDigits">Dígitos de Índice</system:String>
+    <system:String x:Key="IndexStart">Inicio de Índice</system:String>
+    <system:String x:Key="Reset">Restablecer</system:String>
+    
+    <system:String x:Key="SheetPrinting">Impresión de Hojas</system:String>
+    <system:String x:Key="CombineIntoOnePDF">Combinar en Un Solo PDF</system:String>
+    <system:String x:Key="ExportDWG">Exportar DWG</system:String>
+    <system:String x:Key="NamingFormat">Formato de Nombres</system:String>
+    <system:String x:Key="EditFormats">Editar Formatos</system:String>
+    <system:String x:Key="Printer">Impresora</system:String>
+    <system:String x:Key="PageSettings">Configuración de Página</system:String>
+    <system:String x:Key="IncompatibleWithPrinter">Incompatible con la impresora</system:String>
+    
+    <system:String x:Key="ListOfSheets">Lista de las hojas en el índice de hojas seleccionado</system:String>
+    <system:String x:Key="SetPrintSettings">Establecer Configuración de Impresión</system:String>
+    <system:String x:Key="ResetPrintSettings">Restablecer Configuración de Impresión</system:String>
+    <system:String x:Key="Guide">Guía</system:String>
+    <system:String x:Key="GuideText">La configuración de impresión se puede establecer en tipos de cartucho. Cree un parámetro de tipo "Print Setting" (de tipo Texto) en una familia de cartucho, y establezca el valor del parámetro al nombre de la configuración de impresión deseada. Al usar "Variable Paper Size", esta herramienta asignará automáticamente la configuración de impresión correcta basándose en el valor de este parámetro</system:String>
+    
+    <system:String x:Key="KudosToRyan">Créditos a Ryan McCullough por PrintFromIndex</system:String>
+    
+    <system:String x:Key="CopySheetFileNames">Copiar Nombre(s) de Archivo de Hoja</system:String>
+    
+    <system:String x:Key="PrintIndex">Índice de Impresión</system:String>
+    <system:String x:Key="SheetNumber">Número de Hoja</system:String>
+    <system:String x:Key="SheetName">Nombre de Hoja</system:String>
+    <system:String x:Key="SheetRevision">Revisión de Hoja (Ordenar por Fecha)</system:String>
+    <system:String x:Key="PrintSetting">Configuración de Impresión</system:String>
+    <system:String x:Key="FileName">Nombre de Archivo</system:String>
+</ResourceDictionary>

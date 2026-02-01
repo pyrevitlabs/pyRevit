@@ -1,0 +1,37 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Selecione as opções a igualar:</system:String>
+    
+    <system:String x:Key="ElementGraphicsOverrides">Sobreposições de gráficos de elementos:</system:String>
+    <system:String x:Key="Halftone">Meio-tom</system:String>
+    <system:String x:Key="Transparency">Transparência</system:String>
+    
+    <system:String x:Key="ProjectionOptions">Opções de projeção:</system:String>
+    <system:String x:Key="ProjectionLineColor">Cor da linha de projeção</system:String>
+    <system:String x:Key="ProjectionLinePattern">Padrão da linha de projeção</system:String>
+    <system:String x:Key="ProjectionLineWeight">Espessura da linha de projeção</system:String>
+    <system:String x:Key="ProjectionFillColor">Cor de preenchimento da projeção</system:String>
+    <system:String x:Key="ProjectionFillPattern">Padrão de preenchimento da projeção</system:String>
+    <system:String x:Key="ProjectionFillPatternVisibility">Visibilidade do padrão de projeção</system:String>
+    
+    <system:String x:Key="CutOptions">Opções de corte:</system:String>
+    <system:String x:Key="CutLineColor">Cor da linha de corte</system:String>
+    <system:String x:Key="CutLinePattern">Padrão da linha de corte</system:String>
+    <system:String x:Key="CutLineWeight">Espessura da linha de corte</system:String>
+    <system:String x:Key="CutFillColor">Cor de preenchimento de corte</system:String>
+    <system:String x:Key="CutFillPattern">Padrão de preenchimento de corte</system:String>
+    <system:String x:Key="CutFillPatternVisibility">Visibilidade do padrão de corte</system:String>
+    
+    <system:String x:Key="DimensionOverrides">Sobreposições de cota:</system:String>
+    <system:String x:Key="ReplacedValue">Valor substituído</system:String>
+    <system:String x:Key="TextPosition">Posição do texto</system:String>
+    <system:String x:Key="AboveValue">Valor acima</system:String>
+    <system:String x:Key="BelowValue">Valor abaixo</system:String>
+    <system:String x:Key="PrefixValue">Valor de prefixo</system:String>
+    <system:String x:Key="PostfixValue">Valor de sufixo</system:String>
+    
+    <system:String x:Key="CheckAll">Marcar todos</system:String>
+    <system:String x:Key="CheckNone">Desmarcar todos</system:String>
+    <system:String x:Key="SaveOptions">Salvar opções</system:String>
+</ResourceDictionary>

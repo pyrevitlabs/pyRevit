@@ -5,7 +5,7 @@ verify_ssl = true
 
 [dev-packages]
 mypy = "*"
-pylint = "==4.0.2"
+pylint = "==4.0.4"
 
 [packages]
 docopt = "*"
@@ -13,7 +13,7 @@ requests = "*"
 pygount = "*"
 pyyaml = ">=5.4"
 black = "*"
-setuptools = "==80.9.0"
+setuptools = "==80.10.2"
 mkdocs = "*"
 mkdocstrings = "*"
 mkdocstrings-python = "*"

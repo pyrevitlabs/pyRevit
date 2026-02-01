@@ -55,6 +55,7 @@ sroots = {"2012": "/RevitServerAdminRESTService/AdminRESTService.svc",
           "2024": "/RevitServerAdminRESTService2024/AdminRESTService.svc",
           "2025": "/RevitServerAdminRESTService2025/AdminRESTService.svc",
           "2026": "/RevitServerAdminRESTService2026/AdminRESTService.svc",
+          "2027": "/RevitServerAdminRESTService2027/AdminRESTService.svc",
           }
 
 

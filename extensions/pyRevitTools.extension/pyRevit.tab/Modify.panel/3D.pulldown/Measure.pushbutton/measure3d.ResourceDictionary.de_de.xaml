@@ -1,0 +1,34 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">3D-Messwerkzeug</system:String>
+    
+    <system:String x:Key="CurrentMeasurement">Aktuelle Messung</system:String>
+    <system:String x:Key="Point1NotSelected">Punkt 1: Nicht ausgewählt</system:String>
+    <system:String x:Key="Point2NotSelected">Punkt 2: Nicht ausgewählt</system:String>
+    <system:String x:Key="MeasurementHistory">Messverlauf</system:String>
+    <system:String x:Key="NoMeasurementsYet">Noch keine Messungen</system:String>
+    <system:String x:Key="PressESCToExit">ESC drücken zum Beenden</system:String>
+    
+    <system:String x:Key="Point1Format">Punkt 1: {}</system:String>
+    <system:String x:Key="Point2Format">Punkt 2: {}</system:String>
+    <system:String x:Key="DeltaXFormat">ΔX: {:>15}</system:String>
+    <system:String x:Key="DeltaYFormat">ΔY: {:>15}</system:String>
+    <system:String x:Key="DeltaZFormat">ΔZ: {:>15}</system:String>
+    <system:String x:Key="DiagonalFormat">Diagonale: {}</system:String>
+    <system:String x:Key="SlopeFormat">Neigung: {}</system:String>
+    
+    <system:String x:Key="MeasurementHistoryEntry">Messung {}:\n  P1: {}\n  P2: {}\n  ΔX: {:>15}\n  ΔY: {:>15}\n  ΔZ: {:>15}\n  Diagonale: {}\n  Neigung: {}</system:String>
+    
+    <system:String x:Key="Alert3DViewRequired">Bitte aktivieren Sie eine 3D-Ansicht, bevor Sie das 3D-Messwerkzeug verwenden.</system:String>
+    <system:String x:Key="Alert3DViewRequiredTitle">3D-Ansicht Erforderlich</system:String>
+    <system:String x:Key="WarningBarPickFirstPoint">Ersten Punkt auswählen</system:String>
+    <system:String x:Key="WarningBarPickSecondPoint">Zweiten Punkt auswählen</system:String>
+    <system:String x:Key="AlertMeasurementCancelled">Messung aufgrund eines ungültigen Vorgangs abgebrochen. Bitte versuchen Sie es erneut.</system:String>
+    <system:String x:Key="AlertMeasurementErrorTitle">Messfehler</system:String>
+    <system:String x:Key="AlertUnexpectedError">Ein unerwarteter Fehler ist bei der Messung aufgetreten. Weitere Details finden Sie im Protokoll.</system:String>
+    <system:String x:Key="ToastMeasurementsCopied">Messungen in die Zwischenablage kopiert!</system:String>
+    <system:String x:Key="ToastMeasure3DTitle">3D-Messung</system:String>
+    <system:String x:Key="ProjectUnitLengthUnits">Längeneinheiten (in Projekteinheiten anpassen): \n</system:String>
+    <system:String x:Key="ProjectUnitSlopeUnits">Neigungseinheiten (in Projekteinheiten anpassen): \n</system:String>
+</ResourceDictionary>

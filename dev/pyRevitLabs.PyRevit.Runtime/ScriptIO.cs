@@ -11,6 +11,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private WeakReference<ScriptRuntime> _runtime;
         private WeakReference<ScriptConsole> _gui;
         private string _outputBuffer;
+        private readonly object _logLock = new object();
         private bool _inputReceived = false;
         private bool _errored = false;
         private ScriptEngineType _erroredEngine;
@@ -29,15 +30,54 @@ namespace PyRevitLabs.PyRevit.Runtime {
             _gui = new WeakReference<ScriptConsole>(gui);
         }
 
-        public ScriptConsole GetOutput() {
+        private ScriptRuntime GetRuntime() {
+            if (_runtime == null)
+                return null;
+
             ScriptRuntime runtime;
             var re = _runtime.TryGetTarget(out runtime);
-            if (re && runtime != null)
+            return re ? runtime : null;
+        }
+
+        private string GetLogFilePath() {
+            var runtime = GetRuntime();
+            var logFilePath = runtime?.ScriptRuntimeConfigs?.LogFilePath;
+            return string.IsNullOrWhiteSpace(logFilePath) ? null : logFilePath;
+        }
+
+        private void AppendLog(string outputText) {
+            var logFilePath = GetLogFilePath();
+            if (string.IsNullOrEmpty(logFilePath))
+                return;
+
+            lock (_logLock) {
+                try {
+                    var logDir = Path.GetDirectoryName(logFilePath);
+                    if (!string.IsNullOrEmpty(logDir))
+                        Directory.CreateDirectory(logDir);
+                    File.AppendAllText(logFilePath, outputText, OutputEncoding);
+                }
+                catch (Exception ex) {
+                    // Best-effort logging: do not throw from IO during output writes.
+                    if (PrintDebugInfo) {
+                        System.Diagnostics.Debug.WriteLine(
+                            string.Format("[ScriptIO] Failed to append to log file '{0}': {1}", logFilePath, ex)
+                        );
+                    }
+                }
+            }
+        }
+
+        public ScriptConsole GetOutput() {
+            var runtime = GetRuntime();
+            if (runtime != null) {
+                if (runtime.ScriptRuntimeConfigs != null && runtime.ScriptRuntimeConfigs.SuppressOutput)
+                    return null;
                 return runtime.OutputWindow;
+            }
 
             ScriptConsole output;
-            re = _gui.TryGetTarget(out output);
-            if (re && output != null)
+            if (_gui.TryGetTarget(out output) && output != null)
                 return output;
 
             return null;
@@ -65,6 +105,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public override void Write(byte[] buffer, int offset, int count) {
+            var tempBuffer = new byte[count];
+            Array.Copy(buffer, offset, tempBuffer, 0, count);
+            var outputText = OutputEncoding.GetString(tempBuffer);
+            AppendLog(outputText);
+
             var output = GetOutput();
             if (output != null) {
                 if (output.ClosedByUser) {
@@ -84,11 +129,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
 
                 lock (this) {
-
-                    var tempBuffer = new byte[count];
-                    Array.Copy(buffer, offset, tempBuffer, 0, count);
-                    var outputText = OutputEncoding.GetString(tempBuffer);
-
                     // append output to the buffer
                     _outputBuffer += outputText;
 

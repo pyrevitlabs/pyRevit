@@ -1,0 +1,27 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:system="clr-namespace:System;assembly=mscorlib">
+	
+	<!-- Default Title -->
+    <system:String x:Key="SelectFromList.DefaultTitle">Sélectionner dans la liste</system:String>
+
+    <!-- Group Selector -->
+    <system:String x:Key="SelectFromList.GroupSelector.Label">Groupe de Liste:</system:String>
+    
+    <!-- Buttons -->
+    <system:String x:Key="SelectFromList.CheckAll.Button">Tout Cocher</system:String>
+    <system:String x:Key="SelectFromList.UncheckAll.Button">Tout Décocher</system:String>
+    <system:String x:Key="SelectFromList.ToggleAll.Button">Basculer Tout</system:String>
+    <system:String x:Key="SelectFromList.Reset.Button">Réinitialiser</system:String>
+    <system:String x:Key="SelectFromList.Select.Button">Sélectionner</system:String>
+    
+    <!-- Dynamic button labels (when filtered) -->
+    <system:String x:Key="SelectFromList.Check.Button">Cocher</system:String>
+    <system:String x:Key="SelectFromList.Uncheck.Button">Décocher</system:String>
+    <system:String x:Key="SelectFromList.Toggle.Button">Basculer</system:String>
+    
+    <!-- Tooltips -->
+    <system:String x:Key="SelectFromList.RegexToggle.Tooltip">Basculer entre l'utilisation d'expressions régulières et le filtrage flou</system:String>
+    
+</ResourceDictionary>

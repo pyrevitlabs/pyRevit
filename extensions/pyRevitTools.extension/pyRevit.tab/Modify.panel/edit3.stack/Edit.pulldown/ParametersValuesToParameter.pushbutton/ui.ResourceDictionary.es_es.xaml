@@ -1,0 +1,16 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Params2Param - Copiar valores de parámetros</system:String>
+    <system:String x:Key="SelectCategory">Seleccionar categoría:</system:String>
+    <system:String x:Key="SourceParameters">Parámetros de origen (seleccionar varios si es necesario):</system:String>
+    <system:String x:Key="TargetParameter">Parámetro de destino (seleccionar uno):</system:String>
+    <system:String x:Key="InsertSeparators">Insertar separadores entre valores de parámetros separados por espacios.</system:String>
+    <system:String x:Key="AddSpacesToSeparators">Agregar espacios a los separadores:</system:String>
+    <system:String x:Key="None">Ninguno</system:String>
+    <system:String x:Key="Before">Antes</system:String>
+    <system:String x:Key="After">Después</system:String>
+    <system:String x:Key="BeforeAndAfter">Antes y después</system:String>
+    <system:String x:Key="Execute">Ejecutar</system:String>
+    <system:String x:Key="Cancel">Cancelar</system:String>
+</ResourceDictionary>

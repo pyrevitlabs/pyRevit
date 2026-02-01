@@ -5,12 +5,7 @@ logger = script.get_logger()
 output = script.get_output()
 output.close_others()
 
-elements = (
-    DB.FilteredElementCollector(doc)
-    .OfClass(DB.FamilyInstance)
-    .WhereElementIsNotElementType()
-    .ToElements()
-)
+elements = revit.query.get_elements_by_class(DB.FamilyInstance, doc=doc)
 
 # Storage
 processed_types = {}  # typeId: {name, coarse, medium, fine}

@@ -1,6 +1,14 @@
 # -*- coding: UTF-8 -*-
+import sys
+import os
+# Add current directory to path for local imports
+_current_dir = os.path.dirname(os.path.abspath(__file__))
+if _current_dir not in sys.path:
+    sys.path.insert(0, _current_dir)
+
 from pyrevit import script, revit, DB, DOCS
 from pyrevit.preflight import PreflightTestCase
+from check_translations import DocstringMeta
 
 doc = DOCS.doc
 
@@ -63,30 +71,40 @@ def levels_scoped(document=doc):
 
 
 def checkModel(doc, output):
+    from check_translations import get_check_translation
     output = script.get_output()
     output.close_others()
-    output.print_md("# Level Data Lister")
+    output.print_md("# {}".format(get_check_translation("LevelsDataLister")))
     count = levels_count()
-    output.print_md("## Number of levels: {0}".format(count))
+    output.print_md("## {0}: {1}".format(get_check_translation("NumberOfLevels"), count))
     names = levels_names() # [1,2,3,4]
     types = levels_elevation() # [bubble, bubble, bubble, bubble]
     pinned = levels_pinned() # [True, False, True, False]
     scoper = levels_scoped() # [Name of scope, Name of scope, Name of scope, Name of scope]
     elevation = levels_elevation() # [1.0, 2.0, 3.0, 4.0]
-    output.print_table(table_data=zip(names, types, pinned, scoper, elevation), title="Levels", columns=["Name", "Type", "Pinned", "Scope Box", "Elevation"])
+    output.print_table(
+        table_data=zip(names, types, pinned, scoper, elevation),
+        title=get_check_translation("Levels"),
+        columns=[
+            get_check_translation("Name"),
+            get_check_translation("Type"),
+            get_check_translation("Pinned"),
+            get_check_translation("ScopeBox"),
+            get_check_translation("Elevation")
+        ]
+    )
 
 
 
 class ModelChecker(PreflightTestCase):
-    """
-    List levels, if they are pinned, scoped boxed, or named and its elevation.
-
-    This QC tools returns you with the following data:
-        Levels count, name, type, pinned status, scope box, and elevation.
-
-    """
-
-    name = "Levels Data Lister"
+    __metaclass__ = DocstringMeta
+    _docstring_key = "CheckDescription_LevelsDataLister"
+    
+    @property
+    def name(self):
+        from check_translations import get_check_translation
+        return get_check_translation("CheckName_LevelsDataLister")
+    
     author = "Jean-Marc Couffin"
 
 

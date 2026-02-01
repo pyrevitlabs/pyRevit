@@ -33,7 +33,7 @@ def orientsectionbox(view):
             element,
             include_invisible=True,
             compute_references=True,
-            detail_level=curview.DetailLevel
+            detail_level=view.DetailLevel
         )
 
         solids = [g for g in geom_objs if isinstance(g, DB.Solid) and g.Faces.Size > 0]

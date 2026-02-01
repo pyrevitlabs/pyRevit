@@ -1,13 +1,17 @@
 title:
-  ru: Открыть папку с журналами
-  fr_fr: Ouvrir le dossier des fichiers journaux
   en_us: Open Journals Folder
+  fr_fr: Ouvrir le dossier des fichiers journaux
+  ru: Открыть папку с журналами
+  chinese_s: 打开日志文件夹
+  es_es: Abrir la carpeta de los archivos de registro
   de_de: Öffne den Ordner mit den Journal Dateien
 tooltip:
-  ru: Открывает папку журналов Revit текущего пользователя.
-  fr_fr: Ouvre le dossier contenant les fichiers journaux Revit pour l'utilisateur actuel
   en_us: Opens the Revit journals folder for current user
+  fr_fr: Ouvre le dossier contenant les fichiers journaux Revit pour l'utilisateur actuel
+  ru: Открывает папку журналов Revit текущего пользователя.
+  chinese_s: 打开 Revit 日志文件夹
+  es_es: Abre la carpeta de los archivos de registro
   de_de: >-
     Es wird der Ordner mit den Revit Journal Dateien des aktuellen Benutzers geöffnet. 
     Hier kann man untersuchen, welche Aktion zuletzt durchgeführt wurde. Dies ist 
-    vorallem hilfreich, wenn Revit abgestürzt ist, um den Fehler reproduzieren zu können. 
+    vorallem hilfreich, wenn Revit abgestürzt ist, um den Fehler reproduzieren zu können.

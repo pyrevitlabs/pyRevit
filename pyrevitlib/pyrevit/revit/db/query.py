@@ -35,12 +35,14 @@ GRAPHICAL_VIEWTYPES = [
     DB.ViewType.Detail,
     DB.ViewType.CostReport,
     DB.ViewType.LoadsReport,
-    DB.ViewType.PresureLossReport,
     DB.ViewType.ColumnSchedule,
     DB.ViewType.PanelSchedule,
     DB.ViewType.Walkthrough,
     DB.ViewType.Rendering,
 ]
+# PresureLossReport was removed in Revit 2027
+if HOST_APP.is_older_than(2027):
+    GRAPHICAL_VIEWTYPES.append(DB.ViewType.PresureLossReport)
 
 
 DETAIL_CURVES = (DB.DetailLine, DB.DetailArc, DB.DetailEllipse, DB.DetailNurbSpline)

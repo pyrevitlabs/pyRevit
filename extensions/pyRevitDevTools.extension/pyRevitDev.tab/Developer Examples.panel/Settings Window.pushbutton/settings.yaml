@@ -1,0 +1,20 @@
+settings:
+  - name: show_progressbar
+    type: bool
+    label: Show Progressbar
+    default: true
+
+  - name: tree_type
+    type: choice
+    label: Tree Type
+    options:
+      - Apple
+      - Orange
+    default: Apple
+
+  - name: fruits
+    type: int
+    label: Fruits (pcs)
+    default: 10
+    min: 0
+    max: 1000
