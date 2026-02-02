@@ -2,9 +2,23 @@
 import io
 import json
 import os
+import six
 from pyrevit import script, forms
 from pyrevit.userconfig import user_config
-from script import main
+
+if six.PY2:
+    import imp
+
+    def load_module_from_path(name, path):
+        return imp.load_source(name, path)
+else:
+    import importlib.util
+
+    def load_module_from_path(name, path):
+        spec = importlib.util.spec_from_file_location(name, path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
 
 
 def get_translations(script_folder, script_type, locale):
@@ -107,4 +121,4 @@ if results:
         my_config.set_option("custom_prefix_dwg_value", custom_prefix_value)
 
     script.save_config()
-    main()
+    load_module_from_path("script", script.get_bundle_file("script.py")).main()
