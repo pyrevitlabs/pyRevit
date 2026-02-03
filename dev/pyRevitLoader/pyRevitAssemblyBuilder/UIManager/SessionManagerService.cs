@@ -173,7 +173,26 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 }
             }
             
-            // STEP 3: Cleanup orphaned UI elements (those with dirty=false)
+            // STEP 3: Apply external layout directives (panel reordering)
+            // This applies directives that reference external targets (native Revit panels or panels from other extensions)
+            // Must be called after ALL UI is built so all panels exist
+            if (_ribbonScanner != null && uiExtensions != null)
+            {
+                stepStopwatch.Restart();
+                var allExternalDirectives = uiExtensions
+                    .Where(ext => ext?.ExternalLayoutDirectives != null)
+                    .SelectMany(ext => ext.ExternalLayoutDirectives)
+                    .ToList();
+
+                if (allExternalDirectives.Count > 0)
+                {
+                    _logger.Debug($"Applying {allExternalDirectives.Count} external layout directives...");
+                    _ribbonScanner.SortUI(allExternalDirectives);
+                }
+                _logger.Debug($"[PERF] SortUI: {stepStopwatch.ElapsedMilliseconds}ms");
+            }
+
+            // STEP 4: Cleanup orphaned UI elements (those with dirty=false)
             // This deactivates tabs/panels that were deleted or disabled since last load
             // Matching Python's cleanup_pyrevit_ui() behavior
             if (_ribbonScanner != null)
@@ -182,7 +201,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 _ribbonScanner.CleanupOrphanedElements();
                 _logger.Debug($"[PERF] CleanupOrphanedElements: {stepStopwatch.ElapsedMilliseconds}ms");
             }
-            
+
             totalStopwatch.Stop();
             _logger.Info($"Session loaded in {totalStopwatch.ElapsedMilliseconds}ms");
         }

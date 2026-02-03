@@ -16,6 +16,12 @@ namespace pyRevitExtensionParser
         public new string MinRevitVersion { get; set; }
         public new string MaxRevitVersion { get; set; }
         public ExtensionConfig Config { get; set; }
+
+        /// <summary>
+        /// Layout directives that reference external components (from other extensions or native Revit).
+        /// These must be applied after the full UI is built using the Revit ribbon API.
+        /// </summary>
+        public List<ExternalLayoutDirective> ExternalLayoutDirectives { get; set; } = new List<ExternalLayoutDirective>();
         
         // Cache directory existence checks to avoid repeated file system calls
         private Dictionary<string, bool> _dirExistsCache = new Dictionary<string, bool>();
