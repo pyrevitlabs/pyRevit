@@ -428,6 +428,12 @@ namespace pyRevitExtensionParser
                         state.IsInMultilineValue = true;
                         state.CurrentLanguageKey = "en_us";
                     }
+                    else if (string.IsNullOrEmpty(value))
+                    {
+                        // Implicit multiline (legacy format: title: then indented lines)
+                        state.IsInMultilineValue = true;
+                        state.CurrentLanguageKey = "en_us";
+                    }
                     else if (!string.IsNullOrEmpty(value))
                     {
                         parsed.Titles["en_us"] = StripQuotes(value);
@@ -453,6 +459,12 @@ namespace pyRevitExtensionParser
                     else if (value == "|" || value == ">")
                     {
                         // Legacy multiline
+                        state.IsInMultilineValue = true;
+                        state.CurrentLanguageKey = "en_us";
+                    }
+                    else if (string.IsNullOrEmpty(value))
+                    {
+                        // Implicit multiline (legacy format: tooltip: then indented lines)
                         state.IsInMultilineValue = true;
                         state.CurrentLanguageKey = "en_us";
                     }
