@@ -1,8 +1,10 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.RegularExpressions;
+using pyRevitLabs.Json;
+using pyRevitLabs.Json.Linq;
 
 namespace pyRevitExtensionParser
 {
@@ -34,7 +36,7 @@ namespace pyRevitExtensionParser
         /// <param name="val">The value to write.</param>
         /// <param name="filePath">The path to the INI file.</param>
         /// <returns>Non-zero if successful; otherwise, zero.</returns>
-        [DllImport("kernel32")]
+        [DllImport("kernel32", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern long WritePrivateProfileString(string section, string key, string val, string filePath);
 
         /// <summary>
@@ -47,7 +49,7 @@ namespace pyRevitExtensionParser
         /// <param name="size">The size of the buffer (StringBuilder capacity).</param>
         /// <param name="filePath">The path to the INI file.</param>
         /// <returns>The number of characters copied to the buffer, excluding the null terminator.</returns>
-        [DllImport("kernel32")]
+        [DllImport("kernel32", CharSet = CharSet.Unicode, SetLastError = true)]
         private static extern int GetPrivateProfileString(string section, string key, string def, StringBuilder retVal, int size, string filePath);
 
         /// <summary>
@@ -58,6 +60,11 @@ namespace pyRevitExtensionParser
         /// <returns>The value associated with the key, or an empty string if not found.</returns>
         public string IniReadValue(string section, string key)
         {
+            if (TryReadValueManaged(section, key, out var managedValue))
+            {
+                return managedValue ?? string.Empty;
+            }
+
             // Increased capacity for larger ini values (like Python lists)
             var sb = new StringBuilder(2048);
             GetPrivateProfileString(section, key, "", sb, sb.Capacity, _path);
@@ -81,9 +88,150 @@ namespace pyRevitExtensionParser
         /// <returns>An enumerable collection of section names.</returns>
         public IEnumerable<string> GetSections()
         {
+            if (TryReadSectionsManaged(out var sections))
+            {
+                return sections;
+            }
+
             var sb = new StringBuilder(2048);
             GetPrivateProfileString(null, null, null, sb, sb.Capacity, _path);
             return sb.ToString().Split(new[] { '\0' }, StringSplitOptions.RemoveEmptyEntries);
+        }
+
+        private bool TryReadValueManaged(string section, string key, out string value)
+        {
+            value = string.Empty;
+            if (string.IsNullOrEmpty(section) || string.IsNullOrEmpty(key))
+                return false;
+
+            if (!CanReadManaged())
+                return false;
+
+            try
+            {
+                foreach (var entry in EnumerateIniEntries())
+                {
+                    if (!entry.IsKeyValue)
+                        continue;
+                    if (!string.Equals(entry.Section, section, StringComparison.OrdinalIgnoreCase))
+                        continue;
+                    if (!string.Equals(entry.Key, key, StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    value = entry.Value ?? string.Empty;
+                    return true;
+                }
+
+                return true;
+            }
+            catch (IOException)
+            {
+                return false;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return false;
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
+        }
+
+        private bool TryReadSectionsManaged(out IEnumerable<string> sections)
+        {
+            sections = Array.Empty<string>();
+            if (!CanReadManaged())
+                return false;
+
+            try
+            {
+                var sectionNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var entry in EnumerateIniEntries())
+                {
+                    if (!entry.IsSection)
+                        continue;
+
+                    if (!string.IsNullOrEmpty(entry.Section))
+                        sectionNames.Add(entry.Section);
+                }
+
+                sections = sectionNames;
+                return true;
+            }
+            catch (IOException)
+            {
+                return false;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return false;
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
+        }
+
+        private bool CanReadManaged()
+        {
+            return !string.IsNullOrEmpty(_path) && File.Exists(_path);
+        }
+
+        private IEnumerable<IniEntry> EnumerateIniEntries()
+        {
+            string currentSection = null;
+            foreach (var line in File.ReadLines(_path))
+            {
+                var trimmed = line.Trim();
+                if (trimmed.Length == 0)
+                    continue;
+                if (trimmed.StartsWith(";") || trimmed.StartsWith("#"))
+                    continue;
+
+                if (trimmed.StartsWith("[") && trimmed.EndsWith("]"))
+                {
+                    currentSection = trimmed.Substring(1, trimmed.Length - 2).Trim();
+                    yield return IniEntry.SectionEntry(currentSection);
+                    continue;
+                }
+
+                var idx = trimmed.IndexOf('=');
+                if (idx < 0)
+                    continue;
+
+                var keyPart = trimmed.Substring(0, idx).Trim();
+                var valuePart = trimmed.Substring(idx + 1).Trim();
+                yield return IniEntry.KeyValue(currentSection, keyPart, valuePart);
+            }
+        }
+
+        private readonly struct IniEntry
+        {
+            public string Section { get; }
+            public string Key { get; }
+            public string Value { get; }
+            public bool IsSection { get; }
+            public bool IsKeyValue { get; }
+
+            private IniEntry(string section, string key, string value, bool isSection, bool isKeyValue)
+            {
+                Section = section;
+                Key = key;
+                Value = value;
+                IsSection = isSection;
+                IsKeyValue = isKeyValue;
+            }
+
+            public static IniEntry SectionEntry(string section)
+            {
+                return new IniEntry(section, null, null, true, false);
+            }
+
+            public static IniEntry KeyValue(string section, string key, string value)
+            {
+                return new IniEntry(section, key, value, false, true);
+            }
         }
         /// <summary>
         /// Adds a value to a Python-style list stored in the INI file.
@@ -145,30 +293,22 @@ namespace pyRevitExtensionParser
         }
     }
     /// <summary>
-    /// Provides utilities for parsing and formatting Python-style list strings.
-    /// Handles conversion between Python list format (["item1", "item2"]) and C# List&lt;string&gt;.
-    /// Optimized for performance with compiled regex and minimal string allocations.
+    /// Provides utilities for parsing and formatting list strings.
+    /// Handles conversion between list format (["item1", "item2"]) and C# List&lt;string&gt;.
     /// </summary>
     public static class PythonListParser
     {
         /// <summary>
-        /// Pre-compiled regex pattern for extracting quoted values from Python-style lists.
-        /// Pattern matches content between double quotes: "([^"]*)"
-        /// Compiled for better performance when used repeatedly.
-        /// </summary>
-        private static readonly Regex QuotedValueRegex = new Regex(@"""([^""]*)""", RegexOptions.Compiled);
-
-        /// <summary>
-        /// Parses a Python-style list string into a C# List&lt;string&gt;.
-        /// Handles escaped backslashes in paths (e.g., "C:\\path\\to\\file" becomes "C:\path\to\file").
+        /// Parses a list string into a C# List&lt;string&gt;.
+        /// Accepts JSON arrays and preserves Unicode values.
         /// </summary>
         /// <param name="pythonListString">
-        /// The Python-style list string to parse. Expected format: ["value1", "value2", "value3"]
-        /// Can be null, empty, or contain escaped backslashes.
+        /// The list string to parse. Expected format: ["value1", "value2", "value3"]
+        /// Can be null, empty, or a single non-list value.
         /// </param>
         /// <returns>
         /// A List&lt;string&gt; containing the parsed values. Returns an empty list if input is null or empty.
-        /// Backslashes are unescaped (double backslash \\ becomes single backslash \).
+        ///
         /// </returns>
         /// <example>
         /// Input: ["C:\\Users\\Documents", "C:\\Program Files"]
@@ -179,43 +319,35 @@ namespace pyRevitExtensionParser
             if (string.IsNullOrEmpty(pythonListString))
                 return new List<string>();
 
-            var list = new List<string>();
-            var matches = QuotedValueRegex.Matches(pythonListString);
-            
-            // Pre-allocate capacity if we know the count to avoid resizing
-            if (matches.Count > 0)
+            var trimmed = pythonListString.Trim();
+            if (!trimmed.StartsWith("["))
+                return new List<string> { trimmed };
+
+            var list = TryParseJsonList(trimmed);
+            if (list != null)
+                return list;
+
+            var normalized = NormalizeSingleQuotedList(trimmed);
+            if (!string.Equals(normalized, trimmed, StringComparison.Ordinal))
             {
-                list.Capacity = matches.Count;
+                list = TryParseJsonList(normalized);
+                if (list != null)
+                    return list;
             }
 
-            foreach (Match match in matches)
-            {
-                // Only replace if backslashes are present to avoid unnecessary allocations
-                string value = match.Groups[1].Value;
-                if (value.Contains(@"\\"))
-                {
-                    // Unescape: convert \\ to \
-                    list.Add(value.Replace(@"\\", @"\"));
-                }
-                else
-                {
-                    list.Add(value);
-                }
-            }
-            return list;
+            return new List<string>();
         }
 
         /// <summary>
-        /// Converts a C# List&lt;string&gt; to a Python-style list string.
-        /// Escapes backslashes in paths (e.g., "C:\path\to\file" becomes "C:\\path\\to\\file").
+        /// Converts a C# List&lt;string&gt; to a list string.
         /// </summary>
         /// <param name="list">
         /// The list to convert. Can be null or empty.
         /// </param>
         /// <returns>
-        /// A Python-style list string in the format: ["value1", "value2", "value3"]
+        /// A list string in the format: ["value1", "value2", "value3"]
         /// Returns "[]" for null or empty lists.
-        /// Backslashes are escaped (single backslash \ becomes double backslash \\).
+        ///
         /// </returns>
         /// <example>
         /// Input: List with "C:\Users\Documents" and "C:\Program Files"
@@ -226,35 +358,43 @@ namespace pyRevitExtensionParser
             if (list == null || list.Count == 0)
                 return "[]";
 
-            // Estimate capacity: brackets + items + quotes + commas + spaces
-            // Average of 20 characters per item is a reasonable estimate for file paths
-            int estimatedCapacity = 2 + (list.Count * 20);
-            var sb = new StringBuilder(estimatedCapacity);
-            sb.Append('[');
+            var array = new JArray();
+            foreach (var item in list)
+                array.Add(item ?? string.Empty);
 
-            for (int i = 0; i < list.Count; i++)
+            return array.ToString(Formatting.None);
+        }
+
+        private static List<string> TryParseJsonList(string jsonListString)
+        {
+            try
             {
-                // Add comma separator after first item
-                if (i > 0)
-                    sb.Append(", ");
-
-                sb.Append('"');
-                string item = list[i];
-                // Only replace if backslashes are present to avoid unnecessary allocations
-                if (item.Contains(@"\"))
+                var array = JArray.Parse(jsonListString);
+                var list = new List<string>(array.Count);
+                foreach (var token in array)
                 {
-                    // Escape: convert \ to \\
-                    sb.Append(item.Replace(@"\", @"\\"));
+                    if (token == null)
+                        continue;
+                    list.Add(token.Type == JTokenType.String ? token.Value<string>() : token.ToString());
                 }
-                else
-                {
-                    sb.Append(item);
-                }
-                sb.Append('"');
+                return list;
             }
+            catch
+            {
+                return null;
+            }
+        }
 
-            sb.Append(']');
-            return sb.ToString();
+        private static string NormalizeSingleQuotedList(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return value;
+            if (!value.StartsWith("[") || !value.EndsWith("]"))
+                return value;
+            if (value.IndexOf('"') >= 0)
+                return value;
+
+            return value.Replace("'", "\"");
         }
     }
 }

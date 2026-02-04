@@ -575,8 +575,11 @@ namespace pyRevitExtensionParser
             }
 
             var userExtensions = GetConfig().UserExtensionsList;
+            var userExtensionsCount = 0;
+            var userExtensionsAdded = 0;
             foreach (var extPath in userExtensions)
             {
+                userExtensionsCount++;
                 if (string.IsNullOrWhiteSpace(extPath))
                 {
                     logger.Debug("Skipping empty userextensions path");
@@ -587,22 +590,36 @@ namespace pyRevitExtensionParser
                 {
                     var normalizedPath = Path.GetFullPath(extPath);
                     if (Directory.Exists(normalizedPath))
+                    {
                         roots.Add(normalizedPath);
+                        userExtensionsAdded++;
+                    }
                     else
+                    {
                         logger.Debug("Skipping non-existent userextensions path: {0}", normalizedPath);
+                        logger.Warn("User extension path does not exist: {0}", normalizedPath);
+                    }
                 }
                 catch (ArgumentException ex)
                 {
                     logger.Debug("Skipping invalid userextensions path '{0}': {1}", extPath, ex.Message);
+                    logger.Warn("User extension path is invalid: '{0}'", extPath);
                 }
                 catch (PathTooLongException ex)
                 {
                     logger.Debug("Skipping too long userextensions path '{0}': {1}", extPath, ex.Message);
+                    logger.Warn("User extension path is too long: '{0}'", extPath);
                 }
                 catch (NotSupportedException ex)
                 {
                     logger.Debug("Skipping unsupported userextensions path '{0}': {1}", extPath, ex.Message);
+                    logger.Warn("User extension path is not supported: '{0}'", extPath);
                 }
+            }
+
+            if (userExtensionsCount > 0 && userExtensionsAdded == 0)
+            {
+                logger.Warn("No valid userextensions paths found. Check pyRevit_config.ini for non-ASCII or invalid paths.");
             }
 
             return roots;

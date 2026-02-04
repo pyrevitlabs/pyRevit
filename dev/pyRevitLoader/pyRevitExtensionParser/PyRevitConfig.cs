@@ -153,8 +153,7 @@ namespace pyRevitExtensionParser
         {
             get
             {
-                var value = _ini.IniReadValue("core", "userextensions");
-                return string.IsNullOrEmpty(value) ? new List<string>() : PythonListParser.Parse(value);
+                return _ini.GetPythonList("core", "userextensions");
             }
             set
             {
