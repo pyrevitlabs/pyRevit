@@ -13,6 +13,7 @@ Whether you want to create tools, troubleshoot issues, or contribute code, under
 2. **pyRevit python Libraries (pyrevitlibs)**
     - Python packages that simplify working with the .NET Revit API.
     - Provide tools to create ribbon buttons, run scripts, and more.
+    - Some entry points route to engine-specific backends when needed.
 
 3. **Extensions**
     - These are the tools and features users see inside Revit.
@@ -30,21 +31,6 @@ Whether you want to create tools, troubleshoot issues, or contribute code, under
 5. **Telemetry Server**
     - A small server (written in Go) that tracks usage data of pyRevit tools.
     - Stores data in MongoDB or PostgreSQL for business intelligence.
-
-### pyrevit.forms facade
-
-`pyrevit.forms` is a lightweight facade that selects an engine-specific backend:
-
-- Facade: `pyrevitlib/pyrevit/forms/__init__.py` routes based on `pyrevit.compat.IRONPY`.
-- IronPython backend: `pyrevitlib/pyrevit/forms/_ipy.py`.
-- CPython backend: `pyrevitlib/pyrevit/forms/_cpy.py`.
-
-Current CPython behavior:
-
-- `import pyrevit.forms` succeeds.
-- Unsupported symbols raise `PyRevitCPythonNotSupported("pyrevit.forms.<symbol>")`
-  from `pyrevitlib/pyrevit/__init__.py` (not `ImportError` or `AttributeError`).
-- The facade stays free of WPF/clr imports; CPython dialog support is stubbed.
 
 ## How pyRevit Loads in Revit
 
