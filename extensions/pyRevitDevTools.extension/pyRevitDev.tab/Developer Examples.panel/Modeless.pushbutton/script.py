@@ -137,6 +137,12 @@ class ExampleUI(forms.WPFWindow):
         comment = self.comment_input.Text
         execute_in_revit_context(update_element_comment, self.selected_element, comment)
 
+        # Alternatively wrap the call in a lambda so it executes later,
+        # inside Revit's API context.
+        # execute_in_revit_context(
+        #     lambda: update_element_comment(self.selected_element, comment)
+        # )
+
 
 if __name__ == "__main__":
     ui = ExampleUI()
