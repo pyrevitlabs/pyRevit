@@ -79,16 +79,9 @@ class Context(object):
             )
             return False
 
-        try:
-            events.execute_in_revit_context(
-                self._update_view_range_internal, new_values, new_levels
-            )
-        except Exception as e:
-            if hasattr(self, "view_model"):
-                self.view_model.warning_message = (
-                    "Error executing view range update: {}".format(str(e))
-                )
-
+        events.execute_in_revit_context(
+            self._update_view_range_internal, new_values, new_levels
+        )
         return True
 
     def _update_view_range_internal(self, new_values, new_levels=None):
