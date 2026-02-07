@@ -4,8 +4,6 @@ from pyrevit import script, forms, revit, HOST_APP, DB, UI
 from pyrevit.revit import events
 from pyrevit.framework import Convert, List, Color, SolidColorBrush
 from pyrevit.compat import get_elementid_value_func
-import traceback
-from Autodesk.Revit.Exceptions import InvalidOperationException
 from collections import OrderedDict
 
 
@@ -23,42 +21,6 @@ PLANES = OrderedDict([
 
 get_elementid_value = get_elementid_value_func()
 INVALID_ID_VALUE = get_elementid_value(DB.ElementId.InvalidElementId)
-
-
-class SimpleEventHandler(UI.IExternalEventHandler):
-    def __init__(self, do_this):
-        self.do_this = do_this
-
-    def Execute(self, uiapp):
-        try:
-            self.do_this(uiapp)
-        except InvalidOperationException:
-            pass
-
-    def GetName(self):
-        return "SimpleEventHandler"
-
-
-class UpdateViewRangeEventHandler(UI.IExternalEventHandler):
-    def __init__(self):
-        self.new_values = None
-        self.new_levels = None
-        self.context = None
-
-    def Execute(self, uiapp):
-        try:
-            if self.context and self.new_values:
-                self.context._update_view_range_internal(
-                    self.new_values, self.new_levels
-                )
-        except Exception as e:
-            if hasattr(self.context, "view_model"):
-                self.context.view_model.warning_message = (
-                    "Error executing view range update: {}".format(str(e))
-                )
-
-    def GetName(self):
-        return "UpdateViewRangeEventHandler"
 
 
 class Context(object):
@@ -117,10 +79,17 @@ class Context(object):
             )
             return False
 
-        update_view_range_handler.new_values = new_values
-        update_view_range_handler.new_levels = new_levels or {}
-        update_view_range_handler.context = self
-        update_view_range_event.Raise()
+        try:
+            events.execute_in_revit_context(
+                lambda: self._update_view_range_internal(
+                    new_values, new_levels
+                ))
+        except Exception as e:
+            if hasattr(self, "view_model"):
+                self.view_model.warning_message = (
+                    "Error executing view range update: {}".format(str(e))
+                )
+
         return True
 
     def _update_view_range_internal(self, new_values, new_levels=None):
@@ -416,7 +385,7 @@ class Context(object):
 
         if not self.is_valid():
             server.meshes = None
-            refresh_event.Raise()
+            events.execute_in_revit_context(refresh_active_view)
             return
 
         try:
@@ -531,10 +500,10 @@ class Context(object):
                         ]
 
             server.meshes = [revit.dc3dserver.Mesh(edges, triangles)]
-            refresh_event.Raise()
+            events.execute_in_revit_context(refresh_active_view)
 
-        except Exception:
-            print(traceback.format_exc())
+        except Exception as ex:
+            logger.exception(ex)
 
     def is_valid(self):
         if not can_use_view_as_source(self.source_view):
@@ -745,7 +714,7 @@ class MainWindow(forms.WPFWindow):
     def window_closed(self, sender, args):
         script.save_window_position(self)
         server.remove_server()
-        refresh_event.Raise()
+        events.execute_in_revit_context(refresh_active_view)
         # Stop all registered events using the events API
         events.stop_events()
 
@@ -882,24 +851,24 @@ class MainWindow(forms.WPFWindow):
 # Old manual subscribe/unsubscribe functions removed in favor of events API
 
 
-def refresh_active_view(uiapp):
+def refresh_active_view():
     try:
-        uidoc = uiapp.ActiveUIDocument
+        uidoc = revit.uidoc
         if not compare_views(uidoc.ActiveView, context.active_view):
             uidoc.ActiveView = context.active_view
         uidoc.RefreshActiveView()
         if context.source_view:
             uidoc.Selection.SetElementIds(List[DB.ElementId]([context.source_view.Id]))
-    except Exception:
-        print(traceback.format_exc())
+    except Exception as ex:
+        logger.exception(ex)
 
 
 @events.handle("view-activated")
 def view_activated(sender, args):
     try:
         context.active_view = args.CurrentActiveView
-    except Exception:
-        print(traceback.format_exc())
+    except Exception as ex:
+        logger.exception(ex)
 
 
 @events.handle("selection-changed")
@@ -916,8 +885,8 @@ def selection_changed(sender, args):
                 context.source_view = sel
                 return
         context.source_view = None
-    except Exception:
-        print(traceback.format_exc())
+    except Exception as ex:
+        logger.exception(ex)
 
 
 @events.handle("doc-changed")
@@ -933,8 +902,8 @@ def doc_changed(sender, args):
             context.context_changed()
     except AttributeError:
         context.context_changed()
-    except Exception:
-        print(traceback.format_exc())
+    except Exception as ex:
+        logger.exception(ex)
 
 
 def compare_views(view1, view2):
@@ -1002,10 +971,6 @@ def get_color_from_plane(plane):
 
 # Initialize
 server = revit.dc3dserver.Server(register=False)
-refresh_event = UI.ExternalEvent.Create(SimpleEventHandler(refresh_active_view))
-update_view_range_handler = UpdateViewRangeEventHandler()
-update_view_range_event = UI.ExternalEvent.Create(update_view_range_handler)
-
 vm = MainViewModel()
 context = Context(vm)
 context.active_view = uidoc.ActiveGraphicalView
