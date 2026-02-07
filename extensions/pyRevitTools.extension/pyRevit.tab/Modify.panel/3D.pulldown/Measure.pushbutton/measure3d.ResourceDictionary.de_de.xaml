@@ -18,10 +18,17 @@
     <system:String x:Key="DiagonalFormat">Diagonale: {}</system:String>
     <system:String x:Key="SlopeFormat">Neigung: {}</system:String>
     
-    <system:String x:Key="MeasurementHistoryEntry">Messung {}:\n  P1: {}\n  P2: {}\n  ΔX: {:>15}\n  ΔY: {:>15}\n  ΔZ: {:>15}\n  Diagonale: {}\n  Neigung: {}</system:String>
+    <system:String x:Key="MeasurementHistoryEntry" xml:space="preserve">
+Messung {}:
+    P1: {}
+    P2: {}
+    ΔX: {:>15}
+    ΔY: {:>15}
+    ΔZ: {:>15}
+    Diagonale: {} 
+    Neigung: {}
+    </system:String>
     
-    <system:String x:Key="Alert3DViewRequired">Bitte aktivieren Sie eine 3D-Ansicht, bevor Sie das 3D-Messwerkzeug verwenden.</system:String>
-    <system:String x:Key="Alert3DViewRequiredTitle">3D-Ansicht Erforderlich</system:String>
     <system:String x:Key="WarningBarPickFirstPoint">Ersten Punkt auswählen</system:String>
     <system:String x:Key="WarningBarPickSecondPoint">Zweiten Punkt auswählen</system:String>
     <system:String x:Key="AlertMeasurementCancelled">Messung aufgrund eines ungültigen Vorgangs abgebrochen. Bitte versuchen Sie es erneut.</system:String>
@@ -29,6 +36,10 @@
     <system:String x:Key="AlertUnexpectedError">Ein unerwarteter Fehler ist bei der Messung aufgetreten. Weitere Details finden Sie im Protokoll.</system:String>
     <system:String x:Key="ToastMeasurementsCopied">Messungen in die Zwischenablage kopiert!</system:String>
     <system:String x:Key="ToastMeasure3DTitle">3D-Messung</system:String>
-    <system:String x:Key="ProjectUnitLengthUnits">Längeneinheiten (in Projekteinheiten anpassen): \n</system:String>
-    <system:String x:Key="ProjectUnitSlopeUnits">Neigungseinheiten (in Projekteinheiten anpassen): \n</system:String>
+    <system:String x:Key="ProjectUnitLengthUnits" xml:space="preserve">
+Längeneinheiten (in Projekteinheiten anpassen):
+    </system:String>
+    <system:String x:Key="ProjectUnitSlopeUnits" xml:space="preserve">
+Neigungseinheiten (in Projekteinheiten anpassen):
+    </system:String>
 </ResourceDictionary>

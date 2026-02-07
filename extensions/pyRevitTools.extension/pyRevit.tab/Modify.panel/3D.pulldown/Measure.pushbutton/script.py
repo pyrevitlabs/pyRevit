@@ -2,7 +2,7 @@
 from collections import deque
 from math import pi, atan, sqrt
 from pyrevit import HOST_APP, revit, forms, script
-from pyrevit import UI, DB
+from pyrevit import DB
 from Autodesk.Revit.Exceptions import InvalidOperationException
 
 logger = script.get_logger()
@@ -165,23 +165,10 @@ def create_measurement_meshes(point1, point2):
     return meshes
 
 
-def validate_3d_view():
-    """Validate that the active view is a 3D view."""
-    active_view = uidoc.ActiveView
-    if not isinstance(active_view, DB.View3D):
-        forms.alert(
-            measure_window.get_locale_string("Alert3DViewRequired"),
-            title=measure_window.get_locale_string("Alert3DViewRequiredTitle"),
-            exitscript=True,
-        )
-        return False
-    return True
-
-
 def perform_measurement():
     """Perform the measurement workflow: pick points, create aids, update UI."""
     # Add 3D view validation
-    if not validate_3d_view():
+    if not forms.check_viewtype(uidoc.ActiveView, DB.ViewType.ThreeD):
         return
 
     try:
@@ -234,7 +221,7 @@ def perform_measurement():
         measure_window.history_text.Text = history_text
 
         # Automatically start the next measurement
-        measure_handler_event.Raise()
+        revit.events.execute_in_revit_context(perform_measurement)
 
     except InvalidOperationException as ex:
         logger.error("InvalidOperationException during measurement: {}".format(ex))
@@ -250,24 +237,6 @@ def perform_measurement():
             measure_window.get_locale_string("AlertUnexpectedError"),
             title=measure_window.get_locale_string("AlertMeasurementErrorTitle"),
         )
-
-
-class SimpleEventHandler(UI.IExternalEventHandler):
-    """IExternalEventHandler to execute functions in Revit API context."""
-
-    def __init__(self, do_this):
-        self.do_this = do_this
-
-    def Execute(self, uiapp):
-        try:
-            self.do_this()
-        except InvalidOperationException as ex:
-            logger.error("InvalidOperationException caught: {}".format(ex))
-        except Exception as ex:
-            logger.error("Error in event handler: {}".format(ex))
-
-    def GetName(self):
-        return "pyRevit 3D Measure Event Handler"
 
 
 class MeasureWindow(forms.WPFWindow):
@@ -303,7 +272,7 @@ class MeasureWindow(forms.WPFWindow):
         self.Show()
 
         # Automatically start the first measurement
-        measure_handler_event.Raise()
+        revit.events.execute_in_revit_context(perform_measurement)
 
     def window_closed(self, sender, args):
         """Handle window close event - copy history to clipboard, cleanup DC3D server and visual aids."""
@@ -314,7 +283,10 @@ class MeasureWindow(forms.WPFWindow):
             if measurement_history:
                 history_text = "\n".join(measurement_history)
                 script.clipboard_copy(history_text)
-                forms.toast(self.get_locale_string("ToastMeasurementsCopied"), title=self.get_locale_string("ToastMeasure3DTitle"))
+                forms.toast(
+                    self.get_locale_string("ToastMeasurementsCopied"),
+                    title=self.get_locale_string("ToastMeasure3DTitle"),
+                )
         except Exception as ex:
             logger.error("Error copying to clipboard: {}".format(ex))
 
@@ -344,9 +316,6 @@ def main():
     if not dc3d_server:
         logger.error("Failed to create DC3D server")
         script.exit()
-
-    measure_handler = SimpleEventHandler(perform_measurement)
-    measure_handler_event = UI.ExternalEvent.Create(measure_handler)
 
     measure_window = MeasureWindow("measure3d.xaml")
 
