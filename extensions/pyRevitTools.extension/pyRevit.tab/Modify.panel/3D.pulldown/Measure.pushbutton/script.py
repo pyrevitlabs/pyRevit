@@ -213,7 +213,7 @@ def perform_measurement():
                 format_distance(dz),
                 format_distance(diagonal),
                 format_slope(slope),
-            )
+            ).lstrip()
         measurement_history.append(history_entry)
 
         # Update history display
@@ -257,13 +257,13 @@ class MeasureWindow(forms.WPFWindow):
             self.show_element(self.project_unit_text)
             self.project_unit_text.Text = (
                 self.get_locale_string("ProjectUnitLengthUnits") + length_unit_label
-            )
+            ).lstrip()
             self.Height = self.Height + 20
         if not slope_unit_symbol_label:
             self.show_element(self.project_unit_text)
             self.project_unit_text.Text = self.project_unit_text.Text + (
                 "\n" + self.get_locale_string("ProjectUnitSlopeUnits") + slope_unit_label
-            )
+            ).lstrip()
             self.Height = self.Height + 20
 
         # Handle window close event
