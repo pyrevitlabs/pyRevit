@@ -81,9 +81,8 @@ class Context(object):
 
         try:
             events.execute_in_revit_context(
-                lambda: self._update_view_range_internal(
-                    new_values, new_levels
-                ))
+                self._update_view_range_internal, new_values, new_levels
+            )
         except Exception as e:
             if hasattr(self, "view_model"):
                 self.view_model.warning_message = (
