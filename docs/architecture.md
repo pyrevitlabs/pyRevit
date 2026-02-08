@@ -13,7 +13,6 @@ Whether you want to create tools, troubleshoot issues, or contribute code, under
 2. **pyRevit python Libraries (pyrevitlibs)**
     - Python packages that simplify working with the .NET Revit API.
     - Provide tools to create ribbon buttons, run scripts, and more.
-    - Some entry points route to engine-specific backends when needed.
 
 3. **Extensions**
     - These are the tools and features users see inside Revit.
