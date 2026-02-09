@@ -744,15 +744,16 @@ namespace pyRevitExtensionParser
                         scriptPath = yaml;
                 }
 
-                // Look for config script (config.py, config.cs, etc.)
+                // Look for config script (*config.py, *config.cs, etc.)
+                // e.g. both "config.py" and "name_config.py" will match
                 string configScriptPath = null;
                 var configExtensions = new[] { ".py", ".cs", ".vb", ".rb", ".dyn", ".gh", ".ghx" };
                 var allDirFiles = GetFilesInDirectory(dir, "*", SearchOption.TopDirectoryOnly);
                 foreach (var configExt in configExtensions)
                 {
-                    var configFile = $"config{configExt}";
-                    configScriptPath = allDirFiles.FirstOrDefault(f => 
-                        Path.GetFileName(f).Equals(configFile, StringComparison.OrdinalIgnoreCase));
+                    var configPostfix = $"config{configExt}";
+                    configScriptPath = allDirFiles.FirstOrDefault(f =>
+                        Path.GetFileName(f).EndsWith(configPostfix, StringComparison.OrdinalIgnoreCase));
                     if (configScriptPath != null)
                         break;
                 }
