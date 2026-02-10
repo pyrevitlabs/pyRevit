@@ -87,13 +87,13 @@ namespace pyRevitAssemblyBuilder.SessionManager
             // STEP 1: Reset panel backgrounds before creating new UI
             // This matches Python's reset_backgrounds() behavior
             stepStopwatch.Restart();
-            _ribbonScanner?.ResetPanelBackgrounds();
+            _ribbonScanner.ResetPanelBackgrounds();
             _logger.Debug($"[PERF] ResetPanelBackgrounds: {stepStopwatch.ElapsedMilliseconds}ms");
             
             // STEP 2: Reset dirty flags on all existing pyRevit UI elements
             // This marks all existing elements as potentially orphaned
             stepStopwatch.Restart();
-            _ribbonScanner?.ResetDirtyFlags();
+            _ribbonScanner.ResetDirtyFlags();
             _logger.Debug($"[PERF] ResetDirtyFlags: {stepStopwatch.ElapsedMilliseconds}ms");
             
             // Clear all caches to ensure newly installed/enabled extensions are discovered
