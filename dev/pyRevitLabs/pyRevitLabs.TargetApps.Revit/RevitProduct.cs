@@ -144,6 +144,7 @@ namespace pyRevitLabs.TargetApps.Revit {
     public class RevitProduct {
         private string _registeredName = string.Empty;
         private string _registeredInstallPath = string.Empty;
+        private static List<RevitProduct> _installedProductsCache = null;
 
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
@@ -225,6 +226,8 @@ namespace pyRevitLabs.TargetApps.Revit {
         }
 
         public static List<RevitProduct> ListInstalledProducts() {
+            if (_installedProductsCache != null)
+                return _installedProductsCache.ToList();
             var installedRevits = new HashSet<RevitProduct>();
 
             // pattern for finding revit installation entries in registry
@@ -327,7 +330,8 @@ namespace pyRevitLabs.TargetApps.Revit {
                 }
             }
 
-            return installedRevits.ToList();
+            _installedProductsCache = installedRevits.ToList();
+            return _installedProductsCache.ToList();
         }
 
         private static RevitProduct FindRevitProduct(string regVersion, string binaryFilePath)
@@ -363,7 +367,7 @@ namespace pyRevitLabs.TargetApps.Revit {
             }
             catch (Exception ex)
             {
-                logger.Warn(ex, "Revit version \"{0}\" not found in pyrevit-hosts.json and failed to read product info from binary at \"{1}\"", 
+                logger.Debug(ex, "Revit version \"{0}\" not found in pyrevit-hosts.json and failed to read product info from binary at \"{1}\"", 
                             regVersion, binaryFilePath);
             }
             return null;
