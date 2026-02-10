@@ -561,11 +561,9 @@ namespace pyRevitAssemblyBuilder.UIManager
                 }
 
                 int sortedCount = 0;
-                foreach (var directive in directives)
+                foreach (var directive in directives
+                    .Where(d => d != null && !string.IsNullOrEmpty(d.TabName) && !string.IsNullOrEmpty(d.ComponentName)))
                 {
-                    if (directive == null || string.IsNullOrEmpty(directive.TabName) || string.IsNullOrEmpty(directive.ComponentName))
-                        continue;
-
                     // Find the tab containing this panel
                     var tab = ribbon.Tabs.FirstOrDefault(t =>
                         t?.Title == directive.TabName || t?.Id == directive.TabName);

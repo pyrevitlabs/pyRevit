@@ -635,18 +635,16 @@ namespace pyRevitExtensionParser
                         targetValue = targetValue.Replace("\\n", "\n");
                         parsed.LayoutItemTitles[componentName] = targetValue;
                     }
-                    else if (directiveType == "before" || directiveType == "after" || 
-                             directiveType == "beforeall" || directiveType == "afterall")
+                    else if ((directiveType == "before" || directiveType == "after" ||
+                              directiveType == "beforeall" || directiveType == "afterall")
+                             && !string.IsNullOrEmpty(componentName))
                     {
                         // Store the layout directive for later processing
-                        if (!string.IsNullOrEmpty(componentName))
+                        parsed.LayoutDirectives[componentName] = new LayoutDirective
                         {
-                            parsed.LayoutDirectives[componentName] = new LayoutDirective
-                            {
-                                DirectiveType = directiveType,
-                                Target = targetValue
-                            };
-                        }
+                            DirectiveType = directiveType,
+                            Target = targetValue
+                        };
                     }
                 }
             }

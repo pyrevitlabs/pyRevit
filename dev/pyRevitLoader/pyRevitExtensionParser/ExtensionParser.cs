@@ -436,17 +436,6 @@ namespace pyRevitExtensionParser
                     children.Remove(item);
                     children.Insert(0, item);
                 }
-                else if (extension != null && !string.IsNullOrEmpty(tabName))
-                {
-                    // Item not found in children - store as external directive for post-UI sorting
-                    extension.ExternalLayoutDirectives.Add(new ExternalLayoutDirective
-                    {
-                        TabName = tabName,
-                        ComponentName = itemName,
-                        DirectiveType = "beforeall",
-                        Target = null
-                    });
-                }
             }
 
             // Second pass: apply afterall directives (move to last position)
@@ -462,17 +451,6 @@ namespace pyRevitExtensionParser
                 {
                     children.Remove(item);
                     children.Add(item);
-                }
-                else if (extension != null && !string.IsNullOrEmpty(tabName))
-                {
-                    // Item not found in children - store as external directive for post-UI sorting
-                    extension.ExternalLayoutDirectives.Add(new ExternalLayoutDirective
-                    {
-                        TabName = tabName,
-                        ComponentName = itemName,
-                        DirectiveType = "afterall",
-                        Target = null
-                    });
                 }
             }
 
@@ -749,13 +727,25 @@ namespace pyRevitExtensionParser
                 string configScriptPath = null;
                 var configExtensions = new[] { ".py", ".cs", ".vb", ".rb", ".dyn", ".gh", ".ghx" };
                 var allDirFiles = GetFilesInDirectory(dir, "*", SearchOption.TopDirectoryOnly);
+                // Prefer exact "config{ext}" match, then fall back to postfix "*config{ext}"
                 foreach (var configExt in configExtensions)
                 {
-                    var configPostfix = $"config{configExt}";
+                    var configFile = $"config{configExt}";
                     configScriptPath = allDirFiles.FirstOrDefault(f =>
-                        Path.GetFileName(f).EndsWith(configPostfix, StringComparison.OrdinalIgnoreCase));
+                        Path.GetFileName(f).Equals(configFile, StringComparison.OrdinalIgnoreCase));
                     if (configScriptPath != null)
                         break;
+                }
+                if (configScriptPath == null)
+                {
+                    foreach (var configExt in configExtensions)
+                    {
+                        var configPostfix = $"config{configExt}";
+                        configScriptPath = allDirFiles.FirstOrDefault(f =>
+                            Path.GetFileName(f).EndsWith(configPostfix, StringComparison.OrdinalIgnoreCase));
+                        if (configScriptPath != null)
+                            break;
+                    }
                 }
                 // If no separate config script found, use the main script path
                 if (configScriptPath == null)

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using pyRevitLabs.Json;
@@ -122,7 +123,7 @@ namespace pyRevitExtensionParser
                     return true;
                 }
 
-                return true;
+                return false;
             }
             catch (IOException)
             {
@@ -147,13 +148,10 @@ namespace pyRevitExtensionParser
             try
             {
                 var sectionNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                foreach (var entry in EnumerateIniEntries())
+                foreach (var entry in EnumerateIniEntries()
+                    .Where(e => e.IsSection && !string.IsNullOrEmpty(e.Section)))
                 {
-                    if (!entry.IsSection)
-                        continue;
-
-                    if (!string.IsNullOrEmpty(entry.Section))
-                        sectionNames.Add(entry.Section);
+                    sectionNames.Add(entry.Section);
                 }
 
                 sections = sectionNames;
@@ -370,14 +368,10 @@ namespace pyRevitExtensionParser
             try
             {
                 var array = JArray.Parse(jsonListString);
-                var list = new List<string>(array.Count);
-                foreach (var token in array)
-                {
-                    if (token == null)
-                        continue;
-                    list.Add(token.Type == JTokenType.String ? token.Value<string>() : token.ToString());
-                }
-                return list;
+                return array
+                    .Where(token => token != null)
+                    .Select(token => token.Type == JTokenType.String ? token.Value<string>() : token.ToString())
+                    .ToList();
             }
             catch
             {
@@ -394,7 +388,50 @@ namespace pyRevitExtensionParser
             if (value.IndexOf('"') >= 0)
                 return value;
 
-            return value.Replace("'", "\"");
+            // Replace only single quotes that act as string delimiters, not embedded apostrophes.
+            // Delimiters are: after [ or , (opening) and before ] or , (closing).
+            var sb = new StringBuilder(value.Length);
+            bool inString = false;
+            for (int i = 0; i < value.Length; i++)
+            {
+                char c = value[i];
+                if (c == '\'' && !inString)
+                {
+                    sb.Append('"');
+                    inString = true;
+                }
+                else if (c == '\'' && inString)
+                {
+                    // Check if this quote is a closing delimiter:
+                    // next non-whitespace should be , or ]
+                    bool isClosing = false;
+                    for (int j = i + 1; j < value.Length; j++)
+                    {
+                        if (char.IsWhiteSpace(value[j]))
+                            continue;
+                        if (value[j] == ',' || value[j] == ']')
+                            isClosing = true;
+                        break;
+                    }
+
+                    if (isClosing)
+                    {
+                        sb.Append('"');
+                        inString = false;
+                    }
+                    else
+                    {
+                        // Embedded apostrophe — escape it for JSON
+                        sb.Append('\'');
+                    }
+                }
+                else
+                {
+                    sb.Append(c);
+                }
+            }
+
+            return sb.ToString();
         }
     }
 }

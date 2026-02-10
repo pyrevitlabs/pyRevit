@@ -494,8 +494,8 @@ print('Config dialog')
         [Test]
         public void PushButton_DetectsPostfixConfigScript()
         {
-            var panelDir = CreateTabAndPanel();
-            var buttonDir = CreateSubDirectory("Test.extension/Test.tab/TestPanel.panel/Pick.pushbutton");
+            CreateTabAndPanel();
+            CreateSubDirectory("Test.extension/Test.tab/TestPanel.panel/Pick.pushbutton");
 
             // Create main script
             CreateFile("Test.extension/Test.tab/TestPanel.panel/Pick.pushbutton/script.py", @"
