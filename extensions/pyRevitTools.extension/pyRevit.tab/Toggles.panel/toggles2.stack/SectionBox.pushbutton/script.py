@@ -1,7 +1,9 @@
-"""Toggles visibility of section box in current 3D view"""
+"""Toggles visibility, active state or a temporary section box in current 3D view"""
+
+import pickle
 
 from pyrevit import framework
-from pyrevit import revit, DB, script
+from pyrevit import revit, DB, script, forms
 from pyrevit.compat import get_elementid_value_func
 
 get_elementid_value = get_elementid_value_func()
@@ -10,6 +12,8 @@ active_view_id_value = get_elementid_value(active_view.Id)
 
 logger = script.get_logger()
 DATA_SLOTNAME = "SectionBox"
+TEMP_DATAFILE = script.get_instance_data_file("SectionBoxTemp")
+PADDING = 1.0  # feet
 
 my_config = script.get_config()
 scope = my_config.get_option("scope", "Visibility")
@@ -74,4 +78,117 @@ def toggle_sectionbox_active():
 
 if scope == "Active State":
     with revit.Transaction("Toggle Section Box Active"):
+        toggle_sectionbox_active()
+
+
+def get_elements_bounding_box(elements):
+    if not elements:
+        return None
+
+    min_x = min_y = min_z = float("inf")
+    max_x = max_y = max_z = float("-inf")
+
+    for elem in elements:
+        try:
+            bbox = elem.get_BoundingBox(None)
+            if not bbox:
+                continue
+
+            min_pt = bbox.Min
+            max_pt = bbox.Max
+
+            min_x = min(min_x, min_pt.X)
+            min_y = min(min_y, min_pt.Y)
+            min_z = min(min_z, min_pt.Z)
+            max_x = max(max_x, max_pt.X)
+            max_y = max(max_y, max_pt.Y)
+            max_z = max(max_z, max_pt.Z)
+
+        except Exception:
+            continue
+
+    if min_x == float("inf"):
+        return None
+
+    new_bbox = DB.BoundingBoxXYZ()
+
+    new_bbox.Min = DB.XYZ(min_x - PADDING, min_y - PADDING, min_z - PADDING)
+    new_bbox.Max = DB.XYZ(max_x + PADDING, max_y + PADDING, max_z + PADDING)
+
+    return new_bbox
+
+
+def temp_switch_sectionbox():
+    if not isinstance(active_view, DB.View3D):
+        logger.error("Not a 3D view. Operation canceled.")
+        return
+
+    try:
+        with open(TEMP_DATAFILE, "rb") as f:
+            view_data = pickle.load(f)
+    except Exception:
+        view_data = {}
+
+    # Check if we have stored data for this view
+    view_key = "view_{}".format(active_view_id_value)
+
+    if view_key in view_data:
+        # Restore previous state
+        try:
+            previous_state = view_data[view_key]
+
+            if previous_state["was_active"]:
+                # Restore previous section box
+                restored_bbox = revit.deserialize(previous_state["bbox_data"])
+                active_view.SetSectionBox(restored_bbox)
+                active_view.IsSectionBoxActive = True
+            else:
+                # Turn off section box
+                active_view.IsSectionBoxActive = False
+
+            # Clear the stored data
+            del view_data[view_key]
+            with open(TEMP_DATAFILE, "wb") as f:
+                pickle.dump(view_data, f)
+
+            logger.info("Restored previous section box state")
+
+        except Exception as e:
+            logger.error("Failed to restore previous state: {}".format(e))
+    else:
+        selection = revit.get_selection()
+        if not selection:
+            with forms.WarningBar(title="Pick Elements for temporary box"):
+                selection = revit.pick_elements()
+
+        try:
+            current_state = {
+                "was_active": active_view.IsSectionBoxActive,
+                "bbox_data": None,
+            }
+
+            if active_view.IsSectionBoxActive:
+                current_bbox = active_view.GetSectionBox()
+                if current_bbox:
+                    current_state["bbox_data"] = revit.serialize(current_bbox)
+
+            new_bbox = get_elements_bounding_box(selection)
+
+            if new_bbox:
+                active_view.SetSectionBox(new_bbox)
+                active_view.IsSectionBoxActive = True
+
+                view_data[view_key] = current_state
+                with open(TEMP_DATAFILE, "wb") as f:
+                    pickle.dump(view_data, f)
+
+            else:
+                logger.error("Could not create bounding box from selected elements")
+
+        except Exception as e:
+            logger.error("Error creating section box: {}".format(e))
+
+
+if scope == "Temporary Section Box":
+    with revit.Transaction("Temporary Section Box"):
         toggle_sectionbox_active()
