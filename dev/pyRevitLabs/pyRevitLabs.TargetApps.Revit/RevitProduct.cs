@@ -255,8 +255,24 @@ namespace pyRevitLabs.TargetApps.Revit {
                         // collect info from reg key
                         var regName = subkey.GetValue("DisplayName") as string;
                         var regVersion = subkey.GetValue("DisplayVersion") as string;
-                        var regInstallPath = (subkey.GetValue("InstallLocation") as string);
-                        int regLangCode = (int)subkey.GetValue("Language");
+                        var regInstallPath = subkey.GetValue("InstallLocation") as string;
+                        if (regInstallPath == null)
+                        {
+                            // Entries without an install location are typically add-ins; skip them.
+                            continue;
+                        }
+                        var languageValue = subkey.GetValue("Language");
+                        int regLangCode;
+                        if (languageValue is int langCode)
+                        {
+                            regLangCode = langCode;
+                        }
+                        else
+                        {
+                            // Missing or invalid language code; skip this entry to avoid runtime casting errors.
+                            logger.Debug("Skipping registered app \"{0}\" because registry key \"Language\" is missing or invalid.", appName);
+                            continue;
+                        }
                         // try to find binary location
                         var binaryFilePath = RevitProductData.GetBinaryLocation(regInstallPath)?.NormalizeAsPath();
                         logger.Debug("Version from registry key: \"{0}\"", regVersion);
@@ -267,7 +283,7 @@ namespace pyRevitLabs.TargetApps.Revit {
                         var revitProduct = FindRevitProduct(regVersion, binaryFilePath);
                         if (revitProduct is null)
                         {
-                            logger.Warn("Could not determine Revit product for \"{0}\" (version: {1}). This installation will be excluded from the list. " +
+                            logger.Debug("Could not determine Revit product for \"{0}\" (version: {1}). This installation will be excluded from the list. " +
                                        "This may occur if the version is not listed in pyrevit-hosts.json or if product information could not be read from the binary file.",
                                        regName, regVersion);
                             continue;
@@ -327,7 +343,7 @@ namespace pyRevitLabs.TargetApps.Revit {
             // try to get product key from binary version
             if (binaryFilePath == null)
             {
-                logger.Warn("Revit version \"{0}\" not found in pyrevit-hosts.json and no binary path available to read version info", regVersion);
+                logger.Debug("Revit version \"{0}\" not found in pyrevit-hosts.json and no binary path available to read version info", regVersion);
                 return null;
             }
             try
