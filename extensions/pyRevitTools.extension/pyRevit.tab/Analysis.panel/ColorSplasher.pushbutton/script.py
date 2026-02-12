@@ -1,3 +1,4 @@
+# -- coding: utf-8 --
 import sys
 from re import split
 from math import fabs
@@ -1205,15 +1206,28 @@ class ColorSplasherWindow(forms.WPFWindow):
         self.uns_event.Raise()
 
     def list_box2_mouse_down(self, sender, e):
-        """Capture Shift key state when mouse is pressed on list items."""
-        from System.Windows.Input import (
-            MouseButtonEventArgs,
-            ModifierKeys,
-            Keyboard,
-            Key,
-        )
+        from System.Windows.Input import MouseButtonEventArgs, ModifierKeys, Keyboard, Key
 
         if isinstance(e, MouseButtonEventArgs):
+            # Check if click actually hit a ListBoxItem
+            from System.Windows.Media import VisualTreeHelper
+            from System.Windows.Controls import ListBoxItem
+
+            hit_result = VisualTreeHelper.HitTest(self.list_box2, e.GetPosition(self.list_box2))
+            if hit_result is not None and hit_result.VisualHit is not None:
+                element = hit_result.VisualHit
+                found_item = False
+                while element is not None:
+                    if isinstance(element, ListBoxItem):
+                        found_item = True
+                        break
+                    element = VisualTreeHelper.GetParent(element)
+                if not found_item:
+                    # Clicked on white space — suppress further processing
+                    self._shift_pressed_on_click = False
+                    e.Handled = True
+                    return
+
             shift_from_event = (
                 e.KeyboardDevice.Modifiers & ModifierKeys.Shift
             ) == ModifierKeys.Shift
@@ -1223,6 +1237,7 @@ class ColorSplasherWindow(forms.WPFWindow):
             self._shift_pressed_on_click = shift_from_event or shift_from_keyboard
         else:
             self._shift_pressed_on_click = False
+            e.Handled = True
 
     def list_selected_index_changed(self, sender, e):
         """Handle ListBox selection change for color picking or element selection."""
@@ -1230,6 +1245,9 @@ class ColorSplasherWindow(forms.WPFWindow):
         if sender.SelectedIndex == -1:
             if hasattr(self, "_shift_pressed_on_click"):
                 self._shift_pressed_on_click = False
+            return
+        if sender.SelectedItem is None:
+            self._shift_pressed_on_click = False
             return
 
         from System.Windows.Input import Keyboard, Key
