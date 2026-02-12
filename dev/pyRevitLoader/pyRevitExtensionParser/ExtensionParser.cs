@@ -287,6 +287,7 @@ namespace pyRevitExtensionParser
                 Children = children,
                 LayoutOrder = parsedBundle?.LayoutOrder,
                 LayoutItemTitles = parsedBundle?.LayoutItemTitles,
+                LayoutDirectives = parsedBundle?.LayoutDirectives,
                 Titles = parsedBundle?.Titles,
                 Tooltips = parsedBundle?.Tooltips,
                 MinRevitVersion = parsedBundle?.MinRevitVersion,
@@ -296,7 +297,7 @@ namespace pyRevitExtensionParser
                 Config = extConfig
             };
 
-            ReorderByLayout(parsedExtension);
+            ReorderByLayout(parsedExtension, parsedExtension, null);
 
             return parsedExtension;
         }
@@ -306,43 +307,53 @@ namespace pyRevitExtensionParser
         /// according to its own LayoutOrder.  If LayoutOrder is null or empty,
         /// we skip sorting here but still recurse into children.
         /// </summary>
-        private static void ReorderByLayout(ParsedComponent component)
+        /// <param name="component">The component to reorder</param>
+        /// <param name="extension">The root extension (to store external layout directives)</param>
+        /// <param name="currentTabName">The current tab name (for context when storing external directives)</param>
+        private static void ReorderByLayout(ParsedComponent component, ParsedExtension extension, string currentTabName)
         {
             if (component?.Children == null)
                 return;
+
+            // Track the tab name for children - if this is a tab, use its name
+            var tabName = currentTabName;
+            if (component.Type == CommandComponentType.Tab)
+            {
+                tabName = component.DisplayName ?? component.Name;
+            }
 
             if (component.LayoutOrder != null && component.LayoutOrder.Count > 0)
             {
                 // Build reordered list (first pass: add matching components)
                 var reorderedChildren = new List<ParsedComponent>();
-                
+
                 foreach (var layoutItem in component.LayoutOrder)
                 {
                     // Skip separator and slideout markers in first pass
                     if (layoutItem.Contains("---") || layoutItem.Contains(">>>"))
                         continue;
-                    
+
                     // Find matching component by DisplayName
                     var matchingComponent = component.Children.Find(c => c?.DisplayName == layoutItem);
                     if (matchingComponent != null && !reorderedChildren.Contains(matchingComponent))
                     {
                         // Apply custom title if specified in LayoutItemTitles
-                        if (component.LayoutItemTitles != null && 
+                        if (component.LayoutItemTitles != null &&
                             component.LayoutItemTitles.ContainsKey(layoutItem))
                         {
                             matchingComponent.Title = component.LayoutItemTitles[layoutItem];
                         }
-                        
+
                         reorderedChildren.Add(matchingComponent);
                     }
                 }
-                
+
                 // Second pass: insert separators and slideouts at their positions
                 for (int idx = 0; idx < component.LayoutOrder.Count; idx++)
                 {
                     var layoutItem = component.LayoutOrder[idx];
                     var insertIndex = Math.Min(idx, reorderedChildren.Count);
-                    
+
                     // Check if this is a separator or slideout marker
                     if (layoutItem.Contains("---") && idx < component.LayoutOrder.Count - 1)
                     {
@@ -370,7 +381,7 @@ namespace pyRevitExtensionParser
                         reorderedChildren.Insert(insertIndex, slideout);
                     }
                 }
-                
+
                 // Add any components not in layout order at the end
                 foreach (var child in component.Children)
                 {
@@ -379,7 +390,11 @@ namespace pyRevitExtensionParser
                         reorderedChildren.Add(child);
                     }
                 }
-                
+
+                // Apply layout directives (before, after, beforeall, afterall)
+                // External directives (where target is not found) are stored for post-UI-build sorting
+                ApplyLayoutDirectives(component, reorderedChildren, extension, tabName);
+
                 component.Children = reorderedChildren;
             }
 
@@ -387,7 +402,126 @@ namespace pyRevitExtensionParser
             {
                 if (child != null)
                 {
-                    ReorderByLayout(child);
+                    ReorderByLayout(child, extension, tabName);
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Applies layout directives (before, after, beforeall, afterall) to reorder components.
+        /// Directives that reference external components (not found in children) are stored
+        /// in the extension's ExternalLayoutDirectives for post-UI-build sorting.
+        /// </summary>
+        /// <param name="component">The component containing the layout directives</param>
+        /// <param name="children">The list of children to reorder</param>
+        /// <param name="extension">The root extension to store external directives</param>
+        /// <param name="tabName">The current tab name (for context when storing external directives)</param>
+        private static void ApplyLayoutDirectives(ParsedComponent component, List<ParsedComponent> children,
+            ParsedExtension extension, string tabName)
+        {
+            if (component.LayoutDirectives == null || component.LayoutDirectives.Count == 0)
+                return;
+
+            // First pass: apply beforeall directives (move to first position)
+            var beforeAllItems = component.LayoutDirectives
+                .Where(kvp => kvp.Value?.DirectiveType == "beforeall")
+                .Select(kvp => kvp.Key)
+                .ToList();
+
+            foreach (var itemName in beforeAllItems)
+            {
+                var item = children.Find(c => c?.DisplayName == itemName);
+                if (item != null)
+                {
+                    children.Remove(item);
+                    children.Insert(0, item);
+                }
+            }
+
+            // Second pass: apply afterall directives (move to last position)
+            var afterAllItems = component.LayoutDirectives
+                .Where(kvp => kvp.Value?.DirectiveType == "afterall")
+                .Select(kvp => kvp.Key)
+                .ToList();
+
+            foreach (var itemName in afterAllItems)
+            {
+                var item = children.Find(c => c?.DisplayName == itemName);
+                if (item != null)
+                {
+                    children.Remove(item);
+                    children.Add(item);
+                }
+            }
+
+            // Third pass: apply before directives (move before target)
+            var beforeItems = component.LayoutDirectives
+                .Where(kvp => kvp.Value?.DirectiveType == "before")
+                .ToList();
+
+            foreach (var kvp in beforeItems)
+            {
+                var itemName = kvp.Key;
+                var targetName = kvp.Value.Target;
+                if (string.IsNullOrEmpty(targetName))
+                    continue;
+
+                var item = children.Find(c => c?.DisplayName == itemName);
+                var target = children.Find(c => c?.DisplayName == targetName);
+
+                if (item != null && target != null && item != target)
+                {
+                    // Both item and target found internally - apply the directive
+                    children.Remove(item);
+                    var targetIndex = children.IndexOf(target);
+                    children.Insert(targetIndex, item);
+                }
+                else if (item != null && target == null && extension != null && !string.IsNullOrEmpty(tabName))
+                {
+                    // Item found but target not found - this is an external directive
+                    // (e.g., "Packages & Tags[before:Modify]" where Modify is a native Revit panel)
+                    extension.ExternalLayoutDirectives.Add(new ExternalLayoutDirective
+                    {
+                        TabName = tabName,
+                        ComponentName = itemName,
+                        DirectiveType = "before",
+                        Target = targetName
+                    });
+                }
+            }
+
+            // Fourth pass: apply after directives (move after target)
+            var afterItems = component.LayoutDirectives
+                .Where(kvp => kvp.Value?.DirectiveType == "after")
+                .ToList();
+
+            foreach (var kvp in afterItems)
+            {
+                var itemName = kvp.Key;
+                var targetName = kvp.Value.Target;
+                if (string.IsNullOrEmpty(targetName))
+                    continue;
+
+                var item = children.Find(c => c?.DisplayName == itemName);
+                var target = children.Find(c => c?.DisplayName == targetName);
+
+                if (item != null && target != null && item != target)
+                {
+                    // Both item and target found internally - apply the directive
+                    children.Remove(item);
+                    var targetIndex = children.IndexOf(target);
+                    children.Insert(targetIndex + 1, item);
+                }
+                else if (item != null && target == null && extension != null && !string.IsNullOrEmpty(tabName))
+                {
+                    // Item found but target not found - this is an external directive
+                    extension.ExternalLayoutDirectives.Add(new ExternalLayoutDirective
+                    {
+                        TabName = tabName,
+                        ComponentName = itemName,
+                        DirectiveType = "after",
+                        Target = targetName
+                    });
                 }
             }
         }
@@ -419,8 +553,11 @@ namespace pyRevitExtensionParser
             }
 
             var userExtensions = GetConfig().UserExtensionsList;
+            var userExtensionsCount = 0;
+            var userExtensionsAdded = 0;
             foreach (var extPath in userExtensions)
             {
+                userExtensionsCount++;
                 if (string.IsNullOrWhiteSpace(extPath))
                 {
                     logger.Debug("Skipping empty userextensions path");
@@ -431,22 +568,36 @@ namespace pyRevitExtensionParser
                 {
                     var normalizedPath = Path.GetFullPath(extPath);
                     if (Directory.Exists(normalizedPath))
+                    {
                         roots.Add(normalizedPath);
+                        userExtensionsAdded++;
+                    }
                     else
+                    {
                         logger.Debug("Skipping non-existent userextensions path: {0}", normalizedPath);
+                        logger.Warn("User extension path does not exist: {0}", normalizedPath);
+                    }
                 }
                 catch (ArgumentException ex)
                 {
                     logger.Debug("Skipping invalid userextensions path '{0}': {1}", extPath, ex.Message);
+                    logger.Warn("User extension path is invalid: '{0}'", extPath);
                 }
                 catch (PathTooLongException ex)
                 {
                     logger.Debug("Skipping too long userextensions path '{0}': {1}", extPath, ex.Message);
+                    logger.Warn("User extension path is too long: '{0}'", extPath);
                 }
                 catch (NotSupportedException ex)
                 {
                     logger.Debug("Skipping unsupported userextensions path '{0}': {1}", extPath, ex.Message);
+                    logger.Warn("User extension path is not supported: '{0}'", extPath);
                 }
+            }
+
+            if (userExtensionsCount > 0 && userExtensionsAdded == 0)
+            {
+                logger.Warn("No valid userextensions paths found. Check pyRevit_config.ini for non-ASCII or invalid paths.");
             }
 
             return roots;
@@ -571,17 +722,30 @@ namespace pyRevitExtensionParser
                         scriptPath = yaml;
                 }
 
-                // Look for config script (config.py, config.cs, etc.)
+                // Look for config script (*config.py, *config.cs, etc.)
+                // e.g. both "config.py" and "name_config.py" will match
                 string configScriptPath = null;
                 var configExtensions = new[] { ".py", ".cs", ".vb", ".rb", ".dyn", ".gh", ".ghx" };
                 var allDirFiles = GetFilesInDirectory(dir, "*", SearchOption.TopDirectoryOnly);
+                // Prefer exact "config{ext}" match, then fall back to postfix "*config{ext}"
                 foreach (var configExt in configExtensions)
                 {
                     var configFile = $"config{configExt}";
-                    configScriptPath = allDirFiles.FirstOrDefault(f => 
+                    configScriptPath = allDirFiles.FirstOrDefault(f =>
                         Path.GetFileName(f).Equals(configFile, StringComparison.OrdinalIgnoreCase));
                     if (configScriptPath != null)
                         break;
+                }
+                if (configScriptPath == null)
+                {
+                    foreach (var configExt in configExtensions)
+                    {
+                        var configPostfix = $"config{configExt}";
+                        configScriptPath = allDirFiles.FirstOrDefault(f =>
+                            Path.GetFileName(f).EndsWith(configPostfix, StringComparison.OrdinalIgnoreCase));
+                        if (configScriptPath != null)
+                            break;
+                    }
                 }
                 // If no separate config script found, use the main script path
                 if (configScriptPath == null)
@@ -869,6 +1033,7 @@ namespace pyRevitExtensionParser
                     BundleFile = FileExists(bundleFile) ? bundleFile : null,
                     LayoutOrder = bundleInComponent?.LayoutOrder,
                     LayoutItemTitles = bundleInComponent?.LayoutItemTitles,
+                    LayoutDirectives = bundleInComponent?.LayoutDirectives,
                     Title = title,
                     Author = author,
                     Context = finalContext,

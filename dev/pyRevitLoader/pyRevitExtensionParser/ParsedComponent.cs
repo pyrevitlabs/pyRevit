@@ -27,6 +27,15 @@ namespace pyRevitExtensionParser
         /// Used when layout items specify a custom title like: "Component Name[title:Custom Title]"
         /// </summary>
         public Dictionary<string, string> LayoutItemTitles { get; set; }
+        
+        /// <summary>
+        /// Maps component names to their layout directives for positioning control.
+        /// Used when layout items specify positioning directives like:
+        /// "Component Name[before:Target]", "Component Name[after:Target]",
+        /// "Component Name[beforeall:]", "Component Name[afterall:]"
+        /// </summary>
+        public Dictionary<string, LayoutDirective> LayoutDirectives { get; set; }
+        
         public bool HasSlideout { get; set; } = false;
         public string Title { get; set; }
         public string Author { get; set; }
