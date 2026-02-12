@@ -18,10 +18,17 @@
     <system:String x:Key="DiagonalFormat">Diagonale : {}</system:String>
     <system:String x:Key="SlopeFormat">Pente : {}</system:String>
     
-    <system:String x:Key="MeasurementHistoryEntry">Mesure {} :\n  P1 : {}\n  P2 : {}\n  ΔX : {:>15}\n  ΔY : {:>15}\n  ΔZ : {:>15}\n  Diagonale : {}\n  Pente : {}</system:String>
+    <system:String x:Key="MeasurementHistoryEntry" xml:space="preserve">
+Mesure {} :
+    P1 : {}
+    P2 : {}
+    ΔX : {:>15}
+    ΔY : {:>15}
+    ΔZ : {:>15}
+    Diagonale : {}
+    Pente : {}
+    </system:String>
     
-    <system:String x:Key="Alert3DViewRequired">Veuillez activer une vue 3D avant d'utiliser l'outil de Mesure 3D.</system:String>
-    <system:String x:Key="Alert3DViewRequiredTitle">Vue 3D Requise</system:String>
     <system:String x:Key="WarningBarPickFirstPoint">Sélectionner le premier point</system:String>
     <system:String x:Key="WarningBarPickSecondPoint">Sélectionner le deuxième point</system:String>
     <system:String x:Key="AlertMeasurementCancelled">Mesure annulée en raison d'une opération invalide. Veuillez réessayer.</system:String>
@@ -29,6 +36,10 @@
     <system:String x:Key="AlertUnexpectedError">Une erreur inattendue s'est produite lors de la mesure. Consultez le journal pour plus de détails.</system:String>
     <system:String x:Key="ToastMeasurementsCopied">Les mesures sont dans le Presse-papiers !</system:String>
     <system:String x:Key="ToastMeasure3DTitle">Mesure 3D</system:String>
-    <system:String x:Key="ProjectUnitLengthUnits">Unités de Longueur (ajuster dans les Unités du Projet) : \n</system:String>
-    <system:String x:Key="ProjectUnitSlopeUnits">Unités de Pente (ajuster dans les Unités du Projet) : \n</system:String>
+    <system:String x:Key="ProjectUnitLengthUnits"  xml:space="preserve">
+Unités de Longueur (ajuster dans les Unités du Projet) :
+    </system:String>
+    <system:String x:Key="ProjectUnitSlopeUnits"  xml:space="preserve">
+Unités de Pente (ajuster dans les Unités du Projet) :
+    </system:String>
 </ResourceDictionary>
