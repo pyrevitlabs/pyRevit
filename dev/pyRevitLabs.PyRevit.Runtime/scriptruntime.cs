@@ -232,8 +232,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 if (string.IsNullOrEmpty(engineTypeName))
                     return null;
 
+                // Only honor Python engine overrides for Python scripts
+                if (!PyRevitScript.IsType(ScriptSourceFile, PyRevitScriptTypes.Python))
+                    return null;
+
                 // Map string to ScriptEngineType enum
-                if (engineTypeName.Equals("CPython", StringComparison.OrdinalIgnoreCase)) 
+                if (engineTypeName.Equals("CPython", StringComparison.OrdinalIgnoreCase))
                     return ScriptEngineType.CPython;
 
                 if (engineTypeName.Equals("IronPython", StringComparison.OrdinalIgnoreCase))

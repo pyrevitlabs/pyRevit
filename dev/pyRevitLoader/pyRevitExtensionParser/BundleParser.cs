@@ -455,6 +455,12 @@ namespace pyRevitExtensionParser
                         state.IsInMultilineValue = true;
                         state.CurrentLanguageKey = "en_us";
                     }
+                    else if (string.IsNullOrEmpty(value))
+                    {
+                        // Implicit multiline (legacy format: title: then indented lines)
+                        state.IsInMultilineValue = true;
+                        state.CurrentLanguageKey = "en_us";
+                    }
                     else if (!string.IsNullOrEmpty(value))
                     {
                         parsed.Titles["en_us"] = StripQuotes(value);
@@ -480,6 +486,12 @@ namespace pyRevitExtensionParser
                     else if (value == "|" || value == ">")
                     {
                         // Legacy multiline
+                        state.IsInMultilineValue = true;
+                        state.CurrentLanguageKey = "en_us";
+                    }
+                    else if (string.IsNullOrEmpty(value))
+                    {
+                        // Implicit multiline (legacy format: tooltip: then indented lines)
                         state.IsInMultilineValue = true;
                         state.CurrentLanguageKey = "en_us";
                     }
@@ -605,8 +617,18 @@ namespace pyRevitExtensionParser
         }
 
         /// <summary>
-        /// Parses a layout list item with optional custom title syntax.
+        /// Parses a layout list item with optional custom title or positioning directives.
         /// </summary>
+        /// <remarks>
+        /// Supports the following directive syntax:
+        /// <list type="bullet">
+        /// <item><description>"Component[title:Custom Title]" - Custom display title</description></item>
+        /// <item><description>"Component[before:Target]" - Position before target component</description></item>
+        /// <item><description>"Component[after:Target]" - Position after target component</description></item>
+        /// <item><description>"Component[beforeall:]" - Position first (before all others)</description></item>
+        /// <item><description>"Component[afterall:]" - Position last (after all others)</description></item>
+        /// </list>
+        /// </remarks>
         private static void ParseLayoutItem(string line, ParsedBundle parsed)
         {
             var item = line.Substring(1).Trim();
@@ -618,19 +640,45 @@ namespace pyRevitExtensionParser
                 item = item.Substring(1, item.Length - 2);
             }
 
-            // Check for custom title syntax: "Component[title:Custom Title]"
+            // Check for directive syntax: "Component[directive:target]"
+            // Supports: title:, before:, after:, beforeall:, afterall:
             var componentName = item;
-            if (item.Contains("[title:") && item.EndsWith("]"))
+            if (item.Contains("[") && item.EndsWith("]"))
             {
-                var titleStartIndex = item.IndexOf("[title:");
-                componentName = item.Substring(0, titleStartIndex);
-                var titleValue = item.Substring(titleStartIndex + 7, item.Length - titleStartIndex - 8);
+                var bracketStart = item.IndexOf('[');
+                componentName = item.Substring(0, bracketStart).Trim();
+                var directiveContent = item.Substring(bracketStart + 1, item.Length - bracketStart - 2);
+                
+                var colonIndex = directiveContent.IndexOf(':');
+                if (colonIndex > 0)
+                {
+                    var directiveType = directiveContent.Substring(0, colonIndex).Trim().ToLowerInvariant();
+                    var targetValue = directiveContent.Substring(colonIndex + 1).Trim();
+                    
+                    // Handle different directive types
+                    if (directiveType == "title")
+                    {
+                        // Unescape \n to newline for title
+                        targetValue = targetValue.Replace("\\n", "\n");
+                        parsed.LayoutItemTitles[componentName] = targetValue;
+                    }
+                    else if ((directiveType == "before" || directiveType == "after" ||
+                              directiveType == "beforeall" || directiveType == "afterall")
+                             && !string.IsNullOrEmpty(componentName))
+                    {
+                        // Store the layout directive for later processing
+                        parsed.LayoutDirectives[componentName] = new LayoutDirective
+                        {
+                            DirectiveType = directiveType,
+                            Target = targetValue
+                        };
+                    }
+                }
+            }
 
-                // Unescape \n to newline
-                titleValue = titleValue.Replace("\\n", "\n");
-
-                // Store the custom title mapping
-                parsed.LayoutItemTitles[componentName] = titleValue;
+            if (string.IsNullOrEmpty(componentName))
+            {
+                componentName = item;
             }
 
             parsed.LayoutOrder.Add(componentName);
