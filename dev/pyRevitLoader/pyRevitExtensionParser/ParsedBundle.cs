@@ -68,6 +68,71 @@ namespace pyRevitExtensionParser
     }
     
     /// <summary>
+    /// Represents a layout directive for controlling component positioning in the UI.
+    /// </summary>
+    /// <remarks>
+    /// <para>Supported directive types:</para>
+    /// <list type="bullet">
+    /// <item><description>before - Place this component before the target component</description></item>
+    /// <item><description>after - Place this component after the target component</description></item>
+    /// <item><description>beforeall - Place this component first (before all others)</description></item>
+    /// <item><description>afterall - Place this component last (after all others)</description></item>
+    /// </list>
+    /// <para>Example syntax in bundle.yaml:</para>
+    /// <code>
+    /// layout:
+    ///   - Packages & Tags[before:Modify]
+    ///   - Settings[after:Tools]
+    ///   - Help[beforeall:]
+    ///   - About[afterall:]
+    /// </code>
+    /// </remarks>
+    public class LayoutDirective
+    {
+        /// <summary>
+        /// The type of directive: before, after, beforeall, or afterall
+        /// </summary>
+        public string DirectiveType { get; set; }
+
+        /// <summary>
+        /// The target component name (for before/after directives)
+        /// </summary>
+        public string Target { get; set; }
+    }
+
+    /// <summary>
+    /// Represents a layout directive that references an external component (from another extension or native Revit).
+    /// These directives cannot be applied at parse time and must be applied after the full UI is built.
+    /// </summary>
+    /// <remarks>
+    /// <para>External layout directives are collected during parsing and applied post-UI-build
+    /// using the Revit ribbon API to reorder panels across the already-built UI.</para>
+    /// <para>Example: "Packages & Tags[before:Modify]" where "Modify" is a native Revit panel.</para>
+    /// </remarks>
+    public class ExternalLayoutDirective
+    {
+        /// <summary>
+        /// The name of the tab containing the source component
+        /// </summary>
+        public string TabName { get; set; }
+
+        /// <summary>
+        /// The name of the component (panel) to be moved
+        /// </summary>
+        public string ComponentName { get; set; }
+
+        /// <summary>
+        /// The type of directive: before, after, beforeall, or afterall
+        /// </summary>
+        public string DirectiveType { get; set; }
+
+        /// <summary>
+        /// The target component name (for before/after directives)
+        /// </summary>
+        public string Target { get; set; }
+    }
+    
+    /// <summary>
     /// Represents a parsed pyRevit bundle configuration containing all metadata,
     /// layout information, and engine settings for a command or component.
     /// </summary>
@@ -143,6 +208,23 @@ namespace pyRevitExtensionParser
         /// Key: "MyButton", Value: "Click Me\nNow"
         /// </example>
         public Dictionary<string, string> LayoutItemTitles { get; set; } = new Dictionary<string, string>();
+
+        /// <summary>
+        /// Maps component names to their layout directives for positioning control.
+        /// </summary>
+        /// <remarks>
+        /// <para>Used when layout items specify positioning directives using the syntax:</para>
+        /// <code>"Component Name[before:Target]"</code>
+        /// <code>"Component Name[after:Target]"</code>
+        /// <code>"Component Name[beforeall:]"</code>
+        /// <code>"Component Name[afterall:]"</code>
+        /// <para>Supports the following directive types: before, after, beforeall, afterall</para>
+        /// </remarks>
+        /// <example>
+        /// For layout item "Packages & Tags[before:Modify]", this dictionary would contain:
+        /// Key: "Packages & Tags", Value: new LayoutDirective { DirectiveType = "before", Target = "Modify" }
+        /// </example>
+        public Dictionary<string, LayoutDirective> LayoutDirectives { get; set; } = new Dictionary<string, LayoutDirective>();
 
         /// <summary>
         /// Gets or sets the author name or organization for this bundle.
