@@ -63,7 +63,11 @@ namespace pyRevitExtensionParser
             get
             {
                 var value = _ini.IniReadValue("core", "user_locale");
-                return string.IsNullOrEmpty(value) ? null : value.Trim();
+                if (string.IsNullOrEmpty(value))
+                    return null;
+
+                var normalized = NormalizeLocaleValue(value);
+                return string.IsNullOrEmpty(normalized) ? null : normalized;
             }
             set
             {
@@ -153,8 +157,7 @@ namespace pyRevitExtensionParser
         {
             get
             {
-                var value = _ini.IniReadValue("core", "userextensions");
-                return string.IsNullOrEmpty(value) ? new List<string>() : PythonListParser.Parse(value);
+                return _ini.GetPythonList("core", "userextensions");
             }
             set
             {
@@ -169,6 +172,29 @@ namespace pyRevitExtensionParser
         {
             ConfigPath = configPath;
             _ini = new IniFile(configPath);
+        }
+
+        private static string NormalizeLocaleValue(string rawValue)
+        {
+            if (string.IsNullOrEmpty(rawValue))
+                return null;
+
+            var value = rawValue.Trim();
+            if (value.Length >= 2)
+            {
+                var first = value[0];
+                var last = value[value.Length - 1];
+                if ((first == '"' && last == '"') || (first == '\'' && last == '\''))
+                {
+                    value = value.Substring(1, value.Length - 2).Trim();
+                }
+            }
+
+            if (string.IsNullOrEmpty(value))
+                return null;
+
+            value = value.Replace('-', '_').ToLowerInvariant();
+            return LocaleSupport.NormalizeLocaleKey(value);
         }
 
         /// <summary>

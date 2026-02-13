@@ -18,10 +18,16 @@
     <system:String x:Key="DiagonalFormat">Диагональ: {}</system:String>
     <system:String x:Key="SlopeFormat">Уклон: {}</system:String>
     
-    <system:String x:Key="MeasurementHistoryEntry">Измерение {}:\n  P1: {}\n  P2: {}\n  ΔX: {:>15}\n  ΔY: {:>15}\n  ΔZ: {:>15}\n  Диагональ: {}\n  Уклон: {}</system:String>
+    <system:String x:Key="MeasurementHistoryEntry" xml:space="preserve">
+Измерение {}:
+    P1: {}
+    P2: {}
+    ΔX: {:>15}
+    ΔY: {:>15}
+    ΔZ: {:>15}
+    Диагональ: {}
+    Уклон: {}</system:String>
     
-    <system:String x:Key="Alert3DViewRequired">Пожалуйста, активируйте 3D вид перед использованием инструмента 3D Измерения.</system:String>
-    <system:String x:Key="Alert3DViewRequiredTitle">Требуется 3D Вид</system:String>
     <system:String x:Key="WarningBarPickFirstPoint">Выберите первую точку</system:String>
     <system:String x:Key="WarningBarPickSecondPoint">Выберите вторую точку</system:String>
     <system:String x:Key="AlertMeasurementCancelled">Измерение отменено из-за недопустимой операции. Пожалуйста, попробуйте снова.</system:String>
@@ -29,6 +35,10 @@
     <system:String x:Key="AlertUnexpectedError">Произошла неожиданная ошибка во время измерения. Проверьте журнал для получения подробностей.</system:String>
     <system:String x:Key="ToastMeasurementsCopied">Измерения скопированы в буфер обмена!</system:String>
     <system:String x:Key="ToastMeasure3DTitle">3D Измерение</system:String>
-    <system:String x:Key="ProjectUnitLengthUnits">Единицы Длины (настроить в Единицах Проекта): \n</system:String>
-    <system:String x:Key="ProjectUnitSlopeUnits">Единицы Уклона (настроить в Единицах Проекта): \n</system:String>
+    <system:String x:Key="ProjectUnitLengthUnits" xml:space="preserve">
+Единицы Длины (настроить в Единицах Проекта):
+    </system:String>
+    <system:String x:Key="ProjectUnitSlopeUnits" xml:space="preserve">
+Единицы Уклона (настроить в Единицах Проекта):
+    </system:String>
 </ResourceDictionary>
