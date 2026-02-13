@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# -- coding: utf-8 --
 import sys
 from re import split
 from math import fabs
@@ -1228,7 +1228,8 @@ class ColorSplasherWindow(forms.WPFWindow):
                         hit_on_item = True
                         break
                     element = VisualTreeHelper.GetParent(element)
-        except Exception:
+        except Exception as e:
+            logger.debug("Error in list_box2_mouse_down: {0}".format(e))
             hit_on_item = False
 
         if not hit_on_item:
