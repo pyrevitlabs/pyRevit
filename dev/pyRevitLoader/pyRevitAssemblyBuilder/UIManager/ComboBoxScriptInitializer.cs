@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -6,10 +7,147 @@ using System.Reflection;
 using Autodesk.Revit.UI;
 using pyRevitExtensionParser;
 using pyRevitAssemblyBuilder.SessionManager;
+using pyRevitLabs.NLog;
 using RevitComboBoxMember = Autodesk.Revit.UI.ComboBoxMember;
 
 namespace pyRevitAssemblyBuilder.UIManager
 {
+    /// <summary>
+    /// Lightweight wrapper around Revit ComboBox that provides the same API
+    /// as pyrevit.coreutils.ribbon._PyRevitRibbonComboBox, so that Python
+    /// scripts using ctx.ui_item work identically under the C# loader.
+    /// </summary>
+    public class ComboBoxUIItemWrapper
+    {
+        private readonly ComboBox _comboBox;
+
+        public ComboBoxUIItemWrapper(ComboBox comboBox)
+        {
+            _comboBox = comboBox;
+        }
+
+        /// <summary>Gets or sets the currently selected ComboBoxMember.</summary>
+        public RevitComboBoxMember current
+        {
+            get
+            {
+                try { return _comboBox?.Current; }
+                catch { return null; }
+            }
+            set
+            {
+                if (_comboBox != null)
+                    _comboBox.Current = value;
+            }
+        }
+
+        /// <summary>Gets whether the ComboBox is enabled.</summary>
+        public bool enabled
+        {
+            get => _comboBox?.Enabled ?? false;
+            set { if (_comboBox != null) _comboBox.Enabled = value; }
+        }
+
+        /// <summary>Gets whether the ComboBox is visible.</summary>
+        public bool visible
+        {
+            get => _comboBox?.Visible ?? false;
+            set { if (_comboBox != null) _comboBox.Visible = value; }
+        }
+
+        /// <summary>
+         /// Adds a single item using plain values instead of Revit API types.
+         /// </summary>
+        public RevitComboBoxMember AddItem(string name, string itemText, string groupName = null)
+        {
+            if (_comboBox == null || string.IsNullOrEmpty(name) || string.IsNullOrEmpty(itemText))
+                return null;
+
+            var memberData = new ComboBoxMemberData(name, itemText);
+            if (!string.IsNullOrEmpty(groupName))
+                memberData.GroupName = groupName;
+
+            return _comboBox.AddItem(memberData);
+        }
+
+        /// <summary>
+        /// Adds multiple items using plain values.
+        /// Supported item formats: string, [name, text], [name, text, group].
+        /// </summary>
+        public void add_items(IEnumerable itemSpecs, string defaultGroupName = null)
+        {
+            if (_comboBox == null || itemSpecs == null)
+                return;
+
+            foreach (var itemSpec in itemSpecs)
+            {
+                if (!TryCreateMemberData(itemSpec, defaultGroupName, out var memberData))
+                    continue;
+                _comboBox.AddItem(memberData);
+            }
+        }
+
+        private static bool TryCreateMemberData(object itemSpec, string defaultGroupName, out ComboBoxMemberData memberData)
+        {
+            memberData = null;
+            if (itemSpec == null)
+                return false;
+
+            if (itemSpec is string text)
+            {
+                if (string.IsNullOrEmpty(text))
+                    return false;
+
+                memberData = new ComboBoxMemberData(text, text);
+                if (!string.IsNullOrEmpty(defaultGroupName))
+                    memberData.GroupName = defaultGroupName;
+                return true;
+            }
+
+            if (itemSpec is IList values && values.Count >= 2)
+            {
+                var name = values[0]?.ToString();
+                var itemText = values[1]?.ToString();
+                var groupName = values.Count > 2 ? values[2]?.ToString() : defaultGroupName;
+                if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(itemText))
+                    return false;
+
+                memberData = new ComboBoxMemberData(name, itemText);
+                if (!string.IsNullOrEmpty(groupName))
+                    memberData.GroupName = groupName;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>Adds a separator to the ComboBox dropdown list.</summary>
+        public void add_separator()
+        {
+            _comboBox?.AddSeparator();
+        }
+
+        /// <summary>Gets all items in the ComboBox.</summary>
+        public IList<RevitComboBoxMember> get_items()
+        {
+            try { return _comboBox?.GetItems() ?? (IList<RevitComboBoxMember>)new List<RevitComboBoxMember>(); }
+            catch { return new List<RevitComboBoxMember>(); }
+        }
+
+        /// <summary>Gets contextual help for the ComboBox.</summary>
+        public ContextualHelp get_contexthelp()
+        {
+            try { return _comboBox?.GetContextualHelp(); }
+            catch { return null; }
+        }
+
+        /// <summary>Sets contextual help for the ComboBox.</summary>
+        public void set_contexthelp(ContextualHelp help)
+        {
+            _comboBox?.SetContextualHelp(help);
+        }
+    }
+
     /// <summary>
     /// Context object providing access to ComboBox state and data.
     /// This C# class is passed directly to Python event handlers.
@@ -20,16 +158,24 @@ namespace pyRevitAssemblyBuilder.UIManager
         private readonly ParsedComponent _component;
         private readonly UIApplication _uiApp;
         private readonly Dictionary<string, object> _userData = new Dictionary<string, object>();
+        private readonly ComboBoxUIItemWrapper _uiItem;
 
         public ComboBoxContext(ComboBox comboBox, ParsedComponent component, UIApplication uiApp)
         {
             _comboBox = comboBox;
             _component = component;
             _uiApp = uiApp;
+            _uiItem = new ComboBoxUIItemWrapper(comboBox);
         }
 
         /// <summary>Gets the raw Revit ComboBox API object.</summary>
         public ComboBox combobox => _comboBox;
+
+        /// <summary>
+        /// Gets the UI item wrapper providing the same API as
+        /// pyrevit.coreutils.ribbon._PyRevitRibbonComboBox.
+        /// </summary>
+        public ComboBoxUIItemWrapper ui_item => _uiItem;
 
         /// <summary>Gets the currently selected ComboBoxMember.</summary>
         public RevitComboBoxMember current_item => _comboBox?.Current;
@@ -121,7 +267,8 @@ namespace pyRevitAssemblyBuilder.UIManager
     /// </summary>
     public class ComboBoxScriptInitializer
     {
-        private readonly ILogger _logger;
+        private static readonly Logger nlog = LogManager.GetCurrentClassLogger();
+        private readonly SessionManager.ILogger _logger;
         private readonly UIApplication _uiApp;
 
         // Cached reflection types and methods
@@ -130,13 +277,13 @@ namespace pyRevitAssemblyBuilder.UIManager
         private static bool _staticInitialized;
         private static bool _staticInitializationFailed;
         private static readonly object _staticLock = new object();
-        
+
         private object _executor;
         private MethodInfo _executeMethod;
         private bool _instanceInitialized;
         private bool _instanceInitializationFailed;
 
-        public ComboBoxScriptInitializer(UIApplication uiApp, ILogger logger)
+        public ComboBoxScriptInitializer(UIApplication uiApp, SessionManager.ILogger logger)
         {
             _uiApp = uiApp;
             _logger = logger;
@@ -202,7 +349,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             try
             {
                 // Create executor instance with logger
-                Action<string> logAction = msg => _logger.Debug(msg);
+                Action<string> logAction = msg => nlog.Info(msg);
                 _executor = Activator.CreateInstance(_executorType, _uiApp, logAction);
 
                 // Get ExecuteEventHandlerSetup method
