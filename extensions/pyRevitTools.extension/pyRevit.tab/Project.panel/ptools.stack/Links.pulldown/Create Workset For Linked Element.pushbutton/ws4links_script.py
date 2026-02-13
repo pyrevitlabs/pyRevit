@@ -87,7 +87,7 @@ def main():
                 title=translations_dict["Worksharing.Enable.Error.Title"],
                 exitscript=True
             )
-        
+
         with revit.Transaction(translations_dict["Transaction.Name"]):
             for el in selection:
                 linked_model_name = ""
