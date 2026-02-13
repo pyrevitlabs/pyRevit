@@ -169,79 +169,106 @@ namespace pyRevitExtensionParser
                 var raw = lines[i];
                 var line = raw.Trim();
 
-                // Skip empty lines (but preserve them in multiline content)
-                if (string.IsNullOrWhiteSpace(line))
+                try
                 {
+                    // Skip empty lines (but preserve them in multiline content)
+                    if (string.IsNullOrWhiteSpace(line))
+                    {
+                        if (state.IsInMultilineValue)
+                        {
+                            state.MultilineContent.Add("");
+                        }
+                            continue;
+                    }
+
+                    // Handle multiline content continuation
                     if (state.IsInMultilineValue)
                     {
-                        state.MultilineContent.Add("");
-                    }
-                    continue;
-                }
+                        // For top-level multiline (like tooltip: |), content is indented with 2 spaces
+                        // For nested multiline (like tooltip:\n  en_us: |), content is indented with 4 spaces
+                        // Accept both levels of indentation for multiline content
+                        if (raw.StartsWith("  ") || raw.StartsWith("\t"))
+                        {
+                            // Check if line is at key level (2-space indent) vs content level (4+ space indent)
+                            var isAtKeyLevel = (raw.StartsWith("  ") && !raw.StartsWith("    ")) ||
+                                               (raw.StartsWith("\t") && !raw.StartsWith("\t\t"));
 
-                // Handle multiline content continuation
-                if (state.IsInMultilineValue)
-                {
-                    // For top-level multiline (like tooltip: |), content is indented with 2 spaces
-                    // For nested multiline (like tooltip:\n  en_us: |), content is indented with 4 spaces
-                    // Accept both levels of indentation for multiline content
-                    if (raw.StartsWith("  ") || raw.StartsWith("\t"))
-                    {
-                        // Check if this is a new language key declaration (e.g., "  fr_fr: >-")
-                        // This happens in localized sections where multiline content for one language
-                        // is followed by another language key at the same indentation level
-                        var isNewLanguageKey = false;
-                        if ((state.CurrentSection == "title" || state.CurrentSection == "titles" ||
-                             state.CurrentSection == "tooltip" || state.CurrentSection == "tooltips") &&
-                            line.Contains(":"))
-                        {
-                            // Check if this looks like a language key (short alphanumeric before colon)
-                            // Must match valid language code pattern like "en_us", "fr_fr", "de_de", "ru"
-                            var colonIdx = line.IndexOf(':');
-                            var potentialKey = line.Substring(0, colonIdx).Trim();
-                            if (IsValidLanguageCode(potentialKey))
+                            // If multiline started at key level (e.g. en_us: >-) and current line
+                            // is also at key level, the multiline block must end — this line is a
+                            // sibling key, not continuation content
+                            if (state.MultilineStartedAtKeyLevel && isAtKeyLevel)
                             {
-                                isNewLanguageKey = true;
+                                FinishMultilineValue(parsed, state);
+                                state.ResetMultiline();
+                                // Fall through to parse as second-level item
                             }
-                        }
-                        
-                        if (isNewLanguageKey)
-                        {
-                            // End current multiline and process as new language key
-                            FinishMultilineValue(parsed, state);
-                            state.ResetMultiline();
-                            // Fall through to parse as second-level item
+                            else
+                            {
+                                // For top-level multiline, still check for new language keys
+                                // at 2-space indent (they are deeper than the top-level start)
+                                var isNewLanguageKey = false;
+                                if ((state.CurrentSection == "title" || state.CurrentSection == "titles" ||
+                                     state.CurrentSection == "tooltip" || state.CurrentSection == "tooltips") &&
+                                    line.Contains(":"))
+                                {
+                                    var colonIdx = line.IndexOf(':');
+                                    var potentialKey = line.Substring(0, colonIdx).Trim();
+                                    if (IsValidLanguageCode(potentialKey))
+                                    {
+                                        isNewLanguageKey = true;
+                                    }
+                                }
+
+                                if (isNewLanguageKey)
+                                {
+                                    // End current multiline and process as new language key
+                                    FinishMultilineValue(parsed, state);
+                                    state.ResetMultiline();
+                                    // Fall through to parse as second-level item
+                                }
+                                else
+                                {
+                                    var content = raw.TrimStart();
+                                    state.MultilineContent.Add(content);
+                                    continue;
+                                }
+                            }
                         }
                         else
                         {
-                            var content = raw.TrimStart();
-                            state.MultilineContent.Add(content);
-                            continue;
+                            // End of multiline - process accumulated content
+                            FinishMultilineValue(parsed, state);
+                            state.ResetMultiline();
+                            // Continue to process the current line that ended the multiline
                         }
                     }
-                    else
+
+                    // Parse the line based on indentation level
+                    if (!raw.StartsWith(" ") && !raw.StartsWith("\t"))
                     {
-                        // End of multiline - process accumulated content
-                        FinishMultilineValue(parsed, state);
-                        state.ResetMultiline();
-                        // Continue to process the current line that ended the multiline
+                        ParseTopLevelSection(line, parsed, state);
+                    }
+                    else if ((raw.StartsWith("  ") && !raw.StartsWith("    ")) ||
+                             (raw.StartsWith("\t") && !raw.StartsWith("\t\t")))
+                    {
+                        ParseSecondLevelItem(line, raw, parsed, state);
+                    }
+                    else if (raw.StartsWith("    ") || raw.StartsWith("\t\t"))
+                    {
+                        // Third level - for member properties and nested configurations
+                        ParseThirdLevelItem(line, parsed, state);
                     }
                 }
-
-                // Parse the line based on indentation level
-                if (!raw.StartsWith(" ") && !raw.StartsWith("\t"))
+                catch (Exception ex)
                 {
-                    ParseTopLevelSection(line, parsed, state);
-                }
-                else if ((raw.StartsWith("  ") && !raw.StartsWith("    ")) ||
-                         (raw.StartsWith("\t") && !raw.StartsWith("\t\t")))
-                {
-                    ParseSecondLevelItem(line, raw, parsed, state);
-                }
-                else if (raw.StartsWith("    ") || raw.StartsWith("\t\t"))
-                {
-                    // Third level - for member properties and nested configurations
-                    ParseThirdLevelItem(line, parsed, state);
+                    if (ex.Data != null)
+                    {
+                        if (!ex.Data.Contains("LineNumber"))
+                            ex.Data["LineNumber"] = i + 1;
+                        if (!ex.Data.Contains("LineText"))
+                            ex.Data["LineText"] = raw;
+                    }
+                    throw;
                 }
             }
 
@@ -723,35 +750,47 @@ namespace pyRevitExtensionParser
         private static void ParseLocalizedText(string line, ParsedBundle parsed, ParserState state)
         {
             var colonIndex = line.IndexOf(':');
+            var value = line.Substring(colonIndex + 1).Trim();
+
+            if (value.StartsWith("[") && value.IndexOf(']') < 0)
+            {
+                var ex = new FormatException("Invalid flow sequence in bundle.yaml. Missing closing ']'.");
+                ex.Data["ColumnNumber"] = colonIndex + 2;
+                throw ex;
+            }
+
             var rawLanguageKey = line.Substring(0, colonIndex).Trim();
             state.CurrentLanguageKey = LocaleSupport.NormalizeLocaleKey(rawLanguageKey);
             if (state.CurrentLanguageKey == null)
             {
-                logger.Warn(
-                    "Unsupported locale key '{0}' in bundle.yaml{1}",
-                    rawLanguageKey,
-                    string.IsNullOrEmpty(state.SourcePath) ? "" : string.Format(" ({0})", state.SourcePath)
+                var suffix = string.IsNullOrEmpty(state.SourcePath)
+                    ? string.Empty
+                    : string.Format(" ({0})", state.SourcePath);
+                ExtensionParser.LogWarning(
+                    string.Format("Unsupported locale key '{0}' in bundle.yaml{1}", rawLanguageKey, suffix)
                 );
                 return;
             }
-            var value = line.Substring(colonIndex + 1).Trim();
 
             if (value == "|-")
             {
                 // Literal multiline (preserve line breaks)
                 state.IsInMultilineValue = true;
                 state.IsLiteralMultiline = true;
+                state.MultilineStartedAtKeyLevel = true;
             }
             else if (value == ">-")
             {
                 // Folded multiline (join lines)
                 state.IsInMultilineValue = true;
                 state.IsFoldedMultiline = true;
+                state.MultilineStartedAtKeyLevel = true;
             }
             else if (value == "|" || value == ">")
             {
                 // Legacy multiline
                 state.IsInMultilineValue = true;
+                state.MultilineStartedAtKeyLevel = true;
             }
             else if (!string.IsNullOrEmpty(value))
             {
@@ -768,6 +807,7 @@ namespace pyRevitExtensionParser
             {
                 // Empty value after colon - might be implicit multiline
                 state.IsInMultilineValue = true;
+                state.MultilineStartedAtKeyLevel = true;
             }
         }
 
@@ -1047,6 +1087,7 @@ namespace pyRevitExtensionParser
             public bool IsInMultilineValue { get; set; }
             public bool IsLiteralMultiline { get; set; }
             public bool IsFoldedMultiline { get; set; }
+            public bool MultilineStartedAtKeyLevel { get; set; }
             public List<string> MultilineContent { get; set; } = new List<string>();
             
             /// <summary>
@@ -1064,6 +1105,7 @@ namespace pyRevitExtensionParser
                 IsInMultilineValue = false;
                 IsLiteralMultiline = false;
                 IsFoldedMultiline = false;
+                MultilineStartedAtKeyLevel = false;
                 MultilineContent.Clear();
                 CurrentLanguageKey = null;
             }

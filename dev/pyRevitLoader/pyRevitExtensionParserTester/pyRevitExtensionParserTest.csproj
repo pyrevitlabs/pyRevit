@@ -35,6 +35,7 @@
     <Compile Include="ParsedBundleTests.cs" />
     <Compile Include="ParsedComponentTests.cs" />
     <Compile Include="ParserBasicTests.cs" />
+    <Compile Include="ParserErrorHandlingTests.cs" />
     <Compile Include="DiagnosticTests.cs" />
     <Compile Include="QuotedValueTests.cs" />
     <Compile Include="QuoteDebuggingTest.cs" />
