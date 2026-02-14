@@ -1,7 +1,5 @@
 """Toggles visibility, active state or a temporary section box in current 3D view"""
 
-import pickle
-
 from pyrevit import framework
 from pyrevit import revit, DB, script, forms
 from pyrevit.compat import get_elementid_value_func
@@ -125,33 +123,26 @@ def temp_switch_sectionbox():
 
     try:
         with open(TEMP_DATAFILE, "rb") as f:
-            view_data = pickle.load(f)
+            view_data = script.pickle.load(f)
     except Exception:
         view_data = {}
 
-    # Check if we have stored data for this view
     view_key = "view_{}".format(active_view_id_value)
 
     if view_key in view_data:
-        # Restore previous state
         try:
             previous_state = view_data[view_key]
 
             if previous_state["was_active"]:
-                # Restore previous section box
                 restored_bbox = revit.deserialize(previous_state["bbox_data"])
                 active_view.SetSectionBox(restored_bbox)
                 active_view.IsSectionBoxActive = True
             else:
-                # Turn off section box
                 active_view.IsSectionBoxActive = False
 
-            # Clear the stored data
             del view_data[view_key]
             with open(TEMP_DATAFILE, "wb") as f:
-                pickle.dump(view_data, f)
-
-            logger.info("Restored previous section box state")
+                script.pickle.dump(view_data, f)
 
         except Exception as e:
             logger.error("Failed to restore previous state: {}".format(e))
@@ -180,7 +171,7 @@ def temp_switch_sectionbox():
 
                 view_data[view_key] = current_state
                 with open(TEMP_DATAFILE, "wb") as f:
-                    pickle.dump(view_data, f)
+                    script.pickle.dump(view_data, f)
 
             else:
                 logger.error("Could not create bounding box from selected elements")
@@ -191,4 +182,4 @@ def temp_switch_sectionbox():
 
 if scope == "Temporary Section Box":
     with revit.Transaction("Temporary Section Box"):
-        toggle_sectionbox_active()
+        temp_switch_sectionbox()
