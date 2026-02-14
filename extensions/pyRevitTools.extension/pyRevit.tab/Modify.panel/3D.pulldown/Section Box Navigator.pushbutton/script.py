@@ -23,7 +23,7 @@ from sectionbox_utils import (
     apply_plan_viewrange_from_sectionbox,
     to_world_identity,
 )
-from sectionbox_actions import toggle, hide, align_to_face
+from sectionbox_actions import toggle, hide, align_to_face, temp_switch
 from sectionbox_geometry import (
     get_section_box_info,
     get_section_box_face_info,
@@ -60,6 +60,7 @@ default_nudge_value = DB.UnitUtils.Convert(
 )
 TOLERANCE = 1e-5
 DATAFILENAME = "SectionBox"
+TEMP_DATAFILE = script.get_instance_data_file("SectionBoxTemp")
 WINDOW_POSITION = "sbnavigator_window_pos"
 
 # --------------------
@@ -511,6 +512,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 self.do_hide()
             elif action_type == "align_to_face":
                 self.do_align_to_face()
+            elif action_type == "temp_switch":
+                self.do_temp_switch()
             elif action_type == "expand_shrink":
                 self.do_expand_shrink(params)
             elif action_type == "align_to_2d_view":
@@ -1146,6 +1149,20 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                     3, self.get_locale_string("FailedToAlignToFaceFormat").format(str(ex)), "error"
                 )
 
+    def do_temp_switch(self):
+        """Temporary switch to a box around elements"""
+        if not isinstance(self.current_view, DB.View3D):
+            return
+        try:
+            temp_switch(doc, TEMP_DATAFILE)
+            self.show_status_message(3, self.get_locale_string("SuccessTempSwitch"), "success")
+        except Exception as ex:
+            # User might have cancelled, don't show error for cancellation
+            if "cancelled" not in str(ex).lower() and "cancel" not in str(ex).lower():
+                self.show_status_message(
+                    3, self.get_locale_string("FailedTempSwitch").format(str(ex)), "error"
+                )
+
     def adjust_section_box(
         self,
         min_x_change=0,
@@ -1597,6 +1614,13 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         """Align section box to face."""
         self.pending_action = {
             "action": "align_to_face",
+        }
+        events.execute_in_revit_context(self.execute_action, self.pending_action)
+
+    def btn_temp_switch_click(self, sender, e):
+        """Temporary switch to a box around elements"""
+        self.pending_action = {
+            "action": "temp_switch",
         }
         events.execute_in_revit_context(self.execute_action, self.pending_action)
 
