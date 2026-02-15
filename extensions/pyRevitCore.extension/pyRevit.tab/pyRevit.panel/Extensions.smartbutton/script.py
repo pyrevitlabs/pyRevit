@@ -353,7 +353,6 @@ class ExtensionsWindow(forms.WPFWindow):
         self._list_options(option_filter=self.search_tb.Text.lower())
 
     def clear_search(self, sender, args):
-        self.search_tb.Text = " "
         self.search_tb.Clear()
         self.extpkgs_lb.ItemsSource = self._exts_list
 
