@@ -14,7 +14,8 @@
     <v:String x:Key="Buttons.UpdateExtension">Atualizar Configurações da Extensão</v:String>
     <v:String x:Key="Buttons.InstallExtension">Instalar Extensão</v:String>
     <v:String x:Key="Buttons.EnableExtension">Habilitar Extensão</v:String>
-    <v:String x:Key="Buttons.RemoveExtension">Remover Extensão</v:String> 
+    <v:String x:Key="Buttons.RemoveExtension">Remover Extensão</v:String>
+    <v:String x:Key="Buttons.DeselectExtension">Desmarcar</v:String> 
     <v:String x:Key="Buttons.ToggleButton.Enable">Habilitar</v:String>
     <v:String x:Key="Buttons.ToggleButton.Disable">Desabilitar</v:String>
     <v:String x:Key="ExtensionsList.ColumnName">Nome</v:String>

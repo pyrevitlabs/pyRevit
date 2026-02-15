@@ -126,7 +126,7 @@ class ExtensionsWindow(forms.WPFWindow):
         elif self.selected_pkgs:
             self._update_ext_action_buttons(self.selected_pkgs)
         else:
-            self.hide_element(self.ext_toggle_b, self.ext_remove_b)
+            self.hide_element(self.ext_toggle_b, self.ext_remove_b, self.ext_deselect_b)
 
     @property
     def selected_pkg(self):
@@ -265,6 +265,7 @@ class ExtensionsWindow(forms.WPFWindow):
         Args:
             ext_pkg_items (list): List of extension packages
         """
+        self.show_element(self.ext_deselect_b)
 
         if len(ext_pkg_items) == 1:
             ext_pkg_item = ext_pkg_items[0]
@@ -335,7 +336,7 @@ class ExtensionsWindow(forms.WPFWindow):
         else:
             self.show_element(self.ext_infopanel)
             self.hide_element(self.ext_infostack)
-            self.hide_element(self.ext_toggle_b, self.ext_remove_b)
+            self.hide_element(self.ext_toggle_b, self.ext_remove_b, self.ext_deselect_b)
             self._update_add_custom_section_for_new()
 
     def _update_add_custom_section_for_selection(self, ext_pkg_item):
@@ -526,6 +527,10 @@ class ExtensionsWindow(forms.WPFWindow):
                 "Error installing extension: \n{}".format(str(custom_install_err)),
                 exitscript=False,
             )
+
+    def deselect_extension(self, sender, args):
+        """Clear list selection so the user can return to add-new-extension mode."""
+        self.extpkgs_lb.SelectedIndex = -1
 
     def toggle_ext_pkg(self, sender, args):
         """Enables/Disables the selected extension, then reloads pyRevit"""

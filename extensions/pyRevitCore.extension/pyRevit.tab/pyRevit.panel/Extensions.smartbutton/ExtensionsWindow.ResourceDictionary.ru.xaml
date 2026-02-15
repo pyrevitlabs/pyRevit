@@ -15,6 +15,7 @@
     <v:String x:Key="Buttons.InstallExtension">Установить расширение</v:String>
     <v:String x:Key="Buttons.EnableExtension">Включить расширение</v:String>
     <v:String x:Key="Buttons.RemoveExtension">Удалить расширение</v:String>
+    <v:String x:Key="Buttons.DeselectExtension">Снять выделение</v:String>
     <v:String x:Key="Buttons.ToggleButton.Enable">Включить</v:String>
     <v:String x:Key="Buttons.ToggleButton.Disable">Выключить</v:String>
     <v:String x:Key="ExtensionsList.ColumnName">Имя</v:String>

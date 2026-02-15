@@ -86,6 +86,7 @@
                             Click="custom_extension_path"
                             Padding="15,5,15,5"
                             MinWidth="160"
+                            MinHeight="28"
                             Margin="0,0,0,5"/>
                     <Label Grid.Row="2" Grid.Column="0" Content="{DynamicResource AddCustomExtension.TokenLabel}" VerticalAlignment="Center" FontSize="14" Margin="0,0,8,0"/>
                     <PasswordBox Grid.Row="2" Grid.Column="1" x:Name="custom_token_pb"
@@ -99,7 +100,8 @@
                             Content="{DynamicResource AddCustomExtension.AddAndInstall}"
                             Click="install_custom_extension"
                             Padding="15,5,15,5"
-                            MinWidth="160"/>
+                            MinWidth="160"
+                            MinHeight="28"/>
                 </Grid>
             </GroupBox>
             <StackPanel x:Name="ext_infostack">
@@ -124,18 +126,19 @@
                 </TextBlock>
                 <Label x:Name="ext_dependencies_l" Foreground="#bb3a1d" Margin="0,10,0,0"/>
             </StackPanel>
-            <Grid Margin="0,15,0,0" IsEnabled="True">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="32" />
-                </Grid.RowDefinitions>
+            <Grid Margin="0,15,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <Button x:Name="ext_toggle_b" Click="toggle_ext_pkg" Content="{DynamicResource Buttons.EnableExtension}"
-                            Grid.Column="0" Grid.Row="0" Margin="3" />
-                <Button x:Name="ext_remove_b" Content="{DynamicResource Buttons.RemoveExtension}" Click="remove_ext_pkg"
-                            Grid.Column="1" Grid.Row="0" Margin="3" />
+                <Button x:Name="ext_deselect_b" Content="{DynamicResource Buttons.DeselectExtension}" Click="deselect_extension"
+                            Grid.Column="0" HorizontalAlignment="Left" Margin="3" Width="100" MinHeight="28" Visibility="Collapsed" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button x:Name="ext_toggle_b" Click="toggle_ext_pkg" Content="{DynamicResource Buttons.EnableExtension}"
+                            Margin="3" Width="200" MinHeight="28" />
+                    <Button x:Name="ext_remove_b" Content="{DynamicResource Buttons.RemoveExtension}" Click="remove_ext_pkg"
+                            Margin="3" Width="200" MinHeight="28" />
+                </StackPanel>
             </Grid>
         </StackPanel>
         <ListView x:Name="extpkgs_lb" SelectionMode="Extended" SelectionChanged="update_ext_info">

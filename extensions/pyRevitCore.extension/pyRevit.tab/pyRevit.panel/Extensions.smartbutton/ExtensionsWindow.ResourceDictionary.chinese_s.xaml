@@ -15,6 +15,7 @@
     <v:String x:Key="Buttons.InstallExtension">安装扩展</v:String>
     <v:String x:Key="Buttons.EnableExtension">启用扩展</v:String>
     <v:String x:Key="Buttons.RemoveExtension">删除扩展</v:String>
+    <v:String x:Key="Buttons.DeselectExtension">取消选择</v:String>
     <v:String x:Key="Buttons.ToggleButton.Enable">启用</v:String>
     <v:String x:Key="Buttons.ToggleButton.Disable">禁用</v:String>
     <v:String x:Key="ExtensionsList.ColumnName">名称</v:String>
