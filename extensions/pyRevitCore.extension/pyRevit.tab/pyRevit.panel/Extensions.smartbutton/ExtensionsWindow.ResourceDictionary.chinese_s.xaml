@@ -36,4 +36,15 @@
     <v:String xml:space="preserve" x:Key="Extension.InstalledPath">安装位置：
 {}</v:String>
     <v:String x:Key="Extension.Dependencies">依赖项：</v:String>
+    <v:String x:Key="AddCustomExtension.GroupHeader">从 Git 添加自定义扩展</v:String>
+    <v:String x:Key="AddCustomExtension.GitUrlLabel">Git URL：</v:String>
+    <v:String x:Key="AddCustomExtension.GitUrlToolTip">例如 https://github.com/user/repo.git 或 https://gitlab.com/user/repo.git</v:String>
+    <v:String x:Key="AddCustomExtension.PathLabel">路径（可选）：</v:String>
+    <v:String x:Key="AddCustomExtension.PathToolTip">如果为空，将使用默认扩展文件夹</v:String>
+    <v:String x:Key="AddCustomExtension.PickInstallationPath">选择安装路径</v:String>
+    <v:String x:Key="AddCustomExtension.NameLabel">名称：</v:String>
+    <v:String x:Key="AddCustomExtension.NameToolTip">扩展名称（例如 MyTools）</v:String>
+    <v:String x:Key="AddCustomExtension.TokenLabel">令牌（可选）：</v:String>
+    <v:String x:Key="AddCustomExtension.TokenToolTip">公开仓库请留空</v:String>
+    <v:String x:Key="AddCustomExtension.AddAndInstall">添加并安装</v:String>
 </ResourceDictionary>

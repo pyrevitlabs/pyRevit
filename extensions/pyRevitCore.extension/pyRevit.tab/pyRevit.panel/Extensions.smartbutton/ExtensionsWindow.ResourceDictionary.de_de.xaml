@@ -36,4 +36,15 @@
     <v:String xml:space="preserve" x:Key="Extension.InstalledPath">Installiert unter:
 {}</v:String>
     <v:String x:Key="Extension.Dependencies">Abhängigkeiten:</v:String>
+    <v:String x:Key="AddCustomExtension.GroupHeader">Benutzerdefinierte Erweiterung aus Git hinzufügen</v:String>
+    <v:String x:Key="AddCustomExtension.GitUrlLabel">Git-URL:</v:String>
+    <v:String x:Key="AddCustomExtension.GitUrlToolTip">z. B. https://github.com/user/repo.git oder https://gitlab.com/user/repo.git</v:String>
+    <v:String x:Key="AddCustomExtension.PathLabel">Pfad (optional):</v:String>
+    <v:String x:Key="AddCustomExtension.PathToolTip">Wenn leer, wird der Standard-Erweiterungsordner verwendet</v:String>
+    <v:String x:Key="AddCustomExtension.PickInstallationPath">Installationspfad wählen</v:String>
+    <v:String x:Key="AddCustomExtension.NameLabel">Name:</v:String>
+    <v:String x:Key="AddCustomExtension.NameToolTip">Erweiterungsname (z. B. MyTools)</v:String>
+    <v:String x:Key="AddCustomExtension.TokenLabel">Token (optional):</v:String>
+    <v:String x:Key="AddCustomExtension.TokenToolTip">Leer lassen für öffentliche Repositories</v:String>
+    <v:String x:Key="AddCustomExtension.AddAndInstall">Hinzufügen und installieren</v:String>
 </ResourceDictionary>

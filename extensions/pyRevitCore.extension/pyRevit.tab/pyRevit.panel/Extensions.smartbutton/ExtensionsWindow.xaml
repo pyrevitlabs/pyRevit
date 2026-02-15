@@ -59,7 +59,7 @@
             </Grid>
             
             <!-- Second Row: Add Custom Extension -->
-            <GroupBox Grid.Row="1" Header="Add Custom Extension from Git" Margin="0,5,0,0" Padding="10">
+            <GroupBox Grid.Row="1" Header="{DynamicResource AddCustomExtension.GroupHeader}" Margin="0,5,0,0" Padding="10">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -69,18 +69,18 @@
                     
                     <!-- Git URL Input -->
                     <DockPanel Grid.Row="0" Margin="0,0,0,5">
-                        <Label Content="Git URL:" Width="120" VerticalAlignment="Center" FontSize="14"/>
+                        <Label Content="{DynamicResource AddCustomExtension.GitUrlLabel}" Width="150" VerticalAlignment="Center" FontSize="14"/>
                         <TextBox x:Name="custom_git_url_tb" 
                                  Padding="5,0,5,0" 
                                  FontFamily="Consolas"
                                  FontSize="14"
                                  VerticalContentAlignment="Center"
-                                 ToolTip="e.g., https://github.com/user/repo.git or https://gitlab.com/user/repo.git"/>
+                                 ToolTip="{DynamicResource AddCustomExtension.GitUrlToolTip}"/>
                     </DockPanel>
                     
                     <!-- Installation path and Pick button (below Git URL) -->
                     <DockPanel Grid.Row="1" Margin="0,0,0,5">
-                        <Label Content="Path (optional):" Width="120" VerticalAlignment="Center" FontSize="14"/>
+                        <Label Content="{DynamicResource AddCustomExtension.PathLabel}" Width="150" VerticalAlignment="Center" FontSize="14"/>
                         <Button x:Name="path_custom_ext_b" 
                                 DockPanel.Dock="Right"
                                 Content="{DynamicResource AddCustomExtension.PickInstallationPath}" 
@@ -94,7 +94,7 @@
                                    TextWrapping="NoWrap"
                                    TextTrimming="CharacterEllipsis"
                                    FontSize="14"
-                                   ToolTip="If empty, will use the default extensions folder"/>
+                                   ToolTip="{DynamicResource AddCustomExtension.PathToolTip}"/>
                     </DockPanel>
                     
                     <!-- Extension Name, Token, and Install Button -->
@@ -106,21 +106,21 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <Label Grid.Column="0" Content="Name:" Width="120" VerticalAlignment="Center" FontSize="14" Margin="0,0,5,0"/>
+                        <Label Grid.Column="0" Content="{DynamicResource AddCustomExtension.NameLabel}" Width="150" VerticalAlignment="Center" FontSize="14" Margin="0,0,5,0"/>
                         <TextBox x:Name="custom_ext_name_tb" 
                                  Grid.Column="1"
                                  Padding="5,0,5,0"
                                  FontSize="14"
                                  VerticalContentAlignment="Center"
-                                 ToolTip="Extension name (e.g., MyTools)"/>
-                        <Label Grid.Column="2" Content="Token (optional):" Margin="15,0,5,0" VerticalAlignment="Center" FontSize="14"/>
+                                 ToolTip="{DynamicResource AddCustomExtension.NameToolTip}"/>
+                        <Label Grid.Column="2" Content="{DynamicResource AddCustomExtension.TokenLabel}" Margin="15,0,5,0" VerticalAlignment="Center" FontSize="14"/>
                         <PasswordBox x:Name="custom_token_pb" 
                                      Grid.Column="3"
                                      Padding="5,0,5,0" 
                                      FontFamily="Consolas"
                                      VerticalContentAlignment="Center"
                                      Margin="0,0,10,0"
-                                     ToolTip="Leave empty for public repos"/>
+                                     ToolTip="{DynamicResource AddCustomExtension.TokenToolTip}"/>
                         <Button x:Name="install_custom_ext_b" 
                                 Grid.Column="4"
                                 Content="{DynamicResource AddCustomExtension.AddAndInstall}" 

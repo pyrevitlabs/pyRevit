@@ -36,6 +36,15 @@
     <v:String xml:space="preserve" x:Key="Extension.InstalledPath">Installed under:
 {}</v:String>
     <v:String x:Key="Extension.Dependencies">Dependencies:</v:String>
-    <v:String x:Key="AddCustomExtension.AddAndInstall">Add and install</v:String>
+    <v:String x:Key="AddCustomExtension.GroupHeader">Add Custom Extension from Git</v:String>
+    <v:String x:Key="AddCustomExtension.GitUrlLabel">Git URL:</v:String>
+    <v:String x:Key="AddCustomExtension.GitUrlToolTip">e.g., https://github.com/user/repo.git or https://gitlab.com/user/repo.git</v:String>
+    <v:String x:Key="AddCustomExtension.PathLabel">Path (optional):</v:String>
+    <v:String x:Key="AddCustomExtension.PathToolTip">If empty, will use the default extensions folder</v:String>
     <v:String x:Key="AddCustomExtension.PickInstallationPath">Pick Installation path</v:String>
+    <v:String x:Key="AddCustomExtension.NameLabel">Name:</v:String>
+    <v:String x:Key="AddCustomExtension.NameToolTip">Extension name (e.g., MyTools)</v:String>
+    <v:String x:Key="AddCustomExtension.TokenLabel">Token (optional):</v:String>
+    <v:String x:Key="AddCustomExtension.TokenToolTip">Leave empty for public repos</v:String>
+    <v:String x:Key="AddCustomExtension.AddAndInstall">Add and install</v:String>
 </ResourceDictionary>

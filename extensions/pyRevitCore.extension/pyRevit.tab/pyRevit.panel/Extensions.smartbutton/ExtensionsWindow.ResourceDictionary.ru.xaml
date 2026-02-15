@@ -36,4 +36,15 @@
     <v:String xml:space="preserve" x:Key="Extension.InstalledPath">Папка установки:
 {}</v:String>
     <v:String x:Key="Extension.Dependencies">Зависимости:</v:String>
+    <v:String x:Key="AddCustomExtension.GroupHeader">Добавить своё расширение из Git</v:String>
+    <v:String x:Key="AddCustomExtension.GitUrlLabel">URL Git:</v:String>
+    <v:String x:Key="AddCustomExtension.GitUrlToolTip">напр., https://github.com/user/repo.git или https://gitlab.com/user/repo.git</v:String>
+    <v:String x:Key="AddCustomExtension.PathLabel">Путь (необязательно):</v:String>
+    <v:String x:Key="AddCustomExtension.PathToolTip">Если пусто, будет использована папка расширений по умолчанию</v:String>
+    <v:String x:Key="AddCustomExtension.PickInstallationPath">Выбрать путь установки</v:String>
+    <v:String x:Key="AddCustomExtension.NameLabel">Имя:</v:String>
+    <v:String x:Key="AddCustomExtension.NameToolTip">Имя расширения (напр., MyTools)</v:String>
+    <v:String x:Key="AddCustomExtension.TokenLabel">Токен (необязательно):</v:String>
+    <v:String x:Key="AddCustomExtension.TokenToolTip">Оставьте пустым для публичных репозиториев</v:String>
+    <v:String x:Key="AddCustomExtension.AddAndInstall">Добавить и установить</v:String>
 </ResourceDictionary>

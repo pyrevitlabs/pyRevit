@@ -36,4 +36,15 @@
     <v:String xml:space="preserve" x:Key="Extension.InstalledPath">Instalada sob:
 {}</v:String>
     <v:String x:Key="Extension.Dependencies">Dependências:</v:String>
+    <v:String x:Key="AddCustomExtension.GroupHeader">Adicionar extensão personalizada do Git</v:String>
+    <v:String x:Key="AddCustomExtension.GitUrlLabel">URL do Git:</v:String>
+    <v:String x:Key="AddCustomExtension.GitUrlToolTip">ex.: https://github.com/usuario/repo.git ou https://gitlab.com/usuario/repo.git</v:String>
+    <v:String x:Key="AddCustomExtension.PathLabel">Caminho (opcional):</v:String>
+    <v:String x:Key="AddCustomExtension.PathToolTip">Se vazio, será usada a pasta de extensões padrão</v:String>
+    <v:String x:Key="AddCustomExtension.PickInstallationPath">Escolher caminho de instalação</v:String>
+    <v:String x:Key="AddCustomExtension.NameLabel">Nome:</v:String>
+    <v:String x:Key="AddCustomExtension.NameToolTip">Nome da extensão (ex.: MyTools)</v:String>
+    <v:String x:Key="AddCustomExtension.TokenLabel">Token (opcional):</v:String>
+    <v:String x:Key="AddCustomExtension.TokenToolTip">Deixar vazio para repositórios públicos</v:String>
+    <v:String x:Key="AddCustomExtension.AddAndInstall">Adicionar e instalar</v:String>
 </ResourceDictionary>
