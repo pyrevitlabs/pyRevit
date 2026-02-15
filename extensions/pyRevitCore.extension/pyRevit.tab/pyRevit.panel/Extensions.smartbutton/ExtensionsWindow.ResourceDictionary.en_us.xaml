@@ -36,4 +36,5 @@
     <v:String xml:space="preserve" x:Key="Extension.InstalledPath">Installed under:
 {}</v:String>
     <v:String x:Key="Extension.Dependencies">Dependencies:</v:String>
+    <v:String x:Key="AddCustomExtension.AddAndInstall">Add and install</v:String>
 </ResourceDictionary>

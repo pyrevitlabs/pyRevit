@@ -111,7 +111,7 @@
                                 HorizontalAlignment="Right"/>
                         
                         <Button x:Name="install_custom_ext_b" 
-                                Content="Install Extension" 
+                                Content="{DynamicResource AddCustomExtension.AddAndInstall}" 
                                 Click="install_custom_extension"
                                 Padding="15,5,15,5"
                                 Margin="10,0,0,0"
