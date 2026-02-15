@@ -1069,7 +1069,20 @@ namespace pyRevitExtensionParser
                 {
                     // Use default locale for initial title/tooltip assignment
                     var bundleTitle = GetLocalizedValue(bundleInComponent.Titles);
+                    if (string.IsNullOrEmpty(bundleTitle) &&
+                        bundleInComponent.Titles != null &&
+                        bundleInComponent.Titles.TryGetValue("en_us", out var bundleTitleEnUs))
+                    {
+                        bundleTitle = bundleTitleEnUs;
+                    }
+
                     var bundleTooltip = GetLocalizedValue(bundleInComponent.Tooltips);
+                    if (string.IsNullOrEmpty(bundleTooltip) &&
+                        bundleInComponent.Tooltips != null &&
+                        bundleInComponent.Tooltips.TryGetValue("en_us", out var bundleTooltipEnUs))
+                    {
+                        bundleTooltip = bundleTooltipEnUs;
+                    }
                     
                     if (!string.IsNullOrEmpty(bundleTitle))
                         title = bundleTitle;

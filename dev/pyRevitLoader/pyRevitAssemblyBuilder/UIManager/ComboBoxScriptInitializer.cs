@@ -71,6 +71,32 @@ namespace pyRevitAssemblyBuilder.UIManager
         }
 
         /// <summary>
+        /// pyRevit-compatible alias for adding one item.
+        /// Supports string, [name, text], [name, text, group], and ComboBoxMemberData.
+        /// </summary>
+        public RevitComboBoxMember add_item(object itemSpec, string defaultGroupName = null)
+        {
+            if (_comboBox == null || itemSpec == null)
+                return null;
+
+            if (itemSpec is ComboBoxMemberData memberData)
+                return _comboBox.AddItem(memberData);
+
+            if (TryCreateMemberData(itemSpec, defaultGroupName, out var parsedMemberData))
+                return _comboBox.AddItem(parsedMemberData);
+
+            return null;
+        }
+
+        /// <summary>
+        /// pyRevit-compatible alias for adding one item from plain values.
+        /// </summary>
+        public RevitComboBoxMember add_item(string name, string itemText, string groupName = null)
+        {
+            return AddItem(name, itemText, groupName);
+        }
+
+        /// <summary>
         /// Adds multiple items using plain values.
         /// Supported item formats: string, [name, text], [name, text, group].
         /// </summary>
@@ -84,6 +110,29 @@ namespace pyRevitAssemblyBuilder.UIManager
                 if (!TryCreateMemberData(itemSpec, defaultGroupName, out var memberData))
                     continue;
                 _comboBox.AddItem(memberData);
+            }
+        }
+
+        /// <summary>
+        /// .NET-style alias for adding multiple plain item specs.
+        /// </summary>
+        public void AddItems(IEnumerable itemSpecs, string defaultGroupName = null)
+        {
+            add_items(itemSpecs, defaultGroupName);
+        }
+
+        /// <summary>
+        /// .NET-style overload for adding typed ComboBox member data entries.
+        /// </summary>
+        public void AddItems(IEnumerable<ComboBoxMemberData> memberDataItems)
+        {
+            if (_comboBox == null || memberDataItems == null)
+                return;
+
+            foreach (var memberData in memberDataItems)
+            {
+                if (memberData != null)
+                    _comboBox.AddItem(memberData);
             }
         }
 
