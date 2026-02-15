@@ -160,43 +160,6 @@ def align_to_face(doc, uidoc):
         logger.error("Error: {}".format(str(ex)))
 
 
-def _get_elements_bounding_box(elements, padding=PADDING):
-    if not elements:
-        return None
-
-    min_x = min_y = min_z = float("inf")
-    max_x = max_y = max_z = float("-inf")
-
-    for elem in elements:
-        try:
-            bbox = elem.get_BoundingBox(None)
-            if not bbox:
-                continue
-
-            min_pt = bbox.Min
-            max_pt = bbox.Max
-
-            min_x = min(min_x, min_pt.X)
-            min_y = min(min_y, min_pt.Y)
-            min_z = min(min_z, min_pt.Z)
-            max_x = max(max_x, max_pt.X)
-            max_y = max(max_y, max_pt.Y)
-            max_z = max(max_z, max_pt.Z)
-
-        except Exception:
-            continue
-
-    if min_x == float("inf"):
-        return None
-
-    new_bbox = DB.BoundingBoxXYZ()
-
-    new_bbox.Min = DB.XYZ(min_x - padding, min_y - padding, min_z - padding)
-    new_bbox.Max = DB.XYZ(max_x + padding, max_y + padding, max_z + padding)
-
-    return new_bbox
-
-
 def temp_switch(doc, temp_datafilename):
     current_view = doc.ActiveView
     if not isinstance(current_view, DB.View3D):
@@ -248,7 +211,7 @@ def temp_switch(doc, temp_datafilename):
                 if current_bbox:
                     current_state["bbox_data"] = revit.serialize(current_bbox)
 
-            new_bbox = _get_elements_bounding_box(selection)
+            new_bbox = revit.query.get_elements_bounding_box(selection, padding=PADDING)
 
             if new_bbox:
                 with revit.Transaction("Setting new sectionbox"):

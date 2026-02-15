@@ -79,43 +79,6 @@ if scope == "Active State":
         toggle_sectionbox_active()
 
 
-def get_elements_bounding_box(elements):
-    if not elements:
-        return None
-
-    min_x = min_y = min_z = float("inf")
-    max_x = max_y = max_z = float("-inf")
-
-    for elem in elements:
-        try:
-            bbox = elem.get_BoundingBox(None)
-            if not bbox:
-                continue
-
-            min_pt = bbox.Min
-            max_pt = bbox.Max
-
-            min_x = min(min_x, min_pt.X)
-            min_y = min(min_y, min_pt.Y)
-            min_z = min(min_z, min_pt.Z)
-            max_x = max(max_x, max_pt.X)
-            max_y = max(max_y, max_pt.Y)
-            max_z = max(max_z, max_pt.Z)
-
-        except Exception:
-            continue
-
-    if min_x == float("inf"):
-        return None
-
-    new_bbox = DB.BoundingBoxXYZ()
-
-    new_bbox.Min = DB.XYZ(min_x - PADDING, min_y - PADDING, min_z - PADDING)
-    new_bbox.Max = DB.XYZ(max_x + PADDING, max_y + PADDING, max_z + PADDING)
-
-    return new_bbox
-
-
 def temp_switch_sectionbox():
     if not isinstance(active_view, DB.View3D):
         logger.error("Not a 3D view. Operation canceled.")
@@ -163,7 +126,7 @@ def temp_switch_sectionbox():
                 if current_bbox:
                     current_state["bbox_data"] = revit.serialize(current_bbox)
 
-            new_bbox = get_elements_bounding_box(selection)
+            new_bbox = revit.query.get_elements_bounding_box(selection, padding=PADDING)
 
             if new_bbox:
                 active_view.SetSectionBox(new_bbox)
