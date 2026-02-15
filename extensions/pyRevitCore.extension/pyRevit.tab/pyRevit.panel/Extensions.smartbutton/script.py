@@ -121,6 +121,13 @@ class ExtensionsWindow(forms.WPFWindow):
         else:
             self._update_add_custom_section_for_new()
 
+        if self.selected_pkg:
+            self._update_ext_action_buttons([self.selected_pkg])
+        elif self.selected_pkgs:
+            self._update_ext_action_buttons(self.selected_pkgs)
+        else:
+            self.hide_element(self.ext_toggle_b, self.ext_remove_b)
+
     @property
     def selected_pkg(self):
         """
