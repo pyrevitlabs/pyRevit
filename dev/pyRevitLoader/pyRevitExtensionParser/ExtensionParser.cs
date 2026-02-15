@@ -246,7 +246,7 @@ namespace pyRevitExtensionParser
                 {
                     var jsonContent = File.ReadAllText(extensionJsonPath);
                     var json = JObject.Parse(jsonContent);
-                    
+
                     // Read templates section if present
                     var templates = json["templates"] as JObject;
                     if (templates != null)
@@ -257,7 +257,7 @@ namespace pyRevitExtensionParser
                             extensionTemplates[prop.Name] = prop.Value.ToString();
                         }
                     }
-                    
+
                     // Also read top-level author if templates.author doesn't exist
                     if (!extensionTemplates.ContainsKey("author"))
                     {
@@ -273,10 +273,11 @@ namespace pyRevitExtensionParser
                     // If JSON parsing fails, continue without extension.json templates
                 }
             }
-            
+
             var children = ParseComponents(extDir, extName, null, extensionTemplates.Count > 0 ? extensionTemplates : null);
 
-            // Read extension config from pyRevit config file (cached)
+            // Read extension config from pyRevit config file (cached).
+            // Config is keyed by folder name (e.g. [extension_test.extension]) so it matches install and Python.
             var config = GetConfig();
             var extConfig = config.ParseExtensionByName(extName);
 
