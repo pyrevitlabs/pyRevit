@@ -534,7 +534,7 @@ class ExtensionsWindow(forms.WPFWindow):
             )
 
     def toggle_ext_pkg(self, sender, args):
-        """Enables/Disables the selected exension, then reloads pyRevit"""
+        """Enables/Disables the selected extension, then reloads pyRevit"""
         if self.selected_pkg:
             self.selected_pkg.ext_pkg.toggle_package()
         elif self.selected_pkgs:
@@ -544,7 +544,7 @@ class ExtensionsWindow(forms.WPFWindow):
         call_reload()
 
     def remove_ext_pkg(self, sender, args):
-        """Removes the selected exension, then reloads pyRevit"""
+        """Removes the selected extension, then reloads pyRevit"""
 
         try:
             extpkgs.remove(self.selected_pkg.ext_pkg)
