@@ -267,12 +267,6 @@ class ExtensionsWindow(forms.WPFWindow):
         if len(ext_pkg_items) == 1:
             ext_pkg_item = ext_pkg_items[0]
             if ext_pkg_item.ext_pkg.is_installed:
-                # Action Button: Update
-                if ext_pkg_item.ext_pkg.builtin:
-                    self.hide_element(self.ext_update_b)
-                else:
-                    self.show_element(self.ext_update_b)
-
                 # Action Button: Install
                 self.hide_element(self.ext_install_b)
 
@@ -288,7 +282,6 @@ class ExtensionsWindow(forms.WPFWindow):
                 self.show_element(self.ext_install_b)
                 self.hide_element(self.ext_toggle_b, self.ext_remove_b)
         elif len(ext_pkg_items) > 1:
-            self.hide_element(self.ext_update_b)
             self.hide_element(self.ext_install_b)
             self.hide_element(self.ext_remove_b)
             # hide the button if includes any cli extensions
@@ -306,34 +299,6 @@ class ExtensionsWindow(forms.WPFWindow):
                     return
                 # hide the button if mixed enabled and disabled
                 self.hide_element(self.ext_toggle_b)
-
-    def _update_ext_settings_panel(self, ext_pkg_item):
-        """Updates the package settings panel based on the provided
-        package in ext_pkg_item
-
-        Args:
-            ext_pkg_item: Extension package to update the settings ui
-
-        """
-
-        if ext_pkg_item.Builtin:
-            self.hide_element(self.extCredentials)
-            self.hide_element(self.ext_update_b)
-        else:
-            self.show_element(self.extCredentials)
-            self.show_element(self.ext_update_b)
-            try:
-                # Is package using a private git repo?
-                self.privaterepo_cb.IsChecked = ext_pkg_item.ext_pkg.config.private_repo
-                self.privaterepo_cb.UpdateLayout()
-
-                # Set current token for the private repo
-                token_value = getattr(ext_pkg_item.ext_pkg.config, "token", None)
-
-                self.repotoken_pb.Password = token_value
-            except Exception:
-                self.privaterepo_cb.IsChecked = False
-                self.repotoken_pb.Password = ""
 
     def _list_options(self, option_filter=None):
         if option_filter:
@@ -365,20 +330,11 @@ class ExtensionsWindow(forms.WPFWindow):
             self.show_element(self.ext_infopanel)
             self._update_ext_info_panel(self.selected_pkg)
             self._update_ext_action_buttons([self.selected_pkg])
-            self._update_ext_settings_panel(self.selected_pkg)
         elif self.selected_pkgs:
             self.hide_element(self.ext_infostack)
-            self.hide_element(self.extCredentials)
             self._update_ext_action_buttons(self.selected_pkgs)
         else:
             self.hide_element(self.ext_infopanel)
-
-    def handle_private_repo(self, sender, args):
-        """Callback for updating private status of a package"""
-        if self.privaterepo_cb.IsChecked:
-            self.accountcreds_dp.IsEnabled = True
-        else:
-            self.accountcreds_dp.IsEnabled = False
 
     def handle_install_button_popup(self, sender, args):
         """Callback for Install package destination context menu
@@ -392,25 +348,6 @@ class ExtensionsWindow(forms.WPFWindow):
             framework.Controls.Primitives.PlacementMode.Bottom
         )
         sender.ContextMenu.IsOpen = True
-
-    def save_pkg_settings(self, sender, args):
-        """Reads package configuration from UI and saves to package config"""
-
-        try:
-            self.selected_pkg.ext_pkg.config.private_repo = (
-                self.privaterepo_cb.IsChecked
-            )
-
-            token_value = self.repotoken_pb.Password
-            self.selected_pkg.ext_pkg.config.token = token_value
-
-            user_config.save_changes()
-            self.Close()
-        except Exception as pkg_sett_save_err:
-            logger.error(
-                "Error saving extension package settings."
-                " | {}".format(pkg_sett_save_err)
-            )
 
     def install_ext_pkg(self, sender, args):
         """Installs the selected extension, then reloads pyRevit"""

@@ -155,34 +155,6 @@
                 <Label x:Name="ext_installed_l" Margin="0,10,0,0"/>
                 <Label x:Name="ext_dependencies_l" Foreground="#bb3a1d" Margin="0,10,0,0"/>
             </StackPanel>
-            <GroupBox x:Name="extCredentials" Header="{DynamicResource ExtensionSettings.GroupName}" Margin="0,10,0,0">
-                <StackPanel>
-                    <CheckBox x:Name="privaterepo_cb" Margin="10,10,0,0" IsChecked="False"
-                                  Click="handle_private_repo"
-                                  Checked="handle_private_repo"
-                                  Unchecked="handle_private_repo"
-                              Content="{DynamicResource ExtensionSettings.PrivateRepositoryCheck}">
-                    </CheckBox>
-                    <DockPanel x:Name="accountcreds_dp" Margin="23,0,0,10" IsEnabled="False" >
-                        <TextBlock DockPanel.Dock="Top" Margin="0,10,0,5" 
-                                   TextWrapping="Wrap" FontSize="11" Foreground="Gray">
-                            <Run Text="Personal Access Token (PAT) required for private repositories."/>
-                            <LineBreak/>
-                            <Run Text="GitHub: Settings > Developer settings > Personal access tokens > Tokens (classic)"/>
-                            <LineBreak/>
-                            <Run Text="GitLab: User Settings > Access Tokens"/>
-                            <LineBreak/>
-                            <Run Text="Required scopes: 'repo' (GitHub) or 'read_repository' (GitLab)"/>
-                        </TextBlock>
-                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                            <Label Content="Access Token:"/>
-                            <PasswordBox x:Name="repotoken_pb"  Width="300"
-                                     Padding="5,0,5,0" FontFamily="Consolas"
-                                     VerticalContentAlignment="Center"/>
-                        </StackPanel>
-                    </DockPanel>
-                </StackPanel>
-            </GroupBox>
             <Grid Margin="0,15,0,0" IsEnabled="True">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="32" />
@@ -191,12 +163,9 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <Button x:Name="ext_update_b" Content="{DynamicResource Buttons.UpdateExtension}" Click="save_pkg_settings"
-                            Grid.Column="0" Grid.Row="0" Margin="3" />
                 <Button x:Name="ext_install_b" Content="{DynamicResource Buttons.InstallExtension}" Click="handle_install_button_popup"
-                            Grid.Column="1" Grid.Row="0" Margin="3"
+                            Grid.Column="0" Grid.Row="0" Margin="3"
                             ContextMenuService.IsEnabled="False">
                     <Button.ContextMenu>
                         <ContextMenu >
@@ -204,9 +173,9 @@
                     </Button.ContextMenu>
                 </Button>
                 <Button x:Name="ext_toggle_b" Click="toggle_ext_pkg" Content="{DynamicResource Buttons.EnableExtension}"
-                            Grid.Column="2" Grid.Row="0" Margin="3" />
+                            Grid.Column="1" Grid.Row="0" Margin="3" />
                 <Button x:Name="ext_remove_b" Content="{DynamicResource Buttons.RemoveExtension}" Click="remove_ext_pkg"
-                            Grid.Column="3" Grid.Row="0" Margin="3" />
+                            Grid.Column="2" Grid.Row="0" Margin="3" />
             </Grid>
         </StackPanel>
         <ListView x:Name="extpkgs_lb" SelectionMode="Extended" SelectionChanged="update_ext_info">
