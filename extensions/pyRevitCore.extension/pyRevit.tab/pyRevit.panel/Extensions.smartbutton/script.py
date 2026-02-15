@@ -1,11 +1,13 @@
 """Add or remove pyRevit extensions."""
-#pylint: disable=E0401,W0703,W0613,C0103,C0111
+
+# pylint: disable=E0401,W0703,W0613,C0103,C0111
 import re
 
-from pyrevit import framework
+from pyrevit import framework, os
 from pyrevit import coreutils
 from pyrevit import script
 from pyrevit import forms
+from pyrevit import EXEC_PARAMS
 from pyrevit import extensions as exts
 import pyrevit.extensions.extpackages as extpkgs
 
@@ -45,11 +47,9 @@ class ExtensionPackageListItem:
         self.ext_pkg = extension_package
         # setting up pretty type name that shows up on the list
         self.Type = self.locale.get_locale_string("Extension.TypeUnknown")
-        if self.ext_pkg.type == \
-                exts.ExtensionTypes.LIB_EXTENSION:
+        if self.ext_pkg.type == exts.ExtensionTypes.LIB_EXTENSION:
             self.Type = self.locale.get_locale_string("Extension.TypeIronLibrary")
-        elif self.ext_pkg.type == \
-                exts.ExtensionTypes.UI_EXTENSION:
+        elif self.ext_pkg.type == exts.ExtensionTypes.UI_EXTENSION:
             self.Type = self.locale.get_locale_string("Extension.TypeUITools")
 
         # setting up other list data
@@ -63,22 +63,29 @@ class ExtensionPackageListItem:
         self.GitURL = self.ext_pkg.url
         self.URL = self.ext_pkg.website
 
-        self.Installed = self.locale.get_locale_string('Extension.Installed') if self.ext_pkg.is_installed\
-            else self.locale.get_locale_string('Extension.NotInstalled')
+        self.Installed = (
+            self.locale.get_locale_string("Extension.Installed")
+            if self.ext_pkg.is_installed
+            else self.locale.get_locale_string("Extension.NotInstalled")
+        )
 
         # setting the disabled/enabled pretty name
         if self.ext_pkg.is_installed:
-            self.Status = self.locale.get_locale_string('Extension.Enabled') if not self.ext_pkg.config.disabled\
-                else self.locale.get_locale_string('Extension.Disabled')
+            self.Status = (
+                self.locale.get_locale_string("Extension.Enabled")
+                if not self.ext_pkg.config.disabled
+                else self.locale.get_locale_string("Extension.Disabled")
+            )
 
             if self.ext_pkg.version:
                 self.Version = self.ext_pkg.version[:7]
         else:
-            self.Status = self.Version = '--'
+            self.Status = self.Version = "--"
 
     def searchable_values(self):
-        return ' '.join([self.Type, self.Name, self.Desciption,
-                         self.Author, self.Status])
+        return " ".join(
+            [self.Type, self.Name, self.Desciption, self.Author, self.Status]
+        )
 
 
 class InstallPackageMenuItem(framework.Controls.MenuItem):
@@ -95,12 +102,11 @@ class InstallPackageMenuItem(framework.Controls.MenuItem):
 
     """
 
-    install_path = ''
+    install_path = ""
 
 
 class ExtensionsWindow(forms.WPFWindow):
-    """Extension window managing installation and removal of extensions
-    """
+    """Extension window managing installation and removal of extensions"""
 
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name)
@@ -139,12 +145,12 @@ class ExtensionsWindow(forms.WPFWindow):
 
         """
 
-        #pylint: disable=E1101,W0201
         for ext_dir in ext_dirs_list:
             ext_dir_install_menu_item = InstallPackageMenuItem()
             ext_dir_install_menu_item.install_path = ext_dir
-            ext_dir_install_menu_item.Header = \
-                self.get_locale_string("Extension.InstallPath").format(ext_dir)
+            ext_dir_install_menu_item.Header = self.get_locale_string(
+                "Extension.InstallPath"
+            ).format(ext_dir)
             ext_dir_install_menu_item.Click += self.install_ext_pkg
             self.ext_install_b.ContextMenu.AddChild(ext_dir_install_menu_item)
 
@@ -161,8 +167,9 @@ class ExtensionsWindow(forms.WPFWindow):
         for plugin_ext in ext_pkgs_list:
             self._exts_list.append(ExtensionPackageListItem(self, plugin_ext))
 
-        self.extpkgs_lb.ItemsSource = \
-            sorted(self._exts_list, key=lambda x: x.Builtin, reverse=True)
+        self.extpkgs_lb.ItemsSource = sorted(
+            self._exts_list, key=lambda x: x.Builtin, reverse=True
+        )
         self.extpkgs_lb.SelectedIndex = 0
 
     def _update_ext_info_panel(self, ext_pkg_item):
@@ -176,86 +183,94 @@ class ExtensionsWindow(forms.WPFWindow):
 
         # Update the name
         self.ext_name_l.Content = ext_pkg_item.Name
-        self.ext_desc_l.Text = '{}  '.format(ext_pkg_item.Desciption)
+        self.ext_desc_l.Text = "{}  ".format(ext_pkg_item.Desciption)
 
         # Update the description and web link
         if ext_pkg_item.URL:
-            self.ext_gitlink_t.Text = '({})'.format(ext_pkg_item.URL)
+            self.ext_gitlink_t.Text = "({})".format(ext_pkg_item.URL)
             self.ext_gitlink_hl.NavigateUri = framework.Uri(ext_pkg_item.URL)
         else:
-            self.ext_gitlink_t.Text = ''
+            self.ext_gitlink_t.Text = ""
 
         # Update the author and profile link
         if ext_pkg_item.Author:
             self.ext_author_t.Text = ext_pkg_item.Author
             self.ext_author_nolink_t.Text = ext_pkg_item.Author
             if ext_pkg_item.AuthorProfile:
-                self.ext_authorlink_hl.NavigateUri = \
-                    framework.Uri(ext_pkg_item.AuthorProfile)
+                self.ext_authorlink_hl.NavigateUri = framework.Uri(
+                    ext_pkg_item.AuthorProfile
+                )
                 self.show_element(self.ext_author_t)
                 self.hide_element(self.ext_author_nolink_t)
             else:
                 self.hide_element(self.ext_author_t)
                 self.show_element(self.ext_author_nolink_t)
         else:
-            self.ext_author_t.Text = ''
+            self.ext_author_t.Text = ""
 
         # Update the repo link
         if ext_pkg_item.GitURL:
             self.ext_repolink_t.Text = ext_pkg_item.GitURL
-            self.ext_repolink_hl.NavigateUri = \
-                framework.Uri(ext_pkg_item.GitURL)
+            self.ext_repolink_hl.NavigateUri = framework.Uri(ext_pkg_item.GitURL)
         else:
-            self.ext_repolink_t.Text = ''
+            self.ext_repolink_t.Text = ""
 
         # Update Installed folder info
         if ext_pkg_item.ext_pkg.is_installed:
             self.show_element(self.ext_installed_l)
-            self.ext_installed_l.Content = \
-                self.get_locale_string("Extension.InstalledPath") \
-                .format(ext_pkg_item.ext_pkg.is_installed)
+            self.ext_installed_l.Content = self.get_locale_string(
+                "Extension.InstalledPath"
+            ).format(ext_pkg_item.ext_pkg.is_installed)
         else:
             self.hide_element(self.ext_installed_l)
 
         # Update dependencies
         if ext_pkg_item.ext_pkg.dependencies:
             self.show_element(self.ext_dependencies_l)
-            self.ext_dependencies_l.Content = \
-                self.get_locale_string("Extension.Dependencies") + '\n' + \
-                ', '.join(ext_pkg_item.ext_pkg.dependencies)
+            self.ext_dependencies_l.Content = (
+                self.get_locale_string("Extension.Dependencies")
+                + "\n"
+                + ", ".join(ext_pkg_item.ext_pkg.dependencies)
+            )
         else:
             self.hide_element(self.ext_dependencies_l)
 
     def _update_toggle_button(self, enable=True, multiple=False):
         self.show_element(self.ext_toggle_b)
         if enable:
-            self.ext_toggle_b.Content = \
-                self.ext_toggle_b.Content = self.get_locale_string("Buttons.ToggleButton.Enable")
+            self.ext_toggle_b.Content = self.ext_toggle_b.Content = (
+                self.get_locale_string("Buttons.ToggleButton.Enable")
+            )
         else:
-            self.ext_toggle_b.Content = \
-                self.ext_toggle_b.Content = self.get_locale_string("Buttons.ToggleButton.Disable")
+            self.ext_toggle_b.Content = self.ext_toggle_b.Content = (
+                self.get_locale_string("Buttons.ToggleButton.Disable")
+            )
 
         if multiple:
-            self.ext_toggle_b.Content = \
-                self.ext_toggle_b.Content = \
-                    re.sub("Extensions*",
-                           "Extensions",
-                           self.ext_toggle_b.Content)
+            self.ext_toggle_b.Content = self.ext_toggle_b.Content = re.sub(
+                "Extensions*", "Extensions", self.ext_toggle_b.Content
+            )
         else:
-            self.ext_toggle_b.Content = \
-                self.ext_toggle_b.Content.replace('Extensions', 'Extension')
+            self.ext_toggle_b.Content = self.ext_toggle_b.Content.replace(
+                "Extensions", "Extension"
+            )
 
     def _update_ext_action_buttons(self, ext_pkg_items):
-        """Updates the status of actions buttons depending on the status of
-        the provided ext_pkg_item. e.g. disable the Install button if the
-        package is already installed.
+        """Updates the extension action button based on ext_pkg_item
 
         Args:
-            ext_pkg_items: Extension packages to update the action buttons
+            ext_pkg_items (list): List of extension packages
         """
+
         if len(ext_pkg_items) == 1:
             ext_pkg_item = ext_pkg_items[0]
             if ext_pkg_item.ext_pkg.is_installed:
+                # Action Button: Update
+                if ext_pkg_item.ext_pkg.builtin:
+                    self.hide_element(self.ext_update_b)
+                else:
+                    self.show_element(self.ext_update_b)
+
                 # Action Button: Install
                 self.hide_element(self.ext_install_b)
 
@@ -266,9 +281,7 @@ class ExtensionsWindow(forms.WPFWindow):
                     self.show_element(self.ext_remove_b)
 
                 # Action Button: Toggle (Enable / Disable)
-                self._update_toggle_button(
-                    enable=ext_pkg_item.ext_pkg.config.disabled
-                )
+                self._update_toggle_button(enable=ext_pkg_item.ext_pkg.config.disabled)
             else:
                 self.show_element(self.ext_install_b)
                 self.hide_element(self.ext_toggle_b, self.ext_remove_b)
@@ -280,14 +293,12 @@ class ExtensionsWindow(forms.WPFWindow):
             if any([not x.ext_pkg.is_installed for x in ext_pkg_items]):
                 self.hide_element(self.ext_toggle_b)
             else:
-                all_disabled = \
-                    [x.ext_pkg.config.disabled for x in ext_pkg_items]
+                all_disabled = [x.ext_pkg.config.disabled for x in ext_pkg_items]
                 if all(all_disabled):
                     self._update_toggle_button(enable=True, multiple=True)
                     return
 
-                all_enabled = \
-                    [not x.ext_pkg.config.disabled for x in ext_pkg_items]
+                all_enabled = [not x.ext_pkg.config.disabled for x in ext_pkg_items]
                 if all(all_enabled):
                     self._update_toggle_button(enable=False, multiple=True)
                     return
@@ -311,28 +322,30 @@ class ExtensionsWindow(forms.WPFWindow):
             self.show_element(self.ext_update_b)
             try:
                 # Is package using a private git repo?
-                self.privaterepo_cb.IsChecked = \
-                    ext_pkg_item.ext_pkg.config.private_repo
+                self.privaterepo_cb.IsChecked = ext_pkg_item.ext_pkg.config.private_repo
                 self.privaterepo_cb.UpdateLayout()
 
-                # Set current username and pass for the private repo
-                self.repousername_tb.Text = ext_pkg_item.ext_pkg.config.username
-                self.repopassword_pb.Password = ext_pkg_item.ext_pkg.config.password
+                # Set current token for the private repo
+                token_value = getattr(ext_pkg_item.ext_pkg.config, "token", None)
+
+                self.repotoken_pb.Password = token_value
             except Exception:
                 self.privaterepo_cb.IsChecked = False
-                self.repopassword_pb.Password = self.repousername_tb.Text = ''
+                self.repotoken_pb.Password = ""
 
     def _list_options(self, option_filter=None):
         if option_filter:
             option_filter = option_filter.lower()
-            self.extpkgs_lb.ItemsSource = \
-                [x for x in self._exts_list
-                 if option_filter in x.searchable_values().lower()]
+            self.extpkgs_lb.ItemsSource = [
+                x
+                for x in self._exts_list
+                if option_filter in x.searchable_values().lower()
+            ]
         else:
             self.extpkgs_lb.ItemsSource = self._exts_list
 
     def search_txt_changed(self, sender, args):
-        if self.search_tb.Text == '':
+        if self.search_tb.Text == "":
             self.hide_element(self.clrsearch_b)
         else:
             self.show_element(self.clrsearch_b)
@@ -340,13 +353,12 @@ class ExtensionsWindow(forms.WPFWindow):
         self._list_options(option_filter=self.search_tb.Text.lower())
 
     def clear_search(self, sender, args):
-        self.search_tb.Text = ' '
+        self.search_tb.Text = " "
         self.search_tb.Clear()
         self.extpkgs_lb.ItemsSource = self._exts_list
 
     def update_ext_info(self, sender, args):
-        """Callback for updating info panel on package selection change
-        """
+        """Callback for updating info panel on package selection change"""
         if self.selected_pkg:
             self.show_element(self.ext_infostack)
             self.show_element(self.ext_infopanel)
@@ -361,8 +373,7 @@ class ExtensionsWindow(forms.WPFWindow):
             self.hide_element(self.ext_infopanel)
 
     def handle_private_repo(self, sender, args):
-        """Callback for updating private status of a package
-        """
+        """Callback for updating private status of a package"""
         if self.privaterepo_cb.IsChecked:
             self.accountcreds_dp.IsEnabled = True
         else:
@@ -376,44 +387,154 @@ class ExtensionsWindow(forms.WPFWindow):
         """
         sender.ContextMenu.IsEnabled = True
         sender.ContextMenu.PlacementTarget = sender
-        sender.ContextMenu.Placement = \
+        sender.ContextMenu.Placement = (
             framework.Controls.Primitives.PlacementMode.Bottom
+        )
         sender.ContextMenu.IsOpen = True
 
     def save_pkg_settings(self, sender, args):
-        """Reads package configuration from UI and saves to package config
-        """
+        """Reads package configuration from UI and saves to package config"""
 
         try:
-            self.selected_pkg.ext_pkg.config.private_repo = \
+            self.selected_pkg.ext_pkg.config.private_repo = (
                 self.privaterepo_cb.IsChecked
-            self.selected_pkg.ext_pkg.config.username = \
-                self.repousername_tb.Text
-            self.selected_pkg.ext_pkg.config.password = \
-                self.repopassword_pb.Password
+            )
+
+            token_value = self.repotoken_pb.Password
+            self.selected_pkg.ext_pkg.config.token = token_value
+
             user_config.save_changes()
             self.Close()
         except Exception as pkg_sett_save_err:
-            logger.error('Error saving extension package settings.'
-                         ' | {}'.format(pkg_sett_save_err))
+            logger.error(
+                "Error saving extension package settings."
+                " | {}".format(pkg_sett_save_err)
+            )
 
     def install_ext_pkg(self, sender, args):
-        """Installs the selected extension, then reloads pyRevit
-        """
+        """Installs the selected extension, then reloads pyRevit"""
 
         try:
-            extpkgs.install(self.selected_pkg.ext_pkg,
-                            sender.install_path)
+            extpkgs.install(self.selected_pkg.ext_pkg, sender.install_path)
             self.Close()
             call_reload()
         except Exception as pkg_install_err:
-            logger.error('Error installing package.'
-                         ' | {}'.format(pkg_install_err))
+            logger.error("Error installing package." " | {}".format(pkg_install_err))
             self.Close()
 
-    def toggle_ext_pkg(self, sender, args):
-        """Enables/Disables the selected exension, then reloads pyRevit
+    def custom_extension_path(self, sender, args):
+        "Picks a folder to install to"
+        custom_path = forms.pick_folder(owner=self)
+        if custom_path:
+            custom_path = os.path.normpath(custom_path)
+        self.custom_ext_install_path_tb.Text = custom_path
+
+    def install_custom_extension(self, sender, args):
+        """Installs a custom extension from a Git URL
+
+        This mimics the behavior of:
+        pyrevit extend ui ExtName https://github.com/user/repo.git
+            --dest="path" --token=token
         """
+
+        try:
+            # Get values from UI
+            git_url = self.custom_git_url_tb.Text.strip()
+            ext_name = self.custom_ext_name_tb.Text.strip()
+            token = self.custom_token_pb.Password.strip()
+
+            # Validation
+            if not git_url:
+                forms.alert("Please enter a Git URL.", exitscript=False)
+                return
+
+            if not ext_name:
+                forms.alert("Please enter an extension name.", exitscript=False)
+                return
+
+            # Check if URL is valid git URL
+            if not (
+                git_url.startswith("http://")
+                or git_url.startswith("https://")
+                or git_url.startswith("git@")
+            ):
+                forms.alert(
+                    "Git URL must start with https://, http://, or git@",
+                    exitscript=False,
+                )
+                return
+
+            # If token is provided, inject it into the URL
+            if token:
+                # For HTTPS URLs, inject token
+                if git_url.startswith("https://") or git_url.startswith("http://"):
+                    # Parse URL to inject token
+                    # Format: https://oauth2:TOKEN@github.com/user/repo.git
+                    url_parts = git_url.split("://", 1)
+                    if len(url_parts) == 2:
+                        protocol = url_parts[0]
+                        rest = url_parts[1]
+
+                        # Remove any existing credentials
+                        if "@" in rest:
+                            # Already has credentials, replace them
+                            rest = rest.split("@", 1)[1]
+
+                        # Inject token (use 'oauth2' as username for GitLab compatibility)
+                        git_url = "{0}://oauth2:{1}@{2}".format(protocol, token, rest)
+
+            # Get default extension directory
+            dest_path = self.custom_ext_install_path_tb.Text
+            if not dest_path:
+                ext_dirs = user_config.get_thirdparty_ext_root_dirs(include_default=True)
+                dest_path = ext_dirs[0]  # Use the default directory
+
+            logger.info('Installing extension "{}" from {}'.format(ext_name, git_url))
+            logger.info("Destination: {}".format(dest_path))
+
+            # Create a temporary extension package object
+            from pyrevit.extensions.extpackages import ExtensionPackage
+
+            temp_info = {
+                'type': 'temp_type',
+                'name': 'temp_name',
+                'description': 'temp_desc',
+                'url': git_url,
+            }
+
+            temp_pkg = ExtensionPackage(temp_info)
+            temp_pkg.name = ext_name
+            temp_pkg.url = git_url
+            temp_pkg.type = exts.ExtensionTypes.UI_EXTENSION
+
+            # If token was provided, store it in config
+            if token:
+                temp_pkg.config.private_repo = True
+                temp_pkg.config.token = token
+                temp_pkg.config.password = token  # Backward compatibility
+
+            extpkgs.install(temp_pkg, dest_path)
+
+            forms.alert(
+                'Extension "{}" installed successfully! \n'
+                "Revit will reload to apply changes.".format(ext_name),
+                exitscript=False,
+            )
+
+            self.Close()
+            call_reload()
+
+        except Exception as custom_install_err:
+            logger.exception(
+                "Error installing custom extension." " | {}".format(custom_install_err)
+            )
+            forms.alert(
+                "Error installing extension: \n{}".format(str(custom_install_err)),
+                exitscript=False,
+            )
+
+    def toggle_ext_pkg(self, sender, args):
+        """Enables/Disables the selected exension, then reloads pyRevit"""
         if self.selected_pkg:
             self.selected_pkg.ext_pkg.toggle_package()
         elif self.selected_pkgs:
@@ -423,15 +544,14 @@ class ExtensionsWindow(forms.WPFWindow):
         call_reload()
 
     def remove_ext_pkg(self, sender, args):
-        """Removes the selected exension, then reloads pyRevit
-        """
+        """Removes the selected exension, then reloads pyRevit"""
 
         try:
             extpkgs.remove(self.selected_pkg.ext_pkg)
             self.Close()
             call_reload()
         except Exception as pkg_remove_err:
-            logger.error('Error removing package. | {}'.format(pkg_remove_err))
+            logger.error("Error removing package. | {}".format(pkg_remove_err))
 
 
 def open_ext_dirs_in_explorer(ext_dirs_list):
@@ -448,6 +568,7 @@ def open_ext_dirs_in_explorer(ext_dirs_list):
 
 def call_reload():
     from pyrevit.loader.sessionmgr import execute_command
+
     execute_command(pyrevitcore_globals.PYREVIT_CORE_RELOAD_COMMAND_NAME)
 
 
@@ -457,12 +578,13 @@ def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
     if not user_config.user_can_extend:
         return False
 
+
 # handles tool click in Revit interface:
 # if Shift-Click on the tool, opens the extension package destinations in
 # windows explorer
 # otherwise, will show the Extension manager user interface
-if __name__ == '__main__':
-    if __shiftclick__:  #pylint: disable=E0602
+if __name__ == "__main__":
+    if EXEC_PARAMS.config_mode:
         open_ext_dirs_in_explorer(user_config.get_ext_root_dirs())
     else:
-        ExtensionsWindow('ExtensionsWindow.xaml').show_dialog()
+        ExtensionsWindow("ExtensionsWindow.xaml").show_dialog()

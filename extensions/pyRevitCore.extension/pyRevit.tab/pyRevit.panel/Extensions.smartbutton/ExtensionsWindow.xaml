@@ -1,6 +1,6 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="{DynamicResource Window.Title}" Height="700" Width="860" ShowInTaskbar="False" ResizeMode="CanResize"
+        Title="{DynamicResource Window.Title}" Height="750" Width="900" ShowInTaskbar="False" ResizeMode="CanResize"
         WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
     <Window.Resources>
         <Style x:Key="ClearButton" TargetType="Button">
@@ -16,39 +16,111 @@
         </Style>
     </Window.Resources>
     <DockPanel Margin="10" LastChildFill="True">
-        <Grid DockPanel.Dock="Top" Margin="0,0,0,10" Height="25">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <TextBlock DockPanel.Dock="Left"
-                           Grid.Column="0"
-                           VerticalAlignment="Center"
-                       Text="{DynamicResource ExtensionList.TextBlock}"/>
+        <!-- Top Section: Search and Add Custom Extension -->
+        <Grid DockPanel.Dock="Top" Margin="0,0,0,10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            
+            <!-- First Row: Title and Search -->
+            <Grid Grid.Row="0" Height="25" Margin="0,0,0,5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock DockPanel.Dock="Left"
+                               Grid.Column="0"
+                               VerticalAlignment="Center"
+                           Text="{DynamicResource ExtensionList.TextBlock}"/>
 
-            <DockPanel Grid.Column="1">
-                <ContentControl Content="{StaticResource filterIcon}" Width="24" Height="24" Margin="5,0,10,0">
-                    <ContentControl.LayoutTransform>
-                        <ScaleTransform ScaleX="0.4"  ScaleY="0.4"/>
-                    </ContentControl.LayoutTransform>
-                </ContentControl>
-                <StackPanel VerticalAlignment="Center">
-                    <TextBox x:Name="search_tb" Height="25px" Padding="5,0,24,0"
-                             VerticalContentAlignment="Center" TextChanged="search_txt_changed"/>
-                    <Button x:Name="clrsearch_b" Visibility="Collapsed" Margin="0,-25,2,0" Padding="0,-4,0,0"
-                            Width="22px" Height="22px" HorizontalAlignment="Right"
-                            BorderThickness="0"
-                            Style="{StaticResource ClearButton}"
-                            Click="clear_search">
-                        <Button.Content>
-                            <Canvas Width="25" Height="25" VerticalAlignment="Center" HorizontalAlignment="Center">
-                                <Path Canvas.Top="3" Canvas.Left="1" Data="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" Fill="DimGray" />
-                            </Canvas>
-                        </Button.Content>
-                    </Button>
-                </StackPanel>
-            </DockPanel>
+                <DockPanel Grid.Column="1">
+                    <ContentControl Content="{StaticResource filterIcon}" Width="24" Height="24" Margin="5,0,10,0">
+                        <ContentControl.LayoutTransform>
+                            <ScaleTransform ScaleX="0.4"  ScaleY="0.4"/>
+                        </ContentControl.LayoutTransform>
+                    </ContentControl>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBox x:Name="search_tb" Height="25px" Padding="5,0,24,0"
+                                 VerticalContentAlignment="Center" TextChanged="search_txt_changed"/>
+                        <Button x:Name="clrsearch_b" Visibility="Collapsed" Margin="0,-25,2,0" Padding="0,-4,0,0"
+                                Width="22px" Height="22px" HorizontalAlignment="Right"
+                                BorderThickness="0"
+                                Style="{StaticResource ClearButton}"
+                                Click="clear_search">
+                            <Button.Content>
+                                <Canvas Width="25" Height="25" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <Path Canvas.Top="3" Canvas.Left="1" Data="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" Fill="DimGray" />
+                                </Canvas>
+                            </Button.Content>
+                        </Button>
+                    </StackPanel>
+                </DockPanel>
+            </Grid>
+            
+            <!-- Second Row: Add Custom Extension -->
+            <GroupBox Grid.Row="1" Header="Add Custom Extension from Git" Margin="0,5,0,0" Padding="10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <!-- Git URL Input -->
+                    <DockPanel Grid.Row="0" Margin="0,0,0,5">
+                        <Label Content="Git URL:" Width="80" VerticalAlignment="Center"/>
+                        <TextBox x:Name="custom_git_url_tb" 
+                                 Padding="5,0,5,0" 
+                                 FontFamily="Consolas"
+                                 VerticalContentAlignment="Center"
+                                 ToolTip="e.g., https://github.com/user/repo.git or https://gitlab.com/user/repo.git"/>
+                    </DockPanel>
+                    
+                    <!-- Extension Name, Token, and Install Button -->
+                    <DockPanel Grid.Row="1">
+                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                            <Label Content="Name:" Width="80" VerticalAlignment="Center"/>
+                            <TextBox x:Name="custom_ext_name_tb" 
+                                     Width="150" 
+                                     Padding="5,0,5,0"
+                                     VerticalContentAlignment="Center"
+                                     ToolTip="Extension name (e.g., MyTools)"/>
+                            
+                            <Label Content="Token (optional):" Margin="15,0,0,0" VerticalAlignment="Center"/>
+                            <PasswordBox x:Name="custom_token_pb" 
+                                         Width="50" 
+                                         Padding="5,0,5,0" 
+                                         FontFamily="Consolas"
+                                         VerticalContentAlignment="Center"
+                                         ToolTip="Leave empty for public repos"/>
+
+                            <Label Content="Path (optional):" Width="100" VerticalAlignment="Center"/>
+                            <TextBox x:Name="custom_ext_install_path_tb" 
+                                     Width="100" 
+                                     Padding="5,0,5,0"
+                                     VerticalContentAlignment="Center"
+                                     ToolTip="If empty, will pick the default one"
+                                     IsReadOnly="True"/>
+                        </StackPanel>
+
+                        <Button x:Name="path_custom_ext_b" 
+                                Content="Pick" 
+                                Click="custom_extension_path"
+                                Padding="15,5,15,5"
+                                Margin="10,0,0,0"
+                                HorizontalAlignment="Right"/>
+                        
+                        <Button x:Name="install_custom_ext_b" 
+                                Content="Install Extension" 
+                                Click="install_custom_extension"
+                                Padding="15,5,15,5"
+                                Margin="10,0,0,0"
+                                HorizontalAlignment="Right"/>
+                    </DockPanel>
+                </Grid>
+            </GroupBox>
         </Grid>
+        
         <StackPanel x:Name="ext_infopanel" DockPanel.Dock="Bottom" VerticalAlignment="Bottom">
             <StackPanel x:Name="ext_infostack">
                 <Label x:Name="ext_name_l" FontSize="16" FontWeight="DemiBold" Margin="0,10,0,0"/>
@@ -81,20 +153,22 @@
                               Content="{DynamicResource ExtensionSettings.PrivateRepositoryCheck}">
                     </CheckBox>
                     <DockPanel x:Name="accountcreds_dp" Margin="23,0,0,10" IsEnabled="False" >
-                        <WrapPanel DockPanel.Dock="Bottom" Orientation="Horizontal">
-                            <StackPanel Orientation="Horizontal" Margin="0,10,20,0">
-                                <Label Content="{DynamicResource ExtensionSettings.Username}"/>
-                                <TextBox x:Name="repousername_tb" Width="200"
-                                         Padding="5,0,5,0" FontFamily="Consolas"
-                                         VerticalContentAlignment="Center"/>
-                            </StackPanel>
-                            <StackPanel Orientation="Horizontal" Margin="0,10,20,0">
-                                <Label Content="{DynamicResource ExtensionSettings.Password}"/>
-                                <PasswordBox x:Name="repopassword_pb"  Width="200"
-                                         Padding="5,0,5,0" FontFamily="Consolas"
-                                         VerticalContentAlignment="Center"/>
-                            </StackPanel>
-                        </WrapPanel>
+                        <TextBlock DockPanel.Dock="Top" Margin="0,10,0,5" 
+                                   TextWrapping="Wrap" FontSize="11" Foreground="Gray">
+                            <Run Text="Personal Access Token (PAT) required for private repositories."/>
+                            <LineBreak/>
+                            <Run Text="GitHub: Settings > Developer settings > Personal access tokens > Tokens (classic)"/>
+                            <LineBreak/>
+                            <Run Text="GitLab: User Settings > Access Tokens"/>
+                            <LineBreak/>
+                            <Run Text="Required scopes: 'repo' (GitHub) or 'read_repository' (GitLab)"/>
+                        </TextBlock>
+                        <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                            <Label Content="Access Token:"/>
+                            <PasswordBox x:Name="repotoken_pb"  Width="300"
+                                     Padding="5,0,5,0" FontFamily="Consolas"
+                                     VerticalContentAlignment="Center"/>
+                        </StackPanel>
                     </DockPanel>
                 </StackPanel>
             </GroupBox>
