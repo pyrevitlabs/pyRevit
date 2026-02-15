@@ -489,11 +489,12 @@ class ExtensionsWindow(forms.WPFWindow):
 
             # Create a temporary extension package object
             from pyrevit.extensions.extpackages import ExtensionPackage
+            from pyrevit.userconfig import user_config
 
             temp_info = {
-                'type': 'temp_type',
-                'name': 'temp_name',
-                'description': 'temp_desc',
+                'type': exts.ExtensionTypes.UI_EXTENSION.ID,
+                'name': ext_name,
+                'description': 'Custom extension installed from ' + git_url,
                 'url': git_url,
             }
 
@@ -506,6 +507,9 @@ class ExtensionsWindow(forms.WPFWindow):
             if token:
                 temp_pkg.config.private_repo = True
                 temp_pkg.config.token = token
+                temp_pkg.config.username = 'oauth2'  # for backwards compat - drop later
+                temp_pkg.config.password = token  # for backwards compat - drop later
+                user_config.save_changes()  # i don't like it - drop this later
 
             extpkgs.install(temp_pkg, dest_path)
             self._refresh_extension_list()
