@@ -2,6 +2,10 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <Import Project="../Directory.Build.targets"/>
 
+    <PropertyGroup Condition="'$(IsTestProject)' == 'true' AND '$(SkipPyRevitDeploy)' == ''">
+        <SkipPyRevitDeploy>true</SkipPyRevitDeploy>
+    </PropertyGroup>
+
     <ItemGroup>
         <None Remove="obj\**" />
     </ItemGroup>
@@ -51,6 +55,17 @@
     <ItemGroup Condition="'$(UseExtensionParser)' == 'true'">
         <ProjectReference Include="..\pyRevitExtensionParser\pyRevitExtensionParser.csproj" />
     </ItemGroup>
+
+    <!--
+      Test projects should not deploy referenced project binaries into engine folders.
+      This avoids file-lock warning noise during `dotnet test` when Revit has loaded those DLLs.
+    -->
+    <ItemGroup Condition="'$(IsTestProject)' == 'true'">
+        <ProjectReference Update="..\pyRevitAssemblyBuilder\pyRevitAssemblyBuilder.csproj"
+                          AdditionalProperties="SkipPyRevitDeploy=true" />
+        <ProjectReference Update="..\pyRevitExtensionParser\pyRevitExtensionParser.csproj"
+                          AdditionalProperties="SkipPyRevitDeploy=true" />
+    </ItemGroup>
     
     <ItemGroup Condition="'$(UseIronPython)' != 'false'">
         <EmbeddedResource Include="$(IronPythonStdLibDir)\$(IronPythonStdLib)"/>
@@ -60,7 +75,7 @@
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.13.0" />
     </ItemGroup>
     
-    <Target Name="Deploy" AfterTargets="AfterBuild">
+    <Target Name="Deploy" AfterTargets="AfterBuild" Condition="'$(SkipPyRevitDeploy)' != 'true'">
         <ItemGroup>
             <AllFilesToCopy Include="$(TargetDir)\**\*.dll"
                             Exclude="$(TargetDir)\**\Xceed.Wpf.AvalonDock.dll;

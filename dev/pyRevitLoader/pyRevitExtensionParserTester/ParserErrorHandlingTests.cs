@@ -114,6 +114,35 @@ namespace pyRevitExtensionParserTest
                 "Expected extension.json parse error to be logged.");
         }
 
+        [Test]
+        public void InvalidYamlSyntaxIsLoggedWithLocationAndDoesNotStopParsing()
+        {
+            var builder = new TestExtensionBuilder(TestTempDir, "InvalidYamlExt");
+            builder.Create()
+                .AddTab("ErrorTab")
+                .AddPanel("ErrorPanel")
+                .AddPushButton("ErrorButton", "print('x')");
+
+            var bundlePath = Path.Combine(
+                builder.ExtensionPath,
+                "ErrorTab.tab",
+                "ErrorPanel.panel",
+                "ErrorButton.pushbutton",
+                "bundle.yaml");
+
+            File.WriteAllText(bundlePath, "title: [unterminated");
+
+            var parsed = ExtensionParser.ParseInstalledExtensions(new[] { builder.ExtensionPath }).ToList();
+            Assert.That(parsed.Count, Is.EqualTo(1), "Extension parsing should continue after invalid yaml syntax.");
+
+            Assert.That(_memoryTarget?.Logs.Any(message =>
+                    message.Contains("Error while parsing file:") &&
+                    message.Contains(bundlePath) &&
+                    message.Contains("Line/Column:")),
+                Is.True,
+                "Expected invalid yaml parse error with line/column details to be logged.");
+        }
+
         private bool HasLoggedParseError(string filePath)
         {
             if (_memoryTarget == null)

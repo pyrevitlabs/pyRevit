@@ -429,6 +429,11 @@ namespace pyRevitExtensionParser
         public bool IsBeta { get; set; }
 
         /// <summary>
+        /// Gets or sets whether this component should appear collapsed by default.
+        /// </summary>
+        public bool Collapsed { get; set; }
+
+        /// <summary>
         /// Gets or sets the background color for the panel containing this bundle.
         /// </summary>
         /// <remarks>

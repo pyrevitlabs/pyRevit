@@ -408,6 +408,51 @@ context:
                 "Context should be from bundle.yaml");
         }
 
+        [Test]
+        public void TestLocaleAliasKeysAreParsed()
+        {
+            var yamlContent = @"title:
+  english: English Alias Title
+tooltip:
+  german: Deutscher Alias Tooltip
+";
+            var tempFile = Path.GetTempFileName();
+            File.WriteAllText(tempFile, yamlContent);
+
+            try
+            {
+                var bundle = BundleParser.BundleYamlParser.Parse(tempFile);
+                Assert.That(bundle.Titles.ContainsKey("en_us"), Is.True);
+                Assert.That(bundle.Titles["en_us"], Is.EqualTo("English Alias Title"));
+                Assert.That(bundle.Tooltips.ContainsKey("de_de"), Is.True);
+                Assert.That(bundle.Tooltips["de_de"], Is.EqualTo("Deutscher Alias Tooltip"));
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
+        [Test]
+        public void TestIsBetaKeyIsSupported()
+        {
+            var yamlContent = @"title: Test
+is_beta: true
+";
+            var tempFile = Path.GetTempFileName();
+            File.WriteAllText(tempFile, yamlContent);
+
+            try
+            {
+                var bundle = BundleParser.BundleYamlParser.Parse(tempFile);
+                Assert.That(bundle.IsBeta, Is.True);
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
         private static IEnumerable<ParsedComponent> GetAllComponentsFlat(ParsedComponent component)
         {
             yield return component;

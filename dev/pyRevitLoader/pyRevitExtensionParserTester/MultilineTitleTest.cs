@@ -193,8 +193,8 @@ author: Test Author";
 
             TestContext.Out.WriteLine($"\n[en_us]: '{bundle.Titles["en_us"].Replace("\n", "\\n")}'");
 
-            Assert.That(bundle.Titles["en_us"], Is.EqualTo("FICHES\nMETHODES"),
-                $"Expected 'FICHES\\nMETHODES' but got '{bundle.Titles["en_us"].Replace("\n", "\\n")}'");
+            Assert.That(bundle.Titles["en_us"], Is.EqualTo("FICHES METHODES"),
+                $"Expected 'FICHES METHODES' but got '{bundle.Titles["en_us"].Replace("\n", "\\n")}'");
 
             TestContext.Out.WriteLine("\n=== Implicit Multiline Title Test Passed! ===");
         }

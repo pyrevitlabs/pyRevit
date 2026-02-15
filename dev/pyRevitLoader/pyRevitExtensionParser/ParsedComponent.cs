@@ -46,6 +46,7 @@ namespace pyRevitExtensionParser
         public string MinRevitVersion { get; set; }
         public string MaxRevitVersion { get; set; }
         public bool IsBeta { get; set; }
+        public bool Collapsed { get; set; }
         public string TargetAssembly { get; set; }
         public string CommandClass { get; set; }
         public string AvailabilityClass { get; set; }
@@ -245,16 +246,13 @@ namespace pyRevitExtensionParser
             if (string.IsNullOrEmpty(preferredLocale))
                 preferredLocale = ExtensionParser.DefaultLocale;
 
-            // Try preferred locale first
-            if (localizedValues.TryGetValue(preferredLocale, out string preferredValue))
-                return preferredValue;
+            foreach (var locale in LocaleSupport.GetLocaleSearchOrder(preferredLocale, ExtensionParser.DefaultLocale))
+            {
+                if (localizedValues.TryGetValue(locale, out string value))
+                    return value;
+            }
 
-            // Fallback to default locale if different preferred locale was specified
-            if (preferredLocale != ExtensionParser.DefaultLocale && localizedValues.TryGetValue(ExtensionParser.DefaultLocale, out string defaultValue))
-                return defaultValue;
-
-            // Fallback to first available value
-            return localizedValues.Values.FirstOrDefault();
+            return null;
         }
     }
 }
