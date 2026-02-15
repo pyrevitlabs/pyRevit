@@ -238,16 +238,16 @@ class ExtensionsWindow(forms.WPFWindow):
     def _update_toggle_button(self, enable=True, multiple=False):
         self.show_element(self.ext_toggle_b)
         if enable:
-            self.ext_toggle_b.Content = self.ext_toggle_b.Content = (
+            self.ext_toggle_b.Content = (
                 self.get_locale_string("Buttons.ToggleButton.Enable")
             )
         else:
-            self.ext_toggle_b.Content = self.ext_toggle_b.Content = (
+            self.ext_toggle_b.Content = (
                 self.get_locale_string("Buttons.ToggleButton.Disable")
             )
 
         if multiple:
-            self.ext_toggle_b.Content = self.ext_toggle_b.Content = re.sub(
+            self.ext_toggle_b.Content = re.sub(
                 "Extensions*", "Extensions", self.ext_toggle_b.Content
             )
         else:
