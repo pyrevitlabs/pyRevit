@@ -16,123 +16,92 @@
         </Style>
     </Window.Resources>
     <DockPanel Margin="10" LastChildFill="True">
-        <!-- Top Section: Search and Add Custom Extension -->
-        <Grid DockPanel.Dock="Top" Margin="0,0,0,10">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-            
-            <!-- First Row: Title and Search -->
-            <Grid Grid.Row="0" Height="25" Margin="0,0,0,5">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <TextBlock DockPanel.Dock="Left"
-                               Grid.Column="0"
-                               VerticalAlignment="Center"
-                           Text="{DynamicResource ExtensionList.TextBlock}"/>
-
-                <DockPanel Grid.Column="1">
-                    <ContentControl Content="{StaticResource filterIcon}" Width="24" Height="24" Margin="5,0,10,0">
-                        <ContentControl.LayoutTransform>
-                            <ScaleTransform ScaleX="0.4"  ScaleY="0.4"/>
-                        </ContentControl.LayoutTransform>
-                    </ContentControl>
-                    <StackPanel VerticalAlignment="Center">
-                        <TextBox x:Name="search_tb" Height="25px" Padding="5,0,24,0"
-                                 VerticalContentAlignment="Center" TextChanged="search_txt_changed"/>
-                        <Button x:Name="clrsearch_b" Visibility="Collapsed" Margin="0,-25,2,0" Padding="0,-4,0,0"
-                                Width="22px" Height="22px" HorizontalAlignment="Right"
-                                BorderThickness="0"
-                                Style="{StaticResource ClearButton}"
-                                Click="clear_search">
-                            <Button.Content>
-                                <Canvas Width="25" Height="25" VerticalAlignment="Center" HorizontalAlignment="Center">
-                                    <Path Canvas.Top="3" Canvas.Left="1" Data="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" Fill="DimGray" />
-                                </Canvas>
-                            </Button.Content>
-                        </Button>
-                    </StackPanel>
-                </DockPanel>
-            </Grid>
-            
-            <!-- Second Row: Add Custom Extension -->
-            <GroupBox Grid.Row="1" Header="{DynamicResource AddCustomExtension.GroupHeader}" Margin="0,5,0,0" Padding="10">
+        <!-- Top Section: Search only -->
+        <Grid DockPanel.Dock="Top" Height="25" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0"
+                       VerticalAlignment="Center"
+                       Text="{DynamicResource ExtensionList.TextBlock}"/>
+            <DockPanel Grid.Column="1">
+                <ContentControl Content="{StaticResource filterIcon}" Width="24" Height="24" Margin="5,0,10,0">
+                    <ContentControl.LayoutTransform>
+                        <ScaleTransform ScaleX="0.4"  ScaleY="0.4"/>
+                    </ContentControl.LayoutTransform>
+                </ContentControl>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBox x:Name="search_tb" Height="25px" Padding="5,0,24,0"
+                             VerticalContentAlignment="Center" TextChanged="search_txt_changed"/>
+                    <Button x:Name="clrsearch_b" Visibility="Collapsed" Margin="0,-25,2,0" Padding="0,-4,0,0"
+                            Width="22px" Height="22px" HorizontalAlignment="Right"
+                            BorderThickness="0"
+                            Style="{StaticResource ClearButton}"
+                            Click="clear_search">
+                        <Button.Content>
+                            <Canvas Width="25" Height="25" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <Path Canvas.Top="3" Canvas.Left="1" Data="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" Fill="DimGray" />
+                            </Canvas>
+                        </Button.Content>
+                    </Button>
+                </StackPanel>
+            </DockPanel>
+        </Grid>
+        
+        <StackPanel x:Name="ext_infopanel" DockPanel.Dock="Bottom" VerticalAlignment="Bottom">
+            <!-- Add Custom Extension from Git (below list, above extension description) -->
+            <GroupBox Header="{DynamicResource AddCustomExtension.GroupHeader}" Margin="0,0,0,10" Padding="10">
                 <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="160"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    
-                    <!-- Git URL Input -->
-                    <DockPanel Grid.Row="0" Margin="0,0,0,5">
-                        <Label Content="{DynamicResource AddCustomExtension.GitUrlLabel}" Width="150" VerticalAlignment="Center" FontSize="14"/>
-                        <TextBox x:Name="custom_git_url_tb" 
-                                 Padding="5,0,5,0" 
+                    <Label Grid.Row="0" Grid.Column="0" Content="{DynamicResource AddCustomExtension.GitUrlLabel}" VerticalAlignment="Center" FontSize="14" Margin="0,0,8,0"/>
+                    <TextBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" x:Name="custom_git_url_tb"
+                             MinHeight="28"
+                             Padding="5,4,5,4"
+                             FontFamily="Consolas"
+                             FontSize="14"
+                             VerticalContentAlignment="Center"
+                             TextChanged="git_info_text_changed"
+                             ToolTip="{DynamicResource AddCustomExtension.GitUrlToolTip}"
+                             Margin="0,0,0,5"/>
+                    <Label Grid.Row="1" Grid.Column="0" Content="{DynamicResource AddCustomExtension.PathLabel}" VerticalAlignment="Center" FontSize="14" Margin="0,0,8,0"/>
+                    <TextBlock Grid.Row="1" Grid.Column="1" x:Name="custom_ext_install_path_tb"
+                               VerticalAlignment="Center"
+                               TextWrapping="NoWrap"
+                               TextTrimming="CharacterEllipsis"
+                               FontSize="14"
+                               ToolTip="{DynamicResource AddCustomExtension.PathToolTip}"
+                               Margin="0,0,10,5"/>
+                    <Button Grid.Row="1" Grid.Column="2" x:Name="path_custom_ext_b"
+                            Content="{DynamicResource AddCustomExtension.PickInstallationPath}"
+                            Click="custom_extension_path"
+                            Padding="15,5,15,5"
+                            MinWidth="160"
+                            Margin="0,0,0,5"/>
+                    <Label Grid.Row="2" Grid.Column="0" Content="{DynamicResource AddCustomExtension.TokenLabel}" VerticalAlignment="Center" FontSize="14" Margin="0,0,8,0"/>
+                    <PasswordBox Grid.Row="2" Grid.Column="1" x:Name="custom_token_pb"
+                                 MinHeight="28"
+                                 Padding="5,4,5,4"
                                  FontFamily="Consolas"
-                                 FontSize="14"
                                  VerticalContentAlignment="Center"
-                                 ToolTip="{DynamicResource AddCustomExtension.GitUrlToolTip}"/>
-                    </DockPanel>
-                    
-                    <!-- Installation path and Pick button (below Git URL) -->
-                    <DockPanel Grid.Row="1" Margin="0,0,0,5">
-                        <Label Content="{DynamicResource AddCustomExtension.PathLabel}" Width="150" VerticalAlignment="Center" FontSize="14"/>
-                        <Button x:Name="path_custom_ext_b" 
-                                DockPanel.Dock="Right"
-                                Content="{DynamicResource AddCustomExtension.PickInstallationPath}" 
-                                Click="custom_extension_path"
-                                Padding="15,5,15,5"
-                                Margin="10,0,0,0"
-                                MinWidth="160"/>
-                        <TextBlock x:Name="custom_ext_install_path_tb" 
-                                   Margin="5,0,0,0"
-                                   VerticalAlignment="Center"
-                                   TextWrapping="NoWrap"
-                                   TextTrimming="CharacterEllipsis"
-                                   FontSize="14"
-                                   ToolTip="{DynamicResource AddCustomExtension.PathToolTip}"/>
-                    </DockPanel>
-                    
-                    <!-- Extension Name, Token, and Install Button -->
-                    <Grid Grid.Row="2">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="150"/>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <Label Grid.Column="0" Content="{DynamicResource AddCustomExtension.NameLabel}" Width="150" VerticalAlignment="Center" FontSize="14" Margin="0,0,5,0"/>
-                        <TextBox x:Name="custom_ext_name_tb" 
-                                 Grid.Column="1"
-                                 Padding="5,0,5,0"
-                                 FontSize="14"
-                                 VerticalContentAlignment="Center"
-                                 ToolTip="{DynamicResource AddCustomExtension.NameToolTip}"/>
-                        <Label Grid.Column="2" Content="{DynamicResource AddCustomExtension.TokenLabel}" Margin="15,0,5,0" VerticalAlignment="Center" FontSize="14"/>
-                        <PasswordBox x:Name="custom_token_pb" 
-                                     Grid.Column="3"
-                                     Padding="5,0,5,0" 
-                                     FontFamily="Consolas"
-                                     VerticalContentAlignment="Center"
-                                     Margin="0,0,10,0"
-                                     ToolTip="{DynamicResource AddCustomExtension.TokenToolTip}"/>
-                        <Button x:Name="install_custom_ext_b" 
-                                Grid.Column="4"
-                                Content="{DynamicResource AddCustomExtension.AddAndInstall}" 
-                                Click="install_custom_extension"
-                                Padding="15,5,15,5"
-                                MinWidth="160"/>
-                    </Grid>
+                                 Margin="0,0,10,0"
+                                 ToolTip="{DynamicResource AddCustomExtension.TokenToolTip}"/>
+                    <Button Grid.Row="2" Grid.Column="2" x:Name="install_custom_ext_b"
+                            Content="{DynamicResource AddCustomExtension.AddAndInstall}"
+                            Click="install_custom_extension"
+                            Padding="15,5,15,5"
+                            MinWidth="160"/>
                 </Grid>
             </GroupBox>
-        </Grid>
-        
-        <StackPanel x:Name="ext_infopanel" DockPanel.Dock="Bottom" VerticalAlignment="Bottom">
             <StackPanel x:Name="ext_infostack">
                 <Label x:Name="ext_name_l" FontSize="16" FontWeight="DemiBold" Margin="0,10,0,0"/>
                 <TextBlock Margin="5,0,0,0" FontSize="14" >
@@ -147,12 +116,12 @@
                     </Hyperlink>
                     <TextBlock x:Name="ext_author_nolink_t" Visibility="Collapsed"/>
                 </TextBlock>
+                <TextBlock x:Name="ext_installpath_tb" Margin="5,0,0,0" FontSize="14" Visibility="Collapsed"/>
                 <TextBlock Margin="5,0,0,0" FontSize="14" Text="{DynamicResource ExtensionInfo.RepositoryLink}">
                     <Hyperlink x:Name="ext_repolink_hl" Click="handle_url_click">
                         <TextBlock x:Name="ext_repolink_t"/>
                     </Hyperlink>
                 </TextBlock>
-                <Label x:Name="ext_installed_l" Margin="0,10,0,0"/>
                 <Label x:Name="ext_dependencies_l" Foreground="#bb3a1d" Margin="0,10,0,0"/>
             </StackPanel>
             <Grid Margin="0,15,0,0" IsEnabled="True">
@@ -162,20 +131,11 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <Button x:Name="ext_install_b" Content="{DynamicResource Buttons.InstallExtension}" Click="handle_install_button_popup"
-                            Grid.Column="0" Grid.Row="0" Margin="3"
-                            ContextMenuService.IsEnabled="False">
-                    <Button.ContextMenu>
-                        <ContextMenu >
-                        </ContextMenu>
-                    </Button.ContextMenu>
-                </Button>
                 <Button x:Name="ext_toggle_b" Click="toggle_ext_pkg" Content="{DynamicResource Buttons.EnableExtension}"
-                            Grid.Column="1" Grid.Row="0" Margin="3" />
+                            Grid.Column="0" Grid.Row="0" Margin="3" />
                 <Button x:Name="ext_remove_b" Content="{DynamicResource Buttons.RemoveExtension}" Click="remove_ext_pkg"
-                            Grid.Column="2" Grid.Row="0" Margin="3" />
+                            Grid.Column="1" Grid.Row="0" Margin="3" />
             </Grid>
         </StackPanel>
         <ListView x:Name="extpkgs_lb" SelectionMode="Extended" SelectionChanged="update_ext_info">

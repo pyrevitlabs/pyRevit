@@ -5,6 +5,7 @@
     <v:String x:Key="Window.Title">Gestionnaire d'extensions pyRevit</v:String>
     <v:String x:Key="ExtensionList.TextBlock">Liste des packages d'extension enregistrés :</v:String>
     <v:String x:Key="ExtensionInfo.DevelopedByLink">Développé par : </v:String>
+    <v:String x:Key="ExtensionInfo.InstallPathLink">Chemin d'installation : </v:String>
     <v:String x:Key="ExtensionInfo.RepositoryLink">Dépôt : </v:String>
     <v:String x:Key="ExtensionSettings.PrivateRepositoryCheck">Le dépôt Git est privé (Fournir les identifiants du compte)</v:String>
     <v:String x:Key="ExtensionSettings.GroupName">Paramètres du package d'extension :</v:String>
@@ -36,7 +37,7 @@
     <v:String xml:space="preserve" x:Key="Extension.InstalledPath">Installé sous :
 {}</v:String>
     <v:String x:Key="Extension.Dependencies">Dépendances :</v:String>
-    <v:String x:Key="AddCustomExtension.GroupHeader">Ajouter une extension personnalisée depuis Git</v:String>
+    <v:String x:Key="AddCustomExtension.GroupHeader">Informations Git</v:String>
     <v:String x:Key="AddCustomExtension.GitUrlLabel">URL Git :</v:String>
     <v:String x:Key="AddCustomExtension.GitUrlToolTip">ex. https://github.com/user/repo.git ou https://gitlab.com/user/repo.git</v:String>
     <v:String x:Key="AddCustomExtension.PathLabel">Chemin (optionnel) :</v:String>

@@ -5,6 +5,7 @@
     <v:String x:Key="Window.Title">pyRevit Extension Manager</v:String>
     <v:String x:Key="ExtensionList.TextBlock">List of Registered Extension Packages:</v:String>
     <v:String x:Key="ExtensionInfo.DevelopedByLink">Developed by: </v:String>
+    <v:String x:Key="ExtensionInfo.InstallPathLink">Install path: </v:String>
     <v:String x:Key="ExtensionInfo.RepositoryLink">Repository: </v:String>
     <v:String x:Key="ExtensionSettings.PrivateRepositoryCheck">Git Repository is Private (Provide Account Credentials)</v:String>
     <v:String x:Key="ExtensionSettings.GroupName">Extension Package Settings:</v:String>
@@ -36,7 +37,7 @@
     <v:String xml:space="preserve" x:Key="Extension.InstalledPath">Installed under:
 {}</v:String>
     <v:String x:Key="Extension.Dependencies">Dependencies:</v:String>
-    <v:String x:Key="AddCustomExtension.GroupHeader">Add Custom Extension from Git</v:String>
+    <v:String x:Key="AddCustomExtension.GroupHeader">Git information</v:String>
     <v:String x:Key="AddCustomExtension.GitUrlLabel">Git URL:</v:String>
     <v:String x:Key="AddCustomExtension.GitUrlToolTip">e.g., https://github.com/user/repo.git or https://gitlab.com/user/repo.git</v:String>
     <v:String x:Key="AddCustomExtension.PathLabel">Path (optional):</v:String>
