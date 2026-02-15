@@ -83,6 +83,7 @@
                                      $(TargetDir)\**\Microsoft.CodeAnalysis.CSharp.dll;
                                      $(TargetDir)\**\Microsoft.CodeAnalysis.CSharp.resources.dll;
                                      $(TargetDir)\**\Microsoft.CodeAnalysis.resources.dll;
+                                     $(TargetDir)\**\YamlDotNet.dll;
                                      $(TargetDir)\**\System.*.dll"
                             Condition="'$(IsTestProject)' != 'true'"/>
         </ItemGroup>
