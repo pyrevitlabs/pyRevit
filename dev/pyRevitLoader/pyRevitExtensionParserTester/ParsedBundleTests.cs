@@ -453,6 +453,59 @@ is_beta: true
             }
         }
 
+        [Test]
+        public void TestEngineTypeIsNotEmittedByDefaultForPythonScripts()
+        {
+            var extensionDir = Path.Combine(Path.GetTempPath(), $"EngineTypeDefault_{System.Guid.NewGuid():N}.extension");
+            var bundleDir = Path.Combine(extensionDir, "Test.panel", "Cpy.pushbutton");
+            Directory.CreateDirectory(bundleDir);
+
+            try
+            {
+                File.WriteAllText(Path.Combine(bundleDir, "script.py"), "#! python3\nprint(3/0)\n");
+
+                var parsedExtension = ParseInstalledExtensions(new[] { extensionDir }).First();
+                var codeGenerator = new pyRevitAssemblyBuilder.AssemblyMaker.RoslynCommandTypeGenerator();
+                var generatedCode = codeGenerator.GenerateExtensionCode(parsedExtension, "2024");
+
+                Assert.That(generatedCode, Does.Not.Contain("\\\"type\\\":\\\"IronPython\\\""),
+                    "Default IronPython engine type should not be emitted into engine configs.");
+            }
+            finally
+            {
+                if (Directory.Exists(extensionDir))
+                    Directory.Delete(extensionDir, true);
+            }
+        }
+
+        [Test]
+        public void TestEngineTypeIsEmittedWhenExplicitlyConfigured()
+        {
+            var extensionDir = Path.Combine(Path.GetTempPath(), $"EngineTypeExplicit_{System.Guid.NewGuid():N}.extension");
+            var bundleDir = Path.Combine(extensionDir, "Test.panel", "Cmd.pushbutton");
+            Directory.CreateDirectory(bundleDir);
+
+            try
+            {
+                File.WriteAllText(Path.Combine(bundleDir, "script.py"), "print('ok')\n");
+                File.WriteAllText(Path.Combine(bundleDir, "bundle.yaml"), "engine:\n  type: IronPython\n");
+
+                var parsedExtension = ParseInstalledExtensions(new[] { extensionDir }).First();
+                var codeGenerator = new pyRevitAssemblyBuilder.AssemblyMaker.RoslynCommandTypeGenerator();
+                var generatedCode = codeGenerator.GenerateExtensionCode(parsedExtension, "2024");
+
+                Assert.That(generatedCode, Does.Contain("\\\"type\\\":\\\"IronPython\\\""),
+                    "Explicit engine.type from bundle.yaml should be emitted into engine configs.");
+                Assert.That(generatedCode, Does.Contain("\\\"type_explicit\\\":true"),
+                    "Explicit engine.type should set type_explicit marker in engine configs.");
+            }
+            finally
+            {
+                if (Directory.Exists(extensionDir))
+                    Directory.Delete(extensionDir, true);
+            }
+        }
+
         private static IEnumerable<ParsedComponent> GetAllComponentsFlat(ParsedComponent component)
         {
             yield return component;

@@ -363,7 +363,7 @@ namespace pyRevitExtensionParser
         /// <para>Specifies which Python runtime to use for executing scripts.</para>
         /// <para>Valid values: "IronPython" (default), "CPython"</para>
         /// <para>Other values may be supported in the future but are not guaranteed.</para>
-        /// <para>Setting this property to null or empty will reset to the default ("IronPython").</para>
+        /// <para>Setting this property to null or empty clears any explicit override.</para>
         /// </remarks>
         private string _type;
 
@@ -372,6 +372,11 @@ namespace pyRevitExtensionParser
             get => string.IsNullOrEmpty(_type) ? "IronPython" : _type;
             set => _type = value;
         }
+
+        /// <summary>
+        /// Gets whether engine type was explicitly configured by user metadata.
+        /// </summary>
+        public bool HasTypeOverride => !string.IsNullOrWhiteSpace(_type);
 
         /// <summary>
         /// Gets or sets whether to use a clean engine scope for execution.
