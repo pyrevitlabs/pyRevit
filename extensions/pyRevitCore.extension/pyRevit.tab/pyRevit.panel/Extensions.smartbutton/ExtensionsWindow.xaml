@@ -64,59 +64,70 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     
                     <!-- Git URL Input -->
                     <DockPanel Grid.Row="0" Margin="0,0,0,5">
-                        <Label Content="Git URL:" Width="80" VerticalAlignment="Center"/>
+                        <Label Content="Git URL:" Width="120" VerticalAlignment="Center" FontSize="14"/>
                         <TextBox x:Name="custom_git_url_tb" 
                                  Padding="5,0,5,0" 
                                  FontFamily="Consolas"
+                                 FontSize="14"
                                  VerticalContentAlignment="Center"
                                  ToolTip="e.g., https://github.com/user/repo.git or https://gitlab.com/user/repo.git"/>
                     </DockPanel>
                     
-                    <!-- Extension Name, Token, and Install Button -->
-                    <DockPanel Grid.Row="1">
-                        <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
-                            <Label Content="Name:" Width="80" VerticalAlignment="Center"/>
-                            <TextBox x:Name="custom_ext_name_tb" 
-                                     Width="150" 
-                                     Padding="5,0,5,0"
-                                     VerticalContentAlignment="Center"
-                                     ToolTip="Extension name (e.g., MyTools)"/>
-                            
-                            <Label Content="Token (optional):" Margin="15,0,0,0" VerticalAlignment="Center"/>
-                            <PasswordBox x:Name="custom_token_pb" 
-                                         Width="180" 
-                                         Padding="5,0,5,0" 
-                                         FontFamily="Consolas"
-                                         VerticalContentAlignment="Center"
-                                         ToolTip="Leave empty for public repos"/>
-
-                            <Label Content="Path (optional):" Width="100" VerticalAlignment="Center"/>
-                            <TextBox x:Name="custom_ext_install_path_tb" 
-                                     Width="100" 
-                                     Padding="5,0,5,0"
-                                     VerticalContentAlignment="Center"
-                                     ToolTip="If empty, will pick the default one"
-                                     IsReadOnly="True"/>
-                        </StackPanel>
-
+                    <!-- Installation path and Pick button (below Git URL) -->
+                    <DockPanel Grid.Row="1" Margin="0,0,0,5">
+                        <Label Content="Path (optional):" Width="120" VerticalAlignment="Center" FontSize="14"/>
                         <Button x:Name="path_custom_ext_b" 
-                                Content="Pick" 
+                                DockPanel.Dock="Right"
+                                Content="{DynamicResource AddCustomExtension.PickInstallationPath}" 
                                 Click="custom_extension_path"
                                 Padding="15,5,15,5"
                                 Margin="10,0,0,0"
-                                HorizontalAlignment="Right"/>
-                        
+                                MinWidth="160"/>
+                        <TextBlock x:Name="custom_ext_install_path_tb" 
+                                   Margin="5,0,0,0"
+                                   VerticalAlignment="Center"
+                                   TextWrapping="NoWrap"
+                                   TextTrimming="CharacterEllipsis"
+                                   FontSize="14"
+                                   ToolTip="If empty, will use the default extensions folder"/>
+                    </DockPanel>
+                    
+                    <!-- Extension Name, Token, and Install Button -->
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Label Grid.Column="0" Content="Name:" Width="120" VerticalAlignment="Center" FontSize="14" Margin="0,0,5,0"/>
+                        <TextBox x:Name="custom_ext_name_tb" 
+                                 Grid.Column="1"
+                                 Padding="5,0,5,0"
+                                 FontSize="14"
+                                 VerticalContentAlignment="Center"
+                                 ToolTip="Extension name (e.g., MyTools)"/>
+                        <Label Grid.Column="2" Content="Token (optional):" Margin="15,0,5,0" VerticalAlignment="Center" FontSize="14"/>
+                        <PasswordBox x:Name="custom_token_pb" 
+                                     Grid.Column="3"
+                                     Padding="5,0,5,0" 
+                                     FontFamily="Consolas"
+                                     VerticalContentAlignment="Center"
+                                     Margin="0,0,10,0"
+                                     ToolTip="Leave empty for public repos"/>
                         <Button x:Name="install_custom_ext_b" 
+                                Grid.Column="4"
                                 Content="{DynamicResource AddCustomExtension.AddAndInstall}" 
                                 Click="install_custom_extension"
                                 Padding="15,5,15,5"
-                                Margin="10,0,0,0"
-                                HorizontalAlignment="Right"/>
-                    </DockPanel>
+                                MinWidth="160"/>
+                    </Grid>
                 </Grid>
             </GroupBox>
         </Grid>

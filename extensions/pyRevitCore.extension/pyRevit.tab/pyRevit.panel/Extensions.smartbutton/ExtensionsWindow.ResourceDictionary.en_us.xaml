@@ -37,4 +37,5 @@
 {}</v:String>
     <v:String x:Key="Extension.Dependencies">Dependencies:</v:String>
     <v:String x:Key="AddCustomExtension.AddAndInstall">Add and install</v:String>
+    <v:String x:Key="AddCustomExtension.PickInstallationPath">Pick Installation path</v:String>
 </ResourceDictionary>

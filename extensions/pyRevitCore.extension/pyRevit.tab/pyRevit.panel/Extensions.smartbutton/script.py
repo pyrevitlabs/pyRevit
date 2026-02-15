@@ -112,6 +112,8 @@ class ExtensionsWindow(forms.WPFWindow):
         forms.WPFWindow.__init__(self, xaml_file_name)
         self._setup_ext_dirs_ui(user_config.get_thirdparty_ext_root_dirs())
         self._setup_ext_pkg_ui(extpkgs.get_ext_packages())
+        default_path = user_config.get_thirdparty_ext_root_dirs(include_default=True)[0]
+        self.custom_ext_install_path_tb.Text = default_path
 
     @property
     def selected_pkg(self):
