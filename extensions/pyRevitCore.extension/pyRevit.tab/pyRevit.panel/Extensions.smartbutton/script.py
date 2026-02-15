@@ -426,7 +426,7 @@ class ExtensionsWindow(forms.WPFWindow):
         custom_path = forms.pick_folder(owner=self)
         if custom_path:
             custom_path = os.path.normpath(custom_path)
-        self.custom_ext_install_path_tb.Text = custom_path
+        self.custom_ext_install_path_tb.Text = custom_path if custom_path else ""
 
     def install_custom_extension(self, sender, args):
         """Installs a custom extension from a Git URL
