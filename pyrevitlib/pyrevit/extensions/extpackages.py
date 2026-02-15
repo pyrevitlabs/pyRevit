@@ -253,7 +253,6 @@ class ExtensionPackage:
             cfg_section = user_config.add_section(self.ext_dirname)
             self.config.disabled = not self.default_enabled
             self.config.private_repo = self.builtin
-            self.config.username = self.config.password = ''
             user_config.save_changes()
             return cfg_section
 
@@ -341,10 +340,11 @@ def _install_extpkg(extpkg, install_dir, install_dependencies=True):
         clone_path = op.join(install_dir, extpkg.ext_dirname)
         mlogger.info('Installing %s to %s', extpkg.name, clone_path)
 
-        if extpkg.config.username and extpkg.config.password:
+        token = getattr(extpkg.config, 'token', None)
+        if token:
             git.git_clone(extpkg.url, clone_path,
-                          username=extpkg.config.username,
-                          password=extpkg.config.password)
+                          username='oauth2',
+                          password=token)
         else:
             git.git_clone(extpkg.url, clone_path)
         mlogger.info('Extension successfully installed :thumbs_up:')

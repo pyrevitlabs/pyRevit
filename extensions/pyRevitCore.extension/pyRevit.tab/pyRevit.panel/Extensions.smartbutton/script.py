@@ -449,7 +449,6 @@ class ExtensionsWindow(forms.WPFWindow):
             if token:
                 temp_pkg.config.private_repo = True
                 temp_pkg.config.token = token
-                temp_pkg.config.password = token  # Backward compatibility
 
             extpkgs.install(temp_pkg, dest_path)
 
