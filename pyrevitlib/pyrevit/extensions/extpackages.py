@@ -386,8 +386,8 @@ def _remove_extpkg(extpkg, remove_dependencies=True):
     if extpkg.is_removable:
         dir_to_remove = extpkg.is_installed
         if dir_to_remove:
-            fully_remove_dir(dir_to_remove)
             extpkg.remove_pkg_config()
+            fully_remove_dir(dir_to_remove)
             mlogger.info('Successfully removed extension from: %s',
                          dir_to_remove)
         else:
