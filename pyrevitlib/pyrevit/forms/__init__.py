@@ -203,6 +203,9 @@ class WPFWindow(framework.Windows.Window):
 
         if not literal_string:
             wpf.LoadComponent(self, self._determine_xaml(xaml_source))
+            if getattr(self, '_pending_resource_merge', None):
+                self.merge_resource_dict(self._pending_resource_merge)
+                self._pending_resource_merge = None
         else:
             wpf.LoadComponent(self, framework.StringReader(xaml_source))
 
@@ -216,6 +219,7 @@ class WPFWindow(framework.Windows.Window):
             self.setup_default_handlers()
 
     def _determine_xaml(self, xaml_source):
+        self._pending_resource_merge = None
         xaml_file = xaml_source
         if not op.exists(xaml_file):
             xaml_file = os.path.join(EXEC_PARAMS.command_path, xaml_source)
@@ -239,13 +243,14 @@ class WPFWindow(framework.Windows.Window):
         if os.path.isfile(english_xaml_file):
             return english_xaml_file
 
-        # otherwise look for .ResourceDictionary files and load those,
-        # returning the original xaml_file
+        # otherwise look for .ResourceDictionary files and merge after load
+        # (must merge after LoadComponent so XAML does not replace Resources)
         if os.path.isfile(localized_xaml_resfile):
-            self.merge_resource_dict(localized_xaml_resfile)
-
+            self._pending_resource_merge = localized_xaml_resfile
         elif os.path.isfile(english_xaml_resfile):
-            self.merge_resource_dict(english_xaml_resfile)
+            self._pending_resource_merge = english_xaml_resfile
+        else:
+            self._pending_resource_merge = None
 
         return xaml_file
 
