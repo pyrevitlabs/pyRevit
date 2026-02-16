@@ -1489,7 +1489,6 @@ class GetValueWindow(TemplateUserInputWindow):
             self.show_element(self.datePanel_dp)
             self.datePrompt.Text = value_prompt if value_prompt else "Pick date:"
             if isinstance(value_default, datetime.datetime):
-                import System
                 self.datePicker.SelectedDate = System.DateTime(
                     value_default.year,
                     value_default.month,
