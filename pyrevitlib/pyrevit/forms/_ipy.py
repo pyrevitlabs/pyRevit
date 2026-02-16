@@ -42,10 +42,10 @@ from pyrevit.userconfig import user_config
 
 import pyevent
 
-import Autodesk.Windows.ComponentManager  # pylint: disable=import-error
-import Autodesk.Internal.InfoCenter  # pylint: disable=import-error
+import Autodesk.Windows.ComponentManager
+import Autodesk.Internal.InfoCenter
 
-# pylint: disable=W0703,C0302,C0103
+
 mlogger = get_logger(__name__)
 
 
@@ -1968,7 +1968,7 @@ class SearchPrompt(WPFWindow):
             else:
                 if cur_res.lower().startswith(input_term):
                     self.directmatch_tb.Text = (
-                        self.search_input + cur_res[len(input_term) :]
+                        self.search_input + cur_res[len(input_term):]
                     )
                     mlogger.debug("directmatch_tb.Text: %s", self.directmatch_tb.Text)
                 else:
