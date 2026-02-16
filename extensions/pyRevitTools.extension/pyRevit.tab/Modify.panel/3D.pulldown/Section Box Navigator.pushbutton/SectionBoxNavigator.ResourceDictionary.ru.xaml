@@ -37,8 +37,13 @@
     
     <system:String x:Key="Actions">Действия</system:String>
     <system:String x:Key="ToggleBox">Переключить Бокс</system:String>
+    <system:String x:Key="ToggleBoxTooltip">Включает или отключает секционный бокс и восстанавливает его последнюю форму</system:String>
     <system:String x:Key="UnHideBox">(Скрыть/Показать) Бокс</system:String>
+    <system:String x:Key="UnHideBoxTooltip">Показывает или скрывает секционный бокс в текущем виде, если он скрыт поэлементно</system:String>
     <system:String x:Key="AlignBox">Выровнять Бокс</system:String>
+    <system:String x:Key="AlignBoxTooltip">Выберите грань, и бокс повернётся для выравнивания по ней</system:String>
+    <system:String x:Key="TempSwitch">Временный бокс</system:String>
+    <system:String x:Key="TempSwitchTooltip">Создаёт временный бокс вокруг выбранных элементов и позже восстанавливает предыдущее состояние</system:String>
     
     <system:String x:Key="VerticalPositionStatus">Статус Вертикальной Позиции</system:String>
     <system:String x:Key="Top">Верх:</system:String>
@@ -101,6 +106,8 @@
     <system:String x:Key="ErrorInBoxVisibility">Ошибка видимости бокса</system:String>
     <system:String x:Key="SectionBoxAlignedToFace">Бокс сечения выровнен с гранью</system:String>
     <system:String x:Key="FailedToAlignToFaceFormat">Не удалось выровнять с гранью: {0}</system:String>
+    <system:String x:Key="SuccessTempSwitch">Установлен новый бокс или восстановлено предыдущее состояние</system:String>
+    <system:String x:Key="FailedTempSwitch">Не удалось создать или восстановить временный секционный бокс: {0}</system:String>
     <system:String x:Key="InvalidSectionBoxDimensions">Недопустимые размеры бокса сечения.</system:String>
     <system:String x:Key="PleaseEnterValidNumber">Пожалуйста, введите действительное число</system:String>
     <system:String x:Key="AnErrorOccurredFormat">Произошла ошибка: {0}</system:String>

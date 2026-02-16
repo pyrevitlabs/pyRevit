@@ -5,6 +5,7 @@
     <v:String x:Key="Window.Title">Менеджер расширений pyRevit</v:String>
     <v:String x:Key="ExtensionList.TextBlock">Список зарегистрированных расширений:</v:String>
     <v:String x:Key="ExtensionInfo.DevelopedByLink">Разработчик: </v:String>
+    <v:String x:Key="ExtensionInfo.InstallPathLink">Путь установки: </v:String>
     <v:String x:Key="ExtensionInfo.RepositoryLink">Репозиторий: </v:String>
     <v:String x:Key="ExtensionSettings.PrivateRepositoryCheck">Частный Git репозиторий (Предоставьте учетные данные)</v:String>
     <v:String x:Key="ExtensionSettings.GroupName">Настройки расширений:</v:String>
@@ -14,6 +15,7 @@
     <v:String x:Key="Buttons.InstallExtension">Установить расширение</v:String>
     <v:String x:Key="Buttons.EnableExtension">Включить расширение</v:String>
     <v:String x:Key="Buttons.RemoveExtension">Удалить расширение</v:String>
+    <v:String x:Key="Buttons.DeselectExtension">Снять выделение</v:String>
     <v:String x:Key="Buttons.ToggleButton.Enable">Включить</v:String>
     <v:String x:Key="Buttons.ToggleButton.Disable">Выключить</v:String>
     <v:String x:Key="ExtensionsList.ColumnName">Имя</v:String>
@@ -36,4 +38,15 @@
     <v:String xml:space="preserve" x:Key="Extension.InstalledPath">Папка установки:
 {}</v:String>
     <v:String x:Key="Extension.Dependencies">Зависимости:</v:String>
+    <v:String x:Key="AddCustomExtension.GroupHeader">Информация Git</v:String>
+    <v:String x:Key="AddCustomExtension.GitUrlLabel">URL Git:</v:String>
+    <v:String x:Key="AddCustomExtension.GitUrlToolTip">напр., https://github.com/user/repo.git или https://gitlab.com/user/repo.git</v:String>
+    <v:String x:Key="AddCustomExtension.PathLabel">Путь (необязательно):</v:String>
+    <v:String x:Key="AddCustomExtension.PathToolTip">Если пусто, будет использована папка расширений по умолчанию</v:String>
+    <v:String x:Key="AddCustomExtension.PickInstallationPath">Выбрать путь установки</v:String>
+    <v:String x:Key="AddCustomExtension.NameLabel">Имя:</v:String>
+    <v:String x:Key="AddCustomExtension.NameToolTip">Имя расширения (напр., MyTools)</v:String>
+    <v:String x:Key="AddCustomExtension.TokenLabel">Токен (необязательно):</v:String>
+    <v:String x:Key="AddCustomExtension.TokenToolTip">Оставьте пустым для публичных репозиториев</v:String>
+    <v:String x:Key="AddCustomExtension.AddAndInstall">Добавить и установить</v:String>
 </ResourceDictionary>

@@ -37,8 +37,13 @@
     
     <system:String x:Key="Actions">Actions</system:String>
     <system:String x:Key="ToggleBox">Toggle Box</system:String>
+    <system:String x:Key="ToggleBoxTooltip">En- or disables the sectionbox, (re-)storing its last shape</system:String>
     <system:String x:Key="UnHideBox">(Un-)Hide Box</system:String>
+    <system:String x:Key="UnHideBoxTooltip">(Un-)Hides the sectionbox in the current view, if it's hidden on element basis</system:String>
     <system:String x:Key="AlignBox">Align Box</system:String>
+    <system:String x:Key="AlignBoxTooltip">Pick a face, the box will rotate to be aligned to it</system:String>
+    <system:String x:Key="TempSwitch">Temporary Box</system:String>
+    <system:String x:Key="TempSwitchTooltip">Create a temporary box around selected elements, restore the previous state later</system:String>
     
     <system:String x:Key="VerticalPositionStatus">Vertical Position Status</system:String>
     <system:String x:Key="Top">Top:</system:String>
@@ -101,6 +106,8 @@
     <system:String x:Key="ErrorInBoxVisibility">Error in Box visibility</system:String>
     <system:String x:Key="SectionBoxAlignedToFace">Section box aligned to face</system:String>
     <system:String x:Key="FailedToAlignToFaceFormat">Failed to align to face: {0}</system:String>
+    <system:String x:Key="SuccessTempSwitch">Set new Box or restored previous</system:String>
+    <system:String x:Key="FailedTempSwitch">Failed to create or restore temporary Section box: {0}</system:String>
     <system:String x:Key="InvalidSectionBoxDimensions">Invalid section box dimensions.</system:String>
     <system:String x:Key="PleaseEnterValidNumber">Please enter a valid number</system:String>
     <system:String x:Key="AnErrorOccurredFormat">An error occurred: {0}</system:String>

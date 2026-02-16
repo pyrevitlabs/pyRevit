@@ -455,10 +455,18 @@ def pick_point(message=''):
     """
     doc = HOST_APP.doc
     active_view = doc.ActiveView
+    NO_SKETCHPLANE_VIEWTYPES = (
+        DB.ViewType.DraftingView,
+        DB.ViewType.Legend,
+    )  # type: tuple[DB.ViewType]
+    needs_plane = (
+        active_view.SketchPlane is None
+        and active_view.ViewType not in NO_SKETCHPLANE_VIEWTYPES
+    )  # type: bool
     result = None
 
     try:
-        if active_view.SketchPlane is None:
+        if needs_plane:
             tg = DB.TransactionGroup(doc, "Assigning a workplane to the current view")
             tg.Start()
 
