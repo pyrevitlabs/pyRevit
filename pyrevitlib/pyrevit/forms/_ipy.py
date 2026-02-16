@@ -1,5 +1,4 @@
-﻿# -*- coding: UTF-8 -*-
-"""Reusable WPF forms for pyRevit.
+﻿"""Reusable WPF forms for pyRevit.
 
 Examples:
     ```python
