@@ -104,7 +104,9 @@ def ask_for_options():
     ]
 
     selected_switch = forms.CommandSwitchWindow.show(
-        select_options, message="Temporarily isolate elements of type:"
+        select_options,
+        title="Isolate Elements",
+        message="Temporarily isolate elements of type:"
     )
 
     if selected_switch:

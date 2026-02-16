@@ -1,6 +1,6 @@
 #nullable enable
 using System;
-using System.Diagnostics;
+using pyRevitLabs.NLog;
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
@@ -9,7 +9,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
     /// </summary>
     public class LoggingHelper : ILogger
     {
-        private const string LogPrefix = "[pyRevit]";
+        private static readonly Logger nlog = LogManager.GetCurrentClassLogger();
         private readonly dynamic? _pythonLogger;
 
         /// <summary>
@@ -29,11 +29,14 @@ namespace pyRevitAssemblyBuilder.SessionManager
         {
             try
             {
-                _pythonLogger?.info(message);
+                if (_pythonLogger != null)
+                    _pythonLogger.info(message);
+                else
+                    nlog.Info(message);
             }
             catch (Exception ex)
             {
-                Trace.WriteLine($"{LogPrefix} Logging (Info) failed: {ex.Message}");
+                nlog.Error(ex, "Logging (Info) failed");
             }
         }
 
@@ -45,11 +48,14 @@ namespace pyRevitAssemblyBuilder.SessionManager
         {
             try
             {
-                _pythonLogger?.debug(message);
+                if (_pythonLogger != null)
+                    _pythonLogger.debug(message);
+                else
+                    nlog.Debug(message);
             }
             catch (Exception ex)
             {
-                Trace.WriteLine($"{LogPrefix} Logging (Debug) failed: {ex.Message}");
+                nlog.Error(ex, "Logging (Debug) failed");
             }
         }
 
@@ -61,11 +67,14 @@ namespace pyRevitAssemblyBuilder.SessionManager
         {
             try
             {
-                _pythonLogger?.error(message);
+                if (_pythonLogger != null)
+                    _pythonLogger.error(message);
+                else
+                    nlog.Error(message);
             }
             catch (Exception ex)
             {
-                Trace.WriteLine($"{LogPrefix} Logging (Error) failed: {ex.Message}");
+                nlog.Error(ex, "Logging (Error) failed");
             }
         }
 
@@ -77,11 +86,14 @@ namespace pyRevitAssemblyBuilder.SessionManager
         {
             try
             {
-                _pythonLogger?.warning(message);
+                if (_pythonLogger != null)
+                    _pythonLogger.warning(message);
+                else
+                    nlog.Warn(message);
             }
             catch (Exception ex)
             {
-                Trace.WriteLine($"{LogPrefix} Logging (Warning) failed: {ex.Message}");
+                nlog.Error(ex, "Logging (Warning) failed");
             }
         }
     }

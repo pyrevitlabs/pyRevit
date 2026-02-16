@@ -17,6 +17,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="YamlDotNet" Version="15.3.0" />
       <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.Json.dll" Private="false" />
       <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.NLog.dll" Private="false" />
     </ItemGroup>
@@ -30,6 +31,7 @@
       <Compile Include="ParsedBundle.cs" />
       <Compile Include="ParsedComponent.cs" />
       <Compile Include="ParsedExtension.cs" />
+      <Compile Include="ParserLogger.cs" />
       <Compile Include="PyRevitConfig.cs" />
       <Compile Include="ExtensionParser.cs" />
       <Compile Include="IniFile.cs" />

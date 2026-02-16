@@ -18,10 +18,17 @@
     <system:String x:Key="DiagonalFormat">Diagonal: {}</system:String>
     <system:String x:Key="SlopeFormat">Slope: {}</system:String>
     
-    <system:String x:Key="MeasurementHistoryEntry">Measurement {}:\n  P1: {}\n  P2: {}\n  ΔX: {:>15}\n  ΔY: {:>15}\n  ΔZ: {:>15}\n  Diagonal: {}\n  Slope: {}</system:String>
+    <system:String x:Key="MeasurementHistoryEntry" xml:space="preserve">
+Measurement {}: 
+    P1: {}  
+    P2: {}  
+    ΔX: {:>15}
+    ΔY: {:>15}
+    ΔZ: {:>15}
+    Diagonal: {}
+    Slope: {}
+    </system:String>
     
-    <system:String x:Key="Alert3DViewRequired">Please activate a 3D view before using the 3D Measure tool.</system:String>
-    <system:String x:Key="Alert3DViewRequiredTitle">3D View Required</system:String>
     <system:String x:Key="WarningBarPickFirstPoint">Pick first point</system:String>
     <system:String x:Key="WarningBarPickSecondPoint">Pick second point</system:String>
     <system:String x:Key="AlertMeasurementCancelled">Measurement cancelled due to invalid operation. Please try again.</system:String>
@@ -29,6 +36,10 @@
     <system:String x:Key="AlertUnexpectedError">An unexpected error occurred during measurement. Check the log for details.</system:String>
     <system:String x:Key="ToastMeasurementsCopied">Measurements copied to Clipboard!</system:String>
     <system:String x:Key="ToastMeasure3DTitle">Measure 3D</system:String>
-    <system:String x:Key="ProjectUnitLengthUnits">Length Units (adjust in Project Units): \n</system:String>
-    <system:String x:Key="ProjectUnitSlopeUnits">Slope Units (adjust in Project Units): \n</system:String>
+    <system:String x:Key="ProjectUnitLengthUnits" xml:space="preserve">
+Length Units (adjust in Project Units):
+    </system:String>
+    <system:String x:Key="ProjectUnitSlopeUnits" xml:space="preserve">
+Slope Units (adjust in Project Units):
+    </system:String>
 </ResourceDictionary>
