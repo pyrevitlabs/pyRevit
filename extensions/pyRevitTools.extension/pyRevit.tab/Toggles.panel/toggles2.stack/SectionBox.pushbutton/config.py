@@ -6,6 +6,7 @@ scope = my_config.get_option("scope", "Visibility")
 opts = [
     "Visibility",
     "Active State",
+    "Temporary Section Box",
 ]
 result = forms.ask_for_one_item(
     opts,

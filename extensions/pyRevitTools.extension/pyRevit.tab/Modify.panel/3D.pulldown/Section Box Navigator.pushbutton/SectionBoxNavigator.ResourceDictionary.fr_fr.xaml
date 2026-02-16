@@ -37,9 +37,14 @@
     
     <system:String x:Key="Actions">Actions</system:String>
     <system:String x:Key="ToggleBox">Basculer la Boîte</system:String>
+    <system:String x:Key="ToggleBoxTooltip">Active ou désactive la boîte de coupe et restaure sa dernière forme</system:String>
     <system:String x:Key="UnHideBox">(Dé)masquer la Boîte</system:String>
+    <system:String x:Key="UnHideBoxTooltip">Affiche ou masque la boîte de coupe dans la vue actuelle si elle est masquée par élément</system:String>
     <system:String x:Key="AlignBox">Aligner la Boîte</system:String>
-    
+    <system:String x:Key="AlignBoxTooltip">Sélectionnez une face ; la boîte pivotera pour s’y aligner</system:String>
+    <system:String x:Key="TempSwitch">Boîte temporaire</system:String>
+    <system:String x:Key="TempSwitchTooltip">Crée une boîte temporaire autour des éléments sélectionnés et restaure l’état précédent ensuite</system:String>
+
     <system:String x:Key="VerticalPositionStatus">Statut de Position Verticale</system:String>
     <system:String x:Key="Top">Haut :</system:String>
     <system:String x:Key="Bottom">Bas :</system:String>
@@ -101,6 +106,8 @@
     <system:String x:Key="ErrorInBoxVisibility">Erreur dans la visibilité de la boîte</system:String>
     <system:String x:Key="SectionBoxAlignedToFace">Boîte de coupe alignée avec la face</system:String>
     <system:String x:Key="FailedToAlignToFaceFormat">Échec de l'alignement avec la face : {0}</system:String>
+    <system:String x:Key="SuccessTempSwitch">Nouvelle boîte définie ou état précédent restauré</system:String>
+    <system:String x:Key="FailedTempSwitch">Échec de la création ou de la restauration de la boîte de coupe temporaire : {0}</system:String>
     <system:String x:Key="InvalidSectionBoxDimensions">Dimensions de boîte de coupe invalides.</system:String>
     <system:String x:Key="PleaseEnterValidNumber">Veuillez entrer un nombre valide</system:String>
     <system:String x:Key="AnErrorOccurredFormat">Une erreur s'est produite : {0}</system:String>
