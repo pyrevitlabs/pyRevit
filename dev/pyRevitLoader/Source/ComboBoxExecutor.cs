@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Autodesk.Revit.UI;
 using IronPython.Runtime.Exceptions;
@@ -24,10 +25,13 @@ namespace PyRevitLoader {
         private string _pyrevitLibPath;
         private HashSet<string> _baseSearchPaths;
         
-        // Keep engines, scopes, and handler delegates alive to prevent GC from
-        // collecting Python callables wired to .NET events. Without strong references
-        // the delegates get garbage-collected and the event handlers silently stop firing.
-        private static readonly List<object> _aliveReferences = new List<object>();
+        // Keep shared runtime objects alive once and keep per-combo references attached
+        // to each ComboBox instance. This prevents event handler callables from being
+        // garbage-collected while avoiding duplicate references for shared objects.
+        private static readonly object _aliveReferencesLock = new object();
+        private static readonly HashSet<object> _sharedAliveReferences = new HashSet<object>();
+        private static readonly ConditionalWeakTable<ComboBox, List<object>> _comboBoxAliveReferences =
+            new ConditionalWeakTable<ComboBox, List<object>>();
 
         public ComboBoxExecutor(UIApplication uiApplication, Action<string> logger = null) {
             _revit = uiApplication;
@@ -219,13 +223,19 @@ namespace PyRevitLoader {
                 // This prevents GC from collecting the Python callables and
                 // their parent scope, which would silently break event delivery.
                 if (handlersWired) {
-                    lock (_aliveReferences) {
-                        _aliveReferences.Add(_engine);
-                        _aliveReferences.Add(scope);
-                        _aliveReferences.Add(ops);
-                        _aliveReferences.Add(context);
-                        _aliveReferences.Add(outStream);
-                        _aliveReferences.AddRange(handlerObjects);
+                    lock (_aliveReferencesLock) {
+                        _sharedAliveReferences.Add(_engine);
+                        _sharedAliveReferences.Add(ops);
+                        _sharedAliveReferences.Add(outStream);
+
+                        if (!_comboBoxAliveReferences.TryGetValue(comboBox, out var comboAliveReferences)) {
+                            comboAliveReferences = new List<object>();
+                            _comboBoxAliveReferences.Add(comboBox, comboAliveReferences);
+                        }
+
+                        comboAliveReferences.Add(scope);
+                        comboAliveReferences.Add(context);
+                        comboAliveReferences.AddRange(handlerObjects);
                     }
                     Log($"Event handlers set up successfully for ComboBox '{context.name}'.");
                 }

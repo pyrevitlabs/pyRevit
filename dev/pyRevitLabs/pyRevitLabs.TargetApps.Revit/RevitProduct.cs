@@ -145,6 +145,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         private string _registeredName = string.Empty;
         private string _registeredInstallPath = string.Empty;
         private static List<RevitProduct> _installedProductsCache = null;
+        private static readonly object _installedProductsCacheLock = new object();
 
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
@@ -228,6 +229,12 @@ namespace pyRevitLabs.TargetApps.Revit {
         public static List<RevitProduct> ListInstalledProducts() {
             if (_installedProductsCache != null)
                 return _installedProductsCache.ToList();
+
+            lock (_installedProductsCacheLock)
+            {
+                if (_installedProductsCache != null)
+                    return _installedProductsCache.ToList();
+
             var installedRevits = new HashSet<RevitProduct>();
 
             // pattern for finding revit installation entries in registry
@@ -330,8 +337,9 @@ namespace pyRevitLabs.TargetApps.Revit {
                 }
             }
 
-            _installedProductsCache = installedRevits.ToList();
-            return _installedProductsCache.ToList();
+                _installedProductsCache = installedRevits.ToList();
+                return _installedProductsCache.ToList();
+            }
         }
 
         private static RevitProduct FindRevitProduct(string regVersion, string binaryFilePath)

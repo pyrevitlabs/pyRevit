@@ -55,7 +55,6 @@ namespace pyRevitExtensionParser
         {
             var parsed = new ParsedBundle();
             var yamlText = File.ReadAllText(filePath);
-            var lines = File.ReadAllLines(filePath);
             var stream = new YamlStream();
 
             try
@@ -67,7 +66,7 @@ namespace pyRevitExtensionParser
             }
             catch (YamlException ex)
             {
-                AttachYamlErrorDetails(ex, lines);
+                AttachYamlErrorDetails(ex, yamlText);
                 throw;
             }
 
@@ -89,7 +88,7 @@ namespace pyRevitExtensionParser
             return parsed;
         }
 
-        private static void AttachYamlErrorDetails(YamlException ex, string[] lines)
+        private static void AttachYamlErrorDetails(YamlException ex, string yamlText)
         {
             if (ex == null || ex.Data == null)
                 return;
@@ -99,6 +98,14 @@ namespace pyRevitExtensionParser
 
             ex.Data["LineNumber"] = lineNumber;
             ex.Data["ColumnNumber"] = columnNumber;
+
+            if (string.IsNullOrEmpty(yamlText))
+                return;
+
+            var lines = yamlText
+                .Replace("\r\n", "\n")
+                .Replace("\r", "\n")
+                .Split('\n');
 
             if (lineNumber > 0 && lineNumber <= lines.Length)
                 ex.Data["LineText"] = lines[lineNumber - 1];

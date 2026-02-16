@@ -20,10 +20,12 @@ namespace pyRevitAssemblyBuilder.UIManager
     public class ComboBoxUIItemWrapper
     {
         private readonly ComboBox _comboBox;
+        private readonly SessionManager.ILogger _logger;
 
-        public ComboBoxUIItemWrapper(ComboBox comboBox)
+        public ComboBoxUIItemWrapper(ComboBox comboBox, SessionManager.ILogger logger = null)
         {
             _comboBox = comboBox;
+            _logger = logger;
         }
 
         /// <summary>Gets or sets the currently selected ComboBoxMember.</summary>
@@ -32,7 +34,11 @@ namespace pyRevitAssemblyBuilder.UIManager
             get
             {
                 try { return _comboBox?.Current; }
-                catch { return null; }
+                catch (Exception ex)
+                {
+                    _logger?.Debug($"Failed to read ComboBox current item: {ex.Message}");
+                    return null;
+                }
             }
             set
             {
@@ -72,28 +78,18 @@ namespace pyRevitAssemblyBuilder.UIManager
 
         /// <summary>
         /// pyRevit-compatible alias for adding one item.
-        /// Supports string, [name, text], [name, text, group], and ComboBoxMemberData.
+        /// Supports: add_item(spec), add_item(spec, defaultGroup),
+        /// and add_item(name, text[, group]).
         /// </summary>
-        public RevitComboBoxMember add_item(object itemSpec, string defaultGroupName = null)
+        public RevitComboBoxMember add_item(params object[] args)
         {
-            if (_comboBox == null || itemSpec == null)
+            if (_comboBox == null || args == null || args.Length == 0)
                 return null;
 
-            if (itemSpec is ComboBoxMemberData memberData)
-                return _comboBox.AddItem(memberData);
+            if (!TryCreateMemberDataFromArguments(args, out var memberData))
+                return null;
 
-            if (TryCreateMemberData(itemSpec, defaultGroupName, out var parsedMemberData))
-                return _comboBox.AddItem(parsedMemberData);
-
-            return null;
-        }
-
-        /// <summary>
-        /// pyRevit-compatible alias for adding one item from plain values.
-        /// </summary>
-        public RevitComboBoxMember add_item(string name, string itemText, string groupName = null)
-        {
-            return AddItem(name, itemText, groupName);
+            return _comboBox.AddItem(memberData);
         }
 
         /// <summary>
@@ -170,6 +166,65 @@ namespace pyRevitAssemblyBuilder.UIManager
             return false;
         }
 
+        private static bool TryCreateMemberDataFromArguments(object[] args, out ComboBoxMemberData memberData)
+        {
+            memberData = null;
+            if (args == null || args.Length == 0)
+                return false;
+
+            if (args.Length == 1)
+            {
+                var itemSpec = args[0];
+                if (itemSpec is ComboBoxMemberData typedMemberData)
+                {
+                    memberData = typedMemberData;
+                    return true;
+                }
+
+                return TryCreateMemberData(itemSpec, null, out memberData);
+            }
+
+            if (args.Length == 2)
+            {
+                var first = args[0];
+                var second = args[1]?.ToString();
+
+                if (first is ComboBoxMemberData typedMemberData)
+                {
+                    memberData = typedMemberData;
+                    return true;
+                }
+
+                if (first is string name)
+                {
+                    if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(second))
+                        return false;
+
+                    memberData = new ComboBoxMemberData(name, second);
+                    return true;
+                }
+
+                return TryCreateMemberData(first, second, out memberData);
+            }
+
+            if (args.Length == 3)
+            {
+                var name = args[0]?.ToString();
+                var itemText = args[1]?.ToString();
+                var groupName = args[2]?.ToString();
+
+                if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(itemText))
+                    return false;
+
+                memberData = new ComboBoxMemberData(name, itemText);
+                if (!string.IsNullOrEmpty(groupName))
+                    memberData.GroupName = groupName;
+                return true;
+            }
+
+            return false;
+        }
+
         /// <summary>Adds a separator to the ComboBox dropdown list.</summary>
         public void add_separator()
         {
@@ -180,14 +235,22 @@ namespace pyRevitAssemblyBuilder.UIManager
         public IList<RevitComboBoxMember> get_items()
         {
             try { return _comboBox?.GetItems() ?? (IList<RevitComboBoxMember>)new List<RevitComboBoxMember>(); }
-            catch { return new List<RevitComboBoxMember>(); }
+            catch (Exception ex)
+            {
+                _logger?.Debug($"Failed to read ComboBox items: {ex.Message}");
+                return new List<RevitComboBoxMember>();
+            }
         }
 
         /// <summary>Gets contextual help for the ComboBox.</summary>
         public ContextualHelp get_contexthelp()
         {
             try { return _comboBox?.GetContextualHelp(); }
-            catch { return null; }
+            catch (Exception ex)
+            {
+                _logger?.Debug($"Failed to read ComboBox contextual help: {ex.Message}");
+                return null;
+            }
         }
 
         /// <summary>Sets contextual help for the ComboBox.</summary>
@@ -209,12 +272,12 @@ namespace pyRevitAssemblyBuilder.UIManager
         private readonly Dictionary<string, object> _userData = new Dictionary<string, object>();
         private readonly ComboBoxUIItemWrapper _uiItem;
 
-        public ComboBoxContext(ComboBox comboBox, ParsedComponent component, UIApplication uiApp)
+        public ComboBoxContext(ComboBox comboBox, ParsedComponent component, UIApplication uiApp, SessionManager.ILogger logger = null)
         {
             _comboBox = comboBox;
             _component = component;
             _uiApp = uiApp;
-            _uiItem = new ComboBoxUIItemWrapper(comboBox);
+            _uiItem = new ComboBoxUIItemWrapper(comboBox, logger);
         }
 
         /// <summary>Gets the raw Revit ComboBox API object.</summary>
@@ -435,7 +498,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             }
 
             // Create context
-            var context = new ComboBoxContext(comboBox, component, _uiApp);
+            var context = new ComboBoxContext(comboBox, component, _uiApp, _logger);
 
             // Collect additional search paths from extension hierarchy
             var additionalPaths = new List<string>();
