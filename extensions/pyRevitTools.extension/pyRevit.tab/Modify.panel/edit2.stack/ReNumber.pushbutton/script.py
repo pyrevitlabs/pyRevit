@@ -416,6 +416,7 @@ if isinstance(revit.active_view, ALLOWED_VIEW_CLASSES):
         forms.CommandSwitchWindow.show(
             options_dict,
             message='Pick element type to renumber:',
+            title='Pick element type to renumber:',
             width=400
         )
 

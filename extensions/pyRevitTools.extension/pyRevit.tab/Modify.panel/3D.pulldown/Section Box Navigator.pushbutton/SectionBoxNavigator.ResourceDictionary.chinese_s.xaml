@@ -37,8 +37,13 @@
     
     <system:String x:Key="Actions">操作</system:String>
     <system:String x:Key="ToggleBox">切换框</system:String>
+    <system:String x:Key="ToggleBoxTooltip">启用或禁用剖面框，并（重新）保存其上一次的形状</system:String>
     <system:String x:Key="UnHideBox">（取消）隐藏框</system:String>
+    <system:String x:Key="UnHideBoxTooltip">如果剖面框在当前视图中被按元素隐藏，则将其显示/隐藏</system:String>
     <system:String x:Key="AlignBox">对齐框</system:String>
+    <system:String x:Key="AlignBoxTooltip">选择一个面，剖面框将旋转并与其对齐</system:String>
+    <system:String x:Key="TempSwitch">临时剖面框</system:String>
+    <system:String x:Key="TempSwitchTooltip">围绕所选元素创建临时剖面框，稍后恢复之前的状态</system:String>
     
     <system:String x:Key="VerticalPositionStatus">垂直位置状态</system:String>
     <system:String x:Key="Top">顶部：</system:String>
@@ -101,6 +106,8 @@
     <system:String x:Key="ErrorInBoxVisibility">框可见性错误</system:String>
     <system:String x:Key="SectionBoxAlignedToFace">剖面框已与面对齐</system:String>
     <system:String x:Key="FailedToAlignToFaceFormat">与面对齐失败：{0}</system:String>
+    <system:String x:Key="SuccessTempSwitch">已设置新剖面框或恢复之前的状态</system:String>
+    <system:String x:Key="FailedTempSwitch">创建或恢复临时剖面框失败：{0}</system:String>
     <system:String x:Key="InvalidSectionBoxDimensions">无效的剖面框尺寸。</system:String>
     <system:String x:Key="PleaseEnterValidNumber">请输入有效数字</system:String>
     <system:String x:Key="AnErrorOccurredFormat">发生错误：{0}</system:String>

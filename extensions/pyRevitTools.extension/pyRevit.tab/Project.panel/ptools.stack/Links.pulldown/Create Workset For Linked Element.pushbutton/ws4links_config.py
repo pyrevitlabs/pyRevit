@@ -4,7 +4,7 @@ import json
 import os
 from pyrevit import script, forms
 from pyrevit.userconfig import user_config
-from script import main
+from ws4links_script import main
 
 
 def get_translations(script_folder, script_type, locale):

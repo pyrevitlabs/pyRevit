@@ -7,6 +7,8 @@ get_elementid_value = get_elementid_value_func()
 
 logger = script.get_logger()
 
+PADDING = 1.0  # feet
+
 
 def toggle(doc, datafilename):
     """Toggle section box."""
@@ -156,3 +158,74 @@ def align_to_face(doc, uidoc):
 
     except Exception as ex:
         logger.error("Error: {}".format(str(ex)))
+
+
+def temp_switch(doc, temp_datafilename):
+    current_view = doc.ActiveView
+    if not isinstance(current_view, DB.View3D):
+        return
+    current_view_id_value = get_elementid_value(current_view.Id)
+
+    try:
+        with open(temp_datafilename, "rb") as f:
+            view_data = script.pickle.load(f)
+    except Exception:
+        view_data = {}
+
+    view_key = "view_{}".format(current_view_id_value)
+
+    if view_key in view_data:
+        try:
+            previous_state = view_data[view_key]
+
+            with revit.Transaction("Restoring previous state"):
+                if previous_state["was_active"]:
+                    restored_bbox = revit.deserialize(previous_state["bbox_data"])
+                    current_view.SetSectionBox(restored_bbox)
+                    current_view.IsSectionBoxActive = True
+                else:
+                    current_view.IsSectionBoxActive = False
+
+            del view_data[view_key]
+            with open(temp_datafilename, "wb") as f:
+                script.pickle.dump(view_data, f)
+
+            return "restored"
+
+        except Exception as e:
+            logger.error("Failed to restore previous state: {}".format(e))
+    else:
+        selection = revit.get_selection()
+        if not selection:
+            with forms.WarningBar(title="Pick Elements for temporary box"):
+                selection = revit.pick_elements()
+
+        try:
+            current_state = {
+                "was_active": current_view.IsSectionBoxActive,
+                "bbox_data": None,
+            }
+
+            if current_view.IsSectionBoxActive:
+                current_bbox = current_view.GetSectionBox()
+                if current_bbox:
+                    current_state["bbox_data"] = revit.serialize(current_bbox)
+
+            new_bbox = revit.query.get_elements_bounding_box(selection, padding=PADDING)
+
+            if new_bbox:
+                with revit.Transaction("Setting new sectionbox"):
+                    current_view.SetSectionBox(new_bbox)
+                    current_view.IsSectionBoxActive = True
+
+                view_data[view_key] = current_state
+                with open(temp_datafilename, "wb") as f:
+                    script.pickle.dump(view_data, f)
+
+                return "set"
+
+            else:
+                logger.error("Could not create bounding box from selected elements")
+
+        except Exception as e:
+            logger.error("Error creating section box: {}".format(e))

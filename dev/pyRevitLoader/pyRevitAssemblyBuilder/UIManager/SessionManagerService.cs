@@ -87,13 +87,13 @@ namespace pyRevitAssemblyBuilder.SessionManager
             // STEP 1: Reset panel backgrounds before creating new UI
             // This matches Python's reset_backgrounds() behavior
             stepStopwatch.Restart();
-            _ribbonScanner?.ResetPanelBackgrounds();
+            _ribbonScanner.ResetPanelBackgrounds();
             _logger.Debug($"[PERF] ResetPanelBackgrounds: {stepStopwatch.ElapsedMilliseconds}ms");
             
             // STEP 2: Reset dirty flags on all existing pyRevit UI elements
             // This marks all existing elements as potentially orphaned
             stepStopwatch.Restart();
-            _ribbonScanner?.ResetDirtyFlags();
+            _ribbonScanner.ResetDirtyFlags();
             _logger.Debug($"[PERF] ResetDirtyFlags: {stepStopwatch.ElapsedMilliseconds}ms");
             
             // Clear all caches to ensure newly installed/enabled extensions are discovered
@@ -173,16 +173,29 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 }
             }
             
-            // STEP 3: Cleanup orphaned UI elements (those with dirty=false)
+            // STEP 3: Apply external layout directives (panel reordering)
+            // This applies directives that reference external targets (native Revit panels or panels from other extensions)
+            // Must be called after ALL UI is built so all panels exist
+            stepStopwatch.Restart();
+            var allExternalDirectives = uiExtensions
+                .Where(ext => ext?.ExternalLayoutDirectives != null)
+                .SelectMany(ext => ext.ExternalLayoutDirectives)
+                .ToList();
+
+            if (allExternalDirectives.Count > 0)
+            {
+                _logger.Debug($"Applying {allExternalDirectives.Count} external layout directives...");
+                _ribbonScanner.SortUI(allExternalDirectives);
+            }
+            _logger.Debug($"[PERF] SortUI: {stepStopwatch.ElapsedMilliseconds}ms");
+
+            // STEP 4: Cleanup orphaned UI elements (those with dirty=false)
             // This deactivates tabs/panels that were deleted or disabled since last load
             // Matching Python's cleanup_pyrevit_ui() behavior
-            if (_ribbonScanner != null)
-            {
-                stepStopwatch.Restart();
-                _ribbonScanner.CleanupOrphanedElements();
-                _logger.Debug($"[PERF] CleanupOrphanedElements: {stepStopwatch.ElapsedMilliseconds}ms");
-            }
-            
+            stepStopwatch.Restart();
+            _ribbonScanner.CleanupOrphanedElements();
+            _logger.Debug($"[PERF] CleanupOrphanedElements: {stepStopwatch.ElapsedMilliseconds}ms");
+
             totalStopwatch.Stop();
             _logger.Info($"Session loaded in {totalStopwatch.ElapsedMilliseconds}ms");
         }

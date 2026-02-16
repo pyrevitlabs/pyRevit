@@ -135,7 +135,7 @@ namespace pyRevitExtensionParserTest
         [Test]
         public void TestPartialQuotes()
         {
-            // Test edge case of partial quotes (should not be stripped)
+            // Invalid partial quotes should raise yaml parse errors.
             var testYaml = @"title:
   en_us: 'Incomplete quote
   es_es: Missing end quote""
@@ -143,12 +143,7 @@ namespace pyRevitExtensionParserTest
 
             File.WriteAllText(_tempTestFile, testYaml);
 
-            var result = BundleParser.BundleYamlParser.Parse(_tempTestFile);
-
-            Assert.That(result.Titles.Count, Is.EqualTo(3));
-            Assert.That(result.Titles["en_us"], Is.EqualTo("'Incomplete quote")); // Single quote at start only
-            Assert.That(result.Titles["es_es"], Is.EqualTo("Missing end quote\"")); // Double quote at end only
-            Assert.That(result.Titles["ru"], Is.EqualTo("\"Missing start quote")); // Double quote at start only
+            Assert.Catch<System.Exception>(() => BundleParser.BundleYamlParser.Parse(_tempTestFile));
         }
 
         [Test]

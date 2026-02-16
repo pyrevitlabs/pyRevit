@@ -8,6 +8,7 @@ using pyRevitAssemblyBuilder.UIManager.Buttons;
 using pyRevitAssemblyBuilder.UIManager.Icons;
 using pyRevitAssemblyBuilder.UIManager.Panels;
 using pyRevitAssemblyBuilder.UIManager.Tooltips;
+using pyRevitExtensionParser;
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
@@ -245,6 +246,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         {
             // Create logger first - it's used by all other services
             var logger = CreateLogger(pythonLogger);
+            ExtensionParser.SetLogger(new ExtensionParserLoggerAdapter(logger));
             
             // Create core services
             var assemblyBuilder = CreateAssemblyBuilderService(revitVersion, buildStrategy, logger);
@@ -307,6 +309,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             IUIRibbonScanner ribbonScanner,
             ILogger logger)
         {
+            ExtensionParser.SetLogger(new ExtensionParserLoggerAdapter(logger));
             return new SessionManagerService(
                 assemblyBuilder,
                 extensionManager,
