@@ -1488,6 +1488,13 @@ class GetValueWindow(TemplateUserInputWindow):
         elif self.value_type == "date":
             self.show_element(self.datePanel_dp)
             self.datePrompt.Text = value_prompt if value_prompt else "Pick date:"
+            if isinstance(value_default, datetime.datetime):
+                import System
+                self.datePicker.SelectedDate = System.DateTime(
+                    value_default.year,
+                    value_default.month,
+                    value_default.day
+                )
         elif self.value_type == "slider":
             self.show_element(self.sliderPanel_sp)
             self.sliderPrompt.Text = value_prompt
@@ -1528,8 +1535,12 @@ class GetValueWindow(TemplateUserInputWindow):
             self.response = self.dropdown_cb.SelectedItem
         elif self.value_type == "date":
             if self.datePicker.SelectedDate:
-                datestr = self.datePicker.SelectedDate.ToString("MM/dd/yyyy")
-                self.response = datetime.datetime.strptime(datestr, r"%m/%d/%Y")
+                selected = self.datePicker.SelectedDate
+                self.response = datetime.datetime(
+                    selected.Year,
+                    selected.Month,
+                    selected.Day
+                )
             else:
                 self.response = None
         elif self.value_type == "slider":
@@ -3704,7 +3715,6 @@ def ask_for_date(default=None, prompt=None, title=None, **kwargs):
         datetime.datetime(2019, 5, 17, 0, 0)
         ```
     """
-    # FIXME: window does not set default value
     return GetValueWindow.show(
         None, value_type="date", default=default, prompt=prompt, title=title, **kwargs
     )
