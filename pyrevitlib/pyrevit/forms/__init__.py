@@ -680,7 +680,7 @@ class TemplateUserInputWindow(WPFWindow):
         else:
             try:
                 localized_title = self.get_locale_string(self.default_title_key)
-            except wpf.ResourceReferenceKeyNotFoundException:
+            except System.Windows.ResourceReferenceKeyNotFoundException:
                 localized_title = None
             self.Title = localized_title if isinstance(localized_title, str) else "User Input"
         self.Width = width
@@ -911,7 +911,7 @@ class SelectFromList(TemplateUserInputWindow):
             # Use localized default, falling back to generic text if resource is missing
             try:
                 self.select_b.Content = self.get_locale_string("SelectFromList.Select.Button")
-            except wpf.ResourceReferenceKeyNotFoundException:
+            except System.Windows.ResourceReferenceKeyNotFoundException:
                 self.select_b.Content = "Select"
 
         # attribute to use as name?
@@ -953,7 +953,7 @@ class SelectFromList(TemplateUserInputWindow):
                 self.ctx_groups_title = self.get_locale_string(
                     "SelectFromList.GroupSelector.Label"
                 )
-            except wpf.ResourceReferenceKeyNotFoundException:
+            except System.Windows.ResourceReferenceKeyNotFoundException:
                 mlogger.warning("Missing resource key for group selector title.")
                 self.ctx_groups_title = "Groups"
 
@@ -1074,15 +1074,15 @@ class SelectFromList(TemplateUserInputWindow):
         if option_filter:
             try:
                 self.checkall_b.Content = self.get_locale_string("SelectFromList.Check.Button")
-            except wpf.ResourceReferenceKeyNotFoundException:
+            except System.Windows.ResourceReferenceKeyNotFoundException:
                 self.checkall_b.Content = "Check"
             try:
                 self.uncheckall_b.Content = self.get_locale_string("SelectFromList.Uncheck.Button")
-            except wpf.ResourceReferenceKeyNotFoundException:
+            except System.Windows.ResourceReferenceKeyNotFoundException:
                 self.uncheckall_b.Content = "Uncheck"
             try:
                 self.toggleall_b.Content = self.get_locale_string("SelectFromList.Toggle.Button")
-            except wpf.ResourceReferenceKeyNotFoundException:
+            except System.Windows.ResourceReferenceKeyNotFoundException:
                 self.toggleall_b.Content = "Toggle"
             # get a match score for every item and sort high to low
             fuzzy_matches = sorted(
@@ -1107,15 +1107,15 @@ class SelectFromList(TemplateUserInputWindow):
         else:
             try:
                 self.checkall_b.Content = self.get_locale_string("SelectFromList.CheckAll.Button")
-            except wpf.ResourceReferenceKeyNotFoundException:
+            except System.Windows.ResourceReferenceKeyNotFoundException:
                 self.checkall_b.Content = "Check All"
             try:
                 self.uncheckall_b.Content = self.get_locale_string("SelectFromList.UncheckAll.Button")
-            except wpf.ResourceReferenceKeyNotFoundException:
+            except System.Windows.ResourceReferenceKeyNotFoundException:
                 self.uncheckall_b.Content = "Uncheck All"
             try:
                 self.toggleall_b.Content = self.get_locale_string("SelectFromList.ToggleAll.Button")
-            except wpf.ResourceReferenceKeyNotFoundException:
+            except System.Windows.ResourceReferenceKeyNotFoundException:
                 self.toggleall_b.Content = "Toggle All"
 
             self.list_lb.ItemsSource = ObservableCollection[TemplateListItem](
