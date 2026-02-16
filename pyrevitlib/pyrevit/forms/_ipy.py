@@ -1,6 +1,11 @@
-﻿"""IronPython WPF forms backend for pyrevit.forms."""
+﻿# -*- coding: UTF-8 -*-
+"""Reusable WPF forms for pyRevit.
 
-# pylint: disable=consider-using-f-string,wrong-import-position
+Examples:
+    ```python
+    from pyrevit.forms import WPFWindow
+    ```
+"""
 
 import re
 import sys
@@ -35,8 +40,8 @@ from pyrevit.framework import ObservableCollection
 from pyrevit.framework import Uri, UriKind, ResourceDictionary
 from pyrevit.api import AdWindows
 from pyrevit import revit, UI, DB
-from . import utils
-from . import toaster
+from pyrevit.forms import utils
+from pyrevit.forms import toaster
 from pyrevit import versionmgr
 from pyrevit.userconfig import user_config
 
@@ -196,6 +201,9 @@ class WPFWindow(framework.Windows.Window):
 
         if not literal_string:
             wpf.LoadComponent(self, self._determine_xaml(xaml_source))
+            if getattr(self, '_pending_resource_merge', None):
+                self.merge_resource_dict(self._pending_resource_merge)
+                self._pending_resource_merge = None
         else:
             wpf.LoadComponent(self, framework.StringReader(xaml_source))
 
@@ -209,6 +217,7 @@ class WPFWindow(framework.Windows.Window):
             self.setup_default_handlers()
 
     def _determine_xaml(self, xaml_source):
+        self._pending_resource_merge = None
         xaml_file = xaml_source
         if not op.exists(xaml_file):
             xaml_file = os.path.join(EXEC_PARAMS.command_path, xaml_source)
@@ -232,13 +241,14 @@ class WPFWindow(framework.Windows.Window):
         if os.path.isfile(english_xaml_file):
             return english_xaml_file
 
-        # otherwise look for .ResourceDictionary files and load those,
-        # returning the original xaml_file
+        # otherwise look for .ResourceDictionary files and merge after load
+        # (must merge after LoadComponent so XAML does not replace Resources)
         if os.path.isfile(localized_xaml_resfile):
-            self.merge_resource_dict(localized_xaml_resfile)
-
+            self._pending_resource_merge = localized_xaml_resfile
         elif os.path.isfile(english_xaml_resfile):
-            self.merge_resource_dict(english_xaml_resfile)
+            self._pending_resource_merge = english_xaml_resfile
+        else:
+            self._pending_resource_merge = None
 
         return xaml_file
 
@@ -668,7 +678,7 @@ class TemplateUserInputWindow(WPFWindow):
         else:
             try:
                 localized_title = self.get_locale_string(self.default_title_key)
-            except wpf.ResourceReferenceKeyNotFoundException:
+            except System.Windows.ResourceReferenceKeyNotFoundException:
                 localized_title = None
             self.Title = localized_title if isinstance(localized_title, str) else "User Input"
         self.Width = width
@@ -899,7 +909,7 @@ class SelectFromList(TemplateUserInputWindow):
             # Use localized default, falling back to generic text if resource is missing
             try:
                 self.select_b.Content = self.get_locale_string("SelectFromList.Select.Button")
-            except wpf.ResourceReferenceKeyNotFoundException:
+            except System.Windows.ResourceReferenceKeyNotFoundException:
                 self.select_b.Content = "Select"
 
         # attribute to use as name?
@@ -941,7 +951,7 @@ class SelectFromList(TemplateUserInputWindow):
                 self.ctx_groups_title = self.get_locale_string(
                     "SelectFromList.GroupSelector.Label"
                 )
-            except wpf.ResourceReferenceKeyNotFoundException:
+            except System.Windows.ResourceReferenceKeyNotFoundException:
                 mlogger.warning("Missing resource key for group selector title.")
                 self.ctx_groups_title = "Groups"
 
@@ -1062,15 +1072,15 @@ class SelectFromList(TemplateUserInputWindow):
         if option_filter:
             try:
                 self.checkall_b.Content = self.get_locale_string("SelectFromList.Check.Button")
-            except wpf.ResourceReferenceKeyNotFoundException:
+            except System.Windows.ResourceReferenceKeyNotFoundException:
                 self.checkall_b.Content = "Check"
             try:
                 self.uncheckall_b.Content = self.get_locale_string("SelectFromList.Uncheck.Button")
-            except wpf.ResourceReferenceKeyNotFoundException:
+            except System.Windows.ResourceReferenceKeyNotFoundException:
                 self.uncheckall_b.Content = "Uncheck"
             try:
                 self.toggleall_b.Content = self.get_locale_string("SelectFromList.Toggle.Button")
-            except wpf.ResourceReferenceKeyNotFoundException:
+            except System.Windows.ResourceReferenceKeyNotFoundException:
                 self.toggleall_b.Content = "Toggle"
             # get a match score for every item and sort high to low
             fuzzy_matches = sorted(
@@ -1095,15 +1105,15 @@ class SelectFromList(TemplateUserInputWindow):
         else:
             try:
                 self.checkall_b.Content = self.get_locale_string("SelectFromList.CheckAll.Button")
-            except wpf.ResourceReferenceKeyNotFoundException:
+            except System.Windows.ResourceReferenceKeyNotFoundException:
                 self.checkall_b.Content = "Check All"
             try:
                 self.uncheckall_b.Content = self.get_locale_string("SelectFromList.UncheckAll.Button")
-            except wpf.ResourceReferenceKeyNotFoundException:
+            except System.Windows.ResourceReferenceKeyNotFoundException:
                 self.uncheckall_b.Content = "Uncheck All"
             try:
                 self.toggleall_b.Content = self.get_locale_string("SelectFromList.ToggleAll.Button")
-            except wpf.ResourceReferenceKeyNotFoundException:
+            except System.Windows.ResourceReferenceKeyNotFoundException:
                 self.toggleall_b.Content = "Toggle All"
 
             self.list_lb.ItemsSource = ObservableCollection[TemplateListItem](
@@ -1476,6 +1486,12 @@ class GetValueWindow(TemplateUserInputWindow):
         elif self.value_type == "date":
             self.show_element(self.datePanel_dp)
             self.datePrompt.Text = value_prompt if value_prompt else "Pick date:"
+            if isinstance(value_default, datetime.datetime):
+                self.datePicker.SelectedDate = System.DateTime(
+                    value_default.year,
+                    value_default.month,
+                    value_default.day
+                )
         elif self.value_type == "slider":
             self.show_element(self.sliderPanel_sp)
             self.sliderPrompt.Text = value_prompt
@@ -1516,8 +1532,12 @@ class GetValueWindow(TemplateUserInputWindow):
             self.response = self.dropdown_cb.SelectedItem
         elif self.value_type == "date":
             if self.datePicker.SelectedDate:
-                datestr = self.datePicker.SelectedDate.ToString("MM/dd/yyyy")
-                self.response = datetime.datetime.strptime(datestr, r"%m/%d/%Y")
+                selected = self.datePicker.SelectedDate
+                self.response = datetime.datetime(
+                    selected.Year,
+                    selected.Month,
+                    selected.Day
+                )
             else:
                 self.response = None
         elif self.value_type == "slider":
@@ -1968,7 +1988,7 @@ class SearchPrompt(WPFWindow):
             else:
                 if cur_res.lower().startswith(input_term):
                     self.directmatch_tb.Text = (
-                        self.search_input + cur_res[len(input_term):]
+                        self.search_input + cur_res[len(input_term) :]
                     )
                     mlogger.debug("directmatch_tb.Text: %s", self.directmatch_tb.Text)
                 else:
@@ -3692,7 +3712,6 @@ def ask_for_date(default=None, prompt=None, title=None, **kwargs):
         datetime.datetime(2019, 5, 17, 0, 0)
         ```
     """
-    # FIXME: window does not set default value
     return GetValueWindow.show(
         None, value_type="date", default=default, prompt=prompt, title=title, **kwargs
     )
