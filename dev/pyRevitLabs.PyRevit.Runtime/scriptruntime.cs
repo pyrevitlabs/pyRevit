@@ -240,8 +240,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 if (engineTypeName.Equals("CPython", StringComparison.OrdinalIgnoreCase))
                     return ScriptEngineType.CPython;
 
-                if (engineTypeName.Equals("IronPython", StringComparison.OrdinalIgnoreCase))
+                if (engineTypeName.Equals("IronPython", StringComparison.OrdinalIgnoreCase)) {
+                    // Backward-compat: older command generators always injected
+                    // "type":"IronPython" even when user did not explicitly set it.
+                    // In that case, allow runtime shebang detection to pick engine.
+                    var typeExplicit = json["type_explicit"]?.Value<bool?>() ?? false;
+                    if (!typeExplicit)
+                        return null;
+
                     return ScriptEngineType.IronPython;
+                }
 
                 return null;
             }

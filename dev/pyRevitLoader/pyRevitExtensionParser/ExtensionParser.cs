@@ -16,6 +16,96 @@ namespace pyRevitExtensionParser
         public static string DefaultLocale { get; set; } = "en_us";
 
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+        internal static IParserLogger ParserLogger { get; private set; }
+
+        public static void SetLogger(IParserLogger parserLogger)
+        {
+            ParserLogger = parserLogger;
+        }
+
+        internal static void LogDebug(string message)
+        {
+            if (ParserLogger != null)
+                ParserLogger.Debug(message);
+            else
+                logger.Debug(message);
+        }
+
+        internal static void LogInfo(string message)
+        {
+            if (ParserLogger != null)
+                ParserLogger.Info(message);
+            else
+                logger.Info(message);
+        }
+
+        internal static void LogWarning(string message)
+        {
+            if (ParserLogger != null)
+                ParserLogger.Warning(message);
+            else
+                logger.Warn(message);
+        }
+
+        internal static void LogError(string message)
+        {
+            if (ParserLogger != null)
+                ParserLogger.Error(message);
+            else
+                logger.Error(message);
+        }
+
+        private static void LogParseException(string parsedFile, Exception ex)
+        {
+            if (ex == null)
+                return;
+
+            // Use the outer exception for Data (BundleParser enriches the caught exception)
+            // Use the innermost exception for message/type (the root cause)
+            var rootEx = ex.InnerException ?? ex;
+            var lineNo = GetExceptionInt(ex, "LineNumber", "Line", "LineNo");
+            var colNo = GetExceptionInt(ex, "ColumnNumber", "Column", "Offset", "LineColumn", "LinePosition");
+            var lineText = GetExceptionString(ex, "LineText", "Text", "Line");
+
+            var errMsg = rootEx.Message ?? string.Empty;
+            var errType = rootEx.GetType().Name;
+            var msg =
+                "Error while parsing file:\n" + parsedFile +
+                "\nError type: " + errType +
+                "\nError Message: " + errMsg +
+                "\nLine/Column: " + lineNo + "/" + colNo +
+                "\nLine Text: " + lineText;
+
+            LogError(msg);
+        }
+
+        private static int GetExceptionInt(Exception ex, params string[] keys)
+        {
+            if (ex?.Data == null)
+                return 0;
+
+            foreach (var key in keys)
+            {
+                if (ex.Data.Contains(key) && int.TryParse(ex.Data[key]?.ToString(), out var value))
+                    return value;
+            }
+
+            return 0;
+        }
+
+        private static string GetExceptionString(Exception ex, params string[] keys)
+        {
+            if (ex?.Data == null)
+                return string.Empty;
+
+            foreach (var key in keys)
+            {
+                if (ex.Data.Contains(key))
+                    return ex.Data[key]?.ToString() ?? string.Empty;
+            }
+
+            return string.Empty;
+        }
         
         // Cache file existence checks to avoid repeated file system calls
         private static Dictionary<string, bool> _fileExistsCache = new Dictionary<string, bool>();
@@ -43,11 +133,19 @@ namespace pyRevitExtensionParser
         {
             if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory))
                 return Array.Empty<string>();
-                
+
             var cacheKey = $"{directory}|{searchPattern}|{searchOption}";
             if (!_directoryFilesCache.TryGetValue(cacheKey, out string[] files))
             {
-                files = Directory.GetFiles(directory, searchPattern, searchOption);
+                try
+                {
+                    files = Directory.GetFiles(directory, searchPattern, searchOption);
+                }
+                catch (Exception ex)
+                {
+                    LogParseException(directory, ex);
+                    files = Array.Empty<string>();
+                }
                 _directoryFilesCache[cacheKey] = files;
             }
             return files;
@@ -139,7 +237,17 @@ namespace pyRevitExtensionParser
                     continue;
 
                 // Parse .extension directories (UI extensions)
-                foreach (var extDir in Directory.GetDirectories(root, "*.extension"))
+                string[] extDirs;
+                try
+                {
+                    extDirs = Directory.GetDirectories(root, "*.extension");
+                }
+                catch (Exception ex)
+                {
+                    LogParseException(root, ex);
+                    extDirs = Array.Empty<string>();
+                }
+                foreach (var extDir in extDirs)
                 {
                     // Use full path for deduplication
                     var fullPath = Path.GetFullPath(extDir);
@@ -150,7 +258,17 @@ namespace pyRevitExtensionParser
                 }
 
                 // Parse .lib directories (Library extensions)
-                foreach (var libDir in Directory.GetDirectories(root, "*.lib"))
+                string[] libDirs;
+                try
+                {
+                    libDirs = Directory.GetDirectories(root, "*.lib");
+                }
+                catch (Exception ex)
+                {
+                    LogParseException(root, ex);
+                    libDirs = Array.Empty<string>();
+                }
+                foreach (var libDir in libDirs)
                 {
                     var fullPath = Path.GetFullPath(libDir);
                     if (discoveredExtensions.Add(fullPath))
@@ -222,9 +340,18 @@ namespace pyRevitExtensionParser
             var extName = Path.GetFileNameWithoutExtension(extDir);
             
             var bundlePath = Path.Combine(extDir, "bundle.yaml");
-            ParsedBundle parsedBundle = FileExists(bundlePath)
-                ? BundleParser.BundleYamlParser.Parse(bundlePath)
-                : null;
+            ParsedBundle parsedBundle = null;
+            if (FileExists(bundlePath))
+            {
+                try
+                {
+                    parsedBundle = BundleParser.BundleYamlParser.Parse(bundlePath);
+                }
+                catch (Exception ex)
+                {
+                    LogParseException(bundlePath, ex);
+                }
+            }
 
             // Pass extension-level templates to child components
             // Include author as a template if it exists
@@ -268,9 +395,9 @@ namespace pyRevitExtensionParser
                         }
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // If JSON parsing fails, continue without extension.json templates
+                    LogParseException(extensionJsonPath, ex);
                 }
             }
 
@@ -653,7 +780,18 @@ namespace pyRevitExtensionParser
         {
             var components = new List<ParsedComponent>();
 
-            foreach (var dir in Directory.GetDirectories(baseDir))
+            string[] dirs;
+            try
+            {
+                dirs = Directory.GetDirectories(baseDir);
+            }
+            catch (Exception ex)
+            {
+                LogParseException(baseDir, ex);
+                return components;
+            }
+
+            foreach (var dir in dirs)
             {
                 var ext = Path.GetExtension(dir);
                 var componentType = CommandComponentTypeExtensions.FromExtension(ext);
@@ -758,7 +896,18 @@ namespace pyRevitExtensionParser
                 if (componentType == CommandComponentType.ContentButton)
                 {
                     var bundleYaml = Path.Combine(dir, "bundle.yaml");
-                    var tempBundle = FileExists(bundleYaml) ? BundleParser.BundleYamlParser.Parse(bundleYaml) : null;
+                    ParsedBundle tempBundle = null;
+                    if (FileExists(bundleYaml))
+                    {
+                        try
+                        {
+                            tempBundle = BundleParser.BundleYamlParser.Parse(bundleYaml);
+                        }
+                        catch (Exception ex)
+                        {
+                            LogParseException(bundleYaml, ex);
+                        }
+                    }
                     
                     // Try to get content from bundle.yaml metadata first
                     if (tempBundle != null && !string.IsNullOrEmpty(tempBundle.Content))
@@ -843,7 +992,18 @@ namespace pyRevitExtensionParser
                 var bundleFile = Path.Combine(dir, "bundle.yaml");
                 
                 // Then parse bundle and override with bundle values if they exist
-                var bundleInComponent = FileExists(bundleFile) ? BundleParser.BundleYamlParser.Parse(bundleFile) : null;
+                ParsedBundle bundleInComponent = null;
+                if (FileExists(bundleFile))
+                {
+                    try
+                    {
+                        bundleInComponent = BundleParser.BundleYamlParser.Parse(bundleFile);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogParseException(bundleFile, ex);
+                    }
+                }
 
                 // Merge templates: inherited templates + current bundle templates
                 // Current bundle templates override inherited ones
@@ -909,7 +1069,20 @@ namespace pyRevitExtensionParser
                 {
                     // Use default locale for initial title/tooltip assignment
                     var bundleTitle = GetLocalizedValue(bundleInComponent.Titles);
+                    if (string.IsNullOrEmpty(bundleTitle) &&
+                        bundleInComponent.Titles != null &&
+                        bundleInComponent.Titles.TryGetValue("en_us", out var bundleTitleEnUs))
+                    {
+                        bundleTitle = bundleTitleEnUs;
+                    }
+
                     var bundleTooltip = GetLocalizedValue(bundleInComponent.Tooltips);
+                    if (string.IsNullOrEmpty(bundleTooltip) &&
+                        bundleInComponent.Tooltips != null &&
+                        bundleInComponent.Tooltips.TryGetValue("en_us", out var bundleTooltipEnUs))
+                    {
+                        bundleTooltip = bundleTooltipEnUs;
+                    }
                     
                     if (!string.IsNullOrEmpty(bundleTitle))
                         title = bundleTitle;
@@ -1044,6 +1217,7 @@ namespace pyRevitExtensionParser
                     MinRevitVersion = finalMinRevitVersion,
                     MaxRevitVersion = finalMaxRevitVersion,
                     IsBeta = finalIsBeta,
+                    Collapsed = bundleInComponent?.Collapsed ?? false,
                     PanelBackground = bundleInComponent?.PanelBackground,
                     TitleBackground = bundleInComponent?.TitleBackground,
                     SlideoutBackground = bundleInComponent?.SlideoutBackground,
@@ -1137,16 +1311,13 @@ namespace pyRevitExtensionParser
             if (string.IsNullOrEmpty(preferredLocale))
                 preferredLocale = DefaultLocale;
 
-            // Try preferred locale first
-            if (localizedValues.TryGetValue(preferredLocale, out string preferredValue))
-                return preferredValue;
+            foreach (var locale in LocaleSupport.GetLocaleSearchOrder(preferredLocale, DefaultLocale))
+            {
+                if (localizedValues.TryGetValue(locale, out string value))
+                    return value;
+            }
 
-            // Fallback to default locale if different preferred locale was specified
-            if (preferredLocale != DefaultLocale && localizedValues.TryGetValue(DefaultLocale, out string defaultValue))
-                return defaultValue;
-
-            // Fallback to first available value
-            return localizedValues.Values.FirstOrDefault();
+            return null;
         }
 
         /// <summary>
@@ -1227,139 +1398,146 @@ namespace pyRevitExtensionParser
                 
             var result = new PythonScriptConstants();
 
-            // Read all lines to handle multiline strings properly
-            var allLines = File.ReadAllLines(scriptPath);
-            var lineIndex = 0;
-            
-            foreach (var line in allLines)
+            try
             {
-                var trimmedLine = line.TrimStart();
+                // Read all lines to handle multiline strings properly
+                var allLines = File.ReadAllLines(scriptPath);
+                var lineIndex = 0;
                 
-                if (trimmedLine.StartsWith("__title__"))
+                foreach (var line in allLines)
                 {
-                    // Check if it's a dictionary
-                    var dictValue = ExtractPythonDictionary(trimmedLine);
-                    if (dictValue != null)
+                    var trimmedLine = line.TrimStart();
+                    
+                    if (trimmedLine.StartsWith("__title__"))
                     {
-                        result.LocalizedTitles = LocaleSupport.NormalizeLocaleDict(dictValue);
-                        // Get default locale value for backward compatibility
-                        result.Title = GetLocalizedValue(result.LocalizedTitles);
-                    }
-                    else
-                    {
-                        // Check if it's a multiline triple-quoted string
-                        if (trimmedLine.Contains("\"\"\""))
+                        // Check if it's a dictionary
+                        var dictValue = ExtractPythonDictionary(trimmedLine);
+                        if (dictValue != null)
                         {
-                            var remainingLines = allLines.Skip(lineIndex + 1).ToList();
-                            result.Title = ExtractPythonMultilineString(trimmedLine, remainingLines);
+                            result.LocalizedTitles = LocaleSupport.NormalizeLocaleDict(dictValue);
+                            // Get default locale value for backward compatibility
+                            result.Title = GetLocalizedValue(result.LocalizedTitles);
                         }
                         else
                         {
-                            result.Title = ExtractPythonConstantValue(trimmedLine);
+                            // Check if it's a multiline triple-quoted string
+                            if (trimmedLine.Contains("\"\"\""))
+                            {
+                                var remainingLines = allLines.Skip(lineIndex + 1).ToList();
+                                result.Title = ExtractPythonMultilineString(trimmedLine, remainingLines);
+                            }
+                            else
+                            {
+                                result.Title = ExtractPythonConstantValue(trimmedLine);
+                            }
                         }
                     }
-                }
-                else if (trimmedLine.StartsWith("__authors__"))
-                {
-                    // __authors__ is a list, join with newline like Python does
-                    var listValue = ExtractPythonList(trimmedLine);
-                    if (listValue != null && listValue.Count > 0)
+                    else if (trimmedLine.StartsWith("__authors__"))
                     {
-                        result.Author = string.Join("\n", listValue);
-                    }
-                }
-                else if (trimmedLine.StartsWith("__author__"))
-                {
-                    // Only use __author__ if __authors__ wasn't found
-                    if (string.IsNullOrEmpty(result.Author))
-                    {
-                        result.Author = ExtractPythonConstantValue(trimmedLine);
-                    }
-                }
-                else if (trimmedLine.StartsWith("__doc__"))
-                {
-                    // Check if it's a dictionary for multi-language tooltip
-                    var dictValue = ExtractPythonDictionary(trimmedLine);
-                    if (dictValue != null)
-                    {
-                        result.LocalizedTooltips = LocaleSupport.NormalizeLocaleDict(dictValue);
-                        // Get default locale value for backward compatibility
-                        result.Doc = GetLocalizedValue(result.LocalizedTooltips);
-                    }
-                    else
-                    {
-                        // Check if it's a multiline triple-quoted string
-                        if (trimmedLine.Contains("\"\"\""))
+                        // __authors__ is a list, join with newline like Python does
+                        var listValue = ExtractPythonList(trimmedLine);
+                        if (listValue != null && listValue.Count > 0)
                         {
-                            var remainingLines = allLines.Skip(lineIndex + 1).ToList();
-                            result.Doc = ExtractPythonMultilineString(trimmedLine, remainingLines);
+                            result.Author = string.Join("\n", listValue);
+                        }
+                    }
+                    else if (trimmedLine.StartsWith("__author__"))
+                    {
+                        // Only use __author__ if __authors__ wasn't found
+                        if (string.IsNullOrEmpty(result.Author))
+                        {
+                            result.Author = ExtractPythonConstantValue(trimmedLine);
+                        }
+                    }
+                    else if (trimmedLine.StartsWith("__doc__"))
+                    {
+                        // Check if it's a dictionary for multi-language tooltip
+                        var dictValue = ExtractPythonDictionary(trimmedLine);
+                        if (dictValue != null)
+                        {
+                            result.LocalizedTooltips = LocaleSupport.NormalizeLocaleDict(dictValue);
+                            // Get default locale value for backward compatibility
+                            result.Doc = GetLocalizedValue(result.LocalizedTooltips);
                         }
                         else
                         {
-                            result.Doc = ExtractPythonConstantValue(trimmedLine);
+                            // Check if it's a multiline triple-quoted string
+                            if (trimmedLine.Contains("\"\"\""))
+                            {
+                                var remainingLines = allLines.Skip(lineIndex + 1).ToList();
+                                result.Doc = ExtractPythonMultilineString(trimmedLine, remainingLines);
+                            }
+                            else
+                            {
+                                result.Doc = ExtractPythonConstantValue(trimmedLine);
+                            }
                         }
                     }
-                }
-                else if (trimmedLine.StartsWith("__helpurl__"))
-                {
-                    // Check if it's a dictionary for multi-language help URL
-                    var dictValue = ExtractPythonDictionary(trimmedLine);
-                    if (dictValue != null)
+                    else if (trimmedLine.StartsWith("__helpurl__"))
                     {
-                        result.LocalizedHelpUrls = LocaleSupport.NormalizeLocaleDict(dictValue);
-                        // Get default locale value for backward compatibility
-                        result.HelpUrl = GetLocalizedValue(result.LocalizedHelpUrls);
+                        // Check if it's a dictionary for multi-language help URL
+                        var dictValue = ExtractPythonDictionary(trimmedLine);
+                        if (dictValue != null)
+                        {
+                            result.LocalizedHelpUrls = LocaleSupport.NormalizeLocaleDict(dictValue);
+                            // Get default locale value for backward compatibility
+                            result.HelpUrl = GetLocalizedValue(result.LocalizedHelpUrls);
+                        }
+                        else
+                        {
+                            result.HelpUrl = ExtractPythonConstantValue(trimmedLine);
+                        }
                     }
-                    else
+                    else if (trimmedLine.StartsWith("__context__"))
                     {
-                        result.HelpUrl = ExtractPythonConstantValue(trimmedLine);
+                        // Check if it's a list
+                        var listValue = ExtractPythonList(trimmedLine);
+                        if (listValue != null && listValue.Count > 0)
+                        {
+                            result.ContextItems = listValue;
+                            // Format as context string (ALL must match)
+                            result.Context = "(" + string.Join("&", listValue) + ")";
+                        }
+                        else
+                        {
+                            result.Context = NormalizeContextString(ExtractPythonConstantValue(trimmedLine));
+                        }
                     }
-                }
-                else if (trimmedLine.StartsWith("__context__"))
-                {
-                    // Check if it's a list
-                    var listValue = ExtractPythonList(trimmedLine);
-                    if (listValue != null && listValue.Count > 0)
+                    else if (trimmedLine.StartsWith("__highlight__"))
                     {
-                        result.ContextItems = listValue;
-                        // Format as context string (ALL must match)
-                        result.Context = "(" + string.Join("&", listValue) + ")";
+                        result.Highlight = ExtractPythonConstantValue(trimmedLine);
                     }
-                    else
+                    else if (trimmedLine.StartsWith("__min_revit_ver__"))
                     {
-                        result.Context = NormalizeContextString(ExtractPythonConstantValue(trimmedLine));
+                        result.MinRevitVersion = ExtractPythonValue(trimmedLine);
                     }
+                    else if (trimmedLine.StartsWith("__max_revit_ver__"))
+                    {
+                        result.MaxRevitVersion = ExtractPythonValue(trimmedLine);
+                    }
+                    else if (trimmedLine.StartsWith("__beta__"))
+                    {
+                        result.IsBeta = ExtractPythonBoolValue(trimmedLine);
+                    }
+                    else if (trimmedLine.StartsWith("__cleanengine__"))
+                    {
+                        result.CleanEngine = ExtractPythonBoolValue(trimmedLine);
+                    }
+                    else if (trimmedLine.StartsWith("__fullframeengine__"))
+                    {
+                        result.FullFrameEngine = ExtractPythonBoolValue(trimmedLine);
+                    }
+                    else if (trimmedLine.StartsWith("__persistentengine__"))
+                    {
+                        result.PersistentEngine = ExtractPythonBoolValue(trimmedLine);
+                    }
+                    
+                    lineIndex++;
                 }
-                else if (trimmedLine.StartsWith("__highlight__"))
-                {
-                    result.Highlight = ExtractPythonConstantValue(trimmedLine);
-                }
-                else if (trimmedLine.StartsWith("__min_revit_ver__"))
-                {
-                    result.MinRevitVersion = ExtractPythonValue(trimmedLine);
-                }
-                else if (trimmedLine.StartsWith("__max_revit_ver__"))
-                {
-                    result.MaxRevitVersion = ExtractPythonValue(trimmedLine);
-                }
-                else if (trimmedLine.StartsWith("__beta__"))
-                {
-                    result.IsBeta = ExtractPythonBoolValue(trimmedLine);
-                }
-                else if (trimmedLine.StartsWith("__cleanengine__"))
-                {
-                    result.CleanEngine = ExtractPythonBoolValue(trimmedLine);
-                }
-                else if (trimmedLine.StartsWith("__fullframeengine__"))
-                {
-                    result.FullFrameEngine = ExtractPythonBoolValue(trimmedLine);
-                }
-                else if (trimmedLine.StartsWith("__persistentengine__"))
-                {
-                    result.PersistentEngine = ExtractPythonBoolValue(trimmedLine);
-                }
-                
-                lineIndex++;
+            }
+            catch (Exception ex)
+            {
+                LogParseException(scriptPath, ex);
             }
 
             _pythonScriptCache[scriptPath] = result;
@@ -1890,9 +2068,9 @@ namespace pyRevitExtensionParser
                         offIconDarkPath = file;
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // If we can't read the directory, just return nulls
+                LogParseException(componentDirectory, ex);
             }
 
             return (onIconPath, onIconDarkPath, offIconPath, offIconDarkPath);
@@ -1930,9 +2108,9 @@ namespace pyRevitExtensionParser
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // If we can't read the directory, just return null
+                LogParseException(componentDirectory, ex);
             }
 
             return null;

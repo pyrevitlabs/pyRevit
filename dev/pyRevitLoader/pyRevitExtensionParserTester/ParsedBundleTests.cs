@@ -408,6 +408,104 @@ context:
                 "Context should be from bundle.yaml");
         }
 
+        [Test]
+        public void TestLocaleAliasKeysAreParsed()
+        {
+            var yamlContent = @"title:
+  english: English Alias Title
+tooltip:
+  german: Deutscher Alias Tooltip
+";
+            var tempFile = Path.GetTempFileName();
+            File.WriteAllText(tempFile, yamlContent);
+
+            try
+            {
+                var bundle = BundleParser.BundleYamlParser.Parse(tempFile);
+                Assert.That(bundle.Titles.ContainsKey("en_us"), Is.True);
+                Assert.That(bundle.Titles["en_us"], Is.EqualTo("English Alias Title"));
+                Assert.That(bundle.Tooltips.ContainsKey("de_de"), Is.True);
+                Assert.That(bundle.Tooltips["de_de"], Is.EqualTo("Deutscher Alias Tooltip"));
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
+        [Test]
+        public void TestIsBetaKeyIsSupported()
+        {
+            var yamlContent = @"title: Test
+is_beta: true
+";
+            var tempFile = Path.GetTempFileName();
+            File.WriteAllText(tempFile, yamlContent);
+
+            try
+            {
+                var bundle = BundleParser.BundleYamlParser.Parse(tempFile);
+                Assert.That(bundle.IsBeta, Is.True);
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
+        [Test]
+        public void TestEngineTypeIsNotEmittedByDefaultForPythonScripts()
+        {
+            var extensionDir = Path.Combine(Path.GetTempPath(), $"EngineTypeDefault_{System.Guid.NewGuid():N}.extension");
+            var bundleDir = Path.Combine(extensionDir, "Test.panel", "Cpy.pushbutton");
+            Directory.CreateDirectory(bundleDir);
+
+            try
+            {
+                File.WriteAllText(Path.Combine(bundleDir, "script.py"), "#! python3\nprint(3/0)\n");
+
+                var parsedExtension = ParseInstalledExtensions(new[] { extensionDir }).First();
+                var codeGenerator = new pyRevitAssemblyBuilder.AssemblyMaker.RoslynCommandTypeGenerator();
+                var generatedCode = codeGenerator.GenerateExtensionCode(parsedExtension, "2024");
+
+                Assert.That(generatedCode, Does.Not.Contain("\\\"type\\\":\\\"IronPython\\\""),
+                    "Default IronPython engine type should not be emitted into engine configs.");
+            }
+            finally
+            {
+                if (Directory.Exists(extensionDir))
+                    Directory.Delete(extensionDir, true);
+            }
+        }
+
+        [Test]
+        public void TestEngineTypeIsEmittedWhenExplicitlyConfigured()
+        {
+            var extensionDir = Path.Combine(Path.GetTempPath(), $"EngineTypeExplicit_{System.Guid.NewGuid():N}.extension");
+            var bundleDir = Path.Combine(extensionDir, "Test.panel", "Cmd.pushbutton");
+            Directory.CreateDirectory(bundleDir);
+
+            try
+            {
+                File.WriteAllText(Path.Combine(bundleDir, "script.py"), "print('ok')\n");
+                File.WriteAllText(Path.Combine(bundleDir, "bundle.yaml"), "engine:\n  type: IronPython\n");
+
+                var parsedExtension = ParseInstalledExtensions(new[] { extensionDir }).First();
+                var codeGenerator = new pyRevitAssemblyBuilder.AssemblyMaker.RoslynCommandTypeGenerator();
+                var generatedCode = codeGenerator.GenerateExtensionCode(parsedExtension, "2024");
+
+                Assert.That(generatedCode, Does.Contain("\\\"type\\\":\\\"IronPython\\\""),
+                    "Explicit engine.type from bundle.yaml should be emitted into engine configs.");
+                Assert.That(generatedCode, Does.Contain("\\\"type_explicit\\\":true"),
+                    "Explicit engine.type should set type_explicit marker in engine configs.");
+            }
+            finally
+            {
+                if (Directory.Exists(extensionDir))
+                    Directory.Delete(extensionDir, true);
+            }
+        }
+
         private static IEnumerable<ParsedComponent> GetAllComponentsFlat(ParsedComponent component)
         {
             yield return component;
