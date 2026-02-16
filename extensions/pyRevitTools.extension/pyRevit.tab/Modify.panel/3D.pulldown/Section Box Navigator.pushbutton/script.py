@@ -5,7 +5,7 @@
 from pyrevit import revit, script, forms
 from pyrevit.framework import System, Controls, Media
 from pyrevit.revit import events
-from pyrevit import DB, UI
+from pyrevit import DB
 
 from sectionbox_navigation import (
     get_all_levels,
@@ -23,7 +23,7 @@ from sectionbox_utils import (
     apply_plan_viewrange_from_sectionbox,
     to_world_identity,
 )
-from sectionbox_actions import toggle, hide, align_to_face
+from sectionbox_actions import toggle, hide, align_to_face, temp_switch
 from sectionbox_geometry import (
     get_section_box_info,
     get_section_box_face_info,
@@ -60,6 +60,7 @@ default_nudge_value = DB.UnitUtils.Convert(
 )
 TOLERANCE = 1e-5
 DATAFILENAME = "SectionBox"
+TEMP_DATAFILE = script.get_instance_data_file("SectionBoxTemp")
 WINDOW_POSITION = "sbnavigator_window_pos"
 
 # --------------------
@@ -134,28 +135,6 @@ def format_length_value(value):
 
 
 # --------------------
-# Event Handler
-# --------------------
-
-
-class HelperEventHandler(UI.IExternalEventHandler):
-    """Event handler for executing Revit API operations."""
-
-    def __init__(self, action):
-        self.action = action
-        self.parameters = None
-
-    def Execute(self, uiapp):
-        try:
-            self.action(self.parameters)
-        except Exception as ex:
-            logger.error("Error in Execute: {}".format(ex))
-
-    def GetName(self):
-        return "SectionBoxNavigatorHandler"
-
-
-# --------------------
 # View Changed Monitor
 # --------------------
 
@@ -198,9 +177,6 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         except Exception:
             logger.warning("Could not initialize DC3D server")
 
-        # Setup event handler
-        self.event_handler = HelperEventHandler(self.execute_action)
-        self.ext_event = UI.ExternalEvent.Create(self.event_handler)
         self.pending_action = None
 
         if not length_unit_symbol_label:
@@ -536,6 +512,8 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 self.do_hide()
             elif action_type == "align_to_face":
                 self.do_align_to_face()
+            elif action_type == "temp_switch":
+                self.do_temp_switch()
             elif action_type == "expand_shrink":
                 self.do_expand_shrink(params)
             elif action_type == "align_to_2d_view":
@@ -1171,6 +1149,20 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                     3, self.get_locale_string("FailedToAlignToFaceFormat").format(str(ex)), "error"
                 )
 
+    def do_temp_switch(self):
+        """Temporary switch to a box around elements"""
+        if not isinstance(self.current_view, DB.View3D):
+            return
+        try:
+            temp_switch(doc, TEMP_DATAFILE)
+            self.show_status_message(3, self.get_locale_string("SuccessTempSwitch"), "success")
+        except Exception as ex:
+            # User might have cancelled, don't show error for cancellation
+            if "cancelled" not in str(ex).lower() and "cancel" not in str(ex).lower():
+                self.show_status_message(
+                    3, self.get_locale_string("FailedTempSwitch").format(str(ex)), "error"
+                )
+
     def adjust_section_box(
         self,
         min_x_change=0,
@@ -1297,8 +1289,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 "nudge_amount": distance,
                 "elevation": elevation,
             }
-            self.event_handler.parameters = self.pending_action
-            self.ext_event.Raise()
+            events.execute_in_revit_context(self.execute_action, self.pending_action)
 
         except ValueError:
             self.show_status_message(1, self.get_locale_string("PleaseEnterValidNumber"), "warning")
@@ -1323,8 +1314,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 "direction": direction,
                 "nudge_amount": distance,
             }
-            self.event_handler.parameters = self.pending_action
-            self.ext_event.Raise()
+            events.execute_in_revit_context(self.execute_action, self.pending_action)
 
         except ValueError:
             self.show_status_message(2, self.get_locale_string("PleaseEnterValidNumber"), "warning")
@@ -1426,8 +1416,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 "amount": amount,
                 "is_expand": True,
             }
-            self.event_handler.parameters = self.pending_action
-            self.ext_event.Raise()
+            events.execute_in_revit_context(self.execute_action, self.pending_action)
         except ValueError:
             self.show_status_message(
                 3, self.get_locale_string("PleaseEnterValidNumberForExpansion"), "warning"
@@ -1459,8 +1448,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 "amount": amount,
                 "is_expand": False,
             }
-            self.event_handler.parameters = self.pending_action
-            self.ext_event.Raise()
+            events.execute_in_revit_context(self.execute_action, self.pending_action)
         except ValueError:
             self.show_status_message(
                 3, self.get_locale_string("PleaseEnterValidNumberForShrink"), "warning"
@@ -1525,8 +1513,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             self.show_status_message(3, self.get_locale_string("CouldNotExtractViewInformation"), "error")
             return
 
-        self.event_handler.parameters = self.pending_action
-        self.ext_event.Raise()
+        events.execute_in_revit_context(self.execute_action, self.pending_action)
 
     def btn_preview_enter(self, sender, e):
         """Show preview when hovering over level, grid, or expansion buttons."""
@@ -1614,24 +1601,28 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         self.pending_action = {
             "action": "toggle",
         }
-        self.event_handler.parameters = self.pending_action
-        self.ext_event.Raise()
+        events.execute_in_revit_context(self.execute_action, self.pending_action)
 
     def btn_hide_box_click(self, sender, e):
         """Hide/unhide section box."""
         self.pending_action = {
             "action": "hide",
         }
-        self.event_handler.parameters = self.pending_action
-        self.ext_event.Raise()
+        events.execute_in_revit_context(self.execute_action, self.pending_action)
 
     def btn_align_box_to_face_click(self, sender, e):
         """Align section box to face."""
         self.pending_action = {
             "action": "align_to_face",
         }
-        self.event_handler.parameters = self.pending_action
-        self.ext_event.Raise()
+        events.execute_in_revit_context(self.execute_action, self.pending_action)
+
+    def btn_temp_switch_click(self, sender, e):
+        """Temporary switch to a box around elements"""
+        self.pending_action = {
+            "action": "temp_switch",
+        }
+        events.execute_in_revit_context(self.execute_action, self.pending_action)
 
     def chkIncludeLinks_checked(self, sender, e):
         """Refresh levels and grids when checkbox is toggled."""

@@ -17,5 +17,6 @@ tooltip:
 author: wurschdhaud
 context:
   - doc-project
+  - active-3d-view
 engine:
   persistent: true

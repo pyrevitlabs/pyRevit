@@ -232,12 +232,24 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 if (string.IsNullOrEmpty(engineTypeName))
                     return null;
 
+                // Only honor Python engine overrides for Python scripts
+                if (!PyRevitScript.IsType(ScriptSourceFile, PyRevitScriptTypes.Python))
+                    return null;
+
                 // Map string to ScriptEngineType enum
-                if (engineTypeName.Equals("CPython", StringComparison.OrdinalIgnoreCase)) 
+                if (engineTypeName.Equals("CPython", StringComparison.OrdinalIgnoreCase))
                     return ScriptEngineType.CPython;
 
-                if (engineTypeName.Equals("IronPython", StringComparison.OrdinalIgnoreCase))
+                if (engineTypeName.Equals("IronPython", StringComparison.OrdinalIgnoreCase)) {
+                    // Backward-compat: older command generators always injected
+                    // "type":"IronPython" even when user did not explicitly set it.
+                    // In that case, allow runtime shebang detection to pick engine.
+                    var typeExplicit = json["type_explicit"]?.Value<bool?>() ?? false;
+                    if (!typeExplicit)
+                        return null;
+
                     return ScriptEngineType.IronPython;
+                }
 
                 return null;
             }

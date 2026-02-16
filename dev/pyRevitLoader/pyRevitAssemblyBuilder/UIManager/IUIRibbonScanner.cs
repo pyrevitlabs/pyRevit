@@ -1,4 +1,7 @@
 #nullable enable
+using System.Collections.Generic;
+using pyRevitExtensionParser;
+
 namespace pyRevitAssemblyBuilder.UIManager
 {
     /// <summary>
@@ -44,5 +47,13 @@ namespace pyRevitAssemblyBuilder.UIManager
         /// Checks if an element with the given ID is registered as a pyRevit element.
         /// </summary>
         bool IsRegisteredElement(string elementType, string elementId);
+
+        /// <summary>
+        /// Applies external layout directives by reordering panels in the ribbon.
+        /// Called after all UI is built to position panels relative to external targets
+        /// (native Revit panels or panels from other extensions).
+        /// </summary>
+        /// <param name="directives">Collection of external layout directives to apply.</param>
+        void SortUI(IEnumerable<ExternalLayoutDirective> directives);
     }
 }

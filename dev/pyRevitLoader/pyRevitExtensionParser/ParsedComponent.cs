@@ -27,6 +27,15 @@ namespace pyRevitExtensionParser
         /// Used when layout items specify a custom title like: "Component Name[title:Custom Title]"
         /// </summary>
         public Dictionary<string, string> LayoutItemTitles { get; set; }
+        
+        /// <summary>
+        /// Maps component names to their layout directives for positioning control.
+        /// Used when layout items specify positioning directives like:
+        /// "Component Name[before:Target]", "Component Name[after:Target]",
+        /// "Component Name[beforeall:]", "Component Name[afterall:]"
+        /// </summary>
+        public Dictionary<string, LayoutDirective> LayoutDirectives { get; set; }
+        
         public bool HasSlideout { get; set; } = false;
         public string Title { get; set; }
         public string Author { get; set; }
@@ -37,6 +46,7 @@ namespace pyRevitExtensionParser
         public string MinRevitVersion { get; set; }
         public string MaxRevitVersion { get; set; }
         public bool IsBeta { get; set; }
+        public bool Collapsed { get; set; }
         public string TargetAssembly { get; set; }
         public string CommandClass { get; set; }
         public string AvailabilityClass { get; set; }
@@ -236,16 +246,13 @@ namespace pyRevitExtensionParser
             if (string.IsNullOrEmpty(preferredLocale))
                 preferredLocale = ExtensionParser.DefaultLocale;
 
-            // Try preferred locale first
-            if (localizedValues.TryGetValue(preferredLocale, out string preferredValue))
-                return preferredValue;
+            foreach (var locale in LocaleSupport.GetLocaleSearchOrder(preferredLocale, ExtensionParser.DefaultLocale))
+            {
+                if (localizedValues.TryGetValue(locale, out string value))
+                    return value;
+            }
 
-            // Fallback to default locale if different preferred locale was specified
-            if (preferredLocale != ExtensionParser.DefaultLocale && localizedValues.TryGetValue(ExtensionParser.DefaultLocale, out string defaultValue))
-                return defaultValue;
-
-            // Fallback to first available value
-            return localizedValues.Values.FirstOrDefault();
+            return null;
         }
     }
 }
