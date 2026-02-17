@@ -17,7 +17,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>6.0.0.26032+2040</Version>
+    <Version>6.1.0.26047+2349</Version>
     <Copyright>Copyright © 2014-2025</Copyright>
     <Company>pyRevitLabs.io</Company>
   </PropertyGroup>

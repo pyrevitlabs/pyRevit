@@ -13,14 +13,11 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.8
 	github.com/pkg/errors v0.9.1
 	github.com/satori/go.uuid v1.2.0
-	go.mongodb.org/mongo-driver v1.17.8
+	go.mongodb.org/mongo-driver/v2 v2.5.0
 	pkg.re/essentialkaos/ek.v10 v12.32.0+incompatible
 )
 
 require (
-	github.com/aws/aws-sdk-go v1.34.28 // indirect
-	github.com/go-stack/stack v1.8.0 // indirect
-	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/montanaflynn/stats v0.7.1 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.2.0 // indirect
