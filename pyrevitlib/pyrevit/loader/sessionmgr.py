@@ -307,8 +307,11 @@ def _new_session_csharp():
             # Register extension hooks
             # The Python session path (_new_session) registers hooks
             # after assembly creation, but the C# path was missing this
-            for ui_ext in extensionmgr.get_installed_ui_extensions():
-                hooks.register_hooks(ui_ext)
+            try:
+                for ui_ext in extensionmgr.get_installed_ui_extensions():
+                    hooks.register_hooks(ui_ext)
+            except Exception as hook_ex:
+                mlogger.error('Error registering hooks: %s', hook_ex)
         else:
             mlogger.error('C# session loading returned failure result')
             mlogger.info('Falling back to Python session creation...')
