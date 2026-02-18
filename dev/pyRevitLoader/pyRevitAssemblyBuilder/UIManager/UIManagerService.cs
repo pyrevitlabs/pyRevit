@@ -27,7 +27,10 @@ namespace pyRevitAssemblyBuilder.UIManager
         private readonly IUIRibbonScanner? _ribbonScanner;
         private readonly UIApplication _uiApp;
         private ParsedExtension? _currentExtension;
-        private readonly bool _loadBeta;
+        /// <summary>
+        /// Cached Load Beta setting. Re-read at start of each BuildUI so reload picks up settings changes (fixes #3109).
+        /// </summary>
+        private bool _loadBeta;
 
         /// <summary>
         /// Gets the UIApplication instance used by this service.
@@ -92,6 +95,17 @@ namespace pyRevitAssemblyBuilder.UIManager
             {
                 _logger.Warning("Cannot build UI: extension is null.");
                 return;
+            }
+
+            // Re-read Load Beta so toggling "Load Beta Tools" in settings is applied on next reload (#3109).
+            try
+            {
+                var config = PyRevitConfig.Load();
+                _loadBeta = config.LoadBeta;
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug($"Failed to re-read beta config: {ex.Message}");
             }
 
             if (assemblyInfo == null)
