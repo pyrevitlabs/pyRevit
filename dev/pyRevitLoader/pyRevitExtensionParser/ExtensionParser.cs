@@ -510,8 +510,14 @@ namespace pyRevitExtensionParser
                     }
                 }
 
-                // Layout is a strict allowlist: only layout-listed items are shown (parity with Python loader).
-                // Do not append unlisted children.
+                // Add any components not in layout order at the end
+                foreach (var child in component.Children)
+                {
+                    if (child != null && !reorderedChildren.Contains(child))
+                    {
+                        reorderedChildren.Add(child);
+                    }
+                }
 
                 // Apply layout directives (before, after, beforeall, afterall)
                 // External directives (where target is not found) are stored for post-UI-build sorting
@@ -1159,23 +1165,10 @@ namespace pyRevitExtensionParser
                     ? bundleInComponent.Highlight 
                     : scriptHighlight;
 
-                // Determine final help URL: bundle helpurl takes precedence over script helpurl.
-                // Apply template substitution to bundle scalar help_url (parity with Python loader).
-                var bundleHelpUrlRaw = bundleInComponent?.HelpUrl;
-                var bundleHelpUrlSubstituted = SubstituteTemplates(bundleHelpUrlRaw, mergedTemplates);
-                string finalHelpUrl = !string.IsNullOrEmpty(bundleHelpUrlSubstituted)
-                    ? bundleHelpUrlSubstituted
+                // Determine final help URL: bundle helpurl takes precedence over script helpurl
+                string finalHelpUrl = !string.IsNullOrEmpty(bundleInComponent?.HelpUrl)
+                    ? bundleInComponent.HelpUrl
                     : scriptHelpUrl;
-                // Auto-discover help file in bundle directory when no help_url set (parity with Python loader).
-                if (string.IsNullOrEmpty(finalHelpUrl))
-                {
-                    finalHelpUrl = DiscoverHelpFileInBundleDirectory(dir);
-                }
-                // Resolve relative help_url (e.g. "help.html") against bundle directory to file:// URL.
-                if (!string.IsNullOrEmpty(finalHelpUrl))
-                {
-                    finalHelpUrl = ResolveHelpUrlIfRelative(finalHelpUrl, dir);
-                }
 
                 // Determine final help URL: bundle hyperlink takes precedence over script helpurl
                 string finalHyperlink = !string.IsNullOrEmpty(hyperlink) ? hyperlink : scriptHelpUrl;
@@ -1360,80 +1353,6 @@ namespace pyRevitExtensionParser
             }
 
             return null;
-        }
-
-        /// <summary>
-        /// Discovers a help file in the bundle directory (parity with Python loader).
-        /// Matches pattern .*help\..+ (e.g. help.html, help.pdf, myhelp.html).
-        /// </summary>
-        /// <param name="bundleDir">The bundle directory to scan</param>
-        /// <returns>file:// URL of the first matching file, or null if none found</returns>
-        private static string DiscoverHelpFileInBundleDirectory(string bundleDir)
-        {
-            if (string.IsNullOrEmpty(bundleDir) || !Directory.Exists(bundleDir))
-                return null;
-            try
-            {
-                // Match Python HELP_FILE_PATTERN: .*help\..+
-                foreach (var file in Directory.GetFiles(bundleDir))
-                {
-                    var fileName = Path.GetFileName(file);
-                    if (string.IsNullOrEmpty(fileName) || fileName.IndexOf("help.", StringComparison.OrdinalIgnoreCase) < 0)
-                        continue;
-                    var ext = Path.GetExtension(fileName);
-                    if (string.IsNullOrEmpty(ext) || ext.Length < 2)
-                        continue;
-                    // Must be "help.<something>" (e.g. help.html)
-                    var nameWithoutExt = Path.GetFileNameWithoutExtension(fileName);
-                    if (nameWithoutExt.EndsWith("help", StringComparison.OrdinalIgnoreCase))
-                    {
-                        return PathToFileUri(file);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                LogWarning($"Error discovering help file in bundle directory: {ex.Message}");
-            }
-            return null;
-        }
-
-        /// <summary>
-        /// Converts an absolute file path to a file:// URI for Revit contextual help.
-        /// </summary>
-        private static string PathToFileUri(string absolutePath)
-        {
-            if (string.IsNullOrEmpty(absolutePath))
-                return null;
-            try
-            {
-                var uri = new Uri(Path.GetFullPath(absolutePath));
-                return uri.AbsoluteUri;
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// If helpUrl looks like a relative path (no scheme, not rooted), resolves it against bundleDir
-        /// and returns a file:// URL if the file exists. Otherwise returns the original string.
-        /// </summary>
-        private static string ResolveHelpUrlIfRelative(string helpUrl, string bundleDir)
-        {
-            if (string.IsNullOrEmpty(helpUrl) || string.IsNullOrEmpty(bundleDir))
-                return helpUrl;
-            // Already an absolute URL (http/https/file)
-            if (helpUrl.IndexOf("://", StringComparison.Ordinal) >= 0)
-                return helpUrl;
-            // Already an absolute path
-            if (Path.IsPathRooted(helpUrl))
-                return FileExists(helpUrl) ? PathToFileUri(helpUrl) : helpUrl;
-            var resolvedPath = Path.GetFullPath(Path.Combine(bundleDir, helpUrl));
-            if (FileExists(resolvedPath))
-                return PathToFileUri(resolvedPath);
-            return helpUrl;
         }
 
         private static string SanitizeClassName(string name)
