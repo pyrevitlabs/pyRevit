@@ -3,7 +3,7 @@
 from pyrevit import HOST_APP
 from pyrevit import EXEC_PARAMS, DB, UI
 from pyrevit import framework
-from pyrevit import compat
+from pyrevit import compat, PyRevitCPythonNotSupported
 from pyrevit.coreutils.logger import get_logger
 
 
@@ -198,8 +198,7 @@ def execute_in_revit_context(func, *args, **kwargs):
         For return values, use callbacks or shared mutable objects.
     """
     if not compat.IRONPY:
-        mlogger.error("This helper is not available outside of IronPython")
-        return
+        PyRevitCPythonNotSupported("pyrevit.revit.events.execute_in_revit_context")
     _HANDLER.func = func
     _HANDLER.args = args
     _HANDLER.kwargs = kwargs
