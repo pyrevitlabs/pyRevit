@@ -102,6 +102,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             {
                 var config = PyRevitConfig.Load();
                 _loadBeta = config.LoadBeta;
+                _logger.Debug($"Re-read beta config - Beta tools loading: {_loadBeta}");
             }
             catch (Exception ex)
             {
