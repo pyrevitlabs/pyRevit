@@ -2,7 +2,7 @@
 from pyrevit import script, forms
 from pyrevit.userconfig import user_config
 from ws4links_script import main
-from translations import TRANSLATIONS_CONFIG
+from ws4links_translations import TRANSLATIONS_CONFIG
 
 
 class MyOption(forms.TemplateListItem):
