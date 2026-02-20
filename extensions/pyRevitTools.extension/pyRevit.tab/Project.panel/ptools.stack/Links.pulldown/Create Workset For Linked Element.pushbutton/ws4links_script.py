@@ -4,7 +4,7 @@ from pyrevit import script
 from pyrevit.forms import alert
 from pyrevit.userconfig import user_config
 from pyrevit import HOST_APP
-from translations import TRANSLATIONS_SCRIPT
+from ws4links_translations import TRANSLATIONS_SCRIPT
 
 
 doc = HOST_APP.doc
