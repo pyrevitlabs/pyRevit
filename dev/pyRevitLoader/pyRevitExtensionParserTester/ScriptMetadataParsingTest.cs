@@ -212,6 +212,42 @@ tooltip: Bundle Tooltip
         }
 
         [Test]
+        public void TestRocketModeConfigFromIni()
+        {
+            var configPath = Path.Combine(TestTempDir, "pyRevit_config.ini");
+
+            // Default value: false when not set
+            File.WriteAllText(configPath, "");
+            var config1 = PyRevitConfig.Load(configPath);
+            Assert.IsFalse(config1.RocketMode, "Default RocketMode should be false when not set");
+
+            // Explicit true
+            File.WriteAllText(configPath, "[core]\nrocket_mode = true");
+            var config2 = PyRevitConfig.Load(configPath);
+            Assert.IsTrue(config2.RocketMode, "RocketMode should be true when explicitly set");
+
+            // Explicit false
+            File.WriteAllText(configPath, "[core]\nrocket_mode = false");
+            var config3 = PyRevitConfig.Load(configPath);
+            Assert.IsFalse(config3.RocketMode, "RocketMode should be false when explicitly set");
+
+            // Case insensitive
+            File.WriteAllText(configPath, "[core]\nrocket_mode = TRUE");
+            var config4 = PyRevitConfig.Load(configPath);
+            Assert.IsTrue(config4.RocketMode, "RocketMode should be case-insensitive");
+
+            // Round-trip write/read
+            var configPath2 = Path.Combine(TestTempDir, "pyRevit_config_rw.ini");
+            File.WriteAllText(configPath2, "");
+            var configRw = PyRevitConfig.Load(configPath2);
+            configRw.RocketMode = true;
+            var configRw2 = PyRevitConfig.Load(configPath2);
+            Assert.IsTrue(configRw2.RocketMode, "RocketMode should persist after write");
+
+            Assert.Pass("RocketMode config parsing validated successfully.");
+        }
+
+        [Test]
         public void TestLoadBetaConfigFromIni()
         {
             // Create a temporary config file
