@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 from collections import deque
-from math import pi, atan, sqrt
-from pyrevit import HOST_APP, revit, forms, script
+from math import pi, atan, sqrt, acos
+from pyrevit import revit, forms, script
 from pyrevit import DB
 from Autodesk.Revit.Exceptions import InvalidOperationException
 
 logger = script.get_logger()
 
-doc = HOST_APP.doc
+doc = revit.doc
 uidoc = revit.uidoc
 # Length
 length_format_options = doc.GetUnits().GetFormatOptions(DB.SpecTypeId.Length)
@@ -34,12 +34,12 @@ MAX_HISTORY = 5
 measurement_history = deque(maxlen=MAX_HISTORY)
 
 # Visual aid configuration
-CUBE_SIZE = 0.3  # in feet (cube side length)
 LINE_COLOR_X = DB.ColorWithTransparency(255, 0, 0, 0)  # Red
 LINE_COLOR_Y = DB.ColorWithTransparency(0, 255, 0, 0)  # Green
 LINE_COLOR_Z = DB.ColorWithTransparency(0, 0, 255, 0)  # Blue
 LINE_COLOR_DIAG = DB.ColorWithTransparency(200, 200, 0, 0)  # Dark Yellow
-CUBE_COLOR = DB.ColorWithTransparency(255, 165, 0, 50)  # Orange
+CONE_COLOR = DB.ColorWithTransparency(255, 165, 0, 50)  # Orange
+CONE_SCALE = 0.05
 
 
 def calculate_distances(point1, point2):
@@ -92,16 +92,31 @@ def format_point(point):
     return "({:.2f}, {:.2f}, {:.2f})".format(x, y, z)
 
 
-def create_cube_mesh(center, size, color):
-    """Create a cube mesh centered at the given point."""
-    half_size = size / 2.0
+def create_cone_mesh(center, scale, color, view):
+    cone_path = script.get_bundle_file("cone.STL")
+    cam_forward = view.GetOrientation().ForwardDirection.Normalize()
+    cone_axis = cam_forward.Negate()
 
-    bb = DB.BoundingBoxXYZ()
-    bb.Min = DB.XYZ(-half_size, -half_size, -half_size)
-    bb.Max = DB.XYZ(half_size, half_size, half_size)
-    bb.Transform = DB.Transform.CreateTranslation(center)
+    z_axis = DB.XYZ.BasisZ
+    dot = max(-1.0, min(1.0, z_axis.DotProduct(cone_axis)))
 
-    mesh = revit.dc3dserver.Mesh.from_boundingbox(bb, color, black_edges=True)
+    if dot >= 0.9999999:
+        rotation = DB.Transform.Identity
+    elif dot <= -0.9999999:
+        perp = z_axis.CrossProduct(DB.XYZ.BasisX)
+        if perp.GetLength() < 1e-6:
+            perp = z_axis.CrossProduct(DB.XYZ.BasisY)
+        rotation = DB.Transform.CreateRotationAtPoint(perp.Normalize(), pi, DB.XYZ.Zero)
+    else:
+        axis = z_axis.CrossProduct(cone_axis).Normalize()
+        angle = acos(dot)
+        rotation = DB.Transform.CreateRotationAtPoint(axis, angle, DB.XYZ.Zero)
+
+    translation = DB.Transform.CreateTranslation(center)
+    transform = translation.Multiply(rotation).ScaleBasis(scale)
+    mesh = revit.dc3dserver.Mesh.from_stl(
+        cone_path, color, transform=transform, black_edges=True
+    )
 
     return mesh
 
@@ -119,7 +134,7 @@ def create_and_show_point_mesh(point1):
     global dc3d_server
     try:
         new_meshes = []
-        new_meshes.append(create_cube_mesh(point1, CUBE_SIZE, CUBE_COLOR))
+        new_meshes.append(create_cone_mesh(point1, CONE_SCALE, CONE_COLOR, doc.ActiveView))
         if dc3d_server:
             existing_meshes = dc3d_server.meshes if dc3d_server.meshes else []
             dc3d_server.meshes = existing_meshes + new_meshes
@@ -134,7 +149,7 @@ def create_measurement_meshes(point1, point2):
 
     # Create cubes at measurement points
     # Mesh for point1 already immediately created and shown on selection
-    meshes.append(create_cube_mesh(point2, CUBE_SIZE, CUBE_COLOR))
+    meshes.append(create_cone_mesh(point2, CONE_SCALE, CONE_COLOR, doc.ActiveView))
 
     # Determine the work plane (use the lowest Z for X and Y lines)
     lower_z = min(point1.Z, point2.Z)
@@ -168,17 +183,21 @@ def create_measurement_meshes(point1, point2):
 def perform_measurement():
     """Perform the measurement workflow: pick points, create aids, update UI."""
     # Add 3D view validation
-    if not forms.check_viewtype(uidoc.ActiveView, DB.ViewType.ThreeD):
+    if not forms.check_viewtype(doc.ActiveView, DB.ViewType.ThreeD):
         return
 
     try:
-        with forms.WarningBar(title=measure_window.get_locale_string("WarningBarPickFirstPoint")):
+        with forms.WarningBar(
+            title=measure_window.get_locale_string("WarningBarPickFirstPoint")
+        ):
             point1 = revit.pick_elementpoint(world=True)
             if not point1:
                 return
             create_and_show_point_mesh(point1)
 
-        with forms.WarningBar(title=measure_window.get_locale_string("WarningBarPickSecondPoint")):
+        with forms.WarningBar(
+            title=measure_window.get_locale_string("WarningBarPickSecondPoint")
+        ):
             point2 = revit.pick_elementpoint(world=True)
             if not point2:
                 return
@@ -204,7 +223,9 @@ def perform_measurement():
         measure_window.slope_text.Text = measure_window.get_locale_string("SlopeFormat").format(format_slope(slope))
 
         # Add to history
-        history_entry = measure_window.get_locale_string("MeasurementHistoryEntry").format(
+        history_entry = (
+            measure_window.get_locale_string("MeasurementHistoryEntry")
+            .format(
                 len(measurement_history) + 1,
                 format_point(point1),
                 format_point(point2),
@@ -213,7 +234,9 @@ def perform_measurement():
                 format_distance(dz),
                 format_distance(diagonal),
                 format_slope(slope),
-            ).lstrip()
+            )
+            .lstrip()
+        )
         measurement_history.append(history_entry)
 
         # Update history display
@@ -230,9 +253,7 @@ def perform_measurement():
             title=measure_window.get_locale_string("AlertMeasurementErrorTitle"),
         )
     except Exception as ex:
-        logger.exception(
-            "Error during measurement: {}".format(ex)
-        )
+        logger.exception("Error during measurement: {}".format(ex))
         forms.alert(
             measure_window.get_locale_string("AlertUnexpectedError"),
             title=measure_window.get_locale_string("AlertMeasurementErrorTitle"),
