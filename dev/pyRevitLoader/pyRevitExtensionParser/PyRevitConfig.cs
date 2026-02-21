@@ -116,6 +116,205 @@ namespace pyRevitExtensionParser
         }
 
         /// <summary>
+        /// Gets or sets the logging verbosity level.
+        /// </summary>
+        /// <remarks>
+        /// 0 = Quiet (default), 1 = Verbose, 2 = Debug.
+        /// Derived from the [core] verbose and debug keys, matching PyRevitLogLevels in the CLI library.
+        /// </remarks>
+        public int LoggingLevel
+        {
+            get
+            {
+                var verbose = _ini.IniReadValue("core", "verbose");
+                var debug = _ini.IniReadValue("core", "debug");
+                bool isDebug = bool.TryParse(debug, out var d) && d;
+                bool isVerbose = bool.TryParse(verbose, out var v) && v;
+                if (isDebug) return 2;
+                if (isVerbose) return 1;
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets whether to write log output to a file.
+        /// </summary>
+        public bool FileLogging
+        {
+            get
+            {
+                var value = _ini.IniReadValue("core", "filelogging");
+                return bool.TryParse(value, out var result) && result;
+            }
+            set
+            {
+                _ini.IniWriteValue("core", "filelogging", value ? TrueString : FalseString);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets whether pyRevit should auto-update on startup.
+        /// </summary>
+        public bool AutoUpdate
+        {
+            get
+            {
+                var value = _ini.IniReadValue("core", "autoupdate");
+                return bool.TryParse(value, out var result) && result;
+            }
+            set
+            {
+                _ini.IniWriteValue("core", "autoupdate", value ? TrueString : FalseString);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the path to a custom CSS stylesheet for pyRevit output windows.
+        /// </summary>
+        public string OutputStyleSheet
+        {
+            get
+            {
+                var value = _ini.IniReadValue("core", "outputstylesheet");
+                return string.IsNullOrEmpty(value) ? string.Empty : value.Trim();
+            }
+            set
+            {
+                _ini.IniWriteValue("core", "outputstylesheet", value ?? string.Empty);
+            }
+        }
+
+        // ── Telemetry ────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Gets or sets whether script-execution telemetry is enabled.
+        /// </summary>
+        public bool TelemetryState
+        {
+            get
+            {
+                var value = _ini.IniReadValue("telemetry", "active");
+                return bool.TryParse(value, out var result) && result;
+            }
+            set
+            {
+                _ini.IniWriteValue("telemetry", "active", value ? TrueString : FalseString);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets whether telemetry timestamps are recorded in UTC.
+        /// </summary>
+        public bool TelemetryUTCTimeStamps
+        {
+            get
+            {
+                var value = _ini.IniReadValue("telemetry", "utc_timestamps");
+                return bool.TryParse(value, out var result) && result;
+            }
+            set
+            {
+                _ini.IniWriteValue("telemetry", "utc_timestamps", value ? TrueString : FalseString);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the directory path for telemetry log files.
+        /// </summary>
+        public string TelemetryFilePath
+        {
+            get
+            {
+                var value = _ini.IniReadValue("telemetry", "telemetry_file_dir");
+                return string.IsNullOrEmpty(value) ? string.Empty : value.Trim();
+            }
+            set
+            {
+                _ini.IniWriteValue("telemetry", "telemetry_file_dir", value ?? string.Empty);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the URL of the telemetry server.
+        /// </summary>
+        public string TelemetryServerUrl
+        {
+            get
+            {
+                var value = _ini.IniReadValue("telemetry", "telemetry_server_url");
+                return string.IsNullOrEmpty(value) ? string.Empty : value.Trim();
+            }
+            set
+            {
+                _ini.IniWriteValue("telemetry", "telemetry_server_url", value ?? string.Empty);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets whether hook script executions are included in telemetry.
+        /// </summary>
+        public bool TelemetryIncludeHooks
+        {
+            get
+            {
+                var value = _ini.IniReadValue("telemetry", "include_hooks");
+                return bool.TryParse(value, out var result) && result;
+            }
+            set
+            {
+                _ini.IniWriteValue("telemetry", "include_hooks", value ? TrueString : FalseString);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets whether application-event telemetry is enabled.
+        /// </summary>
+        public bool AppTelemetryState
+        {
+            get
+            {
+                var value = _ini.IniReadValue("telemetry", "active_app");
+                return bool.TryParse(value, out var result) && result;
+            }
+            set
+            {
+                _ini.IniWriteValue("telemetry", "active_app", value ? TrueString : FalseString);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the URL of the application-event telemetry server.
+        /// </summary>
+        public string AppTelemetryServerUrl
+        {
+            get
+            {
+                var value = _ini.IniReadValue("telemetry", "apptelemetry_server_url");
+                return string.IsNullOrEmpty(value) ? string.Empty : value.Trim();
+            }
+            set
+            {
+                _ini.IniWriteValue("telemetry", "apptelemetry_server_url", value ?? string.Empty);
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the event-flags bitmask for application telemetry.
+        /// </summary>
+        public string AppTelemetryEventFlags
+        {
+            get
+            {
+                var value = _ini.IniReadValue("telemetry", "apptelemetry_event_flags");
+                return string.IsNullOrEmpty(value) ? string.Empty : value.Trim();
+            }
+            set
+            {
+                _ini.IniWriteValue("telemetry", "apptelemetry_event_flags", value ?? string.Empty);
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the timeout (in seconds) for displaying startup log messages.
         /// </summary>
         /// <remarks>
