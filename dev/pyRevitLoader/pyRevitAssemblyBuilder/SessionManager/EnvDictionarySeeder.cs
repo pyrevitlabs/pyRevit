@@ -74,8 +74,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
                 [KeyTelemetryState]     = config.TelemetryState,
                 [KeyTelemetryUTC]       = config.TelemetryUTCTimeStamps,
-                [KeyTelemetryDir]       = config.TelemetryFilePath,
-                [KeyTelemetryFile]      = string.Empty,
+                [KeyTelemetryFile]      = config.TelemetryFilePath,
                 [KeyTelemetryServer]    = config.TelemetryServerUrl,
                 [KeyTelemetryHooks]     = config.TelemetryIncludeHooks,
 
