@@ -199,10 +199,11 @@ class WPFWindow(framework.Windows.Window):
         self.window_id = coreutils.new_uuid()
 
         if not literal_string:
-            wpf.LoadComponent(self, self._determine_xaml(xaml_source))
+            xaml = self._determine_xaml(xaml_source)
             if getattr(self, '_pending_resource_merge', None):
                 self.merge_resource_dict(self._pending_resource_merge)
                 self._pending_resource_merge = None
+            wpf.LoadComponent(self, xaml)
         else:
             wpf.LoadComponent(self, framework.StringReader(xaml_source))
 
