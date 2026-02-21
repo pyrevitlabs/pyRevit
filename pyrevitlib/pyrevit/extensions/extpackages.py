@@ -15,7 +15,6 @@ from pyrevit.userconfig import user_config
 from pyrevit import extensions as exts
 
 
-#pylint: disable=W0703,C0302,C0103
 mlogger = get_logger(__name__)
 
 
@@ -378,8 +377,8 @@ def _install_extpkg(extpkg, install_dir, install_dependencies=True):
                 dep_pkg = get_ext_package_by_name(dep_pkg_name)
                 if dep_pkg:
                     _install_extpkg(dep_pkg,
-                                     install_dir,
-                                     install_dependencies=True)
+                                    install_dir,
+                                    install_dependencies=True)
 
 
 def _remove_extpkg(extpkg, remove_dependencies=True):
@@ -503,7 +502,7 @@ def get_dependency_graph():
 def install(extpkg, install_dir, install_dependencies=True):
     """Install the extension in the given parent directory.
 
-    This method uses .installed_dir property of extension object 
+    This method uses .installed_dir property of extension object
     as installation directory name for this extension.
     This method also handles installation of extension dependencies.
 
