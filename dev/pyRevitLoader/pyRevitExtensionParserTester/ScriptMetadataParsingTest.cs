@@ -244,7 +244,7 @@ tooltip: Bundle Tooltip
             File.WriteAllText(configPath, "");
             var cfg0 = PyRevitConfig.Load(configPath);
             Assert.IsFalse(cfg0.TelemetryState, "Default TelemetryState should be false");
-            Assert.IsFalse(cfg0.TelemetryUTCTimeStamps, "Default TelemetryUTCTimeStamps should be false");
+            Assert.IsTrue(cfg0.TelemetryUTCTimeStamps, "Default TelemetryUTCTimeStamps should be true");
             Assert.AreEqual(string.Empty, cfg0.TelemetryFilePath, "Default TelemetryFilePath should be empty");
             Assert.AreEqual(string.Empty, cfg0.TelemetryServerUrl, "Default TelemetryServerUrl should be empty");
             Assert.IsFalse(cfg0.TelemetryIncludeHooks, "Default TelemetryIncludeHooks should be false");
