@@ -106,14 +106,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             stepStopwatch.Restart();
             InitializeScriptExecutor();
             _logger.Debug($"[PERF] InitializeScriptExecutor: {stepStopwatch.ElapsedMilliseconds}ms");
-
-            // Seed the AppDomain environment dictionary.  Must run after InitializeScriptExecutor()
-            // (which loads _runtimeAssembly) and before any extension startup script (which may call
-            // pyrevit.sessioninfo, pyrevit.telemetry, etc.).
-            stepStopwatch.Restart();
-            SeedEnvironmentDictionary();
-            _logger.Debug($"[PERF] SeedEnvironmentDictionary: {stepStopwatch.ElapsedMilliseconds}ms");
-
+            
             // Get all library extensions first - they need to be available to all UI extensions
             stepStopwatch.Restart();
             var libraryExtensions = _extensionManager?.GetInstalledLibraryExtensions()?.ToList() ?? new List<ParsedExtension>();
@@ -205,26 +198,6 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
             totalStopwatch.Stop();
             _logger.Info($"Session loaded in {totalStopwatch.ElapsedMilliseconds}ms");
-        }
-
-        private void SeedEnvironmentDictionary()
-        {
-            try
-            {
-                if (_runtimeAssembly == null)
-                {
-                    _logger.Warning("Cannot seed environment dictionary: runtime assembly not loaded.");
-                    return;
-                }
-
-                EnvDictionarySeeder.Seed(_uiApp, _runtimeAssembly, _pyRevitRoot ?? string.Empty);
-                _logger.Debug("Session environment dictionary seeded successfully.");
-            }
-            catch (Exception ex)
-            {
-                // Non-fatal: scripts that don't rely on env vars still work.
-                _logger.Warning($"Failed to seed environment dictionary: {ex.Message}");
-            }
         }
 
         private void InitializeScriptExecutor()
