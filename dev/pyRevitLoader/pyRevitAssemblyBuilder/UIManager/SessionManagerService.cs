@@ -222,8 +222,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
             }
             catch (Exception ex)
             {
-                // Non-fatal: scripts that don't rely on env vars still work.
-                _logger.Warning($"Failed to seed environment dictionary: {ex.Message}");
+                _logger.Warning($"Failed to seed environment dictionary: {ex}");
+                throw;
             }
         }
 
