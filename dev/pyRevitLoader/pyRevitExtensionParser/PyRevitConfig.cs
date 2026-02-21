@@ -210,7 +210,12 @@ namespace pyRevitExtensionParser
             get
             {
                 var value = _ini.IniReadValue("telemetry", "utc_timestamps");
-                return bool.TryParse(value, out var result) && result;
+                if (bool.TryParse(value, out var result))
+                    return result;
+
+                // Default to true when the value is missing or unparseable so that
+                // loader behavior matches CLI/user_config defaults.
+                return true;
             }
             set
             {
