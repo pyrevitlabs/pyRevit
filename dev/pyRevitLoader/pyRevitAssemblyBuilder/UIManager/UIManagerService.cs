@@ -28,7 +28,7 @@ namespace pyRevitAssemblyBuilder.UIManager
         private readonly UIApplication _uiApp;
         private ParsedExtension? _currentExtension;
         /// <summary>
-        /// Cached Load Beta setting. Re-read at start of each BuildUI so reload picks up settings changes (fixes #3109).
+        /// Cached Load Beta setting. Re-read at start of each BuildUI so reload picks up settings changes.
         /// </summary>
         private bool _loadBeta;
 
