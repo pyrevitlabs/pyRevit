@@ -28,7 +28,6 @@ if not slope_unit_symbol.Empty():
 
 # Global variables
 measure_window = None
-measure_handler_event = None
 dc3d_server = None
 MAX_HISTORY = 5
 measurement_history = deque(maxlen=MAX_HISTORY)
@@ -242,6 +241,7 @@ def perform_measurement():
         # Update history display
         history_text = "\n".join(measurement_history)
         measure_window.history_text.Text = history_text
+        measure_window.history_scroll.ScrollToEnd()
 
         # Automatically start the next measurement
         revit.events.execute_in_revit_context(perform_measurement)
@@ -324,7 +324,7 @@ class MeasureWindow(forms.WPFWindow):
 
 def main():
     """Main entry point for the tool."""
-    global measure_window, measure_handler_event
+    global measure_window
     global dc3d_server
 
     dc3d_server = revit.dc3dserver.Server(
