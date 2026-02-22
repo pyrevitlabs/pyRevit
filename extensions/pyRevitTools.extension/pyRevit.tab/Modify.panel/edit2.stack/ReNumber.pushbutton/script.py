@@ -442,19 +442,19 @@ if isinstance(revit.active_view, ALLOWED_VIEW_CLASSES):
             width=400
         )
 
-    dupe_mode = DUPE_MODE_SWEEP   # normal click → original behaviour
-    if EXEC_PARAMS.config_mode:
-        chosen = forms.CommandSwitchWindow.show(
-            [DUPE_MODE_ALERT, DUPE_MODE_SKIP, DUPE_MODE_SWEEP],
-            message="How should duplicate numbers be handled?",
-            title="Advanced: Duplicate Handling",
-            width=420
-        )
-        if not chosen:
-            script.exit()
-        dupe_mode = chosen
 
     if selected_option_name:
+        dupe_mode = DUPE_MODE_SWEEP   # normal click → original behaviour
+        if EXEC_PARAMS.config_mode:
+            chosen = forms.CommandSwitchWindow.show(
+                [DUPE_MODE_ALERT, DUPE_MODE_SKIP, DUPE_MODE_SWEEP],
+                message="How should duplicate numbers be handled?",
+                title="Advanced: Duplicate Handling",
+                width=420
+            )
+            if not chosen:
+                script.exit()
+            dupe_mode = chosen
         selected_option = options_dict[selected_option_name]
         if selected_option.by_bicat:
             # if renumber doors by room
