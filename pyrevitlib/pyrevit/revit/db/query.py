@@ -338,7 +338,7 @@ def get_param_value(targetparam):
 
 def get_value_range(param_name, doc=None, elements=None):
     """
-    Retrieves a set of unique values for a specified parameter from all elements in the given Revit document.
+    Retrieves a set of unique values for a specified parameter from elements in a Revit document or from a provided collection of elements.
 
     Args:
         param_name (str): The name of the parameter to retrieve values for.
