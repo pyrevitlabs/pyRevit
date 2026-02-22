@@ -336,19 +336,24 @@ def get_param_value(targetparam):
     return value
 
 
-def get_value_range(param_name, doc=None):
+def get_value_range(param_name, doc=None, elements=None):
     """
     Retrieves a set of unique values for a specified parameter from all elements in the given Revit document.
 
     Args:
         param_name (str): The name of the parameter to retrieve values for.
         doc (Document, optional): The Revit document to search within. If None, the current document is used.
+        elements (iterable, optional): Specific elements to process. If provided, doc and get_all_elements() are ignored.
 
     Returns:
         set: A set of unique values for the specified parameter. The values can be of any type, but are typically strings.
     """
     values = set()
-    for element in get_all_elements(doc):
+    if elements is not None:
+        element_iterable = elements
+    else:
+        element_iterable = get_all_elements(doc)
+    for element in element_iterable:
         targetparam = element.LookupParameter(param_name)
         if targetparam:
             value = get_param_value(targetparam)
