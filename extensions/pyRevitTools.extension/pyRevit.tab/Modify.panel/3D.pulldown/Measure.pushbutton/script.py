@@ -146,7 +146,7 @@ def create_measurement_meshes(point1, point2):
     """Create all visual aid meshes for a measurement."""
     meshes = []
 
-    # Create cubes at measurement points
+    # Create cones at measurement points
     # Mesh for point1 already immediately created and shown on selection
     meshes.append(create_cone_mesh(point2, CONE_SCALE, CONE_COLOR, doc.ActiveView))
 
