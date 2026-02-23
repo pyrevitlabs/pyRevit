@@ -293,7 +293,10 @@ def pick_and_renumber(rnopts, starting_index, pb):
                     message="Select {} in order".format(rnopts.name.lower())):
                 # need nested transactions to push revit to update view
                 # on each renumber task
-                pb.update_progress(int(index), int(starting_index))
+                try:
+                    pb.update_progress(int(index), int(starting_index))
+                except (ValueError, TypeError):
+                    pb.update_progress(0, 0)
                 with revit.Transaction("Renumber {}".format(rnopts.name)):
                     # record the renumbered element
                     if picked_element.Id not in renumbered_element_ids:
@@ -387,6 +390,11 @@ def door_by_room_renumber(rnopts):
 # [X] renumber room
 # [X] renumber doors by room
 
+class _NoOpPB(object):
+    """No-op progress bar stub for non-integer starting numbers."""
+    def update_progress(self, value, max_value):
+        pass
+
 
 if isinstance(revit.active_view, ALLOWED_VIEW_CLASSES):
     # prepare options
@@ -434,10 +442,23 @@ if isinstance(revit.active_view, ALLOWED_VIEW_CLASSES):
         else:
             starting_number = ask_for_starting_number(selected_option.name)
             if starting_number:
-                with forms.ProgressBar(
-                    title="Pick {} One by One. ESCAPE to end. Current(Last set): {{value}}. Start: {{max_value}}".format(
-                        selected_option.name
-                    )
-                ) as pb:
-                    pb.update_progress(int(starting_number), int(starting_number))
-                    pick_and_renumber(selected_option, starting_number, pb)
+                try:
+                    _start_int = int(starting_number)
+                    _is_int = True
+                except (ValueError, TypeError):
+                    _is_int = False
+
+                if _is_int:
+                    with forms.ProgressBar(
+                        title="Pick {} One by One. ESCAPE to end. "
+                        "Current(Last set): {{value}}. Start: {{max_value}}".format(
+                            selected_option.name
+                        )
+                    ) as pb:
+                        pb.update_progress(_start_int, _start_int)
+                        pick_and_renumber(selected_option, starting_number, pb)
+                else:
+                    with forms.WarningBar(
+                        title="Pick {} One by One. ESCAPE to end.".format(selected_option.name)
+                    ):
+                        pick_and_renumber(selected_option, starting_number, _NoOpPB())
