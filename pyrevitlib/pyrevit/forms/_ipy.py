@@ -242,7 +242,6 @@ class WPFWindow(framework.Windows.Window):
             return english_xaml_file
 
         # otherwise look for .ResourceDictionary files and merge after load
-        # (must merge after LoadComponent so XAML does not replace Resources)
         if os.path.isfile(localized_xaml_resfile):
             self._pending_resource_merge = localized_xaml_resfile
         elif os.path.isfile(english_xaml_resfile):
