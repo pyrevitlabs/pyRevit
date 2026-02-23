@@ -79,6 +79,32 @@ namespace pyRevitExtensionParser
             LogError(msg);
         }
 
+        /// <summary>
+        /// Returns true if the given revitYear falls within the declared min/max version range.
+        /// A null or empty constraint is treated as no restriction (open-ended).
+        /// </summary>
+        private static bool IsRevitVersionCompatible(string minRevitVersion, string maxRevitVersion, int revitYear)
+        {
+            if (revitYear <= 0)
+                return true;
+
+            if (!string.IsNullOrEmpty(minRevitVersion) &&
+                int.TryParse(minRevitVersion, out var min) &&
+                revitYear < min)
+            {
+                return false;
+            }
+
+            if (!string.IsNullOrEmpty(maxRevitVersion) &&
+                int.TryParse(maxRevitVersion, out var max) &&
+                revitYear > max)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         private static int GetExceptionInt(Exception ex, params string[] keys)
         {
             if (ex?.Data == null)
@@ -222,7 +248,7 @@ namespace pyRevitExtensionParser
             return _cachedExtensionRoots;
         }
 
-        public static IEnumerable<ParsedExtension> ParseInstalledExtensions()
+        public static IEnumerable<ParsedExtension> ParseInstalledExtensions(int revitYear = 0)
         {
             var extensionRoots = GetCachedExtensionRoots();
 
@@ -253,7 +279,9 @@ namespace pyRevitExtensionParser
                     var fullPath = Path.GetFullPath(extDir);
                     if (discoveredExtensions.Add(fullPath))
                     {
-                        yield return ParseExtension(extDir);
+                        var parsed = ParseExtension(extDir, revitYear);
+                        if (parsed != null)
+                            yield return parsed;
                     }
                 }
 
@@ -273,7 +301,9 @@ namespace pyRevitExtensionParser
                     var fullPath = Path.GetFullPath(libDir);
                     if (discoveredExtensions.Add(fullPath))
                     {
-                        yield return ParseExtension(libDir);
+                        var parsed = ParseExtension(libDir, revitYear);
+                        if (parsed != null)
+                            yield return parsed;
                     }
                 }
             }
@@ -283,8 +313,9 @@ namespace pyRevitExtensionParser
         /// Parses a specific extension from the given extension path
         /// </summary>
         /// <param name="extensionPath">The full path to the .extension or .lib directory</param>
+        /// <param name="revitYear">The running Revit version year (e.g. 2024). Pass 0 to skip version filtering.</param>
         /// <returns>A single ParsedExtension if the path is valid and contains an extension, otherwise empty</returns>
-        public static IEnumerable<ParsedExtension> ParseInstalledExtensions(string extensionPath)
+        public static IEnumerable<ParsedExtension> ParseInstalledExtensions(string extensionPath, int revitYear = 0)
         {
             if (string.IsNullOrWhiteSpace(extensionPath) || !Directory.Exists(extensionPath))
                 yield break;
@@ -294,15 +325,18 @@ namespace pyRevitExtensionParser
                 !extensionPath.EndsWith(".lib", StringComparison.OrdinalIgnoreCase))
                 yield break;
 
-            yield return ParseExtension(extensionPath);
+            var parsed = ParseExtension(extensionPath, revitYear);
+            if (parsed != null)
+                yield return parsed;
         }
 
         /// <summary>
         /// Parses specific extensions from the given extension paths
         /// </summary>
         /// <param name="extensionPaths">The full paths to the .extension or .lib directories</param>
+        /// <param name="revitYear">The running Revit version year (e.g. 2024). Pass 0 to skip version filtering.</param>
         /// <returns>ParsedExtensions for valid paths that contain extensions</returns>
-        public static IEnumerable<ParsedExtension> ParseInstalledExtensions(IEnumerable<string> extensionPaths)
+        public static IEnumerable<ParsedExtension> ParseInstalledExtensions(IEnumerable<string> extensionPaths, int revitYear = 0)
         {
             if (extensionPaths == null)
                 yield break;
@@ -317,7 +351,9 @@ namespace pyRevitExtensionParser
                     !extensionPath.EndsWith(".lib", StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                yield return ParseExtension(extensionPath);
+                var parsed = ParseExtension(extensionPath, revitYear);
+                if (parsed != null)
+                    yield return parsed;
             }
         }
 
@@ -334,8 +370,9 @@ namespace pyRevitExtensionParser
         /// Parses a single extension from the given extension directory path
         /// </summary>
         /// <param name="extDir">The path to the .extension directory</param>
-        /// <returns>A ParsedExtension object</returns>
-        private static ParsedExtension ParseExtension(string extDir)
+        /// <param name="revitYear">The running Revit version year (e.g. 2024). Pass 0 to skip version filtering.</param>
+        /// <returns>A ParsedExtension object, or null if the extension is incompatible with the given Revit version</returns>
+        private static ParsedExtension ParseExtension(string extDir, int revitYear = 0)
         {
             var extName = Path.GetFileNameWithoutExtension(extDir);
             
@@ -351,6 +388,15 @@ namespace pyRevitExtensionParser
                 {
                     LogParseException(bundlePath, ex);
                 }
+            }
+
+            // Extension-level version gate: skip the entire extension (and its directory tree)
+            // if it declares a version range that doesn't include the running Revit year.
+            if (!IsRevitVersionCompatible(parsedBundle?.MinRevitVersion, parsedBundle?.MaxRevitVersion, revitYear))
+            {
+                LogInfo($"Skipping extension '{extName}': incompatible with Revit {revitYear} " +
+                        $"(min={parsedBundle?.MinRevitVersion ?? "any"}, max={parsedBundle?.MaxRevitVersion ?? "any"})");
+                return null;
             }
 
             // Pass extension-level templates to child components
@@ -401,7 +447,7 @@ namespace pyRevitExtensionParser
                 }
             }
 
-            var children = ParseComponents(extDir, extName, null, extensionTemplates.Count > 0 ? extensionTemplates : null);
+            var children = ParseComponents(extDir, extName, null, extensionTemplates.Count > 0 ? extensionTemplates : null, revitYear);
 
             // Read extension config from pyRevit config file (cached).
             // Config is keyed by folder name (e.g. [extension_test.extension]) so it matches install and Python.
@@ -776,7 +822,8 @@ namespace pyRevitExtensionParser
             string baseDir,
             string extensionName,
             string parentPath = null,
-            Dictionary<string, string> inheritedTemplates = null)
+            Dictionary<string, string> inheritedTemplates = null,
+            int revitYear = 0)
         {
             var components = new List<ParsedComponent>();
 
@@ -1033,7 +1080,7 @@ namespace pyRevitExtensionParser
                 }
 
                 // Pass merged templates to child components
-                var children = ParseComponents(dir, extensionName, fullPath, mergedTemplates);
+                var children = ParseComponents(dir, extensionName, fullPath, mergedTemplates, revitYear);
 
                 // First, get values from Python script
                 string title = null, author = null, doc = null;
@@ -1193,6 +1240,15 @@ namespace pyRevitExtensionParser
                 if (scriptCleanEngine) finalEngine.Clean = true;
                 if (scriptFullFrameEngine) finalEngine.FullFrame = true;
                 if (scriptPersistentEngine) finalEngine.Persistent = true;
+
+                // Component-level version gate: skip this component (and its children) if it declares
+                // a version range that doesn't include the running Revit year.
+                if (!IsRevitVersionCompatible(finalMinRevitVersion, finalMaxRevitVersion, revitYear))
+                {
+                    LogInfo($"Skipping component '{displayName}': incompatible with Revit {revitYear} " +
+                            $"(min={finalMinRevitVersion ?? "any"}, max={finalMaxRevitVersion ?? "any"})");
+                    continue;
+                }
 
                 components.Add(new ParsedComponent
                 {
