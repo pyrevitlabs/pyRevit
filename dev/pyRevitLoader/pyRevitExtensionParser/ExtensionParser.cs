@@ -365,7 +365,8 @@ namespace pyRevitExtensionParser
                 extensionTemplates["author"] = parsedBundle.Author;
             }
             
-            // Read extension.json for additional templates
+            // Read extension.json for additional templates and rocket_mode_compatible
+            bool rocketModeCompatible = false;
             var extensionJsonPath = Path.Combine(extDir, "extension.json");
             if (FileExists(extensionJsonPath))
             {
@@ -394,11 +395,24 @@ namespace pyRevitExtensionParser
                             extensionTemplates["author"] = author;
                         }
                     }
+
+                    // Read rocket_mode_compatible setting
+                    var rocketModeValue = json["rocket_mode_compatible"]?.ToString();
+                    if (!string.IsNullOrEmpty(rocketModeValue))
+                    {
+                        rocketModeCompatible = rocketModeValue.Equals("true", StringComparison.OrdinalIgnoreCase);
+                    }
                 }
                 catch (Exception ex)
                 {
                     LogParseException(extensionJsonPath, ex);
                 }
+            }
+
+            // pyRevitCore is always rocket mode compatible (hardcoded, matches Python behavior)
+            if (string.Equals(extName, "pyRevitCore", StringComparison.OrdinalIgnoreCase))
+            {
+                rocketModeCompatible = true;
             }
 
             var children = ParseComponents(extDir, extName, null, extensionTemplates.Count > 0 ? extensionTemplates : null);
@@ -422,7 +436,8 @@ namespace pyRevitExtensionParser
                 MaxRevitVersion = parsedBundle?.MaxRevitVersion,
                 Context = parsedBundle?.GetFormattedContext(),
                 Engine = parsedBundle?.Engine,
-                Config = extConfig
+                Config = extConfig,
+                RocketModeCompatible = rocketModeCompatible
             };
 
             ReorderByLayout(parsedExtension, parsedExtension, null);

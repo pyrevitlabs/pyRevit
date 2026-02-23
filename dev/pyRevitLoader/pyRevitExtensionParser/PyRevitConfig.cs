@@ -105,12 +105,12 @@ namespace pyRevitExtensionParser
         {
             get
             {
-                var value = _ini.IniReadValue("core", "rocket_mode");
+                var value = _ini.IniReadValue("core", "rocketmode");
                 return bool.TryParse(value, out var result) && result;
             }
             set
             {
-                _ini.IniWriteValue("core", "rocket_mode", value ? TrueString : FalseString);
+                _ini.IniWriteValue("core", "rocketmode", value ? TrueString : FalseString);
             }
         }
 

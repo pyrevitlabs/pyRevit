@@ -44,6 +44,12 @@ namespace pyRevitAssemblyBuilder.UIManager
         public UIApplication UIApplication => _uiApp;
 
         /// <summary>
+        /// Gets whether rocket mode is enabled.
+        /// When true, non-critical startup work is skipped and engine caching is used for compatible extensions.
+        /// </summary>
+        public bool RocketMode => _rocketMode;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="UIManagerService"/> class.
         /// </summary>
         /// <param name="uiApp">The Revit UIApplication instance.</param>
