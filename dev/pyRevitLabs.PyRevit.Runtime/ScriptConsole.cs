@@ -114,17 +114,35 @@ namespace PyRevitLabs.PyRevit.Runtime {
             SaveWindowPosition = false;
         }
 
+        private void TryAddThemeResource(string packUri) {
+            var dict = new ResourceDictionary();
+            try {
+                dict.Source = new Uri(packUri);
+                Resources.MergedDictionaries.Add(dict);
+                return;
+            }
+            catch (Exception) { /* try lowercase path */ }
+            var lower = packUri.Replace("Styles/Themes/Light.Blue.xaml", "styles/themes/light.blue.xaml");
+            if (lower != packUri) {
+                try {
+                    dict = new ResourceDictionary();
+                    dict.Source = new Uri(lower);
+                    Resources.MergedDictionaries.Add(dict);
+                }
+                catch (Exception) { /* theme missing; window may look wrong but will not crash */ }
+            }
+        }
+
         private void SetupDynamicResources() {
+            // Theme must be added first: Controls.xaml merges dicts that reference the theme; loading it before the theme is present causes "Cannot locate resource 'styles/themes/light.blue.xaml'".
+            TryAddThemeResource("pack://application:,,,/pyRevitLabs.MahAppsMetro;component/Styles/Themes/Light.Blue.xaml");
+
             Resources.MergedDictionaries.Add(new ResourceDictionary() {
                 Source = new Uri("pack://application:,,,/pyRevitLabs.MahAppsMetro;component/Styles/Controls.xaml")
             });
 
             Resources.MergedDictionaries.Add(new ResourceDictionary() {
                 Source = new Uri("pack://application:,,,/pyRevitLabs.MahAppsMetro;component/Styles/Fonts.xaml")
-            });
-
-            Resources.MergedDictionaries.Add(new ResourceDictionary() {
-                Source = new Uri("pack://application:,,,/pyRevitLabs.MahAppsMetro;component/Styles/Themes/Light.Blue.xaml")
             });
 
             var accentResDict = Resources;

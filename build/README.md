@@ -74,6 +74,44 @@ You can run any target by name. Dependencies run automatically (e.g. `BuildRunti
 | **BuildAutocmp** | Build CLI shell autocomplete to `bin/pyrevit-autocomplete.exe`. Uses the checked-in `dev/pyRevitLabs/pyRevitCLIAutoComplete/pyrevit-autocomplete.go`. **No project dependencies.** To regenerate the .go from `UsagePatterns.txt` (when CLI usage changes), run `pipenv run pyrevit build autocmp` and commit the updated file. | When you want Tab-completion for `pyrevit` in the shell, or as part of a full build. |
 | **Clean** | Delete `dev/**/bin`, `dev/**/obj`, `dev/**/.vs`, `dev/**/TestResults`. Does **not** delete repo root `bin/`. | Before a clean full build or to free disk space. |
 | **Check** | Verify `dotnet` and `go` are on PATH. | After installing tools or setting up a new machine. |
+| **SetVersion** | Set version in all version/installer files. `--set-version-version 4.9.0` optional `--set-version-wip`. | Before release. |
+| **SetYear** | Update copyright to 2014–{current year} in props, README, .iss, MSI, choco. | Once per year. |
+| **SetNextVersion** | Increment patch in version files and git commit "Next Version". | After a release. |
+| **SetProducts** | New MSI ProductCode, update release props and pyrevit-products.json. | Before build installers. |
+| **BuildInstallers** | Build Inno (.iss) and MSI (.wixproj), then choco pack. Needs iscc, msbuild, choco. | After SetProducts and build. |
+| **ReportSloc** | Run pygount for SLOC. Requires `pip install pygount`. | For stats. |
+| **CommitAndTagBuild** | Git add version/autocomp/release/bin, commit "Publish!", tag v&lt;ver&gt; and cli-v&lt;ver&gt;. | After release build. |
+| **RunPyRevit** | Run any `dev/pyrevit.py` command via pipenv. `--run-pyrevit-args 'set locales'`. | For set locales, report changelog, sign, release, add host, install. |
+
+### Porting from `dev/pyrevit.py` (for full pipenv removal)
+
+| pipenv command | NUKE target | Status |
+|----------------|-------------|--------|
+| `pyrevit build products` | `BuildProducts` | Done |
+| `pyrevit build labs` | `BuildLabs` | Done |
+| `pyrevit build engines` | (part of BuildRuntime) | Done |
+| `pyrevit build telem` | `BuildTelem` | Done |
+| `pyrevit build autocmp` | `BuildAutocmp` | Done |
+| `pyrevit clean labs` | `Clean` | Done |
+| `pyrevit check` | `Check` | Done |
+| `pyrevit build installers` | `BuildInstallers` | Done |
+| `pyrevit set version <ver>` | `SetVersion` (params) | Done |
+| `pyrevit set build wip` | `SetVersion --set-version-wip` | Done |
+| `pyrevit set year` | `SetYear` | Done |
+| `pyrevit set next-version` | `SetNextVersion` | Done |
+| `pyrevit set products` | `SetProducts` | Done |
+| `pyrevit report sloc` | `ReportSloc` | Done |
+| `pyrevit build commit` | `CommitAndTagBuild` | Done |
+| `pyrevit set locales` | `RunPyRevit --run-pyrevit-args 'set locales'` | Via pipenv |
+| `pyrevit report changelog/downloads/releasenotes` | `RunPyRevit --run-pyrevit-args 'report …'` | Via pipenv |
+| `pyrevit test telem` | `RunPyRevit --run-pyrevit-args 'test telem'` | Via pipenv |
+| `pyrevit sign/notify/release/add host/install` | `RunPyRevit --run-pyrevit-args '…'` | Via pipenv |
+
+**Gaps / caveats**
+
+- **Check**: NUKE only verifies `dotnet` and `go`. The Python `check` also validates `msbuild`, `gcc`, `iscc`, `nuget`, `choco` (for release). For full tool check before release, run `RunPyRevit --run-pyrevit-args check`.
+- **Set build wip**: Use `SetVersion --set-version-version <current> --set-version-wip` (or run `RunPyRevit --run-pyrevit-args 'set build wip'` to use the version from the version file).
+- **Pipenv still required for**: `set locales` (Airtable), `report changelog/downloads/releasenotes` (GitHub API), `notify`, `sign`, `release`, `add host`, `install`, `test telem`. All of these are available via `RunPyRevit --run-pyrevit-args '…'`.
 
 ### Examples
 
@@ -100,6 +138,25 @@ You can run any target by name. Dependencies run automatically (e.g. `BuildRunti
 
 # Debug build
 .\build.ps1 BuildProducts --configuration Debug
+
+# Set version (e.g. for release)
+.\build.ps1 SetVersion --set-version-version 4.9.0
+.\build.ps1 SetVersion --set-version-version 4.9.0 --set-version-wip
+
+# Update copyright year
+.\build.ps1 SetYear
+
+# Release flow: set products, build installers, then commit and tag
+.\build.ps1 SetProducts
+.\build.ps1 BuildInstallers
+.\build.ps1 CommitAndTagBuild
+
+# SLOC report (requires pygount)
+.\build.ps1 ReportSloc
+
+# Run any pyrevit.py command via pipenv
+.\build.ps1 RunPyRevit --run-pyrevit-args "set locales"
+.\build.ps1 RunPyRevit --run-pyrevit-args "report changelog"
 ```
 
 ---
@@ -109,6 +166,9 @@ You can run any target by name. Dependencies run automatically (e.g. `BuildRunti
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | **Configuration** | `Release` | MSBuild configuration: `Release` or `Debug`. Pass as `--configuration Debug` (or `-c Debug`). |
+| **SetVersionVersion** | — | Version string for SetVersion (e.g. `4.9.0`). |
+| **SetVersionWip** | `false` | If true, append `-wip` to version in SetVersion. |
+| **RunPyRevitArgs** | — | Arguments for RunPyRevit (e.g. `set locales`, `report changelog`). |
 
 Example:
 
@@ -200,3 +260,14 @@ Rough mapping:
 | (autocmp) | `BuildAutocmp` |
 
 NUKE adds **DeployLibsToEngines** so that `dev/libs/netcore` is copied into the netcore engine folders; pipenv may rely on assembly load path or other layout. For details and migration notes, see `docs/nuke-build-migration-plan.md`.
+
+---
+
+## Source code used by this build
+
+Some repo changes are **product improvements**, not Nuke-only workarounds. They fix real bugs or outdated APIs and benefit both pipenv and Nuke builds:
+
+- **ScriptConsole.cs** (theme fallback): In some hosts the MahApps theme pack URI resolves as `styles/themes/light.blue.xaml` (lowercase). The code tries the canonical URI first, then the lowercase path, so the Script Console loads in Revit (e.g. 2026) without `IOException`.
+- **mongo.go** (MongoDB driver v2): Telemetry server was updated to `go.mongodb.org/mongo-driver/v2` (Connect signature, no deprecated connstring, URI parsing for DB name). Needed for the Go telemetry build; the same binary works whether you built with pipenv or Nuke.
+
+These fixes are needed regardless of build system.
