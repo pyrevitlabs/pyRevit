@@ -817,7 +817,7 @@ namespace pyRevitExtensionParser
                 {
                     // Look for script files in order of preference: .py, .cs, .vb, .rb, .dyn, .gh, .ghx, .rfa
                     // Use cached file listing instead of EnumerateFiles
-                    var dirFiles = GetFilesInDirectory(dir, "script.*", SearchOption.TopDirectoryOnly);
+                    var dirFiles = GetFilesInDirectory(dir, "*script.*", SearchOption.TopDirectoryOnly);
                     var validEndings = new[] { "script", "_script", "-script", ".script" };
                     dirFiles = dirFiles.Where(f =>
                         validEndings.Any(end => Path.GetFileNameWithoutExtension(f).EndsWith(end, StringComparison.OrdinalIgnoreCase))
