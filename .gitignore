@@ -68,3 +68,7 @@ bin/**/*.xml
 
 # claude
 .claude
+
+# NUKE build
+.nuke/
+build/bin/
