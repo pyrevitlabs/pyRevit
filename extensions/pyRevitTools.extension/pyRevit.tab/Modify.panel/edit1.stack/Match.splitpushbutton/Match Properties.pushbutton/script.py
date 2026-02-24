@@ -7,7 +7,7 @@ Reapply the previous matched properties.
 #pylint: disable=import-error,invalid-name,broad-except
 import pickle
 
-from pyrevit import revit, DB
+from pyrevit import revit, DB, EXEC_PARAMS
 from pyrevit import forms
 from pyrevit import script
 from pyrevit.compat import get_elementid_value_func
@@ -133,7 +133,7 @@ def remember(src_props):
 
 # main
 source_props = []
-if __shiftclick__:    #pylint: disable=undefined-variable
+if EXEC_PARAMS.config_mode:
     target_type, source_props = recall()
     logger.debug("Recalled data: %s", source_props)
 

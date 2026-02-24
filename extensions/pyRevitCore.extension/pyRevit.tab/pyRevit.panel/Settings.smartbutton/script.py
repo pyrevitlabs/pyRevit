@@ -1028,7 +1028,7 @@ def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
 # windows explorer
 # otherwise, will show the Settings user interface
 if __name__ == "__main__":
-    if __shiftclick__:  # pylint: disable=E0602
+    if EXEC_PARAMS.config_mode:
         script.show_file_in_explorer(user_config.config_file)
     elif user_config.is_readonly:
         forms.alert("pyRevit settings are set by your admin.", exitscript=True)
