@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using pyRevitExtensionParser;
-using static pyRevitExtensionParser.ExtensionParser;
+// using static pyRevitExtensionParser.ExtensionParser;
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
@@ -11,14 +11,34 @@ namespace pyRevitAssemblyBuilder.SessionManager
     /// </summary>
     public class ExtensionManagerService : IExtensionManagerService
     {
+        private readonly int _revitYear;
+        private readonly ILogger _logger;
         private List<ParsedExtension>? _cachedExtensions;
+
+        /// <summary>
+        /// Initialises the service with the running Revit version year for version-compatibility filtering.
+        /// </summary>
+        /// <param name="revitYear">
+        /// The four-digit Revit release year (e.g. 2024). Pass 0 to disable version filtering.
+        /// </param>
+        /// <param name="logger">The logger instance.</param>
+        public ExtensionManagerService(int revitYear = 0, ILogger? logger = null)
+        {
+            _revitYear = revitYear;
+            _logger = logger ?? new LoggingHelper(null);
+        }
 
         /// <summary>
         /// Gets all parsed extensions (cached).
         /// </summary>
         private List<ParsedExtension> GetAllExtensionsCached()
         {
-            return _cachedExtensions ??= ExtensionParser.ParseInstalledExtensions().ToList();
+            if (_cachedExtensions != null)
+                return _cachedExtensions;
+
+            ExtensionParser.SetLogger(new ExtensionParserLoggerAdapter(_logger));
+            _cachedExtensions = ExtensionParser.ParseInstalledExtensions(_revitYear).ToList();
+            return _cachedExtensions;
         }
 
         /// <summary>
@@ -28,7 +48,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         {
             _cachedExtensions = null;
         }
-        
+
         /// <summary>
         /// Clears all parser caches including the static caches in ExtensionParser.
         /// This ensures newly installed or enabled extensions are discovered on reload.
@@ -56,7 +76,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         public IEnumerable<ParsedExtension> GetInstalledUIExtensions()
         {
             return GetAllExtensionsCached()
-                .Where(ext => ext.Config?.Disabled != true && 
+                .Where(ext => ext.Config?.Disabled != true &&
                        ext.Directory.EndsWith(ExtensionConstants.UI_EXTENSION_SUFFIX, System.StringComparison.OrdinalIgnoreCase));
         }
 
@@ -67,7 +87,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         public IEnumerable<ParsedExtension> GetInstalledLibraryExtensions()
         {
             return GetAllExtensionsCached()
-                .Where(ext => ext.Config?.Disabled != true && 
+                .Where(ext => ext.Config?.Disabled != true &&
                        ext.Directory.EndsWith(ExtensionConstants.LIBRARY_EXTENSION_SUFFIX, System.StringComparison.OrdinalIgnoreCase));
         }
     }
