@@ -512,6 +512,10 @@ class PyRevitExternalCommandType(object):
     def unique_id(self):
         return getattr(self._extcmd.ScriptData, 'CommandUniqueId', None)
 
+    @property
+    def control_id(self):
+        return getattr(self._extcmd.ScriptData, 'CommandControlId', None)
+
     def is_available(self, category_set, zerodoc=False):
         if self._extcmd_availtype:
             return self._extcmd_avail.IsCommandAvailable(HOST_APP.uiapp,
