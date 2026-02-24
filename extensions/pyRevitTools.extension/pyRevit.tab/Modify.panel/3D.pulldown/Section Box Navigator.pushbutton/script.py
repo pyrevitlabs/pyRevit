@@ -549,7 +549,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         next_bottom_level = None
         next_level = None
 
-        if self.rbLevel.IsChecked and not elevation:
+        if self.rbLevel.IsChecked and elevation is None:  # for levels at elevation 0.0 'not elevation:' won't work
             # Level mode - snap to next level
             if target == "both":
                 if direction == "up":
@@ -635,7 +635,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                         self.show_status_message(1, self.get_locale_string("WouldCreateInvalidBox"), "error")
                     return None
 
-        elif elevation:
+        elif elevation is not None:  # for levels at elevation 0.0 'elif elevation:' won't work
             if target == "top":
                 top_distance = elevation - info["transformed_max"].Z
                 # Validate won't go below bottom

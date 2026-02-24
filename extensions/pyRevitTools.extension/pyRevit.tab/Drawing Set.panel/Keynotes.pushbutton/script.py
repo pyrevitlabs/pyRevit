@@ -12,7 +12,7 @@ import math
 from collections import defaultdict
 from natsort import natsorted
 
-from pyrevit import HOST_APP
+from pyrevit import HOST_APP, EXEC_PARAMS
 from pyrevit import framework
 from pyrevit.framework import System
 from pyrevit import coreutils
@@ -1350,7 +1350,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
 try:
     KeynoteManagerWindow(
         xaml_file_name='KeynoteManagerWindow.xaml',
-        reset_config=__shiftclick__ #pylint: disable=undefined-variable
+        reset_config=EXEC_PARAMS.config_mode
         ).show(modal=True)
 except Exception as kmex:
     forms.alert(str(kmex), expanded="Creating keynote manager window")
