@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using pyRevitExtensionParser;
-// using static pyRevitExtensionParser.ExtensionParser;
+// using static pyRevitExtensionParser.ExtensionParser; // not currently used - all calls use fully qualified ExtensionParser.*
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
@@ -12,6 +12,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
     public class ExtensionManagerService : IExtensionManagerService
     {
         private readonly int _revitYear;
+        // Logger is retained for potential direct use in this class (e.g. ClearParserCaches, future methods).
+        // Note: ExtensionParser logger is set by ServiceFactory before this service is constructed —
+        // do NOT call ExtensionParser.SetLogger() here as that would reset it.
         private readonly ILogger _logger;
         private List<ParsedExtension>? _cachedExtensions;
 
@@ -36,7 +39,6 @@ namespace pyRevitAssemblyBuilder.SessionManager
             if (_cachedExtensions != null)
                 return _cachedExtensions;
 
-            ExtensionParser.SetLogger(new ExtensionParserLoggerAdapter(_logger));
             _cachedExtensions = ExtensionParser.ParseInstalledExtensions(_revitYear).ToList();
             return _cachedExtensions;
         }
