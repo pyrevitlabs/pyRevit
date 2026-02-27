@@ -38,25 +38,25 @@ def main():
         )
 
     if len(selection) > 0:
-        enable_worksharing = alert(
-            translations["Worksharing.Enable.Message"],
-            options=translations["Worksharing.Enable.Options"],
-            warn_icon=False
-        )  # type: str
-        if not enable_worksharing:
-            script.exit()
-        if (
-            enable_worksharing == translations["Worksharing.Enable.Options"][0]
-            and not doc.IsWorkshared
-            and doc.CanEnableWorksharing
-        ):
-            doc.EnableWorksharing("Shared Levels and Grids", "Workset1")
-        else:
-            alert(
-                translations["Worksharing.Enable.Error"],
-                title=translations["Worksharing.Enable.Error.Title"],
-                exitscript=True
-            )
+        if not doc.IsWorkshared:
+            enable_worksharing = alert(
+                translations["Worksharing.Enable.Message"],
+                options=translations["Worksharing.Enable.Options"],
+                warn_icon=False
+            )  # type: str
+            if not enable_worksharing:
+                script.exit()
+            if (
+                enable_worksharing == translations["Worksharing.Enable.Options"][0]
+                and doc.CanEnableWorksharing
+            ):
+                doc.EnableWorksharing("Shared Levels and Grids", "Workset1")
+            else:
+                alert(
+                    translations["Worksharing.Enable.Error"],
+                    title=translations["Worksharing.Enable.Error.Title"],
+                    exitscript=True
+                )
 
         with revit.Transaction(translations["Transaction.Name"]):
             for el in selection:
