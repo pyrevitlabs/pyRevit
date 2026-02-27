@@ -2,7 +2,7 @@
 from collections import defaultdict
 
 from pyrevit import script
-from pyrevit import revit, DB
+from pyrevit import revit, DB, EXEC_PARAMS
 from pyrevit.compat import get_elementid_value_func
 
 
@@ -62,7 +62,7 @@ def line_count(document=doc):
 if __name__ == '__main__':
     output.print_md("\n\n# LINES PER VIEW IN CURRENT DOCUMENT\n___\n\n")
     line_count()
-    if __shiftclick__:
+    if EXEC_PARAMS.config_mode:
         output.print_md("\n\n# LINES PER VIEW IN LINKS\n___\n\n")
         revit_links = DB.FilteredElementCollector(doc).OfClass(DB.RevitLinkInstance).ToElements()
         for link in revit_links:
