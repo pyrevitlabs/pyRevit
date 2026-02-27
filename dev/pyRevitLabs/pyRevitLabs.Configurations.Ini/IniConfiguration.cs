@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.RegularExpressions;
 using IniParser;
 using IniParser.Model;
 using pyRevitLabs.Configurations.Abstractions;
@@ -107,10 +108,38 @@ public sealed class IniConfiguration : ConfigurationBase
         _iniFile[sectionName][keyName] = JsonConvert.SerializeObject(value);
     }
     
+    private static readonly Regex HexIntegerRegex = new(@"^\s*0[xX][0-9a-fA-F]+\s*$", RegexOptions.Compiled);
+
     /// <inheritdoc />
     protected override object GetValueImpl(Type typeObject, string sectionName, string keyName)
     {
-        return JsonConvert.DeserializeObject(_iniFile[sectionName][keyName], typeObject)
+        string raw = _iniFile[sectionName][keyName];
+        Type targetType = Nullable.GetUnderlyingType(typeObject) ?? typeObject;
+
+        // Unwrap JSON string quote so "0x0" becomes 0x0 for hex check
+        string valueToParse = raw;
+        if (valueToParse.Length >= 2 && valueToParse.StartsWith("\"", StringComparison.Ordinal) && valueToParse.EndsWith("\"", StringComparison.Ordinal))
+            valueToParse = valueToParse.Substring(1, valueToParse.Length - 2);
+
+        // JSON does not allow hex literals (e.g. "0x0"); legacy INI may store ints as hex
+        if ((targetType == typeof(int) || targetType == typeof(long)) && HexIntegerRegex.IsMatch(valueToParse))
+        {
+            int hexValue = Convert.ToInt32(valueToParse.Trim(), 16);
+            if (typeObject == typeof(int))
+                return hexValue;
+            if (typeObject == typeof(int?))
+                return (int?)hexValue;
+            if (typeObject == typeof(long))
+                return (long)hexValue;
+            if (typeObject == typeof(long?))
+                return (long?)hexValue;
+        }
+
+        // Python configparser expects raw string and does json.loads() itself (handles arrays, objects, primitives)
+        if (targetType == typeof(string))
+            return raw;
+
+        return JsonConvert.DeserializeObject(raw, typeObject)
                ?? throw new ConfigurationException("Cannot deserialize value using the specified key.");
     }
 }

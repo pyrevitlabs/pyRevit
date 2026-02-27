@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <UseWpf>true</UseWpf>
     <UseWindowsForms>true</UseWindowsForms>
@@ -30,5 +30,6 @@
 
   <Target Name="DeployDependencies" AfterTargets="Deploy">
     <Copy SourceFiles="$(OutDir)\Nett.dll" DestinationFolder="$(PyRevitBinDir)" />
+    <Copy SourceFiles="$(OutDir)\INIFileParser.dll" DestinationFolder="$(PyRevitBinDir)" Condition="Exists('$(OutDir)\INIFileParser.dll')" />
   </Target>
 </Project>

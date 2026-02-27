@@ -27,7 +27,11 @@ class ConfigSection(object):
         return self.get_option(param_name)
 
     def __setattr__(self, param_name, value):
-        return self.set_option(param_name, value)
+        # Skip internal storage so __init__ can set __section_name and __configuration
+        if param_name in ('_ConfigSection__section_name', '_ConfigSection__configuration'):
+            object.__setattr__(self, param_name, value)
+        else:
+            return self.set_option(param_name, value)
 
     @property
     def header(self):
@@ -41,8 +45,8 @@ class ConfigSection(object):
         return self.__configuration.HasSectionKey(self.__section_name, option_name)
 
     def get_option(self, op_name, default_value=None):
-        value = self.__configuration.GetValueOrDefault(op_name, "")
-        return json.load(value) if value else default_value
+        value = self.__configuration.GetValueOrDefault(self.__section_name, op_name, "")
+        return json.loads(value) if value else default_value
 
     def set_option(self, op_name, value):
         self.__configuration.SetValue(self.__section_name, op_name,
@@ -57,23 +61,24 @@ class ConfigSection(object):
 
     def add_subsection(self, section_name):
         """Add subsection to section."""
-        return self._parser.add_section(
-            coreutils.make_canonical_name(self._section_name, section_name)
+        return ConfigSection(
+            coreutils.make_canonical_name(self.__section_name, section_name),
+            self.__configuration
         )
 
     def get_subsections(self):
         subsections = []
         for section_name in self.__configuration.GetSectionNames():
-            if section_name.startswith(self._section_name + '.'):
-                subsec = ConfigSection(self._parser, section_name)
+            if section_name.startswith(self.__section_name + '.'):
+                subsec = ConfigSection(section_name, self.__configuration)
                 subsections.append(subsec)
-
         return subsections
 
     def get_subsection(self, section_name):
         for subsection in self.get_subsections():
             if subsection.subheader == section_name:
                 return subsection
+        return None
 
 
 class ConfigSections(object):

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Microsoft.VisualStudio.TestPlatform.ObjectModel.Client;
 using pyRevitLabs.Configurations.Abstractions;
 
@@ -26,6 +27,16 @@ namespace pyRevitLabs.Configurations.Tests
             }
 
             public bool HasSectionKey(string sectionName, string keyName)
+            {
+                throw new NotImplementedException();
+            }
+
+            public IEnumerable<string> GetSectionNames()
+            {
+                throw new NotImplementedException();
+            }
+
+            public IEnumerable<string> GetSectionOptionNames(string sectionName)
             {
                 throw new NotImplementedException();
             }

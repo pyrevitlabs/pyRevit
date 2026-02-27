@@ -34,12 +34,14 @@ Examples:
     ```
 """
 #pylint: disable=C0103,C0413,W0703
+import json
 import os
 import os.path as op
 
 from pyrevit import EXEC_PARAMS, HOME_DIR, HOST_APP
 from pyrevit import PyRevitException
 from pyrevit import EXTENSIONS_DEFAULT_DIR, THIRDPARTY_EXTENSIONS_DEFAULT_DIR
+from pyrevit import framework
 from pyrevit.compat import winreg as wr
 from pyrevit.coreutils.configparser import ConfigSections
 
@@ -57,6 +59,33 @@ mlogger = logger.get_logger(__name__)
 
 
 CONSTS = PyRevit.PyRevitConsts
+
+
+class _SectionCompatWrapper(object):
+    """Wraps C# Core/Routes/Telemetry section so .get_option()/.set_option() work for extensions."""
+    def __init__(self, section_name, csharp_section, configuration):
+        self._section_name = section_name
+        self._csharp = csharp_section
+        self._config = configuration
+
+    def get_option(self, key, default=None):
+        value = self._config.GetValueOrDefault(self._section_name, key, "")
+        return json.loads(value) if value else default
+
+    def set_option(self, key, value):
+        self._config.SetValue(
+            self._section_name, key,
+            json.dumps(value, separators=(',', ':'), ensure_ascii=False)
+        )
+
+    def __getattr__(self, name):
+        return getattr(self._csharp, name)
+
+    def __setattr__(self, name, value):
+        if name in ('_section_name', '_csharp', '_config'):
+            object.__setattr__(self, name, value)
+        else:
+            setattr(self._csharp, name, value)
 
 
 class PyRevitConfig(object):
@@ -114,20 +143,29 @@ class PyRevitConfig(object):
         """Environment section."""
         return self.config_service.Environment
 
+    def _get_default_config(self):
+        return self.config_service[ConfigurationService.DefaultConfigurationName]
+
     @property
     def core(self):
-        """Core section."""
-        return self.config_service.Core
+        """Core section (supports .get_option/.set_option for extension compat)."""
+        return _SectionCompatWrapper(
+            "core", self.config_service.Core, self._get_default_config()
+        )
 
     @property
     def routes(self):
-        """Routes section."""
-        return self.config_service.Routes
+        """Routes section (supports .get_option/.set_option for extension compat)."""
+        return _SectionCompatWrapper(
+            "routes", self.config_service.Routes, self._get_default_config()
+        )
 
     @property
     def telemetry(self):
-        """Telemetry section."""
-        return self.config_service.Telemetry
+        """Telemetry section (supports .get_option/.set_option for extension compat)."""
+        return _SectionCompatWrapper(
+            "telemetry", self.config_service.Telemetry, self._get_default_config()
+        )
 
     @property
     def bin_cache(self):
@@ -433,10 +471,8 @@ class PyRevitConfig(object):
         try:
             dir_list.update([
                 op.expandvars(op.normpath(x))
-                for x in self.core.get_option(
-                    CONSTS.ConfigsUserExtensionsKey,
-                    default_value=[]
-                )])
+                for x in (self.core.UserExtensions or [])
+            ])
         except Exception as read_err:
             mlogger.error('Error reading list of user extension folders. | %s',
                           read_err)
@@ -471,8 +507,9 @@ class PyRevitConfig(object):
                 raise PyRevitException("Path \"%s\" does not exist." % ext_path)
 
         try:
-            self.core.UserExtensions = \
+            self.core.UserExtensions = framework.List[str](
                 [op.normpath(x) for x in path_list]
+            )
         except Exception as write_err:
             mlogger.error('Error setting list of user extension folders. | %s',
                           write_err)
@@ -536,9 +573,10 @@ class PyRevitConfig(object):
     def save_changes(self):
         """Save user config into associated config file."""
         if not self._admin:
-            self.config_service.SaveSection(ConfigurationService.DefaultConfigurationName, self.core)
-            self.config_service.SaveSection(ConfigurationService.DefaultConfigurationName, self.routes)
-            self.config_service.SaveSection(ConfigurationService.DefaultConfigurationName, self.telemetry)
+            # Pass C# section objects so SaveSection gets correct Type and writes INI
+            self.config_service.SaveSection(ConfigurationService.DefaultConfigurationName, self.config_service.Core)
+            self.config_service.SaveSection(ConfigurationService.DefaultConfigurationName, self.config_service.Routes)
+            self.config_service.SaveSection(ConfigurationService.DefaultConfigurationName, self.config_service.Telemetry)
 
             # save all sections (need to dynamic section on python)
             self.config_service[ConfigurationService.DefaultConfigurationName].SaveConfiguration()
@@ -586,6 +624,6 @@ def find_config_file(target_path):
 
 user_config = None
 
-# location for default pyRevit config files
-if not EXEC_PARAMS.doc_mode:
+# location for default pyRevit config files (skip when in doc/no-doc mode if present)
+if not getattr(EXEC_PARAMS, 'doc_mode', False):
     user_config = PyRevitConfig(PyRevit.PyRevitConfigs.GetConfigFile())

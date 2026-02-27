@@ -107,6 +107,20 @@ RUNTIME_ASSM_FILE_ID = '{}_{}'\
 RUNTIME_ASSM_FILE = \
     op.join(BIN_DIR, "pyRevitLabs.PyRevit.Runtime.{}.dll".format(HOST_APP.version))
 
+
+def _resolve_runtime_asm_file():
+    """Return path to Runtime DLL; check BIN_DIR then engines/<EngineVersion>."""
+    if op.isfile(RUNTIME_ASSM_FILE):
+        return RUNTIME_ASSM_FILE
+    if eng.EngineVersion and str(eng.EngineVersion) != '000':
+        fallback = op.join(BIN_DIR, 'engines', eng.EngineVersion,
+                           op.basename(RUNTIME_ASSM_FILE))
+        if op.isfile(fallback):
+            mlogger.debug('Using runtime assembly from engines: %s', fallback)
+            return fallback
+    return RUNTIME_ASSM_FILE
+
+
 # taking the name of the generated data file and use it as assembly name
 RUNTIME_ASSM_NAME = op.splitext(op.basename(RUNTIME_ASSM_FILE))[0]
 mlogger.debug('Interface types assembly file is: %s', RUNTIME_ASSM_NAME)
@@ -278,9 +292,10 @@ def get_references():
 
 def _generate_runtime_asm():
     source_list = list(_get_source_files())
-    # now try to load compiled runtime assembly
+    # now try to load compiled runtime assembly (BIN_DIR or engines/EngineVersion)
+    asm_path = _resolve_runtime_asm_file()
     try:
-        return assmutils.load_asm_file(RUNTIME_ASSM_FILE)
+        return assmutils.load_asm_file(asm_path)
     except PyRevitException as compile_err:
         errors = safe_strtype(compile_err).replace('Compile error: ', '')
         mlogger.critical('Can not compile base types code into assembly.\n%s',
@@ -289,11 +304,13 @@ def _generate_runtime_asm():
 
 
 def _get_runtime_asm():
+    asm_path = _resolve_runtime_asm_file()
+    if op.isfile(asm_path):
+        return assmutils.load_asm_file(asm_path)
     if appdata.is_data_file_available(file_id=RUNTIME_ASSM_FILE_ID,
                                       file_ext=framework.ASSEMBLY_FILE_TYPE):
         return assmutils.load_asm_file(RUNTIME_ASSM_FILE)
-    else:
-        return _generate_runtime_asm()
+    return _generate_runtime_asm()
 
 
 def create_ipyengine_configs(clean=False, full_frame=False, persistent=False):
