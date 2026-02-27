@@ -25,23 +25,22 @@ func (w MongoDBConnection) GetType() DBBackend {
 
 func (w MongoDBConnection) GetVersion(logger *cli.Logger) string {
 	logger.Debug("grabbing db name from connection string")
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	logger.Debug("opening mongodb session")
 	client, err := mongo.Connect(options.Client().ApplyURI(w.Config.ConnString))
 	if err != nil {
 		return ""
 	}
 	defer func() {
-		if dErr := client.Disconnect(ctx); dErr != nil {
+		disconnectCtx, disconnectCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer disconnectCancel()
+		if dErr := client.Disconnect(disconnectCtx); dErr != nil {
 			panic(dErr)
 		}
 	}()
 
-	ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-	pErr := client.Ping(ctx, readpref.Primary())
+	pingCtx, pingCancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer pingCancel()
+	pErr := client.Ping(pingCtx, readpref.Primary())
 
 	if pErr != nil {
 		return ""
@@ -52,7 +51,9 @@ func (w MongoDBConnection) GetVersion(logger *cli.Logger) string {
 	logger.Debug("getting mongodb version")
 	var commandResult bson.M
 	command := bson.D{{"buildInfo", 1}}
-	vErr := client.Database("admin").RunCommand(ctx, command).Decode(&commandResult)
+	cmdCtx, cmdCancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cmdCancel()
+	vErr := client.Database("admin").RunCommand(cmdCtx, command).Decode(&commandResult)
 
 	if vErr != nil {
 		return ""

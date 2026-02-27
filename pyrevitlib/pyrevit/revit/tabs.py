@@ -10,9 +10,16 @@ from pyrevit.coreutils import envvars
 
 def hex_to_brush(color_hex):
     """Convert hex color to WPF brush."""
-    return Media.SolidColorBrush(
-        Media.ColorConverter.ConvertFromString(color_hex)
-    )
+    try:
+        return Media.SolidColorBrush(
+            Media.ColorConverter.ConvertFromString(color_hex)
+        )
+    except:
+        # Gracefully handle bad/legacy values in user configs.
+        try:
+            return types.TabColoringTheme.DefaultBrushes[0]
+        except Exception:
+            return Media.SolidColorBrush(Media.Colors.White)
 
 
 def hex_from_brush(solid_brush):
@@ -58,6 +65,12 @@ def _set_tab_ordercolors(tabcfgs, theme):
 
 def _get_tab_filterrules(tabcfgs):
     tab_filtercolors = tabcfgs.get_option('tab_filtercolors', {})
+    # Older configs may store this as a list or a serialized value;
+    # normalize to a dict[str, str] before iterating.
+    if isinstance(tab_filtercolors, list):
+        tab_filtercolors = {c: "" for c in tab_filtercolors}
+    elif not isinstance(tab_filtercolors, dict):
+        tab_filtercolors = {}
     return List[types.TabColoringRule](
         [types.TabColoringRule(hex_to_brush(c), f)
          for c, f in tab_filtercolors.items()]
@@ -75,6 +88,11 @@ def _get_tabstyle(tabcfgs):
         'tabstyle_index',
         types.TabColoringTheme.DefaultTabColoringStyleIndex
         )
+    # legacy configs may store this as a string; normalize to int
+    try:
+        tabstyle_index = int(tabstyle_index)
+    except (TypeError, ValueError):
+        tabstyle_index = types.TabColoringTheme.DefaultTabColoringStyleIndex
     return types.TabColoringTheme.AvailableStyles[tabstyle_index]
 
 
@@ -88,6 +106,11 @@ def _get_family_tabstyle(tabcfgs):
         'family_tabstyle_index',
         types.TabColoringTheme.DefaultFamilyTabColoringStyleIndex
         )
+    # legacy configs may store this as a string; normalize to int
+    try:
+        family_tabstyle_index = int(family_tabstyle_index)
+    except (TypeError, ValueError):
+        family_tabstyle_index = types.TabColoringTheme.DefaultFamilyTabColoringStyleIndex
     return types.TabColoringTheme.AvailableStyles[family_tabstyle_index]
 
 

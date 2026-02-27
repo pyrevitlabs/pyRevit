@@ -188,7 +188,6 @@ partial class Build : NukeBuild
         var telemPath = DevPath / "pyRevitTelemetryServer";
         var outputExe = BinPath / "pyrevit-telemetryserver.exe";
         BinPath.CreateDirectory();
-        RunProcess("go", "get ./...", (string)telemPath, captureOutput: true, unsetProxy: true);
         RunProcess("go", $"build -o \"{outputExe}\" .", (string)telemPath, captureOutput: true, unsetProxy: true);
     }
 
@@ -201,7 +200,6 @@ partial class Build : NukeBuild
         var autocmpPath = DevPath / "pyRevitLabs" / "pyRevitCLIAutoComplete";
         var outputExe = BinPath / "pyrevit-autocomplete.exe";
         BinPath.CreateDirectory();
-        RunProcess("go", "get ./...", (string)autocmpPath, captureOutput: true, unsetProxy: true);
         RunProcess("go", $"build -o \"{outputExe}\" .", (string)autocmpPath, captureOutput: true, unsetProxy: true);
     }
 
@@ -276,8 +274,11 @@ partial class Build : NukeBuild
         .Description("Update copyright year to current year in Directory.Build.props, versionmgr/about.py, README, .iss, MSI, choco.")
         .Executes(() =>
         {
-            var year = DateTime.Now.Year;
-            if (DateTime.Now.Month == 12) year++;
+            var now = DateTime.Now;
+            var year = now.Year;
+            var nextJan1 = new DateTime(year + 1, 1, 1);
+            var threshold = nextJan1.AddDays(-30);
+            if (now >= threshold) year++;
             var newCopyright = $"2014-{year}";
             var cpFinder = new Regex(@"2014-\d{4}", RegexOptions.Compiled);
 
