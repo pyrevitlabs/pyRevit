@@ -8,9 +8,9 @@ This module:
 - Exposes high-level helpers (e.g. IFCExporter) around Document.Export
   for IFC exports.
 """
-# pylint: skip-file
 import os.path as op
 import json
+import codecs
 from pyrevit import clr, BIN_DIR, DB
 from pyrevit.coreutils.logger import get_logger
 
@@ -84,7 +84,7 @@ def load_config(config_path):
     """
     if not op.isfile(config_path):
         raise IOError("IFC config file not found: {}".format(config_path))
-    with open(config_path, "r") as fh:
+    with codecs.open(config_path, "r", "utf-8") as fh:
         try:
             return json.load(fh)
         except ValueError as exc:
