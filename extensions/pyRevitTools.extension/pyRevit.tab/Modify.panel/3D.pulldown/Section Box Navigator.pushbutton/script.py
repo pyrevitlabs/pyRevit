@@ -36,32 +36,52 @@ from sectionbox_geometry import (
 # Initialize Variables
 # --------------------
 
-uidoc = revit.uidoc
-doc = revit.doc
-active_view = revit.active_view
+uidoc = None
+doc = None
+active_view = None
 
 logger = script.get_logger()
 output = script.get_output()
 output.close_others()
 
+my_config = script.get_config()
+
 sb_form = None
 
-length_format_options = doc.GetUnits().GetFormatOptions(DB.SpecTypeId.Length)
-length_unit = length_format_options.GetUnitTypeId()
-length_unit_label = DB.LabelUtils.GetLabelForUnit(length_unit)
-length_unit_symbol = length_format_options.GetSymbolTypeId()
+length_unit = None
+length_unit_label = None
 length_unit_symbol_label = None
-if not length_unit_symbol.Empty():
-    length_unit_symbol_label = DB.LabelUtils.GetLabelForSymbol(length_unit_symbol)
 
-DEFAULT_NUDGE_VALUE_MM = 500.0
-default_nudge_value = DB.UnitUtils.Convert(
-    DEFAULT_NUDGE_VALUE_MM, DB.UnitTypeId.Millimeters, length_unit
-)
+config_level_nudge_value = my_config.get_option("level_nudge_value", 1.64042)
+config_grid_nudge_value = my_config.get_option("grid_nudge_value", 1.64042)
+config_expand_nudge_value = my_config.get_option("expand_nudge_value", 1.64042)
+
 TOLERANCE = 1e-5
 DATAFILENAME = "SectionBox"
 TEMP_DATAFILE = script.get_instance_data_file("SectionBoxTemp")
 WINDOW_POSITION = "sbnavigator_window_pos"
+
+
+def initialize_globals():
+    global uidoc, doc, active_view
+    global length_unit, length_unit_label, length_unit_symbol_label
+    global level_nudge_value, grid_nudge_value, expand_nudge_value
+
+    uidoc = revit.uidoc
+    doc = revit.doc
+    active_view = revit.active_view
+
+    length_format_options = doc.GetUnits().GetFormatOptions(DB.SpecTypeId.Length)
+    length_unit = length_format_options.GetUnitTypeId()
+    length_unit_label = DB.LabelUtils.GetLabelForUnit(length_unit)
+    length_unit_symbol = length_format_options.GetSymbolTypeId()
+    length_unit_symbol_label = None
+    if not length_unit_symbol.Empty():
+        length_unit_symbol_label = DB.LabelUtils.GetLabelForSymbol(length_unit_symbol)
+
+    level_nudge_value = DB.UnitUtils.Convert(config_level_nudge_value, DB.UnitTypeId.Feet, length_unit)
+    grid_nudge_value = DB.UnitUtils.Convert(config_grid_nudge_value, DB.UnitTypeId.Feet, length_unit)
+    expand_nudge_value = DB.UnitUtils.Convert(config_expand_nudge_value, DB.UnitTypeId.Feet, length_unit)
 
 # --------------------
 # Helper Functions
@@ -135,7 +155,7 @@ def format_length_value(value):
 
 
 # --------------------
-# View Changed Monitor
+# Event Monitor
 # --------------------
 
 
@@ -143,6 +163,8 @@ def format_length_value(value):
 @events.handle("view-activated")
 def on_view_or_doc_changed(sender, args):
     try:
+        if revit.doc != doc:
+            initialize_globals()
         if not sb_form or not sb_form.chkAutoupdate.IsChecked:
             return
         sb_form.Dispatcher.Invoke(System.Action(sb_form.update_info))
@@ -162,7 +184,16 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name, handle_esc=False)
 
+        self.chkIncludeLinks.IsChecked = my_config.get_option("chkLinks_state")
+        self.chkPreview.IsChecked = my_config.get_option("chkPreview_state")
+        self.chkAutoupdate.IsChecked = my_config.get_option("chkAutoupdate_state")
+        self.rbLevel.IsChecked = my_config.get_option("rbLevel_state", True)
+        self.rbLevelNudge.IsChecked = not self.rbLevel.IsChecked
+        self.rbGrid.IsChecked = my_config.get_option("rbGrid_state", True)
+        self.rbGridNudge.IsChecked = not self.rbGrid.IsChecked
+
         self.current_view = doc.ActiveView
+        self.current_length_unit = length_unit
         self.all_levels = get_all_levels(doc, self.chkIncludeLinks.IsChecked)
         self.all_grids = get_all_grids(doc, self.chkIncludeLinks.IsChecked)
         self.preview_server = None
@@ -179,18 +210,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
         self.pending_action = None
 
-        if not length_unit_symbol_label:
-            self.project_unit_text.Visibility = forms.WPF_VISIBLE
-            self.project_unit_text.Text = (
-                self.get_locale_string("LengthLabelAdjust") + "\n" + length_unit_label
-            )
-        self.txtLevelNudgeAmount.Text = str(round(default_nudge_value, 3))
-        self.txtLevelNudgeUnit.Text = length_unit_symbol_label or ""
-        self.txtExpandAmount.Text = str(round(default_nudge_value, 3))
-        self.txtExpandUnit.Text = length_unit_symbol_label or ""
-        self.txtGridNudgeAmount.Text = str(round(default_nudge_value, 3))
-        self.txtGridNudgeUnit.Text = length_unit_symbol_label or ""
-
+        self.update_fields_with_unit_dependencies()
         self.update_info()
         self.update_grid_status()
         self.update_expand_actions_status()
@@ -199,6 +219,22 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         self.Closed += self.form_closed
         script.restore_window_position(self)
         self.Show()
+
+    def update_fields_with_unit_dependencies(self):
+        if not length_unit_symbol_label:
+            self.project_unit_text.Visibility = forms.WPF_VISIBLE
+            self.project_unit_text.Text = (
+                self.get_locale_string("LengthLabelAdjust") + "\n" + length_unit_label
+            )
+        else:
+            self.project_unit_text.Visibility = forms.WPF_COLLAPSED
+
+        self.txtLevelNudgeAmount.Text = str(round(level_nudge_value, 3))
+        self.txtLevelNudgeUnit.Text = length_unit_symbol_label or ""
+        self.txtExpandAmount.Text = str(round(expand_nudge_value, 3))
+        self.txtExpandUnit.Text = length_unit_symbol_label or ""
+        self.txtGridNudgeAmount.Text = str(round(grid_nudge_value, 3))
+        self.txtGridNudgeUnit.Text = length_unit_symbol_label or ""
 
     def update_dropdown_visibility(self):
         """Show/hide dropdown arrows based on Level mode."""
@@ -301,6 +337,10 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         try:
             last_view = self.current_view.Id
             self.current_view = doc.ActiveView
+
+            if self.current_length_unit != length_unit:
+                self.current_length_unit = length_unit
+                self.update_fields_with_unit_dependencies()
 
             if is_2d_view(self.current_view):
                 self.btnAlignToView.Content = self.get_locale_string("AlignWith3DView")
@@ -1326,12 +1366,14 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             )
             return
 
-    def _get_validated_nudge_amount(self, text_control, column=None, unit=length_unit):
+    def _get_validated_nudge_amount(self, text_control, column=None, unit=None):
         """Extract and validate nudge amount from text control.
 
         Returns:
             float: Converted distance in internal units, or None if invalid
         """
+        if unit is None:
+            unit = length_unit
         try:
             distance_text = text_control.Text.strip()
             if column and not distance_text:
@@ -1731,10 +1773,21 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                     logger.warning("Error removing DC3D server: {}".format(ex))
 
             # Refresh view
-            try:
-                uidoc.RefreshActiveView()
-            except Exception as ex:
-                logger.warning("Error refreshing view: {}".format(ex))
+            uidoc.RefreshActiveView()
+
+            # Save nudge values and radio buttons
+            level_nudge_value = self._get_validated_nudge_amount(self.txtLevelNudgeAmount)
+            grid_nudge_value = self._get_validated_nudge_amount(self.txtGridNudgeAmount)
+            expand_nudge_value = self._get_validated_nudge_amount(self.txtExpandAmount)
+            my_config.set_option("level_nudge_value", level_nudge_value)
+            my_config.set_option("grid_nudge_value", grid_nudge_value)
+            my_config.set_option("expand_nudge_value", expand_nudge_value)
+            my_config.set_option("rbLevel_state", self.rbLevel.IsChecked)
+            my_config.set_option("rbGrid_state", self.rbGrid.IsChecked)
+            my_config.set_option("chkLinks_state", self.chkIncludeLinks.IsChecked)
+            my_config.set_option("chkPreview_state", self.chkPreview.IsChecked)
+            my_config.set_option("chkAutoupdate_state", self.chkAutoupdate.IsChecked)
+            script.save_config()
 
         except Exception:
             logger.exception("Error during cleanup.")
@@ -1746,6 +1799,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
 if __name__ == "__main__":
     try:
+        initialize_globals()
         # Check if section box is active
         if not active_view.IsSectionBoxActive:
             try:
