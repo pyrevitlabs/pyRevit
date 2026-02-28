@@ -307,7 +307,7 @@ class IFCExporter(object):
         )
 
         if not op.isdir(folder):
-            raise FileNotFoundError
+            raise IOError("IFC export folder not found: {}".format(folder))
 
         mlogger.debug("Exporting to: {}".format(op.join(folder, filename)))
 
