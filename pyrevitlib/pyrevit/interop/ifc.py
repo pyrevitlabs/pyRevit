@@ -1,5 +1,13 @@
-"""IFC.Net assembly import."""
+"""
+Interop helpers for Revit IFC export.
 
+This module:
+- Loads the IFC.Net assembly to provide IFC schema types (e.g. Ifc4).
+- Parses Revit IFC exporter JSON configuration files and maps them to
+  Autodesk.Revit.DB.IFCExportOptions.
+- Exposes high-level helpers (e.g. IFCExporter) around Document.Export
+  for IFC exports.
+"""
 # pylint: skip-file
 import os.path as op
 import json
