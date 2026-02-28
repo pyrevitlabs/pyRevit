@@ -473,8 +473,6 @@ class WPFPanel(framework.Windows.Controls.Page):
             how the panel interacts with the active editor.
         contextual_help (UI.ContextualHelp):
             F1 help associated with the pane.
-        minimum_width (int): minimum panel width in pixels.
-        minimum_height (int): minimum panel height in pixels.
 
     Examples:
 ```python
