@@ -78,10 +78,10 @@ class Context(object):
 
             self._source_template = None
             if (
-                self.source_view != None
+                self.source_view is not None
                 and self.source_view.ViewTemplateId != DB.ElementId.InvalidElementId
             ):
-                template = doc.GetElement(self.source_view.ViewTemplateId)
+                template = self.source_view.Document.GetElement(self.source_view.ViewTemplateId)
                 non_controlled_params = template.GetNonControlledTemplateParameterIds()
                 if DB.ElementId(DB.BuiltInParameter.PLAN_VIEW_RANGE) not in non_controlled_params:
                     self._source_template = template
@@ -94,7 +94,7 @@ class Context(object):
             return False
 
 
-        if self._source_template != None:
+        if self._source_template is not None:
             dialog_result = forms.alert(
                 "You are about to change a View Template! Are you sure you want to proceed?",
                 ok=False,
@@ -564,7 +564,7 @@ class Context(object):
             self.view_model.message = "Showing View Range of\n[{}]".format(
                 self.source_view.Name
             )
-            if self._source_template != None:
+            if self._source_templateis is not None:
                 self.view_model.message += (
                     " - ⚠️ View Range driven by Template [{}]".format(
                         self._source_template.Name
