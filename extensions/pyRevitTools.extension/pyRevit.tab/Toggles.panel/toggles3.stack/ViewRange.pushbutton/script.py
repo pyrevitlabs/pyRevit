@@ -83,7 +83,7 @@ class Context(object):
             ):
                 template = doc.GetElement(self.source_view.ViewTemplateId)
                 non_controlled_params = template.GetNonControlledTemplateParameterIds()
-                if DB.ElementId(-1005162) not in non_controlled_params:
+                if DB.ElementId(DB.BuiltInParameter.PLAN_VIEW_RANGE) not in non_controlled_params:
                     self._source_template = template
 
             self.context_changed()
