@@ -93,6 +93,17 @@ class Context(object):
             self.view_model.warning_message = "No valid plan view selected"
             return False
 
+
+        if self._source_template != None:
+            dialog_result = forms.alert(
+                "You are about to change a View Template! Are you sure you want to proceed?",
+                ok=False,
+                yes=True,
+                no=True,
+            )
+            if not dialog_result:
+                return False
+
         events.execute_in_revit_context(
             self._update_view_range_internal, new_values, new_levels
         )
@@ -102,16 +113,6 @@ class Context(object):
         try:
             if not self._validate_view_range_order(new_values, new_levels):
                 return False
-
-            if self._source_template != None:
-                dialog_result = forms.alert(
-                    "You are about to change a View Template! Are you sure you want to proceed?",
-                    ok=False,
-                    yes=True,
-                    no=True,
-                )
-                if not dialog_result:
-                    return False
 
             with revit.Transaction("Update View Range", doc=revit.doc):
                 view_range = self.source_view.GetViewRange()
