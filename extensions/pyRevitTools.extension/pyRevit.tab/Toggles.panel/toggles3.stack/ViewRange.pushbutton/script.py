@@ -12,12 +12,20 @@ uidoc = HOST_APP.uidoc
 logger = script.get_logger()
 output = script.get_output()
 
-PLANES = OrderedDict([
-    (DB.PlanViewPlane.TopClipPlane, ([0, 255, 0], "Top Clip Plane", "topplane")),
-    (DB.PlanViewPlane.CutPlane, ([255, 0, 0], "Cut Plane", "cutplane")),
-    (DB.PlanViewPlane.BottomClipPlane, ([0, 0, 255], "Bottom Clip Plane", "bottomplane")),
-    (DB.PlanViewPlane.ViewDepthPlane, ([255, 127, 0], "View Depth Plane", "viewdepth")),
-])
+PLANES = OrderedDict(
+    [
+        (DB.PlanViewPlane.TopClipPlane, ([0, 255, 0], "Top Clip Plane", "topplane")),
+        (DB.PlanViewPlane.CutPlane, ([255, 0, 0], "Cut Plane", "cutplane")),
+        (
+            DB.PlanViewPlane.BottomClipPlane,
+            ([0, 0, 255], "Bottom Clip Plane", "bottomplane"),
+        ),
+        (
+            DB.PlanViewPlane.ViewDepthPlane,
+            ([255, 127, 0], "View Depth Plane", "viewdepth"),
+        ),
+    ]
+)
 
 get_elementid_value = get_elementid_value_func()
 INVALID_ID_VALUE = get_elementid_value(DB.ElementId.InvalidElementId)
@@ -69,8 +77,10 @@ class Context(object):
             self._levels_populated = False  # Reset when view changes
 
             self._source_template = None
-            if (self.source_view != None and
-                    self.source_view.ViewTemplateId != DB.ElementId.InvalidElementId):
+            if (
+                self.source_view != None
+                and self.source_view.ViewTemplateId != DB.ElementId.InvalidElementId
+            ):
                 template = doc.GetElement(self.source_view.ViewTemplateId)
                 non_controlled_params = template.GetNonControlledTemplateParameterIds()
                 if DB.ElementId(-1005162) not in non_controlled_params:
@@ -98,7 +108,7 @@ class Context(object):
                     "You are about to change a View Template! Are you sure you want to proceed?",
                     ok=False,
                     yes=True,
-                    no=True
+                    no=True,
                 )
                 if not dialog_result:
                     return False
@@ -282,7 +292,9 @@ class Context(object):
         """Populate the list of available levels in the project"""
         try:
             # Get all levels in the project
-            level_collector = DB.FilteredElementCollector(self.source_view.Document).OfClass(DB.Level)
+            level_collector = DB.FilteredElementCollector(
+                self.source_view.Document
+            ).OfClass(DB.Level)
             levels = list(level_collector)
 
             # Sort levels by elevation
@@ -293,7 +305,11 @@ class Context(object):
                 def __init__(self, name, element_id, elevation=None, is_special=False):
                     self.Name = name
                     self.Id = element_id
-                    self.IdValue = get_elementid_value(element_id) if element_id else INVALID_ID_VALUE
+                    self.IdValue = (
+                        get_elementid_value(element_id)
+                        if element_id
+                        else INVALID_ID_VALUE
+                    )
                     self.Elevation = elevation
                     self.IsSpecial = is_special
 
@@ -362,9 +378,15 @@ class Context(object):
             self.view_model.viewdepth_level_id = None
 
             # Then set the actual values
-            self.view_model.topplane_level_id = stored_selections.get("top", INVALID_ID_VALUE)
-            self.view_model.bottomplane_level_id = stored_selections.get("bottom", INVALID_ID_VALUE)
-            self.view_model.viewdepth_level_id = stored_selections.get("viewdepth", INVALID_ID_VALUE)
+            self.view_model.topplane_level_id = stored_selections.get(
+                "top", INVALID_ID_VALUE
+            )
+            self.view_model.bottomplane_level_id = stored_selections.get(
+                "bottom", INVALID_ID_VALUE
+            )
+            self.view_model.viewdepth_level_id = stored_selections.get(
+                "viewdepth", INVALID_ID_VALUE
+            )
 
         except Exception as e:
             self.view_model.warning_message = (
@@ -542,8 +564,10 @@ class Context(object):
                 self.source_view.Name
             )
             if self._source_template != None:
-                self.view_model.message += " - ⚠️ View Range driven by Template [{}]".format(
-                    self._source_template.Name
+                self.view_model.message += (
+                    " - ⚠️ View Range driven by Template [{}]".format(
+                        self._source_template.Name
+                    )
                 )
             return True
 
@@ -787,8 +811,8 @@ class MainWindow(forms.WPFWindow):
                             original_level_id
                             and original_level_id != DB.ElementId.InvalidElementId
                         ):
-                            self.DataContext.topplane_level_id = (
-                                get_elementid_value(original_level_id)
+                            self.DataContext.topplane_level_id = get_elementid_value(
+                                original_level_id
                             )
                         else:
                             self.DataContext.topplane_level_id = INVALID_ID_VALUE
@@ -801,7 +825,10 @@ class MainWindow(forms.WPFWindow):
                         ):
                             try:
                                 # Use source_view.Document instead of active_view.Document
-                                if context.source_view and context.source_view.IsValidObject:
+                                if (
+                                    context.source_view
+                                    and context.source_view.IsValidObject
+                                ):
                                     level = context.source_view.Document.GetElement(
                                         original_level_id
                                     )
@@ -820,8 +847,8 @@ class MainWindow(forms.WPFWindow):
                             original_level_id
                             and original_level_id != DB.ElementId.InvalidElementId
                         ):
-                            self.DataContext.bottomplane_level_id = (
-                                get_elementid_value(original_level_id)
+                            self.DataContext.bottomplane_level_id = get_elementid_value(
+                                original_level_id
                             )
                         else:
                             self.DataContext.bottomplane_level_id = INVALID_ID_VALUE
@@ -831,8 +858,8 @@ class MainWindow(forms.WPFWindow):
                             original_level_id
                             and original_level_id != DB.ElementId.InvalidElementId
                         ):
-                            self.DataContext.viewdepth_level_id = (
-                                get_elementid_value(original_level_id)
+                            self.DataContext.viewdepth_level_id = get_elementid_value(
+                                original_level_id
                             )
                         else:
                             self.DataContext.viewdepth_level_id = INVALID_ID_VALUE
