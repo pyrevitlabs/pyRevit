@@ -653,7 +653,7 @@ def get_dockable_panel(panel_type_or_id):
     """
     if isinstance(panel_type_or_id, str):
         return DOCKABLE_PANEL_REGISTRY.get(panel_type_or_id, None)
-    elif issubclass(panel_type_or_id, WPFPanel):
+    elif isinstance(panel_type_or_id, type) and issubclass(panel_type_or_id, WPFPanel):
         return DOCKABLE_PANEL_REGISTRY.get(panel_type_or_id.panel_id, None)
     raise PyRevitException("Given type is not a forms.WPFPanel or panel id string")
 
