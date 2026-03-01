@@ -81,9 +81,14 @@ class Context(object):
                 self.source_view is not None
                 and self.source_view.ViewTemplateId != DB.ElementId.InvalidElementId
             ):
-                template = self.source_view.Document.GetElement(self.source_view.ViewTemplateId)
+                template = self.source_view.Document.GetElement(
+                    self.source_view.ViewTemplateId
+                )
                 non_controlled_params = template.GetNonControlledTemplateParameterIds()
-                if DB.ElementId(DB.BuiltInParameter.PLAN_VIEW_RANGE) not in non_controlled_params:
+                if (
+                    DB.ElementId(DB.BuiltInParameter.PLAN_VIEW_RANGE)
+                    not in non_controlled_params
+                ):
                     self._source_template = template
 
             self.context_changed()
@@ -92,7 +97,6 @@ class Context(object):
         if not self.source_view or not isinstance(self.source_view, DB.ViewPlan):
             self.view_model.warning_message = "No valid plan view selected"
             return False
-
 
         if self._source_template is not None:
             dialog_result = forms.alert(
