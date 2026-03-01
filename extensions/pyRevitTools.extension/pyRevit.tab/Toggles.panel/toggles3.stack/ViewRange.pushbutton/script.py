@@ -67,16 +67,20 @@ class Context(object):
         if not compare_views(self._source_view, value):
             self._source_view = value
             self._levels_populated = False  # Reset when view changes
+
+            self._source_template = None
+            if (self.source_view != None and
+                    self.source_view.ViewTemplateId != DB.ElementId.InvalidElementId):
+                template = doc.GetElement(self.source_view.ViewTemplateId)
+                non_controlled_params = template.GetNonControlledTemplateParameterIds()
+                if DB.ElementId(-1005162) not in non_controlled_params:
+                    self._source_template = template
+
             self.context_changed()
 
     def update_view_range(self, new_values, new_levels=None):
         if not self.source_view or not isinstance(self.source_view, DB.ViewPlan):
             self.view_model.warning_message = "No valid plan view selected"
-            return False
-        if self.source_view.IsTemplate:
-            self.view_model.warning_message = (
-                "Cannot modify view range - this is a view template"
-            )
             return False
 
         events.execute_in_revit_context(
@@ -88,6 +92,16 @@ class Context(object):
         try:
             if not self._validate_view_range_order(new_values, new_levels):
                 return False
+
+            if self._source_template != None:
+                dialog_result = forms.alert(
+                    "You are about to change a View Template! Are you sure you want to proceed?",
+                    ok=False,
+                    yes=True,
+                    no=True
+                )
+                if not dialog_result:
+                    return False
 
             with revit.Transaction("Update View Range", doc=revit.doc):
                 view_range = self.source_view.GetViewRange()
@@ -521,19 +535,15 @@ class Context(object):
             )
             self.view_model.can_modify_view = False
         else:
-            can_modify = (
-                isinstance(self.source_view, DB.ViewPlan)
-                and not self.source_view.IsTemplate
-            )
+            can_modify = isinstance(self.source_view, DB.ViewPlan)
             self.view_model.can_modify_view = can_modify
 
-            if self.source_view.IsTemplate:
-                self.view_model.message = "Showing View Range of [{}]\n(View Template - Cannot Modify)".format(
-                    self.source_view.Name
-                )
-            else:
-                self.view_model.message = "Showing View Range of\n[{}]".format(
-                    self.source_view.Name
+            self.view_model.message = "Showing View Range of\n[{}]".format(
+                self.source_view.Name
+            )
+            if self._source_template != None:
+                self.view_model.message += " - ⚠️ View Range driven by Template [{}]".format(
+                    self._source_template.Name
                 )
             return True
 
