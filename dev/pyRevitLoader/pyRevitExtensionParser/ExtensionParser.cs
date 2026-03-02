@@ -476,7 +476,6 @@ namespace pyRevitExtensionParser
                 }
             }
 
-<<<<<<< HEAD
             // pyRevitCore is always rocket mode compatible (hardcoded, matches Python behavior)
             if (string.Equals(extName, "pyRevitCore", StringComparison.OrdinalIgnoreCase))
             {
@@ -484,9 +483,6 @@ namespace pyRevitExtensionParser
             }
 
             var children = ParseComponents(extDir, extName, null, extensionTemplates.Count > 0 ? extensionTemplates : null);
-=======
-            var children = ParseComponents(extDir, extName, null, extensionTemplates.Count > 0 ? extensionTemplates : null, revitYear);
->>>>>>> e16430e8aeb8682d32a482634cd7a30273655e28
 
             // Read extension config from pyRevit config file (cached).
             // Config is keyed by folder name (e.g. [extension_test.extension]) so it matches install and Python.

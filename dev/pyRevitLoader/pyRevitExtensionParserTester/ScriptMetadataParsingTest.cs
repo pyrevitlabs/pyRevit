@@ -213,39 +213,108 @@ tooltip: Bundle Tooltip
         }
 
         [Test]
-        public void TestRocketModeConfigFromIni()
+        public void TestLoggingLevelConfigFromIni()
         {
-            var configPath = Path.Combine(TestTempDir, "pyRevit_config.ini");
+            var configPath = Path.Combine(TestTempDir, "pyRevit_config_logging.ini");
 
-            // Default value: false when not set
+            // Default: Quiet (0) when nothing is set
             File.WriteAllText(configPath, "");
-            var config1 = PyRevitConfig.Load(configPath);
-            Assert.IsFalse(config1.RocketMode, "Default RocketMode should be false when not set");
+            Assert.AreEqual(0, PyRevitConfig.Load(configPath).LoggingLevel, "Default should be 0 (Quiet)");
 
-            // Explicit true
-            File.WriteAllText(configPath, "[core]\nrocketmode = true");
-            var config2 = PyRevitConfig.Load(configPath);
-            Assert.IsTrue(config2.RocketMode, "RocketMode should be true when explicitly set");
+            // Verbose only → 1
+            File.WriteAllText(configPath, "[core]\nverbose = true\ndebug = false");
+            Assert.AreEqual(1, PyRevitConfig.Load(configPath).LoggingLevel, "verbose=true should give 1");
 
-            // Explicit false
-            File.WriteAllText(configPath, "[core]\nrocketmode = false");
-            var config3 = PyRevitConfig.Load(configPath);
-            Assert.IsFalse(config3.RocketMode, "RocketMode should be false when explicitly set");
+            // Debug → 2 (takes priority)
+            File.WriteAllText(configPath, "[core]\nverbose = true\ndebug = true");
+            Assert.AreEqual(2, PyRevitConfig.Load(configPath).LoggingLevel, "debug=true should give 2");
 
-            // Case insensitive
-            File.WriteAllText(configPath, "[core]\nrocketmode = TRUE");
-            var config4 = PyRevitConfig.Load(configPath);
-            Assert.IsTrue(config4.RocketMode, "RocketMode should be case-insensitive");
+            // Explicit Quiet
+            File.WriteAllText(configPath, "[core]\nverbose = false\ndebug = false");
+            Assert.AreEqual(0, PyRevitConfig.Load(configPath).LoggingLevel, "Both false should give 0");
 
-            // Round-trip write/read
-            var configPath2 = Path.Combine(TestTempDir, "pyRevit_config_rw.ini");
+            Assert.Pass("LoggingLevel config parsing validated successfully.");
+        }
+
+        [Test]
+        public void TestTelemetryConfigFromIni()
+        {
+            var configPath = Path.Combine(TestTempDir, "pyRevit_config_telem.ini");
+
+            // Defaults: all false / empty when section is absent
+            File.WriteAllText(configPath, "");
+            var cfg0 = PyRevitConfig.Load(configPath);
+            Assert.IsFalse(cfg0.TelemetryState, "Default TelemetryState should be false");
+            Assert.IsTrue(cfg0.TelemetryUTCTimeStamps, "Default TelemetryUTCTimeStamps should be true");
+            Assert.AreEqual(string.Empty, cfg0.TelemetryFilePath, "Default TelemetryFilePath should be empty");
+            Assert.AreEqual(string.Empty, cfg0.TelemetryServerUrl, "Default TelemetryServerUrl should be empty");
+            Assert.IsFalse(cfg0.TelemetryIncludeHooks, "Default TelemetryIncludeHooks should be false");
+            Assert.IsFalse(cfg0.AppTelemetryState, "Default AppTelemetryState should be false");
+            Assert.AreEqual(string.Empty, cfg0.AppTelemetryServerUrl, "Default AppTelemetryServerUrl should be empty");
+            Assert.AreEqual(string.Empty, cfg0.AppTelemetryEventFlags, "Default AppTelemetryEventFlags should be empty");
+
+            // Set values and verify read-back
+            var iniContent = string.Join("\n", new[] {
+                "[telemetry]",
+                "active = true",
+                "utc_timestamps = true",
+                "telemetry_file_dir = C:\\logs",
+                "telemetry_server_url = https://telem.example.com",
+                "include_hooks = true",
+                "active_app = true",
+                "apptelemetry_server_url = https://apptelm.example.com",
+                "apptelemetry_event_flags = 255",
+            });
+            File.WriteAllText(configPath, iniContent);
+            var cfg1 = PyRevitConfig.Load(configPath);
+            Assert.IsTrue(cfg1.TelemetryState);
+            Assert.IsTrue(cfg1.TelemetryUTCTimeStamps);
+            Assert.AreEqual("C:\\logs", cfg1.TelemetryFilePath);
+            Assert.AreEqual("https://telem.example.com", cfg1.TelemetryServerUrl);
+            Assert.IsTrue(cfg1.TelemetryIncludeHooks);
+            Assert.IsTrue(cfg1.AppTelemetryState);
+            Assert.AreEqual("https://apptelm.example.com", cfg1.AppTelemetryServerUrl);
+            Assert.AreEqual("255", cfg1.AppTelemetryEventFlags);
+
+            // Write-then-read round-trip
+            var configPath2 = Path.Combine(TestTempDir, "pyRevit_config_telem_rw.ini");
             File.WriteAllText(configPath2, "");
-            var configRw = PyRevitConfig.Load(configPath2);
-            configRw.RocketMode = true;
-            var configRw2 = PyRevitConfig.Load(configPath2);
-            Assert.IsTrue(configRw2.RocketMode, "RocketMode should persist after write");
+            var cfgRw = PyRevitConfig.Load(configPath2);
+            cfgRw.TelemetryState = true;
+            cfgRw.TelemetryServerUrl = "https://rw.example.com";
+            Assert.IsTrue(PyRevitConfig.Load(configPath2).TelemetryState);
+            Assert.AreEqual("https://rw.example.com", PyRevitConfig.Load(configPath2).TelemetryServerUrl);
 
-            Assert.Pass("RocketMode config parsing validated successfully.");
+            Assert.Pass("Telemetry config parsing validated successfully.");
+        }
+
+        [Test]
+        public void TestFileLoggingAndAutoUpdateConfigFromIni()
+        {
+            var configPath = Path.Combine(TestTempDir, "pyRevit_config_misc.ini");
+
+            // Defaults
+            File.WriteAllText(configPath, "");
+            var cfg0 = PyRevitConfig.Load(configPath);
+            Assert.IsFalse(cfg0.FileLogging, "Default FileLogging should be false");
+            Assert.IsFalse(cfg0.AutoUpdate, "Default AutoUpdate should be false");
+            Assert.AreEqual(string.Empty, cfg0.OutputStyleSheet, "Default OutputStyleSheet should be empty");
+
+            // Set values
+            File.WriteAllText(configPath, "[core]\nfilelogging = true\nautoupdate = true\noutputstylesheet = C:\\style.css");
+            var cfg1 = PyRevitConfig.Load(configPath);
+            Assert.IsTrue(cfg1.FileLogging);
+            Assert.IsTrue(cfg1.AutoUpdate);
+            Assert.AreEqual("C:\\style.css", cfg1.OutputStyleSheet);
+
+            // Write-then-read round-trip for OutputStyleSheet
+            var configPath2 = Path.Combine(TestTempDir, "pyRevit_config_misc_rw.ini");
+            File.WriteAllText(configPath2, "");
+            var cfgRw = PyRevitConfig.Load(configPath2);
+            cfgRw.OutputStyleSheet = "C:\\custom.css";
+            Assert.AreEqual("C:\\custom.css", PyRevitConfig.Load(configPath2).OutputStyleSheet);
+
+            Assert.Pass("FileLogging / AutoUpdate / OutputStyleSheet config parsing validated successfully.");
         }
 
         [Test]
