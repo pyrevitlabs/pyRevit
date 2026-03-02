@@ -121,6 +121,7 @@ namespace pyRevitExtensionParser
         /// <remarks>
         /// 0 = Quiet (default), 1 = Verbose, 2 = Debug.
         /// Derived from the [core] verbose and debug keys, matching PyRevitLogLevels in the CLI library.
+        /// Read-only; change level by setting the [core] verbose or debug INI keys.
         /// </remarks>
         public int LoggingLevel
         {
