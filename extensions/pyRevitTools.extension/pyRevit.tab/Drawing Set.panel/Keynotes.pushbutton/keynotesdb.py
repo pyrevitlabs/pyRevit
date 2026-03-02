@@ -241,7 +241,10 @@ class RKeynote(object):
             self.used = True
             self.used_count = len(used_keysdict[self.key])
             for keyid in used_keysdict[self.key]:
-                owner_view = doc.GetElement(doc.GetElement(keyid).OwnerViewId)
+                kel = doc.GetElement(keyid)
+                if not kel:
+                    continue
+                owner_view = doc.GetElement(kel.OwnerViewId)
                 view_name = revit.query.get_name(owner_view)
                 self.tooltip += '\n' + view_name
 
