@@ -568,7 +568,7 @@ class Context(object):
             self.view_model.message = "Showing View Range of\n[{}]".format(
                 self.source_view.Name
             )
-            if self._source_templateis is not None:
+            if self._source_template is not None:
                 self.view_model.message += (
                     " - ⚠️ View Range driven by Template [{}]".format(
                         self._source_template.Name
