@@ -213,7 +213,6 @@ tooltip: Bundle Tooltip
         }
 
         [Test]
-<<<<<<< HEAD
         public void TestLoggingLevelConfigFromIni()
         {
             var configPath = Path.Combine(TestTempDir, "pyRevit_config_logging.ini");
@@ -316,41 +315,6 @@ tooltip: Bundle Tooltip
             Assert.AreEqual("C:\\custom.css", PyRevitConfig.Load(configPath2).OutputStyleSheet);
 
             Assert.Pass("FileLogging / AutoUpdate / OutputStyleSheet config parsing validated successfully.");
-=======
-        public void TestRocketModeConfigFromIni()
-        {
-            var configPath = Path.Combine(TestTempDir, "pyRevit_config.ini");
-
-            // Default value: false when not set
-            File.WriteAllText(configPath, "");
-            var config1 = PyRevitConfig.Load(configPath);
-            Assert.IsFalse(config1.RocketMode, "Default RocketMode should be false when not set");
-
-            // Explicit true
-            File.WriteAllText(configPath, "[core]\nrocketmode = true");
-            var config2 = PyRevitConfig.Load(configPath);
-            Assert.IsTrue(config2.RocketMode, "RocketMode should be true when explicitly set");
-
-            // Explicit false
-            File.WriteAllText(configPath, "[core]\nrocketmode = false");
-            var config3 = PyRevitConfig.Load(configPath);
-            Assert.IsFalse(config3.RocketMode, "RocketMode should be false when explicitly set");
-
-            // Case insensitive
-            File.WriteAllText(configPath, "[core]\nrocketmode = TRUE");
-            var config4 = PyRevitConfig.Load(configPath);
-            Assert.IsTrue(config4.RocketMode, "RocketMode should be case-insensitive");
-
-            // Round-trip write/read
-            var configPath2 = Path.Combine(TestTempDir, "pyRevit_config_rw.ini");
-            File.WriteAllText(configPath2, "");
-            var configRw = PyRevitConfig.Load(configPath2);
-            configRw.RocketMode = true;
-            var configRw2 = PyRevitConfig.Load(configPath2);
-            Assert.IsTrue(configRw2.RocketMode, "RocketMode should persist after write");
-
-            Assert.Pass("RocketMode config parsing validated successfully.");
->>>>>>> 31ab6878c4dc2f642a734320882ea92867626f4f
         }
 
         [Test]
