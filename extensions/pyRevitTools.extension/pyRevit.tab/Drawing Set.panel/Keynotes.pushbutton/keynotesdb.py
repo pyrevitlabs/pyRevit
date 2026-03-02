@@ -576,7 +576,7 @@ def import_legacy_keynotes(conn, src_legacy_keynotes_file, skip_dup=False):
             else:
                 continue
 
-    if legacy_kfile:
+    if knote_lines:
         conn.BEGIN(KEYNOTES_DB)
         try:
             mlogger.debug('Importing categories and keynotes...')
