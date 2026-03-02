@@ -35,6 +35,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         private const string KeyFileLogging          = "PYREVIT_FILELOGGING";
         private const string KeyTelemetryState       = "PYREVIT_TELEMETRYSTATE";
         private const string KeyTelemetryUTC         = "PYREVIT_TELEMETRYUTCTIMESTAMPS";
+        private const string KeyTelemetryFileDir     = "PYREVIT_TELEMETRYDIR";
         private const string KeyTelemetryFile        = "PYREVIT_TELEMETRYFILE";
         private const string KeyTelemetryServer      = "PYREVIT_TELEMETRYSERVER";
         private const string KeyTelemetryHooks       = "PYREVIT_TELEMETRYINCLUDEHOOKS";
@@ -74,7 +75,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
                 [KeyTelemetryState]     = config.TelemetryState,
                 [KeyTelemetryUTC]       = config.TelemetryUTCTimeStamps,
-                [KeyTelemetryFile]      = config.TelemetryFilePath,
+                [KeyTelemetryFileDir]   = config.TelemetryFilePath,
+                [KeyTelemetryFile]      = string.Empty,
                 [KeyTelemetryServer]    = config.TelemetryServerUrl,
                 [KeyTelemetryHooks]     = config.TelemetryIncludeHooks,
 
