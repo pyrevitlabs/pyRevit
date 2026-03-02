@@ -18,6 +18,7 @@ import os
 import os.path as op
 import shutil
 import math
+import uuid
 from collections import defaultdict, OrderedDict
 from natsort import natsorted
 
@@ -29,7 +30,7 @@ from pyrevit import forms
 from pyrevit import script
 
 from pyrevit.framework import System, Windows
-from System.Windows.Interop import WindowInteropHelper
+from System.Windows.Interop import WindowInteropHelper, HwndSource
 from System.Diagnostics import Process as SysProcess
 from System.Windows.Threading import DispatcherTimer
 from System import TimeSpan
@@ -121,13 +122,15 @@ def _patched_get_item_property_id_value(adc_svc, drive, item, prop_id):
     return None
 
 
-# Apply patches (only on .NET Framework where the bug manifests)
-if not HOST_APP.is_newer_than("2024"):
+# Apply patches (only on .NET Framework, only once per engine session)
+if not HOST_APP.is_newer_than("2024") \
+        and not getattr(adc, '_readonlylist_patched', False):
     logger.debug('Applying ADC ReadOnlyList patches for .NET Framework')
     adc._get_item = _patched_get_item
     adc._get_item_lockstatus = _patched_get_item_lockstatus
     adc._get_item_property_value = _patched_get_item_property_value
     adc._get_item_property_id_value = _patched_get_item_property_id_value
+    adc._readonlylist_patched = True
 
 
 # =============================================================================
@@ -160,8 +163,9 @@ class RevitActionHandler(UI.IExternalEventHandler):
                         window.Dispatcher.Invoke(
                             System.Action(
                                 lambda e=str(ex): forms.alert(e)))
-                except Exception:
-                    pass
+                except Exception as disp_ex:
+                    logger.debug(
+                        'Failed to display error in window | %s' % disp_ex)
             if callback:
                 try:
                     if window and window.IsLoaded:
@@ -477,6 +481,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
         except Exception as ex:
             logger.debug('WindowInteropHelper failed | %s' % ex)
 
+        # Hook WndProc to intercept WM_MOUSEACTIVATE — prevents the
+        # re-entrant activation crash when clicking between Revit and
+        # this modeless window.
+        self._hwnd_source = None
+        self._activation_pending = False
+        self.SourceInitialized += self._on_source_initialized
+
         self._kfile = None
         self._kfile_handler = None
         self._kfile_ext = None
@@ -606,6 +617,154 @@ class KeynoteManagerWindow(forms.WPFWindow):
         _ext_event.Raise()
 
     # =========================================================================
+    # MODELESS FOCUS MANAGEMENT (WndProc hook)
+    # =========================================================================
+
+    WM_MOUSEACTIVATE = 0x0021
+    MA_NOACTIVATE = 3
+
+    def _on_source_initialized(self, sender, args):
+        """Hook into the Win32 message loop once the HWND exists."""
+        try:
+            wih = WindowInteropHelper(self)
+            self._hwnd_source = HwndSource.FromHwnd(wih.Handle)
+            if self._hwnd_source:
+                self._hwnd_source.AddHook(self._wnd_proc)
+        except Exception as ex:
+            logger.debug('HwndSource hook failed | %s' % ex)
+
+    def _wnd_proc(self, hwnd, msg, wParam, lParam, handled):
+        """Win32 WndProc hook — intercept activation messages."""
+        if msg == self.WM_MOUSEACTIVATE:
+            handled.Value = True
+            if not self._activation_pending:
+                self._activation_pending = True
+                self.Dispatcher.BeginInvoke(
+                    System.Action(self._safe_activate),
+                    Windows.Threading.DispatcherPriority.Background)
+            return System.IntPtr(self.MA_NOACTIVATE)
+        return System.IntPtr.Zero
+
+    def _safe_activate(self):
+        """Deferred activation — runs when Revit's message loop is idle."""
+        self._activation_pending = False
+        try:
+            if self.IsLoaded and self.IsVisible:
+                self.Activate()
+        except Exception as ex:
+            logger.debug('Deferred activation failed | %s' % ex)
+
+    # =========================================================================
+    # TREE STATE PRESERVATION
+    # =========================================================================
+
+    def _get_scroll_viewer(self):
+        """Walk the visual tree to find the ScrollViewer inside TreeView."""
+        tv = self.keynotes_tv
+        if not tv or Windows.Media.VisualTreeHelper.GetChildrenCount(tv) == 0:
+            return None
+        try:
+            border = Windows.Media.VisualTreeHelper.GetChild(tv, 0)
+            if border and Windows.Media.VisualTreeHelper.GetChildrenCount(border) > 0:
+                sv = Windows.Media.VisualTreeHelper.GetChild(border, 0)
+                if isinstance(sv, Windows.Controls.ScrollViewer):
+                    return sv
+        except Exception:
+            pass
+        return self._find_child_of_type(tv, Windows.Controls.ScrollViewer)
+
+    def _find_child_of_type(self, parent, child_type):
+        """Recursively find first child of a given type in the visual tree."""
+        try:
+            count = Windows.Media.VisualTreeHelper.GetChildrenCount(parent)
+        except Exception:
+            return None
+        for i in range(count):
+            child = Windows.Media.VisualTreeHelper.GetChild(parent, i)
+            if isinstance(child, child_type):
+                return child
+            result = self._find_child_of_type(child, child_type)
+            if result:
+                return result
+        return None
+
+    def _get_scroll_offset(self):
+        """Get the current vertical scroll offset of the TreeView."""
+        sv = self._get_scroll_viewer()
+        if sv:
+            return sv.VerticalOffset
+        return None
+
+    def _set_scroll_offset(self, offset):
+        """Restore the vertical scroll offset after a tree rebuild."""
+        def _do_scroll():
+            sv = self._get_scroll_viewer()
+            if sv:
+                sv.ScrollToVerticalOffset(offset)
+        self.Dispatcher.BeginInvoke(
+            System.Action(_do_scroll),
+            Windows.Threading.DispatcherPriority.Loaded)
+
+    def _select_keynote_by_key(self, key):
+        """Find and select the node with the given key in the new tree."""
+        path = self._find_node_path(self.keynotes_tv.ItemsSource, key)
+        if not path:
+            return
+
+        def _do_select():
+            container = None
+            parent_container = self.keynotes_tv
+            for node in path:
+                if container and hasattr(container, 'IsExpanded'):
+                    container.IsExpanded = True
+                    container.UpdateLayout()
+                idx = None
+                items = parent_container.ItemContainerGenerator
+                src = parent_container.Items if hasattr(parent_container, 'Items') \
+                    else parent_container.ItemsSource
+                if src:
+                    for i, item in enumerate(src):
+                        if hasattr(item, 'key') and item.key == node.key:
+                            idx = i
+                            break
+                if idx is not None:
+                    container = items.ContainerFromIndex(idx)
+                else:
+                    container = items.ContainerFromItem(node)
+                if container is None:
+                    if hasattr(parent_container, 'UpdateLayout'):
+                        parent_container.UpdateLayout()
+                    if idx is not None:
+                        container = items.ContainerFromIndex(idx)
+                    else:
+                        container = items.ContainerFromItem(node)
+                if container is None:
+                    return
+                parent_container = container
+
+            if container and hasattr(container, 'IsSelected'):
+                container.IsSelected = True
+                container.BringIntoView()
+
+        self.Dispatcher.BeginInvoke(
+            System.Action(_do_select),
+            Windows.Threading.DispatcherPriority.Loaded)
+
+    def _find_node_path(self, roots, target_key):
+        """Return the path [root, ..., target] from roots to the node
+        matching target_key, or None if not found."""
+        if not roots:
+            return None
+        for root in roots:
+            if root.key == target_key:
+                return [root]
+            if root.children:
+                sub = self._find_node_path(root.children, target_key)
+                if sub:
+                    return [root] + sub
+        return None
+
+    # =========================================================================
     # USED KEYNOTE TRACKING
     # =========================================================================
 
@@ -613,8 +772,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
         used = defaultdict(list)
         try:
             for kn in revit.query.get_used_keynotes(doc=revit.doc):
-                key = kn.Parameter[DB.BuiltInParameter.KEY_VALUE].AsString()
-                used[key].append(kn.Id)
+                if kn is None:
+                    continue
+                p = kn.Parameter[DB.BuiltInParameter.KEY_VALUE]
+                if p:
+                    key = p.AsString()
+                    if key:
+                        used[key].append(kn.Id)
         except Exception as ex:
             logger.debug('get_used_keynotes failed | %s' % ex)
         return used
@@ -774,7 +938,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
         except Exception:
             raise Exception("Backup failed.")
         try:
-            open(self._kfile, 'w').close()
+            with open(self._kfile, 'w'):
+                pass
         except Exception:
             raise Exception("File preparation failed.")
         try:
@@ -839,6 +1004,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     def _update_full_tree(self, fast_filter=False):
         """Refresh the single unified tree, applying search filter."""
+        # Save current state before rebuild
+        saved_key = None
+        saved_scroll = None
+        sel = self.selected_keynote
+        if sel:
+            saved_key = sel.key
+        saved_scroll = self._get_scroll_offset()
+
         keynote_filter = self.search_term if self.search_term else None
 
         # Update view-only filter keys
@@ -872,6 +1045,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self.emptyStateMsg.Visibility = Windows.Visibility.Collapsed
         else:
             self.emptyStateMsg.Visibility = Windows.Visibility.Visible
+
+        # Restore state after rebuild
+        if saved_key:
+            self._select_keynote_by_key(saved_key)
+        if saved_scroll is not None:
+            self._set_scroll_offset(saved_scroll)
 
     # =========================================================================
     # BUTTON STATE
@@ -1046,7 +1225,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         # Swap keys
         sel_key = sel.key
         other_key = other.key
-        temp_key = "__swap_temp__"
+        temp_key = "__swap_{}__".format(uuid.uuid4().hex[:8])
 
         try:
             if is_cat:
@@ -1090,7 +1269,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     def _swap_keynote_refs(self, key_a, key_b):
         """Swap Revit element references between two keynote keys."""
-        temp = "__swap_ref__"
+        temp = "__ref_{}__".format(uuid.uuid4().hex[:8])
         with revit.Transaction("Reorder Keynotes"):
             for kid in self.get_used_keynote_elements().get(key_a, []):
                 kel = revit.doc.GetElement(kid)
@@ -1592,30 +1771,39 @@ class KeynoteManagerWindow(forms.WPFWindow):
     # =========================================================================
 
     def show_keynote(self, sender, args):
+        """Show keynote usage in pyRevit output — keeps the window open."""
         sel = self.selected_keynote
         if not sel:
             return
         key = sel.key
         used_snapshot = dict(self._used_keysdict)
-        self.Close()
+        kids = used_snapshot.get(key, [])
+        if not kids:
+            self.statusLeft.Text = u"Keynote '{}' — not placed in model".format(key)
+            return
         def _do():
-            kids = used_snapshot.get(key, [])
             for kid in kids:
                 source = viewname = ''
                 kel = revit.doc.GetElement(kid)
+                if kel is None:
+                    continue
                 ehist = revit.query.get_history(kel)
-                if kel:
-                    source = kel.Parameter[
-                        DB.BuiltInParameter.KEY_SOURCE_PARAM].AsString()
-                    vel = revit.doc.GetElement(kel.OwnerViewId)
-                    if vel:
-                        viewname = revit.query.get_name(vel)
+                p = kel.Parameter[DB.BuiltInParameter.KEY_SOURCE_PARAM]
+                if p:
+                    source = p.AsString()
+                vel = revit.doc.GetElement(kel.OwnerViewId)
+                if vel:
+                    viewname = revit.query.get_name(vel)
                 report = "Keynote: {} | Source: {} | View: {}".format(
                     output.linkify(kid), source, viewname)
                 if ehist:
                     report += " | Last edit: %s" % ehist.last_changed_by
                 print(report)
-        self._revit_run(_do)
+        def _update_status():
+            self.statusLeft.Text = \
+                u"Keynote '{}' — {} placements shown in output".format(
+                    key, len(kids))
+        self._revit_run(_do, callback=_update_status)
 
     def place_keynote(self, sender, args):
         sel = self.selected_keynote
@@ -1655,8 +1843,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self._needs_update = True
             try:
                 self._used_keysdict = self.get_used_keynote_elements()
-            except Exception:
-                pass
+            except Exception as ex:
+                logger.debug('Refresh used keys failed | %s' % ex)
             self._update_full_tree()
             self._update_status_bar()
         self._revit_run(_set_file, callback=_reload)
@@ -1742,6 +1930,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 return
 
         # Proceed with cleanup
+        # Remove WndProc hook to prevent leaks
+        if self._hwnd_source:
+            try:
+                self._hwnd_source.RemoveHook(self._wnd_proc)
+            except Exception:
+                pass
+            self._hwnd_source = None
+
         if self._kfile_handler == 'adc':
             try:
                 adc.unlock_file(self._kfile_ext)
