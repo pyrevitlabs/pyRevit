@@ -432,14 +432,8 @@ namespace pyRevitExtensionParser
             {
                 extensionTemplates["author"] = parsedBundle.Author;
             }
-<<<<<<< HEAD
-            
             // Read extension.json for additional templates and rocket_mode_compatible
             bool rocketModeCompatible = false;
-=======
-
-            // Read extension.json for additional templates
->>>>>>> e16430e8aeb8682d32a482634cd7a30273655e28
             var extensionJsonPath = Path.Combine(extDir, "extension.json");
             if (FileExists(extensionJsonPath))
             {
