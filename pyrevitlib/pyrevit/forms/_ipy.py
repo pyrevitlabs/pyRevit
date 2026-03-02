@@ -67,6 +67,7 @@ WPF_VISIBLE = framework.Windows.Visibility.Visible
 
 XAML_FILES_DIR = op.dirname(__file__)
 
+DOCKABLE_PANEL_REGISTRY = {}
 
 ParamDef = namedtuple("ParamDef", ["name", "istype", "definition", "isreadonly", "isunit", "storagetype"])
 """Parameter definition tuple.
@@ -199,10 +200,11 @@ class WPFWindow(framework.Windows.Window):
         self.window_id = coreutils.new_uuid()
 
         if not literal_string:
-            wpf.LoadComponent(self, self._determine_xaml(xaml_source))
+            xaml = self._determine_xaml(xaml_source)
             if getattr(self, '_pending_resource_merge', None):
                 self.merge_resource_dict(self._pending_resource_merge)
                 self._pending_resource_merge = None
+            wpf.LoadComponent(self, xaml)
         else:
             wpf.LoadComponent(self, framework.StringReader(xaml_source))
 
@@ -241,7 +243,6 @@ class WPFWindow(framework.Windows.Window):
             return english_xaml_file
 
         # otherwise look for .ResourceDictionary files and merge after load
-        # (must merge after LoadComponent so XAML does not replace Resources)
         if os.path.isfile(localized_xaml_resfile):
             self._pending_resource_merge = localized_xaml_resfile
         elif os.path.isfile(english_xaml_resfile):
@@ -435,7 +436,7 @@ class WPFWindow(framework.Windows.Window):
 
     @staticmethod
     def disable_element(*wpf_elements):
-        """Enable elements.
+        """Disable elements.
 
         Args:
             *wpf_elements (list[UIElement]): WPF framework elements to be enabled
@@ -461,24 +462,48 @@ class WPFWindow(framework.Windows.Window):
 class WPFPanel(framework.Windows.Controls.Page):
     r"""WPF panel base class for all pyRevit dockable panels.
 
-    panel_id (str) must be set on the type to dockable panel uuid
-    panel_source (str): xaml source filepath
+    panel_id (str) must be set on the type to dockable panel uuid.
+    panel_source (str): xaml source filepath.
+    panel_title (str): title shown in the panel chrome.
+
+    Optional class attributes:
+        initial_state (UI.DockablePaneState):
+            initial docking position. If None, Revit picks a default.
+        editor_interaction (UI.EditorInteractionType):
+            how the panel interacts with the active editor.
+        contextual_help (UI.ContextualHelp):
+            F1 help associated with the pane.
 
     Examples:
-        ```python
+```python
         from pyrevit import forms
+        import Autodesk.Revit.UI as UI
+
+        state = UI.DockablePaneState()
+        state.DockPosition = UI.DockPosition.Right
+        state.MinimumWidth = 300
+
         class MyPanel(forms.WPFPanel):
             panel_id = "181e05a4-28f6-4311-8a9f-d2aa528c8755"
             panel_source = "MyPanel.xaml"
+            panel_title = "My Panel"
+            initial_state = state
+            editor_interaction = UI.EditorInteractionType.KeepAlive
 
         forms.register_dockable_panel(MyPanel)
-        # then from the button that needs to open the panel
-        forms.open_dockable_panel("181e05a4-28f6-4311-8a9f-d2aa528c8755")
-        ```
+        # open from any button
+        forms.open_dockable_panel(MyPanel)
+        # retrieve live instance from anywhere
+        panel = forms.get_dockable_panel(MyPanel)
+```
     """
 
     panel_id = None
     panel_source = None
+    panel_title = None
+    initial_state = None
+    editor_interaction = None
+    contextual_help = None
 
     def __init__(self):
         """Initialize WPF panel and resources."""
@@ -486,6 +511,8 @@ class WPFPanel(framework.Windows.Controls.Page):
             raise PyRevitException('"panel_id" property is not set')
         if not self.panel_source:
             raise PyRevitException('"panel_source" property is not set')
+        if not self.panel_title:
+            raise PyRevitException('"panel_title" property is not set')
 
         if not op.exists(self.panel_source):
             wpf.LoadComponent(
@@ -494,7 +521,6 @@ class WPFPanel(framework.Windows.Controls.Page):
         else:
             wpf.LoadComponent(self, self.panel_source)
 
-        # set properties
         self.thread_id = framework.get_current_thread_id()
         WPFWindow.setup_resources(self)
 
@@ -512,9 +538,9 @@ class WPFPanel(framework.Windows.Controls.Page):
         """Collapse elements.
 
         Args:
-            *wpf_elements (list[UIElement]): WPF framework elements to be collaped
+            *wpf_elements (list[UIElement]): WPF framework elements to be collapsed
         """
-        WPFPanel.hide_element(*wpf_elements)
+        WPFWindow.hide_element(*wpf_elements)
 
     @staticmethod
     def show_element(*wpf_elements):
@@ -523,7 +549,7 @@ class WPFPanel(framework.Windows.Controls.Page):
         Args:
             *wpf_elements (list[UIElement]): WPF framework elements to be set to visible.
         """
-        WPFPanel.show_element(*wpf_elements)
+        WPFWindow.show_element(*wpf_elements)
 
     @staticmethod
     def toggle_element(*wpf_elements):
@@ -532,25 +558,25 @@ class WPFPanel(framework.Windows.Controls.Page):
         Args:
             *wpf_elements (list[UIElement]): WPF framework elements to be toggled.
         """
-        WPFPanel.toggle_element(*wpf_elements)
+        WPFWindow.toggle_element(*wpf_elements)
 
     @staticmethod
     def disable_element(*wpf_elements):
-        """Enable elements.
+        """Disable elements.
 
         Args:
-            *wpf_elements (list[UIElement]): WPF framework elements to be enabled
+            *wpf_elements (list[UIElement]): WPF framework elements to be disabled
         """
-        WPFPanel.disable_element(*wpf_elements)
+        WPFWindow.disable_element(*wpf_elements)
 
     @staticmethod
     def enable_element(*wpf_elements):
         """Enable elements.
 
         Args:
-            *wpf_elements (list): WPF framework elements to be enabled
+            *wpf_elements (list[UIElement]): WPF framework elements to be enabled
         """
-        WPFPanel.enable_element(*wpf_elements)
+        WPFWindow.enable_element(*wpf_elements)
 
     def handle_url_click(self, sender, args):  # pylint: disable=unused-argument
         """Callback for handling click on package website url."""
@@ -558,7 +584,7 @@ class WPFPanel(framework.Windows.Controls.Page):
 
 
 class _WPFPanelProvider(UI.IDockablePaneProvider):
-    """Internal Panel provider for panels."""
+    """Internal panel provider for dockable panels."""
 
     def __init__(self, panel_type, default_visible=True):
         self._panel_type = panel_type
@@ -566,11 +592,18 @@ class _WPFPanelProvider(UI.IDockablePaneProvider):
         self.panel = self._panel_type()
 
     def SetupDockablePane(self, data):
-        """Setup forms.WPFPanel set on this instance."""
-        # TODO: need to implement panel data
-        # https://apidocs.co/apps/revit/2021.1/98157ec2-ab26-6ab7-2933-d1b4160ba2b8.htm
+        """Configure DockablePaneProviderData from the panel type's class attributes."""
         data.FrameworkElement = self.panel
         data.VisibleByDefault = self._default_visible
+
+        if self._panel_type.initial_state is not None:
+            data.InitialState = self._panel_type.initial_state
+
+        if self._panel_type.editor_interaction is not None:
+            data.EditorInteraction = self._panel_type.editor_interaction
+
+        if self._panel_type.contextual_help is not None:
+            data.ContextualHelp = self._panel_type.contextual_help
 
 
 def is_registered_dockable_panel(panel_type):
@@ -581,16 +614,19 @@ def is_registered_dockable_panel(panel_type):
     """
     panel_uuid = coreutils.Guid.Parse(panel_type.panel_id)
     dockable_panel_id = UI.DockablePaneId(panel_uuid)
-    return UI.DockablePane.PaneExists(dockable_panel_id)
+    return UI.DockablePane.PaneIsRegistered(dockable_panel_id)
 
 
 def register_dockable_panel(panel_type, default_visible=True):
-    """Register dockable panel.
+    """Register dockable panel and store instance in the panel registry.
 
     Args:
         panel_type (forms.WPFPanel): dockable panel type
         default_visible (bool, optional):
             whether panel should be visible by default
+
+    Returns:
+        forms.WPFPanel: the live panel instance
     """
     if not issubclass(panel_type, WPFPanel):
         raise PyRevitException("Dockable pane must be a subclass of forms.WPFPanel")
@@ -602,14 +638,31 @@ def register_dockable_panel(panel_type, default_visible=True):
         dockable_panel_id, panel_type.panel_title, panel_provider
     )
 
+    DOCKABLE_PANEL_REGISTRY[panel_type.panel_id] = panel_provider.panel
     return panel_provider.panel
+
+
+def get_dockable_panel(panel_type_or_id):
+    """Retrieve the live panel instance from the registry.
+
+    Args:
+        panel_type_or_id (forms.WPFPanel | str): panel type or panel id string
+
+    Returns:
+        forms.WPFPanel: the live panel instance, or None if not registered
+    """
+    if isinstance(panel_type_or_id, str):
+        return DOCKABLE_PANEL_REGISTRY.get(panel_type_or_id, None)
+    elif isinstance(panel_type_or_id, type) and issubclass(panel_type_or_id, WPFPanel):
+        return DOCKABLE_PANEL_REGISTRY.get(panel_type_or_id.panel_id, None)
+    raise PyRevitException("Given type is not a forms.WPFPanel or panel id string")
 
 
 def open_dockable_panel(panel_type_or_id):
     """Open previously registered dockable panel.
 
     Args:
-        panel_type_or_id (forms.WPFPanel, str): panel type or id
+        panel_type_or_id (forms.WPFPanel | str): panel type or id
     """
     toggle_dockable_panel(panel_type_or_id, True)
 
@@ -618,7 +671,7 @@ def close_dockable_panel(panel_type_or_id):
     """Close previously registered dockable panel.
 
     Args:
-        panel_type_or_id (forms.WPFPanel, str): panel type or id
+        panel_type_or_id (forms.WPFPanel | str): panel type or id
     """
     toggle_dockable_panel(panel_type_or_id, False)
 
@@ -1987,7 +2040,7 @@ class SearchPrompt(WPFWindow):
             else:
                 if cur_res.lower().startswith(input_term):
                     self.directmatch_tb.Text = (
-                        self.search_input + cur_res[len(input_term) :]
+                        self.search_input + cur_res[len(input_term):]
                     )
                     mlogger.debug("directmatch_tb.Text: %s", self.directmatch_tb.Text)
                 else:

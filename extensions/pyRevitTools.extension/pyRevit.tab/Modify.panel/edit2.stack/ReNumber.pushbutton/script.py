@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """ReNumber numbered elements in order of selection."""
 #pylint: disable=import-error,invalid-name,broad-except
 from collections import OrderedDict
@@ -6,7 +7,7 @@ from pyrevit.coreutils import applocales
 from pyrevit import revit, DB
 from pyrevit import coreutils
 from pyrevit import forms
-from pyrevit import script
+from pyrevit import script, EXEC_PARAMS
 
 doc = revit.doc
 uidoc = revit.uidoc
@@ -23,6 +24,9 @@ ALLOWED_VIEW_CLASSES = (
     DB.ViewSection,
     DB.ViewSheet,
 )
+DUPE_MODE_SWEEP = "Sweep (renumber displaced)"  # default behaviour
+DUPE_MODE_ALERT = "Alert (warn and skip)"
+DUPE_MODE_SKIP = "Skip (already numbered)"
 
 
 class RNOpts(object):
@@ -146,7 +150,7 @@ def increment(number):
 
 
 def get_number(target_element):
-    """Get target elemnet number (might be from Number or other fields)"""
+    """Get target element number (might be from Number or other fields)"""
     if hasattr(target_element, "Number"):
         return target_element.Number
 
@@ -162,7 +166,7 @@ def get_number(target_element):
 
 
 def set_number(target_element, new_number):
-    """Set target elemnet number (might be at Number or other fields)"""
+    """Set target element number (might be at Number or other fields)"""
     if hasattr(target_element, "Number"):
         target_element.Number = new_number
         return
@@ -227,34 +231,52 @@ def find_replacement_number(existing_number, elements_dict):
     return replaced_number
 
 
-def renumber_element(target_views, target_element, new_number, elements_dict):
-    """Renumber given element."""
-    # check if elements with same number exists
+def renumber_element(target_views, target_element, new_number,
+                     elements_dict, dupe_mode=DUPE_MODE_SWEEP):
+    """Renumber given element, respecting the chosen duplicate-handling mode."""
+
+    # ── duplicate check ───────────────────────────────────────────────────────
     if new_number in elements_dict:
-        element_with_same_number = \
-            revit.doc.GetElement(elements_dict[new_number])
-        # make sure its not the same as target_element
+        element_with_same_number = revit.doc.GetElement(elements_dict[new_number])
+
         if element_with_same_number \
                 and element_with_same_number.Id != target_element.Id:
-            # replace its number with something else that is not conflicting
-            current_number = get_number(element_with_same_number)
-            replaced_number = \
-                find_replacement_number(current_number, elements_dict)
-            set_number(element_with_same_number, replaced_number)
-            # record the element with its new number for later renumber jobs
-            elements_dict[replaced_number] = element_with_same_number.Id
 
-    # check if target element is already listed
-    # remove the existing number entry since we are renumbering
+            if dupe_mode == DUPE_MODE_ALERT:
+                forms.alert(
+                    "Duplicate number \"{}\" found.\n"
+                    "Element skipped.".format(new_number),
+                    title="Duplicate Element Found"
+                )
+                return   # abort – do not renumber this element
+
+            elif dupe_mode == DUPE_MODE_SKIP:
+                # silently skip if the target itself is already numbered
+                # (i.e. it has *any* number set – user probably tagged it already)
+                if get_number(target_element):
+                    return
+                # if target has no number yet, fall through to sweep behaviour
+                # so it still gets a free slot
+                current_number = get_number(element_with_same_number)
+                replaced_number = find_replacement_number(current_number, elements_dict)
+                set_number(element_with_same_number, replaced_number)
+                elements_dict[replaced_number] = element_with_same_number.Id
+
+            else:  # DUPE_MODE_SWEEP – original behaviour
+                current_number = get_number(element_with_same_number)
+                replaced_number = find_replacement_number(current_number, elements_dict)
+                set_number(element_with_same_number, replaced_number)
+                elements_dict[replaced_number] = element_with_same_number.Id
+
+    # ── remove stale entry for this element ───────────────────────────────────
     existing_number = get_number(target_element)
     if existing_number in elements_dict:
         elements_dict.pop(existing_number)
 
-    # renumber the given element
+    # ── apply the new number ──────────────────────────────────────────────────
     logger.debug('applying %s', new_number)
     set_number(target_element, new_number)
     elements_dict[new_number] = target_element.Id
-    # mark the element visually to renumbered
     mark_element_as_renumbered(target_views, target_element)
 
 
@@ -272,42 +294,34 @@ def _unmark_collected(category_name, target_views, renumbered_element_ids):
         unmark_renamed_elements(target_views, renumbered_element_ids)
 
 
-def pick_and_renumber(rnopts, starting_index, pb):
+def pick_and_renumber(rnopts, starting_index, pb, dupe_mode=DUPE_MODE_SWEEP):
     """Main renumbering routine for elements of given category."""
-    # all actions under one transaction
     if rnopts.bicat != BIC.OST_Viewports:
         open_views = get_open_views()
     else:
         open_views = [revit.active_view]
     with revit.TransactionGroup("Renumber {}".format(rnopts.name)):
-        # make sure target elements are easily selectable
         with EasilySelectableElements(open_views, rnopts.bicat):
             index = starting_index
-            # collect existing elements number:id data
             existing_elements_data = get_elements_dict(open_views, rnopts.bicat)
-            # dict to collect renumbered elements
             renumbered_element_ids = {}
-            # ask user to pick elements and renumber them
             for picked_element in revit.get_picked_elements_by_category(
                     rnopts.bicat,
                     message="Select {} in order".format(rnopts.name.lower())):
-                # need nested transactions to push revit to update view
-                # on each renumber task
                 try:
                     pb.update_progress(int(index), int(starting_index))
                 except (ValueError, TypeError):
                     pb.update_progress(0, 0)
                 with revit.Transaction("Renumber {}".format(rnopts.name)):
-                    # record the renumbered element
                     if picked_element.Id not in renumbered_element_ids:
                         renumbered_element_ids[picked_element.Id] = {}
                         for v in open_views:
-                            renumbered_element_ids[picked_element.Id][v.Id] = v.GetElementOverrides(picked_element.Id)
-                    # actual renumber task
+                            renumbered_element_ids[picked_element.Id][v.Id] = \
+                                v.GetElementOverrides(picked_element.Id)
                     renumber_element(open_views, picked_element,
-                                     index, existing_elements_data)
+                                     index, existing_elements_data,
+                                     dupe_mode=dupe_mode)
                 index = increment(index)
-            # unmark all renumbered elements
             _unmark_collected(rnopts.name, open_views, renumbered_element_ids)
 
 
@@ -428,7 +442,19 @@ if isinstance(revit.active_view, ALLOWED_VIEW_CLASSES):
             width=400
         )
 
+
     if selected_option_name:
+        dupe_mode = DUPE_MODE_SWEEP   # normal click → original behaviour
+        if EXEC_PARAMS.config_mode:
+            chosen = forms.CommandSwitchWindow.show(
+                [DUPE_MODE_ALERT, DUPE_MODE_SKIP, DUPE_MODE_SWEEP],
+                message="How should duplicate numbers be handled?",
+                title="Advanced: Duplicate Handling",
+                width=420
+            )
+            if not chosen:
+                script.exit()
+            dupe_mode = chosen
         selected_option = options_dict[selected_option_name]
         if selected_option.by_bicat:
             # if renumber doors by room
@@ -438,6 +464,10 @@ if isinstance(revit.active_view, ALLOWED_VIEW_CLASSES):
                     title="Pick Pairs of Door and Room. ESCAPE to end."
                 ):
                     door_by_room_renumber(selected_option)
+                    # NOTE: door_by_room_renumber calls renumber_element internally.
+                    # To fully support dupe_mode there too, pass it through
+                    # door_by_room_renumber(selected_option, dupe_mode=dupe_mode)
+                    # and add the same dupe_mode param to that function.
 
         else:
             starting_number = ask_for_starting_number(selected_option.name)
@@ -456,9 +486,9 @@ if isinstance(revit.active_view, ALLOWED_VIEW_CLASSES):
                         )
                     ) as pb:
                         pb.update_progress(_start_int, _start_int)
-                        pick_and_renumber(selected_option, starting_number, pb)
+                        pick_and_renumber(selected_option, starting_number, pb, dupe_mode=dupe_mode)
                 else:
                     with forms.WarningBar(
                         title="Pick {} One by One. ESCAPE to end.".format(selected_option.name)
                     ):
-                        pick_and_renumber(selected_option, starting_number, _NoOpPB())
+                        pick_and_renumber(selected_option, starting_number, _NoOpPB(), dupe_mode=dupe_mode)
