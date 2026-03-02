@@ -95,6 +95,26 @@ namespace pyRevitExtensionParser
         }
 
         /// <summary>
+        /// Gets or sets whether Rocket Mode is enabled.
+        /// </summary>
+        /// <remarks>
+        /// When true, pyRevit skips non-critical startup work (e.g. icon pre-loading)
+        /// to reduce session load time. Defaults to false.
+        /// </remarks>
+        public bool RocketMode
+        {
+            get
+            {
+                var value = _ini.IniReadValue("core", "rocketmode");
+                return bool.TryParse(value, out var result) && result;
+            }
+            set
+            {
+                _ini.IniWriteValue("core", "rocketmode", value ? TrueString : FalseString);
+            }
+        }
+
+        /// <summary>
         /// Gets or sets whether to load beta/experimental commands.
         /// </summary>
         /// <remarks>

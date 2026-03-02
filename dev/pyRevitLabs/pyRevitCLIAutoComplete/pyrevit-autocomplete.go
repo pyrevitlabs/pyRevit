@@ -34,9 +34,19 @@ func main() {
 			"env": complete.Command{
 				Sub: complete.Commands{},
 				Flags: complete.Flags{
+<<<<<<< HEAD
 					"--log":  complete.PredictNothing,
 					"--json": complete.PredictNothing,
 					"--help": complete.PredictNothing,
+=======
+<<<<<<< HEAD
+=======
+					"--json": complete.PredictNothing,
+>>>>>>> e16430e8aeb8682d32a482634cd7a30273655e28
+					"--help": complete.PredictNothing,
+					"--log":  complete.PredictNothing,
+					"--json": complete.PredictNothing,
+>>>>>>> 31ab6878c4dc2f642a734320882ea92867626f4f
 				},
 			},
 			"update": complete.Command{
@@ -48,12 +58,30 @@ func main() {
 			"clone": complete.Command{
 				Sub: complete.Commands{},
 				Flags: complete.Flags{
+<<<<<<< HEAD
 					"--log":      complete.PredictNothing,
 					"--help":     complete.PredictNothing,
 					"--token":    complete.PredictNothing,
 					"--dest":     complete.PredictNothing,
 					"--branch":   complete.PredictNothing,
 					"--password": complete.PredictNothing,
+=======
+<<<<<<< HEAD
+					"--password": complete.PredictNothing,
+					"--dest":     complete.PredictNothing,
+					"--token":    complete.PredictNothing,
+					"--help":     complete.PredictNothing,
+=======
+					"--token":    complete.PredictNothing,
+					"--dest":     complete.PredictNothing,
+					"--help":     complete.PredictNothing,
+					"--log":      complete.PredictNothing,
+					"--password": complete.PredictNothing,
+					"--image":    complete.PredictNothing,
+>>>>>>> e16430e8aeb8682d32a482634cd7a30273655e28
+					"--branch":   complete.PredictNothing,
+					"--log":      complete.PredictNothing,
+>>>>>>> 31ab6878c4dc2f642a734320882ea92867626f4f
 					"--image":    complete.PredictNothing,
 				},
 			},
@@ -126,9 +154,22 @@ func main() {
 					"update": complete.Command{
 						Sub: complete.Commands{},
 						Flags: complete.Flags{
+<<<<<<< HEAD
+							"--log":      complete.PredictNothing,
+=======
+<<<<<<< HEAD
+>>>>>>> 31ab6878c4dc2f642a734320882ea92867626f4f
+							"--password": complete.PredictNothing,
+							"--log":      complete.PredictNothing,
+							"--token":    complete.PredictNothing,
+=======
+							"--token":    complete.PredictNothing,
+<<<<<<< HEAD
+=======
 							"--log":      complete.PredictNothing,
 							"--password": complete.PredictNothing,
-							"--token":    complete.PredictNothing,
+>>>>>>> e16430e8aeb8682d32a482634cd7a30273655e28
+>>>>>>> 31ab6878c4dc2f642a734320882ea92867626f4f
 						},
 					},
 					"deployments": complete.Command{
@@ -149,17 +190,42 @@ func main() {
 					"default": complete.Command{
 						Sub: complete.Commands{},
 						Flags: complete.Flags{
+<<<<<<< HEAD
 							"--allusers":  complete.PredictNothing,
 							"--attached":  complete.PredictNothing,
 							"--installed": complete.PredictNothing,
+=======
+<<<<<<< HEAD
+							"--allusers":  complete.PredictNothing,
+							"--attached":  complete.PredictNothing,
+							"--installed": complete.PredictNothing,
+=======
+							"--installed": complete.PredictNothing,
+							"--attached":  complete.PredictNothing,
+							"--allusers":  complete.PredictNothing,
+>>>>>>> e16430e8aeb8682d32a482634cd7a30273655e28
+>>>>>>> 31ab6878c4dc2f642a734320882ea92867626f4f
 						},
 					},
 				},
 				Flags: complete.Flags{
+<<<<<<< HEAD
 					"--allusers":  complete.PredictNothing,
 					"--attached":  complete.PredictNothing,
 					"--installed": complete.PredictNothing,
 					"--help":      complete.PredictNothing,
+=======
+<<<<<<< HEAD
+					"--allusers":  complete.PredictNothing,
+					"--attached":  complete.PredictNothing,
+					"--help":      complete.PredictNothing,
+=======
+>>>>>>> e16430e8aeb8682d32a482634cd7a30273655e28
+					"--installed": complete.PredictNothing,
+					"--attached":  complete.PredictNothing,
+					"--help":      complete.PredictNothing,
+					"--allusers":  complete.PredictNothing,
+>>>>>>> 31ab6878c4dc2f642a734320882ea92867626f4f
 				},
 			},
 			"attached": complete.Command{
@@ -186,28 +252,72 @@ func main() {
 					"ui": complete.Command{
 						Sub: complete.Commands{},
 						Flags: complete.Flags{
+<<<<<<< HEAD
 							"--log":      complete.PredictNothing,
 							"--password": complete.PredictNothing,
 							"--token":    complete.PredictNothing,
 							"--dest":     complete.PredictNothing,
+=======
+<<<<<<< HEAD
+							"--password": complete.PredictNothing,
+							"--log":      complete.PredictNothing,
+							"--dest":     complete.PredictNothing,
+							"--token":    complete.PredictNothing,
+=======
+							"--token":    complete.PredictNothing,
+							"--password": complete.PredictNothing,
+							"--log":      complete.PredictNothing,
+							"--dest":     complete.PredictNothing,
+>>>>>>> e16430e8aeb8682d32a482634cd7a30273655e28
+>>>>>>> 31ab6878c4dc2f642a734320882ea92867626f4f
 						},
 					},
 					"lib": complete.Command{
 						Sub: complete.Commands{},
 						Flags: complete.Flags{
+<<<<<<< HEAD
 							"--log":      complete.PredictNothing,
 							"--password": complete.PredictNothing,
 							"--token":    complete.PredictNothing,
 							"--dest":     complete.PredictNothing,
+=======
+<<<<<<< HEAD
+							"--password": complete.PredictNothing,
+							"--log":      complete.PredictNothing,
+							"--dest":     complete.PredictNothing,
+							"--token":    complete.PredictNothing,
+=======
+							"--token":    complete.PredictNothing,
+							"--password": complete.PredictNothing,
+							"--log":      complete.PredictNothing,
+							"--dest":     complete.PredictNothing,
+>>>>>>> e16430e8aeb8682d32a482634cd7a30273655e28
+>>>>>>> 31ab6878c4dc2f642a734320882ea92867626f4f
 						},
 					},
 				},
 				Flags: complete.Flags{
+<<<<<<< HEAD
 					"--log":      complete.PredictNothing,
 					"--token":    complete.PredictNothing,
 					"--help":     complete.PredictNothing,
 					"--dest":     complete.PredictNothing,
 					"--password": complete.PredictNothing,
+=======
+<<<<<<< HEAD
+					"--password": complete.PredictNothing,
+					"--dest":     complete.PredictNothing,
+					"--token":    complete.PredictNothing,
+					"--help":     complete.PredictNothing,
+					"--log":      complete.PredictNothing,
+=======
+					"--token":    complete.PredictNothing,
+					"--dest":     complete.PredictNothing,
+					"--help":     complete.PredictNothing,
+					"--log":      complete.PredictNothing,
+					"--password": complete.PredictNothing,
+>>>>>>> e16430e8aeb8682d32a482634cd7a30273655e28
+>>>>>>> 31ab6878c4dc2f642a734320882ea92867626f4f
 				},
 			},
 			"extensions": complete.Command{
@@ -298,9 +408,22 @@ func main() {
 					"update": complete.Command{
 						Sub: complete.Commands{},
 						Flags: complete.Flags{
+<<<<<<< HEAD
+							"--log":      complete.PredictNothing,
+=======
+<<<<<<< HEAD
+>>>>>>> 31ab6878c4dc2f642a734320882ea92867626f4f
+							"--password": complete.PredictNothing,
+							"--log":      complete.PredictNothing,
+							"--token":    complete.PredictNothing,
+=======
+							"--token":    complete.PredictNothing,
+<<<<<<< HEAD
+=======
 							"--log":      complete.PredictNothing,
 							"--password": complete.PredictNothing,
-							"--token":    complete.PredictNothing,
+>>>>>>> e16430e8aeb8682d32a482634cd7a30273655e28
+>>>>>>> 31ab6878c4dc2f642a734320882ea92867626f4f
 						},
 					},
 				},
@@ -366,16 +489,28 @@ func main() {
 					"fileinfo": complete.Command{
 						Sub: complete.Commands{},
 						Flags: complete.Flags{
-							"--csv": complete.PredictNothing,
-							"--rte": complete.PredictNothing,
 							"--rft": complete.PredictNothing,
+							"--rte": complete.PredictNothing,
+							"--csv": complete.PredictNothing,
 						},
 					},
 				},
 				Flags: complete.Flags{
+<<<<<<< HEAD
 					"--supported": complete.PredictNothing,
 					"--installed": complete.PredictNothing,
 					"--help":      complete.PredictNothing,
+=======
+<<<<<<< HEAD
+					"--supported": complete.PredictNothing,
+					"--help":      complete.PredictNothing,
+					"--installed": complete.PredictNothing,
+=======
+					"--installed": complete.PredictNothing,
+					"--help":      complete.PredictNothing,
+					"--supported": complete.PredictNothing,
+>>>>>>> e16430e8aeb8682d32a482634cd7a30273655e28
+>>>>>>> 31ab6878c4dc2f642a734320882ea92867626f4f
 				},
 			},
 			"run": complete.Command{
@@ -386,12 +521,26 @@ func main() {
 					},
 				},
 				Flags: complete.Flags{
+<<<<<<< HEAD
 					"--import":       complete.PredictNothing,
 					"--help":         complete.PredictNothing,
 					"--allowdialogs": complete.PredictNothing,
 					"--purge":        complete.PredictNothing,
+=======
+>>>>>>> 31ab6878c4dc2f642a734320882ea92867626f4f
 					"--models":       complete.PredictNothing,
+					"--help":         complete.PredictNothing,
 					"--revit":        complete.PredictNothing,
+<<<<<<< HEAD
+					"--allowdialogs": complete.PredictNothing,
+					"--purge":        complete.PredictNothing,
+					"--import":       complete.PredictNothing,
+=======
+					"--import":       complete.PredictNothing,
+					"--help":         complete.PredictNothing,
+					"--purge":        complete.PredictNothing,
+					"--allowdialogs": complete.PredictNothing,
+>>>>>>> e16430e8aeb8682d32a482634cd7a30273655e28
 				},
 			},
 			"caches": complete.Command{
@@ -853,11 +1002,27 @@ func main() {
 			},
 		},
 		Flags: complete.Flags{
+<<<<<<< HEAD
 			"--verbose": complete.PredictNothing,
 			"--usage":   complete.PredictNothing,
 			"--help":    complete.PredictNothing,
 			"--version": complete.PredictNothing,
 			"--debug":   complete.PredictNothing,
+=======
+<<<<<<< HEAD
+			"--version": complete.PredictNothing,
+			"--verbose": complete.PredictNothing,
+			"--help":    complete.PredictNothing,
+			"--usage":   complete.PredictNothing,
+			"--debug":   complete.PredictNothing,
+=======
+			"--debug":   complete.PredictNothing,
+			"--help":    complete.PredictNothing,
+			"--usage":   complete.PredictNothing,
+			"--version": complete.PredictNothing,
+			"--verbose": complete.PredictNothing,
+>>>>>>> e16430e8aeb8682d32a482634cd7a30273655e28
+>>>>>>> 31ab6878c4dc2f642a734320882ea92867626f4f
 		},
 	}
 	complete.New("pyrevit", pyrevit).Run()

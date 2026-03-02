@@ -1,6 +1,7 @@
 using pyRevitExtensionParser;
 using pyRevitExtensionParserTest;
 using pyRevitExtensionParserTest.TestHelpers;
+using pyRevitAssemblyBuilder.AssemblyMaker;
 using System.IO;
 using System.Text;
 using NUnit.Framework;
@@ -212,6 +213,7 @@ tooltip: Bundle Tooltip
         }
 
         [Test]
+<<<<<<< HEAD
         public void TestLoggingLevelConfigFromIni()
         {
             var configPath = Path.Combine(TestTempDir, "pyRevit_config_logging.ini");
@@ -314,6 +316,41 @@ tooltip: Bundle Tooltip
             Assert.AreEqual("C:\\custom.css", PyRevitConfig.Load(configPath2).OutputStyleSheet);
 
             Assert.Pass("FileLogging / AutoUpdate / OutputStyleSheet config parsing validated successfully.");
+=======
+        public void TestRocketModeConfigFromIni()
+        {
+            var configPath = Path.Combine(TestTempDir, "pyRevit_config.ini");
+
+            // Default value: false when not set
+            File.WriteAllText(configPath, "");
+            var config1 = PyRevitConfig.Load(configPath);
+            Assert.IsFalse(config1.RocketMode, "Default RocketMode should be false when not set");
+
+            // Explicit true
+            File.WriteAllText(configPath, "[core]\nrocketmode = true");
+            var config2 = PyRevitConfig.Load(configPath);
+            Assert.IsTrue(config2.RocketMode, "RocketMode should be true when explicitly set");
+
+            // Explicit false
+            File.WriteAllText(configPath, "[core]\nrocketmode = false");
+            var config3 = PyRevitConfig.Load(configPath);
+            Assert.IsFalse(config3.RocketMode, "RocketMode should be false when explicitly set");
+
+            // Case insensitive
+            File.WriteAllText(configPath, "[core]\nrocketmode = TRUE");
+            var config4 = PyRevitConfig.Load(configPath);
+            Assert.IsTrue(config4.RocketMode, "RocketMode should be case-insensitive");
+
+            // Round-trip write/read
+            var configPath2 = Path.Combine(TestTempDir, "pyRevit_config_rw.ini");
+            File.WriteAllText(configPath2, "");
+            var configRw = PyRevitConfig.Load(configPath2);
+            configRw.RocketMode = true;
+            var configRw2 = PyRevitConfig.Load(configPath2);
+            Assert.IsTrue(configRw2.RocketMode, "RocketMode should persist after write");
+
+            Assert.Pass("RocketMode config parsing validated successfully.");
+>>>>>>> 31ab6878c4dc2f642a734320882ea92867626f4f
         }
 
         [Test]
@@ -343,6 +380,101 @@ tooltip: Bundle Tooltip
             Assert.IsTrue(config4.LoadBeta, "LoadBeta should be case-insensitive");
             
             Assert.Pass("LoadBeta config parsing validated successfully.");
+        }
+
+        [Test]
+        public void TestRocketModeEngineConfigs()
+        {
+            var testCases = new[]
+            {
+                new { Name = "RocketMode_Off_CompatibleExt", RocketMode = false, Compatible = true, ExplicitClean = false, ExpectedClean = true },
+                new { Name = "RocketMode_On_CompatibleExt", RocketMode = true, Compatible = true, ExplicitClean = false, ExpectedClean = false },
+                new { Name = "RocketMode_On_IncompatibleExt", RocketMode = true, Compatible = false, ExplicitClean = false, ExpectedClean = true },
+                new { Name = "RocketMode_On_CompatibleExt_ExplicitClean", RocketMode = true, Compatible = true, ExplicitClean = true, ExpectedClean = true },
+                new { Name = "RocketMode_Off_IncompatibleExt", RocketMode = false, Compatible = false, ExplicitClean = false, ExpectedClean = true },
+            };
+
+            foreach (var tc in testCases)
+            {
+                var extensionDir = Path.Combine(TestTempDir, $"{tc.Name}.extension");
+                var bundleDir = Path.Combine(extensionDir, "TestPanel.panel", "TestButton.pushbutton");
+                Directory.CreateDirectory(bundleDir);
+
+                var scriptContent = new StringBuilder();
+                scriptContent.AppendLine("__title__ = 'Test Button'");
+                if (tc.ExplicitClean)
+                {
+                    scriptContent.AppendLine("__cleanengine__ = True");
+                }
+                File.WriteAllText(Path.Combine(bundleDir, "script.py"), scriptContent.ToString());
+
+                if (tc.Compatible)
+                {
+                    var extensionJson = "{ \"rocket_mode_compatible\": \"True\" }";
+                    File.WriteAllText(Path.Combine(extensionDir, "extension.json"), extensionJson);
+                }
+
+                var extensions = ParseInstalledExtensions(extensionDir).ToList();
+                Assert.AreEqual(1, extensions.Count, $"{tc.Name}: Expected 1 extension");
+                var extension = extensions.First();
+
+                Assert.AreEqual(tc.Compatible, extension.RocketModeCompatible, 
+                    $"{tc.Name}: RocketModeCompatible should be {tc.Compatible}");
+
+                var button = FindComponentRecursively(extension, "TestButton");
+                Assert.IsNotNull(button, $"{tc.Name}: TestButton not found");
+
+                var engineCfgs = pyRevitAssemblyBuilder.AssemblyMaker.CommandGenerationUtilities.BuildEngineConfigs(
+                    button, button.ScriptPath, extension, tc.RocketMode);
+
+                TestContext.Out.WriteLine($"{tc.Name}: RocketMode={tc.RocketMode}, Compatible={tc.Compatible}, ExplicitClean={tc.ExplicitClean}");
+                TestContext.Out.WriteLine($"  Engine Configs: {engineCfgs}");
+
+                Assert.IsTrue(engineCfgs.Contains($"\"clean\":{tc.ExpectedClean.ToString().ToLower()}"),
+                    $"{tc.Name}: Expected clean={tc.ExpectedClean}, got: {engineCfgs}");
+
+                Directory.Delete(extensionDir, true);
+            }
+
+            Assert.Pass("Rocket mode engine configs validated successfully.");
+        }
+
+        [Test]
+        public void TestRocketModeCompatibilityFromExtensionJson()
+        {
+            var extensionDir = Path.Combine(TestTempDir, "RocketModeCompatibilityTest.extension");
+            var bundleDir = Path.Combine(extensionDir, "TestPanel.panel", "TestButton.pushbutton");
+            Directory.CreateDirectory(bundleDir);
+
+            File.WriteAllText(Path.Combine(bundleDir, "script.py"), "__title__ = 'Test'");
+            File.WriteAllText(Path.Combine(extensionDir, "extension.json"), "{ \"rocket_mode_compatible\": \"True\" }");
+
+            var extensions = ParseInstalledExtensions(extensionDir).ToList();
+            Assert.AreEqual(1, extensions.Count);
+            var extension = extensions.First();
+
+            Assert.IsTrue(extension.RocketModeCompatible, "Extension should be rocket mode compatible");
+
+            Directory.Delete(extensionDir, true);
+        }
+
+        [Test]
+        public void TestPyRevitCoreAlwaysRocketModeCompatible()
+        {
+            var extensionDir = Path.Combine(TestTempDir, "pyRevitCore.extension");
+            var bundleDir = Path.Combine(extensionDir, "TestPanel.panel", "TestButton.pushbutton");
+            Directory.CreateDirectory(bundleDir);
+
+            File.WriteAllText(Path.Combine(bundleDir, "script.py"), "__title__ = 'Test'");
+            // No extension.json - pyRevitCore should still be compatible
+
+            var extensions = ParseInstalledExtensions(extensionDir).ToList();
+            Assert.AreEqual(1, extensions.Count);
+            var extension = extensions.First();
+
+            Assert.IsTrue(extension.RocketModeCompatible, "pyRevitCore should always be rocket mode compatible");
+
+            Directory.Delete(extensionDir, true);
         }
 
         private ParsedComponent? FindComponentRecursively(ParsedComponent? component, string targetName)

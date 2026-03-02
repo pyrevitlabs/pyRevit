@@ -50,7 +50,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             return Path.GetFullPath(Path.Combine(dllDir, "..", "..", "..", ".."));
         }
         
-        public string GenerateExtensionCode(ParsedExtension extension, string revitVersion, IEnumerable<ParsedExtension> libraryExtensions = null)
+        public string GenerateExtensionCode(ParsedExtension extension, string revitVersion, IEnumerable<ParsedExtension> libraryExtensions = null, bool rocketMode = false)
         {
             var sb = new StringBuilder();
             sb.AppendLine("#nullable disable");
@@ -112,7 +112,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 string ctrlId = cmd.ControlId ?? $"CustomCtrl_%CustomCtrl_%{extName}%{bundle}%{cmd.Name}";
                 
                 // Build engine configs based on bundle configuration or script type
-                string engineCfgs = CommandGenerationUtilities.BuildEngineConfigs(cmd, scriptPath);
+                string engineCfgs = CommandGenerationUtilities.BuildEngineConfigs(cmd, scriptPath, extension, rocketMode);
                 
                 // Get context from component - only use if explicitly defined
                 string context = cmd.Context ?? string.Empty;
@@ -181,7 +181,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 .Replace("\"", "\\\"");
     }
 
-    internal static class CommandGenerationUtilities
+    public static class CommandGenerationUtilities
     {
         public static string BuildCommandArguments(ParsedExtension extension, ParsedComponent component, string revitVersion)
         {
@@ -206,7 +206,11 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         /// <summary>
         /// Builds the engine configuration JSON string based on script type and bundle settings
         /// </summary>
-        public static string BuildEngineConfigs(ParsedComponent cmd, string scriptPath)
+        /// <param name="cmd">The command component to build configs for</param>
+        /// <param name="scriptPath">Path to the script file</param>
+        /// <param name="extension">The parent extension (for rocket mode compatibility check)</param>
+        /// <param name="rocketMode">Whether rocket mode is enabled globally</param>
+        public static string BuildEngineConfigs(ParsedComponent cmd, string scriptPath, ParsedExtension extension = null, bool rocketMode = false)
         {
             var configs = new Dictionary<string, object>();
             
@@ -214,8 +218,28 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             bool isDynamoScript = scriptPath != null && 
                                 scriptPath.EndsWith(".dyn", StringComparison.OrdinalIgnoreCase);
             
-            // Core engine settings (apply to all script types)
-            configs["clean"] = cmd.Engine?.Clean ?? false;
+            // Determine clean engine setting.
+            // Default is true (use clean engine for each execution).
+            // In rocket mode with compatible extension, use cached engine (clean = false).
+            bool useCleanEngine = true;
+            
+            // Check if script explicitly requires clean engine via metadata
+            bool explicitlyRequiresCleanEngine = cmd.Engine?.Clean ?? false;
+            
+            // If rocket mode is enabled and extension is compatible and script doesn't explicitly require clean engine,
+            // then use cached engine (clean = false) for better performance
+            bool extensionIsRocketModeCompatible = extension?.RocketModeCompatible ?? false;
+            if (rocketMode && extensionIsRocketModeCompatible && !explicitlyRequiresCleanEngine)
+            {
+                useCleanEngine = false;
+            }
+            // If script explicitly requires clean engine, honor that
+            else if (explicitlyRequiresCleanEngine)
+            {
+                useCleanEngine = true;
+            }
+            
+            configs["clean"] = useCleanEngine;
             
             // Add engine type only when explicitly specified in metadata.
             // Do not force the default IronPython value into configs,
