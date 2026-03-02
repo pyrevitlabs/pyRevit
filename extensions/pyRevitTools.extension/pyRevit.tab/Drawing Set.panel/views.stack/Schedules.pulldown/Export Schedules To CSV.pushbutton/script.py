@@ -9,7 +9,7 @@ import os.path as op
 
 from pyrevit import forms
 from pyrevit import coreutils
-from pyrevit import revit, DB
+from pyrevit import revit, DB, EXEC_PARAMS
 from pyrevit import script
 
 from pyrevit.userconfig import user_config
@@ -24,7 +24,7 @@ incl_headers = False
 basefolder = ''
 # if user shift-clicks, default to user desktop,
 # otherwise ask for a folder containing the PDF files
-if __shiftclick__:  #pylint: disable=E0602
+if EXEC_PARAMS.config_mode:
     destopt, switches = forms.CommandSwitchWindow.show(
         ["My Desktop", "Where Revit Model Is", "My Downloads", "User Select"],
         switches=["Open CSV File","Include Headers"],

@@ -2,7 +2,7 @@
   "Uuid": "14461aef-24c5-4d59-a473-4d84cbdf4fe6",
   "IsCustomNode": false,
   "Description": "Ce graphique crée une folie architecturale en utilisant une série de lignes et leur déplacement pour positionner les éléments d'ossature et de sol dans Revit.",
-  "Name": "BIM1_ArrowHeadSwitcher_script",
+  "Name": "folie_architecturale_script",
   "ElementResolver": {
     "ResolutionMap": {}
   },
