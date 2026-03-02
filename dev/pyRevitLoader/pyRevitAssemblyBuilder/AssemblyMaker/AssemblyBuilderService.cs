@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
@@ -52,10 +52,11 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         /// </summary>
         /// <param name="extension">The parsed extension to build an assembly for.</param>
         /// <param name="libraryExtensions">Optional collection of library extensions to include as references.</param>
+        /// <param name="rocketMode">Whether rocket mode is enabled globally.</param>
         /// <returns>Information about the built assembly.</returns>
         /// <exception cref="ArgumentNullException">Thrown when extension is null.</exception>
         /// <exception cref="Exception">Thrown when assembly building fails.</exception>
-        public ExtensionAssemblyInfo BuildExtensionAssembly(ParsedExtension extension, IEnumerable<ParsedExtension> libraryExtensions = null)
+        public ExtensionAssemblyInfo BuildExtensionAssembly(ParsedExtension extension, IEnumerable<ParsedExtension> libraryExtensions = null, bool rocketMode = false)
         {
             if (extension == null)
                 throw new ArgumentNullException(nameof(extension));
@@ -74,9 +75,13 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             // so they're available in the AppDomain for CLREngine to reference
             LoadExtensionModules(extension);
 
-            // Use build strategy as seed to differentiate DLLs built with different strategies
-            // This ensures DLLs are only regenerated when extension structure changes or build strategy changes
-            string strategySeed = _buildStrategy.ToString();
+            // Include generation-time inputs that affect emitted command types, so cache invalidates
+            // when runtime behavior changes (e.g. rocket mode toggles or loader binary updates).
+            string strategySeed = string.Join("|",
+                _buildStrategy.ToString(),
+                $"rocket:{rocketMode}",
+                $"rocket_compat:{extension.RocketModeCompatible}",
+                $"builder:{GetAssemblyBuildFingerprint()}");
             string hash = GetStableHash(extension.GetHash(strategySeed) + _revitVersion).Substring(0, 16);
             string fileName = $"pyRevit_{_revitVersion}_{hash}_{extension.Name}.dll";
 
@@ -117,7 +122,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 
             try
             {
-                BuildWithRoslyn(extension, outputPath, libraryExtensions);
+                BuildWithRoslyn(extension, outputPath, libraryExtensions, rocketMode);
 
                 return new ExtensionAssemblyInfo(extension.Name, outputPath, isReloading);
             }
@@ -260,11 +265,12 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         /// <param name="extension">The parsed extension to build.</param>
         /// <param name="outputPath">The output path for the compiled assembly.</param>
         /// <param name="libraryExtensions">Optional library extensions to reference.</param>
+        /// <param name="rocketMode">Whether rocket mode is enabled globally.</param>
         /// <exception cref="Exception">Thrown when Roslyn compilation fails.</exception>
-        private void BuildWithRoslyn(ParsedExtension extension, string outputPath, IEnumerable<ParsedExtension> libraryExtensions)
+        private void BuildWithRoslyn(ParsedExtension extension, string outputPath, IEnumerable<ParsedExtension> libraryExtensions, bool rocketMode)
         {
             var generator = new RoslynCommandTypeGenerator();
-            string code = generator.GenerateExtensionCode(extension, _revitVersion, libraryExtensions);
+            string code = generator.GenerateExtensionCode(extension, _revitVersion, libraryExtensions, rocketMode);
             var csPath = Path.Combine(Path.GetDirectoryName(outputPath), $"{extension.Name}.cs");
             File.WriteAllText(csPath, code);
             _logger.Debug($"Generated C# code file: {csPath}");
@@ -333,6 +339,23 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             using var sha1 = System.Security.Cryptography.SHA1.Create();
             var hash = sha1.ComputeHash(Encoding.UTF8.GetBytes(input));
             return BitConverter.ToString(hash).Replace("-", string.Empty).ToLowerInvariant();
+        }
+
+        private static string GetAssemblyBuildFingerprint()
+        {
+            try
+            {
+                var asmPath = Assembly.GetExecutingAssembly().Location;
+                var writeTime = File.Exists(asmPath)
+                    ? File.GetLastWriteTimeUtc(asmPath).Ticks.ToString()
+                    : "0";
+                var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0";
+                return string.Join("-", version, writeTime);
+            }
+            catch
+            {
+                return "0";
+            }
         }
 
         /// <summary>
