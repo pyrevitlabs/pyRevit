@@ -436,7 +436,7 @@ class WPFWindow(framework.Windows.Window):
 
     @staticmethod
     def disable_element(*wpf_elements):
-        """Enable elements.
+        """Disable elements.
 
         Args:
             *wpf_elements (list[UIElement]): WPF framework elements to be enabled
@@ -624,7 +624,7 @@ def register_dockable_panel(panel_type, default_visible=True):
         panel_type (forms.WPFPanel): dockable panel type
         default_visible (bool, optional):
             whether panel should be visible by default
-    
+
     Returns:
         forms.WPFPanel: the live panel instance
     """
@@ -2040,7 +2040,7 @@ class SearchPrompt(WPFWindow):
             else:
                 if cur_res.lower().startswith(input_term):
                     self.directmatch_tb.Text = (
-                        self.search_input + cur_res[len(input_term) :]
+                        self.search_input + cur_res[len(input_term):]
                     )
                     mlogger.debug("directmatch_tb.Text: %s", self.directmatch_tb.Text)
                 else:
