@@ -136,7 +136,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 try
                 {
                     stepStopwatch.Restart();
-                    var assmInfo = _assemblyBuilder?.BuildExtensionAssembly(ext, libraryExtensions);
+                    var rocketMode = _uiManager?.RocketMode ?? false;
+                    var assmInfo = _assemblyBuilder?.BuildExtensionAssembly(ext, libraryExtensions, rocketMode);
                     var buildTime = stepStopwatch.ElapsedMilliseconds;
                     
                     if (assmInfo == null)

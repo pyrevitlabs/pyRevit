@@ -432,8 +432,14 @@ namespace pyRevitExtensionParser
             {
                 extensionTemplates["author"] = parsedBundle.Author;
             }
+<<<<<<< HEAD
+            
+            // Read extension.json for additional templates and rocket_mode_compatible
+            bool rocketModeCompatible = false;
+=======
 
             // Read extension.json for additional templates
+>>>>>>> e16430e8aeb8682d32a482634cd7a30273655e28
             var extensionJsonPath = Path.Combine(extDir, "extension.json");
             if (FileExists(extensionJsonPath))
             {
@@ -462,6 +468,13 @@ namespace pyRevitExtensionParser
                             extensionTemplates["author"] = author;
                         }
                     }
+
+                    // Read rocket_mode_compatible setting
+                    var rocketModeValue = json["rocket_mode_compatible"]?.ToString();
+                    if (!string.IsNullOrEmpty(rocketModeValue))
+                    {
+                        rocketModeCompatible = rocketModeValue.Equals("true", StringComparison.OrdinalIgnoreCase);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -469,7 +482,17 @@ namespace pyRevitExtensionParser
                 }
             }
 
+<<<<<<< HEAD
+            // pyRevitCore is always rocket mode compatible (hardcoded, matches Python behavior)
+            if (string.Equals(extName, "pyRevitCore", StringComparison.OrdinalIgnoreCase))
+            {
+                rocketModeCompatible = true;
+            }
+
+            var children = ParseComponents(extDir, extName, null, extensionTemplates.Count > 0 ? extensionTemplates : null);
+=======
             var children = ParseComponents(extDir, extName, null, extensionTemplates.Count > 0 ? extensionTemplates : null, revitYear);
+>>>>>>> e16430e8aeb8682d32a482634cd7a30273655e28
 
             // Read extension config from pyRevit config file (cached).
             // Config is keyed by folder name (e.g. [extension_test.extension]) so it matches install and Python.
@@ -490,7 +513,8 @@ namespace pyRevitExtensionParser
                 MaxRevitVersion = parsedBundle?.MaxRevitVersion,
                 Context = parsedBundle?.GetFormattedContext(),
                 Engine = parsedBundle?.Engine,
-                Config = extConfig
+                Config = extConfig,
+                RocketModeCompatible = rocketModeCompatible
             };
 
             ReorderByLayout(parsedExtension, parsedExtension, null);
