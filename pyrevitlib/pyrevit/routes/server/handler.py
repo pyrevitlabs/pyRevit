@@ -18,6 +18,61 @@ from pyrevit.routes.server import base
 mlogger = get_logger(__name__)
 
 
+def _safe_json_dumps(obj):
+    """Serialize obj to a JSON string, safe for IronPython 2.7.
+
+    IronPython 2.7 unifies str and unicode as .NET System.String.
+    The standard json.dumps may fail with UnicodeDecodeError when
+    strings contain non-ASCII characters (e.g. accented letters in
+    French, German, etc.) and the system codec is reported as
+    'unknown'.  This function manually builds a JSON string,
+    escaping all non-ASCII as \\uXXXX.
+    """
+    if obj is None:
+        return "null"
+    if isinstance(obj, bool):
+        return "true" if obj else "false"
+    if isinstance(obj, int):
+        return str(obj)
+    if isinstance(obj, float):
+        return repr(obj)
+    if isinstance(obj, str):
+        # Manually escape to produce a JSON string with \uXXXX for non-ASCII
+        parts = ['"']
+        for ch in obj:
+            cp = ord(ch)
+            if ch == '\\':
+                parts.append('\\\\')
+            elif ch == '"':
+                parts.append('\\"')
+            elif ch == '\n':
+                parts.append('\\n')
+            elif ch == '\r':
+                parts.append('\\r')
+            elif ch == '\t':
+                parts.append('\\t')
+            elif cp < 0x20:
+                parts.append('\\u{:04x}'.format(cp))
+            elif cp > 127:
+                parts.append('\\u{:04x}'.format(cp))
+            else:
+                parts.append(ch)
+        parts.append('"')
+        return ''.join(parts)
+    if isinstance(obj, dict):
+        items = []
+        for k, v in obj.items():
+            items.append(_safe_json_dumps(str(k)) + ':' + _safe_json_dumps(v))
+        return '{' + ','.join(items) + '}'
+    if isinstance(obj, (list, tuple)):
+        return '[' + ','.join(_safe_json_dumps(item) for item in obj) + ']'
+    # Fallback: convert to string
+    try:
+        return _safe_json_dumps(str(obj))
+    except Exception:
+        return '"<unserializable>"'
+
+
 ARGS_REQUEST = 'request'
 ARGS_UIAPP = 'uiapp'
 ARGS_UIDOC = 'uidoc'
@@ -192,8 +247,7 @@ class RequestHandler(UI.IExternalEventHandler):
                 response.status if hasattr(response, 'status') \
                     else base.INTERNAL_SERVER_ERROR
             headers = {'Content-Type': 'application/json'}
-            data = json.dumps(
-                {
+            exc_data = {
                     "exception": {
                         "source": response.source
                                   if hasattr(response, 'source')
@@ -201,13 +255,19 @@ class RequestHandler(UI.IExternalEventHandler):
                         "message": str(response)
                     }
                 }
-            )
+            try:
+                data = json.dumps(exc_data, ensure_ascii=True)
+            except (UnicodeDecodeError, UnicodeEncodeError):
+                data = _safe_json_dumps(exc_data)
 
         # plain text response
         elif isinstance(response, str):
             # keey default status
             headers['Content-Type'] = 'text/html'
-            data = json.dumps(response)
+            try:
+                data = json.dumps(response, ensure_ascii=True)
+            except (UnicodeDecodeError, UnicodeEncodeError):
+                data = _safe_json_dumps(response)
 
         # any obj that has .status and .data, OR
         # any json serializable object
@@ -228,7 +288,10 @@ class RequestHandler(UI.IExternalEventHandler):
 
             # serialize data
             if data is not None:
-                data = json.dumps(data)
+                try:
+                    data = json.dumps(data, ensure_ascii=True)
+                except (UnicodeDecodeError, UnicodeEncodeError):
+                    data = _safe_json_dumps(data)
                 headers['Content-Type'] = 'application/json'
 
         return base.Response(status=status, data=data, headers=headers)

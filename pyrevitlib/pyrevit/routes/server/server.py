@@ -121,12 +121,21 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
     def _write_response(self, response):
         r = handler.RequestHandler.parse_response(response)
         self.send_response(r.status)
+        body = r.data if r.data is not None else "\n"
+        if isinstance(body, str):
+            body = body.encode("utf-8")
+        elif not isinstance(body, bytes):
+            body = str(body).encode("utf-8")
+
+        self.send_header("Content-Length", str(len(body)))
         if r.headers:
             for key, value in r.headers.items():
+                if str(key).lower() == "content-length":
+                    continue
                 self.send_header(key, value)
-            self.end_headers()
+        self.end_headers()
         # sending \n if no data otherwise Postman panics for some reason
-        self.wfile.write(r.data or "\n")
+        self.wfile.write(body)
 
     def _handle_route(self, method):
         # process the given url and find API and route
