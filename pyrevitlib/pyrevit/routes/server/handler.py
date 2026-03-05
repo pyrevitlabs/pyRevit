@@ -19,7 +19,7 @@ mlogger = get_logger(__name__)
 
 
 def _safe_json_dumps(obj):
-    """Serialize obj to a JSON string, safe for IronPython 2.7.
+    r"""Serialize obj to a JSON string, safe for IronPython 2.7.
 
     IronPython 2.7 unifies str and unicode as .NET System.String.
     The standard json.dumps may fail with UnicodeDecodeError when

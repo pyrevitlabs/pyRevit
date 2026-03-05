@@ -159,7 +159,7 @@ class SafeJsonDumpsTests(unittest.TestCase):
     # --- Bool before int (isinstance ordering) ---
 
     def test_bool_not_treated_as_int(self):
-        """bool is a subclass of int; must check bool first."""
+        """Bool is a subclass of int; must check bool first."""
         self.assertEqual("true", handler._safe_json_dumps(True))
         self.assertNotEqual("1", handler._safe_json_dumps(True))
 
