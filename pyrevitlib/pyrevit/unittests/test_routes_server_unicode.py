@@ -8,6 +8,7 @@ UnicodeDecodeError in IronPython 2.7's json.dumps.
 Also verifies that parse_response falls back to _safe_json_dumps
 when json.dumps raises Unicode errors.
 """
+
 import json
 import unittest
 
@@ -132,13 +133,12 @@ class SafeJsonDumpsTests(unittest.TestCase):
                 {"name": u"PLAN G\u00c9N\u00c9RALE"},
                 {"name": u"Nomenclature des r\u00e9visions"},
             ],
-            "total": 2
+            "total": 2,
         }
         result = handler._safe_json_dumps(obj)
         parsed = json.loads(result)
         self.assertEqual(u"PLAN G\u00c9N\u00c9RALE", parsed["views"][0]["name"])
-        self.assertEqual(u"Nomenclature des r\u00e9visions",
-                         parsed["views"][1]["name"])
+        self.assertEqual(u"Nomenclature des r\u00e9visions", parsed["views"][1]["name"])
         self.assertEqual(2, parsed["total"])
 
     def test_tuple(self):
@@ -183,6 +183,7 @@ class ParseResponseUnicodeTests(unittest.TestCase):
 
     def test_dict_response_with_accents(self):
         """Response object with .data containing non-ASCII strings."""
+
         class _Resp(object):
             status = base.OK
             headers = {"Content-Type": "application/json"}
@@ -200,6 +201,7 @@ class ParseResponseUnicodeTests(unittest.TestCase):
 
     def test_exception_response_with_accents(self):
         """Exception-like response with non-ASCII in message."""
+
         class _ExcResp(object):
             message = u"Erreur: \u00e9l\u00e9ment introuvable"
             status = base.INTERNAL_SERVER_ERROR

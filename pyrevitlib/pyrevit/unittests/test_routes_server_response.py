@@ -1,4 +1,5 @@
 """Tests for routes server response framing behavior."""
+
 import unittest
 
 from pyrevit.routes.server import base
@@ -44,8 +45,9 @@ class RoutesServerWriteResponseTests(unittest.TestCase):
         # Call HttpRequestHandler._write_response with a fake request handler
         # object that only implements the methods/attributes it needs.
         orig_parse_response = server.handler.RequestHandler.parse_response
-        server.handler.RequestHandler.parse_response = \
-            staticmethod(lambda _response: parsed_response)
+        server.handler.RequestHandler.parse_response = staticmethod(
+            lambda _response: parsed_response
+        )
         try:
             server.HttpRequestHandler._write_response(handler_instance, object())
         finally:
@@ -67,8 +69,7 @@ class RoutesServerWriteResponseTests(unittest.TestCase):
         self.assertEqual(1, result.end_headers_calls)
         self.assertEqual(data.encode("utf-8"), result.wfile.writes[0])
         self.assertIn(
-            ("Content-Length", str(len(data.encode("utf-8")))),
-            result.headers
+            ("Content-Length", str(len(data.encode("utf-8")))), result.headers
         )
 
     def test_encodes_string_body_as_utf8_bytes(self):
@@ -117,9 +118,7 @@ class RoutesServerWriteResponseTests(unittest.TestCase):
         result = self._run_write_response(parsed)
 
         content_length_headers = [
-            pair for pair in result.headers
-            if pair[0].lower() == "content-length"
+            pair for pair in result.headers if pair[0].lower() == "content-length"
         ]
         self.assertEqual(1, len(content_length_headers))
         self.assertEqual(str(len(data.encode("utf-8"))), content_length_headers[0][1])
-
