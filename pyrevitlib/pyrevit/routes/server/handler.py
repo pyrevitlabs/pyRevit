@@ -35,6 +35,9 @@ def _safe_json_dumps(obj):
     if isinstance(obj, int):
         return str(obj)
     if isinstance(obj, float):
+        import math
+        if math.isnan(obj) or math.isinf(obj):
+            return "null"
         return repr(obj)
     if isinstance(obj, str):
         # Manually escape to produce a JSON string with \uXXXX for non-ASCII
