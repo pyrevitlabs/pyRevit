@@ -6,6 +6,7 @@ import sys
 import traceback
 import threading
 import json
+import numbers
 
 from pyrevit.api import UI
 from pyrevit.coreutils.logger import get_logger
@@ -32,7 +33,7 @@ def _safe_json_dumps(obj):
         return "null"
     if isinstance(obj, bool):
         return "true" if obj else "false"
-    if isinstance(obj, int):
+    if isinstance(obj, numbers.Integral):
         return str(obj)
     if isinstance(obj, float):
         import math
@@ -226,6 +227,14 @@ class RequestHandler(UI.IExternalEventHandler):
     @staticmethod
     def parse_response(response):
         """Parse any given response data and return Response object."""
+        def _json_dumps_safe(value):
+            # IronPython may raise different encoding/runtime exceptions
+            # for non-ASCII payloads; always fall back to manual serializer.
+            try:
+                return json.dumps(value, ensure_ascii=True)
+            except Exception:
+                return _safe_json_dumps(value)
+
         status = base.OK
         headers = {}
         data = None
@@ -256,19 +265,13 @@ class RequestHandler(UI.IExternalEventHandler):
                     "message": str(response),
                 }
             }
-            try:
-                data = json.dumps(exc_data, ensure_ascii=True)
-            except (UnicodeDecodeError, UnicodeEncodeError):
-                data = _safe_json_dumps(exc_data)
+            data = _json_dumps_safe(exc_data)
 
         # plain text response
         elif isinstance(response, str):
             # keey default status
             headers["Content-Type"] = "text/html"
-            try:
-                data = json.dumps(response, ensure_ascii=True)
-            except (UnicodeDecodeError, UnicodeEncodeError):
-                data = _safe_json_dumps(response)
+            data = _json_dumps_safe(response)
 
         # any obj that has .status and .data, OR
         # any json serializable object
@@ -287,10 +290,7 @@ class RequestHandler(UI.IExternalEventHandler):
 
             # serialize data
             if data is not None:
-                try:
-                    data = json.dumps(data, ensure_ascii=True)
-                except (UnicodeDecodeError, UnicodeEncodeError):
-                    data = _safe_json_dumps(data)
+                data = _json_dumps_safe(data)
                 headers["Content-Type"] = "application/json"
 
         return base.Response(status=status, data=data, headers=headers)

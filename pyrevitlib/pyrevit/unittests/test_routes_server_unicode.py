@@ -14,6 +14,7 @@ import unittest
 
 from pyrevit.routes.server import handler
 from pyrevit.routes.server import base
+from pyrevit.compat import PY2
 
 
 class SafeJsonDumpsTests(unittest.TestCase):
@@ -38,6 +39,13 @@ class SafeJsonDumpsTests(unittest.TestCase):
 
     def test_negative_integer(self):
         self.assertEqual("-7", handler._safe_json_dumps(-7))
+
+    @unittest.skipUnless(PY2, "Python 2 only long integer behavior")
+    def test_long_integer(self):
+        value = long(2 ** 40)  # pylint: disable=undefined-variable
+        result = handler._safe_json_dumps(value)
+        self.assertEqual(str(value), result)
+        self.assertEqual(2 ** 40, json.loads(result))
 
     def test_float(self):
         result = handler._safe_json_dumps(3.14)
@@ -171,10 +179,22 @@ class ParseResponseUnicodeTests(unittest.TestCase):
     strings. parse_response must fall back to _safe_json_dumps.
     """
 
+    def _parse_response_forced_fallback(self, response):
+        original_dumps = handler.json.dumps
+
+        def _raise_json_error(*args, **kwargs):
+            raise ValueError("forced json serialization failure")
+
+        handler.json.dumps = _raise_json_error
+        try:
+            return handler.RequestHandler.parse_response(response)
+        finally:
+            handler.json.dumps = original_dumps
+
     def test_string_response_with_accents(self):
         """Plain string response containing accented characters."""
         response = u"Fen\u00eatres ext\u00e9rieures"
-        result = handler.RequestHandler.parse_response(response)
+        result = self._parse_response_forced_fallback(response)
         self.assertEqual(base.OK, result.status)
         self.assertIsNotNone(result.data)
         # The data should be valid JSON (a JSON-encoded string)
@@ -194,7 +214,7 @@ class ParseResponseUnicodeTests(unittest.TestCase):
                 ]
             }
 
-        result = handler.RequestHandler.parse_response(_Resp())
+        result = self._parse_response_forced_fallback(_Resp())
         self.assertIsNotNone(result.data)
         parsed = json.loads(result.data)
         self.assertEqual(u"\u00c9L\u00c9VATIONS", parsed["views"][0])
@@ -207,7 +227,10 @@ class ParseResponseUnicodeTests(unittest.TestCase):
             status = base.INTERNAL_SERVER_ERROR
             source = "test"
 
-        result = handler.RequestHandler.parse_response(_ExcResp())
+            def __str__(self):
+                return self.message
+
+        result = self._parse_response_forced_fallback(_ExcResp())
         self.assertEqual(base.INTERNAL_SERVER_ERROR, result.status)
         parsed = json.loads(result.data)
         self.assertIn(u"\u00e9l\u00e9ment", parsed["exception"]["message"])

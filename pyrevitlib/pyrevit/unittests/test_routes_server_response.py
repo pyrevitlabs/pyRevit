@@ -14,7 +14,7 @@ class _DummyWriter(object):
         self.writes.append(payload)
 
 
-class _DummyHttpHandler(object):
+class _DummyHttpHandler(server.HttpRequestHandler):
     def __init__(self):
         self.statuses = []
         self.headers = []
@@ -44,14 +44,18 @@ class RoutesServerWriteResponseTests(unittest.TestCase):
 
         # Call HttpRequestHandler._write_response with a fake request handler
         # object that only implements the methods/attributes it needs.
-        orig_parse_response = server.handler.RequestHandler.parse_response
-        server.handler.RequestHandler.parse_response = staticmethod(
-            lambda _response: parsed_response
-        )
+        orig_request_handler_cls = server.handler.RequestHandler
+
+        class _PatchedRequestHandler(object):
+            @staticmethod
+            def parse_response(_response):
+                return parsed_response
+
+        server.handler.RequestHandler = _PatchedRequestHandler
         try:
             server.HttpRequestHandler._write_response(handler_instance, object())
         finally:
-            server.handler.RequestHandler.parse_response = orig_parse_response
+            server.handler.RequestHandler = orig_request_handler_cls
 
         return handler_instance
 
