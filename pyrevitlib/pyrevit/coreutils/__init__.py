@@ -1101,9 +1101,9 @@ def random_rgba_color():
                                        random_alpha())
 
 
-def _color_distance(c1, c2):
+def _color_distance_sq(c1, c2):
     """Return euclidean distance between two RGB colors."""
-    return math.sqrt(
+    return (
         (c1[0] - c2[0]) ** 2 +
         (c1[1] - c2[1]) ** 2 +
         (c1[2] - c2[2]) ** 2
@@ -1140,7 +1140,7 @@ def distinct_rgb_colors(count, attempts=200):
                 best_color = candidate
                 break
 
-            min_dist = min(_color_distance(candidate, c) for c in colors)
+            min_dist = min(_color_distance_sq(candidate, c) for c in colors)
 
             if min_dist > best_distance:
                 best_distance = min_dist
@@ -1164,12 +1164,12 @@ def distinct_rgb_strings(count):
 
 
 def distinct_rgba_strings(count, alpha=None):
-    """Return visually distinct colors in rgba(...) format."""
+    """Return visually distinct colors in rgba(...) format. If alpha is None, it will get randomized."""
     colors = distinct_rgb_colors(count)
 
     result = []
     for r, g, b in colors:
-        a = alpha if alpha is not None else round(random.random(), 2)
+        a = alpha if alpha is not None else random_alpha()
         result.append('rgba(%d, %d, %d, %.2f)' % (r, g, b, a))
 
     return result
