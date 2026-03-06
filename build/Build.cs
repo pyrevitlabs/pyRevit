@@ -188,6 +188,8 @@ partial class Build : NukeBuild
         var telemPath = DevPath / "pyRevitTelemetryServer";
         var outputExe = BinPath / "pyrevit-telemetryserver.exe";
         BinPath.CreateDirectory();
+        // Match pipenv: go get ./... then go build (pipenv run pyrevit build telem)
+        RunProcess("go", "get ./...", (string)telemPath, captureOutput: true, unsetProxy: true);
         RunProcess("go", $"build -o \"{outputExe}\" .", (string)telemPath, captureOutput: true, unsetProxy: true);
     }
 
@@ -208,7 +210,7 @@ partial class Build : NukeBuild
         .Executes(BuildAutocmpCore);
 
     Target BuildProducts => _ => _
-        .Description("Full build: BuildDeps → BuildLabs → BuildLoaders → BuildRuntime → DeployLibsToEngines → BuildTelem → BuildAutocmp.")
+        .Description("Full build: BuildDeps → BuildLabs → BuildLoaders → BuildRuntime → DeployLibsToEngines → BuildTelem → BuildAutocmp (matches pipenv run pyrevit build products).")
         .DependsOn(DeployLibsToEngines, BuildTelem, BuildAutocmp)
         .Executes(() => { });
 
