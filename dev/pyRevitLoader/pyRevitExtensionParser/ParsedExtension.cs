@@ -18,6 +18,13 @@ namespace pyRevitExtensionParser
         public ExtensionConfig Config { get; set; }
 
         /// <summary>
+        /// Gets or sets whether this extension is compatible with rocket mode.
+        /// When rocket mode is enabled and the extension is compatible, the engine
+        /// will be reused between command executions for better performance.
+        /// </summary>
+        public bool RocketModeCompatible { get; set; } = false;
+
+        /// <summary>
         /// Layout directives that reference external components (from other extensions or native Revit).
         /// These must be applied after the full UI is built using the Revit ribbon API.
         /// </summary>
