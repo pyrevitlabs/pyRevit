@@ -7,7 +7,7 @@ This folder contains the NUKE-based build for pyRevit. It replaces `pipenv run p
 ## Prerequisites
 
 - **.NET SDK** (8.0 or later; 10.x works). Include workloads for .NET Framework 4.8 and .NET 8.0 (e.g. `net8.0-windows`).
-- **Go** (for the telemetry server). On PATH.
+- **Go** (for CLI autocomplete). On PATH.
 - **Windows** (build is designed for Windows; Revit add-in and engine paths are Windows-specific).
 
 Check that tools are available:
@@ -30,7 +30,7 @@ From the **repository root** (parent of `build/`):
 .\build.ps1
 ```
 
-This runs, in order: **BuildDeps** → **BuildLabs** → **BuildLoaders** → **BuildRuntime** → **DeployLibsToEngines** → **BuildTelem** → **BuildAutocmp**.
+This runs, in order: **BuildDeps** → **BuildLabs** → **BuildLoaders** → **BuildRuntime** → **DeployLibsToEngines** → **BuildAutocmp**. (The telemetry server is moving to another repository and is no longer built here.)
 
 ---
 
@@ -44,7 +44,7 @@ From the repo root:
 .\build.ps1 [TargetName] [--Parameter value]
 ```
 
-- **TargetName** – Any target below (e.g. `BuildProducts`, `BuildTelem`, `Clean`). If omitted, the default target **BuildProducts** runs.
+- **TargetName** – Any target below (e.g. `BuildProducts`, `BuildAutocmp`, `Clean`). If omitted, the default target **BuildProducts** runs.
 - The script builds the `build` project once, then runs the requested target.
 
 ### Option 2: DotNet run
@@ -53,24 +53,23 @@ From the repo root:
 
 ```powershell
 dotnet run --project build -- BuildProducts
-dotnet run --project build -- BuildTelem --configuration Debug
+dotnet run --project build -- BuildAutocmp --configuration Debug
 ```
 
 ---
 
 ## Build targets
 
-You can run any target by name. Dependencies run automatically (e.g. `BuildRuntime` runs BuildDeps → BuildLabs → BuildLoaders → BuildRuntime). Targets with **no** C# dependencies (Go only) are **BuildTelem** and **BuildAutocmp**.
+You can run any target by name. Dependencies run automatically (e.g. `BuildRuntime` runs BuildDeps → BuildLabs → BuildLoaders → BuildRuntime). **BuildAutocmp** has no C# dependencies (Go only).
 
 | Target | Description | When to use |
 |--------|-------------|-------------|
-| **BuildProducts** | Full build: deps → labs → loaders → runtime → deploy libs → telem. Default target. | One-shot build, CI, or “build everything.” |
+| **BuildProducts** | Full build: deps → labs → loaders → runtime → deploy libs → autocmp. Default target. | One-shot build, CI, or “build everything.” |
 | **BuildDeps** | Build dependencies: MahApps.Metro, Newtonsoft.Json, NLog, IronPython2, Python.Net. Outputs to `dev/libs/netfx`, `dev/libs/netcore`, and engine folders (`bin/netfx/engines/IPY2712PR`, `bin/netcore/engines/IPY2712PR`). | After a clean, or when you change a dependency. |
 | **BuildLabs** | Build pyRevitLabs.sln and publish CLI + Doctor to `bin/`. Depends on BuildDeps. | When you change Labs, CLI, or Doctor. |
 | **BuildLoaders** | Build pyRevitLoader.sln (loaders + AssemblyBuilder + ExtensionParser). Depends on BuildLabs. | When you change loader or engine tooling. |
 | **BuildRuntime** | Build PyRevit.Runtime for IPY2712PR and IPY342. Depends on BuildLoaders. | When you change Runtime (e.g. ScriptConsole, engines). |
 | **DeployLibsToEngines** | Copy `dev/libs/netcore` (MahApps, NLog, etc.) into `bin/netcore/engines/IPY2712PR` and `IPY342`. Depends on BuildRuntime. | Ensures engine folders have theme/lib DLLs so pack URIs resolve in Revit. |
-| **BuildTelem** | Build the Go telemetry server to `bin/pyrevit-telemetryserver.exe`. **No project dependencies** – safe to run alone. | When you change `dev/pyRevitTelemetryServer` only. |
 | **BuildAutocmp** | Build CLI shell autocomplete to `bin/pyrevit-autocomplete.exe`. Uses the checked-in `dev/pyRevitLabs/pyRevitCLIAutoComplete/pyrevit-autocomplete.go`. **No project dependencies.** To regenerate the .go from `UsagePatterns.txt` (when CLI usage changes), run `pipenv run pyrevit build autocmp` and commit the updated file. | When you want Tab-completion for `pyrevit` in the shell, or as part of a full build. |
 | **Clean** | Delete `dev/**/bin`, `dev/**/obj`, `dev/**/.vs`, `dev/**/TestResults`. Does **not** delete repo root `bin/`. | Before a clean full build or to free disk space. |
 | **Check** | Verify `dotnet` and `go` are on PATH. | After installing tools or setting up a new machine. |
@@ -90,7 +89,7 @@ You can run any target by name. Dependencies run automatically (e.g. `BuildRunti
 | `pyrevit build products` | `BuildProducts` | Done |
 | `pyrevit build labs` | `BuildLabs` | Done |
 | `pyrevit build engines` | (part of BuildRuntime) | Done |
-| `pyrevit build telem` | `BuildTelem` | Done |
+| `pyrevit build telem` | — | Removed (telemetry moving to another repo) |
 | `pyrevit build autocmp` | `BuildAutocmp` | Done |
 | `pyrevit clean labs` | `Clean` | Done |
 | `pyrevit check` | `Check` | Done |
@@ -118,9 +117,6 @@ You can run any target by name. Dependencies run automatically (e.g. `BuildRunti
 ```powershell
 # Full build
 .\build.ps1 BuildProducts
-
-# Only telemetry server (no C# build)
-.\build.ps1 BuildTelem
 
 # Only CLI autocomplete (no C# build)
 .\build.ps1 BuildAutocmp
@@ -182,7 +178,7 @@ Example:
 
 | Output | Path |
 |--------|------|
-| CLI, Doctor, telemetry server, autocomplete | `bin/` (repo root) |
+| CLI, Doctor, autocomplete | `bin/` (repo root) |
 | .NET Framework engines (IronPython 2) | `bin/netfx/engines/IPY2712PR` |
 | .NET Core engines (IronPython 2) | `bin/netcore/engines/IPY2712PR` |
 | .NET Core engines (IronPython 3.4) | `bin/netcore/engines/IPY342` |
@@ -211,7 +207,7 @@ The build now captures MSBuild output on failure — scroll up in the log to see
 
 ### Go / NuGet failing with proxy errors
 
-If you see connection errors to `127.0.0.1:xxxxx` (e.g. a proxy), unset proxy env vars in your session or in your PowerShell profile. The build **unsets proxy only for Go** (BuildTelem); NuGet still uses the process environment. Example in a profile:
+If you see connection errors to `127.0.0.1:xxxxx` (e.g. a proxy), unset proxy env vars in your session or in your PowerShell profile. The build **unsets proxy only for Go** (BuildAutocmp); NuGet still uses the process environment. Example in a profile:
 
 ```powershell
 $proxyVars = @('HTTP_PROXY','HTTPS_PROXY','ALL_PROXY')
@@ -256,18 +252,7 @@ Rough mapping:
 | (deps from _labs.build_deps) | `BuildDeps` |
 | (engines / loaders) | `BuildLoaders` (after BuildLabs) |
 | (runtime) | `BuildRuntime` |
-| (telem) | `BuildTelem` |
+| (telem) | Removed (moving to another repo) |
 | (autocmp) | `BuildAutocmp` |
 
 NUKE adds **DeployLibsToEngines** so that `dev/libs/netcore` is copied into the netcore engine folders; pipenv may rely on assembly load path or other layout. For details and migration notes, see `docs/nuke-build-migration-plan.md`.
-
----
-
-## Source code used by this build
-
-Some repo changes are **product improvements**, not Nuke-only workarounds. They fix real bugs or outdated APIs and benefit both pipenv and Nuke builds:
-
-- **ScriptConsole.cs** (theme fallback): In some hosts the MahApps theme pack URI resolves as `styles/themes/light.blue.xaml` (lowercase). The code tries the canonical URI first, then the lowercase path, so the Script Console loads in Revit (e.g. 2026) without `IOException`.
-- **mongo.go** (MongoDB driver v2): Telemetry server was updated to `go.mongodb.org/mongo-driver/v2` (Connect signature, no deprecated connstring, URI parsing for DB name). Needed for the Go telemetry build; the same binary works whether you built with pipenv or Nuke.
-
-These fixes are needed regardless of build system.

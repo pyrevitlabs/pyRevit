@@ -183,20 +183,6 @@ partial class Build : NukeBuild
             }
         });
 
-    void BuildTelemCore()
-    {
-        var telemPath = DevPath / "pyRevitTelemetryServer";
-        var outputExe = BinPath / "pyrevit-telemetryserver.exe";
-        BinPath.CreateDirectory();
-        // Match pipenv: go get ./... then go build (pipenv run pyrevit build telem)
-        RunProcess("go", "get ./...", (string)telemPath, captureOutput: true, unsetProxy: true);
-        RunProcess("go", $"build -o \"{outputExe}\" .", (string)telemPath, captureOutput: true, unsetProxy: true);
-    }
-
-    Target BuildTelem => _ => _
-        .Description("Build telemetry server (Go) to bin/pyrevit-telemetryserver.exe. No project dependencies; can run alone.")
-        .Executes(BuildTelemCore);
-
     void BuildAutocmpCore()
     {
         var autocmpPath = DevPath / "pyRevitLabs" / "pyRevitCLIAutoComplete";
@@ -210,8 +196,8 @@ partial class Build : NukeBuild
         .Executes(BuildAutocmpCore);
 
     Target BuildProducts => _ => _
-        .Description("Full build: BuildDeps → BuildLabs → BuildLoaders → BuildRuntime → DeployLibsToEngines → BuildTelem → BuildAutocmp (matches pipenv run pyrevit build products).")
-        .DependsOn(DeployLibsToEngines, BuildTelem, BuildAutocmp)
+        .Description("Full build: BuildDeps → BuildLabs → BuildLoaders → BuildRuntime → DeployLibsToEngines → BuildAutocmp (matches pipenv run pyrevit build products; telemetry server moved to another repo).")
+        .DependsOn(DeployLibsToEngines, BuildAutocmp)
         .Executes(() => { });
 
     Target Check => _ => _
