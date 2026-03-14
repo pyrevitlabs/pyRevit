@@ -75,20 +75,33 @@ def count_analytical_model_activated(document):
 
 def count_copied_views(views_set):
     """
-    Returns the number of views in the given set that have "Copy" or "Copie" in their name.
-
+    Returns the number of views in the given set that have a locale-specific
+    Revit copy suffix in their name.
     Args:
-    views_set (set): A set of views to check for copied views. Defaults to None.
-
+        views_set (set): A set of views to check for copied views.
     Returns:
-    int: The number of views in the set that have "Copy" or "Copie" in their name.
+        int: The number of views whose name contains a known copy suffix.
     """
-    copied_view_names = ["Copy", "Copie"]
+    # Revit appends a locale-specific word when duplicating views.
+    # This list covers all known Revit UI locales.
+    copied_view_names = [
+        "Copy",     # English
+        "Copie",    # French
+        "Kopie",    # German, Dutch, Czech
+        "Copia",    # Spanish, Italian, Portuguese (BR/PT)
+        "Kopia",    # Polish, Swedish
+        "Kopi",     # Norwegian, Danish
+        "Kopio",    # Finnish
+        "\u041a\u043e\u043f\u0438\u044f",   # Russian (Копия)
+        "\u30b3\u30d4\u30fc",               # Japanese (コピー)
+        "\u590d\u5236",                     # Chinese Simplified (复制)
+        "\ubcf5\uc0ac\ubcf8",              # Korean (복사본)
+        "M\xe1solat",                       # Hungarian (Másolat)
+    ]
     copied_views_count = 0
     for view in views_set:
         view_name = q.get_name(view)
         try:
-            # FIXME French compatibility, make it universal
             if any(name in view_name for name in copied_view_names):
                 copied_views_count += 1
         except Exception as e:
