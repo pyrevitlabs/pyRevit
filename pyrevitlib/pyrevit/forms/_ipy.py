@@ -556,7 +556,6 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
             raise PyRevitException('"panel_title" class attribute is not set')
 
         self.load_xaml(self.panel_source)
-        self.thread_id = framework.get_current_thread_id()
 
     def load_xaml(self, xaml_source, literal_string=False):
         """Load the panel XAML file.
@@ -577,6 +576,7 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
             wpf.LoadComponent(self, xaml_path)
         else:
             wpf.LoadComponent(self, framework.StringReader(xaml_source))
+        self.thread_id = framework.get_current_thread_id()
 
 
 class _WPFPanelProvider(UI.IDockablePaneProvider):
@@ -644,13 +644,16 @@ def get_dockable_panel(panel_type_or_id):
         panel_type_or_id (forms.WPFPanel | str): panel type or panel id string
 
     Returns:
-        UI.DockablePane: the live panel instance, or None if not registered
+        UI.DockablePane: the live panel pane handle.
+        
+    Raises:
+        PyRevitException: if the panel id is not registered with Revit.
     """
     dpanel_id = None
     if isinstance(panel_type_or_id, str):
         panel_id = coreutils.Guid.Parse(panel_type_or_id)
         dpanel_id = UI.DockablePaneId(panel_id)
-    elif issubclass(panel_type_or_id, WPFPanel):
+    elif isinstance(panel_type_or_id, type) and issubclass(panel_type_or_id, WPFPanel):
         panel_id = coreutils.Guid.Parse(panel_type_or_id.panel_id)
         dpanel_id = UI.DockablePaneId(panel_id)
     else:
@@ -691,14 +694,12 @@ def toggle_dockable_panel(panel_type_or_id, state):
         panel_type_or_id (forms.WPFPanel | str): panel type or id
         state (bool): True to show the panel, False to hide it.
     """
-    dockable_panel = None
     dockable_panel = get_dockable_panel(panel_type_or_id)
     if dockable_panel:
         if state:
             dockable_panel.Show()
         else:
             dockable_panel.Hide()
-
 
 
 class TemplateUserInputWindow(WPFWindow):
