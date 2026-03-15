@@ -29,7 +29,7 @@ ruff = "*"
 python_version = "3.14"
 
 [pipenv]
-allow_prereleases = true
+allow_prereleases = false
 
 [scripts]
 pyrevit = "python ./dev/pyrevit.py"
