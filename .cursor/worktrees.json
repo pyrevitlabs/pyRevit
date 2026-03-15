@@ -1,0 +1,7 @@
+{
+  "setup-worktree-windows": [
+    "py -3.10 -m pipenv install",
+    "py -3.10 -m pipenv run pyrevit build products Debug",
+    "py -3.10 -m pipenv run pyrevit build labs Debug"
+  ]
+}

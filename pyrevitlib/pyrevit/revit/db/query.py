@@ -35,12 +35,14 @@ GRAPHICAL_VIEWTYPES = [
     DB.ViewType.Detail,
     DB.ViewType.CostReport,
     DB.ViewType.LoadsReport,
-    DB.ViewType.PresureLossReport,
     DB.ViewType.ColumnSchedule,
     DB.ViewType.PanelSchedule,
     DB.ViewType.Walkthrough,
     DB.ViewType.Rendering,
 ]
+# PresureLossReport was removed in Revit 2027
+if HOST_APP.is_older_than(2027):
+    GRAPHICAL_VIEWTYPES.append(DB.ViewType.PresureLossReport)
 
 
 DETAIL_CURVES = (DB.DetailLine, DB.DetailArc, DB.DetailEllipse, DB.DetailNurbSpline)
@@ -334,19 +336,24 @@ def get_param_value(targetparam):
     return value
 
 
-def get_value_range(param_name, doc=None):
+def get_value_range(param_name, doc=None, elements=None):
     """
-    Retrieves a set of unique values for a specified parameter from all elements in the given Revit document.
+    Retrieves a set of unique values for a specified parameter from elements in a Revit document or from a provided collection of elements.
 
     Args:
         param_name (str): The name of the parameter to retrieve values for.
         doc (Document, optional): The Revit document to search within. If None, the current document is used.
+        elements (iterable, optional): Specific elements to process. If provided, these elements are processed instead of calling get_all_elements(doc).
 
     Returns:
         set: A set of unique values for the specified parameter. The values can be of any type, but are typically strings.
     """
     values = set()
-    for element in get_all_elements(doc):
+    if elements is not None:
+        element_iterable = elements
+    else:
+        element_iterable = get_all_elements(doc)
+    for element in element_iterable:
         targetparam = element.LookupParameter(param_name)
         if targetparam:
             value = get_param_value(targetparam)
@@ -3233,3 +3240,56 @@ def get_array_group_ids_types(doc=None):
     """
     arrays_groups = get_array_group_ids(doc or DOCS.doc)
     return {doc.GetElement(ar).GetTypeId() for ar in arrays_groups}
+
+
+def get_elements_bounding_box(elements, view=None, padding=0.0):
+    """
+    Compute a combined BoundingBoxXYZ enclosing all given elements.
+
+    Args:
+        elements (Iterable[DB.Element]): Elements to include in the bounding box.
+        view (DB.View, optional): If provided, retrieves view-specific bounding
+            boxes (e.g. cut geometry). If None, model geometry is used.
+        padding (float, optional): Extra offset applied in all directions,
+            in Revit internal units (feet). Default is 0.0.
+
+    Returns:
+        DB.BoundingBoxXYZ | None:
+            A new BoundingBoxXYZ enclosing all valid element bounding boxes,
+            expanded by the given padding.
+            Returns None if no elements have a valid bounding box.
+    """
+    if not elements:
+        return None
+
+    min_x = min_y = min_z = float("inf")
+    max_x = max_y = max_z = float("-inf")
+
+    for elem in elements:
+        try:
+            bbox = elem.get_BoundingBox(view)
+            if not bbox:
+                continue
+
+            min_pt = bbox.Min
+            max_pt = bbox.Max
+
+            min_x = min(min_x, min_pt.X)
+            min_y = min(min_y, min_pt.Y)
+            min_z = min(min_z, min_pt.Z)
+            max_x = max(max_x, max_pt.X)
+            max_y = max(max_y, max_pt.Y)
+            max_z = max(max_z, max_pt.Z)
+
+        except Exception:
+            continue
+
+    if min_x == float("inf"):
+        return None
+
+    new_bbox = DB.BoundingBoxXYZ()
+
+    new_bbox.Min = DB.XYZ(min_x - padding, min_y - padding, min_z - padding)
+    new_bbox.Max = DB.XYZ(max_x + padding, max_y + padding, max_z + padding)
+
+    return new_bbox

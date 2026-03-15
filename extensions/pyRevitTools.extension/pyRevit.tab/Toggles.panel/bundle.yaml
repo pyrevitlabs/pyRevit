@@ -1,3 +1,11 @@
+title:
+  en_us: Toggles
+  fr_fr: Commutateurs
+  ru: Переключатели
+  chinese_s: 切换
+  es_es: Alternar
+  de_de: Umschalter
+  pt_br: Alternadores
 layout:
   - toggles1
   - toggles2

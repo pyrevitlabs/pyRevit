@@ -55,6 +55,9 @@
                                     </BeginStoryboard>
                                 </Trigger.ExitActions>
                             </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.35" />
+                            </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
@@ -211,7 +214,7 @@
                                     <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0" Text="{DynamicResource CoreSettings.CloseOtherConsoles.Description}"/>
                                     <WrapPanel Margin="0,15,0,0">
                                         <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="minimize_consoles_cb" IsChecked="False"/>
-                                        <TextBlock Margin="30,4,0,0" Text="Minimize the number of open consoles:" />
+                                        <TextBlock Margin="30,4,0,0" Text="{DynamicResource CoreSettings.CloseOtherConsoles.Toggle}"/>
                                     </WrapPanel>
                                 </StackPanel>
 
@@ -222,6 +225,15 @@
                                     <RadioButton x:Name="closewindows_close_all_rb" GroupName="console_close_mode" Margin="0,10,0,5" IsChecked="False" Content="{DynamicResource CoreSettings.CloseOtherConsoles.CloseAll}"/>
                                     <TextBlock TextWrapping="WrapWithOverflow" Margin="20,0,0,0" Text="{DynamicResource CoreSettings.CloseOtherConsoles.CloseAll.Description}"/>
                                 </StackPanel>
+                            </StackPanel>
+                        </GroupBox>
+                        <GroupBox Header="{DynamicResource CoreSettings.Loader}" Margin="0,10,0,0">
+                            <StackPanel>
+                                <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0" Text="{DynamicResource CoreSettings.Loader.Description}"/>
+                                <WrapPanel Margin="10,10,0,10">
+                                    <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="new_loader" IsChecked="False" Checked="new_loader_changed" Unchecked="new_loader_changed"/>
+                                    <TextBlock Margin="30,4,0,0" Text="{DynamicResource CoreSettings.Loader.NewLoader}"/>
+                                </WrapPanel>
                             </StackPanel>
                         </GroupBox>
                         <GroupBox Header="{DynamicResource CoreSettings.Caching}" Margin="0,10,0,0">

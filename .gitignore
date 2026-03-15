@@ -65,3 +65,6 @@ bin/**/*.xml
 *.so
 *.a
 *.dylib
+
+# claude
+.claude

@@ -1,10 +1,14 @@
 title:
-  ru: Открыть текущий журнал сессии
-  fr_fr: Ouvre le journal de la session actuel
   en_us: Open Current Session Journal
+  fr_fr: Ouvre le journal de la session actuel
+  ru: Открыть текущий журнал сессии
+  chinese_s: 打开当前会话日志
+  es_es: Abrir el log de la sesión actual
   de_de: Öffne die aktuelle Journal Datei
 tooltip:
-  ru: Открывает текущий файл журнала сессии.
-  fr_fr: Ouvre le journal de la session actuel
   en_us: Open current session journal file
+  fr_fr: Ouvre le journal de la session actuel
+  ru: Открывает текущий файл журнала сессии.
+  chinese_s: 打开当前会话日志文件
+  es_es: Abre el log de la sesión actual
   de_de: Es wird die Journal Datei von dieser Sitzung geöffnet.

@@ -218,11 +218,11 @@
             "builtin": "False",
             "type": "extension",
             "rocket_mode_compatible": "true",
-            "name": "revit-mcp-python",
+            "name": "mcp-server-for-revit-python",
             "description": "MCP to allow for interaction between Revit, pyRevit and Claude MCP protocol. Uses the pyRevit routes module to handle the communication.",
             "author": "Juan D. Rodriguez / Jean-Marc Couffin",
             "author_profile": "https://www.linkedin.com/in/juan-david-rodriguez-3abbb5218/ https://www.linkedin.com/in/jmcouffin/",
-            "url": "https://github.com/revit-mcp/revit-mcp-python.git",
+            "url": "https://github.com/mcp-servers-for-revit/mcp-server-for-revit-python.git",
             "website": "",
             "image": "",
             "dependencies": []
@@ -237,6 +237,19 @@
             "author_profile": "https://de.linkedin.com/in/ramyamaher",
             "url": "https://github.com/ramyamaher/Revitesse.git",
             "website": "https://revitesse.com/",
+            "image": "",
+            "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "type": "extension",
+            "rocket_mode_compatible": "true",
+            "name": "CostEstimates",
+            "description": "Automate quantity takeoffs and cost estimation inside Autodesk Revit with pyRevit.",
+            "author": "Wachama J. Swana",
+            "author_profile": "https://www.linkedin.com/in/wachama-j-swana-a937081b4/",
+            "url": "https://github.com/SwanaWJ/pyrevit-CostEstimates.git",
+            "website": "",
             "image": "",
             "dependencies": []
         }

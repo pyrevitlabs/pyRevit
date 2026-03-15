@@ -1,12 +1,17 @@
 title:
-  ru: Перенумеровать
-  fr_fr: Renuméroter
   en_us: Renumber
+  fr_fr: Renuméroter
+  ru: Перенумеровать
+  chinese_s: 重新编号
+  es_es: Renumerar
   de_de: Umummerieren
+  pt_br: Renumerar
 tooltip:
-  ru: Перенумеровать пронумерованные элементы в порядке выделения.
-  fr_fr: Renuméroter les éléments dans l'ordre de sélection
-  en_us: ReNumber numbered elements in order of selection
-  de_de: Elemente werden mit der Reihenfolge der Auswahl neu nummeriert
+  en_us: ReNumber numbered elements in order of selection. Shift-Click to choose duplicate handling (Alert, Skip, or Sweep).
+  fr_fr: Renuméroter les éléments dans l'ordre de sélection. Maj+Clic pour gérer les doublons (Alerte, Ignorer ou Balayer).
+  ru: Перенумеровать пронумерованные элементы в порядке выделения. Shift+Клик для выбора обработки дублей (Предупреждение, Пропуск или Сквозная нумерация).
+  chinese_s: 按照选择顺序，为已编号的图元重新编号。按住 Shift 单击可选择重复项处理方式（提示、跳过或覆盖）。
+  es_es: Renumerar elementos numerados en orden de selección. Shift+Clic para gestionar duplicados (Alerta, Omitir o Barrer).
+  de_de: Elemente werden mit der Reihenfolge der Auswahl neu nummeriert. Shift+Klick zur Behandlung von Duplikaten (Warnung, Überspringen oder Durchnummerieren).
+  pt_br: Renumerar elementos numerados na ordem de seleção. Shift+Clique para lidar com duplicatas (Alerta, Ignorar ou Varrer).
 author: '{{author}}'
-

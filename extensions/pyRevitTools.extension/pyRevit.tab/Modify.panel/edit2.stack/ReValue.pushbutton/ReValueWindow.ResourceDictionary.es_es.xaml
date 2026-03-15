@@ -1,0 +1,14 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Reasignar Valor</system:String>
+    <system:String x:Key="Parameter">Parámetro:</system:String>
+    <system:String x:Key="Guide">Guía</system:String>
+    <system:String x:Key="GuideText">Por Formato: Especifique el patrón existente de los valores en el primer cuadro y un nuevo formato en el segundo cuadro. Por ejemplo, si el valor es "OVERALL 1ST FLOOR", el primer cuadro puede contener "{type} {lvl}ST {name}". La herramienta coincidirá el formato especificado con el valor y extraerá las partes en consecuencia. Usando el segundo cuadro, puede reorganizar estas partes extraídas. En este ejemplo, especificando "LEVEL {lvl} - {type} {name} PLAN" dentro del segundo cuadro se reasignará a "LEVEL 1 - OVERALL FLOOR PLAN"&#x0a;&#x0a;Por Expresión Regular: Si el primer cuadro no contiene un buscador de formato "{}", entonces la herramienta funciona en modo Buscar/Reemplazar con soporte de Expresión Regular.</system:String>
+    <system:String x:Key="OriginalPattern">Patrón Original:</system:String>
+    <system:String x:Key="NewPattern">Nuevo Patrón:</system:String>
+    <system:String x:Key="ApplyNewValues">Aplicar Nuevos Valores</system:String>
+    <system:String x:Key="MarkSelectedAsFinal">Marcar Seleccionados como Finales</system:String>
+    <system:String x:Key="OldValue">Valor Antiguo</system:String>
+    <system:String x:Key="NewValue">Valor Nuevo</system:String>
+</ResourceDictionary>

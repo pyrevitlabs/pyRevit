@@ -3,7 +3,15 @@
 import math
 from pyrevit import revit, DB, DOCS, HOST_APP
 from pyrevit import script
+import sys
+import os
+# Add current directory to path for local imports
+_current_dir = os.path.dirname(os.path.abspath(__file__))
+if _current_dir not in sys.path:
+    sys.path.insert(0, _current_dir)
+
 from pyrevit.preflight import PreflightTestCase
+from check_translations import DocstringMeta
 
 doc = DOCS.doc  # Current Document
 output = script.get_output()
@@ -411,7 +419,8 @@ def check_model_coordinates(document=doc):
     ('<cover>__________:satellite_antenna:__10-Mile Radar___________</cover>'))
     print(divider)
     print("")
-    output.print_md('# Checking model placement and coordinates')
+    from check_translations import get_check_translation
+    output.print_md('# {}'.format(get_check_translation("RadarCheckingModelPlacement")))
     print(divider)
     # endregion
     # region Check the distances of base and survey points
@@ -419,45 +428,45 @@ def check_model_coordinates(document=doc):
     basptdistance = abs(calculate_distance(baspt, INTERNAL_ORIGIN))
     surveydistance = abs(calculate_distance(survpt, INTERNAL_ORIGIN))
     if abs(basptdistance > EXTENT_DISTANCE):
-        output.print_md('{} Base Point is more than {}'.
-                        format(BAD_STRG, CRITERIA_STRG))
+        output.print_md('{} {} {}'.
+                        format(BAD_STRG, get_check_translation("RadarBasePointMoreThan"), get_check_translation("Radar10MilesAway")))
     if abs(surveydistance > EXTENT_DISTANCE):
-        output.print_md('{} Survey Point is more than {}'.
-                        format(BAD_STRG, CRITERIA_STRG))
+        output.print_md('{} {} {}'.
+                        format(BAD_STRG, get_check_translation("RadarSurveyPointMoreThan"), get_check_translation("Radar10MilesAway")))
     else:
-        output.print_md('{} Survey Point is less than {}'.
-                        format(GOOD_STRG, CRITERIA_STRG))
+        output.print_md('{} {} {}'.
+                        format(GOOD_STRG, get_check_translation("RadarSurveyPointLessThan"), get_check_translation("Radar10MilesAway")))
     basptdistance = calculate_distance(baspt, INTERNAL_ORIGIN)
     # endregion
     # region Print Table
     tbdata = [
-        report_point('Project Base Point Coordinates to Internal Origin', 
+        report_point(get_check_translation("RadarProjectBasePointCoords"), 
                      baspt, basptdistance),
-        report_point('Survey Point Coordinates to Internal Origin', 
+        report_point(get_check_translation("RadarSurveyPointCoords"), 
                      survpt, surveydistance),
-        report_point('Project Base Point to Survey Delta X', 
+        report_point(get_check_translation("RadarBaseToSurveyDeltaX"), 
                      baspt, calculate_delta(baspt, survpt, delta = 'x'), 
                      distance_only=True),
-        report_point('Project Base Point to Survey Delta Y', 
+        report_point(get_check_translation("RadarBaseToSurveyDeltaY"), 
                      baspt, calculate_delta(baspt, survpt, delta = 'y'), 
                      distance_only=True),
-        report_point('Planar Distance between Base Point and Survey Point', 
+        report_point(get_check_translation("RadarPlanarDistance"), 
                      baspt, calculate_horizontal_distance(baspt, survpt), 
                      distance_only=True),
-        report_point('Total Distance between Base Point and Survey Point', 
+        report_point(get_check_translation("RadarTotalDistance"), 
                      baspt, calculate_distance(baspt, survpt), 
                      distance_only=True),
-        report_point('Project Elevation (Base Point Vertical Distance)', 
+        report_point(get_check_translation("RadarProjectElevation"), 
                      baspt, calculate_delta(baspt, survpt, delta = 'z'),
                         distance_only=True)
     ]
     output.print_table(table_data=tbdata, 
-                    title='Project Coordinates and Distances',
+                    title=get_check_translation("RadarProjectCoordinates"),
                     columns=
-                        ['Points',
-                        ' XYZ Coordinates',
-                        ' Distance (' + str(unit_system) + ')  ',
-                        ' ANGLE (°)  '],
+                        [get_check_translation("RadarPoints"),
+                        ' ' + get_check_translation("RadarXYZCoordinates"),
+                        ' {} ({} )  '.format(get_check_translation("RadarDistance"), str(unit_system)),
+                        ' {}  '.format(get_check_translation("RadarAngle"))],
                     formats=['', '' , '', '', '', ''])
     # endregion
 
@@ -469,8 +478,9 @@ def check_model_extents(document=doc):
     Returns:
         Test Score (int): The score of the test.
     """
+    from check_translations import get_check_translation
     print("")
-    output.print_md('# Checking the extents of the 3D view bounding box')
+    output.print_md('# {}'.format(get_check_translation("RadarChecking3DViewBBox")))
     bbox = get_temp_view_bbox(document)
     min = (bbox.Min.X, bbox.Min.Y, bbox.Min.Z)
     max = (bbox.Max.X, bbox.Max.Y, bbox.Max.Z)
@@ -479,12 +489,12 @@ def check_model_extents(document=doc):
     print("")
     if (calculate_distance(min, INTERNAL_ORIGIN) > EXTENT_DISTANCE or 
         calculate_distance(max, INTERNAL_ORIGIN) > EXTENT_DISTANCE):
-        output.print_md('{} 3D View Bounding Box extends more than {}'.
-                        format(BAD_STRG, CRITERIA_STRG))
+        output.print_md('{} {} {}'.
+                        format(BAD_STRG, get_check_translation("Radar3DViewBBoxMoreThan"), get_check_translation("Radar10MilesAway")))
         return 0
     else:
-        output.print_md('{} 3D View Bounding Box is located less than {}'.
-                        format(GOOD_STRG, CRITERIA_STRG))
+        output.print_md('{} {} {}'.
+                        format(GOOD_STRG, get_check_translation("Radar3DViewBBoxLessThan"), get_check_translation("Radar10MilesAway")))
         return 1
 
 def check_design_options(document=doc):
@@ -495,9 +505,10 @@ def check_design_options(document=doc):
     Returns:
         Test Score (int): The score of the test.
     """
+    from check_translations import get_check_translation
     print("")
     print(divider)
-    output.print_md('# Checking the extents of the design option objects')
+    output.print_md('# {}'.format(get_check_translation("RadarCheckingDesignOptions")))
     print(divider)
     design_option_objects = get_design_options_elements(document)
     violating_design_option_objects = []
@@ -524,14 +535,13 @@ def check_design_options(document=doc):
                                                 get_Parameter(option_set_param).
                                                 AsElementId())
     if len(violating_design_option_objects) > 0:
-        output.print_md(BAD_STRG + 
-        'Design Option Objects are located more than {}'.
-                            format(CRITERIA_STRG))
+        output.print_md('{} {} {}'.
+                            format(BAD_STRG, get_check_translation("RadarDesignOptionsMoreThan"), get_check_translation("Radar10MilesAway")))
         if len(violating_design_option_objects) > 10:
-            output.print_md('{} Showing the first 10 objects'.
-                            format(WARN_STRG))
-            output.print_md('{} Manual investigation is required'.
-                            format(WARN_STRG))
+            output.print_md('{} {}'.
+                            format(WARN_STRG, get_check_translation("RadarShowingFirst10")))
+            output.print_md('{} {}'.
+                            format(WARN_STRG, get_check_translation("RadarManualInvestigation")))
         counter = 0
         limit = 10
         violating_design_option_objects = violating_design_option_objects[:limit]
@@ -540,7 +550,7 @@ def check_design_options(document=doc):
             print(output.linkify(x.Id) + 
                     "   " +
                     str(x.Name) +
-                    " - Is part of " +
+                    " - {} ".format(get_check_translation("RadarIsPartOf")) +
                     str(doc.GetElement(setid).Name) +
                     " - " +
                     str(x.DesignOption.Name)
@@ -549,8 +559,8 @@ def check_design_options(document=doc):
         return 0
     else:
         output.print_md(
-            '{} No object in any design option is located more than {}'.
-            format(GOOD_STRG, CRITERIA_STRG))
+            '{} {} {}'.
+            format(GOOD_STRG, get_check_translation("RadarNoObjectInDesignOption"), get_check_translation("Radar10MilesAway")))
         return 1
 
 def check_linked_elements(document=doc):
@@ -563,8 +573,9 @@ def check_linked_elements(document=doc):
     """
     # region collect bad cads and rvts
     limit = 5
+    from check_translations import get_check_translation
     print(divider)
-    output.print_md('# Checking the extents of the CAD and RVT links')
+    output.print_md('# {}'.format(get_check_translation("RadarCheckingCADRVT")))
     print(divider)
     badcads = get_far_elements(doc, cad=True, rvt=False)
     badcads = badcads[:limit]
@@ -583,8 +594,8 @@ def check_linked_elements(document=doc):
                 str(x.Name) + '  ' + str(x.Category.Name))
 
     else:
-        output.print_md('{} All CAD and RVT Links are located less than {}'.
-                        format(GOOD_STRG, CRITERIA_STRG))
+        output.print_md('{} {} {}'.
+                        format(GOOD_STRG, get_check_translation("RadarAllCADRVTLessThan"), get_check_translation("Radar10MilesAway")))
         test_score = 2
         print(divider)
     # endregion
@@ -592,17 +603,18 @@ def check_linked_elements(document=doc):
     hide_linked_elements(document, make_temp_view(document), True, True)
     cleanbbox = get_temp_view_bbox(doc)
     if check_bounding_box(cleanbbox, INTERNAL_ORIGIN, EXTENT_DISTANCE) == 0:
-        output.print_md('{} Distant objects are still being detected!'.
-                        format(BAD_STRG))
-        output.print_md('{} Further Analysis Required.'.format(WARN_STRG))
+        output.print_md('{} {}'.
+                        format(BAD_STRG, get_check_translation("RadarDistantObjectsDetected")))
+        output.print_md('{} {}'.format(WARN_STRG, get_check_translation("RadarFurtherAnalysis")))
     else:
-        output.print_md('{} All Objects are located less than {}'.
-                        format(GOOD_STRG, CRITERIA_STRG))
+        output.print_md('{} {} {}'.
+                        format(GOOD_STRG, get_check_translation("RadarAllObjectsLessThan"), get_check_translation("Radar10MilesAway")))
         script.exit()
     # endregion
+    from check_translations import get_check_translation
     print(divider)
-    output.print_md('# Checking everything, It is going to take a while.')
-    output.print_md('# Please be patient.')
+    output.print_md('# {}'.format(get_check_translation("RadarCheckingEverything")))
+    output.print_md('# {}'.format(get_check_translation("RadarPleaseBePatient")))
 
 def check_all_elements(document=doc): 
     """
@@ -617,44 +629,33 @@ def check_all_elements(document=doc):
     limit = 10
     badelements = badelements[:limit]
     if badelements:
+        from check_translations import get_check_translation
         if len(badelements) > limit:
-            output.print_md('{} Showing the first 10 objects'.
-                            format(WARN_STRG))
-            output.print_md('{} Manual investigation is required'.
-                            format(WARN_STRG))
-        output.print_md('{} Elements below are located more than {}'.
-                        format(BAD_STRG, CRITERIA_STRG))
+            output.print_md('{} {}'.
+                            format(WARN_STRG, get_check_translation("RadarShowingFirst10")))
+            output.print_md('{} {}'.
+                            format(WARN_STRG, get_check_translation("RadarManualInvestigation")))
+        output.print_md('{} {} {}'.
+                        format(BAD_STRG, get_check_translation("RadarElementsMoreThan"), get_check_translation("Radar10MilesAway")))
         for x in badelements:
             print(output.linkify(x.Id)+ '  ' + 
                     str(x.Name) + '  ' + str(x.Category.Name))
 
     else:
-        output.print_md('{} All Objects are located less than {}'.
-                        format(GOOD_STRG, CRITERIA_STRG))
-    output.print_md('# All tests completed, Review the results above.')
+        from check_translations import get_check_translation
+        output.print_md('{} {} {}'.
+                        format(GOOD_STRG, get_check_translation("RadarAllObjectsLessThan"), get_check_translation("Radar10MilesAway")))
+    output.print_md('# {}'.format(get_check_translation("RadarAllTestsCompleted")))
 
 class ModelChecker(PreflightTestCase):
-    """
-    Checks the extents of all elements in the model.
-    This Model Checker swiftly verifies the extents of the Revit model. 
-    Placing model extents more than 10 Mi (16KM) from the project's 
-    internal origin can lead to issues with accuracy, tolerance, 
-    performance, and viewport display. This check ensures that the 
-    model remains within a 10-mile radius of the internal origin.
-
-    The test case examines the following, reporting extents 
-    concerning the project's internal origin. The script prioritizes 
-    based on the assumption that most model extent issues are
-    related to the following:
-
-        - The distance between project basepoint and internal origin
-        - The distance between survey point and  internal origin
-        - The bounding box of the 3D view
-        - The bounding box of the design option objects
-        - The bounding box of the CAD and RVT links
-        - The bounding box of all elements in the model
-    """
-    name = "10 Mile Radar"
+    __metaclass__ = DocstringMeta
+    _docstring_key = "CheckDescription_10MileRadar"
+    
+    @property
+    def name(self):
+        from check_translations import get_check_translation
+        return get_check_translation("CheckName_10MileRadar")
+    
     author = "Tay Othman"
 
     def setUp(self, doc, output):
@@ -665,16 +666,17 @@ class ModelChecker(PreflightTestCase):
             check_model_coordinates(doc)
             task_1 = check_model_extents(doc)
             task_2 = check_design_options(doc)
+            from check_translations import get_check_translation
             if task_1 + task_2 < 2:
                 output.print_md(
-                    ('{} 3D View Bounding Box extends more than {}'.
-                     format(BAD_STRG, CRITERIA_STRG)))
+                    ('{} {} {}'.
+                     format(BAD_STRG, get_check_translation("Radar3DViewBBoxMoreThan"), get_check_translation("Radar10MilesAway"))))
                 check_linked_elements(doc)
                 check_all_elements(doc)
             else:
                 output.print_md(
-                    ('{} 3D View Bounding Box is located less than {}'.
-                     format(GOOD_STRG, CRITERIA_STRG)))
+                    ('{} {} {}'.
+                     format(GOOD_STRG, get_check_translation("Radar3DViewBBoxLessThan"), get_check_translation("Radar10MilesAway"))))
 
 
     def tearDown(self, doc, output):

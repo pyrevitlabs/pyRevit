@@ -4,8 +4,6 @@ from pyrevit import script, forms, revit, HOST_APP, DB, UI
 from pyrevit.revit import events
 from pyrevit.framework import Convert, List, Color, SolidColorBrush
 from pyrevit.compat import get_elementid_value_func
-import traceback
-from Autodesk.Revit.Exceptions import InvalidOperationException
 from collections import OrderedDict
 
 
@@ -14,51 +12,23 @@ uidoc = HOST_APP.uidoc
 logger = script.get_logger()
 output = script.get_output()
 
-PLANES = OrderedDict([
-    (DB.PlanViewPlane.TopClipPlane, ([0, 255, 0], "Top Clip Plane", "topplane")),
-    (DB.PlanViewPlane.CutPlane, ([255, 0, 0], "Cut Plane", "cutplane")),
-    (DB.PlanViewPlane.BottomClipPlane, ([0, 0, 255], "Bottom Clip Plane", "bottomplane")),
-    (DB.PlanViewPlane.ViewDepthPlane, ([255, 127, 0], "View Depth Plane", "viewdepth")),
-])
+PLANES = OrderedDict(
+    [
+        (DB.PlanViewPlane.TopClipPlane, ([0, 255, 0], "Top Clip Plane", "topplane")),
+        (DB.PlanViewPlane.CutPlane, ([255, 0, 0], "Cut Plane", "cutplane")),
+        (
+            DB.PlanViewPlane.BottomClipPlane,
+            ([0, 0, 255], "Bottom Clip Plane", "bottomplane"),
+        ),
+        (
+            DB.PlanViewPlane.ViewDepthPlane,
+            ([255, 127, 0], "View Depth Plane", "viewdepth"),
+        ),
+    ]
+)
 
 get_elementid_value = get_elementid_value_func()
 INVALID_ID_VALUE = get_elementid_value(DB.ElementId.InvalidElementId)
-
-
-class SimpleEventHandler(UI.IExternalEventHandler):
-    def __init__(self, do_this):
-        self.do_this = do_this
-
-    def Execute(self, uiapp):
-        try:
-            self.do_this(uiapp)
-        except InvalidOperationException:
-            pass
-
-    def GetName(self):
-        return "SimpleEventHandler"
-
-
-class UpdateViewRangeEventHandler(UI.IExternalEventHandler):
-    def __init__(self):
-        self.new_values = None
-        self.new_levels = None
-        self.context = None
-
-    def Execute(self, uiapp):
-        try:
-            if self.context and self.new_values:
-                self.context._update_view_range_internal(
-                    self.new_values, self.new_levels
-                )
-        except Exception as e:
-            if hasattr(self.context, "view_model"):
-                self.context.view_model.warning_message = (
-                    "Error executing view range update: {}".format(str(e))
-                )
-
-    def GetName(self):
-        return "UpdateViewRangeEventHandler"
 
 
 class Context(object):
@@ -105,22 +75,42 @@ class Context(object):
         if not compare_views(self._source_view, value):
             self._source_view = value
             self._levels_populated = False  # Reset when view changes
+
+            self._source_template = None
+            if (
+                self.source_view is not None
+                and self.source_view.ViewTemplateId != DB.ElementId.InvalidElementId
+            ):
+                template = self.source_view.Document.GetElement(
+                    self.source_view.ViewTemplateId
+                )
+                non_controlled_params = template.GetNonControlledTemplateParameterIds()
+                if (
+                    DB.ElementId(DB.BuiltInParameter.PLAN_VIEW_RANGE)
+                    not in non_controlled_params
+                ):
+                    self._source_template = template
+
             self.context_changed()
 
     def update_view_range(self, new_values, new_levels=None):
         if not self.source_view or not isinstance(self.source_view, DB.ViewPlan):
             self.view_model.warning_message = "No valid plan view selected"
             return False
-        if self.source_view.IsTemplate:
-            self.view_model.warning_message = (
-                "Cannot modify view range - this is a view template"
-            )
-            return False
 
-        update_view_range_handler.new_values = new_values
-        update_view_range_handler.new_levels = new_levels or {}
-        update_view_range_handler.context = self
-        update_view_range_event.Raise()
+        if self._source_template is not None:
+            dialog_result = forms.alert(
+                "You are about to change a View Template! Are you sure you want to proceed?",
+                ok=False,
+                yes=True,
+                no=True,
+            )
+            if not dialog_result:
+                return False
+
+        events.execute_in_revit_context(
+            self._update_view_range_internal, new_values, new_levels
+        )
         return True
 
     def _update_view_range_internal(self, new_values, new_levels=None):
@@ -307,7 +297,9 @@ class Context(object):
         """Populate the list of available levels in the project"""
         try:
             # Get all levels in the project
-            level_collector = DB.FilteredElementCollector(self.source_view.Document).OfClass(DB.Level)
+            level_collector = DB.FilteredElementCollector(
+                self.source_view.Document
+            ).OfClass(DB.Level)
             levels = list(level_collector)
 
             # Sort levels by elevation
@@ -318,7 +310,11 @@ class Context(object):
                 def __init__(self, name, element_id, elevation=None, is_special=False):
                     self.Name = name
                     self.Id = element_id
-                    self.IdValue = get_elementid_value(element_id) if element_id else INVALID_ID_VALUE
+                    self.IdValue = (
+                        get_elementid_value(element_id)
+                        if element_id
+                        else INVALID_ID_VALUE
+                    )
                     self.Elevation = elevation
                     self.IsSpecial = is_special
 
@@ -387,9 +383,15 @@ class Context(object):
             self.view_model.viewdepth_level_id = None
 
             # Then set the actual values
-            self.view_model.topplane_level_id = stored_selections.get("top", INVALID_ID_VALUE)
-            self.view_model.bottomplane_level_id = stored_selections.get("bottom", INVALID_ID_VALUE)
-            self.view_model.viewdepth_level_id = stored_selections.get("viewdepth", INVALID_ID_VALUE)
+            self.view_model.topplane_level_id = stored_selections.get(
+                "top", INVALID_ID_VALUE
+            )
+            self.view_model.bottomplane_level_id = stored_selections.get(
+                "bottom", INVALID_ID_VALUE
+            )
+            self.view_model.viewdepth_level_id = stored_selections.get(
+                "viewdepth", INVALID_ID_VALUE
+            )
 
         except Exception as e:
             self.view_model.warning_message = (
@@ -416,7 +418,7 @@ class Context(object):
 
         if not self.is_valid():
             server.meshes = None
-            refresh_event.Raise()
+            events.execute_in_revit_context(refresh_active_view)
             return
 
         try:
@@ -531,10 +533,10 @@ class Context(object):
                         ]
 
             server.meshes = [revit.dc3dserver.Mesh(edges, triangles)]
-            refresh_event.Raise()
+            events.execute_in_revit_context(refresh_active_view)
 
-        except Exception:
-            print(traceback.format_exc())
+        except Exception as ex:
+            logger.exception(ex)
 
     def is_valid(self):
         if not can_use_view_as_source(self.source_view):
@@ -560,19 +562,17 @@ class Context(object):
             )
             self.view_model.can_modify_view = False
         else:
-            can_modify = (
-                isinstance(self.source_view, DB.ViewPlan)
-                and not self.source_view.IsTemplate
-            )
+            can_modify = isinstance(self.source_view, DB.ViewPlan)
             self.view_model.can_modify_view = can_modify
 
-            if self.source_view.IsTemplate:
-                self.view_model.message = "Showing View Range of [{}]\n(View Template - Cannot Modify)".format(
-                    self.source_view.Name
-                )
-            else:
-                self.view_model.message = "Showing View Range of\n[{}]".format(
-                    self.source_view.Name
+            self.view_model.message = "Showing View Range of\n[{}]".format(
+                self.source_view.Name
+            )
+            if self._source_template is not None:
+                self.view_model.message += (
+                    " - ⚠️ View Range driven by Template [{}]".format(
+                        self._source_template.Name
+                    )
                 )
             return True
 
@@ -738,12 +738,14 @@ class MainWindow(forms.WPFWindow):
     def __init__(self):
         forms.WPFWindow.__init__(self, "MainWindow.xaml")
         self.Closed += self.window_closed
+        script.restore_window_position(self)
         # Events are now handled via @events.handle decorators
         server.add_server()
 
     def window_closed(self, sender, args):
+        script.save_window_position(self)
         server.remove_server()
-        refresh_event.Raise()
+        events.execute_in_revit_context(refresh_active_view)
         # Stop all registered events using the events API
         events.stop_events()
 
@@ -814,8 +816,8 @@ class MainWindow(forms.WPFWindow):
                             original_level_id
                             and original_level_id != DB.ElementId.InvalidElementId
                         ):
-                            self.DataContext.topplane_level_id = (
-                                get_elementid_value(original_level_id)
+                            self.DataContext.topplane_level_id = get_elementid_value(
+                                original_level_id
                             )
                         else:
                             self.DataContext.topplane_level_id = INVALID_ID_VALUE
@@ -828,7 +830,10 @@ class MainWindow(forms.WPFWindow):
                         ):
                             try:
                                 # Use source_view.Document instead of active_view.Document
-                                if context.source_view and context.source_view.IsValidObject:
+                                if (
+                                    context.source_view
+                                    and context.source_view.IsValidObject
+                                ):
                                     level = context.source_view.Document.GetElement(
                                         original_level_id
                                     )
@@ -847,8 +852,8 @@ class MainWindow(forms.WPFWindow):
                             original_level_id
                             and original_level_id != DB.ElementId.InvalidElementId
                         ):
-                            self.DataContext.bottomplane_level_id = (
-                                get_elementid_value(original_level_id)
+                            self.DataContext.bottomplane_level_id = get_elementid_value(
+                                original_level_id
                             )
                         else:
                             self.DataContext.bottomplane_level_id = INVALID_ID_VALUE
@@ -858,8 +863,8 @@ class MainWindow(forms.WPFWindow):
                             original_level_id
                             and original_level_id != DB.ElementId.InvalidElementId
                         ):
-                            self.DataContext.viewdepth_level_id = (
-                                get_elementid_value(original_level_id)
+                            self.DataContext.viewdepth_level_id = get_elementid_value(
+                                original_level_id
                             )
                         else:
                             self.DataContext.viewdepth_level_id = INVALID_ID_VALUE
@@ -880,24 +885,24 @@ class MainWindow(forms.WPFWindow):
 # Old manual subscribe/unsubscribe functions removed in favor of events API
 
 
-def refresh_active_view(uiapp):
+def refresh_active_view():
     try:
-        uidoc = uiapp.ActiveUIDocument
+        uidoc = revit.uidoc
         if not compare_views(uidoc.ActiveView, context.active_view):
             uidoc.ActiveView = context.active_view
         uidoc.RefreshActiveView()
         if context.source_view:
             uidoc.Selection.SetElementIds(List[DB.ElementId]([context.source_view.Id]))
-    except Exception:
-        print(traceback.format_exc())
+    except Exception as ex:
+        logger.exception(ex)
 
 
 @events.handle("view-activated")
 def view_activated(sender, args):
     try:
         context.active_view = args.CurrentActiveView
-    except Exception:
-        print(traceback.format_exc())
+    except Exception as ex:
+        logger.exception(ex)
 
 
 @events.handle("selection-changed")
@@ -914,8 +919,8 @@ def selection_changed(sender, args):
                 context.source_view = sel
                 return
         context.source_view = None
-    except Exception:
-        print(traceback.format_exc())
+    except Exception as ex:
+        logger.exception(ex)
 
 
 @events.handle("doc-changed")
@@ -931,8 +936,8 @@ def doc_changed(sender, args):
             context.context_changed()
     except AttributeError:
         context.context_changed()
-    except Exception:
-        print(traceback.format_exc())
+    except Exception as ex:
+        logger.exception(ex)
 
 
 def compare_views(view1, view2):
@@ -1000,10 +1005,6 @@ def get_color_from_plane(plane):
 
 # Initialize
 server = revit.dc3dserver.Server(register=False)
-refresh_event = UI.ExternalEvent.Create(SimpleEventHandler(refresh_active_view))
-update_view_range_handler = UpdateViewRangeEventHandler()
-update_view_range_event = UI.ExternalEvent.Create(update_view_range_handler)
-
 vm = MainViewModel()
 context = Context(vm)
 context.active_view = uidoc.ActiveGraphicalView

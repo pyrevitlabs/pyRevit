@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Преобразование стилей линий</system:String>
+    <system:String x:Key="FromStyle">Исходный стиль</system:String>
+    <system:String x:Key="ToStyle">Целевой стиль</system:String>
+    <system:String x:Key="ConvertSelectedStyles">Преобразовать выбранные стили</system:String>
+    <system:String x:Key="ConvertStyles">Преобразовать стиль(и)</system:String>
+    <system:String x:Key="ConvertOptions">Параметры преобразования</system:String>
+    <system:String x:Key="ConvertDetailLines">Преобразовать детальные линии</system:String>
+    <system:String x:Key="ConvertModelLines">Преобразовать модели линии</system:String>
+    <system:String x:Key="ConvertFilledRegionLines">Преобразовать линии заполненных областей (Заполненные области требуют встряхивания)</system:String>
+    <system:String x:Key="ConvertGroupedLines">Преобразовать сгруппированные линии (Нет поддержки API)</system:String>
+    <system:String x:Key="DeleteConvertedStyles">Удалить преобразованные стили после завершения</system:String>
+</ResourceDictionary>

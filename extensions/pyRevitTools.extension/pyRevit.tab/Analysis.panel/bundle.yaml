@@ -1,0 +1,11 @@
+title:
+  en_us: Analysis
+  fr_fr: Analyse
+  ru: Анализ
+  chinese_s: 分析
+  es_es: Análisis
+  de_de: Analyse
+  pt_br: Análise
+layout:
+  - ColorSplasher
+  - Tools

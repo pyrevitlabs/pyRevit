@@ -437,6 +437,7 @@ def pick_linkeds(message=''):
 
 
 def pick_point(message=''):
+    # type: (str) -> DB.XYZ | None
     """Pick a point from the user interface.
 
     Args:
@@ -445,11 +446,62 @@ def pick_point(message=''):
     Returns:
         (tuple or None): A tuple representing the picked point as (x, y, z)
             coordinates, or None if no point was picked or an error occurred.
+
+    Side Effects:
+        If the active view does not have a ``SketchPlane`` assigned, this
+        function will automatically create a temporary work plane (aligned with the
+        active view) and assign it to the view before prompting for the point.
+        The work plane is removed after picking to avoid modifying the document.
     """
+    doc = HOST_APP.doc
+    active_view = doc.ActiveView
+    NO_SKETCHPLANE_VIEWTYPES = (
+        DB.ViewType.DraftingView,
+        DB.ViewType.Legend,
+    )  # type: tuple[DB.ViewType]
+    needs_plane = (
+        active_view.SketchPlane is None
+        and active_view.ViewType not in NO_SKETCHPLANE_VIEWTYPES
+    )  # type: bool
+    result = None
+
     try:
-        return HOST_APP.uidoc.Selection.PickPoint(message)
-    except Exception:
+        if needs_plane:
+            tg = DB.TransactionGroup(doc, "Assigning a workplane to the current view")
+            tg.Start()
+
+            with DB.Transaction(doc, "Create temporary workplane") as t:
+                t.Start()
+                try:
+                    sketch_plane = DB.SketchPlane.Create(
+                        doc,
+                        DB.Plane.CreateByNormalAndOrigin(
+                            active_view.ViewDirection,
+                            active_view.Origin
+                        )
+                    )
+                    active_view.SketchPlane = sketch_plane
+                    t.Commit()
+                except Exception as ex:
+                    mlogger.error("Failed to create temporary sketch plane: %s", ex)
+                    t.RollBack()
+                    tg.RollBack()
+                    return None
+
+            result = HOST_APP.uidoc.Selection.PickPoint(message)
+
+            tg.RollBack()
+        else:
+            result = HOST_APP.uidoc.Selection.PickPoint(message)
+
+    except RevitExceptions.OperationCanceledException:
+        mlogger.debug("Operation canceled by user")
         return None
+    except Exception as ex:
+        mlogger.error("An error occurred during point picking: %s", ex)
+        return None
+
+    return result
 
 
 def pick_rectangle(message='', pick_filter=None):

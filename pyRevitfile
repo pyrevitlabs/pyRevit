@@ -37,6 +37,7 @@ corex = [
 ]
 base = [
     'bin',
+    'extensions/pyRevitBundlesCreatorExtension.extension',
     'extensions/pyRevitCore.extension',
     'extensions/pyRevitTags.extension',
     'extensions/pyRevitTools.extension',

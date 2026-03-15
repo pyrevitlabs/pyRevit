@@ -1,0 +1,26 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Make Pattern</system:String>
+    
+    <system:String x:Key="EnterNewPatternName">Enter New Pattern Name</system:String>
+    <system:String x:Key="SelectPatternToExport">Select Pattern to Export</system:String>
+    
+    <system:String x:Key="ExportPATFile">Export PAT File</system:String>
+    <system:String x:Key="CreatePattern">Create Pattern</system:String>
+    <system:String x:Key="NoLineworkSelected">No Linework Selected</system:String>
+    <system:String x:Key="IncompatibleViewType">Incompatible View Type</system:String>
+    
+    <system:String x:Key="ResolverOptions">Resolver Options</system:String>
+    <system:String x:Key="CreateFilledRegion">Create Filled Region</system:String>
+    <system:String x:Key="UseHighestResolution">Use Highest Resolution</system:String>
+    <system:String x:Key="CapturedViewScale">Captured View Scale</system:String>
+    <system:String x:Key="ScaleMultiplier">Scale Multiplier</system:String>
+    <system:String x:Key="RotationInDegrees">Rotation (in Degrees)</system:String>
+    <system:String x:Key="FlipHorizontally">Flip Horizontally</system:String>
+    <system:String x:Key="FlipVertically">Flip Vertically</system:String>
+    
+    <system:String x:Key="PatternType">Pattern Type</system:String>
+    <system:String x:Key="DetailPattern">Detail Pattern</system:String>
+    <system:String x:Key="ModelPattern">Model Pattern</system:String>
+</ResourceDictionary>

@@ -4,30 +4,28 @@
         Width="600" Height="500" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen"
         HorizontalContentAlignment="Center"
-		Title="Batch Sheet Maker">
+		Title="{DynamicResource Title}">
         <DockPanel Margin="10">
-            <TextBlock DockPanel.Dock="Top">
-                Enter list of sheet number and names in this format:<LineBreak />
-                <Bold>sheet-number</Bold>  TAB  <Bold>sheet-name</Bold> (e.g. A311 <Run FontSize="18" Text="⇥"/> SHEET NAME)<LineBreak />
-                Multiple sheet with indentical names could be listed with sheet number ranges:<LineBreak />
-                <Bold>Range of Sheet Numbers:</Bold>   e.g. A103--A106 or A103::A106<LineBreak />
-                <Bold>List of Sheet Numbers:</Bold>   e.g. A104,A105 or A104;A105
+            <TextBlock DockPanel.Dock="Top" TextWrapping="Wrap">
+                <Run Text="{DynamicResource InstructionsLine1}"/><LineBreak />
+                <Bold><Run Text="{DynamicResource SheetNumberLabel}"/></Bold>  <Run Text="{DynamicResource TAB}"/>  <Bold><Run Text="{DynamicResource SheetNameLabel}"/></Bold> <Run Text=" "/><Run FontSize="18" Text="⇥"/><Run Text=" "/><Run Text="{DynamicResource SheetNameExample}"/><LineBreak />
+                <Run Text="{DynamicResource InstructionsLine2}"/><LineBreak />
+                <Bold><Run Text="{DynamicResource RangeOfSheetNumbers}"/></Bold>   <Run Text="{DynamicResource RangeExample}"/><LineBreak />
+                <Bold><Run Text="{DynamicResource ListOfSheetNumbers}"/></Bold>   <Run Text="{DynamicResource ListExample}"/>
             </TextBlock>
             <StackPanel DockPanel.Dock="Bottom">
                 <WrapPanel>
                     <RadioButton x:Name="sheet_cb" GroupName="sheetoptions"
                                  Margin="10,10,0,5"
-                                 IsChecked="True">
-                        Create Sheets
-                    </RadioButton>
+                                 IsChecked="True"
+                                 Content="{DynamicResource CreateSheets}"/>
                     <RadioButton x:Name="placeholder_cb"
                                  GroupName="sheetoptions"
                                  Margin="10,10,0,5"
-                                 IsChecked="False">
-                        Create Placeholders
-                     </RadioButton>
+                                 IsChecked="False"
+                                 Content="{DynamicResource CreatePlaceholders}"/>
                 </WrapPanel>
-                <Button Content="Create" Margin="0,10,0,0"
+                <Button Content="{DynamicResource CreateButton}" Margin="0,10,0,0"
                         Height="24"
                         Click="create_sheets"/>
             </StackPanel>

@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <DisableImplicitProps>true</DisableImplicitProps>
+        <DisableImplicitTargets>true</DisableImplicitTargets>
+        <AssemblyName>pyRevitAssemblyBuilder</AssemblyName>
+        <RootNamespace>pyRevitAssemblyBuilder</RootNamespace>
+        <UseRevit>true</UseRevit>
+        <UseIronPython>false</UseIronPython>
+        <UseExtensionParser>true</UseExtensionParser>
+        <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
+        <IronPythonVersion>IPY342</IronPythonVersion>
+        <Version>3.4.2</Version>
+        <UseRoslyn>true</UseRoslyn>
+        <LangVersion>10.0</LangVersion>
+        <UseWPF>true</UseWPF>
+        <!-- Deploy to both IPY342 and IPY2712PR directories -->
+        <DeployToAllVersions>true</DeployToAllVersions>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+        <Reference Include="WindowsBase" />
+        <Reference Include="PresentationCore" />
+        <Reference Include="PresentationFramework" />
+        <Reference Include="pyRevitLabs.NLog">
+            <HintPath>..\..\libs\netfx\pyRevitLabs.NLog.dll</HintPath>
+            <Private>false</Private>
+        </Reference>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
+        <Reference Include="pyRevitLabs.NLog">
+            <HintPath>..\..\libs\netcore\pyRevitLabs.NLog.dll</HintPath>
+            <Private>false</Private>
+        </Reference>
+    </ItemGroup>
+</Project>

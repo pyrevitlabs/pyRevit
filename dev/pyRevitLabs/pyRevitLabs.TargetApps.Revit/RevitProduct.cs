@@ -28,7 +28,7 @@ namespace pyRevitLabs.TargetApps.Revit {
     }
 
     public class RevitProductData {
-        public static string HostFileURL = GithubAPI.GetRawUrl(PyRevitLabsConsts.OriginalRepoId, PyRevitLabsConsts.TargetBranch, @"bin/pyrevit-hosts.json");
+        public static string HostFileURL = GithubAPI.GetRawUrl(PyRevitLabsConsts.OriginalRepoId, PyRevitLabsConsts.HostsFileBranch, @"bin/pyrevit-hosts.json");
 
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
@@ -137,11 +137,15 @@ namespace pyRevitLabs.TargetApps.Revit {
         }
 
         public static void Update() => _dstore.UpdateData(forceUpdate: true);
+
+        public static void RefreshIfStale() => _dstore.UpdateData(forceUpdate: false);
     }
 
     public class RevitProduct {
         private string _registeredName = string.Empty;
         private string _registeredInstallPath = string.Empty;
+        private static List<RevitProduct> _installedProductsCache = null;
+        private static readonly object _installedProductsCacheLock = new object();
 
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
@@ -223,6 +227,14 @@ namespace pyRevitLabs.TargetApps.Revit {
         }
 
         public static List<RevitProduct> ListInstalledProducts() {
+            if (_installedProductsCache != null)
+                return _installedProductsCache.ToList();
+
+            lock (_installedProductsCacheLock)
+            {
+                if (_installedProductsCache != null)
+                    return _installedProductsCache.ToList();
+
             var installedRevits = new HashSet<RevitProduct>();
 
             // pattern for finding revit installation entries in registry
@@ -233,6 +245,8 @@ namespace pyRevitLabs.TargetApps.Revit {
             // fails:
             //     Revit Content Libraries 2016
             var revitFinder = new Regex(@"^Revit\s[A-Za-z]*\s*\d{4}\s?($|\s-)");
+            // also match Revit Preview Release (e.g. 2027 preview) and "Autodesk Revit Preview Release"
+            var previewFinder = new Regex(@"^(Autodesk\s+)?Revit\s+Preview\s+Release\s*$", RegexOptions.IgnoreCase);
 
             // open parent regkey
             var uninstallKey =
@@ -243,7 +257,7 @@ namespace pyRevitLabs.TargetApps.Revit {
                 var subkey = uninstallKey.OpenSubKey(key);
                 var appName = subkey.GetValue("DisplayName") as string;
                 logger.Debug("Analysing registered app: {0} @ {1}", appName, subkey.Name);
-                if (appName != null && revitFinder.IsMatch(appName))
+                if (appName != null && (revitFinder.IsMatch(appName) || previewFinder.IsMatch(appName)))
                 {
                     logger.Debug("App is a Revit product: {0}", appName);
                     try
@@ -251,8 +265,24 @@ namespace pyRevitLabs.TargetApps.Revit {
                         // collect info from reg key
                         var regName = subkey.GetValue("DisplayName") as string;
                         var regVersion = subkey.GetValue("DisplayVersion") as string;
-                        var regInstallPath = (subkey.GetValue("InstallLocation") as string);
-                        int regLangCode = (int)subkey.GetValue("Language");
+                        var regInstallPath = subkey.GetValue("InstallLocation") as string;
+                        if (regInstallPath == null)
+                        {
+                            // Entries without an install location are typically add-ins; skip them.
+                            continue;
+                        }
+                        var languageValue = subkey.GetValue("Language");
+                        int regLangCode;
+                        if (languageValue is int langCode)
+                        {
+                            regLangCode = langCode;
+                        }
+                        else
+                        {
+                            // Missing or invalid language code; skip this entry to avoid runtime casting errors.
+                            logger.Debug("Skipping registered app \"{0}\" because registry key \"Language\" is missing or invalid.", appName);
+                            continue;
+                        }
                         // try to find binary location
                         var binaryFilePath = RevitProductData.GetBinaryLocation(regInstallPath)?.NormalizeAsPath();
                         logger.Debug("Version from registry key: \"{0}\"", regVersion);
@@ -263,7 +293,9 @@ namespace pyRevitLabs.TargetApps.Revit {
                         var revitProduct = FindRevitProduct(regVersion, binaryFilePath);
                         if (revitProduct is null)
                         {
-                            logger.Debug("Can not determine Revit product.");
+                            logger.Debug("Could not determine Revit product for \"{0}\" (version: {1}). This installation will be excluded from the list. " +
+                                       "This may occur if the version is not listed in pyrevit-hosts.json or if product information could not be read from the binary file.",
+                                       regName, regVersion);
                             continue;
                         }
                         logger.Debug("Revit Product is : {0}", revitProduct);
@@ -305,7 +337,9 @@ namespace pyRevitLabs.TargetApps.Revit {
                 }
             }
 
-            return installedRevits.ToList();
+                _installedProductsCache = installedRevits.ToList();
+                return _installedProductsCache.ToList();
+            }
         }
 
         private static RevitProduct FindRevitProduct(string regVersion, string binaryFilePath)
@@ -317,10 +351,11 @@ namespace pyRevitLabs.TargetApps.Revit {
                 return revitProduct; 
             }
 
-            logger.Debug("Could not determine Revit Product from version \"{0}\"", regVersion);
+            logger.Debug("Could not determine Revit Product from version \"{0}\" in pyrevit-hosts.json", regVersion);
             // try to get product key from binary version
             if (binaryFilePath == null)
             {
+                logger.Debug("Revit version \"{0}\" not found in pyrevit-hosts.json and no binary path available to read version info", regVersion);
                 return null;
             }
             try
@@ -328,11 +363,20 @@ namespace pyRevitLabs.TargetApps.Revit {
                 var prodInfo = RevitProductData.GetBinaryProductInfo(binaryFilePath);
                 logger.Debug("Read build number \"{0}\" from binary at \"{1}\"", prodInfo.build, binaryFilePath);
                 revitProduct = LookupRevitProduct(prodInfo.build);
-                return revitProduct is null ? new RevitProduct(prodInfo) : revitProduct;
+                // If still not found in database, create from binary info
+                if (revitProduct is null)
+                {
+                    logger.Info("Version \"{0}\" (build: {1}) not found in pyrevit-hosts.json. Using product information from binary file. " +
+                               "Consider updating pyrevit-hosts.json if this version should be officially supported.", 
+                               regVersion, prodInfo.build);
+                    revitProduct = new RevitProduct(prodInfo);
+                }
+                return revitProduct;
             }
-            catch
+            catch (Exception ex)
             {
-                logger.Debug("Failed reading product info from binary at \"{0}\"", binaryFilePath);
+                logger.Debug(ex, "Revit version \"{0}\" not found in pyrevit-hosts.json and failed to read product info from binary at \"{1}\"", 
+                            regVersion, binaryFilePath);
             }
             return null;
         }

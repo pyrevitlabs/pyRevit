@@ -1,0 +1,44 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Инструмент 3D Измерения</system:String>
+    
+    <system:String x:Key="CurrentMeasurement">Текущее Измерение</system:String>
+    <system:String x:Key="Point1NotSelected">Точка 1: Не выбрана</system:String>
+    <system:String x:Key="Point2NotSelected">Точка 2: Не выбрана</system:String>
+    <system:String x:Key="MeasurementHistory">История Измерений</system:String>
+    <system:String x:Key="NoMeasurementsYet">Измерений пока нет</system:String>
+    <system:String x:Key="PressESCToExit">Нажмите ESC для выхода</system:String>
+    
+    <system:String x:Key="Point1Format">Точка 1: {}</system:String>
+    <system:String x:Key="Point2Format">Точка 2: {}</system:String>
+    <system:String x:Key="DeltaXFormat">ΔX: {:>15}</system:String>
+    <system:String x:Key="DeltaYFormat">ΔY: {:>15}</system:String>
+    <system:String x:Key="DeltaZFormat">ΔZ: {:>15}</system:String>
+    <system:String x:Key="DiagonalFormat">Диагональ: {}</system:String>
+    <system:String x:Key="SlopeFormat">Уклон: {}</system:String>
+    
+    <system:String x:Key="MeasurementHistoryEntry" xml:space="preserve">
+Измерение {}:
+    P1: {}
+    P2: {}
+    ΔX: {:>15}
+    ΔY: {:>15}
+    ΔZ: {:>15}
+    Диагональ: {}
+    Уклон: {}</system:String>
+    
+    <system:String x:Key="WarningBarPickFirstPoint">Выберите первую точку</system:String>
+    <system:String x:Key="WarningBarPickSecondPoint">Выберите вторую точку</system:String>
+    <system:String x:Key="AlertMeasurementCancelled">Измерение отменено из-за недопустимой операции. Пожалуйста, попробуйте снова.</system:String>
+    <system:String x:Key="AlertMeasurementErrorTitle">Ошибка Измерения</system:String>
+    <system:String x:Key="AlertUnexpectedError">Произошла неожиданная ошибка во время измерения. Проверьте журнал для получения подробностей.</system:String>
+    <system:String x:Key="ToastMeasurementsCopied">Измерения скопированы в буфер обмена!</system:String>
+    <system:String x:Key="ToastMeasure3DTitle">3D Измерение</system:String>
+    <system:String x:Key="ProjectUnitLengthUnits" xml:space="preserve">
+Единицы Длины (настроить в Единицах Проекта):
+    </system:String>
+    <system:String x:Key="ProjectUnitSlopeUnits" xml:space="preserve">
+Единицы Уклона (настроить в Единицах Проекта):
+    </system:String>
+</ResourceDictionary>

@@ -201,7 +201,7 @@ def reset_config(section=None):
     """
     from pyrevit.userconfig import user_config
     if not section:
-        script_cfg_postfix = 'config'
+        script_cfg_postfix = '_config'
         section = EXEC_PARAMS.command_name + script_cfg_postfix
     elif section in [PyRevit.PyRevitConsts.ConfigsCoreSection]:
         raise PyRevitException('Can not remove internal config section: {}'
@@ -802,7 +802,7 @@ def data_exists(slot_name, this_project=True):
     return os.path.exists(data_file)
 
 
-def restore_window_position(window, command_name=EXEC_PARAMS.command_name):
+def restore_window_position(window, command_name=None):
     """
     Restore window position from saved data.
 
@@ -813,6 +813,8 @@ def restore_window_position(window, command_name=EXEC_PARAMS.command_name):
     Returns:
         bool: True if position was restored, False if centered to screen
     """
+    if not command_name:
+        command_name = EXEC_PARAMS.command_name
     storage_key = "last_window_position_" + command_name
 
     try:
@@ -847,7 +849,7 @@ def restore_window_position(window, command_name=EXEC_PARAMS.command_name):
         return False
 
 
-def save_window_position(window, command_name=EXEC_PARAMS.command_name):
+def save_window_position(window, command_name=None):
     """
     Save window position to persistent storage.
 
@@ -855,6 +857,8 @@ def save_window_position(window, command_name=EXEC_PARAMS.command_name):
         window (System.Windows.Window): WPF window instance
         command_name (str): Unique identifier for this window
     """
+    if not command_name:
+        command_name = EXEC_PARAMS.command_name
     storage_key = "last_window_position_" + command_name
     position_data = {
         "Left": window.Left,

@@ -278,10 +278,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (updaterListener == null) {
                 updaterListener = new UpdaterListener();
                 UpdaterRegistry.RegisterUpdater(updaterListener);
-                UpdaterRegistry.AddTrigger(
-                    updaterListener.GetUpdaterId(),
-                    new ElementCategoryFilter(BuiltInCategory.INVALID, inverted: true),
-                    Element.GetChangeTypeAny());
+                var updaterId = updaterListener.GetUpdaterId();
+                var categoryFilter = new ElementCategoryFilter(BuiltInCategory.INVALID, inverted: true);
+                UpdaterRegistry.AddTrigger(updaterId, categoryFilter, Element.GetChangeTypeAny());
+                UpdaterRegistry.AddTrigger(updaterId, categoryFilter, Element.GetChangeTypeElementAddition());
+                UpdaterRegistry.AddTrigger(updaterId, categoryFilter, Element.GetChangeTypeElementDeletion());
             }
         }
 

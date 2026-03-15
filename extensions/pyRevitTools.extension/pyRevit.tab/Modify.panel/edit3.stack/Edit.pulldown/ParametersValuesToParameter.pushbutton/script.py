@@ -150,6 +150,28 @@ def get_localized_texts():
             ),
             "elements_failed": "{} элементов не удалось обновить.",
         },
+        "Brazilian_Portuguese": {
+            "window_title": "Params2Param - Copiar Valores de Parâmetros",
+            "select_category": "Selecionar Categoria:",
+            "source_parameters": "Parâmetros de Origem (Selecione múltiplos se necessário):",
+            "target_parameter": "Parâmetro de Destino (Selecione um):",
+            "insert_separators": "Inserir separadores entre os valores de parâmetros separados por espaços.",
+            "add_spaces": "Adicionar espaços aos separadores:",
+            "none": "Nenhum",
+            "before": "Antes",
+            "after": "Depois",
+            "before_and_after": "Antes e Depois",
+            "execute": "Executar",
+            "cancel": "Cancelar",
+            "invalid_category": "Categoria selecionada inválida",
+            "no_elements": "Nenhum elemento encontrado",
+            "select_category_error": "Por favor, selecione uma categoria",
+            "no_elements_error": "Nenhum elemento encontrado para a categoria selecionada",
+            "select_source_error": "Por favor, selecione ao menos um parâmetro de origem",
+            "select_target_error": "Por favor, selecione um parâmetro de destino",
+            "elements_updated": "{} elementos atualizados com valores de parâmetros de [{}] para o parâmetro '{}'",
+            "elements_failed": "Falha ao atualizar {} elementos.",
+        },
     }
 
     # Default to English if language not found
