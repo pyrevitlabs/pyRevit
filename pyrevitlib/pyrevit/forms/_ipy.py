@@ -535,7 +535,7 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
         forms.open_dockable_panel(MyPanel)
 
         # retrieve the live instance from anywhere
-        panel = forms.get_dockable_panel(MyPanel)
+        dockable_pane = forms.get_dockable_panel(MyPanel)
 ```
     """
 
@@ -627,7 +627,12 @@ def register_dockable_panel(panel_type, default_visible=True):
     if not issubclass(panel_type, WPFPanel):
         raise PyRevitException("Dockable pane must be a subclass of forms.WPFPanel")
 
-    panel_uuid = coreutils.Guid.Parse(panel_type.panel_id)
+    try:
+        panel_uuid = coreutils.Guid.Parse(panel_type.panel_id)
+    except System.FormatException:
+        raise PyRevitException(
+            'Invalid dockable panel id "{}"'.format(panel_type.panel_id)
+        )
     dockable_panel_id = UI.DockablePaneId(panel_uuid)
     panel_provider = _WPFPanelProvider(panel_type, default_visible)
     HOST_APP.uiapp.RegisterDockablePane(
@@ -638,23 +643,35 @@ def register_dockable_panel(panel_type, default_visible=True):
 
 
 def get_dockable_panel(panel_type_or_id):
-    """Retrieve the live panel instance from the registry.
+    """Retrieve the Revit dockable pane handle for a registered panel.
 
     Args:
-        panel_type_or_id (forms.WPFPanel | str): panel type or panel id string
+        panel_type_or_id (forms.WPFPanel | str):
+            dockable panel type (subclass of forms.WPFPanel) or panel id string
+            corresponding to the Revit dockable pane id.
 
     Returns:
         UI.DockablePane: the live panel pane handle.
-        
+
     Raises:
         PyRevitException: if the panel id is not registered with Revit.
     """
     dpanel_id = None
     if isinstance(panel_type_or_id, str):
-        panel_id = coreutils.Guid.Parse(panel_type_or_id)
+        try:
+            panel_id = coreutils.Guid.Parse(panel_type_or_id)
+        except System.FormatException:
+            raise PyRevitException(
+                'Invalid dockable panel id "{}"'.format(panel_type_or_id)
+            )
         dpanel_id = UI.DockablePaneId(panel_id)
     elif isinstance(panel_type_or_id, type) and issubclass(panel_type_or_id, WPFPanel):
-        panel_id = coreutils.Guid.Parse(panel_type_or_id.panel_id)
+        try:
+            panel_id = coreutils.Guid.Parse(panel_type_or_id.panel_id)
+        except System.FormatException:
+            raise PyRevitException(
+                'Invalid dockable panel id "{}"'.format(panel_type_or_id.panel_id)
+            )
         dpanel_id = UI.DockablePaneId(panel_id)
     else:
         raise PyRevitException("Given type is not a forms.WPFPanel")
