@@ -614,15 +614,19 @@ def is_registered_dockable_panel(panel_type):
 
 
 def register_dockable_panel(panel_type, default_visible=True):
-    """Register dockable panel and store instance in the panel registry.
+    """Register a dockable panel with Revit and return its instance.
+
+    This function creates a provider for the given panel type, registers the
+    corresponding dockable pane with Revit, and returns the live WPF panel
+    instance managed by that provider.
 
     Args:
         panel_type (forms.WPFPanel): dockable panel type
         default_visible (bool, optional):
-            whether panel should be visible by default
+            Whether the panel should be visible by default when registered.
 
     Returns:
-        forms.WPFPanel: the live panel instance
+        forms.WPFPanel: The live panel instance created during registration.
     """
     if not issubclass(panel_type, WPFPanel):
         raise PyRevitException("Dockable pane must be a subclass of forms.WPFPanel")
