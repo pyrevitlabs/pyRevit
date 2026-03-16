@@ -776,7 +776,8 @@ namespace pyRevitExtensionParser
 
                 try
                 {
-                    var normalizedPath = Path.GetFullPath(extPath);
+                    var expandedPath = Environment.ExpandEnvironmentVariables(extPath);
+                    var normalizedPath = Path.GetFullPath(expandedPath);
                     if (Directory.Exists(normalizedPath))
                     {
                         roots.Add(normalizedPath);
