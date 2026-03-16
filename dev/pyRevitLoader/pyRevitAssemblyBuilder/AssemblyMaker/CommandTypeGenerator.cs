@@ -217,30 +217,14 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             // Check if this is a Dynamo script
             bool isDynamoScript = scriptPath != null && 
                                 scriptPath.EndsWith(".dyn", StringComparison.OrdinalIgnoreCase);
-            
+
             // Determine clean engine setting.
-            // Default is true (use clean engine for each execution).
+            // Default is false (metadata-driven; matches legacy cached-engine behavior)
             // In rocket mode with compatible extension, use cached engine (clean = false).
-            bool useCleanEngine = true;
-            
-            // Check if script explicitly requires clean engine via metadata
-            bool explicitlyRequiresCleanEngine = cmd.Engine?.Clean ?? false;
-            
-            // If rocket mode is enabled and extension is compatible and script doesn't explicitly require clean engine,
-            // then use cached engine (clean = false) for better performance
-            bool extensionIsRocketModeCompatible = extension?.RocketModeCompatible ?? false;
-            if (rocketMode && extensionIsRocketModeCompatible && !explicitlyRequiresCleanEngine)
-            {
-                useCleanEngine = false;
-            }
-            // If script explicitly requires clean engine, honor that
-            else if (explicitlyRequiresCleanEngine)
-            {
-                useCleanEngine = true;
-            }
-            
+            bool useCleanEngine = cmd.Engine?.Clean ?? false;
+            // No rocket-mode override needed — the logic is now purely metadata-driven
             configs["clean"] = useCleanEngine;
-            
+
             // Add engine type only when explicitly specified in metadata.
             // Do not force the default IronPython value into configs,
             // otherwise runtime shebang detection (#! python3) is bypassed.
@@ -252,9 +236,8 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             
             if (isDynamoScript)
             {
-                // For Dynamo scripts, use appropriate settings
-                // Use automate or mainthread setting (automate is Dynamo-specific synonym)
-                bool requiresMainThread = (cmd.Engine?.MainThread ?? false) || (cmd.Engine?.Automate ?? true);
+                // Use EngineConfig.RequiresMainThread which already has the correct defaults.
+                bool requiresMainThread = cmd.Engine?.RequiresMainThread ?? false;
                 configs["automate"] = requiresMainThread;
                 
                 // Add Dynamo-specific settings
