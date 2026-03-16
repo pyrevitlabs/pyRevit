@@ -482,7 +482,10 @@ namespace pyRevitExtensionParser
                 rocketModeCompatible = true;
             }
 
-            var children = ParseComponents(extDir, extName, null, extensionTemplates.Count > 0 ? extensionTemplates : null);
+            // FIXED — pass revitYear through:
+            var children = ParseComponents(extDir, extName, null,
+                extensionTemplates.Count > 0 ? extensionTemplates : null,
+                revitYear);
 
             // Read extension config from pyRevit config file (cached).
             // Config is keyed by folder name (e.g. [extension_test.extension]) so it matches install and Python.
