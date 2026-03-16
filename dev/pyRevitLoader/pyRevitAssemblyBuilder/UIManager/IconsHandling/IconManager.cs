@@ -180,9 +180,11 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
         /// <inheritdoc/>
         public BitmapSource LoadBitmapSource(string imagePath, int targetSize = 0)
         {
+            if (string.IsNullOrEmpty(imagePath) || !File.Exists(imagePath))
+                return null;
             if (imagePath.EndsWith(".svg", StringComparison.OrdinalIgnoreCase))
             {
-                _logger.Debug($"Skipping SVG icon (not supported by BitmapImage): '{imagePath}'");
+                _logger.Debug($"Skipping SVG icon ...");
                 return null;
             }
 

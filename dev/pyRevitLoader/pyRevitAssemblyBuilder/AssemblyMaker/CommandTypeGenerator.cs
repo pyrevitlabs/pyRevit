@@ -217,30 +217,14 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             // Check if this is a Dynamo script
             bool isDynamoScript = scriptPath != null && 
                                 scriptPath.EndsWith(".dyn", StringComparison.OrdinalIgnoreCase);
-            
+
             // Determine clean engine setting.
-            // Default is true (use clean engine for each execution).
+            // Default is false (metadata-driven; matches legacy cached-engine behavior)
             // In rocket mode with compatible extension, use cached engine (clean = false).
             bool useCleanEngine = cmd.Engine?.Clean ?? false;
-            
-            // Check if script explicitly requires clean engine via metadata
-            bool explicitlyRequiresCleanEngine = cmd.Engine?.Clean ?? false;
-            
-            // If rocket mode is enabled and extension is compatible and script doesn't explicitly require clean engine,
-            // then use cached engine (clean = false) for better performance
-            bool extensionIsRocketModeCompatible = extension?.RocketModeCompatible ?? false;
-            if (rocketMode && extensionIsRocketModeCompatible && !explicitlyRequiresCleanEngine)
-            {
-                useCleanEngine = false;
-            }
-            // If script explicitly requires clean engine, honor that
-            else if (explicitlyRequiresCleanEngine)
-            {
-                useCleanEngine = true;
-            }
-            
+            // No rocket-mode override needed — the logic is now purely metadata-driven
             configs["clean"] = useCleanEngine;
-            
+
             // Add engine type only when explicitly specified in metadata.
             // Do not force the default IronPython value into configs,
             // otherwise runtime shebang detection (#! python3) is bypassed.
