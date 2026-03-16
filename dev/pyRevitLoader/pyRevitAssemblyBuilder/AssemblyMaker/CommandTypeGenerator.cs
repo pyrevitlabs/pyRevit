@@ -221,7 +221,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             // Determine clean engine setting.
             // Default is true (use clean engine for each execution).
             // In rocket mode with compatible extension, use cached engine (clean = false).
-            bool useCleanEngine = true;
+            bool useCleanEngine = cmd.Engine?.Clean ?? false;
             
             // Check if script explicitly requires clean engine via metadata
             bool explicitlyRequiresCleanEngine = cmd.Engine?.Clean ?? false;
@@ -252,9 +252,8 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             
             if (isDynamoScript)
             {
-                // For Dynamo scripts, use appropriate settings
-                // Use automate or mainthread setting (automate is Dynamo-specific synonym)
-                bool requiresMainThread = (cmd.Engine?.MainThread ?? false) || (cmd.Engine?.Automate ?? true);
+                // Use EngineConfig.RequiresMainThread which already has the correct defaults.
+                bool requiresMainThread = cmd.Engine?.RequiresMainThread ?? false;
                 configs["automate"] = requiresMainThread;
                 
                 // Add Dynamo-specific settings
