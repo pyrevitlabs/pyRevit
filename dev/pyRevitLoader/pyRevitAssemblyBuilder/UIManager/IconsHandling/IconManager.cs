@@ -180,6 +180,12 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
         /// <inheritdoc/>
         public BitmapSource LoadBitmapSource(string imagePath, int targetSize = 0)
         {
+            if (imagePath.EndsWith(".svg", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.Debug($"Skipping SVG icon (not supported by BitmapImage): '{imagePath}'");
+                return null;
+            }
+
             if (string.IsNullOrEmpty(imagePath) || !File.Exists(imagePath))
                 return null;
 
@@ -236,23 +242,28 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
             if (!component.HasValidIcons)
                 return null;
 
-            // Return the appropriate icon based on theme preference
+            // Fix for #3173: SVG files are discovered as valid icons but cannot be rendered
+            // by WPF BitmapImage. Filter to renderable (raster) formats only.
+            bool IsRenderable(ComponentIcon icon) =>
+                icon?.IsValid == true && !IsSvgIcon(icon);
+
             if (isDarkTheme)
             {
-                // In dark theme, prefer dark icon, fall back to light
                 var darkIcon = component.Icons.PrimaryDarkIcon;
-                if (darkIcon?.IsValid == true)
+                if (IsRenderable(darkIcon))
                     return darkIcon;
             }
 
-            // Use light icon (either because we're in light theme, or as fallback)
             var lightIcon = component.Icons.PrimaryIcon;
-            if (lightIcon?.IsValid == true)
+            if (IsRenderable(lightIcon))
                 return lightIcon;
 
-            // Final fallback - use any valid icon
-            return component.Icons.FirstOrDefault(i => i.IsValid);
+            // Final fallback - use any valid renderable icon
+            return component.Icons.FirstOrDefault(i => IsRenderable(i));
         }
+
+        private static bool IsSvgIcon(ComponentIcon icon) =>
+            icon != null && string.Equals(icon.Extension, ".svg", StringComparison.OrdinalIgnoreCase);
 
         /// <inheritdoc/>
         public void PreloadExtensionIcons(ParsedExtension extension)
