@@ -1384,8 +1384,8 @@ namespace pyRevitExtensionParser
                 .Replace("}", "")
                 .Replace("[", "")
                 .Replace("]", "")
-                .Replace("(", "")
-                .Replace(")", "")
+                .Replace("\\(", "")
+                .Replace("\\)", "")
                 .Replace("-", "MINUS")
                 .Replace("=", "EQUALS")
                 .Replace("<", "")
@@ -1394,7 +1394,7 @@ namespace pyRevitExtensionParser
                 .Replace(".", "DOT")
                 // '_' is intentionally NOT replaced — it is the separator (skip=['_'])
                 .Replace("|", "VERT")
-                .Replace("/", "")
+                .Replace("\\/", "")
                 .Replace("\\", "");
 
             return result;
