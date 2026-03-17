@@ -50,7 +50,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             return Path.GetFullPath(Path.Combine(dllDir, "..", "..", "..", ".."));
         }
         
-        public string GenerateExtensionCode(ParsedExtension extension, string revitVersion, IEnumerable<ParsedExtension> libraryExtensions = null)
+        public string GenerateExtensionCode(ParsedExtension extension, string revitVersion, IEnumerable<ParsedExtension> libraryExtensions = null, bool rocketMode = false)
         {
             var sb = new StringBuilder();
             sb.AppendLine("#nullable disable");
@@ -112,7 +112,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 string ctrlId = cmd.ControlId ?? $"CustomCtrl_%CustomCtrl_%{extName}%{bundle}%{cmd.Name}";
                 
                 // Build engine configs based on bundle configuration or script type
-                string engineCfgs = CommandGenerationUtilities.BuildEngineConfigs(cmd, scriptPath);
+                string engineCfgs = CommandGenerationUtilities.BuildEngineConfigs(cmd, scriptPath, extension, rocketMode);
                 
                 // Get context from component - only use if explicitly defined
                 string context = cmd.Context ?? string.Empty;
@@ -181,7 +181,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 .Replace("\"", "\\\"");
     }
 
-    internal static class CommandGenerationUtilities
+    public static class CommandGenerationUtilities
     {
         public static string BuildCommandArguments(ParsedExtension extension, ParsedComponent component, string revitVersion)
         {
@@ -206,17 +206,25 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         /// <summary>
         /// Builds the engine configuration JSON string based on script type and bundle settings
         /// </summary>
-        public static string BuildEngineConfigs(ParsedComponent cmd, string scriptPath)
+        /// <param name="cmd">The command component to build configs for</param>
+        /// <param name="scriptPath">Path to the script file</param>
+        /// <param name="extension">The parent extension (for rocket mode compatibility check)</param>
+        /// <param name="rocketMode">Whether rocket mode is enabled globally</param>
+        public static string BuildEngineConfigs(ParsedComponent cmd, string scriptPath, ParsedExtension extension = null, bool rocketMode = false)
         {
             var configs = new Dictionary<string, object>();
             
             // Check if this is a Dynamo script
             bool isDynamoScript = scriptPath != null && 
                                 scriptPath.EndsWith(".dyn", StringComparison.OrdinalIgnoreCase);
-            
-            // Core engine settings (apply to all script types)
-            configs["clean"] = cmd.Engine?.Clean ?? false;
-            
+
+            // Determine clean engine setting.
+            // Default is false (metadata-driven; matches legacy cached-engine behavior)
+            // In rocket mode with compatible extension, use cached engine (clean = false).
+            bool useCleanEngine = cmd.Engine?.Clean ?? false;
+            // No rocket-mode override needed — the logic is now purely metadata-driven
+            configs["clean"] = useCleanEngine;
+
             // Add engine type only when explicitly specified in metadata.
             // Do not force the default IronPython value into configs,
             // otherwise runtime shebang detection (#! python3) is bypassed.
@@ -228,9 +236,8 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             
             if (isDynamoScript)
             {
-                // For Dynamo scripts, use appropriate settings
-                // Use automate or mainthread setting (automate is Dynamo-specific synonym)
-                bool requiresMainThread = (cmd.Engine?.MainThread ?? false) || (cmd.Engine?.Automate ?? true);
+                // Use EngineConfig.RequiresMainThread which already has the correct defaults.
+                bool requiresMainThread = cmd.Engine?.RequiresMainThread ?? false;
                 configs["automate"] = requiresMainThread;
                 
                 // Add Dynamo-specific settings

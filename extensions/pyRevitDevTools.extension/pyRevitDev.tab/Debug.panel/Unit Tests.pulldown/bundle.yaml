@@ -8,6 +8,7 @@ layout:
   - Forms Module Tests
   - Revit Module Tests
   - Script Module Tests
+  - Routes Module Tests
   - -----
   - Test Output Stream
   - Test Input Stream

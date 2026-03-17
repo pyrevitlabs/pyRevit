@@ -4,7 +4,7 @@ Shift-Click:
 Pin all viewports on active sheet.
 """
 
-from pyrevit import revit, DB
+from pyrevit import revit, DB, EXEC_PARAMS
 from pyrevit import script
 from pyrevit import forms
 
@@ -29,7 +29,7 @@ def pin_viewports(sheet_list):
                           alreadypinnedcount))
 
 
-if __shiftclick__:
+if EXEC_PARAMS.config_mode:
     if isinstance(revit.active_view, DB.ViewSheet):
         sel_sheets = [revit.active_view]
     else:

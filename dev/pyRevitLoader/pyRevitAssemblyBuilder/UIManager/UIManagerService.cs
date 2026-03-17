@@ -27,12 +27,27 @@ namespace pyRevitAssemblyBuilder.UIManager
         private readonly IUIRibbonScanner? _ribbonScanner;
         private readonly UIApplication _uiApp;
         private ParsedExtension? _currentExtension;
-        private readonly bool _loadBeta;
+        /// <summary>
+        /// Cached Load Beta setting. Re-read at start of each BuildUI so reload picks up settings changes.
+        /// </summary>
+        private bool _loadBeta;
+
+        /// <summary>
+        /// Cached Rocket Mode setting. Re-read at start of each BuildUI so reload picks up settings changes.
+        /// When true, non-critical startup work (e.g. icon pre-loading) is skipped to reduce load time.
+        /// </summary>
+        private bool _rocketMode;
 
         /// <summary>
         /// Gets the UIApplication instance used by this service.
         /// </summary>
         public UIApplication UIApplication => _uiApp;
+
+        /// <summary>
+        /// Gets whether rocket mode is enabled.
+        /// When true, non-critical startup work is skipped and engine caching is used for compatible extensions.
+        /// </summary>
+        public bool RocketMode => _rocketMode;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UIManagerService"/> class.
@@ -67,17 +82,20 @@ namespace pyRevitAssemblyBuilder.UIManager
             _comboBoxBuilder = comboBoxBuilder ?? throw new ArgumentNullException(nameof(comboBoxBuilder));
             _ribbonScanner = ribbonScanner;
             
-            // Load beta settings from config
+            // Load beta and rocket mode settings from config
             try
             {
                 var config = PyRevitConfig.Load();
                 _loadBeta = config.LoadBeta;
+                _rocketMode = config.RocketMode;
                 _logger.Debug($"Beta tools loading: {_loadBeta}");
+                _logger.Debug($"Rocket mode: {_rocketMode}");
             }
             catch (Exception ex)
             {
-                _logger.Debug($"Failed to load beta config, defaulting to false: {ex.Message}");
+                _logger.Debug($"Failed to load config, defaulting to false: {ex.Message}");
                 _loadBeta = false;
+                _rocketMode = false;
             }
         }
 
@@ -94,6 +112,19 @@ namespace pyRevitAssemblyBuilder.UIManager
                 return;
             }
 
+            // Re-read Load Beta and Rocket Mode so toggling in settings is applied on next reload (#3109).
+            try
+            {
+                var config = PyRevitConfig.Load();
+                _loadBeta = config.LoadBeta;
+                _rocketMode = config.RocketMode;
+                _logger.Debug($"Re-read config - Beta tools loading: {_loadBeta}, Rocket mode: {_rocketMode}");
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug($"Failed to re-read config: {ex.Message}");
+            }
+
             if (assemblyInfo == null)
             {
                 _logger.Warning($"Cannot build UI for extension '{extension.Name}': assemblyInfo is null.");
@@ -106,8 +137,11 @@ namespace pyRevitAssemblyBuilder.UIManager
                 return;
             }
 
-            // Pre-load icon files in parallel to warm OS file cache
-            _buttonPostProcessor.IconManager.PreloadExtensionIcons(extension);
+            // Pre-load icon files in parallel to warm OS file cache (skipped in Rocket Mode)
+            if (!_rocketMode)
+                _buttonPostProcessor.IconManager.PreloadExtensionIcons(extension);
+            else
+                _logger.Debug($"Rocket mode: skipping icon pre-load for extension '{extension.Name}'.");
 
             _currentExtension = extension;
             foreach (var component in extension.Children)
