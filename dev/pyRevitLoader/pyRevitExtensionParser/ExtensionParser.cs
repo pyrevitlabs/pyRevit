@@ -1397,7 +1397,12 @@ namespace pyRevitExtensionParser
                 .Replace("\\/", "")
                 .Replace("\\", "");
 
-            return result;
+            // Final safety pass: strip any character not valid in a C# identifier
+            var sb = new StringBuilder(result.Length);
+            foreach (char c in result)
+                if (char.IsLetterOrDigit(c) || c == '_')
+                    sb.Append(c);
+            return sb.ToString();
         }
 
         /// <summary>
