@@ -1364,8 +1364,6 @@ namespace pyRevitExtensionParser
         /// </summary>
         private static string SanitizeClassName(string name)
         {
-            // Phase 1: SPECIAL_CHARS table from coreutils/__init__.py
-            // Matches Python cleanup_string(..., skip=['_'])
             var result = name
                 .Replace(" ", "")
                 .Replace("~", "")
@@ -1386,8 +1384,6 @@ namespace pyRevitExtensionParser
                 .Replace("}", "")
                 .Replace("[", "")
                 .Replace("]", "")
-                // Python uses r'\(' and r'\)' — these are 2-char sequences (backslash + paren),
-                // NOT bare parentheses. Python's str.replace() is plain-text, so bare ( ) survive.
                 .Replace("\\(", "")
                 .Replace("\\)", "")
                 .Replace("-", "MINUS")
@@ -1398,20 +1394,14 @@ namespace pyRevitExtensionParser
                 .Replace(".", "DOT")
                 // '_' is intentionally NOT replaced — it is the separator (skip=['_'])
                 .Replace("|", "VERT")
-                // Python uses r'\/' — 2-char sequence (backslash + slash), not bare /
                 .Replace("\\/", "")
                 .Replace("\\", "");
 
-            // Phase 2: Safety net — strip any character not valid in a C# identifier.
-            // The Python cleanup_string has this same blind spot (Unicode, backtick, etc.
-            // pass through), but since C# uses these as actual compiled class names,
-            // invalid identifiers would cause assembly-load failures at runtime.
+            // Final safety pass: strip any character not valid in a C# identifier
             var sb = new StringBuilder(result.Length);
             foreach (char c in result)
-            {
                 if (char.IsLetterOrDigit(c) || c == '_')
                     sb.Append(c);
-            }
             return sb.ToString();
         }
 
