@@ -261,6 +261,8 @@ class MatchHistoryClipboard(forms.WPFPanel):
                 )
             ]
             self._add_to_history(props)
+            self._items[0].IsSelected = True
+            self._update_ui_state()
         except Exception as ex:
             logger.warning("load_from_filter_and_element: %s", ex)
 
@@ -314,7 +316,7 @@ class MatchHistoryClipboard(forms.WPFPanel):
                 dest_elements = []
 
                 if paste_mode == "single":
-                    elem = revit.pick_element()
+                    elem = revit.pick_element(pick_filter=pick_filter)
                     if elem:
                         dest_elements = [elem]
 
