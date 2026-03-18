@@ -1451,11 +1451,53 @@ namespace pyRevitExtensionParser
             return null;
         }
 
+        /// <summary>
+        /// Sanitizes a string for use as a unique command identifier / C# class name.
+        /// Replicates the legacy Python coreutils.cleanup_string() behavior with
+        /// the SPECIAL_CHARS replacement table and skip=['_'] (the separator).
+        /// See: pyrevitlib/pyrevit/coreutils/__init__.py lines 295-344
+        /// Fix for #3164: Unique ID generation must match legacy Python loader.
+        /// </summary>
         private static string SanitizeClassName(string name)
         {
-            var sb = new StringBuilder();
-            foreach (char c in name)
-                sb.Append(char.IsLetterOrDigit(c) ? c : '_');
+            var result = name
+                .Replace(" ", "")
+                .Replace("~", "")
+                .Replace("!", "EXCLAM")
+                .Replace("@", "AT")
+                .Replace("#", "SHARP")
+                .Replace("$", "DOLLAR")
+                .Replace("%", "PERCENT")
+                .Replace("^", "")
+                .Replace("&", "AND")
+                .Replace("*", "STAR")
+                .Replace("+", "PLUS")
+                .Replace(";", "")
+                .Replace(":", "")
+                .Replace(",", "")
+                .Replace("\"", "")
+                .Replace("{", "")
+                .Replace("}", "")
+                .Replace("[", "")
+                .Replace("]", "")
+                .Replace("\\(", "")
+                .Replace("\\)", "")
+                .Replace("-", "MINUS")
+                .Replace("=", "EQUALS")
+                .Replace("<", "")
+                .Replace(">", "")
+                .Replace("?", "QMARK")
+                .Replace(".", "DOT")
+                // '_' is intentionally NOT replaced — it is the separator (skip=['_'])
+                .Replace("|", "VERT")
+                .Replace("\\/", "")
+                .Replace("\\", "");
+
+            // Final safety pass: strip any character not valid in a C# identifier
+            var sb = new StringBuilder(result.Length);
+            foreach (char c in result)
+                if (char.IsLetterOrDigit(c) || c == '_')
+                    sb.Append(c);
             return sb.ToString();
         }
 
