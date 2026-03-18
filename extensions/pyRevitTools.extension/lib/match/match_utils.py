@@ -1,0 +1,131 @@
+from pyrevit import script, forms, revit
+from pyrevit import DB, UI
+from pyrevit.compat import get_elementid_value_func
+
+get_elementid_value = get_elementid_value_func()
+
+logger = script.get_logger()
+
+
+def safe_get_parameter(elem, param_id):
+    if not param_id:
+        return None
+
+    # BuiltInParameter (negative ids)
+    if get_elementid_value(param_id) < 0:
+        bip = DB.BuiltInParameter(get_elementid_value(param_id))
+        return elem.get_Parameter(bip)
+
+    # shared/project parameter
+    return elem.Parameter[param_id]
+
+
+class PickByCategorySelectionFilter(UI.Selection.ISelectionFilter):
+    def __init__(self, category_ids):
+        self.category_ids = category_ids
+
+    # standard API override function
+    def AllowElement(self, element):
+        if element.Category and element.Category.Id in self.category_ids:
+            return True
+        else:
+            return False
+
+    # standard API override function
+    def AllowReference(self, refer, point):  # pylint: disable=W0613
+        return False
+
+
+class PropKeyValue(object):
+    """Storage class for matched property info and value."""
+
+    def __init__(self, name, datatype, value, istype, display_value=None, categories=[]):
+        self.name = name
+        self.datatype = datatype
+        self.value = value
+        self.istype = istype
+        self.display_value = display_value or name
+        self.categories = categories
+
+    def __repr__(self):
+        return str(self.__dict__)
+
+
+def match_prop(dest_inst, dest_type, src_props):
+    """Match given properties on target instance or type"""
+    for pkv in src_props:
+        logger.debug("Applying %s", pkv.name)
+
+        # determine target
+        target = dest_type if pkv.istype else dest_inst
+        # ensure target is valid if it is type
+        if pkv.istype and not target:
+            logger.warning("Element type is not accessible.")
+            continue
+        logger.debug("Target is %s", target)
+
+        # find parameter
+        dparam = target.LookupParameter(pkv.name)
+        if dparam and pkv.datatype == dparam.StorageType:
+            try:
+                if dparam.StorageType == DB.StorageType.Integer:
+                    dparam.Set(pkv.value or 0)
+                elif dparam.StorageType == DB.StorageType.Double:
+                    dparam.Set(pkv.value or 0.0)
+                elif dparam.StorageType == DB.StorageType.ElementId:
+                    dparam.Set(DB.ElementId(pkv.value))
+                else:
+                    dparam.Set(pkv.value or "")
+            except Exception as setex:
+                logger.warning("Error applying value to: %s | %s", pkv.name, setex)
+                continue
+        else:
+            logger.debug('Parameter "%s"not found on target.', pkv.name)
+
+
+def get_source_properties(src_element):
+    """Return info on selected properties."""
+    props = []
+
+    src_type = revit.query.get_type(src_element)
+
+    selected_params = (
+        forms.select_parameters(
+            src_element,
+            title="Select Parameters",
+            multiple=True,
+            include_instance=True,
+            include_type=True,
+        )
+        or []
+    )
+
+    logger.debug("Selected parameters: %s", [x.name for x in selected_params])
+
+    for sparam in selected_params:
+        logger.debug("Reading %s", sparam.name)
+        target = src_type if sparam.istype else src_element
+        tparam = target.LookupParameter(sparam.name)
+        if tparam:
+            if tparam.StorageType == DB.StorageType.Integer:
+                value = tparam.AsInteger()
+            elif tparam.StorageType == DB.StorageType.Double:
+                value = tparam.AsDouble()
+            elif tparam.StorageType == DB.StorageType.ElementId:
+                get_elementid_value = get_elementid_value_func()
+                value = get_elementid_value(tparam.AsElementId())
+            else:
+                value = tparam.AsString()
+
+            props.append(
+                PropKeyValue(
+                    name=sparam.name,
+                    datatype=tparam.StorageType,
+                    value=value,
+                    istype=sparam.istype,
+                    display_value=tparam.AsValueString(),
+                    categories=[src_element.Category],
+                )
+            )
+
+    return props
