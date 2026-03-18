@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from pyrevit.revit import query
 from pyrevit import DB
 from pyrevit.compat import get_elementid_value_func
 
@@ -34,7 +35,8 @@ def dissect_parameter_filter(doc, filter_element):
     # ── categories ────────────────────────────────────────────────────
     try:
         for cid in filter_element.GetCategories():
-            cat = doc.Settings.Categories.get_Item(cid)
+            bic = DB.BuiltInCategory(get_elementid_value(cid))
+            cat = doc.Settings.Categories.get_Item(bic)
             if cat:
                 result["categories"].append(cat.Name)
     except Exception:
@@ -90,8 +92,22 @@ def dissect_parameter_filter(doc, filter_element):
         result["storage_type"] = DB.StorageType.Double
         result["value"] = val
         try:
+            spec = None
+            if param_elem:
+                spec = param_elem.GetDataType()
+            else:
+                try:
+                    bip = DB.BuiltInParameter(get_elementid_value(param_id))
+                    bics = [query.get_builtincategory(bic_name) for bic_name in result["categories"]]
+                    collector = query.get_elements_by_categories(bics)
+                    elem = collector[0]
+                    param = elem.get_Parameter(bip) if elem else None
+                    if param:
+                        spec = param.Definition.GetDataType()
+                except Exception:
+                    pass
             display = DB.UnitFormatUtils.Format(
-                doc.GetUnits(), rule.GetRuleParameter(), val, False
+                doc.GetUnits(), spec, val, False
             )
         except Exception:
             display = str(val)
