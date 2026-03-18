@@ -26,10 +26,10 @@ mkdocs-material = "*"
 ruff = "*"
 
 [requires]
-python_version = "3.10"
+python_version = "3.14"
 
 [pipenv]
-allow_prereleases = true
+allow_prereleases = false
 
 [scripts]
 pyrevit = "python ./dev/pyrevit.py"
