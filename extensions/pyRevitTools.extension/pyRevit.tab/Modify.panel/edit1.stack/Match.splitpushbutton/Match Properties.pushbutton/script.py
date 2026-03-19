@@ -17,9 +17,7 @@ logger = script.get_logger()
 output = script.get_output()
 
 
-MEMFILE = script.get_document_data_file(
-    file_id="MatchSelectedProperties", file_ext="pym", add_cmd_name=False
-)
+MEMFILE = script.get_instance_data_file(file_id="MatchSelectedProperties")
 
 
 def recall():
