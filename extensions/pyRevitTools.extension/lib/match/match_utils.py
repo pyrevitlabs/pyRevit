@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from pyrevit import script, forms, revit
 from pyrevit import DB, UI
 from pyrevit.compat import get_elementid_value_func
@@ -39,7 +40,9 @@ class PickByCategorySelectionFilter(UI.Selection.ISelectionFilter):
 class PropKeyValue(object):
     """Storage class for matched property info and value."""
 
-    def __init__(self, name, datatype, value, istype, display_value=None, categories=[]):
+    def __init__(
+        self, name, datatype, value, istype, display_value=None, categories=[]
+    ):
         self.name = name
         self.datatype = datatype
         self.value = value
@@ -73,7 +76,10 @@ def match_prop(dest_inst, dest_type, src_props):
                 elif dparam.StorageType == DB.StorageType.Double:
                     dparam.Set(pkv.value or 0.0)
                 elif dparam.StorageType == DB.StorageType.ElementId:
-                    dparam.Set(DB.ElementId(pkv.value))
+                    if not isinstance(pkv.value, DB.ElementId):
+                        dparam.Set(DB.ElementId(pkv.value))
+                    else:
+                        dparam.Set(pkv.value)
                 else:
                     dparam.Set(pkv.value or "")
             except Exception as setex:
@@ -129,3 +135,60 @@ def get_source_properties(src_element):
             )
 
     return props
+
+
+def paste_props(source_props, paste_mode, category_filter=False):
+    """
+    Core paste routine — runs inside an ExternalEvent (Revit API context).
+    paste_mode: "single" | "rectangle" | "selection"
+    """
+    # Build category filter if the checkbox is ticked and categories are known
+    pick_filter = None
+    if category_filter:
+        # if bool(self.categoryFilterCheck.IsChecked):
+        cat_ids = set()
+        for p in source_props:
+            for c in p.categories or []:
+                if hasattr(c, "Id"):
+                    cat_ids.add(c.Id)
+        if cat_ids:
+            pick_filter = PickByCategorySelectionFilter(list(cat_ids))
+
+    # Status-bar message shown to the user while picking
+    if len(source_props) == 1:
+        title = "Match: {} = {}".format(
+            source_props[0].name,
+            source_props[0].display_value or str(source_props[0].value),
+        )
+    else:
+        title = "Pick elements to match {} parameter(s):".format(len(source_props))
+
+    with forms.WarningBar(title=title):
+        while True:
+            dest_elements = []
+
+            if paste_mode == "single":
+                elem = revit.pick_element(pick_filter=pick_filter)
+                if elem:
+                    dest_elements = [elem]
+
+            elif paste_mode == "rectangle":
+                dest_elements = revit.pick_rectangle(pick_filter=pick_filter)
+
+            elif paste_mode == "selection":
+                dest_elements = list(revit.get_selection())
+
+            if not dest_elements:
+                break  # user cancelled / nothing selected
+
+            for dest in dest_elements:
+                dest_type = revit.query.get_type(dest)
+                with revit.Transaction("Match Properties"):
+                    # type parameters first so instance params can reference them
+                    match_prop(dest, dest_type, [p for p in source_props if p.istype])
+                    match_prop(
+                        dest, dest_type, [p for p in source_props if not p.istype]
+                    )
+
+            if paste_mode == "selection":
+                break  # selection is one-shot, not a pick loop

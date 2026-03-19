@@ -7,11 +7,10 @@ from pyrevit.revit.events import _GenericExternalEventHandler
 from pyrevit.framework import ComponentModel
 
 from match_utils import (
-    match_prop,
     PropKeyValue,
     get_source_properties,
     safe_get_parameter,
-    PickByCategorySelectionFilter,
+    paste_props
 )
 from filter_utils import get_most_common_filter_parameter, dissect_parameter_filter
 
@@ -272,76 +271,19 @@ class MatchHistoryClipboard(forms.WPFPanel):
         """Paste checked parameters by picking elements one at a time (loops)."""
         props = self._selected_props()
         if props:
-            self._run_in_revit(self._do_paste, props, "single")
+            self._run_in_revit(paste_props, props, "single", bool(self.categoryFilterCheck.IsChecked))
 
     def paste_rectangle(self, sender, args):
         """Paste checked parameters to elements inside a drawn rectangle (loops)."""
         props = self._selected_props()
         if props:
-            self._run_in_revit(self._do_paste, props, "rectangle")
+            self._run_in_revit(paste_props, props, "rectangle", bool(self.categoryFilterCheck.IsChecked))
 
     def paste_selection(self, sender, args):
         """Paste checked parameters to the current Revit selection (one-shot)."""
         props = self._selected_props()
         if props:
-            self._run_in_revit(self._do_paste, props, "selection")
-
-    def _do_paste(self, source_props, paste_mode):
-        """
-        Core paste routine — runs inside an ExternalEvent (Revit API context).
-        paste_mode: "single" | "rectangle" | "selection"
-        """
-        # Build category filter if the checkbox is ticked and categories are known
-        pick_filter = None
-        if bool(self.categoryFilterCheck.IsChecked):
-            cat_ids = set()
-            for p in source_props:
-                for c in p.categories or []:
-                    if hasattr(c, "Id"):
-                        cat_ids.add(c.Id)
-            if cat_ids:
-                pick_filter = PickByCategorySelectionFilter(list(cat_ids))
-
-        # Status-bar message shown to the user while picking
-        if len(source_props) == 1:
-            title = "Match: {} = {}".format(
-                source_props[0].name,
-                source_props[0].display_value or str(source_props[0].value),
-            )
-        else:
-            title = "Pick elements to match {} parameter(s):".format(len(source_props))
-
-        with forms.WarningBar(title=title):
-            while True:
-                dest_elements = []
-
-                if paste_mode == "single":
-                    elem = revit.pick_element(pick_filter=pick_filter)
-                    if elem:
-                        dest_elements = [elem]
-
-                elif paste_mode == "rectangle":
-                    dest_elements = revit.pick_rectangle(pick_filter=pick_filter)
-
-                elif paste_mode == "selection":
-                    dest_elements = list(revit.get_selection())
-
-                if not dest_elements:
-                    break  # user cancelled / nothing selected
-
-                for dest in dest_elements:
-                    dest_type = revit.query.get_type(dest)
-                    with revit.Transaction("Match Properties"):
-                        # type parameters first so instance params can reference them
-                        match_prop(
-                            dest, dest_type, [p for p in source_props if p.istype]
-                        )
-                        match_prop(
-                            dest, dest_type, [p for p in source_props if not p.istype]
-                        )
-
-                if paste_mode == "selection":
-                    break  # selection is one-shot, not a pick loop
+            self._run_in_revit(paste_props, props, "selection", bool(self.categoryFilterCheck.IsChecked))
 
     # ── check / search UI handlers ───────────────────────────────────────────
 
