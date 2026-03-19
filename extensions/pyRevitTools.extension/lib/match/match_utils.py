@@ -89,7 +89,7 @@ def match_prop(dest_inst, dest_type, src_props):
             logger.debug('Parameter "%s"not found on target.', pkv.name)
 
 
-def get_source_properties(src_element):
+def get_source_properties(src_element, simple=False):
     """Return info on selected properties."""
     props = []
 
@@ -129,8 +129,8 @@ def get_source_properties(src_element):
                     datatype=tparam.StorageType,
                     value=value,
                     istype=sparam.istype,
-                    display_value=tparam.AsValueString(),
-                    categories=[src_element.Category],
+                    display_value=tparam.AsValueString() if not simple else None,
+                    categories=[src_element.Category] if not simple else [],
                 )
             )
 
