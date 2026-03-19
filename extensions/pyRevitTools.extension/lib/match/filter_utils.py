@@ -100,7 +100,7 @@ def dissect_parameter_filter(doc, filter_element):
                     bip = DB.BuiltInParameter(get_elementid_value(param_id))
                     bics = [query.get_builtincategory(bic_name) for bic_name in result["categories"]]
                     collector = query.get_elements_by_categories(bics)
-                    elem = collector[0]
+                    elem = next(iter(collector), None)
                     param = elem.get_Parameter(bip) if elem else None
                     if param:
                         spec = param.Definition.GetDataType()

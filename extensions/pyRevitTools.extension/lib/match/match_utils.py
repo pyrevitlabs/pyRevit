@@ -41,14 +41,14 @@ class PropKeyValue(object):
     """Storage class for matched property info and value."""
 
     def __init__(
-        self, name, datatype, value, istype, display_value=None, categories=[]
+        self, name, datatype, value, istype, display_value=None, categories=None
     ):
         self.name = name
         self.datatype = datatype
         self.value = value
         self.istype = istype
         self.display_value = display_value or name
-        self.categories = categories
+        self.categories = categories if categories is not None else []
 
     def __repr__(self):
         return str(self.__dict__)
@@ -118,7 +118,6 @@ def get_source_properties(src_element, simple=False):
             elif tparam.StorageType == DB.StorageType.Double:
                 value = tparam.AsDouble()
             elif tparam.StorageType == DB.StorageType.ElementId:
-                get_elementid_value = get_elementid_value_func()
                 value = get_elementid_value(tparam.AsElementId())
             else:
                 value = tparam.AsString()

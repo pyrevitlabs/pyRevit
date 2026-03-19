@@ -240,6 +240,9 @@ class MatchHistoryClipboard(forms.WPFPanel):
         Useful for quickly setting up a match from a 'key' parameter.
         """
         param_id = get_most_common_filter_parameter(revit.doc, revit.active_view)
+        if not param_id:
+            logger.warning("No simple equals filter found on active view.")
+            return
         sel = revit.get_selection()
         elem = sel[0] if len(sel) == 1 else revit.pick_element()
         if not elem:
