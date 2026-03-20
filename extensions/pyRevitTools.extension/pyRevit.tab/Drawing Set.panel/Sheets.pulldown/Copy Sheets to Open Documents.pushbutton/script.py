@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import sys
 
 from pyrevit.framework import List
@@ -388,6 +389,94 @@ def apply_detail_number(original_vport, nvport):
             print("\t\t\tSkipping detail number preservation (option not checked)")
 
 
+def get_source_vport_data(doc, vport, sheet_view):
+    """Capture source viewport placement and view title data.
+
+    Uses PROPERTY access (vport.LabelOffset, vport.LabelLineLength)
+    rather than method calls — IronPython 2.7 requires property syntax
+    for .NET properties exposed with get_/set_ accessors.
+
+    Also captures get_BoundingBox(sheet) which includes the view title
+    extent for a final position verification pass.
+    """
+    data = {
+        "box_center": vport.GetBoxCenter(),
+        "label_offset": None,
+        "label_line_length": None,
+        "bbox_min": None,
+        "bbox_max": None,
+    }
+    try:
+        data["label_offset"] = vport.LabelOffset
+    except Exception:
+        pass
+    try:
+        data["label_line_length"] = vport.LabelLineLength
+    except Exception:
+        pass
+    try:
+        bb = vport.get_BoundingBox(sheet_view)
+        if bb:
+            data["bbox_min"] = bb.Min
+            data["bbox_max"] = bb.Max
+    except Exception:
+        pass
+    return data
+
+
+def apply_vport_label_props(dest_doc, nvport_id, src_data):
+    """Set label offset and line length using PROPERTY syntax."""
+    label_offset = src_data.get("label_offset")
+    label_line_len = src_data.get("label_line_length")
+    if label_offset is None and label_line_len is None:
+        return
+    try:
+        with revit.Transaction(
+            "Set View Title Properties",
+            doc=dest_doc,
+            swallow_errors=True,
+        ):
+            vp = dest_doc.GetElement(nvport_id)
+            if label_offset is not None:
+                vp.LabelOffset = label_offset
+            if label_line_len is not None:
+                vp.LabelLineLength = label_line_len
+    except Exception as e:
+        logger.warning("Label property set failed: {}".format(e))
+
+
+def correct_vport_by_bbox(dest_doc, nvport_id, src_data, dest_sheet):
+    """Verify and correct viewport position using BoundingBox(sheet).
+
+    get_BoundingBox(sheet) includes the view title extent.  By comparing
+    source vs destination Min points, any residual drift is detected and
+    corrected with MoveElement (rigid translation).
+    """
+    src_bb_min = src_data.get("bbox_min")
+    if src_bb_min is None:
+        return
+    try:
+        with revit.Transaction(
+            "Align View Title Position",
+            doc=dest_doc,
+            swallow_errors=True,
+        ):
+            vp = dest_doc.GetElement(nvport_id)
+            dst_bb = vp.get_BoundingBox(dest_sheet)
+            if dst_bb is None:
+                return
+            dx = src_bb_min.X - dst_bb.Min.X
+            dy = src_bb_min.Y - dst_bb.Min.Y
+            if abs(dx) > 1e-9 or abs(dy) > 1e-9:
+                DB.ElementTransformUtils.MoveElement(
+                    dest_doc,
+                    nvport_id,
+                    DB.XYZ(dx, dy, 0),
+                )
+    except Exception as e:
+        logger.warning("BBox position correction failed: {}".format(e))
+
+
 def copy_sheet_viewports(activedoc, source_sheet, dest_doc, dest_sheet):
     existing_views = [
         dest_doc.GetElement(x).ViewId for x in dest_sheet.GetAllViewports()
@@ -412,15 +501,29 @@ def copy_sheet_viewports(activedoc, source_sheet, dest_doc, dest_sheet):
 
             if new_view.Id not in existing_views:
                 print("\t\t\tPlacing copied view on sheet.")
+                src_data = get_source_vport_data(
+                    activedoc, vport, source_sheet
+                )
+
                 with revit.Transaction("Place View on Sheet", doc=dest_doc):
                     nvport = DB.Viewport.Create(
-                        dest_doc, dest_sheet.Id, new_view.Id, vport.GetBoxCenter()
+                        dest_doc,
+                        dest_sheet.Id,
+                        new_view.Id,
+                        src_data["box_center"],
                     )
-
                     apply_detail_number(vport, nvport)
 
                 if nvport:
-                    apply_viewport_type(activedoc, vport_id, dest_doc, nvport.Id)
+                    apply_viewport_type(
+                        activedoc, vport_id, dest_doc, nvport.Id
+                    )
+                    apply_vport_label_props(
+                        dest_doc, nvport.Id, src_data
+                    )
+                    correct_vport_by_bbox(
+                        dest_doc, nvport.Id, src_data, dest_sheet
+                    )
             else:
                 print("\t\t\tView already exists on the sheet.")
 
