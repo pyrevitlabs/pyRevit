@@ -408,19 +408,23 @@ def get_source_vport_data(doc, vport, sheet_view):
     }
     try:
         data["label_offset"] = vport.LabelOffset
-    except Exception:
-        pass
+    except AttributeError:
+        logger.debug("LabelOffset not available (requires Revit 2022+)")
+    except Exception as e:
+        logger.debug("Could not read LabelOffset: {}".format(e))
     try:
         data["label_line_length"] = vport.LabelLineLength
-    except Exception:
-        pass
+    except AttributeError:
+        logger.debug("LabelLineLength not available (requires Revit 2022+)")
+    except Exception as e:
+        logger.debug("Could not read LabelLineLength: {}".format(e))
     try:
         bb = vport.get_BoundingBox(sheet_view)
         if bb:
             data["bbox_min"] = bb.Min
             data["bbox_max"] = bb.Max
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("Could not read BoundingBox: {}".format(e))
     return data
 
 
@@ -438,9 +442,15 @@ def apply_vport_label_props(dest_doc, nvport_id, src_data):
         ):
             vp = dest_doc.GetElement(nvport_id)
             if label_offset is not None:
-                vp.LabelOffset = label_offset
+                try:
+                    vp.LabelOffset = label_offset
+                except AttributeError:
+                    logger.debug("LabelOffset not available (requires Revit 2022+)")
             if label_line_len is not None:
-                vp.LabelLineLength = label_line_len
+                try:
+                    vp.LabelLineLength = label_line_len
+                except AttributeError:
+                    logger.debug("LabelLineLength not available (requires Revit 2022+)")
     except Exception as e:
         logger.warning("Label property set failed: {}".format(e))
 
@@ -456,23 +466,24 @@ def correct_vport_by_bbox(dest_doc, nvport_id, src_data, dest_sheet):
     if src_bb_min is None:
         return
     try:
+        vp = dest_doc.GetElement(nvport_id)
+        dst_bb = vp.get_BoundingBox(dest_sheet)
+        if dst_bb is None:
+            return
+        dx = src_bb_min.X - dst_bb.Min.X
+        dy = src_bb_min.Y - dst_bb.Min.Y
+        if abs(dx) <= 1e-9 and abs(dy) <= 1e-9:
+            return
         with revit.Transaction(
             "Align View Title Position",
             doc=dest_doc,
             swallow_errors=True,
         ):
-            vp = dest_doc.GetElement(nvport_id)
-            dst_bb = vp.get_BoundingBox(dest_sheet)
-            if dst_bb is None:
-                return
-            dx = src_bb_min.X - dst_bb.Min.X
-            dy = src_bb_min.Y - dst_bb.Min.Y
-            if abs(dx) > 1e-9 or abs(dy) > 1e-9:
-                DB.ElementTransformUtils.MoveElement(
-                    dest_doc,
-                    nvport_id,
-                    DB.XYZ(dx, dy, 0),
-                )
+            DB.ElementTransformUtils.MoveElement(
+                dest_doc,
+                nvport_id,
+                DB.XYZ(dx, dy, 0),
+            )
     except Exception as e:
         logger.warning("BBox position correction failed: {}".format(e))
 
