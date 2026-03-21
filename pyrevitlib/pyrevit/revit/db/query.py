@@ -90,7 +90,7 @@ def get_name(element, title_on_sheet=False):
                 return element.Name
             else:
                 return element.ViewName
-    if PY3:
+    if hasattr(element, "Name"):
         return element.Name
     else:
         return Element.Name.GetValue(element)
