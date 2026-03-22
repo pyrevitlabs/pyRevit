@@ -16,6 +16,7 @@ namespace pyRevitExtensionParser
         public new string MinRevitVersion { get; set; }
         public new string MaxRevitVersion { get; set; }
         public ExtensionConfig Config { get; set; }
+        public bool RocketModeCompatible { get; set; }
 
         /// <summary>
         /// Layout directives that reference external components (from other extensions or native Revit).

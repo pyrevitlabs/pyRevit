@@ -11,14 +11,20 @@ namespace pyRevitAssemblyBuilder.SessionManager
     /// </summary>
     public class ExtensionManagerService : IExtensionManagerService
     {
+        private readonly int _revitYear;
         private List<ParsedExtension>? _cachedExtensions;
+
+        public ExtensionManagerService(int revitYear = 0)
+        {
+            _revitYear = revitYear;
+        }
 
         /// <summary>
         /// Gets all parsed extensions (cached).
         /// </summary>
         private List<ParsedExtension> GetAllExtensionsCached()
         {
-            return _cachedExtensions ??= ExtensionParser.ParseInstalledExtensions().ToList();
+            return _cachedExtensions ??= ExtensionParser.ParseInstalledExtensions(_revitYear).ToList();
         }
 
         /// <summary>

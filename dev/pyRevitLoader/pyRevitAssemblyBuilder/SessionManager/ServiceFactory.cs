@@ -44,9 +44,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// Creates an ExtensionManagerService instance.
         /// </summary>
         /// <returns>A new IExtensionManagerService instance.</returns>
-        public static IExtensionManagerService CreateExtensionManagerService()
+        public static IExtensionManagerService CreateExtensionManagerService(int revitYear = 0)
         {
-            return new ExtensionManagerService();
+            return new ExtensionManagerService(revitYear);
         }
 
         /// <summary>
@@ -250,7 +250,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
             
             // Create core services
             var assemblyBuilder = CreateAssemblyBuilderService(revitVersion, buildStrategy, logger);
-            var extensionManager = CreateExtensionManagerService();
+            int.TryParse(revitVersion, out int revitYear);
+            var extensionManager = CreateExtensionManagerService(revitYear);
             var hookManager = CreateHookManager(logger);
             
             // Create icon and tooltip managers
