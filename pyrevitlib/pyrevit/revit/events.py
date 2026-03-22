@@ -3,6 +3,7 @@
 from pyrevit import HOST_APP
 from pyrevit import EXEC_PARAMS, DB, UI
 from pyrevit import framework
+from pyrevit import compat, PyRevitCPythonNotSupported
 from pyrevit.coreutils.logger import get_logger
 
 
@@ -156,9 +157,9 @@ class _GenericExternalEventHandler(UI.IExternalEventHandler):
     def GetName(self):
         return "GenericExternalEventHandler"
 
-
-_HANDLER = _GenericExternalEventHandler()
-_EXTERNAL_EVENT = UI.ExternalEvent.Create(_HANDLER)
+if compat.IRONPY:
+    _HANDLER = _GenericExternalEventHandler()
+    _EXTERNAL_EVENT = UI.ExternalEvent.Create(_HANDLER)
 
 
 def execute_in_revit_context(func, *args, **kwargs):
@@ -196,6 +197,8 @@ def execute_in_revit_context(func, *args, **kwargs):
         This function does not return values from the executed function.
         For return values, use callbacks or shared mutable objects.
     """
+    if not compat.IRONPY:
+        PyRevitCPythonNotSupported("pyrevit.revit.events.execute_in_revit_context")
     _HANDLER.func = func
     _HANDLER.args = args
     _HANDLER.kwargs = kwargs

@@ -1,9 +1,6 @@
 """Does its best at visually separating open documents."""
 #pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
-import re
-
-from pyrevit import HOST_APP
-from pyrevit.runtime.types import DocumentTabEventUtils
+from pyrevit import EXEC_PARAMS
 from pyrevit.coreutils.ribbon import ICON_MEDIUM
 from pyrevit import script
 from pyrevit.userconfig import user_config
@@ -64,7 +61,7 @@ def reset_slots():
 
 
 if __name__ == '__main__':
-    if __shiftclick__: #pylint: disable=undefined-variable
+    if EXEC_PARAMS.config_mode:
         selected_option = forms.CommandSwitchWindow.show(
             ["List Document Colors", "Reset Theme"],
             message="Select option:"

@@ -1,6 +1,7 @@
 using pyRevitExtensionParser;
 using pyRevitExtensionParserTest;
 using pyRevitExtensionParserTest.TestHelpers;
+using pyRevitAssemblyBuilder.AssemblyMaker;
 using System.IO;
 using System.Text;
 using NUnit.Framework;
@@ -212,6 +213,111 @@ tooltip: Bundle Tooltip
         }
 
         [Test]
+        public void TestLoggingLevelConfigFromIni()
+        {
+            var configPath = Path.Combine(TestTempDir, "pyRevit_config_logging.ini");
+
+            // Default: Quiet (0) when nothing is set
+            File.WriteAllText(configPath, "");
+            Assert.AreEqual(0, PyRevitConfig.Load(configPath).LoggingLevel, "Default should be 0 (Quiet)");
+
+            // Verbose only → 1
+            File.WriteAllText(configPath, "[core]\nverbose = true\ndebug = false");
+            Assert.AreEqual(1, PyRevitConfig.Load(configPath).LoggingLevel, "verbose=true should give 1");
+
+            // Debug → 2 (takes priority)
+            File.WriteAllText(configPath, "[core]\nverbose = true\ndebug = true");
+            Assert.AreEqual(2, PyRevitConfig.Load(configPath).LoggingLevel, "debug=true should give 2");
+
+            // Explicit Quiet
+            File.WriteAllText(configPath, "[core]\nverbose = false\ndebug = false");
+            Assert.AreEqual(0, PyRevitConfig.Load(configPath).LoggingLevel, "Both false should give 0");
+
+            Assert.Pass("LoggingLevel config parsing validated successfully.");
+        }
+
+        [Test]
+        public void TestTelemetryConfigFromIni()
+        {
+            var configPath = Path.Combine(TestTempDir, "pyRevit_config_telem.ini");
+
+            // Defaults: all false / empty when section is absent
+            File.WriteAllText(configPath, "");
+            var cfg0 = PyRevitConfig.Load(configPath);
+            Assert.IsFalse(cfg0.TelemetryState, "Default TelemetryState should be false");
+            Assert.IsTrue(cfg0.TelemetryUTCTimeStamps, "Default TelemetryUTCTimeStamps should be true");
+            Assert.AreEqual(string.Empty, cfg0.TelemetryFilePath, "Default TelemetryFilePath should be empty");
+            Assert.AreEqual(string.Empty, cfg0.TelemetryServerUrl, "Default TelemetryServerUrl should be empty");
+            Assert.IsFalse(cfg0.TelemetryIncludeHooks, "Default TelemetryIncludeHooks should be false");
+            Assert.IsFalse(cfg0.AppTelemetryState, "Default AppTelemetryState should be false");
+            Assert.AreEqual(string.Empty, cfg0.AppTelemetryServerUrl, "Default AppTelemetryServerUrl should be empty");
+            Assert.AreEqual(string.Empty, cfg0.AppTelemetryEventFlags, "Default AppTelemetryEventFlags should be empty");
+
+            // Set values and verify read-back
+            var iniContent = string.Join("\n", new[] {
+                "[telemetry]",
+                "active = true",
+                "utc_timestamps = true",
+                "telemetry_file_dir = C:\\logs",
+                "telemetry_server_url = https://telem.example.com",
+                "include_hooks = true",
+                "active_app = true",
+                "apptelemetry_server_url = https://apptelm.example.com",
+                "apptelemetry_event_flags = 255",
+            });
+            File.WriteAllText(configPath, iniContent);
+            var cfg1 = PyRevitConfig.Load(configPath);
+            Assert.IsTrue(cfg1.TelemetryState);
+            Assert.IsTrue(cfg1.TelemetryUTCTimeStamps);
+            Assert.AreEqual("C:\\logs", cfg1.TelemetryFilePath);
+            Assert.AreEqual("https://telem.example.com", cfg1.TelemetryServerUrl);
+            Assert.IsTrue(cfg1.TelemetryIncludeHooks);
+            Assert.IsTrue(cfg1.AppTelemetryState);
+            Assert.AreEqual("https://apptelm.example.com", cfg1.AppTelemetryServerUrl);
+            Assert.AreEqual("255", cfg1.AppTelemetryEventFlags);
+
+            // Write-then-read round-trip
+            var configPath2 = Path.Combine(TestTempDir, "pyRevit_config_telem_rw.ini");
+            File.WriteAllText(configPath2, "");
+            var cfgRw = PyRevitConfig.Load(configPath2);
+            cfgRw.TelemetryState = true;
+            cfgRw.TelemetryServerUrl = "https://rw.example.com";
+            Assert.IsTrue(PyRevitConfig.Load(configPath2).TelemetryState);
+            Assert.AreEqual("https://rw.example.com", PyRevitConfig.Load(configPath2).TelemetryServerUrl);
+
+            Assert.Pass("Telemetry config parsing validated successfully.");
+        }
+
+        [Test]
+        public void TestFileLoggingAndAutoUpdateConfigFromIni()
+        {
+            var configPath = Path.Combine(TestTempDir, "pyRevit_config_misc.ini");
+
+            // Defaults
+            File.WriteAllText(configPath, "");
+            var cfg0 = PyRevitConfig.Load(configPath);
+            Assert.IsFalse(cfg0.FileLogging, "Default FileLogging should be false");
+            Assert.IsFalse(cfg0.AutoUpdate, "Default AutoUpdate should be false");
+            Assert.AreEqual(string.Empty, cfg0.OutputStyleSheet, "Default OutputStyleSheet should be empty");
+
+            // Set values
+            File.WriteAllText(configPath, "[core]\nfilelogging = true\nautoupdate = true\noutputstylesheet = C:\\style.css");
+            var cfg1 = PyRevitConfig.Load(configPath);
+            Assert.IsTrue(cfg1.FileLogging);
+            Assert.IsTrue(cfg1.AutoUpdate);
+            Assert.AreEqual("C:\\style.css", cfg1.OutputStyleSheet);
+
+            // Write-then-read round-trip for OutputStyleSheet
+            var configPath2 = Path.Combine(TestTempDir, "pyRevit_config_misc_rw.ini");
+            File.WriteAllText(configPath2, "");
+            var cfgRw = PyRevitConfig.Load(configPath2);
+            cfgRw.OutputStyleSheet = "C:\\custom.css";
+            Assert.AreEqual("C:\\custom.css", PyRevitConfig.Load(configPath2).OutputStyleSheet);
+
+            Assert.Pass("FileLogging / AutoUpdate / OutputStyleSheet config parsing validated successfully.");
+        }
+
+        [Test]
         public void TestLoadBetaConfigFromIni()
         {
             // Create a temporary config file
@@ -238,6 +344,101 @@ tooltip: Bundle Tooltip
             Assert.IsTrue(config4.LoadBeta, "LoadBeta should be case-insensitive");
             
             Assert.Pass("LoadBeta config parsing validated successfully.");
+        }
+
+        [Test]
+        public void TestRocketModeEngineConfigs()
+        {
+            var testCases = new[]
+            {
+                new { Name = "RocketMode_Off_CompatibleExt", RocketMode = false, Compatible = true, ExplicitClean = false, ExpectedClean = true },
+                new { Name = "RocketMode_On_CompatibleExt", RocketMode = true, Compatible = true, ExplicitClean = false, ExpectedClean = false },
+                new { Name = "RocketMode_On_IncompatibleExt", RocketMode = true, Compatible = false, ExplicitClean = false, ExpectedClean = true },
+                new { Name = "RocketMode_On_CompatibleExt_ExplicitClean", RocketMode = true, Compatible = true, ExplicitClean = true, ExpectedClean = true },
+                new { Name = "RocketMode_Off_IncompatibleExt", RocketMode = false, Compatible = false, ExplicitClean = false, ExpectedClean = true },
+            };
+
+            foreach (var tc in testCases)
+            {
+                var extensionDir = Path.Combine(TestTempDir, $"{tc.Name}.extension");
+                var bundleDir = Path.Combine(extensionDir, "TestPanel.panel", "TestButton.pushbutton");
+                Directory.CreateDirectory(bundleDir);
+
+                var scriptContent = new StringBuilder();
+                scriptContent.AppendLine("__title__ = 'Test Button'");
+                if (tc.ExplicitClean)
+                {
+                    scriptContent.AppendLine("__cleanengine__ = True");
+                }
+                File.WriteAllText(Path.Combine(bundleDir, "script.py"), scriptContent.ToString());
+
+                if (tc.Compatible)
+                {
+                    var extensionJson = "{ \"rocket_mode_compatible\": \"True\" }";
+                    File.WriteAllText(Path.Combine(extensionDir, "extension.json"), extensionJson);
+                }
+
+                var extensions = ParseInstalledExtensions(extensionDir).ToList();
+                Assert.AreEqual(1, extensions.Count, $"{tc.Name}: Expected 1 extension");
+                var extension = extensions.First();
+
+                Assert.AreEqual(tc.Compatible, extension.RocketModeCompatible, 
+                    $"{tc.Name}: RocketModeCompatible should be {tc.Compatible}");
+
+                var button = FindComponentRecursively(extension, "TestButton");
+                Assert.IsNotNull(button, $"{tc.Name}: TestButton not found");
+
+                var engineCfgs = pyRevitAssemblyBuilder.AssemblyMaker.CommandGenerationUtilities.BuildEngineConfigs(
+                    button, button.ScriptPath, extension, tc.RocketMode);
+
+                TestContext.Out.WriteLine($"{tc.Name}: RocketMode={tc.RocketMode}, Compatible={tc.Compatible}, ExplicitClean={tc.ExplicitClean}");
+                TestContext.Out.WriteLine($"  Engine Configs: {engineCfgs}");
+
+                Assert.IsTrue(engineCfgs.Contains($"\"clean\":{tc.ExpectedClean.ToString().ToLower()}"),
+                    $"{tc.Name}: Expected clean={tc.ExpectedClean}, got: {engineCfgs}");
+
+                Directory.Delete(extensionDir, true);
+            }
+
+            Assert.Pass("Rocket mode engine configs validated successfully.");
+        }
+
+        [Test]
+        public void TestRocketModeCompatibilityFromExtensionJson()
+        {
+            var extensionDir = Path.Combine(TestTempDir, "RocketModeCompatibilityTest.extension");
+            var bundleDir = Path.Combine(extensionDir, "TestPanel.panel", "TestButton.pushbutton");
+            Directory.CreateDirectory(bundleDir);
+
+            File.WriteAllText(Path.Combine(bundleDir, "script.py"), "__title__ = 'Test'");
+            File.WriteAllText(Path.Combine(extensionDir, "extension.json"), "{ \"rocket_mode_compatible\": \"True\" }");
+
+            var extensions = ParseInstalledExtensions(extensionDir).ToList();
+            Assert.AreEqual(1, extensions.Count);
+            var extension = extensions.First();
+
+            Assert.IsTrue(extension.RocketModeCompatible, "Extension should be rocket mode compatible");
+
+            Directory.Delete(extensionDir, true);
+        }
+
+        [Test]
+        public void TestPyRevitCoreAlwaysRocketModeCompatible()
+        {
+            var extensionDir = Path.Combine(TestTempDir, "pyRevitCore.extension");
+            var bundleDir = Path.Combine(extensionDir, "TestPanel.panel", "TestButton.pushbutton");
+            Directory.CreateDirectory(bundleDir);
+
+            File.WriteAllText(Path.Combine(bundleDir, "script.py"), "__title__ = 'Test'");
+            // No extension.json - pyRevitCore should still be compatible
+
+            var extensions = ParseInstalledExtensions(extensionDir).ToList();
+            Assert.AreEqual(1, extensions.Count);
+            var extension = extensions.First();
+
+            Assert.IsTrue(extension.RocketModeCompatible, "pyRevitCore should always be rocket mode compatible");
+
+            Directory.Delete(extensionDir, true);
         }
 
         private ParsedComponent? FindComponentRecursively(ParsedComponent? component, string targetName)

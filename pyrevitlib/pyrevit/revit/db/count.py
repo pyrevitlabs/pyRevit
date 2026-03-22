@@ -1,10 +1,23 @@
 # -*- coding: UTF-8 -*-
 
 """ Counting functions for Revit elements. """
+import re
 
 from pyrevit import DB
 from pyrevit.compat import get_elementid_value_func
 import pyrevit.revit.db.query as q
+
+_COPY_SUFFIXES = {
+    "Copy", "Copie", "Kopie", "Copia", "Kopia", "Kopi", "Kopio",
+    u"\u041a\u043e\u043f\u0438\u044f",
+    u"\u30b3\u30d4\u30fc",
+    u"\u526f\u672c",       # Chinese Simplified
+    u"\ubcf5\uc0ac\ubcf8",
+    u"M\xe1solat",
+}
+_COPY_PATTERN = re.compile(
+    r'\s+(' + '|'.join(re.escape(s) for s in _COPY_SUFFIXES) + r')\s+\d+$'
+)
 
 
 def count_unpinned_revit_links(revitlinks_elements):
@@ -75,21 +88,18 @@ def count_analytical_model_activated(document):
 
 def count_copied_views(views_set):
     """
-    Returns the number of views in the given set that have "Copy" or "Copie" in their name.
-
+    Returns the number of views in the given set that have a locale-specific
+    Revit copy suffix in their name.
     Args:
-    views_set (set): A set of views to check for copied views. Defaults to None.
-
+        views_set (set): A set of views to check for copied views.
     Returns:
-    int: The number of views in the set that have "Copy" or "Copie" in their name.
+        int: The number of views whose name contains a known copy suffix.
     """
-    copied_view_names = ["Copy", "Copie"]
     copied_views_count = 0
     for view in views_set:
         view_name = q.get_name(view)
         try:
-            # FIXME French compatibility, make it universal
-            if any(name in view_name for name in copied_view_names):
+            if _COPY_PATTERN.search(view_name):
                 copied_views_count += 1
         except Exception as e:
             print(e)
@@ -334,10 +344,10 @@ def count_revision_clouds(document):
 def count_groups(doc):
     """
     Counts the instances and types of model and detail groups in a Revit document, excluding array members.
-    
+
     Args:
         doc (DB.Document): The Revit document to process.
-    
+
     Returns:
         tuple: A tuple containing four integers:
             - model_group_instances_count (int): The count of model group instances.
@@ -353,7 +363,6 @@ def count_groups(doc):
             arraysmembers.update(array.GetCopiedMemberIds())
 
     arrays_grouptype_members = set(doc.GetElement(array).GetTypeId() for array in arraysmembers)
-
 
     model_groups = DB.FilteredElementCollector(doc).OfCategory(DB.BuiltInCategory.OST_IOSModelGroups).ToElements()
     model_group_instances_count = 0
