@@ -90,6 +90,13 @@ namespace pyRevitExtensionParser
         /// <param name="name">The component or extension name, used in log messages.</param>
         private static bool IsRevitVersionCompatible(string minRevitVersion, string maxRevitVersion, int revitYear, string name)
         {
+            // Early exit when Revit version is unknown — skip version filtering entirely
+            if (revitYear <= 0)
+            {
+                LogWarning("Skipping min / max version test, since Revit version is unknown");
+                return true;
+            }
+
             bool compatible = true;
 
             // Parse and validate min_revit_version
@@ -120,12 +127,6 @@ namespace pyRevitExtensionParser
                     LogInfo($"'{name}': skipped - requires Revit {max} or earlier (running {revitYear}).");
                     compatible = false;
                 }
-            }
-
-            if (revitYear <= 0)
-            {
-                LogWarning("Skipping min / max version test, since Revit version is unknown");
-                return true;
             }
 
             return compatible;
