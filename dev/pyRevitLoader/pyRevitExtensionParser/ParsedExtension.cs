@@ -16,7 +16,6 @@ namespace pyRevitExtensionParser
         public new string MinRevitVersion { get; set; }
         public new string MaxRevitVersion { get; set; }
         public ExtensionConfig Config { get; set; }
-        public bool RocketModeCompatible { get; set; }
 
         /// <summary>
         /// Gets or sets whether this extension is compatible with rocket mode.
