@@ -118,8 +118,13 @@ class Context(object):
             if not self._validate_view_range_order(new_values, new_levels):
                 return False
 
+            if self._source_template is not None:
+                view = self._source_template
+            else:
+                view = self._source_view
+
             with revit.Transaction("Update View Range", doc=revit.doc):
-                view_range = self.source_view.GetViewRange()
+                view_range = view.GetViewRange()
 
                 # First, update levels if provided
                 if new_levels:
@@ -172,7 +177,7 @@ class Context(object):
                             return False
 
                 # Apply the view range back to the view
-                self.source_view.SetViewRange(view_range)
+                view.SetViewRange(view_range)
                 self.context_changed()
                 self.view_model.warning_message = "View range updated successfully"
                 return True
