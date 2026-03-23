@@ -161,7 +161,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 }
                 catch (Exception ex)
                 {
-                    _logger.Error($"Error building/loading extension '{ext?.Name ?? "unknown"}': {ex.Message}");
+                    _logger.Error($"Error building/loading extension '{ext?.Name ?? "unknown"}': {ex}");
                 }
             }
 
@@ -180,7 +180,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     }
                     catch (Exception ex)
                     {
-                        _logger.Error($"Startup script error for '{ext.Name}': {ex.Message}");
+                        _logger.Error($"Startup script error for '{ext.Name}': {ex}");
                     }
                 }
             }
@@ -197,7 +197,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 }
                 catch (Exception ex)
                 {
-                    _logger.Error($"UI build error for '{ext?.Name ?? "unknown"}': {ex.Message}");
+                    _logger.Error($"UI build error for '{ext?.Name ?? "unknown"}': {ex}");
                 }
             }
 
