@@ -1,4 +1,4 @@
-"""Monify UI backend."""
+"""Minify UI backend."""
 #pylint: disable=E0401,C0103
 from pyrevit import forms
 from pyrevit import script
@@ -46,12 +46,22 @@ def config_minifyui(config):
 
 
 def update_ui(config):
-    # Minify or unminify the ui here
+    """Apply or remove tab visibility based on current minify state.
+
+    Called on toggle, config change, session init, and ViewActivated.
+    Uses MINIFYUIACTIVE env var + hidden_tabs config as single source
+    of truth. See: https://github.com/pyrevitlabs/pyRevit/issues/3106
+    """
     hidden_tabs = get_minifyui_config(config)
+    is_active = script.get_envvar(MINIFYUI_ENV_VAR)
     for tab in ribbon.get_current_ui():
         if tab.name in hidden_tabs:
             # not new state since the visible value is reverse
-            tab.visible = not script.get_envvar(MINIFYUI_ENV_VAR)
+            tab.visible = not is_active
+            mlogger.debug(
+                'MinifyUI: tab "%s" visible=%s (active=%s)',
+                tab.name, not is_active, is_active
+            )
 
 
 def toggle_minifyui(config):
