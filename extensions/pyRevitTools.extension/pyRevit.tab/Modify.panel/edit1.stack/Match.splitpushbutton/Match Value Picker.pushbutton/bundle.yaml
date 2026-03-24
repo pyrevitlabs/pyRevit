@@ -1,0 +1,46 @@
+title:
+  en_us: Match Value Picker
+  fr_fr: Sélecteur de valeur (Correspondance)
+  ru: Подбор значения
+  chinese_s: 匹配数值拾取器
+  es_es: Selector de valores (Igualar)
+  de_de: Wert übernehmen (Picker)
+  pt_br: Seletor de valor (Correspondência)
+
+tooltip:
+  en_us: >-
+    Pick a value from an element and apply it to others.
+    Works like an eyedropper for parameter values.
+    Requires an active "equals" filter in the current view. Without it, nothing will happen.
+
+  fr_fr: >-
+    Sélectionnez une valeur sur un élément et appliquez-la aux autres.
+    Fonctionne comme une pipette pour les valeurs de paramètres.
+    Nécessite un filtre "égal à" actif dans la vue courante. Sans cela, rien ne se passe.
+
+  ru: >-
+    Выберите значение с элемента и примените его к другим.
+    Работает как пипетка для значений параметров.
+    Требуется активный фильтр «равно» в текущем виде. Без него ничего не произойдет.
+
+  chinese_s: >-
+    从一个元素拾取数值并应用到其他元素。
+    类似于用于参数数值的“取色器”。
+    需要当前视图中存在启用的“等于”过滤器，否则不会执行任何操作。
+
+  es_es: >-
+    Selecciona un valor de un elemento y aplícalo a otros.
+    Funciona como un cuentagotas para valores de parámetros.
+    Requiere un filtro de tipo "igual a" activo en la vista actual. Sin él, no ocurrirá nada.
+
+  de_de: >-
+    Wert von einem Element aufnehmen und auf andere übertragen.
+    Funktioniert wie eine Pipette für Parameterwerte.
+    Erfordert einen aktiven „Ist gleich“-Filter in der aktuellen Ansicht. Ohne diesen passiert nichts.
+
+  pt_br: >-
+    Selecione um valor de um elemento e aplique a outros.
+    Funciona como um conta-gotas para valores de parâmetros.
+    Requer um filtro "igual a" ativo na vista atual. Sem isso, nada acontecerá.
+
+author: wurschdhaud
