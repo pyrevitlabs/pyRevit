@@ -69,6 +69,8 @@ bin/**/*.xml
 # claude
 .claude
 
-# NUKE build
-.nuke/
+# NUKE build (root marker is `.nuke/`; temp + generated JSON stay local)
+.nuke/temp/
+.nuke/build.schema.json
+.nuke/parameters.json
 build/bin/

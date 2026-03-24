@@ -6,9 +6,9 @@ Param(
 )
 
 $ErrorActionPreference = "Stop"
-$PSScriptRoot = Split-Path $MyInvocation.MyCommand.Path -Parent
+$ScriptRoot = Split-Path $MyInvocation.MyCommand.Path -Parent
 
-$BuildProjectFile = Join-Path $PSScriptRoot "build\build.csproj"
+$BuildProjectFile = Join-Path $ScriptRoot "build\build.csproj"
 $env:DOTNET_CLI_TELEMETRY_OPTOUT = 1
 $env:DOTNET_NOLOGO = 1
 $env:NUKE_TELEMETRY_OPTOUT = 1
