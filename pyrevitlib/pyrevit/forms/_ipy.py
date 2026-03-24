@@ -1,4 +1,5 @@
-﻿"""Reusable WPF forms for pyRevit.
+# encoding: utf-8
+"""Reusable WPF forms for pyRevit.
 
 Examples:
     ```python
@@ -68,7 +69,9 @@ WPF_VISIBLE = framework.Windows.Visibility.Visible
 XAML_FILES_DIR = op.dirname(__file__)
 
 
-ParamDef = namedtuple("ParamDef", ["name", "istype", "definition", "isreadonly", "isunit", "storagetype"])
+ParamDef = namedtuple(
+    "ParamDef", ["name", "istype", "definition", "isreadonly", "isunit", "storagetype"]
+)
 """Parameter definition tuple.
 
 Attributes:
@@ -424,7 +427,7 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
                 False if it is a path. Defaults to False.
             handle_esc (bool, optional): Whether the ESC key should be handled.
                 Defaults to True.
-            set_owner (bool, optional): Whether to se the window owner.
+            set_owner (bool, optional): Whether to set the window owner.
                 Defaults to True.
         """
         # create new id for this window
@@ -447,12 +450,6 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         self.setup_icon()
         if handle_esc:
             self.setup_default_handlers()
-
-    def _determine_xaml(self, xaml_source):
-        # Kept for backwards compatibility — delegates to module-level helper.
-        xaml_path, pending = _resolve_xaml_source(xaml_source)
-        self._pending_resource_merge = pending
-        return xaml_path
 
     def setup_owner(self):
         """Set the window owner."""
@@ -499,44 +496,44 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
 class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
     r"""WPF panel base class for all pyRevit dockable panels.
 
-    Subclass this, set the three required class attributes, then register
-    and open the panel through the module-level helpers.
+        Subclass this, set the three required class attributes, then register
+        and open the panel through the module-level helpers.
 
-    Required class attributes:
-        panel_id (str): stable UUID string identifying the panel in Revit.
-        panel_source (str): XAML filename (resolved relative to the command).
-        panel_title (str): title displayed in the panel chrome.
+        Required class attributes:
+            panel_id (str): stable UUID string identifying the panel in Revit.
+            panel_source (str): XAML filename (resolved relative to the command).
+            panel_title (str): title displayed in the panel chrome.
 
-    Optional class attributes:
-        initial_state (UI.DockablePaneState):
-            initial docking position; Revit picks a default when None.
-        editor_interaction (UI.EditorInteractionType):
-            how the panel behaves while an editor is active.
-        contextual_help (UI.ContextualHelp):
-            F1 help associated with the pane.
+        Optional class attributes:
+            initial_state (UI.DockablePaneState):
+                initial docking position; Revit picks a default when None.
+            editor_interaction (UI.EditorInteractionType):
+                how the panel behaves while an editor is active.
+            contextual_help (UI.ContextualHelp):
+                F1 help associated with the pane.
 
-    Examples:
-```python
-        from pyrevit import forms
-        import Autodesk.Revit.UI as UI
+        Examples:
+    ```python
+            from pyrevit import forms
+            import Autodesk.Revit.UI as UI
 
-        state = UI.DockablePaneState()
-        state.DockPosition = UI.DockPosition.Right
+            state = UI.DockablePaneState()
+            state.DockPosition = UI.DockPosition.Right
 
-        class MyPanel(forms.WPFPanel):
-            panel_id     = "181e05a4-28f6-4311-8a9f-d2aa528c8755"
-            panel_source = "MyPanel.xaml"
-            panel_title  = "My Panel"
-            initial_state = state
+            class MyPanel(forms.WPFPanel):
+                panel_id     = "181e05a4-28f6-4311-8a9f-d2aa528c8755"
+                panel_source = "MyPanel.xaml"
+                panel_title  = "My Panel"
+                initial_state = state
 
-        forms.register_dockable_panel(MyPanel)
+            forms.register_dockable_panel(MyPanel)
 
-        # open from any command button
-        forms.open_dockable_panel(MyPanel)
+            # open from any command button
+            forms.open_dockable_panel(MyPanel)
 
-        # retrieve the live instance from anywhere
-        dockable_pane = forms.get_dockable_panel(MyPanel)
-```
+            # retrieve the live instance from anywhere
+            dockable_pane = forms.get_dockable_panel(MyPanel)
+    ```
     """
 
     panel_id = None
@@ -628,7 +625,7 @@ def register_dockable_panel(panel_type, default_visible=True):
     Returns:
         forms.WPFPanel: The live panel instance created during registration.
     """
-    if not issubclass(panel_type, WPFPanel):
+    if not isinstance(panel_type, type) or not issubclass(panel_type, WPFPanel):
         raise PyRevitException("Dockable pane must be a subclass of forms.WPFPanel")
 
     try:
@@ -716,11 +713,10 @@ def toggle_dockable_panel(panel_type_or_id, state):
         state (bool): True to show the panel, False to hide it.
     """
     dockable_panel = get_dockable_panel(panel_type_or_id)
-    if dockable_panel:
-        if state:
-            dockable_panel.Show()
-        else:
-            dockable_panel.Hide()
+    if state:
+        dockable_panel.Show()
+    else:
+        dockable_panel.Hide()
 
 
 class TemplateUserInputWindow(WPFWindow):
@@ -749,7 +745,9 @@ class TemplateUserInputWindow(WPFWindow):
                 localized_title = self.get_locale_string(self.default_title_key)
             except System.Windows.ResourceReferenceKeyNotFoundException:
                 localized_title = None
-            self.Title = localized_title if isinstance(localized_title, str) else "User Input"
+            self.Title = (
+                localized_title if isinstance(localized_title, str) else "User Input"
+            )
         self.Width = width
         self.Height = height
 
@@ -977,7 +975,9 @@ class SelectFromList(TemplateUserInputWindow):
         else:
             # Use localized default, falling back to generic text if resource is missing
             try:
-                self.select_b.Content = self.get_locale_string("SelectFromList.Select.Button")
+                self.select_b.Content = self.get_locale_string(
+                    "SelectFromList.Select.Button"
+                )
             except System.Windows.ResourceReferenceKeyNotFoundException:
                 self.select_b.Content = "Select"
 
@@ -1140,15 +1140,21 @@ class SelectFromList(TemplateUserInputWindow):
     def _list_options(self, option_filter=None):
         if option_filter:
             try:
-                self.checkall_b.Content = self.get_locale_string("SelectFromList.Check.Button")
+                self.checkall_b.Content = self.get_locale_string(
+                    "SelectFromList.Check.Button"
+                )
             except System.Windows.ResourceReferenceKeyNotFoundException:
                 self.checkall_b.Content = "Check"
             try:
-                self.uncheckall_b.Content = self.get_locale_string("SelectFromList.Uncheck.Button")
+                self.uncheckall_b.Content = self.get_locale_string(
+                    "SelectFromList.Uncheck.Button"
+                )
             except System.Windows.ResourceReferenceKeyNotFoundException:
                 self.uncheckall_b.Content = "Uncheck"
             try:
-                self.toggleall_b.Content = self.get_locale_string("SelectFromList.Toggle.Button")
+                self.toggleall_b.Content = self.get_locale_string(
+                    "SelectFromList.Toggle.Button"
+                )
             except System.Windows.ResourceReferenceKeyNotFoundException:
                 self.toggleall_b.Content = "Toggle"
             # get a match score for every item and sort high to low
@@ -1173,15 +1179,21 @@ class SelectFromList(TemplateUserInputWindow):
             )
         else:
             try:
-                self.checkall_b.Content = self.get_locale_string("SelectFromList.CheckAll.Button")
+                self.checkall_b.Content = self.get_locale_string(
+                    "SelectFromList.CheckAll.Button"
+                )
             except System.Windows.ResourceReferenceKeyNotFoundException:
                 self.checkall_b.Content = "Check All"
             try:
-                self.uncheckall_b.Content = self.get_locale_string("SelectFromList.UncheckAll.Button")
+                self.uncheckall_b.Content = self.get_locale_string(
+                    "SelectFromList.UncheckAll.Button"
+                )
             except System.Windows.ResourceReferenceKeyNotFoundException:
                 self.uncheckall_b.Content = "Uncheck All"
             try:
-                self.toggleall_b.Content = self.get_locale_string("SelectFromList.ToggleAll.Button")
+                self.toggleall_b.Content = self.get_locale_string(
+                    "SelectFromList.ToggleAll.Button"
+                )
             except System.Windows.ResourceReferenceKeyNotFoundException:
                 self.toggleall_b.Content = "Toggle All"
 
@@ -1557,9 +1569,7 @@ class GetValueWindow(TemplateUserInputWindow):
             self.datePrompt.Text = value_prompt if value_prompt else "Pick date:"
             if isinstance(value_default, datetime.datetime):
                 self.datePicker.SelectedDate = System.DateTime(
-                    value_default.year,
-                    value_default.month,
-                    value_default.day
+                    value_default.year, value_default.month, value_default.day
                 )
         elif self.value_type == "slider":
             self.show_element(self.sliderPanel_sp)
@@ -1603,9 +1613,7 @@ class GetValueWindow(TemplateUserInputWindow):
             if self.datePicker.SelectedDate:
                 selected = self.datePicker.SelectedDate
                 self.response = datetime.datetime(
-                    selected.Year,
-                    selected.Month,
-                    selected.Day
+                    selected.Year, selected.Month, selected.Day
                 )
             else:
                 self.response = None
@@ -2057,7 +2065,7 @@ class SearchPrompt(WPFWindow):
             else:
                 if cur_res.lower().startswith(input_term):
                     self.directmatch_tb.Text = (
-                        self.search_input + cur_res[len(input_term):]
+                        self.search_input + cur_res[len(input_term) :]
                     )
                     mlogger.debug("directmatch_tb.Text: %s", self.directmatch_tb.Text)
                 else:
@@ -2389,7 +2397,7 @@ def select_sheets(
         sheetset_ops = sorted(
             [SheetOption(x) for x in sheetset_sheets], key=lambda x: x.number
         )
-        if sheetset.Name == 'All Sheets':
+        if sheetset.Name == "All Sheets":
             all_ops["[" + sheetset.Name + "]"] = sheetset_ops
         else:
             all_ops[sheetset.Name] = sheetset_ops
