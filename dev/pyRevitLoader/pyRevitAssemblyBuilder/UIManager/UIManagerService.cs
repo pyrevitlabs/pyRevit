@@ -246,7 +246,8 @@ namespace pyRevitAssemblyBuilder.UIManager
             ParsedComponent? parentComponent,
             RibbonPanel? parentPanel,
             string tabName,
-            ExtensionAssemblyInfo assemblyInfo)
+            ExtensionAssemblyInfo assemblyInfo,
+            string? renamedTabTitle = null)
         {
             if (component == null)
             {
@@ -280,7 +281,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                     break;
 
                 case CommandComponentType.Panel:
-                    HandlePanel(component, tabName, assemblyInfo);
+                    HandlePanel(component, tabName, assemblyInfo, renamedTabTitle);
                     break;
 
                 default:
@@ -300,8 +301,10 @@ namespace pyRevitAssemblyBuilder.UIManager
 
         private void HandleTab(ParsedComponent component, ExtensionAssemblyInfo assemblyInfo)
         {
-            // Use TabBuilder to create the tab
-            _tabBuilder.CreateTab(component);
+            // CreateTab handles find → tag → re-enable in a single ribbon scan.
+            // Returns the tab's current Title if it was renamed (e.g. by a translation
+            // script), or null if no rename detected.
+            var renamedTabTitle = _tabBuilder.CreateTab(component);
 
             // Get tab name for children using localized title
             var tabText = ExtensionParser.GetComponentTitle(component);
@@ -309,12 +312,21 @@ namespace pyRevitAssemblyBuilder.UIManager
             // Mark tab as touched in the registry (matching Python's set_dirty_flag behavior)
             _ribbonScanner?.MarkElementTouched("tab", tabText);
 
-            // Recursively build children
+            // If CreateTab detected a rename, also mark the current (renamed) Title
+            // so CleanupOrphanedElements() doesn't deactivate the tab (#3167).
+            if (!string.IsNullOrEmpty(renamedTabTitle))
+            {
+                _ribbonScanner?.MarkElementTouched("tab", renamedTabTitle);
+                _logger.Debug($"Tab '{tabText}' has current Title '{renamedTabTitle}' — marked both as touched.");
+            }
+
+            // Recursively build children, passing the renamed title so panels can dual-mark too
             foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
-                RecursivelyBuildUI(child, component, null, tabText, assemblyInfo);
+                RecursivelyBuildUI(child, component, null, tabText, assemblyInfo, renamedTabTitle);
         }
 
-        private void HandlePanel(ParsedComponent component, string tabName, ExtensionAssemblyInfo assemblyInfo)
+        private void HandlePanel(ParsedComponent component, string tabName,
+            ExtensionAssemblyInfo assemblyInfo, string? renamedTabTitle = null)
         {
             // Use PanelBuilder to create the panel
             var panel = _panelBuilder.CreatePanel(component, tabName);
@@ -325,12 +337,21 @@ namespace pyRevitAssemblyBuilder.UIManager
             // Mark panel as touched in the registry (matching Python's set_dirty_flag behavior)
             _ribbonScanner?.MarkElementTouched("panel", panelText, tabName);
 
+            // If the parent tab was renamed (e.g. by a translation script), the scanner
+            // registered this panel under "panel:{renamedTab}:{panelText}". Mark that
+            // key as touched too so cleanup doesn't hide the panel.
+            if (!string.IsNullOrEmpty(renamedTabTitle))
+            {
+                _ribbonScanner?.MarkElementTouched("panel", panelText, renamedTabTitle);
+            }
+
             // Apply background colors if specified
             _panelBuilder.ApplyPanelBackgroundColors(panel, component, tabName);
 
-            // Recursively build children
+            // Recursively build children — propagate renamedTabTitle so any nested
+            // components that depend on the tab name for registry keys stay consistent.
             foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
-                RecursivelyBuildUI(child, component, panel, tabName, assemblyInfo);
+                RecursivelyBuildUI(child, component, panel, tabName, assemblyInfo, renamedTabTitle);
         }
 
         private void EnsureSlideOutApplied(ParsedComponent? parentComponent, RibbonPanel? parentPanel)

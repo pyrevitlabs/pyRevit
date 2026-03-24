@@ -205,17 +205,19 @@ def _pick_obj(obj_type, message, multiple=False, world=False, selection_filter=N
     mlogger.error("Error processing picked elements. return_values should be a list.")
 
 
-def pick_element(message=''):
+def pick_element(message='', pick_filter=None):
     """Asks the user to pick an element.
 
     Args:
         message (str): An optional message to display.
+        pick_filter (object, optional): An object specifying the filter to apply
+            when picking elements. Default is None.
 
     Returns:
         (Element): element selected by the user.
     """
     return _pick_obj(UI.Selection.ObjectType.Element,
-                     message)
+                     message, selection_filter=pick_filter)
 
 
 def pick_element_by_category(cat_name_or_builtin, message=''):
@@ -298,18 +300,21 @@ def pick_linked(message=''):
                      message)
 
 
-def pick_elements(message=''):
+def pick_elements(message='', pick_filter=None):
     """Asks the user to pick multiple elements.
 
     Args:
         message (str): An optional message to display.
+        pick_filter (object, optional): An object specifying the filter to apply
+            when picking elements. Default is None.
 
     Returns:
         (list[Element]): elements selected by the user.
     """
     return _pick_obj(UI.Selection.ObjectType.Element,
                      message,
-                     multiple=True)
+                     multiple=True,
+                     selection_filter=pick_filter)
 
 
 def pick_elements_by_category(cat_name_or_builtin, message=''):
