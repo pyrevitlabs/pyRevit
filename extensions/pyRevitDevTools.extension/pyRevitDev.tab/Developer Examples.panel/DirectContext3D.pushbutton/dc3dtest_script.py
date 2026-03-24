@@ -68,6 +68,18 @@ class UI(forms.WPFWindow):
         uidoc.RefreshActiveView()
 
     def button_select(self, sender, args):
+        override_color = None
+        if self.chkOverrideColor.IsChecked:
+            try:
+                override_color = DB.ColorWithTransparency(
+                    int(self.txtRed.Text),
+                    int(self.txtGreen.Text),
+                    int(self.txtBlue.Text),
+                    int(self.txtTransp.Text),
+                )
+            except ValueError:
+                forms.alert("Color input invalid!", sub_msg=traceback.format_exc())
+                return
         element = revit.pick_element()
         geometry = revit.query.get_geometry(element)
 
@@ -75,7 +87,7 @@ class UI(forms.WPFWindow):
         for geo in geometry:
             if not isinstance(geo, DB.Solid) or geo.Volume == 0:
                 continue
-            solid_mesh = revit.dc3dserver.Mesh.from_solid(doc, geo)
+            solid_mesh = revit.dc3dserver.Mesh.from_solid(doc, geo, color=override_color)
             if not solid_mesh:
                 continue
             mesh.append(solid_mesh)
