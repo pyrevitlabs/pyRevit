@@ -69,7 +69,7 @@ def get_name(element, title_on_sheet=False):
     Retrieves the name of a Revit element, with special handling for views.
 
     Args:
-        element (DB.Element): The Revit element whose name is to be retrieved.
+        element (DB.Element | DB.Workset): The Revit element whose name is to be retrieved.
         title_on_sheet (bool, optional): If True and the element is a view,
                                          attempts to retrieve the view's title
                                          on the sheet. Defaults to False.
@@ -90,6 +90,8 @@ def get_name(element, title_on_sheet=False):
                 return element.Name
             else:
                 return element.ViewName
+    if isinstance(element, DB.Workset):
+        return element.Name
     if PY3:
         return element.Name
     else:
