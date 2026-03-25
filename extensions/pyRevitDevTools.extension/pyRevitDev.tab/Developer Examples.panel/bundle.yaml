@@ -12,4 +12,5 @@ layout:
   - DirectContext3D
   - Settings Window
   - Modeless
+  - DockablePane
   - ExportIFC
