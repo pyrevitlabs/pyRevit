@@ -1,7 +1,13 @@
-"""Monify UI backend."""
+# -*- coding: utf-8 -*-
+"""Minify UI backend."""
 #pylint: disable=E0401,C0103
+import System
+from System.Windows import Threading
+
 from pyrevit import forms
 from pyrevit import script
+from pyrevit import framework
+from pyrevit import HOST_APP, UI
 from pyrevit.coreutils import ribbon
 
 
@@ -9,6 +15,7 @@ mlogger = script.get_logger()
 
 
 MINIFYUI_ENV_VAR = 'MINIFYUIACTIVE'
+MINIFYUI_SUBSCRIBED_ENV_VAR = 'MINIFYUI_SUBSCRIBED'
 
 
 class TabOption(forms.TemplateListItem):
@@ -48,14 +55,61 @@ def config_minifyui(config):
 def update_ui(config):
     # Minify or unminify the ui here
     hidden_tabs = get_minifyui_config(config)
+    is_active = script.get_envvar(MINIFYUI_ENV_VAR)
     for tab in ribbon.get_current_ui():
         if tab.name in hidden_tabs:
             # not new state since the visible value is reverse
-            tab.visible = not script.get_envvar(MINIFYUI_ENV_VAR)
+            tab.visible = not is_active
+
+
+def _deferred_update(config):
+    # schedule re-hide after Revit ribbon updates settle
+    dispatcher = Threading.Dispatcher.CurrentDispatcher
+    def do_update():
+        try:
+            if script.get_envvar(MINIFYUI_ENV_VAR):
+                update_ui(config)
+        except Exception:
+            pass
+    action = System.Action(do_update)
+    dispatcher.BeginInvoke(
+        Threading.DispatcherPriority.Background, action)
+    dispatcher.BeginInvoke(
+        Threading.DispatcherPriority.ContextIdle, action)
+    dispatcher.BeginInvoke(
+        Threading.DispatcherPriority.ApplicationIdle, action)
+
+
+def ensure_subscribed(config):
+    # guard: skip if already subscribed
+    if script.get_envvar(MINIFYUI_SUBSCRIBED_ENV_VAR):
+        return
+
+    uiapp = HOST_APP.uiapp
+    if not uiapp:
+        return
+
+    def on_view_activated(sender, args):
+        try:
+            if script.get_envvar(MINIFYUI_ENV_VAR):
+                update_ui(config)
+                _deferred_update(config)
+        except Exception:
+            pass
+
+    try:
+        handler = framework.EventHandler[
+            UI.Events.ViewActivatedEventArgs](on_view_activated)
+        uiapp.ViewActivated += handler
+        script.set_envvar(MINIFYUI_SUBSCRIBED_ENV_VAR, True)
+    except Exception as ex:
+        mlogger.warning('MinifyUI: subscribe failed: %s', ex)
 
 
 def toggle_minifyui(config):
     new_state = not script.get_envvar(MINIFYUI_ENV_VAR)
     script.set_envvar(MINIFYUI_ENV_VAR, new_state)
     script.toggle_icon(new_state)
+    if new_state:
+        ensure_subscribed(config)
     update_ui(config)
