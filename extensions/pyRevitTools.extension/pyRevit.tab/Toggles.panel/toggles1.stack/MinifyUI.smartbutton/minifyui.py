@@ -69,8 +69,8 @@ def _deferred_update(config):
         try:
             if script.get_envvar(MINIFYUI_ENV_VAR):
                 update_ui(config)
-        except Exception:
-            pass
+        except Exception as ex:
+            mlogger.exception('MinifyUI: deferred update failed: %s', ex)
     action = System.Action(do_update)
     dispatcher.BeginInvoke(
         Threading.DispatcherPriority.Background, action)
