@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -129,47 +129,67 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 _logger.Warning("No UI extensions found or extension manager is null.");
                 return;
             }
-            
+
+            // ── PASS 1: Build and load ALL assemblies ──────────────────────────
+            // Fix for #3108: Legacy _new_session() uses separate loops to guarantee
+            // all assemblies exist in the AppDomain before any startup script runs.
+            // Cross-extension imports in startup scripts fail without this.
+            var assembledExtensions = new List<(ParsedExtension ext, ExtensionAssemblyInfo assmInfo)>();
+
             foreach (var ext in uiExtensions)
             {
-                if (ext == null)
-                {
-                    _logger.Warning("Skipping null extension.");
-                    continue;
-                }
-                
-                var extStopwatch = Stopwatch.StartNew();
-                
+                if (ext == null) { _logger.Warning("Skipping null extension."); continue; }
                 try
                 {
                     stepStopwatch.Restart();
                     var rocketMode = _uiManager?.RocketMode ?? false;
                     var assmInfo = _assemblyBuilder?.BuildExtensionAssembly(ext, libraryExtensions, rocketMode);
                     var buildTime = stepStopwatch.ElapsedMilliseconds;
-                    
+
                     if (assmInfo == null)
                     {
                         _logger.Error($"Failed to build assembly for extension '{ext.Name}'.");
                         continue;
                     }
-                    
+
                     _logger.Info($"Extension assembly created: {ext.Name}");
                     stepStopwatch.Restart();
                     _assemblyBuilder?.LoadAssembly(assmInfo);
-                    var loadTime = stepStopwatch.ElapsedMilliseconds;
-                    
-                    _logger.Debug($"[PERF] {ext.Name} - Build: {buildTime}ms, Load: {loadTime}ms");
-                    
-                    // Execute startup script after building assembly but before creating UI
-                    // This matches the Python loader flow
-                    if (!string.IsNullOrEmpty(ext.StartupScript))
+                    _logger.Debug($"[PERF] {ext.Name} - Build: {buildTime}ms, Load: {stepStopwatch.ElapsedMilliseconds}ms");
+
+                    assembledExtensions.Add((ext, assmInfo));
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error($"Error building/loading extension '{ext?.Name ?? "unknown"}': {ex}");
+                }
+            }
+
+            // ── PASS 2: Run ALL startup scripts ────────────────────────────────
+            // All assemblies are now loaded, so cross-extension imports work.
+            foreach (var (ext, _) in assembledExtensions)
+            {
+                if (!string.IsNullOrEmpty(ext.StartupScript))
+                {
+                    try
                     {
                         _logger.Info($"Running startup tasks for {ext.Name}");
                         stepStopwatch.Restart();
                         ExecuteExtensionStartupScript(ext, libraryExtensions);
                         _logger.Debug($"[PERF] {ext.Name} - StartupScript: {stepStopwatch.ElapsedMilliseconds}ms");
                     }
+                    catch (Exception ex)
+                    {
+                        _logger.Error($"Startup script error for '{ext.Name}': {ex}");
+                    }
+                }
+            }
 
+            // ── PASS 3: Build ALL UI ───────────────────────────────────────────
+            foreach (var (ext, assmInfo) in assembledExtensions)
+            {
+                try
+                {
                     stepStopwatch.Restart();
                     _uiManager?.BuildUI(ext, assmInfo);
                     _logger.Debug($"[PERF] {ext.Name} - BuildUI: {stepStopwatch.ElapsedMilliseconds}ms");
@@ -177,10 +197,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 }
                 catch (Exception ex)
                 {
-                    _logger.Error($"Error processing extension '{ext?.Name ?? "unknown"}': {ex.Message}");
+                    _logger.Error($"UI build error for '{ext?.Name ?? "unknown"}': {ex}");
                 }
             }
-            
+
             // STEP 3: Apply external layout directives (panel reordering)
             // This applies directives that reference external targets (native Revit panels or panels from other extensions)
             // Must be called after ALL UI is built so all panels exist
