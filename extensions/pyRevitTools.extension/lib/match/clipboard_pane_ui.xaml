@@ -133,42 +133,110 @@
                   Margin="2,0,0,6"
                   ToolTip="{DynamicResource TooltipRestrictCategories}"/>
 
-        <!-- ── Row 4: Load-source buttons ─────────────────────────── -->
+        <!-- ── Row 4: Load-source buttons ─────────────────────────────────── -->
         <UniformGrid Grid.Row="4" Rows="1" Margin="0,0,0,4">
-            <Button Content="{DynamicResource BtnElemParams}"
-                    Height="28" Margin="0,0,2,0"
+
+            <!-- tag-multiple: parameters are tagged key/value pairs on an element -->
+            <Button Height="28" Margin="0,0,2,0"
                     Click="load_from_element"
-                    ToolTip="{DynamicResource TooltipElemParams}"/>
-            <Button Content="{DynamicResource BtnViewFilters}"
-                    Height="28" Margin="2,0,2,0"
+                    ToolTip="{DynamicResource TooltipElemParams}">
+                <StackPanel Orientation="Horizontal">
+                    <Viewbox Width="15" Height="15" Margin="0,0,5,0" VerticalAlignment="Center">
+                        <Canvas Width="24" Height="24">
+                            <Path Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                Data="M5.5,9A1.5,1.5 0 0,0 7,7.5A1.5,1.5 0 0,0 5.5,6A1.5,1.5 0 0,0 4,7.5A1.5,1.5 0 0,0 5.5,9M17.41,11.58C17.77,11.94 18,12.44 18,13C18,13.55 17.78,14.05 17.41,14.41L12.41,19.41C12.05,19.77 11.55,20 11,20C10.45,20 9.95,19.78 9.58,19.41L2.59,12.42C2.22,12.05 2,11.55 2,11V6C2,4.89 2.89,4 4,4H9C9.55,4 10.05,4.22 10.41,4.58L17.41,11.58M13.54,5.71L14.54,4.71L21.41,11.58C21.78,11.94 22,12.45 22,13C22,13.55 21.78,14.05 21.41,14.41L16.04,19.79L15.04,18.79L20.75,13L13.54,5.71Z"/>
+                        </Canvas>
+                    </Viewbox>
+                    <TextBlock Text="{DynamicResource BtnElemParams}" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+
+            <!-- eye-outline: reading / inspecting the active view -->
+            <Button Height="28" Margin="2,0,2,0"
                     Click="load_from_view_filters"
-                    ToolTip="{DynamicResource TooltipViewFilters}"/>
-            <Button Content="{DynamicResource BtnFilterElem}"
-                    Height="28" Margin="2,0,0,0"
+                    ToolTip="{DynamicResource TooltipViewFilters}">
+                <StackPanel Orientation="Horizontal">
+                    <Viewbox Width="15" Height="15" Margin="0,0,5,0" VerticalAlignment="Center">
+                        <Canvas Width="24" Height="24">
+                            <Path Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                Data="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z"/>
+                        </Canvas>
+                    </Viewbox>
+                    <TextBlock Text="{DynamicResource BtnViewFilters}" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+
+            <!-- filter (funnel): filtering down to the most-common value -->
+            <Button Height="28" Margin="2,0,0,0"
                     Click="load_from_filter_and_element"
-                    ToolTip="{DynamicResource TooltipFilterElem}"/>
+                    ToolTip="{DynamicResource TooltipFilterElem}">
+                <StackPanel Orientation="Horizontal">
+                    <Viewbox Width="15" Height="15" Margin="0,0,5,0" VerticalAlignment="Center">
+                        <Canvas Width="24" Height="24">
+                            <Path Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                Data="M14,12V19.88C14.04,20.18 13.94,20.5 13.71,20.71C13.32,21.1 12.69,21.1 12.3,20.71L10.29,18.7C10.06,18.47 9.96,18.16 10,17.87V12H9.97L4.21,4.62C3.87,4.19 3.95,3.56 4.38,3.22C4.57,3.08 4.78,3 5,3V3H19V3C19.22,3 19.43,3.08 19.62,3.22C20.05,3.56 20.13,4.19 19.79,4.62L14.03,12H14Z"/>
+                        </Canvas>
+                    </Viewbox>
+                    <TextBlock Text="{DynamicResource BtnFilterElem}" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+
         </UniformGrid>
 
-        <!-- ── Row 5: Paste buttons ────────────────────────────────── -->
+        <!-- ── Row 5: Paste buttons ────────────────────────────────────────── -->
         <UniformGrid Grid.Row="5" Rows="1">
+
+            <!-- cursor-default: clicking one element at a time -->
             <Button x:Name="pasteSingleBtn"
-                    Content="{DynamicResource BtnPasteOne}"
                     Height="28" Margin="0,0,2,0"
                     IsEnabled="False"
                     Click="paste_single"
-                    ToolTip="{DynamicResource TooltipPasteOne}"/>
+                    ToolTip="{DynamicResource TooltipPasteOne}">
+                <StackPanel Orientation="Horizontal">
+                    <Viewbox Width="15" Height="15" Margin="0,0,5,0" VerticalAlignment="Center">
+                        <Canvas Width="24" Height="24">
+                            <Path Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                Data="M13.64,21.97C13.14,22.21 12.54,22 12.31,21.5L10.13,16.76L7.62,18.78C7.45,18.92 7.24,19 7,19A1,1 0 0,1 6,18V3A1,1 0 0,1 7,2C7.24,2 7.47,2.09 7.64,2.23L7.65,2.22L19.14,11.86C19.57,12.22 19.62,12.85 19.27,13.27C19.12,13.45 18.91,13.57 18.7,13.61L15.54,14.23L17.74,18.96C18,19.46 17.76,20.05 17.26,20.28L13.64,21.97Z"/>
+                        </Canvas>
+                    </Viewbox>
+                    <TextBlock Text="{DynamicResource BtnPasteOne}" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+
+            <!-- crop-free: the four corner handles of a drag-selection rectangle -->
             <Button x:Name="pasteRectBtn"
-                    Content="{DynamicResource BtnPasteBox}"
                     Height="28" Margin="2,0,2,0"
                     IsEnabled="False"
                     Click="paste_rectangle"
-                    ToolTip="{DynamicResource TooltipPasteBox}"/>
+                    ToolTip="{DynamicResource TooltipPasteBox}">
+                <StackPanel Orientation="Horizontal">
+                    <Viewbox Width="15" Height="15" Margin="0,0,5,0" VerticalAlignment="Center">
+                        <Canvas Width="24" Height="24">
+                            <Path Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                Data="M3,3H9V5H5V9H3V3M21,3V9H19V5H15V3H21M3,15V21H9V19H5V15H3M19,19H15V21H21V15H19V19Z"/>
+                        </Canvas>
+                    </Viewbox>
+                    <TextBlock Text="{DynamicResource BtnPasteBox}" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+
+            <!-- check-all: multiple items already selected, paste to all at once -->
             <Button x:Name="pasteSelBtn"
-                    Content="{DynamicResource BtnPasteSel}"
                     Height="28" Margin="2,0,0,0"
                     IsEnabled="False"
                     Click="paste_selection"
-                    ToolTip="{DynamicResource TooltipPasteSel}"/>
+                    ToolTip="{DynamicResource TooltipPasteSel}">
+                <StackPanel Orientation="Horizontal">
+                    <Viewbox Width="15" Height="15" Margin="0,0,5,0" VerticalAlignment="Center">
+                        <Canvas Width="24" Height="24">
+                            <Path Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+                                Data="M0.41,13.41L6,19L7.41,17.58L1.83,12M22.24,5.58L11.66,16.17L7.5,12L6.07,13.41L11.66,19L23.66,7M18,7L16.59,5.58L10.24,11.93L11.66,13.34L18,7Z"/>
+                        </Canvas>
+                    </Viewbox>
+                    <TextBlock Text="{DynamicResource BtnPasteSel}" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+
         </UniformGrid>
     </Grid>
 </Page>
