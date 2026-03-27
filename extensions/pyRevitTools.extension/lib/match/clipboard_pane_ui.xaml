@@ -43,7 +43,7 @@
         <!-- ── Row 0: Search bar ───────────────────────────────────── -->
         <DockPanel Grid.Row="0" Margin="0,0,0,6">
             <ToggleButton x:Name="regexToggle_b"
-                          ToolTip="Toggle regex / substring search"
+                          ToolTip="{DynamicResource TooltipToggleRegex}"
                           Content="{StaticResource filterIcon}"
                           Width="24" Height="24"
                           Margin="0,0,6,0"
@@ -79,9 +79,9 @@
 
         <!-- ── Row 1: Check / Uncheck / Toggle ────────────────────── -->
         <UniformGrid Grid.Row="1" Rows="1" Margin="0,0,0,6">
-            <Button Content="Check All"   Height="22" Click="check_all"   Margin="0,0,2,0"/>
-            <Button Content="Uncheck All" Height="22" Click="uncheck_all" Margin="2,0,2,0"/>
-            <Button Content="Toggle All"  Height="22" Click="toggle_all"  Margin="2,0,0,0"/>
+            <Button Content="{DynamicResource BtnCheckAll}"   Height="22" Click="check_all"   Margin="0,0,2,0"/>
+            <Button Content="{DynamicResource BtnUncheckAll}" Height="22" Click="uncheck_all" Margin="2,0,2,0"/>
+            <Button Content="{DynamicResource BtnToggleAll}"  Height="22" Click="toggle_all"  Margin="2,0,0,0"/>
         </UniformGrid>
 
         <!-- ── Row 2: Parameter history list ──────────────────────── -->
@@ -102,14 +102,26 @@
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <!-- parameter name -->
-                    <GridViewColumn Header="Parameter" Width="130"
-                                    DisplayMemberBinding="{Binding Name}"/>
+                    <GridViewColumn Width="130"
+                                    DisplayMemberBinding="{Binding Name}">
+                        <GridViewColumn.Header>
+                            <TextBlock Text="{DynamicResource ColParameter}"/>
+                        </GridViewColumn.Header>
+                    </GridViewColumn>
                     <!-- display value -->
-                    <GridViewColumn Header="Value" Width="115"
-                                    DisplayMemberBinding="{Binding DisplayValue}"/>
+                    <GridViewColumn Width="115"
+                                    DisplayMemberBinding="{Binding DisplayValue}">
+                        <GridViewColumn.Header>
+                            <TextBlock Text="{DynamicResource ColValue}"/>
+                        </GridViewColumn.Header>
+                    </GridViewColumn>
                     <!-- category: single name or "multiple" -->
-                    <GridViewColumn Header="Category" Width="80"
-                                    DisplayMemberBinding="{Binding Category}"/>
+                    <GridViewColumn Width="80"
+                                    DisplayMemberBinding="{Binding Category}">
+                        <GridViewColumn.Header>
+                            <TextBlock Text="{DynamicResource ColCategory}"/>
+                        </GridViewColumn.Header>
+                    </GridViewColumn>
                 </GridView>
             </ListView.View>
         </ListView>
@@ -117,46 +129,46 @@
         <!-- ── Row 3: Category selection filter toggle ─────────────── -->
         <CheckBox x:Name="categoryFilterCheck"
                   Grid.Row="3"
-                  Content="Restrict pick to element categories"
+                  Content="{DynamicResource ChkRestrictCategories}"
                   Margin="2,0,0,6"
-                  ToolTip="When enabled, rectangle-pick only selects elements whose category matches the checked parameters"/>
+                  ToolTip="{DynamicResource TooltipRestrictCategories}"/>
 
         <!-- ── Row 4: Load-source buttons ─────────────────────────── -->
         <UniformGrid Grid.Row="4" Rows="1" Margin="0,0,0,4">
-            <Button Content="Elem Params"
+            <Button Content="{DynamicResource BtnElemParams}"
                     Height="28" Margin="0,0,2,0"
                     Click="load_from_element"
-                    ToolTip="Pick element and interactively choose parameters to copy"/>
-            <Button Content="View Filters"
+                    ToolTip="{DynamicResource TooltipElemParams}"/>
+            <Button Content="{DynamicResource BtnViewFilters}"
                     Height="28" Margin="2,0,2,0"
                     Click="load_from_view_filters"
-                    ToolTip="Read all equals-filter parameter values from the active view"/>
-            <Button Content="Filter+Elem"
+                    ToolTip="{DynamicResource TooltipViewFilters}"/>
+            <Button Content="{DynamicResource BtnFilterElem}"
                     Height="28" Margin="2,0,0,0"
                     Click="load_from_filter_and_element"
-                    ToolTip="Read the most-common filter parameter value from a picked element"/>
+                    ToolTip="{DynamicResource TooltipFilterElem}"/>
         </UniformGrid>
 
         <!-- ── Row 5: Paste buttons ────────────────────────────────── -->
         <UniformGrid Grid.Row="5" Rows="1">
             <Button x:Name="pasteSingleBtn"
-                    Content="Paste One"
+                    Content="{DynamicResource BtnPasteOne}"
                     Height="28" Margin="0,0,2,0"
                     IsEnabled="False"
                     Click="paste_single"
-                    ToolTip="Pick one element repeatedly and paste checked parameters"/>
+                    ToolTip="{DynamicResource TooltipPasteOne}"/>
             <Button x:Name="pasteRectBtn"
-                    Content="Paste Box"
+                    Content="{DynamicResource BtnPasteBox}"
                     Height="28" Margin="2,0,2,0"
                     IsEnabled="False"
                     Click="paste_rectangle"
-                    ToolTip="Draw rectangle repeatedly and paste checked parameters to enclosed elements"/>
+                    ToolTip="{DynamicResource TooltipPasteBox}"/>
             <Button x:Name="pasteSelBtn"
-                    Content="Paste Sel."
+                    Content="{DynamicResource BtnPasteSel}"
                     Height="28" Margin="2,0,0,0"
                     IsEnabled="False"
                     Click="paste_selection"
-                    ToolTip="Paste checked parameters to the current Revit selection (one-shot)"/>
+                    ToolTip="{DynamicResource TooltipPasteSel}"/>
         </UniformGrid>
     </Grid>
 </Page>
