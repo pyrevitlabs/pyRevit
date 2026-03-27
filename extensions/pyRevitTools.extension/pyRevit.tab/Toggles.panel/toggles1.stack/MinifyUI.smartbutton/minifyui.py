@@ -94,8 +94,8 @@ def ensure_subscribed(config):
             if script.get_envvar(MINIFYUI_ENV_VAR):
                 update_ui(config)
                 _deferred_update(config)
-        except Exception:
-            pass
+        except Exception as ex:
+            mlogger.debug('MinifyUI: view activation handler failed: %s', ex)
 
     try:
         handler = framework.EventHandler[
