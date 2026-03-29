@@ -861,7 +861,7 @@ class _PyRevitRibbonButton(GenericPyRevitUIContainer):
                 self.set_tooltip_image(self.tooltip_image)
         except Exception as ttimage_err:
             raise PyRevitUIError(
-                "Error setting deffered tooltip image {} | {} ".format(
+                "Error setting deferred tooltip image {} | {} ".format(
                     self.tooltip_image, ttimage_err
                 )
             )
@@ -871,7 +871,7 @@ class _PyRevitRibbonButton(GenericPyRevitUIContainer):
                 self.set_tooltip_video(self.tooltip_video)
         except Exception as ttvideo_err:
             raise PyRevitUIError(
-                "Error setting deffered tooltip video {} | {} ".format(
+                "Error setting deferred tooltip video {} | {} ".format(
                     self.tooltip_video, ttvideo_err
                 )
             )
