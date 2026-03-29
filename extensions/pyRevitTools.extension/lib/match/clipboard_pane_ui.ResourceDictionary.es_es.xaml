@@ -1,0 +1,38 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <!-- Barra de búsqueda -->
+    <system:String x:Key="TooltipToggleRegex">Alternar búsqueda regex / subcadena</system:String>
+
+    <!-- Botones de selección -->
+    <system:String x:Key="BtnCheckAll">Marcar todo</system:String>
+    <system:String x:Key="BtnUncheckAll">Desmarcar todo</system:String>
+    <system:String x:Key="BtnToggleAll">Alternar todo</system:String>
+
+    <!-- Encabezados de columna -->
+    <system:String x:Key="ColParameter">Parámetro</system:String>
+    <system:String x:Key="ColValue">Valor</system:String>
+    <system:String x:Key="ColCategory">Categoría</system:String>
+
+    <!-- Casilla de filtro de categoría -->
+    <system:String x:Key="ChkRestrictCategories">Restringir selección a categorías de elemento</system:String>
+    <system:String x:Key="TooltipRestrictCategories">Cuando está activado, la selección rectangular solo selecciona elementos cuya categoría coincide con los parámetros marcados</system:String>
+
+    <!-- Botones de fuente -->
+    <system:String x:Key="BtnElemParams">Param. Elem.</system:String>
+    <system:String x:Key="TooltipElemParams">Seleccionar elemento y elegir parámetros a copiar de forma interactiva</system:String>
+    <system:String x:Key="BtnViewFilters">Filtros Vista</system:String>
+    <system:String x:Key="TooltipViewFilters">Leer todos los valores de parámetro de filtro de igualdad de la vista activa</system:String>
+    <system:String x:Key="BtnFilterElem">Filtro+Elem.</system:String>
+    <system:String x:Key="TooltipFilterElem">Leer el valor de parámetro de filtro más común de un elemento seleccionado</system:String>
+
+    <!-- Botones de pegado -->
+    <system:String x:Key="BtnPasteOne">Pegar uno</system:String>
+    <system:String x:Key="TooltipPasteOne">Seleccionar un elemento repetidamente y pegar los parámetros marcados</system:String>
+    <system:String x:Key="BtnPasteBox">Pegar rect.</system:String>
+    <system:String x:Key="TooltipPasteBox">Dibujar rectángulo repetidamente y pegar parámetros marcados en los elementos contenidos</system:String>
+    <system:String x:Key="BtnPasteSel">Pegar sel.</system:String>
+    <system:String x:Key="TooltipPasteSel">Pegar parámetros marcados en la selección actual de Revit (una sola vez)</system:String>
+
+</ResourceDictionary>
