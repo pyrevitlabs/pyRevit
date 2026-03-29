@@ -1608,9 +1608,11 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
                 self._add_component(_PyRevitRibbonGroupItem(revit_ribbon_item))
             elif isinstance(revit_ribbon_item, UI.PushButton):
                 self._add_component(_PyRevitRibbonButton(revit_ribbon_item))
+            elif isinstance(revit_ribbon_item, UI.ComboBox):
+                self._add_component(_PyRevitRibbonComboBox(revit_ribbon_item))
             else:
-                raise PyRevitUIError(
-                    "Can not determin ribbon item type: {}".format(revit_ribbon_item)
+                mlogger.debug(
+                    "Unknown ribbon item type, skipping: %s", revit_ribbon_item
                 )
 
     def get_adwindows_object(self):
