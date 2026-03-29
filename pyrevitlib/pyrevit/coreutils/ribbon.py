@@ -861,10 +861,10 @@ class _PyRevitRibbonButton(GenericPyRevitUIContainer):
         try:
             if self.tooltip_image:
                 self.set_tooltip_image(self.tooltip_image)
-        except Exception as ttvideo_err:
+        except Exception as ttimage_err:
             raise PyRevitUIError(
                 "Error setting deffered tooltip image {} | {} ".format(
-                    self.tooltip_video, ttvideo_err
+                    self.tooltip_image, ttimage_err
                 )
             )
 
