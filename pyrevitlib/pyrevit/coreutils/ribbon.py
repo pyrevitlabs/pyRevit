@@ -356,12 +356,10 @@ class GenericPyRevitUIContainer(object):
         return flagged_cmps
 
     def keys(self):
-        # FIXME: what does this do?
-        list(self._sub_pyrvt_components.keys())
+        return list(self._sub_pyrvt_components.keys())
 
     def values(self):
-        # FIXME: what does this do?
-        list(self._sub_pyrvt_components.values())
+        return list(self._sub_pyrvt_components.values())
 
     @staticmethod
     def is_native():
