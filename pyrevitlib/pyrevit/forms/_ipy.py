@@ -95,9 +95,9 @@ Attributes:
     storagetype (Autodesk.Revit.DB.StorageType): String, Integer, Double or ElementId
     displayvalue (str): display string of the current parameter value, or None
     hasvalue (bool): true if the parameter has a value to display
-    grouptype (str): name of parametergroup
+    grouptype (str): name of parameter group
     isshared (bool): is the parameter shared
-    paramid (str): integer of parametervalue
+    paramid (str): stringified parameter ElementId (integer id)
 """
 
 
