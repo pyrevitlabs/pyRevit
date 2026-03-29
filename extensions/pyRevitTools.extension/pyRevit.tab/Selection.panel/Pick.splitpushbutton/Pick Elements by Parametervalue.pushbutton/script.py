@@ -27,7 +27,7 @@ class ParamValueSelectionFilter(UI.Selection.ISelectionFilter):
                 matches.append(False)
 
         # ANY match (default mode)
-        if any(matches):
+        if not EXEC_PARAMS.config_mode and any(matches):
             return True
 
         # ALL match (config mode)
