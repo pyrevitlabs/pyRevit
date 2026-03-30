@@ -9,6 +9,7 @@ from pyrevit import script
 from pyrevit import framework
 from pyrevit import HOST_APP, UI
 from pyrevit.coreutils import ribbon
+from pyrevit.runtime import types
 
 
 mlogger = script.get_logger()
@@ -53,9 +54,9 @@ def config_minifyui(config):
 
 
 def update_ui(config):
-    # Minify or unminify the ui here
     hidden_tabs = get_minifyui_config(config)
     is_active = script.get_envvar(MINIFYUI_ENV_VAR)
+<<<<<<< Updated upstream
     for tab in ribbon.get_current_ui():
         if tab.name in hidden_tabs:
             # not new state since the visible value is reverse
@@ -104,12 +105,23 @@ def ensure_subscribed(config):
         script.set_envvar(MINIFYUI_SUBSCRIBED_ENV_VAR, True)
     except Exception as ex:
         mlogger.warning('MinifyUI: subscribe failed: %s', ex)
+=======
+
+    if is_active:
+        types.RibbonTabVisibilityUtils.StartHidingTabs(hidden_tabs)
+    else:
+        types.RibbonTabVisibilityUtils.StopHidingTabs()
+>>>>>>> Stashed changes
 
 
 def toggle_minifyui(config):
     new_state = not script.get_envvar(MINIFYUI_ENV_VAR)
     script.set_envvar(MINIFYUI_ENV_VAR, new_state)
     script.toggle_icon(new_state)
+<<<<<<< Updated upstream
     if new_state:
         ensure_subscribed(config)
     update_ui(config)
+=======
+    update_ui(config)
+>>>>>>> Stashed changes
