@@ -382,13 +382,15 @@ class Context(object):
 
                 elif plane == DB.PlanViewPlane.CutPlane:
                     # For Cut Plane, show the level name as read-only text
-                    if level_id and level_id != DB.ElementId.InvalidElementId:
+                    if not level_id or level_id == DB.ElementId.InvalidElementId:
+                        self.view_model.cutplane_level_name = "Unlimited"
+                    elif level_id == DB.PlanViewRange.Current:
+                        self.view_model.cutplane_level_name = "Current"
+                    else:
                         level = self.source_view.Document.GetElement(level_id)
                         self.view_model.cutplane_level_name = (
                             level.Name if level else "Unknown"
                         )
-                    else:
-                        self.view_model.cutplane_level_name = "Unlimited"
 
                 elif plane == DB.PlanViewPlane.BottomClipPlane:
                     if level_id and level_id != DB.ElementId.InvalidElementId:
