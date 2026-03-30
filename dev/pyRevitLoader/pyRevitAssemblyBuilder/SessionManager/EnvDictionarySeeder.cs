@@ -46,6 +46,21 @@ namespace pyRevitAssemblyBuilder.SessionManager
         private const string KeyOutputStyleSheet     = "PYREVIT_STYLESHEET";
 
         /// <summary>
+        /// Converts PyRevitConfig's logging level enum (0=Quiet, 1=Verbose, 2=Debug)
+        /// to Python's logging module level (30=WARNING, 20=INFO, 10=DEBUG).
+        /// See: pyrevitlib/pyrevit/coreutils/logger.py DEFAULT_LOGGING_LEVEL
+        /// </summary>
+        private static int TranslateLoggingLevel(int pyrevitLevel)
+        {
+            switch (pyrevitLevel)
+            {
+                case 2:  return 10;  // Debug   → logging.DEBUG
+                case 1:  return 20;  // Verbose → logging.INFO
+                default: return 30;  // Quiet   → logging.WARNING (default)
+            }
+        }
+
+        /// <summary>
         /// Builds the session environment dictionary and stores it in the AppDomain via a reflection
         /// call to <c>EnvDictionary.Seed()</c> in the Runtime assembly.
         /// </summary>
@@ -70,7 +85,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 [KeyIPYVersion]         = ReadIPYVersion(pyRevitRoot),
                 [KeyCPYVersion]         = "3.12.3",    // Known default for the bundled CPython engine
 
-                [KeyLoggingLevel]       = config.LoggingLevel,
+                [KeyLoggingLevel]       = TranslateLoggingLevel(config.LoggingLevel),
                 [KeyFileLogging]        = config.FileLogging,
 
                 [KeyTelemetryState]     = config.TelemetryState,
