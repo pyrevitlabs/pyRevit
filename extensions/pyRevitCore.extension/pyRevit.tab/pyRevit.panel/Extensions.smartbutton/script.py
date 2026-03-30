@@ -26,10 +26,32 @@ def _ensure_path_registered(dest_path):
     was never needed. The new 'Pick' button allows arbitrary folders, so we must
     register them or pyRevit won't discover the installed extension after reload.
     Fix for #3193.
+
+    Avoid explicitly registering the implicit default third-party extensions
+    directory in the Custom Extension Directories list.
     """
-    norm_dest = os.path.normpath(dest_path)
+    # Normalize destination for reliable comparison across platforms
+    norm_dest = os.path.normcase(os.path.normpath(dest_path))
+
+    # Skip registering the default third-party extensions directory, which is
+    # meant to be implicit and not stored as a custom extension root.
+    try:
+        from pyrevit import THIRDPARTY_EXTENSIONS_DEFAULT_DIR
+
+        default_norm = os.path.normcase(
+            os.path.normpath(THIRDPARTY_EXTENSIONS_DEFAULT_DIR)
+        )
+        if norm_dest == default_norm:
+            return
+    except Exception:
+        # If the default directory cannot be resolved for any reason,
+        # fall back to normal registration logic.
+        pass
+
     existing_dirs = user_config.get_thirdparty_ext_root_dirs(include_default=False)
-    normalized_existing = [os.path.normpath(d) for d in existing_dirs]
+    normalized_existing = [
+        os.path.normcase(os.path.normpath(d)) for d in existing_dirs
+    ]
     if norm_dest not in normalized_existing:
         existing_dirs.append(norm_dest)
         user_config.set_thirdparty_ext_root_dirs(existing_dirs)
