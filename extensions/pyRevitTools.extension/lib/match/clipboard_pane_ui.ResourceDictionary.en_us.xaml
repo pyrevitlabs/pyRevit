@@ -1,0 +1,38 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <!-- Search bar -->
+    <system:String x:Key="TooltipToggleRegex">Toggle regex / substring search</system:String>
+
+    <!-- Check / Uncheck / Toggle row -->
+    <system:String x:Key="BtnCheckAll">Check All</system:String>
+    <system:String x:Key="BtnUncheckAll">Uncheck All</system:String>
+    <system:String x:Key="BtnToggleAll">Toggle All</system:String>
+
+    <!-- ListView column headers -->
+    <system:String x:Key="ColParameter">Parameter</system:String>
+    <system:String x:Key="ColValue">Value</system:String>
+    <system:String x:Key="ColCategory">Category</system:String>
+
+    <!-- Category filter checkbox -->
+    <system:String x:Key="ChkRestrictCategories">Restrict pick to element categories</system:String>
+    <system:String x:Key="TooltipRestrictCategories">When enabled, rectangle-pick only selects elements whose category matches the checked parameters</system:String>
+
+    <!-- Load-source buttons -->
+    <system:String x:Key="BtnElemParams">Elem Params</system:String>
+    <system:String x:Key="TooltipElemParams">Pick element and interactively choose parameters to copy</system:String>
+    <system:String x:Key="BtnViewFilters">View Filters</system:String>
+    <system:String x:Key="TooltipViewFilters">Read all equals-filter parameter values from the active view</system:String>
+    <system:String x:Key="BtnFilterElem">Filter+Elem</system:String>
+    <system:String x:Key="TooltipFilterElem">Read the most-common filter parameter value from a picked element</system:String>
+
+    <!-- Paste buttons -->
+    <system:String x:Key="BtnPasteOne">Paste One</system:String>
+    <system:String x:Key="TooltipPasteOne">Pick one element repeatedly and paste checked parameters</system:String>
+    <system:String x:Key="BtnPasteBox">Paste Box</system:String>
+    <system:String x:Key="TooltipPasteBox">Draw rectangle repeatedly and paste checked parameters to enclosed elements</system:String>
+    <system:String x:Key="BtnPasteSel">Paste Sel.</system:String>
+    <system:String x:Key="TooltipPasteSel">Paste checked parameters to the current Revit selection (one-shot)</system:String>
+
+</ResourceDictionary>
