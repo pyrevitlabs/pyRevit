@@ -1,0 +1,38 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <!-- 搜索栏 -->
+    <system:String x:Key="TooltipToggleRegex">切换正则表达式/子字符串搜索</system:String>
+
+    <!-- 选择按钮 -->
+    <system:String x:Key="BtnCheckAll">全选</system:String>
+    <system:String x:Key="BtnUncheckAll">取消全选</system:String>
+    <system:String x:Key="BtnToggleAll">全部切换</system:String>
+
+    <!-- 列标题 -->
+    <system:String x:Key="ColParameter">参数</system:String>
+    <system:String x:Key="ColValue">值</system:String>
+    <system:String x:Key="ColCategory">类别</system:String>
+
+    <!-- 类别过滤复选框 -->
+    <system:String x:Key="ChkRestrictCategories">限制选取到元素类别</system:String>
+    <system:String x:Key="TooltipRestrictCategories">启用时，矩形选取仅选择类别与选中参数匹配的元素</system:String>
+
+    <!-- 来源按钮 -->
+    <system:String x:Key="BtnElemParams">元素参数</system:String>
+    <system:String x:Key="TooltipElemParams">选取元素并交互选择要复制的参数</system:String>
+    <system:String x:Key="BtnViewFilters">视图过滤器</system:String>
+    <system:String x:Key="TooltipViewFilters">从活动视图读取所有等值过滤器参数值</system:String>
+    <system:String x:Key="BtnFilterElem">过滤器+元素</system:String>
+    <system:String x:Key="TooltipFilterElem">从选取的元素读取最常见的过滤器参数值</system:String>
+
+    <!-- 粘贴按钮 -->
+    <system:String x:Key="BtnPasteOne">粘贴到一个</system:String>
+    <system:String x:Key="TooltipPasteOne">反复选取单个元素并粘贴选中参数</system:String>
+    <system:String x:Key="BtnPasteBox">矩形粘贴</system:String>
+    <system:String x:Key="TooltipPasteBox">反复绘制矩形并将选中参数粘贴到框选元素</system:String>
+    <system:String x:Key="BtnPasteSel">粘贴到选择集</system:String>
+    <system:String x:Key="TooltipPasteSel">将选中参数粘贴到当前Revit选择集（单次）</system:String>
+
+</ResourceDictionary>

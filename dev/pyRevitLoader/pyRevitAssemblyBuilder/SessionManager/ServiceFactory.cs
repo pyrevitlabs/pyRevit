@@ -43,19 +43,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <summary>
         /// Creates an ExtensionManagerService instance.
         /// </summary>
-        /// <param name="revitVersion">The Revit version number (e.g., "2024"). Used to filter extensions by version compatibility.</param>
         /// <returns>A new IExtensionManagerService instance.</returns>
-        public static IExtensionManagerService CreateExtensionManagerService(string revitVersion, ILogger logger)
+        public static IExtensionManagerService CreateExtensionManagerService(int revitYear = 0)
         {
-            int.TryParse(revitVersion, out var revitYear);
-            
-            // log if parsing fails, but still create the service with revitYear = 0 which will be treated as "no version filter"
-            if (revitYear == 0)
-            {
-                logger.Warning($"Failed to parse Revit version: {revitVersion}");
-            }
-
-            return new ExtensionManagerService(revitYear, logger);
+            return new ExtensionManagerService(revitYear);
         }
 
         /// <summary>
@@ -144,7 +135,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         {
             // Create script initializers
             var smartButtonScriptInitializer = new SmartButtonScriptInitializer(uiApplication, logger);
-
+            
             // Create individual button builders
             var linkButtonBuilder = new LinkButtonBuilder(logger, buttonPostProcessor);
             var pushButtonBuilder = new PushButtonBuilder(logger, buttonPostProcessor, smartButtonScriptInitializer);
@@ -178,7 +169,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             var linkButtonBuilder = new LinkButtonBuilder(logger, buttonPostProcessor);
             var pulldownButtonBuilder = new PulldownButtonBuilder(logger, buttonPostProcessor, linkButtonBuilder, smartButtonScriptInitializer);
             var splitButtonBuilder = new SplitButtonBuilder(logger, buttonPostProcessor, linkButtonBuilder);
-
+            
             return new StackBuilder(logger, buttonPostProcessor, linkButtonBuilder, pulldownButtonBuilder, splitButtonBuilder, smartButtonScriptInitializer);
         }
 
@@ -256,17 +247,18 @@ namespace pyRevitAssemblyBuilder.SessionManager
             // Create logger first - it's used by all other services
             var logger = CreateLogger(pythonLogger);
             ExtensionParser.SetLogger(new ExtensionParserLoggerAdapter(logger));
-
+            
             // Create core services
             var assemblyBuilder = CreateAssemblyBuilderService(revitVersion, buildStrategy, logger);
-            var extensionManager = CreateExtensionManagerService(revitVersion, logger);
+            int.TryParse(revitVersion, out int revitYear);
+            var extensionManager = CreateExtensionManagerService(revitYear);
             var hookManager = CreateHookManager(logger);
-
+            
             // Create icon and tooltip managers
             var iconManager = CreateIconManager(logger);
             var tooltipManager = CreateTooltipManager(logger);
             var buttonPostProcessor = CreateButtonPostProcessor(logger, iconManager, tooltipManager);
-
+            
             // Create UI builders
             var panelStyleManager = CreatePanelStyleManager(logger);
             var tabBuilder = CreateTabBuilder(uiApplication, logger);
@@ -274,7 +266,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             var buttonBuilderFactory = CreateButtonBuilderFactory(uiApplication, logger, buttonPostProcessor);
             var stackBuilder = CreateStackBuilder(uiApplication, logger, buttonPostProcessor);
             var comboBoxBuilder = CreateComboBoxBuilder(uiApplication, logger, buttonPostProcessor);
-
+            
             // Create ribbon scanner for UI cleanup
             var ribbonScanner = CreateUIRibbonScanner(logger);
 
@@ -298,7 +290,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 ribbonScanner,
                 logger);
         }
-
+        
         /// <summary>
         /// Creates a SessionManagerService instance with custom service implementations.
         /// Use this overload for testing or when custom implementations are needed.

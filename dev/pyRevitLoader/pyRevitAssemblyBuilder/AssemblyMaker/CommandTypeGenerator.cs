@@ -49,7 +49,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             var dllDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             return Path.GetFullPath(Path.Combine(dllDir, "..", "..", "..", ".."));
         }
-        
+
         public string GenerateExtensionCode(ParsedExtension extension, string revitVersion, IEnumerable<ParsedExtension> libraryExtensions = null, bool rocketMode = false)
         {
             var sb = new StringBuilder();
@@ -58,11 +58,32 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             sb.AppendLine("using PyRevitLabs.PyRevit.Runtime;");
             sb.AppendLine();
 
+            // Fix for #3140: Track emitted class names to prevent Roslyn CS0101
+            // (duplicate type definition) which kills the entire extension assembly.
+            // The legacy loader isolates failures per-command via try/except in
+            // typemaker.make_bundle_types(); this HashSet provides equivalent safety.
+            var emittedClassNames = new HashSet<string>(StringComparer.Ordinal);
+
             foreach (var cmd in extension.CollectCommandComponents())
             {
                 string safeClassName = SanitizeClassName(cmd.UniqueId);
+
+                if (!emittedClassNames.Add(safeClassName))
+                {
+                    // Duplicate — skip this command to avoid CS0101.
+                    // Emit a comment in the generated .cs so the user can diagnose
+                    // which script was dropped (the .cs file is saved alongside the DLL).
+                    sb.AppendLine($"// WARNING [#3140]: Skipped duplicate class '{safeClassName}'");
+                    sb.AppendLine($"//   Script: {cmd.ScriptPath ?? "(no script)"}");
+                    sb.AppendLine($"//   UniqueId: {cmd.UniqueId}");
+                    sb.AppendLine($"//   Two bundle directories produced the same UniqueId.");
+                    sb.AppendLine($"//   Rename one directory to fix this.");
+                    sb.AppendLine();
+                    continue;
+                }
+
                 string scriptPath = cmd.ScriptPath;
-                
+
                 // Build search paths matching Python's behavior:
                 // 1. Script's own directory
                 // 2. Component hierarchy lib/ folders (button -> panel -> tab -> extension)
@@ -169,6 +190,14 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             var sb = new StringBuilder();
             foreach (char c in name)
                 sb.Append(char.IsLetterOrDigit(c) ? c : '_');
+
+            // Fix for #3107: C# identifiers cannot start with a digit.
+            // The legacy loader used Reflection.Emit (IL-level) where leading digits
+            // were valid. Roslyn compiles C# source, which requires a letter or '_'
+            // as the first character. Prepend '_' to make it a valid identifier.
+            if (sb.Length > 0 && char.IsDigit(sb[0]))
+                sb.Insert(0, '_');
+
             return sb.ToString();
         }
 

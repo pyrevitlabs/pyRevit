@@ -28,5 +28,6 @@ layout:
   - Test Toast
   - Test FillPatternViewer
   - Test Family API
+  - Query get_name Tests
   - -----
   - Test Project Parameters
