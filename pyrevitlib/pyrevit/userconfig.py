@@ -685,10 +685,11 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
     def get_thirdparty_ext_root_dirs(self, include_default=True):
         """Return a list of external extension directories set by the user.
 
-        When include_default is True, the pyRevit default extensions directory
-        is always the FIRST entry in the returned list, followed by
-        user-configured directories in their config-file order.
-        Duplicates are removed while preserving order.
+        When include_default is True and the pyRevit default extensions
+        directory exists, it is the FIRST entry in the returned list,
+        followed by user-configured directories in their config-file order.
+        Duplicates are removed while preserving order, and only paths that
+        currently exist on disk are returned.
 
         Returns:
             (list[str]): External user extension directories.
