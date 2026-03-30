@@ -1642,7 +1642,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
     /// Hides ribbon tabs by intercepting PropertyChanged on each target
     /// RibbonTab data object. When Revit sets IsVisible=true during a
     /// view switch, the callback fires synchronously and overrides it
-    /// back to false — before the WPF layout pass renders.
+    /// back to false â€” before the WPF layout pass renders.
     /// 
     /// Called from MinifyUI smartbutton via pyrevit.runtime.types.
     /// </summary>
