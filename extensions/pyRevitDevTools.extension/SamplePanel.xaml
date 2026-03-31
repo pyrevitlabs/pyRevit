@@ -1,0 +1,90 @@
+<Page xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Background="White">
+
+    <Page.Resources>
+        <!-- compact default styles — override freely -->
+        <Style TargetType="GroupBox">
+            <Setter Property="Margin"  Value="0,0,0,8"/>
+            <Setter Property="Padding" Value="6,4"/>
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="Margin"  Value="0,0,4,0"/>
+            <Setter Property="Padding" Value="8,2"/>
+        </Style>
+    </Page.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="10">
+
+            <!-- pyrevit_version: populated in __init__ -->
+            <TextBlock x:Name="version_label"
+                       FontWeight="Bold"
+                       Foreground="{StaticResource pyRevitAccentBrush}"
+                       Margin="0,0,0,4"/>
+
+            <!-- set_image_source: populated in __init__ -->
+            <Image x:Name="sample_image"
+                   Height="32"
+                   HorizontalAlignment="Left"
+                   Margin="0,0,0,10"/>
+
+            <!-- hide_element / show_element / toggle_element -->
+            <GroupBox Header="hide_element  |  show_element  |  toggle_element">
+                <StackPanel>
+                    <TextBlock x:Name="toggle_target"
+                               Text="I can be hidden (hide_element collapses layout space)"
+                               Margin="0,0,0,6"
+                               TextWrapping="Wrap"/>
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="Hide"   Click="hide_btn_clicked"/>
+                        <Button Content="Show"   Click="show_btn_clicked"/>
+                        <Button Content="Toggle" Click="toggle_btn_clicked"/>
+                    </StackPanel>
+                </StackPanel>
+            </GroupBox>
+
+            <!-- disable_element / enable_element -->
+            <GroupBox Header="disable_element  |  enable_element">
+                <StackPanel>
+                    <Button x:Name="target_button"
+                            Content="I can be disabled"
+                            Margin="0,0,0,6"/>
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="Disable" Click="disable_btn_clicked"/>
+                        <Button Content="Enable"  Click="enable_btn_clicked"/>
+                    </StackPanel>
+                </StackPanel>
+            </GroupBox>
+
+            <!-- dispatch: background thread with UI callback -->
+            <GroupBox Header="dispatch  (UI thread → background → UI thread)">
+                <StackPanel>
+                    <TextBlock x:Name="dispatch_status"
+                               Text="Idle — click the button below"
+                               Margin="0,0,0,6"/>
+                    <Button Content="Run background work (2 s)"
+                            Click="dispatch_btn_clicked"/>
+                </StackPanel>
+            </GroupBox>
+
+            <!-- handle_url_click: inherited, no Python handler needed -->
+            <GroupBox Header="handle_url_click  (inherited, XAML-only wiring)">
+                <TextBlock>
+                    <Hyperlink NavigateUri="https://github.com/pyRevitLabs/pyRevit"
+                               RequestNavigate="handle_url_click">
+                        pyRevit on GitHub
+                    </Hyperlink>
+                </TextBlock>
+            </GroupBox>
+
+            <!-- get_locale_string: populated in __init__ when ResDict is present -->
+            <GroupBox Header="get_locale_string  (requires ResourceDictionary)">
+                <TextBlock x:Name="locale_label"
+                           Text="(no ResourceDictionary found for current locale)"
+                           TextWrapping="Wrap"/>
+            </GroupBox>
+
+        </StackPanel>
+    </ScrollViewer>
+</Page>

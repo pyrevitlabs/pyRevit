@@ -1,4 +1,4 @@
-from pyrevit import revit, DB, UI
+from pyrevit import revit, DB, EXEC_PARAMS
 from pyrevit import forms
 
 import diffutils
@@ -16,7 +16,7 @@ if len(view_list) == 2:
     comp = diffutils.compare_views(revit.doc,
                                    view_list[0],
                                    view_list[1],
-                                   compare_types=__shiftclick__,
+                                   compare_types=EXEC_PARAMS.config_mode,
                                    diff_results=res)
 
     forms.alert('Views are smiliar (not identical).'

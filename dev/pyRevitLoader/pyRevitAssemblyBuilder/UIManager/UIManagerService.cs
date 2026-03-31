@@ -27,12 +27,27 @@ namespace pyRevitAssemblyBuilder.UIManager
         private readonly IUIRibbonScanner? _ribbonScanner;
         private readonly UIApplication _uiApp;
         private ParsedExtension? _currentExtension;
-        private readonly bool _loadBeta;
+        /// <summary>
+        /// Cached Load Beta setting. Re-read at start of each BuildUI so reload picks up settings changes.
+        /// </summary>
+        private bool _loadBeta;
+
+        /// <summary>
+        /// Cached Rocket Mode setting. Re-read at start of each BuildUI so reload picks up settings changes.
+        /// When true, non-critical startup work (e.g. icon pre-loading) is skipped to reduce load time.
+        /// </summary>
+        private bool _rocketMode;
 
         /// <summary>
         /// Gets the UIApplication instance used by this service.
         /// </summary>
         public UIApplication UIApplication => _uiApp;
+
+        /// <summary>
+        /// Gets whether rocket mode is enabled.
+        /// When true, non-critical startup work is skipped and engine caching is used for compatible extensions.
+        /// </summary>
+        public bool RocketMode => _rocketMode;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UIManagerService"/> class.
@@ -67,17 +82,20 @@ namespace pyRevitAssemblyBuilder.UIManager
             _comboBoxBuilder = comboBoxBuilder ?? throw new ArgumentNullException(nameof(comboBoxBuilder));
             _ribbonScanner = ribbonScanner;
             
-            // Load beta settings from config
+            // Load beta and rocket mode settings from config
             try
             {
                 var config = PyRevitConfig.Load();
                 _loadBeta = config.LoadBeta;
+                _rocketMode = config.RocketMode;
                 _logger.Debug($"Beta tools loading: {_loadBeta}");
+                _logger.Debug($"Rocket mode: {_rocketMode}");
             }
             catch (Exception ex)
             {
-                _logger.Debug($"Failed to load beta config, defaulting to false: {ex.Message}");
+                _logger.Debug($"Failed to load config, defaulting to false: {ex.Message}");
                 _loadBeta = false;
+                _rocketMode = false;
             }
         }
 
@@ -94,6 +112,19 @@ namespace pyRevitAssemblyBuilder.UIManager
                 return;
             }
 
+            // Re-read Load Beta and Rocket Mode so toggling in settings is applied on next reload (#3109).
+            try
+            {
+                var config = PyRevitConfig.Load();
+                _loadBeta = config.LoadBeta;
+                _rocketMode = config.RocketMode;
+                _logger.Debug($"Re-read config - Beta tools loading: {_loadBeta}, Rocket mode: {_rocketMode}");
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug($"Failed to re-read config: {ex.Message}");
+            }
+
             if (assemblyInfo == null)
             {
                 _logger.Warning($"Cannot build UI for extension '{extension.Name}': assemblyInfo is null.");
@@ -106,8 +137,11 @@ namespace pyRevitAssemblyBuilder.UIManager
                 return;
             }
 
-            // Pre-load icon files in parallel to warm OS file cache
-            _buttonPostProcessor.IconManager.PreloadExtensionIcons(extension);
+            // Pre-load icon files in parallel to warm OS file cache (skipped in Rocket Mode)
+            if (!_rocketMode)
+                _buttonPostProcessor.IconManager.PreloadExtensionIcons(extension);
+            else
+                _logger.Debug($"Rocket mode: skipping icon pre-load for extension '{extension.Name}'.");
 
             _currentExtension = extension;
             foreach (var component in extension.Children)
@@ -212,7 +246,8 @@ namespace pyRevitAssemblyBuilder.UIManager
             ParsedComponent? parentComponent,
             RibbonPanel? parentPanel,
             string tabName,
-            ExtensionAssemblyInfo assemblyInfo)
+            ExtensionAssemblyInfo assemblyInfo,
+            string? renamedTabTitle = null)
         {
             if (component == null)
             {
@@ -246,7 +281,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                     break;
 
                 case CommandComponentType.Panel:
-                    HandlePanel(component, tabName, assemblyInfo);
+                    HandlePanel(component, tabName, assemblyInfo, renamedTabTitle);
                     break;
 
                 default:
@@ -266,8 +301,10 @@ namespace pyRevitAssemblyBuilder.UIManager
 
         private void HandleTab(ParsedComponent component, ExtensionAssemblyInfo assemblyInfo)
         {
-            // Use TabBuilder to create the tab
-            _tabBuilder.CreateTab(component);
+            // CreateTab handles find → tag → re-enable in a single ribbon scan.
+            // Returns the tab's current Title if it was renamed (e.g. by a translation
+            // script), or null if no rename detected.
+            var renamedTabTitle = _tabBuilder.CreateTab(component);
 
             // Get tab name for children using localized title
             var tabText = ExtensionParser.GetComponentTitle(component);
@@ -275,12 +312,21 @@ namespace pyRevitAssemblyBuilder.UIManager
             // Mark tab as touched in the registry (matching Python's set_dirty_flag behavior)
             _ribbonScanner?.MarkElementTouched("tab", tabText);
 
-            // Recursively build children
+            // If CreateTab detected a rename, also mark the current (renamed) Title
+            // so CleanupOrphanedElements() doesn't deactivate the tab (#3167).
+            if (!string.IsNullOrEmpty(renamedTabTitle))
+            {
+                _ribbonScanner?.MarkElementTouched("tab", renamedTabTitle);
+                _logger.Debug($"Tab '{tabText}' has current Title '{renamedTabTitle}' — marked both as touched.");
+            }
+
+            // Recursively build children, passing the renamed title so panels can dual-mark too
             foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
-                RecursivelyBuildUI(child, component, null, tabText, assemblyInfo);
+                RecursivelyBuildUI(child, component, null, tabText, assemblyInfo, renamedTabTitle);
         }
 
-        private void HandlePanel(ParsedComponent component, string tabName, ExtensionAssemblyInfo assemblyInfo)
+        private void HandlePanel(ParsedComponent component, string tabName,
+            ExtensionAssemblyInfo assemblyInfo, string? renamedTabTitle = null)
         {
             // Use PanelBuilder to create the panel
             var panel = _panelBuilder.CreatePanel(component, tabName);
@@ -291,12 +337,21 @@ namespace pyRevitAssemblyBuilder.UIManager
             // Mark panel as touched in the registry (matching Python's set_dirty_flag behavior)
             _ribbonScanner?.MarkElementTouched("panel", panelText, tabName);
 
+            // If the parent tab was renamed (e.g. by a translation script), the scanner
+            // registered this panel under "panel:{renamedTab}:{panelText}". Mark that
+            // key as touched too so cleanup doesn't hide the panel.
+            if (!string.IsNullOrEmpty(renamedTabTitle))
+            {
+                _ribbonScanner?.MarkElementTouched("panel", panelText, renamedTabTitle);
+            }
+
             // Apply background colors if specified
             _panelBuilder.ApplyPanelBackgroundColors(panel, component, tabName);
 
-            // Recursively build children
+            // Recursively build children — propagate renamedTabTitle so any nested
+            // components that depend on the tab name for registry keys stay consistent.
             foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
-                RecursivelyBuildUI(child, component, panel, tabName, assemblyInfo);
+                RecursivelyBuildUI(child, component, panel, tabName, assemblyInfo, renamedTabTitle);
         }
 
         private void EnsureSlideOutApplied(ParsedComponent? parentComponent, RibbonPanel? parentPanel)

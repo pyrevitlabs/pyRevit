@@ -78,6 +78,11 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
             var sb = new System.Text.StringBuilder();
             foreach (char c in name)
                 sb.Append(char.IsLetterOrDigit(c) ? c : '_');
+
+            // Fix for #3107: C# class names cannot start with a digit.
+            if (sb.Length > 0 && char.IsDigit(sb[0]))
+                sb.Insert(0, '_');
+
             return sb.ToString();
         }
 
