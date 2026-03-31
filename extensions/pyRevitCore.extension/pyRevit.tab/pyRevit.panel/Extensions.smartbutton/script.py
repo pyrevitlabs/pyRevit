@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Add or remove pyRevit extensions."""
 
 # pylint: disable=E0401,W0703,W0613,C0103,C0111
@@ -18,6 +19,65 @@ import pyrevitcore_globals
 
 logger = script.get_logger()
 
+def _ensure_path_registered(dest_path):
+    """Add dest_path to the Custom Extension Directories list if not already there.
+
+    The old 5.x Install dropdown only offered pre-registered directories, so this
+    was never needed. The new 'Pick' button allows arbitrary folders, so we must
+    register them or pyRevit won't discover the installed extension after reload.
+    Fix for #3193.
+
+    Avoid explicitly registering the implicit default third-party extensions
+    directory in the Custom Extension Directories list.
+    """
+    # Normalize destination for reliable comparison across platforms
+    norm_dest = os.path.normcase(os.path.normpath(dest_path))
+
+    # Skip registering the default third-party extensions directory, which is
+    # meant to be implicit and not stored as a custom extension root.
+    try:
+        from pyrevit import THIRDPARTY_EXTENSIONS_DEFAULT_DIR
+
+        default_norm = os.path.normcase(
+            os.path.normpath(THIRDPARTY_EXTENSIONS_DEFAULT_DIR)
+        )
+        if norm_dest == default_norm:
+            return
+    except Exception:
+        # If the default directory cannot be resolved for any reason,
+        # fall back to normal registration logic.
+        pass
+
+
+    Note:
+        This function must *not* use get_thirdparty_ext_root_dirs() as the source
+        of truth, since that helper may filter out non-existent paths (e.g. network
+        locations that are temporarily offline). We therefore read the raw configured
+        list from user_config when available, and only fall back to the helper for
+        backward compatibility.
+    """
+    norm_dest = os.path.normpath(dest_path)
+
+    # Prefer the raw configured list to avoid silently dropping offline paths.
+    try:
+        raw_dirs = list(user_config.thirdparty_ext_root_dirs or [])
+    except AttributeError:
+        # Fallback for older configs: use existing helper (may filter non-existent).
+        raw_dirs = user_config.get_thirdparty_ext_root_dirs(include_default=False)
+
+    normalized_existing = [os.path.normpath(d) for d in raw_dirs]
+    if norm_dest not in normalized_existing:
+        raw_dirs.append(norm_dest)
+        user_config.set_thirdparty_ext_root_dirs(raw_dirs)
+        user_config.save_changes()
+
+def _get_default_ext_dir():
+    """Return the best default extension installation directory."""
+    dirs = user_config.get_thirdparty_ext_root_dirs(include_default=True)
+    if dirs:
+        return dirs[0]
+    from pyrevit import THIRDPARTY_EXTENSIONS_DEFAULT_DIR
+    return THIRDPARTY_EXTENSIONS_DEFAULT_DIR
 
 def _repo_name_from_git_url(git_url):
     """Derive repo/folder name from a Git URL (e.g. .../owner/repo.git -> repo)."""
@@ -340,22 +400,25 @@ class ExtensionsWindow(forms.WPFWindow):
             self._update_add_custom_section_for_new()
 
     def _update_add_custom_section_for_selection(self, ext_pkg_item):
-        """Populate Add Custom section from selected extension; disable Pick, show Install only if not installed."""
+        """Populate Add Custom section from selected extension."""
         self.custom_git_url_tb.Text = ext_pkg_item.GitURL or ""
         if getattr(self, "custom_ext_name_tb", None):
             self.custom_ext_name_tb.Text = ext_pkg_item.Name or ""
+        # Git URL and name come from the catalog — make read-only
         self.custom_git_url_tb.IsReadOnly = True
         if getattr(self, "custom_ext_name_tb", None):
             self.custom_ext_name_tb.IsReadOnly = True
-        self.path_custom_ext_b.IsEnabled = False
         if ext_pkg_item.ext_pkg.is_installed:
+            # Already installed — show where it lives, disable path change
             self.custom_ext_install_path_tb.Text = ext_pkg_item.ext_pkg.is_installed
-        else:
-            default_path = user_config.get_thirdparty_ext_root_dirs(include_default=True)[0]
-            self.custom_ext_install_path_tb.Text = default_path
-        if ext_pkg_item.ext_pkg.is_installed:
+            self.path_custom_ext_b.IsEnabled = False
             self.hide_element(self.install_custom_ext_b)
         else:
+            # Not yet installed — let user pick where to install
+            # Fix for #3193: Keep "Pick installation path" enabled so user can choose
+            self.path_custom_ext_b.IsEnabled = True
+            default_path = _get_default_ext_dir()
+            self.custom_ext_install_path_tb.Text = default_path
             self.show_element(self.install_custom_ext_b)
             self.install_custom_ext_b.Content = self.get_locale_string("Buttons.InstallExtension")
 
@@ -436,6 +499,7 @@ class ExtensionsWindow(forms.WPFWindow):
                     self.selected_pkg.ext_pkg.config.private_repo = True
                     self.selected_pkg.ext_pkg.config.token = token
                 extpkgs.install(self.selected_pkg.ext_pkg, dest_path)
+                _ensure_path_registered(dest_path)
                 self._refresh_extension_list()
                 self.Close()
                 call_reload()
@@ -512,6 +576,7 @@ class ExtensionsWindow(forms.WPFWindow):
                 user_config.save_changes()  # i don't like it - drop this later
 
             extpkgs.install(temp_pkg, dest_path)
+            _ensure_path_registered(dest_path)
             self._refresh_extension_list()
 
             forms.alert(

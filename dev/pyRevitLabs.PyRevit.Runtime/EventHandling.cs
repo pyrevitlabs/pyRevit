@@ -1638,4 +1638,79 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
     }
+    /// <summary>
+    /// Hides ribbon tabs by intercepting PropertyChanged on each target
+    /// RibbonTab data object. When Revit sets IsVisible=true during a
+    /// view switch, the callback fires synchronously and overrides it
+    /// back to false — before the WPF layout pass renders.
+    /// 
+    /// Called from MinifyUI smartbutton via pyrevit.runtime.types.
+    /// </summary>
+    public static class RibbonTabVisibilityUtils
+    {
+        public static bool IsHidingTabs { get; private set; }
+
+        private static HashSet<string> _hiddenTabTitles = new HashSet<string>();
+        private static List<Autodesk.Windows.RibbonTab> _hookedTabs
+            = new List<Autodesk.Windows.RibbonTab>();
+
+        public static void StartHidingTabs(IEnumerable<string> tabTitles)
+        {
+            StopHidingTabs();
+
+            _hiddenTabTitles = new HashSet<string>(tabTitles);
+            if (_hiddenTabTitles.Count == 0)
+                return;
+
+            IsHidingTabs = true;
+
+            foreach (var tab in Autodesk.Windows.ComponentManager.Ribbon.Tabs)
+            {
+                if (_hiddenTabTitles.Contains(tab.Title))
+                {
+                    var inpc = tab as System.ComponentModel.INotifyPropertyChanged;
+                    if (inpc != null)
+                    {
+                        inpc.PropertyChanged += OnTabPropertyChanged;
+                        _hookedTabs.Add(tab);
+                    }
+                    tab.IsVisible = false;
+                }
+            }
+        }
+
+        public static void StopHidingTabs()
+        {
+            foreach (var tab in _hookedTabs)
+            {
+                try
+                {
+                    var inpc = tab as System.ComponentModel.INotifyPropertyChanged;
+                    if (inpc != null)
+                        inpc.PropertyChanged -= OnTabPropertyChanged;
+                    tab.IsVisible = true;
+                }
+                catch { }
+            }
+            _hookedTabs.Clear();
+            _hiddenTabTitles.Clear();
+            IsHidingTabs = false;
+        }
+
+        private static void OnTabPropertyChanged(
+                object sender,
+                System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (!IsHidingTabs) return;
+            if (e.PropertyName != "IsVisible") return;
+
+            var tab = sender as Autodesk.Windows.RibbonTab;
+            if (tab == null) return;
+            if (!_hiddenTabTitles.Contains(tab.Title)) return;
+
+            if (tab.IsVisible)
+                tab.IsVisible = false;
+        }
+    }
 }
+

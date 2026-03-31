@@ -70,18 +70,65 @@ XAML_FILES_DIR = op.dirname(__file__)
 
 
 ParamDef = namedtuple(
-    "ParamDef", ["name", "istype", "definition", "isreadonly", "isunit", "storagetype"]
+    "ParamDef",
+    [
+        "name",
+        "istype",
+        "definition",
+        "isreadonly",
+        "isunit",
+        "storagetype",
+        "displayvalue",
+        "hasvalue",
+        "grouptype",
+        "isshared",
+        "paramid",
+    ],
 )
 """Parameter definition tuple.
-
 Attributes:
     name (str): parameter name
     istype (bool): true if type parameter, otherwise false
     definition (Autodesk.Revit.DB.Definition): parameter definition object
     isreadonly (bool): true if the parameter value can't be edited
     isunit (bool): true if its ForgeTypeId is measurable
-    storagetype (Autodesk.Revit.DB.Storagetype): String, Integer, Double or ElementId
+    storagetype (Autodesk.Revit.DB.StorageType): String, Integer, Double or ElementId
+    displayvalue (str): display string of the current parameter value, or None
+    hasvalue (bool): true if the parameter has a value to display
+    grouptype (str): name of parameter group
+    isshared (bool): is the parameter shared
+    paramid (str): stringified parameter ElementId (integer id)
 """
+
+
+def _make_param_def(param, istype):
+    """Build a ParamDef from a Revit parameter object."""
+    if param.HasValue:
+        display_value_str = param.AsValueString() or param.AsString()
+    else:
+        display_value_str = None
+
+    return ParamDef(
+        name=param.Definition.Name,
+        istype=istype,
+        definition=param.Definition,
+        isreadonly=param.IsReadOnly,
+        isunit=(
+            DB.UnitUtils.IsMeasurableSpec(param.Definition.GetDataType())
+            if HOST_APP.is_newer_than(2022, True)
+            else False
+        ),
+        storagetype=param.StorageType,
+        displayvalue=display_value_str,
+        hasvalue=display_value_str is not None,
+        grouptype=(
+            DB.LabelUtils.GetLabelForGroup(param.Definition.GetGroupTypeId())
+            if HOST_APP.is_newer_than(2022, True)
+            else DB.LabelUtils.GetLabelFor(param.Definition.ParameterGroup)
+        ),
+        isshared=param.IsShared,
+        paramid=str(param.Id),
+    )
 
 
 # https://gui-at.blogspot.com/2009/11/inotifypropertychanged-in-ironpython.html
@@ -2893,18 +2940,7 @@ def select_parameters(
         # collect instance parameters
         param_defs.extend(
             [
-                ParamDef(
-                    name=x.Definition.Name,
-                    istype=False,
-                    definition=x.Definition,
-                    isreadonly=x.IsReadOnly,
-                    isunit=(
-                        DB.UnitUtils.IsMeasurableSpec(x.Definition.GetDataType())
-                        if HOST_APP.is_newer_than(2022, True)
-                        else False
-                    ),
-                    storagetype=x.StorageType,
-                )
+                _make_param_def(x, istype=False)
                 for x in src_element.Parameters
                 if x.StorageType != non_storage_type
             ]
@@ -2916,18 +2952,7 @@ def select_parameters(
         if src_type is not None:
             param_defs.extend(
                 [
-                    ParamDef(
-                        name=x.Definition.Name,
-                        istype=True,
-                        definition=x.Definition,
-                        isreadonly=x.IsReadOnly,
-                        isunit=(
-                            DB.UnitUtils.IsMeasurableSpec(x.Definition.GetDataType())
-                            if HOST_APP.is_newer_than(2022, True)
-                            else False
-                        ),
-                        storagetype=x.StorageType,
-                    )
+                    _make_param_def(x, istype=True)
                     for x in src_type.Parameters
                     if x.StorageType != non_storage_type
                 ]
@@ -2948,7 +2973,7 @@ def select_parameters(
         param_defs,
         title=title,
         button_name=button_name,
-        width=450,
+        width=500,
         multiselect=multiple,
         item_template=itemplate,
     )
