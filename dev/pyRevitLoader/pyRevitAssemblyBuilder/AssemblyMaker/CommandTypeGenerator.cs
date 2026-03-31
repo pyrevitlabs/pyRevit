@@ -49,8 +49,8 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             var dllDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             return Path.GetFullPath(Path.Combine(dllDir, "..", "..", "..", ".."));
         }
-        
-        public string GenerateExtensionCode(ParsedExtension extension, string revitVersion, IEnumerable<ParsedExtension> libraryExtensions = null)
+
+        public string GenerateExtensionCode(ParsedExtension extension, string revitVersion, IEnumerable<ParsedExtension> libraryExtensions = null, bool rocketMode = false)
         {
             var sb = new StringBuilder();
             sb.AppendLine("#nullable disable");
@@ -58,11 +58,32 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             sb.AppendLine("using PyRevitLabs.PyRevit.Runtime;");
             sb.AppendLine();
 
+            // Fix for #3140: Track emitted class names to prevent Roslyn CS0101
+            // (duplicate type definition) which kills the entire extension assembly.
+            // The legacy loader isolates failures per-command via try/except in
+            // typemaker.make_bundle_types(); this HashSet provides equivalent safety.
+            var emittedClassNames = new HashSet<string>(StringComparer.Ordinal);
+
             foreach (var cmd in extension.CollectCommandComponents())
             {
                 string safeClassName = SanitizeClassName(cmd.UniqueId);
+
+                if (!emittedClassNames.Add(safeClassName))
+                {
+                    // Duplicate — skip this command to avoid CS0101.
+                    // Emit a comment in the generated .cs so the user can diagnose
+                    // which script was dropped (the .cs file is saved alongside the DLL).
+                    sb.AppendLine($"// WARNING [#3140]: Skipped duplicate class '{safeClassName}'");
+                    sb.AppendLine($"//   Script: {cmd.ScriptPath ?? "(no script)"}");
+                    sb.AppendLine($"//   UniqueId: {cmd.UniqueId}");
+                    sb.AppendLine($"//   Two bundle directories produced the same UniqueId.");
+                    sb.AppendLine($"//   Rename one directory to fix this.");
+                    sb.AppendLine();
+                    continue;
+                }
+
                 string scriptPath = cmd.ScriptPath;
-                
+
                 // Build search paths matching Python's behavior:
                 // 1. Script's own directory
                 // 2. Component hierarchy lib/ folders (button -> panel -> tab -> extension)
@@ -112,7 +133,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 string ctrlId = cmd.ControlId ?? $"CustomCtrl_%CustomCtrl_%{extName}%{bundle}%{cmd.Name}";
                 
                 // Build engine configs based on bundle configuration or script type
-                string engineCfgs = CommandGenerationUtilities.BuildEngineConfigs(cmd, scriptPath);
+                string engineCfgs = CommandGenerationUtilities.BuildEngineConfigs(cmd, scriptPath, extension, rocketMode);
                 
                 // Get context from component - only use if explicitly defined
                 string context = cmd.Context ?? string.Empty;
@@ -169,6 +190,14 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             var sb = new StringBuilder();
             foreach (char c in name)
                 sb.Append(char.IsLetterOrDigit(c) ? c : '_');
+
+            // Fix for #3107: C# identifiers cannot start with a digit.
+            // The legacy loader used Reflection.Emit (IL-level) where leading digits
+            // were valid. Roslyn compiles C# source, which requires a letter or '_'
+            // as the first character. Prepend '_' to make it a valid identifier.
+            if (sb.Length > 0 && char.IsDigit(sb[0]))
+                sb.Insert(0, '_');
+
             return sb.ToString();
         }
 
@@ -181,7 +210,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 .Replace("\"", "\\\"");
     }
 
-    internal static class CommandGenerationUtilities
+    public static class CommandGenerationUtilities
     {
         public static string BuildCommandArguments(ParsedExtension extension, ParsedComponent component, string revitVersion)
         {
@@ -206,17 +235,25 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         /// <summary>
         /// Builds the engine configuration JSON string based on script type and bundle settings
         /// </summary>
-        public static string BuildEngineConfigs(ParsedComponent cmd, string scriptPath)
+        /// <param name="cmd">The command component to build configs for</param>
+        /// <param name="scriptPath">Path to the script file</param>
+        /// <param name="extension">The parent extension (for rocket mode compatibility check)</param>
+        /// <param name="rocketMode">Whether rocket mode is enabled globally</param>
+        public static string BuildEngineConfigs(ParsedComponent cmd, string scriptPath, ParsedExtension extension = null, bool rocketMode = false)
         {
             var configs = new Dictionary<string, object>();
             
             // Check if this is a Dynamo script
             bool isDynamoScript = scriptPath != null && 
                                 scriptPath.EndsWith(".dyn", StringComparison.OrdinalIgnoreCase);
-            
-            // Core engine settings (apply to all script types)
-            configs["clean"] = cmd.Engine?.Clean ?? false;
-            
+
+            // Determine clean engine setting.
+            // Default is false (metadata-driven; matches legacy cached-engine behavior)
+            // In rocket mode with compatible extension, use cached engine (clean = false).
+            bool useCleanEngine = cmd.Engine?.Clean ?? false;
+            // No rocket-mode override needed — the logic is now purely metadata-driven
+            configs["clean"] = useCleanEngine;
+
             // Add engine type only when explicitly specified in metadata.
             // Do not force the default IronPython value into configs,
             // otherwise runtime shebang detection (#! python3) is bypassed.
@@ -228,9 +265,8 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             
             if (isDynamoScript)
             {
-                // For Dynamo scripts, use appropriate settings
-                // Use automate or mainthread setting (automate is Dynamo-specific synonym)
-                bool requiresMainThread = (cmd.Engine?.MainThread ?? false) || (cmd.Engine?.Automate ?? true);
+                // Use EngineConfig.RequiresMainThread which already has the correct defaults.
+                bool requiresMainThread = cmd.Engine?.RequiresMainThread ?? false;
                 configs["automate"] = requiresMainThread;
                 
                 // Add Dynamo-specific settings

@@ -69,7 +69,7 @@ def get_name(element, title_on_sheet=False):
     Retrieves the name of a Revit element, with special handling for views.
 
     Args:
-        element (DB.Element): The Revit element whose name is to be retrieved.
+        element (DB.Element | DB.Workset): The Revit element whose name is to be retrieved.
         title_on_sheet (bool, optional): If True and the element is a view,
                                          attempts to retrieve the view's title
                                          on the sheet. Defaults to False.
@@ -90,6 +90,8 @@ def get_name(element, title_on_sheet=False):
                 return element.Name
             else:
                 return element.ViewName
+    if isinstance(element, DB.Workset):
+        return element.Name
     if PY3:
         return element.Name
     else:
@@ -336,19 +338,24 @@ def get_param_value(targetparam):
     return value
 
 
-def get_value_range(param_name, doc=None):
+def get_value_range(param_name, doc=None, elements=None):
     """
-    Retrieves a set of unique values for a specified parameter from all elements in the given Revit document.
+    Retrieves a set of unique values for a specified parameter from elements in a Revit document or from a provided collection of elements.
 
     Args:
         param_name (str): The name of the parameter to retrieve values for.
         doc (Document, optional): The Revit document to search within. If None, the current document is used.
+        elements (iterable, optional): Specific elements to process. If provided, these elements are processed instead of calling get_all_elements(doc).
 
     Returns:
         set: A set of unique values for the specified parameter. The values can be of any type, but are typically strings.
     """
     values = set()
-    for element in get_all_elements(doc):
+    if elements is not None:
+        element_iterable = elements
+    else:
+        element_iterable = get_all_elements(doc)
+    for element in element_iterable:
         targetparam = element.LookupParameter(param_name)
         if targetparam:
             value = get_param_value(targetparam)

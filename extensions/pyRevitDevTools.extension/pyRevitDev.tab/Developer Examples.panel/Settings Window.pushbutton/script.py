@@ -18,6 +18,16 @@ settings = [
         "label": "Show Warnings",
         "default": True,
     },
+    # Slider settings
+    {
+        "name": "transparency",
+        "type": "slider",
+        "label": "Transparency (%)",
+        "default": 10,
+        "min": 0,
+        "max": 100,
+        "step": 5,
+    },
     # Choice settings (dropdown)
     {
         "name": "view_discipline",
@@ -33,6 +43,8 @@ settings = [
         "options": ["Coarse", "Medium", "Fine"],
         "default": "Medium",
     },
+    # Separator Line
+    {"type": "separator"},
     # Integer settings with min/max validation
     {
         "name": "tolerance",
@@ -59,6 +71,8 @@ settings = [
         "min": 0.1,
         "max": 10.0,
     },
+    # Section with Label
+    {"type": "section", "label": "Display"},
     # String settings
     {"name": "prefix", "type": "string", "label": "Element Prefix", "default": ""},
     {
