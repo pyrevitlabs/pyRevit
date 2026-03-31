@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="docopt.net" Version="0.8.1" />
+    <PackageReference Include="docopt.net" Version="0.8.3" />
     <PackageReference Include="Colorful.Console" Version="1.2.15" />
   </ItemGroup>
 
