@@ -11,8 +11,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MSTest.TestAdapter" Version="3.4.3" />
-    <PackageReference Include="MSTest.TestFramework" Version="3.4.3" />
+    <PackageReference Include="MSTest.TestAdapter" Version="4.1.0" />
+    <PackageReference Include="MSTest.TestFramework" Version="4.1.0" />
   </ItemGroup>
 
   <ItemGroup>
