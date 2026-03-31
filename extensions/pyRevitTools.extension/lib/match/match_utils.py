@@ -38,7 +38,7 @@ def safe_get_parameter(elem, param_id):
             param_el.GetDefinition() if hasattr(param_el, "GetDefinition") else None
         )
         if definition:
-            param_el.get_Parameter(definition)
+            return param_el.get_Parameter(definition)
 
     except Exception:
         return None
