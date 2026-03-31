@@ -212,7 +212,11 @@ class MatchHistoryClipboard(forms.WPFPanel):
         if not elem:
             return
         props = get_source_properties(elem)  # opens pyrevit parameter-picker dialog
+        count = len(props)
         self._add_to_history(props)
+        for i in range(min(count, len(self._items))):
+            self._items[i].IsSelected = True
+        self._update_ui_state()
 
     def load_from_view_filters(self, sender, args):
         """Read all equals-filter parameter values from the active view."""
