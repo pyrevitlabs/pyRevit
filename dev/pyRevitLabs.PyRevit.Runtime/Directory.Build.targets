@@ -51,7 +51,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="docopt.net" Version="0.8.1" />
+        <PackageReference Include="docopt.net" Version="0.8.3" />
         <PackageReference Include="AirspaceFixer" Version="1.0.6" />
         <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'"  Include="ControlzEx" Version="7.0.3" />
         <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'"  Include="ControlzEx" Version="7.0.3" />
