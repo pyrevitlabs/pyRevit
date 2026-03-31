@@ -1,8 +1,10 @@
-"""Monify UI backend."""
+# -*- coding: utf-8 -*-
+"""Minify UI backend."""
 #pylint: disable=E0401,C0103
 from pyrevit import forms
 from pyrevit import script
 from pyrevit.coreutils import ribbon
+from pyrevit.runtime import types
 
 
 mlogger = script.get_logger()
@@ -46,12 +48,13 @@ def config_minifyui(config):
 
 
 def update_ui(config):
-    # Minify or unminify the ui here
     hidden_tabs = get_minifyui_config(config)
-    for tab in ribbon.get_current_ui():
-        if tab.name in hidden_tabs:
-            # not new state since the visible value is reverse
-            tab.visible = not script.get_envvar(MINIFYUI_ENV_VAR)
+    is_active = script.get_envvar(MINIFYUI_ENV_VAR)
+
+    if is_active:
+        types.RibbonTabVisibilityUtils.StartHidingTabs(hidden_tabs)
+    else:
+        types.RibbonTabVisibilityUtils.StopHidingTabs()
 
 
 def toggle_minifyui(config):
