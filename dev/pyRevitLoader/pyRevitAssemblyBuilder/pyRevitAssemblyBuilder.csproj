@@ -17,6 +17,10 @@
         <DeployToAllVersions>true</DeployToAllVersions>
     </PropertyGroup>
 
+    <ItemGroup>
+        <InternalsVisibleTo Include="pyRevitExtensionParserTest" />
+    </ItemGroup>
+
     <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
         <Reference Include="WindowsBase" />
         <Reference Include="PresentationCore" />
