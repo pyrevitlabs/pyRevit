@@ -12,13 +12,36 @@ def safe_get_parameter(elem, param_id):
     if not param_id:
         return None
 
-    # BuiltInParameter (negative ids)
-    if get_elementid_value(param_id) < 0:
-        bip = DB.BuiltInParameter(get_elementid_value(param_id))
-        return elem.get_Parameter(bip)
+    try:
+        pid_val = get_elementid_value(param_id)
 
-    # shared/project parameter
-    return elem.Parameter[param_id]
+        # BuiltInParameter (negative ids)
+        if pid_val < 0:
+            bip = DB.BuiltInParameter(pid_val)
+            return elem.get_Parameter(bip)
+
+        # Shared / Project Parameter
+        doc = elem.Document
+        param_el = doc.GetElement(param_id)
+
+        if not param_el:
+            return None
+
+        # Prefer GUID
+        if hasattr(param_el, "GuidValue"):
+            guid = param_el.GuidValue
+            if guid:
+                return elem.get_Parameter(guid)
+
+        # Fallback - this should not be entered, as this would mean a non-filterable parameter
+        definition = (
+            param_el.GetDefinition() if hasattr(param_el, "GetDefinition") else None
+        )
+        if definition:
+            return param_el.get_Parameter(definition)
+
+    except Exception:
+        return None
 
 
 class PickByCategorySelectionFilter(UI.Selection.ISelectionFilter):
@@ -144,7 +167,6 @@ def paste_props(source_props, paste_mode, category_filter=False):
     # Build category filter if the checkbox is ticked and categories are known
     pick_filter = None
     if category_filter:
-        # if bool(self.categoryFilterCheck.IsChecked):
         cat_ids = set()
         for p in source_props:
             for c in p.categories or []:
@@ -172,10 +194,19 @@ def paste_props(source_props, paste_mode, category_filter=False):
                     dest_elements = [elem]
 
             elif paste_mode == "rectangle":
-                dest_elements = revit.pick_rectangle(pick_filter=pick_filter)
+                try:
+                    dest_elements = revit.pick_rectangle(pick_filter=pick_filter)
+                except Exception:
+                    # To handle esc by user, this would throw a OperationCanceledException
+                    pass
 
             elif paste_mode == "selection":
                 dest_elements = list(revit.get_selection())
+                if category_filter:
+                    dest_elements = [
+                        el for el in dest_elements
+                        if el.Category and el.Category.Id in cat_ids
+                    ]
 
             if not dest_elements:
                 break  # user cancelled / nothing selected
