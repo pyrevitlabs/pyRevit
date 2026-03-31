@@ -28,17 +28,17 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
         }
 
         /// <inheritdoc/>
-        public void CreateTab(ParsedComponent component)
+        public string? CreateTab(ParsedComponent component)
         {
             if (component == null)
             {
                 _logger.Warning("Cannot create tab: component is null.");
-                return;
+                return null;
             }
 
             // Use localized title which handles fallback to DisplayName
             var tabText = ExtensionParser.GetComponentTitle(component);
-            
+
             try
             {
                 _uiApp.CreateRibbonTab(tabText);
@@ -50,24 +50,56 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                 _logger.Debug($"Failed to create ribbon tab '{tabText}'. Tab may already exist. Exception: {ex.Message}");
             }
 
-            // Mark the tab as a pyRevit tab so toggle_icon can find it at runtime
-            TagTabAsPyRevit(tabText);
-
-            // Ensure existing tab is visible/enabled on reload
+            // Find the tab, tag it as pyRevit, ensure it's visible, and detect renames.
+            // Done in a single ribbon scan to avoid the circular dependency where
+            // TagTabAsPyRevit would need the Tag to find renamed tabs but is itself
+            // the method that sets the Tag.
+            string? renamedTitle = null;
             try
             {
                 var ribbon = ComponentManager.Ribbon;
-                var existingTab = ribbon?.Tabs?.FirstOrDefault(t => t.Title == tabText || t.Id == tabText);
+                if (ribbon?.Tabs == null) return null;
+
+                // Primary search: exact Title or Id match
+                var existingTab = ribbon.Tabs.FirstOrDefault(t =>
+                    t.Title == tabText || t.Id == tabText);
+
+                // Fallback: tab was renamed by a script (e.g. translation) so Title no
+                // longer matches. Search by pyRevit Tag (set during the previous session)
+                // combined with exact Id match. The Tag persists on the AdWindows object
+                // across reloads within the same Revit session.
+                if (existingTab == null)
+                {
+                    existingTab = ribbon.Tabs.FirstOrDefault(t =>
+                        (t.Tag as string) == UIManagerConstants.PyRevitTabIdentifier
+                        && string.Equals(t.Id, tabText, StringComparison.OrdinalIgnoreCase));
+                }
+
                 if (existingTab != null)
                 {
+                    existingTab.Tag = UIManagerConstants.PyRevitTabIdentifier;
                     existingTab.IsVisible = true;
                     existingTab.IsEnabled = true;
+
+                    // Detect rename: if the current Title differs, return it so the
+                    // caller can dual-mark the scanner registry under both names.
+                    if (existingTab.Title != tabText)
+                    {
+                        renamedTitle = existingTab.Title;
+                        _logger.Debug($"Tab '{tabText}' found with renamed Title '{renamedTitle}'.");
+                    }
+                    else
+                    {
+                        _logger.Debug($"Found and enabled tab '{tabText}'.");
+                    }
                 }
             }
             catch (Exception ex)
             {
-                _logger.Debug($"Failed to re-enable tab '{tabText}'. Exception: {ex.Message}");
+                _logger.Debug($"Failed to find/enable tab '{tabText}'. Exception: {ex.Message}");
             }
+
+            return renamedTitle;
         }
 
         /// <inheritdoc/>
@@ -85,8 +117,18 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                 if (ribbon?.Tabs == null)
                     return;
 
-                // Find the tab by Title (display name) since that's how tabs are identified
-                var tab = ribbon.Tabs.FirstOrDefault(t => t.Title == tabName || t.Id == tabName);
+                // Primary: find by Title or Id
+                var tab = ribbon.Tabs.FirstOrDefault(t =>
+                    t.Title == tabName || t.Id == tabName);
+
+                // Fallback: renamed tab — match by existing Tag + exact Id
+                if (tab == null)
+                {
+                    tab = ribbon.Tabs.FirstOrDefault(t =>
+                        (t.Tag as string) == UIManagerConstants.PyRevitTabIdentifier
+                        && string.Equals(t.Id, tabName, StringComparison.OrdinalIgnoreCase));
+                }
+
                 if (tab != null)
                 {
                     tab.Tag = UIManagerConstants.PyRevitTabIdentifier;

@@ -1,4 +1,5 @@
-﻿"""Reusable WPF forms for pyRevit.
+# encoding: utf-8
+"""Reusable WPF forms for pyRevit.
 
 Examples:
     ```python
@@ -68,17 +69,66 @@ WPF_VISIBLE = framework.Windows.Visibility.Visible
 XAML_FILES_DIR = op.dirname(__file__)
 
 
-ParamDef = namedtuple("ParamDef", ["name", "istype", "definition", "isreadonly", "isunit", "storagetype"])
+ParamDef = namedtuple(
+    "ParamDef",
+    [
+        "name",
+        "istype",
+        "definition",
+        "isreadonly",
+        "isunit",
+        "storagetype",
+        "displayvalue",
+        "hasvalue",
+        "grouptype",
+        "isshared",
+        "paramid",
+    ],
+)
 """Parameter definition tuple.
-
 Attributes:
     name (str): parameter name
     istype (bool): true if type parameter, otherwise false
     definition (Autodesk.Revit.DB.Definition): parameter definition object
     isreadonly (bool): true if the parameter value can't be edited
     isunit (bool): true if its ForgeTypeId is measurable
-    storagetype (Autodesk.Revit.DB.Storagetype): String, Integer, Double or ElementId
+    storagetype (Autodesk.Revit.DB.StorageType): String, Integer, Double or ElementId
+    displayvalue (str): display string of the current parameter value, or None
+    hasvalue (bool): true if the parameter has a value to display
+    grouptype (str): name of parameter group
+    isshared (bool): is the parameter shared
+    paramid (str): stringified parameter ElementId (integer id)
 """
+
+
+def _make_param_def(param, istype):
+    """Build a ParamDef from a Revit parameter object."""
+    if param.HasValue:
+        display_value_str = param.AsValueString() or param.AsString()
+    else:
+        display_value_str = None
+
+    return ParamDef(
+        name=param.Definition.Name,
+        istype=istype,
+        definition=param.Definition,
+        isreadonly=param.IsReadOnly,
+        isunit=(
+            DB.UnitUtils.IsMeasurableSpec(param.Definition.GetDataType())
+            if HOST_APP.is_newer_than(2022, True)
+            else False
+        ),
+        storagetype=param.StorageType,
+        displayvalue=display_value_str,
+        hasvalue=display_value_str is not None,
+        grouptype=(
+            DB.LabelUtils.GetLabelForGroup(param.Definition.GetGroupTypeId())
+            if HOST_APP.is_newer_than(2022, True)
+            else DB.LabelUtils.GetLabelFor(param.Definition.ParameterGroup)
+        ),
+        isshared=param.IsShared,
+        paramid=str(param.Id),
+    )
 
 
 # https://gui-at.blogspot.com/2009/11/inotifypropertychanged-in-ironpython.html
@@ -145,7 +195,239 @@ class WindowToggler(object):
         self._window.show_dialog()
 
 
-class WPFWindow(framework.Windows.Window):
+class _WPFMixin(object):
+    """Shared behaviour for WPFWindow and WPFPanel.
+
+    Not intended for direct use — inherit via WPFWindow or WPFPanel.
+    """
+
+    # ------------------------------------------------------------------ resources
+
+    @staticmethod
+    def setup_resources(wpf_ctrl):
+        """Set pyRevit colour resources on any WPF control.
+
+        Args:
+            wpf_ctrl: any WPF FrameworkElement with a Resources dict.
+        """
+        wpf_ctrl.Resources["pyRevitDarkColor"] = Media.Color.FromArgb(
+            0xFF, 0x2C, 0x3E, 0x50
+        )
+        wpf_ctrl.Resources["pyRevitDarkerDarkColor"] = Media.Color.FromArgb(
+            0xFF, 0x23, 0x30, 0x3D
+        )
+        wpf_ctrl.Resources["pyRevitButtonColor"] = Media.Color.FromArgb(
+            0xFF, 0xFF, 0xFF, 0xFF
+        )
+        wpf_ctrl.Resources["pyRevitAccentColor"] = Media.Color.FromArgb(
+            0xFF, 0xF3, 0x9C, 0x12
+        )
+        wpf_ctrl.Resources["pyRevitDarkBrush"] = Media.SolidColorBrush(
+            wpf_ctrl.Resources["pyRevitDarkColor"]
+        )
+        wpf_ctrl.Resources["pyRevitAccentBrush"] = Media.SolidColorBrush(
+            wpf_ctrl.Resources["pyRevitAccentColor"]
+        )
+        wpf_ctrl.Resources["pyRevitDarkerDarkBrush"] = Media.SolidColorBrush(
+            wpf_ctrl.Resources["pyRevitDarkerDarkColor"]
+        )
+        wpf_ctrl.Resources["pyRevitButtonForgroundBrush"] = Media.SolidColorBrush(
+            wpf_ctrl.Resources["pyRevitButtonColor"]
+        )
+        wpf_ctrl.Resources["pyRevitRecognizesAccessKey"] = DEFAULT_RECOGNIZE_ACCESS_KEY
+
+    def merge_resource_dict(self, xaml_source):
+        """Merge a ResourceDictionary xaml file into this control's resources.
+
+        Args:
+            xaml_source (str): absolute path to a ResourceDictionary xaml file.
+        """
+        lang_dictionary = ResourceDictionary()
+        lang_dictionary.Source = Uri(xaml_source, UriKind.Absolute)
+        self.Resources.MergedDictionaries.Add(lang_dictionary)
+
+    def get_locale_string(self, string_name):
+        """Return a localised string from the merged ResourceDictionary.
+
+        Args:
+            string_name (str): resource key.
+
+        Returns:
+            str: localised string value.
+        """
+        return self.FindResource(string_name)
+
+    # ------------------------------------------------------------------ images
+
+    @staticmethod
+    def set_image_source_file(wpf_element, image_file):
+        """Set the source of a WPF Image element from a file path.
+
+        Args:
+            wpf_element (System.Windows.Controls.Image): target image element.
+            image_file (str): absolute or command-relative image path.
+        """
+        if not op.exists(image_file):
+            wpf_element.Source = utils.bitmap_from_file(
+                os.path.join(EXEC_PARAMS.command_path, image_file)
+            )
+        else:
+            wpf_element.Source = utils.bitmap_from_file(image_file)
+
+    def set_image_source(self, wpf_element, image_file):
+        """Set the source of a WPF Image element from a file path.
+
+        Args:
+            wpf_element (System.Windows.Controls.Image): target image element.
+            image_file (str): absolute or command-relative image path.
+        """
+        _WPFMixin.set_image_source_file(wpf_element, image_file)
+
+    # ------------------------------------------------------------------ visibility
+
+    @staticmethod
+    def hide_element(*wpf_elements):
+        """Collapse one or more WPF elements (removes from layout).
+
+        Args:
+            *wpf_elements (list[UIElement]): elements to collapse.
+        """
+        for wpfel in wpf_elements:
+            wpfel.Visibility = WPF_COLLAPSED
+
+    @staticmethod
+    def show_element(*wpf_elements):
+        """Make one or more collapsed WPF elements visible.
+
+        Args:
+            *wpf_elements (list[UIElement]): elements to show.
+        """
+        for wpfel in wpf_elements:
+            wpfel.Visibility = WPF_VISIBLE
+
+    @staticmethod
+    def toggle_element(*wpf_elements):
+        """Toggle visibility of one or more WPF elements.
+
+        Args:
+            *wpf_elements (list[UIElement]): elements to toggle.
+        """
+        for wpfel in wpf_elements:
+            if wpfel.Visibility == WPF_VISIBLE:
+                _WPFMixin.hide_element(wpfel)
+            elif wpfel.Visibility == WPF_COLLAPSED:
+                _WPFMixin.show_element(wpfel)
+
+    # ------------------------------------------------------------------ enabled
+
+    @staticmethod
+    def disable_element(*wpf_elements):
+        """Disable one or more WPF elements.
+
+        Args:
+            *wpf_elements (list[UIElement]): elements to disable.
+        """
+        for wpfel in wpf_elements:
+            wpfel.IsEnabled = False
+
+    @staticmethod
+    def enable_element(*wpf_elements):
+        """Enable one or more WPF elements.
+
+        Args:
+            *wpf_elements (list[UIElement]): elements to enable.
+        """
+        for wpfel in wpf_elements:
+            wpfel.IsEnabled = True
+
+    # ------------------------------------------------------------------ threading
+
+    def dispatch(self, func, *args, **kwargs):
+        """Run a function on the opposite thread.
+
+        When called from the UI thread, spawns a background thread.
+        When called from a background thread, marshals execution back
+        onto the UI thread via the Dispatcher.  This makes the pattern
+        for background work + UI updates symmetrical:
+
+            # on UI thread — starts background work
+            self.dispatch(self._do_work)
+
+            def _do_work(self):
+                ...heavy work...
+                # on background thread — posts UI update
+                self.dispatch(self._update_label, "done")
+
+        Args:
+            func (Callable): function to run.
+            *args: positional arguments forwarded to func.
+            **kwargs: keyword arguments forwarded to func.
+        """
+        if framework.get_current_thread_id() == self.thread_id:
+            t = threading.Thread(target=func, args=args, kwargs=kwargs)
+            t.start()
+        else:
+            self.Dispatcher.Invoke(
+                System.Action(lambda: func(*args, **kwargs)),
+                Threading.DispatcherPriority.Background,
+            )
+
+    # ------------------------------------------------------------------ misc
+
+    @property
+    def pyrevit_version(self):
+        """Active pyRevit formatted version string, e.g. '4.9-beta'."""
+        return "pyRevit {}".format(versionmgr.get_pyrevit_version().get_formatted())
+
+    def handle_url_click(self, sender, args):  # pylint: disable=unused-argument
+        """XAML event handler: open a Hyperlink URL in the default browser.
+
+        Wire up in XAML with:  RequestNavigate="handle_url_click"
+        """
+        return webbrowser.open_new_tab(sender.NavigateUri.AbsoluteUri)
+
+
+def _resolve_xaml_source(xaml_source):
+    """Resolve a XAML path with full locale-fallback logic.
+
+    Resolution order:
+      1. <name>.<locale>.xaml                      full localised replacement
+      2. <name>.en_us.xaml                         English replacement
+      3. <name>.xaml  +  ResourceDictionary merge  localised strings
+      4. <name>.xaml  +  ResourceDictionary merge  English strings
+      5. <name>.xaml                               bare, no merge
+
+    Args:
+        xaml_source (str): xaml filename or absolute path.
+
+    Returns:
+        tuple(str, str|None): (resolved xaml path, resource-dict path or None)
+    """
+    xaml_file = xaml_source
+    if not op.exists(xaml_file):
+        xaml_file = os.path.join(EXEC_PARAMS.command_path, xaml_source)
+
+    localized_xaml = xaml_file.replace(
+        ".xaml", ".{}.xaml".format(user_config.user_locale)
+    )
+    english_xaml = xaml_file.replace(".xaml", ".en_us.xaml")
+    localized_res = xaml_file.replace(
+        ".xaml", ".ResourceDictionary.{}.xaml".format(user_config.user_locale)
+    )
+    english_res = xaml_file.replace(".xaml", ".ResourceDictionary.en_us.xaml")
+
+    if os.path.isfile(localized_xaml):
+        return localized_xaml, None
+    if os.path.isfile(english_xaml):
+        return english_xaml, None
+    if os.path.isfile(localized_res):
+        return xaml_file, localized_res
+    if os.path.isfile(english_res):
+        return xaml_file, english_res
+    return xaml_file, None
+
+
+class WPFWindow(_WPFMixin, framework.Windows.Window):
     r"""WPF Window base class for all pyRevit forms.
 
     Args:
@@ -192,17 +474,19 @@ class WPFWindow(framework.Windows.Window):
                 False if it is a path. Defaults to False.
             handle_esc (bool, optional): Whether the ESC key should be handled.
                 Defaults to True.
-            set_owner (bool, optional): Whether to se the window owner.
+            set_owner (bool, optional): Whether to set the window owner.
                 Defaults to True.
         """
         # create new id for this window
         self.window_id = coreutils.new_uuid()
 
+        _WPFMixin.setup_resources(self)
         if not literal_string:
-            wpf.LoadComponent(self, self._determine_xaml(xaml_source))
-            if getattr(self, '_pending_resource_merge', None):
-                self.merge_resource_dict(self._pending_resource_merge)
-                self._pending_resource_merge = None
+            xaml_path, pending_resource_merge = _resolve_xaml_source(xaml_source)
+            # merge before LoadComponent so resources are available during parse
+            if pending_resource_merge:
+                self.merge_resource_dict(pending_resource_merge)
+            wpf.LoadComponent(self, xaml_path)
         else:
             wpf.LoadComponent(self, framework.StringReader(xaml_source))
 
@@ -211,111 +495,13 @@ class WPFWindow(framework.Windows.Window):
         if set_owner:
             self.setup_owner()
         self.setup_icon()
-        WPFWindow.setup_resources(self)
         if handle_esc:
             self.setup_default_handlers()
-
-    def _determine_xaml(self, xaml_source):
-        self._pending_resource_merge = None
-        xaml_file = xaml_source
-        if not op.exists(xaml_file):
-            xaml_file = os.path.join(EXEC_PARAMS.command_path, xaml_source)
-
-        english_xaml_file = xaml_file.replace(".xaml", ".en_us.xaml")
-        localized_xaml_file = xaml_file.replace(
-            ".xaml", ".{}.xaml".format(user_config.user_locale)
-        )
-
-        english_xaml_resfile = xaml_file.replace(
-            ".xaml", ".ResourceDictionary.en_us.xaml"
-        )
-        localized_xaml_resfile = xaml_file.replace(
-            ".xaml", ".ResourceDictionary.{}.xaml".format(user_config.user_locale)
-        )
-
-        # if localized version of xaml file is provided, use that
-        if os.path.isfile(localized_xaml_file):
-            return localized_xaml_file
-
-        if os.path.isfile(english_xaml_file):
-            return english_xaml_file
-
-        # otherwise look for .ResourceDictionary files and merge after load
-        # (must merge after LoadComponent so XAML does not replace Resources)
-        if os.path.isfile(localized_xaml_resfile):
-            self._pending_resource_merge = localized_xaml_resfile
-        elif os.path.isfile(english_xaml_resfile):
-            self._pending_resource_merge = english_xaml_resfile
-        else:
-            self._pending_resource_merge = None
-
-        return xaml_file
-
-    def merge_resource_dict(self, xaml_source):
-        """Merge a ResourceDictionary xaml file with this window.
-
-        Args:
-            xaml_source (str): xaml file with the resource dictionary
-        """
-        lang_dictionary = ResourceDictionary()
-        lang_dictionary.Source = Uri(xaml_source, UriKind.Absolute)
-        self.Resources.MergedDictionaries.Add(lang_dictionary)
-
-    def get_locale_string(self, string_name):
-        """Get localized string.
-
-        Args:
-            string_name (str): string name
-
-        Returns:
-            (str): localized string
-        """
-        return self.FindResource(string_name)
 
     def setup_owner(self):
         """Set the window owner."""
         wih = Interop.WindowInteropHelper(self)
         wih.Owner = AdWindows.ComponentManager.ApplicationWindow
-
-    @staticmethod
-    def setup_resources(wpf_ctrl):
-        """Sets the WPF resources."""
-        # 2c3e50
-        wpf_ctrl.Resources["pyRevitDarkColor"] = Media.Color.FromArgb(
-            0xFF, 0x2C, 0x3E, 0x50
-        )
-
-        # 23303d
-        wpf_ctrl.Resources["pyRevitDarkerDarkColor"] = Media.Color.FromArgb(
-            0xFF, 0x23, 0x30, 0x3D
-        )
-
-        # ffffff
-        wpf_ctrl.Resources["pyRevitButtonColor"] = Media.Color.FromArgb(
-            0xFF, 0xFF, 0xFF, 0xFF
-        )
-
-        # f39c12
-        wpf_ctrl.Resources["pyRevitAccentColor"] = Media.Color.FromArgb(
-            0xFF, 0xF3, 0x9C, 0x12
-        )
-
-        wpf_ctrl.Resources["pyRevitDarkBrush"] = Media.SolidColorBrush(
-            wpf_ctrl.Resources["pyRevitDarkColor"]
-        )
-        wpf_ctrl.Resources["pyRevitAccentBrush"] = Media.SolidColorBrush(
-            wpf_ctrl.Resources["pyRevitAccentColor"]
-        )
-
-        wpf_ctrl.Resources["pyRevitDarkerDarkBrush"] = Media.SolidColorBrush(
-            wpf_ctrl.Resources["pyRevitDarkerDarkColor"]
-        )
-
-        wpf_ctrl.Resources["pyRevitButtonForgroundBrush"] = Media.SolidColorBrush(
-            wpf_ctrl.Resources["pyRevitButtonColor"]
-        )
-
-        wpf_ctrl.Resources["pyRevitRecognizesAccessKey"] = DEFAULT_RECOGNIZE_ACCESS_KEY
 
     def setup_default_handlers(self):
         """Set the default handlers."""
@@ -349,216 +535,96 @@ class WPFWindow(framework.Windows.Window):
         """Show modal window."""
         return self.ShowDialog()
 
-    @staticmethod
-    def set_image_source_file(wpf_element, image_file):
-        """Set source file for image element.
-
-        Args:
-            wpf_element (System.Windows.Controls.Image): xaml image element
-            image_file (str): image file path
-        """
-        if not op.exists(image_file):
-            wpf_element.Source = utils.bitmap_from_file(
-                os.path.join(EXEC_PARAMS.command_path, image_file)
-            )
-        else:
-            wpf_element.Source = utils.bitmap_from_file(image_file)
-
-    def set_image_source(self, wpf_element, image_file):
-        """Set source file for image element.
-
-        Args:
-            wpf_element (System.Windows.Controls.Image): xaml image element
-            image_file (str): image file path
-        """
-        WPFWindow.set_image_source_file(wpf_element, image_file)
-
-    def dispatch(self, func, *args, **kwargs):
-        """Runs the function in a new thread.
-
-        Args:
-            func (Callable): function to run
-            *args (Any): positional arguments to pass to func
-            **kwargs (Any): keyword arguments to pass to func
-        """
-        if framework.get_current_thread_id() == self.thread_id:
-            t = threading.Thread(target=func, args=args, kwargs=kwargs)
-            t.start()
-        else:
-            # ask ui thread to call the func with args and kwargs
-            self.Dispatcher.Invoke(
-                System.Action(lambda: func(*args, **kwargs)),
-                Threading.DispatcherPriority.Background,
-            )
-
     def conceal(self):
         """Conceal window."""
         return WindowToggler(self)
 
-    @property
-    def pyrevit_version(self):
-        """Active pyRevit formatted version e.g. '4.9-beta'."""
-        return "pyRevit {}".format(versionmgr.get_pyrevit_version().get_formatted())
 
-    @staticmethod
-    def hide_element(*wpf_elements):
-        """Collapse elements.
-
-        Args:
-            *wpf_elements (list[UIElement]): WPF framework elements to be collaped
-        """
-        for wpfel in wpf_elements:
-            wpfel.Visibility = WPF_COLLAPSED
-
-    @staticmethod
-    def show_element(*wpf_elements):
-        """Show collapsed elements.
-
-        Args:
-            *wpf_elements (list[UIElement]): WPF framework elements to be set to visible.
-        """
-        for wpfel in wpf_elements:
-            wpfel.Visibility = WPF_VISIBLE
-
-    @staticmethod
-    def toggle_element(*wpf_elements):
-        """Toggle visibility of elements.
-
-        Args:
-            *wpf_elements (list[UIElement]): WPF framework elements to be toggled.
-        """
-        for wpfel in wpf_elements:
-            if wpfel.Visibility == WPF_VISIBLE:
-                WPFWindow.hide_element(wpfel)
-            elif wpfel.Visibility == WPF_COLLAPSED:
-                WPFWindow.show_element(wpfel)
-
-    @staticmethod
-    def disable_element(*wpf_elements):
-        """Enable elements.
-
-        Args:
-            *wpf_elements (list[UIElement]): WPF framework elements to be enabled
-        """
-        for wpfel in wpf_elements:
-            wpfel.IsEnabled = False
-
-    @staticmethod
-    def enable_element(*wpf_elements):
-        """Enable elements.
-
-        Args:
-            *wpf_elements (list[UIElement]): WPF framework elements to be enabled
-        """
-        for wpfel in wpf_elements:
-            wpfel.IsEnabled = True
-
-    def handle_url_click(self, sender, args):  # pylint: disable=unused-argument
-        """Callback for handling click on package website url."""
-        return webbrowser.open_new_tab(sender.NavigateUri.AbsoluteUri)
-
-
-class WPFPanel(framework.Windows.Controls.Page):
+class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
     r"""WPF panel base class for all pyRevit dockable panels.
 
-    panel_id (str) must be set on the type to dockable panel uuid
-    panel_source (str): xaml source filepath
+        Subclass this, set the three required class attributes, then register
+        and open the panel through the module-level helpers.
 
-    Examples:
-        ```python
-        from pyrevit import forms
-        class MyPanel(forms.WPFPanel):
-            panel_id = "181e05a4-28f6-4311-8a9f-d2aa528c8755"
-            panel_source = "MyPanel.xaml"
+        Required class attributes:
+            panel_id (str): stable UUID string identifying the panel in Revit.
+            panel_source (str): XAML filename (resolved relative to the command).
+            panel_title (str): title displayed in the panel chrome.
 
-        forms.register_dockable_panel(MyPanel)
-        # then from the button that needs to open the panel
-        forms.open_dockable_panel("181e05a4-28f6-4311-8a9f-d2aa528c8755")
-        ```
+        Optional class attributes:
+            initial_state (UI.DockablePaneState):
+                initial docking position; Revit picks a default when None.
+            editor_interaction (UI.EditorInteractionType):
+                how the panel behaves while an editor is active.
+            contextual_help (UI.ContextualHelp):
+                F1 help associated with the pane.
+
+        Examples:
+    ```python
+            from pyrevit import forms
+            import Autodesk.Revit.UI as UI
+
+            state = UI.DockablePaneState()
+            state.DockPosition = UI.DockPosition.Right
+
+            class MyPanel(forms.WPFPanel):
+                panel_id     = "181e05a4-28f6-4311-8a9f-d2aa528c8755"
+                panel_source = "MyPanel.xaml"
+                panel_title  = "My Panel"
+                initial_state = state
+
+            forms.register_dockable_panel(MyPanel)
+
+            # open from any command button
+            forms.open_dockable_panel(MyPanel)
+
+            # retrieve the live instance from anywhere
+            dockable_pane = forms.get_dockable_panel(MyPanel)
+    ```
     """
 
     panel_id = None
     panel_source = None
+    panel_title = None
+    initial_state = None
+    editor_interaction = None
+    contextual_help = None
 
     def __init__(self):
         """Initialize WPF panel and resources."""
         if not self.panel_id:
-            raise PyRevitException('"panel_id" property is not set')
+            raise PyRevitException('"panel_id" class attribute is not set')
         if not self.panel_source:
-            raise PyRevitException('"panel_source" property is not set')
+            raise PyRevitException('"panel_source" class attribute is not set')
+        if not self.panel_title:
+            raise PyRevitException('"panel_title" class attribute is not set')
 
-        if not op.exists(self.panel_source):
-            wpf.LoadComponent(
-                self, os.path.join(EXEC_PARAMS.command_path, self.panel_source)
-            )
+        self.load_xaml(self.panel_source)
+
+    def load_xaml(self, xaml_source, literal_string=False):
+        """Load the panel XAML file.
+
+        Supports the full locale-fallback chain (see _resolve_xaml_source) and
+        can accept raw XAML content via literal_string, matching WPFWindow.
+
+        Args:
+            xaml_source (str): XAML content string or file path.
+            literal_string (bool): True when xaml_source is raw content.
+        """
+        _WPFMixin.setup_resources(self)
+        if not literal_string:
+            xaml_path, pending_resource_merge = _resolve_xaml_source(xaml_source)
+            # merge before LoadComponent so resources are available during parse
+            if pending_resource_merge:
+                self.merge_resource_dict(pending_resource_merge)
+            wpf.LoadComponent(self, xaml_path)
         else:
-            wpf.LoadComponent(self, self.panel_source)
-
-        # set properties
+            wpf.LoadComponent(self, framework.StringReader(xaml_source))
         self.thread_id = framework.get_current_thread_id()
-        WPFWindow.setup_resources(self)
-
-    def set_image_source(self, wpf_element, image_file):
-        """Set source file for image element.
-
-        Args:
-            wpf_element (System.Windows.Controls.Image): xaml image element
-            image_file (str): image file path
-        """
-        WPFWindow.set_image_source_file(wpf_element, image_file)
-
-    @staticmethod
-    def hide_element(*wpf_elements):
-        """Collapse elements.
-
-        Args:
-            *wpf_elements (list[UIElement]): WPF framework elements to be collaped
-        """
-        WPFPanel.hide_element(*wpf_elements)
-
-    @staticmethod
-    def show_element(*wpf_elements):
-        """Show collapsed elements.
-
-        Args:
-            *wpf_elements (list[UIElement]): WPF framework elements to be set to visible.
-        """
-        WPFPanel.show_element(*wpf_elements)
-
-    @staticmethod
-    def toggle_element(*wpf_elements):
-        """Toggle visibility of elements.
-
-        Args:
-            *wpf_elements (list[UIElement]): WPF framework elements to be toggled.
-        """
-        WPFPanel.toggle_element(*wpf_elements)
-
-    @staticmethod
-    def disable_element(*wpf_elements):
-        """Enable elements.
-
-        Args:
-            *wpf_elements (list[UIElement]): WPF framework elements to be enabled
-        """
-        WPFPanel.disable_element(*wpf_elements)
-
-    @staticmethod
-    def enable_element(*wpf_elements):
-        """Enable elements.
-
-        Args:
-            *wpf_elements (list): WPF framework elements to be enabled
-        """
-        WPFPanel.enable_element(*wpf_elements)
-
-    def handle_url_click(self, sender, args):  # pylint: disable=unused-argument
-        """Callback for handling click on package website url."""
-        return webbrowser.open_new_tab(sender.NavigateUri.AbsoluteUri)
 
 
 class _WPFPanelProvider(UI.IDockablePaneProvider):
-    """Internal Panel provider for panels."""
+    """Internal panel provider for dockable panels."""
 
     def __init__(self, panel_type, default_visible=True):
         self._panel_type = panel_type
@@ -566,11 +632,18 @@ class _WPFPanelProvider(UI.IDockablePaneProvider):
         self.panel = self._panel_type()
 
     def SetupDockablePane(self, data):
-        """Setup forms.WPFPanel set on this instance."""
-        # TODO: need to implement panel data
-        # https://apidocs.co/apps/revit/2021.1/98157ec2-ab26-6ab7-2933-d1b4160ba2b8.htm
+        """Configure DockablePaneProviderData from the panel type's class attributes."""
         data.FrameworkElement = self.panel
         data.VisibleByDefault = self._default_visible
+
+        if self._panel_type.initial_state is not None:
+            data.InitialState = self._panel_type.initial_state
+
+        if self._panel_type.editor_interaction is not None:
+            data.EditorInteraction = self._panel_type.editor_interaction
+
+        if self._panel_type.contextual_help is not None:
+            data.ContextualHelp = self._panel_type.contextual_help
 
 
 def is_registered_dockable_panel(panel_type):
@@ -581,21 +654,33 @@ def is_registered_dockable_panel(panel_type):
     """
     panel_uuid = coreutils.Guid.Parse(panel_type.panel_id)
     dockable_panel_id = UI.DockablePaneId(panel_uuid)
-    return UI.DockablePane.PaneExists(dockable_panel_id)
+    return UI.DockablePane.PaneIsRegistered(dockable_panel_id)
 
 
 def register_dockable_panel(panel_type, default_visible=True):
-    """Register dockable panel.
+    """Register a dockable panel with Revit and return its instance.
+
+    This function creates a provider for the given panel type, registers the
+    corresponding dockable pane with Revit, and returns the live WPF panel
+    instance managed by that provider.
 
     Args:
         panel_type (forms.WPFPanel): dockable panel type
         default_visible (bool, optional):
-            whether panel should be visible by default
+            Whether the panel should be visible by default when registered.
+
+    Returns:
+        forms.WPFPanel: The live panel instance created during registration.
     """
-    if not issubclass(panel_type, WPFPanel):
+    if not isinstance(panel_type, type) or not issubclass(panel_type, WPFPanel):
         raise PyRevitException("Dockable pane must be a subclass of forms.WPFPanel")
 
-    panel_uuid = coreutils.Guid.Parse(panel_type.panel_id)
+    try:
+        panel_uuid = coreutils.Guid.Parse(panel_type.panel_id)
+    except System.FormatException:
+        raise PyRevitException(
+            'Invalid dockable panel id "{}"'.format(panel_type.panel_id)
+        )
     dockable_panel_id = UI.DockablePaneId(panel_uuid)
     panel_provider = _WPFPanelProvider(panel_type, default_visible)
     HOST_APP.uiapp.RegisterDockablePane(
@@ -605,11 +690,55 @@ def register_dockable_panel(panel_type, default_visible=True):
     return panel_provider.panel
 
 
+def get_dockable_panel(panel_type_or_id):
+    """Retrieve the Revit dockable pane handle for a registered panel.
+
+    Args:
+        panel_type_or_id (forms.WPFPanel | str):
+            dockable panel type (subclass of forms.WPFPanel) or panel id string
+            corresponding to the Revit dockable pane id.
+
+    Returns:
+        UI.DockablePane: the live panel pane handle.
+
+    Raises:
+        PyRevitException: if the panel id is not registered with Revit.
+    """
+    dpanel_id = None
+    if isinstance(panel_type_or_id, str):
+        try:
+            panel_id = coreutils.Guid.Parse(panel_type_or_id)
+        except System.FormatException:
+            raise PyRevitException(
+                'Invalid dockable panel id "{}"'.format(panel_type_or_id)
+            )
+        dpanel_id = UI.DockablePaneId(panel_id)
+    elif isinstance(panel_type_or_id, type) and issubclass(panel_type_or_id, WPFPanel):
+        try:
+            panel_id = coreutils.Guid.Parse(panel_type_or_id.panel_id)
+        except System.FormatException:
+            raise PyRevitException(
+                'Invalid dockable panel id "{}"'.format(panel_type_or_id.panel_id)
+            )
+        dpanel_id = UI.DockablePaneId(panel_id)
+    else:
+        raise PyRevitException("Given type is not a forms.WPFPanel")
+
+    if dpanel_id:
+        if UI.DockablePane.PaneIsRegistered(dpanel_id):
+            dockable_panel = HOST_APP.uiapp.GetDockablePane(dpanel_id)
+            return dockable_panel
+        else:
+            raise PyRevitException(
+                'Panel with id "%s" is not registered' % panel_type_or_id
+            )
+
+
 def open_dockable_panel(panel_type_or_id):
     """Open previously registered dockable panel.
 
     Args:
-        panel_type_or_id (forms.WPFPanel, str): panel type or id
+        panel_type_or_id (forms.WPFPanel | str): panel type or id
     """
     toggle_dockable_panel(panel_type_or_id, True)
 
@@ -618,7 +747,7 @@ def close_dockable_panel(panel_type_or_id):
     """Close previously registered dockable panel.
 
     Args:
-        panel_type_or_id (forms.WPFPanel, str): panel type or id
+        panel_type_or_id (forms.WPFPanel | str): panel type or id
     """
     toggle_dockable_panel(panel_type_or_id, False)
 
@@ -630,27 +759,11 @@ def toggle_dockable_panel(panel_type_or_id, state):
         panel_type_or_id (forms.WPFPanel | str): panel type or id
         state (bool): True to show the panel, False to hide it.
     """
-    dpanel_id = None
-    if isinstance(panel_type_or_id, str):
-        panel_id = coreutils.Guid.Parse(panel_type_or_id)
-        dpanel_id = UI.DockablePaneId(panel_id)
-    elif issubclass(panel_type_or_id, WPFPanel):
-        panel_id = coreutils.Guid.Parse(panel_type_or_id.panel_id)
-        dpanel_id = UI.DockablePaneId(panel_id)
+    dockable_panel = get_dockable_panel(panel_type_or_id)
+    if state:
+        dockable_panel.Show()
     else:
-        raise PyRevitException("Given type is not a forms.WPFPanel")
-
-    if dpanel_id:
-        if UI.DockablePane.PaneIsRegistered(dpanel_id):
-            dockable_panel = HOST_APP.uiapp.GetDockablePane(dpanel_id)
-            if state:
-                dockable_panel.Show()
-            else:
-                dockable_panel.Hide()
-        else:
-            raise PyRevitException(
-                'Panel with id "%s" is not registered' % panel_type_or_id
-            )
+        dockable_panel.Hide()
 
 
 class TemplateUserInputWindow(WPFWindow):
@@ -679,7 +792,9 @@ class TemplateUserInputWindow(WPFWindow):
                 localized_title = self.get_locale_string(self.default_title_key)
             except System.Windows.ResourceReferenceKeyNotFoundException:
                 localized_title = None
-            self.Title = localized_title if isinstance(localized_title, str) else "User Input"
+            self.Title = (
+                localized_title if isinstance(localized_title, str) else "User Input"
+            )
         self.Width = width
         self.Height = height
 
@@ -907,7 +1022,9 @@ class SelectFromList(TemplateUserInputWindow):
         else:
             # Use localized default, falling back to generic text if resource is missing
             try:
-                self.select_b.Content = self.get_locale_string("SelectFromList.Select.Button")
+                self.select_b.Content = self.get_locale_string(
+                    "SelectFromList.Select.Button"
+                )
             except System.Windows.ResourceReferenceKeyNotFoundException:
                 self.select_b.Content = "Select"
 
@@ -1070,15 +1187,21 @@ class SelectFromList(TemplateUserInputWindow):
     def _list_options(self, option_filter=None):
         if option_filter:
             try:
-                self.checkall_b.Content = self.get_locale_string("SelectFromList.Check.Button")
+                self.checkall_b.Content = self.get_locale_string(
+                    "SelectFromList.Check.Button"
+                )
             except System.Windows.ResourceReferenceKeyNotFoundException:
                 self.checkall_b.Content = "Check"
             try:
-                self.uncheckall_b.Content = self.get_locale_string("SelectFromList.Uncheck.Button")
+                self.uncheckall_b.Content = self.get_locale_string(
+                    "SelectFromList.Uncheck.Button"
+                )
             except System.Windows.ResourceReferenceKeyNotFoundException:
                 self.uncheckall_b.Content = "Uncheck"
             try:
-                self.toggleall_b.Content = self.get_locale_string("SelectFromList.Toggle.Button")
+                self.toggleall_b.Content = self.get_locale_string(
+                    "SelectFromList.Toggle.Button"
+                )
             except System.Windows.ResourceReferenceKeyNotFoundException:
                 self.toggleall_b.Content = "Toggle"
             # get a match score for every item and sort high to low
@@ -1103,15 +1226,21 @@ class SelectFromList(TemplateUserInputWindow):
             )
         else:
             try:
-                self.checkall_b.Content = self.get_locale_string("SelectFromList.CheckAll.Button")
+                self.checkall_b.Content = self.get_locale_string(
+                    "SelectFromList.CheckAll.Button"
+                )
             except System.Windows.ResourceReferenceKeyNotFoundException:
                 self.checkall_b.Content = "Check All"
             try:
-                self.uncheckall_b.Content = self.get_locale_string("SelectFromList.UncheckAll.Button")
+                self.uncheckall_b.Content = self.get_locale_string(
+                    "SelectFromList.UncheckAll.Button"
+                )
             except System.Windows.ResourceReferenceKeyNotFoundException:
                 self.uncheckall_b.Content = "Uncheck All"
             try:
-                self.toggleall_b.Content = self.get_locale_string("SelectFromList.ToggleAll.Button")
+                self.toggleall_b.Content = self.get_locale_string(
+                    "SelectFromList.ToggleAll.Button"
+                )
             except System.Windows.ResourceReferenceKeyNotFoundException:
                 self.toggleall_b.Content = "Toggle All"
 
@@ -1487,9 +1616,7 @@ class GetValueWindow(TemplateUserInputWindow):
             self.datePrompt.Text = value_prompt if value_prompt else "Pick date:"
             if isinstance(value_default, datetime.datetime):
                 self.datePicker.SelectedDate = System.DateTime(
-                    value_default.year,
-                    value_default.month,
-                    value_default.day
+                    value_default.year, value_default.month, value_default.day
                 )
         elif self.value_type == "slider":
             self.show_element(self.sliderPanel_sp)
@@ -1533,9 +1660,7 @@ class GetValueWindow(TemplateUserInputWindow):
             if self.datePicker.SelectedDate:
                 selected = self.datePicker.SelectedDate
                 self.response = datetime.datetime(
-                    selected.Year,
-                    selected.Month,
-                    selected.Day
+                    selected.Year, selected.Month, selected.Day
                 )
             else:
                 self.response = None
@@ -2319,7 +2444,7 @@ def select_sheets(
         sheetset_ops = sorted(
             [SheetOption(x) for x in sheetset_sheets], key=lambda x: x.number
         )
-        if sheetset.Name == 'All Sheets':
+        if sheetset.Name == "All Sheets":
             all_ops["[" + sheetset.Name + "]"] = sheetset_ops
         else:
             all_ops[sheetset.Name] = sheetset_ops
@@ -2815,18 +2940,7 @@ def select_parameters(
         # collect instance parameters
         param_defs.extend(
             [
-                ParamDef(
-                    name=x.Definition.Name,
-                    istype=False,
-                    definition=x.Definition,
-                    isreadonly=x.IsReadOnly,
-                    isunit=(
-                        DB.UnitUtils.IsMeasurableSpec(x.Definition.GetDataType())
-                        if HOST_APP.is_newer_than(2022, True)
-                        else False
-                    ),
-                    storagetype=x.StorageType,
-                )
+                _make_param_def(x, istype=False)
                 for x in src_element.Parameters
                 if x.StorageType != non_storage_type
             ]
@@ -2838,18 +2952,7 @@ def select_parameters(
         if src_type is not None:
             param_defs.extend(
                 [
-                    ParamDef(
-                        name=x.Definition.Name,
-                        istype=True,
-                        definition=x.Definition,
-                        isreadonly=x.IsReadOnly,
-                        isunit=(
-                            DB.UnitUtils.IsMeasurableSpec(x.Definition.GetDataType())
-                            if HOST_APP.is_newer_than(2022, True)
-                            else False
-                        ),
-                        storagetype=x.StorageType,
-                    )
+                    _make_param_def(x, istype=True)
                     for x in src_type.Parameters
                     if x.StorageType != non_storage_type
                 ]
@@ -2870,7 +2973,7 @@ def select_parameters(
         param_defs,
         title=title,
         button_name=button_name,
-        width=450,
+        width=500,
         multiselect=multiple,
         item_template=itemplate,
     )

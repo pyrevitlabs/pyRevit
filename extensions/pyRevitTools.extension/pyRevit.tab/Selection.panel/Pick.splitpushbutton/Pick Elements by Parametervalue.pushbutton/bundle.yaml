@@ -1,0 +1,19 @@
+title:
+  en_us: Pick Elements by Parameter Value
+  fr_fr: Sélectionner des éléments par valeur de paramètre
+  ru: Выбрать элементы по значению параметра
+  chinese_s: 按参数值选择图元
+  es_es: Seleccionar elementos por valor de parámetro
+  de_de: Elemente nach Parameterwert auswählen
+  pt_br: Selecionar Elementos por Valor de Parâmetro
+
+tooltip:
+  en_us: Select elements that match the chosen parameter value(s). By default, any parameter match is accepted. Hold Shift while clicking to require all parameter values to match.
+  fr_fr: Sélectionne les éléments correspondant aux valeurs de paramètres choisies. Par défaut, une correspondance suffit. Maintenez Maj en cliquant pour exiger que toutes les valeurs correspondent.
+  ru: Выбирает элементы с совпадающими значениями параметров. По умолчанию достаточно любого совпадения. Удерживайте Shift при щелчке, чтобы требовать совпадение всех параметров.
+  chinese_s: 选择与所选参数值匹配的图元。默认情况下，任意一个参数匹配即可。按住 Shift 单击以要求所有参数值都匹配。
+  es_es: Selecciona elementos que coinciden con los valores de parámetro elegidos. Por defecto, cualquier coincidencia es suficiente. Mantén Shift al hacer clic para exigir que todos coincidan.
+  de_de: Wählt Elemente mit übereinstimmenden Parameterwerten aus. Standardmäßig reicht eine beliebige Übereinstimmung. Halten Sie Shift gedrückt, um zu verlangen, dass alle Parameterwerte übereinstimmen.
+  pt_br: Seleciona elementos que correspondem aos valores de parâmetro escolhidos. Por padrão, qualquer correspondência é aceita. Segure Shift ao clicar para exigir que todos os valores coincidam.
+
+author: wurschdhaud

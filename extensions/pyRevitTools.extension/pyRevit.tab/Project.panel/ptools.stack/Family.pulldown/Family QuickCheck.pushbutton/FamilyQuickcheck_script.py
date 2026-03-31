@@ -7,7 +7,7 @@ github.com/frederic-beaupere
 PR731 https://github.com/pyrevitlabs/pyRevit/pull/731
 """
 #pylint: disable=invalid-name,import-error,superfluous-parens,broad-except
-from pyrevit import revit
+from pyrevit import revit, EXEC_PARAMS
 from pyrevit import forms
 from pyrevit import script
 
@@ -25,7 +25,7 @@ count_families_with_warnings = 0
 all_families = revit.query.get_families(revit.doc, only_editable=True)
 editable_families = []
 
-if __shiftclick__: #pylint: disable=E0602
+if EXEC_PARAMS.config_mode:
     family_dict = {}
     for family in all_families:
         if family.FamilyCategory:

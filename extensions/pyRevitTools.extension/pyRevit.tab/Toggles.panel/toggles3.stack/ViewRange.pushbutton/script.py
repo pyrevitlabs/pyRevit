@@ -12,12 +12,20 @@ uidoc = HOST_APP.uidoc
 logger = script.get_logger()
 output = script.get_output()
 
-PLANES = OrderedDict([
-    (DB.PlanViewPlane.TopClipPlane, ([0, 255, 0], "Top Clip Plane", "topplane")),
-    (DB.PlanViewPlane.CutPlane, ([255, 0, 0], "Cut Plane", "cutplane")),
-    (DB.PlanViewPlane.BottomClipPlane, ([0, 0, 255], "Bottom Clip Plane", "bottomplane")),
-    (DB.PlanViewPlane.ViewDepthPlane, ([255, 127, 0], "View Depth Plane", "viewdepth")),
-])
+PLANES = OrderedDict(
+    [
+        (DB.PlanViewPlane.TopClipPlane, ([0, 255, 0], "Top Clip Plane", "topplane")),
+        (DB.PlanViewPlane.CutPlane, ([255, 0, 0], "Cut Plane", "cutplane")),
+        (
+            DB.PlanViewPlane.BottomClipPlane,
+            ([0, 0, 255], "Bottom Clip Plane", "bottomplane"),
+        ),
+        (
+            DB.PlanViewPlane.ViewDepthPlane,
+            ([255, 127, 0], "View Depth Plane", "viewdepth"),
+        ),
+    ]
+)
 
 get_elementid_value = get_elementid_value_func()
 INVALID_ID_VALUE = get_elementid_value(DB.ElementId.InvalidElementId)
@@ -41,6 +49,7 @@ class Context(object):
         self.original_offset_data = {}
         self.original_level_data = {}
         self.view_model = view_model
+        self._ordered_levels = []
         self._levels_populated = False  # Track if levels have been populated
         view_model.unit_label = DB.LabelUtils.GetLabelForUnit(self.length_unit)
 
@@ -66,18 +75,41 @@ class Context(object):
     def source_view(self, value):
         if not compare_views(self._source_view, value):
             self._source_view = value
+            if not self._ordered_levels:
+                self.collect_levels(self._source_view.Document)
             self._levels_populated = False  # Reset when view changes
+
+            self._source_template = None
+            if (
+                self.source_view is not None
+                and self.source_view.ViewTemplateId != DB.ElementId.InvalidElementId
+            ):
+                template = self.source_view.Document.GetElement(
+                    self.source_view.ViewTemplateId
+                )
+                non_controlled_params = template.GetNonControlledTemplateParameterIds()
+                if (
+                    DB.ElementId(DB.BuiltInParameter.PLAN_VIEW_RANGE)
+                    not in non_controlled_params
+                ):
+                    self._source_template = template
+
             self.context_changed()
 
     def update_view_range(self, new_values, new_levels=None):
         if not self.source_view or not isinstance(self.source_view, DB.ViewPlan):
             self.view_model.warning_message = "No valid plan view selected"
             return False
-        if self.source_view.IsTemplate:
-            self.view_model.warning_message = (
-                "Cannot modify view range - this is a view template"
+
+        if self._source_template is not None:
+            dialog_result = forms.alert(
+                "You are about to change a View Template! Are you sure you want to proceed?",
+                ok=False,
+                yes=True,
+                no=True,
             )
-            return False
+            if not dialog_result:
+                return False
 
         events.execute_in_revit_context(
             self._update_view_range_internal, new_values, new_levels
@@ -89,8 +121,13 @@ class Context(object):
             if not self._validate_view_range_order(new_values, new_levels):
                 return False
 
+            if self._source_template is not None:
+                view = self._source_template
+            else:
+                view = self._source_view
+
             with revit.Transaction("Update View Range", doc=revit.doc):
-                view_range = self.source_view.GetViewRange()
+                view_range = view.GetViewRange()
 
                 # First, update levels if provided
                 if new_levels:
@@ -143,7 +180,7 @@ class Context(object):
                             return False
 
                 # Apply the view range back to the view
-                self.source_view.SetViewRange(view_range)
+                view.SetViewRange(view_range)
                 self.context_changed()
                 self.view_model.warning_message = "View range updated successfully"
                 return True
@@ -264,39 +301,57 @@ class Context(object):
             )
             return False
 
-    def _populate_available_levels(self):
+    def collect_levels(self, doc):
+        # Get all levels in the project
+        level_collector = DB.FilteredElementCollector(doc).OfClass(DB.Level)
+        levels = list(level_collector)
+
+        # Sort levels by elevation
+        levels.sort(key=lambda x: x.ProjectElevation)
+        self._ordered_levels = levels
+
+    def _populate_level_items(self):
         """Populate the list of available levels in the project"""
         try:
-            # Get all levels in the project
-            level_collector = DB.FilteredElementCollector(self.source_view.Document).OfClass(DB.Level)
-            levels = list(level_collector)
-
-            # Sort levels by elevation
-            levels.sort(key=lambda x: x.ProjectElevation)
-
             # Create a simple class for level items that WPF can bind to
             class LevelItem(object):
                 def __init__(self, name, element_id, elevation=None, is_special=False):
                     self.Name = name
                     self.Id = element_id
-                    self.IdValue = get_elementid_value(element_id) if element_id else INVALID_ID_VALUE
+                    self.IdValue = (
+                        get_elementid_value(element_id)
+                        if element_id
+                        else INVALID_ID_VALUE
+                    )
                     self.Elevation = elevation
                     self.IsSpecial = is_special
 
             # Create level items
             level_items = []
 
+            if self._source_template is not None:
+                # Get relative levels
+                level_items.append(
+                    LevelItem("Current", DB.ElementId(-3), None, True)
+                )
+                level_items.append(
+                    LevelItem("Level Above", DB.ElementId(-2), None, True)
+                )
+                level_items.append(
+                    LevelItem("Level Below", DB.ElementId(-4), None, True)
+                )
+            else:
+                # Add actual levels
+                for level in self._ordered_levels:
+                    level_item = LevelItem(
+                        level.Name, level.Id, level.ProjectElevation, False
+                    )
+                    level_items.append(level_item)
+
             # Add special "Unlimited" option (uses InvalidElementId)
             level_items.append(
                 LevelItem("Unlimited", DB.ElementId.InvalidElementId, None, True)
             )
-
-            # Add actual levels
-            for level in levels:
-                level_item = LevelItem(
-                    level.Name, level.Id, level.ProjectElevation, False
-                )
-                level_items.append(level_item)
 
             self.view_model.available_levels = level_items
             self._levels_populated = True
@@ -304,9 +359,14 @@ class Context(object):
         except Exception as e:
             self.view_model.warning_message = "Error loading levels: {}".format(str(e))
 
-    def _set_current_level_selections(self, view_range):
+    def _set_current_level_selections(self):
         """Set the current level selections based on the view range"""
         try:
+            if self._source_template is None:
+                view_range = self._source_view.GetViewRange()
+            else:
+                view_range = self._source_template.GetViewRange()
+
             # Store current selections
             stored_selections = {}
 
@@ -322,13 +382,15 @@ class Context(object):
 
                 elif plane == DB.PlanViewPlane.CutPlane:
                     # For Cut Plane, show the level name as read-only text
-                    if level_id and level_id != DB.ElementId.InvalidElementId:
+                    if not level_id or level_id == DB.ElementId.InvalidElementId:
+                        self.view_model.cutplane_level_name = "Unlimited"
+                    elif level_id == DB.PlanViewRange.Current:
+                        self.view_model.cutplane_level_name = "Current"
+                    else:
                         level = self.source_view.Document.GetElement(level_id)
                         self.view_model.cutplane_level_name = (
                             level.Name if level else "Unknown"
                         )
-                    else:
-                        self.view_model.cutplane_level_name = "Unlimited"
 
                 elif plane == DB.PlanViewPlane.BottomClipPlane:
                     if level_id and level_id != DB.ElementId.InvalidElementId:
@@ -348,9 +410,15 @@ class Context(object):
             self.view_model.viewdepth_level_id = None
 
             # Then set the actual values
-            self.view_model.topplane_level_id = stored_selections.get("top", INVALID_ID_VALUE)
-            self.view_model.bottomplane_level_id = stored_selections.get("bottom", INVALID_ID_VALUE)
-            self.view_model.viewdepth_level_id = stored_selections.get("viewdepth", INVALID_ID_VALUE)
+            self.view_model.topplane_level_id = stored_selections.get(
+                "top", INVALID_ID_VALUE
+            )
+            self.view_model.bottomplane_level_id = stored_selections.get(
+                "bottom", INVALID_ID_VALUE
+            )
+            self.view_model.viewdepth_level_id = stored_selections.get(
+                "viewdepth", INVALID_ID_VALUE
+            )
 
         except Exception as e:
             self.view_model.warning_message = (
@@ -384,6 +452,11 @@ class Context(object):
             edges, triangles = [], []
 
             if isinstance(self.source_view, DB.ViewPlan):
+                if self._source_template is None:
+                    view_range = self.source_view.GetViewRange()
+                else:
+                    view_range = self._source_template.GetViewRange()
+
                 if (
                     self.active_view.get_Parameter(
                         DB.BuiltInParameter.VIEWER_MODEL_CLIP_BOX_ACTIVE
@@ -394,11 +467,12 @@ class Context(object):
                 else:
                     corners = corners_from_bb(self.source_view.CropBox)
 
-                view_range = self.source_view.GetViewRange()
-
                 # Only populate levels if not already populated
                 if not self._levels_populated:
-                    self._populate_available_levels()
+                    self._populate_level_items()
+
+                view_level_id = self.source_view.GenLevel.Id
+                ordered_level_ids = [l.Id for l in self._ordered_levels]
 
                 for plane in PLANES:
                     _, _, prefix = PLANES[plane]
@@ -411,7 +485,23 @@ class Context(object):
                         self.level_data[plane] = None
                         continue
 
-                    plane_level = self.source_view.Document.GetElement(level_id)
+                    # above
+                    elif get_elementid_value(level_id) == -2:
+                        plane_level = self._ordered_levels[
+                            ordered_level_ids.index(view_level_id) + 1
+                        ]
+                    # current
+                    elif get_elementid_value(level_id) == -3:
+                        plane_level = self._ordered_levels[
+                            ordered_level_ids.index(view_level_id)
+                        ]
+                    # below
+                    elif get_elementid_value(level_id) == -4:
+                        plane_level = self._ordered_levels[
+                            ordered_level_ids.index(view_level_id) - 1
+                        ]
+                    else:
+                        plane_level = self.source_view.Document.GetElement(level_id)
 
                     if not plane_level:
                         self.height_data[plane] = "N/A"
@@ -468,7 +558,7 @@ class Context(object):
                     )
 
                 # Set current level selections AFTER ensuring levels are populated
-                self._set_current_level_selections(view_range)
+                self._set_current_level_selections()
 
             else:
                 crop_bbox = self.source_view.CropBox
@@ -521,19 +611,17 @@ class Context(object):
             )
             self.view_model.can_modify_view = False
         else:
-            can_modify = (
-                isinstance(self.source_view, DB.ViewPlan)
-                and not self.source_view.IsTemplate
-            )
+            can_modify = isinstance(self.source_view, DB.ViewPlan)
             self.view_model.can_modify_view = can_modify
 
-            if self.source_view.IsTemplate:
-                self.view_model.message = "Showing View Range of [{}]\n(View Template - Cannot Modify)".format(
-                    self.source_view.Name
-                )
-            else:
-                self.view_model.message = "Showing View Range of\n[{}]".format(
-                    self.source_view.Name
+            self.view_model.message = "Showing View Range of\n[{}]".format(
+                self.source_view.Name
+            )
+            if self._source_template is not None:
+                self.view_model.message += (
+                    " - ⚠️ View Range driven by Template [{}]".format(
+                        self._source_template.Name
+                    )
                 )
             return True
 
@@ -777,8 +865,8 @@ class MainWindow(forms.WPFWindow):
                             original_level_id
                             and original_level_id != DB.ElementId.InvalidElementId
                         ):
-                            self.DataContext.topplane_level_id = (
-                                get_elementid_value(original_level_id)
+                            self.DataContext.topplane_level_id = get_elementid_value(
+                                original_level_id
                             )
                         else:
                             self.DataContext.topplane_level_id = INVALID_ID_VALUE
@@ -791,7 +879,10 @@ class MainWindow(forms.WPFWindow):
                         ):
                             try:
                                 # Use source_view.Document instead of active_view.Document
-                                if context.source_view and context.source_view.IsValidObject:
+                                if (
+                                    context.source_view
+                                    and context.source_view.IsValidObject
+                                ):
                                     level = context.source_view.Document.GetElement(
                                         original_level_id
                                     )
@@ -810,8 +901,8 @@ class MainWindow(forms.WPFWindow):
                             original_level_id
                             and original_level_id != DB.ElementId.InvalidElementId
                         ):
-                            self.DataContext.bottomplane_level_id = (
-                                get_elementid_value(original_level_id)
+                            self.DataContext.bottomplane_level_id = get_elementid_value(
+                                original_level_id
                             )
                         else:
                             self.DataContext.bottomplane_level_id = INVALID_ID_VALUE
@@ -821,16 +912,15 @@ class MainWindow(forms.WPFWindow):
                             original_level_id
                             and original_level_id != DB.ElementId.InvalidElementId
                         ):
-                            self.DataContext.viewdepth_level_id = (
-                                get_elementid_value(original_level_id)
+                            self.DataContext.viewdepth_level_id = get_elementid_value(
+                                original_level_id
                             )
                         else:
                             self.DataContext.viewdepth_level_id = INVALID_ID_VALUE
             else:
                 # Fallback: Reset level selections to current view range levels if no original data
                 if hasattr(context, "source_view") and context.source_view:
-                    view_range = context.source_view.GetViewRange()
-                    context._set_current_level_selections(view_range)
+                    context._set_current_level_selections()
 
             self.DataContext.warning_message = ""
         except Exception as ex:
@@ -884,6 +974,7 @@ def selection_changed(sender, args):
 @events.handle("doc-changed")
 def doc_changed(sender, args):
     try:
+        context.collect_levels(args.Document)
         affected_ids = list(args.GetModifiedElementIds()) + list(
             args.GetDeletedElementIds()
         )
