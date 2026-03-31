@@ -252,6 +252,19 @@
             "website": "",
             "image": "",
             "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "type": "extension",
+            "rocket_mode_compatible": "True",
+            "name": "T3LabLite",
+            "description": "Set of tools for Revit.",
+            "author": "Tran Tien Thanh",
+            "author_profile": "https://www.linkedin.com/in/sunarch7899/",
+            "url": "https://github.com/thanhtranarch/T3Lab-Lite_RevitTools",
+            "website": "https://t3lab.space/",
+            "image": "",
+            "dependencies": []
         }
     ]
 }
