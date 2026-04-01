@@ -25,6 +25,6 @@ tooltip:
 author: Tamás Déri
 min_revit_version: 2023
 engine:
-  clean: true
+  clean: false
   full_frame: false
   persistent: true
