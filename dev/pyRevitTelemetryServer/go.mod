@@ -8,9 +8,9 @@ require (
 	github.com/docopt/docopt-go v0.0.0-20180111231733-ee0de3bc6815
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/gofrs/uuid v4.4.0+incompatible
-	github.com/gorilla/mux v1.8.0
+	github.com/gorilla/mux v1.8.1
 	github.com/lib/pq v1.12.1
-	github.com/mattn/go-sqlite3 v1.14.8
+	github.com/mattn/go-sqlite3 v1.14.38
 	github.com/pkg/errors v0.9.1
 	github.com/satori/go.uuid v1.2.0
 	pkg.re/essentialkaos/ek.v10 v12.32.0+incompatible
