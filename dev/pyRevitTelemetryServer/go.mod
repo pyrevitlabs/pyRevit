@@ -3,13 +3,13 @@ module pyrevittelemetryserver
 go 1.24.4
 
 require (
-	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
+	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/denisenkom/go-mssqldb v0.11.0
 	github.com/docopt/docopt-go v0.0.0-20180111231733-ee0de3bc6815
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/gofrs/uuid v4.4.0+incompatible
 	github.com/gorilla/mux v1.8.0
-	github.com/lib/pq v1.10.3
+	github.com/lib/pq v1.12.1
 	github.com/mattn/go-sqlite3 v1.14.8
 	github.com/pkg/errors v0.9.1
 	github.com/satori/go.uuid v1.2.0
