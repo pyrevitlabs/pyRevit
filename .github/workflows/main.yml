@@ -1,8 +1,8 @@
 name: pyRevitCI
 on:
-  # WIP / Release: only after merged PRs to develop / master
+  # PR: opened / reopened / closed (merged close runs WIP or Release). Pushes to the PR branch do not trigger (no synchronize).
   pull_request:
-    types: [opened, synchronize, reopened, closed]
+    types: [opened, reopened, closed]
     branches:
       - develop
       - master
@@ -43,7 +43,7 @@ jobs:
         with:
           fetch-depth: 0
           submodules: recursive
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.merged && github.event.pull_request.merge_commit_sha != '' && github.event.pull_request.merge_commit_sha || github.sha }}
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.merge_commit_sha || github.sha }}
 
       - name: Prepare Python 3.14
         uses: actions/setup-python@v6
@@ -235,8 +235,10 @@ jobs:
 
       - name: Increment Version & Commit (Release)
         if: (env.ReleaseRun == 'true' && github.repository == env.MainRepo)
+        shell: bash
         run: |
+          set -e
           git checkout develop
-          git pull --rebase origin develop
+          git pull --rebase origin develop || { echo "Rebase failed — resolve conflicts on develop manually and re-run or bump version locally."; exit 1; }
           pipenv run pyrevit set next-version
           git push origin develop
