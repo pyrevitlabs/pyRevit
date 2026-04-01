@@ -211,21 +211,37 @@ namespace pyRevitLabs.Common {
         }
 
         public static byte[] GetStructuredStorageStream(string filePath, string streamName) {
-            logger.Debug(string.Format("Attempting to read \"{0}\" stream from structured storage file at \"{1}\"",
-                                       streamName, filePath));
+            logger.Debug("Attempting to read \"{0}\" stream from structured storage file at \"{1}\"",
+                         streamName, filePath);
             int res = StgIsStorageFile(filePath);
 
             if (res == 0) {
                 using (var root = RootStorage.OpenRead(filePath)) {
-                    logger.Debug(string.Format("Opened structured storage root at \"{0}\"", filePath));
+                    logger.Debug("Opened structured storage root at \"{0}\"", filePath);
                     if (root.TryOpenStream(streamName, out CfbStream foundStream)) {
                         using (foundStream) {
-                            using (var ms = new MemoryStream()) {
-                                foundStream.CopyTo(ms);
-                                return ms.ToArray();
+                            long len = foundStream.Length;
+                            if (len > int.MaxValue)
+                                throw new NotSupportedException(
+                                    string.Format("Structured storage stream \"{0}\" in \"{1}\" exceeds maximum supported size.",
+                                                  streamName, filePath));
+                            foundStream.Seek(0, SeekOrigin.Begin);
+                            byte[] buffer = new byte[(int)len];
+                            int offset = 0;
+                            int remaining = buffer.Length;
+                            while (remaining > 0) {
+                                int read = foundStream.Read(buffer, offset, remaining);
+                                if (read == 0)
+                                    throw new InvalidDataException(
+                                        string.Format("Structured storage stream \"{0}\" in \"{1}\" ended before declared length.",
+                                                      streamName, filePath));
+                                offset += read;
+                                remaining -= read;
                             }
+                            return buffer;
                         }
                     }
+                    logger.Debug("Stream \"{0}\" not found in structured storage file \"{1}\"", streamName, filePath);
                     return null;
                 }
             }
