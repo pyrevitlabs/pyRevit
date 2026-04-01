@@ -51,10 +51,10 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      - name: Prepare Python 3.10
+      - name: Prepare Python 3.14
         uses: actions/setup-python@v6
         with:
-          python-version: '3.10'
+          python-version: '3.14'
           cache: 'pipenv'
 
       - name: Prepare pipenv
@@ -84,7 +84,7 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Prepare msbuild
-        uses: microsoft/setup-msbuild@v2
+        uses: microsoft/setup-msbuild@v3
 
       - name: Prepare git
         if: (github.repository == env.MainRepo)
@@ -135,7 +135,7 @@ jobs:
       
       - name: Sign files with Trusted Signing (DLLs and EXEs)
         if: (github.repository == env.MainRepo)
-        uses: azure/trusted-signing-action@v1.0.0
+        uses: azure/trusted-signing-action@v1.2.0
         with:
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -145,7 +145,7 @@ jobs:
           certificate-profile-name: ${{ secrets.AZURE_CERT_PROFILE_NAME }}
 
           files-folder: bin/
-          files-folder-filter: pyrevit*.exe,pyrevit*.dll, pyRevit*.dll
+          files-folder-filter: pyrevit*.exe,pyrevit*.dll,pyRevit*.dll
           files-folder-recurse: true
           file-digest: SHA256
           timestamp-rfc3161: http://timestamp.acs.microsoft.com
@@ -157,7 +157,7 @@ jobs:
 
       - name: Sign files with Trusted Signing (installers)
         if: (github.repository == env.MainRepo)
-        uses: azure/trusted-signing-action@v1.0.0
+        uses: azure/trusted-signing-action@v1.2.0
         with:
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -174,7 +174,7 @@ jobs:
           timestamp-digest: SHA256
       
       - name: Upload Installers
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: pyrevit-installers
           path: |

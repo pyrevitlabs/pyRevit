@@ -1,0 +1,38 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <!-- Barre de recherche -->
+    <system:String x:Key="TooltipToggleRegex">Basculer recherche regex / sous-chaîne</system:String>
+
+    <!-- Boutons de sélection -->
+    <system:String x:Key="BtnCheckAll">Tout cocher</system:String>
+    <system:String x:Key="BtnUncheckAll">Tout décocher</system:String>
+    <system:String x:Key="BtnToggleAll">Tout basculer</system:String>
+
+    <!-- En-têtes de colonnes -->
+    <system:String x:Key="ColParameter">Paramètre</system:String>
+    <system:String x:Key="ColValue">Valeur</system:String>
+    <system:String x:Key="ColCategory">Catégorie</system:String>
+
+    <!-- Case à cocher filtre de catégorie -->
+    <system:String x:Key="ChkRestrictCategories">Restreindre la sélection aux catégories d'éléments</system:String>
+    <system:String x:Key="TooltipRestrictCategories">Lorsqu'activé, la sélection rectangle sélectionne uniquement les éléments dont la catégorie correspond aux paramètres cochés</system:String>
+
+    <!-- Boutons de source -->
+    <system:String x:Key="BtnElemParams">Param. Élém.</system:String>
+    <system:String x:Key="TooltipElemParams">Sélectionner un élément et choisir interactivement les paramètres à copier</system:String>
+    <system:String x:Key="BtnViewFilters">Filtres Vue</system:String>
+    <system:String x:Key="TooltipViewFilters">Lire toutes les valeurs de paramètre de filtre d'égalité depuis la vue active</system:String>
+    <system:String x:Key="BtnFilterElem">Filtre+Élém.</system:String>
+    <system:String x:Key="TooltipFilterElem">Lire la valeur de paramètre de filtre la plus commune depuis un élément sélectionné</system:String>
+
+    <!-- Boutons de collage -->
+    <system:String x:Key="BtnPasteOne">Coller un</system:String>
+    <system:String x:Key="TooltipPasteOne">Sélectionner un élément répétitivement et coller les paramètres cochés</system:String>
+    <system:String x:Key="BtnPasteBox">Coller rect.</system:String>
+    <system:String x:Key="TooltipPasteBox">Dessiner un rectangle répétitivement et coller les paramètres cochés dans les éléments contenus</system:String>
+    <system:String x:Key="BtnPasteSel">Coller sél.</system:String>
+    <system:String x:Key="TooltipPasteSel">Coller les paramètres cochés dans la sélection Revit actuelle (une seule fois)</system:String>
+
+</ResourceDictionary>

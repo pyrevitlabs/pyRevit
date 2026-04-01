@@ -1,27 +1,55 @@
 # -*- coding: UTF-8 -*-
+# ── Duplicate-window guard ──────────────────────────────────────────
+# With engine: { persistent: true, clean: false }, the same IronPython
+# engine and scope persist across clicks. script.exit() is safe here —
+# it raises SystemExit which the runner catches without disposing the
+# engine. No new .NET objects created, no engine disposal side effects.
+from pyrevit import script
 
-from pyrevit import script, forms, revit, HOST_APP, DB, UI
+logger = script.get_logger()
+
+VIEWRANGE_WINDOW_KEY = "PYREVIT_VIEWRANGE_WINDOW"
+VIEWRANGE_EXECID_KEY = "PYREVIT_VIEWRANGE_EXECID"
+
+_existing = script.get_envvar(VIEWRANGE_WINDOW_KEY)
+if _existing:
+    try:
+        if _existing.IsVisible:
+            script.exit()
+    except SystemExit:
+        raise
+    except Exception:
+        script.set_envvar(VIEWRANGE_WINDOW_KEY, None)
+        script.set_envvar(VIEWRANGE_EXECID_KEY, None)
+
+# ── Full imports ────────────────────────────────────────────────────
+from pyrevit import forms, revit, HOST_APP, DB, UI, EXEC_PARAMS
 from pyrevit.revit import events
 from pyrevit.framework import Convert, List, Color, SolidColorBrush
 from pyrevit.compat import get_elementid_value_func
 from collections import OrderedDict
 
-
 doc = HOST_APP.doc
 uidoc = HOST_APP.uidoc
-logger = script.get_logger()
 output = script.get_output()
 
-PLANES = OrderedDict([
-    (DB.PlanViewPlane.TopClipPlane, ([0, 255, 0], "Top Clip Plane", "topplane")),
-    (DB.PlanViewPlane.CutPlane, ([255, 0, 0], "Cut Plane", "cutplane")),
-    (DB.PlanViewPlane.BottomClipPlane, ([0, 0, 255], "Bottom Clip Plane", "bottomplane")),
-    (DB.PlanViewPlane.ViewDepthPlane, ([255, 127, 0], "View Depth Plane", "viewdepth")),
-])
+PLANES = OrderedDict(
+    [
+        (DB.PlanViewPlane.TopClipPlane, ([0, 255, 0], "Top Clip Plane", "topplane")),
+        (DB.PlanViewPlane.CutPlane, ([255, 0, 0], "Cut Plane", "cutplane")),
+        (
+            DB.PlanViewPlane.BottomClipPlane,
+            ([0, 0, 255], "Bottom Clip Plane", "bottomplane"),
+        ),
+        (
+            DB.PlanViewPlane.ViewDepthPlane,
+            ([255, 127, 0], "View Depth Plane", "viewdepth"),
+        ),
+    ]
+)
 
 get_elementid_value = get_elementid_value_func()
 INVALID_ID_VALUE = get_elementid_value(DB.ElementId.InvalidElementId)
-
 
 class Context(object):
     def __new__(cls, *args, **kwargs):
@@ -67,17 +95,38 @@ class Context(object):
         if not compare_views(self._source_view, value):
             self._source_view = value
             self._levels_populated = False  # Reset when view changes
+
+            self._source_template = None
+            if (
+                self.source_view is not None
+                and self.source_view.ViewTemplateId != DB.ElementId.InvalidElementId
+            ):
+                template = self.source_view.Document.GetElement(
+                    self.source_view.ViewTemplateId
+                )
+                non_controlled_params = template.GetNonControlledTemplateParameterIds()
+                if (
+                    DB.ElementId(DB.BuiltInParameter.PLAN_VIEW_RANGE)
+                    not in non_controlled_params
+                ):
+                    self._source_template = template
+
             self.context_changed()
 
     def update_view_range(self, new_values, new_levels=None):
         if not self.source_view or not isinstance(self.source_view, DB.ViewPlan):
-            self.view_model.warning_message = "No valid plan view selected"
+            self.view_model.show_error("No valid plan view selected")
             return False
-        if self.source_view.IsTemplate:
-            self.view_model.warning_message = (
-                "Cannot modify view range - this is a view template"
+
+        if self._source_template is not None:
+            dialog_result = forms.alert(
+                "You are about to change a View Template! Are you sure you want to proceed?",
+                ok=False,
+                yes=True,
+                no=True,
             )
-            return False
+            if not dialog_result:
+                return False
 
         events.execute_in_revit_context(
             self._update_view_range_internal, new_values, new_levels
@@ -85,190 +134,142 @@ class Context(object):
         return True
 
     def _update_view_range_internal(self, new_values, new_levels=None):
+        self.view_model.clear_field_errors()
+
+        # ── Build the PlanViewRange in memory (no transaction needed) ──
         try:
-            if not self._validate_view_range_order(new_values, new_levels):
-                return False
-
-            with revit.Transaction("Update View Range", doc=revit.doc):
-                view_range = self.source_view.GetViewRange()
-
-                # First, update levels if provided
-                if new_levels:
-                    for plane, new_level_id in new_levels.items():
-                        current_level_id = view_range.GetLevelId(plane)
-
-                        # Handle Unlimited (InvalidElementId)
-                        if new_level_id == DB.ElementId.InvalidElementId:
-                            # For View Depth, Unlimited is common - set to InvalidElementId
-                            if current_level_id != DB.ElementId.InvalidElementId:
-                                try:
-                                    # Note: Not all planes support InvalidElementId
-                                    # View Depth typically does, others may not
-                                    view_range.SetLevelId(
-                                        plane, DB.ElementId.InvalidElementId
-                                    )
-                                except Exception:
-                                    pass
-                        # Handle regular level changes
-                        elif new_level_id and current_level_id != new_level_id:
-                            try:
-                                view_range.SetLevelId(plane, new_level_id)
-                            except Exception:
-                                pass
-
-                # Then, update offsets (only for planes that have valid levels)
-                for plane, offset_str in new_values.items():
-                    # Skip offset update if level is set to Unlimited
-                    level_id = view_range.GetLevelId(plane)
-                    if not level_id or level_id == DB.ElementId.InvalidElementId:
-                        continue
-
-                    if (
-                        offset_str
-                        and offset_str.strip()
-                        and offset_str != "-"
-                        and offset_str.upper() != "N/A"
-                    ):
-                        try:
-                            offset_display = float(offset_str)
-                            offset_internal = DB.UnitUtils.ConvertToInternalUnits(
-                                offset_display, self.length_unit
-                            )
-                            current_offset = view_range.GetOffset(plane)
-
-                            # Only update if different
-                            if abs(current_offset - offset_internal) > 0.0001:
-                                view_range.SetOffset(plane, offset_internal)
-                        except ValueError:
-                            return False
-
-                # Apply the view range back to the view
-                self.source_view.SetViewRange(view_range)
-                self.context_changed()
-                self.view_model.warning_message = "View range updated successfully"
-                return True
-
+            view_range = self.source_view.GetViewRange()
         except Exception as e:
-            self.view_model.warning_message = "Error updating view range: {}".format(
-                str(e)
+            self.view_model.show_error(
+                "Error reading view range: {}".format(e)
             )
             return False
 
-    def _validate_view_range_order(self, new_values, new_levels=None):
-        try:
-            elevations = {}
-            offset_values = {}
-
-            for plane, offset_str in new_values.items():
-                # Skip validation for N/A values (Unlimited levels)
-                if offset_str and offset_str.upper() == "N/A":
-                    continue
-
-                if offset_str and offset_str.strip() and offset_str != "-":
-                    try:
-                        offset_value = float(offset_str)
-                        offset_values[plane] = offset_value
-
-                        # Use new level if provided, otherwise use current level
-                        level = None
-                        if new_levels and plane in new_levels:
-                            level_id = new_levels[plane]
-                            # Skip validation for Unlimited (InvalidElementId)
-                            if (
-                                not level_id
-                                or level_id == DB.ElementId.InvalidElementId
-                            ):
-                                continue
-                            level = self.source_view.Document.GetElement(level_id)
-
-                        if not level:
-                            level = self.level_data.get(plane)
-
-                        if level:
-                            level_elevation = DB.UnitUtils.ConvertFromInternalUnits(
-                                level.ProjectElevation, self.length_unit
+        # Update levels
+        if new_levels:
+            for plane, new_level_id in new_levels.items():
+                current_level_id = view_range.GetLevelId(plane)
+                if new_level_id == DB.ElementId.InvalidElementId:
+                    if current_level_id != DB.ElementId.InvalidElementId:
+                        try:
+                            view_range.SetLevelId(
+                                plane, DB.ElementId.InvalidElementId
                             )
-                            elevations[plane] = level_elevation + offset_value
-                    except ValueError:
-                        forms.alert(
-                            "Invalid Input Format!\n\nThe value '{}' for {} is not a valid number.\n\n"
-                            "Please enter a numeric value (e.g., 4.5, -2.0, 0)".format(
-                                offset_str, PLANES[plane][1]
-                            ),
-                            title="Invalid Number Format",
-                            warn_icon=True,
-                        )
-                        self.view_model.warning_message = (
-                            "Invalid number format: {}".format(offset_str)
-                        )
-                        return False
+                        except Exception:
+                            pass
+                elif new_level_id and current_level_id != new_level_id:
+                    try:
+                        view_range.SetLevelId(plane, new_level_id)
+                    except Exception:
+                        pass
 
-            # If any plane is set to Unlimited, skip full validation
-            if len(elevations) < 4:
-                return True
-
-            # Check order: Top >= Cut >= Bottom >= ViewDepth
-            checks = [
-                (
-                    DB.PlanViewPlane.TopClipPlane,
-                    DB.PlanViewPlane.CutPlane,
-                    "Top Clip Plane",
-                    "Cut Plane",
-                ),
-                (
-                    DB.PlanViewPlane.CutPlane,
-                    DB.PlanViewPlane.BottomClipPlane,
-                    "Cut Plane",
-                    "Bottom Clip Plane",
-                ),
-                (
-                    DB.PlanViewPlane.BottomClipPlane,
-                    DB.PlanViewPlane.ViewDepthPlane,
-                    "Bottom Clip Plane",
-                    "View Depth Plane",
-                ),
-            ]
-
-            for higher_plane, lower_plane, higher_name, lower_name in checks:
-                higher_elev = elevations.get(higher_plane)
-                lower_elev = elevations.get(lower_plane)
-
-                if (
-                    higher_elev is not None
-                    and lower_elev is not None
-                    and higher_elev < lower_elev
-                ):
-                    forms.alert(
-                        "View Range Order Error!\n\n{} (offset: {:.2f}') must be greater than or equal to {} "
-                        "(offset: {:.2f}').\n\nNote: These are offset values from the associated level.\n\n"
-                        "Correct order (top to bottom):\n1. Top Clip Plane (highest offset)\n2. Cut Plane\n"
-                        "3. Bottom Clip Plane\n4. View Depth Plane (lowest offset)".format(
-                            higher_name,
-                            offset_values.get(higher_plane, 0),
-                            lower_name,
-                            offset_values.get(lower_plane, 0),
-                        ),
-                        title="Invalid View Range",
-                        warn_icon=True,
+        # Update offsets
+        for plane, offset_str in new_values.items():
+            level_id = view_range.GetLevelId(plane)
+            if not level_id or level_id == DB.ElementId.InvalidElementId:
+                continue
+            if (
+                offset_str
+                and offset_str.strip()
+                and offset_str != "-"
+                and offset_str.upper() != "N/A"
+            ):
+                try:
+                    offset_display = float(offset_str)
+                    offset_internal = DB.UnitUtils.ConvertToInternalUnits(
+                        offset_display, self.length_unit
                     )
-                    self.view_model.warning_message = "{} must be >= {}".format(
-                        higher_name, lower_name
+                    current_offset = view_range.GetOffset(plane)
+                    if abs(current_offset - offset_internal) > 0.0001:
+                        view_range.SetOffset(plane, offset_internal)
+                except ValueError:
+                    _, _, prefix = PLANES[plane]
+                    self.view_model.set_field_error(prefix)
+                    self.view_model.show_error(
+                        "Invalid number format in {} field".format(
+                            PLANES[plane][1]
+                        )
                     )
                     return False
 
-            return True
-
-        except Exception as e:
-            self.view_model.warning_message = "Error validating view range: {}".format(
-                str(e)
+        # ── Validate assembled view range (internal units, single pass) ──
+        error_prefixes = self._find_elevation_violations(view_range)
+        if error_prefixes:
+            self.view_model.set_field_error(*error_prefixes)
+            self.view_model.show_error(
+                "Invalid view range: plane elevations must be ordered "
+                "Top \u2265 Cut \u2265 Bottom \u2265 View Depth"
             )
             return False
+
+        # ── Apply to the model inside a transaction ──
+        # try/except wraps the with block so the exception propagates to
+        # revit.Transaction.__exit__ for proper rollback (no ghost Undo).
+        apply_error = None
+        try:
+            with revit.Transaction("Update View Range", doc=revit.doc):
+                self.source_view.SetViewRange(view_range)
+        except Exception as e:
+            apply_error = e
+
+        if apply_error:
+            all_prefixes = [p for _, _, p in PLANES.values()]
+            self.view_model.set_field_error(*all_prefixes)
+            self.view_model.show_error(
+                "Invalid view range: the combination of levels and "
+                "offsets is not allowed by Revit"
+            )
+            return False
+
+        self.context_changed()
+        self.view_model.show_success("View range updated successfully")
+        return True
+
+    def _find_elevation_violations(self, view_range):
+        """Check the assembled view_range for ordering violations.
+
+        Returns a list of prefixes (e.g. ['topplane', 'cutplane']) for
+        planes that are out of order.  Empty list means valid.
+        """
+        ordered_planes = [
+            DB.PlanViewPlane.TopClipPlane,
+            DB.PlanViewPlane.CutPlane,
+            DB.PlanViewPlane.BottomClipPlane,
+            DB.PlanViewPlane.ViewDepthPlane,
+        ]
+        elevations = {}
+        for plane in ordered_planes:
+            level_id = view_range.GetLevelId(plane)
+            if not level_id or level_id == DB.ElementId.InvalidElementId:
+                continue
+            level = self.source_view.Document.GetElement(level_id)
+            if not level:
+                continue
+            elevations[plane] = level.ProjectElevation + view_range.GetOffset(plane)
+
+        # Check each adjacent pair
+        error_planes = set()
+        checks = [
+            (DB.PlanViewPlane.TopClipPlane, DB.PlanViewPlane.CutPlane),
+            (DB.PlanViewPlane.CutPlane, DB.PlanViewPlane.BottomClipPlane),
+            (DB.PlanViewPlane.BottomClipPlane, DB.PlanViewPlane.ViewDepthPlane),
+        ]
+        for higher, lower in checks:
+            if higher in elevations and lower in elevations:
+                if elevations[higher] < elevations[lower] - 0.001:
+                    error_planes.add(higher)
+                    error_planes.add(lower)
+
+        # Map PlanViewPlane enums to prefixes
+        return [PLANES[p][2] for p in error_planes if p in PLANES]
 
     def _populate_available_levels(self):
         """Populate the list of available levels in the project"""
         try:
             # Get all levels in the project
-            level_collector = DB.FilteredElementCollector(self.source_view.Document).OfClass(DB.Level)
+            level_collector = DB.FilteredElementCollector(
+                self.source_view.Document
+            ).OfClass(DB.Level)
             levels = list(level_collector)
 
             # Sort levels by elevation
@@ -279,7 +280,11 @@ class Context(object):
                 def __init__(self, name, element_id, elevation=None, is_special=False):
                     self.Name = name
                     self.Id = element_id
-                    self.IdValue = get_elementid_value(element_id) if element_id else INVALID_ID_VALUE
+                    self.IdValue = (
+                        get_elementid_value(element_id)
+                        if element_id
+                        else INVALID_ID_VALUE
+                    )
                     self.Elevation = elevation
                     self.IsSpecial = is_special
 
@@ -302,7 +307,7 @@ class Context(object):
             self._levels_populated = True
 
         except Exception as e:
-            self.view_model.warning_message = "Error loading levels: {}".format(str(e))
+            self.view_model.show_error("Error loading levels: {}".format(str(e)))
 
     def _set_current_level_selections(self, view_range):
         """Set the current level selections based on the view range"""
@@ -348,12 +353,18 @@ class Context(object):
             self.view_model.viewdepth_level_id = None
 
             # Then set the actual values
-            self.view_model.topplane_level_id = stored_selections.get("top", INVALID_ID_VALUE)
-            self.view_model.bottomplane_level_id = stored_selections.get("bottom", INVALID_ID_VALUE)
-            self.view_model.viewdepth_level_id = stored_selections.get("viewdepth", INVALID_ID_VALUE)
+            self.view_model.topplane_level_id = stored_selections.get(
+                "top", INVALID_ID_VALUE
+            )
+            self.view_model.bottomplane_level_id = stored_selections.get(
+                "bottom", INVALID_ID_VALUE
+            )
+            self.view_model.viewdepth_level_id = stored_selections.get(
+                "viewdepth", INVALID_ID_VALUE
+            )
 
         except Exception as e:
-            self.view_model.warning_message = (
+            self.view_model.show_error(
                 "Error setting level selections: {}".format(str(e))
             )
 
@@ -373,10 +384,15 @@ class Context(object):
             setattr(self.view_model, prefix + "_elevation", "-")
             setattr(self.view_model, prefix + "_new_value", "")
 
-        self.view_model.warning_message = ""
+        self.view_model.clear_warning()
+        self.view_model.clear_field_errors()
 
         if not self.is_valid():
-            server.meshes = None
+            try:
+                server.remove_server()
+            except Exception:
+                pass
+            server.meshes = []
             events.execute_in_revit_context(refresh_active_view)
             return
 
@@ -491,7 +507,17 @@ class Context(object):
                             view_dir_transform.OfPoint(pt) for pt in cut_plane_vertices
                         ]
 
+            # Swap meshes with server removed to prevent Draw Thread
+            # from calling GetBoundingBox during the transition.
+            try:
+                server.remove_server()
+            except Exception:
+                pass
             server.meshes = [revit.dc3dserver.Mesh(edges, triangles)]
+            try:
+                server.add_server()
+            except Exception:
+                pass
             events.execute_in_revit_context(refresh_active_view)
 
         except Exception as ex:
@@ -521,27 +547,52 @@ class Context(object):
             )
             self.view_model.can_modify_view = False
         else:
-            can_modify = (
-                isinstance(self.source_view, DB.ViewPlan)
-                and not self.source_view.IsTemplate
-            )
+            can_modify = isinstance(self.source_view, DB.ViewPlan)
             self.view_model.can_modify_view = can_modify
 
-            if self.source_view.IsTemplate:
-                self.view_model.message = "Showing View Range of [{}]\n(View Template - Cannot Modify)".format(
-                    self.source_view.Name
-                )
-            else:
-                self.view_model.message = "Showing View Range of\n[{}]".format(
-                    self.source_view.Name
+            self.view_model.message = "Showing View Range of\n[{}]".format(
+                self.source_view.Name
+            )
+            if self._source_template is not None:
+                self.view_model.message += (
+                    " - ⚠️ View Range driven by Template [{}]".format(
+                        self._source_template.Name
+                    )
                 )
             return True
 
-
 class MainViewModel(forms.Reactive):
+    # Brushes for field error highlighting
+    _DEFAULT_FIELD_BG = SolidColorBrush(Color.FromArgb(
+        Convert.ToByte(0), Convert.ToByte(255),
+        Convert.ToByte(255), Convert.ToByte(255)))  # Transparent
+    _ERROR_FIELD_BG = SolidColorBrush(Color.FromArgb(
+        Convert.ToByte(255), Convert.ToByte(255),
+        Convert.ToByte(200), Convert.ToByte(200)))  # Light red
+
+    # Warning banner brushes
+    _TRANSPARENT_BG = SolidColorBrush(Color.FromArgb(
+        Convert.ToByte(0), Convert.ToByte(0),
+        Convert.ToByte(0), Convert.ToByte(0)))
+    _ERROR_BANNER_BG = SolidColorBrush(Color.FromArgb(
+        Convert.ToByte(255), Convert.ToByte(254),
+        Convert.ToByte(235), Convert.ToByte(235)))  # Soft red bg
+    _ERROR_BANNER_FG = SolidColorBrush(Color.FromRgb(
+        Convert.ToByte(180), Convert.ToByte(30),
+        Convert.ToByte(30)))  # Dark red text
+    _SUCCESS_BANNER_BG = SolidColorBrush(Color.FromArgb(
+        Convert.ToByte(255), Convert.ToByte(235),
+        Convert.ToByte(250), Convert.ToByte(235)))  # Soft green bg
+    _SUCCESS_BANNER_FG = SolidColorBrush(Color.FromRgb(
+        Convert.ToByte(30), Convert.ToByte(120),
+        Convert.ToByte(30)))  # Dark green text
+
     def __init__(self):
         self._message = None
         self._warning_message = ""
+        self._warning_icon = ""
+        self._warning_bg = self._TRANSPARENT_BG
+        self._warning_fg = self._ERROR_BANNER_FG
         self._can_modify_view = False
 
         # Initialize level-related properties - use INTEGER values for WPF binding
@@ -562,6 +613,49 @@ class MainViewModel(forms.Reactive):
             )
             setattr(self, "_" + prefix + "_elevation", "-")
             setattr(self, "_" + prefix + "_new_value", "")
+            # Per-field error background (bound to TextBox/ComboBox Background)
+            setattr(self, "_" + prefix + "_field_bg", self._DEFAULT_FIELD_BG)
+
+    def clear_field_errors(self):
+        """Reset all field backgrounds to default (no error)."""
+        for _, _, prefix in PLANES.values():
+            setattr(self, prefix + "_field_bg", self._DEFAULT_FIELD_BG)
+
+    def set_field_error(self, *prefixes):
+        """Set the specified field(s) to error highlight."""
+        for prefix in prefixes:
+            setattr(self, prefix + "_field_bg", self._ERROR_FIELD_BG)
+
+    def show_error(self, msg):
+        """Show an error banner with warning icon."""
+        self._warning_icon = "\u26A0"  # ⚠
+        self._warning_bg = self._ERROR_BANNER_BG
+        self._warning_fg = self._ERROR_BANNER_FG
+        # Trigger all bindings
+        self.warning_icon = self._warning_icon
+        self.warning_bg = self._warning_bg
+        self.warning_fg = self._warning_fg
+        self.warning_message = msg
+
+    def show_success(self, msg):
+        """Show a success banner with check icon."""
+        self._warning_icon = "\u2714"  # ✔
+        self._warning_bg = self._SUCCESS_BANNER_BG
+        self._warning_fg = self._SUCCESS_BANNER_FG
+        self.warning_icon = self._warning_icon
+        self.warning_bg = self._warning_bg
+        self.warning_fg = self._warning_fg
+        self.warning_message = msg
+
+    def clear_warning(self):
+        """Hide the warning banner."""
+        self._warning_icon = ""
+        self._warning_bg = self._TRANSPARENT_BG
+        self._warning_fg = self._ERROR_BANNER_FG
+        self.warning_icon = self._warning_icon
+        self.warning_bg = self._warning_bg
+        self.warning_fg = self._warning_fg
+        self.warning_message = ""
 
     @forms.reactive
     def message(self):
@@ -578,6 +672,30 @@ class MainViewModel(forms.Reactive):
     @warning_message.setter
     def warning_message(self, value):
         self._warning_message = value
+
+    @forms.reactive
+    def warning_icon(self):
+        return self._warning_icon
+
+    @warning_icon.setter
+    def warning_icon(self, value):
+        self._warning_icon = value
+
+    @forms.reactive
+    def warning_bg(self):
+        return self._warning_bg
+
+    @warning_bg.setter
+    def warning_bg(self, value):
+        self._warning_bg = value
+
+    @forms.reactive
+    def warning_fg(self):
+        return self._warning_fg
+
+    @warning_fg.setter
+    def warning_fg(self, value):
+        self._warning_fg = value
 
     @forms.reactive
     def can_modify_view(self):
@@ -694,6 +812,38 @@ class MainViewModel(forms.Reactive):
     def viewdepth_new_value(self, value):
         self._viewdepth_new_value = value
 
+    # Per-field error background properties (bound to TextBox/ComboBox Background)
+    @forms.reactive
+    def topplane_field_bg(self):
+        return self._topplane_field_bg
+
+    @topplane_field_bg.setter
+    def topplane_field_bg(self, value):
+        self._topplane_field_bg = value
+
+    @forms.reactive
+    def cutplane_field_bg(self):
+        return self._cutplane_field_bg
+
+    @cutplane_field_bg.setter
+    def cutplane_field_bg(self, value):
+        self._cutplane_field_bg = value
+
+    @forms.reactive
+    def bottomplane_field_bg(self):
+        return self._bottomplane_field_bg
+
+    @bottomplane_field_bg.setter
+    def bottomplane_field_bg(self, value):
+        self._bottomplane_field_bg = value
+
+    @forms.reactive
+    def viewdepth_field_bg(self):
+        return self._viewdepth_field_bg
+
+    @viewdepth_field_bg.setter
+    def viewdepth_field_bg(self, value):
+        self._viewdepth_field_bg = value
 
 class MainWindow(forms.WPFWindow):
     def __init__(self):
@@ -705,13 +855,11 @@ class MainWindow(forms.WPFWindow):
 
     def window_closed(self, sender, args):
         script.save_window_position(self)
-        server.remove_server()
-        events.execute_in_revit_context(refresh_active_view)
-        # Stop all registered events using the events API
-        events.stop_events()
+        events.execute_in_revit_context(_on_close_cleanup)
 
     def apply_changes_click(self, sender, e):
         try:
+            self.DataContext.clear_field_errors()
             new_values = {
                 plane: getattr(self.DataContext, prefix + "_new_value")
                 for plane, (_, _, prefix) in PLANES.items()
@@ -755,8 +903,8 @@ class MainWindow(forms.WPFWindow):
 
             context.update_view_range(new_values, new_levels)
         except Exception as ex:
-            self.DataContext.warning_message = "Error applying changes: {}".format(
-                str(ex)
+            self.DataContext.show_error("Error applying changes: {}".format(
+                str(ex))
             )
 
     def reset_values_click(self, sender, e):
@@ -777,8 +925,8 @@ class MainWindow(forms.WPFWindow):
                             original_level_id
                             and original_level_id != DB.ElementId.InvalidElementId
                         ):
-                            self.DataContext.topplane_level_id = (
-                                get_elementid_value(original_level_id)
+                            self.DataContext.topplane_level_id = get_elementid_value(
+                                original_level_id
                             )
                         else:
                             self.DataContext.topplane_level_id = INVALID_ID_VALUE
@@ -791,7 +939,10 @@ class MainWindow(forms.WPFWindow):
                         ):
                             try:
                                 # Use source_view.Document instead of active_view.Document
-                                if context.source_view and context.source_view.IsValidObject:
+                                if (
+                                    context.source_view
+                                    and context.source_view.IsValidObject
+                                ):
                                     level = context.source_view.Document.GetElement(
                                         original_level_id
                                     )
@@ -810,8 +961,8 @@ class MainWindow(forms.WPFWindow):
                             original_level_id
                             and original_level_id != DB.ElementId.InvalidElementId
                         ):
-                            self.DataContext.bottomplane_level_id = (
-                                get_elementid_value(original_level_id)
+                            self.DataContext.bottomplane_level_id = get_elementid_value(
+                                original_level_id
                             )
                         else:
                             self.DataContext.bottomplane_level_id = INVALID_ID_VALUE
@@ -821,8 +972,8 @@ class MainWindow(forms.WPFWindow):
                             original_level_id
                             and original_level_id != DB.ElementId.InvalidElementId
                         ):
-                            self.DataContext.viewdepth_level_id = (
-                                get_elementid_value(original_level_id)
+                            self.DataContext.viewdepth_level_id = get_elementid_value(
+                                original_level_id
                             )
                         else:
                             self.DataContext.viewdepth_level_id = INVALID_ID_VALUE
@@ -832,71 +983,13 @@ class MainWindow(forms.WPFWindow):
                     view_range = context.source_view.GetViewRange()
                     context._set_current_level_selections(view_range)
 
-            self.DataContext.warning_message = ""
+            self.DataContext.clear_warning()
         except Exception as ex:
-            self.DataContext.warning_message = "Error resetting values: {}".format(
-                str(ex)
+            self.DataContext.show_error("Error resetting values: {}".format(
+                str(ex))
             )
 
-
-# Event handlers are now registered via @events.handle decorators below
-# Old manual subscribe/unsubscribe functions removed in favor of events API
-
-
-def refresh_active_view():
-    try:
-        uidoc = revit.uidoc
-        if not compare_views(uidoc.ActiveView, context.active_view):
-            uidoc.ActiveView = context.active_view
-        uidoc.RefreshActiveView()
-        if context.source_view:
-            uidoc.Selection.SetElementIds(List[DB.ElementId]([context.source_view.Id]))
-    except Exception as ex:
-        logger.exception(ex)
-
-
-@events.handle("view-activated")
-def view_activated(sender, args):
-    try:
-        context.active_view = args.CurrentActiveView
-    except Exception as ex:
-        logger.exception(ex)
-
-
-@events.handle("selection-changed")
-def selection_changed(sender, args):
-    if not args.GetDocument().ActiveView.ViewType == DB.ViewType.ProjectBrowser:
-        return
-
-    try:
-        doc = args.GetDocument()
-        sel_ids = list(args.GetSelectedElements())
-        if len(sel_ids) == 1:
-            sel = doc.GetElement(sel_ids[0])
-            if can_use_view_as_source(sel):
-                context.source_view = sel
-                return
-        context.source_view = None
-    except Exception as ex:
-        logger.exception(ex)
-
-
-@events.handle("doc-changed")
-def doc_changed(sender, args):
-    try:
-        affected_ids = list(args.GetModifiedElementIds()) + list(
-            args.GetDeletedElementIds()
-        )
-        if any(
-            view.Id in affected_ids
-            for view in [context.source_view, context.active_view]
-        ):
-            context.context_changed()
-    except AttributeError:
-        context.context_changed()
-    except Exception as ex:
-        logger.exception(ex)
-
+# ── Helper functions ────────────────────────────────────────────────
 
 def compare_views(view1, view2):
     if not view1 and not view2:
@@ -908,10 +1001,8 @@ def compare_views(view1, view2):
         and view1.Id == view2.Id
     )
 
-
 def can_use_view_as_source(view):
     return isinstance(view, (DB.ViewPlan, DB.ViewSection))
-
 
 def corners_from_bb(bbox):
     transform = bbox.Transform
@@ -925,13 +1016,11 @@ def corners_from_bb(bbox):
     ]
     return [transform.OfPoint(c) for c in corners]
 
-
 def create_edges(vertices, color):
     return [
         revit.dc3dserver.Edge(vertices[i - 1], vertices[i], color)
         for i in range(len(vertices))
     ]
-
 
 def create_triangles(vertices, color):
     return [
@@ -955,11 +1044,96 @@ def create_triangles(vertices, color):
         ),
     ]
 
-
 def get_color_from_plane(plane):
     rgb = PLANES[plane][0]
     return DB.ColorWithTransparency(rgb[0], rgb[1], rgb[2], 180)
 
+def refresh_active_view():
+    try:
+        uidoc = revit.uidoc
+        if not compare_views(uidoc.ActiveView, context.active_view):
+            uidoc.ActiveView = context.active_view
+        uidoc.RefreshActiveView()
+        if context.source_view:
+            uidoc.Selection.SetElementIds(
+                List[DB.ElementId]([context.source_view.Id])
+            )
+    except Exception as ex:
+        logger.exception(ex)
+
+def _on_close_cleanup():
+    """Deferred cleanup in valid Revit API context.
+
+    Order matters:
+    1. Unregister event handlers (using stored exec_id)
+    2. Remove DC3D server (stops Draw Thread calls)
+    3. Refresh view (clears stale rendering)
+    4. Clear window envvar (allows reopening)
+    """
+    try:
+        stored_exec_id = script.get_envvar(VIEWRANGE_EXECID_KEY)
+        if stored_exec_id:
+            events.unregister_exec_handlers(stored_exec_id)
+            script.set_envvar(VIEWRANGE_EXECID_KEY, None)
+    except Exception as ex:
+        logger.error("Error stopping events: {}".format(ex))
+    try:
+        server.remove_server()
+    except Exception as ex:
+        logger.error("Error removing DC3D server: {}".format(ex))
+    try:
+        uidoc = revit.uidoc
+        uidoc.RefreshActiveView()
+    except Exception as ex:
+        logger.error("Error refreshing view: {}".format(ex))
+    # Clear window key AFTER all cleanup is complete, so the guard
+    # blocks re-entry until the server is fully removed.
+    script.set_envvar(VIEWRANGE_WINDOW_KEY, None)
+
+# ── Event handlers & initialization ─────────────────────────────────
+# This code is ONLY reached on the first click. Subsequent clicks
+# hit script.exit() at the top of the file before even importing
+# pyrevit.revit.events, so no .NET ExternalEvent objects are created
+# and no event handlers are re-registered.
+
+@events.handle("view-activated")
+def view_activated(sender, args):
+    try:
+        context.active_view = args.CurrentActiveView
+    except Exception as ex:
+        logger.exception(ex)
+
+@events.handle("selection-changed")
+def selection_changed(sender, args):
+    if not args.GetDocument().ActiveView.ViewType == DB.ViewType.ProjectBrowser:
+        return
+    try:
+        doc = args.GetDocument()
+        sel_ids = list(args.GetSelectedElements())
+        if len(sel_ids) == 1:
+            sel = doc.GetElement(sel_ids[0])
+            if can_use_view_as_source(sel):
+                context.source_view = sel
+                return
+        context.source_view = None
+    except Exception as ex:
+        logger.exception(ex)
+
+@events.handle("doc-changed")
+def doc_changed(sender, args):
+    try:
+        affected_ids = list(args.GetModifiedElementIds()) + list(
+            args.GetDeletedElementIds()
+        )
+        if any(
+            view.Id in affected_ids
+            for view in [context.source_view, context.active_view]
+        ):
+            context.context_changed()
+    except AttributeError:
+        context.context_changed()
+    except Exception as ex:
+        logger.exception(ex)
 
 # Initialize
 server = revit.dc3dserver.Server(register=False)
@@ -969,4 +1143,6 @@ context.active_view = uidoc.ActiveGraphicalView
 
 main_window = MainWindow()
 main_window.DataContext = vm
+script.set_envvar(VIEWRANGE_WINDOW_KEY, main_window)
+script.set_envvar(VIEWRANGE_EXECID_KEY, EXEC_PARAMS.exec_id)
 main_window.show()
