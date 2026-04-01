@@ -1,9 +1,10 @@
 name: pyRevitCI
 on:
-  # when PRs from forked repos are merged
+  # WIP: push to develop; release: push to master after develop→master merge
   push:
     branches:
       - develop
+      - master
     paths:
       - 'bin/**'
       - 'dev/**'
@@ -11,7 +12,7 @@ on:
       - 'pyrevitlib/**'
       - 'release/**'
       - 'site-packages/**'
-  # when PR from develop->master is created
+  # pre-merge validation build (release steps run only on push to master)
   pull_request:
     branches:
       - master
@@ -26,12 +27,13 @@ on:
   workflow_dispatch:
 
 env:
-  ReleaseBranch: "master"
   MainRepo: "pyrevitlabs/pyRevit"
 
 jobs:
   build:
     runs-on: windows-latest
+    env:
+      ReleaseRun: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master' }}
     steps:
       - name: Report Context
         run: |
@@ -99,15 +101,15 @@ jobs:
         run: |
           pipenv run pyrevit set year
 
-      # WIP only
+      # WIP only (push or manual run on develop — not master / not PR validation)
       - name: Update Build Info (WIP)
-        if: (github.base_ref != env.ReleaseBranch && github.repository == env.MainRepo)
+        if: (github.ref == 'refs/heads/develop' && github.repository == env.MainRepo)
         run: |
           pipenv run pyrevit set build wip
 
-      # RELEASE only
+      # RELEASE only (push or manual run on master)
       - name: Update Build Info (Release)
-        if: (github.base_ref == env.ReleaseBranch && github.repository == env.MainRepo)
+        if: (env.ReleaseRun == 'true' && github.repository == env.MainRepo)
         run: |
           pipenv run pyrevit set build release
 
@@ -185,14 +187,14 @@ jobs:
             dist/pyRevit_CLI_${{ steps.installversion.outputs.content }}_admin_signed.msi
             dist/pyrevit-cli.${{ steps.installversion.outputs.content }}.nupkg
       - name: Generate Release Notes (Release)
-        if: (github.base_ref == env.ReleaseBranch && github.repository == env.MainRepo)
+        if: (env.ReleaseRun == 'true' && github.repository == env.MainRepo)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           pipenv run pyrevit report releasenotes > release_notes.md
 
       - name: Commit & Tag Changes (Release)
-        if: (github.base_ref == env.ReleaseBranch && github.repository == env.MainRepo)
+        if: (env.ReleaseRun == 'true' && github.repository == env.MainRepo)
         # configure git and commit changes
         run: |
           pipenv run pyrevit build commit
@@ -201,7 +203,7 @@ jobs:
 
       - name: Publish Release (Release)
         id: publish_release
-        if: (github.base_ref == env.ReleaseBranch && github.repository == env.MainRepo)
+        if: (env.ReleaseRun == 'true' && github.repository == env.MainRepo)
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -220,19 +222,10 @@ jobs:
             dist/pyrevit-cli.${{ steps.installversion.outputs.content }}.nupkg
 
       - name: Publish Choco Packages (Release)
-        if: (github.base_ref == env.ReleaseBranch && github.repository == env.MainRepo)
+        if: (env.ReleaseRun == 'true' && github.repository == env.MainRepo)
         run: |
           choco apikey --key ${{ secrets.CHOCO_TOKEN}} --source https://push.chocolatey.org/
           choco push dist/pyrevit-cli.${{ steps.installversion.outputs.content }}.nupkg -s https://push.chocolatey.org/
-
-      - name: Merge To Master (Release)
-        if: (github.base_ref == env.ReleaseBranch && github.repository == env.MainRepo)
-        # configure git and commit changes
-        run: |
-          git checkout ${{ github.base_ref }}
-          git merge ${{ github.head_ref }}
-          git push
-          git checkout ${{ github.head_ref }}
 
       - name: Notify Issue Threads (WIP)
         if: (github.ref == 'refs/heads/develop' && github.repository == env.MainRepo)
@@ -242,14 +235,16 @@ jobs:
           pipenv run pyrevit notify wip https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
       - name: Notify Issue Threads (Release)
-        if: (github.base_ref == env.ReleaseBranch && github.repository == env.MainRepo)
+        if: (env.ReleaseRun == 'true' && github.repository == env.MainRepo)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           pipenv run pyrevit notify release ${{ steps.publish_release.outputs.url }}
 
       - name: Increment Version & Commit (Release)
-        if: (github.base_ref == env.ReleaseBranch && github.repository == env.MainRepo)
+        if: (env.ReleaseRun == 'true' && github.repository == env.MainRepo)
         run: |
+          git checkout develop
+          git pull origin develop
           pipenv run pyrevit set next-version
-          git push
+          git push origin develop
