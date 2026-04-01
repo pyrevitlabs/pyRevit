@@ -16,6 +16,12 @@ namespace pyRevitAssemblyBuilder.UIManager
         UIApplication UIApplication { get; }
 
         /// <summary>
+        /// Gets whether rocket mode is enabled.
+        /// When true, non-critical startup work is skipped and engine caching is used for compatible extensions.
+        /// </summary>
+        bool RocketMode { get; }
+
+        /// <summary>
         /// Builds the UI for the specified extension using the provided assembly information.
         /// </summary>
         /// <param name="extension">The parsed extension containing UI component definitions.</param>
