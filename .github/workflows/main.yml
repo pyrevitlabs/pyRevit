@@ -1,7 +1,8 @@
 name: pyRevitCI
 on:
-  # WIP: push to develop; release: push to master after develop→master merge
-  push:
+  # WIP / Release: only after merged PRs to develop / master
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
     branches:
       - develop
       - master
@@ -12,18 +13,6 @@ on:
       - 'pyrevitlib/**'
       - 'release/**'
       - 'site-packages/**'
-  # pre-merge validation build (release steps run only on push to master)
-  pull_request:
-    branches:
-      - master
-    paths:
-      - 'bin/**'
-      - 'dev/**'
-      - 'extensions/**'
-      - 'pyrevitlib/**'
-      - 'release/**'
-      - 'site-packages/**'
-  # manual run
   workflow_dispatch:
 
 env:
@@ -31,9 +20,11 @@ env:
 
 jobs:
   build:
+    if: ${{ github.event_name != 'pull_request' || github.event.action != 'closed' || github.event.pull_request.merged }}
     runs-on: windows-latest
     env:
-      ReleaseRun: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master' }}
+      WipRun: ${{ github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged && github.base_ref == 'develop' }}
+      ReleaseRun: ${{ (github.event_name == 'pull_request' && github.event.action == 'closed' && github.event.pull_request.merged && github.base_ref == 'master') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master') }}
     steps:
       - name: Report Context
         run: |
@@ -52,6 +43,7 @@ jobs:
         with:
           fetch-depth: 0
           submodules: recursive
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.merged && github.event.pull_request.merge_commit_sha != '' && github.event.pull_request.merge_commit_sha || github.sha }}
 
       - name: Prepare Python 3.14
         uses: actions/setup-python@v6
@@ -101,13 +93,13 @@ jobs:
         run: |
           pipenv run pyrevit set year
 
-      # WIP only (push or manual run on develop — not master / not PR validation)
+      # WIP only: merged PR into develop
       - name: Update Build Info (WIP)
-        if: (github.ref == 'refs/heads/develop' && github.repository == env.MainRepo)
+        if: (env.WipRun == 'true' && github.repository == env.MainRepo)
         run: |
           pipenv run pyrevit set build wip
 
-      # RELEASE only (push or manual run on master)
+      # RELEASE only: merged PR into master, or workflow_dispatch on master
       - name: Update Build Info (Release)
         if: (env.ReleaseRun == 'true' && github.repository == env.MainRepo)
         run: |
@@ -228,7 +220,7 @@ jobs:
           choco push dist/pyrevit-cli.${{ steps.installversion.outputs.content }}.nupkg -s https://push.chocolatey.org/
 
       - name: Notify Issue Threads (WIP)
-        if: (github.ref == 'refs/heads/develop' && github.repository == env.MainRepo)
+        if: (env.WipRun == 'true' && github.repository == env.MainRepo)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -245,6 +237,6 @@ jobs:
         if: (env.ReleaseRun == 'true' && github.repository == env.MainRepo)
         run: |
           git checkout develop
-          git pull origin develop
+          git pull --rebase origin develop
           pipenv run pyrevit set next-version
           git push origin develop
