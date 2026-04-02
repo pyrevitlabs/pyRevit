@@ -63,7 +63,7 @@ def _ensure_path_registered(dest_path):
 
     normalized_existing = [os.path.normcase(os.path.normpath(d)) for d in raw_dirs]
     if norm_dest not in normalized_existing:
-        raw_dirs.append(norm_dest)
+        raw_dirs.append(dest_path)
         user_config.set_thirdparty_ext_root_dirs(raw_dirs)
         user_config.save_changes()
 
