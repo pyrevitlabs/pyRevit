@@ -54,8 +54,6 @@ def _ensure_path_registered(dest_path):
         # fall back to normal registration logic.
         pass
 
-    norm_dest = os.path.normpath(dest_path)
-
     # Prefer the raw configured list to avoid silently dropping offline paths.
     try:
         raw_dirs = list(user_config.thirdparty_ext_root_dirs or [])
@@ -63,7 +61,7 @@ def _ensure_path_registered(dest_path):
         # Fallback for older configs: use existing helper (may filter non-existent).
         raw_dirs = user_config.get_thirdparty_ext_root_dirs(include_default=False)
 
-    normalized_existing = [os.path.normpath(d) for d in raw_dirs]
+    normalized_existing = [os.path.normcase(os.path.normpath(d)) for d in raw_dirs]
     if norm_dest not in normalized_existing:
         raw_dirs.append(norm_dest)
         user_config.set_thirdparty_ext_root_dirs(raw_dirs)
