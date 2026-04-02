@@ -29,6 +29,12 @@ def _ensure_path_registered(dest_path):
 
     Avoid explicitly registering the implicit default third-party extensions
     directory in the Custom Extension Directories list.
+
+    Note: This function must not use get_thirdparty_ext_root_dirs() as the sole
+    source of truth, since that helper may filter out non-existent paths (e.g.
+    network locations that are temporarily offline). We therefore read the raw
+    configured list from user_config when available, and only fall back to the
+    helper for backward compatibility.
     """
     # Normalize destination for reliable comparison across platforms
     norm_dest = os.path.normcase(os.path.normpath(dest_path))
@@ -48,14 +54,6 @@ def _ensure_path_registered(dest_path):
         # fall back to normal registration logic.
         pass
 
-
-    Note:
-        This function must *not* use get_thirdparty_ext_root_dirs() as the source
-        of truth, since that helper may filter out non-existent paths (e.g. network
-        locations that are temporarily offline). We therefore read the raw configured
-        list from user_config when available, and only fall back to the helper for
-        backward compatibility.
-    """
     norm_dest = os.path.normpath(dest_path)
 
     # Prefer the raw configured list to avoid silently dropping offline paths.
