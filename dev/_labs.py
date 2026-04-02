@@ -91,7 +91,10 @@ def _merge_publish_into_bin(source_root: str, dest_bin: str) -> None:
         dest_dir = dest_bin if rel == "." else op.join(dest_bin, rel)
         os.makedirs(dest_dir, exist_ok=True)
         for name in files:
-            shutil.copy2(op.join(root, name), op.join(dest_dir, name))
+            dest_file = op.join(dest_dir, name)
+            if op.exists(dest_file):
+                print(f"  [merge] overwriting {op.relpath(dest_file, dest_bin)}")
+            shutil.copy2(op.join(root, name), dest_file)
 
 
 def build_deps(_: Dict[str, str]):
