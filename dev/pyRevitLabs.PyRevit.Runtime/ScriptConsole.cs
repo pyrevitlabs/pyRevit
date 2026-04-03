@@ -171,6 +171,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private DispatcherTimer _animationTimer;
         private System.Windows.Forms.HtmlElement _lastDocumentBody = null;
         private UIApplication _uiApp;
+        private ScriptConsoleLowLevelKeyHook _keyHook;
 
         private List<ScriptConsoleDebugger> _supportedDebuggers =
             new List<ScriptConsoleDebugger> {
@@ -803,12 +804,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private void Window_Loaded(object sender, System.EventArgs e) {
             var outputWindow = (ScriptConsole)sender;
+            // Install low-level keyboard hook for Ctrl+C/Ctrl+A support.
+            // Installed here (not in constructor) so Window_Closing can always dispose it.
+            // Fix for https://github.com/pyrevitlabs/pyRevit/issues/1729
+            _keyHook = new ScriptConsoleLowLevelKeyHook(this);
             ScriptConsoleManager.AppendToOutputWindowList(this);
             ApplyCloseOthersConfig();
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
             var outputWindow = (ScriptConsole)sender;
+            outputWindow._keyHook?.Dispose();
 
             outputWindow.stdinBar.CancelRead();
 
@@ -968,6 +974,79 @@ namespace PyRevitLabs.PyRevit.Runtime {
             var notif = new ToolTip() { Content = "Copied to Clipboard" };
             notif.StaysOpen = false;
             notif.IsOpen = true;
+        }
+
+        /// <summary>
+        /// Low-level keyboard hook that intercepts Ctrl+C/Ctrl+A before Revit's
+        /// accelerator table consumes them. Revit calls IOleInPlaceActiveObject
+        /// .TranslateAccelerator in its message loop, which processes Ctrl+C for
+        /// its own Copy command before WPF events, WinForms events, IMessageFilter,
+        /// or JavaScript onkeydown ever see the keystroke. WH_KEYBOARD_LL fires
+        /// at the OS level before any of this processing occurs.
+        /// Fix for https://github.com/pyrevitlabs/pyRevit/issues/1729
+        /// </summary>
+        private class ScriptConsoleLowLevelKeyHook : IDisposable {
+            private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
+
+            [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+            private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
+
+            [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
+            private static extern bool UnhookWindowsHookEx(IntPtr hhk);
+
+            [System.Runtime.InteropServices.DllImport("user32.dll")]
+            private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+
+            [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+            private static extern IntPtr GetModuleHandle(string lpModuleName);
+
+            private const int WH_KEYBOARD_LL = 13;
+            private const int WM_KEYDOWN = 0x0100;
+            private const int VK_C = 0x43;
+            private const int VK_A = 0x41;
+
+            private IntPtr _hookId = IntPtr.Zero;
+            private readonly ScriptConsole _console;
+            private readonly LowLevelKeyboardProc _proc;
+
+            public ScriptConsoleLowLevelKeyHook(ScriptConsole console) {
+                _console = console;
+                _proc = HookCallback;
+                _hookId = SetWindowsHookEx(WH_KEYBOARD_LL, _proc,
+                    GetModuleHandle(null), 0);
+                if (_hookId == IntPtr.Zero)
+                    System.Diagnostics.Debug.WriteLine("[ScriptConsoleLowLevelKeyHook] SetWindowsHookEx failed to install keyboard hook.");
+            }
+
+            private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam) {
+                if (nCode >= 0 && wParam == (IntPtr)WM_KEYDOWN) {
+                    int vkCode = System.Runtime.InteropServices.Marshal.ReadInt32(lParam);
+                    bool ctrl = (System.Windows.Forms.Control.ModifierKeys & System.Windows.Forms.Keys.Control) != 0;
+
+                    if (ctrl && (vkCode == VK_C || vkCode == VK_A) &&
+                        _console.IsActive && _console.renderer != null &&
+                        _console.renderer.ContainsFocus &&
+                        _console.ActiveDocument != null) {
+                        try {
+                            if (vkCode == VK_C)
+                                _console.ActiveDocument.ExecCommand("Copy", false, null);
+                            else
+                                _console.ActiveDocument.ExecCommand("SelectAll", false, null);
+                        } catch (Exception ex) {
+                            System.Diagnostics.Debug.WriteLine($"[ScriptConsoleLowLevelKeyHook] ExecCommand failed: {ex.Message}");
+                        }
+                        return (IntPtr)1;
+                    }
+                }
+                return CallNextHookEx(_hookId, nCode, wParam, lParam);
+            }
+
+            public void Dispose() {
+                if (_hookId != IntPtr.Zero) {
+                    UnhookWindowsHookEx(_hookId);
+                    _hookId = IntPtr.Zero;
+                }
+            }
         }
 
         private void CollapseWindow() {
