@@ -68,8 +68,15 @@ def _ensure_path_registered(dest_path):
     normalized_existing = [os.path.normcase(os.path.normpath(d)) for d in raw_dirs]
     if norm_dest not in normalized_existing:
         raw_dirs.append(dest_path)
-        user_config.set_thirdparty_ext_root_dirs(raw_dirs)
-        user_config.save_changes()
+        try:
+            from pyrevit.userconfig import CONSTS
+            user_config.core.set_option(
+                CONSTS.ConfigsUserExtensionsKey,
+                [os.path.normpath(x) for x in raw_dirs]
+            )
+            user_config.save_changes()
+        except Exception as write_err:
+            logger.error('Error saving extension path. | %s', write_err)
 
 def _get_default_ext_dir():
     """Return the best default extension installation directory."""
