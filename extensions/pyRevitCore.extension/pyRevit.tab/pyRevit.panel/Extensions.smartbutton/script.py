@@ -57,19 +57,20 @@ def _ensure_path_registered(dest_path):
     # Read the raw configured list to avoid silently dropping offline paths.
     # get_thirdparty_ext_root_dirs() filters by op.exists(), which would
     # remove temporarily-offline network shares when writing back.
+    from pyrevit.userconfig import CONSTS
     try:
-        from pyrevit.userconfig import CONSTS
         raw_dirs = list(user_config.core.get_option(
             CONSTS.ConfigsUserExtensionsKey, default_value=[]))
-    except Exception:
-        # Fallback: use existing helper (may filter non-existent).
+    except Exception as read_err:
+        logger.debug('Error reading raw extension dirs, falling back to helper. | %s', read_err)
         raw_dirs = user_config.get_thirdparty_ext_root_dirs(include_default=False)
 
     normalized_existing = [os.path.normcase(os.path.normpath(d)) for d in raw_dirs]
     if norm_dest not in normalized_existing:
         raw_dirs.append(dest_path)
+        # Write directly to preserve offline paths; set_thirdparty_ext_root_dirs
+        # would reject any path that doesn't currently exist on disk.
         try:
-            from pyrevit.userconfig import CONSTS
             user_config.core.set_option(
                 CONSTS.ConfigsUserExtensionsKey,
                 [os.path.normpath(x) for x in raw_dirs]
