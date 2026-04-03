@@ -12,7 +12,7 @@ from pyrevit import EXEC_PARAMS
 from pyrevit import extensions as exts
 import pyrevit.extensions.extpackages as extpkgs
 
-from pyrevit.userconfig import user_config
+from pyrevit.userconfig import user_config, CONSTS
 
 import pyrevitcore_globals
 
@@ -57,10 +57,9 @@ def _ensure_path_registered(dest_path):
     # Read the raw configured list to avoid silently dropping offline paths.
     # get_thirdparty_ext_root_dirs() filters by op.exists(), which would
     # remove temporarily-offline network shares when writing back.
-    from pyrevit.userconfig import CONSTS
     try:
-        raw_dirs = list(user_config.core.get_option(
-            CONSTS.ConfigsUserExtensionsKey, default_value=[]))
+        raw_dirs = [os.path.expandvars(d) for d in user_config.core.get_option(
+            CONSTS.ConfigsUserExtensionsKey, default_value=[])]
     except Exception as read_err:
         logger.debug('Error reading raw extension dirs, falling back to helper. | %s', read_err)
         raw_dirs = user_config.get_thirdparty_ext_root_dirs(include_default=False)
