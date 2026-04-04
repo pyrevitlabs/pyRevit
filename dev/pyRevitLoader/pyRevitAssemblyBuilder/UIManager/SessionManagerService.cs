@@ -264,6 +264,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             
             // Cache bin directory and pyRevit root for repeated use
             _binDir = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            _pyRevitRoot = FindPyRevitRoot(_binDir);
             
             // Cache reflection types and methods for startup script execution - HUGE performance boost
             _scriptDataType = _runtimeAssembly.GetType("PyRevitLabs.PyRevit.Runtime.ScriptData");
