@@ -170,11 +170,12 @@ def format_length_value(value):
 @events.handle("view-activated")
 def on_view_or_doc_changed(sender, args):
     try:
-        if revit.doc != doc:
-            initialize_globals()
         if not sb_form or not sb_form.chkAutoupdate.IsChecked:
             return
-        sb_form.Dispatcher.Invoke(System.Action(sb_form.update_info))
+        if revit.doc != doc:
+            initialize_globals()
+            sb_form.dispatch(sb_form.update_grids_and_levels)
+        sb_form.dispatch(sb_form.update_info)
         logger.info("Form updated due to view or document change.")
     except Exception as ex:
         logger.warning("Failed to update form: {}".format(ex))
@@ -201,8 +202,9 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
         self.current_view = doc.ActiveView
         self.current_length_unit = length_unit
-        self.all_levels = get_all_levels(doc, self.chkIncludeLinks.IsChecked)
-        self.all_grids = get_all_grids(doc, self.chkIncludeLinks.IsChecked)
+        self.all_levels = None
+        self.all_grids = None
+        self.update_grids_and_levels()
         self.preview_server = None
 
         # Initialize DC3D Server
@@ -255,6 +257,11 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         self.btnBottomDownDropdown.Visibility = visibility
         self.btnBoxUpDropdown.Visibility = visibility
         self.btnBoxDownDropdown.Visibility = visibility
+
+    def update_grids_and_levels(self):
+        """Updates grids and levels"""
+        self.all_levels = get_all_levels(doc, self.chkIncludeLinks.IsChecked)
+        self.all_grids = get_all_grids(doc, self.chkIncludeLinks.IsChecked)
 
     def populate_level_menu(self, menu, direction, target):
         """Populate a level menu with all available levels in the given direction.
@@ -1783,8 +1790,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
     def chkIncludeLinks_checked(self, sender, e):
         """Refresh levels and grids when checkbox is toggled."""
-        self.all_levels = get_all_levels(doc, self.chkIncludeLinks.IsChecked)
-        self.all_grids = get_all_grids(doc, self.chkIncludeLinks.IsChecked)
+        self.update_grids_and_levels()
         self.update_info()
 
     # Grid Navigation Button Handlers
