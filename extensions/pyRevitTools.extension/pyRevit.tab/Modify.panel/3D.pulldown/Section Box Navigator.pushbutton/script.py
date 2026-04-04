@@ -170,11 +170,12 @@ def format_length_value(value):
 @events.handle("view-activated")
 def on_view_or_doc_changed(sender, args):
     try:
-        if not sb_form or not sb_form.chkAutoupdate.IsChecked:
-            return
         if revit.doc != doc:
             initialize_globals()
-            sb_form.Dispatcher.Invoke(System.Action(sb_form.update_grids_and_levels))
+            if sb_form:
+                sb_form.Dispatcher.Invoke(System.Action(sb_form.update_grids_and_levels))
+        if not sb_form or not sb_form.chkAutoupdate.IsChecked:
+            return
         sb_form.Dispatcher.Invoke(System.Action(sb_form.update_info))
         logger.info("Form updated due to view or document change.")
     except Exception as ex:
@@ -368,6 +369,10 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
     def update_info(self):
         """Update the information display."""
         try:
+            # I assume the event handler is sometimes faster than the init, causing a initial error message
+            # therefore safeguard with:
+            if not hasattr(self, "current_view"):
+                return
             last_view = self.current_view.Id
             self.current_view = revit.active_view
 
