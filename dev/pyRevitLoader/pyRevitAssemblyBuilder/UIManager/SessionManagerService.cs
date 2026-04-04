@@ -529,7 +529,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             return exists;
         }
         
-        private static string? FindPyRevitRoot(params string?[] hintPaths)
+        internal static string? FindPyRevitRoot(params string?[] hintPaths)
         {
             foreach (var hint in hintPaths)
             {

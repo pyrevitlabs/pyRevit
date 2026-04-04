@@ -128,7 +128,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             }
         }
 
-        private static string ReadPyRevitVersion(string pyRevitRoot)
+        internal static string ReadPyRevitVersion(string pyRevitRoot)
         {
             if (string.IsNullOrEmpty(pyRevitRoot))
                 return "Unknown";
@@ -144,7 +144,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             return "Unknown";
         }
 
-        private static string ReadIPYVersion(string pyRevitRoot)
+        internal static string ReadIPYVersion(string pyRevitRoot)
         {
             // IronPython engines live under bin/ inside the repo root as well as beside this DLL.
             // Check both the bin/ folder of the repo and the directory of the executing assembly.
