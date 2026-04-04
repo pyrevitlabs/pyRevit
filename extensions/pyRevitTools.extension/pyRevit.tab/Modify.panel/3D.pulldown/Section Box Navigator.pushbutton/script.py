@@ -299,7 +299,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 break
 
             levels.append(next_level)
-            current_elevation = next_level.Elevation
+            current_elevation = next_level.ProjectElevation
 
             # Limit to reasonable number of levels
             if len(levels) >= 20:
@@ -312,14 +312,14 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
             # Format level name and elevation
             level_name = level.Name
-            level_elev = format_length_value(level.Elevation)
+            level_elev = format_length_value(level.ProjectElevation)
             btn.Content = "{0} ({1})".format(level_name, level_elev)
 
             # Store level info in Tag
             btn.Tag = {
                 "target": target,
                 "direction": direction,
-                "elevation": level.Elevation,
+                "elevation": level.ProjectElevation,
             }
 
             # Wire up click and hover events
@@ -639,13 +639,13 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                         )
                     return None
 
-                top_distance = next_top_level.Elevation - info["transformed_max"].Z
+                top_distance = next_top_level.ProjectElevation - info["transformed_max"].Z
                 bottom_distance = (
-                    next_bottom_level.Elevation - info["transformed_min"].Z
+                    next_bottom_level.ProjectElevation - info["transformed_min"].Z
                 )
 
                 # Validate box dimensions
-                if next_top_level.Elevation <= next_bottom_level.Elevation:
+                if next_top_level.ProjectElevation <= next_bottom_level.ProjectElevation:
                     if not do_not_apply:
                         self.show_status_message(
                             1, self.get_locale_string("WouldCreateInvalidBox"), "error"
@@ -671,10 +671,10 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                         )
                     return None
 
-                top_distance = next_level.Elevation - info["transformed_max"].Z
+                top_distance = next_level.ProjectElevation - info["transformed_max"].Z
 
                 # Validate won't go below bottom
-                if next_level.Elevation <= info["transformed_min"].Z:
+                if next_level.ProjectElevation <= info["transformed_min"].Z:
                     if not do_not_apply:
                         self.show_status_message(
                             1, self.get_locale_string("WouldCreateInvalidBox"), "error"
@@ -700,10 +700,10 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                         )
                     return None
 
-                bottom_distance = next_level.Elevation - info["transformed_min"].Z
+                bottom_distance = next_level.ProjectElevation - info["transformed_min"].Z
 
                 # Validate won't go above top
-                if next_level.Elevation >= info["transformed_max"].Z:
+                if next_level.ProjectElevation >= info["transformed_max"].Z:
                     if not do_not_apply:
                         self.show_status_message(
                             1, self.get_locale_string("WouldCreateInvalidBox"), "error"
