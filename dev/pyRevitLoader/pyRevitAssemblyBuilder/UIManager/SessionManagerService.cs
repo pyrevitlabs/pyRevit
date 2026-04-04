@@ -266,6 +266,11 @@ namespace pyRevitAssemblyBuilder.SessionManager
             _binDir = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             _pyRevitRoot = FindPyRevitRoot(_binDir);
             
+            if (_pyRevitRoot != null)
+                _logger.Debug($"pyRevit root resolved to: {_pyRevitRoot}");
+            else
+                _logger.Debug("pyRevit root could not be resolved from bin directory; will retry during BuildSearchPaths");
+            
             // Cache reflection types and methods for startup script execution - HUGE performance boost
             _scriptDataType = _runtimeAssembly.GetType("PyRevitLabs.PyRevit.Runtime.ScriptData");
             _scriptRuntimeConfigsType = _runtimeAssembly.GetType("PyRevitLabs.PyRevit.Runtime.ScriptRuntimeConfigs");
