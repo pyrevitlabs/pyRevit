@@ -62,6 +62,7 @@
     <Compile Include="ScriptMetadataParsingTest.cs" />
     <Compile Include="VersionFilteringTests.cs" />
     <Compile Include="EnvDictionarySeederTests.cs" />
+    <Compile Include="PyRevitRootResolutionTests.cs" />
   </ItemGroup>
 
   <ItemGroup>
