@@ -174,8 +174,8 @@ def on_view_or_doc_changed(sender, args):
             return
         if revit.doc != doc:
             initialize_globals()
-            sb_form.dispatch(sb_form.update_grids_and_levels)
-        sb_form.dispatch(sb_form.update_info)
+            sb_form.Dispatcher.Invoke(System.Action(sb_form.update_grids_and_levels))
+        sb_form.Dispatcher.Invoke(System.Action(sb_form.update_info))
         logger.info("Form updated due to view or document change.")
     except Exception as ex:
         logger.warning("Failed to update form: {}".format(ex))
@@ -200,7 +200,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         self.rbGrid.IsChecked = my_config.get_option("rbGrid_state", True)
         self.rbGridNudge.IsChecked = not self.rbGrid.IsChecked
 
-        self.current_view = doc.ActiveView
+        self.current_view = revit.active_view
         self.current_length_unit = length_unit
         self.all_levels = None
         self.all_grids = None
@@ -314,8 +314,25 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
         # Create buttons for each level
         for level in levels:
+            level_elev = level.ProjectElevation
+
+            is_valid = True
+
+            if target == "top":
+                if level_elev <= info["transformed_min"].Z:
+                    is_valid = False
+
+            elif target == "bottom":
+                if level_elev >= info["transformed_max"].Z:
+                    is_valid = False
+
             btn = Controls.Button()
             btn.Style = self.FindResource("LevelMenuItemStyle")
+
+            # Disable buttons for invalid levels
+            btn.IsEnabled = is_valid
+            if not is_valid:
+                btn.Opacity = 0.5
 
             # Format level name and elevation
             level_name = level.Name
@@ -352,7 +369,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         """Update the information display."""
         try:
             last_view = self.current_view.Id
-            self.current_view = doc.ActiveView
+            self.current_view = revit.active_view
 
             if self.current_length_unit != length_unit:
                 self.current_length_unit = length_unit
@@ -1621,7 +1638,6 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
     def btn_align_box_to_view_click(self, sender, e):
         """Align section box to a selected view."""
-        self.current_view = doc.ActiveView
         # Select the view to align
         if isinstance(self.current_view, DB.View3D):
             selected_view = forms.select_views(
