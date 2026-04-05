@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Diagnostics;
 using System.Reflection;
 using Autodesk.Revit.UI;
 using pyRevitExtensionParser;
@@ -128,7 +129,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             }
         }
 
-        private static string ReadPyRevitVersion(string pyRevitRoot)
+        internal static string ReadPyRevitVersion(string pyRevitRoot)
         {
             if (string.IsNullOrEmpty(pyRevitRoot))
                 return "Unknown";
@@ -144,33 +145,46 @@ namespace pyRevitAssemblyBuilder.SessionManager
             return "Unknown";
         }
 
-        private static string ReadIPYVersion(string pyRevitRoot)
+        internal static string ReadIPYVersion(string pyRevitRoot)
         {
-            // IronPython engines live under bin/ inside the repo root as well as beside this DLL.
-            // Check both the bin/ folder of the repo and the directory of the executing assembly.
+            // IronPython engines live under bin/{netcore|netfx}/engines/{IPY342|IPY2712PR}/.
+            // IPY342 ships as "IronPython.dll"; IPY2712PR ships as "pyRevitLabs.IronPython.dll".
+            // Check the executing assembly's directory FIRST — it sits in the active engine
+            // folder, so its sibling IronPython DLL is the one actually in use.  Fall back to
+            // the repo engine directories if the executing assembly path is unavailable.
             var candidateDirs = new List<string>();
 
-            if (!string.IsNullOrEmpty(pyRevitRoot))
-            {
-                candidateDirs.Add(Path.Combine(pyRevitRoot, "bin", "IPY342"));
-                candidateDirs.Add(Path.Combine(pyRevitRoot, "bin", "IPY2712PR"));
-                candidateDirs.Add(Path.Combine(pyRevitRoot, "bin"));
-            }
-
+            // Priority 1: active engine directory (same folder as this DLL)
             var selfDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             if (!string.IsNullOrEmpty(selfDir))
                 candidateDirs.Add(selfDir);
 
+            // Priority 2: all known engine directories under the repo root
+            if (!string.IsNullOrEmpty(pyRevitRoot))
+            {
+                foreach (var net in new[] { "netcore", "netfx" })
+                {
+                    candidateDirs.Add(Path.Combine(pyRevitRoot, "bin", net, "engines", "IPY342"));
+                    candidateDirs.Add(Path.Combine(pyRevitRoot, "bin", net, "engines", "IPY2712PR"));
+                }
+            }
+
+            // Check both DLL name variants in each candidate directory
+            var dllNames = new[] { "IronPython.dll", "pyRevitLabs.IronPython.dll" };
+
             foreach (var dir in candidateDirs)
             {
-                var dll = Path.Combine(dir, "IronPython.dll");
-                if (!File.Exists(dll)) continue;
-                try
+                foreach (var dllName in dllNames)
                 {
-                    var ver = AssemblyName.GetAssemblyName(dll).Version;
-                    if (ver != null) return ver.ToString();
+                    var dll = Path.Combine(dir, dllName);
+                    if (!File.Exists(dll)) continue;
+                    try
+                    {
+                        var ver = AssemblyName.GetAssemblyName(dll).Version;
+                        if (ver != null) return ver.ToString();
+                    }
+                    catch (Exception ex) { Trace.WriteLine($"ReadIPYVersion: skipping {dll}: {ex.Message}"); }
                 }
-                catch { /* try next candidate */ }
             }
 
             return "Unknown";

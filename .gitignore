@@ -68,3 +68,4 @@ bin/**/*.xml
 
 # claude
 .claude
+.vscode/settings.json

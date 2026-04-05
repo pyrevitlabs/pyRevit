@@ -13,19 +13,19 @@ def get_all_levels(doc, include_linked=False):
                 transform = link_inst.GetTotalTransform()
                 for lvl in DB.FilteredElementCollector(link_doc).OfClass(DB.Level):
                     # Transform the level elevation to host coordinates
-                    # The transform is applied to a point at (0,0,level.Elevation)
-                    pt = transform.OfPoint(DB.XYZ(0, 0, lvl.Elevation))
+                    # The transform is applied to a point at (0,0,level.ProjectElevation)
+                    pt = transform.OfPoint(DB.XYZ(0, 0, lvl.ProjectElevation))
                     # Store both the level element and transformed elevation
                     lvl_host_elev = type('LinkedLevel', (object,), {
                         'Element': lvl,
                         'Name': lvl.Name,
-                        'Elevation': pt.Z,
+                        'ProjectElevation': pt.Z,
                         'SourceLink': link_inst
                     })
                     levels.append(lvl_host_elev)
 
     # Sort by elevation (transformed if linked)
-    levels = sorted(levels, key=lambda x: x.Elevation)
+    levels = sorted(levels, key=lambda x: x.ProjectElevation)
     return levels
 
 
@@ -113,16 +113,16 @@ def get_cardinal_direction(direction_name, view=None):
 def get_next_level_above(z_coordinate, all_levels, tolerance):
     """Get the next level above the given Z coordinate."""
     for level in all_levels:
-        if level.Elevation > z_coordinate + tolerance:
-            return level, level.Elevation
+        if level.ProjectElevation > z_coordinate + tolerance:
+            return level, level.ProjectElevation
     return None, None
 
 
 def get_next_level_below(z_coordinate, all_levels, tolerance):
     """Get the next level below the given Z coordinate."""
     for level in reversed(all_levels):
-        if level.Elevation < z_coordinate - tolerance:
-            return level, level.Elevation
+        if level.ProjectElevation < z_coordinate - tolerance:
+            return level, level.ProjectElevation
     return None, None
 
 

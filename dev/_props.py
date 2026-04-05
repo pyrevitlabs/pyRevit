@@ -214,7 +214,7 @@ def set_next_ver(args: Dict[str, str]):
 
     utils.system(["git", "add", configs.PYREVIT_VERSION_FILE])
     utils.system(["git", "add", configs.PYREVIT_INSTALL_VERSION_FILE])
-    utils.system(["git", "commit", "-m", "Next Version"])
+    utils.system(["git", "commit", "-m", "Next Version [skip ci]"])
 
 
 def _find_tbundles(root_path) -> List[str]:

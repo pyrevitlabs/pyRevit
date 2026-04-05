@@ -12,7 +12,7 @@ from pyrevit import EXEC_PARAMS
 from pyrevit import extensions as exts
 import pyrevit.extensions.extpackages as extpkgs
 
-from pyrevit.userconfig import user_config
+from pyrevit.userconfig import user_config, CONSTS
 
 import pyrevitcore_globals
 
@@ -29,6 +29,12 @@ def _ensure_path_registered(dest_path):
 
     Avoid explicitly registering the implicit default third-party extensions
     directory in the Custom Extension Directories list.
+
+    Note: This function must not use get_thirdparty_ext_root_dirs() as the sole
+    source of truth, since that helper may filter out non-existent paths (e.g.
+    network locations that are temporarily offline). We therefore read the raw
+    configured list from user_config when available, and only fall back to the
+    helper for backward compatibility.
     """
     # Normalize destination for reliable comparison across platforms
     norm_dest = os.path.normcase(os.path.normpath(dest_path))
@@ -48,28 +54,29 @@ def _ensure_path_registered(dest_path):
         # fall back to normal registration logic.
         pass
 
-
-    Note:
-        This function must *not* use get_thirdparty_ext_root_dirs() as the source
-        of truth, since that helper may filter out non-existent paths (e.g. network
-        locations that are temporarily offline). We therefore read the raw configured
-        list from user_config when available, and only fall back to the helper for
-        backward compatibility.
-    """
-    norm_dest = os.path.normpath(dest_path)
-
-    # Prefer the raw configured list to avoid silently dropping offline paths.
+    # Read the raw configured list to avoid silently dropping offline paths.
+    # get_thirdparty_ext_root_dirs() filters by op.exists(), which would
+    # remove temporarily-offline network shares when writing back.
     try:
-        raw_dirs = list(user_config.thirdparty_ext_root_dirs or [])
-    except AttributeError:
-        # Fallback for older configs: use existing helper (may filter non-existent).
+        raw_dirs = [os.path.expandvars(d) for d in user_config.core.get_option(
+            CONSTS.ConfigsUserExtensionsKey, default_value=[])]
+    except Exception as read_err:
+        logger.debug('Error reading raw extension dirs, falling back to helper. | %s', read_err)
         raw_dirs = user_config.get_thirdparty_ext_root_dirs(include_default=False)
 
-    normalized_existing = [os.path.normpath(d) for d in raw_dirs]
+    normalized_existing = [os.path.normcase(os.path.normpath(d)) for d in raw_dirs]
     if norm_dest not in normalized_existing:
-        raw_dirs.append(norm_dest)
-        user_config.set_thirdparty_ext_root_dirs(raw_dirs)
-        user_config.save_changes()
+        raw_dirs.append(dest_path)
+        # Write directly to preserve offline paths; set_thirdparty_ext_root_dirs
+        # would reject any path that doesn't currently exist on disk.
+        try:
+            user_config.core.set_option(
+                CONSTS.ConfigsUserExtensionsKey,
+                [os.path.normpath(x) for x in raw_dirs]
+            )
+            user_config.save_changes()
+        except Exception as write_err:
+            logger.error('Error saving extension path. | %s', write_err)
 
 def _get_default_ext_dir():
     """Return the best default extension installation directory."""
@@ -174,8 +181,7 @@ class ExtensionsWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name)
         self._setup_ext_pkg_ui(extpkgs.get_ext_packages())
-        default_path = user_config.get_thirdparty_ext_root_dirs(include_default=True)[0]
-        self.custom_ext_install_path_tb.Text = default_path
+        self.custom_ext_install_path_tb.Text = _get_default_ext_dir()
         if self.selected_pkg:
             self._update_add_custom_section_for_selection(self.selected_pkg)
         else:
@@ -431,8 +437,7 @@ class ExtensionsWindow(forms.WPFWindow):
         if getattr(self, "custom_ext_name_tb", None):
             self.custom_ext_name_tb.IsReadOnly = False
         self.path_custom_ext_b.IsEnabled = True
-        default_path = user_config.get_thirdparty_ext_root_dirs(include_default=True)[0]
-        self.custom_ext_install_path_tb.Text = default_path
+        self.custom_ext_install_path_tb.Text = _get_default_ext_dir()
         self.show_element(self.install_custom_ext_b)
         self._update_ext_info_from_git_fields()
 
@@ -492,8 +497,7 @@ class ExtensionsWindow(forms.WPFWindow):
             if self.selected_pkg and not self.selected_pkg.ext_pkg.is_installed:
                 dest_path = self.custom_ext_install_path_tb.Text
                 if not dest_path:
-                    ext_dirs = user_config.get_thirdparty_ext_root_dirs(include_default=True)
-                    dest_path = ext_dirs[0]
+                    dest_path = _get_default_ext_dir()
                 token = self.custom_token_pb.Password.strip()
                 if token:
                     self.selected_pkg.ext_pkg.config.private_repo = True
@@ -545,8 +549,7 @@ class ExtensionsWindow(forms.WPFWindow):
             # Get default extension directory
             dest_path = self.custom_ext_install_path_tb.Text
             if not dest_path:
-                ext_dirs = user_config.get_thirdparty_ext_root_dirs(include_default=True)
-                dest_path = ext_dirs[0]  # Use the default directory
+                dest_path = _get_default_ext_dir()
 
             logger.info('Installing extension "{}" from {}'.format(ext_name, git_url))
             logger.info("Destination: {}".format(dest_path))
