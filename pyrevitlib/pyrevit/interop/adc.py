@@ -31,9 +31,9 @@ ADC_DRIVE_SCHEMA = "{drive_name}://"
 # =====================================================================
 
 ADC_ROOT = r"C:\Program Files\Autodesk\Desktop Connector"
-API = None           # Legacy API module (DesktopConnectorService)
-API_PUBLIC = None    # Public API module (DesktopConnectorApiClient, v2027+)
-_api_mode = None     # "public", "legacy", or None
+API = None  # Legacy API module (DesktopConnectorService)
+API_PUBLIC = None  # Public API module (DesktopConnectorApiClient, v2027+)
+_api_mode = None  # "public", "legacy", or None
 
 ADC_DEFAULT_INSTALL_PATH = ADC_ROOT
 ADC_API_DLL = "Autodesk.DesktopConnector.API.dll"
@@ -58,16 +58,19 @@ def _preload_wcf_for_public_api():
       4. Load API.Contracts.dll from ADC root
     """
     from System.Reflection import Assembly as SysAssembly
+
     loaded = 0
 
     # --- 1. Split WCF assemblies from FOS/Client/SDK ---
     sdk_path = op.join(ADC_ROOT, "FOS", "Client", "SDK")
     if op.isdir(sdk_path):
-        for dll in ["System.ServiceModel.Primitives.dll",
-                     "System.ServiceModel.Http.dll",
-                     "System.ServiceModel.NetTcp.dll",
-                     "System.ServiceModel.Duplex.dll",
-                     "System.ServiceModel.Security.dll"]:
+        for dll in [
+            "System.ServiceModel.Primitives.dll",
+            "System.ServiceModel.Http.dll",
+            "System.ServiceModel.NetTcp.dll",
+            "System.ServiceModel.Duplex.dll",
+            "System.ServiceModel.Security.dll",
+        ]:
             full = op.join(sdk_path, dll)
             if op.exists(full):
                 try:
@@ -79,8 +82,7 @@ def _preload_wcf_for_public_api():
     # --- 2. System.ServiceModel.NetNamedPipe from Revit dir ---
     revit_dir = ""
     try:
-        revit_dir = op.dirname(HOST_APP.proc_path) \
-            if HOST_APP.proc_path else ""
+        revit_dir = op.dirname(HOST_APP.proc_path) if HOST_APP.proc_path else ""
     except Exception:
         pass
     if revit_dir:
@@ -96,16 +98,27 @@ def _preload_wcf_for_public_api():
     #     This is the unified assembly that satisfies the v4.0.0.0
     #     reference.  It ships inside the Primitives NuGet package.
     import os as _os
+    import re as _re
+
+    def _ver_key(s):
+        """Semantic version sort key — handles 4.10.0 > 4.9.0."""
+        parts = _re.split(r"[.\-]", s)
+        return [int(p) if p.isdigit() else p for p in parts]
+
     sm_facade = None
-    nuget = op.join(_os.environ.get('USERPROFILE', ''),
-                    '.nuget', 'packages',
-                    'system.servicemodel.primitives')
+    nuget = op.join(
+        _os.environ.get("USERPROFILE", ""),
+        ".nuget",
+        "packages",
+        "system.servicemodel.primitives",
+    )
     if op.isdir(nuget):
         # Find the newest version's net6.0 or net8.0 facade
-        for ver_dir in sorted(_os.listdir(nuget), reverse=True):
-            for tfm in ['net8.0', 'net6.0']:
-                candidate = op.join(nuget, ver_dir, 'lib', tfm,
-                                    'System.ServiceModel.dll')
+        for ver_dir in sorted(_os.listdir(nuget), key=_ver_key, reverse=True):
+            for tfm in ["net8.0", "net6.0"]:
+                candidate = op.join(
+                    nuget, ver_dir, "lib", tfm, "System.ServiceModel.dll"
+                )
                 if op.exists(candidate):
                     sm_facade = candidate
                     break
@@ -114,14 +127,18 @@ def _preload_wcf_for_public_api():
 
     # Also try System.Private.ServiceModel from NuGet
     spm_dll = None
-    spm_pkg = op.join(_os.environ.get('USERPROFILE', ''),
-                      '.nuget', 'packages',
-                      'system.private.servicemodel')
+    spm_pkg = op.join(
+        _os.environ.get("USERPROFILE", ""),
+        ".nuget",
+        "packages",
+        "system.private.servicemodel",
+    )
     if op.isdir(spm_pkg):
-        for ver_dir in sorted(_os.listdir(spm_pkg), reverse=True):
-            for tfm in ['net8.0', 'netstandard2.0', 'net6.0']:
-                candidate = op.join(spm_pkg, ver_dir, 'lib', tfm,
-                                    'System.Private.ServiceModel.dll')
+        for ver_dir in sorted(_os.listdir(spm_pkg), key=_ver_key, reverse=True):
+            for tfm in ["net8.0", "netstandard2.0", "net6.0"]:
+                candidate = op.join(
+                    spm_pkg, ver_dir, "lib", tfm, "System.Private.ServiceModel.dll"
+                )
                 if op.exists(candidate):
                     spm_dll = candidate
                     break
@@ -133,8 +150,7 @@ def _preload_wcf_for_public_api():
         try:
             clr.AddReferenceToFileAndPath(spm_dll)
             loaded += 1
-            mlogger.debug("Loaded System.Private.ServiceModel from: %s"
-                          % spm_dll)
+            mlogger.debug("Loaded System.Private.ServiceModel from: %s" % spm_dll)
         except Exception:
             pass
 
@@ -144,8 +160,7 @@ def _preload_wcf_for_public_api():
         try:
             _facade_asm = SysAssembly.LoadFrom(sm_facade)
             loaded += 1
-            mlogger.debug("Loaded System.ServiceModel facade from: %s"
-                          % sm_facade)
+            mlogger.debug("Loaded System.ServiceModel facade from: %s" % sm_facade)
         except Exception:
             pass
 
@@ -154,41 +169,39 @@ def _preload_wcf_for_public_api():
     #     v4.0.0.0 and returns the loaded facade or Primitives assembly.
     _resolve_cache = {}
     if _facade_asm:
-        _resolve_cache['system.servicemodel'] = _facade_asm
+        _resolve_cache["system.servicemodel"] = _facade_asm
 
     # Cache any other loaded ServiceModel assemblies for redirection
     try:
         for asm in System.AppDomain.CurrentDomain.GetAssemblies():
             name = asm.GetName().Name.lower()
-            if 'servicemodel' in name or 'private.servicemodel' in name:
+            if "servicemodel" in name or "private.servicemodel" in name:
                 _resolve_cache[name] = asm
     except Exception:
         pass
 
     if _resolve_cache:
+
         def _wcf_resolve(sender, args):
             try:
-                req = args.Name.split(',')[0].strip().lower()
+                req = args.Name.split(",")[0].strip().lower()
                 if req in _resolve_cache:
                     return _resolve_cache[req]
-                # Partial match fallback
-                for cn, ca in _resolve_cache.items():
-                    if req in cn or cn in req:
-                        return ca
             except Exception:
                 pass
             return None
 
         try:
             System.AppDomain.CurrentDomain.AssemblyResolve += _wcf_resolve
-            mlogger.debug("Registered WCF AssemblyResolve handler "
-                          "(%d cached)" % len(_resolve_cache))
+            mlogger.debug(
+                "Registered WCF AssemblyResolve handler "
+                "(%d cached)" % len(_resolve_cache)
+            )
         except Exception:
             pass
 
     # --- 5. API.Contracts.dll from ADC root ---
-    contracts = op.join(ADC_ROOT,
-                        "Autodesk.DesktopConnector.API.Contracts.dll")
+    contracts = op.join(ADC_ROOT, "Autodesk.DesktopConnector.API.Contracts.dll")
     if op.exists(contracts):
         try:
             clr.AddReferenceToFileAndPath(contracts)
@@ -197,8 +210,9 @@ def _preload_wcf_for_public_api():
             pass
 
     if loaded:
-        mlogger.debug("Pre-loaded %d WCF/contract assemblies for "
-                      "Public API" % loaded)
+        mlogger.debug(
+            "Pre-loaded %d WCF/contract assemblies for " "Public API" % loaded
+        )
     return loaded > 0
 
 
@@ -217,7 +231,8 @@ def _try_load_public_api():
         _preload_wcf_for_public_api()
         clr.AddReferenceToFileAndPath(dll)
         import Autodesk.DesktopConnector.API.Public as _pub
-        if hasattr(_pub, 'DesktopConnectorApiClient'):
+
+        if hasattr(_pub, "DesktopConnectorApiClient"):
             API_PUBLIC = _pub
             mlogger.debug("Loaded ADC Public API from: %s" % dll)
             return True
@@ -232,8 +247,7 @@ def _try_load_legacy_api():
 
     candidates = []
     if HOST_APP.is_newer_than("2024"):
-        candidates.append(
-            op.join(ADC_ROOT, "FOS", "AddInProcess", "Civil3DOE"))
+        candidates.append(op.join(ADC_ROOT, "FOS", "AddInProcess", "Civil3DOE"))
     candidates.append(ADC_ROOT)
 
     for path in candidates:
@@ -243,6 +257,7 @@ def _try_load_legacy_api():
         try:
             clr.AddReferenceToFileAndPath(dll)
             import Autodesk.DesktopConnector.API as _api
+
             # Verify service can instantiate (catches WCF failures early)
             _api.DesktopConnectorService()
             API = _api
@@ -274,13 +289,16 @@ else:
     if _try_load_legacy_api():
         _api_mode = "legacy"
 
-mlogger.debug("ADC api_mode: %s | API: %s | API_PUBLIC: %s"
-              % (_api_mode, bool(API), bool(API_PUBLIC)))
+mlogger.debug(
+    "ADC api_mode: %s | API: %s | API_PUBLIC: %s"
+    % (_api_mode, bool(API), bool(API_PUBLIC))
+)
 
 
 # =====================================================================
 # INTERNAL HELPERS - LEGACY (DesktopConnectorService)
 # =====================================================================
+
 
 def _get_all_processids():
     return [x.Id for x in Process.GetProcesses()]
@@ -372,10 +390,10 @@ def _get_item_property_id_value(adc, drive, item, prop_id):
 # INTERNAL HELPERS - PUBLIC API (DesktopConnectorApiClient, v2027+)
 # =====================================================================
 
+
 def _get_pub_client():
     if not API_PUBLIC:
-        raise PyRevitException(
-            "{} public API is not loaded".format(ADC_NAME))
+        raise PyRevitException("{} public API is not loaded".format(ADC_NAME))
     return API_PUBLIC.DesktopConnectorApiClient()
 
 
@@ -383,8 +401,7 @@ def _get_pub_subscriptions():
     client = _get_pub_client()
     try:
         subs = client.GetSubscriptions()
-        return [s for s in subs
-                if s.State == API_PUBLIC.SubscriptionState.Subscribed]
+        return [s for s in subs if s.State == API_PUBLIC.SubscriptionState.Subscribed]
     finally:
         client.Dispose()
 
@@ -398,9 +415,8 @@ def _pub_drive_from_path(path):
 
 
 def _pub_drive_path_to_local(sub, drive_schema, path):
-    return op.normpath(
-        op.join(sub.Path, path.replace(drive_schema, ""))
-    )
+    rel = path[len(drive_schema) :]  # strip prefix exactly once
+    return op.normpath(op.join(sub.Path, rel))
 
 
 # =====================================================================
@@ -416,11 +432,12 @@ def _pub_drive_path_to_local(sub, drive_schema, path):
 #   2. Parse the cloud path schema and walk known workspace dirs
 #      on disk to find the local file (for get_local_path)
 
+
 def _adc_process_running():
     """Check if the Desktop Connector tray process is running."""
     try:
         for p in Process.GetProcesses():
-            if 'DesktopConnector' in p.ProcessName:
+            if "DesktopConnector" in p.ProcessName:
                 return True
     except Exception:
         pass
@@ -436,12 +453,13 @@ def _find_workspace_roots():
       %USERPROFILE%\\DC\\ACCDocs\\{org}\\{project}\\...
       %USERPROFILE%\\DC\\{org}\\{project}\\..."""
     import os as _os
+
     roots = []
-    user_profile = _os.environ.get('USERPROFILE', '')
+    user_profile = _os.environ.get("USERPROFILE", "")
     if not user_profile:
         return roots
     # Standard ADC workspace locations (order matters — more specific first)
-    for subpath in ['DC\\ACCDocs', 'ACCDocs', 'DC']:
+    for subpath in ["DC\\ACCDocs", "ACCDocs", "DC"]:
         candidate = op.join(user_profile, subpath)
         if op.isdir(candidate):
             roots.append(candidate)
@@ -460,12 +478,12 @@ def _parse_cloud_path(cloud_path):
     Returns (drive_name, relative_path) or (None, None).
     drive_name = everything before ://
     relative_path = everything after ://  (org/project/rest...)"""
-    sep = '://'
+    sep = "://"
     idx = cloud_path.find(sep)
     if idx < 0:
         return None, None
     drive_name = cloud_path[:idx]
-    rel_path = cloud_path[idx + len(sep):]
+    rel_path = cloud_path[idx + len(sep) :]
     return drive_name, rel_path
 
 
@@ -482,12 +500,12 @@ def _resolve_path_from_filesystem(cloud_path):
 
     # rel_path is like: "Boulder Associates/257197.00 .../path/to/file.txt"
     # Split into segments
-    segments = rel_path.replace('\\', '/').split('/')
+    segments = rel_path.replace("\\", "/").split("/")
     if len(segments) < 2:
         return None
 
     org_name = segments[0]
-    rest = '/'.join(segments[1:])
+    rest = "/".join(segments[1:])
 
     for ws_root in _find_workspace_roots():
         # Check if org directory exists
@@ -507,17 +525,16 @@ def _resolve_path_from_filesystem(cloud_path):
                 project_candidate = op.join(org_dir, entry)
                 if not op.isdir(project_candidate):
                     continue
-                # Match start of project folder to second segment
-                if segments[1].lower().startswith(
-                        entry.lower()[:min(10, len(entry))]) \
-                        or entry.lower().startswith(
-                        segments[1].lower()[:min(10, len(segments[1]))]):
+                # Match only if one name fully starts with the other
+                seg2 = segments[1].lower()
+                entry_l = entry.lower()
+                if seg2.startswith(entry_l) or entry_l.startswith(seg2):
                     # Try building path from this project dir
-                    file_path = op.normpath(
-                        op.join(project_candidate, *segments[2:]))
+                    file_path = op.normpath(op.join(project_candidate, *segments[2:]))
                     if op.exists(file_path):
-                        mlogger.debug("Filesystem fallback resolved "
-                                      "(fuzzy): %s" % file_path)
+                        mlogger.debug(
+                            "Filesystem fallback resolved " "(fuzzy): %s" % file_path
+                        )
                         return file_path
         except Exception:
             pass
@@ -529,6 +546,7 @@ def _resolve_path_from_filesystem(cloud_path):
 # =====================================================================
 # PUBLIC INTERFACE (auto-dispatches to best available backend)
 # =====================================================================
+
 
 def is_available():
     """Check if ADC service is available.
@@ -550,10 +568,21 @@ def is_available():
         except Exception as ex:
             mlogger.debug("Legacy API is_available failed: %s" % ex)
     # Filesystem fallback: ADC process running + workspace dirs exist
-    if _adc_process_running() and _find_workspace_roots():
-        mlogger.debug("ADC available via filesystem fallback "
-                      "(process running, workspace dirs found)")
-        return True
+    # Verify workspace roots actually contain org subdirectories
+    if _adc_process_running():
+        for ws_root in _find_workspace_roots():
+            try:
+                import os as _os
+
+                entries = _os.listdir(ws_root)
+                if any(op.isdir(op.join(ws_root, e)) for e in entries):
+                    mlogger.debug(
+                        "ADC available via filesystem fallback "
+                        "(process running, workspace dirs found)"
+                    )
+                    return True
+            except Exception:
+                pass
     return False
 
 
@@ -569,6 +598,7 @@ def get_drive_paths():
         return {x.Name: x.WorkspaceLocation for x in _get_drives_info(adc)}
     # Filesystem fallback: list workspace root contents
     import os as _os
+
     result = {}
     for ws_root in _find_workspace_roots():
         try:
@@ -624,8 +654,7 @@ def is_locked(path):
     adc = _get_adc()
     item = _get_item(adc, path)
     lock_status = _get_item_lockstatus(adc, item)
-    return lock_status.State == API.LockState.LockedByOther, \
-        lock_status.LockOwner
+    return lock_status.State == API.LockState.LockedByOther, lock_status.LockOwner
 
 
 def unlock_file(path):
