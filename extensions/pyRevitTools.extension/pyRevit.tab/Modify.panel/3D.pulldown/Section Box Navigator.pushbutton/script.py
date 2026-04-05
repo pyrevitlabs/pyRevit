@@ -172,6 +172,8 @@ def on_view_or_doc_changed(sender, args):
     try:
         if revit.doc != doc:
             initialize_globals()
+            if sb_form:
+                sb_form.Dispatcher.Invoke(System.Action(sb_form.update_grids_and_levels))
         if not sb_form or not sb_form.chkAutoupdate.IsChecked:
             return
         sb_form.Dispatcher.Invoke(System.Action(sb_form.update_info))
@@ -199,10 +201,11 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         self.rbGrid.IsChecked = my_config.get_option("rbGrid_state", True)
         self.rbGridNudge.IsChecked = not self.rbGrid.IsChecked
 
-        self.current_view = doc.ActiveView
+        self.current_view = revit.active_view
         self.current_length_unit = length_unit
-        self.all_levels = get_all_levels(doc, self.chkIncludeLinks.IsChecked)
-        self.all_grids = get_all_grids(doc, self.chkIncludeLinks.IsChecked)
+        self.all_levels = None
+        self.all_grids = None
+        self.update_grids_and_levels()
         self.preview_server = None
 
         # Initialize DC3D Server
@@ -256,6 +259,11 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         self.btnBoxUpDropdown.Visibility = visibility
         self.btnBoxDownDropdown.Visibility = visibility
 
+    def update_grids_and_levels(self):
+        """Updates grids and levels"""
+        self.all_levels = get_all_levels(doc, self.chkIncludeLinks.IsChecked)
+        self.all_grids = get_all_grids(doc, self.chkIncludeLinks.IsChecked)
+
     def populate_level_menu(self, menu, direction, target):
         """Populate a level menu with all available levels in the given direction.
 
@@ -299,7 +307,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 break
 
             levels.append(next_level)
-            current_elevation = next_level.Elevation
+            current_elevation = next_level.ProjectElevation
 
             # Limit to reasonable number of levels
             if len(levels) >= 20:
@@ -307,19 +315,36 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
         # Create buttons for each level
         for level in levels:
+            level_elev = level.ProjectElevation
+
+            is_valid = True
+
+            if target == "top":
+                if level_elev <= info["transformed_min"].Z:
+                    is_valid = False
+
+            elif target == "bottom":
+                if level_elev >= info["transformed_max"].Z:
+                    is_valid = False
+
             btn = Controls.Button()
             btn.Style = self.FindResource("LevelMenuItemStyle")
 
+            # Disable buttons for invalid levels
+            btn.IsEnabled = is_valid
+            if not is_valid:
+                btn.Opacity = 0.5
+
             # Format level name and elevation
             level_name = level.Name
-            level_elev = format_length_value(level.Elevation)
+            level_elev = format_length_value(level.ProjectElevation)
             btn.Content = "{0} ({1})".format(level_name, level_elev)
 
             # Store level info in Tag
             btn.Tag = {
                 "target": target,
                 "direction": direction,
-                "elevation": level.Elevation,
+                "elevation": level.ProjectElevation,
             }
 
             # Wire up click and hover events
@@ -344,8 +369,12 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
     def update_info(self):
         """Update the information display."""
         try:
+            # I assume the event handler is sometimes faster than the init, causing a initial error message
+            # therefore safeguard with:
+            if not hasattr(self, "current_view"):
+                return
             last_view = self.current_view.Id
-            self.current_view = doc.ActiveView
+            self.current_view = revit.active_view
 
             if self.current_length_unit != length_unit:
                 self.current_length_unit = length_unit
@@ -639,13 +668,13 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                         )
                     return None
 
-                top_distance = next_top_level.Elevation - info["transformed_max"].Z
+                top_distance = next_top_level.ProjectElevation - info["transformed_max"].Z
                 bottom_distance = (
-                    next_bottom_level.Elevation - info["transformed_min"].Z
+                    next_bottom_level.ProjectElevation - info["transformed_min"].Z
                 )
 
                 # Validate box dimensions
-                if next_top_level.Elevation <= next_bottom_level.Elevation:
+                if next_top_level.ProjectElevation <= next_bottom_level.ProjectElevation:
                     if not do_not_apply:
                         self.show_status_message(
                             1, self.get_locale_string("WouldCreateInvalidBox"), "error"
@@ -671,10 +700,10 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                         )
                     return None
 
-                top_distance = next_level.Elevation - info["transformed_max"].Z
+                top_distance = next_level.ProjectElevation - info["transformed_max"].Z
 
                 # Validate won't go below bottom
-                if next_level.Elevation <= info["transformed_min"].Z:
+                if next_level.ProjectElevation <= info["transformed_min"].Z:
                     if not do_not_apply:
                         self.show_status_message(
                             1, self.get_locale_string("WouldCreateInvalidBox"), "error"
@@ -700,10 +729,10 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                         )
                     return None
 
-                bottom_distance = next_level.Elevation - info["transformed_min"].Z
+                bottom_distance = next_level.ProjectElevation - info["transformed_min"].Z
 
                 # Validate won't go above top
-                if next_level.Elevation >= info["transformed_max"].Z:
+                if next_level.ProjectElevation >= info["transformed_max"].Z:
                     if not do_not_apply:
                         self.show_status_message(
                             1, self.get_locale_string("WouldCreateInvalidBox"), "error"
@@ -1614,7 +1643,6 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
     def btn_align_box_to_view_click(self, sender, e):
         """Align section box to a selected view."""
-        self.current_view = doc.ActiveView
         # Select the view to align
         if isinstance(self.current_view, DB.View3D):
             selected_view = forms.select_views(
@@ -1783,8 +1811,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
     def chkIncludeLinks_checked(self, sender, e):
         """Refresh levels and grids when checkbox is toggled."""
-        self.all_levels = get_all_levels(doc, self.chkIncludeLinks.IsChecked)
-        self.all_grids = get_all_grids(doc, self.chkIncludeLinks.IsChecked)
+        self.update_grids_and_levels()
         self.update_info()
 
     # Grid Navigation Button Handlers
