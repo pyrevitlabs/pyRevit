@@ -59,6 +59,15 @@ def dissect_parameter_filter(doc, filter_element):
         return None
 
     rule = rules[0]
+
+    # ── unwrap inverted rules ─────────────────────────────────────────
+    if isinstance(rule, DB.FilterInverseRule):
+        return None
+
+    # extra safeguard (future-proof)
+    if not hasattr(rule, "GetRuleParameter") or not hasattr(rule, "GetEvaluator"):
+        return None
+
     result["rule"] = rule
 
     # ── parameter id / name ───────────────────────────────────────────
@@ -74,14 +83,6 @@ def dissect_parameter_filter(doc, filter_element):
             result["parameter_name"] = DB.LabelUtils.GetLabelFor(bip)
         except Exception:
             result["parameter_name"] = str(get_elementid_value(param_id))
-
-    # ── unwrap rule ─────────────────────────────────────────
-    while isinstance(rule, DB.FilterInverseRule):
-        rule = rule.GetInnerRule()
-
-    # extra safeguard (future-proof)
-    if not hasattr(rule, "GetRuleParameter") or not hasattr(rule, "GetEvaluator"):
-        return None
 
     # ── evaluator must be equals ──────────────────────────────────────
     evaluator = rule.GetEvaluator()
