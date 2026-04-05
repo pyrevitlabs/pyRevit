@@ -13,6 +13,18 @@ on:
       - 'pyrevitlib/**'
       - 'release/**'
       - 'site-packages/**'
+  # After merges (especially from forks), secrets are available on push but not on pull_request.
+  push:
+    branches:
+      - develop
+      - master
+    paths:
+      - 'bin/**'
+      - 'dev/**'
+      - 'extensions/**'
+      - 'pyrevitlib/**'
+      - 'release/**'
+      - 'site-packages/**'
   workflow_dispatch:
 
 env:
@@ -127,9 +139,30 @@ jobs:
         uses: juliangruber/read-file-action@v1
         with:
           path: release/version
+
+      # Secrets are not available for pull_request workflows from forks; skip signing there (push run will sign).
+      - name: Require Trusted Signing secrets
+        if: >
+          github.repository == env.MainRepo &&
+          (github.event_name != 'pull_request' ||
+           github.event.pull_request.head.repo.full_name == github.repository) &&
+          (env.WipRun == 'true' || env.ReleaseRun == 'true' ||
+           github.event_name == 'workflow_dispatch' ||
+           github.event_name == 'push')
+        shell: pwsh
+        run: |
+          if (-not "${{ secrets.AZURE_ENDPOINT }}") { throw "Missing secret: AZURE_ENDPOINT" }
+          if (-not "${{ secrets.AZURE_TENANT_ID }}") { throw "Missing secret: AZURE_TENANT_ID" }
+          if (-not "${{ secrets.AZURE_CLIENT_ID }}") { throw "Missing secret: AZURE_CLIENT_ID" }
+          if (-not "${{ secrets.AZURE_CLIENT_SECRET }}") { throw "Missing secret: AZURE_CLIENT_SECRET" }
+          if (-not "${{ secrets.AZURE_CODE_SIGNING_NAME }}") { throw "Missing secret: AZURE_CODE_SIGNING_NAME" }
+          if (-not "${{ secrets.AZURE_CERT_PROFILE_NAME }}") { throw "Missing secret: AZURE_CERT_PROFILE_NAME" }
       
       - name: Sign files with Trusted Signing (DLLs and EXEs)
-        if: (github.repository == env.MainRepo)
+        if: >
+          github.repository == env.MainRepo &&
+          (github.event_name != 'pull_request' ||
+           github.event.pull_request.head.repo.full_name == github.repository)
         uses: azure/trusted-signing-action@v1.2.0
         with:
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -151,7 +184,10 @@ jobs:
           pipenv run pyrevit build installers
 
       - name: Sign files with Trusted Signing (installers)
-        if: (github.repository == env.MainRepo)
+        if: >
+          github.repository == env.MainRepo &&
+          (github.event_name != 'pull_request' ||
+           github.event.pull_request.head.repo.full_name == github.repository)
         uses: azure/trusted-signing-action@v1.2.0
         with:
           azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
