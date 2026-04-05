@@ -75,6 +75,14 @@ def dissect_parameter_filter(doc, filter_element):
         except Exception:
             result["parameter_name"] = str(get_elementid_value(param_id))
 
+    # ── unwrap rule ─────────────────────────────────────────
+    while isinstance(rule, DB.FilterInverseRule):
+        rule = rule.GetInnerRule()
+
+    # extra safeguard (future-proof)
+    if not hasattr(rule, "GetRuleParameter") or not hasattr(rule, "GetEvaluator"):
+        return None
+
     # ── evaluator must be equals ──────────────────────────────────────
     evaluator = rule.GetEvaluator()
     if not isinstance(evaluator, (DB.FilterNumericEquals, DB.FilterStringEquals)):
