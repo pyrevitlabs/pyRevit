@@ -118,20 +118,24 @@ namespace pyRevitExtensionParser
         /// Gets or sets whether to load beta/experimental commands.
         /// </summary>
         /// <remarks>
-        /// When false (default), commands marked as beta (__beta__ = True) will not be loaded.
+        /// When false (default), commands marked as beta (bundle <c>is_beta</c> or script <c>__beta__</c>) will not be loaded.
         /// When true, beta commands will be visible in the UI.
         /// Defaults to false if not configured or if the value cannot be parsed.
+        /// Reads <c>loadbeta</c> first (same INI key as pyRevitLabs and Python <c>user_config.load_beta</c>);
+        /// falls back to <c>load_beta</c> for older INI files written by earlier C# builds.
         /// </remarks>
         public bool LoadBeta
         {
             get
             {
-                var value = _ini.IniReadValue("core", "load_beta");
+                var value = _ini.IniReadValue("core", "loadbeta");
+                if (string.IsNullOrWhiteSpace(value))
+                    value = _ini.IniReadValue("core", "load_beta");
                 return bool.TryParse(value, out var result) ? result : false;
             }
             set
             {
-                _ini.IniWriteValue("core", "load_beta", value ? TrueString : FalseString);
+                _ini.IniWriteValue("core", "loadbeta", value ? TrueString : FalseString);
             }
         }
 
