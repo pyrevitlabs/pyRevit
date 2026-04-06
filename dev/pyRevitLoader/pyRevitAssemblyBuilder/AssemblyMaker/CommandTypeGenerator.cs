@@ -247,11 +247,20 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             bool isDynamoScript = scriptPath != null && 
                                 scriptPath.EndsWith(".dyn", StringComparison.OrdinalIgnoreCase);
 
-            // Determine clean engine setting.
-            // Default is false (metadata-driven; matches legacy cached-engine behavior)
-            // In rocket mode with compatible extension, use cached engine (clean = false).
-            bool useCleanEngine = cmd.Engine?.Clean ?? false;
-            // No rocket-mode override needed — the logic is now purely metadata-driven
+            // Determine clean engine setting:
+            // - Script/bundle may force clean scope via Engine.Clean (__cleanengine__ / bundle.yaml).
+            // - Rocket mode with a rocket-compatible extension reuses a cached engine (clean = false).
+            // - Otherwise use a clean engine scope (clean = true).
+            bool engineCleanFromMetadata = cmd.Engine != null && cmd.Engine.Clean;
+            bool extensionRocketOk = extension != null && extension.RocketModeCompatible;
+            bool useCleanEngine;
+            if (engineCleanFromMetadata)
+                useCleanEngine = true;
+            else if (rocketMode && extensionRocketOk)
+                useCleanEngine = false;
+            else
+                useCleanEngine = true;
+
             configs["clean"] = useCleanEngine;
 
             // Add engine type only when explicitly specified in metadata.

@@ -84,6 +84,14 @@ namespace pyRevitExtensionParser
         }
 
         /// <summary>
+        /// Removes a key from the INI file (Win32 <c>WritePrivateProfileString</c> with a null value).
+        /// </summary>
+        public void IniRemoveKey(string section, string key)
+        {
+            WritePrivateProfileString(section, key, null, _path);
+        }
+
+        /// <summary>
         /// Retrieves all section names from the INI file.
         /// </summary>
         /// <returns>An enumerable collection of section names.</returns>
