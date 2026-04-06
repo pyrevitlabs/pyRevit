@@ -136,6 +136,8 @@ namespace pyRevitExtensionParser
             set
             {
                 _ini.IniWriteValue("core", "loadbeta", value ? TrueString : FalseString);
+                // Drop legacy key so the file does not show two competing entries.
+                _ini.IniRemoveKey("core", "load_beta");
             }
         }
 

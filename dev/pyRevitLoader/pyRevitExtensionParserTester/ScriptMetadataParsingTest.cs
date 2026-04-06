@@ -345,7 +345,17 @@ tooltip: Bundle Tooltip
             File.WriteAllText(configPath, "[core]\nload_beta = true");
             var config5 = PyRevitConfig.Load(configPath);
             Assert.IsTrue(config5.LoadBeta, "LoadBeta should read legacy load_beta when loadbeta is absent");
-            
+
+            // Setter writes canonical key and removes legacy duplicate
+            File.WriteAllText(configPath, "[core]\nload_beta = true\nloadbeta = false");
+            var config6 = PyRevitConfig.Load(configPath);
+            Assert.IsFalse(config6.LoadBeta, "Canonical loadbeta should win when both keys exist");
+            config6.LoadBeta = true;
+            var iniText = File.ReadAllText(configPath);
+            StringAssert.DoesNotContain("load_beta", iniText);
+            StringAssert.Contains("loadbeta", iniText);
+            Assert.IsTrue(PyRevitConfig.Load(configPath).LoadBeta, "After setter, only loadbeta should remain and read as true");
+
             Assert.Pass("LoadBeta config parsing validated successfully.");
         }
 
