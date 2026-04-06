@@ -101,12 +101,13 @@ namespace pyRevitExtensionParserTest
             builder.AddTab("Tab").AddPanel("Panel").AddPushButton("Button", "pass");
 
             // Act & Assert — should not throw, and the extension should be excluded
-            List<ParsedExtension> results = null;
+            List<ParsedExtension>? results = null;
             Assert.DoesNotThrow(() =>
             {
                 results = ParseInstalledExtensions(new[] { builder.ExtensionPath }, revitYear: 2024).ToList();
             }, "Parsing an invalid version string should not throw an exception");
 
+            Assert.That(results, Is.Not.Null);
             Assert.IsEmpty(results, "Extension with an unparseable version string should be excluded");
         }
 

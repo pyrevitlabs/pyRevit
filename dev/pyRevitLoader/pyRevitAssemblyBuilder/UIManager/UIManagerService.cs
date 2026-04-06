@@ -316,7 +316,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             // so CleanupOrphanedElements() doesn't deactivate the tab (#3167).
             if (!string.IsNullOrEmpty(renamedTabTitle))
             {
-                _ribbonScanner?.MarkElementTouched("tab", renamedTabTitle);
+                _ribbonScanner?.MarkElementTouched("tab", renamedTabTitle!);
                 _logger.Debug($"Tab '{tabText}' has current Title '{renamedTabTitle}' — marked both as touched.");
             }
 
