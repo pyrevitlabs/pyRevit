@@ -328,21 +328,39 @@ tooltip: Bundle Tooltip
             var config1 = PyRevitConfig.Load(configPath);
             Assert.IsFalse(config1.LoadBeta, "Default LoadBeta should be false when not set");
             
-            // Test explicit true
-            File.WriteAllText(configPath, "[core]\nload_beta = true");
+            // Canonical key matches pyRevitLabs / Python user_config (loadbeta, no underscore)
+            File.WriteAllText(configPath, "[core]\nloadbeta = true");
             var config2 = PyRevitConfig.Load(configPath);
-            Assert.IsTrue(config2.LoadBeta, "LoadBeta should be true when explicitly set");
+            Assert.IsTrue(config2.LoadBeta, "LoadBeta should be true when loadbeta is set");
             
-            // Test explicit false
-            File.WriteAllText(configPath, "[core]\nload_beta = false");
+            File.WriteAllText(configPath, "[core]\nloadbeta = false");
             var config3 = PyRevitConfig.Load(configPath);
-            Assert.IsFalse(config3.LoadBeta, "LoadBeta should be false when explicitly set");
+            Assert.IsFalse(config3.LoadBeta, "LoadBeta should be false when loadbeta is false");
             
-            // Test case insensitivity
-            File.WriteAllText(configPath, "[core]\nload_beta = TRUE");
+            File.WriteAllText(configPath, "[core]\nloadbeta = TRUE");
             var config4 = PyRevitConfig.Load(configPath);
-            Assert.IsTrue(config4.LoadBeta, "LoadBeta should be case-insensitive");
-            
+            Assert.IsTrue(config4.LoadBeta, "LoadBeta should be case-insensitive for loadbeta");
+
+            // Legacy underscore key (older C# PyRevitConfig writer)
+            File.WriteAllText(configPath, "[core]\nload_beta = true");
+            var config5 = PyRevitConfig.Load(configPath);
+            Assert.IsTrue(config5.LoadBeta, "LoadBeta should read legacy load_beta when loadbeta is absent");
+
+            // Setter writes canonical key and removes legacy duplicate
+            File.WriteAllText(configPath, "[core]\nload_beta = true\nloadbeta = false");
+            var config6 = PyRevitConfig.Load(configPath);
+            Assert.IsFalse(config6.LoadBeta, "Canonical loadbeta should win when both keys exist");
+            config6.LoadBeta = true;
+            var iniText = File.ReadAllText(configPath);
+            StringAssert.DoesNotContain("load_beta", iniText);
+            StringAssert.Contains("loadbeta", iniText);
+            Assert.IsTrue(PyRevitConfig.Load(configPath).LoadBeta, "After setter, only loadbeta should remain and read as true");
+
+            File.WriteAllText(configPath, "[core]\nloadbeta = 1");
+            Assert.IsTrue(PyRevitConfig.Load(configPath).LoadBeta, "LoadBeta should accept numeric 1");
+            File.WriteAllText(configPath, "[core]\nloadbeta = \"true\"");
+            Assert.IsTrue(PyRevitConfig.Load(configPath).LoadBeta, "LoadBeta should accept quoted true");
+
             Assert.Pass("LoadBeta config parsing validated successfully.");
         }
 
