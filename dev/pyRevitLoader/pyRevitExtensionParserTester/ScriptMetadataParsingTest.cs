@@ -356,6 +356,11 @@ tooltip: Bundle Tooltip
             StringAssert.Contains("loadbeta", iniText);
             Assert.IsTrue(PyRevitConfig.Load(configPath).LoadBeta, "After setter, only loadbeta should remain and read as true");
 
+            File.WriteAllText(configPath, "[core]\nloadbeta = 1");
+            Assert.IsTrue(PyRevitConfig.Load(configPath).LoadBeta, "LoadBeta should accept numeric 1");
+            File.WriteAllText(configPath, "[core]\nloadbeta = \"true\"");
+            Assert.IsTrue(PyRevitConfig.Load(configPath).LoadBeta, "LoadBeta should accept quoted true");
+
             Assert.Pass("LoadBeta config parsing validated successfully.");
         }
 

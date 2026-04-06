@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace pyRevitExtensionParser
 {
@@ -131,7 +132,7 @@ namespace pyRevitExtensionParser
                 var value = _ini.IniReadValue("core", "loadbeta");
                 if (string.IsNullOrWhiteSpace(value))
                     value = _ini.IniReadValue("core", "load_beta");
-                return bool.TryParse(value, out var result) ? result : false;
+                return TryParseConfigBool(value, out var result) && result;
             }
             set
             {
@@ -433,7 +434,9 @@ namespace pyRevitExtensionParser
         /// </summary>
         /// <param name="customPath">
         /// Optional custom path to the configuration file. 
-        /// If null, uses the default location: %APPDATA%\pyRevit\pyRevit_config.ini
+        /// If null, uses the same discovery as pyRevitLabs/Python: first <c>*.ini</c> under
+        /// <c>%APPDATA%\pyRevit\</c> matching the labs config filename pattern, else
+        /// <c>%APPDATA%\pyRevit\pyRevit_config.ini</c>.
         /// </param>
         /// <returns>A new <see cref="PyRevitConfig"/> instance for the specified configuration file.</returns>
         /// <remarks>
@@ -451,14 +454,40 @@ namespace pyRevitExtensionParser
         /// </example>
         public static PyRevitConfig Load(string customPath = null)
         {
-            string configName = "pyRevit_config.ini";
-            string defaultPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "pyRevit",
-                configName);
+            if (!string.IsNullOrEmpty(customPath))
+                return new PyRevitConfig(customPath);
 
-            string finalPath = customPath ?? defaultPath;
-            return new PyRevitConfig(finalPath);
+            var appDataPyRevit = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "pyRevit");
+            var discovered = TryFindConfigIniInDirectory(appDataPyRevit);
+            var fallback = Path.Combine(appDataPyRevit, "pyRevit_config.ini");
+            return new PyRevitConfig(discovered ?? fallback);
+        }
+
+        /// <summary>
+        /// Matches pyRevitLabs <c>ConfigsFileRegexPattern</c> (first match wins).
+        /// </summary>
+        private static string TryFindConfigIniInDirectory(string directory)
+        {
+            if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory))
+                return null;
+
+            try
+            {
+                var configMatcher = new Regex(@".*[pyrevit|config].*\.ini", RegexOptions.IgnoreCase);
+                foreach (var fullPath in Directory.GetFiles(directory, "*.ini", SearchOption.TopDirectoryOnly))
+                {
+                    if (configMatcher.IsMatch(Path.GetFileName(fullPath)))
+                        return fullPath;
+                }
+            }
+            catch
+            {
+                // ignore
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -527,6 +556,45 @@ namespace pyRevitExtensionParser
             }
 
             return null; // Return null if the extension is not found
+        }
+
+        /// <summary>
+        /// Parses booleans from INI values (matches Python/json-style and common variants).
+        /// </summary>
+        private static bool TryParseConfigBool(string raw, out bool result)
+        {
+            result = false;
+            if (string.IsNullOrWhiteSpace(raw))
+                return false;
+
+            var v = raw.Trim();
+            if (v.Length >= 2 &&
+                ((v[0] == '"' && v[v.Length - 1] == '"') ||
+                 (v[0] == '\'' && v[v.Length - 1] == '\'')))
+            {
+                v = v.Substring(1, v.Length - 2).Trim();
+            }
+
+            if (bool.TryParse(v, out result))
+                return true;
+
+            if (v.Equals("1", StringComparison.Ordinal) ||
+                v.Equals("yes", StringComparison.OrdinalIgnoreCase) ||
+                v.Equals("on", StringComparison.OrdinalIgnoreCase))
+            {
+                result = true;
+                return true;
+            }
+
+            if (v.Equals("0", StringComparison.Ordinal) ||
+                v.Equals("no", StringComparison.OrdinalIgnoreCase) ||
+                v.Equals("off", StringComparison.OrdinalIgnoreCase))
+            {
+                result = false;
+                return true;
+            }
+
+            return false;
         }
     }
 
