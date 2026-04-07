@@ -83,15 +83,11 @@ namespace pyRevitAssemblyBuilder.SessionManager
                         continue;
 
                     var fileName = Path.GetFileName(hookScript);
-                    var match = HookPartsRegex.Match(fileName);
-                    if (!match.Success)
+                    if (!TryParseHookFileName(fileName, out var eventName, out var eventTarget))
                     {
                         _logger.Debug($"Hook script '{fileName}' does not match naming convention — skipped.");
                         continue;
                     }
-
-                    var eventName = match.Groups[1].Value;   // e.g., "doc-opened"
-                    var eventTarget = match.Groups[2].Success ? match.Groups[2].Value : "";  // e.g., "ID_INPLACE_COMPONENT" or ""
 
                     // Build hook unique ID matching Python _create_hook_id():
                     //   cleanup_string(UNIQUE_ID_SEPARATOR.join([ext.unique_name, basename(hook_script)]), skip=['_']).lower()
@@ -118,10 +114,26 @@ namespace pyRevitAssemblyBuilder.SessionManager
         }
 
         /// <summary>
+        /// Parses a hook script basename using the same rules as Python hooks._get_hook_parts().
+        /// </summary>
+        /// <param name="fileName">Basename only (e.g. doc-opened.py).</param>
+        internal static bool TryParseHookFileName(string fileName, out string eventName, out string eventTarget)
+        {
+            eventName = "";
+            eventTarget = "";
+            var match = HookPartsRegex.Match(fileName);
+            if (!match.Success)
+                return false;
+            eventName = match.Groups[1].Value;
+            eventTarget = match.Groups[2].Success ? match.Groups[2].Value : "";
+            return true;
+        }
+
+        /// <summary>
         /// Creates a hook unique ID matching the legacy Python _create_hook_id().
         /// Format: cleanup_string("{extension.unique_name}_{hook_filename}", skip=['_']).lower()
         /// </summary>
-        private static string CreateHookId(ParsedExtension extension, string hookFileName)
+        internal static string CreateHookId(ParsedExtension extension, string hookFileName)
         {
             // extension.UniqueId is already the sanitized unique name (from ExtensionParser)
             // Join with '_' separator, then sanitize the hook filename part
@@ -136,7 +148,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// Matches Python hooks.register_hooks() which passes extension.module_paths.
         /// module_paths = [extension.lib/, extension.bin/] + library extension lib/ paths.
         /// </summary>
-        private string[] BuildHookSearchPaths(
+        internal string[] BuildHookSearchPaths(
             ParsedExtension extension,
             List<ParsedExtension> libraryExtensions,
             string? pyRevitRoot)
