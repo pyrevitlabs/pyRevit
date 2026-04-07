@@ -129,461 +129,11 @@ def _patched_get_item_property_id_value(adc_svc, drive, item, prop_id):
 if not HOST_APP.is_newer_than("2024") and not getattr(
     adc, "_readonlylist_patched", False
 ):
-    logger.debug("Applying ADC ReadOnlyList patches for .NET Framework")
     adc._get_item = _patched_get_item
     adc._get_item_lockstatus = _patched_get_item_lockstatus
     adc._get_item_property_value = _patched_get_item_property_value
     adc._get_item_property_id_value = _patched_get_item_property_id_value
     adc._readonlylist_patched = True
-
-
-# =============================================================================
-# ADC DIAGNOSTIC LOGGING
-# =============================================================================
-# Two-tier diagnostic system:
-#
-# TIER 1 — SAFE DIAGNOSTIC (_adc_diagnose_safe)
-#   Tests only the Public API (GetDesktopConnectorInfo, GetSubscriptions).
-#   Does NOT load any legacy DLLs or touch WCF.  Safe to run anytime
-#   without poisoning the AppDomain.  Always available.
-#
-# TIER 2 — DEEP DIAGNOSTIC (_adc_diagnose_deep)
-#   Probes legacy DLLs, WCF assemblies, tries DesktopConnectorService().
-#   POISONS the AppDomain on .NET 8 with ADC v2027 — only runs when
-#   gated behind PYREVIT_ADC_DIAG=1 env var AND after is_available()
-#   has already failed on a clean AppDomain.
-#
-# Call order in _determine_kfile():
-#   1. adc.is_available() — clean AppDomain, first touch
-#   2. If True  → _resolve_adc_keynote() → done
-#   3. If False → _adc_diagnose_safe() for all users (light, safe)
-#   4. If PYREVIT_ADC_DIAG=1 → _adc_diagnose_deep() (heavy, poisonous)
-
-
-def _is_deep_diagnostic_enabled():
-    """Check if deep ADC diagnostic mode is enabled.
-    Set PYREVIT_ADC_DIAG=1 in environment variables to enable.
-    This triggers the legacy DLL / WCF probing which poisons the
-    AppDomain on .NET 8.  Only needed for developer debugging."""
-    return os.environ.get("PYREVIT_ADC_DIAG", "").strip() == "1"
-
-
-def _adc_diagnose_safe(keynote_ext_path=None):
-    """Tier 1: Safe diagnostic using only the Public API.
-    Does NOT load legacy DLLs or touch WCF — safe for all users.
-
-    Returns a list of (level, message) tuples."""
-    import os.path as _op
-
-    report = []
-
-    def _log(level, msg):
-        report.append((level, msg))
-        logger.debug("ADC [%s] %s" % (level, msg))
-
-    _log("INFO", "=" * 60)
-    _log("INFO", "ADC STATUS REPORT")
-    _log("INFO", "=" * 60)
-
-    # 1. Environment
-    try:
-        is_net8 = HOST_APP.is_newer_than("2024")
-        _log(
-            "INFO",
-            "Revit %s | .NET %s"
-            % (HOST_APP.version, "Core (8+)" if is_net8 else "Framework 4.x"),
-        )
-    except Exception:
-        _log("WARN", "Cannot read Revit version")
-
-    # 2. API surface loaded by adc.py
-    api_mode = getattr(adc, "_api_mode", None)
-    has_public = bool(getattr(adc, "API_PUBLIC", None))
-    has_legacy = bool(getattr(adc, "API", None))
-    _log(
-        "INFO",
-        "api_mode=%s | Public=%s | Legacy=%s" % (api_mode, has_public, has_legacy),
-    )
-
-    # 3. ADC process check
-    try:
-        from pyrevit.framework import Process
-
-        adc_procs = [
-            p for p in Process.GetProcesses() if "DesktopConnector" in p.ProcessName
-        ]
-        if adc_procs:
-            for p in adc_procs:
-                try:
-                    _log("OK", "ADC process: %s (PID %d)" % (p.ProcessName, p.Id))
-                except Exception:
-                    _log("OK", "ADC process found")
-        else:
-            _log("FAIL", "No Desktop Connector process running")
-    except Exception:
-        _log("WARN", "Process check failed")
-
-    # 4. Public API test (safe — no WCF)
-    if has_public:
-        PubAPI = adc.API_PUBLIC
-        # 4a. GetDesktopConnectorInfo
-        try:
-            client = PubAPI.DesktopConnectorApiClient()
-            try:
-                info = client.GetDesktopConnectorInfo()
-                _log("OK", "GetDesktopConnectorInfo() succeeded")
-                try:
-                    _log(
-                        "INFO",
-                        "  ProjectSubscriptionLimit: %s"
-                        % info.ProjectSubscriptionLimit,
-                    )
-                except Exception:
-                    pass
-            except Exception as ex:
-                _log("FAIL", "GetDesktopConnectorInfo() failed: %s" % ex)
-            finally:
-                client.Dispose()
-        except Exception as ex:
-            _log("FAIL", "DesktopConnectorApiClient() failed: %s" % ex)
-
-        # 4b. GetSubscriptions
-        try:
-            client = PubAPI.DesktopConnectorApiClient()
-            try:
-                subs = list(client.GetSubscriptions())
-                active = [
-                    s for s in subs if s.State == PubAPI.SubscriptionState.Subscribed
-                ]
-                _log(
-                    "OK",
-                    "GetSubscriptions() returned %d total, "
-                    "%d active" % (len(subs), len(active)),
-                )
-                for s in active:
-                    try:
-                        _log(
-                            "INFO",
-                            "  Drive: %s | Path: %s | "
-                            "DriveType: %s" % (s.Name, s.Path, s.DriveType),
-                        )
-                    except Exception:
-                        _log("INFO", "  Drive: %s (details partial)" % s.Name)
-            except Exception as ex:
-                _log("FAIL", "GetSubscriptions() failed: %s" % ex)
-            finally:
-                client.Dispose()
-        except Exception as ex:
-            _log("FAIL", "Client creation for subscriptions failed: %s" % ex)
-
-        # 4c. Keynote path resolution (if provided)
-        if keynote_ext_path:
-            _log("INFO", "Resolving: %s" % keynote_ext_path)
-            try:
-                local = adc.get_local_path(keynote_ext_path)
-                if local:
-                    _log("OK", "Resolved to: %s" % local)
-                    _log(
-                        "OK" if _op.exists(local) else "FAIL",
-                        "File exists: %s" % _op.exists(local),
-                    )
-                else:
-                    _log("FAIL", "No drive matches the keynote path")
-            except Exception as ex:
-                _log("FAIL", "Path resolution failed: %s" % ex)
-    else:
-        _log("WARN", "Public API not loaded — cannot test")
-
-    # 5. Legacy API status (report only, no loading)
-    if has_legacy:
-        _log("OK", "Legacy API available — full file ops (lock/sync)")
-    elif api_mode == "public":
-        _log(
-            "INFO",
-            "Legacy API not loaded — file lock/sync/unlock "
-            "will be skipped (ADC v2027+ Public API only)",
-        )
-    else:
-        _log("WARN", "No API surface loaded")
-
-    _log("INFO", "=" * 60)
-    _log("INFO", "END ADC STATUS REPORT")
-    _log("INFO", "=" * 60)
-    return report
-
-
-def _adc_diagnose_deep(keynote_ext_path=None):
-    """Tier 2: Deep diagnostic — probes legacy DLLs and WCF assemblies.
-
-    WARNING: This POISONS the AppDomain on .NET 8 with ADC v2027.
-    Only call AFTER is_available() has already returned False,
-    and only when PYREVIT_ADC_DIAG=1 is set.
-
-    Returns a list of (level, message) tuples."""
-    from pyrevit.framework import clr, Process
-    import os.path as _op
-    import traceback as _tb
-
-    report = []
-
-    def _log(level, msg):
-        report.append((level, msg))
-        logger.debug("ADC_DEEP [%s] %s" % (level, msg))
-
-    _log("INFO", "=" * 60)
-    _log("INFO", "ADC DEEP DIAGNOSTIC (legacy DLL probing)")
-    _log("INFO", "WARNING: This may poison the .NET AppDomain")
-    _log("INFO", "=" * 60)
-
-    is_net8 = HOST_APP.is_newer_than("2024")
-    _log(
-        "INFO",
-        "Revit %s | .NET %s"
-        % (HOST_APP.version, "Core (8+)" if is_net8 else "Framework 4.x"),
-    )
-
-    # 1. DLL scan
-    net8_path = (
-        r"C:\Program Files\Autodesk\Desktop Connector" r"\FOS\AddInProcess\Civil3DOE"
-    )
-    netfw_path = r"C:\Program Files\Autodesk\Desktop Connector"
-    dll_name = "Autodesk.DesktopConnector.API.dll"
-
-    for label, path in [
-        (".NET 8 (Civil3DOE)", net8_path),
-        (".NET FW (root)", netfw_path),
-    ]:
-        full = _op.join(path, dll_name)
-        exists = _op.exists(full)
-        _log(
-            "OK" if exists else "WARN",
-            "%s: %s" % (label, "EXISTS" if exists else "NOT FOUND"),
-        )
-
-    # Scan all API DLLs
-    found_dlls = []
-    adc_root = r"C:\Program Files\Autodesk\Desktop Connector"
-    if _op.isdir(adc_root):
-        for dirpath, _, filenames in os.walk(adc_root):
-            for fn in filenames:
-                if fn.lower() == dll_name.lower():
-                    full = _op.join(dirpath, fn)
-                    found_dlls.append(full)
-                    try:
-                        from System.Diagnostics import FileVersionInfo
-
-                        fvi = FileVersionInfo.GetVersionInfo(full)
-                        ver = "%s.%s.%s.%s" % (
-                            fvi.FileMajorPart,
-                            fvi.FileMinorPart,
-                            fvi.FileBuildPart,
-                            fvi.FilePrivatePart,
-                        )
-                        _log("INFO", "  %s (v%s)" % (full, ver))
-                    except Exception:
-                        _log("INFO", "  %s" % full)
-
-    # 2. Try manual legacy DLL load
-    api_module = None
-    for dll in found_dlls:
-        _log("INFO", "Attempting legacy load: %s" % dll)
-        try:
-            clr.AddReferenceToFileAndPath(dll)
-            import Autodesk.DesktopConnector.API as _test_api
-
-            _log(
-                "OK",
-                "DLL loaded — types: %s"
-                % ", ".join([t for t in dir(_test_api) if not t.startswith("_")][:15]),
-            )
-            api_module = _test_api
-            break
-        except Exception as ex:
-            _log("FAIL", "Load failed: %s" % ex)
-
-    # 3. Service instantiation (THIS IS THE POISON STEP)
-    svc = None
-    if api_module:
-        try:
-            svc = api_module.DesktopConnectorService()
-            _log("OK", "DesktopConnectorService() succeeded")
-        except Exception as ex:
-            _log("FAIL", "DesktopConnectorService() FAILED: %s" % ex)
-
-            # 3b. WCF shim attempt
-            if "System.ServiceModel" in str(ex):
-                _log("INFO", "WCF dependency failure detected")
-                _log("INFO", "Searching for WCF assemblies...")
-                svc = _try_wcf_shim(api_module, _log)
-
-    # 4. Discover + drives (if service created)
-    if svc:
-        try:
-            svc.Discover()
-            _log("OK", "Discover() succeeded")
-        except Exception as ex:
-            _log("FAIL", "Discover() failed: %s" % ex)
-        try:
-            drives = list(svc.GetDrives())
-            _log("OK", "%d drives found" % len(drives))
-            for drv in drives:
-                try:
-                    _log("INFO", "  %s -> %s" % (drv.Name, drv.WorkspaceLocation))
-                except Exception:
-                    pass
-        except Exception as ex:
-            _log("FAIL", "GetDrives() failed: %s" % ex)
-    else:
-        _log("FAIL", "Service not created — skipping Discover/GetDrives")
-        if is_net8:
-            _log("INFO", "")
-            _log("INFO", "This is a confirmed ADC v2027 regression:")
-            _log("INFO", "  ADC removed the .NET 8 API DLL from")
-            _log("INFO", "  FOS/AddInProcess/Civil3DOE and the root")
-            _log("INFO", "  DLL requires WCF which .NET 8 lacks.")
-
-    _log("INFO", "=" * 60)
-    _log("INFO", "END DEEP DIAGNOSTIC")
-    _log("INFO", "=" * 60)
-    return report
-
-
-def _find_wcf_assemblies():
-    """Search for System.ServiceModel assemblies (NuGet, Revit, ADC).
-    Only called from deep diagnostic path."""
-    import os as _os
-    import os.path as _op
-
-    found = {}
-    search_roots = []
-
-    nuget_cache = _op.join(_os.environ.get("USERPROFILE", ""), ".nuget", "packages")
-    if _op.isdir(nuget_cache):
-        for pkg in [
-            "system.servicemodel.primitives",
-            "system.servicemodel.http",
-            "system.servicemodel.nettcp",
-            "system.servicemodel.netnamedpipe",
-            "system.private.servicemodel",
-        ]:
-            pkg_dir = _op.join(nuget_cache, pkg)
-            if _op.isdir(pkg_dir):
-                search_roots.append(pkg_dir)
-
-    revit_dir = _op.dirname(HOST_APP.proc_path) if HOST_APP.proc_path else ""
-    if revit_dir and _op.isdir(revit_dir):
-        search_roots.append(revit_dir)
-
-    adc_root = r"C:\Program Files\Autodesk\Desktop Connector"
-    if _op.isdir(adc_root):
-        search_roots.append(adc_root)
-
-    targets = {
-        "system.servicemodel.dll",
-        "system.servicemodel.primitives.dll",
-        "system.servicemodel.http.dll",
-        "system.servicemodel.nettcp.dll",
-        "system.servicemodel.netnamedpipe.dll",
-        "system.private.servicemodel.dll",
-    }
-
-    for root in search_roots:
-        try:
-            for dirpath, _, filenames in _os.walk(root):
-                if "net4" in dirpath.lower() and "net8" not in dirpath.lower():
-                    continue
-                for fn in filenames:
-                    if fn.lower() in targets:
-                        short = fn.lower().replace(".dll", "")
-                        full = _op.join(dirpath, fn)
-                        if short not in found or "net8" in dirpath.lower():
-                            found[short] = full
-        except Exception:
-            pass
-    return found
-
-
-def _try_wcf_shim(api_module, _log):
-    """Attempt WCF dependency resolution and retry DesktopConnectorService().
-    WARNING: Poisons the AppDomain. Only call from deep diagnostic."""
-    from pyrevit.framework import clr
-    import traceback as _tb
-    from System.Reflection import Assembly
-
-    wcf_dlls = _find_wcf_assemblies()
-    if not wcf_dlls:
-        _log("FAIL", "No WCF assemblies found on disk")
-        return None
-
-    _log("INFO", "Found WCF assemblies:")
-    for name, path in sorted(wcf_dlls.items()):
-        _log("INFO", "  %s -> %s" % (name, path))
-
-    for name, path in wcf_dlls.items():
-        try:
-            clr.AddReferenceToFileAndPath(path)
-            _log("OK", "Pre-loaded: %s" % name)
-        except Exception as ex:
-            _log("WARN", "Failed: %s (%s)" % (name, ex))
-
-    _resolve_cache = {}
-    for name, path in wcf_dlls.items():
-        try:
-            asm = Assembly.LoadFrom(path)
-            _resolve_cache[asm.GetName().Name.lower()] = asm
-            _log(
-                "INFO", "  Cached: %s v%s" % (asm.GetName().Name, asm.GetName().Version)
-            )
-        except Exception:
-            pass
-
-    def _wcf_resolve(sender, args):
-        try:
-            req = args.Name.split(",")[0].strip().lower()
-            if req in _resolve_cache:
-                return _resolve_cache[req]
-            for cn, ca in _resolve_cache.items():
-                if req in cn or cn in req:
-                    return ca
-        except Exception:
-            pass
-        return None
-
-    try:
-        System.AppDomain.CurrentDomain.AssemblyResolve += _wcf_resolve
-        _log("OK", "AssemblyResolve handler registered")
-    except Exception as ex:
-        _log("FAIL", "Handler registration failed: %s" % ex)
-        return None
-
-    _log("INFO", "Retrying DesktopConnectorService()...")
-    try:
-        svc = api_module.DesktopConnectorService()
-        _log("OK", "WCF SHIM WORKED — service instantiated")
-        # Note: NOT mutating adc.API here — diagnostic functions
-        # should only observe, not change module state.
-        return svc
-    except Exception as ex:
-        _log("FAIL", "Retry FAILED: %s" % ex)
-        _log("INFO", "Confirmed: Legacy API cannot work on .NET 8 " "with ADC v2027.")
-        try:
-            System.AppDomain.CurrentDomain.AssemblyResolve -= _wcf_resolve
-        except Exception:
-            pass
-        return None
-
-
-def _print_adc_report(report):
-    """Print an ADC diagnostic report to the pyRevit output window."""
-    ICONS = {"INFO": "\u2139", "OK": "\u2705", "WARN": "\u26a0", "FAIL": "\u274c"}
-    out = script.get_output()
-    out.print_md("## ADC Diagnostic Report")
-    for level, msg in report:
-        icon = ICONS.get(level, "")
-        if level == "FAIL":
-            out.print_md("**%s %s**" % (icon, msg))
-        else:
-            print("%s %s" % (icon, msg))
 
 
 # =============================================================================
@@ -1336,107 +886,41 @@ class KeynoteManagerWindow(forms.WPFWindow):
         Resolution order:
           1. Local keynote file (revit.query.get_local_keynote_file)
           2. External/cloud file via ADC (Autodesk Desktop Connector)
-             a. Try adc.is_available() on CLEAN AppDomain first
-             b. Resolve cloud path to local via adc.get_local_path()
-             c. Graceful degradation for lock/sync on Public API
-          3. Diagnostic if ADC not available:
-             - Tier 1 (safe) always runs — tests Public API only
-             - Tier 2 (deep) only with PYREVIT_ADC_DIAG=1 env var
+             - Resolve cloud path to local via adc.get_local_path()
+             - Graceful degradation for lock/sync on Public API
+          3. Alert user if ADC not available
         """
         self._kfile = revit.query.get_local_keynote_file(doc=revit.doc)
         self._kfile_handler = None
         self._kfile_ext = None
 
-        logger.debug("ADC | local keynote file: %s" % self._kfile)
-
-        # --- Step 1: local file found — done ---
         if self._kfile:
             return
 
-        # --- Step 2: check for external/cloud-hosted keynote file ---
         self._kfile_ext = revit.query.get_external_keynote_file(doc=revit.doc)
         self._kfile_handler = "unknown"
-        logger.debug("ADC | external keynote file: %s" % self._kfile_ext)
 
         if not self._kfile_ext:
             return
 
-        # --- Step 3: cloud file detected — try ADC resolution ---
-        logger.debug("ADC | cloud-hosted keynote, checking ADC...")
-        logger.debug(
-            "ADC | _api_mode=%s  Public=%s  Legacy=%s"
-            % (
-                getattr(adc, "_api_mode", None),
-                bool(getattr(adc, "API_PUBLIC", None)),
-                bool(getattr(adc, "API", None)),
-            )
-        )
-
         # CRITICAL: call is_available() FIRST on a clean AppDomain.
-        # No legacy DLL probing has occurred before this point.
-        adc_available = adc.is_available()
-        logger.debug("ADC | is_available() = %s" % adc_available)
-
-        if adc_available:
+        # No legacy DLL probing before this point.
+        if adc.is_available():
             self._kfile_handler = "adc"
             self._resolve_adc_keynote()
             return
 
-        # --- Step 4: ADC not available — diagnose and inform user ---
-        logger.debug("ADC | not available — running safe diagnostic")
-
-        # Tier 1: Safe diagnostic (always runs, no WCF poison)
-        safe_report = _adc_diagnose_safe(keynote_ext_path=self._kfile_ext)
-
-        # Check if any FAIL entries exist for context
-        has_failures = any(lvl == "FAIL" for lvl, _ in safe_report)
-
-        # Tier 2: Deep diagnostic (only with env var, poisons AppDomain)
-        deep_report = None
-        if _is_deep_diagnostic_enabled():
-            logger.debug("ADC | PYREVIT_ADC_DIAG=1 — running deep diagnostic")
-            deep_report = _adc_diagnose_deep(keynote_ext_path=self._kfile_ext)
-
-        # Print reports to output window
-        if deep_report:
-            _print_adc_report(safe_report + deep_report)
-        elif has_failures:
-            _print_adc_report(safe_report)
-
-        # User-facing alert
-        api_mode = getattr(adc, "_api_mode", None)
-        msg = "{} is not available.".format(adc.ADC_NAME)
-
-        if deep_report:
-            msg += (
-                "\n\nDiagnostic reports have been printed to the\n"
-                "pyRevit output window. Please share with the\n"
-                "development team."
-            )
-        elif api_mode == "public":
-            msg += (
-                "\n\nThe ADC Public API loaded but could not "
-                "connect to the service.\nPlease ensure Desktop "
-                "Connector is running in the system tray."
-                "\n\nFor detailed diagnostics, set environment "
-                "variable PYREVIT_ADC_DIAG=1 and retry."
-            )
-        elif not api_mode:
-            msg += (
-                "\n\nNo compatible ADC API was found.\n"
-                "This may be caused by ADC v2027 on "
-                "Revit 2025/2026.\n\nFor detailed diagnostics, "
-                "set PYREVIT_ADC_DIAG=1 and retry."
-            )
-
-        forms.alert(msg, exitscript=True)
+        forms.alert(
+            "{} is not available.\n\n"
+            "Please ensure Desktop Connector is running "
+            "in the system tray.".format(adc.ADC_NAME),
+            exitscript=True,
+        )
 
     def _resolve_adc_keynote(self):
-        """Resolve cloud keynote path to local file via ADC.
-        Called only when adc.is_available() returned True."""
+        """Resolve cloud keynote path to local file via ADC."""
         try:
             local_kfile = adc.get_local_path(self._kfile_ext)
-            logger.debug("ADC | get_local_path() -> %s" % local_kfile)
 
             if not local_kfile:
                 forms.alert(
@@ -1445,29 +929,24 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 )
                 return
 
-            # Lock check (graceful — may not be available on Public API)
             try:
                 locked, owner = adc.is_locked(self._kfile_ext)
-                logger.debug("ADC | is_locked -> %s, %s" % (locked, owner))
                 if locked:
                     forms.alert("File locked by {}.".format(owner), exitscript=True)
                     return
-            except Exception as lockex:
-                logger.debug("ADC | lock check skipped: %s" % lockex)
+            except Exception:
+                pass
 
-            # Sync and lock (graceful — no-ops on Public API)
             try:
                 adc.sync_file(self._kfile_ext)
                 adc.lock_file(self._kfile_ext)
-                logger.debug("ADC | sync+lock completed")
-            except Exception as syncex:
-                logger.debug("ADC | sync/lock skipped: %s" % syncex)
+            except Exception:
+                pass
 
             self._kfile = local_kfile
             self.Title += " ( ACC / FORMA )"
 
         except Exception as adcex:
-            logger.debug("ADC | resolution failed: %s" % adcex)
             forms.alert("ADC communication failed.\n{}".format(adcex), exitscript=True)
 
     def _change_kfile(self):

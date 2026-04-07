@@ -16,11 +16,8 @@ Supports two API surfaces:
 import os.path as op
 from pyrevit import PyRevitException
 from pyrevit.framework import clr, Process, System
-from pyrevit.coreutils import logger
 
 from pyrevit import HOST_APP
-
-mlogger = logger.get_logger(__name__)
 
 ADC_NAME = "Autodesk Desktop Connector"
 ADC_SHORTNAME = "ADC"
@@ -150,7 +147,6 @@ def _preload_wcf_for_public_api():
         try:
             clr.AddReferenceToFileAndPath(spm_dll)
             loaded += 1
-            mlogger.debug("Loaded System.Private.ServiceModel from: %s" % spm_dll)
         except Exception:
             pass
 
@@ -160,7 +156,6 @@ def _preload_wcf_for_public_api():
         try:
             _facade_asm = SysAssembly.LoadFrom(sm_facade)
             loaded += 1
-            mlogger.debug("Loaded System.ServiceModel facade from: %s" % sm_facade)
         except Exception:
             pass
 
@@ -193,10 +188,6 @@ def _preload_wcf_for_public_api():
 
         try:
             System.AppDomain.CurrentDomain.AssemblyResolve += _wcf_resolve
-            mlogger.debug(
-                "Registered WCF AssemblyResolve handler "
-                "(%d cached)" % len(_resolve_cache)
-            )
         except Exception:
             pass
 
@@ -210,9 +201,7 @@ def _preload_wcf_for_public_api():
             pass
 
     if loaded:
-        mlogger.debug(
-            "Pre-loaded %d WCF/contract assemblies for " "Public API" % loaded
-        )
+        pass
     return loaded > 0
 
 
@@ -234,10 +223,9 @@ def _try_load_public_api():
 
         if hasattr(_pub, "DesktopConnectorApiClient"):
             API_PUBLIC = _pub
-            mlogger.debug("Loaded ADC Public API from: %s" % dll)
             return True
     except Exception as ex:
-        mlogger.debug("Public API load failed: %s" % ex)
+        pass
     return False
 
 
@@ -263,36 +251,9 @@ def _try_load_legacy_api():
             API = _api
             ADC_DEFAULT_INSTALL_PATH = path
             ADC_API_DLL_PATH = dll
-            mlogger.debug("Loaded ADC Legacy API from: %s" % dll)
             return True
         except Exception as ex:
-            mlogger.debug("Legacy API failed from %s: %s" % (dll, ex))
-    return False
-
-
-# Load in priority order
-if HOST_APP.is_newer_than("2024"):
-    # .NET 8: prefer Public API (v2027+), fall back to Legacy.
-    # CRITICAL: Do NOT attempt legacy load when Public API succeeded.
-    # _try_load_legacy_api() calls DesktopConnectorService() which
-    # triggers WCF System.ServiceModel resolution.  On ADC v2027 this
-    # fails and the failure is CACHED in the AppDomain, poisoning all
-    # subsequent assembly loads — including the Public API's own
-    # GetDesktopConnectorInfo() which then fails with the same
-    # NetNamedPipeBinding error even though it has no WCF dependency.
-    if _try_load_public_api():
-        _api_mode = "public"
-    elif _try_load_legacy_api():
-        _api_mode = "legacy"
-else:
-    # .NET Framework: Legacy only
-    if _try_load_legacy_api():
-        _api_mode = "legacy"
-
-mlogger.debug(
-    "ADC api_mode: %s | API: %s | API_PUBLIC: %s"
-    % (_api_mode, bool(API), bool(API_PUBLIC))
-)
+            pass
 
 
 # =====================================================================
@@ -516,7 +477,6 @@ def _resolve_path_from_filesystem(cloud_path):
         # Try direct join: ws_root/org/project/rest...
         candidate = op.normpath(op.join(ws_root, *segments))
         if op.exists(candidate):
-            mlogger.debug("Filesystem fallback resolved: %s" % candidate)
             return candidate
 
         # Try case-insensitive search in org directory
@@ -532,14 +492,10 @@ def _resolve_path_from_filesystem(cloud_path):
                     # Try building path from this project dir
                     file_path = op.normpath(op.join(project_candidate, *segments[2:]))
                     if op.exists(file_path):
-                        mlogger.debug(
-                            "Filesystem fallback resolved " "(fuzzy): %s" % file_path
-                        )
                         return file_path
         except Exception:
             pass
 
-    mlogger.debug("Filesystem fallback: no match for %s" % cloud_path)
     return None
 
 
@@ -560,13 +516,13 @@ def is_available():
             finally:
                 client.Dispose()
         except Exception as ex:
-            mlogger.debug("Public API is_available failed: %s" % ex)
+            pass
     if API:
         try:
             _get_adc().Discover()
             return True
         except Exception as ex:
-            mlogger.debug("Legacy API is_available failed: %s" % ex)
+            pass
     # Filesystem fallback: ADC process running + workspace dirs exist
     # Verify workspace roots actually contain org subdirectories
     if _adc_process_running():
@@ -576,10 +532,6 @@ def is_available():
 
                 entries = _os.listdir(ws_root)
                 if any(op.isdir(op.join(ws_root, e)) for e in entries):
-                    mlogger.debug(
-                        "ADC available via filesystem fallback "
-                        "(process running, workspace dirs found)"
-                    )
                     return True
             except Exception:
                 pass
@@ -620,7 +572,7 @@ def get_local_path(path):
             if sub:
                 return _pub_drive_path_to_local(sub, schema, path)
         except Exception as ex:
-            mlogger.debug("Public API get_local_path: %s" % ex)
+            pass
     # Try Legacy API
     if API:
         try:
@@ -629,7 +581,7 @@ def get_local_path(path):
             if drv_info:
                 return _drive_path_to_local_path(drv_info, path)
         except Exception as ex:
-            mlogger.debug("Legacy API get_local_path: %s" % ex)
+            pass
     # Filesystem fallback
     resolved = _resolve_path_from_filesystem(path)
     if resolved:
@@ -640,7 +592,6 @@ def get_local_path(path):
 def lock_file(path):
     """Lock given file. No-op if only Public API available."""
     if not API:
-        mlogger.debug("lock_file: legacy API unavailable, skipping")
         return
     adc = _get_adc()
     item = _get_item(adc, path)
@@ -660,7 +611,6 @@ def is_locked(path):
 def unlock_file(path):
     """Unlock given file. No-op if only Public API available."""
     if not API:
-        mlogger.debug("unlock_file: legacy API unavailable, skipping")
         return
     adc = _get_adc()
     item = _get_item(adc, path)
@@ -685,7 +635,6 @@ def is_synced(path):
 def sync_file(path, force=False):
     """Force ADC to sync given file. No-op if only Public API available."""
     if not API:
-        mlogger.debug("sync_file: legacy API unavailable, skipping")
         return
     if not force and is_synced(path):
         return
