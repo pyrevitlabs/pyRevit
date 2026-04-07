@@ -448,8 +448,15 @@ namespace pyRevitExtensionParser
         /// </param>
         /// <returns>A new <see cref="PyRevitConfig"/> instance for the specified configuration file.</returns>
         /// <remarks>
-        /// This method does not verify that the configuration file exists.
-        /// The file will be created automatically when values are written.
+        /// When loading from the default path (i.e. <paramref name="customPath"/> is null), this method
+        /// eagerly creates an empty <c>pyRevit_config.ini</c> file (and its parent directory) if it does
+        /// not already exist, so that Python's <c>configparser</c> can save settings without manual
+        /// intervention.  The result is cached for the lifetime of the session; call
+        /// <see cref="ClearCache"/> to force a re-read on the next call.
+        /// <para>
+        /// When a <paramref name="customPath"/> is supplied (e.g. in tests), the call is never cached
+        /// and no file is created.
+        /// </para>
         /// </remarks>
         /// <example>
         /// <code>
