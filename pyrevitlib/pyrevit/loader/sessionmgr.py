@@ -1,3 +1,4 @@
+# encoding: utf-8
 """The loader module manages the workflow of loading a new pyRevit session.
 
 Its main purpose is to orchestrate the process of finding pyRevit extensions,
@@ -40,7 +41,7 @@ from pyrevit import output
 from pyrevit import DB, UI, revit
 
 
-#pylint: disable=W0703,C0302,C0103,no-member
+# pylint: disable=W0703,C0302,C0103,no-member
 mlogger = logger.get_logger(__name__)
 
 # Build strategy constant (Roslyn is the only supported strategy)
@@ -279,13 +280,13 @@ def _new_session_csharp():
             except Exception:
                 # Some assemblies might not have accessible location/name
                 continue
-        
+
         if not loader_app_type:
             mlogger.error('PyRevitLoaderApplication not found in loaded assemblies')
             mlogger.info('Falling back to Python session creation...')
             _new_session()
             return
-        
+
         # Get the LoadSession method
         load_session_method = loader_app_type.GetMethod('LoadSession')
         if not load_session_method:
@@ -293,11 +294,11 @@ def _new_session_csharp():
             mlogger.info('Falling back to Python session creation...')
             _new_session()
             return
-        
+
         # Call the LoadSession method with logger and build strategy
         mlogger.info('Loading session using C# LoadSession method...')
         result = load_session_method.Invoke(None, framework.Array[object]([mlogger, build_strategy]))
-        
+
         # Check if the result indicates success (Result.Succeeded = 0)
         if hasattr(result, 'value__') and result.value__ == 0:
             mlogger.info('C# session loading completed successfully')
@@ -316,7 +317,7 @@ def _new_session_csharp():
             mlogger.error('C# session loading returned failure result')
             mlogger.info('Falling back to Python session creation...')
             _new_session()
-        
+
     except Exception as cs_ex:
         mlogger.error('Error in C# session creation: %s', cs_ex)
         mlogger.info('Falling back to Python session creation...')
