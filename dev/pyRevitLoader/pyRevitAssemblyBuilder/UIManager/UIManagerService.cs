@@ -137,11 +137,10 @@ namespace pyRevitAssemblyBuilder.UIManager
                 return;
             }
 
-            // Pre-load icon files in parallel to warm OS file cache (skipped in Rocket Mode)
-            if (!_rocketMode)
-                _buttonPostProcessor.IconManager.PreloadExtensionIcons(extension);
-            else
-                _logger.Debug($"Rocket mode: skipping icon pre-load for extension '{extension.Name}'.");
+            // Icon pre-loading removed for #3268: the legacy Python loader loads icons
+            // on-demand during UI construction with no pre-loading step.
+            // LoadBitmapSource() has its own BitmapCache, so each icon is decoded once.
+            // The OS file cache is already warm from bundle.yaml parsing in PASS 1.
 
             _currentExtension = extension;
             foreach (var component in extension.Children)

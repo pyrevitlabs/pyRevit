@@ -15,7 +15,15 @@ namespace pyRevitExtensionParser
         /// The underlying INI file handler for reading and writing configuration values.
         /// </summary>
         private readonly IniFile _ini;
-        
+
+        /// <summary>
+        /// Cached default-path instance. Cleared via <see cref="ClearCache"/> at the
+        /// start of each session load so that config changes made between reloads are
+        /// picked up.  Custom-path calls bypass this cache.
+        /// </summary>
+        private static PyRevitConfig _defaultInstance;
+        private static readonly object _cacheLock = new object();
+
         /// <summary>
         /// Cached values for boolean conversion to avoid repeated string allocations.
         /// </summary>
@@ -454,15 +462,46 @@ namespace pyRevitExtensionParser
         /// </example>
         public static PyRevitConfig Load(string customPath = null)
         {
+            // Custom-path calls (used by tests) always create a fresh instance — no caching.
             if (!string.IsNullOrEmpty(customPath))
                 return new PyRevitConfig(customPath);
 
-            var appDataPyRevit = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "pyRevit");
-            var discovered = TryFindConfigIniInDirectory(appDataPyRevit);
-            var fallback = Path.Combine(appDataPyRevit, "pyRevit_config.ini");
-            return new PyRevitConfig(discovered ?? fallback);
+            // Return cached default-path instance.
+            if (_defaultInstance != null)
+                return _defaultInstance;
+
+            lock (_cacheLock)
+            {
+                if (_defaultInstance != null)
+                    return _defaultInstance;
+
+                var appDataPyRevit = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "pyRevit");
+                var discovered = TryFindConfigIniInDirectory(appDataPyRevit);
+                var fallback = Path.Combine(appDataPyRevit, "pyRevit_config.ini");
+                var finalPath = discovered ?? fallback;
+
+                // Ensure the file exists so Python's configparser can write to it
+                if (!File.Exists(finalPath))
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(finalPath));
+                    File.Create(finalPath).Dispose();
+                }
+
+                _defaultInstance = new PyRevitConfig(finalPath);
+                return _defaultInstance;
+            }
+        }
+
+        /// <summary>
+        /// Clears the cached default-path config instance so that the next
+        /// <see cref="Load()"/> call re-reads from disk.  Called at session reload
+        /// via <see cref="ExtensionParser.ClearAllCaches"/>.
+        /// </summary>
+        public static void ClearCache()
+        {
+            _defaultInstance = null;
         }
 
         /// <summary>
