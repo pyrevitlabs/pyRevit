@@ -21,7 +21,7 @@ namespace pyRevitExtensionParser
         /// start of each session load so that config changes made between reloads are
         /// picked up.  Custom-path calls bypass this cache.
         /// </summary>
-        private static PyRevitConfig _defaultInstance;
+        private static volatile PyRevitConfig _defaultInstance;
         private static readonly object _cacheLock = new object();
 
         /// <summary>
@@ -508,7 +508,10 @@ namespace pyRevitExtensionParser
         /// </summary>
         public static void ClearCache()
         {
-            _defaultInstance = null;
+            lock (_cacheLock)
+            {
+                _defaultInstance = null;
+            }
         }
 
         /// <summary>
