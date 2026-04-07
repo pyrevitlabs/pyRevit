@@ -18,8 +18,8 @@
     <TestTfmsInParallel>false</TestTfmsInParallel>
     <SkipPyRevitDeploy>true</SkipPyRevitDeploy>
     <RunSettingsFilePath>test.runsettings</RunSettingsFilePath>
-	<!-- Suppress NUnit analyzer suggestions for classic assertion model -->
-	<NoWarn>$(NoWarn);NUnit2005;NUnit2006</NoWarn>
+	<!-- Suppress NUnit analyzer suggestions for classic assertion model and related style hints -->
+	<NoWarn>$(NoWarn);NUnit2005;NUnit2006;NUnit1033;NUnit2048;NUnit2049</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

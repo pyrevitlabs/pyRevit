@@ -614,8 +614,21 @@ namespace pyRevitExtensionParser
 
         private static bool ParseBool(YamlNode node)
         {
-            var value = GetScalar(node);
-            return value != null && value.Equals("true", StringComparison.InvariantCultureIgnoreCase);
+            var scalar = node as YamlScalarNode;
+            if (scalar == null)
+                return false;
+
+            var value = scalar.Value?.Trim();
+            if (string.IsNullOrEmpty(value))
+                return false;
+
+            if (bool.TryParse(value, out var b))
+                return b;
+
+            return value.Equals("true", StringComparison.InvariantCultureIgnoreCase)
+                   || value.Equals("1", StringComparison.Ordinal)
+                   || value.Equals("yes", StringComparison.InvariantCultureIgnoreCase)
+                   || value.Equals("on", StringComparison.InvariantCultureIgnoreCase);
         }
 
         private static string GetScalar(YamlNode node)
