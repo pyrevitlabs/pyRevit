@@ -316,7 +316,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             }
         }
 
-        //// <summary>
+        /// <summary>
         /// Resolves and returns the metadata references required for Roslyn compilation.
         /// </summary>
         /// <remarks>

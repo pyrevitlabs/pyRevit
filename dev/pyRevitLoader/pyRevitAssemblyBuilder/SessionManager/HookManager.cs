@@ -128,7 +128,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             var pieces = extension.UniqueId + "_" + hookFileName;
 
             // SanitizeClassName replicates cleanup_string(skip=['_'])
-            return ExtensionParser.SanitizeClassName(pieces.ToLowerInvariant());
+            return ExtensionParser.SanitizeClassName(pieces).ToLowerInvariant();
         }
 
         /// <summary>

@@ -199,7 +199,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 }
                 catch (Exception ex)
                 {
-                    _logger.Error($"Hook registration error for '{ext.Name}': {ex.Message}");
+                    _logger.Error($"Hook registration error for '{ext.Name}': {ex}");
                 }
             }
             _logger.Debug($"[PERF] RegisterHooks (all extensions): {stepStopwatch.ElapsedMilliseconds}ms");
