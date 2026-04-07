@@ -133,6 +133,41 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         }
 
         /// <summary>
+        /// Cached list of loaded pyRevit assembly names, built once per session on first access.
+        /// </summary>
+        /// <remarks>
+        /// Perf fix for #3268 issue #4: The original code called
+        /// <c>AppDomain.CurrentDomain.GetAssemblies()</c> and iterated every loaded assembly
+        /// (hundreds in a typical Revit session) for <em>each</em> extension.  This field stores
+        /// only the pyRevit-prefixed names (~10-20) so per-extension checks are O(N) over a
+        /// tiny set instead of O(M) over the full AppDomain.
+        /// </remarks>
+        private List<string> _loadedPyRevitAssemblyNames;
+
+        private void EnsureLoadedAssemblyNamesCached()
+        {
+            if (_loadedPyRevitAssemblyNames != null)
+                return;
+
+            const string PYREVIT_PREFIX = "pyRevit_";
+            _loadedPyRevitAssemblyNames = new List<string>();
+
+            foreach (var loadedAsm in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                try
+                {
+                    var asmName = loadedAsm.GetName().Name;
+                    if (asmName != null && asmName.StartsWith(PYREVIT_PREFIX))
+                        _loadedPyRevitAssemblyNames.Add(asmName);
+                }
+                catch
+                {
+                    // Some dynamic/collectible assemblies throw — skip silently
+                }
+            }
+        }
+
+        /// <summary>
         /// Checks if any assembly for this extension is already loaded in the AppDomain.
         /// This is used to detect if we are reloading an extension.
         /// </summary>
@@ -140,31 +175,18 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         /// <returns>True if an assembly for this extension is already loaded.</returns>
         private bool IsAnyExtensionAssemblyLoaded(ParsedExtension extension)
         {
-            const string PYREVIT_PREFIX = "pyRevit_";
-            
-            foreach (var loadedAsm in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                try
-                {
-                    var asmName = loadedAsm.GetName().Name;
-                    if (asmName == null)
-                        continue;
+            EnsureLoadedAssemblyNamesCached();
 
-                    // Check if this is a pyRevit extension assembly for this extension
-                    // Assembly names follow the pattern: pyRevit_{revitVersion}_{hash}_{extensionName}
-                    if (asmName.StartsWith(PYREVIT_PREFIX) && asmName.EndsWith(extension.Name))
-                    {
-                        _logger.Debug($"Found loaded extension assembly: {asmName}");
-                        return true;
-                    }
-                }
-                catch (Exception ex)
+            // Assembly names follow: pyRevit_{revitVersion}_{hash}_{extensionName}
+            foreach (var name in _loadedPyRevitAssemblyNames)
+            {
+                if (name.EndsWith(extension.Name, StringComparison.OrdinalIgnoreCase))
                 {
-                    // Some assemblies may throw when getting their name, skip them
-                    _logger.Debug($"Error checking assembly: {ex.Message}");
+                    _logger.Debug($"Found loaded extension assembly: {name}");
+                    return true;
                 }
             }
-            
+
             return false;
         }
 
@@ -298,23 +320,49 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         /// Resolves and returns the metadata references required for Roslyn compilation.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// Includes references to core .NET assemblies, Revit API assemblies, and pyRevit runtime.
+        /// </para>
+        /// <para>
+        /// Perf fix for #3268 issue #3: <c>MetadataReference.CreateFromFile()</c> reads assembly
+        /// metadata from disk on every call.  These references never change during a Revit session,
+        /// so they are built once and cached statically.  A version guard ensures correctness if
+        /// the static field somehow survives across different Revit version contexts (it won't in
+        /// practice, but defensive coding costs nothing here).
+        /// </para>
         /// </remarks>
         /// <returns>A list of metadata references for the Roslyn compiler.</returns>
+        private static List<MetadataReference> _cachedRoslynRefs;
+        private static string _cachedRoslynRefsVersion;
+        private static readonly object _roslynRefsLock = new object();
+
         private List<MetadataReference> ResolveRoslynReferences()
         {
-            string baseDir = _baseDir;
-            var refs = new List<MetadataReference>
+            // Fast path — already cached for this Revit version
+            if (_cachedRoslynRefs != null && _cachedRoslynRefsVersion == _revitVersion)
+                return _cachedRoslynRefs;
+
+            lock (_roslynRefsLock)
             {
-                MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(Console).Assembly.Location),
-                MetadataReference.CreateFromFile(Path.Combine(AppContext.BaseDirectory, "RevitAPI.dll")),
-                MetadataReference.CreateFromFile(Path.Combine(AppContext.BaseDirectory, "RevitAPIUI.dll")),
-                MetadataReference.CreateFromFile(Path.Combine(baseDir, $"PyRevitLabs.PyRevit.Runtime.{_revitVersion}.dll"))
-            };
-            string sys = Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location), "System.Runtime.dll");
-            if (File.Exists(sys)) refs.Add(MetadataReference.CreateFromFile(sys));
-            return refs;
+                if (_cachedRoslynRefs != null && _cachedRoslynRefsVersion == _revitVersion)
+                    return _cachedRoslynRefs;
+
+                string baseDir = _baseDir;
+                var refs = new List<MetadataReference>
+                {
+                    MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+                    MetadataReference.CreateFromFile(typeof(Console).Assembly.Location),
+                    MetadataReference.CreateFromFile(Path.Combine(AppContext.BaseDirectory, "RevitAPI.dll")),
+                    MetadataReference.CreateFromFile(Path.Combine(AppContext.BaseDirectory, "RevitAPIUI.dll")),
+                    MetadataReference.CreateFromFile(Path.Combine(baseDir, $"PyRevitLabs.PyRevit.Runtime.{_revitVersion}.dll"))
+                };
+                string sys = Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location), "System.Runtime.dll");
+                if (File.Exists(sys)) refs.Add(MetadataReference.CreateFromFile(sys));
+
+                _cachedRoslynRefs = refs;
+                _cachedRoslynRefsVersion = _revitVersion;
+                return _cachedRoslynRefs;
+            }
         }
 
         /// <summary>
@@ -341,11 +389,18 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             return BitConverter.ToString(hash).Replace("-", string.Empty).ToLowerInvariant();
         }
 
-        private static string GetAssemblyBuildFingerprint()
+        // Perf fix for #3268 issue #7: The executing assembly never changes during a
+        // Revit session — cache the fingerprint once as a static readonly instead of
+        // re-reading file metadata and assembly version on every extension build.
+        private static readonly string _assemblyBuildFingerprint = ComputeAssemblyBuildFingerprint();
+
+        private static string GetAssemblyBuildFingerprint() => _assemblyBuildFingerprint;
+
+        private static string ComputeAssemblyBuildFingerprint()
         {
             try
             {
-                var asmPath = Assembly.GetExecutingAssembly().Location;
+                var asmPath = _executingAssemblyLocation;
                 var writeTime = File.Exists(asmPath)
                     ? File.GetLastWriteTimeUtc(asmPath).Ticks.ToString()
                     : "0";

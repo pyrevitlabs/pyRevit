@@ -35,12 +35,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
         ComponentIcon GetBestIconForSize(ParsedComponent component, int preferredSize);
 
         /// <summary>
-        /// Pre-loads icon file bytes for an extension in parallel to warm the OS file cache.
-        /// </summary>
-        /// <param name="extension">The extension whose icons should be pre-loaded.</param>
-        void PreloadExtensionIcons(ParsedExtension extension);
-
-        /// <summary>
         /// Clears the bitmap cache.
         /// </summary>
         void ClearCache();
