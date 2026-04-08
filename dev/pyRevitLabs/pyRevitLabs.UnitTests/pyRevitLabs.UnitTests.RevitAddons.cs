@@ -58,42 +58,47 @@ namespace pyRevitLabs.UnitTests.RevitAddons {
 
         [TestMethod()]
         public void GetRevitAddonsFolder_AllUsers_Post2027_Test() {
-            // Test that all-users path for Revit ≥2027 ends with proper structure
             var path2027 = pyRevitLabs.TargetApps.Revit.RevitAddons.GetRevitAddonsFolder(2027, allUsers: true);
             var path2028 = pyRevitLabs.TargetApps.Revit.RevitAddons.GetRevitAddonsFolder(2028, allUsers: true);
             var path2030 = pyRevitLabs.TargetApps.Revit.RevitAddons.GetRevitAddonsFolder(2030, allUsers: true);
 
-            // Verify path structure - should end with "Addins\<year>" or "Addins/<year>"
-            Assert.IsTrue(path2027.EndsWith(@"Addins\2027") || path2027.EndsWith("Addins/2027"),
-                $"Path 2027 should end with Addins\\2027: {path2027}");
-            Assert.IsTrue(path2028.EndsWith(@"Addins\2028") || path2028.EndsWith("Addins/2028"),
-                $"Path 2028 should end with Addins\\2028: {path2028}");
-            Assert.IsTrue(path2030.EndsWith(@"Addins\2030") || path2030.EndsWith("Addins/2030"),
-                $"Path 2030 should end with Addins\\2030: {path2030}");
+            // Verify path structure - should use shared Revit\Addins\<year> under Program Files
+            var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
 
-            // Verify it's an install-location-based path (contains Revit year in the path)
-            Assert.IsTrue(path2027.Contains("Revit 2027") || path2027.Contains("Revit_2027"),
-                $"Path 2027 should reference Revit 2027 installation: {path2027}");
-            Assert.IsTrue(path2028.Contains("Revit 2028") || path2028.Contains("Revit_2028"),
-                $"Path 2028 should reference Revit 2028 installation: {path2028}");
+            Assert.IsTrue(path2027.StartsWith(programFiles, StringComparison.OrdinalIgnoreCase),
+                $"All-users path for 2027 should be under Program Files: {path2027}");
+            Assert.IsTrue(path2027.Contains(@"Autodesk\Revit\Addins\2027") ||
+                          path2027.Contains("Autodesk/Revit/Addins/2027"),
+                $"Path 2027 should use shared Revit\\Addins structure: {path2027}");
+            Assert.IsTrue(path2028.StartsWith(programFiles, StringComparison.OrdinalIgnoreCase),
+                $"All-users path for 2028 should be under Program Files: {path2028}");
+            Assert.IsTrue(path2028.Contains(@"Autodesk\Revit\Addins\2028") ||
+                          path2028.Contains("Autodesk/Revit/Addins/2028"),
+                $"Path 2028 should use shared Revit\\Addins structure: {path2028}");
+            Assert.IsTrue(path2030.StartsWith(programFiles, StringComparison.OrdinalIgnoreCase),
+                $"All-users path for 2030 should be under Program Files: {path2030}");
+            Assert.IsTrue(path2030.Contains(@"Autodesk\Revit\Addins\2030") ||
+                          path2030.Contains("Autodesk/Revit/Addins/2030"),
+                $"Path 2030 should use shared Revit\\Addins structure: {path2030}");
         }
 
         [TestMethod()]
         public void GetRevitAddonsFolder_AllUsers_2027Boundary_Test() {
-            // Test the exact boundary at year 2027
             var path2026 = pyRevitLabs.TargetApps.Revit.RevitAddons.GetRevitAddonsFolder(2026, allUsers: true);
             var path2027 = pyRevitLabs.TargetApps.Revit.RevitAddons.GetRevitAddonsFolder(2027, allUsers: true);
 
             var programData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+            var programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
 
             // 2026 should use the legacy ProgramData structure
-            Assert.IsTrue(path2026.Contains(@"Autodesk\Revit\Addins\2026") || 
-                          path2026.Contains("Autodesk/Revit/Addins/2026"),
-                $"2026 should use legacy ProgramData structure: {path2026}");
+            Assert.IsTrue(path2026.StartsWith(programData, StringComparison.OrdinalIgnoreCase),
+                $"2026 should use ProgramData: {path2026}");
 
-            // 2027 should use install-location-based structure ending in Addins\2027
+            // 2027 should use Program Files shared structure
+            Assert.IsTrue(path2027.StartsWith(programFiles, StringComparison.OrdinalIgnoreCase),
+                $"2027 should use Program Files: {path2027}");
             Assert.IsTrue(path2027.EndsWith(@"Addins\2027") || path2027.EndsWith("Addins/2027"),
-                $"2027 should use install-location structure ending in Addins\\2027: {path2027}");
+                $"2027 should end with Addins\\2027: {path2027}");
         }
 
         [TestMethod()]
@@ -126,7 +131,7 @@ namespace pyRevitLabs.UnitTests.RevitAddons {
             Assert.IsTrue(allUsersPath2026.StartsWith(commonData, StringComparison.OrdinalIgnoreCase),
                 "allusers: true for 2026 should be under CommonApplicationData: " + allUsersPath2026);
 
-            // With allusers: true, Revit 2027+ uses install path or CommonApplicationData
+            // With allusers: true, Revit 2027+ uses %ProgramFiles%\Autodesk\Revit\Addins\<year>
             var allUsersPath2027 = pyRevitLabs.TargetApps.Revit.RevitAddons.GetRevitAddonsFilePath(2027, "TestAddin", allusers: true);
             Assert.IsTrue(allUsersPath2027.EndsWith("TestAddin.addin", StringComparison.OrdinalIgnoreCase),
                 "Path should end with TestAddin.addin: " + allUsersPath2027);
