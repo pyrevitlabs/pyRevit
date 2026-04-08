@@ -1,3 +1,4 @@
+# encoding: utf-8
 """The loader module manages the workflow of loading a new pyRevit session.
 
 Its main purpose is to orchestrate the process of finding pyRevit extensions,
@@ -31,23 +32,25 @@ from pyrevit.versionmgr import updater
 from pyrevit.versionmgr import upgrade
 from pyrevit import telemetry
 from pyrevit import routes
+
 # import the runtime first to get all the c-sharp code to compile
 from pyrevit import runtime
 from pyrevit.runtime import types as runtime_types
+
 # now load the rest of module that could depend on the compiled runtime
 from pyrevit import output
 
 from pyrevit import DB, UI, revit
 
 
-#pylint: disable=W0703,C0302,C0103,no-member
+# pylint: disable=W0703,C0302,C0103,no-member
 mlogger = logger.get_logger(__name__)
 
 # Build strategy constant (Roslyn is the only supported strategy)
 BUILD_STRATEGY_ROSLYN = "Roslyn"
 
 
-AssembledExtension = namedtuple('AssembledExtension', ['ext', 'assm'])
+AssembledExtension = namedtuple("AssembledExtension", ["ext", "assm"])
 
 
 def _clear_running_engines():
@@ -59,7 +62,7 @@ def _clear_running_engines():
 
         runtime_types.ScriptEngineManager.ClearEngines(
             excludeEngine=EXEC_PARAMS.engine_id
-            )
+        )
         return True
     except AttributeError:
         return False
@@ -69,11 +72,11 @@ def _setup_output():
     # create output window and assign handle
     out_window = runtime.types.ScriptConsole()
     runtime_info = sessioninfo.get_runtime_info()
-    out_window.AppVersion = '{}:{}:{}'.format(
+    out_window.AppVersion = "{}:{}:{}".format(
         runtime_info.pyrevit_version,
         int(runtime_info.engine_version),
-        runtime_info.host_version
-        )
+        runtime_info.host_version,
+    )
 
     # create output stream and set stdout to it
     # we're not opening the output window here.
@@ -107,12 +110,11 @@ def _set_autoupdate_inprogress(state):
 def _perform_onsessionloadstart_ops():
     # clear the cached engines
     if not _clear_running_engines():
-        mlogger.debug('No Engine Manager exists...')
+        mlogger.debug("No Engine Manager exists...")
 
     # check for updates
-    if user_config.auto_update \
-            and not _check_autoupdate_inprogress():
-        mlogger.info('Auto-update is active. Attempting update...')
+    if user_config.auto_update and not _check_autoupdate_inprogress():
+        mlogger.info("Auto-update is active. Attempting update...")
         _set_autoupdate_inprogress(True)
         updater.update_pyrevit()
         _set_autoupdate_inprogress(False)
@@ -162,7 +164,7 @@ def _perform_onsessionloadcomplete_ops():
         if active_server:
             mlogger.info(str(active_server))
         else:
-            mlogger.error('Routes servers failed activation')
+            mlogger.error("Routes servers failed activation")
 
 
 def _new_session():
@@ -189,19 +191,15 @@ def _new_session():
         # create a dll assembly and get assembly info
         ext_asm_info = asmmaker.create_assembly(ui_ext)
         if not ext_asm_info:
-            mlogger.critical('Failed to create assembly for: %s', ui_ext)
+            mlogger.critical("Failed to create assembly for: %s", ui_ext)
             continue
         else:
-            mlogger.info('Extension assembly created: %s', ui_ext.name)
+            mlogger.info("Extension assembly created: %s", ui_ext.name)
 
-        assembled_exts.append(
-            AssembledExtension(ext=ui_ext, assm=ext_asm_info)
-        )
+        assembled_exts.append(AssembledExtension(ext=ui_ext, assm=ext_asm_info))
 
     # add names of the created assemblies to the session info
-    sessioninfo.set_loaded_pyrevit_assemblies(
-        [x.assm.name for x in assembled_exts]
-    )
+    sessioninfo.set_loaded_pyrevit_assemblies([x.assm.name for x in assembled_exts])
 
     # run startup scripts for this ui extension, if any
     for assm_ext in assembled_exts:
@@ -211,16 +209,15 @@ def _new_session():
             if assm_ext.ext.library_path:
                 sys_paths.insert(0, assm_ext.ext.library_path)
 
-            mlogger.info('Running startup tasks for %s', assm_ext.ext.name)
-            mlogger.debug('Executing startup script for extension: %s',
-                          assm_ext.ext.name)
+            mlogger.info("Running startup tasks for %s", assm_ext.ext.name)
+            mlogger.debug(
+                "Executing startup script for extension: %s", assm_ext.ext.name
+            )
 
             # now run
             execute_extension_startup_script(
-                assm_ext.ext.startup_script,
-                assm_ext.ext.name,
-                sys_paths=sys_paths
-                )
+                assm_ext.ext.startup_script, assm_ext.ext.name, sys_paths=sys_paths
+            )
 
     # register extension hooks
     for assm_ext in assembled_exts:
@@ -229,12 +226,8 @@ def _new_session():
     # update/create ui (needs the assembly to link button actions
     # to commands saved in the dll)
     for assm_ext in assembled_exts:
-        uimaker.update_pyrevit_ui(
-            assm_ext.ext,
-            assm_ext.assm,
-            user_config.load_beta
-        )
-        mlogger.info('UI created for extension: %s', assm_ext.ext.name)
+        uimaker.update_pyrevit_ui(assm_ext.ext, assm_ext.assm, user_config.load_beta)
+        mlogger.info("UI created for extension: %s", assm_ext.ext.name)
 
     # re-sort the ui elements
     for assm_ext in assembled_exts:
@@ -256,96 +249,98 @@ def _new_session_csharp():
     try:
         # Check if the new loader should be used
         if not user_config.new_loader:
-            mlogger.debug('New loader disabled. Using Python session creation.')
+            mlogger.debug("New loader disabled. Using Python session creation.")
             _new_session()
             return
-        
+
         # Always use Roslyn build strategy
         build_strategy = BUILD_STRATEGY_ROSLYN
-        mlogger.info('Using %s build strategy for C# session manager', build_strategy)
-        
+        mlogger.info("Using %s build strategy for C# session manager", build_strategy)
+
         # Find the PyRevitLoaderApplication type from loaded assemblies
         loaded_assemblies = framework.AppDomain.CurrentDomain.GetAssemblies()
         loader_app_type = None
-        
+
         for assembly in loaded_assemblies:
             try:
                 assembly_name = assembly.GetName().Name
-                if assembly_name.startswith('pyRevitLoader'):
-                    loader_app_type = assembly.GetType('PyRevitLoader.PyRevitLoaderApplication')
+                if assembly_name.startswith("pyRevitLoader"):
+                    loader_app_type = assembly.GetType(
+                        "PyRevitLoader.PyRevitLoaderApplication"
+                    )
                     if loader_app_type:
-                        mlogger.debug('Found PyRevitLoaderApplication in assembly: %s', assembly.Location)
+                        mlogger.debug(
+                            "Found PyRevitLoaderApplication in assembly: %s",
+                            assembly.Location,
+                        )
                         break
             except Exception:
                 # Some assemblies might not have accessible location/name
                 continue
-        
+
         if not loader_app_type:
-            mlogger.error('PyRevitLoaderApplication not found in loaded assemblies')
-            mlogger.info('Falling back to Python session creation...')
+            mlogger.error("PyRevitLoaderApplication not found in loaded assemblies")
+            mlogger.info("Falling back to Python session creation...")
             _new_session()
             return
-        
+
         # Get the LoadSession method
-        load_session_method = loader_app_type.GetMethod('LoadSession')
+        load_session_method = loader_app_type.GetMethod("LoadSession")
         if not load_session_method:
-            mlogger.error('LoadSession method not found in PyRevitLoaderApplication')
-            mlogger.info('Falling back to Python session creation...')
+            mlogger.error("LoadSession method not found in PyRevitLoaderApplication")
+            mlogger.info("Falling back to Python session creation...")
             _new_session()
             return
-        
+
         # Call the LoadSession method with logger and build strategy
-        mlogger.info('Loading session using C# LoadSession method...')
-        result = load_session_method.Invoke(None, framework.Array[object]([mlogger, build_strategy]))
-        
+        mlogger.info("Loading session using C# LoadSession method...")
+        result = load_session_method.Invoke(
+            None, framework.Array[object]([mlogger, build_strategy])
+        )
+
         # Check if the result indicates success (Result.Succeeded = 0)
-        if hasattr(result, 'value__') and result.value__ == 0:
-            mlogger.info('C# session loading completed successfully')
+        if hasattr(result, "value__") and result.value__ == 0:
+            mlogger.info("C# session loading completed successfully")
             # Register loaded pyRevit assemblies with sessioninfo
             # so find_pyrevitcmd can locate commands
             _register_loaded_pyrevit_assemblies()
-            # Register extension hooks
-            # The Python session path (_new_session) registers hooks
-            # after assembly creation, but the C# path was missing this
-            try:
-                for ui_ext in extensionmgr.get_installed_ui_extensions():
-                    hooks.register_hooks(ui_ext)
-            except Exception as hook_ex:
-                mlogger.error('Error registering hooks: %s', hook_ex)
+            # Hook registration is now handled inside C# LoadSession()
+            # (HookManager.RegisterHooks) — no Python-side re-parse needed.
+            # This eliminates the ~2-5s double extension parsing overhead.
         else:
-            mlogger.error('C# session loading returned failure result')
-            mlogger.info('Falling back to Python session creation...')
+            mlogger.error("C# session loading returned failure result")
+            mlogger.info("Falling back to Python session creation...")
             _new_session()
-        
+
     except Exception as cs_ex:
-        mlogger.error('Error in C# session creation: %s', cs_ex)
-        mlogger.info('Falling back to Python session creation...')
+        mlogger.error("Error in C# session creation: %s", cs_ex)
+        mlogger.info("Falling back to Python session creation...")
         _new_session()
 
 
 def _register_loaded_pyrevit_assemblies():
     """Find and register pyRevit assemblies loaded by the C# session manager.
-    
+
     Scans all loaded assemblies in the AppDomain to find pyRevit extension assemblies.
-    Note: .NET cannot unload assemblies, so count may include old assemblies from 
+    Note: .NET cannot unload assemblies, so count may include old assemblies from
     previous reloads - this is expected behavior.
     """
     pyrevit_assemblies = []
-    
+
     for assembly in framework.AppDomain.CurrentDomain.GetAssemblies():
         try:
             assembly_name = assembly.GetName().Name
-            if assembly_name and assembly_name.startswith('pyRevit_'):
+            if assembly_name and assembly_name.startswith("pyRevit_"):
                 pyrevit_assemblies.append(assembly_name)
-                mlogger.debug('Found pyRevit assembly: %s', assembly_name)
+                mlogger.debug("Found pyRevit assembly: %s", assembly_name)
         except Exception:
             continue
-    
+
     if pyrevit_assemblies:
         sessioninfo.set_loaded_pyrevit_assemblies(pyrevit_assemblies)
         # mlogger.info('Registered %d pyRevit assemblies', len(pyrevit_assemblies))
     else:
-        mlogger.warning('No pyRevit assemblies found')
+        mlogger.warning("No pyRevit assemblies found")
 
 
 def load_session():
@@ -356,7 +351,7 @@ def load_session():
     through interactions with .extensions, .loader.asmmaker, and .loader.uimaker.
 
     Load session now takes a light parameter that will skip the assembly creation
-    and UI creation. This is for the case when pyRevitAssemblyMaker.dll is 
+    and UI creation. This is for the case when pyRevitAssemblyMaker.dll is
     used to create the assembly and UI
 
     Examples:
@@ -377,6 +372,7 @@ def load_session():
         output_window = _setup_output()
     else:
         from pyrevit import script
+
         output_window = script.get_output()
 
     # initialize timer to measure load time
@@ -387,10 +383,10 @@ def load_session():
 
     # create a new session
     if not user_config.new_loader:
-        mlogger.info('Creating new pyRevit session with pyRevitLoader.py...')
+        mlogger.info("Creating new pyRevit session with pyRevitLoader.py...")
         _new_session()
     else:
-        mlogger.info('Creating new Session with pyRevitAssemblyMaker.dll...')
+        mlogger.info("Creating new Session with pyRevitAssemblyMaker.dll...")
         _new_session_csharp()
 
     # perform post-load tasks
@@ -398,8 +394,8 @@ def load_session():
 
     # log load time and thumbs-up :)
     endtime = timer.get_time()
-    success_emoji = ':OK_hand:' if endtime < 3.00 else ':thumbs_up:'
-    mlogger.info('Load time: %s seconds %s', endtime, success_emoji)
+    success_emoji = ":OK_hand:" if endtime < 3.00 else ":thumbs_up:"
+    mlogger.info("Load time: %s seconds %s", endtime, success_emoji)
 
     # if everything went well, self destruct
     try:
@@ -412,8 +408,7 @@ def load_session():
                 # output_window is of type PyRevitOutputWindow
                 output_window.self_destruct(timeout)
     except Exception as imp_err:
-        mlogger.error('Error setting up self_destruct on output window | %s',
-                      imp_err)
+        mlogger.error("Error setting up self_destruct on output window | %s", imp_err)
 
     _cleanup_output()
     return sessioninfo.get_session_uuid()
@@ -429,10 +424,11 @@ def _perform_onsessionreloadcomplete_ops():
 
 def reload_pyrevit():
     _perform_onsessionreload_ops()
-    mlogger.info('Reloading....')
+    mlogger.info("Reloading....")
     session_Id = load_session()
     _perform_onsessionreloadcomplete_ops()
     return session_Id
+
 
 # -----------------------------------------------------------------------------
 # Functions related to finding/executing
@@ -440,6 +436,7 @@ def reload_pyrevit():
 # -----------------------------------------------------------------------------
 class PyRevitExternalCommandType(object):
     """PyRevit external command type."""
+
     def __init__(self, extcmd_type, extcmd_availtype):
         self._extcmd_type = extcmd_type
         self._extcmd = extcmd_type()
@@ -468,58 +465,57 @@ class PyRevitExternalCommandType(object):
 
     @property
     def script(self):
-        return getattr(self._extcmd.ScriptData, 'ScriptPath', None)
+        return getattr(self._extcmd.ScriptData, "ScriptPath", None)
 
     @property
     def config_script(self):
-        return getattr(self._extcmd.ScriptData, 'ConfigScriptPath', None)
+        return getattr(self._extcmd.ScriptData, "ConfigScriptPath", None)
 
     @property
     def search_paths(self):
-        value = getattr(self._extcmd.ScriptRuntimeConfigs, 'SearchPaths', [])
+        value = getattr(self._extcmd.ScriptRuntimeConfigs, "SearchPaths", [])
         return list(value)
 
     @property
     def arguments(self):
-        value = getattr(self._extcmd.ScriptRuntimeConfigs, 'Arguments', [])
+        value = getattr(self._extcmd.ScriptRuntimeConfigs, "Arguments", [])
         return list(value)
 
     @property
     def engine_cfgs(self):
-        return getattr(self._extcmd.ScriptRuntimeConfigs, 'EngineConfigs', '')
+        return getattr(self._extcmd.ScriptRuntimeConfigs, "EngineConfigs", "")
 
     @property
     def helpsource(self):
-        return getattr(self._extcmd.ScriptData, 'HelpSource', None)
+        return getattr(self._extcmd.ScriptData, "HelpSource", None)
 
     @property
     def tooltip(self):
-        return getattr(self._extcmd.ScriptData, 'Tooltip', None)
+        return getattr(self._extcmd.ScriptData, "Tooltip", None)
 
     @property
     def name(self):
-        return getattr(self._extcmd.ScriptData, 'CommandName', None)
+        return getattr(self._extcmd.ScriptData, "CommandName", None)
 
     @property
     def bundle(self):
-        return getattr(self._extcmd.ScriptData, 'CommandBundle', None)
+        return getattr(self._extcmd.ScriptData, "CommandBundle", None)
 
     @property
     def extension(self):
-        return getattr(self._extcmd.ScriptData, 'CommandExtension', None)
+        return getattr(self._extcmd.ScriptData, "CommandExtension", None)
 
     @property
     def unique_id(self):
-        return getattr(self._extcmd.ScriptData, 'CommandUniqueId', None)
+        return getattr(self._extcmd.ScriptData, "CommandUniqueId", None)
 
     @property
     def control_id(self):
-        return getattr(self._extcmd.ScriptData, 'CommandControlId', None)
+        return getattr(self._extcmd.ScriptData, "CommandControlId", None)
 
     def is_available(self, category_set, zerodoc=False):
         if self._extcmd_availtype:
-            return self._extcmd_avail.IsCommandAvailable(HOST_APP.uiapp,
-                                                         category_set)
+            return self._extcmd_avail.IsCommandAvailable(HOST_APP.uiapp, category_set)
         elif not zerodoc:
             return True
 
@@ -530,8 +526,8 @@ pyrevit_extcmdtype_cache = []
 
 
 def find_all_commands(category_set=None, cache=True):
-    global pyrevit_extcmdtype_cache    #pylint: disable=W0603
-    if cache and pyrevit_extcmdtype_cache:    #pylint: disable=E0601
+    global pyrevit_extcmdtype_cache  # pylint: disable=W0603
+    if cache and pyrevit_extcmdtype_cache:  # pylint: disable=E0601
         pyrevit_extcmds = pyrevit_extcmdtype_cache
     else:
         pyrevit_extcmds = []
@@ -542,29 +538,31 @@ def find_all_commands(category_set=None, cache=True):
 
                 for pyrvt_type in all_exported_types:
                     tname = pyrvt_type.FullName
-                    availtname = pyrvt_type.Name \
-                                 + runtime.CMD_AVAIL_NAME_POSTFIX
+                    availtname = pyrvt_type.Name + runtime.CMD_AVAIL_NAME_POSTFIX
                     pyrvt_availtype = None
 
-                    if not tname.endswith(runtime.CMD_AVAIL_NAME_POSTFIX)\
-                            and runtime.RUNTIME_NAMESPACE not in tname \
-                            and pyrvt_type.IsSubclassOf(runtime.CMD_EXECUTOR_TYPE):
+                    if (
+                        not tname.endswith(runtime.CMD_AVAIL_NAME_POSTFIX)
+                        and runtime.RUNTIME_NAMESPACE not in tname
+                        and pyrvt_type.IsSubclassOf(runtime.CMD_EXECUTOR_TYPE)
+                    ):
                         for exported_type in all_exported_types:
                             if exported_type.Name == availtname:
                                 pyrvt_availtype = exported_type
 
                         pyrevit_extcmds.append(
-                            PyRevitExternalCommandType(pyrvt_type,
-                                                       pyrvt_availtype)
-                            )
+                            PyRevitExternalCommandType(pyrvt_type, pyrvt_availtype)
+                        )
         if cache:
             pyrevit_extcmdtype_cache = pyrevit_extcmds
 
     # now check commands in current context if requested
     if category_set:
-        return [x for x in pyrevit_extcmds
-                if x.is_available(category_set=category_set,
-                                  zerodoc=HOST_APP.uidoc is None)]
+        return [
+            x
+            for x in pyrevit_extcmds
+            if x.is_available(category_set=category_set, zerodoc=HOST_APP.uidoc is None)
+        ]
     else:
         return pyrevit_extcmds
 
@@ -601,30 +599,28 @@ def find_pyrevitcmd(pyrevitcmd_unique_id):
     """
     # go through assmebles loaded under current pyRevit session
     # and try to find the command
-    mlogger.debug('Searching for pyrevit command: %s', pyrevitcmd_unique_id)
+    mlogger.debug("Searching for pyrevit command: %s", pyrevitcmd_unique_id)
     for loaded_assm_name in sessioninfo.get_loaded_pyrevit_assemblies():
-        mlogger.debug('Expecting assm: %s', loaded_assm_name)
+        mlogger.debug("Expecting assm: %s", loaded_assm_name)
         loaded_assm = assmutils.find_loaded_asm(loaded_assm_name)
         if loaded_assm:
-            mlogger.debug('Found assm: %s', loaded_assm_name)
+            mlogger.debug("Found assm: %s", loaded_assm_name)
             for pyrvt_type in loaded_assm[0].GetTypes():
-                mlogger.debug('Found Type: %s', pyrvt_type)
+                mlogger.debug("Found Type: %s", pyrvt_type)
                 if pyrvt_type.FullName == pyrevitcmd_unique_id:
-                    mlogger.debug('Found pyRevit command in %s',
-                                  loaded_assm_name)
+                    mlogger.debug("Found pyRevit command in %s", loaded_assm_name)
                     return pyrvt_type
-            mlogger.debug('Could not find pyRevit command.')
+            mlogger.debug("Could not find pyRevit command.")
         else:
-            mlogger.debug('Can not find assm: %s', loaded_assm_name)
+            mlogger.debug("Can not find assm: %s", loaded_assm_name)
 
     return None
 
 
 def create_tmp_commanddata():
-    tmp_cmd_data = \
-        framework.FormatterServices.GetUninitializedObject(
-            UI.ExternalCommandData
-            )
+    tmp_cmd_data = framework.FormatterServices.GetUninitializedObject(
+        UI.ExternalCommandData
+    )
     tmp_cmd_data.Application = HOST_APP.uiapp
     # tmp_cmd_data.IsReadOnly = False
     # tmp_cmd_data.View = None
@@ -632,14 +628,14 @@ def create_tmp_commanddata():
     return tmp_cmd_data
 
 
-def execute_command_cls(extcmd_type, arguments=None,
-                        config_mode=False, exec_from_ui=False):
+def execute_command_cls(
+    extcmd_type, arguments=None, config_mode=False, exec_from_ui=False
+):
 
     command_instance = extcmd_type()
     # pass the arguments to the instance
     if arguments:
-        command_instance.ScriptRuntimeConfigs.Arguments = \
-            framework.List[str](arguments)
+        command_instance.ScriptRuntimeConfigs.Arguments = framework.List[str](arguments)
     # this is a manual execution from python code and not by user
     command_instance.ExecConfigs.MimicExecFromUI = exec_from_ui
     # force using the config script
@@ -650,9 +646,7 @@ def execute_command_cls(extcmd_type, arguments=None,
     # string message,
     # ElementSet elements
     # )
-    re = command_instance.Execute(create_tmp_commanddata(),
-                                  '',
-                                  DB.ElementSet())
+    re = command_instance.Execute(create_tmp_commanddata(), "", DB.ElementSet())
     command_instance = None
     return re
 
@@ -666,8 +660,7 @@ def execute_command(pyrevitcmd_unique_id):
     cmd_class = find_pyrevitcmd(pyrevitcmd_unique_id)
 
     if not cmd_class:
-        mlogger.error('Can not find command with unique name: %s',
-                      pyrevitcmd_unique_id)
+        mlogger.error("Can not find command with unique name: %s", pyrevitcmd_unique_id)
         return None
     else:
         execute_command_cls(cmd_class)
@@ -690,29 +683,25 @@ def execute_extension_startup_script(script_path, ext_name, sys_paths=None):
     script_data = runtime.types.ScriptData()
     script_data.ScriptPath = script_path
     script_data.ConfigScriptPath = None
-    script_data.CommandUniqueId = ''
-    script_data.CommandName = 'Starting {}'.format(ext_name)
-    script_data.CommandBundle = ''
+    script_data.CommandUniqueId = ""
+    script_data.CommandName = "Starting {}".format(ext_name)
+    script_data.CommandBundle = ""
     script_data.CommandExtension = ext_name
-    script_data.HelpSource = ''
+    script_data.HelpSource = ""
 
     script_runtime_cfg = runtime.types.ScriptRuntimeConfigs()
     script_runtime_cfg.CommandData = create_tmp_commanddata()
     script_runtime_cfg.SelectedElements = None
     script_runtime_cfg.SearchPaths = framework.List[str](sys_paths or [])
     script_runtime_cfg.Arguments = framework.List[str]([])
-    script_runtime_cfg.EngineConfigs = \
-        runtime.create_ipyengine_configs(
-            clean=True,
-            full_frame=True,
-            persistent=True,
-        )
+    script_runtime_cfg.EngineConfigs = runtime.create_ipyengine_configs(
+        clean=True,
+        full_frame=True,
+        persistent=True,
+    )
     script_runtime_cfg.RefreshEngine = False
     script_runtime_cfg.ConfigMode = False
     script_runtime_cfg.DebugMode = False
     script_runtime_cfg.ExecutedFromUI = False
 
-    runtime.types.ScriptExecutor.ExecuteScript(
-        script_data,
-        script_runtime_cfg
-    )
+    runtime.types.ScriptExecutor.ExecuteScript(script_data, script_runtime_cfg)

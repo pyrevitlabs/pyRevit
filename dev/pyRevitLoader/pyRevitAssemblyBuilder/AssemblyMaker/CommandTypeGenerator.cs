@@ -64,6 +64,14 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             // typemaker.make_bundle_types(); this HashSet provides equivalent safety.
             var emittedClassNames = new HashSet<string>(StringComparer.Ordinal);
 
+            // Perf fix for #3268 issue #9: Materialize library extension directories
+            // ONCE before the command loop.  Previously .ToList() was called per command,
+            // creating hundreds of unnecessary list copies for the default install.
+            var libExtDirectories = libraryExtensions?
+                .Select(le => le.Directory)
+                .Where(d => !string.IsNullOrEmpty(d))
+                .ToList();
+
             foreach (var cmd in extension.CollectCommandComponents())
             {
                 string safeClassName = SanitizeClassName(cmd.UniqueId);
@@ -103,18 +111,14 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 
                 // Add binary paths from component hierarchy for module DLLs
                 searchPathsList.AddRange(extension.CollectBinaryPaths(cmd));
-                
+
                 // Add all library extension directories
-                if (libraryExtensions != null)
+                // Add all library extension directories (pre-materialized above)
+                if (libExtDirectories != null)
                 {
-                    var libExtList = libraryExtensions.ToList();
-                    foreach (var libExt in libExtList)
-                    {
-                        if (!string.IsNullOrEmpty(libExt.Directory))
-                            searchPathsList.Add(libExt.Directory);
-                    }
+                    searchPathsList.AddRange(libExtDirectories);
                 }
-                
+
                 // Add pyrevitlib/ and site-packages/ paths if pyRevitRoot is valid
                 if (!string.IsNullOrEmpty(_pyRevitRoot))
                 {

@@ -62,6 +62,15 @@ def dissect_parameter_filter(doc, filter_element):
         return None
 
     rule = rules[0]
+
+    # ── unwrap inverted rules ─────────────────────────────────────────
+    if isinstance(rule, DB.FilterInverseRule):
+        return None
+
+    # extra safeguard (future-proof)
+    if not hasattr(rule, "GetRuleParameter") or not hasattr(rule, "GetEvaluator"):
+        return None
+
     result["rule"] = rule
 
     # ── parameter id / name ───────────────────────────────────────────
