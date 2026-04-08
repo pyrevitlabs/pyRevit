@@ -20,7 +20,7 @@ def dissect_parameter_filter(doc, filter_element):
         parameter_name – human-readable name string
         categories     – list of category name strings
         storage_type   – DB.StorageType enum value
-        value          – raw value (int / float / str / DB.ElementId)
+        value          – raw value (int / float / str / get_elementid_value(DB.ElementId))
         display_value  – formatted string for display
         rule           – the raw Revit filter rule object
     """
@@ -144,7 +144,7 @@ def dissect_parameter_filter(doc, filter_element):
     elif isinstance(rule, DB.FilterElementIdRule):
         val = rule.RuleValue
         result["storage_type"] = DB.StorageType.ElementId
-        result["value"] = val
+        result["value"] = get_elementid_value(val)
         elem = doc.GetElement(val)
         if elem:
             try:
