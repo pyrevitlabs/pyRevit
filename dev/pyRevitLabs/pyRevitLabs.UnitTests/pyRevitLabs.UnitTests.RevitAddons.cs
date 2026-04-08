@@ -131,7 +131,7 @@ namespace pyRevitLabs.UnitTests.RevitAddons {
             Assert.IsTrue(allUsersPath2026.StartsWith(commonData, StringComparison.OrdinalIgnoreCase),
                 "allusers: true for 2026 should be under CommonApplicationData: " + allUsersPath2026);
 
-            // With allusers: true, Revit 2027+ uses install path or CommonApplicationData
+            // With allusers: true, Revit 2027+ uses %ProgramFiles%\Autodesk\Revit\Addins\<year>
             var allUsersPath2027 = pyRevitLabs.TargetApps.Revit.RevitAddons.GetRevitAddonsFilePath(2027, "TestAddin", allusers: true);
             Assert.IsTrue(allUsersPath2027.EndsWith("TestAddin.addin", StringComparison.OrdinalIgnoreCase),
                 "Path should end with TestAddin.addin: " + allUsersPath2027);
