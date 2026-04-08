@@ -70,9 +70,13 @@ namespace pyRevitLabs.UnitTests.RevitAddons {
             Assert.IsTrue(path2027.Contains(@"Autodesk\Revit\Addins\2027") ||
                           path2027.Contains("Autodesk/Revit/Addins/2027"),
                 $"Path 2027 should use shared Revit\\Addins structure: {path2027}");
+            Assert.IsTrue(path2028.StartsWith(programFiles, StringComparison.OrdinalIgnoreCase),
+                $"All-users path for 2028 should be under Program Files: {path2028}");
             Assert.IsTrue(path2028.Contains(@"Autodesk\Revit\Addins\2028") ||
                           path2028.Contains("Autodesk/Revit/Addins/2028"),
                 $"Path 2028 should use shared Revit\\Addins structure: {path2028}");
+            Assert.IsTrue(path2030.StartsWith(programFiles, StringComparison.OrdinalIgnoreCase),
+                $"All-users path for 2030 should be under Program Files: {path2030}");
             Assert.IsTrue(path2030.Contains(@"Autodesk\Revit\Addins\2030") ||
                           path2030.Contains("Autodesk/Revit/Addins/2030"),
                 $"Path 2030 should use shared Revit\\Addins structure: {path2030}");
