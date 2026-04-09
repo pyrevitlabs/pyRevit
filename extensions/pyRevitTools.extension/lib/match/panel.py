@@ -5,6 +5,7 @@ from pyrevit import script, forms, revit, op
 from pyrevit import UI
 from pyrevit.revit.events import _GenericExternalEventHandler
 from pyrevit.framework import ComponentModel
+from pyrevit.compat import get_elementid_value_func
 
 from match_utils import (
     PropKeyValue,
@@ -20,6 +21,7 @@ from filter_utils import (
     get_ogs_from_prop_in_view,
 )
 
+get_elementid_value = get_elementid_value_func()
 logger = script.get_logger()
 
 MAX_HISTORY_ITEMS = 50
@@ -266,7 +268,7 @@ class MatchHistoryClipboard(forms.WPFPanel):
                 PropKeyValue(
                     name=tparam.Definition.Name,
                     datatype=tparam.StorageType,
-                    value=value,
+                    value=get_elementid_value(value),
                     istype=False,
                     display_value=tparam.AsValueString() or str(value),
                     categories=[elem.Category],

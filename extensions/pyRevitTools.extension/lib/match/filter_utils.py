@@ -18,7 +18,7 @@ def dissect_parameter_filter(doc, filter_element):
     Keys:
         parameter_id   – DB.ElementId of the parameter
         parameter_name – human-readable name string
-        categories     – list of category name strings
+        categories     – list of categories
         storage_type   – DB.StorageType enum value
         value          – raw value (int / float / str / get_elementid_value(DB.ElementId))
         display_value  – formatted string for display
@@ -41,7 +41,7 @@ def dissect_parameter_filter(doc, filter_element):
             bic = DB.BuiltInCategory(get_elementid_value(cid))
             cat = doc.Settings.Categories.get_Item(bic)
             if cat:
-                result["categories"].append(cat.Name)
+                result["categories"].append(cat)
     except Exception:
         pass
 
@@ -386,14 +386,18 @@ def get_ogs_from_prop_in_view(doc, view, prop):
 
             # 4. Optional: category match (safer)
             if prop.categories:
-                filter_cat_ids = set()
-                for c in prop.categories or []:
-                    if hasattr(c, "Id"):
-                        filter_cat_ids.add(c.Id)
-                if filter_cat_ids:
-                    prop_cat_ids = set([c.Id for c in prop.categories if c])
-                    if not prop_cat_ids.intersection(filter_cat_ids):
-                        continue
+                prop_cat_ids = set(
+                    get_elementid_value(c.Id)
+                    for c in prop.categories
+                    if c
+                )
+                filter_cat_ids = set(
+                    get_elementid_value(cat_id)
+                    for cat_id in (f.GetCategories() or [])
+                    if cat_id
+                )
+                if filter_cat_ids and not prop_cat_ids.intersection(filter_cat_ids):
+                    continue
 
             # --------------------------------------------------
             # OGS
