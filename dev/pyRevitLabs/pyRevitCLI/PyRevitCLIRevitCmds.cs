@@ -28,13 +28,17 @@ namespace pyRevitCLI {
         PrintLocalRevits(bool running = false) {
             if (running) {
                 PyRevitCLIAppCmds.PrintHeader("Running Revit Instances");
-                foreach (var revit in RevitController.ListRunningRevits().OrderByDescending(x => x.RevitProduct.Version))
-                    Console.WriteLine(revit);
+                foreach (var revit in RevitController.ListRunningRevits().OrderByDescending(x => x.RevitProduct.Version)) {
+                    var line = revit.ToString();
+                    global::System.Console.WriteLine(line);
+                }
             }
             else {
                 PyRevitCLIAppCmds.PrintHeader("Installed Revits");
-                foreach (var revit in RevitProduct.ListInstalledProducts().OrderByDescending(x => x.Version))
-                    Console.WriteLine(revit);
+                foreach (var revit in RevitProduct.ListInstalledProducts().OrderByDescending(x => x.Version)) {
+                    var line = revit.ToString();
+                    global::System.Console.WriteLine(line);
+                }
             }
         }
 
