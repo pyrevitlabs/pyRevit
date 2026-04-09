@@ -525,9 +525,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
         # Pre-cache .NET types — IronPython cannot resolve System.IntPtr
         # or System.Action from inside a Win32 WndProc callback
         # (LookupGlobalInstruction crash in HwndSubclass.SubclassWndProc).
-        self._INTPTR_ZERO = System.IntPtr.Zero
-        self._INTPTR_MA_NOACTIVATE = System.IntPtr(self.MA_NOACTIVATE)
-        self._BG_PRIORITY = Windows.Threading.DispatcherPriority.Background
+        self._intptr_zero = System.IntPtr.Zero
+        self._intptr_ma_noactivate = System.IntPtr(self.MA_NOACTIVATE)
+        self._bg_priority = Windows.Threading.DispatcherPriority.Background
         self.SourceInitialized += self._on_source_initialized
 
         self._kfile = None
@@ -696,14 +696,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     self._activation_pending = True
                     try:
                         self.Dispatcher.BeginInvoke(
-                            self._activate_action, self._BG_PRIORITY
+                            self._activate_action, self._bg_priority
                         )
                     except Exception:
                         self._activation_pending = False
-                return self._INTPTR_MA_NOACTIVATE
+                return self._intptr_ma_noactivate
         except Exception:
             pass  # WndProc must NEVER throw
-        return self._INTPTR_ZERO
+        return self._intptr_zero
 
     def _safe_activate(self):
         """Deferred activation — runs when Revit's message loop is idle."""
