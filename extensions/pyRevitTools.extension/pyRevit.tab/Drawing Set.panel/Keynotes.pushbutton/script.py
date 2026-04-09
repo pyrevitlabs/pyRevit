@@ -685,9 +685,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     def _wnd_proc(self, hwnd, msg, wParam, lParam, handled):
         """Win32 WndProc hook — intercept activation messages.
-        CRITICAL: Only use pre-cached instance variables here.
-        IronPython cannot resolve .NET types (System.IntPtr, etc.)
-        from inside a native Win32 callback."""
+        CRITICAL: Do not resolve .NET types/delegates by name here
+        (for example System.IntPtr or System.Action); use cached
+        members/delegates instead. Callback parameters and constants
+        are safe to use inside this native Win32 callback."""
         try:
             if msg == self.WM_MOUSEACTIVATE:
                 handled.Value = True
