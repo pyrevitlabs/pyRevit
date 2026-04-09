@@ -98,7 +98,7 @@ class PrintUtils:
         return dp
 
     @staticmethod
-    def pdf_opts(hcb=True, hsb=True, hrp=True, hvt=True, mcl=True):
+    def pdf_opts(hcb=True, hsb=True, hrp=True, hvt=True, mcl=True, print_params=None):
         opts = DB.PDFExportOptions()
         opts.HideCropBoundaries = hcb
         opts.HideScopeBoxes = hsb
@@ -106,6 +106,24 @@ class PrintUtils:
         opts.HideUnreferencedViewTags = hvt
         opts.MaskCoincidentLines = mcl
         opts.PaperFormat = DB.ExportPaperFormat.Default
+        if print_params:
+            try:
+                opts.ColorDepth = print_params.ColorDepth
+            except Exception:
+                pass
+            try:
+                opts.RasterQuality = print_params.RasterQuality
+            except Exception:
+                pass
+            # PDF export has no hidden line views option of its own; asking
+            # for raster processing rasterizes the whole view instead.
+            try:
+                opts.AlwaysUseRaster = (
+                    print_params.HiddenLineViews
+                    == DB.HiddenLineViewsType.RasterProcessing
+                    )
+            except Exception:
+                pass
         return opts
 
     @staticmethod
@@ -1131,7 +1149,14 @@ class PrintSheetsWindow(forms.WPFWindow):
                                                 pb1.update_progress(pbCount1, pbTotal1)
                                                 pbCount1 += 1
                                                 if IS_REVIT_2022_OR_NEWER and self.selected_printer == "Revit Internal Printer":
-                                                    optspdf = PrintUtils.pdf_opts()
+                                                    _params = (
+                                                        sheet.print_settings.PrintParameters
+                                                        if per_sheet_psettings
+                                                        else self.selected_print_setting.print_params
+                                                    )
+                                                    optspdf = PrintUtils.pdf_opts(
+                                                        print_params=_params
+                                                    )
                                                     PrintUtils.export_sheet_pdf(dirPath, sheet.revit_sheet, optspdf, doc, sheet.print_filename)
                                                 else:
                                                     print_mgr.SubmitPrint(sheet.revit_sheet)
@@ -1176,7 +1201,14 @@ class PrintSheetsWindow(forms.WPFWindow):
                                                 pb1.update_progress(pbCount1, pbTotal1)
                                                 pbCount1 += 1
                                                 if IS_REVIT_2022_OR_NEWER and self.selected_printer == "Revit Internal Printer":
-                                                    optspdf = PrintUtils.pdf_opts()
+                                                    _params = (
+                                                        sheet.print_settings.PrintParameters
+                                                        if per_sheet_psettings
+                                                        else self.selected_print_setting.print_params
+                                                    )
+                                                    optspdf = PrintUtils.pdf_opts(
+                                                        print_params=_params
+                                                    )
                                                     PrintUtils.export_sheet_pdf(dirPath, sheet.revit_sheet, optspdf, doc, sheet.print_filename)
                                                 else:
                                                     print_mgr.SubmitPrint(sheet.revit_sheet)
@@ -1225,7 +1257,9 @@ class PrintSheetsWindow(forms.WPFWindow):
                                         pb1.update_progress(pbCount1, pbTotal1)
                                         pbCount1 += 1
                                         if IS_REVIT_2022_OR_NEWER and self.selected_printer == "Revit Internal Printer":
-                                            optspdf = PrintUtils.pdf_opts()
+                                            optspdf = PrintUtils.pdf_opts(
+                                                print_params=self.selected_print_setting.print_params
+                                            )
                                             PrintUtils.export_sheet_pdf(dirPath, sheet.revit_sheet, optspdf, doc, sheet.print_filename)
                                         else:
                                             print_mgr.SubmitPrint(sheet.revit_sheet)
