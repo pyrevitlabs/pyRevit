@@ -127,6 +127,11 @@ jobs:
         run: |
           pipenv run pyrevit build products
 
+      - name: Verify LibGit2 native DLL in bin
+        shell: pwsh
+        run: |
+          & "${{ github.workspace }}/release/Verify-LibGit2NativeDll.ps1"
+
       - name: Get Build Version
         if: (github.repository == env.MainRepo)
         id: buildversion
