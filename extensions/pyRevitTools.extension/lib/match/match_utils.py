@@ -159,9 +159,8 @@ def get_source_properties(src_element, simple=False):
     return props
 
 
-def paste_props(source_props, paste_mode, category_filter=False):
+def paste_props(source_props, paste_mode, category_filter=False, **kwargs):
     """
-    Core paste routine — runs inside an ExternalEvent (Revit API context).
     paste_mode: "single" | "rectangle" | "selection"
     """
     # Build category filter if the checkbox is ticked and categories are known
@@ -184,7 +183,9 @@ def paste_props(source_props, paste_mode, category_filter=False):
     else:
         title = "Pick elements to match {} parameter(s):".format(len(source_props))
 
-    with forms.WarningBar(title=title):
+    bg = kwargs.get("background", None)
+    fg = kwargs.get("foreground", None)
+    with forms.WarningBar(title=title, background=bg, foreground=fg):
         while True:
             dest_elements = []
 

@@ -1751,6 +1751,8 @@ class WarningBar(TemplatePromptBar):
 
     Keyword Args:
         title (string): warning bar text
+        background (SolidColorBrush): background brush
+        foreground (SolidColorBrush): text brush
 
     Examples:
         ```python
@@ -1763,6 +1765,14 @@ class WarningBar(TemplatePromptBar):
 
     def _setup(self, **kwargs):
         self.message_tb.Text = kwargs.get("title", "")
+
+        bg = kwargs.get("background", None)
+        if bg:
+            self.Resources["pyRevitAccentBrush"] = bg
+
+        fg = kwargs.get("foreground", None)
+        if fg:
+            self.Resources[System.Windows.SystemColors.WindowBrushKey] = fg
 
 
 class ProgressBar(TemplatePromptBar):

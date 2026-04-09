@@ -2,18 +2,22 @@
 from pyrevit import revit, script
 
 from match.match_utils import paste_props, PropKeyValue, safe_get_parameter
-from match.filter_utils import get_most_common_filter_parameter
+from match.filter_utils import (
+    get_color_source_parameter,
+    get_most_common_ogs_brush,
+    get_contrasting_brush,
+)
 
 logger = script.get_logger()
 
 
 def main():
-    param_id = get_most_common_filter_parameter(revit.doc, revit.active_view)
-    if not param_id:
-        return
     sel = revit.get_selection()
-    elem = sel[0] if len(sel) == 1 else revit.pick_element()
+    elem = sel[0] if len(sel) == 1 else revit.pick_element(message="Pick Element to gather Parameter Value")
     if not elem:
+        return
+    param_id, ogs = get_color_source_parameter(revit.doc, revit.active_view, elem)
+    if not param_id:
         return
     props = []
     try:
@@ -38,7 +42,10 @@ def main():
     if not props:
         return
 
-    paste_props(props, "single")
+    bg = get_most_common_ogs_brush(ogs)
+    fg = get_contrasting_brush(bg)
+
+    paste_props(props, "single", background=bg, foreground=fg)
 
 
 if __name__ == "__main__":
