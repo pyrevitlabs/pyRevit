@@ -522,6 +522,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
         # this modeless window.
         self._hwnd_source = None
         self._activation_pending = False
+        # Pre-cache .NET types — IronPython cannot resolve System.IntPtr
+        # or System.Action from inside a Win32 WndProc callback
+        # (LookupGlobalInstruction crash in HwndSubclass.SubclassWndProc).
+        self._intptr_zero = System.IntPtr.Zero
+        self._intptr_ma_noactivate = System.IntPtr(self.MA_NOACTIVATE)
+        self._bg_priority = Windows.Threading.DispatcherPriority.Background
         self.SourceInitialized += self._on_source_initialized
 
         self._kfile = None
@@ -545,9 +551,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._close_pending = False
 
         self._search_timer = DispatcherTimer()
-        self._search_timer.Interval = TimeSpan.FromMilliseconds(
-            300
-        )  # Wait 300ms after last keystroke
+        # Wait 300ms after last keystroke before filtering.
+        self._search_timer.Interval = TimeSpan.FromMilliseconds(300)
         self._search_timer.Tick += self._on_search_timer_tick
 
         self.load_config(reset_config)
@@ -671,22 +676,34 @@ class KeynoteManagerWindow(forms.WPFWindow):
             wih = WindowInteropHelper(self)
             self._hwnd_source = HwndSource.FromHwnd(wih.Handle)
             if self._hwnd_source:
+                # Cache the Action delegate — must be done after __init__
+                # so self._safe_activate is bound
+                self._activate_action = System.Action(self._safe_activate)
                 self._hwnd_source.AddHook(self._wnd_proc)
         except Exception as ex:
             logger.debug("HwndSource hook failed | %s" % ex)
 
     def _wnd_proc(self, hwnd, msg, wParam, lParam, handled):
-        """Win32 WndProc hook — intercept activation messages."""
-        if msg == self.WM_MOUSEACTIVATE:
-            handled.Value = True
-            if not self._activation_pending:
-                self._activation_pending = True
-                self.Dispatcher.BeginInvoke(
-                    System.Action(self._safe_activate),
-                    Windows.Threading.DispatcherPriority.Background,
-                )
-            return System.IntPtr(self.MA_NOACTIVATE)
-        return System.IntPtr.Zero
+        """Win32 WndProc hook — intercept activation messages.
+        CRITICAL: Do not resolve .NET types/delegates by name here
+        (for example System.IntPtr or System.Action); use cached
+        members/delegates instead. Callback parameters and constants
+        are safe to use inside this native Win32 callback."""
+        try:
+            if msg == self.WM_MOUSEACTIVATE:
+                handled.Value = True
+                if not self._activation_pending:
+                    self._activation_pending = True
+                    try:
+                        self.Dispatcher.BeginInvoke(
+                            self._activate_action, self._bg_priority
+                        )
+                    except Exception:
+                        self._activation_pending = False
+                return self._intptr_ma_noactivate
+        except Exception:
+            pass  # WndProc must NEVER throw
+        return self._intptr_zero
 
     def _safe_activate(self):
         """Deferred activation — runs when Revit's message loop is idle."""
@@ -1420,7 +1437,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._update_full_tree(fast_filter=True)
 
     def clear_search(self, sender, args):
-        self.search_tb.Text = ""  # Removed the space to ensure clean empty string
+        self.search_tb.Text = ""
         self.search_tb.Clear()
         self.search_tb.Focus()
         self._update_full_tree(fast_filter=True)
