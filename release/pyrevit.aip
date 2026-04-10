@@ -648,7 +648,7 @@
     <ROW Component="family_utils.py" ComponentId="{845FBB09-BEC1-4922-BA1C-1DE7A45C0F58}" Directory_="lib_3_Dir" Attributes="0" KeyPath="family_utils.py" Type="0"/>
     <ROW Component="files.py" ComponentId="{53FE6F52-9A18-493C-86DE-BB2F7E8EC060}" Directory_="revit_Dir" Attributes="0" KeyPath="files.py" Type="0"/>
     <ROW Component="firsttransaction_script.py" ComponentId="{F2774182-93D0-4AD9-993D-75B27F7D81E1}" Directory_="Session4.pushbutton_Dir" Attributes="0" KeyPath="firsttransaction_script.py" Type="0"/>
-    <ROW Component="git2106a5f2.dll" ComponentId="{1E9F9136-BBC9-46D5-8CF2-4BFB700A306B}" Directory_="bin_Dir" Attributes="256" KeyPath="git2106a5f2.dll"/>
+    <ROW Component="git23f4182d.dll" ComponentId="{1E9F9136-BBC9-46D5-8CF2-4BFB700A306B}" Directory_="bin_Dir" Attributes="256" KeyPath="git23f4182d.dll"/>
     <ROW Component="header01.txt" ComponentId="{6F393DFF-05B1-4899-AC2D-3B9194982072}" Directory_="data_Dir" Attributes="0" KeyPath="header01.txt" Type="0"/>
     <ROW Component="icon.png" ComponentId="{E1AB6C3A-3CA8-4A26-86B4-66CFD89AEC08}" Directory_="FindRangeOfRoofSlopes.pushbut_1_Dir" Attributes="0" KeyPath="icon.png_72" Type="0"/>
     <ROW Component="icon.png_1" ComponentId="{391514B1-ACA6-4834-A145-A36E7AD80EF7}" Directory_="ReOrderSheets.pushbutton_Dir" Attributes="0" KeyPath="icon.png_1" Type="0"/>
@@ -2775,7 +2775,7 @@
     <ROW File="System.Reflection.Metadata.dll" Component_="System.Reflection.Metadata.dll" FileName="SYSTEM~1.DLL|System.Reflection.Metadata.dll" Attributes="0" SourcePath="..\bin\System.Reflection.Metadata.dll" SelfReg="false"/>
     <ROW File="Microsoft.CodeAnalysis.CSharp.dll" Component_="Microsoft.CodeAnalysis.CSharp.dll" FileName="MICROS~3.DLL|Microsoft.CodeAnalysis.CSharp.dll" Attributes="0" SourcePath="..\bin\Microsoft.CodeAnalysis.CSharp.dll" SelfReg="false"/>
     <ROW File="Microsoft.CodeAnalysis.dll" Component_="Microsoft.CodeAnalysis.dll" FileName="MICROS~4.DLL|Microsoft.CodeAnalysis.dll" Attributes="0" SourcePath="..\bin\Microsoft.CodeAnalysis.dll" SelfReg="false"/>
-    <ROW File="git2106a5f2.dll" Component_="git2106a5f2.dll" FileName="GIT2-1~1.DLL|git2-106a5f2.dll" Attributes="0" SourcePath="..\bin\git2-106a5f2.dll" SelfReg="false"/>
+    <ROW File="git23f4182d.dll" Component_="git23f4182d.dll" FileName="GIT2-3~1.DLL|git2-3f4182d.dll" Attributes="0" SourcePath="..\bin\git2-3f4182d.dll" SelfReg="false"/>
     <ROW File="System.Runtime.CompilerServices.Unsafe.dll" Component_="System.Runtime.CompilerServices.Unsafe.dll" FileName="SYSTEM~2.DLL|System.Runtime.CompilerServices.Unsafe.dll" Attributes="0" SourcePath="..\bin\System.Runtime.CompilerServices.Unsafe.dll" SelfReg="false"/>
     <ROW File="System.Numerics.Vectors.dll" Component_="System.Numerics.Vectors.dll" FileName="SYSTEM~4.DLL|System.Numerics.Vectors.dll" Attributes="0" SourcePath="..\bin\System.Numerics.Vectors.dll" SelfReg="false"/>
     <ROW File="System.Collections.Immutable.dll" Component_="System.Collections.Immutable.dll" FileName="SYSTEM~5.DLL|System.Collections.Immutable.dll" Attributes="0" SourcePath="..\bin\System.Collections.Immutable.dll" SelfReg="false"/>
@@ -3604,7 +3604,7 @@
     <ROW Feature_="MainFeature" Component_="System.Reflection.Metadata.dll"/>
     <ROW Feature_="MainFeature" Component_="Microsoft.CodeAnalysis.CSharp.dll"/>
     <ROW Feature_="MainFeature" Component_="Microsoft.CodeAnalysis.dll"/>
-    <ROW Feature_="MainFeature" Component_="git2106a5f2.dll"/>
+    <ROW Feature_="MainFeature" Component_="git23f4182d.dll"/>
     <ROW Feature_="MainFeature" Component_="System.Runtime.CompilerServices.Unsafe.dll"/>
     <ROW Feature_="MainFeature" Component_="System.Numerics.Vectors.dll"/>
     <ROW Feature_="MainFeature" Component_="System.Collections.Immutable.dll"/>

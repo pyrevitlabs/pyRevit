@@ -228,12 +228,9 @@ namespace pyRevitExtensionParser
             _directoryFilesCache.Clear();
             _iconCache.Clear();
             _cachedExtensionRoots = null;
-            _cachedConfig = null;
+            PyRevitConfig.ClearCache();
             _pythonScriptCache.Clear();
-            _localeInitialized = false;
-
-            // Also clear the BundleParser cache
-            BundleParser.BundleYamlParser.ClearCache();
+            BundleParser.BundleYamlParser.ClearCache(); 
         }
 
         /// <summary>
@@ -384,14 +381,10 @@ namespace pyRevitExtensionParser
             }
         }
 
-        // Cache config instance to avoid reloading for each extension
-        private static PyRevitConfig _cachedConfig;
-        private static PyRevitConfig GetConfig()
-        {
-            if (_cachedConfig == null)
-                _cachedConfig = PyRevitConfig.Load();
-            return _cachedConfig;
-        }
+        // Config caching is now handled inside PyRevitConfig.Load() itself.
+        // All callers (UIManagerService, EnvDictionarySeeder, etc.) benefit from the
+        // single cache without needing their own copy.  Fix for #3268.
+        private static PyRevitConfig GetConfig() => PyRevitConfig.Load();
 
         /// <summary>
         /// Parses a single extension from the given extension directory path
@@ -1453,13 +1446,11 @@ namespace pyRevitExtensionParser
         }
 
         /// <summary>
-        /// Sanitizes a string for use as a unique command identifier / C# class name.
-        /// Replicates the legacy Python coreutils.cleanup_string() behavior with
-        /// the SPECIAL_CHARS replacement table and skip=['_'] (the separator).
+        /// Sanitizes a string using the legacy Python cleanup_string() replacement table.
+        /// Public so that HookManager can generate hook IDs matching the legacy format.
         /// See: pyrevitlib/pyrevit/coreutils/__init__.py lines 295-344
-        /// Fix for #3164: Unique ID generation must match legacy Python loader.
         /// </summary>
-        private static string SanitizeClassName(string name)
+        public static string SanitizeClassName(string name)
         {
             var result = name
                 .Replace(" ", "")

@@ -5,15 +5,23 @@ from pyrevit import script, forms, revit, op
 from pyrevit import UI
 from pyrevit.revit.events import _GenericExternalEventHandler
 from pyrevit.framework import ComponentModel
+from pyrevit.compat import get_elementid_value_func
 
 from match_utils import (
     PropKeyValue,
     get_source_properties,
     safe_get_parameter,
-    paste_props
+    paste_props,
 )
-from filter_utils import get_most_common_filter_parameter, dissect_parameter_filter
+from filter_utils import (
+    dissect_parameter_filter,
+    get_color_source_parameter,
+    get_most_common_ogs_brush,
+    get_contrasting_brush,
+    get_ogs_from_prop_in_view,
+)
 
+get_elementid_value = get_elementid_value_func()
 logger = script.get_logger()
 
 MAX_HISTORY_ITEMS = 50
@@ -243,13 +251,13 @@ class MatchHistoryClipboard(forms.WPFPanel):
         Read the value of the most-common filter parameter from a picked element.
         Useful for quickly setting up a match from a 'key' parameter.
         """
-        param_id = get_most_common_filter_parameter(revit.doc, revit.active_view)
-        if not param_id:
-            logger.warning("No simple equals filter found on active view.")
-            return
         sel = revit.get_selection()
         elem = sel[0] if len(sel) == 1 else revit.pick_element()
         if not elem:
+            return
+        param_id, _ = get_color_source_parameter(revit.doc, revit.active_view, elem)
+        if not param_id:
+            logger.warning("No simple equals filter found on active view.")
             return
         try:
             tparam = safe_get_parameter(elem, param_id)
@@ -260,10 +268,10 @@ class MatchHistoryClipboard(forms.WPFPanel):
                 PropKeyValue(
                     name=tparam.Definition.Name,
                     datatype=tparam.StorageType,
-                    value=value,
+                    value=get_elementid_value(value),
                     istype=False,
                     display_value=tparam.AsValueString() or str(value),
-                    categories=[elem.Category]
+                    categories=[elem.Category],
                 )
             ]
             self._add_to_history(props)
@@ -277,20 +285,51 @@ class MatchHistoryClipboard(forms.WPFPanel):
     def paste_single(self, sender, args):
         """Paste checked parameters by picking elements one at a time (loops)."""
         props = self._selected_props()
+        bg, fg = None, None
+        if len(props) == 1:
+            ogs = get_ogs_from_prop_in_view(revit.doc, revit.active_view, props[0])
+            if ogs:
+                bg = get_most_common_ogs_brush(ogs)
+                fg = get_contrasting_brush(bg)
         if props:
-            self._run_in_revit(paste_props, props, "single", bool(self.categoryFilterCheck.IsChecked))
+            self._run_in_revit(
+                paste_props,
+                props,
+                "single",
+                bool(self.categoryFilterCheck.IsChecked),
+                background=bg,
+                foreground=fg,
+            )
 
     def paste_rectangle(self, sender, args):
         """Paste checked parameters to elements inside a drawn rectangle (loops)."""
         props = self._selected_props()
+        bg, fg = None, None
+        if len(props) == 1:
+            ogs = get_ogs_from_prop_in_view(revit.doc, revit.active_view, props[0])
+            if ogs:
+                bg = get_most_common_ogs_brush(ogs)
+                fg = get_contrasting_brush(bg)
         if props:
-            self._run_in_revit(paste_props, props, "rectangle", bool(self.categoryFilterCheck.IsChecked))
+            self._run_in_revit(
+                paste_props,
+                props,
+                "rectangle",
+                bool(self.categoryFilterCheck.IsChecked),
+                background=bg,
+                foreground=fg,
+            )
 
     def paste_selection(self, sender, args):
         """Paste checked parameters to the current Revit selection (one-shot)."""
         props = self._selected_props()
         if props:
-            self._run_in_revit(paste_props, props, "selection", bool(self.categoryFilterCheck.IsChecked))
+            self._run_in_revit(
+                paste_props,
+                props,
+                "selection",
+                bool(self.categoryFilterCheck.IsChecked),
+            )
 
     # ── check / search UI handlers ───────────────────────────────────────────
 

@@ -185,6 +185,25 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 }
             }
 
+            // ── PASS 2.5: Register ALL hooks ──────────────────────────────────
+            // Replaces the Python-side extensionmgr.get_installed_ui_extensions() +
+            // hooks.register_hooks() loop in _new_session_csharp(), which triggered
+            // a redundant full extension re-parse costing ~2-5s.
+            // See: pyrevitlib/pyrevit/loader/hooks.py register_hooks()
+            stepStopwatch.Restart();
+            foreach (var (ext, _) in assembledExtensions)
+            {
+                try
+                {
+                    _hookManager.RegisterHooks(ext, libraryExtensions, _runtimeAssembly!, _pyRevitRoot);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error($"Hook registration error for '{ext.Name}': {ex}");
+                }
+            }
+            _logger.Debug($"[PERF] RegisterHooks (all extensions): {stepStopwatch.ElapsedMilliseconds}ms");
+
             // ── PASS 3: Build ALL UI ───────────────────────────────────────────
             foreach (var (ext, assmInfo) in assembledExtensions)
             {

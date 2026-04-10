@@ -127,6 +127,11 @@ jobs:
         run: |
           pipenv run pyrevit build products
 
+      - name: Verify LibGit2 native DLL in bin
+        shell: pwsh
+        run: |
+          & "${{ github.workspace }}/release/Verify-LibGit2NativeDll.ps1"
+
       - name: Get Build Version
         if: (github.repository == env.MainRepo)
         id: buildversion
@@ -169,7 +174,7 @@ jobs:
           azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
           azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
           endpoint: ${{ secrets.AZURE_ENDPOINT }}
-          trusted-signing-account-name: ${{ secrets.AZURE_CODE_SIGNING_NAME }}
+          signing-account-name: ${{ secrets.AZURE_CODE_SIGNING_NAME }}
           certificate-profile-name: ${{ secrets.AZURE_CERT_PROFILE_NAME }}
 
           files-folder: bin/
@@ -194,7 +199,7 @@ jobs:
           azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
           azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
           endpoint: ${{ secrets.AZURE_ENDPOINT }}
-          trusted-signing-account-name: ${{ secrets.AZURE_CODE_SIGNING_NAME }}
+          signing-account-name: ${{ secrets.AZURE_CODE_SIGNING_NAME }}
           certificate-profile-name: ${{ secrets.AZURE_CERT_PROFILE_NAME }}
 
           # Sign all exes inside the folder

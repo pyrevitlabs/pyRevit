@@ -36,12 +36,25 @@
         <Copy SourceFiles="$(OutDir)\DotNetVersionFinder.dll" DestinationFolder="$(PyRevitBinDir)"/>
         <Copy SourceFiles="$(OutDir)\LibGit2Sharp.dll" DestinationFolder="$(PyRevitBinDir)"/>
         <Copy SourceFiles="@(LibGit2SharpNative)" DestinationFolder="$(PyRevitBinDir)"/>
+        <!-- pyrevit.exe (UseDefaultBin) loads LibGit2Sharp from repo bin\; native git2 must sit beside it. -->
+        <Copy SourceFiles="$(OutDir)\LibGit2Sharp.dll" DestinationFolder="$(PyRevitRootDir)\bin"
+            Condition="'$(PyRevitBinDir)' != '$(PyRevitRootDir)\bin'"/>
+        <Copy SourceFiles="@(LibGit2SharpNative)" DestinationFolder="$(PyRevitRootDir)\bin"
+            Condition="'$(PyRevitBinDir)' != '$(PyRevitRootDir)\bin'"/>
         <Copy SourceFiles="$(OutDir)\MadMilkman.Ini.dll" DestinationFolder="$(PyRevitBinDir)"/>
         <Copy SourceFiles="$(OutDir)\OpenMcdf.dll" DestinationFolder="$(PyRevitBinDir)"/>
         <Copy SourceFiles="$(OutDir)\YamlDotNet.dll" DestinationFolder="$(PyRevitBinDir)"/>
         <Copy SourceFiles="$(OutDir)\Microsoft.CodeAnalysis.dll" DestinationFolder="$(PyRevitBinDir)"/>
         <Copy SourceFiles="$(OutDir)\Microsoft.CodeAnalysis.CSharp.dll" DestinationFolder="$(PyRevitBinDir)"/>
         <Copy SourceFiles="$(OutDir)\Microsoft.CodeAnalysis.VisualBasic.dll" DestinationFolder="$(PyRevitBinDir)"/>
+        <Copy SourceFiles="$(OutDir)\System.Management.dll" DestinationFolder="$(PyRevitBinDir)"
+            Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp' and Exists('$(OutDir)\System.Management.dll')" />
+        <Copy SourceFiles="$(OutDir)\runtimes\win\lib\net8.0\System.Management.dll" DestinationFolder="$(PyRevitBinDir)\runtimes\win\lib\net8.0"
+            Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp' and Exists('$(OutDir)\runtimes\win\lib\net8.0\System.Management.dll')" />
+        <Copy SourceFiles="$(OutDir)\System.Management.dll" DestinationFolder="$(PyRevitRootDir)\bin"
+            Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp' and '$(PyRevitBinDir)' != '$(PyRevitRootDir)\bin' and Exists('$(OutDir)\System.Management.dll')" />
+        <Copy SourceFiles="$(OutDir)\runtimes\win\lib\net8.0\System.Management.dll" DestinationFolder="$(PyRevitRootDir)\bin\runtimes\win\lib\net8.0"
+            Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp' and '$(PyRevitBinDir)' != '$(PyRevitRootDir)\bin' and Exists('$(OutDir)\runtimes\win\lib\net8.0\System.Management.dll')" />
         
     </Target>
 

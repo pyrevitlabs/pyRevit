@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace pyRevitExtensionParser
 {
@@ -14,7 +15,15 @@ namespace pyRevitExtensionParser
         /// The underlying INI file handler for reading and writing configuration values.
         /// </summary>
         private readonly IniFile _ini;
-        
+
+        /// <summary>
+        /// Cached default-path instance. Cleared via <see cref="ClearCache"/> at the
+        /// start of each session load so that config changes made between reloads are
+        /// picked up.  Custom-path calls bypass this cache.
+        /// </summary>
+        private static volatile PyRevitConfig _defaultInstance;
+        private static readonly object _cacheLock = new object();
+
         /// <summary>
         /// Cached values for boolean conversion to avoid repeated string allocations.
         /// </summary>
@@ -118,20 +127,26 @@ namespace pyRevitExtensionParser
         /// Gets or sets whether to load beta/experimental commands.
         /// </summary>
         /// <remarks>
-        /// When false (default), commands marked as beta (__beta__ = True) will not be loaded.
+        /// When false (default), commands marked as beta (bundle <c>is_beta</c> or script <c>__beta__</c>) will not be loaded.
         /// When true, beta commands will be visible in the UI.
         /// Defaults to false if not configured or if the value cannot be parsed.
+        /// Reads <c>loadbeta</c> first (same INI key as pyRevitLabs and Python <c>user_config.load_beta</c>);
+        /// falls back to <c>load_beta</c> for older INI files written by earlier C# builds.
         /// </remarks>
         public bool LoadBeta
         {
             get
             {
-                var value = _ini.IniReadValue("core", "load_beta");
-                return bool.TryParse(value, out var result) ? result : false;
+                var value = _ini.IniReadValue("core", "loadbeta");
+                if (string.IsNullOrWhiteSpace(value))
+                    value = _ini.IniReadValue("core", "load_beta");
+                return TryParseConfigBool(value, out var result) && result;
             }
             set
             {
-                _ini.IniWriteValue("core", "load_beta", value ? TrueString : FalseString);
+                _ini.IniWriteValue("core", "loadbeta", value ? TrueString : FalseString);
+                // Drop legacy key so the file does not show two competing entries.
+                _ini.IniRemoveKey("core", "load_beta");
             }
         }
 
@@ -427,12 +442,21 @@ namespace pyRevitExtensionParser
         /// </summary>
         /// <param name="customPath">
         /// Optional custom path to the configuration file. 
-        /// If null, uses the default location: %APPDATA%\pyRevit\pyRevit_config.ini
+        /// If null, uses the same discovery as pyRevitLabs/Python: first <c>*.ini</c> under
+        /// <c>%APPDATA%\pyRevit\</c> matching the labs config filename pattern, else
+        /// <c>%APPDATA%\pyRevit\pyRevit_config.ini</c>.
         /// </param>
         /// <returns>A new <see cref="PyRevitConfig"/> instance for the specified configuration file.</returns>
         /// <remarks>
-        /// This method does not verify that the configuration file exists.
-        /// The file will be created automatically when values are written.
+        /// When loading from the default path (i.e. <paramref name="customPath"/> is null), this method
+        /// eagerly creates an empty <c>pyRevit_config.ini</c> file (and its parent directory) if it does
+        /// not already exist, so that Python's <c>configparser</c> can save settings without manual
+        /// intervention.  The result is cached for the lifetime of the session; call
+        /// <see cref="ClearCache"/> to force a re-read on the next call.
+        /// <para>
+        /// When a <paramref name="customPath"/> is supplied (e.g. in tests), the call is never cached
+        /// and no file is created.
+        /// </para>
         /// </remarks>
         /// <example>
         /// <code>
@@ -445,14 +469,74 @@ namespace pyRevitExtensionParser
         /// </example>
         public static PyRevitConfig Load(string customPath = null)
         {
-            string configName = "pyRevit_config.ini";
-            string defaultPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "pyRevit",
-                configName);
+            // Custom-path calls (used by tests) always create a fresh instance — no caching.
+            if (!string.IsNullOrEmpty(customPath))
+                return new PyRevitConfig(customPath);
 
-            string finalPath = customPath ?? defaultPath;
-            return new PyRevitConfig(finalPath);
+            // Return cached default-path instance.
+            if (_defaultInstance != null)
+                return _defaultInstance;
+
+            lock (_cacheLock)
+            {
+                if (_defaultInstance != null)
+                    return _defaultInstance;
+
+                var appDataPyRevit = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "pyRevit");
+                var discovered = TryFindConfigIniInDirectory(appDataPyRevit);
+                var fallback = Path.Combine(appDataPyRevit, "pyRevit_config.ini");
+                var finalPath = discovered ?? fallback;
+
+                // Ensure the file exists so Python's configparser can write to it
+                if (!File.Exists(finalPath))
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(finalPath));
+                    File.Create(finalPath).Dispose();
+                }
+
+                _defaultInstance = new PyRevitConfig(finalPath);
+                return _defaultInstance;
+            }
+        }
+
+        /// <summary>
+        /// Clears the cached default-path config instance so that the next
+        /// <see cref="Load()"/> call re-reads from disk.  Called at session reload
+        /// via <see cref="ExtensionParser.ClearAllCaches"/>.
+        /// </summary>
+        public static void ClearCache()
+        {
+            lock (_cacheLock)
+            {
+                _defaultInstance = null;
+            }
+        }
+
+        /// <summary>
+        /// Matches pyRevitLabs <c>ConfigsFileRegexPattern</c> (first match wins).
+        /// </summary>
+        private static string TryFindConfigIniInDirectory(string directory)
+        {
+            if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory))
+                return null;
+
+            try
+            {
+                var configMatcher = new Regex(@".*[pyrevit|config].*\.ini", RegexOptions.IgnoreCase);
+                foreach (var fullPath in Directory.GetFiles(directory, "*.ini", SearchOption.TopDirectoryOnly))
+                {
+                    if (configMatcher.IsMatch(Path.GetFileName(fullPath)))
+                        return fullPath;
+                }
+            }
+            catch
+            {
+                // ignore
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -521,6 +605,45 @@ namespace pyRevitExtensionParser
             }
 
             return null; // Return null if the extension is not found
+        }
+
+        /// <summary>
+        /// Parses booleans from INI values (matches Python/json-style and common variants).
+        /// </summary>
+        private static bool TryParseConfigBool(string raw, out bool result)
+        {
+            result = false;
+            if (string.IsNullOrWhiteSpace(raw))
+                return false;
+
+            var v = raw.Trim();
+            if (v.Length >= 2 &&
+                ((v[0] == '"' && v[v.Length - 1] == '"') ||
+                 (v[0] == '\'' && v[v.Length - 1] == '\'')))
+            {
+                v = v.Substring(1, v.Length - 2).Trim();
+            }
+
+            if (bool.TryParse(v, out result))
+                return true;
+
+            if (v.Equals("1", StringComparison.Ordinal) ||
+                v.Equals("yes", StringComparison.OrdinalIgnoreCase) ||
+                v.Equals("on", StringComparison.OrdinalIgnoreCase))
+            {
+                result = true;
+                return true;
+            }
+
+            if (v.Equals("0", StringComparison.Ordinal) ||
+                v.Equals("no", StringComparison.OrdinalIgnoreCase) ||
+                v.Equals("off", StringComparison.OrdinalIgnoreCase))
+            {
+                result = false;
+                return true;
+            }
+
+            return false;
         }
     }
 

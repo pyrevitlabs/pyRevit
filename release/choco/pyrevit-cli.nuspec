@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
   <metadata>
     <id>pyrevit-cli</id>
-    <version>6.3.0.26092</version>
+    <version>6.4.0.26098</version>
     <packageSourceUrl>https://github.com/pyrevitlabs/pyRevit/tree/master/release/choco/</packageSourceUrl>
     <owners>Ehsan Iran-Nejad</owners>
     <title>pyRevit CLI</title>
@@ -20,7 +20,7 @@
 and configure pyRevit in your production/development environment.
 Each section below showcases a specific set of functionality of the command line tool.
 </description>
-    <releaseNotes>https://github.com/pyrevitlabs/pyRevit/releases/tag/v6.3.0.26092%2B0010/</releaseNotes>
+    <releaseNotes>https://github.com/pyrevitlabs/pyRevit/releases/tag/v6.4.0.26098%2B2214/</releaseNotes>
     <dependencies>
       <dependency id="dotnetfx" version="4.8.0.20190930" />
     </dependencies>

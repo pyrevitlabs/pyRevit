@@ -1,6 +1,6 @@
 #define MyAppName "pyRevit"
 #define MyAppUUID "f2a3da53-6f34-41d5-abbd-389ffa7f4d5f"
-#define MyAppVersion "6.3.0.26092"
+#define MyAppVersion "6.4.0.26098"
 #define MyAppPublisher "pyRevitLabs"
 #define MyAppURL "pyrevitlabs.io"
 #include "CodeDependencies.iss"
@@ -38,7 +38,7 @@ DisableWelcomePage=no
 WizardStyle=classic
 WizardImageFile=.\pyrevit.bmp
 WizardSmallImageFile=.\pyrevit-banner.bmp
-ArchitecturesInstallIn64BitMode=x64
+ArchitecturesInstallIn64BitMode=x64compatible
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
