@@ -69,7 +69,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 [KeyVersion]            = ReadPyRevitVersion(pyRevitRoot),
                 [KeyClone]              = "Unknown",
                 [KeyIPYVersion]         = ReadIPYVersion(pyRevitRoot),
-                [KeyCPYVersion]         = "3.12.3",    // Known default for the bundled CPython engine
+                [KeyCPYVersion]         = ReadCPYVersion(pyRevitRoot),
 
                 // Fix for #3203: PyRevitConfig.LoggingLevel returns a pyRevit enum
                 // (0=Quiet, 1=Verbose, 2=Debug) but the Python logger reads this
@@ -188,6 +188,38 @@ namespace pyRevitAssemblyBuilder.SessionManager
             }
 
             return "Unknown";
+        }
+        /// <summary>
+        /// Reads the highest installed CPython engine version as an integer string
+        /// (e.g. "3123") by scanning the <c>bin/cengines/CPY{version}</c> directories.
+        /// Returns "0" if no CPython engine is installed.
+        /// </summary>
+        internal static string ReadCPYVersion(string pyRevitRoot)
+        {
+            if (string.IsNullOrEmpty(pyRevitRoot))
+                return "0";
+
+            try
+            {
+                var cenginesDir = Path.Combine(pyRevitRoot, "bin", "cengines");
+                if (!Directory.Exists(cenginesDir))
+                    return "0";
+
+                int maxVersion = 0;
+                foreach (var dir in Directory.GetDirectories(cenginesDir, "CPY*"))
+                {
+                    var dirName = Path.GetFileName(dir);
+                    if (int.TryParse(dirName.Substring(3), out int ver) && ver > maxVersion)
+                        maxVersion = ver;
+                }
+
+                return maxVersion > 0 ? maxVersion.ToString() : "0";
+            }
+            catch (Exception ex)
+            {
+                Trace.WriteLine($"ReadCPYVersion: {ex.Message}");
+                return "0";
+            }
         }
     }
 }
