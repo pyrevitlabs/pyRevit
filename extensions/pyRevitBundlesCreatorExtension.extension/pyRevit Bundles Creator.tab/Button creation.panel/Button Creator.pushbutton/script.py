@@ -19,6 +19,8 @@ up_2_folder = os.path.dirname(up_1_folder)
 # get panel name and create folder
 panel_name = forms.ask_for_string(
     default="My New Panel Name", title="New panel", prompt="Get your new panel a name")
+if not panel_name:
+    script.exit()
 panel_folder = os.path.join(up_2_folder, panel_name + ".panel")
 if not os.path.exists(panel_folder):
     os.mkdir(panel_folder)
