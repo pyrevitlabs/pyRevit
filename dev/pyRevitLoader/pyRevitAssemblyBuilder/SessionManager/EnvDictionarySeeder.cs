@@ -190,9 +190,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
             return "Unknown";
         }
         /// <summary>
-        /// Reads the active CPython engine version as an integer string (e.g. "3123")
-        /// by scanning the <c>bin/cengines/CPY{version}</c> directories and returning
-        /// the highest version found. Returns "0" if no CPython engine is installed.
+        /// Reads the highest installed CPython engine version as an integer string
+        /// (e.g. "3123") by scanning the <c>bin/cengines/CPY{version}</c> directories.
+        /// Returns "0" if no CPython engine is installed.
         /// </summary>
         internal static string ReadCPYVersion(string pyRevitRoot)
         {
