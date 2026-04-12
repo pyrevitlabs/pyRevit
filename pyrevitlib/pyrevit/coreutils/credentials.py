@@ -121,7 +121,6 @@ def migrate_legacy_token():
         return
     try:
         set_github_token(legacy_token)
-        _delete_config(_KEY_TOKEN_LEGACY)
     except Exception as ex:
         mlogger.warning("credentials: failed to migrate legacy token: %s", ex)
 
