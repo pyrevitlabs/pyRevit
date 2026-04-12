@@ -139,6 +139,10 @@ def _perform_onsessionloadstart_ops():
     # apply Upgrades
     upgrade.upgrade_existing_pyrevit()
 
+    # migrate any legacy plaintext GitHub token to DPAPI-encrypted storage
+    from pyrevit.coreutils import credentials
+    credentials.migrate_legacy_token()
+
     # setup hooks
     hooks.setup_hooks()
 
