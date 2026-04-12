@@ -44,8 +44,20 @@ def _check_connection(host="8.8.8.8", port=53, timeout=3):
 def _get_extension_credentials(repo_info):
     try:
         repo_config = user_config.get_section(repo_info.name)
-        if repo_config.private_repo:
-            return repo_config.username, repo_config.password
+        if not repo_config.private_repo:
+            return None, None
+        # Prefer the global DPAPI-encrypted token introduced in credentials.py.
+        # Fall back to the legacy per-extension plaintext password if present
+        # (covers installations not yet migrated).
+        from pyrevit.coreutils import credentials
+        token = credentials.get_github_token()
+        if token:
+            return 'oauth2', token
+        # Legacy fallback
+        username = repo_config.get_option('username', None)
+        password = repo_config.get_option('password', None)
+        if username and password:
+            return username, password
         return None, None
     except Exception:
         return None, None

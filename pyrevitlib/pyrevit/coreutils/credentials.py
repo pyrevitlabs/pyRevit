@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Secure GitHub token storage using Windows DPAPI (CurrentUser scope).
 
 Tokens are encrypted with ProtectedData and stored as base64 in the pyRevit
@@ -6,9 +7,6 @@ config. Plaintext never touches disk.
 Note: DPAPI blobs are bound to the Windows user profile and cannot be
 recovered after an OS reinstall without profile backup. If decryption fails,
 get_github_token() returns None and the user must re-enter the token.
-
-Note: Extension repo passwords in versionmgr/updater.py remain plaintext;
-only the GitHub token is encrypted here.
 
 Note: The C# CLI (PyRevitCLI.cs:TryGetCredentials) reads tokens from --token
 CLI arguments only. Bridging stored tokens to CLI commands is not yet
@@ -36,6 +34,9 @@ _SECTION = "github"
 _KEY_TOKEN = "token_dpapi"
 _KEY_TOKEN_LEGACY = "token"  # plaintext key used before this implementation
 
+# Keys written by old install code into per-extension config sections
+_EXT_PLAINTEXT_KEYS = ("token", "username", "password")
+
 
 # ------------------------------------------------------------------
 # DPAPI helpers
@@ -45,14 +46,14 @@ def _encrypt(plaintext):
     """Encrypt a string using DPAPI (CurrentUser scope). Returns base64 string."""
     data = Encoding.UTF8.GetBytes(plaintext)
     protected = ProtectedData.Protect(data, None, DataProtectionScope.CurrentUser)
-    # Use System.Convert throughout to stay in .NET types and avoid
-    # IronPython 2 bytes(bytearray(...)) pitfall (gives repr, not raw bytes).
+    # Use System.Convert to stay in .NET types and avoid the IronPython 2
+    # bytes(bytearray(...)) pitfall where that yields repr, not raw bytes.
     return Convert.ToBase64String(protected)
 
 
 def _decrypt(b64_ciphertext):
     """Decrypt a base64 DPAPI blob. Returns plaintext string."""
-    # FromBase64String returns a .NET byte[] directly — no Python bytearray needed.
+    # FromBase64String returns a .NET byte[] directly -- no Python bytearray needed.
     raw = Convert.FromBase64String(b64_ciphertext)
     decrypted = ProtectedData.Unprotect(raw, None, DataProtectionScope.CurrentUser)
     return Encoding.UTF8.GetString(decrypted)
@@ -98,31 +99,87 @@ def _delete_config(key):
 # Migration
 # ------------------------------------------------------------------
 
-def migrate_legacy_token():
-    """Re-encrypt a plaintext 'token' config key with DPAPI.
-
-    Safe to call on every startup — no-op if already migrated or absent.
-    If migration fails the legacy plaintext token is left untouched so the
-    user is not locked out.
-    """
-    legacy_token = _read_config(_KEY_TOKEN_LEGACY)
-    if not legacy_token:
-        return
-    # Already migrated — verify the blob is still decryptable before removing legacy.
-    existing = _read_config(_KEY_TOKEN)
-    if existing:
+def _cleanup_extension_plaintext_keys(save=True):
+    """Remove token/username/password keys from all per-extension sections."""
+    changed = False
+    for section in user_config:
+        if not section.has_option("private_repo"):
+            continue
+        for key in _EXT_PLAINTEXT_KEYS:
+            try:
+                if section.has_option(key):
+                    section.remove_option(key)
+                    changed = True
+            except Exception:
+                pass
+    if changed and save:
         try:
-            _decrypt(existing)
-            _delete_config(_KEY_TOKEN_LEGACY)
+            user_config.save_changes()
         except Exception as ex:
-            mlogger.warning(
-                "credentials: encrypted token unreadable, keeping legacy: %s", ex
-            )
+            mlogger.warning("credentials: failed to save config after cleanup: %s", ex)
+
+
+def _migrate_extension_plaintext_tokens():
+    """Find a plaintext token in per-extension sections and encrypt it globally.
+
+    Old install code wrote token/username/password into the extension's own
+    config section. This helper reads the first one found, stores it as the
+    global DPAPI token, then strips the plaintext keys from all sections.
+    """
+    already_encrypted = bool(_read_config(_KEY_TOKEN))
+
+    if not already_encrypted:
+        for section in user_config:
+            if not section.has_option("private_repo"):
+                continue
+            pwd = section.get_option("password", None)
+            if not pwd:
+                pwd = section.get_option("token", None)
+            if pwd:
+                try:
+                    set_github_token(pwd)
+                    already_encrypted = True
+                except Exception as ex:
+                    mlogger.warning(
+                        "credentials: failed to encrypt extension token: %s", ex
+                    )
+                break  # one global token is enough
+
+    if already_encrypted:
+        _cleanup_extension_plaintext_keys()
+
+
+def migrate_legacy_token():
+    """Re-encrypt any plaintext GitHub token found in config with DPAPI.
+
+    Handles both the legacy [github].token key and per-extension sections
+    written by old install code (private_repo=True with token/password).
+    Safe to call on every startup -- no-op when nothing to migrate.
+    If migration fails the plaintext token is left untouched.
+    """
+    # Case 1: [github].token plaintext key (original legacy path)
+    legacy_token = _read_config(_KEY_TOKEN_LEGACY)
+    if legacy_token:
+        existing = _read_config(_KEY_TOKEN)
+        if existing:
+            # Already migrated -- verify blob before removing plaintext.
+            try:
+                _decrypt(existing)
+                _delete_config(_KEY_TOKEN_LEGACY)
+            except Exception as ex:
+                mlogger.warning(
+                    "credentials: encrypted token unreadable, keeping legacy: %s", ex
+                )
+        else:
+            try:
+                set_github_token(legacy_token)
+                _delete_config(_KEY_TOKEN_LEGACY)
+            except Exception as ex:
+                mlogger.warning("credentials: failed to migrate legacy token: %s", ex)
         return
-    try:
-        set_github_token(legacy_token)
-    except Exception as ex:
-        mlogger.warning("credentials: failed to migrate legacy token: %s", ex)
+
+    # Case 2: per-extension plaintext token written by old install code
+    _migrate_extension_plaintext_tokens()
 
 
 # ------------------------------------------------------------------
@@ -137,8 +194,8 @@ def get_github_token():
             return _decrypt(b64)
         except Exception as ex:
             mlogger.warning("credentials: failed to decrypt token: %s", ex)
-            # Fall back to legacy plaintext rather than returning None so
-            # existing setups are not broken by a corrupt encrypted blob.
+            # Fall back to legacy plaintext so existing setups survive a
+            # corrupt encrypted blob.
             return _read_config(_KEY_TOKEN_LEGACY) or None
     # Pre-migration fallback: return plaintext legacy token if present.
     return _read_config(_KEY_TOKEN_LEGACY) or None
@@ -147,7 +204,7 @@ def get_github_token():
 def set_github_token(token):
     """Encrypt and persist the GitHub token.
 
-    Raises on DPAPI failure — caller should catch and prompt the user to
+    Raises on DPAPI failure -- caller should catch and prompt the user to
     retry rather than silently losing the token.
     """
     if not token:
@@ -155,8 +212,7 @@ def set_github_token(token):
         return
     encrypted = _encrypt(token)
     _write_config(_KEY_TOKEN, encrypted)
-    # remove legacy plaintext immediately so it is not left behind until
-    # the next startup migration run
+    # Remove legacy plaintext immediately rather than waiting for next startup.
     _delete_config(_KEY_TOKEN_LEGACY)
 
 
