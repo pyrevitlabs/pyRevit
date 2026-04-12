@@ -102,9 +102,16 @@ def migrate_legacy_token():
     legacy_token = _read_config(_KEY_TOKEN_LEGACY)
     if not legacy_token:
         return
-    # Already migrated but legacy not cleaned up — just remove it.
-    if _read_config(_KEY_TOKEN):
-        _delete_config(_KEY_TOKEN_LEGACY)
+    # Already migrated — verify the blob is still decryptable before removing legacy.
+    existing = _read_config(_KEY_TOKEN)
+    if existing:
+        try:
+            _decrypt(existing)
+            _delete_config(_KEY_TOKEN_LEGACY)
+        except Exception as ex:
+            mlogger.warning(
+                "credentials: encrypted token unreadable, keeping legacy: %s", ex
+            )
         return
     try:
         set_github_token(legacy_token)
@@ -125,7 +132,9 @@ def get_github_token():
             return _decrypt(b64)
         except Exception as ex:
             mlogger.warning("credentials: failed to decrypt token: %s", ex)
-            return None
+            # Fall back to legacy plaintext rather than returning None so
+            # existing setups are not broken by a corrupt encrypted blob.
+            return _read_config(_KEY_TOKEN_LEGACY) or None
     # Pre-migration fallback: return plaintext legacy token if present.
     return _read_config(_KEY_TOKEN_LEGACY) or None
 
@@ -141,6 +150,9 @@ def set_github_token(token):
         return
     encrypted = _encrypt(token)
     _write_config(_KEY_TOKEN, encrypted)
+    # remove legacy plaintext immediately so it is not left behind until
+    # the next startup migration run
+    _delete_config(_KEY_TOKEN_LEGACY)
 
 
 def delete_github_token():

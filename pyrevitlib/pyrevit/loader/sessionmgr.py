@@ -140,8 +140,14 @@ def _perform_onsessionloadstart_ops():
     upgrade.upgrade_existing_pyrevit()
 
     # migrate any legacy plaintext GitHub token to DPAPI-encrypted storage
-    from pyrevit.coreutils import credentials
-    credentials.migrate_legacy_token()
+    # best-effort: a failure here must not block session startup
+    try:
+        from pyrevit.coreutils import credentials
+        credentials.migrate_legacy_token()
+    except Exception as cred_migration_err:
+        mlogger.warning(
+            "Skipping legacy credential migration: %s", cred_migration_err
+        )
 
     # setup hooks
     hooks.setup_hooks()
