@@ -15,10 +15,15 @@ CLI arguments only. Bridging stored tokens to CLI commands is not yet
 implemented.
 """
 import clr
-import base64
 
-clr.AddReference("System.Security")
+# System.Security.Cryptography.ProtectedData is a standalone assembly on
+# .NET Core (Revit 2025+); on .NET Framework it lives in System.Security.
+try:
+    clr.AddReference("System.Security.Cryptography.ProtectedData")
+except Exception:
+    clr.AddReference("System.Security")
 
+from System import Convert
 from System.Security.Cryptography import ProtectedData, DataProtectionScope
 from System.Text import Encoding
 
@@ -40,15 +45,16 @@ def _encrypt(plaintext):
     """Encrypt a string using DPAPI (CurrentUser scope). Returns base64 string."""
     data = Encoding.UTF8.GetBytes(plaintext)
     protected = ProtectedData.Protect(data, None, DataProtectionScope.CurrentUser)
-    return base64.b64encode(bytes(bytearray(protected))).decode("ascii")
+    # Use System.Convert throughout to stay in .NET types and avoid
+    # IronPython 2 bytes(bytearray(...)) pitfall (gives repr, not raw bytes).
+    return Convert.ToBase64String(protected)
 
 
 def _decrypt(b64_ciphertext):
     """Decrypt a base64 DPAPI blob. Returns plaintext string."""
-    raw = base64.b64decode(b64_ciphertext)
-    decrypted = ProtectedData.Unprotect(
-        bytearray(raw), None, DataProtectionScope.CurrentUser
-    )
+    # FromBase64String returns a .NET byte[] directly — no Python bytearray needed.
+    raw = Convert.FromBase64String(b64_ciphertext)
+    decrypted = ProtectedData.Unprotect(raw, None, DataProtectionScope.CurrentUser)
     return Encoding.UTF8.GetString(decrypted)
 
 
