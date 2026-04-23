@@ -3,6 +3,7 @@
 from pyrevit import HOST_APP
 from pyrevit import EXEC_PARAMS, DB, UI
 from pyrevit import framework
+from pyrevit import forms
 from pyrevit import compat, PyRevitCPythonNotSupported
 from pyrevit.coreutils.logger import get_logger
 
