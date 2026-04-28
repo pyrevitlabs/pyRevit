@@ -31,7 +31,7 @@ from pyrevit import forms
 from pyrevit import script
 
 from pyrevit.framework import System, Windows
-from System.Windows.Interop import WindowInteropHelper, HwndSource
+from System.Windows.Interop import WindowInteropHelper
 from System.Diagnostics import Process as SysProcess
 from System.Windows.Threading import DispatcherTimer
 from System import TimeSpan
@@ -517,18 +517,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
         except Exception as ex:
             logger.debug("WindowInteropHelper failed | %s" % ex)
 
-        # Hook WndProc to intercept WM_MOUSEACTIVATE — prevents the
-        # re-entrant activation crash when clicking between Revit and
-        # this modeless window.
-        self._hwnd_source = None
-        self._activation_pending = False
-        # Pre-cache .NET types — IronPython cannot resolve System.IntPtr
-        # or System.Action from inside a Win32 WndProc callback
-        # (LookupGlobalInstruction crash in HwndSubclass.SubclassWndProc).
-        self._intptr_zero = System.IntPtr.Zero
-        self._intptr_ma_noactivate = System.IntPtr(self.MA_NOACTIVATE)
-        self._bg_priority = Windows.Threading.DispatcherPriority.Background
-        self.SourceInitialized += self._on_source_initialized
+        # Modeless focus management — keep window always on top of Revit.
+        self.Topmost = True
 
         self._kfile = None
         self._kfile_handler = None
@@ -541,7 +531,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._cache = []
         self._needs_update = False
         self._config = script.get_config()
-        self._used_keysdict = self.get_used_keynote_elements()
+        self._used_keysdict = defaultdict(list)
+        self._used_typesdict = defaultdict(set)
+        try:
+            self._used_keysdict, self._used_typesdict = self.get_used_keynote_elements()
+        except Exception:
+            pass
 
         # drag state
         self._drag_start_point = None
@@ -554,6 +549,20 @@ class KeynoteManagerWindow(forms.WPFWindow):
         # Wait 300ms after last keystroke before filtering.
         self._search_timer.Interval = TimeSpan.FromMilliseconds(300)
         self._search_timer.Tick += self._on_search_timer_tick
+
+        # Auto-refresh — subscribe to Revit's DocumentChanged event
+        # so usage counts and type filters update instantly.
+        self._refresh_pending = False
+        self._doc_changed_app = None
+        try:
+            self._doc_changed_app = HOST_APP.uiapp.Application
+            self._doc_changed_app.DocumentChanged += self._on_doc_changed
+        except Exception:
+            try:
+                self._doc_changed_app = HOST_APP.app
+                self._doc_changed_app.DocumentChanged += self._on_doc_changed
+            except Exception:
+                self._doc_changed_app = None
 
         self.load_config(reset_config)
         self._update_full_tree()
@@ -662,57 +671,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
         Optional callback runs on the WPF thread after the action."""
         _ext_handler.queue(action, callback, self)
         _ext_event.Raise()
-
-    # =========================================================================
-    # MODELESS FOCUS MANAGEMENT (WndProc hook)
-    # =========================================================================
-
-    WM_MOUSEACTIVATE = 0x0021
-    MA_NOACTIVATE = 3
-
-    def _on_source_initialized(self, sender, args):
-        """Hook into the Win32 message loop once the HWND exists."""
-        try:
-            wih = WindowInteropHelper(self)
-            self._hwnd_source = HwndSource.FromHwnd(wih.Handle)
-            if self._hwnd_source:
-                # Cache the Action delegate — must be done after __init__
-                # so self._safe_activate is bound
-                self._activate_action = System.Action(self._safe_activate)
-                self._hwnd_source.AddHook(self._wnd_proc)
-        except Exception as ex:
-            logger.debug("HwndSource hook failed | %s" % ex)
-
-    def _wnd_proc(self, hwnd, msg, wParam, lParam, handled):
-        """Win32 WndProc hook — intercept activation messages.
-        CRITICAL: Do not resolve .NET types/delegates by name here
-        (for example System.IntPtr or System.Action); use cached
-        members/delegates instead. Callback parameters and constants
-        are safe to use inside this native Win32 callback."""
-        try:
-            if msg == self.WM_MOUSEACTIVATE:
-                handled.Value = True
-                if not self._activation_pending:
-                    self._activation_pending = True
-                    try:
-                        self.Dispatcher.BeginInvoke(
-                            self._activate_action, self._bg_priority
-                        )
-                    except Exception:
-                        self._activation_pending = False
-                return self._intptr_ma_noactivate
-        except Exception:
-            pass  # WndProc must NEVER throw
-        return self._intptr_zero
-
-    def _safe_activate(self):
-        """Deferred activation — runs when Revit's message loop is idle."""
-        self._activation_pending = False
-        try:
-            if self.IsLoaded and self.IsVisible:
-                self.Activate()
-        except Exception as ex:
-            logger.debug("Deferred activation failed | %s" % ex)
 
     # =========================================================================
     # TREE STATE PRESERVATION
@@ -835,18 +793,33 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     def get_used_keynote_elements(self):
         used = defaultdict(list)
+        used_types = defaultdict(set)
         try:
-            for kn in revit.query.get_used_keynotes(doc=revit.doc):
+            keynotes = revit.query.get_used_keynotes(doc=revit.doc)
+            if not keynotes:
+                return used, used_types
+            for kn in keynotes:
                 if kn is None:
                     continue
                 p = kn.Parameter[DB.BuiltInParameter.KEY_VALUE]
-                if p:
-                    key = p.AsString()
-                    if key:
-                        used[key].append(kn.Id)
-        except Exception as ex:
-            logger.debug("get_used_keynotes failed | %s" % ex)
-        return used
+                if not p:
+                    continue
+                key = p.AsString()
+                if not key:
+                    continue
+                used[key].append(kn.Id)
+                # Detect keynote type from the tag's source param
+                try:
+                    src = kn.Parameter[DB.BuiltInParameter.KEY_SOURCE_PARAM]
+                    if src and src.HasValue:
+                        val = src.AsString()
+                        if val:
+                            used_types[key].add(val)
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        return used, used_types
 
     # =========================================================================
     # CONFIG
@@ -1115,7 +1088,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         # Mark used
         for node in tree:
-            node.update_used(self._used_keysdict)
+            node.update_used(self._used_keysdict, self._used_typesdict)
 
         # Cache for fast re-filter
         self._cache = list(tree)
@@ -1359,19 +1332,19 @@ class KeynoteManagerWindow(forms.WPFWindow):
         """Swap Revit element references between two keynote keys."""
         temp = "__ref_{}__".format(uuid.uuid4().hex[:8])
         with revit.Transaction("Reorder Keynotes"):
-            for kid in self.get_used_keynote_elements().get(key_a, []):
+            for kid in self._used_keysdict.get(key_a, []):
                 kel = revit.doc.GetElement(kid)
                 if kel:
                     p = kel.Parameter[DB.BuiltInParameter.KEY_VALUE]
                     if p:
                         p.Set(temp)
-            for kid in self.get_used_keynote_elements().get(key_b, []):
+            for kid in self._used_keysdict.get(key_b, []):
                 kel = revit.doc.GetElement(kid)
                 if kel:
                     p = kel.Parameter[DB.BuiltInParameter.KEY_VALUE]
                     if p:
                         p.Set(key_a)
-            for kid in self.get_used_keynote_elements().get(key_a, []):
+            for kid in self._used_keysdict.get(key_a, []):
                 kel = revit.doc.GetElement(kid)
                 if kel:
                     p = kel.Parameter[DB.BuiltInParameter.KEY_VALUE]
@@ -1435,6 +1408,39 @@ class KeynoteManagerWindow(forms.WPFWindow):
         """Fires when the user stops typing."""
         self._search_timer.Stop()
         self._update_full_tree(fast_filter=True)
+
+    def _on_doc_changed(self, sender, args):
+        """Fires on the Revit thread after any document change.
+        Refreshes keynote usage data and updates the tree."""
+        if self._refresh_pending:
+            return
+        self._refresh_pending = True
+
+        # Collect data on the Revit thread (we have API access here)
+        try:
+            new_used, new_types = self.get_used_keynote_elements()
+        except Exception:
+            self._refresh_pending = False
+            return
+
+        # Dispatch UI update to WPF thread
+        def _update_ui():
+            try:
+                self._used_keysdict = new_used
+                self._used_typesdict = new_types
+                self._update_full_tree()
+                self._update_status_bar()
+            except Exception:
+                pass
+            self._refresh_pending = False
+
+        try:
+            self.Dispatcher.BeginInvoke(
+                System.Action(_update_ui),
+                Windows.Threading.DispatcherPriority.Background,
+            )
+        except Exception:
+            self._refresh_pending = False
 
     def clear_search(self, sender, args):
         self.search_tb.Text = ""
@@ -1650,7 +1656,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if self._conn:
 
             def _query_used():
-                self._used_keysdict = self.get_used_keynote_elements()
+                try:
+                    self._used_keysdict, self._used_typesdict = (
+                        self.get_used_keynote_elements()
+                    )
+                except Exception:
+                    pass
 
             def _on_done():
                 self._update_full_tree()
@@ -1821,7 +1832,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     def _rekey_refs(self, from_key, to_key):
         with revit.Transaction("Re-Key {}".format(from_key)):
-            for kid in self.get_used_keynote_elements().get(from_key, []):
+            for kid in self._used_keysdict.get(from_key, []):
                 kel = revit.doc.GetElement(kid)
                 if kel:
                     p = kel.Parameter[DB.BuiltInParameter.KEY_VALUE]
@@ -1920,23 +1931,52 @@ class KeynoteManagerWindow(forms.WPFWindow):
             return
         sel_key = sel.key
         postcmd = self.postable_keynote_command
-        self.Close()
 
         def _do():
             keynotes_cat = revit.query.get_category(DB.BuiltInCategory.OST_KeynoteTags)
-            if keynotes_cat:
-                def_id = revit.doc.GetDefaultFamilyTypeId(keynotes_cat.Id)
-                if revit.doc.GetElement(def_id):
-                    DocumentEventUtils.PostCommandAndUpdateNewElementProperties(
-                        HOST_APP.uiapp,
-                        revit.doc,
-                        postcmd,
-                        "Update Keynotes",
-                        DB.BuiltInParameter.KEY_VALUE,
-                        sel_key,
-                    )
+            if not keynotes_cat:
+                self._place_result = "no_family"
+                return
+            def_id = revit.doc.GetDefaultFamilyTypeId(keynotes_cat.Id)
+            if not def_id or not revit.doc.GetElement(def_id):
+                self._place_result = "no_family"
+                return
+            self._place_result = "ok"
+            DocumentEventUtils.PostCommandAndUpdateNewElementProperties(
+                HOST_APP.uiapp,
+                revit.doc,
+                postcmd,
+                "Update Keynotes",
+                DB.BuiltInParameter.KEY_VALUE,
+                sel_key,
+            )
 
-        self._revit_run(_do)
+        def _on_placed():
+            result = getattr(self, "_place_result", None)
+            if result == "no_family":
+                forms.alert(
+                    "No Keynote Tag family is loaded in this project.\n\n"
+                    "Please load a Keynote Tag family from the library "
+                    "before placing keynotes.",
+                    title="Keynote Tag Missing",
+                )
+                return
+            try:
+                self._used_keysdict, self._used_typesdict = (
+                    self.get_used_keynote_elements()
+                )
+            except Exception:
+                pass
+            self._update_full_tree()
+            self._update_status_bar()
+            # Re-assert visibility — Revit steals focus on PostCommand
+            try:
+                self.Topmost = True
+                self.Activate()
+            except Exception:
+                pass
+
+        self._revit_run(_do, callback=_on_placed)
 
     # =========================================================================
     # FILE OPERATIONS
@@ -1956,7 +1996,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self._connect_kfile()
             self._needs_update = True
             try:
-                self._used_keysdict = self.get_used_keynote_elements()
+                self._used_keysdict, self._used_typesdict = (
+                    self.get_used_keynote_elements()
+                )
             except Exception as ex:
                 logger.debug("Refresh used keys failed | %s" % ex)
             self._update_full_tree()
@@ -2047,14 +2089,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 return
 
         # Proceed with cleanup
-        # Remove WndProc hook to prevent leaks
-        if self._hwnd_source:
+        if self._doc_changed_app:
             try:
-                self._hwnd_source.RemoveHook(self._wnd_proc)
+                self._doc_changed_app.DocumentChanged -= self._on_doc_changed
             except Exception:
                 pass
-            self._hwnd_source = None
-
         if self._kfile_handler == "adc":
             try:
                 adc.unlock_file(self._kfile_ext)

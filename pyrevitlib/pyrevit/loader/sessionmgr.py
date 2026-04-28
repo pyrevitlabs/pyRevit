@@ -71,6 +71,11 @@ def _clear_running_engines():
 def _setup_output():
     # create output window and assign handle
     out_window = runtime.types.ScriptConsole()
+    # protect from close_other_outputs triggered by startup-script windows
+    try:
+        out_window.IsSessionOutput = True
+    except Exception:
+        pass
     runtime_info = sessioninfo.get_runtime_info()
     out_window.AppVersion = "{}:{}:{}".format(
         runtime_info.pyrevit_version,

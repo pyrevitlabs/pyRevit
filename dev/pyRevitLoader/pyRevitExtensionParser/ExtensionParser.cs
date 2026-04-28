@@ -428,6 +428,8 @@ namespace pyRevitExtensionParser
             }
             // Read extension.json for additional templates and rocket_mode_compatible
             bool rocketModeCompatible = false;
+            List<string> authUsers = null;
+            List<string> authGroups = null;
             var extensionJsonPath = Path.Combine(extDir, "extension.json");
             if (FileExists(extensionJsonPath))
             {
@@ -462,6 +464,36 @@ namespace pyRevitExtensionParser
                     if (!string.IsNullOrEmpty(rocketModeValue))
                     {
                         rocketModeCompatible = rocketModeValue.Equals("true", StringComparison.OrdinalIgnoreCase);
+                    }
+
+                    // Read authusers if present (list of authorized usernames)
+                    var authUsersArray = json["authusers"] as JArray;
+                    if (authUsersArray != null && authUsersArray.Count > 0)
+                    {
+                        authUsers = new List<string>();
+                        foreach (var item in authUsersArray)
+                        {
+                            var user = item?.ToString();
+                            if (!string.IsNullOrEmpty(user))
+                            {
+                                authUsers.Add(user);
+                            }
+                        }
+                    }
+
+                    // Read authgroups if present (list of authorized Windows security groups)
+                    var authGroupsArray = json["authgroups"] as JArray;
+                    if (authGroupsArray != null && authGroupsArray.Count > 0)
+                    {
+                        authGroups = new List<string>();
+                        foreach (var item in authGroupsArray)
+                        {
+                            var group = item?.ToString();
+                            if (!string.IsNullOrEmpty(group))
+                            {
+                                authGroups.Add(group);
+                            }
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -501,7 +533,9 @@ namespace pyRevitExtensionParser
                 Context = parsedBundle?.GetFormattedContext(),
                 Engine = parsedBundle?.Engine,
                 Config = extConfig,
-                RocketModeCompatible = rocketModeCompatible
+                RocketModeCompatible = rocketModeCompatible,
+                AuthorizedUsers = authUsers,
+                AuthorizedGroups = authGroups
             };
 
             ReorderByLayout(parsedExtension, parsedExtension, null);
@@ -1074,6 +1108,9 @@ namespace pyRevitExtensionParser
                 // Look for tooltip media file (tooltip.mp4, tooltip.swf, tooltip.png)
                 var mediaFile = FindMediaFile(dir);
 
+                // Look for help file (help.* pattern) for file-based help
+                var helpFile = FindHelpFile(dir);
+
                 var bundleFile = Path.Combine(dir, "bundle.yaml");
 
                 // Then parse bundle and override with bundle values if they exist
@@ -1326,7 +1363,8 @@ namespace pyRevitExtensionParser
                     OnIconDarkPath = onIconDarkPath,
                     OffIconPath = offIconPath,
                     OffIconDarkPath = offIconDarkPath,
-                    MediaFile = mediaFile
+                    MediaFile = mediaFile,
+                    HelpFile = helpFile
                 });
             }
 
@@ -2246,6 +2284,30 @@ namespace pyRevitExtensionParser
                         }
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                LogParseException(componentDirectory, ex);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Finds a help file in the component directory matching the pattern "help.*" (e.g., help.html, help.md).
+        /// This implements file-based help discovery similar to the Python loader.
+        /// </summary>
+        /// <param name="componentDirectory">The directory containing the component</param>
+        /// <returns>Full path to the help file if found, null otherwise</returns>
+        private static string FindHelpFile(string componentDirectory)
+        {
+            if (!Directory.Exists(componentDirectory))
+                return null;
+
+            try
+            {
+                return GetFilesInDirectory(componentDirectory, "*help.*", SearchOption.TopDirectoryOnly)
+                    .FirstOrDefault();
             }
             catch (Exception ex)
             {

@@ -130,5 +130,24 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 return false;
             }
         }
+
+        /// <summary>
+        /// Hides and disables an existing ribbon item when it is no longer supported.
+        /// </summary>
+        protected void DeactivateRibbonItem(RibbonItem? item, string itemName)
+        {
+            if (item == null)
+                return;
+
+            try
+            {
+                item.Visible = false;
+                item.Enabled = false;
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug($"Failed to deactivate ribbon item '{itemName}'. Exception: {ex.Message}");
+            }
+        }
     }
 }

@@ -28,6 +28,7 @@ import pyrevitcore_globals
 
 logger = script.get_logger()
 available_revit_versions = [
+    "2027",
     "2026",
     "2025",
     "2024",

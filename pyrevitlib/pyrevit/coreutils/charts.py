@@ -21,9 +21,35 @@ CHARTS_JS_PATH = \
     "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/{version}/Chart.min.js"
 
 
-SCRIPT_TEMPLATE = \
-    "var ctx = document.getElementById('{canvas_id}').getContext('2d');" \
-    "var chart = new Chart(ctx, {canvas_code});"
+SCRIPT_TEMPLATE = """
+(function() {{
+    var retryCount = 0;
+    var maxRetries = 100;
+
+    function renderChart() {{
+        if (typeof Chart !== 'undefined') {{
+            var canvas = document.getElementById('{canvas_id}');
+            if (!canvas) {{
+                console.error('pyRevit charts: canvas element "{canvas_id}" was not found.');
+                return;
+            }}
+
+            var ctx = canvas.getContext('2d');
+            var chart = new Chart(ctx, {canvas_code});
+        }} else if (retryCount < maxRetries) {{
+            retryCount += 1;
+            setTimeout(renderChart, 50);
+        }} else {{
+            console.error(
+                'pyRevit charts: Chart.js failed to load after ' +
+                maxRetries +
+                ' retries for canvas "{canvas_id}".'
+            );
+        }}
+    }}
+    renderChart();
+}})();
+"""
 
 
 class _ChartsDataSetEncode(JSONEncoder):

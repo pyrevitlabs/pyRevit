@@ -85,6 +85,16 @@
                            TextWrapping="Wrap"/>
             </GroupBox>
 
+            <!-- output / logger -->
+            <GroupBox Header="output logger">
+                <StackPanel>
+                    <Button x:Name="output_button"
+                            Content="I can print"
+                            Margin="0,0,0,6"
+                            Click="output_btn_clicked"/>
+                </StackPanel>
+            </GroupBox>
+
         </StackPanel>
     </ScrollViewer>
 </Page>

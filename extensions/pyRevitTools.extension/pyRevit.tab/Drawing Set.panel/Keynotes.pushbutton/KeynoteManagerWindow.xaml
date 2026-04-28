@@ -30,6 +30,12 @@
         <SolidColorBrush x:Key="UsedBadgeBgBrush"   Color="#E8F5E9"/>
         <SolidColorBrush x:Key="UsedBadgeFgBrush"   Color="#2E7D32"/>
         <SolidColorBrush x:Key="CatBadgeBrush"      Color="#333333"/>
+        <SolidColorBrush x:Key="TypeElBgBrush"      Color="#E3F2FD"/>
+        <SolidColorBrush x:Key="TypeElFgBrush"      Color="#1565C0"/>
+        <SolidColorBrush x:Key="TypeMatBgBrush"     Color="#FFF3E0"/>
+        <SolidColorBrush x:Key="TypeMatFgBrush"     Color="#E65100"/>
+        <SolidColorBrush x:Key="TypeUsrBgBrush"     Color="#F3E5F5"/>
+        <SolidColorBrush x:Key="TypeUsrFgBrush"     Color="#6A1B9A"/>
 
         <!-- ============================================================ -->
         <!-- BASE BUTTON STYLES                                           -->
@@ -218,6 +224,33 @@
                                 </TextBlock.Text>
                             </TextBlock>
                         </Border>
+                        <!-- Type: Element -->
+                        <Border x:Name="typElBadge" Visibility="Collapsed"
+                                Background="{StaticResource TypeElBgBrush}"
+                                CornerRadius="8" Padding="5,1,5,2"
+                                Margin="0,0,2,0">
+                            <TextBlock Text="Element"
+                                       Foreground="{StaticResource TypeElFgBrush}"
+                                       FontSize="9" FontWeight="SemiBold"/>
+                        </Border>
+                        <!-- Type: Material -->
+                        <Border x:Name="typMatBadge" Visibility="Collapsed"
+                                Background="{StaticResource TypeMatBgBrush}"
+                                CornerRadius="8" Padding="5,1,5,2"
+                                Margin="0,0,2,0">
+                            <TextBlock Text="Material"
+                                       Foreground="{StaticResource TypeMatFgBrush}"
+                                       FontSize="9" FontWeight="SemiBold"/>
+                        </Border>
+                        <!-- Type: User -->
+                        <Border x:Name="typUsrBadge" Visibility="Collapsed"
+                                Background="{StaticResource TypeUsrBgBrush}"
+                                CornerRadius="8" Padding="5,1,5,2"
+                                Margin="0,0,4,0">
+                            <TextBlock Text="User"
+                                       Foreground="{StaticResource TypeUsrFgBrush}"
+                                       FontSize="9" FontWeight="SemiBold"/>
+                        </Border>
                         <!-- Lock badge -->
                         <Border x:Name="lockBadge" Visibility="Collapsed"
                                 Background="{StaticResource WarningBrush}"
@@ -250,6 +283,15 @@
                     <Setter TargetName="lockBadge"  Property="Visibility" Value="Visible"/>
                     <Setter TargetName="textDisplay" Property="Foreground"
                             Value="{StaticResource TextMutedBrush}"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding has_element_type}" Value="True">
+                    <Setter TargetName="typElBadge" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding has_material_type}" Value="True">
+                    <Setter TargetName="typMatBadge" Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding has_user_type}" Value="True">
+                    <Setter TargetName="typUsrBadge" Property="Visibility" Value="Visible"/>
                 </DataTrigger>
             </HierarchicalDataTemplate.Triggers>
         </HierarchicalDataTemplate>

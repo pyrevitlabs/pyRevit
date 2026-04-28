@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -35,6 +35,12 @@ namespace pyRevitAssemblyBuilder.SessionManager
         private MethodInfo? _executeScriptMethod;
         private PropertyInfo? _externalCommandDataAppProperty;
         private Dictionary<string, bool> _directoryExistsCache = new Dictionary<string, bool>();
+
+        /// <summary>
+        /// Pre-materialized library extension lib paths to avoid repeated Directory.Exists checks
+        /// per extension. Populated once in LoadSession() after libraryExtensions are retrieved.
+        /// </summary>
+        private List<string> _precomputedLibraryLibPaths = new List<string>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SessionManagerService"/> class.
@@ -118,6 +124,19 @@ namespace pyRevitAssemblyBuilder.SessionManager
             stepStopwatch.Restart();
             var libraryExtensions = _extensionManager?.GetInstalledLibraryExtensions()?.ToList() ?? new List<ParsedExtension>();
             _logger.Debug($"[PERF] GetLibraryExtensions: {stepStopwatch.ElapsedMilliseconds}ms");
+
+            // Pre-compute library extension lib paths once to avoid N*lib_count Directory.Exists checks
+            // in BuildSearchPaths() for each UI extension. Optimization for #3268.
+            _precomputedLibraryLibPaths.Clear();
+            foreach (var libExt in libraryExtensions)
+            {
+                var libLibPath = System.IO.Path.Combine(libExt.Directory, "lib");
+                if (System.IO.Directory.Exists(libLibPath))
+                {
+                    _precomputedLibraryLibPaths.Add(libLibPath);
+                }
+            }
+            _logger.Debug($"Pre-computed {_precomputedLibraryLibPaths.Count} library lib paths");
             
             // Get UI extensions
             stepStopwatch.Restart();
@@ -343,7 +362,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 }
                 
                 // Build search paths for the startup script
-                var searchPaths = BuildSearchPaths(extension, libraryExtensions);
+                var searchPaths = BuildSearchPaths(extension);
                 
                 // Create ScriptData
                 var scriptData = CreateScriptData(extension);
@@ -391,9 +410,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// Builds the search paths for a startup script, including extension lib folders and pyRevit core paths.
         /// </summary>
         /// <param name="extension">The extension for which to build search paths.</param>
-        /// <param name="libraryExtensions">List of library extensions to include.</param>
         /// <returns>List of search paths.</returns>
-        private List<string> BuildSearchPaths(ParsedExtension extension, List<ParsedExtension> libraryExtensions)
+        private List<string> BuildSearchPaths(ParsedExtension extension)
         {
             var searchPaths = new List<string> { extension.Directory };
             
@@ -404,15 +422,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 searchPaths.Insert(0, extLibPath);
             }
             
-            // Add library extension paths (cached)
-            foreach (var libExt in libraryExtensions)
-            {
-                var libExtLibPath = System.IO.Path.Combine(libExt.Directory, "lib");
-                if (DirectoryExistsCached(libExtLibPath))
-                {
-                    searchPaths.Add(libExtLibPath);
-                }
-            }
+            // Use pre-computed library extension lib paths (avoids N*lib_count Directory.Exists calls)
+            // This is an optimization for #3268 - previously this loop was inside the foreach for each UI extension
+            searchPaths.AddRange(_precomputedLibraryLibPaths);
             
             // Add core pyRevit paths (pyrevitlib + site-packages) by discovering repo root
             // Cache the root lookup - it's the same for all extensions

@@ -5,6 +5,7 @@ using System.Linq;
 using Autodesk.Revit.UI;
 using pyRevitAssemblyBuilder.AssemblyMaker;
 using pyRevitAssemblyBuilder.SessionManager;
+using pyRevitAssemblyBuilder.UIManager;
 using pyRevitAssemblyBuilder.UIManager.Icons;
 using pyRevitExtensionParser;
 using static pyRevitExtensionParser.ExtensionParser;
@@ -16,6 +17,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
     /// </summary>
     public class PulldownButtonBuilder : ButtonBuilderBase
     {
+        private readonly BuildContext _buildContext;
         private readonly SmartButtonScriptInitializer? _smartButtonScriptInitializer;
         private readonly LinkButtonBuilder _linkButtonBuilder;
 
@@ -28,17 +30,20 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
         /// <summary>
         /// Initializes a new instance of the <see cref="PulldownButtonBuilder"/> class.
         /// </summary>
+        /// <param name="buildContext">Shared build context that carries the current per-build settings.</param>
         /// <param name="logger">The logger instance.</param>
         /// <param name="buttonPostProcessor">The button post-processor.</param>
         /// <param name="linkButtonBuilder">The link button builder for child link buttons.</param>
         /// <param name="smartButtonScriptInitializer">Optional SmartButton script initializer.</param>
         public PulldownButtonBuilder(
+            BuildContext buildContext,
             ILogger logger,
             IButtonPostProcessor buttonPostProcessor,
             LinkButtonBuilder linkButtonBuilder,
             SmartButtonScriptInitializer? smartButtonScriptInitializer = null)
             : base(logger, buttonPostProcessor)
         {
+            _buildContext = buildContext ?? throw new ArgumentNullException(nameof(buildContext));
             _linkButtonBuilder = linkButtonBuilder ?? throw new ArgumentNullException(nameof(linkButtonBuilder));
             _smartButtonScriptInitializer = smartButtonScriptInitializer;
         }
@@ -52,16 +57,45 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 return;
             }
 
-            // Check if pulldown button already exists - if so, update it instead of creating new
             var existingPdBtn = GetExistingPulldownButton(parentPanel, component.DisplayName);
+            if (!TryGetVisibleChildren(component, existingPdBtn, out var visibleChildren))
+                return;
+
             if (existingPdBtn != null)
             {
                 Logger.Debug($"Pulldown button '{component.DisplayName}' already exists - updating.");
-                UpdateExistingPulldownButton(existingPdBtn, component, assemblyInfo);
+                UpdateExistingPulldownButton(existingPdBtn, component, visibleChildren, assemblyInfo);
                 return;
             }
 
-            CreatePulldown(component, parentPanel, tabName, assemblyInfo, addToPanel: true);
+            CreatePulldown(component, parentPanel, tabName, assemblyInfo, visibleChildren, addToPanel: true);
+        }
+
+        /// <summary>
+        /// Filters <paramref name="component"/>'s children using the current <see cref="BuildContext"/>.
+        /// When the result is empty, deactivates <paramref name="existingRibbonItem"/> (if any) and
+        /// returns false so the caller can short-circuit.
+        /// </summary>
+        private bool TryGetVisibleChildren(
+            ParsedComponent component,
+            RibbonItem? existingRibbonItem,
+            out IReadOnlyList<ParsedComponent> visibleChildren)
+        {
+            var settings = _buildContext.CurrentSettings;
+            visibleChildren = ComponentSupportUtils.GetVisibleButtonGroupChildren(
+                component.Children,
+                settings.CurrentVersion,
+                settings.LoadBeta,
+                Logger);
+
+            if (visibleChildren.Count == 0)
+            {
+                Logger.Debug($"Pulldown button '{component.DisplayName}' has no visible children after filtering. Hiding it.");
+                DeactivateRibbonItem(existingRibbonItem, component.DisplayName);
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -88,7 +122,11 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
         /// <summary>
         /// Updates an existing pulldown button with new configuration.
         /// </summary>
-        private void UpdateExistingPulldownButton(PulldownButton pdBtn, ParsedComponent component, ExtensionAssemblyInfo assemblyInfo)
+        private void UpdateExistingPulldownButton(
+            PulldownButton pdBtn,
+            ParsedComponent component,
+            IReadOnlyList<ParsedComponent> visibleChildren,
+            ExtensionAssemblyInfo assemblyInfo)
         {
             try
             {
@@ -103,7 +141,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 pdBtn.Visible = true;
 
                 // Update children
-                AddChildrenToPulldown(pdBtn, component, assemblyInfo);
+                AddChildrenToPulldown(pdBtn, component, assemblyInfo, visibleChildren);
 
                 Logger.Debug($"Updated existing pulldown button '{component.DisplayName}'.");
             }
@@ -122,6 +160,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
             RibbonPanel parentPanel,
             string tabName,
             ExtensionAssemblyInfo assemblyInfo,
+            IReadOnlyList<ParsedComponent> visibleChildren,
             bool addToPanel)
         {
             // Use localized title which handles fallback to DisplayName
@@ -143,85 +182,114 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
             ButtonPostProcessor.Process(pdBtn, component);
 
             // Add children
-            AddChildrenToPulldown(pdBtn, component, assemblyInfo);
+            AddChildrenToPulldown(pdBtn, component, assemblyInfo, visibleChildren);
 
-            Logger.Debug($"Created pulldown button '{pulldownText}' with {component.Children?.Count ?? 0} children.");
+            Logger.Debug($"Created pulldown button '{pulldownText}' with {visibleChildren.Count} visible children.");
             return pdData;
         }
 
         /// <summary>
-        /// Adds child buttons to an existing pulldown button.
+        /// Adds child buttons to an existing pulldown button. Filters the component's
+        /// children against the current <see cref="BuildContext"/> and deactivates the
+        /// pulldown if nothing remains visible.
         /// </summary>
         public void AddChildrenToPulldown(PulldownButton pdBtn, ParsedComponent component, ExtensionAssemblyInfo assemblyInfo)
+        {
+            if (!TryGetVisibleChildren(component, pdBtn, out var visibleChildren))
+                return;
+
+            AddChildrenToPulldown(pdBtn, component, assemblyInfo, visibleChildren);
+        }
+
+        private void AddChildrenToPulldown(
+            PulldownButton pdBtn,
+            ParsedComponent component,
+            ExtensionAssemblyInfo assemblyInfo,
+            IReadOnlyList<ParsedComponent> visibleChildren)
         {
             // Check if children already exist (reload scenario)
             var existingItems = GetExistingChildButtons(pdBtn);
             if (existingItems.Count > 0)
             {
                 Logger.Debug($"Pulldown button '{component.DisplayName}' already has {existingItems.Count} children - updating existing buttons.");
-                UpdateExistingChildren(pdBtn, component, existingItems, assemblyInfo);
+                UpdateExistingChildren(pdBtn, component, visibleChildren, existingItems, assemblyInfo);
                 return;
             }
 
-            foreach (var sub in component.Children ?? Enumerable.Empty<ParsedComponent>())
+            foreach (var sub in visibleChildren)
             {
-                if (sub.Type == CommandComponentType.Separator)
-                {
-                    // Skip adding separators during reload - they persist in the UI
-                    if (assemblyInfo?.IsReloading == true)
-                    {
-                        Logger.Debug($"Skipping separator during reload for pulldown button '{component.DisplayName}'.");
-                        continue;
-                    }
-                    try
-                    {
-                        pdBtn.AddSeparator();
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger.Debug($"Failed to add separator to pulldown button. Exception: {ex.Message}");
-                    }
-                }
-                else if (sub.Type == CommandComponentType.PushButton ||
-                         sub.Type == CommandComponentType.UrlButton ||
-                         sub.Type == CommandComponentType.InvokeButton ||
-                         sub.Type == CommandComponentType.ContentButton)
-                {
-                    var subBtn = pdBtn.AddPushButton(CreatePushButtonData(sub, assemblyInfo!));
-                    if (subBtn != null)
-                    {
-                        ButtonPostProcessor.Process(subBtn, sub, component, IconMode.SmallToBoth);
-                    }
-                }
-                else if (sub.Type == CommandComponentType.SmartButton)
-                {
-                    var smartSubBtn = pdBtn.AddPushButton(CreatePushButtonData(sub, assemblyInfo!));
-                    if (smartSubBtn != null)
-                    {
-                        ButtonPostProcessor.Process(smartSubBtn, sub, component, IconMode.SmallToBoth);
+                AddSingleChildToPulldown(pdBtn, sub, component, assemblyInfo);
+            }
+        }
 
-                        // Execute __selfinit__ for SmartButton in pulldown
-                        if (_smartButtonScriptInitializer != null)
+        private void AddSingleChildToPulldown(
+            PulldownButton pdBtn,
+            ParsedComponent sub,
+            ParsedComponent component,
+            ExtensionAssemblyInfo assemblyInfo)
+        {
+            if (sub.Type == CommandComponentType.Separator)
+            {
+                // Skip adding separators during reload - they persist in the UI
+                if (assemblyInfo?.IsReloading == true)
+                {
+                    Logger.Debug($"Skipping separator during reload for pulldown button '{component.DisplayName}'.");
+                    return;
+                }
+                try
+                {
+                    pdBtn.AddSeparator();
+                }
+                catch (Exception ex)
+                {
+                    Logger.Debug($"Failed to add separator to pulldown button. Exception: {ex.Message}");
+                }
+                return;
+            }
+
+            if (sub.Type == CommandComponentType.PushButton ||
+                sub.Type == CommandComponentType.UrlButton ||
+                sub.Type == CommandComponentType.InvokeButton ||
+                sub.Type == CommandComponentType.ContentButton)
+            {
+                var subBtn = pdBtn.AddPushButton(CreatePushButtonData(sub, assemblyInfo!));
+                if (subBtn != null)
+                {
+                    ButtonPostProcessor.Process(subBtn, sub, component, IconMode.SmallToBoth);
+                }
+                return;
+            }
+
+            if (sub.Type == CommandComponentType.SmartButton)
+            {
+                var smartSubBtn = pdBtn.AddPushButton(CreatePushButtonData(sub, assemblyInfo!));
+                if (smartSubBtn != null)
+                {
+                    ButtonPostProcessor.Process(smartSubBtn, sub, component, IconMode.SmallToBoth);
+
+                    // Execute __selfinit__ for SmartButton in pulldown
+                    if (_smartButtonScriptInitializer != null)
+                    {
+                        var shouldActivate = _smartButtonScriptInitializer.ExecuteSelfInit(sub, smartSubBtn);
+                        if (!shouldActivate)
                         {
-                            var shouldActivate = _smartButtonScriptInitializer.ExecuteSelfInit(sub, smartSubBtn);
-                            if (!shouldActivate)
-                            {
-                                smartSubBtn.Enabled = false;
-                                Logger.Debug($"SmartButton '{sub.DisplayName}' in pulldown deactivated by __selfinit__.");
-                            }
+                            smartSubBtn.Enabled = false;
+                            Logger.Debug($"SmartButton '{sub.DisplayName}' in pulldown deactivated by __selfinit__.");
                         }
                     }
                 }
-                else if (sub.Type == CommandComponentType.LinkButton)
+                return;
+            }
+
+            if (sub.Type == CommandComponentType.LinkButton)
+            {
+                var linkData = _linkButtonBuilder.CreateLinkButtonData(sub);
+                if (linkData != null)
                 {
-                    var linkData = _linkButtonBuilder.CreateLinkButtonData(sub);
-                    if (linkData != null)
+                    var linkSubBtn = pdBtn.AddPushButton(linkData);
+                    if (linkSubBtn != null)
                     {
-                        var linkSubBtn = pdBtn.AddPushButton(linkData);
-                        if (linkSubBtn != null)
-                        {
-                            ButtonPostProcessor.Process(linkSubBtn, sub, component, IconMode.SmallToBoth);
-                        }
+                        ButtonPostProcessor.Process(linkSubBtn, sub, component, IconMode.SmallToBoth);
                     }
                 }
             }
@@ -255,7 +323,12 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
         /// <summary>
         /// Updates existing child buttons in a pulldown button during reload.
         /// </summary>
-        private void UpdateExistingChildren(PulldownButton pdBtn, ParsedComponent component, List<RibbonItem> existingItems, ExtensionAssemblyInfo assemblyInfo)
+        private void UpdateExistingChildren(
+            PulldownButton pdBtn,
+            ParsedComponent component,
+            IReadOnlyList<ParsedComponent> visibleChildren,
+            List<RibbonItem> existingItems,
+            ExtensionAssemblyInfo assemblyInfo)
         {
             // Build a dictionary of existing items by name for quick lookup
             var existingByName = new Dictionary<string, PushButton>(StringComparer.OrdinalIgnoreCase);
@@ -268,12 +341,16 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 }
             }
 
-            Logger.Debug($"Updating {component.Children?.Count ?? 0} children in pulldown '{component.DisplayName}'. Found {existingByName.Count} existing buttons.");
+            Logger.Debug($"Updating {visibleChildren.Count} visible children in pulldown '{component.DisplayName}'. Found {existingByName.Count} existing buttons.");
 
-            foreach (var sub in component.Children ?? Enumerable.Empty<ParsedComponent>())
+            var touchedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var sub in visibleChildren)
             {
                 if (sub.Type == CommandComponentType.Separator)
                     continue;
+
+                touchedNames.Add(sub.DisplayName);
 
                 Logger.Debug($"Looking for child '{sub.DisplayName}' in pulldown '{component.DisplayName}'...");
 
@@ -315,7 +392,24 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 }
                 else
                 {
-                    Logger.Debug($"Child '{sub.DisplayName}' not found in existing buttons. Available: [{string.Join(", ", existingByName.Keys)}]");
+                    Logger.Debug($"Creating previously-hidden child '{sub.DisplayName}' in pulldown '{component.DisplayName}'.");
+                    try
+                    {
+                        AddSingleChildToPulldown(pdBtn, sub, component, assemblyInfo);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error($"Failed to create child '{sub.DisplayName}' in pulldown '{component.DisplayName}': {ex.Message}");
+                    }
+                }
+            }
+
+            foreach (var existingByNamePair in existingByName)
+            {
+                if (!touchedNames.Contains(existingByNamePair.Key))
+                {
+                    Logger.Debug($"Hiding stale pulldown child '{existingByNamePair.Key}' in '{component.DisplayName}'.");
+                    DeactivateRibbonItem(existingByNamePair.Value, existingByNamePair.Key);
                 }
             }
         }

@@ -9,9 +9,10 @@ from pyrevit.compat import get_elementid_value_func
 get_elementid_value = get_elementid_value_func()
 
 
-def dissect_parameter_filter(doc, filter_element):
+def dissect_parameter_filter(doc, filter_element, lightweight=False):
     """
     Extract information from a simple equals ParameterFilterElement.
+    Lightweight argument skips filling categories and display_value keys.
 
     Returns a dict, or None if the filter is not a single equals rule.
 
@@ -35,15 +36,18 @@ def dissect_parameter_filter(doc, filter_element):
         "rule": None,
     }
 
+    if not isinstance(filter_element, DB.ParameterFilterElement):
+        return None
+
     # ── categories ────────────────────────────────────────────────────
-    try:
-        for cid in filter_element.GetCategories():
-            bic = DB.BuiltInCategory(get_elementid_value(cid))
-            cat = doc.Settings.Categories.get_Item(bic)
-            if cat:
-                result["categories"].append(cat)
-    except Exception:
-        pass
+    if not lightweight:
+        try:
+            for cid in filter_element.GetCategories():
+                cat = query.get_category(cid, doc=doc)
+                if cat:
+                    result["categories"].append(cat)
+        except Exception:
+            pass
 
     # ── unwrap to ElementParameterFilter ─────────────────────────────
     element_filter = filter_element.GetElementFilter()
@@ -97,62 +101,64 @@ def dissect_parameter_filter(doc, filter_element):
         val = rule.RuleString
         result["storage_type"] = DB.StorageType.String
         result["value"] = val
-        result["display_value"] = val
+        if not lightweight:
+            result["display_value"] = val
 
     elif isinstance(rule, DB.FilterDoubleRule):
         val = rule.RuleValue
         result["storage_type"] = DB.StorageType.Double
         result["value"] = val
-        try:
-            spec = None
-            if param_elem:
-                spec = param_elem.GetDataType()
-            else:
-                try:
-                    bip = DB.BuiltInParameter(get_elementid_value(param_id))
-                    bics = [query.get_builtincategory(bic_name) for bic_name in result["categories"]]
-                    collector = query.get_elements_by_categories(bics)
-                    elem = next(iter(collector), None)
-                    param = elem.get_Parameter(bip) if elem else None
-                    if param:
-                        spec = param.Definition.GetDataType()
-                except Exception:
-                    pass
-            display = DB.UnitFormatUtils.Format(
-                doc.GetUnits(), spec, val, False
-            )
-        except Exception:
-            display = str(val)
-        result["display_value"] = display
+        if not lightweight:
+            try:
+                spec = None
+                if param_elem:
+                    spec = param_elem.GetDataType()
+                else:
+                    try:
+                        collector = query.get_elements_by_categories(result["categories"], doc=doc)
+                        elem = next(iter(collector), None)
+                        param = query.get_param(elem, param_id) if elem else None
+                        if param:
+                            spec = param.Definition.GetDataType()
+                    except Exception:
+                        pass
+                display = DB.UnitFormatUtils.Format(
+                    doc.GetUnits(), spec, val, False
+                )
+            except Exception:
+                display = str(val)
+            result["display_value"] = display
 
     elif isinstance(rule, DB.FilterIntegerRule):
         val = rule.RuleValue
         result["storage_type"] = DB.StorageType.Integer
         result["value"] = val
-        # special case: workset parameter
-        if get_elementid_value(param_id) == int(
-            DB.BuiltInParameter.ELEM_PARTITION_PARAM
-        ):
-            try:
-                ws = doc.GetWorksetTable().GetWorkset(DB.WorksetId(val))
-                result["display_value"] = ws.Name if ws else str(val)
-            except Exception:
+        if not lightweight:
+            # special case: workset parameter
+            if get_elementid_value(param_id) == int(
+                DB.BuiltInParameter.ELEM_PARTITION_PARAM
+            ):
+                try:
+                    ws = doc.GetWorksetTable().GetWorkset(DB.WorksetId(val))
+                    result["display_value"] = ws.Name if ws else str(val)
+                except Exception:
+                    result["display_value"] = str(val)
+            else:
                 result["display_value"] = str(val)
-        else:
-            result["display_value"] = str(val)
 
     elif isinstance(rule, DB.FilterElementIdRule):
         val = rule.RuleValue
         result["storage_type"] = DB.StorageType.ElementId
         result["value"] = get_elementid_value(val)
-        elem = doc.GetElement(val)
-        if elem:
-            try:
-                result["display_value"] = elem.Name
-            except Exception:
+        if not lightweight:
+            elem = doc.GetElement(val)
+            if elem:
+                try:
+                    result["display_value"] = elem.Name
+                except Exception:
+                    result["display_value"] = str(get_elementid_value(val))
+            else:
                 result["display_value"] = str(get_elementid_value(val))
-        else:
-            result["display_value"] = str(get_elementid_value(val))
 
     else:
         return None
@@ -171,7 +177,7 @@ def get_most_common_filter_parameter(doc, view):
     for f in filters:
         if not isinstance(f, DB.ParameterFilterElement):
             continue
-        info = dissect_parameter_filter(doc, f)
+        info = dissect_parameter_filter(doc, f, lightweight=True)
         if not info:
             continue
         pid = info["parameter_id"]
@@ -228,7 +234,7 @@ def get_color_source_parameter(doc, view, element=None):
             if not ogs_has_overrides(ogs):
                 continue
 
-            info = dissect_parameter_filter(doc, f)
+            info = dissect_parameter_filter(doc, f, lightweight=True)
             if not info:
                 continue
 
@@ -363,7 +369,7 @@ def get_ogs_from_prop_in_view(doc, view, prop):
             if not view.GetIsFilterEnabled(f.Id):
                 continue
 
-            info = dissect_parameter_filter(doc, f)
+            info = dissect_parameter_filter(doc, f, lightweight=True)
             if not info:
                 continue
 
@@ -384,7 +390,7 @@ def get_ogs_from_prop_in_view(doc, view, prop):
             if info["value"] != prop.value:
                 continue
 
-            # 4. Optional: category match (safer)
+            # 4. Category match
             if prop.categories:
                 prop_cat_ids = set(
                     get_elementid_value(c.Id)

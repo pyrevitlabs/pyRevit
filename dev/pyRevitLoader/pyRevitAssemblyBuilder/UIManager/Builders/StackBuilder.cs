@@ -5,6 +5,7 @@ using System.Linq;
 using Autodesk.Revit.UI;
 using pyRevitAssemblyBuilder.AssemblyMaker;
 using pyRevitAssemblyBuilder.SessionManager;
+using pyRevitAssemblyBuilder.UIManager;
 using pyRevitAssemblyBuilder.UIManager.Buttons;
 using pyRevitAssemblyBuilder.UIManager.Icons;
 using pyRevitExtensionParser;
@@ -17,6 +18,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
     /// </summary>
     public class StackBuilder : IStackBuilder
     {
+        private readonly BuildContext _buildContext;
         private readonly ILogger _logger;
         private readonly IButtonPostProcessor _buttonPostProcessor;
         private readonly Buttons.LinkButtonBuilder _linkButtonBuilder;
@@ -27,6 +29,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
         /// <summary>
         /// Initializes a new instance of the <see cref="StackBuilder"/> class.
         /// </summary>
+        /// <param name="buildContext">Shared build context that carries the current per-build settings.</param>
         /// <param name="logger">The logger instance.</param>
         /// <param name="buttonPostProcessor">The button post-processor.</param>
         /// <param name="linkButtonBuilder">The link button builder.</param>
@@ -34,6 +37,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
         /// <param name="splitButtonBuilder">The split button builder.</param>
         /// <param name="smartButtonScriptInitializer">Optional SmartButton script initializer.</param>
         public StackBuilder(
+            BuildContext buildContext,
             ILogger logger,
             IButtonPostProcessor buttonPostProcessor,
             Buttons.LinkButtonBuilder linkButtonBuilder,
@@ -41,6 +45,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
             Buttons.SplitButtonBuilder splitButtonBuilder,
             SmartButtonScriptInitializer? smartButtonScriptInitializer = null)
         {
+            _buildContext = buildContext ?? throw new ArgumentNullException(nameof(buildContext));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _buttonPostProcessor = buttonPostProcessor ?? throw new ArgumentNullException(nameof(buttonPostProcessor));
             _linkButtonBuilder = linkButtonBuilder ?? throw new ArgumentNullException(nameof(linkButtonBuilder));
@@ -58,10 +63,23 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                 return;
             }
 
-            var children = (component.Children ?? Enumerable.Empty<ParsedComponent>()).ToList();
+            var settings = _buildContext.CurrentSettings;
+            var children = new List<ParsedComponent>();
+            foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
+            {
+                if (ComponentSupportUtils.IsStackChildVisible(
+                        child,
+                        settings.CurrentVersion,
+                        settings.LoadBeta,
+                        _logger))
+                {
+                    children.Add(child);
+                }
+            }
+
             if (children.Count < 2)
             {
-                _logger.Debug($"Stack '{component.DisplayName}' has fewer than 2 items, skipping.");
+                _logger.Debug($"Stack '{component.DisplayName}' has fewer than 2 visible items after filtering, skipping.");
                 return;
             }
 
@@ -126,20 +144,27 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
 
             if (itemDataList.Count >= 2)
             {
-                IList<RibbonItem>? stackedItems = null;
-                if (itemDataList.Count == 2)
-                    stackedItems = parentPanel.AddStackedItems(itemDataList[0], itemDataList[1]);
-                else
-                    stackedItems = parentPanel.AddStackedItems(itemDataList[0], itemDataList[1], itemDataList[2]);
-
-                if (stackedItems != null)
+                try
                 {
-                    ProcessStackedItems(stackedItems, originalItems, assemblyInfo);
+                    IList<RibbonItem>? stackedItems = null;
+                    if (itemDataList.Count == 2)
+                        stackedItems = parentPanel.AddStackedItems(itemDataList[0], itemDataList[1]);
+                    else
+                        stackedItems = parentPanel.AddStackedItems(itemDataList[0], itemDataList[1], itemDataList[2]);
+
+                    if (stackedItems != null)
+                    {
+                        ProcessStackedItems(stackedItems, originalItems, assemblyInfo);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warning($"Stack '{component.DisplayName}' skipped: {ex.Message}");
                 }
             }
             else
             {
-                _logger.Debug($"Stack '{component.DisplayName}' has fewer than 2 items after filtering, skipping.");
+                _logger.Debug($"Stack '{component.DisplayName}' has fewer than 2 visible items after filtering, skipping.");
             }
         }
 

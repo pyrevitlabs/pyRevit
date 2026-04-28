@@ -1,4 +1,6 @@
 using pyRevitAssemblyBuilder.SessionManager;
+using pyRevitExtensionParser;
+using System.Reflection;
 
 namespace pyRevitExtensionParserTester
 {
@@ -78,6 +80,84 @@ namespace pyRevitExtensionParserTester
                 "UI extensions should be a subset of all extensions");
             Assert.IsTrue(libExtensions.All(e => allExtensionNames.Contains(e.Name)),
                 "Library extensions should be a subset of all extensions");
+        }
+
+        [Test]
+        public void IsExtensionAllowed_CachesUnauthorizedExtensions()
+        {
+            var logger = new pyRevitExtensionParserTest.MockLogger();
+            var service = new ExtensionManagerService(logger: logger);
+            var extension = new ParsedExtension
+            {
+                Name = "UnauthorizedExtension",
+                Directory = @"C:\extensions\unauthorized.extension",
+                AuthorizedUsers = new List<string> { "someone_else" }
+            };
+
+            Assert.IsFalse(InvokeIsExtensionAllowed(service, extension));
+            Assert.IsFalse(InvokeIsExtensionAllowed(service, extension));
+            Assert.AreEqual(1, logger.Warnings.Count);
+        }
+
+        [Test]
+        public void IsExtensionAllowed_UsesDirectoryAsCacheKey()
+        {
+            var service = new ExtensionManagerService();
+            var currentUser = GetExpectedCurrentUser();
+
+            var unauthorizedExtension = new ParsedExtension
+            {
+                Name = "SharedName",
+                Directory = @"C:\extensions\shared-a.extension",
+                AuthorizedUsers = new List<string> { "someone_else" }
+            };
+
+            var authorizedExtension = new ParsedExtension
+            {
+                Name = "SharedName",
+                Directory = @"C:\extensions\shared-b.extension",
+                AuthorizedUsers = new List<string> { currentUser }
+            };
+
+            Assert.IsFalse(InvokeIsExtensionAllowed(service, unauthorizedExtension));
+            Assert.IsTrue(InvokeIsExtensionAllowed(service, authorizedExtension));
+        }
+
+        [Test]
+        public void ClearParserCaches_ClearsAuthorizationDecisionCaches()
+        {
+            var service = new ExtensionManagerService();
+            var extension = new ParsedExtension
+            {
+                Name = "MutableExtension",
+                Directory = @"C:\extensions\mutable.extension",
+                AuthorizedUsers = new List<string> { "someone_else" }
+            };
+
+            Assert.IsFalse(InvokeIsExtensionAllowed(service, extension));
+
+            extension.AuthorizedUsers = new List<string> { GetExpectedCurrentUser() };
+            service.ClearParserCaches();
+
+            Assert.IsTrue(InvokeIsExtensionAllowed(service, extension));
+        }
+
+        private static bool InvokeIsExtensionAllowed(ExtensionManagerService service, ParsedExtension extension)
+        {
+            var method = typeof(ExtensionManagerService).GetMethod("IsExtensionAllowed", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(method, Is.Not.Null);
+
+            return (bool)method!.Invoke(service, new object[] { extension })!;
+        }
+
+        private static string GetExpectedCurrentUser()
+        {
+            var userName = Environment.UserName;
+            var atIndex = userName.IndexOf('@');
+            if (atIndex > 0)
+                userName = userName.Substring(0, atIndex);
+
+            return userName.Replace(".", "");
         }
     }
 }

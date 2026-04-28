@@ -291,7 +291,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         /// <exception cref="Exception">Thrown when Roslyn compilation fails.</exception>
         private void BuildWithRoslyn(ParsedExtension extension, string outputPath, IEnumerable<ParsedExtension> libraryExtensions, bool rocketMode)
         {
-            var generator = new RoslynCommandTypeGenerator();
+            var generator = new RoslynCommandTypeGenerator(_logger);
             string code = generator.GenerateExtensionCode(extension, _revitVersion, libraryExtensions, rocketMode);
             var csPath = Path.Combine(Path.GetDirectoryName(outputPath), $"{extension.Name}.cs");
             File.WriteAllText(csPath, code);

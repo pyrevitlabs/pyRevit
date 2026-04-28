@@ -207,6 +207,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
         // to track if user manually closed the window
         public bool ClosedByUser = false;
 
+        // marks the session-loader output window so that "close other outputs"
+        // config does not kill it when a startup script opens its own output.
+        public bool IsSessionOutput = false;
+
         // is window collapsed?
         private double prevHeight = 0;
         public bool IsCollapsed = false;

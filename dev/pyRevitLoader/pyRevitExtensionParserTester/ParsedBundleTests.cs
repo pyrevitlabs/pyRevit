@@ -1,4 +1,4 @@
-﻿using pyRevitExtensionParser;
+using pyRevitExtensionParser;
 using System.IO;
 using System.Linq;
 using NUnit.Framework;
@@ -9,7 +9,9 @@ namespace pyRevitExtensionParserTest
 	internal class ParsedBundleTests
 	{
         private IEnumerable<ParsedExtension>? _installedExtensions;
-        
+
+        private static readonly MockLogger _mockLogger = new MockLogger();
+
         [SetUp]
         public void Setup()
         {
@@ -318,7 +320,7 @@ context:
             TestContext.Out.WriteLine($"Component Context: {testBundleButton.Context}");
             
             // Generate code
-            var codeGenerator = new pyRevitAssemblyBuilder.AssemblyMaker.RoslynCommandTypeGenerator();
+            var codeGenerator = new pyRevitAssemblyBuilder.AssemblyMaker.RoslynCommandTypeGenerator(_mockLogger);
             var generatedCode = codeGenerator.GenerateExtensionCode(extension, "2024");
             
             // Sanitize the class name to match what's generated
@@ -465,7 +467,7 @@ is_beta: true
                 File.WriteAllText(Path.Combine(bundleDir, "script.py"), "#! python3\nprint(3/0)\n");
 
                 var parsedExtension = ParseInstalledExtensions(new[] { extensionDir }).First();
-                var codeGenerator = new pyRevitAssemblyBuilder.AssemblyMaker.RoslynCommandTypeGenerator();
+                var codeGenerator = new pyRevitAssemblyBuilder.AssemblyMaker.RoslynCommandTypeGenerator(_mockLogger);
                 var generatedCode = codeGenerator.GenerateExtensionCode(parsedExtension, "2024");
 
                 Assert.That(generatedCode, Does.Not.Contain("\\\"type\\\":\\\"IronPython\\\""),
@@ -491,7 +493,7 @@ is_beta: true
                 File.WriteAllText(Path.Combine(bundleDir, "bundle.yaml"), "engine:\n  type: IronPython\n");
 
                 var parsedExtension = ParseInstalledExtensions(new[] { extensionDir }).First();
-                var codeGenerator = new pyRevitAssemblyBuilder.AssemblyMaker.RoslynCommandTypeGenerator();
+                var codeGenerator = new pyRevitAssemblyBuilder.AssemblyMaker.RoslynCommandTypeGenerator(_mockLogger);
                 var generatedCode = codeGenerator.GenerateExtensionCode(parsedExtension, "2024");
 
                 Assert.That(generatedCode, Does.Contain("\\\"type\\\":\\\"IronPython\\\""),
