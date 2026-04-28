@@ -355,19 +355,19 @@ def _install_extpkg(extpkg, install_dir, install_dependencies=True):
         clone_path = op.join(install_dir, extpkg.ext_dirname)
         mlogger.info('Installing %s to %s', extpkg.name, clone_path)
 
-        # Look up the stored token for this host from the central DPAPI store.
-        # Fall back to any legacy per-extension plaintext token in the config.
+        # Look up the DPAPI-encrypted token stored in this extension's own
+        # config section. Fall back to legacy plaintext key if not yet migrated.
         token = None
         try:
             from pyrevit.coreutils import credentials
-            token = credentials.get_token(extpkg.url)
+            token = credentials.get_token(extpkg.config_section_name)
         except Exception:
             pass
         if not token:
             token = getattr(extpkg.config, 'token', None) \
                     or getattr(extpkg.config, 'password', None)
 
-        # Only pass username/password when URL has no embedded credentials
+        # Only pass credentials when URL has no embedded credentials
         # (double credentials cause "too many redirects or authentication replays")
         url_has_creds = '://' in extpkg.url and '@' in extpkg.url.split('://', 1)[1].split('/')[0]
         if token and not url_has_creds:

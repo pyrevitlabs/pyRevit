@@ -47,15 +47,10 @@ def _get_extension_credentials(repo_info):
         repo_config = user_config.get_section(repo_info.name)
         if not repo_config.private_repo:
             return None, None
-        # Get remote URL for host-based token lookup
-        remote_url = None
-        try:
-            for remote in repo_info.repo.Network.Remotes:
-                remote_url = remote.Url
-                break
-        except Exception:
-            pass
-        token = credentials.get_token(remote_url) if remote_url else None
+        # repo_info.name is the extension folder name (e.g. MyTool.extension),
+        # which matches extpkg.config_section_name -- the same key used when
+        # the token was stored during install.
+        token = credentials.get_token(repo_info.name)
         if token:
             return 'oauth2', token
         # Legacy fallback: per-extension plaintext credentials not yet migrated

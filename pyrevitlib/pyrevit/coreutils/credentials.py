@@ -1,19 +1,22 @@
 # -*- coding: utf-8 -*-
-"""Secure Git token storage using Windows DPAPI (CurrentUser scope).
+"""Secure per-extension Git token storage using Windows DPAPI (CurrentUser scope).
 
-Tokens are encrypted with ProtectedData and stored as base64 in the pyRevit
-config, keyed by Git host. Plaintext never touches disk.
+Each extension stores its own encrypted token inside its own config section
+(the same section that holds `disabled`, `private_repo`, etc.). Plaintext
+never touches disk.
 
-Works with any Git hosting platform: GitHub, GitLab, Gitbucket, self-hosted
-Gitea, etc.
+Public API:
+    get_token(section_name)     -- decrypt and return token, or None
+    set_token(section_name, token) -- encrypt and persist token
+    delete_token(section_name)  -- remove token
+
+`section_name` is the extension folder name, e.g. ``MyTool.extension``.
+For an ExtensionPackage object this is ``extpkg.config_section_name``.
+For a RepoInfo object (updater) this is ``repo_info.name``.
 
 Note: DPAPI blobs are bound to the Windows user profile and cannot be
 recovered after an OS reinstall without profile backup. If decryption fails,
 get_token() returns None and the user must re-enter the token.
-
-Note: The C# CLI (PyRevitCLI.cs:TryGetCredentials) reads tokens from --token
-CLI arguments only. Bridging stored tokens to CLI commands is not yet
-implemented.
 """
 import clr
 
@@ -33,54 +36,14 @@ from pyrevit.userconfig import user_config
 
 mlogger = get_logger(__name__)
 
-_SECTION = "git_credentials"
-_KEY_SUFFIX = "_token_dpapi"
+# Key written into each extension's own config section
+_KEY_ENCRYPTED = "token_dpapi"
 
-# Legacy section/keys written by the first version of this module
-_LEGACY_SECTION = "github"
-_LEGACY_KEY_ENCRYPTED = "token_dpapi"
-_LEGACY_KEY_PLAINTEXT = "token"
+# Legacy plaintext keys that old install code wrote into extension sections
+_LEGACY_PLAINTEXT_KEYS = ("token", "password", "username")
 
-# Keys written by old install code into per-extension config sections
-_EXT_PLAINTEXT_KEYS = ("token", "username", "password")
-
-
-# ------------------------------------------------------------------
-# URL / host helpers
-# ------------------------------------------------------------------
-
-def _url_to_key_prefix(url):
-    """Return a config-safe prefix derived from the host of a git URL.
-
-    Examples:
-        https://github.com/owner/repo.git  -> github_com
-        git@gitlab.com:owner/repo.git      -> gitlab_com
-        https://git.corp.io/owner/repo     -> git_corp_io
-    """
-    if not url:
-        return "unknown"
-    host = url
-    if host.startswith("git@"):
-        # git@host:path
-        host = host[4:].split(":")[0]
-    elif "://" in host:
-        # https://host/path  or  http://user:pass@host/path
-        host = host.split("://", 1)[1].split("/")[0]
-        if "@" in host:
-            host = host.split("@", 1)[1]
-        # Strip port
-        host = host.split(":")[0]
-    else:
-        host = host.split("/")[0]
-    # Replace non-alphanumeric chars with underscores; collapse consecutive _
-    safe = "".join(c if c.isalnum() else "_" for c in host.lower())
-    while "__" in safe:
-        safe = safe.replace("__", "_")
-    return safe.strip("_") or "unknown"
-
-
-def _config_key(url):
-    return _url_to_key_prefix(url) + _KEY_SUFFIX
+# Old global sections from earlier iterations of this module
+_OBSOLETE_SECTIONS = ("github", "git_credentials")
 
 
 # ------------------------------------------------------------------
@@ -108,31 +71,30 @@ def _decrypt(b64_ciphertext):
 # Config helpers
 # ------------------------------------------------------------------
 
-def _get_or_create_section(section_name=None):
-    name = section_name or _SECTION
+def _get_or_create_section(section_name):
     try:
-        return user_config.get_section(name)
+        return user_config.get_section(section_name)
     except AttributeError:
-        return user_config.add_section(name)
+        return user_config.add_section(section_name)
 
 
-def _read_config(key, section_name=None, fallback=None):
+def _read_config(key, section_name, fallback=None):
     try:
-        section = user_config.get_section(section_name or _SECTION)
+        section = user_config.get_section(section_name)
         return section.get_option(key, fallback)
     except Exception:
         return fallback
 
 
-def _write_config(key, value, section_name=None):
+def _write_config(key, value, section_name):
     section = _get_or_create_section(section_name)
     section.set_option(key, value)
     user_config.save_changes()
 
 
-def _delete_config(key, section_name=None):
+def _delete_config(key, section_name):
     try:
-        section = user_config.get_section(section_name or _SECTION)
+        section = user_config.get_section(section_name)
         if section.has_option(key):
             section.remove_option(key)
             user_config.save_changes()
@@ -145,57 +107,41 @@ def _delete_config(key, section_name=None):
 # ------------------------------------------------------------------
 
 def migrate_legacy_token():
-    """Migrate any old-format tokens to the new per-host DPAPI storage.
+    """Migrate old-format tokens to per-extension DPAPI storage.
 
     Handles:
-    1. [github].token_dpapi (encrypted by the first version of this module)
-       -> re-keyed as github_com_token_dpapi under [git_credentials]
-    2. [github].token (plaintext from even older code)
-       -> encrypted and stored as github_com_token_dpapi under [git_credentials]
-    3. Per-extension plaintext token/password (private_repo=True)
-       -> encrypted and stored by host under [git_credentials]
+    1. Plaintext token/password in extension config sections (private_repo=True)
+       -> encrypted token_dpapi in the same section; plaintext keys removed
+    2. Old global [github] / [git_credentials] sections from earlier module
+       versions -> sections removed (tokens cannot be attributed to a specific
+       extension and were effectively non-functional anyway)
 
     Safe to call on every startup -- no-op when nothing to migrate.
     Failures are logged as warnings and never propagate to the caller.
     """
-    github_key = "github_com" + _KEY_SUFFIX
+    # Remove obsolete global sections that stored one token for all extensions.
+    # These tokens can't be re-attributed to individual extensions, and the
+    # code that wrote them was buggy (auth never actually worked), so the
+    # user will need to re-enter credentials.
+    for section_name in _OBSOLETE_SECTIONS:
+        try:
+            user_config.get_section(section_name)
+            user_config.remove_section(section_name)
+            user_config.save_changes()
+            mlogger.debug("credentials: removed obsolete section [%s]", section_name)
+        except Exception:
+            pass
 
-    # Case 1: already-encrypted token in the old [github] section
-    legacy_encrypted = _read_config(_LEGACY_KEY_ENCRYPTED, section_name=_LEGACY_SECTION)
-    if legacy_encrypted:
-        if not _read_config(github_key):
-            try:
-                plaintext = _decrypt(legacy_encrypted)
-                _write_config(github_key, _encrypt(plaintext))
-            except Exception as ex:
-                mlogger.warning("credentials: could not re-encrypt legacy token: %s", ex)
-        if _read_config(github_key):
-            _delete_config(_LEGACY_KEY_ENCRYPTED, section_name=_LEGACY_SECTION)
-        return
-
-    # Case 2: plaintext token in the old [github] section
-    legacy_plaintext = _read_config(_LEGACY_KEY_PLAINTEXT, section_name=_LEGACY_SECTION)
-    if legacy_plaintext:
-        if not _read_config(github_key):
-            try:
-                _write_config(github_key, _encrypt(legacy_plaintext))
-            except Exception as ex:
-                mlogger.warning("credentials: failed to encrypt legacy plaintext token: %s", ex)
-        if _read_config(github_key):
-            _delete_config(_LEGACY_KEY_PLAINTEXT, section_name=_LEGACY_SECTION)
-        return
-
-    # Case 3: per-extension plaintext tokens (private_repo=True with token/password key)
+    # Migrate per-extension plaintext tokens in-place.
     _migrate_extension_plaintext_tokens()
 
 
 def _migrate_extension_plaintext_tokens():
-    """Encrypt per-extension plaintext tokens and remove them from config.
+    """Encrypt plaintext token/password keys in extension config sections.
 
-    Old install code wrote token/username/password directly into each
-    extension's config section. This reads installed extensions, finds those
-    with a private_repo flag and a plaintext credential, encrypts the
-    credential by host, then strips the plaintext keys.
+    Old install code wrote ``token`` or ``password`` directly into each
+    extension's config section alongside ``private_repo = True``. This
+    encrypts those values in-place and removes the plaintext keys.
     """
     try:
         from pyrevit.extensions import extpackages
@@ -205,29 +151,26 @@ def _migrate_extension_plaintext_tokens():
 
     changed = False
     for pkg in pkgs:
-        if not pkg.url:
-            continue
         try:
             cfg = pkg.config
             if not cfg.private_repo:
                 continue
-            pwd = cfg.get_option("password", None)
-            if not pwd:
-                pwd = cfg.get_option("token", None)
-            if pwd:
-                try:
-                    set_token(pkg.url, pwd)
-                except Exception as ex:
-                    mlogger.warning(
-                        "credentials: failed to encrypt token for %s: %s", pkg.url, ex
-                    )
-            for key in _EXT_PLAINTEXT_KEYS:
-                try:
-                    if cfg.has_option(key):
-                        cfg.remove_option(key)
+            if not cfg.has_option(_KEY_ENCRYPTED):
+                pwd = cfg.get_option("password", None) \
+                      or cfg.get_option("token", None)
+                if pwd:
+                    try:
+                        cfg.set_option(_KEY_ENCRYPTED, _encrypt(pwd))
                         changed = True
-                except Exception:
-                    pass
+                    except Exception as ex:
+                        mlogger.warning(
+                            "credentials: failed to encrypt token for [%s]: %s",
+                            pkg.config_section_name, ex
+                        )
+            for key in _LEGACY_PLAINTEXT_KEYS:
+                if cfg.has_option(key):
+                    cfg.remove_option(key)
+                    changed = True
         except Exception as ex:
             mlogger.warning("credentials: error migrating extension token: %s", ex)
 
@@ -235,55 +178,59 @@ def _migrate_extension_plaintext_tokens():
         try:
             user_config.save_changes()
         except Exception as ex:
-            mlogger.warning("credentials: failed to save config after migration: %s", ex)
+            mlogger.warning(
+                "credentials: failed to save config after migration: %s", ex
+            )
 
 
 # ------------------------------------------------------------------
 # Public API
 # ------------------------------------------------------------------
 
-def get_token(url):
-    """Return the decrypted token for the given git URL/host, or None.
+def get_token(section_name):
+    """Return the decrypted token for an extension, or None.
 
     Args:
-        url (str): Any git URL (https://, http://, git@host:path).
-                   The hostname is extracted to look up the stored token.
+        section_name (str): Extension config section name, e.g.
+            ``extpkg.config_section_name`` or ``repo_info.name``.
 
     Returns:
         str or None: Decrypted token, or None if not set or unrecoverable.
     """
-    key = _config_key(url)
-    b64 = _read_config(key)
+    b64 = _read_config(_KEY_ENCRYPTED, section_name)
     if b64:
         try:
             return _decrypt(b64)
         except Exception as ex:
-            mlogger.warning("credentials: failed to decrypt token for %s: %s",
-                            _url_to_key_prefix(url), ex)
+            mlogger.warning(
+                "credentials: failed to decrypt token for [%s]: %s",
+                section_name, ex
+            )
     return None
 
 
-def set_token(url, token):
-    """Encrypt and persist the token for the given git URL/host.
+def set_token(section_name, token):
+    """Encrypt and persist the token for an extension.
 
     Args:
-        url (str): Any git URL; the hostname is used as the storage key.
+        section_name (str): Extension config section name.
         token (str): PAT or password to encrypt and store.
 
     Raises:
         Exception: Propagates DPAPI failures so the caller can prompt the user.
     """
     if not token:
-        delete_token(url)
+        delete_token(section_name)
         return
-    key = _config_key(url)
-    _write_config(key, _encrypt(token))
+    _write_config(_KEY_ENCRYPTED, _encrypt(token), section_name)
+    for key in _LEGACY_PLAINTEXT_KEYS:
+        _delete_config(key, section_name)
 
 
-def delete_token(url):
-    """Remove the stored token for the given git URL/host.
+def delete_token(section_name):
+    """Remove the stored token for an extension.
 
     Args:
-        url (str): Any git URL; the hostname is used as the storage key.
+        section_name (str): Extension config section name.
     """
-    _delete_config(_config_key(url))
+    _delete_config(_KEY_ENCRYPTED, section_name)
