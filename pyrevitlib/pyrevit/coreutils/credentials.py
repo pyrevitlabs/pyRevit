@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
-"""Secure GitHub token storage using Windows DPAPI (CurrentUser scope).
+"""Secure Git token storage using Windows DPAPI (CurrentUser scope).
 
 Tokens are encrypted with ProtectedData and stored as base64 in the pyRevit
-config. Plaintext never touches disk.
+config, keyed by Git host. Plaintext never touches disk.
+
+Works with any Git hosting platform: GitHub, GitLab, Gitbucket, self-hosted
+Gitea, etc.
 
 Note: DPAPI blobs are bound to the Windows user profile and cannot be
 recovered after an OS reinstall without profile backup. If decryption fails,
-get_github_token() returns None and the user must re-enter the token.
+get_token() returns None and the user must re-enter the token.
 
 Note: The C# CLI (PyRevitCLI.cs:TryGetCredentials) reads tokens from --token
 CLI arguments only. Bridging stored tokens to CLI commands is not yet
@@ -30,12 +33,54 @@ from pyrevit.userconfig import user_config
 
 mlogger = get_logger(__name__)
 
-_SECTION = "github"
-_KEY_TOKEN = "token_dpapi"
-_KEY_TOKEN_LEGACY = "token"  # plaintext key used before this implementation
+_SECTION = "git_credentials"
+_KEY_SUFFIX = "_token_dpapi"
+
+# Legacy section/keys written by the first version of this module
+_LEGACY_SECTION = "github"
+_LEGACY_KEY_ENCRYPTED = "token_dpapi"
+_LEGACY_KEY_PLAINTEXT = "token"
 
 # Keys written by old install code into per-extension config sections
 _EXT_PLAINTEXT_KEYS = ("token", "username", "password")
+
+
+# ------------------------------------------------------------------
+# URL / host helpers
+# ------------------------------------------------------------------
+
+def _url_to_key_prefix(url):
+    """Return a config-safe prefix derived from the host of a git URL.
+
+    Examples:
+        https://github.com/owner/repo.git  -> github_com
+        git@gitlab.com:owner/repo.git      -> gitlab_com
+        https://git.corp.io/owner/repo     -> git_corp_io
+    """
+    if not url:
+        return "unknown"
+    host = url
+    if host.startswith("git@"):
+        # git@host:path
+        host = host[4:].split(":")[0]
+    elif "://" in host:
+        # https://host/path  or  http://user:pass@host/path
+        host = host.split("://", 1)[1].split("/")[0]
+        if "@" in host:
+            host = host.split("@", 1)[1]
+        # Strip port
+        host = host.split(":")[0]
+    else:
+        host = host.split("/")[0]
+    # Replace non-alphanumeric chars with underscores; collapse consecutive _
+    safe = "".join(c if c.isalnum() else "_" for c in host.lower())
+    while "__" in safe:
+        safe = safe.replace("__", "_")
+    return safe.strip("_") or "unknown"
+
+
+def _config_key(url):
+    return _url_to_key_prefix(url) + _KEY_SUFFIX
 
 
 # ------------------------------------------------------------------
@@ -43,7 +88,7 @@ _EXT_PLAINTEXT_KEYS = ("token", "username", "password")
 # ------------------------------------------------------------------
 
 def _encrypt(plaintext):
-    """Encrypt a string using DPAPI (CurrentUser scope). Returns base64 string."""
+    """Encrypt a string with DPAPI (CurrentUser scope). Returns base64 string."""
     data = Encoding.UTF8.GetBytes(plaintext)
     protected = ProtectedData.Protect(data, None, DataProtectionScope.CurrentUser)
     # Use System.Convert to stay in .NET types and avoid the IronPython 2
@@ -63,31 +108,31 @@ def _decrypt(b64_ciphertext):
 # Config helpers
 # ------------------------------------------------------------------
 
-def _get_or_create_section():
-    """Return the github config section, creating it if absent."""
+def _get_or_create_section(section_name=None):
+    name = section_name or _SECTION
     try:
-        return user_config.get_section(_SECTION)
+        return user_config.get_section(name)
     except AttributeError:
-        return user_config.add_section(_SECTION)
+        return user_config.add_section(name)
 
 
-def _read_config(key, fallback=None):
+def _read_config(key, section_name=None, fallback=None):
     try:
-        section = user_config.get_section(_SECTION)
+        section = user_config.get_section(section_name or _SECTION)
         return section.get_option(key, fallback)
     except Exception:
         return fallback
 
 
-def _write_config(key, value):
-    section = _get_or_create_section()
+def _write_config(key, value, section_name=None):
+    section = _get_or_create_section(section_name)
     section.set_option(key, value)
     user_config.save_changes()
 
 
-def _delete_config(key):
+def _delete_config(key, section_name=None):
     try:
-        section = user_config.get_section(_SECTION)
+        section = user_config.get_section(section_name or _SECTION)
         if section.has_option(key):
             section.remove_option(key)
             user_config.save_changes()
@@ -99,124 +144,146 @@ def _delete_config(key):
 # Migration
 # ------------------------------------------------------------------
 
-def _cleanup_extension_plaintext_keys(save=True):
-    """Remove token/username/password keys from all per-extension sections."""
-    changed = False
-    for section in user_config:
-        if not section.has_option("private_repo"):
-            continue
-        for key in _EXT_PLAINTEXT_KEYS:
+def migrate_legacy_token():
+    """Migrate any old-format tokens to the new per-host DPAPI storage.
+
+    Handles:
+    1. [github].token_dpapi (encrypted by the first version of this module)
+       -> re-keyed as github_com_token_dpapi under [git_credentials]
+    2. [github].token (plaintext from even older code)
+       -> encrypted and stored as github_com_token_dpapi under [git_credentials]
+    3. Per-extension plaintext token/password (private_repo=True)
+       -> encrypted and stored by host under [git_credentials]
+
+    Safe to call on every startup -- no-op when nothing to migrate.
+    Failures are logged as warnings and never propagate to the caller.
+    """
+    github_key = "github_com" + _KEY_SUFFIX
+
+    # Case 1: already-encrypted token in the old [github] section
+    legacy_encrypted = _read_config(_LEGACY_KEY_ENCRYPTED, section_name=_LEGACY_SECTION)
+    if legacy_encrypted:
+        if not _read_config(github_key):
             try:
-                if section.has_option(key):
-                    section.remove_option(key)
-                    changed = True
-            except Exception:
-                pass
-    if changed and save:
-        try:
-            user_config.save_changes()
-        except Exception as ex:
-            mlogger.warning("credentials: failed to save config after cleanup: %s", ex)
+                plaintext = _decrypt(legacy_encrypted)
+                _write_config(github_key, _encrypt(plaintext))
+            except Exception as ex:
+                mlogger.warning("credentials: could not re-encrypt legacy token: %s", ex)
+        if _read_config(github_key):
+            _delete_config(_LEGACY_KEY_ENCRYPTED, section_name=_LEGACY_SECTION)
+        return
+
+    # Case 2: plaintext token in the old [github] section
+    legacy_plaintext = _read_config(_LEGACY_KEY_PLAINTEXT, section_name=_LEGACY_SECTION)
+    if legacy_plaintext:
+        if not _read_config(github_key):
+            try:
+                _write_config(github_key, _encrypt(legacy_plaintext))
+            except Exception as ex:
+                mlogger.warning("credentials: failed to encrypt legacy plaintext token: %s", ex)
+        if _read_config(github_key):
+            _delete_config(_LEGACY_KEY_PLAINTEXT, section_name=_LEGACY_SECTION)
+        return
+
+    # Case 3: per-extension plaintext tokens (private_repo=True with token/password key)
+    _migrate_extension_plaintext_tokens()
 
 
 def _migrate_extension_plaintext_tokens():
-    """Find a plaintext token in per-extension sections and encrypt it globally.
+    """Encrypt per-extension plaintext tokens and remove them from config.
 
-    Old install code wrote token/username/password into the extension's own
-    config section. This helper reads the first one found, stores it as the
-    global DPAPI token, then strips the plaintext keys from all sections.
+    Old install code wrote token/username/password directly into each
+    extension's config section. This reads installed extensions, finds those
+    with a private_repo flag and a plaintext credential, encrypts the
+    credential by host, then strips the plaintext keys.
     """
-    already_encrypted = bool(_read_config(_KEY_TOKEN))
-
-    if not already_encrypted:
-        for section in user_config:
-            if not section.has_option("private_repo"):
-                continue
-            pwd = section.get_option("password", None)
-            if not pwd:
-                pwd = section.get_option("token", None)
-            if pwd:
-                try:
-                    set_github_token(pwd)
-                    already_encrypted = True
-                except Exception as ex:
-                    mlogger.warning(
-                        "credentials: failed to encrypt extension token: %s", ex
-                    )
-                break  # one global token is enough
-
-    if already_encrypted:
-        _cleanup_extension_plaintext_keys()
-
-
-def migrate_legacy_token():
-    """Re-encrypt any plaintext GitHub token found in config with DPAPI.
-
-    Handles both the legacy [github].token key and per-extension sections
-    written by old install code (private_repo=True with token/password).
-    Safe to call on every startup -- no-op when nothing to migrate.
-    If migration fails the plaintext token is left untouched.
-    """
-    # Case 1: [github].token plaintext key (original legacy path)
-    legacy_token = _read_config(_KEY_TOKEN_LEGACY)
-    if legacy_token:
-        existing = _read_config(_KEY_TOKEN)
-        if existing:
-            # Already migrated -- verify blob before removing plaintext.
-            try:
-                _decrypt(existing)
-                _delete_config(_KEY_TOKEN_LEGACY)
-            except Exception as ex:
-                mlogger.warning(
-                    "credentials: encrypted token unreadable, keeping legacy: %s", ex
-                )
-        else:
-            try:
-                set_github_token(legacy_token)
-                _delete_config(_KEY_TOKEN_LEGACY)
-            except Exception as ex:
-                mlogger.warning("credentials: failed to migrate legacy token: %s", ex)
+    try:
+        from pyrevit.extensions import extpackages
+        pkgs = extpackages.get_ext_packages(authorized_only=False)
+    except Exception:
         return
 
-    # Case 2: per-extension plaintext token written by old install code
-    _migrate_extension_plaintext_tokens()
+    changed = False
+    for pkg in pkgs:
+        if not pkg.url:
+            continue
+        try:
+            cfg = pkg.config
+            if not cfg.private_repo:
+                continue
+            pwd = cfg.get_option("password", None)
+            if not pwd:
+                pwd = cfg.get_option("token", None)
+            if pwd:
+                try:
+                    set_token(pkg.url, pwd)
+                except Exception as ex:
+                    mlogger.warning(
+                        "credentials: failed to encrypt token for %s: %s", pkg.url, ex
+                    )
+            for key in _EXT_PLAINTEXT_KEYS:
+                try:
+                    if cfg.has_option(key):
+                        cfg.remove_option(key)
+                        changed = True
+                except Exception:
+                    pass
+        except Exception as ex:
+            mlogger.warning("credentials: error migrating extension token: %s", ex)
+
+    if changed:
+        try:
+            user_config.save_changes()
+        except Exception as ex:
+            mlogger.warning("credentials: failed to save config after migration: %s", ex)
 
 
 # ------------------------------------------------------------------
 # Public API
 # ------------------------------------------------------------------
 
-def get_github_token():
-    """Return the decrypted GitHub token, or None if not set or unrecoverable."""
-    b64 = _read_config(_KEY_TOKEN)
+def get_token(url):
+    """Return the decrypted token for the given git URL/host, or None.
+
+    Args:
+        url (str): Any git URL (https://, http://, git@host:path).
+                   The hostname is extracted to look up the stored token.
+
+    Returns:
+        str or None: Decrypted token, or None if not set or unrecoverable.
+    """
+    key = _config_key(url)
+    b64 = _read_config(key)
     if b64:
         try:
             return _decrypt(b64)
         except Exception as ex:
-            mlogger.warning("credentials: failed to decrypt token: %s", ex)
-            # Fall back to legacy plaintext so existing setups survive a
-            # corrupt encrypted blob.
-            return _read_config(_KEY_TOKEN_LEGACY) or None
-    # Pre-migration fallback: return plaintext legacy token if present.
-    return _read_config(_KEY_TOKEN_LEGACY) or None
+            mlogger.warning("credentials: failed to decrypt token for %s: %s",
+                            _url_to_key_prefix(url), ex)
+    return None
 
 
-def set_github_token(token):
-    """Encrypt and persist the GitHub token.
+def set_token(url, token):
+    """Encrypt and persist the token for the given git URL/host.
 
-    Raises on DPAPI failure -- caller should catch and prompt the user to
-    retry rather than silently losing the token.
+    Args:
+        url (str): Any git URL; the hostname is used as the storage key.
+        token (str): PAT or password to encrypt and store.
+
+    Raises:
+        Exception: Propagates DPAPI failures so the caller can prompt the user.
     """
     if not token:
-        delete_github_token()
+        delete_token(url)
         return
-    encrypted = _encrypt(token)
-    _write_config(_KEY_TOKEN, encrypted)
-    # Remove legacy plaintext immediately rather than waiting for next startup.
-    _delete_config(_KEY_TOKEN_LEGACY)
+    key = _config_key(url)
+    _write_config(key, _encrypt(token))
 
 
-def delete_github_token():
-    """Remove the stored token entirely (both encrypted and legacy keys)."""
-    _delete_config(_KEY_TOKEN)
-    _delete_config(_KEY_TOKEN_LEGACY)
+def delete_token(url):
+    """Remove the stored token for the given git URL/host.
+
+    Args:
+        url (str): Any git URL; the hostname is used as the storage key.
+    """
+    _delete_config(_config_key(url))

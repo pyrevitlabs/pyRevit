@@ -5,6 +5,7 @@ from pyrevit.compat import safe_strtype
 from pyrevit import coreutils
 from pyrevit import HOME_DIR
 from pyrevit.coreutils.logger import get_logger
+from pyrevit.coreutils import credentials
 from pyrevit import versionmgr
 from pyrevit.versionmgr import upgrade
 
@@ -46,14 +47,18 @@ def _get_extension_credentials(repo_info):
         repo_config = user_config.get_section(repo_info.name)
         if not repo_config.private_repo:
             return None, None
-        # Prefer the global DPAPI-encrypted token introduced in credentials.py.
-        # Fall back to the legacy per-extension plaintext password if present
-        # (covers installations not yet migrated).
-        from pyrevit.coreutils import credentials
-        token = credentials.get_github_token()
+        # Get remote URL for host-based token lookup
+        remote_url = None
+        try:
+            for remote in repo_info.repo.Network.Remotes:
+                remote_url = remote.Url
+                break
+        except Exception:
+            pass
+        token = credentials.get_token(remote_url) if remote_url else None
         if token:
             return 'oauth2', token
-        # Legacy fallback
+        # Legacy fallback: per-extension plaintext credentials not yet migrated
         username = repo_config.get_option('username', None)
         password = repo_config.get_option('password', None)
         if username and password:

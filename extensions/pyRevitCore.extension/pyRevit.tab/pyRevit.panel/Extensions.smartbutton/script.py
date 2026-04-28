@@ -11,6 +11,7 @@ from pyrevit import forms
 from pyrevit import EXEC_PARAMS
 from pyrevit import extensions as exts
 import pyrevit.extensions.extpackages as extpkgs
+from pyrevit.coreutils import credentials
 
 from pyrevit.userconfig import user_config, CONSTS
 
@@ -501,8 +502,7 @@ class ExtensionsWindow(forms.WPFWindow):
                 token = self.custom_token_pb.Password.strip()
                 if token:
                     self.selected_pkg.ext_pkg.config.private_repo = True
-                    from pyrevit.coreutils import credentials
-                    credentials.set_github_token(token)
+                    credentials.set_token(self.selected_pkg.ext_pkg.url, token)
                 extpkgs.install(self.selected_pkg.ext_pkg, dest_path)
                 _ensure_path_registered(dest_path)
                 self._refresh_extension_list()
@@ -575,8 +575,7 @@ class ExtensionsWindow(forms.WPFWindow):
             if token:
                 temp_pkg.config.private_repo = True
                 user_config.save_changes()
-                from pyrevit.coreutils import credentials
-                credentials.set_github_token(token)
+                credentials.set_token(git_url, token)
 
             extpkgs.install(temp_pkg, dest_path)
             _ensure_path_registered(dest_path)
