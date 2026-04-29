@@ -29,7 +29,7 @@
         
         <!-- Measurement History -->
         <GroupBox Header="{DynamicResource MeasurementHistory}" Grid.Row="2" Padding="5" Margin="0,0,0,10">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <ScrollViewer x:Name="history_scroll" VerticalScrollBarVisibility="Auto">
                 <TextBlock x:Name="history_text" Text="{DynamicResource NoMeasurementsYet}" TextWrapping="Wrap" FontFamily="Consolas" FontSize="11"/>
             </ScrollViewer>
         </GroupBox>

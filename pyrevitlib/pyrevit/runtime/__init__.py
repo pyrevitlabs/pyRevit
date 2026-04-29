@@ -180,6 +180,16 @@ def _get_framework_sdk_module(fw_module):
 
 def _get_reference_file(ref_name):
     mlogger.debug('Searching for dependency: %s', ref_name)
+    # On netcore the host often loads framework assemblies from the shared runtime
+    # (e.g. System.Collections.Immutable 8.x). A newer copy in bin/ may be 9.x;
+    # Assembly.LoadFrom that path then fails while the same name is already loaded.
+    if NETCORE:
+        loaded_asm = assmutils.find_loaded_asm(ref_name)
+        if loaded_asm:
+            mlogger.debug('Using host-loaded dependency: %s @ %s', ref_name,
+                          loaded_asm[0].Location)
+            return loaded_asm[0].Location
+
     # First try to find the dll in the project folder
     addin_file = framework.get_dll_file(ref_name)
     if addin_file:

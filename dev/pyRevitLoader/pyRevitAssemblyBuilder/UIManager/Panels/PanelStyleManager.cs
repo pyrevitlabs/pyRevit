@@ -78,11 +78,19 @@ namespace pyRevitAssemblyBuilder.UIManager.Panels
                 if (ribbon?.Tabs == null)
                     return null;
 
-                var tab = ribbon.Tabs.FirstOrDefault(t => t.Id == tabName);
+                var tab = ribbon.Tabs.FirstOrDefault(t =>
+                    string.Equals(t.Title, tabName, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(t.Id, tabName, StringComparison.OrdinalIgnoreCase));
                 if (tab?.Panels == null)
                     return null;
 
-                return tab.Panels.FirstOrDefault(p => p.Source?.Title == revitPanel.Name);
+                var panelName = revitPanel.Name;
+                if (string.IsNullOrEmpty(panelName))
+                    return null;
+
+                return tab.Panels.FirstOrDefault(p =>
+                    string.Equals(p.Source?.Title, panelName, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(p.Source?.Id, panelName, StringComparison.OrdinalIgnoreCase));
             }
             catch (Exception ex)
             {

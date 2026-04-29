@@ -67,21 +67,15 @@ namespace pyRevitExtensionParserTest
             
             var extension = parsedExtensions.First();
             
-            // Look for Test DynamoBIM GUI button (has BIM1_ArrowHeadSwitcher_script.dyn)
+            // Look for Test DynamoBIM GUI button (has custom-named folie_architecturale_script.dyn)
             var dynamoGuiButton = FindComponentRecursively(extension, "TestDynamoBIMGUI");
-            
+
             Assert.That(dynamoGuiButton, Is.Not.Null, "Should find TestDynamoBIMGUI button");
-            Assert.That(dynamoGuiButton.ScriptPath, Does.EndWith("BIM1_ArrowHeadSwitcher_script.dyn"), 
-                "TestDynamoBIMGUI should have BIM1_ArrowHeadSwitcher_script.dyn");
-            Assert.That(File.Exists(dynamoGuiButton.ScriptPath), Is.True, 
-                "BIM1_ArrowHeadSwitcher_script.dyn file should exist");
-            
-            // Also verify the config file exists
-            var configPath = Path.Combine(Path.GetDirectoryName(dynamoGuiButton.ScriptPath)!, 
-                "BIM1_DeleteUnusedViewTemplates_config.dyn");
-            Assert.That(File.Exists(configPath), Is.True, 
-                "BIM1_DeleteUnusedViewTemplates_config.dyn should also exist");
-            
+            Assert.That(dynamoGuiButton.ScriptPath, Does.EndWith("folie_architecturale_script.dyn"),
+                "TestDynamoBIMGUI should have custom-named folie_architecturale_script.dyn");
+            Assert.That(File.Exists(dynamoGuiButton.ScriptPath), Is.True,
+                "folie_architecturale_script.dyn file should exist");
+
             TestContext.WriteLine($"Found TestDynamoBIMGUI script at: {dynamoGuiButton.ScriptPath}");
         }
 

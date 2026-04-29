@@ -214,15 +214,14 @@ namespace pyRevitExtensionParserTest
         }
 
         /// <summary>
-        /// Tests that authors list in Test pyRevit Bundle.pushbutton is documented.
+        /// Tests that authors list in Test pyRevit Bundle.pushbutton is parsed like Python loader.
         /// 
         /// Test pyRevit Bundle.pushbutton/bundle.yaml defines:
         ///   authors:
         ///     - "{{author}}"
         ///     - John Doe
         /// 
-        /// Note: The BundleParser currently only supports singular 'author:' field,
-        /// not 'authors:' list. This test documents the current behavior.
+        /// Python loader supports authors list by joining entries with newlines.
         /// </summary>
         [Test]
         public void TestAuthorsListWithTemplate()
@@ -236,21 +235,10 @@ namespace pyRevitExtensionParserTest
             TestContext.Out.WriteLine($"Author: {bundle.Author ?? "null"}");
             TestContext.Out.WriteLine($"Hyperlink: {bundle.Hyperlink ?? "null"}");
             
-            // Note: 'authors:' list (plural) is not currently supported by BundleParser
-            // Only singular 'author:' field is parsed
-            // This test documents the current behavior
-            if (bundle.Author == null)
-            {
-                TestContext.Out.WriteLine("Note: 'authors:' list is not currently supported by BundleParser");
-                TestContext.Out.WriteLine("Only singular 'author:' field is parsed");
-            }
-            else
-            {
-                TestContext.Out.WriteLine($"Parsed author value: {bundle.Author}");
-            }
-            
-            // This test passes - it just documents the behavior
-            Assert.Pass("Test documents current authors list behavior");
+            Assert.That(bundle.Author, Is.Not.Null.And.Not.Empty,
+                "authors list should be parsed into author string");
+            Assert.That(bundle.Author.Contains("John Doe"), Is.True,
+                "authors list should include plain author entries");
         }
     }
 }

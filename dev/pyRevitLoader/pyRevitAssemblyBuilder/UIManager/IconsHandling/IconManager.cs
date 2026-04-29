@@ -182,6 +182,14 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
         {
             if (string.IsNullOrEmpty(imagePath) || !File.Exists(imagePath))
                 return null;
+            if (imagePath.EndsWith(".svg", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.Debug($"Skipping SVG icon ...");
+                return null;
+            }
+
+            if (string.IsNullOrEmpty(imagePath) || !File.Exists(imagePath))
+                return null;
 
             // Check cache first
             if (_cache.TryGet(imagePath, targetSize, out var cachedBitmap))
@@ -236,98 +244,28 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
             if (!component.HasValidIcons)
                 return null;
 
-            // Return the appropriate icon based on theme preference
+            // Fix for #3173: SVG files are discovered as valid icons but cannot be rendered
+            // by WPF BitmapImage. Filter to renderable (raster) formats only.
+            bool IsRenderable(ComponentIcon icon) =>
+                icon?.IsValid == true && !IsSvgIcon(icon);
+
             if (isDarkTheme)
             {
-                // In dark theme, prefer dark icon, fall back to light
                 var darkIcon = component.Icons.PrimaryDarkIcon;
-                if (darkIcon?.IsValid == true)
+                if (IsRenderable(darkIcon))
                     return darkIcon;
             }
 
-            // Use light icon (either because we're in light theme, or as fallback)
             var lightIcon = component.Icons.PrimaryIcon;
-            if (lightIcon?.IsValid == true)
+            if (IsRenderable(lightIcon))
                 return lightIcon;
 
-            // Final fallback - use any valid icon
-            return component.Icons.FirstOrDefault(i => i.IsValid);
+            // Final fallback - use any valid renderable icon
+            return component.Icons.FirstOrDefault(i => IsRenderable(i));
         }
 
-        /// <inheritdoc/>
-        public void PreloadExtensionIcons(ParsedExtension extension)
-        {
-            try
-            {
-                var isDarkTheme = _themeDetector.IsDarkTheme();
-
-                // Collect all unique icon paths we'll need
-                var iconPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-                CollectIconPaths(extension.Children, iconPaths, isDarkTheme);
-
-                if (iconPaths.Count == 0)
-                    return;
-
-                _logger.Debug($"Pre-reading {iconPaths.Count} icon files for {extension.Name}...");
-
-                // Read all icon file bytes in parallel to warm OS file cache
-                // This makes subsequent bitmap loading much faster
-                Parallel.ForEach(iconPaths, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
-                    iconPath =>
-                    {
-                        try
-                        {
-                            // Just read the file to warm the OS file cache
-                            // The actual bitmap loading will use BitmapImage with UriSource
-                            // which benefits from the warm cache
-                            File.ReadAllBytes(iconPath);
-                        }
-                        catch
-                        {
-                            // Ignore read errors - bitmap loading will handle them
-                        }
-                    });
-
-                _logger.Debug($"Pre-read {iconPaths.Count} icon files for {extension.Name}");
-            }
-            catch (Exception ex)
-            {
-                _logger.Debug($"Error pre-reading icons: {ex.Message}");
-                // Continue without pre-loading - icons will load on demand
-            }
-        }
-
-        /// <summary>
-        /// Recursively collects icon paths from components.
-        /// </summary>
-        private void CollectIconPaths(IEnumerable<ParsedComponent> components, HashSet<string> iconPaths, bool isDarkTheme)
-        {
-            if (components == null)
-                return;
-
-            foreach (var component in components)
-            {
-                if (component == null)
-                    continue;
-
-                // Get the best icons for this component
-                var largeIcon = GetBestIconForSizeWithTheme(component, UIManagerConstants.ICON_LARGE, isDarkTheme);
-                var smallIcon = GetBestIconForSizeWithTheme(component, UIManagerConstants.ICON_SMALL, isDarkTheme);
-
-                if (largeIcon != null && !string.IsNullOrEmpty(largeIcon.FilePath) && File.Exists(largeIcon.FilePath))
-                {
-                    iconPaths.Add(largeIcon.FilePath);
-                }
-                if (smallIcon != null && !string.IsNullOrEmpty(smallIcon.FilePath) && File.Exists(smallIcon.FilePath))
-                {
-                    iconPaths.Add(smallIcon.FilePath);
-                }
-
-                // Recurse into children
-                CollectIconPaths(component.Children, iconPaths, isDarkTheme);
-            }
-        }
+        private static bool IsSvgIcon(ComponentIcon icon) =>
+            icon != null && string.Equals(icon.Extension, ".svg", StringComparison.OrdinalIgnoreCase);
 
         /// <inheritdoc/>
         public void ClearCache()

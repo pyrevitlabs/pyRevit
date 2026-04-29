@@ -18,10 +18,17 @@
     <system:String x:Key="DiagonalFormat">对角线：{}</system:String>
     <system:String x:Key="SlopeFormat">坡度：{}</system:String>
     
-    <system:String x:Key="MeasurementHistoryEntry">测量 {}：\n  P1：{}\n  P2：{}\n  ΔX：{:>15}\n  ΔY：{:>15}\n  ΔZ：{:>15}\n  对角线：{}\n  坡度：{}</system:String>
+    <system:String x:Key="MeasurementHistoryEntry" xml:space="preserve">
+测量 {}：
+    P1：{}
+    P2：{}
+    ΔX：{:>15}
+    ΔY：{:>15}
+    ΔZ：{:>15}
+    对角线：{} 
+    坡度：{}
+    </system:String>
     
-    <system:String x:Key="Alert3DViewRequired">请在使用 3D 测量工具之前激活 3D 视图。</system:String>
-    <system:String x:Key="Alert3DViewRequiredTitle">需要 3D 视图</system:String>
     <system:String x:Key="WarningBarPickFirstPoint">选择第一个点</system:String>
     <system:String x:Key="WarningBarPickSecondPoint">选择第二个点</system:String>
     <system:String x:Key="AlertMeasurementCancelled">由于无效操作，测量已取消。请重试。</system:String>
@@ -29,6 +36,10 @@
     <system:String x:Key="AlertUnexpectedError">测量期间发生意外错误。请查看日志以获取详细信息。</system:String>
     <system:String x:Key="ToastMeasurementsCopied">测量已复制到剪贴板！</system:String>
     <system:String x:Key="ToastMeasure3DTitle">3D 测量</system:String>
-    <system:String x:Key="ProjectUnitLengthUnits">长度单位（在项目单位中调整）：\n</system:String>
-    <system:String x:Key="ProjectUnitSlopeUnits">坡度单位（在项目单位中调整）：\n</system:String>
+    <system:String x:Key="ProjectUnitLengthUnits" xml:space="preserve">
+长度单位（在项目单位中调整）：
+    </system:String>
+    <system:String x:Key="ProjectUnitSlopeUnits" xml:space="preserve">
+坡度单位（在项目单位中调整）：
+    </system:String>
 </ResourceDictionary>

@@ -171,5 +171,32 @@ author: Test Author";
 
             TestContext.Out.WriteLine("\n=== Simple Multiline Test Passed! ===");
         }
+
+        [Test]
+        public void TestImplicitMultilineTitleNoMarker()
+        {
+            // Legacy format: title: followed by indented lines (no | or > marker)
+            var bundleContent = @"title:
+  FICHES
+  METHODES
+tooltip:
+  en_us: Test tooltip
+author: Test Author";
+
+            var bundlePath = Path.Combine(_testDir, "bundle_implicit.yaml");
+            File.WriteAllText(bundlePath, bundleContent);
+
+            TestContext.Out.WriteLine("=== Testing Implicit Multiline Title (No Marker) ===");
+            TestContext.Out.WriteLine($"Bundle content:\n{bundleContent}");
+
+            var bundle = BundleParser.BundleYamlParser.Parse(bundlePath);
+
+            TestContext.Out.WriteLine($"\n[en_us]: '{bundle.Titles["en_us"].Replace("\n", "\\n")}'");
+
+            Assert.That(bundle.Titles["en_us"], Is.EqualTo("FICHES METHODES"),
+                $"Expected 'FICHES METHODES' but got '{bundle.Titles["en_us"].Replace("\n", "\\n")}'");
+
+            TestContext.Out.WriteLine("\n=== Implicit Multiline Title Test Passed! ===");
+        }
     }
 }

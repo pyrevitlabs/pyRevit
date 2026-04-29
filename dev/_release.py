@@ -413,5 +413,5 @@ def _tag_changes():
 
 def commit_and_tag_build(_: Dict[str, str]):
     """Commit changes and tag repo"""
-    _commit_changes("Publish!")
+    _commit_changes("Publish! [skip ci]")
     _tag_changes()

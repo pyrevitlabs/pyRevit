@@ -1,0 +1,10 @@
+title: Test DynamoBIM 
+tooltip: Balloon test for DynamoBIM, Shift + Click to Test Script set to Auto Execute, add your scripts to the trusted locations or disable the warning in the settings.
+author: "{{author}}"
+highlight: new
+min_revit_version: '2025'
+max_revit_version: '2026'
+references:
+engine:
+  clean: false
+  automate: false

@@ -2,9 +2,12 @@
 # pylint: disable=invalid-name,broad-except
 import sys
 import io
+import os
 import os.path as op
 import logging
-from typing import Dict, Optional
+import shutil
+import tempfile
+from typing import Dict, List, Optional
 
 # Configure UTF-8 encoding for console output
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
@@ -26,7 +29,15 @@ def _abort(message):
     sys.exit(1)
 
 
-def _build(name: str, sln: str, config: str = "Release", framework: str = None, publish_dir: str = None, print_output: Optional[bool] = False):
+def _build(
+    name: str,
+    sln: str,
+    config: str = "Release",
+    framework: str = None,
+    publish_dir: str = None,
+    print_output: Optional[bool] = False,
+    extra_publish_args: Optional[List[str]] = None,
+):
     utils.ensure_windows()
 
     # clean
@@ -47,26 +58,43 @@ def _build(name: str, sln: str, config: str = "Release", framework: str = None, 
         )
     else:
         print(f"Publish {name}...")
-        report = utils.system(
-            [
-                install.get_tool("dotnet"),
-                "publish",
-                f"{slnpath}",
-                "-c",
-                f"{config}",
-                "-f",
-                f"{framework}",
-                "-o",
-                f"{publish_dir}",
-            ],
-            dump_stdout=print_output
-        )
+        cmd = [
+            install.get_tool("dotnet"),
+            "publish",
+            f"{slnpath}",
+            "-c",
+            f"{config}",
+            "-f",
+            f"{framework}",
+            "-o",
+            f"{publish_dir}",
+        ]
+        if extra_publish_args:
+            cmd.extend(extra_publish_args)
+        report = utils.system(cmd, dump_stdout=print_output)
 
     passed, report = utils.parse_dotnet_build_output(report)
     if not passed:
         _abort(report)
     else:
         print(f"Building {name} completed successfully")
+
+
+def _merge_publish_into_bin(source_root: str, dest_bin: str) -> None:
+    """Copy a dotnet publish output tree into dest_bin without deleting other files."""
+    source_root = op.abspath(source_root)
+    dest_bin = op.abspath(dest_bin)
+    if not op.isdir(source_root):
+        return
+    for root, _, files in os.walk(source_root):
+        rel = op.relpath(root, source_root)
+        dest_dir = dest_bin if rel == "." else op.join(dest_bin, rel)
+        os.makedirs(dest_dir, exist_ok=True)
+        for name in files:
+            dest_file = op.join(dest_dir, name)
+            if op.exists(dest_file):
+                print(f"  [merge] overwriting {op.relpath(dest_file, dest_bin)}")
+            shutil.copy2(op.join(root, name), dest_file)
 
 
 def build_deps(_: Dict[str, str]):
@@ -109,8 +137,18 @@ def build_labs(args: Dict[str, str]):
     """Build pyRevit labs."""
     config = args.get("<config>") or "Release"
     _build("labs", configs.LABS, config=config)
-    _build("cli", configs.LABS_CLI, config=config, framework="net8.0-windows", publish_dir=configs.BINPATH)
-    _build("doctor", configs.LABS_DOCTOR, config=config, framework="net8.0-windows", publish_dir=configs.BINPATH)
+    # Publishing two exes to the same folder breaks the second run: dotnet publish removes assemblies
+    # not produced by that project (e.g. DocoptNet.dll is CLI-only and disappears if doctor publishes last).
+    os.makedirs(configs.BINPATH, exist_ok=True)
+    with tempfile.TemporaryDirectory() as tmp:
+        cli_dir = op.join(tmp, "cli")
+        doctor_dir = op.join(tmp, "doctor")
+        _build("cli", configs.LABS_CLI, config=config, framework="net8.0-windows", publish_dir=cli_dir)
+        _build("doctor", configs.LABS_DOCTOR, config=config, framework="net8.0-windows", publish_dir=doctor_dir)
+        print("Merging cli and doctor publish output into bin...")
+        _merge_publish_into_bin(doctor_dir, configs.BINPATH)
+        _merge_publish_into_bin(cli_dir, configs.BINPATH)
+        print("Merged publish output into bin completed successfully")
 
 
 def build_runtime(args: Dict[str, str]):

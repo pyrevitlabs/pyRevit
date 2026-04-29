@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Handle reading and parsing, writing and saving of all user configurations.
 
 This module handles the reading and writing of the pyRevit configuration files.
@@ -684,23 +685,38 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
     def get_thirdparty_ext_root_dirs(self, include_default=True):
         """Return a list of external extension directories set by the user.
 
+        When include_default is True and the pyRevit default extensions
+        directory exists, it is the FIRST entry in the returned list,
+        followed by user-configured directories in their config-file order.
+        Duplicates are removed while preserving order, and only paths that
+        currently exist on disk are returned.
+
         Returns:
             (list[str]): External user extension directories.
         """
-        dir_list = set()
+        # Fix for #3193: Use a list to preserve deterministic ordering.
+        # The default path should always come first when included, so that
+        # [0] is predictable across all call sites.
+        seen = set()
+        dir_list = []
+
         if include_default:
-            # add default ext path
-            dir_list.add(THIRDPARTY_EXTENSIONS_DEFAULT_DIR)
+            norm = op.normpath(THIRDPARTY_EXTENSIONS_DEFAULT_DIR)
+            if norm not in seen:
+                seen.add(norm)
+                dir_list.append(norm)
+
         try:
-            dir_list.update([
-                op.expandvars(op.normpath(x))
-                for x in self.core.get_option(
+            for x in self.core.get_option(
                     CONSTS.ConfigsUserExtensionsKey,
-                    default_value=[]
-                )])
+                    default_value=[]):
+                norm = op.expandvars(op.normpath(x))
+                if norm not in seen:
+                    seen.add(norm)
+                    dir_list.append(norm)
         except Exception as read_err:
             mlogger.error('Error reading list of user extension folders. | %s',
-                          read_err)
+                        read_err)
 
         return [x for x in dir_list if op.exists(x)]
 

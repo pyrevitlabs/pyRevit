@@ -6,7 +6,7 @@ Examples:
     coreutils.cleanup_string('some string')
     ```
 """
-#pylint: disable=invalid-name
+# pylint: disable=invalid-name
 import os
 import os.path as op
 import re
@@ -22,7 +22,7 @@ import math
 import socket
 from collections import defaultdict
 
-#pylint: disable=E0401
+# pylint: disable=E0401
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit.compat import PY3, PY2
 from pyrevit.compat import safe_strtype
@@ -33,7 +33,7 @@ from pyrevit import framework
 # import uuid
 from System import Guid
 
-#pylint: disable=W0703,C0302
+# pylint: disable=W0703,C0302
 DEFAULT_SEPARATOR = ';'
 
 # extracted from
@@ -123,8 +123,10 @@ class ScriptFileParser(object):
         elif isinstance(node_value, ast.List):
             return node_value.elts
         elif isinstance(node_value, ast.Dict):
-            return {self.extract_node_value(k):self.extract_node_value(v)
-                    for k, v in zip(node_value.keys, node_value.values)}
+            return {
+                self.extract_node_value(k): self.extract_node_value(v)
+                for k, v in zip(node_value.keys, node_value.values)
+            }
 
     def get_docstring(self):
         """Get global docstring."""
@@ -484,7 +486,7 @@ def calculate_dir_hash(dir_path, dir_filter, file_filter):
         "1a885a0cae99f53d6088b9f7cee3bf4d"
     """
     mtime_sum = 0
-    for root, dirs, files in os.walk(dir_path): #pylint: disable=W0612
+    for root, dirs, files in os.walk(dir_path):  #pylint: disable=W0612
         if re.search(dir_filter, op.basename(root), flags=re.IGNORECASE):
             mtime_sum += op.getmtime(root)
             for filename in files:
@@ -777,7 +779,7 @@ def decrement_str(input_str, step=1, shrink=False):
     Args:
         input_str (str): identifier e.g. A310a
         step (int): number of steps to change the identifier
-        shrink (bool): removes leading zeroes or duplicate letters 
+        shrink (bool): removes leading zeroes or duplicate letters
 
     Returns:
         (str): modified identifier
@@ -1099,6 +1101,80 @@ def random_rgba_color():
                                        random_alpha())
 
 
+def _color_distance_sq(c1, c2):
+    """Return euclidean distance between two RGB colors."""
+    return (
+        (c1[0] - c2[0]) ** 2 +
+        (c1[1] - c2[1]) ** 2 +
+        (c1[2] - c2[2]) ** 2
+    )
+
+
+def distinct_rgb_colors(count, attempts=200):
+    """Generate visually distinct RGB colors.
+
+    Uses a greedy max-distance approach: each new color is chosen so its
+    minimum distance to existing colors is maximized.
+
+    Args:
+        count (int): number of colors to generate
+        attempts (int): random candidates evaluated per color
+
+    Returns:
+        list: list of (r, g, b) tuples
+    """
+    colors = []
+
+    for _ in range(count):
+        best_color = None
+        best_distance = -1
+
+        for _ in range(attempts):
+            candidate = (
+                random.randint(0, 255),
+                random.randint(0, 255),
+                random.randint(0, 255)
+            )
+
+            if not colors:
+                best_color = candidate
+                break
+
+            min_dist = min(_color_distance_sq(candidate, c) for c in colors)
+
+            if min_dist > best_distance:
+                best_distance = min_dist
+                best_color = candidate
+
+        colors.append(best_color)
+
+    return colors
+
+
+def distinct_hex_colors(count):
+    """Return visually distinct colors in hex format."""
+    colors = distinct_rgb_colors(count)
+    return ['#%02X%02X%02X' % c for c in colors]
+
+
+def distinct_rgb_strings(count):
+    """Return visually distinct colors in rgb(...) format."""
+    colors = distinct_rgb_colors(count)
+    return ['rgb(%d, %d, %d)' % c for c in colors]
+
+
+def distinct_rgba_strings(count, alpha=None):
+    """Return visually distinct colors in rgba(...) format. If alpha is None, it will get randomized."""
+    colors = distinct_rgb_colors(count)
+
+    result = []
+    for r, g, b in colors:
+        a = alpha if alpha is not None else random_alpha()
+        result.append('rgba(%d, %d, %d, %.2f)' % (r, g, b, a))
+
+    return result
+
+
 def extract_range(formatted_str, max_range=500):
     """Extract range from formatted string.
 
@@ -1284,7 +1360,7 @@ def fuzzy_search_ratio(target_string, sfilter, regex=False):
 
     # 91  to 92 reserved (2 scores)
 
-    ## 80 to 90 for parts matches
+    # 80 to 90 for parts matches
     tstring_parts = tstring.split()
     sfilter_parts = sfilter.split()
     if all(x in tstring_parts for x in sfilter_parts):
@@ -1308,10 +1384,7 @@ def fuzzy_search_ratio(target_string, sfilter, regex=False):
             # doesn't contain
             if len(e) > 1:
                 exclude_string = e[1:]
-                if any(
-                        [exclude_string in
-                        part for part in lower_tstring_parts]
-                ):
+                if any([exclude_string in part for part in lower_tstring_parts]):
                     return 0
     if all(x in lower_tstring_parts for x in lower_sfilter_parts):
         return 87

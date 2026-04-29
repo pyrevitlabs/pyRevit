@@ -5,6 +5,7 @@
     <v:String x:Key="Window.Title">pyRevit Extension Manager</v:String>
     <v:String x:Key="ExtensionList.TextBlock">List of Registered Extension Packages:</v:String>
     <v:String x:Key="ExtensionInfo.DevelopedByLink">Developed by: </v:String>
+    <v:String x:Key="ExtensionInfo.InstallPathLink">Install path: </v:String>
     <v:String x:Key="ExtensionInfo.RepositoryLink">Repository: </v:String>
     <v:String x:Key="ExtensionSettings.PrivateRepositoryCheck">Git Repository is Private (Provide Account Credentials)</v:String>
     <v:String x:Key="ExtensionSettings.GroupName">Extension Package Settings:</v:String>
@@ -14,6 +15,7 @@
     <v:String x:Key="Buttons.InstallExtension">Install Extension</v:String>
     <v:String x:Key="Buttons.EnableExtension">Enable Extension</v:String>
     <v:String x:Key="Buttons.RemoveExtension">Remove Extension</v:String>
+    <v:String x:Key="Buttons.DeselectExtension">Deselect</v:String>
     <v:String x:Key="Buttons.ToggleButton.Enable">Enable</v:String>
     <v:String x:Key="Buttons.ToggleButton.Disable">Disable</v:String>
     <v:String x:Key="ExtensionsList.ColumnName">Name</v:String>
@@ -36,4 +38,15 @@
     <v:String xml:space="preserve" x:Key="Extension.InstalledPath">Installed under:
 {}</v:String>
     <v:String x:Key="Extension.Dependencies">Dependencies:</v:String>
+    <v:String x:Key="AddCustomExtension.GroupHeader">Git information</v:String>
+    <v:String x:Key="AddCustomExtension.GitUrlLabel">Git URL:</v:String>
+    <v:String x:Key="AddCustomExtension.GitUrlToolTip">e.g., https://github.com/user/repo.git or https://gitlab.com/user/repo.git</v:String>
+    <v:String x:Key="AddCustomExtension.PathLabel">Path (optional):</v:String>
+    <v:String x:Key="AddCustomExtension.PathToolTip">If empty, will use the default extensions folder</v:String>
+    <v:String x:Key="AddCustomExtension.PickInstallationPath">Pick Installation path</v:String>
+    <v:String x:Key="AddCustomExtension.NameLabel">Name:</v:String>
+    <v:String x:Key="AddCustomExtension.NameToolTip">Extension name (e.g., MyTools)</v:String>
+    <v:String x:Key="AddCustomExtension.TokenLabel">Token (optional):</v:String>
+    <v:String x:Key="AddCustomExtension.TokenToolTip">Leave empty for public repos</v:String>
+    <v:String x:Key="AddCustomExtension.AddAndInstall">Add and install</v:String>
 </ResourceDictionary>

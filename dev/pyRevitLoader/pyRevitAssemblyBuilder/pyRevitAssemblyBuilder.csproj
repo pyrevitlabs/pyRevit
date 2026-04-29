@@ -17,6 +17,14 @@
         <DeployToAllVersions>true</DeployToAllVersions>
     </PropertyGroup>
 
+    <ItemGroup>
+        <InternalsVisibleTo Include="pyRevitExtensionParserTest" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\pyRevitLabs\pyRevitLabs.Common\pyRevitLabs.Common.csproj" />
+    </ItemGroup>
+
     <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
         <Reference Include="WindowsBase" />
         <Reference Include="PresentationCore" />

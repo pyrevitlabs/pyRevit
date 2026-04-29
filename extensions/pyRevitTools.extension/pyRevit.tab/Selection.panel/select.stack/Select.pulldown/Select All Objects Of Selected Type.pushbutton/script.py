@@ -6,7 +6,7 @@ Shift-Click:
 Show Results
 """
 #pylint: disable=import-error,invalid-name,unused-argument,broad-except,superfluous-parens
-from pyrevit import revit, DB
+from pyrevit import revit, DB, EXEC_PARAMS
 from pyrevit import script
 from pyrevit import forms
 
@@ -75,7 +75,7 @@ for selected_element in selection:
                 model_items.append(sim_element)
 
 # print results if requested
-if __shiftclick__:  #pylint: disable=undefined-variable
+if EXEC_PARAMS.config_mode:
     if is_viewspecific:
         for ovname, items in viewspecific_items.items():
             print('OWNER VIEW: {0}'.format(ovname))

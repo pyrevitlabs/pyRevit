@@ -37,8 +37,13 @@
     
     <system:String x:Key="Actions">Acciones</system:String>
     <system:String x:Key="ToggleBox">Alternar Caja</system:String>
+    <system:String x:Key="ToggleBoxTooltip">Activa o desactiva la caja de sección y (re)guarda su última forma</system:String>
     <system:String x:Key="UnHideBox">(Des)Ocultar Caja</system:String>
+    <system:String x:Key="UnHideBoxTooltip">Muestra u oculta la caja de sección en la vista actual si está oculta por elemento</system:String>
     <system:String x:Key="AlignBox">Alinear Caja</system:String>
+    <system:String x:Key="AlignBoxTooltip">Seleccione una cara; la caja rotará para alinearse con ella</system:String>
+    <system:String x:Key="TempSwitch">Caja temporal</system:String>
+    <system:String x:Key="TempSwitchTooltip">Crea una caja temporal alrededor de los elementos seleccionados y restaura el estado anterior después</system:String>
     
     <system:String x:Key="VerticalPositionStatus">Estado de Posición Vertical</system:String>
     <system:String x:Key="Top">Arriba:</system:String>
@@ -101,6 +106,8 @@
     <system:String x:Key="ErrorInBoxVisibility">Error en la visibilidad de la caja</system:String>
     <system:String x:Key="SectionBoxAlignedToFace">Caja de sección alineada con la cara</system:String>
     <system:String x:Key="FailedToAlignToFaceFormat">Falló al alinear con la cara: {0}</system:String>
+    <system:String x:Key="SuccessTempSwitch">Nueva caja establecida o estado anterior restaurado</system:String>
+    <system:String x:Key="FailedTempSwitch">Error al crear o restaurar la caja de sección temporal: {0}</system:String>
     <system:String x:Key="InvalidSectionBoxDimensions">Dimensiones de caja de sección inválidas.</system:String>
     <system:String x:Key="PleaseEnterValidNumber">Por favor ingrese un número válido</system:String>
     <system:String x:Key="AnErrorOccurredFormat">Ocurrió un error: {0}</system:String>

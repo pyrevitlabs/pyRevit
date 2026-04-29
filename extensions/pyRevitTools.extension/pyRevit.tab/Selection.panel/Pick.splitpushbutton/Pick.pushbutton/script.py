@@ -62,6 +62,7 @@ if source_categories:
     selected_category = \
         forms.CommandSwitchWindow.show(
             sorted([x.name for x in category_opts]),
+            title='Pick only elements of type:',
             message='Pick only elements of type:'
         )
 

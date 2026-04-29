@@ -22,7 +22,7 @@ output wrapper.
 from __future__ import print_function
 import os.path as op
 import sys
-from pyrevit.compat import PY2, PY3
+from pyrevit.compat import PY2, PY3, IRONPY
 if PY2:
     from itertools import izip_longest as zip_longest
 elif PY3:
@@ -548,8 +548,13 @@ class PyRevitOutputWindow(object):
         markdown_html = markdown_html.replace('\n', '').replace('\r', '')
         html_code = coreutils.prepare_html_str(markdown_html)
         print(html_code, end="")
-        if PY3:
-            sys.stdout.flush()
+        if PY3 and not IRONPY:
+            # Under CPython in Revit, sys.stdout may be a .NET-backed ScriptIO
+            # with `Flush()` but no `flush()`.
+            try:
+                sys.stdout.flush()
+            except AttributeError:
+                sys.stdout.Flush()
 
 
     def print_table(self, table_data, columns=None, formats=None,

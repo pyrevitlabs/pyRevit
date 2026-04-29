@@ -1,11 +1,11 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using System.Text;
 using pyRevitExtensionParser;
 using pyRevitAssemblyBuilder.SessionManager;
 
@@ -52,10 +52,11 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         /// </summary>
         /// <param name="extension">The parsed extension to build an assembly for.</param>
         /// <param name="libraryExtensions">Optional collection of library extensions to include as references.</param>
+        /// <param name="rocketMode">Whether rocket mode is enabled globally.</param>
         /// <returns>Information about the built assembly.</returns>
         /// <exception cref="ArgumentNullException">Thrown when extension is null.</exception>
         /// <exception cref="Exception">Thrown when assembly building fails.</exception>
-        public ExtensionAssemblyInfo BuildExtensionAssembly(ParsedExtension extension, IEnumerable<ParsedExtension> libraryExtensions = null)
+        public ExtensionAssemblyInfo BuildExtensionAssembly(ParsedExtension extension, IEnumerable<ParsedExtension> libraryExtensions = null, bool rocketMode = false)
         {
             if (extension == null)
                 throw new ArgumentNullException(nameof(extension));
@@ -74,9 +75,13 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             // so they're available in the AppDomain for CLREngine to reference
             LoadExtensionModules(extension);
 
-            // Use build strategy as seed to differentiate DLLs built with different strategies
-            // This ensures DLLs are only regenerated when extension structure changes or build strategy changes
-            string strategySeed = _buildStrategy.ToString();
+            // Include generation-time inputs that affect emitted command types, so cache invalidates
+            // when runtime behavior changes (e.g. rocket mode toggles or loader binary updates).
+            string strategySeed = string.Join("|",
+                _buildStrategy.ToString(),
+                $"rocket:{rocketMode}",
+                $"rocket_compat:{extension.RocketModeCompatible}",
+                $"builder:{GetAssemblyBuildFingerprint()}");
             string hash = GetStableHash(extension.GetHash(strategySeed) + _revitVersion).Substring(0, 16);
             string fileName = $"pyRevit_{_revitVersion}_{hash}_{extension.Name}.dll";
 
@@ -117,13 +122,48 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 
             try
             {
-                BuildWithRoslyn(extension, outputPath, libraryExtensions);
+                BuildWithRoslyn(extension, outputPath, libraryExtensions, rocketMode);
 
                 return new ExtensionAssemblyInfo(extension.Name, outputPath, isReloading);
             }
             catch
             {
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// Cached list of loaded pyRevit assembly names, built once per session on first access.
+        /// </summary>
+        /// <remarks>
+        /// Perf fix for #3268 issue #4: The original code called
+        /// <c>AppDomain.CurrentDomain.GetAssemblies()</c> and iterated every loaded assembly
+        /// (hundreds in a typical Revit session) for <em>each</em> extension.  This field stores
+        /// only the pyRevit-prefixed names (~10-20) so per-extension checks are O(N) over a
+        /// tiny set instead of O(M) over the full AppDomain.
+        /// </remarks>
+        private List<string> _loadedPyRevitAssemblyNames;
+
+        private void EnsureLoadedAssemblyNamesCached()
+        {
+            if (_loadedPyRevitAssemblyNames != null)
+                return;
+
+            const string PYREVIT_PREFIX = "pyRevit_";
+            _loadedPyRevitAssemblyNames = new List<string>();
+
+            foreach (var loadedAsm in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                try
+                {
+                    var asmName = loadedAsm.GetName().Name;
+                    if (asmName != null && asmName.StartsWith(PYREVIT_PREFIX))
+                        _loadedPyRevitAssemblyNames.Add(asmName);
+                }
+                catch
+                {
+                    // Some dynamic/collectible assemblies throw — skip silently
+                }
             }
         }
 
@@ -135,31 +175,18 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         /// <returns>True if an assembly for this extension is already loaded.</returns>
         private bool IsAnyExtensionAssemblyLoaded(ParsedExtension extension)
         {
-            const string PYREVIT_PREFIX = "pyRevit_";
-            
-            foreach (var loadedAsm in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                try
-                {
-                    var asmName = loadedAsm.GetName().Name;
-                    if (asmName == null)
-                        continue;
+            EnsureLoadedAssemblyNamesCached();
 
-                    // Check if this is a pyRevit extension assembly for this extension
-                    // Assembly names follow the pattern: pyRevit_{revitVersion}_{hash}_{extensionName}
-                    if (asmName.StartsWith(PYREVIT_PREFIX) && asmName.EndsWith(extension.Name))
-                    {
-                        _logger.Debug($"Found loaded extension assembly: {asmName}");
-                        return true;
-                    }
-                }
-                catch (Exception ex)
+            // Assembly names follow: pyRevit_{revitVersion}_{hash}_{extensionName}
+            foreach (var name in _loadedPyRevitAssemblyNames)
+            {
+                if (name.EndsWith(extension.Name, StringComparison.OrdinalIgnoreCase))
                 {
-                    // Some assemblies may throw when getting their name, skip them
-                    _logger.Debug($"Error checking assembly: {ex.Message}");
+                    _logger.Debug($"Found loaded extension assembly: {name}");
+                    return true;
                 }
             }
-            
+
             return false;
         }
 
@@ -260,11 +287,12 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         /// <param name="extension">The parsed extension to build.</param>
         /// <param name="outputPath">The output path for the compiled assembly.</param>
         /// <param name="libraryExtensions">Optional library extensions to reference.</param>
+        /// <param name="rocketMode">Whether rocket mode is enabled globally.</param>
         /// <exception cref="Exception">Thrown when Roslyn compilation fails.</exception>
-        private void BuildWithRoslyn(ParsedExtension extension, string outputPath, IEnumerable<ParsedExtension> libraryExtensions)
+        private void BuildWithRoslyn(ParsedExtension extension, string outputPath, IEnumerable<ParsedExtension> libraryExtensions, bool rocketMode)
         {
-            var generator = new RoslynCommandTypeGenerator();
-            string code = generator.GenerateExtensionCode(extension, _revitVersion, libraryExtensions);
+            var generator = new RoslynCommandTypeGenerator(_logger);
+            string code = generator.GenerateExtensionCode(extension, _revitVersion, libraryExtensions, rocketMode);
             var csPath = Path.Combine(Path.GetDirectoryName(outputPath), $"{extension.Name}.cs");
             File.WriteAllText(csPath, code);
             _logger.Debug($"Generated C# code file: {csPath}");
@@ -292,23 +320,49 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         /// Resolves and returns the metadata references required for Roslyn compilation.
         /// </summary>
         /// <remarks>
+        /// <para>
         /// Includes references to core .NET assemblies, Revit API assemblies, and pyRevit runtime.
+        /// </para>
+        /// <para>
+        /// Perf fix for #3268 issue #3: <c>MetadataReference.CreateFromFile()</c> reads assembly
+        /// metadata from disk on every call.  These references never change during a Revit session,
+        /// so they are built once and cached statically.  A version guard ensures correctness if
+        /// the static field somehow survives across different Revit version contexts (it won't in
+        /// practice, but defensive coding costs nothing here).
+        /// </para>
         /// </remarks>
         /// <returns>A list of metadata references for the Roslyn compiler.</returns>
+        private static List<MetadataReference> _cachedRoslynRefs;
+        private static string _cachedRoslynRefsVersion;
+        private static readonly object _roslynRefsLock = new object();
+
         private List<MetadataReference> ResolveRoslynReferences()
         {
-            string baseDir = _baseDir;
-            var refs = new List<MetadataReference>
+            // Fast path — already cached for this Revit version
+            if (_cachedRoslynRefs != null && _cachedRoslynRefsVersion == _revitVersion)
+                return _cachedRoslynRefs;
+
+            lock (_roslynRefsLock)
             {
-                MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(Console).Assembly.Location),
-                MetadataReference.CreateFromFile(Path.Combine(AppContext.BaseDirectory, "RevitAPI.dll")),
-                MetadataReference.CreateFromFile(Path.Combine(AppContext.BaseDirectory, "RevitAPIUI.dll")),
-                MetadataReference.CreateFromFile(Path.Combine(baseDir, $"PyRevitLabs.PyRevit.Runtime.{_revitVersion}.dll"))
-            };
-            string sys = Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location), "System.Runtime.dll");
-            if (File.Exists(sys)) refs.Add(MetadataReference.CreateFromFile(sys));
-            return refs;
+                if (_cachedRoslynRefs != null && _cachedRoslynRefsVersion == _revitVersion)
+                    return _cachedRoslynRefs;
+
+                string baseDir = _baseDir;
+                var refs = new List<MetadataReference>
+                {
+                    MetadataReference.CreateFromFile(typeof(object).Assembly.Location),
+                    MetadataReference.CreateFromFile(typeof(Console).Assembly.Location),
+                    MetadataReference.CreateFromFile(Path.Combine(AppContext.BaseDirectory, "RevitAPI.dll")),
+                    MetadataReference.CreateFromFile(Path.Combine(AppContext.BaseDirectory, "RevitAPIUI.dll")),
+                    MetadataReference.CreateFromFile(Path.Combine(baseDir, $"PyRevitLabs.PyRevit.Runtime.{_revitVersion}.dll"))
+                };
+                string sys = Path.Combine(Path.GetDirectoryName(typeof(object).Assembly.Location), "System.Runtime.dll");
+                if (File.Exists(sys)) refs.Add(MetadataReference.CreateFromFile(sys));
+
+                _cachedRoslynRefs = refs;
+                _cachedRoslynRefsVersion = _revitVersion;
+                return _cachedRoslynRefs;
+            }
         }
 
         /// <summary>
@@ -333,6 +387,30 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             using var sha1 = System.Security.Cryptography.SHA1.Create();
             var hash = sha1.ComputeHash(Encoding.UTF8.GetBytes(input));
             return BitConverter.ToString(hash).Replace("-", string.Empty).ToLowerInvariant();
+        }
+
+        // Perf fix for #3268 issue #7: The executing assembly never changes during a
+        // Revit session — cache the fingerprint once as a static readonly instead of
+        // re-reading file metadata and assembly version on every extension build.
+        private static readonly string _assemblyBuildFingerprint = ComputeAssemblyBuildFingerprint();
+
+        private static string GetAssemblyBuildFingerprint() => _assemblyBuildFingerprint;
+
+        private static string ComputeAssemblyBuildFingerprint()
+        {
+            try
+            {
+                var asmPath = _executingAssemblyLocation;
+                var writeTime = File.Exists(asmPath)
+                    ? File.GetLastWriteTimeUtc(asmPath).Ticks.ToString()
+                    : "0";
+                var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0";
+                return string.Join("-", version, writeTime);
+            }
+            catch
+            {
+                return "0";
+            }
         }
 
         /// <summary>

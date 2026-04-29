@@ -15,13 +15,17 @@
     <UseAssemblyBuilder>true</UseAssemblyBuilder>
     <UseExtensionParser>true</UseExtensionParser>
     <LangVersion>latest</LangVersion>
-	<!-- Suppress NUnit analyzer suggestions for classic assertion model -->
-	<NoWarn>$(NoWarn);NUnit2005;NUnit2006</NoWarn>
+    <TestTfmsInParallel>false</TestTfmsInParallel>
+    <SkipPyRevitDeploy>true</SkipPyRevitDeploy>
+    <RunSettingsFilePath>test.runsettings</RunSettingsFilePath>
+	<!-- Suppress NUnit analyzer suggestions for classic assertion model and related style hints -->
+	<NoWarn>$(NoWarn);NUnit2005;NUnit2006;NUnit1033;NUnit2048;NUnit2049</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="TestHelpers\TempFileTestBase.cs" />
     <Compile Include="TestHelpers\TestExtensionBuilder.cs" />
+    <Compile Include="MockLogger.cs" />
     <Compile Include="DarkIconTests.cs" />
     <Compile Include="TestConfiguration.cs" />
     <Compile Include="LocalizationTests.cs" />
@@ -30,11 +34,13 @@
     <Compile Include="IconParsingTests.cs" />
     <Compile Include="IconFunctionalityTests.cs" />
     <Compile Include="BundleTooltipFixTest.cs" />
+    <Compile Include="ComponentSupportUtilsTests.cs" />
     <Compile Include="ComponentValidationTests.cs" />
     <Compile Include="PanelButtonBundleTests.cs" />
     <Compile Include="ParsedBundleTests.cs" />
     <Compile Include="ParsedComponentTests.cs" />
     <Compile Include="ParserBasicTests.cs" />
+    <Compile Include="ParserErrorHandlingTests.cs" />
     <Compile Include="DiagnosticTests.cs" />
     <Compile Include="QuotedValueTests.cs" />
     <Compile Include="QuoteDebuggingTest.cs" />
@@ -46,25 +52,31 @@
     <Compile Include="DynamoScriptTests.cs" />
     <Compile Include="ExtensionManagerServiceTests.cs" />
     <Compile Include="AssemblyBuilderServiceTests.cs" />
+    <Compile Include="HookManagerTests.cs" />
     <Compile Include="SessionManagerIntegrationTests.cs" />
     <Compile Include="PythonScriptMultiLangTest.cs" />
     <Compile Include="ComboBoxTests.cs" />
     <Compile Include="SmartButtonTests.cs" />
+    <Compile Include="StackBuilderTests.cs" />
     <Compile Include="TemplateInheritanceTests.cs" />
     <Compile Include="ControlIdTests.cs" />
     <Compile Include="MultilineTitleTest.cs" />
     <Compile Include="UrlButtonTests.cs" />
     <Compile Include="HelpUrlTests.cs" />
+    <Compile Include="HelpFileTests.cs" />
     <Compile Include="ScriptMetadataParsingTest.cs" />
+    <Compile Include="VersionFilteringTests.cs" />
+    <Compile Include="EnvDictionarySeederTests.cs" />
+    <Compile Include="PyRevitRootResolutionTests.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="coverlet.collector" Version="6.0.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
-    <PackageReference Include="NUnit" Version="3.14.0" />
-    <PackageReference Include="NUnit.Analyzers" Version="3.9.0" />
-    <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
-    <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
+    <PackageReference Include="coverlet.collector" Version="8.0.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.3.0" />
+    <PackageReference Include="NUnit" Version="4.5.1" />
+    <PackageReference Include="NUnit.Analyzers" Version="4.12.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="6.2.0" />
+    <PackageReference Include="System.Drawing.Common" Version="10.0.5" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
@@ -90,6 +102,7 @@
 
   <ItemGroup>
     <Using Include="NUnit.Framework" />
+    <Using Include="NUnit.Framework.Legacy" />
   </ItemGroup>
 
 </Project>

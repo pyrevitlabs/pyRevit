@@ -11,6 +11,7 @@ namespace pyRevitExtensionParserTest
     public class SmartButtonTests : TempFileTestBase
     {
         private string _extensionDir;
+        private static readonly MockLogger _mockLogger = new MockLogger();
 
         [SetUp]
         public override void BaseSetUp()
@@ -427,7 +428,7 @@ print('Config dialog')
                 "ConfigScriptPath should be different from ScriptPath");
             
             // Generate code using RoslynCommandTypeGenerator
-            var codeGenerator = new pyRevitAssemblyBuilder.AssemblyMaker.RoslynCommandTypeGenerator();
+            var codeGenerator = new pyRevitAssemblyBuilder.AssemblyMaker.RoslynCommandTypeGenerator(_mockLogger);
             var generatedCode = codeGenerator.GenerateExtensionCode(extension, "2024");
             
             // Verify the generated code contains the config script path
@@ -489,6 +490,39 @@ print('Config dialog')
             Assert.IsNotNull(pushButton.ConfigScriptPath, "ConfigScriptPath should not be null");
             Assert.IsTrue(pushButton.ConfigScriptPath.EndsWith("config.py"), 
                 "ConfigScriptPath should end with config.py");
+        }
+
+        [Test]
+        public void PushButton_DetectsPostfixConfigScript()
+        {
+            CreateTabAndPanel();
+            CreateSubDirectory("Test.extension/Test.tab/TestPanel.panel/Pick.pushbutton");
+
+            // Create main script
+            CreateFile("Test.extension/Test.tab/TestPanel.panel/Pick.pushbutton/script.py", @"
+import pick_config
+print('Main action')
+");
+            // Create config script with prefix (e.g. pick_config.py)
+            // Mirrors pythonic loader postfix matching: any file ending with 'config.py' should match
+            CreateFile("Test.extension/Test.tab/TestPanel.panel/Pick.pushbutton/pick_config.py", @"
+if __name__ == '__main__':
+    print('Config dialog')
+");
+
+            var extensions = ParseInstalledExtensions(new[] { _extensionDir });
+            var extension = extensions.First();
+
+            var allComponents = GetAllComponentsFlat(extension);
+            var pushButton = allComponents.FirstOrDefault(c => c.Type == CommandComponentType.PushButton);
+
+            Assert.IsNotNull(pushButton, "PushButton should be found");
+            Assert.IsTrue(pushButton.HasConfigScript, "PushButton should detect prefixed config script");
+            Assert.IsNotNull(pushButton.ConfigScriptPath, "ConfigScriptPath should not be null");
+            Assert.IsTrue(pushButton.ConfigScriptPath.EndsWith("pick_config.py"),
+                "ConfigScriptPath should end with pick_config.py");
+            Assert.AreNotEqual(pushButton.ScriptPath, pushButton.ConfigScriptPath,
+                "ConfigScriptPath should differ from ScriptPath");
         }
 
         /// <summary>

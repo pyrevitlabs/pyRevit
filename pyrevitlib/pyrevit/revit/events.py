@@ -3,6 +3,7 @@
 from pyrevit import HOST_APP
 from pyrevit import EXEC_PARAMS, DB, UI
 from pyrevit import framework
+from pyrevit import compat, PyRevitCPythonNotSupported
 from pyrevit.coreutils.logger import get_logger
 
 
@@ -138,3 +139,67 @@ def stop_events():
         else:
             # request underegister from external event
             delayed_unregister_exec_handlers(EXEC_PARAMS.exec_id)
+
+
+class _GenericExternalEventHandler(UI.IExternalEventHandler):
+    def __init__(self):
+        self.func = None
+        self.args = ()
+        self.kwargs = {}
+
+    def Execute(self, uiapp):
+        try:
+            if self.func:
+                self.func(*self.args, **self.kwargs)
+        except Exception as ex:
+            mlogger.error("ExternalEvent error: {}".format(ex))
+
+    def GetName(self):
+        return "GenericExternalEventHandler"
+
+if compat.IRONPY:
+    _HANDLER = _GenericExternalEventHandler()
+    _EXTERNAL_EVENT = UI.ExternalEvent.Create(_HANDLER)
+
+
+def execute_in_revit_context(func, *args, **kwargs):
+    """
+    Execute a function in Revit API context using ExternalEvent.
+
+    Use this helper when calling Revit API from modeless dialogs,
+    background threads, or any non-Revit context where direct API
+    access would raise InvalidOperationException.
+
+    The function executes asynchronously - it returns immediately
+    and the function runs when Revit is idle.
+
+    Args:
+        func: Function to execute in Revit context
+        *args: Positional arguments to pass to the function
+        **kwargs: Keyword arguments to pass to the function
+
+    Example:
+        ```python
+        # Simple function call
+        execute_in_revit_context(transaction_function, doc, element_id)
+
+        # From modeless dialog button click
+        def on_button_click(sender, args):
+            execute_in_revit_context(
+                modify_elements,
+                selected_ids,
+                parameter_name="Comments",
+                value="Updated"
+            )
+        ```
+
+    Note:
+        This function does not return values from the executed function.
+        For return values, use callbacks or shared mutable objects.
+    """
+    if not compat.IRONPY:
+        PyRevitCPythonNotSupported("pyrevit.revit.events.execute_in_revit_context")
+    _HANDLER.func = func
+    _HANDLER.args = args
+    _HANDLER.kwargs = kwargs
+    _EXTERNAL_EVENT.Raise()

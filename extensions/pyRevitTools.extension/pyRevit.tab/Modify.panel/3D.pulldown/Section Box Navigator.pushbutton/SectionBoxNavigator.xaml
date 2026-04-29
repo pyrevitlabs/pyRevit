@@ -455,14 +455,17 @@
             <GroupBox.Header>
                 <TextBlock FontWeight="Bold" Text="{DynamicResource Actions}"/>
             </GroupBox.Header>
-            <UniformGrid Columns="3" Margin="5,0,5,2" HorizontalAlignment="Stretch">
+            <UniformGrid Columns="4" Margin="5,0,5,2" HorizontalAlignment="Stretch">
                 <Button x:Name="btnToggleBox" Content="{DynamicResource ToggleBox}" 
                         Margin="2" Click="btn_toggle_box_click" Tag="box-toggle"
-                        MouseEnter="btn_preview_enter" MouseLeave="btn_preview_leave"/>
+                        MouseEnter="btn_preview_enter" MouseLeave="btn_preview_leave"
+                        ToolTip="{DynamicResource ToggleBoxTooltip}"/>
                 <Button x:Name="btnHideBox" Content="{DynamicResource UnHideBox}" 
-                        Margin="2" Click="btn_hide_box_click"/>
+                        Margin="2" Click="btn_hide_box_click" ToolTip="{DynamicResource UnHideBoxTooltip}"/>
                 <Button x:Name="btnAlignBoxToFace" Content="{DynamicResource AlignBox}" 
-                        Margin="2" Click="btn_align_box_to_face_click"/>
+                        Margin="2" Click="btn_align_box_to_face_click" ToolTip="{DynamicResource AlignBoxTooltip}"/>
+                <Button x:Name="btnTempSwitch" Content="{DynamicResource TempSwitch}" 
+                        Margin="2" Click="btn_temp_switch_click" ToolTip="{DynamicResource TempSwitchTooltip}"/>
             </UniformGrid>
         </GroupBox>
 

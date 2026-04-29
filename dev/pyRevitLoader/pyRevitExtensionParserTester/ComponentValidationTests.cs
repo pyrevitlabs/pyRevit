@@ -445,7 +445,12 @@ namespace pyRevitExtensionParserTest
         {
             if (string.IsNullOrEmpty(uniqueId))
                 return false;
-                
+
+            // Fix for #3107: UniqueId must also be a valid C# identifier,
+            // which means it cannot start with a digit.
+            if (char.IsDigit(uniqueId[0]))
+                return false;
+
             return uniqueId.All(c => char.IsLetterOrDigit(c) || c == '_');
         }
     }

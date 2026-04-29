@@ -29,7 +29,7 @@ import datetime
 import locale
 from collections import namedtuple
 
-from pyrevit import HOST_APP
+from pyrevit import HOST_APP, EXEC_PARAMS
 from pyrevit import framework
 from pyrevit.framework import Windows, Drawing, ObjectModel, Forms, List
 from pyrevit import coreutils
@@ -1690,7 +1690,7 @@ forms.check_modeldoc(exitscript=True)
 revit.selection.get_selection().clear()
 
 # TODO: add copy filenames to sheet list
-if __shiftclick__:  # pylint: disable=E0602
+if EXEC_PARAMS.config_mode:
     open_docs = forms.select_open_docs(check_more_than_one=False)
     if open_docs:
         for open_doc in open_docs:

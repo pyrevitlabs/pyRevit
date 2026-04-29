@@ -26,13 +26,25 @@ namespace pyRevitAssemblyBuilder.UIManager
         private readonly IComboBoxBuilder _comboBoxBuilder;
         private readonly IUIRibbonScanner? _ribbonScanner;
         private readonly UIApplication _uiApp;
+        private readonly BuildContext _buildContext;
         private ParsedExtension? _currentExtension;
-        private readonly bool _loadBeta;
+
+        /// <summary>
+        /// Cached Rocket Mode setting. Re-read at start of each BuildUI so reload picks up settings changes.
+        /// When true, non-critical startup work (e.g. icon pre-loading) is skipped to reduce load time.
+        /// </summary>
+        private bool _rocketMode;
 
         /// <summary>
         /// Gets the UIApplication instance used by this service.
         /// </summary>
         public UIApplication UIApplication => _uiApp;
+
+        /// <summary>
+        /// Gets whether rocket mode is enabled.
+        /// When true, non-critical startup work is skipped and engine caching is used for compatible extensions.
+        /// </summary>
+        public bool RocketMode => _rocketMode;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UIManagerService"/> class.
@@ -45,6 +57,7 @@ namespace pyRevitAssemblyBuilder.UIManager
         /// <param name="buttonBuilderFactory">The button builder factory instance.</param>
         /// <param name="stackBuilder">The stack builder instance.</param>
         /// <param name="comboBoxBuilder">The combo box builder instance.</param>
+        /// <param name="buildContext">Shared build context that holds the current per-build settings; updated at the start of each <see cref="BuildUI"/> call so all builders observe the same snapshot.</param>
         /// <param name="ribbonScanner">Optional ribbon scanner for tracking UI elements.</param>
         public UIManagerService(
             UIApplication uiApp,
@@ -55,6 +68,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             IButtonBuilderFactory buttonBuilderFactory,
             IStackBuilder stackBuilder,
             IComboBoxBuilder comboBoxBuilder,
+            BuildContext buildContext,
             IUIRibbonScanner? ribbonScanner = null)
         {
             _uiApp = uiApp ?? throw new ArgumentNullException(nameof(uiApp));
@@ -65,20 +79,36 @@ namespace pyRevitAssemblyBuilder.UIManager
             _buttonBuilderFactory = buttonBuilderFactory ?? throw new ArgumentNullException(nameof(buttonBuilderFactory));
             _stackBuilder = stackBuilder ?? throw new ArgumentNullException(nameof(stackBuilder));
             _comboBoxBuilder = comboBoxBuilder ?? throw new ArgumentNullException(nameof(comboBoxBuilder));
+            _buildContext = buildContext ?? throw new ArgumentNullException(nameof(buildContext));
             _ribbonScanner = ribbonScanner;
-            
-            // Load beta settings from config
+
+            RefreshBuildSettings(initial: true);
+        }
+
+        /// <summary>
+        /// Re-reads <see cref="PyRevitConfig"/> and pushes the new <see cref="BuildSettings"/> into the
+        /// shared <see cref="BuildContext"/>. Called at construction and at the start of every
+        /// <see cref="BuildUI"/> so toggling beta / rocket mode takes effect on the next reload (#3109)
+        /// and all builders observe the same snapshot.
+        /// </summary>
+        private void RefreshBuildSettings(bool initial)
+        {
+            var settings = ComponentSupportUtils.ReadBuildSettings(_uiApp, _logger);
+            _buildContext.Update(settings);
+
             try
             {
-                var config = PyRevitConfig.Load();
-                _loadBeta = config.LoadBeta;
-                _logger.Debug($"Beta tools loading: {_loadBeta}");
+                _rocketMode = PyRevitConfig.Load().RocketMode;
             }
             catch (Exception ex)
             {
-                _logger.Debug($"Failed to load beta config, defaulting to false: {ex.Message}");
-                _loadBeta = false;
+                _logger.Debug($"Failed to read RocketMode config: {ex.Message}");
+                if (initial)
+                    _rocketMode = false;
             }
+
+            var prefix = initial ? string.Empty : "Re-read config - ";
+            _logger.Debug($"{prefix}Beta tools loading: {settings.LoadBeta}, Rocket mode: {_rocketMode}");
         }
 
         /// <summary>
@@ -94,6 +124,8 @@ namespace pyRevitAssemblyBuilder.UIManager
                 return;
             }
 
+            RefreshBuildSettings(initial: false);
+
             if (assemblyInfo == null)
             {
                 _logger.Warning($"Cannot build UI for extension '{extension.Name}': assemblyInfo is null.");
@@ -106,8 +138,10 @@ namespace pyRevitAssemblyBuilder.UIManager
                 return;
             }
 
-            // Pre-load icon files in parallel to warm OS file cache
-            _buttonPostProcessor.IconManager.PreloadExtensionIcons(extension);
+            // Icon pre-loading removed for #3268: the legacy Python loader loads icons
+            // on-demand during UI construction with no pre-loading step.
+            // LoadBitmapSource() has its own BitmapCache, so each icon is decoded once.
+            // The OS file cache is already warm from bundle.yaml parsing in PASS 1.
 
             _currentExtension = extension;
             foreach (var component in extension.Children)
@@ -127,84 +161,12 @@ namespace pyRevitAssemblyBuilder.UIManager
         /// <returns>True if the component should be loaded, false otherwise.</returns>
         private bool IsComponentSupported(ParsedComponent component)
         {
-            // Check if component is marked as beta
-            if (component.IsBeta)
-            {
-                if (!_loadBeta)
-                {
-                    _logger.Debug($"Skipping beta component '{component.DisplayName}' - beta tools not enabled.");
-                    return false;
-                }
-                _logger.Debug($"Component '{component.DisplayName}' is beta and will be shown.");
-            }
-
-            // Get current Revit version
-            string currentVersion = _uiApp?.Application?.VersionNumber ?? string.Empty;
-            if (string.IsNullOrEmpty(currentVersion))
-            {
-                _logger.Warning("Could not determine Revit version. Allowing all components.");
-                return true;
-            }
-
-            // Normalize version numbers for comparison
-            // Revit versions before 2021 use 2-digit format (e.g., "20" for Revit 2020)
-            // Revit versions 2021+ use 4-digit format (e.g., "2021" for Revit 2021)
-            int currentVersionNum = NormalizeVersionNumber(currentVersion);
-
-            // Check minimum version requirement
-            if (!string.IsNullOrEmpty(component.MinRevitVersion))
-            {
-                int minVersionNum = NormalizeVersionNumber(component.MinRevitVersion);
-                if (currentVersionNum < minVersionNum)
-                {
-                    _logger.Debug($"Component '{component.DisplayName}' requires Revit {component.MinRevitVersion} or later. Current version: {currentVersion}. Skipping.");
-                    return false;
-                }
-            }
-
-            // Check maximum version requirement
-            if (!string.IsNullOrEmpty(component.MaxRevitVersion))
-            {
-                int maxVersionNum = NormalizeVersionNumber(component.MaxRevitVersion);
-                if (currentVersionNum > maxVersionNum)
-                {
-                    _logger.Debug($"Component '{component.DisplayName}' supports up to Revit {component.MaxRevitVersion}. Current version: {currentVersion}. Skipping.");
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// Normalizes a version number string to an integer for comparison.
-        /// Handles both 2-digit (e.g., "20") and 4-digit (e.g., "2020") formats.
-        /// </summary>
-        /// <param name="version">The version string to normalize.</param>
-        /// <returns>An integer representation of the version.</returns>
-        private int NormalizeVersionNumber(string version)
-        {
-            if (string.IsNullOrEmpty(version))
-                return 0;
-
-            // Remove any non-digit characters
-            var digits = new string(version.Where(char.IsDigit).ToArray());
-
-            if (string.IsNullOrEmpty(digits))
-                return 0;
-
-            if (int.TryParse(digits, out int versionNum))
-            {
-                // If it's a 2-digit version (e.g., "20" for 2020), convert to 4-digit
-                if (versionNum < 100)
-                {
-                    // Assume 20xx format
-                    versionNum = 2000 + versionNum;
-                }
-                return versionNum;
-            }
-
-            return 0;
+            var settings = _buildContext.CurrentSettings;
+            return ComponentSupportUtils.IsSupported(
+                component,
+                settings.CurrentVersion,
+                settings.LoadBeta,
+                _logger);
         }
 
         private void RecursivelyBuildUI(
@@ -212,7 +174,8 @@ namespace pyRevitAssemblyBuilder.UIManager
             ParsedComponent? parentComponent,
             RibbonPanel? parentPanel,
             string tabName,
-            ExtensionAssemblyInfo assemblyInfo)
+            ExtensionAssemblyInfo assemblyInfo,
+            string? renamedTabTitle = null)
         {
             if (component == null)
             {
@@ -246,7 +209,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                     break;
 
                 case CommandComponentType.Panel:
-                    HandlePanel(component, tabName, assemblyInfo);
+                    HandlePanel(component, tabName, assemblyInfo, renamedTabTitle);
                     break;
 
                 default:
@@ -266,8 +229,10 @@ namespace pyRevitAssemblyBuilder.UIManager
 
         private void HandleTab(ParsedComponent component, ExtensionAssemblyInfo assemblyInfo)
         {
-            // Use TabBuilder to create the tab
-            _tabBuilder.CreateTab(component);
+            // CreateTab handles find → tag → re-enable in a single ribbon scan.
+            // Returns the tab's current Title if it was renamed (e.g. by a translation
+            // script), or null if no rename detected.
+            var renamedTabTitle = _tabBuilder.CreateTab(component);
 
             // Get tab name for children using localized title
             var tabText = ExtensionParser.GetComponentTitle(component);
@@ -275,12 +240,21 @@ namespace pyRevitAssemblyBuilder.UIManager
             // Mark tab as touched in the registry (matching Python's set_dirty_flag behavior)
             _ribbonScanner?.MarkElementTouched("tab", tabText);
 
-            // Recursively build children
+            // If CreateTab detected a rename, also mark the current (renamed) Title
+            // so CleanupOrphanedElements() doesn't deactivate the tab (#3167).
+            if (!string.IsNullOrEmpty(renamedTabTitle))
+            {
+                _ribbonScanner?.MarkElementTouched("tab", renamedTabTitle!);
+                _logger.Debug($"Tab '{tabText}' has current Title '{renamedTabTitle}' — marked both as touched.");
+            }
+
+            // Recursively build children, passing the renamed title so panels can dual-mark too
             foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
-                RecursivelyBuildUI(child, component, null, tabText, assemblyInfo);
+                RecursivelyBuildUI(child, component, null, tabText, assemblyInfo, renamedTabTitle);
         }
 
-        private void HandlePanel(ParsedComponent component, string tabName, ExtensionAssemblyInfo assemblyInfo)
+        private void HandlePanel(ParsedComponent component, string tabName,
+            ExtensionAssemblyInfo assemblyInfo, string? renamedTabTitle = null)
         {
             // Use PanelBuilder to create the panel
             var panel = _panelBuilder.CreatePanel(component, tabName);
@@ -291,12 +265,21 @@ namespace pyRevitAssemblyBuilder.UIManager
             // Mark panel as touched in the registry (matching Python's set_dirty_flag behavior)
             _ribbonScanner?.MarkElementTouched("panel", panelText, tabName);
 
+            // If the parent tab was renamed (e.g. by a translation script), the scanner
+            // registered this panel under "panel:{renamedTab}:{panelText}". Mark that
+            // key as touched too so cleanup doesn't hide the panel.
+            if (!string.IsNullOrEmpty(renamedTabTitle))
+            {
+                _ribbonScanner?.MarkElementTouched("panel", panelText, renamedTabTitle);
+            }
+
             // Apply background colors if specified
             _panelBuilder.ApplyPanelBackgroundColors(panel, component, tabName);
 
-            // Recursively build children
+            // Recursively build children — propagate renamedTabTitle so any nested
+            // components that depend on the tab name for registry keys stay consistent.
             foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
-                RecursivelyBuildUI(child, component, panel, tabName, assemblyInfo);
+                RecursivelyBuildUI(child, component, panel, tabName, assemblyInfo, renamedTabTitle);
         }
 
         private void EnsureSlideOutApplied(ParsedComponent? parentComponent, RibbonPanel? parentPanel)
@@ -335,6 +318,9 @@ namespace pyRevitAssemblyBuilder.UIManager
                     // Mark all children in the stack as touched
                     foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
                     {
+                        if (!IsStackChildVisible(child))
+                            continue;
+
                         _ribbonScanner?.MarkElementTouched("button", child.DisplayName, panelName);
                     }
                     break;
@@ -407,6 +393,16 @@ namespace pyRevitAssemblyBuilder.UIManager
                 _logger.Debug($"Error checking if item '{itemName}' exists in panel. Exception: {ex.Message}");
                 return false;
             }
+        }
+
+        private bool IsStackChildVisible(ParsedComponent child)
+        {
+            var settings = _buildContext.CurrentSettings;
+            return ComponentSupportUtils.IsStackChildVisible(
+                child,
+                settings.CurrentVersion,
+                settings.LoadBeta,
+                _logger);
         }
     }
 }

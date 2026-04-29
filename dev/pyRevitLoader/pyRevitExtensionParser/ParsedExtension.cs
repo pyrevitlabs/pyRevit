@@ -16,6 +16,33 @@ namespace pyRevitExtensionParser
         public new string MinRevitVersion { get; set; }
         public new string MaxRevitVersion { get; set; }
         public ExtensionConfig Config { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether this extension is compatible with rocket mode.
+        /// When rocket mode is enabled and the extension is compatible, the engine
+        /// will be reused between command executions for better performance.
+        /// </summary>
+        public bool RocketModeCompatible { get; set; } = false;
+
+        /// <summary>
+        /// Layout directives that reference external components (from other extensions or native Revit).
+        /// These must be applied after the full UI is built using the Revit ribbon API.
+        /// </summary>
+        public List<ExternalLayoutDirective> ExternalLayoutDirectives { get; set; } = new List<ExternalLayoutDirective>();
+
+        /// <summary>
+        /// Gets or sets the list of users authorized to access this extension.
+        /// When populated, only users in this list can use the extension.
+        /// When null or empty, all users are allowed (unless AuthorizedGroups restricts access).
+        /// </summary>
+        public List<string>? AuthorizedUsers { get; set; }
+
+        /// <summary>
+        /// Gets or sets the list of Windows security groups authorized to access this extension.
+        /// When populated, users must be a member of at least one of these groups to use the extension.
+        /// When null or empty, no group restriction is applied.
+        /// </summary>
+        public List<string>? AuthorizedGroups { get; set; }
         
         // Cache directory existence checks to avoid repeated file system calls
         private Dictionary<string, bool> _dirExistsCache = new Dictionary<string, bool>();

@@ -5,11 +5,11 @@ Remove tags in selected views
 """
 #pylint: disable=C0103,E0401
 from pyrevit import framework
-from pyrevit import revit, DB
+from pyrevit import revit, DB, EXEC_PARAMS
 from pyrevit import forms
 
 
-if __shiftclick__:  #pylint: disable=undefined-variable
+if EXEC_PARAMS.config_mode:
     selected_views = \
         forms.select_views(filterfunc=lambda x: isinstance(x, DB.ViewPlan),
                            use_selection=True)

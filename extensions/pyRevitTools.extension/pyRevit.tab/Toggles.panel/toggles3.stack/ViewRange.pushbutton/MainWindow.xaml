@@ -41,14 +41,16 @@
                      Text="{Binding topplane_new_value, UpdateSourceTrigger=PropertyChanged}" 
                      Width="100" Height="25" Margin="5,0"
                      HorizontalContentAlignment="Right" VerticalContentAlignment="Center"
-                     IsEnabled="{Binding can_modify_view}"/>
+                     IsEnabled="{Binding can_modify_view}"
+                     Background="{Binding topplane_field_bg}"/>
             <ComboBox Grid.Row="1" Grid.Column="4" x:Name="topplane_level_combo" 
                       ItemsSource="{Binding available_levels}" 
                       SelectedValue="{Binding topplane_level_id, Mode=TwoWay}"
                       DisplayMemberPath="Name" 
                       SelectedValuePath="IdValue"
                       Height="25" Margin="5,0" VerticalContentAlignment="Center"
-                      IsEnabled="{Binding can_modify_view}"/>
+                      IsEnabled="{Binding can_modify_view}"
+                      Background="{Binding topplane_field_bg}"/>
             
             <!-- Cut Plane Row -->
             <Rectangle Grid.Row="2" Grid.Column="0" Width="5" Height="20" Fill="{Binding cutplane_brush}" RadiusX="3" RadiusY="3"/>
@@ -58,7 +60,8 @@
                      Text="{Binding cutplane_new_value, UpdateSourceTrigger=PropertyChanged}" 
                      Width="100" Height="25" Margin="5,0"
                      HorizontalContentAlignment="Right" VerticalContentAlignment="Center"
-                     IsEnabled="{Binding can_modify_view}"/>
+                     IsEnabled="{Binding can_modify_view}"
+                     Background="{Binding cutplane_field_bg}"/>
             <TextBlock Grid.Row="2" Grid.Column="4" Text="{Binding cutplane_level_name}" 
                        VerticalAlignment="Center" Margin="5,0" 
                        Background="#E8E8E8" Padding="8,5" FontStyle="Italic" TextAlignment="Center"/>
@@ -71,14 +74,16 @@
                      Text="{Binding bottomplane_new_value, UpdateSourceTrigger=PropertyChanged}" 
                      Width="100" Height="25" Margin="5,0"
                      HorizontalContentAlignment="Right" VerticalContentAlignment="Center"
-                     IsEnabled="{Binding can_modify_view}"/>
+                     IsEnabled="{Binding can_modify_view}"
+                     Background="{Binding bottomplane_field_bg}"/>
             <ComboBox Grid.Row="3" Grid.Column="4" x:Name="bottomplane_level_combo" 
                       ItemsSource="{Binding available_levels}" 
                       SelectedValue="{Binding bottomplane_level_id, Mode=TwoWay}"
                       DisplayMemberPath="Name" 
                       SelectedValuePath="IdValue"
                       Height="25" Margin="5,0" VerticalContentAlignment="Center"
-                      IsEnabled="{Binding can_modify_view}"/>
+                      IsEnabled="{Binding can_modify_view}"
+                      Background="{Binding bottomplane_field_bg}"/>
             
             <!-- View Depth Row -->
             <Rectangle Grid.Row="4" Grid.Column="0" Width="5" Height="20" Fill="{Binding viewdepth_brush}" RadiusX="3" RadiusY="3"/>
@@ -88,14 +93,16 @@
                      Text="{Binding viewdepth_new_value, UpdateSourceTrigger=PropertyChanged}" 
                      Width="100" Height="25" Margin="5,0"
                      HorizontalContentAlignment="Right" VerticalContentAlignment="Center"
-                     IsEnabled="{Binding can_modify_view}"/>
+                     IsEnabled="{Binding can_modify_view}"
+                     Background="{Binding viewdepth_field_bg}"/>
             <ComboBox Grid.Row="4" Grid.Column="4" x:Name="viewdepth_level_combo" 
                       ItemsSource="{Binding available_levels}" 
                       SelectedValue="{Binding viewdepth_level_id, Mode=TwoWay}"
                       DisplayMemberPath="Name" 
                       SelectedValuePath="IdValue"
                       Height="25" Margin="5,0" VerticalContentAlignment="Center"
-                      IsEnabled="{Binding can_modify_view}"/>
+                      IsEnabled="{Binding can_modify_view}"
+                      Background="{Binding viewdepth_field_bg}"/>
         </Grid>
         
         <Separator Margin="0,10"/>
@@ -108,7 +115,17 @@
         </StackPanel>
         
         <!-- Warning/Status Messages -->
-        <TextBlock x:Name="warning" Text="{Binding warning_message}" Foreground="Red" 
-                   TextWrapping="Wrap" HorizontalAlignment="Center" Margin="0,5" FontSize="11"/>
+        <Border x:Name="warning_banner" Background="{Binding warning_bg}" 
+                CornerRadius="4" Padding="10,6" Margin="0,8,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <TextBlock Text="{Binding warning_icon}" FontSize="14" 
+                           Foreground="{Binding warning_fg}"
+                           VerticalAlignment="Center" Margin="0,0,6,0"/>
+                <TextBlock Text="{Binding warning_message}" 
+                           Foreground="{Binding warning_fg}"
+                           TextWrapping="Wrap" VerticalAlignment="Center" 
+                           FontSize="11" FontWeight="SemiBold"/>
+            </StackPanel>
+        </Border>
     </StackPanel>
 </Window>

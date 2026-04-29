@@ -5,6 +5,7 @@
     <v:String x:Key="Window.Title">pyRevit 扩展管理器</v:String>
     <v:String x:Key="ExtensionList.TextBlock">已注册扩展包列表：</v:String>
     <v:String x:Key="ExtensionInfo.DevelopedByLink">开发者：</v:String>
+    <v:String x:Key="ExtensionInfo.InstallPathLink">安装路径：</v:String>
     <v:String x:Key="ExtensionInfo.RepositoryLink">存储库：</v:String>
     <v:String x:Key="ExtensionSettings.PrivateRepositoryCheck">Git 存储库是私有的（提供帐户凭据）</v:String>
     <v:String x:Key="ExtensionSettings.GroupName">扩展包设置：</v:String>
@@ -14,6 +15,7 @@
     <v:String x:Key="Buttons.InstallExtension">安装扩展</v:String>
     <v:String x:Key="Buttons.EnableExtension">启用扩展</v:String>
     <v:String x:Key="Buttons.RemoveExtension">删除扩展</v:String>
+    <v:String x:Key="Buttons.DeselectExtension">取消选择</v:String>
     <v:String x:Key="Buttons.ToggleButton.Enable">启用</v:String>
     <v:String x:Key="Buttons.ToggleButton.Disable">禁用</v:String>
     <v:String x:Key="ExtensionsList.ColumnName">名称</v:String>
@@ -36,4 +38,15 @@
     <v:String xml:space="preserve" x:Key="Extension.InstalledPath">安装位置：
 {}</v:String>
     <v:String x:Key="Extension.Dependencies">依赖项：</v:String>
+    <v:String x:Key="AddCustomExtension.GroupHeader">Git 信息</v:String>
+    <v:String x:Key="AddCustomExtension.GitUrlLabel">Git URL：</v:String>
+    <v:String x:Key="AddCustomExtension.GitUrlToolTip">例如 https://github.com/user/repo.git 或 https://gitlab.com/user/repo.git</v:String>
+    <v:String x:Key="AddCustomExtension.PathLabel">路径（可选）：</v:String>
+    <v:String x:Key="AddCustomExtension.PathToolTip">如果为空，将使用默认扩展文件夹</v:String>
+    <v:String x:Key="AddCustomExtension.PickInstallationPath">选择安装路径</v:String>
+    <v:String x:Key="AddCustomExtension.NameLabel">名称：</v:String>
+    <v:String x:Key="AddCustomExtension.NameToolTip">扩展名称（例如 MyTools）</v:String>
+    <v:String x:Key="AddCustomExtension.TokenLabel">令牌（可选）：</v:String>
+    <v:String x:Key="AddCustomExtension.TokenToolTip">公开仓库请留空</v:String>
+    <v:String x:Key="AddCustomExtension.AddAndInstall">添加并安装</v:String>
 </ResourceDictionary>

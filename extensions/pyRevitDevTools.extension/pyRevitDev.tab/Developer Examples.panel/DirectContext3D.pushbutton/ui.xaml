@@ -18,6 +18,7 @@
                 <RowDefinition />
                 <RowDefinition />
                 <RowDefinition />
+                <RowDefinition />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
@@ -45,6 +46,7 @@
             <TextBox Margin="5" Grid.Row="9" Grid.Column="1" Name="txtTransp" Text="0" />
             <TextBlock Margin="5" Grid.Row="10" Grid.Column="0">STL Scale</TextBlock>
             <TextBox Margin="5" Grid.Row="10" Grid.Column="1" Name="txtSTLScale" Text="1" />
+            <CheckBox Margin="5" Grid.Row="11" x:Name="chkOverrideColor" Content="Override color"/>
         </Grid>
         <Button x:Name="btnApply" Click="button_apply" Content="Create Box" />
         <Button x:Name="btnSelect" Margin="0,5,0,0" Click="button_select" Content="Pick Source Element" />

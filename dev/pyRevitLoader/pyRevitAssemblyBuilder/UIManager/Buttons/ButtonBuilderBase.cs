@@ -78,6 +78,11 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
             var sb = new System.Text.StringBuilder();
             foreach (char c in name)
                 sb.Append(char.IsLetterOrDigit(c) ? c : '_');
+
+            // Fix for #3107: C# class names cannot start with a digit.
+            if (sb.Length > 0 && char.IsDigit(sb[0]))
+                sb.Insert(0, '_');
+
             return sb.ToString();
         }
 
@@ -123,6 +128,25 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
             {
                 Logger.Debug($"Error checking if item '{itemName}' exists in panel. Exception: {ex.Message}");
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// Hides and disables an existing ribbon item when it is no longer supported.
+        /// </summary>
+        protected void DeactivateRibbonItem(RibbonItem? item, string itemName)
+        {
+            if (item == null)
+                return;
+
+            try
+            {
+                item.Visible = false;
+                item.Enabled = false;
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug($"Failed to deactivate ribbon item '{itemName}'. Exception: {ex.Message}");
             }
         }
     }

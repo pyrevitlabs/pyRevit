@@ -56,4 +56,6 @@ title:
     Gerenciar
     Notas-Chave
 min_revit_version: 2014
-author: '{{author}}'
+author: |-
+    Ehsan Iran-Nejad (Original Author)
+    Tay Othman (Maintainer + UI)

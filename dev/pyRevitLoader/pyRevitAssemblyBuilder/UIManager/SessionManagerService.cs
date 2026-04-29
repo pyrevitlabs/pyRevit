@@ -37,6 +37,12 @@ namespace pyRevitAssemblyBuilder.SessionManager
         private Dictionary<string, bool> _directoryExistsCache = new Dictionary<string, bool>();
 
         /// <summary>
+        /// Pre-materialized library extension lib paths to avoid repeated Directory.Exists checks
+        /// per extension. Populated once in LoadSession() after libraryExtensions are retrieved.
+        /// </summary>
+        private List<string> _precomputedLibraryLibPaths = new List<string>();
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="SessionManagerService"/> class.
         /// </summary>
         /// <param name="assemblyBuilder">Service for building extension assemblies.</param>
@@ -87,13 +93,13 @@ namespace pyRevitAssemblyBuilder.SessionManager
             // STEP 1: Reset panel backgrounds before creating new UI
             // This matches Python's reset_backgrounds() behavior
             stepStopwatch.Restart();
-            _ribbonScanner?.ResetPanelBackgrounds();
+            _ribbonScanner.ResetPanelBackgrounds();
             _logger.Debug($"[PERF] ResetPanelBackgrounds: {stepStopwatch.ElapsedMilliseconds}ms");
             
             // STEP 2: Reset dirty flags on all existing pyRevit UI elements
             // This marks all existing elements as potentially orphaned
             stepStopwatch.Restart();
-            _ribbonScanner?.ResetDirtyFlags();
+            _ribbonScanner.ResetDirtyFlags();
             _logger.Debug($"[PERF] ResetDirtyFlags: {stepStopwatch.ElapsedMilliseconds}ms");
             
             // Clear all caches to ensure newly installed/enabled extensions are discovered
@@ -106,11 +112,31 @@ namespace pyRevitAssemblyBuilder.SessionManager
             stepStopwatch.Restart();
             InitializeScriptExecutor();
             _logger.Debug($"[PERF] InitializeScriptExecutor: {stepStopwatch.ElapsedMilliseconds}ms");
-            
+
+            // Seed the AppDomain environment dictionary.  Must run after InitializeScriptExecutor()
+            // (which loads _runtimeAssembly) and before any extension startup script (which may call
+            // pyrevit.sessioninfo, pyrevit.telemetry, etc.).
+            stepStopwatch.Restart();
+            SeedEnvironmentDictionary();
+            _logger.Debug($"[PERF] SeedEnvironmentDictionary: {stepStopwatch.ElapsedMilliseconds}ms");
+
             // Get all library extensions first - they need to be available to all UI extensions
             stepStopwatch.Restart();
             var libraryExtensions = _extensionManager?.GetInstalledLibraryExtensions()?.ToList() ?? new List<ParsedExtension>();
             _logger.Debug($"[PERF] GetLibraryExtensions: {stepStopwatch.ElapsedMilliseconds}ms");
+
+            // Pre-compute library extension lib paths once to avoid N*lib_count Directory.Exists checks
+            // in BuildSearchPaths() for each UI extension. Optimization for #3268.
+            _precomputedLibraryLibPaths.Clear();
+            foreach (var libExt in libraryExtensions)
+            {
+                var libLibPath = System.IO.Path.Combine(libExt.Directory, "lib");
+                if (System.IO.Directory.Exists(libLibPath))
+                {
+                    _precomputedLibraryLibPaths.Add(libLibPath);
+                }
+            }
+            _logger.Debug($"Pre-computed {_precomputedLibraryLibPaths.Count} library lib paths");
             
             // Get UI extensions
             stepStopwatch.Restart();
@@ -122,46 +148,86 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 _logger.Warning("No UI extensions found or extension manager is null.");
                 return;
             }
-            
+
+            // ── PASS 1: Build and load ALL assemblies ──────────────────────────
+            // Fix for #3108: Legacy _new_session() uses separate loops to guarantee
+            // all assemblies exist in the AppDomain before any startup script runs.
+            // Cross-extension imports in startup scripts fail without this.
+            var assembledExtensions = new List<(ParsedExtension ext, ExtensionAssemblyInfo assmInfo)>();
+
             foreach (var ext in uiExtensions)
             {
-                if (ext == null)
-                {
-                    _logger.Warning("Skipping null extension.");
-                    continue;
-                }
-                
-                var extStopwatch = Stopwatch.StartNew();
-                
+                if (ext == null) { _logger.Warning("Skipping null extension."); continue; }
                 try
                 {
                     stepStopwatch.Restart();
-                    var assmInfo = _assemblyBuilder?.BuildExtensionAssembly(ext, libraryExtensions);
+                    var rocketMode = _uiManager?.RocketMode ?? false;
+                    var assmInfo = _assemblyBuilder?.BuildExtensionAssembly(ext, libraryExtensions, rocketMode);
                     var buildTime = stepStopwatch.ElapsedMilliseconds;
-                    
+
                     if (assmInfo == null)
                     {
                         _logger.Error($"Failed to build assembly for extension '{ext.Name}'.");
                         continue;
                     }
-                    
+
                     _logger.Info($"Extension assembly created: {ext.Name}");
                     stepStopwatch.Restart();
                     _assemblyBuilder?.LoadAssembly(assmInfo);
-                    var loadTime = stepStopwatch.ElapsedMilliseconds;
-                    
-                    _logger.Debug($"[PERF] {ext.Name} - Build: {buildTime}ms, Load: {loadTime}ms");
-                    
-                    // Execute startup script after building assembly but before creating UI
-                    // This matches the Python loader flow
-                    if (!string.IsNullOrEmpty(ext.StartupScript))
+                    _logger.Debug($"[PERF] {ext.Name} - Build: {buildTime}ms, Load: {stepStopwatch.ElapsedMilliseconds}ms");
+
+                    assembledExtensions.Add((ext, assmInfo));
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error($"Error building/loading extension '{ext?.Name ?? "unknown"}': {ex}");
+                }
+            }
+
+            // ── PASS 2: Run ALL startup scripts ────────────────────────────────
+            // All assemblies are now loaded, so cross-extension imports work.
+            foreach (var (ext, _) in assembledExtensions)
+            {
+                if (!string.IsNullOrEmpty(ext.StartupScript))
+                {
+                    try
                     {
                         _logger.Info($"Running startup tasks for {ext.Name}");
                         stepStopwatch.Restart();
                         ExecuteExtensionStartupScript(ext, libraryExtensions);
                         _logger.Debug($"[PERF] {ext.Name} - StartupScript: {stepStopwatch.ElapsedMilliseconds}ms");
                     }
+                    catch (Exception ex)
+                    {
+                        _logger.Error($"Startup script error for '{ext.Name}': {ex}");
+                    }
+                }
+            }
 
+            // ── PASS 2.5: Register ALL hooks ──────────────────────────────────
+            // Replaces the Python-side extensionmgr.get_installed_ui_extensions() +
+            // hooks.register_hooks() loop in _new_session_csharp(), which triggered
+            // a redundant full extension re-parse costing ~2-5s.
+            // See: pyrevitlib/pyrevit/loader/hooks.py register_hooks()
+            stepStopwatch.Restart();
+            foreach (var (ext, _) in assembledExtensions)
+            {
+                try
+                {
+                    _hookManager.RegisterHooks(ext, libraryExtensions, _runtimeAssembly!, _pyRevitRoot);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error($"Hook registration error for '{ext.Name}': {ex}");
+                }
+            }
+            _logger.Debug($"[PERF] RegisterHooks (all extensions): {stepStopwatch.ElapsedMilliseconds}ms");
+
+            // ── PASS 3: Build ALL UI ───────────────────────────────────────────
+            foreach (var (ext, assmInfo) in assembledExtensions)
+            {
+                try
+                {
                     stepStopwatch.Restart();
                     _uiManager?.BuildUI(ext, assmInfo);
                     _logger.Debug($"[PERF] {ext.Name} - BuildUI: {stepStopwatch.ElapsedMilliseconds}ms");
@@ -169,22 +235,55 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 }
                 catch (Exception ex)
                 {
-                    _logger.Error($"Error processing extension '{ext?.Name ?? "unknown"}': {ex.Message}");
+                    _logger.Error($"UI build error for '{ext?.Name ?? "unknown"}': {ex}");
                 }
             }
-            
-            // STEP 3: Cleanup orphaned UI elements (those with dirty=false)
+
+            // STEP 3: Apply external layout directives (panel reordering)
+            // This applies directives that reference external targets (native Revit panels or panels from other extensions)
+            // Must be called after ALL UI is built so all panels exist
+            stepStopwatch.Restart();
+            var allExternalDirectives = uiExtensions
+                .Where(ext => ext?.ExternalLayoutDirectives != null)
+                .SelectMany(ext => ext.ExternalLayoutDirectives)
+                .ToList();
+
+            if (allExternalDirectives.Count > 0)
+            {
+                _logger.Debug($"Applying {allExternalDirectives.Count} external layout directives...");
+                _ribbonScanner.SortUI(allExternalDirectives);
+            }
+            _logger.Debug($"[PERF] SortUI: {stepStopwatch.ElapsedMilliseconds}ms");
+
+            // STEP 4: Cleanup orphaned UI elements (those with dirty=false)
             // This deactivates tabs/panels that were deleted or disabled since last load
             // Matching Python's cleanup_pyrevit_ui() behavior
-            if (_ribbonScanner != null)
-            {
-                stepStopwatch.Restart();
-                _ribbonScanner.CleanupOrphanedElements();
-                _logger.Debug($"[PERF] CleanupOrphanedElements: {stepStopwatch.ElapsedMilliseconds}ms");
-            }
-            
+            stepStopwatch.Restart();
+            _ribbonScanner.CleanupOrphanedElements();
+            _logger.Debug($"[PERF] CleanupOrphanedElements: {stepStopwatch.ElapsedMilliseconds}ms");
+
             totalStopwatch.Stop();
             _logger.Info($"Session loaded in {totalStopwatch.ElapsedMilliseconds}ms");
+        }
+
+        private void SeedEnvironmentDictionary()
+        {
+            try
+            {
+                if (_runtimeAssembly == null)
+                {
+                    _logger.Warning("Cannot seed environment dictionary: runtime assembly not loaded.");
+                    return;
+                }
+
+                EnvDictionarySeeder.Seed(_uiApp, _runtimeAssembly, _pyRevitRoot ?? string.Empty);
+                _logger.Debug("Session environment dictionary seeded successfully.");
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning($"Failed to seed environment dictionary: {ex}");
+                throw;
+            }
         }
 
         private void InitializeScriptExecutor()
@@ -203,6 +302,12 @@ namespace pyRevitAssemblyBuilder.SessionManager
             
             // Cache bin directory and pyRevit root for repeated use
             _binDir = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+            _pyRevitRoot = FindPyRevitRoot(_binDir);
+            
+            if (_pyRevitRoot != null)
+                _logger.Debug($"pyRevit root resolved to: {_pyRevitRoot}");
+            else
+                _logger.Debug("pyRevit root could not be resolved from bin directory; will retry during BuildSearchPaths");
             
             // Cache reflection types and methods for startup script execution - HUGE performance boost
             _scriptDataType = _runtimeAssembly.GetType("PyRevitLabs.PyRevit.Runtime.ScriptData");
@@ -257,7 +362,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 }
                 
                 // Build search paths for the startup script
-                var searchPaths = BuildSearchPaths(extension, libraryExtensions);
+                var searchPaths = BuildSearchPaths(extension);
                 
                 // Create ScriptData
                 var scriptData = CreateScriptData(extension);
@@ -305,9 +410,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// Builds the search paths for a startup script, including extension lib folders and pyRevit core paths.
         /// </summary>
         /// <param name="extension">The extension for which to build search paths.</param>
-        /// <param name="libraryExtensions">List of library extensions to include.</param>
         /// <returns>List of search paths.</returns>
-        private List<string> BuildSearchPaths(ParsedExtension extension, List<ParsedExtension> libraryExtensions)
+        private List<string> BuildSearchPaths(ParsedExtension extension)
         {
             var searchPaths = new List<string> { extension.Directory };
             
@@ -318,15 +422,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 searchPaths.Insert(0, extLibPath);
             }
             
-            // Add library extension paths (cached)
-            foreach (var libExt in libraryExtensions)
-            {
-                var libExtLibPath = System.IO.Path.Combine(libExt.Directory, "lib");
-                if (DirectoryExistsCached(libExtLibPath))
-                {
-                    searchPaths.Add(libExtLibPath);
-                }
-            }
+            // Use pre-computed library extension lib paths (avoids N*lib_count Directory.Exists calls)
+            // This is an optimization for #3268 - previously this loop was inside the foreach for each UI extension
+            searchPaths.AddRange(_precomputedLibraryLibPaths);
             
             // Add core pyRevit paths (pyrevitlib + site-packages) by discovering repo root
             // Cache the root lookup - it's the same for all extensions
@@ -462,7 +560,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             return exists;
         }
         
-        private static string? FindPyRevitRoot(params string?[] hintPaths)
+        internal static string? FindPyRevitRoot(params string?[] hintPaths)
         {
             foreach (var hint in hintPaths)
             {

@@ -169,5 +169,28 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public void ResetEventHooks() {
             ((Dictionary<string, Dictionary<string, string>>)_envData[EnvDictionaryKeys.Hooks]).Clear();
         }
+
+        /// <summary>
+        /// Seeds the AppDomain environment dictionary with session values supplied by the C# loader.
+        /// Called via reflection by EnvDictionarySeeder in pyRevitAssemblyBuilder (which has no
+        /// compile-time reference to IronPython), so the PythonDictionary is created here where
+        /// IronPython is already available.
+        /// </summary>
+        /// <param name="values">
+        /// Key/value pairs to store. Keys must match the string values of <see cref="EnvDictionaryKeys"/>.
+        /// Values must be plain CLR primitives (string, bool, int) — IronPython coerces them correctly.
+        /// </param>
+        public static void Seed(Dictionary<string, object> values) {
+            var envData = AppDomain.CurrentDomain.GetData(DomainStorageKeys.EnvVarsDictKey) as PythonDictionary
+                          ?? new PythonDictionary();
+
+            foreach (var kv in values)
+                envData[kv.Key] = kv.Value;
+
+            if (!envData.Contains(EnvDictionaryKeys.Hooks))
+                envData[EnvDictionaryKeys.Hooks] = new Dictionary<string, Dictionary<string, string>>();
+
+            AppDomain.CurrentDomain.SetData(DomainStorageKeys.EnvVarsDictKey, envData);
+        }
     }
 }

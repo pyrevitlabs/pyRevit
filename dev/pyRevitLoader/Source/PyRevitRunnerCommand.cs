@@ -231,7 +231,9 @@ namespace PyRevitRunner {
             var ipyVersion = attachment?.Engine != null ? attachment.Engine.Version.Version.ToString() : "0";
             var cpyVersion = PyRevitConfigs.GetCpythonEngineVersion().ToString();
 
-            envData[EnvDictionaryKeys.SessionUUID] = Guid.NewGuid().ToString();
+            if (!envData.Contains(EnvDictionaryKeys.SessionUUID)
+                || string.IsNullOrWhiteSpace(envData[EnvDictionaryKeys.SessionUUID] as string))
+                envData[EnvDictionaryKeys.SessionUUID] = Guid.NewGuid().ToString();
             envData[EnvDictionaryKeys.RevitVersion] = revitVersion;
             envData[EnvDictionaryKeys.Version] = pyRevitVersion;
             envData[EnvDictionaryKeys.Clone] = cloneName;

@@ -5,8 +5,7 @@ Shift+Click:
 Include not-grouped elements
 """
 #pylint: disable=import-error,invalid-name,broad-except
-from pyrevit import revit, DB
-from pyrevit import forms
+from pyrevit import revit, DB, EXEC_PARAMS
 from pyrevit import script
 
 
@@ -35,7 +34,7 @@ for selected_element in selection:
     if higher_group:
         logger.debug("Found group: %s", higher_group.Id)
         parent_group_ids.add(higher_group.Id)
-    elif __shiftclick__:    #pylint: disable=undefined-variable
+    elif EXEC_PARAMS.config_mode:
         ungrouped_element_ids.append(selected_element.Id)
 
 parent_group_ids.update(ungrouped_element_ids)

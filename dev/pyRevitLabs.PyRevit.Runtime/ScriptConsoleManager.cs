@@ -29,6 +29,18 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return defaultId;
         }
 
+        public static bool GetIsSessionOutput(Object outputWindow)
+        {
+            var field = GetField(outputWindow, "IsSessionOutput");
+            if (field != null)
+            {
+                var value = field.GetValue(outputWindow);
+                if (value is bool b)
+                    return b;
+            }
+            return false;
+        }
+
         public static string GetOutputWindowUniqueId(Object outputWindow, string defaultId = "")
         {
             var uniqueIdProp = GetField(outputWindow, "OutputUniqueId");
@@ -109,15 +121,22 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (excludeOutputWindow != null)
             {
                 foreach (Object activeOutputWindow in GetAllActiveOutputWindows(filterOutputWindowId))
-                    if (GetOutputWindowUniqueId(excludeOutputWindow) != GetOutputWindowUniqueId(activeOutputWindow))
+                    if (GetOutputWindowUniqueId(excludeOutputWindow) != GetOutputWindowUniqueId(activeOutputWindow)
+                        && !GetIsSessionOutput(activeOutputWindow))
                         CallCloseMethod(activeOutputWindow);
             }
             else
             {
+                var remaining = new List<Object>();
                 foreach (Object activeOutputWindow in GetAllActiveOutputWindows())
-                    CallCloseMethod(activeOutputWindow);
+                {
+                    if (GetIsSessionOutput(activeOutputWindow))
+                        remaining.Add(activeOutputWindow);
+                    else
+                        CallCloseMethod(activeOutputWindow);
+                }
 
-                ActiveOutputWindows = null;
+                ActiveOutputWindows = remaining;
             }
         }
     }

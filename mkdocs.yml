@@ -90,7 +90,9 @@ nav:
     - Repository organization: repo-organization.md
     - Developer Guide: dev-guide.md
     - Architecture: architecture.md
+    - CI/CD and releases: ci-cd.md
     - Adding support for new Revit version: adding-revit-version.md
+    - Propose your own custom extension: custom_extension.md
     - Contributing: CONTRIBUTING.md
     - Code Of Conduct: CODE_OF_CONDUCT.md
   - Security: SECURITY.md

@@ -18,7 +18,7 @@
                 <File Id="fil3406CC0FC6C6A6084331ABAA94AA1E0F" KeyPath="yes" Source="$(var.PyRevitBinDir)\FileFormatWavefront.dll" />
             </Component>
             <Component Id="cmp9B7B7DEBA8CF5BDFB2990F8976838CBD" Guid="*">
-                <File Id="filF357DBE64BA0E643A3A8F8A46058EB40" KeyPath="yes" Source="$(var.PyRevitBinDir)\git2-a2bde63.dll" />
+                <File Id="filF357DBE64BA0E643A3A8F8A46058EB40" KeyPath="yes" Source="$(var.PyRevitBinDir)\git2-3f4182d.dll" />
             </Component>
             <Component Id="cmpCCF4F9994FBB083C9B630368252E6983" Guid="*">
                 <File Id="filC47D4D8F87E530AF27947AAF789A3C7B" KeyPath="yes" Source="$(var.PyRevitBinDir)\Ifc.NET.dll" />

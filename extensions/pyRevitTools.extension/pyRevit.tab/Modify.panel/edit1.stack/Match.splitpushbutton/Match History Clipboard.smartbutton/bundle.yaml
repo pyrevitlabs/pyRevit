@@ -1,0 +1,52 @@
+title:
+  en_us: Match History Clipboard
+  fr_fr: Historique Presse-papiers
+  ru: История буфера совпадений
+  chinese_s: 匹配历史剪贴板
+  es_es: Portapapeles de historial
+  de_de: Zwischenablage-Verlauf
+  pt_br: Histórico de transferência
+tooltip:
+  en_us: >
+    Toggle the Match History Clipboard dockable pane.
+    Load parameter values from elements or view filters, then paste them
+    onto any number of elements — one by one, by box selection, or from
+    the current selection.
+    Up to 50 entries are kept in history so you can reuse values
+    across multiple operations without re-picking.
+  fr_fr: >
+    Afficher/masquer le panneau Historique Presse-papiers.
+    Chargez des valeurs de paramètres depuis des éléments ou des filtres de
+    vue, puis appliquez-les à autant d'éléments que nécessaire — un par un,
+    par sélection rectangulaire ou depuis la sélection active.
+    L'historique conserve jusqu'à 50 entrées réutilisables.
+  ru: >
+    Открыть/закрыть панель истории буфера совпадений.
+    Загружайте значения параметров из элементов или фильтров вида,
+    затем вставляйте их в любое количество элементов — поочерёдно,
+    прямоугольным выбором или из текущего выделения.
+    История хранит до 50 записей для повторного использования.
+  chinese_s: >
+    切换匹配历史剪贴板停靠面板。
+    从图元或视图过滤器中读取参数值，然后将其粘贴到任意数量的图元上——
+    逐个拾取、矩形框选或使用当前选择集均可。
+    历史记录最多保存 50 条，可跨操作重复使用。
+  es_es: >
+    Mostrar u ocultar el panel de historial de portapapeles.
+    Cargue valores de parámetros desde elementos o filtros de vista
+    y aplíquelos a cualquier número de elementos — uno a uno,
+    por selección rectangular o desde la selección activa.
+    El historial conserva hasta 50 entradas reutilizables.
+  de_de: >
+    Andockbares Fenster „Zwischenablage-Verlauf" ein-/ausblenden.
+    Parameterwerte aus Elementen oder Ansichtsfiltern laden und auf
+    beliebig viele Elemente übertragen — einzeln, per Rechteckauswahl
+    oder aus der aktuellen Auswahl.
+    Der Verlauf speichert bis zu 50 Einträge zur Wiederverwendung.
+  pt_br: >
+    Exibir ou ocultar o painel de histórico da área de transferência.
+    Carregue valores de parâmetros a partir de elementos ou filtros de
+    vista e aplique-os a quantos elementos quiser — um a um, por seleção
+    retangular ou a partir da seleção atual.
+    O histórico armazena até 50 entradas reutilizáveis.
+author: wurschdhaud

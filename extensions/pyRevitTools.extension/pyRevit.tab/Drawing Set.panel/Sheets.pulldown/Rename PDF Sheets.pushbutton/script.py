@@ -5,7 +5,7 @@ import re
 
 from pathlib import Path
 
-from pyrevit import forms
+from pyrevit import forms, EXEC_PARAMS
 
 
 def renamepdf(old_name):
@@ -19,7 +19,7 @@ def renamepdf(old_name):
 
 # if user shift-clicks, default to user desktop,
 # otherwise ask for a folder containing the PDF files
-if __shiftclick__:
+if EXEC_PARAMS.config_mode:
     basefolder = op.expandvars(r"%userprofile%\desktop")
 else:
     basefolder = forms.pick_folder()

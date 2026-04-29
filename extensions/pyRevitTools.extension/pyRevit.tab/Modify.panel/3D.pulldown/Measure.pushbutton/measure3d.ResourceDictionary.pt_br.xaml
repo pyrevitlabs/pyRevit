@@ -18,10 +18,17 @@
     <system:String x:Key="DiagonalFormat">Diagonal: {}</system:String>
     <system:String x:Key="SlopeFormat">Inclinação: {}</system:String>
     
-    <system:String x:Key="MeasurementHistoryEntry">Medida {}:\n  P1: {}\n  P2: {}\n  ΔX: {:>15}\n  ΔY: {:>15}\n  ΔZ: {:>15}\n  Diagonal: {}\n  Inclinação: {}</system:String>
+    <system:String x:Key="MeasurementHistoryEntry" xml:space="preserve">
+Medida {}:
+    P1: {}
+    P2: {}
+    ΔX: {:>15}
+    ΔY: {:>15}
+    ΔZ: {:>15}
+    Diagonal: {}
+    Inclinação: {}
+    </system:String>
     
-    <system:String x:Key="Alert3DViewRequired">Ative uma vista 3D antes de usar a ferramenta de medir 3D.</system:String>
-    <system:String x:Key="Alert3DViewRequiredTitle">Vista 3D necessária</system:String>
     <system:String x:Key="WarningBarPickFirstPoint">Selecione o primeiro ponto</system:String>
     <system:String x:Key="WarningBarPickSecondPoint">Selecione o segundo ponto</system:String>
     <system:String x:Key="AlertMeasurementCancelled">Medição cancelada devido a operação inválida. Tente novamente.</system:String>
@@ -29,6 +36,10 @@
     <system:String x:Key="AlertUnexpectedError">Ocorreu um erro inesperado durante a medição. Verifique o log para detalhes.</system:String>
     <system:String x:Key="ToastMeasurementsCopied">Medidas copiadas para a área de transferência!</system:String>
     <system:String x:Key="ToastMeasure3DTitle">Medir 3D</system:String>
-    <system:String x:Key="ProjectUnitLengthUnits">Unidades de comprimento (ajuste nas Unidades do projeto): \n</system:String>
-    <system:String x:Key="ProjectUnitSlopeUnits">Unidades de inclinação (ajuste nas Unidades do projeto): \n</system:String>
+    <system:String x:Key="ProjectUnitLengthUnits" xml:space="preserve">
+Unidades de comprimento (ajuste nas Unidades do projeto):
+    </system:String>
+    <system:String x:Key="ProjectUnitSlopeUnits" xml:space="preserve">
+Unidades de inclinação (ajuste nas Unidades do projeto):
+    </system:String>
 </ResourceDictionary>

@@ -356,12 +356,10 @@ class GenericPyRevitUIContainer(object):
         return flagged_cmps
 
     def keys(self):
-        # FIXME: what does this do?
-        list(self._sub_pyrvt_components.keys())
+        return list(self._sub_pyrvt_components.keys())
 
     def values(self):
-        # FIXME: what does this do?
-        list(self._sub_pyrvt_components.values())
+        return list(self._sub_pyrvt_components.values())
 
     @staticmethod
     def is_native():
@@ -861,10 +859,10 @@ class _PyRevitRibbonButton(GenericPyRevitUIContainer):
         try:
             if self.tooltip_image:
                 self.set_tooltip_image(self.tooltip_image)
-        except Exception as ttvideo_err:
+        except Exception as ttimage_err:
             raise PyRevitUIError(
-                "Error setting deffered tooltip image {} | {} ".format(
-                    self.tooltip_video, ttvideo_err
+                "Error setting deferred tooltip image {} | {} ".format(
+                    self.tooltip_image, ttimage_err
                 )
             )
 
@@ -873,7 +871,7 @@ class _PyRevitRibbonButton(GenericPyRevitUIContainer):
                 self.set_tooltip_video(self.tooltip_video)
         except Exception as ttvideo_err:
             raise PyRevitUIError(
-                "Error setting deffered tooltip video {} | {} ".format(
+                "Error setting deferred tooltip video {} | {} ".format(
                     self.tooltip_video, ttvideo_err
                 )
             )
@@ -1608,9 +1606,11 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
                 self._add_component(_PyRevitRibbonGroupItem(revit_ribbon_item))
             elif isinstance(revit_ribbon_item, UI.PushButton):
                 self._add_component(_PyRevitRibbonButton(revit_ribbon_item))
+            elif isinstance(revit_ribbon_item, UI.ComboBox):
+                self._add_component(_PyRevitRibbonComboBox(revit_ribbon_item))
             else:
-                raise PyRevitUIError(
-                    "Can not determin ribbon item type: {}".format(revit_ribbon_item)
+                mlogger.debug(
+                    "Unknown ribbon item type, skipping: %s", revit_ribbon_item
                 )
 
     def get_adwindows_object(self):

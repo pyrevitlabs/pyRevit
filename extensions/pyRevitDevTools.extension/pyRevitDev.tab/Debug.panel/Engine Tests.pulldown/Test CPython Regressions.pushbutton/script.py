@@ -1,5 +1,9 @@
 #! python3
-"""Regression tests."""
+"""CPython regression tests.
+
+Validates contract for pyrevit.forms: import succeeds under CPython and
+unsupported symbols raise PyRevitCPythonNotSupported("pyrevit.forms.<symbol>").
+"""
 
 import unittest
 from pyrevit.unittests.runner import run_test_case
@@ -18,14 +22,42 @@ class TestClass(unittest.TestCase):
             "{} is not a BuiltInParameter".format(type(element))
         )
 
-    def test_pyrevit_forms(self):
-        """PyRevit forms compatibility with CPython."""
+    def test_pyrevit_forms_import(self):
+        """pyrevit.forms imports under CPython."""
         try:
-            from pyrevit.forms import show_balloon
-            show_balloon("It works!", "pyRevit forms is working under CPython")
+            from pyrevit import forms  # noqa: F401
         except Exception as err:
-            print(err)
-            self.fail(err)
+            self.fail("pyrevit.forms import failed: {}".format(err))
+
+    def test_pyrevit_forms_ask_for_string_raises(self):
+        """ask_for_string raises PyRevitCPythonNotSupported under CPython."""
+        from pyrevit import PyRevitCPythonNotSupported
+        from pyrevit import forms
+        try:
+            forms.ask_for_string("Test")
+            self.fail("Expected PyRevitCPythonNotSupported for ask_for_string")
+        except PyRevitCPythonNotSupported as err:
+            self.assertEqual(
+                "pyrevit.forms.ask_for_string",
+                err.feature_name
+            )
+        except Exception as err:
+            self.fail("Unexpected error type for stubbed API: {}".format(err))
+
+    def test_pyrevit_forms_missing_symbol_raises(self):
+        """Missing symbols raise PyRevitCPythonNotSupported under CPython."""
+        from pyrevit import PyRevitCPythonNotSupported
+        from pyrevit import forms
+        try:
+            getattr(forms, "does_not_exist")
+            self.fail("Expected PyRevitCPythonNotSupported for missing symbol")
+        except PyRevitCPythonNotSupported as err:
+            self.assertEqual(
+                "pyrevit.forms.does_not_exist",
+                err.feature_name
+            )
+        except Exception as err:
+            self.fail("Unexpected error type for missing symbol: {}".format(err))
 
     def test_ouput_markdown(self):
         """Issue #2130."""
@@ -37,5 +69,6 @@ class TestClass(unittest.TestCase):
         """Issue #2193."""
         import sys
         print(sys.path)
+
 
 run_test_case(TestClass)

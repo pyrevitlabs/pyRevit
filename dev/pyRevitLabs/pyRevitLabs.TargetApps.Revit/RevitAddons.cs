@@ -54,34 +54,33 @@ namespace pyRevitLabs.TargetApps.Revit {
 </RevitAddIns>
 ";
         public static string GetRevitAddonsFolder(int revitYear, bool allUsers = false) {
-            // For Revit 2027+, all-users addins must use the new secure location
-            if (allUsers && revitYear >= 2027) {
-                // Try to get the Revit installation path
-                var revitProducts = RevitProduct.ListInstalledProducts();
-                var targetRevit = revitProducts.FirstOrDefault(r => r.ProductYear == revitYear);
-                
-                if (targetRevit != null && !string.IsNullOrEmpty(targetRevit.InstallLocation)) {
-                    return Path.Combine(targetRevit.InstallLocation, "Addins", revitYear.ToString());
+            if (allUsers) {
+                if (revitYear >= 2027) {
+                    // Revit 2027+ moved the all-users add-in manifest location.
+                    // The legacy ProgramData path is ignored entirely.
+                    // The version-specific install dir (e.g. "Revit 2027\AddIns\")
+                    // is reserved for signed internal add-ins only.
+                    // Third-party unsigned add-ins must use:
+                    //   C:\Program Files\Autodesk\Revit\Addins\<year>
+                    return Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                        "Autodesk", "Revit", "Addins", revitYear.ToString()
+                    );
                 }
                 else {
-                    // Fallback to default expected path
-                    var defaultPath = Path.Combine(
-                        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
-                        "Autodesk",
-                        $"Revit {revitYear}",
-                        "Addins",
-                        revitYear.ToString()
+                    // Revit ≤2026: all-users manifests go in ProgramData
+                    return Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+                        "Autodesk", "Revit", "Addins", revitYear.ToString()
                     );
-                    logger.Debug("Revit {0} install location not available in registry; using default path: {1}", revitYear, defaultPath);
-                    return defaultPath;
                 }
             }
             else {
-                // Existing logic for user-level or Revit ≤2026
-                var rootFolder =
-                    allUsers ? System.Environment.SpecialFolder.CommonApplicationData : System.Environment.SpecialFolder.ApplicationData;
-                return Path.Combine(System.Environment.GetFolderPath(rootFolder),
-                                    "Autodesk", "Revit", "Addins", revitYear.ToString());
+                // Per-user path is unchanged for all Revit versions
+                return Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "Autodesk", "Revit", "Addins", revitYear.ToString()
+                );
             }
         }
 

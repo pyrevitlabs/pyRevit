@@ -79,7 +79,7 @@
     <ROW Component="System.Threading.Tasks.Extensions.dll" ComponentId="{D3791113-CF67-4F32-9A3D-B50F02C560C5}" Directory_="APPDIR" Attributes="0" KeyPath="System.Threading.Tasks.Extensions.dll"/>
     <ROW Component="System.Windows.Interactivity.dll" ComponentId="{32ABD954-5434-47DD-AE25-A0BCBAE40192}" Directory_="APPDIR" Attributes="0" KeyPath="System.Windows.Interactivity.dll"/>
     <ROW Component="YamlDotNet.dll" ComponentId="{ED37BACB-3DD9-4DF0-93D2-D081F348C864}" Directory_="APPDIR" Attributes="0" KeyPath="YamlDotNet.dll"/>
-    <ROW Component="git2106a5f2.dll" ComponentId="{1FCB3649-517F-413C-83E4-84F0AB146480}" Directory_="APPDIR" Attributes="256" KeyPath="git2106a5f2.dll"/>
+    <ROW Component="git23f4182d.dll" ComponentId="{1FCB3649-517F-413C-83E4-84F0AB146480}" Directory_="APPDIR" Attributes="256" KeyPath="git23f4182d.dll"/>
     <ROW Component="pyRevitLabs.Common.dll" ComponentId="{379FC385-744C-4190-A95C-281E67B527AF}" Directory_="APPDIR" Attributes="0" KeyPath="pyRevitLabs.Common.dll"/>
     <ROW Component="pyRevitLabs.CommonCLI.dll" ComponentId="{A83F9E4E-2B1A-45A3-B465-B25A73D75272}" Directory_="APPDIR" Attributes="0" KeyPath="pyRevitLabs.CommonCLI.dll"/>
     <ROW Component="pyRevitLabs.CommonWPF.dll" ComponentId="{5363FD8C-C3D6-446B-8F9F-FD6AD171F2B0}" Directory_="APPDIR" Attributes="0" KeyPath="pyRevitLabs.CommonWPF.dll"/>
@@ -149,7 +149,7 @@
     <ROW File="System.Reflection.Metadata.dll" Component_="System.Reflection.Metadata.dll" FileName="SYSTEM~1.DLL|System.Reflection.Metadata.dll" Attributes="0" SourcePath="..\bin\System.Reflection.Metadata.dll" SelfReg="false"/>
     <ROW File="Microsoft.CodeAnalysis.CSharp.dll" Component_="Microsoft.CodeAnalysis.CSharp.dll" FileName="MICROS~3.DLL|Microsoft.CodeAnalysis.CSharp.dll" Attributes="0" SourcePath="..\bin\Microsoft.CodeAnalysis.CSharp.dll" SelfReg="false"/>
     <ROW File="Microsoft.CodeAnalysis.dll" Component_="Microsoft.CodeAnalysis.dll" FileName="MICROS~4.DLL|Microsoft.CodeAnalysis.dll" Attributes="0" SourcePath="..\bin\Microsoft.CodeAnalysis.dll" SelfReg="false"/>
-    <ROW File="git2106a5f2.dll" Component_="git2106a5f2.dll" FileName="GIT2-1~1.DLL|git2-106a5f2.dll" Attributes="0" SourcePath="..\bin\git2-106a5f2.dll" SelfReg="false"/>
+    <ROW File="git23f4182d.dll" Component_="git23f4182d.dll" FileName="GIT2-3~1.DLL|git2-3f4182d.dll" Attributes="0" SourcePath="..\bin\git2-3f4182d.dll" SelfReg="false"/>
     <ROW File="System.Runtime.CompilerServices.Unsafe.dll" Component_="System.Runtime.CompilerServices.Unsafe.dll" FileName="SYSTEM~2.DLL|System.Runtime.CompilerServices.Unsafe.dll" Attributes="0" SourcePath="..\bin\System.Runtime.CompilerServices.Unsafe.dll" SelfReg="false"/>
     <ROW File="System.Numerics.Vectors.dll" Component_="System.Numerics.Vectors.dll" FileName="SYSTEM~4.DLL|System.Numerics.Vectors.dll" Attributes="0" SourcePath="..\bin\System.Numerics.Vectors.dll" SelfReg="false"/>
     <ROW File="System.Collections.Immutable.dll" Component_="System.Collections.Immutable.dll" FileName="SYSTEM~5.DLL|System.Collections.Immutable.dll" Attributes="0" SourcePath="..\bin\System.Collections.Immutable.dll" SelfReg="false"/>
@@ -335,7 +335,7 @@
     <ROW Feature_="MainFeature" Component_="System.Reflection.Metadata.dll"/>
     <ROW Feature_="MainFeature" Component_="Microsoft.CodeAnalysis.CSharp.dll"/>
     <ROW Feature_="MainFeature" Component_="Microsoft.CodeAnalysis.dll"/>
-    <ROW Feature_="MainFeature" Component_="git2106a5f2.dll"/>
+    <ROW Feature_="MainFeature" Component_="git23f4182d.dll"/>
     <ROW Feature_="MainFeature" Component_="System.Runtime.CompilerServices.Unsafe.dll"/>
     <ROW Feature_="MainFeature" Component_="System.Numerics.Vectors.dll"/>
     <ROW Feature_="MainFeature" Component_="System.Collections.Immutable.dll"/>

@@ -1,0 +1,38 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <!-- Barra de pesquisa -->
+    <system:String x:Key="TooltipToggleRegex">Alternar pesquisa regex / substring</system:String>
+
+    <!-- Botões de seleção -->
+    <system:String x:Key="BtnCheckAll">Marcar tudo</system:String>
+    <system:String x:Key="BtnUncheckAll">Desmarcar tudo</system:String>
+    <system:String x:Key="BtnToggleAll">Alternar tudo</system:String>
+
+    <!-- Cabeçalhos de coluna -->
+    <system:String x:Key="ColParameter">Parâmetro</system:String>
+    <system:String x:Key="ColValue">Valor</system:String>
+    <system:String x:Key="ColCategory">Categoria</system:String>
+
+    <!-- Caixa de seleção de filtro de categoria -->
+    <system:String x:Key="ChkRestrictCategories">Restringir seleção às categorias de elemento</system:String>
+    <system:String x:Key="TooltipRestrictCategories">Quando ativado, a seleção retangular seleciona apenas elementos cuja categoria corresponde aos parâmetros marcados</system:String>
+
+    <!-- Botões de fonte -->
+    <system:String x:Key="BtnElemParams">Param. Elem.</system:String>
+    <system:String x:Key="TooltipElemParams">Selecionar elemento e escolher parâmetros a copiar interativamente</system:String>
+    <system:String x:Key="BtnViewFilters">Filtros Vista</system:String>
+    <system:String x:Key="TooltipViewFilters">Ler todos os valores de parâmetro de filtro de igualdade da vista ativa</system:String>
+    <system:String x:Key="BtnFilterElem">Filtro+Elem.</system:String>
+    <system:String x:Key="TooltipFilterElem">Ler o valor de parâmetro de filtro mais comum de um elemento selecionado</system:String>
+
+    <!-- Botões de colagem -->
+    <system:String x:Key="BtnPasteOne">Colar um</system:String>
+    <system:String x:Key="TooltipPasteOne">Selecionar um elemento repetidamente e colar os parâmetros marcados</system:String>
+    <system:String x:Key="BtnPasteBox">Colar ret.</system:String>
+    <system:String x:Key="TooltipPasteBox">Desenhar retângulo repetidamente e colar parâmetros marcados nos elementos contidos</system:String>
+    <system:String x:Key="BtnPasteSel">Colar seleção</system:String>
+    <system:String x:Key="TooltipPasteSel">Colar parâmetros marcados na seleção atual do Revit (uma vez)</system:String>
+
+</ResourceDictionary>

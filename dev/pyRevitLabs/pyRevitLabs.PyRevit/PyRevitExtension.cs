@@ -94,15 +94,9 @@ namespace pyRevitLabs.PyRevit {
             var extDefFile = GetExtensionDefFilePath(InstallPath);
             if (CommonUtils.VerifyFile(extDefFile))
                 Definition = new PyRevitExtensionDefinition(extDefFile);
-            else {
-                // if def file is not found try to grab the definitions from registered extensions
-                try {
-                    Definition = PyRevitExtensions.FindRegisteredExtension(Name);
-                }
-                catch {
-                    // let Definition be null if extension is not registered
-                }
-            }
+            // Without extension.json, leave Definition null; Name/Type/Url use path + git origin.
+            // Avoid FindRegisteredExtension(Name) here — it downloads the global extensions.json
+            // and made CLI commands like `env` stall on network I/O.
         }
 
         public string InstallPath { get; private set; }

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using Autodesk.Windows;
 using pyRevitAssemblyBuilder.SessionManager;
+using pyRevitExtensionParser;
 
 namespace pyRevitAssemblyBuilder.UIManager
 {
@@ -542,6 +543,156 @@ namespace pyRevitAssemblyBuilder.UIManager
             {
                 _logger.Debug($"Failed to deactivate item '{item?.AutomationName}': {ex.Message}");
             }
+        }
+
+        /// <inheritdoc/>
+        public void SortUI(IEnumerable<ExternalLayoutDirective> directives)
+        {
+            if (directives == null)
+                return;
+
+            try
+            {
+                var ribbon = ComponentManager.Ribbon;
+                if (ribbon?.Tabs == null)
+                {
+                    _logger.Debug("Cannot sort UI: ribbon or tabs is null.");
+                    return;
+                }
+
+                int sortedCount = 0;
+                foreach (var directive in directives
+                    .Where(d => d != null && !string.IsNullOrEmpty(d.TabName) && !string.IsNullOrEmpty(d.ComponentName)))
+                {
+                    // Find the tab containing this panel
+                    var tab = ribbon.Tabs.FirstOrDefault(t =>
+                        t?.Title == directive.TabName || t?.Id == directive.TabName);
+
+                    if (tab?.Panels == null)
+                    {
+                        _logger.Debug($"SortUI: Tab '{directive.TabName}' not found for directive on '{directive.ComponentName}'.");
+                        continue;
+                    }
+
+                    // Find the panel to move by its Source.Title or Source.AutomationName
+                    var panelToMoveIndex = FindPanelIndex(tab.Panels, directive.ComponentName);
+                    if (panelToMoveIndex < 0)
+                    {
+                        _logger.Debug($"SortUI: Panel '{directive.ComponentName}' not found in tab '{directive.TabName}'.");
+                        continue;
+                    }
+
+                    switch (directive.DirectiveType?.ToLowerInvariant())
+                    {
+                        case "beforeall":
+                            // Move to first position
+                            if (panelToMoveIndex > 0)
+                            {
+                                tab.Panels.Move(panelToMoveIndex, 0);
+                                sortedCount++;
+                                _logger.Debug($"SortUI: Moved panel '{directive.ComponentName}' to first position in tab '{directive.TabName}'.");
+                            }
+                            break;
+
+                        case "afterall":
+                            // Move to last position
+                            if (panelToMoveIndex < tab.Panels.Count - 1)
+                            {
+                                tab.Panels.Move(panelToMoveIndex, tab.Panels.Count - 1);
+                                sortedCount++;
+                                _logger.Debug($"SortUI: Moved panel '{directive.ComponentName}' to last position in tab '{directive.TabName}'.");
+                            }
+                            break;
+
+                        case "before":
+                            if (string.IsNullOrEmpty(directive.Target))
+                                continue;
+
+                            var targetBeforeIndex = FindPanelIndex(tab.Panels, directive.Target);
+                            if (targetBeforeIndex < 0)
+                            {
+                                _logger.Debug($"SortUI: Target panel '{directive.Target}' not found for 'before' directive on '{directive.ComponentName}'.");
+                                continue;
+                            }
+
+                            // Move panel to position before the target
+                            // If panel is after target, we need to account for removal shifting indices
+                            if (panelToMoveIndex != targetBeforeIndex && panelToMoveIndex != targetBeforeIndex - 1)
+                            {
+                                var destIndex = panelToMoveIndex < targetBeforeIndex ? targetBeforeIndex - 1 : targetBeforeIndex;
+                                tab.Panels.Move(panelToMoveIndex, destIndex);
+                                sortedCount++;
+                                _logger.Debug($"SortUI: Moved panel '{directive.ComponentName}' before '{directive.Target}' in tab '{directive.TabName}'.");
+                            }
+                            break;
+
+                        case "after":
+                            if (string.IsNullOrEmpty(directive.Target))
+                                continue;
+
+                            var targetAfterIndex = FindPanelIndex(tab.Panels, directive.Target);
+                            if (targetAfterIndex < 0)
+                            {
+                                _logger.Debug($"SortUI: Target panel '{directive.Target}' not found for 'after' directive on '{directive.ComponentName}'.");
+                                continue;
+                            }
+
+                            // Move panel to position after the target
+                            if (panelToMoveIndex != targetAfterIndex && panelToMoveIndex != targetAfterIndex + 1)
+                            {
+                                var destIndex = panelToMoveIndex < targetAfterIndex ? targetAfterIndex : targetAfterIndex + 1;
+                                tab.Panels.Move(panelToMoveIndex, destIndex);
+                                sortedCount++;
+                                _logger.Debug($"SortUI: Moved panel '{directive.ComponentName}' after '{directive.Target}' in tab '{directive.TabName}'.");
+                            }
+                            break;
+
+                        default:
+                            _logger.Debug($"SortUI: Unknown directive type '{directive.DirectiveType}' for panel '{directive.ComponentName}'.");
+                            break;
+                    }
+                }
+
+                if (sortedCount > 0)
+                {
+                    _logger.Info($"Applied {sortedCount} external layout directives.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"Error applying external layout directives: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Finds the index of a panel in the panels collection by name.
+        /// Matches against Source.Title, Source.AutomationName, or Id.
+        /// </summary>
+        private static int FindPanelIndex(RibbonPanelCollection panels, string name)
+        {
+            if (panels == null || string.IsNullOrEmpty(name))
+                return -1;
+
+            for (int i = 0; i < panels.Count; i++)
+            {
+                var panel = panels[i] as RibbonPanel;
+                if (panel == null)
+                    continue;
+
+                // Check various naming properties
+                var panelTitle = panel.Source?.Title;
+                var panelAutoName = panel.Source?.AutomationName;
+                var panelId = panel.Source?.Id;
+
+                if (string.Equals(panelTitle, name, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(panelAutoName, name, StringComparison.OrdinalIgnoreCase) ||
+                    (panelId != null && panelId.EndsWith(name, StringComparison.OrdinalIgnoreCase)))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
         }
     }
 }

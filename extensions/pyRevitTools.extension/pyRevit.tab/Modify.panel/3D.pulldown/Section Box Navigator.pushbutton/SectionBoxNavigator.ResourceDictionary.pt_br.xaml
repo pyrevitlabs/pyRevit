@@ -37,9 +37,14 @@
     
     <system:String x:Key="Actions">Ações</system:String>
     <system:String x:Key="ToggleBox">Alternar caixa</system:String>
+    <system:String x:Key="ToggleBoxTooltip">Ativa ou desativa a caixa de seção e (re)salva sua última forma</system:String>
     <system:String x:Key="UnHideBox">(Re)Exibir caixa</system:String>
+    <system:String x:Key="UnHideBoxTooltip">Mostra ou oculta a caixa de seção na vista atual se estiver oculta por elemento</system:String>
     <system:String x:Key="AlignBox">Alinhar caixa</system:String>
-    
+    <system:String x:Key="AlignBoxTooltip">Selecione uma face; a caixa será rotacionada para se alinhar a ela</system:String>
+    <system:String x:Key="TempSwitch">Caixa temporária</system:String>
+    <system:String x:Key="TempSwitchTooltip">Cria uma caixa temporária ao redor dos elementos selecionados e restaura o estado anterior depois</system:String>
+
     <system:String x:Key="VerticalPositionStatus">Status da posição vertical</system:String>
     <system:String x:Key="Top">Topo:</system:String>
     <system:String x:Key="Bottom">Base:</system:String>
@@ -101,6 +106,8 @@
     <system:String x:Key="ErrorInBoxVisibility">Erro na visibilidade da caixa</system:String>
     <system:String x:Key="SectionBoxAlignedToFace">Caixa de corte alinhada à face</system:String>
     <system:String x:Key="FailedToAlignToFaceFormat">Falha ao alinhar à face: {0}</system:String>
+    <system:String x:Key="SuccessTempSwitch">Nova caixa definida ou estado anterior restaurado</system:String>
+    <system:String x:Key="FailedTempSwitch">Falha ao criar ou restaurar a caixa de seção temporária: {0}</system:String>
     <system:String x:Key="InvalidSectionBoxDimensions">Dimensões inválidas da caixa de corte.</system:String>
     <system:String x:Key="PleaseEnterValidNumber">Insira um número válido</system:String>
     <system:String x:Key="AnErrorOccurredFormat">Ocorreu um erro: {0}</system:String>

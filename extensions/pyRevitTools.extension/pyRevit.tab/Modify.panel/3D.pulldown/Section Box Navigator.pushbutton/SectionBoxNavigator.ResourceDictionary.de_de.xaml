@@ -37,8 +37,13 @@
     
     <system:String x:Key="Actions">Aktionen</system:String>
     <system:String x:Key="ToggleBox">Box umschalten</system:String>
+    <system:String x:Key="ToggleBoxTooltip">Aktiviert oder deaktiviert die Schnittbox und stellt ihre letzte Form wieder her</system:String>
     <system:String x:Key="UnHideBox">Box (ein-/aus)blenden</system:String>
+    <system:String x:Key="UnHideBoxTooltip">Blendet die Schnittbox in der aktuellen Ansicht ein oder aus, falls sie elementweise ausgeblendet ist</system:String>
     <system:String x:Key="AlignBox">Box ausrichten</system:String>
+    <system:String x:Key="AlignBoxTooltip">Wählen Sie eine Fläche, die Schnittbox wird daran ausgerichtet</system:String>
+    <system:String x:Key="TempSwitch">Temporäre Schnittbox</system:String>
+    <system:String x:Key="TempSwitchTooltip">Erstellt eine temporäre Schnittbox um ausgewählte Elemente und stellt später den vorherigen Zustand wieder her</system:String>
     
     <system:String x:Key="VerticalPositionStatus">Vertikale Positionsstatus</system:String>
     <system:String x:Key="Top">Oben:</system:String>
@@ -100,7 +105,9 @@
     <system:String x:Key="Unhidden">sichtbar</system:String>
     <system:String x:Key="ErrorInBoxVisibility">Fehler bei Box-Sichtbarkeit</system:String>
     <system:String x:Key="SectionBoxAlignedToFace">Schnittbox mit Fläche ausgerichtet</system:String>
-    <system:String x:Key="FailedToAlignToFaceFormat">Ausrichtung mit Fläche fehlgeschlagen: {0}</system:String>
+    <system:String x:Key="FailedToAlignToFaceFormat">Ausrichtung mit Fläche fehlgeschlagen: {0}</system:String> 
+    <system:String x:Key="SuccessTempSwitch">Neue Schnittbox gesetzt oder vorheriger Zustand wiederhergestellt</system:String>
+    <system:String x:Key="FailedTempSwitch">Temporäre Schnittbox konnte nicht erstellt oder wiederhergestellt werden: {0}</system:String>
     <system:String x:Key="InvalidSectionBoxDimensions">Ungültige Schnittbox-Dimensionen.</system:String>
     <system:String x:Key="PleaseEnterValidNumber">Bitte geben Sie eine gültige Zahl ein</system:String>
     <system:String x:Key="AnErrorOccurredFormat">Ein Fehler ist aufgetreten: {0}</system:String>

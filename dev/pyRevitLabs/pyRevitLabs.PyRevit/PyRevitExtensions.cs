@@ -37,10 +37,14 @@ namespace pyRevitLabs.PyRevit {
             var installedExtensions = new List<PyRevitExtension>();
 
             logger.Debug("Looking for installed extensions under \"{0}\"...", searchPath);
-            foreach (var subdir in Directory.GetDirectories(searchPath)) {
-                if (PyRevitExtension.IsExtensionDirectory(subdir)) {
-                    logger.Debug("Found installed extension \"{0}\"...", subdir);
-                    installedExtensions.Add(new PyRevitExtension(subdir));
+            foreach (var extPostFix in PyRevitExtension.GetAllExtentionDirExts()) {
+                if (string.IsNullOrEmpty(extPostFix))
+                    continue;
+                foreach (var subdir in Directory.EnumerateDirectories(searchPath, "*" + extPostFix)) {
+                    if (PyRevitExtension.IsExtensionDirectory(subdir)) {
+                        logger.Debug("Found installed extension \"{0}\"...", subdir);
+                        installedExtensions.Add(new PyRevitExtension(subdir));
+                    }
                 }
             }
 

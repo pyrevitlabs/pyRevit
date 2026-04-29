@@ -27,6 +27,15 @@ namespace pyRevitExtensionParser
         /// Used when layout items specify a custom title like: "Component Name[title:Custom Title]"
         /// </summary>
         public Dictionary<string, string> LayoutItemTitles { get; set; }
+        
+        /// <summary>
+        /// Maps component names to their layout directives for positioning control.
+        /// Used when layout items specify positioning directives like:
+        /// "Component Name[before:Target]", "Component Name[after:Target]",
+        /// "Component Name[beforeall:]", "Component Name[afterall:]"
+        /// </summary>
+        public Dictionary<string, LayoutDirective> LayoutDirectives { get; set; }
+        
         public bool HasSlideout { get; set; } = false;
         public string Title { get; set; }
         public string Author { get; set; }
@@ -37,6 +46,7 @@ namespace pyRevitExtensionParser
         public string MinRevitVersion { get; set; }
         public string MaxRevitVersion { get; set; }
         public bool IsBeta { get; set; }
+        public bool Collapsed { get; set; }
         public string TargetAssembly { get; set; }
         public string CommandClass { get; set; }
         public string AvailabilityClass { get; set; }
@@ -91,11 +101,22 @@ namespace pyRevitExtensionParser
         /// Used for video or image tooltips on buttons.
         /// </summary>
         public string MediaFile { get; set; }
-        
+
         /// <summary>
         /// Whether this component has a tooltip media file.
         /// </summary>
         public bool HasMediaFile => !string.IsNullOrEmpty(MediaFile);
+
+        /// <summary>
+        /// Path to the help file discovered from the bundle directory (help.html, help.md, etc.).
+        /// Used as fallback when no help_url is specified in bundle.yaml or script.
+        /// </summary>
+        public string HelpFile { get; set; }
+
+        /// <summary>
+        /// Whether this component has a help file.
+        /// </summary>
+        public bool HasHelpFile => !string.IsNullOrEmpty(HelpFile);
         
         /// <summary>
         /// Panel background color (ARGB hex format, e.g., '#BB005591')
@@ -215,13 +236,15 @@ namespace pyRevitExtensionParser
         }
 
         /// <summary>
-        /// Gets the localized help URL for the specified locale, with fallback logic
+        /// Gets the localized help URL for the specified locale, with fallback logic.
+        /// Returns the URL as-is.
         /// </summary>
         /// <param name="locale">The preferred locale (e.g., "en_us", "fr_fr")</param>
         /// <returns>The localized help URL or null if not available</returns>
         public string GetLocalizedHelpUrl(string locale = null)
         {
-            return GetLocalizedValue(LocalizedHelpUrls, locale) ?? HelpUrl;
+            // Priority: LocalizedHelpUrls > HelpUrl > HelpFile
+            return GetLocalizedValue(LocalizedHelpUrls, locale) ?? HelpUrl ?? HelpFile;
         }
 
         /// <summary>
@@ -236,16 +259,13 @@ namespace pyRevitExtensionParser
             if (string.IsNullOrEmpty(preferredLocale))
                 preferredLocale = ExtensionParser.DefaultLocale;
 
-            // Try preferred locale first
-            if (localizedValues.TryGetValue(preferredLocale, out string preferredValue))
-                return preferredValue;
+            foreach (var locale in LocaleSupport.GetLocaleSearchOrder(preferredLocale, ExtensionParser.DefaultLocale))
+            {
+                if (localizedValues.TryGetValue(locale, out string value))
+                    return value;
+            }
 
-            // Fallback to default locale if different preferred locale was specified
-            if (preferredLocale != ExtensionParser.DefaultLocale && localizedValues.TryGetValue(ExtensionParser.DefaultLocale, out string defaultValue))
-                return defaultValue;
-
-            // Fallback to first available value
-            return localizedValues.Values.FirstOrDefault();
+            return null;
         }
     }
 }

@@ -69,7 +69,7 @@ def get_name(element, title_on_sheet=False):
     Retrieves the name of a Revit element, with special handling for views.
 
     Args:
-        element (DB.Element): The Revit element whose name is to be retrieved.
+        element (DB.Element | DB.Workset): The Revit element whose name is to be retrieved.
         title_on_sheet (bool, optional): If True and the element is a view,
                                          attempts to retrieve the view's title
                                          on the sheet. Defaults to False.
@@ -90,6 +90,8 @@ def get_name(element, title_on_sheet=False):
                 return element.Name
             else:
                 return element.ViewName
+    if isinstance(element, DB.Workset):
+        return element.Name
     if PY3:
         return element.Name
     else:
@@ -170,23 +172,100 @@ def get_guid(element):
     return uid[:28] + "{0:x}".format(xor)
 
 
-def get_param(element, param_name, default=None):
+def _param_or_default(param, default):
+    """Return param if it is a live Parameter object, otherwise default."""
+    return param if param is not None else default
+
+
+def _get_param_by_element_id(element, param_id):
     """
-    Retrieves a parameter from a Revit element by its name.
+    Resolve a parameter from a DB.ElementId.
+
+    - Negative id  -> BuiltInParameter
+    - Non-negative -> shared/project parameter, preferred via GUID,
+                     fallback via Definition (non-filterable params only)
+
+    Returns DB.Parameter or None.
+    """
+    try:
+        get_elementid_value = get_elementid_value_func()
+        pid_val = get_elementid_value(param_id)
+
+        if pid_val < 0:
+            bip = DB.BuiltInParameter(pid_val)
+            return element.get_Parameter(bip)
+
+        doc = element.Document
+        param_el = doc.GetElement(param_id)
+        if param_el is None:
+            return None
+
+        if hasattr(param_el, "GuidValue") and param_el.GuidValue:
+            return element.get_Parameter(param_el.GuidValue)
+
+        if hasattr(param_el, "GetDefinition"):
+            definition = param_el.GetDefinition()
+            if definition:
+                return element.get_Parameter(definition)
+
+    except Exception:
+        pass
+
+    return None
+
+
+def get_param(element, param_identifier, default=None):
+    """
+    Retrieve a single parameter from a Revit element.
+
+    Dispatch table
+    --------------
+    str                  : LookupParameter(name)
+    DB.BuiltInParameter  : get_Parameter(bip)
+    System.Guid          : get_Parameter(guid)
+    DB.ElementId         : smart lookup via _get_param_by_element_id()
 
     Args:
-        element (DB.Element): The Revit element from which to retrieve the parameter.
-        param_name (str): The name of the parameter to retrieve.
-        default: The value to return if the parameter is not found or an error occurs. Defaults to None.
+        element (DB.Element)      : The Revit element.
+        param_identifier          : str | DB.BuiltInParameter | System.Guid | DB.ElementId
+        default                   : Returned when nothing is found or on error. Default: None.
 
     Returns:
-        The parameter if found, otherwise the default value.
+        DB.Parameter or default.
+
+    Notes:
+        - String lookup is fast but ambiguous when names collide.
+        - Built-in parameter names are translated in non-English Revit builds;
+          prefer DB.BuiltInParameter over a name string for portability.
     """
-    if isinstance(element, DB.Element):
-        try:
-            return element.LookupParameter(param_name)
-        except Exception:
-            return default
+    if not isinstance(element, DB.Element):
+        return default
+
+    try:
+        if isinstance(param_identifier, (str, unicode)):
+            return _param_or_default(
+                element.LookupParameter(param_identifier), default
+            )
+
+        if isinstance(param_identifier, DB.BuiltInParameter):
+            return _param_or_default(
+                element.get_Parameter(param_identifier), default
+            )
+
+        if isinstance(param_identifier, framework.System.Guid):
+            return _param_or_default(
+                element.get_Parameter(param_identifier), default
+            )
+
+        if isinstance(param_identifier, DB.ElementId):
+            return _param_or_default(
+                _get_param_by_element_id(element, param_identifier), default
+            )
+
+    except Exception:
+        pass
+
+    return default
 
 
 def get_mark(element):
@@ -336,19 +415,24 @@ def get_param_value(targetparam):
     return value
 
 
-def get_value_range(param_name, doc=None):
+def get_value_range(param_name, doc=None, elements=None):
     """
-    Retrieves a set of unique values for a specified parameter from all elements in the given Revit document.
+    Retrieves a set of unique values for a specified parameter from elements in a Revit document or from a provided collection of elements.
 
     Args:
         param_name (str): The name of the parameter to retrieve values for.
         doc (Document, optional): The Revit document to search within. If None, the current document is used.
+        elements (iterable, optional): Specific elements to process. If provided, these elements are processed instead of calling get_all_elements(doc).
 
     Returns:
         set: A set of unique values for the specified parameter. The values can be of any type, but are typically strings.
     """
     values = set()
-    for element in get_all_elements(doc):
+    if elements is not None:
+        element_iterable = elements
+    else:
+        element_iterable = get_all_elements(doc)
+    for element in element_iterable:
         targetparam = element.LookupParameter(param_name)
         if targetparam:
             value = get_param_value(targetparam)
@@ -390,7 +474,7 @@ def get_elements_by_parameter(param_name, param_value, doc=None, partial=False):
     return found_els
 
 
-def get_elements_by_param_value(param_name, param_value, inverse=False, doc=None):
+def get_elements_by_param_value(param_name, param_value, inverse=False, doc=None, view_id=None):
     """
     Retrieves elements from the Revit document based on a parameter name and value.
 
@@ -399,6 +483,7 @@ def get_elements_by_param_value(param_name, param_value, inverse=False, doc=None
         param_value (str): The value of the parameter to filter by.
         inverse (bool, optional): If True, inverts the filter to exclude elements with the specified parameter value. Defaults to False.
         doc (Document, optional): The Revit document to search in. If None, uses the default document.
+        view_id (DB.ElementId, optional): The ID of the view to restrict the search to. Defaults to None.
 
     Returns:
         list: A list of elements that match the parameter name and value.
@@ -415,37 +500,71 @@ def get_elements_by_param_value(param_name, param_value, inverse=False, doc=None
         if inverse:
             vrule = DB.FilterInverseRule(vrule)
         param_filter = DB.ElementParameterFilter(vrule)
-        return DB.FilteredElementCollector(doc).WherePasses(param_filter).ToElements()
+        fec = (
+            DB.FilteredElementCollector(doc, view_id)
+            if view_id
+            else DB.FilteredElementCollector(doc)
+        )
+        return fec.WherePasses(param_filter).ToElements()
     else:
         return []
 
 
-def get_elements_by_categories(element_bicats, elements=None, doc=None):
+def get_elements_by_categories(categories, elements=None, doc=None, view_id=None):
     """
     Retrieves elements from a Revit document based on specified categories.
 
     Args:
-        element_bicats (list): A list of built-in categories to filter elements by.
-        elements (list, optional): A list of elements to filter. If provided, the function will filter these elements.
-        doc (DB.Document, optional): The Revit document to collect elements from. If not provided, the active document is used.
+        categories (list):
+            A list of category identifiers. Supported types:
+                - DB.BuiltInCategory
+                - DB.ElementId
+                - DB.Category
+
+            The function will normalize all inputs internally.
+
+        elements (list, optional):
+            A list of elements to filter. If provided, filtering is done
+            in-memory instead of using a FilteredElementCollector.
+
+        doc (DB.Document, optional):
+            The Revit document to collect elements from.
+            Defaults to the active document.
+
+        view_id (DB.ElementId, optional):
+            The ID of the view to restrict the search to.
 
     Returns:
-        list: A list of elements that belong to the specified categories.
+        list:
+            A list of elements that belong to the specified categories.
     """
+
+    doc = doc or DOCS.doc
+
+    def _category_to_id(cat_input, doc=None):
+        cat = get_category(cat_input, doc=doc)
+        return cat.Id if cat else None
+
+    category_ids = {_category_to_id(c, doc) for c in categories if c}
+    category_ids.discard(None)
+
     if elements:
-        return [
-            x
-            for x in elements
-            if get_builtincategory(x.Category.Name) in element_bicats
-        ]
-    cat_filters = [DB.ElementCategoryFilter(x) for x in element_bicats if x]
+        return [x for x in elements if x.Category and x.Category.Id in category_ids]
+
+    cat_filters = [DB.ElementCategoryFilter(cid) for cid in category_ids]
+
+    if not cat_filters:
+        return []
+
     elcats_filter = DB.LogicalOrFilter(framework.List[DB.ElementFilter](cat_filters))
-    return (
-        DB.FilteredElementCollector(doc or DOCS.doc)
-        .WherePasses(elcats_filter)
-        .WhereElementIsNotElementType()
-        .ToElements()
+
+    fec = (
+        DB.FilteredElementCollector(doc, view_id)
+        if view_id
+        else DB.FilteredElementCollector(doc)
     )
+
+    return fec.WherePasses(elcats_filter).WhereElementIsNotElementType().ToElements()
 
 
 def get_elements_by_class(element_class, elements=None, doc=None, view_id=None):
@@ -463,20 +582,15 @@ def get_elements_by_class(element_class, elements=None, doc=None, view_id=None):
     """
     if elements:
         return [x for x in elements if isinstance(x, element_class)]
-    if view_id:
-        return (
-            DB.FilteredElementCollector(doc or DOCS.doc, view_id)
-            .OfClass(element_class)
-            .WhereElementIsNotElementType()
-            .ToElements()
-        )
-    else:
-        return (
-            DB.FilteredElementCollector(doc or DOCS.doc)
-            .OfClass(element_class)
-            .WhereElementIsNotElementType()
-            .ToElements()
-        )
+
+    doc = doc or DOCS.doc
+    fec = (
+        DB.FilteredElementCollector(doc, view_id)
+        if view_id
+        else DB.FilteredElementCollector(doc)
+    )
+
+    return fec.OfClass(element_class).WhereElementIsNotElementType().ToElements()
 
 
 def get_types_by_class(type_class, types=None, doc=None):
@@ -1634,57 +1748,67 @@ def get_takeoff_categories(doc=None):
     return cats
 
 
-def get_category(cat_name_or_builtin, doc=None):
+def get_category(cat_input, doc=None):
     """
-    Retrieves a Revit category based on the provided category name, built-in category, or category object.
+    Retrieves a Revit category based on the provided category name, built-in category, category object or element id.
 
     Args:
-        cat_name_or_builtin (Union[str, DB.BuiltInCategory, DB.Category]): The category name as a string,
-            a built-in category enum, or a category object.
+        cat_input (Union[str, DB.BuiltInCategory, DB.Category, DB.ElementId]): The category name as a string,
+            a built-in category enum, a category object or ElementId.
         doc (Optional[Document]): The Revit document to search within. If not provided, defaults to DOCS.doc.
 
     Returns:
         DB.Category: The matching Revit category object, or None if no match is found.
     """
     doc = doc or DOCS.doc
-    all_cats = get_doc_categories(doc)
-    if isinstance(cat_name_or_builtin, str):
-        for cat in all_cats:
-            if cat.Name == cat_name_or_builtin:
-                return cat
-    elif isinstance(cat_name_or_builtin, DB.BuiltInCategory):
+    if isinstance(cat_input, DB.Category):
+        return cat_input
+
+    if isinstance(cat_input, DB.ElementId):
         get_elementid_value = get_elementid_value_func()
-        for cat in all_cats:
-            if get_elementid_value(cat.Id) == int(cat_name_or_builtin):
+        try:
+            return doc.Settings.Categories.get_Item(
+                DB.BuiltInCategory(get_elementid_value(cat_input))
+            )
+        except Exception:
+            for cat in get_doc_categories(doc):
+                if cat.Id == cat_input:
+                    return cat
+            return None
+
+    if isinstance(cat_input, DB.BuiltInCategory):
+        return doc.Settings.Categories.get_Item(cat_input)
+
+    if isinstance(cat_input, (str, unicode)):
+        for cat in get_doc_categories(doc):
+            if cat.Name == cat_input:
                 return cat
-    elif isinstance(cat_name_or_builtin, DB.Category):
-        return cat_name_or_builtin
+
+    return None
 
 
-def get_builtincategory(cat_name_or_id, doc=None):
+def get_builtincategory(cat_input, doc=None):
     """
-    Retrieves the BuiltInCategory for a given category name or ElementId.
+    Retrieves the BuiltInCategory for a given category name, built-in category, category object or element id.
 
     Args:
-        cat_name_or_id (str or DB.ElementId): The name of the category as a string or the ElementId of the category.
-        doc (optional): The Revit document. If not provided, defaults to DOCS.doc.
+        cat_input (Union[str, DB.BuiltInCategory, DB.Category, DB.ElementId]): The category name as a string,
+            a built-in category enum, a category object or ElementId.
+        doc (Optional[Document]): The Revit document to search within. If not provided, defaults to DOCS.doc.
 
     Returns:
         DB.BuiltInCategory: The corresponding BuiltInCategory if found, otherwise None.
     """
-    doc = doc or DOCS.doc
-    cat_id = None
-    if isinstance(cat_name_or_id, str):
-        cat = get_category(cat_name_or_id)
-        if cat:
-            cat_id = cat.Id
-    elif isinstance(cat_name_or_id, DB.ElementId):
-        cat_id = cat_name_or_id
-    if cat_id:
-        get_elementid_value = get_elementid_value_func()
-        for bicat in DB.BuiltInCategory.GetValues(DB.BuiltInCategory):
-            if int(bicat) == get_elementid_value(cat_id):
-                return bicat
+    cat = get_category(cat_input, doc=doc)
+    if not cat:
+        return None
+
+    get_elementid_value = get_elementid_value_func()
+    cat_val = get_elementid_value(cat.Id)
+
+    for bicat in DB.BuiltInCategory.GetValues(DB.BuiltInCategory):
+        if int(bicat) == cat_val:
+            return bicat
 
 
 def get_subcategories(doc=None, purgable=False, filterfunc=None):
@@ -3235,3 +3359,56 @@ def get_array_group_ids_types(doc=None):
     """
     arrays_groups = get_array_group_ids(doc or DOCS.doc)
     return {doc.GetElement(ar).GetTypeId() for ar in arrays_groups}
+
+
+def get_elements_bounding_box(elements, view=None, padding=0.0):
+    """
+    Compute a combined BoundingBoxXYZ enclosing all given elements.
+
+    Args:
+        elements (Iterable[DB.Element]): Elements to include in the bounding box.
+        view (DB.View, optional): If provided, retrieves view-specific bounding
+            boxes (e.g. cut geometry). If None, model geometry is used.
+        padding (float, optional): Extra offset applied in all directions,
+            in Revit internal units (feet). Default is 0.0.
+
+    Returns:
+        DB.BoundingBoxXYZ | None:
+            A new BoundingBoxXYZ enclosing all valid element bounding boxes,
+            expanded by the given padding.
+            Returns None if no elements have a valid bounding box.
+    """
+    if not elements:
+        return None
+
+    min_x = min_y = min_z = float("inf")
+    max_x = max_y = max_z = float("-inf")
+
+    for elem in elements:
+        try:
+            bbox = elem.get_BoundingBox(view)
+            if not bbox:
+                continue
+
+            min_pt = bbox.Min
+            max_pt = bbox.Max
+
+            min_x = min(min_x, min_pt.X)
+            min_y = min(min_y, min_pt.Y)
+            min_z = min(min_z, min_pt.Z)
+            max_x = max(max_x, max_pt.X)
+            max_y = max(max_y, max_pt.Y)
+            max_z = max(max_z, max_pt.Z)
+
+        except Exception:
+            continue
+
+    if min_x == float("inf"):
+        return None
+
+    new_bbox = DB.BoundingBoxXYZ()
+
+    new_bbox.Min = DB.XYZ(min_x - padding, min_y - padding, min_z - padding)
+    new_bbox.Max = DB.XYZ(max_x + padding, max_y + padding, max_z + padding)
+
+    return new_bbox

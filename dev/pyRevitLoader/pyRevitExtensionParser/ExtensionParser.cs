@@ -16,21 +16,164 @@ namespace pyRevitExtensionParser
         public static string DefaultLocale { get; set; } = "en_us";
 
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
-        
+        internal static IParserLogger ParserLogger { get; private set; }
+
+        public static void SetLogger(IParserLogger parserLogger)
+        {
+            ParserLogger = parserLogger;
+        }
+
+        internal static void LogDebug(string message)
+        {
+            if (ParserLogger != null)
+                ParserLogger.Debug(message);
+            else
+                logger.Debug(message);
+        }
+
+        internal static void LogInfo(string message)
+        {
+            if (ParserLogger != null)
+                ParserLogger.Info(message);
+            else
+                logger.Info(message);
+        }
+
+        internal static void LogWarning(string message)
+        {
+            if (ParserLogger != null)
+                ParserLogger.Warning(message);
+            else
+                logger.Warn(message);
+        }
+
+        internal static void LogError(string message)
+        {
+            if (ParserLogger != null)
+                ParserLogger.Error(message);
+            else
+                logger.Error(message);
+        }
+
+        private static void LogParseException(string parsedFile, Exception ex)
+        {
+            if (ex == null)
+                return;
+
+            // Use the outer exception for Data (BundleParser enriches the caught exception)
+            // Use the innermost exception for message/type (the root cause)
+            var rootEx = ex.InnerException ?? ex;
+            var lineNo = GetExceptionInt(ex, "LineNumber", "Line", "LineNo");
+            var colNo = GetExceptionInt(ex, "ColumnNumber", "Column", "Offset", "LineColumn", "LinePosition");
+            var lineText = GetExceptionString(ex, "LineText", "Text", "Line");
+
+            var errMsg = rootEx.Message ?? string.Empty;
+            var errType = rootEx.GetType().Name;
+            var msg =
+                "Error while parsing file:\n" + parsedFile +
+                "\nError type: " + errType +
+                "\nError Message: " + errMsg +
+                "\nLine/Column: " + lineNo + "/" + colNo +
+                "\nLine Text: " + lineText;
+
+            LogError(msg);
+        }
+
+        /// <summary>
+        /// Returns true if the given revitYear falls within the declared min/max version range.
+        /// A null or empty constraint is treated as no restriction (open-ended).
+        /// A non-empty value that cannot be parsed to an integer is treated as a hard fail.
+        /// </summary>
+        /// <param name="minRevitVersion">The minimum Revit version.</param>
+        /// <param name="maxRevitVersion">The maximum Revit version.</param>
+        /// <param name="revitYear">The Revit year of the running Revit instance.</param>
+        /// <param name="name">The component or extension name, used in log messages.</param>
+        private static bool IsRevitVersionCompatible(string minRevitVersion, string maxRevitVersion, int revitYear, string name)
+        {
+            // Early exit when Revit version is unknown — skip version filtering entirely
+            if (revitYear <= 0)
+            {
+                LogWarning("Skipping min / max version test, since Revit version is unknown");
+                return true;
+            }
+
+            bool compatible = true;
+
+            // Parse and validate min_revit_version
+            if (!string.IsNullOrEmpty(minRevitVersion))
+            {
+                if (!int.TryParse(minRevitVersion, out var min))
+                {
+                    LogWarning($"'{name}': min_revit_version value '{minRevitVersion}' is not a valid integer - skipping.");
+                    compatible = false;
+                }
+                else if (revitYear < min)
+                {
+                    LogInfo($"'{name}': skipped - requires Revit {min} or later (running {revitYear}).");
+                    compatible = false;
+                }
+            }
+
+            // Parse and validate max_revit_version
+            if (!string.IsNullOrEmpty(maxRevitVersion))
+            {
+                if (!int.TryParse(maxRevitVersion, out var max))
+                {
+                    LogWarning($"'{name}': max_revit_version value '{maxRevitVersion}' is not a valid integer - skipping.");
+                    compatible = false;
+                }
+                else if (revitYear > max)
+                {
+                    LogInfo($"'{name}': skipped - requires Revit {max} or earlier (running {revitYear}).");
+                    compatible = false;
+                }
+            }
+
+            return compatible;
+        }
+
+        private static int GetExceptionInt(Exception ex, params string[] keys)
+        {
+            if (ex?.Data == null)
+                return 0;
+
+            foreach (var key in keys)
+            {
+                if (ex.Data.Contains(key) && int.TryParse(ex.Data[key]?.ToString(), out var value))
+                    return value;
+            }
+
+            return 0;
+        }
+
+        private static string GetExceptionString(Exception ex, params string[] keys)
+        {
+            if (ex?.Data == null)
+                return string.Empty;
+
+            foreach (var key in keys)
+            {
+                if (ex.Data.Contains(key))
+                    return ex.Data[key]?.ToString() ?? string.Empty;
+            }
+
+            return string.Empty;
+        }
+
         // Cache file existence checks to avoid repeated file system calls
         private static Dictionary<string, bool> _fileExistsCache = new Dictionary<string, bool>();
-        
+
         // Cache directory file listings to avoid repeated Directory.GetFiles calls
         private static Dictionary<string, string[]> _directoryFilesCache = new Dictionary<string, string[]>();
-        
+
         // Cache icon parsing results per component directory
         private static Dictionary<string, ComponentIconCollection> _iconCache = new Dictionary<string, ComponentIconCollection>();
-        
+
         private static bool FileExists(string path)
         {
             if (string.IsNullOrEmpty(path))
                 return false;
-                
+
             if (!_fileExistsCache.TryGetValue(path, out bool exists))
             {
                 exists = File.Exists(path);
@@ -38,16 +181,24 @@ namespace pyRevitExtensionParser
             }
             return exists;
         }
-        
+
         private static string[] GetFilesInDirectory(string directory, string searchPattern = "*", SearchOption searchOption = SearchOption.TopDirectoryOnly)
         {
             if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory))
                 return Array.Empty<string>();
-                
+
             var cacheKey = $"{directory}|{searchPattern}|{searchOption}";
             if (!_directoryFilesCache.TryGetValue(cacheKey, out string[] files))
             {
-                files = Directory.GetFiles(directory, searchPattern, searchOption);
+                try
+                {
+                    files = Directory.GetFiles(directory, searchPattern, searchOption);
+                }
+                catch (Exception ex)
+                {
+                    LogParseException(directory, ex);
+                    files = Array.Empty<string>();
+                }
                 _directoryFilesCache[cacheKey] = files;
             }
             return files;
@@ -55,17 +206,17 @@ namespace pyRevitExtensionParser
 
         // Cache extension roots to avoid repeated directory traversal and config reading
         private static List<string> _cachedExtensionRoots;
-        
+
         /// <summary>
         /// Flag to track if locale has been initialized from config
         /// </summary>
         private static bool _localeInitialized = false;
-        
+
         /// <summary>
         /// Cached locale value for cache invalidation when locale changes
         /// </summary>
         private static string _cachedLocale = null;
-        
+
         /// <summary>
         /// Clears all static caches to force re-parsing of extensions.
         /// This should be called before reloading pyRevit to ensure newly installed
@@ -77,14 +228,11 @@ namespace pyRevitExtensionParser
             _directoryFilesCache.Clear();
             _iconCache.Clear();
             _cachedExtensionRoots = null;
-            _cachedConfig = null;
+            PyRevitConfig.ClearCache();
             _pythonScriptCache.Clear();
-            _localeInitialized = false;
-            
-            // Also clear the BundleParser cache
-            BundleParser.BundleYamlParser.ClearCache();
+            BundleParser.BundleYamlParser.ClearCache(); 
         }
-        
+
         /// <summary>
         /// Initializes the DefaultLocale from user configuration if not already set.
         /// Should be called before parsing extensions to ensure locale-aware localization.
@@ -94,7 +242,7 @@ namespace pyRevitExtensionParser
         {
             var config = GetConfig();
             var userLocale = config.UserLocale;
-            
+
             // Check if locale has changed since last initialization
             // If locale changed, we need to invalidate all caches to force re-parsing
             if (_localeInitialized && userLocale != _cachedLocale)
@@ -102,7 +250,7 @@ namespace pyRevitExtensionParser
                 logger.Debug("Locale changed from '{0}' to '{1}'. Clearing caches...", _cachedLocale, userLocale);
                 ClearAllCaches();
             }
-            
+
             if (!string.IsNullOrEmpty(userLocale))
             {
                 DefaultLocale = userLocale;
@@ -110,7 +258,7 @@ namespace pyRevitExtensionParser
             _cachedLocale = userLocale;
             _localeInitialized = true;
         }
-        
+
         private static List<string> GetCachedExtensionRoots()
         {
             if (_cachedExtensionRoots == null)
@@ -124,7 +272,7 @@ namespace pyRevitExtensionParser
             return _cachedExtensionRoots;
         }
 
-        public static IEnumerable<ParsedExtension> ParseInstalledExtensions()
+        public static IEnumerable<ParsedExtension> ParseInstalledExtensions(int revitYear = 0)
         {
             var extensionRoots = GetCachedExtensionRoots();
 
@@ -139,23 +287,47 @@ namespace pyRevitExtensionParser
                     continue;
 
                 // Parse .extension directories (UI extensions)
-                foreach (var extDir in Directory.GetDirectories(root, "*.extension"))
+                string[] extDirs;
+                try
+                {
+                    extDirs = Directory.GetDirectories(root, "*.extension");
+                }
+                catch (Exception ex)
+                {
+                    LogParseException(root, ex);
+                    extDirs = Array.Empty<string>();
+                }
+                foreach (var extDir in extDirs)
                 {
                     // Use full path for deduplication
                     var fullPath = Path.GetFullPath(extDir);
                     if (discoveredExtensions.Add(fullPath))
                     {
-                        yield return ParseExtension(extDir);
+                        var parsed = ParseExtension(extDir, revitYear);
+                        if (parsed != null)
+                            yield return parsed;
                     }
                 }
 
                 // Parse .lib directories (Library extensions)
-                foreach (var libDir in Directory.GetDirectories(root, "*.lib"))
+                string[] libDirs;
+                try
+                {
+                    libDirs = Directory.GetDirectories(root, "*.lib");
+                }
+                catch (Exception ex)
+                {
+                    LogParseException(root, ex);
+                    libDirs = Array.Empty<string>();
+                }
+                foreach (var libDir in libDirs)
                 {
                     var fullPath = Path.GetFullPath(libDir);
                     if (discoveredExtensions.Add(fullPath))
                     {
-                        yield return ParseExtension(libDir);
+                        var parsed = ParseExtension(libDir, revitYear);
+                        if (parsed != null)
+                            yield return parsed;
                     }
                 }
             }
@@ -165,8 +337,9 @@ namespace pyRevitExtensionParser
         /// Parses a specific extension from the given extension path
         /// </summary>
         /// <param name="extensionPath">The full path to the .extension or .lib directory</param>
+        /// <param name="revitYear">The running Revit version year (e.g. 2024). Pass 0 to skip version filtering.</param>
         /// <returns>A single ParsedExtension if the path is valid and contains an extension, otherwise empty</returns>
-        public static IEnumerable<ParsedExtension> ParseInstalledExtensions(string extensionPath)
+        public static IEnumerable<ParsedExtension> ParseInstalledExtensions(string extensionPath, int revitYear = 0)
         {
             if (string.IsNullOrWhiteSpace(extensionPath) || !Directory.Exists(extensionPath))
                 yield break;
@@ -176,15 +349,18 @@ namespace pyRevitExtensionParser
                 !extensionPath.EndsWith(".lib", StringComparison.OrdinalIgnoreCase))
                 yield break;
 
-            yield return ParseExtension(extensionPath);
+            var parsed = ParseExtension(extensionPath, revitYear);
+            if (parsed != null)
+                yield return parsed;
         }
 
         /// <summary>
         /// Parses specific extensions from the given extension paths
         /// </summary>
         /// <param name="extensionPaths">The full paths to the .extension or .lib directories</param>
+        /// <param name="revitYear">The running Revit version year (e.g. 2024). Pass 0 to skip version filtering.</param>
         /// <returns>ParsedExtensions for valid paths that contain extensions</returns>
-        public static IEnumerable<ParsedExtension> ParseInstalledExtensions(IEnumerable<string> extensionPaths)
+        public static IEnumerable<ParsedExtension> ParseInstalledExtensions(IEnumerable<string> extensionPaths, int revitYear = 0)
         {
             if (extensionPaths == null)
                 yield break;
@@ -199,46 +375,61 @@ namespace pyRevitExtensionParser
                     !extensionPath.EndsWith(".lib", StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                yield return ParseExtension(extensionPath);
+                var parsed = ParseExtension(extensionPath, revitYear);
+                if (parsed != null)
+                    yield return parsed;
             }
         }
 
-        // Cache config instance to avoid reloading for each extension
-        private static PyRevitConfig _cachedConfig;
-        private static PyRevitConfig GetConfig()
-        {
-            if (_cachedConfig == null)
-                _cachedConfig = PyRevitConfig.Load();
-            return _cachedConfig;
-        }
+        // Config caching is now handled inside PyRevitConfig.Load() itself.
+        // All callers (UIManagerService, EnvDictionarySeeder, etc.) benefit from the
+        // single cache without needing their own copy.  Fix for #3268.
+        private static PyRevitConfig GetConfig() => PyRevitConfig.Load();
 
         /// <summary>
         /// Parses a single extension from the given extension directory path
         /// </summary>
         /// <param name="extDir">The path to the .extension directory</param>
-        /// <returns>A ParsedExtension object</returns>
-        private static ParsedExtension ParseExtension(string extDir)
+        /// <param name="revitYear">The running Revit version year (e.g. 2024). Pass 0 to skip version filtering.</param>
+        /// <returns>A ParsedExtension object, or null if the extension is incompatible with the given Revit version</returns>
+        private static ParsedExtension ParseExtension(string extDir, int revitYear = 0)
         {
             var extName = Path.GetFileNameWithoutExtension(extDir);
-            
+
             var bundlePath = Path.Combine(extDir, "bundle.yaml");
-            ParsedBundle parsedBundle = FileExists(bundlePath)
-                ? BundleParser.BundleYamlParser.Parse(bundlePath)
-                : null;
+            ParsedBundle parsedBundle = null;
+            if (FileExists(bundlePath))
+            {
+                try
+                {
+                    parsedBundle = BundleParser.BundleYamlParser.Parse(bundlePath);
+                }
+                catch (Exception ex)
+                {
+                    LogParseException(bundlePath, ex);
+                }
+            }
+
+            // Extension-level version gate: skip the entire extension (and its directory tree)
+            // if it declares a version range that doesn't include the running Revit year.
+            if (!IsRevitVersionCompatible(parsedBundle?.MinRevitVersion, parsedBundle?.MaxRevitVersion, revitYear, extName))
+                return null;
 
             // Pass extension-level templates to child components
             // Include author as a template if it exists
-            var extensionTemplates = parsedBundle?.Templates != null 
+            var extensionTemplates = parsedBundle?.Templates != null
                 ? new Dictionary<string, string>(parsedBundle.Templates)
                 : new Dictionary<string, string>();
-            
+
             // If extension has an author, add it as a template for children to inherit
             if (!string.IsNullOrEmpty(parsedBundle?.Author))
             {
                 extensionTemplates["author"] = parsedBundle.Author;
             }
-            
-            // Read extension.json for additional templates
+            // Read extension.json for additional templates and rocket_mode_compatible
+            bool rocketModeCompatible = false;
+            List<string> authUsers = null;
+            List<string> authGroups = null;
             var extensionJsonPath = Path.Combine(extDir, "extension.json");
             if (FileExists(extensionJsonPath))
             {
@@ -246,7 +437,7 @@ namespace pyRevitExtensionParser
                 {
                     var jsonContent = File.ReadAllText(extensionJsonPath);
                     var json = JObject.Parse(jsonContent);
-                    
+
                     // Read templates section if present
                     var templates = json["templates"] as JObject;
                     if (templates != null)
@@ -257,7 +448,7 @@ namespace pyRevitExtensionParser
                             extensionTemplates[prop.Name] = prop.Value.ToString();
                         }
                     }
-                    
+
                     // Also read top-level author if templates.author doesn't exist
                     if (!extensionTemplates.ContainsKey("author"))
                     {
@@ -267,16 +458,63 @@ namespace pyRevitExtensionParser
                             extensionTemplates["author"] = author;
                         }
                     }
+
+                    // Read rocket_mode_compatible setting
+                    var rocketModeValue = json["rocket_mode_compatible"]?.ToString();
+                    if (!string.IsNullOrEmpty(rocketModeValue))
+                    {
+                        rocketModeCompatible = rocketModeValue.Equals("true", StringComparison.OrdinalIgnoreCase);
+                    }
+
+                    // Read authusers if present (list of authorized usernames)
+                    var authUsersArray = json["authusers"] as JArray;
+                    if (authUsersArray != null && authUsersArray.Count > 0)
+                    {
+                        authUsers = new List<string>();
+                        foreach (var item in authUsersArray)
+                        {
+                            var user = item?.ToString();
+                            if (!string.IsNullOrEmpty(user))
+                            {
+                                authUsers.Add(user);
+                            }
+                        }
+                    }
+
+                    // Read authgroups if present (list of authorized Windows security groups)
+                    var authGroupsArray = json["authgroups"] as JArray;
+                    if (authGroupsArray != null && authGroupsArray.Count > 0)
+                    {
+                        authGroups = new List<string>();
+                        foreach (var item in authGroupsArray)
+                        {
+                            var group = item?.ToString();
+                            if (!string.IsNullOrEmpty(group))
+                            {
+                                authGroups.Add(group);
+                            }
+                        }
+                    }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // If JSON parsing fails, continue without extension.json templates
+                    LogParseException(extensionJsonPath, ex);
                 }
             }
-            
-            var children = ParseComponents(extDir, extName, null, extensionTemplates.Count > 0 ? extensionTemplates : null);
 
-            // Read extension config from pyRevit config file (cached)
+            // pyRevitCore is always rocket mode compatible (hardcoded, matches Python behavior)
+            if (string.Equals(extName, "pyRevitCore", StringComparison.OrdinalIgnoreCase))
+            {
+                rocketModeCompatible = true;
+            }
+
+            // FIXED — pass revitYear through:
+            var children = ParseComponents(extDir, extName, null,
+                extensionTemplates.Count > 0 ? extensionTemplates : null,
+                revitYear);
+
+            // Read extension config from pyRevit config file (cached).
+            // Config is keyed by folder name (e.g. [extension_test.extension]) so it matches install and Python.
             var config = GetConfig();
             var extConfig = config.ParseExtensionByName(extName);
 
@@ -287,16 +525,20 @@ namespace pyRevitExtensionParser
                 Children = children,
                 LayoutOrder = parsedBundle?.LayoutOrder,
                 LayoutItemTitles = parsedBundle?.LayoutItemTitles,
+                LayoutDirectives = parsedBundle?.LayoutDirectives,
                 Titles = parsedBundle?.Titles,
                 Tooltips = parsedBundle?.Tooltips,
                 MinRevitVersion = parsedBundle?.MinRevitVersion,
                 MaxRevitVersion = parsedBundle?.MaxRevitVersion,
                 Context = parsedBundle?.GetFormattedContext(),
                 Engine = parsedBundle?.Engine,
-                Config = extConfig
+                Config = extConfig,
+                RocketModeCompatible = rocketModeCompatible,
+                AuthorizedUsers = authUsers,
+                AuthorizedGroups = authGroups
             };
 
-            ReorderByLayout(parsedExtension);
+            ReorderByLayout(parsedExtension, parsedExtension, null);
 
             return parsedExtension;
         }
@@ -306,43 +548,53 @@ namespace pyRevitExtensionParser
         /// according to its own LayoutOrder.  If LayoutOrder is null or empty,
         /// we skip sorting here but still recurse into children.
         /// </summary>
-        private static void ReorderByLayout(ParsedComponent component)
+        /// <param name="component">The component to reorder</param>
+        /// <param name="extension">The root extension (to store external layout directives)</param>
+        /// <param name="currentTabName">The current tab name (for context when storing external directives)</param>
+        private static void ReorderByLayout(ParsedComponent component, ParsedExtension extension, string currentTabName)
         {
             if (component?.Children == null)
                 return;
+
+            // Track the tab name for children - if this is a tab, use its name
+            var tabName = currentTabName;
+            if (component.Type == CommandComponentType.Tab)
+            {
+                tabName = component.DisplayName ?? component.Name;
+            }
 
             if (component.LayoutOrder != null && component.LayoutOrder.Count > 0)
             {
                 // Build reordered list (first pass: add matching components)
                 var reorderedChildren = new List<ParsedComponent>();
-                
+
                 foreach (var layoutItem in component.LayoutOrder)
                 {
                     // Skip separator and slideout markers in first pass
                     if (layoutItem.Contains("---") || layoutItem.Contains(">>>"))
                         continue;
-                    
+
                     // Find matching component by DisplayName
                     var matchingComponent = component.Children.Find(c => c?.DisplayName == layoutItem);
                     if (matchingComponent != null && !reorderedChildren.Contains(matchingComponent))
                     {
                         // Apply custom title if specified in LayoutItemTitles
-                        if (component.LayoutItemTitles != null && 
+                        if (component.LayoutItemTitles != null &&
                             component.LayoutItemTitles.ContainsKey(layoutItem))
                         {
                             matchingComponent.Title = component.LayoutItemTitles[layoutItem];
                         }
-                        
+
                         reorderedChildren.Add(matchingComponent);
                     }
                 }
-                
+
                 // Second pass: insert separators and slideouts at their positions
                 for (int idx = 0; idx < component.LayoutOrder.Count; idx++)
                 {
                     var layoutItem = component.LayoutOrder[idx];
                     var insertIndex = Math.Min(idx, reorderedChildren.Count);
-                    
+
                     // Check if this is a separator or slideout marker
                     if (layoutItem.Contains("---") && idx < component.LayoutOrder.Count - 1)
                     {
@@ -370,7 +622,7 @@ namespace pyRevitExtensionParser
                         reorderedChildren.Insert(insertIndex, slideout);
                     }
                 }
-                
+
                 // Add any components not in layout order at the end
                 foreach (var child in component.Children)
                 {
@@ -379,7 +631,11 @@ namespace pyRevitExtensionParser
                         reorderedChildren.Add(child);
                     }
                 }
-                
+
+                // Apply layout directives (before, after, beforeall, afterall)
+                // External directives (where target is not found) are stored for post-UI-build sorting
+                ApplyLayoutDirectives(component, reorderedChildren, extension, tabName);
+
                 component.Children = reorderedChildren;
             }
 
@@ -387,7 +643,126 @@ namespace pyRevitExtensionParser
             {
                 if (child != null)
                 {
-                    ReorderByLayout(child);
+                    ReorderByLayout(child, extension, tabName);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Applies layout directives (before, after, beforeall, afterall) to reorder components.
+        /// Directives that reference external components (not found in children) are stored
+        /// in the extension's ExternalLayoutDirectives for post-UI-build sorting.
+        /// </summary>
+        /// <param name="component">The component containing the layout directives</param>
+        /// <param name="children">The list of children to reorder</param>
+        /// <param name="extension">The root extension to store external directives</param>
+        /// <param name="tabName">The current tab name (for context when storing external directives)</param>
+        private static void ApplyLayoutDirectives(ParsedComponent component, List<ParsedComponent> children,
+            ParsedExtension extension, string tabName)
+        {
+            if (component.LayoutDirectives == null || component.LayoutDirectives.Count == 0)
+                return;
+
+            // First pass: apply beforeall directives (move to first position)
+            var beforeAllItems = component.LayoutDirectives
+                .Where(kvp => kvp.Value?.DirectiveType == "beforeall")
+                .Select(kvp => kvp.Key)
+                .ToList();
+
+            foreach (var itemName in beforeAllItems)
+            {
+                var item = children.Find(c => c?.DisplayName == itemName);
+                if (item != null)
+                {
+                    children.Remove(item);
+                    children.Insert(0, item);
+                }
+            }
+
+            // Second pass: apply afterall directives (move to last position)
+            var afterAllItems = component.LayoutDirectives
+                .Where(kvp => kvp.Value?.DirectiveType == "afterall")
+                .Select(kvp => kvp.Key)
+                .ToList();
+
+            foreach (var itemName in afterAllItems)
+            {
+                var item = children.Find(c => c?.DisplayName == itemName);
+                if (item != null)
+                {
+                    children.Remove(item);
+                    children.Add(item);
+                }
+            }
+
+            // Third pass: apply before directives (move before target)
+            var beforeItems = component.LayoutDirectives
+                .Where(kvp => kvp.Value?.DirectiveType == "before")
+                .ToList();
+
+            foreach (var kvp in beforeItems)
+            {
+                var itemName = kvp.Key;
+                var targetName = kvp.Value.Target;
+                if (string.IsNullOrEmpty(targetName))
+                    continue;
+
+                var item = children.Find(c => c?.DisplayName == itemName);
+                var target = children.Find(c => c?.DisplayName == targetName);
+
+                if (item != null && target != null && item != target)
+                {
+                    // Both item and target found internally - apply the directive
+                    children.Remove(item);
+                    var targetIndex = children.IndexOf(target);
+                    children.Insert(targetIndex, item);
+                }
+                else if (item != null && target == null && extension != null && !string.IsNullOrEmpty(tabName))
+                {
+                    // Item found but target not found - this is an external directive
+                    // (e.g., "Packages & Tags[before:Modify]" where Modify is a native Revit panel)
+                    extension.ExternalLayoutDirectives.Add(new ExternalLayoutDirective
+                    {
+                        TabName = tabName,
+                        ComponentName = itemName,
+                        DirectiveType = "before",
+                        Target = targetName
+                    });
+                }
+            }
+
+            // Fourth pass: apply after directives (move after target)
+            var afterItems = component.LayoutDirectives
+                .Where(kvp => kvp.Value?.DirectiveType == "after")
+                .ToList();
+
+            foreach (var kvp in afterItems)
+            {
+                var itemName = kvp.Key;
+                var targetName = kvp.Value.Target;
+                if (string.IsNullOrEmpty(targetName))
+                    continue;
+
+                var item = children.Find(c => c?.DisplayName == itemName);
+                var target = children.Find(c => c?.DisplayName == targetName);
+
+                if (item != null && target != null && item != target)
+                {
+                    // Both item and target found internally - apply the directive
+                    children.Remove(item);
+                    var targetIndex = children.IndexOf(target);
+                    children.Insert(targetIndex + 1, item);
+                }
+                else if (item != null && target == null && extension != null && !string.IsNullOrEmpty(tabName))
+                {
+                    // Item found but target not found - this is an external directive
+                    extension.ExternalLayoutDirectives.Add(new ExternalLayoutDirective
+                    {
+                        TabName = tabName,
+                        ComponentName = itemName,
+                        DirectiveType = "after",
+                        Target = targetName
+                    });
                 }
             }
         }
@@ -412,15 +787,18 @@ namespace pyRevitExtensionParser
                 Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                 "pyRevit",
                 "Extensions");
-            
+
             if (Directory.Exists(thirdPartyExtensionsPath))
             {
                 roots.Add(thirdPartyExtensionsPath);
             }
 
             var userExtensions = GetConfig().UserExtensionsList;
+            var userExtensionsCount = 0;
+            var userExtensionsAdded = 0;
             foreach (var extPath in userExtensions)
             {
+                userExtensionsCount++;
                 if (string.IsNullOrWhiteSpace(extPath))
                 {
                     logger.Debug("Skipping empty userextensions path");
@@ -429,24 +807,39 @@ namespace pyRevitExtensionParser
 
                 try
                 {
-                    var normalizedPath = Path.GetFullPath(extPath);
+                    var expandedPath = Environment.ExpandEnvironmentVariables(extPath);
+                    var normalizedPath = Path.GetFullPath(expandedPath);
                     if (Directory.Exists(normalizedPath))
+                    {
                         roots.Add(normalizedPath);
+                        userExtensionsAdded++;
+                    }
                     else
+                    {
                         logger.Debug("Skipping non-existent userextensions path: {0}", normalizedPath);
+                        logger.Warn("User extension path does not exist: {0}", normalizedPath);
+                    }
                 }
                 catch (ArgumentException ex)
                 {
                     logger.Debug("Skipping invalid userextensions path '{0}': {1}", extPath, ex.Message);
+                    logger.Warn("User extension path is invalid: '{0}'", extPath);
                 }
                 catch (PathTooLongException ex)
                 {
                     logger.Debug("Skipping too long userextensions path '{0}': {1}", extPath, ex.Message);
+                    logger.Warn("User extension path is too long: '{0}'", extPath);
                 }
                 catch (NotSupportedException ex)
                 {
                     logger.Debug("Skipping unsupported userextensions path '{0}': {1}", extPath, ex.Message);
+                    logger.Warn("User extension path is not supported: '{0}'", extPath);
                 }
+            }
+
+            if (userExtensionsCount > 0 && userExtensionsAdded == 0)
+            {
+                logger.Warn("No valid userextensions paths found. Check pyRevit_config.ini for non-ASCII or invalid paths.");
             }
 
             return roots;
@@ -479,7 +872,7 @@ namespace pyRevitExtensionParser
         /// Substitutes liquid template tags in a dictionary of localized values.
         /// </summary>
         private static Dictionary<string, string> SubstituteTemplatesInDict(
-            Dictionary<string, string> localizedValues, 
+            Dictionary<string, string> localizedValues,
             Dictionary<string, string> templates)
         {
             if (localizedValues == null || templates == null || templates.Count == 0)
@@ -497,11 +890,23 @@ namespace pyRevitExtensionParser
             string baseDir,
             string extensionName,
             string parentPath = null,
-            Dictionary<string, string> inheritedTemplates = null)
+            Dictionary<string, string> inheritedTemplates = null,
+            int revitYear = 0)
         {
             var components = new List<ParsedComponent>();
 
-            foreach (var dir in Directory.GetDirectories(baseDir))
+            string[] dirs;
+            try
+            {
+                dirs = Directory.GetDirectories(baseDir);
+            }
+            catch (Exception ex)
+            {
+                LogParseException(baseDir, ex);
+                return components;
+            }
+
+            foreach (var dir in dirs)
             {
                 var ext = Path.GetExtension(dir);
                 var componentType = CommandComponentTypeExtensions.FromExtension(ext);
@@ -527,19 +932,23 @@ namespace pyRevitExtensionParser
                 {
                     // Look for script files in order of preference: .py, .cs, .vb, .rb, .dyn, .gh, .ghx, .rfa
                     // Use cached file listing instead of EnumerateFiles
-                    var dirFiles = GetFilesInDirectory(dir, "script.*", SearchOption.TopDirectoryOnly);
+                    var dirFiles = GetFilesInDirectory(dir, "*script.*", SearchOption.TopDirectoryOnly);
+                    var validEndings = new[] { "script", "_script", "-script", ".script" };
+                    dirFiles = dirFiles.Where(f =>
+                        validEndings.Any(end => Path.GetFileNameWithoutExtension(f).EndsWith(end, StringComparison.OrdinalIgnoreCase))
+                    ).ToArray();
                     
                     // Check for scripts in priority order
                     var scriptExtensions = new[] { ".py", ".cs", ".vb", ".rb", ".dyn", ".gh", ".ghx", ".rfa" };
                     foreach (var scriptExt in scriptExtensions)
                     {
                         var scriptFile = $"script{scriptExt}";
-                        scriptPath = dirFiles.FirstOrDefault(f => 
+                        scriptPath = dirFiles.FirstOrDefault(f =>
                             f.EndsWith(scriptFile, StringComparison.OrdinalIgnoreCase));
                         if (scriptPath != null)
                             break;
                     }
-                    
+
                     // If no script.* file found, look for any file with the target extensions
                     // This handles cases like BIM1_ArrowHeadSwitcher_script.dyn
                     if (scriptPath == null)
@@ -548,9 +957,9 @@ namespace pyRevitExtensionParser
                         foreach (var scriptExt in scriptExtensions)
                         {
                             // Look for any file ending with _script{ext} or just {ext}
-                            scriptPath = allFiles.FirstOrDefault(f => 
+                            scriptPath = allFiles.FirstOrDefault(f =>
                                 (f.EndsWith($"_script{scriptExt}", StringComparison.OrdinalIgnoreCase) ||
-                                 (f.EndsWith(scriptExt, StringComparison.OrdinalIgnoreCase) && 
+                                 (f.EndsWith(scriptExt, StringComparison.OrdinalIgnoreCase) &&
                                   !f.EndsWith($"_config{scriptExt}", StringComparison.OrdinalIgnoreCase))));
                             if (scriptPath != null)
                                 break;
@@ -571,17 +980,30 @@ namespace pyRevitExtensionParser
                         scriptPath = yaml;
                 }
 
-                // Look for config script (config.py, config.cs, etc.)
+                // Look for config script (*config.py, *config.cs, etc.)
+                // e.g. both "config.py" and "name_config.py" will match
                 string configScriptPath = null;
                 var configExtensions = new[] { ".py", ".cs", ".vb", ".rb", ".dyn", ".gh", ".ghx" };
                 var allDirFiles = GetFilesInDirectory(dir, "*", SearchOption.TopDirectoryOnly);
+                // Prefer exact "config{ext}" match, then fall back to postfix "*config{ext}"
                 foreach (var configExt in configExtensions)
                 {
                     var configFile = $"config{configExt}";
-                    configScriptPath = allDirFiles.FirstOrDefault(f => 
+                    configScriptPath = allDirFiles.FirstOrDefault(f =>
                         Path.GetFileName(f).Equals(configFile, StringComparison.OrdinalIgnoreCase));
                     if (configScriptPath != null)
                         break;
+                }
+                if (configScriptPath == null)
+                {
+                    foreach (var configExt in configExtensions)
+                    {
+                        var configPostfix = $"config{configExt}";
+                        configScriptPath = allDirFiles.FirstOrDefault(f =>
+                            Path.GetFileName(f).EndsWith(configPostfix, StringComparison.OrdinalIgnoreCase));
+                        if (configScriptPath != null)
+                            break;
+                    }
                 }
                 // If no separate config script found, use the main script path
                 if (configScriptPath == null)
@@ -593,14 +1015,25 @@ namespace pyRevitExtensionParser
                 if (componentType == CommandComponentType.ContentButton)
                 {
                     var bundleYaml = Path.Combine(dir, "bundle.yaml");
-                    var tempBundle = FileExists(bundleYaml) ? BundleParser.BundleYamlParser.Parse(bundleYaml) : null;
-                    
+                    ParsedBundle tempBundle = null;
+                    if (FileExists(bundleYaml))
+                    {
+                        try
+                        {
+                            tempBundle = BundleParser.BundleYamlParser.Parse(bundleYaml);
+                        }
+                        catch (Exception ex)
+                        {
+                            LogParseException(bundleYaml, ex);
+                        }
+                    }
+
                     // Try to get content from bundle.yaml metadata first
                     if (tempBundle != null && !string.IsNullOrEmpty(tempBundle.Content))
                     {
                         scriptPath = ResolveContentPath(dir, tempBundle.Content);
                     }
-                    
+
                     // If no content in metadata, use naming convention
                     if (scriptPath == null)
                     {
@@ -631,7 +1064,7 @@ namespace pyRevitExtensionParser
                             }
                         }
                     }
-                    
+
                     // Handle alternative content (CTRL+Click)
                     if (tempBundle != null && !string.IsNullOrEmpty(tempBundle.ContentAlt))
                     {
@@ -662,10 +1095,10 @@ namespace pyRevitExtensionParser
                         }
                     }
                 }
-                
+
                 // Look for on/off icons for smartbuttons and toggle buttons
                 string onIconPath = null, onIconDarkPath = null, offIconPath = null, offIconDarkPath = null;
-                if (componentType == CommandComponentType.SmartButton || 
+                if (componentType == CommandComponentType.SmartButton ||
                     componentType == CommandComponentType.PushButton)
                 {
                     // Parse on/off icons with theme support
@@ -675,10 +1108,24 @@ namespace pyRevitExtensionParser
                 // Look for tooltip media file (tooltip.mp4, tooltip.swf, tooltip.png)
                 var mediaFile = FindMediaFile(dir);
 
+                // Look for help file (help.* pattern) for file-based help
+                var helpFile = FindHelpFile(dir);
+
                 var bundleFile = Path.Combine(dir, "bundle.yaml");
-                
+
                 // Then parse bundle and override with bundle values if they exist
-                var bundleInComponent = FileExists(bundleFile) ? BundleParser.BundleYamlParser.Parse(bundleFile) : null;
+                ParsedBundle bundleInComponent = null;
+                if (FileExists(bundleFile))
+                {
+                    try
+                    {
+                        bundleInComponent = BundleParser.BundleYamlParser.Parse(bundleFile);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogParseException(bundleFile, ex);
+                    }
+                }
 
                 // Merge templates: inherited templates + current bundle templates
                 // Current bundle templates override inherited ones
@@ -708,7 +1155,7 @@ namespace pyRevitExtensionParser
                 }
 
                 // Pass merged templates to child components
-                var children = ParseComponents(dir, extensionName, fullPath, mergedTemplates);
+                var children = ParseComponents(dir, extensionName, fullPath, mergedTemplates, revitYear);
 
                 // First, get values from Python script
                 string title = null, author = null, doc = null;
@@ -718,7 +1165,7 @@ namespace pyRevitExtensionParser
                 Dictionary<string, string> scriptLocalizedTitles = null;
                 Dictionary<string, string> scriptLocalizedTooltips = null;
                 Dictionary<string, string> scriptLocalizedHelpUrls = null;
-                
+
                 if (scriptPath != null && scriptPath.EndsWith(".py", StringComparison.OrdinalIgnoreCase))
                 {
                     var scriptConstants = ReadPythonScriptConstants(scriptPath);
@@ -744,14 +1191,27 @@ namespace pyRevitExtensionParser
                 {
                     // Use default locale for initial title/tooltip assignment
                     var bundleTitle = GetLocalizedValue(bundleInComponent.Titles);
+                    if (string.IsNullOrEmpty(bundleTitle) &&
+                        bundleInComponent.Titles != null &&
+                        bundleInComponent.Titles.TryGetValue("en_us", out var bundleTitleEnUs))
+                    {
+                        bundleTitle = bundleTitleEnUs;
+                    }
+
                     var bundleTooltip = GetLocalizedValue(bundleInComponent.Tooltips);
-                    
+                    if (string.IsNullOrEmpty(bundleTooltip) &&
+                        bundleInComponent.Tooltips != null &&
+                        bundleInComponent.Tooltips.TryGetValue("en_us", out var bundleTooltipEnUs))
+                    {
+                        bundleTooltip = bundleTooltipEnUs;
+                    }
+
                     if (!string.IsNullOrEmpty(bundleTitle))
                         title = bundleTitle;
-                    
+
                     if (!string.IsNullOrEmpty(bundleTooltip))
                         doc = bundleTooltip;
-                        
+
                     if (!string.IsNullOrEmpty(bundleInComponent.Author))
                         author = bundleInComponent.Author;
                 }
@@ -760,7 +1220,7 @@ namespace pyRevitExtensionParser
                 var finalLocalizedTitles = scriptLocalizedTitles ?? new Dictionary<string, string>();
                 var finalLocalizedTooltips = scriptLocalizedTooltips ?? new Dictionary<string, string>();
                 var finalLocalizedHelpUrls = scriptLocalizedHelpUrls ?? new Dictionary<string, string>();
-                
+
                 // If bundle has localized values, they override script values
                 if (bundleInComponent?.Titles != null)
                 {
@@ -769,7 +1229,7 @@ namespace pyRevitExtensionParser
                         finalLocalizedTitles[kvp.Key] = kvp.Value;
                     }
                 }
-                
+
                 if (bundleInComponent?.Tooltips != null)
                 {
                     foreach (var kvp in bundleInComponent.Tooltips)
@@ -777,7 +1237,7 @@ namespace pyRevitExtensionParser
                         finalLocalizedTooltips[kvp.Key] = kvp.Value;
                     }
                 }
-                
+
                 if (bundleInComponent?.HelpUrls != null)
                 {
                     foreach (var kvp in bundleInComponent.HelpUrls)
@@ -792,7 +1252,7 @@ namespace pyRevitExtensionParser
                 author = SubstituteTemplates(author, mergedTemplates);
                 var hyperlink = SubstituteTemplates(bundleInComponent?.Hyperlink, mergedTemplates);
                 scriptHelpUrl = SubstituteTemplates(scriptHelpUrl, mergedTemplates);
-                
+
                 // Apply template substitution to localized values
                 finalLocalizedTitles = SubstituteTemplatesInDict(finalLocalizedTitles, mergedTemplates);
                 finalLocalizedTooltips = SubstituteTemplatesInDict(finalLocalizedTooltips, mergedTemplates);
@@ -803,8 +1263,8 @@ namespace pyRevitExtensionParser
                 // so we need to check if there's actually a context defined in the bundle
                 string finalContext;
                 var bundleContext = bundleInComponent?.GetFormattedContext();
-                if (bundleInComponent != null && 
-                    (bundleInComponent.ContextItems?.Count > 0 || 
+                if (bundleInComponent != null &&
+                    (bundleInComponent.ContextItems?.Count > 0 ||
                      bundleInComponent.ContextRules?.Count > 0 ||
                      !string.IsNullOrEmpty(bundleInComponent.Context)))
                 {
@@ -823,8 +1283,8 @@ namespace pyRevitExtensionParser
                 }
 
                 // Determine final highlight: bundle takes precedence over script
-                string finalHighlight = !string.IsNullOrEmpty(bundleInComponent?.Highlight) 
-                    ? bundleInComponent.Highlight 
+                string finalHighlight = !string.IsNullOrEmpty(bundleInComponent?.Highlight)
+                    ? bundleInComponent.Highlight
                     : scriptHighlight;
 
                 // Determine final help URL: bundle helpurl takes precedence over script helpurl
@@ -846,8 +1306,8 @@ namespace pyRevitExtensionParser
                     : scriptMaxRevitVersion;
 
                 // Determine final beta status: bundle takes precedence over script
-                bool finalIsBeta = bundleInComponent != null && bundleInComponent.IsBeta 
-                    ? bundleInComponent.IsBeta 
+                bool finalIsBeta = bundleInComponent != null && bundleInComponent.IsBeta
+                    ? bundleInComponent.IsBeta
                     : scriptIsBeta;
 
                 // Determine final engine config: bundle takes precedence, but script can add flags
@@ -855,6 +1315,11 @@ namespace pyRevitExtensionParser
                 if (scriptCleanEngine) finalEngine.Clean = true;
                 if (scriptFullFrameEngine) finalEngine.FullFrame = true;
                 if (scriptPersistentEngine) finalEngine.Persistent = true;
+
+                // Component-level version gate: skip this component (and its children) if it declares
+                // a version range that doesn't include the running Revit year.
+                if (!IsRevitVersionCompatible(finalMinRevitVersion, finalMaxRevitVersion, revitYear, displayName))
+                    continue;
 
                 components.Add(new ParsedComponent
                 {
@@ -869,6 +1334,7 @@ namespace pyRevitExtensionParser
                     BundleFile = FileExists(bundleFile) ? bundleFile : null,
                     LayoutOrder = bundleInComponent?.LayoutOrder,
                     LayoutItemTitles = bundleInComponent?.LayoutItemTitles,
+                    LayoutDirectives = bundleInComponent?.LayoutDirectives,
                     Title = title,
                     Author = author,
                     Context = finalContext,
@@ -878,6 +1344,7 @@ namespace pyRevitExtensionParser
                     MinRevitVersion = finalMinRevitVersion,
                     MaxRevitVersion = finalMaxRevitVersion,
                     IsBeta = finalIsBeta,
+                    Collapsed = bundleInComponent?.Collapsed ?? false,
                     PanelBackground = bundleInComponent?.PanelBackground,
                     TitleBackground = bundleInComponent?.TitleBackground,
                     SlideoutBackground = bundleInComponent?.SlideoutBackground,
@@ -896,7 +1363,8 @@ namespace pyRevitExtensionParser
                     OnIconDarkPath = onIconDarkPath,
                     OffIconPath = offIconPath,
                     OffIconDarkPath = offIconDarkPath,
-                    MediaFile = mediaFile
+                    MediaFile = mediaFile,
+                    HelpFile = helpFile
                 });
             }
 
@@ -924,7 +1392,7 @@ namespace pyRevitExtensionParser
         {
             if (component == null)
                 return string.Empty;
-                
+
             // First try localized titles
             if (component.LocalizedTitles != null && component.LocalizedTitles.Count > 0)
             {
@@ -932,7 +1400,7 @@ namespace pyRevitExtensionParser
                 if (!string.IsNullOrEmpty(localizedTitle))
                     return localizedTitle;
             }
-            
+
             // Fall back to pre-resolved Title or DisplayName
             return !string.IsNullOrEmpty(component.Title) ? component.Title : component.DisplayName;
         }
@@ -946,7 +1414,7 @@ namespace pyRevitExtensionParser
         {
             if (component == null)
                 return string.Empty;
-                
+
             // First try localized tooltips
             if (component.LocalizedTooltips != null && component.LocalizedTooltips.Count > 0)
             {
@@ -954,7 +1422,7 @@ namespace pyRevitExtensionParser
                 if (!string.IsNullOrEmpty(localizedTooltip))
                     return localizedTooltip;
             }
-            
+
             // Fall back to pre-resolved Tooltip
             return component.Tooltip ?? string.Empty;
         }
@@ -971,16 +1439,13 @@ namespace pyRevitExtensionParser
             if (string.IsNullOrEmpty(preferredLocale))
                 preferredLocale = DefaultLocale;
 
-            // Try preferred locale first
-            if (localizedValues.TryGetValue(preferredLocale, out string preferredValue))
-                return preferredValue;
+            foreach (var locale in LocaleSupport.GetLocaleSearchOrder(preferredLocale, DefaultLocale))
+            {
+                if (localizedValues.TryGetValue(locale, out string value))
+                    return value;
+            }
 
-            // Fallback to default locale if different preferred locale was specified
-            if (preferredLocale != DefaultLocale && localizedValues.TryGetValue(DefaultLocale, out string defaultValue))
-                return defaultValue;
-
-            // Fallback to first available value
-            return localizedValues.Values.FirstOrDefault();
+            return null;
         }
 
         /// <summary>
@@ -998,7 +1463,7 @@ namespace pyRevitExtensionParser
             // Check if it's an absolute path
             if (Path.IsPathRooted(contentPath))
             {
-                if (FileExists(contentPath) && 
+                if (FileExists(contentPath) &&
                     contentPath.EndsWith(".rfa", StringComparison.OrdinalIgnoreCase))
                 {
                     return contentPath;
@@ -1009,7 +1474,7 @@ namespace pyRevitExtensionParser
             // Treat as relative to bundle directory
             // Normalize the path to handle .. and . properly
             var resolvedPath = Path.GetFullPath(Path.Combine(bundleDir, contentPath));
-            if (FileExists(resolvedPath) && 
+            if (FileExists(resolvedPath) &&
                 resolvedPath.EndsWith(".rfa", StringComparison.OrdinalIgnoreCase))
             {
                 return resolvedPath;
@@ -1018,11 +1483,60 @@ namespace pyRevitExtensionParser
             return null;
         }
 
-        private static string SanitizeClassName(string name)
+        /// <summary>
+        /// Sanitizes a string using the legacy Python cleanup_string() replacement table.
+        /// Public so that HookManager can generate hook IDs matching the legacy format.
+        /// See: pyrevitlib/pyrevit/coreutils/__init__.py lines 295-344
+        /// </summary>
+        public static string SanitizeClassName(string name)
         {
-            var sb = new StringBuilder();
-            foreach (char c in name)
-                sb.Append(char.IsLetterOrDigit(c) ? c : '_');
+            var result = name
+                .Replace(" ", "")
+                .Replace("~", "")
+                .Replace("!", "EXCLAM")
+                .Replace("@", "AT")
+                .Replace("#", "SHARP")
+                .Replace("$", "DOLLAR")
+                .Replace("%", "PERCENT")
+                .Replace("^", "")
+                .Replace("&", "AND")
+                .Replace("*", "STAR")
+                .Replace("+", "PLUS")
+                .Replace(";", "")
+                .Replace(":", "")
+                .Replace(",", "")
+                .Replace("\"", "")
+                .Replace("{", "")
+                .Replace("}", "")
+                .Replace("[", "")
+                .Replace("]", "")
+                .Replace("\\(", "")
+                .Replace("\\)", "")
+                .Replace("(", "")
+                .Replace(")", "")
+                .Replace("-", "MINUS")
+                .Replace("=", "EQUALS")
+                .Replace("<", "")
+                .Replace(">", "")
+                .Replace("?", "QMARK")
+                .Replace(".", "DOT")
+                // '_' is intentionally NOT replaced — it is the separator (skip=['_'])
+                .Replace("|", "VERT")
+                .Replace("\\/", "")
+                .Replace("\\", "");
+
+            // Final safety pass: strip any character not valid in a C# identifier
+            var sb = new StringBuilder(result.Length);
+            foreach (char c in result)
+                if (char.IsLetterOrDigit(c) || c == '_')
+                    sb.Append(c);
+
+            // Fix for #3107: Ensure UniqueId is a valid C# identifier.
+            // Leading digits are invalid in C# class names generated by Roslyn.
+            // The legacy loader used Reflection.Emit which accepted leading digits.
+            if (sb.Length > 0 && char.IsDigit(sb[0]))
+                sb.Insert(0, '_');
+
             return sb.ToString();
         }
 
@@ -1050,7 +1564,7 @@ namespace pyRevitExtensionParser
         }
 
         // Cache Python script constant parsing to avoid re-reading files
-        private static Dictionary<string, PythonScriptConstants> _pythonScriptCache = 
+        private static Dictionary<string, PythonScriptConstants> _pythonScriptCache =
             new Dictionary<string, PythonScriptConstants>();
 
         private static PythonScriptConstants ReadPythonScriptConstants(string scriptPath)
@@ -1058,142 +1572,149 @@ namespace pyRevitExtensionParser
             // Check cache first
             if (_pythonScriptCache.TryGetValue(scriptPath, out var cached))
                 return cached;
-                
+
             var result = new PythonScriptConstants();
 
-            // Read all lines to handle multiline strings properly
-            var allLines = File.ReadAllLines(scriptPath);
-            var lineIndex = 0;
-            
-            foreach (var line in allLines)
+            try
             {
-                var trimmedLine = line.TrimStart();
-                
-                if (trimmedLine.StartsWith("__title__"))
+                // Read all lines to handle multiline strings properly
+                var allLines = File.ReadAllLines(scriptPath);
+                var lineIndex = 0;
+
+                foreach (var line in allLines)
                 {
-                    // Check if it's a dictionary
-                    var dictValue = ExtractPythonDictionary(trimmedLine);
-                    if (dictValue != null)
+                    var trimmedLine = line.TrimStart();
+
+                    if (trimmedLine.StartsWith("__title__"))
                     {
-                        result.LocalizedTitles = LocaleSupport.NormalizeLocaleDict(dictValue);
-                        // Get default locale value for backward compatibility
-                        result.Title = GetLocalizedValue(result.LocalizedTitles);
-                    }
-                    else
-                    {
-                        // Check if it's a multiline triple-quoted string
-                        if (trimmedLine.Contains("\"\"\""))
+                        // Check if it's a dictionary
+                        var dictValue = ExtractPythonDictionary(trimmedLine);
+                        if (dictValue != null)
                         {
-                            var remainingLines = allLines.Skip(lineIndex + 1).ToList();
-                            result.Title = ExtractPythonMultilineString(trimmedLine, remainingLines);
+                            result.LocalizedTitles = LocaleSupport.NormalizeLocaleDict(dictValue);
+                            // Get default locale value for backward compatibility
+                            result.Title = GetLocalizedValue(result.LocalizedTitles);
                         }
                         else
                         {
-                            result.Title = ExtractPythonConstantValue(trimmedLine);
+                            // Check if it's a multiline triple-quoted string
+                            if (trimmedLine.Contains("\"\"\""))
+                            {
+                                var remainingLines = allLines.Skip(lineIndex + 1).ToList();
+                                result.Title = ExtractPythonMultilineString(trimmedLine, remainingLines);
+                            }
+                            else
+                            {
+                                result.Title = ExtractPythonConstantValue(trimmedLine);
+                            }
                         }
                     }
-                }
-                else if (trimmedLine.StartsWith("__authors__"))
-                {
-                    // __authors__ is a list, join with newline like Python does
-                    var listValue = ExtractPythonList(trimmedLine);
-                    if (listValue != null && listValue.Count > 0)
+                    else if (trimmedLine.StartsWith("__authors__"))
                     {
-                        result.Author = string.Join("\n", listValue);
-                    }
-                }
-                else if (trimmedLine.StartsWith("__author__"))
-                {
-                    // Only use __author__ if __authors__ wasn't found
-                    if (string.IsNullOrEmpty(result.Author))
-                    {
-                        result.Author = ExtractPythonConstantValue(trimmedLine);
-                    }
-                }
-                else if (trimmedLine.StartsWith("__doc__"))
-                {
-                    // Check if it's a dictionary for multi-language tooltip
-                    var dictValue = ExtractPythonDictionary(trimmedLine);
-                    if (dictValue != null)
-                    {
-                        result.LocalizedTooltips = LocaleSupport.NormalizeLocaleDict(dictValue);
-                        // Get default locale value for backward compatibility
-                        result.Doc = GetLocalizedValue(result.LocalizedTooltips);
-                    }
-                    else
-                    {
-                        // Check if it's a multiline triple-quoted string
-                        if (trimmedLine.Contains("\"\"\""))
+                        // __authors__ is a list, join with newline like Python does
+                        var listValue = ExtractPythonList(trimmedLine);
+                        if (listValue != null && listValue.Count > 0)
                         {
-                            var remainingLines = allLines.Skip(lineIndex + 1).ToList();
-                            result.Doc = ExtractPythonMultilineString(trimmedLine, remainingLines);
+                            result.Author = string.Join("\n", listValue);
+                        }
+                    }
+                    else if (trimmedLine.StartsWith("__author__"))
+                    {
+                        // Only use __author__ if __authors__ wasn't found
+                        if (string.IsNullOrEmpty(result.Author))
+                        {
+                            result.Author = ExtractPythonConstantValue(trimmedLine);
+                        }
+                    }
+                    else if (trimmedLine.StartsWith("__doc__"))
+                    {
+                        // Check if it's a dictionary for multi-language tooltip
+                        var dictValue = ExtractPythonDictionary(trimmedLine);
+                        if (dictValue != null)
+                        {
+                            result.LocalizedTooltips = LocaleSupport.NormalizeLocaleDict(dictValue);
+                            // Get default locale value for backward compatibility
+                            result.Doc = GetLocalizedValue(result.LocalizedTooltips);
                         }
                         else
                         {
-                            result.Doc = ExtractPythonConstantValue(trimmedLine);
+                            // Check if it's a multiline triple-quoted string
+                            if (trimmedLine.Contains("\"\"\""))
+                            {
+                                var remainingLines = allLines.Skip(lineIndex + 1).ToList();
+                                result.Doc = ExtractPythonMultilineString(trimmedLine, remainingLines);
+                            }
+                            else
+                            {
+                                result.Doc = ExtractPythonConstantValue(trimmedLine);
+                            }
                         }
                     }
-                }
-                else if (trimmedLine.StartsWith("__helpurl__"))
-                {
-                    // Check if it's a dictionary for multi-language help URL
-                    var dictValue = ExtractPythonDictionary(trimmedLine);
-                    if (dictValue != null)
+                    else if (trimmedLine.StartsWith("__helpurl__"))
                     {
-                        result.LocalizedHelpUrls = LocaleSupport.NormalizeLocaleDict(dictValue);
-                        // Get default locale value for backward compatibility
-                        result.HelpUrl = GetLocalizedValue(result.LocalizedHelpUrls);
+                        // Check if it's a dictionary for multi-language help URL
+                        var dictValue = ExtractPythonDictionary(trimmedLine);
+                        if (dictValue != null)
+                        {
+                            result.LocalizedHelpUrls = LocaleSupport.NormalizeLocaleDict(dictValue);
+                            // Get default locale value for backward compatibility
+                            result.HelpUrl = GetLocalizedValue(result.LocalizedHelpUrls);
+                        }
+                        else
+                        {
+                            result.HelpUrl = ExtractPythonConstantValue(trimmedLine);
+                        }
                     }
-                    else
+                    else if (trimmedLine.StartsWith("__context__"))
                     {
-                        result.HelpUrl = ExtractPythonConstantValue(trimmedLine);
+                        // Check if it's a list
+                        var listValue = ExtractPythonList(trimmedLine);
+                        if (listValue != null && listValue.Count > 0)
+                        {
+                            result.ContextItems = listValue;
+                            // Format as context string (ALL must match)
+                            result.Context = "(" + string.Join("&", listValue) + ")";
+                        }
+                        else
+                        {
+                            result.Context = NormalizeContextString(ExtractPythonConstantValue(trimmedLine));
+                        }
                     }
-                }
-                else if (trimmedLine.StartsWith("__context__"))
-                {
-                    // Check if it's a list
-                    var listValue = ExtractPythonList(trimmedLine);
-                    if (listValue != null && listValue.Count > 0)
+                    else if (trimmedLine.StartsWith("__highlight__"))
                     {
-                        result.ContextItems = listValue;
-                        // Format as context string (ALL must match)
-                        result.Context = "(" + string.Join("&", listValue) + ")";
+                        result.Highlight = ExtractPythonConstantValue(trimmedLine);
                     }
-                    else
+                    else if (trimmedLine.StartsWith("__min_revit_ver__"))
                     {
-                        result.Context = NormalizeContextString(ExtractPythonConstantValue(trimmedLine));
+                        result.MinRevitVersion = ExtractPythonValue(trimmedLine);
                     }
+                    else if (trimmedLine.StartsWith("__max_revit_ver__"))
+                    {
+                        result.MaxRevitVersion = ExtractPythonValue(trimmedLine);
+                    }
+                    else if (trimmedLine.StartsWith("__beta__"))
+                    {
+                        result.IsBeta = ExtractPythonBoolValue(trimmedLine);
+                    }
+                    else if (trimmedLine.StartsWith("__cleanengine__"))
+                    {
+                        result.CleanEngine = ExtractPythonBoolValue(trimmedLine);
+                    }
+                    else if (trimmedLine.StartsWith("__fullframeengine__"))
+                    {
+                        result.FullFrameEngine = ExtractPythonBoolValue(trimmedLine);
+                    }
+                    else if (trimmedLine.StartsWith("__persistentengine__"))
+                    {
+                        result.PersistentEngine = ExtractPythonBoolValue(trimmedLine);
+                    }
+
+                    lineIndex++;
                 }
-                else if (trimmedLine.StartsWith("__highlight__"))
-                {
-                    result.Highlight = ExtractPythonConstantValue(trimmedLine);
-                }
-                else if (trimmedLine.StartsWith("__min_revit_ver__"))
-                {
-                    result.MinRevitVersion = ExtractPythonValue(trimmedLine);
-                }
-                else if (trimmedLine.StartsWith("__max_revit_ver__"))
-                {
-                    result.MaxRevitVersion = ExtractPythonValue(trimmedLine);
-                }
-                else if (trimmedLine.StartsWith("__beta__"))
-                {
-                    result.IsBeta = ExtractPythonBoolValue(trimmedLine);
-                }
-                else if (trimmedLine.StartsWith("__cleanengine__"))
-                {
-                    result.CleanEngine = ExtractPythonBoolValue(trimmedLine);
-                }
-                else if (trimmedLine.StartsWith("__fullframeengine__"))
-                {
-                    result.FullFrameEngine = ExtractPythonBoolValue(trimmedLine);
-                }
-                else if (trimmedLine.StartsWith("__persistentengine__"))
-                {
-                    result.PersistentEngine = ExtractPythonBoolValue(trimmedLine);
-                }
-                
-                lineIndex++;
+            }
+            catch (Exception ex)
+            {
+                LogParseException(scriptPath, ex);
             }
 
             _pythonScriptCache[scriptPath] = result;
@@ -1215,16 +1736,16 @@ namespace pyRevitExtensionParser
                     var items = new List<string>();
                     // Remove outer brackets
                     value = value.Substring(1, value.Length - 2);
-                    
+
                     // Split by comma, handling quoted strings
                     var currentItem = "";
                     var inQuote = false;
                     var quoteChar = '\0';
-                    
+
                     for (int i = 0; i < value.Length; i++)
                     {
                         var ch = value[i];
-                        
+
                         if (!inQuote && (ch == '"' || ch == '\''))
                         {
                             inQuote = true;
@@ -1247,12 +1768,12 @@ namespace pyRevitExtensionParser
                             currentItem += ch;
                         }
                     }
-                    
+
                     // Add last item
                     var lastTrimmed = currentItem.Trim().Trim('\'', '"');
                     if (!string.IsNullOrWhiteSpace(lastTrimmed))
                         items.Add(lastTrimmed);
-                    
+
                     return items.Count > 0 ? items : null;
                 }
             }
@@ -1282,10 +1803,10 @@ namespace pyRevitExtensionParser
             int firstQuotePos = firstLineTrimmed.IndexOf("\"\"\"");
             if (firstQuotePos == -1)
                 return null;
-            
+
             int contentStart = firstQuotePos + 3;
             string partialContent = firstLineTrimmed.Substring(contentStart);
-            
+
             // Check if the closing quote is on the same line
             int closingQuotePos = partialContent.IndexOf("\"\"\"");
             if (closingQuotePos != -1)
@@ -1293,17 +1814,17 @@ namespace pyRevitExtensionParser
                 // Single-line multiline string
                 return partialContent.Substring(0, closingQuotePos);
             }
-            
+
             // Need to read more lines to find the closing triple quote
             var content = new StringBuilder();
             content.Append(partialContent);
             content.Append("\n");
-            
+
             foreach (var line in remainingLines)
             {
                 content.Append(line);
                 content.Append("\n");
-                
+
                 // Check if this line contains the closing triple quote
                 if (line.Contains("\"\"\""))
                 {
@@ -1320,7 +1841,7 @@ namespace pyRevitExtensionParser
                     break;
                 }
             }
-            
+
             // Process escape sequences in the collected content
             return ProcessPythonEscapeSequences(content.ToString());
         }
@@ -1347,18 +1868,18 @@ namespace pyRevitExtensionParser
             if (parts.Length == 2)
             {
                 var value = parts[1].Trim();
-                
+
                 // Try to extract quoted string first
                 var quotedValue = ExtractPythonStringContent(value);
                 if (quotedValue != null)
                     return ProcessPythonEscapeSequences(quotedValue);
-                
+
                 // If no quotes, return the value as-is (for unquoted numbers, etc.)
                 // Remove any trailing comments
                 var commentIndex = value.IndexOf('#');
                 if (commentIndex >= 0)
                     value = value.Substring(0, commentIndex).Trim();
-                
+
                 return string.IsNullOrEmpty(value) ? null : value;
             }
             return null;
@@ -1391,11 +1912,11 @@ namespace pyRevitExtensionParser
                 return null;
 
             var trimmedValue = value.TrimStart();
-            
+
             // Find the first quote (either single or double)
             int startIndex = -1;
             char quoteChar = '\0';
-            
+
             for (int i = 0; i < trimmedValue.Length; i++)
             {
                 if (trimmedValue[i] == '"' || trimmedValue[i] == '\'')
@@ -1419,13 +1940,13 @@ namespace pyRevitExtensionParser
                     endIndex += 2;
                     continue;
                 }
-                
+
                 if (trimmedValue[endIndex] == quoteChar)
                 {
                     // Found the closing quote
                     return trimmedValue.Substring(startIndex + 1, endIndex - startIndex - 1);
                 }
-                
+
                 endIndex++;
             }
 
@@ -1497,17 +2018,17 @@ namespace pyRevitExtensionParser
                     var dict = new Dictionary<string, string>();
                     // Remove outer braces
                     value = value.Substring(1, value.Length - 2);
-                    
+
                     // Split by comma, but handle commas within quoted strings
                     var items = new List<string>();
                     var currentItem = "";
                     var inQuote = false;
                     var quoteChar = '\0';
-                    
+
                     for (int i = 0; i < value.Length; i++)
                     {
                         var ch = value[i];
-                        
+
                         if (!inQuote && (ch == '"' || ch == '\''))
                         {
                             inQuote = true;
@@ -1531,10 +2052,10 @@ namespace pyRevitExtensionParser
                             currentItem += ch;
                         }
                     }
-                    
+
                     if (!string.IsNullOrWhiteSpace(currentItem))
                         items.Add(currentItem.Trim());
-                    
+
                     // Parse each key-value pair
                     foreach (var item in items)
                     {
@@ -1547,7 +2068,7 @@ namespace pyRevitExtensionParser
                             dict[key] = val;
                         }
                     }
-                    
+
                     return dict.Count > 0 ? dict : null;
                 }
             }
@@ -1564,7 +2085,7 @@ namespace pyRevitExtensionParser
             // Check cache first
             if (_iconCache.TryGetValue(componentDirectory, out var cached))
                 return cached;
-                
+
             var icons = new ComponentIconCollection();
 
             if (!Directory.Exists(componentDirectory))
@@ -1605,7 +2126,7 @@ namespace pyRevitExtensionParser
 
             // Cache the result
             _iconCache[componentDirectory] = icons;
-            
+
             return icons;
         }
 
@@ -1707,11 +2228,11 @@ namespace pyRevitExtensionParser
             try
             {
                 var files = GetFilesInDirectory(componentDirectory, "*", SearchOption.TopDirectoryOnly);
-                
+
                 foreach (var file in files)
                 {
                     var fileName = Path.GetFileName(file).ToLowerInvariant();
-                    
+
                     // Check for on icons
                     if (fileName == "on.png" || fileName == "on.ico")
                         onIconPath = file;
@@ -1724,9 +2245,9 @@ namespace pyRevitExtensionParser
                         offIconDarkPath = file;
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // If we can't read the directory, just return nulls
+                LogParseException(componentDirectory, ex);
             }
 
             return (onIconPath, onIconDarkPath, offIconPath, offIconDarkPath);
@@ -1746,12 +2267,12 @@ namespace pyRevitExtensionParser
             try
             {
                 var files = GetFilesInDirectory(componentDirectory, "*", SearchOption.TopDirectoryOnly);
-                
+
                 foreach (var file in files)
                 {
                     var fileName = Path.GetFileName(file).ToLowerInvariant();
                     var fileNameWithoutExt = Path.GetFileNameWithoutExtension(fileName);
-                    
+
                     // Match by name 'tooltip' (like Python's finder='name' mode)
                     // Supports: tooltip.mp4, tooltip.swf, tooltip.png
                     if (fileNameWithoutExt == "tooltip")
@@ -1764,9 +2285,33 @@ namespace pyRevitExtensionParser
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // If we can't read the directory, just return null
+                LogParseException(componentDirectory, ex);
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Finds a help file in the component directory matching the pattern "help.*" (e.g., help.html, help.md).
+        /// This implements file-based help discovery similar to the Python loader.
+        /// </summary>
+        /// <param name="componentDirectory">The directory containing the component</param>
+        /// <returns>Full path to the help file if found, null otherwise</returns>
+        private static string FindHelpFile(string componentDirectory)
+        {
+            if (!Directory.Exists(componentDirectory))
+                return null;
+
+            try
+            {
+                return GetFilesInDirectory(componentDirectory, "*help.*", SearchOption.TopDirectoryOnly)
+                    .FirstOrDefault();
+            }
+            catch (Exception ex)
+            {
+                LogParseException(componentDirectory, ex);
             }
 
             return null;

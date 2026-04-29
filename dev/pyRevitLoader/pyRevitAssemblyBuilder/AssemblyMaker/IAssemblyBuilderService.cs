@@ -14,8 +14,9 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         /// </summary>
         /// <param name="extension">The parsed extension to build an assembly for.</param>
         /// <param name="libraryExtensions">Optional collection of library extensions to include as references.</param>
+        /// <param name="rocketMode">Whether rocket mode is enabled globally.</param>
         /// <returns>Information about the built assembly, or null if building fails.</returns>
-        ExtensionAssemblyInfo? BuildExtensionAssembly(ParsedExtension extension, IEnumerable<ParsedExtension>? libraryExtensions = null);
+        ExtensionAssemblyInfo? BuildExtensionAssembly(ParsedExtension extension, IEnumerable<ParsedExtension>? libraryExtensions = null, bool rocketMode = false);
 
         /// <summary>
         /// Loads an assembly into the current AppDomain.

@@ -53,15 +53,14 @@ def _update_extension_search_paths(ui_ext, lib_ext_list, pyrvt_paths):
 def _is_extension_enabled(ext_info):
     try:
         ext_pkg = extpkgs.get_ext_package_by_name(ext_info.name)
+        if not ext_pkg and getattr(ext_info, 'directory', None):
+            ext_pkg = extpkgs.get_ext_package_by_installed_path(ext_info.directory)
         if ext_pkg:
             return ext_pkg.is_enabled and ext_pkg.user_has_access
-        else:
-            mlogger.debug('Extension package is not defined: %s', ext_info.name)
+        mlogger.debug('Extension package is not defined: %s', ext_info.name)
     except Exception as ext_check_err:
         mlogger.error('Error checking state for extension: %s | %s',
                       ext_info.name, ext_check_err)
-
-    # Lets be nice and load the package if it is not defined
     return True
 
 

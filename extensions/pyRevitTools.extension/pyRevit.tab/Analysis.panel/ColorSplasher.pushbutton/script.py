@@ -1,3 +1,4 @@
+# -- coding: utf-8 --
 import sys
 from re import split
 from math import fabs
@@ -1205,24 +1206,44 @@ class ColorSplasherWindow(forms.WPFWindow):
         self.uns_event.Raise()
 
     def list_box2_mouse_down(self, sender, e):
-        """Capture Shift key state when mouse is pressed on list items."""
-        from System.Windows.Input import (
-            MouseButtonEventArgs,
-            ModifierKeys,
-            Keyboard,
-            Key,
-        )
+        """
+        track clicking on dialogbox
+        
+        :param self: Description
+        :param sender: Description
+        :param e: Description
+        """
+        from System.Windows.Input import ModifierKeys, Keyboard, Key
+        from System.Windows.Media import VisualTreeHelper
+        from System.Windows.Controls import ListBoxItem
 
-        if isinstance(e, MouseButtonEventArgs):
-            shift_from_event = (
-                e.KeyboardDevice.Modifiers & ModifierKeys.Shift
-            ) == ModifierKeys.Shift
-            shift_from_keyboard = Keyboard.IsKeyDown(
-                Key.LeftShift
-            ) or Keyboard.IsKeyDown(Key.RightShift)
-            self._shift_pressed_on_click = shift_from_event or shift_from_keyboard
-        else:
+        hit_on_item = False
+        try:
+            pos = e.GetPosition(self.list_box2)
+            hit = VisualTreeHelper.HitTest(self.list_box2, pos)
+            if hit is not None and hit.VisualHit is not None:
+                element = hit.VisualHit
+                while element is not None:
+                    if isinstance(element, ListBoxItem):
+                        hit_on_item = True
+                        break
+                    element = VisualTreeHelper.GetParent(element)
+        except Exception as e:
+            logger.debug("Error in list_box2_mouse_down: {0}".format(e))
+            hit_on_item = False
+
+        if not hit_on_item:
             self._shift_pressed_on_click = False
+            e.Handled = True
+            return
+
+        shift_from_event = (
+            e.KeyboardDevice.Modifiers & ModifierKeys.Shift
+        ) == ModifierKeys.Shift
+        shift_from_keyboard = Keyboard.IsKeyDown(
+            Key.LeftShift
+        ) or Keyboard.IsKeyDown(Key.RightShift)
+        self._shift_pressed_on_click = shift_from_event or shift_from_keyboard
 
     def list_selected_index_changed(self, sender, e):
         """Handle ListBox selection change for color picking or element selection."""
@@ -1230,6 +1251,9 @@ class ColorSplasherWindow(forms.WPFWindow):
         if sender.SelectedIndex == -1:
             if hasattr(self, "_shift_pressed_on_click"):
                 self._shift_pressed_on_click = False
+            return
+        if sender.SelectedItem is None:
+            self._shift_pressed_on_click = False
             return
 
         from System.Windows.Input import Keyboard, Key

@@ -104,18 +104,19 @@ author: Test Author";
             var testButton = FindComponentRecursively(extension, "TestButton");
             Assert.IsNotNull(testButton, "TestButton should be found");
             
-            // Since there's no en_us, should fallback to first available
-            Assert.IsNotNull(testButton.Title, "Title should not be null");
-            Assert.IsNotNull(testButton.Tooltip, "Tooltip should not be null");
+            // Python parity: without matching locale (and no en_us), direct resolved title/tooltip are null
+            Assert.IsTrue(string.IsNullOrEmpty(testButton.Title),
+                "Title should be empty when no preferred/default locale exists");
+            Assert.IsTrue(string.IsNullOrEmpty(testButton.Tooltip),
+                "Tooltip should be empty when no preferred/default locale exists");
             Assert.That(testButton.Author, Is.EqualTo("Test Author"));
             
             TestContext.Out.WriteLine($"Fallback Title: {testButton.Title}");
             TestContext.Out.WriteLine($"Fallback Tooltip: {testButton.Tooltip}");
             
-            // Should get one of the available locales (first one in order)
-            Assert.IsTrue(testButton.Title == "French Title" || 
-                         testButton.Title == "German Title" || 
-                         testButton.Title == "Spanish Title");
+            // Unknown locale with no en_us fallback resolves to component fallback values
+            Assert.IsTrue(string.IsNullOrEmpty(testButton.GetLocalizedTitle("zh_cn")));
+            Assert.IsTrue(string.IsNullOrEmpty(testButton.GetLocalizedTooltip("zh_cn")));
         }
         
         [Test]
@@ -194,9 +195,9 @@ author: Multilingual Test Author";
             Assert.AreEqual("Titolo Italiano", testButton.GetLocalizedTitle("it_it"));
             Assert.AreEqual("English tooltip description", testButton.GetLocalizedTooltip("it_it")); // Should fallback to en_us
             
-            // Test fallback for unknown locale
-            Assert.AreEqual("English Title", testButton.GetLocalizedTitle("zh_cn")); // Should fallback to en_us
-            Assert.AreEqual("English tooltip description", testButton.GetLocalizedTooltip("zh_cn")); // Should fallback to en_us
+            // Test fallback for unknown locale via default locale aliases (en_us/english)
+            Assert.AreEqual("English Title", testButton.GetLocalizedTitle("zh_cn"));
+            Assert.AreEqual("English tooltip description", testButton.GetLocalizedTooltip("zh_cn"));
             
             // Test available locales
             var availableLocales = testButton.AvailableLocales.ToList();
@@ -229,7 +230,7 @@ author: Locale Test Author";
             
             TestExtensionBuilder.WriteBundleYaml(buttonDir, bundleContent);
             
-            // Test with default locale (en_us) - should fallback to first available
+            // Test with default locale (en_us) and no matching locale key
             var originalDefaultLocale = ExtensionParser.DefaultLocale;
             
             try
@@ -242,9 +243,9 @@ author: Locale Test Author";
                 
                 Assert.IsNotNull(testButton);
                 
-                // Should get first available since en_us is not available
+                // Python parity: no first-value fallback when locale chain has no match
                 var titleWithEnUs = testButton.GetLocalizedTitle();
-                Assert.IsTrue(titleWithEnUs == "Titre Francais Only" || titleWithEnUs == "Nur Deutscher Titel");
+                Assert.IsNull(titleWithEnUs);
                 
                 TestContext.Out.WriteLine($"Default locale (en_us) fallback title: {titleWithEnUs}");
                 
