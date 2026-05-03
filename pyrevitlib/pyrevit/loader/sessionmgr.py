@@ -400,7 +400,7 @@ def load_session():
             "future release. Enable the new loader in pyRevit settings."
         )
         _new_session()
-    elif int(HOST_APP.version) < NEW_LOADER_MIN_REVIT_VERSION:
+    elif HOST_APP.is_older_than(NEW_LOADER_MIN_REVIT_VERSION):
         mlogger.warning(
             "The new C# loader is not supported on Revit %s (requires Revit %s+). "
             "Falling back to the legacy Python loader automatically.",
