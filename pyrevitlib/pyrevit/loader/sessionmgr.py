@@ -49,6 +49,12 @@ mlogger = logger.get_logger(__name__)
 # Build strategy constant (Roslyn is the only supported strategy)
 BUILD_STRATEGY_ROSLYN = "Roslyn"
 
+# Minimum Revit version that supports the new C# loader.
+# Revit 2019/2020 ship an older .NET Framework and system assemblies
+# (System.Runtime.CompilerServices.Unsafe, System.Collections.Immutable)
+# that are incompatible with the Roslyn version bundled in pyRevit.
+NEW_LOADER_MIN_REVIT_VERSION = 2021
+
 
 AssembledExtension = namedtuple("AssembledExtension", ["ext", "assm"])
 
@@ -389,6 +395,23 @@ def load_session():
     # create a new session
     if not user_config.new_loader:
         mlogger.info("Creating new pyRevit session with pyRevitLoader.py...")
+        mlogger.warning(
+            "The legacy Python loader is deprecated and will be removed in a "
+            "future release. Enable the new loader in pyRevit settings."
+        )
+        _new_session()
+    elif int(HOST_APP.version) < NEW_LOADER_MIN_REVIT_VERSION:
+        mlogger.warning(
+            "The new C# loader is not supported on Revit %s (requires Revit %s+). "
+            "Falling back to the legacy Python loader automatically.",
+            HOST_APP.version,
+            NEW_LOADER_MIN_REVIT_VERSION,
+        )
+        mlogger.warning(
+            "The legacy Python loader is deprecated and will be removed in a "
+            "future release. Upgrade to Revit %s or newer to use the new loader.",
+            NEW_LOADER_MIN_REVIT_VERSION,
+        )
         _new_session()
     else:
         mlogger.info("Creating new Session with pyRevitAssemblyMaker.dll...")
