@@ -401,13 +401,13 @@ def load_session():
         )
         _new_session()
     elif HOST_APP.is_older_than(NEW_LOADER_MIN_REVIT_VERSION):
-        mlogger.debug(
+        mlogger.warning(
             "The new C# loader is not supported on Revit %s (requires Revit %s+). "
             "Falling back to the legacy Python loader automatically.",
             HOST_APP.version,
             NEW_LOADER_MIN_REVIT_VERSION,
         )
-        mlogger.debug(
+        mlogger.warning(
             "The legacy Python loader is deprecated and will be removed in "
             "future releases. Upgrade to Revit %s or newer to use the new loader.",
             NEW_LOADER_MIN_REVIT_VERSION,
