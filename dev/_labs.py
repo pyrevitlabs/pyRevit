@@ -109,11 +109,20 @@ def build_deps(_: Dict[str, str]):
     _build("NLog (netfx)", configs.NLOG, framework="net46", publish_dir=configs.LIBSPATH_NETFX)
     _build("NLog (netcore)", configs.NLOG, framework="netstandard2.0", publish_dir=configs.LIBSPATH_NETCORE)
 
-    _build("IronPython2 (netfx)", configs.IRONPYTHON2, framework="net48", publish_dir=configs.ENGINES2PATH_NETFX)
-    _build("IronPython2 (netcore)", configs.IRONPYTHON2_LIB, framework="netstandard2.0", publish_dir=configs.ENGINES2PATH_NETCORE)
-    _build("IronPython2 (netcore)", configs.IRONPYTHON2_MODULES, framework="netstandard2.0", publish_dir=configs.ENGINES2PATH_NETCORE)
-    _build("IronPython2 (netcore)", configs.IRONPYTHON2_SQLITE, framework="netstandard2.0", publish_dir=configs.ENGINES2PATH_NETCORE)
-    _build("IronPython2 (netcore)", configs.IRONPYTHON2_WPF, framework="net6.0-windows", publish_dir=configs.ENGINES2PATH_NETCORE)
+    # Use an explicit NuGet.config to avoid inheriting the broken myget.org source from the
+    # IronPython2 submodule's NuGet.config (https://www.myget.org/F/nunit/api/v3/index.json).
+    _ipy2_nuget_config = op.join(op.dirname(op.abspath(configs.IRONPYTHON2)), "NuGet.config")
+    _ipy2_nuget_args = ["--configfile", _ipy2_nuget_config]
+    _build("IronPython2 (netfx)", configs.IRONPYTHON2, framework="net48", publish_dir=configs.ENGINES2PATH_NETFX,
+           extra_publish_args=_ipy2_nuget_args)
+    _build("IronPython2 (netcore)", configs.IRONPYTHON2_LIB, framework="netstandard2.0", publish_dir=configs.ENGINES2PATH_NETCORE,
+           extra_publish_args=_ipy2_nuget_args)
+    _build("IronPython2 (netcore)", configs.IRONPYTHON2_MODULES, framework="netstandard2.0", publish_dir=configs.ENGINES2PATH_NETCORE,
+           extra_publish_args=_ipy2_nuget_args)
+    _build("IronPython2 (netcore)", configs.IRONPYTHON2_SQLITE, framework="netstandard2.0", publish_dir=configs.ENGINES2PATH_NETCORE,
+           extra_publish_args=_ipy2_nuget_args)
+    _build("IronPython2 (netcore)", configs.IRONPYTHON2_WPF, framework="net6.0-windows", publish_dir=configs.ENGINES2PATH_NETCORE,
+           extra_publish_args=_ipy2_nuget_args)
 
     # NOTE: Enable when produced custom IronPython3 build
     # _build("IronPython3 (netfx)", configs.IRONPYTHON3, framework="net48", publish_dir=configs.ENGINES3PATH_NETFX)
