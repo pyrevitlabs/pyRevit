@@ -124,6 +124,27 @@ namespace pyRevitExtensionParser
         }
 
         /// <summary>
+        /// Gets or sets whether to include legacy .tab/ folders when a layout file exists.
+        /// </summary>
+        /// <remarks>
+        /// When true and an extension has an extension_layout.yaml, legacy .tab/ directories
+        /// are also scanned and their tools merged into the layout (layout wins on name collision).
+        /// Defaults to false.
+        /// </remarks>
+        public bool IncludeLegacyFolders
+        {
+            get
+            {
+                var value = _ini.IniReadValue("core", "include_legacy_folders");
+                return bool.TryParse(value, out var result) && result;
+            }
+            set
+            {
+                _ini.IniWriteValue("core", "include_legacy_folders", value ? TrueString : FalseString);
+            }
+        }
+
+        /// <summary>
         /// Gets or sets whether to load beta/experimental commands.
         /// </summary>
         /// <remarks>
@@ -605,6 +626,49 @@ namespace pyRevitExtensionParser
             }
 
             return null; // Return null if the extension is not found
+        }
+
+        /// <summary>
+        /// Gets the custom layout file path for an extension, if configured.
+        /// </summary>
+        /// <param name="extensionName">Extension name (without .extension suffix)</param>
+        /// <returns>Path to custom layout file, or null if not configured or file doesn't exist</returns>
+        public string GetCustomLayoutPath(string extensionName)
+        {
+            if (string.IsNullOrEmpty(extensionName))
+                return null;
+
+            var section = $"{extensionName}.extension";
+            var value = _ini.IniReadValue(section, "custom_layout_path");
+
+            if (string.IsNullOrEmpty(value))
+                return null;
+
+            value = value.Trim();
+            // Strip quotes if present
+            if (value.Length >= 2 &&
+                ((value[0] == '"' && value[value.Length - 1] == '"') ||
+                 (value[0] == '\'' && value[value.Length - 1] == '\'')))
+            {
+                value = value.Substring(1, value.Length - 2).Trim();
+            }
+
+            // Only return if file exists
+            return File.Exists(value) ? value : null;
+        }
+
+        /// <summary>
+        /// Sets or clears the custom layout file path for an extension.
+        /// </summary>
+        /// <param name="extensionName">Extension name (without .extension suffix)</param>
+        /// <param name="layoutPath">Path to custom layout file, or null/empty to clear</param>
+        public void SetCustomLayoutPath(string extensionName, string layoutPath)
+        {
+            if (string.IsNullOrEmpty(extensionName))
+                return;
+
+            var section = $"{extensionName}.extension";
+            _ini.IniWriteValue(section, "custom_layout_path", layoutPath ?? string.Empty);
         }
 
         /// <summary>

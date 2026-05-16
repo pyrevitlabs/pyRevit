@@ -387,6 +387,11 @@ namespace pyRevitExtensionParser
         private static PyRevitConfig GetConfig() => PyRevitConfig.Load();
 
         /// <summary>
+        /// Internal accessor for GetConfig, used by LayoutParser for custom layout path resolution.
+        /// </summary>
+        internal static PyRevitConfig GetConfigPublic() => GetConfig();
+
+        /// <summary>
         /// Parses a single extension from the given extension directory path
         /// </summary>
         /// <param name="extDir">The path to the .extension directory</param>
@@ -477,6 +482,7 @@ namespace pyRevitExtensionParser
             }
 
             // Check for layout-based parsing (extension_layout.yaml)
+            var config = GetConfig();
             List<ParsedComponent> children;
             if (LayoutParser.HasLayoutFile(extDir))
             {
@@ -484,7 +490,8 @@ namespace pyRevitExtensionParser
                 children = LayoutParser.ParseLayout(
                     extDir, extName,
                     extensionTemplates.Count > 0 ? extensionTemplates : null,
-                    revitYear);
+                    revitYear,
+                    config.IncludeLegacyFolders);
             }
             else
             {
@@ -496,7 +503,6 @@ namespace pyRevitExtensionParser
 
             // Read extension config from pyRevit config file (cached).
             // Config is keyed by folder name (e.g. [extension_test.extension]) so it matches install and Python.
-            var config = GetConfig();
             var extConfig = config.ParseExtensionByName(extName);
 
             var parsedExtension = new ParsedExtension
@@ -1741,6 +1747,19 @@ namespace pyRevitExtensionParser
                 OffIconDarkPath = offIconDarkPath,
                 MediaFile = mediaFile
             };
+        }
+
+        /// <summary>
+        /// Internal wrapper for ParseComponents, exposed for LayoutParser's legacy merge feature.
+        /// </summary>
+        internal static List<ParsedComponent> ParseComponentsPublic(
+            string baseDir,
+            string extensionName,
+            string parentPath,
+            Dictionary<string, string> inheritedTemplates,
+            int revitYear)
+        {
+            return ParseComponents(baseDir, extensionName, parentPath, inheritedTemplates, revitYear);
         }
 
         /// <summary>

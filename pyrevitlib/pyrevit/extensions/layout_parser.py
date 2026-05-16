@@ -49,8 +49,21 @@ def get_layout_file(extension_dir):
     Returns:
         str or None: Path to the layout file, or None for legacy mode
     """
-    # TODO: Phase 4 will add user config override check here
-    # For now, just check for bundled layout file
+    # Check user config for custom layout path
+    try:
+        from pyrevit.userconfig import user_config
+        ext_name = op.splitext(op.basename(extension_dir))[0]
+        section_name = ext_name + '.extension'
+        if user_config.has_section(section_name):
+            section = user_config.get_section(section_name)
+            custom_path = section.get_option('custom_layout_path',
+                                             default_value='')
+            if custom_path and op.isfile(custom_path):
+                return custom_path
+    except Exception:
+        pass
+
+    # Bundled layout file
     bundled = op.join(extension_dir, exts.EXT_LAYOUT_FILE)
     if op.isfile(bundled):
         return bundled

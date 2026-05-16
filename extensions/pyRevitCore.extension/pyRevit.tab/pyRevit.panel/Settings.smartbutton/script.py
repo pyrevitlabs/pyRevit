@@ -160,6 +160,8 @@ class SettingsWindow(forms.WPFWindow):
         
         self.new_loader.IsChecked = user_config.new_loader
 
+        self.include_legacy_folders.IsChecked = user_config.include_legacy_folders
+
         self.minimize_consoles_cb.IsChecked = user_config.output_close_others
 
         mode = user_config.output_close_mode_enum
@@ -523,6 +525,81 @@ class SettingsWindow(forms.WPFWindow):
         """Callback method for when new_loader toggle changes"""
         pass
 
+    def import_layout_clicked(self, sender, args):
+        """Callback for Import Layout button - picks a YAML file and stores path in config."""
+        from pyrevit import forms as pyrvt_forms
+        layout_file = pyrvt_forms.pick_file(
+            file_ext='yaml',
+            title='Select Layout YAML File'
+        )
+        if not layout_file:
+            return
+
+        # Ask which extension to apply it to
+        import os
+        import os.path as op
+        from pyrevit.extensions.extpackages import get_ext_packages
+        ext_names = []
+        for ext in get_ext_packages():
+            if ext.is_installed:
+                ext_names.append(ext.name)
+
+        if not ext_names:
+            pyrvt_forms.alert('No installed extensions found.')
+            return
+
+        selected = pyrvt_forms.SelectFromList.show(
+            sorted(ext_names),
+            title='Select Extension',
+            multiselect=False
+        )
+        if not selected:
+            return
+
+        # Store the custom layout path in config
+        section_name = selected + '.extension'
+        if not user_config.has_section(section_name):
+            user_config.add_section(section_name)
+        section = user_config.get_section(section_name)
+        section.custom_layout_path = layout_file
+        user_config.save_changes()
+
+        pyrvt_forms.alert(
+            'Custom layout set for "{}". Reload pyRevit to apply.'.format(selected)
+        )
+
+    def reset_layout_clicked(self, sender, args):
+        """Callback for Reset Layout button - clears custom layout path from config."""
+        from pyrevit import forms as pyrvt_forms
+        from pyrevit.extensions.extpackages import get_ext_packages
+        ext_names = []
+        for ext in get_ext_packages():
+            if ext.is_installed:
+                ext_names.append(ext.name)
+
+        if not ext_names:
+            pyrvt_forms.alert('No installed extensions found.')
+            return
+
+        selected = pyrvt_forms.SelectFromList.show(
+            sorted(ext_names),
+            title='Select Extension to Reset',
+            multiselect=False
+        )
+        if not selected:
+            return
+
+        # Clear the custom layout path
+        section_name = selected + '.extension'
+        if user_config.has_section(section_name):
+            section = user_config.get_section(section_name)
+            section.custom_layout_path = ''
+            user_config.save_changes()
+
+        pyrvt_forms.alert(
+            'Layout reset to default for "{}". Reload pyRevit to apply.'.format(selected)
+        )
+
     def copy_envvar_value(self, sender, args):
         """Callback method for copying selected env var value to clipboard"""
         script.clipboard_copy(self.envvars_lb.SelectedItem.Value)
@@ -863,6 +940,7 @@ class SettingsWindow(forms.WPFWindow):
 
         user_config.load_beta = self.loadbetatools_cb.IsChecked
         user_config.new_loader = self.new_loader.IsChecked
+        user_config.include_legacy_folders = self.include_legacy_folders.IsChecked
 
         user_config.output_close_others = self.minimize_consoles_cb.IsChecked
         if self.closewindows_current_rb.IsChecked:
