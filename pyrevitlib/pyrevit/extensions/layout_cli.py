@@ -59,7 +59,8 @@ def generate_layout(extension_dir, output_dir=None):
             tab_entry['title'] = tab._ui_title
 
         panels_data = []
-        for panel in getattr(tab, 'components', []):
+        # Use iter() to get layout-ordered panels (respects bundle.yaml layout key)
+        for panel in iter(tab):
             panel_name = panel.name
             panel_entry = {'name': panel_name}
 
@@ -176,7 +177,8 @@ def _build_panel_layout(panel):
     layout = []
     stack_buffer = []
 
-    for comp in getattr(panel, 'components', []):
+    # Use iter() to respect layout ordering from bundle.yaml
+    for comp in iter(panel):
         type_id = getattr(comp, 'type_id', '')
 
         if type_id == exts.SEPARATOR_IDENTIFIER:
@@ -191,8 +193,10 @@ def _build_panel_layout(panel):
                 stack_buffer = []
             layout.append('>>>')
         elif _is_stack_type(comp):
-            # This is a stack - inline its children
-            stack_children = [c.name for c in getattr(comp, 'components', [])]
+            # This is a stack - inline its children (iter respects bundle.yaml order)
+            stack_children = [c.name for c in iter(comp)
+                              if getattr(c, 'type_id', '') not in
+                              (exts.SEPARATOR_IDENTIFIER, exts.SLIDEOUT_IDENTIFIER)]
             if stack_children:
                 layout.append({'stack': stack_children})
         else:

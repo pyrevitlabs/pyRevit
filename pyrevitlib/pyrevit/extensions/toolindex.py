@@ -68,13 +68,12 @@ def _is_recognized_bundle(dir_path, cmp_types_list):
 
 
 def build_tool_index(tools_dir, extension_dir):
-    """Scan tools/ directory and return dict mapping tool name to component.
+    """Scan tools/ directory and legacy folder structure for tool bundles.
 
-    Recursively walks the tools/ directory. Directories with recognized
-    postfixes (.pushbutton, .pulldown, etc.) are instantiated as components.
-    Plain subdirectories (no recognized postfix) are treated as organizational
-    folders and recursed into. Container tools (pulldown, splitbutton) have
-    their children parsed via the standard recursive parser.
+    Recursively walks the tools/ directory first, then scans the legacy
+    .tab/.panel/ hierarchy for additional tool bundles. This allows layout
+    YAML files to reference tools regardless of where they physically reside.
+    Duplicates: tools/ wins (indexed first).
 
     Args:
         tools_dir (str): Path to the tools/ directory
@@ -83,9 +82,6 @@ def build_tool_index(tools_dir, extension_dir):
     Returns:
         dict: Mapping of tool name (str) to component object
     """
-    if not op.exists(tools_dir):
-        return {}
-
     ext_name = _get_extension_name(extension_dir)
     tool_index = {}
 
@@ -103,10 +99,18 @@ def build_tool_index(tools_dir, extension_dir):
                          GenericUICommand, NoScriptButton]
     all_cmp_types = _get_subcomponents_classes(panel_child_types)
 
-    _scan_directory(tools_dir, ext_name, tool_index, all_cmp_types)
+    # Scan tools/ directory first (takes priority on duplicates)
+    if op.isdir(tools_dir):
+        _scan_directory(tools_dir, ext_name, tool_index, all_cmp_types)
+        mlogger.debug('Built tool index with %d entries from: %s',
+                      len(tool_index), tools_dir)
 
-    mlogger.debug('Built tool index with %d entries from: %s',
-                  len(tool_index), tools_dir)
+    # Also scan legacy folder structure (.tab/.panel/) for tool bundles
+    _scan_legacy_directory(extension_dir, tools_dir, ext_name,
+                           tool_index, all_cmp_types)
+
+    mlogger.debug('Tool index has %d total entries after legacy scan',
+                  len(tool_index))
     return tool_index
 
 
@@ -144,6 +148,92 @@ def _scan_directory(search_dir, ext_name, tool_index, cmp_types):
         else:
             # Plain subfolder - recurse into it for organizational grouping
             _scan_directory(full_path, ext_name, tool_index, cmp_types)
+
+
+def _scan_legacy_directory(extension_dir, tools_dir, ext_name,
+                           tool_index, cmp_types):
+    """Scan legacy .tab/.panel/ folder structure for tool bundles.
+
+    Walks the extension directory recursively. Directories with .tab or
+    .panel postfixes are treated as structural containers and recursed into.
+    Tool bundles (.pushbutton, .pulldown, etc.) are indexed. Plain directories
+    without recognized postfixes are skipped. The tools/ directory is skipped
+    to avoid double-indexing.
+
+    Args:
+        extension_dir (str): Extension root directory to scan
+        tools_dir (str): Path to tools/ directory (skipped)
+        ext_name (str): Extension name for unique name generation
+        tool_index (dict): Accumulator dict to populate
+        cmp_types (list): List of recognized component type classes
+    """
+    _scan_legacy_subdir(extension_dir, tools_dir, ext_name,
+                        tool_index, cmp_types)
+
+
+def _scan_legacy_subdir(search_dir, tools_dir, ext_name,
+                        tool_index, cmp_types):
+    """Recursively scan a legacy directory for tool bundles.
+
+    Args:
+        search_dir (str): Directory to scan
+        tools_dir (str): Path to tools/ directory (skipped)
+        ext_name (str): Extension name for unique name generation
+        tool_index (dict): Accumulator dict to populate
+        cmp_types (list): List of recognized component type classes
+    """
+    try:
+        entries = os.listdir(search_dir)
+    except OSError as err:
+        mlogger.error('Cannot list directory %s: %s', search_dir, err)
+        return
+
+    for entry in entries:
+        # skip hidden/private entries
+        if entry.startswith(('.', '_')):
+            continue
+
+        full_path = op.join(search_dir, entry)
+
+        # only process directories
+        if not op.isdir(full_path):
+            continue
+
+        # Skip the tools/ directory (already indexed)
+        if tools_dir and op.normcase(op.abspath(full_path)) == \
+                op.normcase(op.abspath(tools_dir)):
+            continue
+
+        # Check if this is a .tab, .panel, or .stack (structural container)
+        dir_ext = _get_dir_extension(full_path)
+        if dir_ext in ('.tab', '.panel', '.stack'):
+            # Recurse into structural containers
+            _scan_legacy_subdir(full_path, None, ext_name,
+                                tool_index, cmp_types)
+            continue
+
+        # Check if this is a recognized tool bundle
+        matched_type = _is_recognized_bundle(full_path, cmp_types)
+        if matched_type:
+            # Index tool (IndexTool skips duplicates)
+            _index_tool(full_path, matched_type, ext_name, tool_index)
+        # Plain directories without recognized postfix are skipped
+
+
+def _get_dir_extension(dir_path):
+    """Get the extension/postfix of a directory name.
+
+    Args:
+        dir_path (str): Path to the directory
+
+    Returns:
+        str: Lowercase extension (e.g. '.tab', '.panel', '.pushbutton')
+    """
+    name = op.basename(dir_path)
+    dot_idx = name.rfind('.')
+    if dot_idx > 0:
+        return name[dot_idx:].lower()
+    return ''
 
 
 def _index_tool(tool_path, cmp_type, ext_name, tool_index):

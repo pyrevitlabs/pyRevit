@@ -490,8 +490,7 @@ namespace pyRevitExtensionParser
                 children = LayoutParser.ParseLayout(
                     extDir, extName,
                     extensionTemplates.Count > 0 ? extensionTemplates : null,
-                    revitYear,
-                    config.IncludeLegacyFolders);
+                    revitYear);
             }
             else
             {
@@ -1749,18 +1748,6 @@ namespace pyRevitExtensionParser
             };
         }
 
-        /// <summary>
-        /// Internal wrapper for ParseComponents, exposed for LayoutParser's legacy merge feature.
-        /// </summary>
-        internal static List<ParsedComponent> ParseComponentsPublic(
-            string baseDir,
-            string extensionName,
-            string parentPath,
-            Dictionary<string, string> inheritedTemplates,
-            int revitYear)
-        {
-            return ParseComponents(baseDir, extensionName, parentPath, inheritedTemplates, revitYear);
-        }
 
         /// <summary>
         /// Gets a localized value from a dictionary, falling back to the default locale, then to the first available value.

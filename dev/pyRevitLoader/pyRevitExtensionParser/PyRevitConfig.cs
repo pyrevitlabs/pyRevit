@@ -123,26 +123,6 @@ namespace pyRevitExtensionParser
             }
         }
 
-        /// <summary>
-        /// Gets or sets whether to include legacy .tab/ folders when a layout file exists.
-        /// </summary>
-        /// <remarks>
-        /// When true and an extension has an extension_layout.yaml, legacy .tab/ directories
-        /// are also scanned and their tools merged into the layout (layout wins on name collision).
-        /// Defaults to false.
-        /// </remarks>
-        public bool IncludeLegacyFolders
-        {
-            get
-            {
-                var value = _ini.IniReadValue("core", "include_legacy_folders");
-                return bool.TryParse(value, out var result) && result;
-            }
-            set
-            {
-                _ini.IniWriteValue("core", "include_legacy_folders", value ? TrueString : FalseString);
-            }
-        }
 
         /// <summary>
         /// Gets or sets whether to load beta/experimental commands.

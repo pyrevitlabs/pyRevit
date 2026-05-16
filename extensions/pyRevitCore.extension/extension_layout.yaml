@@ -1,0 +1,5 @@
+tabs:
+  - panels:
+      - layout_file: "pyRevit.panel.yaml"
+        name: "pyRevit"
+    name: "pyRevit"

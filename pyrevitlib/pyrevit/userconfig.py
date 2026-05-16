@@ -316,20 +316,6 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             value=state
         )
     
-    @property
-    def include_legacy_folders(self):
-        """Whether to include legacy .tab/ folders when layout file exists."""
-        return self.core.get_option(
-            'include_legacy_folders',
-            default_value=False,
-        )
-
-    @include_legacy_folders.setter
-    def include_legacy_folders(self, state):
-        self.core.set_option(
-            'include_legacy_folders',
-            value=state
-        )
 
     @property
     def output_close_others(self):

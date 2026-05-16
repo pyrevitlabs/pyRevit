@@ -1,0 +1,23 @@
+title: "pyRevit"
+layout:
+  - stack:
+      - "Search"
+      - "Spy"
+      - "Reload"
+  - ">>>"
+  - "About"
+  - "Update"
+  - "Extensions"
+  - stack:
+      - "Wiki"
+      - "Blog"
+      - "Repo"
+  - stack:
+      - "apidocs"
+      - "emojis"
+      - "rpw Docs"
+  - stack:
+      - "Icons8"
+      - "RegEx Tool"
+      - "Report Bugs"
+  - "Settings"

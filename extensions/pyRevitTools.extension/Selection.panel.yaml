@@ -1,0 +1,16 @@
+layout:
+  - "Pick"
+  - "Set Workset"
+  - stack:
+      - "Isolate"
+      - "Filter"
+      - "Select"
+  - stack:
+      - "MAppend"
+      - "MWrite"
+      - "MRead"
+  - stack:
+      - "Copy State"
+      - "Paste State"
+      - "Memory"
+title: "Selection"

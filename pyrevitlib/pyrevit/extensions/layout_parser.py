@@ -100,6 +100,8 @@ def parse_extension_layout(extension, tool_index, layout_file):
         mlogger.warning('No tabs defined in layout file: %s', layout_file)
         return
 
+    layout_dir = op.dirname(layout_file)
+
     for tab_data in tabs_data:
         tab = _create_tab(tab_data, ext_name, ext_dir)
         if tab is None:
@@ -107,7 +109,8 @@ def parse_extension_layout(extension, tool_index, layout_file):
 
         panels_data = tab_data.get(exts.LAYOUT_PANELS_KEY, [])
         for panel_data in panels_data:
-            panel = _create_panel(panel_data, ext_name, ext_dir, tool_index)
+            panel = _create_panel(panel_data, ext_name, ext_dir, tool_index,
+                                  layout_dir)
             if panel is not None:
                 tab.add_component(panel)
 
@@ -144,7 +147,7 @@ def _create_tab(tab_data, ext_name, ext_dir):
     return tab
 
 
-def _create_panel(panel_data, ext_name, ext_dir, tool_index):
+def _create_panel(panel_data, ext_name, ext_dir, tool_index, layout_dir=None):
     """Create a Panel component from layout YAML data.
 
     Handles both inline layout and external panel.yaml file references.
@@ -154,18 +157,23 @@ def _create_panel(panel_data, ext_name, ext_dir, tool_index):
         ext_name (str): Extension name
         ext_dir (str): Extension directory path
         tool_index (dict): Tool name to component mapping
+        layout_dir (str): Directory of the active layout file (for custom cached layouts)
 
     Returns:
         Panel or None: Created panel component
     """
     from pyrevit.extensions.components import Panel
 
+    if layout_dir is None:
+        layout_dir = ext_dir
+
     # panel_data can be a dict with name + layout/layout_file
     if isinstance(panel_data, str):
         # Simple string reference - look for panel.yaml file
         panel_name = panel_data
         panel_title = panel_data
-        layout_list = _load_panel_layout_file(panel_name, ext_dir)
+        layout_list = _load_panel_layout_file(panel_name, ext_dir,
+                                              layout_dir)
     elif isinstance(panel_data, dict):
         panel_name = panel_data.get(exts.LAYOUT_NAME_KEY)
         if not panel_name:
@@ -176,9 +184,11 @@ def _create_panel(panel_data, ext_name, ext_dir, tool_index):
         # Check for external layout file reference
         layout_file_ref = panel_data.get(exts.LAYOUT_FILE_KEY)
         if layout_file_ref:
-            layout_list = _load_panel_layout_file_path(
-                op.join(ext_dir, layout_file_ref)
-            )
+            # Try layout directory first (custom cached layouts), then ext_dir
+            filepath = op.join(layout_dir, layout_file_ref)
+            if not op.isfile(filepath):
+                filepath = op.join(ext_dir, layout_file_ref)
+            layout_list = _load_panel_layout_file_path(filepath)
         else:
             # Inline layout
             layout_list = panel_data.get(exts.LAYOUT_KEY, [])
@@ -199,18 +209,26 @@ def _create_panel(panel_data, ext_name, ext_dir, tool_index):
     return panel
 
 
-def _load_panel_layout_file(panel_name, ext_dir):
-    """Load a panel layout from {PanelName}.panel.yaml in extension root.
+def _load_panel_layout_file(panel_name, ext_dir, layout_dir=None):
+    """Load a panel layout from {PanelName}.panel.yaml.
+
+    Checks layout_dir first (for custom cached layouts), then ext_dir.
 
     Args:
         panel_name (str): Panel name to look up
         ext_dir (str): Extension directory path
+        layout_dir (str): Directory of the active layout file
 
     Returns:
         list: Layout entries, or empty list if not found
     """
-    # Try exact name match first
     filename = panel_name + exts.PANEL_LAYOUT_POSTFIX
+    # Try layout directory first (custom cached layouts)
+    if layout_dir:
+        filepath = op.join(layout_dir, filename)
+        if op.isfile(filepath):
+            return _load_panel_layout_file_path(filepath)
+    # Fall back to extension directory
     filepath = op.join(ext_dir, filename)
     return _load_panel_layout_file_path(filepath)
 

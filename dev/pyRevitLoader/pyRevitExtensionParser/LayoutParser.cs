@@ -81,14 +81,12 @@ namespace pyRevitExtensionParser
         /// <param name="extensionName">Name of the extension (without .extension suffix)</param>
         /// <param name="inheritedTemplates">Templates inherited from extension bundle.yaml</param>
         /// <param name="revitYear">Running Revit version year (0 to skip filtering)</param>
-        /// <param name="includeLegacyFolders">When true, also scan .tab/ folders and merge undeclared tools</param>
         /// <returns>List of ParsedComponent (tabs) representing the layout tree</returns>
         public static List<ParsedComponent> ParseLayout(
             string extensionDir,
             string extensionName,
             Dictionary<string, string> inheritedTemplates,
-            int revitYear,
-            bool includeLegacyFolders = false)
+            int revitYear)
         {
             // Resolve layout file (custom path > bundled)
             var layoutPath = GetLayoutFilePath(extensionDir)
@@ -98,173 +96,19 @@ namespace pyRevitExtensionParser
             // Build tool index from tools/ directory
             var toolIndex = BuildToolIndex(toolsDir, extensionName, inheritedTemplates, revitYear);
 
+            // Also scan legacy folder structure (.tab/.panel/) for tool bundles
+            ScanLegacyDirectoryForTools(extensionDir, extensionName, inheritedTemplates, revitYear, toolIndex);
+
             // Parse the layout YAML
             var layoutYaml = LoadYaml(layoutPath);
             if (layoutYaml == null)
                 return new List<ParsedComponent>();
 
             // Build the component tree from layout
-            var tabs = BuildComponentTree(layoutYaml, extensionDir, extensionName, toolIndex);
-
-            // Optionally merge legacy .tab/ folders
-            if (includeLegacyFolders)
-            {
-                MergeLegacyFolders(tabs, extensionDir, extensionName, inheritedTemplates, revitYear);
-            }
+            var layoutDir = Path.GetDirectoryName(layoutPath);
+            var tabs = BuildComponentTree(layoutYaml, extensionDir, layoutDir, extensionName, toolIndex);
 
             return tabs;
-        }
-
-        /// <summary>
-        /// Merges legacy .tab/ directory components into the layout-built tree.
-        /// Tools already declared in the layout are skipped (layout wins).
-        /// Undeclared legacy tools are appended to matching panels or a new "Legacy" panel.
-        /// </summary>
-        private static void MergeLegacyFolders(
-            List<ParsedComponent> layoutTabs,
-            string extensionDir,
-            string extensionName,
-            Dictionary<string, string> inheritedTemplates,
-            int revitYear)
-        {
-            // Parse .tab/ directories using the standard directory-walking parser
-            var legacyChildren = ExtensionParser.ParseComponentsPublic(
-                extensionDir, extensionName, null, inheritedTemplates, revitYear);
-
-            if (legacyChildren == null || legacyChildren.Count == 0)
-                return;
-
-            // Build a set of tool names already in the layout tree
-            var declaredNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            CollectDeclaredNames(layoutTabs, declaredNames);
-
-            // Merge legacy tabs/panels/tools
-            foreach (var legacyTab in legacyChildren)
-            {
-                if (legacyTab.Type != CommandComponentType.Tab)
-                    continue;
-
-                // Find matching tab in layout
-                var matchingTab = layoutTabs.Find(t =>
-                    string.Equals(t.DisplayName, legacyTab.DisplayName, StringComparison.OrdinalIgnoreCase));
-
-                if (matchingTab == null)
-                {
-                    // Entire tab is new - add it only if it has undeclared tools
-                    var filteredTab = FilterDeclaredComponents(legacyTab, declaredNames);
-                    if (filteredTab != null && filteredTab.Children != null && filteredTab.Children.Count > 0)
-                        layoutTabs.Add(filteredTab);
-                    continue;
-                }
-
-                // Tab exists - merge panels
-                if (legacyTab.Children == null)
-                    continue;
-
-                foreach (var legacyPanel in legacyTab.Children)
-                {
-                    if (legacyPanel.Type != CommandComponentType.Panel)
-                        continue;
-
-                    var matchingPanel = matchingTab.Children.Find(p =>
-                        string.Equals(p.DisplayName, legacyPanel.DisplayName, StringComparison.OrdinalIgnoreCase));
-
-                    if (matchingPanel == null)
-                    {
-                        // Panel is new - add it with undeclared tools only
-                        var filteredPanel = FilterDeclaredComponents(legacyPanel, declaredNames);
-                        if (filteredPanel != null && filteredPanel.Children != null && filteredPanel.Children.Count > 0)
-                            matchingTab.Children.Add(filteredPanel);
-                    }
-                    else
-                    {
-                        // Panel exists - append undeclared tools
-                        if (legacyPanel.Children == null)
-                            continue;
-
-                        foreach (var tool in legacyPanel.Children)
-                        {
-                            if (!declaredNames.Contains(tool.Name) && !declaredNames.Contains(tool.DisplayName))
-                            {
-                                matchingPanel.Children.Add(tool);
-                            }
-                        }
-                    }
-                }
-            }
-
-            ExtensionParser.LogDebug(
-                $"Layout: Merged legacy folders for {extensionName} " +
-                $"({declaredNames.Count} tools already declared in layout)");
-        }
-
-        /// <summary>
-        /// Recursively collects all component names already in the layout tree.
-        /// </summary>
-        private static void CollectDeclaredNames(List<ParsedComponent> components, HashSet<string> names)
-        {
-            if (components == null)
-                return;
-
-            foreach (var comp in components)
-            {
-                if (comp.Type != CommandComponentType.Tab &&
-                    comp.Type != CommandComponentType.Panel &&
-                    comp.Type != CommandComponentType.Stack &&
-                    comp.Type != CommandComponentType.Separator)
-                {
-                    if (!string.IsNullOrEmpty(comp.Name))
-                        names.Add(comp.Name);
-                    if (!string.IsNullOrEmpty(comp.DisplayName))
-                        names.Add(comp.DisplayName);
-                }
-
-                if (comp.Children != null)
-                    CollectDeclaredNames(comp.Children, names);
-            }
-        }
-
-        /// <summary>
-        /// Returns a copy of the component with already-declared tools removed.
-        /// Returns null if no undeclared tools remain.
-        /// </summary>
-        private static ParsedComponent FilterDeclaredComponents(
-            ParsedComponent component, HashSet<string> declaredNames)
-        {
-            if (component.Children == null || component.Children.Count == 0)
-                return null;
-
-            var filtered = new List<ParsedComponent>();
-            foreach (var child in component.Children)
-            {
-                if (child.Type == CommandComponentType.Panel ||
-                    child.Type == CommandComponentType.Tab)
-                {
-                    var filteredChild = FilterDeclaredComponents(child, declaredNames);
-                    if (filteredChild != null)
-                        filtered.Add(filteredChild);
-                }
-                else if (!declaredNames.Contains(child.Name) &&
-                         !declaredNames.Contains(child.DisplayName))
-                {
-                    filtered.Add(child);
-                }
-            }
-
-            if (filtered.Count == 0)
-                return null;
-
-            // Return a shallow copy with filtered children
-            return new ParsedComponent
-            {
-                Name = component.Name,
-                DisplayName = component.DisplayName,
-                Title = component.Title,
-                Type = component.Type,
-                UniqueId = component.UniqueId,
-                Directory = component.Directory,
-                Children = filtered
-            };
         }
 
         #region Tool Index
@@ -337,6 +181,88 @@ namespace pyRevitExtensionParser
                     // Plain organizational folder - recurse into it
                     ScanToolDirectory(dir, extensionName, inheritedTemplates, revitYear, index);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Scans the legacy folder structure (.tab/.panel/ hierarchy) for tool bundles
+        /// and adds them to the existing tool index. This allows layout YAML files to
+        /// reference tools regardless of whether they live in tools/ or the legacy structure.
+        /// Containers (.tab, .panel) are recursed into but not indexed themselves.
+        /// Duplicates are skipped (tools/ wins since it's indexed first).
+        /// </summary>
+        private static void ScanLegacyDirectoryForTools(
+            string extensionDir,
+            string extensionName,
+            Dictionary<string, string> inheritedTemplates,
+            int revitYear,
+            Dictionary<string, ParsedComponent> index)
+        {
+            if (string.IsNullOrEmpty(extensionDir) || !Directory.Exists(extensionDir))
+                return;
+
+            var toolsDir = Path.Combine(extensionDir, ToolsDirName);
+            ScanLegacySubdirectory(extensionDir, toolsDir, extensionName, inheritedTemplates, revitYear, index);
+
+            ExtensionParser.LogDebug(
+                $"Layout: After legacy scan, tool index has {index.Count} total entries");
+        }
+
+        /// <summary>
+        /// Recursively scans a directory in the legacy structure.
+        /// .tab and .panel directories are recursed into (containers).
+        /// Tool bundles (.pushbutton, .pulldown, etc.) are indexed.
+        /// Plain directories without recognized postfixes are skipped.
+        /// </summary>
+        private static void ScanLegacySubdirectory(
+            string searchDir,
+            string toolsDirToSkip,
+            string extensionName,
+            Dictionary<string, string> inheritedTemplates,
+            int revitYear,
+            Dictionary<string, ParsedComponent> index)
+        {
+            string[] dirs;
+            try
+            {
+                dirs = Directory.GetDirectories(searchDir);
+            }
+            catch (Exception ex)
+            {
+                ExtensionParser.LogError($"Layout: Cannot list directory {searchDir}: {ex.Message}");
+                return;
+            }
+
+            foreach (var dir in dirs)
+            {
+                var dirName = Path.GetFileName(dir);
+
+                // Skip hidden/private entries
+                if (dirName.StartsWith(".") || dirName.StartsWith("_"))
+                    continue;
+
+                // Skip the tools/ directory (already indexed)
+                if (!string.IsNullOrEmpty(toolsDirToSkip) &&
+                    string.Equals(Path.GetFullPath(dir), Path.GetFullPath(toolsDirToSkip),
+                        StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var ext = Path.GetExtension(dir);
+                var componentType = CommandComponentTypeExtensions.FromExtension(ext);
+
+                if (componentType == CommandComponentType.Tab ||
+                    componentType == CommandComponentType.Panel ||
+                    componentType == CommandComponentType.Stack)
+                {
+                    // Structural container - recurse into it
+                    ScanLegacySubdirectory(dir, null, extensionName, inheritedTemplates, revitYear, index);
+                }
+                else if (componentType != CommandComponentType.Unknown)
+                {
+                    // Tool bundle - index it (IndexTool skips duplicates)
+                    IndexTool(dir, componentType, extensionName, inheritedTemplates, revitYear, index);
+                }
+                // Plain directories (Unknown) are skipped in legacy mode
             }
         }
 
@@ -465,6 +391,7 @@ namespace pyRevitExtensionParser
         private static List<ParsedComponent> BuildComponentTree(
             YamlMappingNode layoutRoot,
             string extensionDir,
+            string layoutDir,
             string extensionName,
             Dictionary<string, ParsedComponent> toolIndex)
         {
@@ -484,7 +411,7 @@ namespace pyRevitExtensionParser
                 if (tabMapping == null)
                     continue;
 
-                var tab = CreateTab(tabMapping, extensionDir, extensionName, toolIndex);
+                var tab = CreateTab(tabMapping, extensionDir, layoutDir, extensionName, toolIndex);
                 if (tab != null)
                     tabs.Add(tab);
             }
@@ -498,6 +425,7 @@ namespace pyRevitExtensionParser
         private static ParsedComponent CreateTab(
             YamlMappingNode tabMapping,
             string extensionDir,
+            string layoutDir,
             string extensionName,
             Dictionary<string, ParsedComponent> toolIndex)
         {
@@ -535,7 +463,7 @@ namespace pyRevitExtensionParser
                 if (panelMapping == null)
                     continue;
 
-                var panel = CreatePanel(panelMapping, extensionDir, extensionName, toolIndex);
+                var panel = CreatePanel(panelMapping, extensionDir, layoutDir, extensionName, toolIndex);
                 if (panel != null)
                     tab.Children.Add(panel);
             }
@@ -550,6 +478,7 @@ namespace pyRevitExtensionParser
         private static ParsedComponent CreatePanel(
             YamlMappingNode panelMapping,
             string extensionDir,
+            string layoutDir,
             string extensionName,
             Dictionary<string, ParsedComponent> toolIndex)
         {
@@ -582,8 +511,10 @@ namespace pyRevitExtensionParser
             var layoutFileName = GetScalar(GetMappingValue(panelMapping, LayoutFileKey));
             if (!string.IsNullOrEmpty(layoutFileName))
             {
-                // External panel layout file
-                var panelLayoutPath = Path.Combine(extensionDir, layoutFileName);
+                // Try layout directory first (for custom cached layouts), fall back to extension dir
+                var panelLayoutPath = Path.Combine(layoutDir, layoutFileName);
+                if (!File.Exists(panelLayoutPath))
+                    panelLayoutPath = Path.Combine(extensionDir, layoutFileName);
                 layoutList = LoadPanelLayoutFile(panelLayoutPath);
             }
 
