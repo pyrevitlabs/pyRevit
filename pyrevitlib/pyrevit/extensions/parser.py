@@ -1,9 +1,10 @@
-"""Base module ofr parsing extensions."""
+"""Base module for parsing extensions."""
 import os
 import os.path as op
 
 from pyrevit.coreutils import get_all_subclasses
 from pyrevit.coreutils.logger import get_logger
+import pyrevit.extensions as exts
 
 
 #pylint: disable=W0703,C0302,C0103
@@ -112,8 +113,31 @@ def get_parsed_extension(extension):
     under that package. (e.g. tabs, buttons, ...) sub components of package
     can be accessed by iterating the _get_component.
     See _basecomponents for types.
+
+    When extension_layout.yaml is present, uses layout-based parsing.
+    Otherwise falls back to the legacy directory-walking parser.
     """
-    _parse_for_components(extension)
+    try:
+        from pyrevit.extensions.layout_parser import get_layout_file, \
+            parse_extension_layout
+        from pyrevit.extensions.toolindex import build_tool_index
+    except Exception:
+        _parse_for_components(extension)
+        return extension
+
+    layout_file = get_layout_file(extension.directory)
+
+    if layout_file:
+        mlogger.debug('Using layout-based parsing for: %s', extension.name)
+        tools_dir = op.join(extension.directory, exts.TOOLS_DIR_NAME)
+        if op.exists(tools_dir):
+            tool_index = build_tool_index(tools_dir, extension.directory)
+        else:
+            tool_index = {}
+        parse_extension_layout(extension, tool_index, layout_file)
+    else:
+        _parse_for_components(extension)
+
     return extension
 
 

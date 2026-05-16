@@ -1,0 +1,6 @@
+tabs:
+  - name: "pyRevit Templates"
+    panels:
+      - name: "Templates"
+        layout:
+          - Template

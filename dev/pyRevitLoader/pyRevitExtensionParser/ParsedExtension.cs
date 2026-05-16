@@ -62,6 +62,7 @@ namespace pyRevitExtensionParser
 
         private static readonly HashSet<string> _hashDirSuffixes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
+            ".extension",
             ".tab",
             ".panel",
             ".pulldown",
@@ -79,7 +80,8 @@ namespace pyRevitExtensionParser
         private static readonly HashSet<string> _hashDirNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "lib",
-            "hooks"
+            "hooks",
+            "tools"
         };
         
         /// <summary>

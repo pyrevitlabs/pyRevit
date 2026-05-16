@@ -176,6 +176,20 @@ UNIQUE_ID_SEPARATOR = '_'
 SEPARATOR_IDENTIFIER = '---'
 SLIDEOUT_IDENTIFIER = '>>>'
 
+# layout-based extension structure
+EXT_LAYOUT_FILE = 'extension_layout.yaml'
+PANEL_LAYOUT_POSTFIX = '.panel.yaml'
+TOOLS_DIR_NAME = 'tools'
+
+# layout YAML keys
+LAYOUT_TABS_KEY = 'tabs'
+LAYOUT_PANELS_KEY = 'panels'
+LAYOUT_NAME_KEY = 'name'
+LAYOUT_TITLE_KEY = 'title'
+LAYOUT_FILE_KEY = 'layout_file'
+LAYOUT_KEY = 'layout'
+LAYOUT_STACK_KEY = 'stack'
+
 # bundle icon
 ICON_FILE_FORMAT = '.png'
 ICON_DARK_SUFFIX = '.dark'
