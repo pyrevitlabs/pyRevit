@@ -1,21 +1,17 @@
-"""Generate extension_layout.yaml from a legacy extension.
-
-Select an extension directory and this script will parse it using the
-legacy folder-walking parser, then generate YAML layout files that
-reproduce the same UI structure.
-"""
 #pylint: disable=E0401
 import os
 import os.path as op
 
 from pyrevit import script, forms
 from pyrevit.extensions.layout_cli import generate_layout
+from pyrevit.extensions.layout_parser import has_layout_file
 
-__title__ = "Generate\nLayout"
-__doc__ = "Generate extension_layout.yaml from a legacy extension's folder structure"
+split_panels = __shiftclick__  #pylint: disable=E0602
 
 output = script.get_output()
 output.print_md("# Generate Extension Layout")
+if split_panels:
+    output.print_md("*Mode: separate panel files*")
 
 # Find extensions root
 repo_root = op.dirname(op.dirname(op.dirname(op.dirname(op.dirname(
@@ -45,6 +41,19 @@ if not selected:
     script.exit()
 
 selected_dir = ext_dirs[ext_names.index(selected)]
+
+# Warn if extension already has a layout file
+if has_layout_file(selected_dir):
+    proceed = forms.alert(
+        'This extension already has an extension_layout.yaml file. '
+        'The generator parses legacy .tab/.panel/ folders which may '
+        'no longer exist.\n\n'
+        'Proceed anyway?',
+        yes=True, no=True
+    )
+    if not proceed:
+        script.exit()
+
 output.print_md("## Generating layout for: {}".format(selected))
 
 # Ask for output directory
@@ -56,7 +65,8 @@ output.print_md("**Output directory:** `{}`".format(output_dir))
 
 # Generate
 try:
-    generated = generate_layout(selected_dir, output_dir)
+    generated = generate_layout(selected_dir, output_dir,
+                                split_panels=split_panels)
     if generated:
         output.print_md("## Generated Files")
         for f in generated:

@@ -1,8 +1,3 @@
-"""List all tools/commands in an extension.
-
-Displays a table of all tools found in the selected extension,
-showing name, type, path, and unique name.
-"""
 #pylint: disable=E0401
 import os
 import os.path as op
@@ -10,9 +5,6 @@ import os.path as op
 from pyrevit import script, forms
 from pyrevit.extensions.layout_cli import list_tools
 from pyrevit.extensions.layout_parser import has_layout_file
-
-__title__ = "List\nTools"
-__doc__ = "List all tools in an extension (layout or legacy mode)"
 
 output = script.get_output()
 output.print_md("# Extension Tool List")

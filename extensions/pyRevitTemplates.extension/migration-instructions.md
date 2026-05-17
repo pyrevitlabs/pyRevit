@@ -137,7 +137,7 @@ BIMTools.extension/
 ### Generated Layout
 
 ```yaml
-# extension_layout.yaml
+# extension_layout.yaml (generated)
 tabs:
   - name: "BIM"
     panels:

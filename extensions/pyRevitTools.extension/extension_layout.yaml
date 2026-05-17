@@ -1,7 +1,8 @@
 tabs:
   - name: "pyRevit"
     panels:
-      - layout:
+      - name: "Toggles"
+        layout:
           - stack:
               - "Tab Coloring"
               - "Override 2D"
@@ -13,19 +14,65 @@ tabs:
           - stack:
               - "sync"
               - "ViewRange"
-        name: "Toggles"
-      - layout_file: "Selection.panel.yaml"
-        name: "Selection"
-      - layout:
+      - name: "Selection"
+        layout:
+          - "Pick"
+          - "Set Workset"
+          - stack:
+              - "Isolate"
+              - "Filter"
+              - "Select"
+          - stack:
+              - "MAppend"
+              - "MWrite"
+              - "MRead"
+          - stack:
+              - "Copy State"
+              - "Paste State"
+              - "Memory"
+      - name: "Analysis"
+        layout:
           - "ColorSplasher"
           - stack:
               - "Sum"
               - "Analyse"
               - "Inspect"
-        name: "Analysis"
-      - layout_file: "Modify.panel.yaml"
-        name: "Modify"
-      - layout_file: "DrawingSet.panel.yaml"
-        name: "Drawing Set"
-      - layout_file: "Project.panel.yaml"
-        name: "Project"
+      - name: "Modify"
+        layout:
+          - stack:
+              - "Match"
+              - "Patterns"
+              - "Overkill"
+          - stack:
+              - "Flip"
+              - "ReNumber"
+              - "ReValue"
+          - stack:
+              - "Edit"
+              - "Override"
+              - "Groups"
+          - "---"
+          - "3D"
+      - name: "Drawing Set"
+        layout:
+          - "Sheets"
+          - "Revision"
+          - "Keynotes"
+          - stack:
+              - "Legends"
+              - "Schedules"
+              - "Views"
+          - "---"
+          - "Print Sheets"
+      - name: "Project"
+        layout:
+          - "Preflight Checks"
+          - stack:
+              - "Get Central Path"
+              - "Get RVT Info"
+              - "Team"
+          - stack:
+              - "Cycle Family Types"
+              - "Family"
+              - "Links"
+          - "Wipe"

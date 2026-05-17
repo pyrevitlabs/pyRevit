@@ -3,4 +3,4 @@ tabs:
     panels:
       - name: "Templates"
         layout:
-          - Template
+          - "Template"

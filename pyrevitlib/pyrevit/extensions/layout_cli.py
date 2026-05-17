@@ -10,6 +10,7 @@ or called programmatically.
 import os
 import os.path as op
 import codecs
+from collections import OrderedDict
 
 from pyrevit.coreutils.logger import get_logger
 import pyrevit.extensions as exts
@@ -19,7 +20,7 @@ import pyrevit.extensions as exts
 mlogger = get_logger(__name__)
 
 
-def generate_layout(extension_dir, output_dir=None):
+def generate_layout(extension_dir, output_dir=None, split_panels=False):
     """Generate extension_layout.yaml and panel.yaml files from a legacy extension.
 
     Parses the extension using the legacy directory-walking parser, then
@@ -29,6 +30,9 @@ def generate_layout(extension_dir, output_dir=None):
         extension_dir (str): Path to the .extension directory
         output_dir (str, optional): Where to write output files.
             Defaults to the extension directory itself.
+        split_panels (bool): If True, write complex panels to separate
+            .panel.yaml files. If False (default), inline all layouts
+            into extension_layout.yaml.
 
     Returns:
         list: Paths to generated files
@@ -52,9 +56,8 @@ def generate_layout(extension_dir, output_dir=None):
     # Build the extension_layout.yaml content
     tabs_data = []
     for tab in extension.components:
-        tab_entry = {
-            'name': tab.name,
-        }
+        tab_entry = OrderedDict()
+        tab_entry['name'] = tab.name
         if hasattr(tab, '_ui_title') and tab._ui_title and tab._ui_title != tab.name:
             tab_entry['title'] = tab._ui_title
 
@@ -62,20 +65,22 @@ def generate_layout(extension_dir, output_dir=None):
         # Use iter() to get layout-ordered panels (respects bundle.yaml layout key)
         for panel in iter(tab):
             panel_name = panel.name
-            panel_entry = {'name': panel_name}
+            panel_entry = OrderedDict()
+            panel_entry['name'] = panel_name
 
             # Build layout list for this panel
             layout_list = _build_panel_layout(panel)
 
             if layout_list:
-                # Write external panel file if layout is complex
-                if len(layout_list) > 3:
+                if split_panels:
+                    # Write each panel to a separate .panel.yaml file
                     panel_filename = panel_name.replace(' ', '') + '.panel.yaml'
                     panel_filepath = op.join(output_dir, panel_filename)
                     _write_panel_yaml(panel_filepath, panel_name, layout_list)
                     panel_entry['layout_file'] = panel_filename
                     generated_files.append(panel_filepath)
                 else:
+                    # Inline all layouts into extension_layout.yaml
                     panel_entry['layout'] = layout_list
 
             panels_data.append(panel_entry)
@@ -314,10 +319,9 @@ def _write_panel_yaml(filepath, panel_name, layout_list):
         panel_name (str): Panel display name/title
         layout_list (list): Layout entries
     """
-    data = {
-        'title': panel_name,
-        'layout': layout_list,
-    }
+    data = OrderedDict()
+    data['title'] = panel_name
+    data['layout'] = layout_list
     content = _serialize_layout_yaml(data)
     with codecs.open(filepath, 'w', 'utf-8') as f:
         f.write(content)

@@ -1,0 +1,8 @@
+title:
+  en_us: "Generate\nLayout"
+tooltip:
+  en_us: >-
+    Generate extension_layout.yaml from a legacy extension's folder structure.
+    Shift+Click: split panels into separate .panel.yaml files.
+context: zero-doc
+author: ChrisCrosley

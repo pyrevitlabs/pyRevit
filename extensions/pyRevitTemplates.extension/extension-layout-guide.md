@@ -42,8 +42,8 @@ tabs:
     panels:
       - name: "My Panel"
         layout:
-          - ToolName
-          - AnotherTool
+          - "ToolName"
+          - "AnotherTool"
       - name: "Complex Panel"
         layout_file: "ComplexPanel.panel.yaml"
 ```
@@ -53,6 +53,7 @@ tabs:
 | Key | Required | Description |
 |-----|----------|-------------|
 | `name` | Yes | Tab name (also used as the display title) |
+| `title` | No | Display title if different from name |
 | `panels` | Yes | List of panel definitions |
 
 ### Panel Properties
@@ -62,6 +63,8 @@ tabs:
 | `name` | Yes | Panel name (display title shown below the panel) |
 | `layout` | Either this or `layout_file` | Inline list of layout items |
 | `layout_file` | Either this or `layout` | Path to an external `.panel.yaml` file |
+
+The parser looks up keys by name, so key ordering does not affect behavior. The auto-generator outputs `name` and `title` keys first for readability.
 
 ## Panel Layout Items
 
@@ -73,9 +76,11 @@ References a tool by its folder name (without the `.pushbutton`/`.pulldown`/etc.
 
 ```yaml
 layout:
-  - MyButton          # References tools/MyButton.pushbutton/
-  - MyPulldown        # References tools/MyPulldown.pulldown/
+  - "MyButton"          # References tools/MyButton.pushbutton/
+  - "MyPulldown"        # References tools/MyPulldown.pulldown/
 ```
+
+Tool names can be quoted or unquoted in YAML. The auto-generator quotes all values for consistency, but both forms are valid.
 
 ### Stack (mapping)
 
@@ -84,9 +89,9 @@ Groups 2-3 buttons vertically in a compact stack:
 ```yaml
 layout:
   - stack:
-      - SmallButton1
-      - SmallButton2
-      - SmallButton3
+      - "SmallButton1"
+      - "SmallButton2"
+      - "SmallButton3"
 ```
 
 Stacks display buttons at 16x16 icon size, stacked vertically. Maximum 3 items per stack.
@@ -129,18 +134,20 @@ panels:
 # Selection.panel.yaml:
 title: "Selection"
 layout:
-  - Pick
+  - "Pick"
   - "Set Workset"
   - stack:
-      - Isolate
-      - Filter
-      - Select
+      - "Isolate"
+      - "Filter"
+      - "Select"
   - "---"
   - stack:
-      - MAppend
-      - MWrite
-      - MRead
+      - "MAppend"
+      - "MWrite"
+      - "MRead"
 ```
+
+The `title` key is informational (the panel name comes from the `name` key in `extension_layout.yaml`). The auto-generator always outputs `title` before `layout`.
 
 ## Tool Naming
 
@@ -148,11 +155,11 @@ Tools are referenced by their **folder name without the postfix**:
 
 | Folder Name | Reference in YAML |
 |-------------|-------------------|
-| `Color Splasher.pushbutton` | `Color Splasher` |
-| `MyTool.pulldown` | `MyTool` |
-| `Sync Views.smartbutton` | `Sync Views` |
+| `Color Splasher.pushbutton` | `"Color Splasher"` |
+| `MyTool.pulldown` | `"MyTool"` or `MyTool` |
+| `Sync Views.smartbutton` | `"Sync Views"` |
 
-Names are case-insensitive during lookup but should match the folder name for clarity.
+Names are case-insensitive during lookup but should match the folder name for clarity. Names containing spaces should be quoted.
 
 ## Custom User Layouts
 
@@ -190,6 +197,9 @@ tabs:
           - "Export Settings"
           - "Batch Export"
 ```
+
+This matches the format produced by the auto-generator. See the bundled
+`extension_layout.yaml` in this template extension for a live example.
 
 ## Comparison with Legacy Mode
 

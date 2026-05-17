@@ -1,0 +1,9 @@
+title:
+  en_us: "Test Layout\nParsing"
+tooltip:
+  en_us: >-
+    Test the layout-based extension parsing system.
+    Scans all extensions for layout files, builds tool indexes,
+    and verifies the component tree.
+context: zero-doc
+author: ChrisCrosley

@@ -1,4 +1,3 @@
-"""Test the layout-based extension parsing system."""
 #pylint: disable=E0401
 import os
 import os.path as op

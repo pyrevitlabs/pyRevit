@@ -1,0 +1,8 @@
+title:
+  en_us: "List\nTools"
+tooltip:
+  en_us: >-
+    List all tools/commands in an extension.
+    Shows name, type, and unique name for each tool found via layout or legacy mode.
+context: zero-doc
+author: ChrisCrosley
