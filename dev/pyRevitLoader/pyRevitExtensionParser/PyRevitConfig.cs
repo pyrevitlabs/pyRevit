@@ -85,6 +85,23 @@ namespace pyRevitExtensionParser
         }
 
         /// <summary>
+        /// Gets whether custom layouts are globally disabled.
+        /// When true, GetCustomLayoutPath always returns null (bundled layouts still apply).
+        /// </summary>
+        public bool DisableCustomLayouts
+        {
+            get
+            {
+                var value = _ini.IniReadValue("core", "disable_custom_layouts");
+                return bool.TryParse(value, out var result) ? result : false;
+            }
+            set
+            {
+                _ini.IniWriteValue("core", "disable_custom_layouts", value ? TrueString : FalseString);
+            }
+        }
+
+        /// <summary>
         /// Gets or sets whether the new loader architecture is enabled.
         /// </summary>
         /// <remarks>
@@ -616,6 +633,10 @@ namespace pyRevitExtensionParser
         public string GetCustomLayoutPath(string extensionName)
         {
             if (string.IsNullOrEmpty(extensionName))
+                return null;
+
+            // Global toggle: skip custom layouts when disabled
+            if (DisableCustomLayouts)
                 return null;
 
             var section = $"{extensionName}.extension";

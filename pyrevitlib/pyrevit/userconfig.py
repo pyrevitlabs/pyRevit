@@ -315,7 +315,21 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             CONSTS.ConfigsNewLoaderKey,
             value=state
         )
-    
+
+    @property
+    def disable_custom_layouts(self):
+        """Whether to globally disable user custom layouts."""
+        return self.core.get_option(
+            CONSTS.ConfigsDisableCustomLayoutsKey,
+            default_value=CONSTS.ConfigsDisableCustomLayoutsDefault,
+        )
+
+    @disable_custom_layouts.setter
+    def disable_custom_layouts(self, state):
+        self.core.set_option(
+            CONSTS.ConfigsDisableCustomLayoutsKey,
+            value=state
+        )
 
     @property
     def output_close_others(self):

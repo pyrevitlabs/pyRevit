@@ -87,6 +87,30 @@ class RevitVersionCB:
         self.IsEnabled = is_enabled  # Whether the checkbox is enabled
 
 
+PYREVIT_APP_DIR = os.environ.get(
+    'APPDATA', op.expanduser('~')
+)
+
+
+class LayoutExtensionItem(object):
+    """Row item for the per-extension layout ListView."""
+
+    def __init__(self, ext_name, ext_dir):
+        self.Name = ext_name
+        self.Directory = ext_dir
+        self._update_status()
+
+    def _update_status(self):
+        cache_dir = self._get_cache_dir()
+        if op.isdir(cache_dir) and os.listdir(cache_dir):
+            self.Status = 'Custom'
+        else:
+            self.Status = 'Default'
+
+    def _get_cache_dir(self):
+        return op.join(PYREVIT_APP_DIR, 'pyRevit', 'Layouts', self.Name)
+
+
 class SettingsWindow(forms.WPFWindow):
     """pyRevit Settings window that handles setting the pyRevit configs"""
 
@@ -160,7 +184,8 @@ class SettingsWindow(forms.WPFWindow):
         
         self.new_loader.IsChecked = user_config.new_loader
 
-        self.include_legacy_folders.IsChecked = user_config.include_legacy_folders
+        self.disable_custom_layouts.IsChecked = user_config.disable_custom_layouts
+        self._setup_layout_extensions_list()
 
         self.minimize_consoles_cb.IsChecked = user_config.output_close_others
 
@@ -525,79 +550,128 @@ class SettingsWindow(forms.WPFWindow):
         """Callback method for when new_loader toggle changes"""
         pass
 
-    def import_layout_clicked(self, sender, args):
-        """Callback for Import Layout button - picks a YAML file and stores path in config."""
-        from pyrevit import forms as pyrvt_forms
-        layout_file = pyrvt_forms.pick_file(
-            file_ext='yaml',
-            title='Select Layout YAML File'
-        )
-        if not layout_file:
-            return
-
-        # Ask which extension to apply it to
-        import os
+    def _setup_layout_extensions_list(self):
+        """Populate the layout extensions ListView."""
         import os.path as op
+        from pyrevit.extensions.layout_parser import has_layout_file
         from pyrevit.extensions.extpackages import get_ext_packages
-        ext_names = []
+
+        items = []
         for ext in get_ext_packages():
-            if ext.is_installed:
-                ext_names.append(ext.name)
+            if ext.is_installed and ext.installed_dir:
+                ext_dir = ext.installed_dir
+                if has_layout_file(ext_dir):
+                    items.append(LayoutExtensionItem(ext.name, ext_dir))
 
-        if not ext_names:
-            pyrvt_forms.alert('No installed extensions found.')
+        self.layout_extensions_lv.ItemsSource = \
+            sorted(items, key=lambda x: x.Name)
+
+    def _refresh_layout_list(self):
+        """Refresh status in layout extensions ListView."""
+        for item in (self.layout_extensions_lv.ItemsSource or []):
+            item._update_status()
+        self.layout_extensions_lv.Items.Refresh()
+
+    def import_layout_for_ext(self, sender, args):
+        """Import custom layout files for a specific extension."""
+        import shutil
+        item = sender.Tag
+        if not item:
             return
 
-        selected = pyrvt_forms.SelectFromList.show(
-            sorted(ext_names),
-            title='Select Extension',
-            multiselect=False
+        src_dir = forms.pick_folder(
+            title='Select folder containing layout YAML files'
         )
-        if not selected:
+        if not src_dir:
             return
 
-        # Store the custom layout path in config
-        section_name = selected + '.extension'
+        # Validate source has extension_layout.yaml
+        layout_file = op.join(src_dir, 'extension_layout.yaml')
+        if not op.isfile(layout_file):
+            forms.alert('Selected folder must contain extension_layout.yaml')
+            return
+
+        # Copy files to appdata cache
+        cache_dir = item._get_cache_dir()
+        if op.isdir(cache_dir):
+            shutil.rmtree(cache_dir)
+        os.makedirs(cache_dir)
+
+        # Copy extension_layout.yaml + all *.panel.yaml
+        shutil.copy2(layout_file, cache_dir)
+        for f in os.listdir(src_dir):
+            if f.endswith('.panel.yaml'):
+                shutil.copy2(op.join(src_dir, f), cache_dir)
+
+        # Set config to point to cached layout
+        cached_layout = op.join(cache_dir, 'extension_layout.yaml')
+        section_name = item.Name + '.extension'
         if not user_config.has_section(section_name):
             user_config.add_section(section_name)
         section = user_config.get_section(section_name)
-        section.custom_layout_path = layout_file
+        section.custom_layout_path = cached_layout
         user_config.save_changes()
 
-        pyrvt_forms.alert(
-            'Custom layout set for "{}". Reload pyRevit to apply.'.format(selected)
+        self._refresh_layout_list()
+        forms.alert(
+            'Custom layout imported for "{}". '
+            'Reload pyRevit to apply.'.format(item.Name)
         )
 
-    def reset_layout_clicked(self, sender, args):
-        """Callback for Reset Layout button - clears custom layout path from config."""
-        from pyrevit import forms as pyrvt_forms
-        from pyrevit.extensions.extpackages import get_ext_packages
-        ext_names = []
-        for ext in get_ext_packages():
-            if ext.is_installed:
-                ext_names.append(ext.name)
-
-        if not ext_names:
-            pyrvt_forms.alert('No installed extensions found.')
+    def export_layout_for_ext(self, sender, args):
+        """Export active layout files for a specific extension."""
+        import shutil
+        item = sender.Tag
+        if not item:
             return
 
-        selected = pyrvt_forms.SelectFromList.show(
-            sorted(ext_names),
-            title='Select Extension to Reset',
-            multiselect=False
-        )
-        if not selected:
+        # Determine source: cache dir if custom, else extension dir
+        cache_dir = item._get_cache_dir()
+        if op.isdir(cache_dir) and os.listdir(cache_dir):
+            src_dir = cache_dir
+        else:
+            src_dir = item.Directory
+
+        # Collect layout files
+        layout_file = op.join(src_dir, 'extension_layout.yaml')
+        if not op.isfile(layout_file):
+            forms.alert('No layout file found for "{}".'.format(item.Name))
             return
 
-        # Clear the custom layout path
-        section_name = selected + '.extension'
+        dest_dir = forms.pick_folder(title='Select destination folder')
+        if not dest_dir:
+            return
+
+        shutil.copy2(layout_file, dest_dir)
+        for f in os.listdir(src_dir):
+            if f.endswith('.panel.yaml'):
+                shutil.copy2(op.join(src_dir, f), dest_dir)
+
+        forms.alert('Layout files exported to:\n{}'.format(dest_dir))
+
+    def reset_layout_for_ext(self, sender, args):
+        """Reset custom layout for a specific extension."""
+        import shutil
+        item = sender.Tag
+        if not item:
+            return
+
+        # Clear cache directory
+        cache_dir = item._get_cache_dir()
+        if op.isdir(cache_dir):
+            shutil.rmtree(cache_dir)
+
+        # Clear config
+        section_name = item.Name + '.extension'
         if user_config.has_section(section_name):
             section = user_config.get_section(section_name)
             section.custom_layout_path = ''
             user_config.save_changes()
 
-        pyrvt_forms.alert(
-            'Layout reset to default for "{}". Reload pyRevit to apply.'.format(selected)
+        self._refresh_layout_list()
+        forms.alert(
+            'Layout reset to default for "{}". '
+            'Reload pyRevit to apply.'.format(item.Name)
         )
 
     def copy_envvar_value(self, sender, args):
@@ -940,7 +1014,7 @@ class SettingsWindow(forms.WPFWindow):
 
         user_config.load_beta = self.loadbetatools_cb.IsChecked
         user_config.new_loader = self.new_loader.IsChecked
-        user_config.include_legacy_folders = self.include_legacy_folders.IsChecked
+        user_config.disable_custom_layouts = self.disable_custom_layouts.IsChecked
 
         user_config.output_close_others = self.minimize_consoles_cb.IsChecked
         if self.closewindows_current_rb.IsChecked:

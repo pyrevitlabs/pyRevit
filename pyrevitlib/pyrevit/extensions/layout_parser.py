@@ -52,14 +52,16 @@ def get_layout_file(extension_dir):
     # Check user config for custom layout path
     try:
         from pyrevit.userconfig import user_config
-        ext_name = op.splitext(op.basename(extension_dir))[0]
-        section_name = ext_name + '.extension'
-        if user_config.has_section(section_name):
-            section = user_config.get_section(section_name)
-            custom_path = section.get_option('custom_layout_path',
-                                             default_value='')
-            if custom_path and op.isfile(custom_path):
-                return custom_path
+        # Global toggle: skip custom layouts when disabled
+        if not user_config.disable_custom_layouts:
+            ext_name = op.splitext(op.basename(extension_dir))[0]
+            section_name = ext_name + '.extension'
+            if user_config.has_section(section_name):
+                section = user_config.get_section(section_name)
+                custom_path = section.get_option('custom_layout_path',
+                                                 default_value='')
+                if custom_path and op.isfile(custom_path):
+                    return custom_path
     except Exception:
         pass
 

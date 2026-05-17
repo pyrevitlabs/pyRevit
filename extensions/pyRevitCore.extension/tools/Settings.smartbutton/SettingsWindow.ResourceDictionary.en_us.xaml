@@ -62,10 +62,13 @@
     <system:String x:Key="CoreSettings.Loader.NewLoader">Enables new pyRevit loader (beta) (Restarting Revit is required)</system:String>
 
     <system:String x:Key="CoreSettings.Layout">Extension Layout</system:String>
-    <system:String x:Key="CoreSettings.Layout.Description">Configure how extensions with layout files (extension_layout.yaml) handle legacy folder structures.</system:String>
-    <system:String x:Key="CoreSettings.Layout.IncludeLegacy">Include legacy tab folders when layout file exists (Reload is required)</system:String>
-    <system:String x:Key="CoreSettings.Layout.Import">Import Layout...</system:String>
-    <system:String x:Key="CoreSettings.Layout.Reset">Reset to Default</system:String>
+    <system:String x:Key="CoreSettings.Layout.Description">Manage custom layouts for extensions. Import custom layout files, export for editing, or reset to defaults. Reload required.</system:String>
+    <system:String x:Key="CoreSettings.Layout.DisableCustom">Disable all custom layouts (use bundled defaults) (Reload is required)</system:String>
+    <system:String x:Key="CoreSettings.Layout.Col.Name">Extension</system:String>
+    <system:String x:Key="CoreSettings.Layout.Col.Status">Status</system:String>
+    <system:String x:Key="CoreSettings.Layout.Import">Import</system:String>
+    <system:String x:Key="CoreSettings.Layout.Export">Export</system:String>
+    <system:String x:Key="CoreSettings.Layout.Reset">Reset</system:String>
 
     <system:String x:Key="CoreSettings.CloseOtherConsoles">Close other open consoles</system:String>
     <system:String x:Key="CoreSettings.CloseOtherConsoles.Description">
