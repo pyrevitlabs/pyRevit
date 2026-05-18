@@ -34,6 +34,7 @@ class LayoutNode(forms.Reactive):
         self._node_type = node_type
         self._name = name
         self._title = title
+        self._missing = False
         self._children = ObservableCollection[object]()
         self.parent = None
         if children:
@@ -47,10 +48,23 @@ class LayoutNode(forms.Reactive):
         return self._node_type
 
     @forms.reactive
+    def is_missing(self):
+        return self._missing
+
+    @is_missing.setter
+    def is_missing(self, value):
+        self._missing = value
+        self.OnPropertyChanged("is_missing")
+        self.OnPropertyChanged("display_name")
+
+    @forms.reactive
     def display_name(self):
         if self._node_type in ("separator", "slideout"):
             return ""
-        return self._title or self._name
+        label = self._title or self._name
+        if self._missing:
+            label += "  [missing]"
+        return label
 
     @forms.reactive
     def type_badge(self):
@@ -335,12 +349,23 @@ class LayoutBuilderWindow(forms.WPFWindow):
             self._all_tools.append(ToolItem(name, ctype))
 
         self._show_all = False
+        self._update_missing_flags()
         self._update_placed_flags()
         self._apply_tool_filter("")
 
         self.header_tb.Text = "Layout Builder - {}".format(extension_name)
 
     # -- tool list helpers --
+
+    def _update_missing_flags(self):
+        """Flag tool nodes that reference tools not in the index."""
+        def _walk(node):
+            if node.node_type == "tool":
+                node.is_missing = node.name not in self._tool_index
+            for child in node.children:
+                _walk(child)
+        for root in self._roots:
+            _walk(root)
 
     def _update_placed_flags(self):
         """Mark tools that are already placed in the layout."""
@@ -349,6 +374,7 @@ class LayoutBuilderWindow(forms.WPFWindow):
             placed_names.update(root.collect_tool_names())
         for tool in self._all_tools:
             tool.placed = tool.name in placed_names
+        self._update_missing_flags()
         self._apply_tool_filter(self.search_tb.Text)
 
     def _apply_tool_filter(self, search_text):
@@ -538,7 +564,14 @@ class LayoutBuilderWindow(forms.WPFWindow):
 
         # Validate
         warnings = []
+        missing_names = []
+        def _collect_missing(node):
+            if node.node_type == "tool" and node.is_missing:
+                missing_names.append(node.name)
+            for child in node.children:
+                _collect_missing(child)
         for tab in roots:
+            _collect_missing(tab)
             if not tab.children or tab.children.Count == 0:
                 warnings.append(
                     "Tab '{}' has no panels.".format(tab.name))
@@ -551,6 +584,10 @@ class LayoutBuilderWindow(forms.WPFWindow):
                                 "Stack in panel '{}' has {} items "
                                 "(recommended 2-3).".format(
                                     panel.name, count))
+        if missing_names:
+            warnings.append(
+                "Missing tools (will not appear in ribbon): {}".format(
+                    ", ".join(missing_names)))
 
         if warnings:
             msg = "Warnings:\n" + "\n".join(warnings) + "\n\nSave anyway?"

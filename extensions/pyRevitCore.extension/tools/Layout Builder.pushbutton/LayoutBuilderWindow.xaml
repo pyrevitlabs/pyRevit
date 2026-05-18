@@ -28,6 +28,8 @@
         <SolidColorBrush x:Key="ToolBrush"      Color="#1E1E1E"/>
         <!-- SEPARATOR/SLIDEOUT color -->
         <SolidColorBrush x:Key="SpecialBrush"   Color="#CA5010"/>
+        <!-- MISSING tool color -->
+        <SolidColorBrush x:Key="MissingBrush"   Color="#D32F2F"/>
         <!-- FLAT BUTTON STYLE -->
         <Style x:Key="FlatButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
@@ -145,14 +147,32 @@
                                     <Setter Property="Background"
                                             Value="{StaticResource SpecialBrush}"/>
                                 </DataTrigger>
+                                <DataTrigger Binding="{Binding is_missing}" Value="True">
+                                    <Setter Property="Background"
+                                            Value="{StaticResource MissingBrush}"/>
+                                </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </TextBlock.Style>
                 </TextBlock>
                 <TextBlock Text="{Binding display_name}"
                            FontSize="12"
-                           Foreground="{StaticResource TextPrimaryBrush}"
-                           VerticalAlignment="Center"/>
+                           VerticalAlignment="Center">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground"
+                                    Value="{StaticResource TextPrimaryBrush}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding is_missing}" Value="True">
+                                    <Setter Property="Foreground"
+                                            Value="{StaticResource MissingBrush}"/>
+                                    <Setter Property="TextDecorations"
+                                            Value="Strikethrough"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
             </StackPanel>
         </HierarchicalDataTemplate>
 
