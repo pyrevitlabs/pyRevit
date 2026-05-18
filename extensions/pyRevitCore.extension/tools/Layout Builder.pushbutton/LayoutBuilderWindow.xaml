@@ -322,7 +322,7 @@
                         Style="{StaticResource FlatButton}"
                         Click="cancel_click"
                         Padding="16,6" Margin="0,0,8,0"/>
-                <Button Content="Save Layout"
+                <Button Content="Save &amp; Reload"
                         Style="{StaticResource AccentButton}"
                         Click="save_click"
                         Padding="16,6"/>

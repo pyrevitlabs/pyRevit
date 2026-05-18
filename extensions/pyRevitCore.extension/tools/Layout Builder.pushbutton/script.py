@@ -19,6 +19,7 @@ from pyrevit.framework import ObservableCollection
 from pyrevit.extensions.layout_cli import serialize_layout_yaml
 from pyrevit.extensions.layout_parser import has_layout_file
 from pyrevit.extensions.toolindex import build_tool_index
+from pyrevit.loader import sessionmgr
 import pyrevit.extensions as exts
 
 
@@ -573,10 +574,11 @@ class LayoutBuilderWindow(forms.WPFWindow):
 
         forms.alert(
             "Custom layout saved to:\n{}\n\n"
-            "Reload pyRevit to apply.".format(layout_path),
+            "pyRevit will now reload to apply changes.".format(layout_path),
             title="Saved"
         )
         self.Close()
+        sessionmgr.reload_pyrevit()
 
     def cancel_click(self, sender, args):
         self.Close()
