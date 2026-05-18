@@ -515,6 +515,31 @@ class LayoutBuilderWindow(forms.WPFWindow):
         node = LayoutNode("slideout")
         parent.insert_child(idx, node)
 
+    def _select_tree_item(self, data_item):
+        """Re-select a data item in the TreeView after a collection change."""
+        container = self._find_tree_container(self.layout_tv, data_item)
+        if container:
+            container.IsSelected = True
+            container.BringIntoView()
+
+    def _find_tree_container(self, parent, data_item):
+        """Walk the TreeView visual tree to find the TreeViewItem for data_item."""
+        from pyrevit.framework import Windows
+        if parent is None:
+            return None
+        generator = parent.ItemContainerGenerator
+        for i in range(generator.Items.Count):
+            container = generator.ContainerFromIndex(i)
+            if container is None:
+                continue
+            if container.DataContext == data_item:
+                return container
+            # Recurse into children
+            child_result = self._find_tree_container(container, data_item)
+            if child_result:
+                return child_result
+        return None
+
     def move_up(self, sender, args):
         selected = self.layout_tv.SelectedItem
         if not selected:
@@ -529,6 +554,7 @@ class LayoutBuilderWindow(forms.WPFWindow):
         if idx > 0:
             siblings.RemoveAt(idx)
             siblings.Insert(idx - 1, selected)
+            self._select_tree_item(selected)
 
     def move_down(self, sender, args):
         selected = self.layout_tv.SelectedItem
@@ -544,6 +570,7 @@ class LayoutBuilderWindow(forms.WPFWindow):
         if idx < siblings.Count - 1:
             siblings.RemoveAt(idx)
             siblings.Insert(idx + 1, selected)
+            self._select_tree_item(selected)
 
     def remove_node(self, sender, args):
         selected = self.layout_tv.SelectedItem
