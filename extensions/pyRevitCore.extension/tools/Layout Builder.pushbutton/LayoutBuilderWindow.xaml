@@ -1,0 +1,332 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Extension Layout Builder"
+        Width="900" Height="650"
+        MinWidth="750" MinHeight="500"
+        ResizeMode="CanResizeWithGrip"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.Resources>
+        <!-- COLOR PALETTE -->
+        <SolidColorBrush x:Key="AccentBrush"        Color="#2B579A"/>
+        <SolidColorBrush x:Key="AccentHoverBrush"    Color="#3A6FB0"/>
+        <SolidColorBrush x:Key="BorderBrush"         Color="#D1D1D1"/>
+        <SolidColorBrush x:Key="BgPanelBrush"        Color="#F5F5F5"/>
+        <SolidColorBrush x:Key="BgWhiteBrush"        Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="TextPrimaryBrush"    Color="#1E1E1E"/>
+        <SolidColorBrush x:Key="TextSecondaryBrush"  Color="#6E6E6E"/>
+        <SolidColorBrush x:Key="TextMutedBrush"      Color="#999999"/>
+        <SolidColorBrush x:Key="WarningBrush"        Color="#CA5010"/>
+
+        <!-- TAB node color -->
+        <SolidColorBrush x:Key="TabBrush"       Color="#2B579A"/>
+        <!-- PANEL node color -->
+        <SolidColorBrush x:Key="PanelBrush"     Color="#2E7D32"/>
+        <!-- STACK node color -->
+        <SolidColorBrush x:Key="StackBrush"     Color="#7B1FA2"/>
+        <!-- TOOL node color -->
+        <SolidColorBrush x:Key="ToolBrush"      Color="#1E1E1E"/>
+        <!-- SEPARATOR/SLIDEOUT color -->
+        <SolidColorBrush x:Key="SpecialBrush"   Color="#CA5010"/>
+        <!-- FLAT BUTTON STYLE -->
+        <Style x:Key="FlatButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                CornerRadius="3"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#E8E8E8"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#D0D0D0"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.35"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ACCENT BUTTON STYLE -->
+        <Style x:Key="AccentButton" TargetType="Button" BasedOn="{StaticResource FlatButton}">
+            <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="3"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background"
+                                        Value="{StaticResource AccentHoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#1E4A80"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.35"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- TOOLBAR BUTTON STYLE -->
+        <Style x:Key="ToolbarButton" TargetType="Button" BasedOn="{StaticResource FlatButton}">
+            <Setter Property="Padding" Value="6,3"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Background" Value="#E8E8E8"/>
+        </Style>
+
+        <!-- TREE ITEM CONTAINER STYLE (auto-expand) -->
+        <Style x:Key="TreeItemContainer" TargetType="TreeViewItem">
+            <Setter Property="IsExpanded" Value="True"/>
+            <Setter Property="Padding" Value="2"/>
+        </Style>
+
+        <!-- HIERARCHICAL DATA TEMPLATE FOR LAYOUT TREE -->
+        <HierarchicalDataTemplate x:Key="LayoutNodeTemplate"
+                                  ItemsSource="{Binding children}">
+            <StackPanel Orientation="Horizontal" Margin="2,1">
+                <TextBlock x:Name="type_badge"
+                           Text="{Binding type_badge}"
+                           FontSize="10" FontWeight="Bold"
+                           Foreground="White"
+                           Padding="4,1" Margin="0,0,6,0">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Background"
+                                    Value="{StaticResource ToolBrush}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding node_type}" Value="tab">
+                                    <Setter Property="Background"
+                                            Value="{StaticResource TabBrush}"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding node_type}" Value="panel">
+                                    <Setter Property="Background"
+                                            Value="{StaticResource PanelBrush}"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding node_type}" Value="stack">
+                                    <Setter Property="Background"
+                                            Value="{StaticResource StackBrush}"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding node_type}" Value="separator">
+                                    <Setter Property="Background"
+                                            Value="{StaticResource SpecialBrush}"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding node_type}" Value="slideout">
+                                    <Setter Property="Background"
+                                            Value="{StaticResource SpecialBrush}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <TextBlock Text="{Binding display_name}"
+                           FontSize="12"
+                           Foreground="{StaticResource TextPrimaryBrush}"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+        </HierarchicalDataTemplate>
+
+    </Window.Resources>
+
+    <!-- MAIN LAYOUT -->
+    <Grid Background="{StaticResource BgPanelBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- HEADER -->
+        <Border Grid.Row="0" Background="White"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1"
+                Padding="12,8">
+            <TextBlock x:Name="header_tb"
+                       Text="Extension Layout Builder"
+                       FontSize="16" FontWeight="SemiBold"
+                       Foreground="{StaticResource AccentBrush}"/>
+        </Border>
+
+        <!-- TWO-COLUMN CONTENT -->
+        <Grid Grid.Row="1" Margin="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*" MinWidth="200"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="3*" MinWidth="300"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- LEFT COLUMN: Available Tools -->
+            <Border Grid.Column="0" Background="White"
+                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                    CornerRadius="3" Padding="8">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Section title -->
+                    <TextBlock Grid.Row="0" Text="Available Tools"
+                               FontSize="13" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               Margin="0,0,0,6"/>
+
+                    <!-- Search box + Show All toggle -->
+                    <DockPanel Grid.Row="1">
+                        <Button x:Name="show_all_btn"
+                                DockPanel.Dock="Right"
+                                Content="Show All"
+                                Style="{StaticResource ToolbarButton}"
+                                Click="toggle_show_all"
+                                Margin="4,0,0,0"/>
+                        <TextBox x:Name="search_tb"
+                                 TextChanged="search_changed"
+                                 Padding="4,3"
+                                 FontSize="12"
+                                 BorderBrush="{StaticResource BorderBrush}"/>
+                    </DockPanel>
+
+                    <!-- Tool list -->
+                    <ListBox Grid.Row="2" x:Name="tools_lb"
+                             Margin="0,6,0,0"
+                             BorderThickness="0"
+                             FontSize="12"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding display}"
+                                           Foreground="{StaticResource TextPrimaryBrush}"
+                                           Margin="2,1"/>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <!-- Insert button -->
+                    <Button Grid.Row="3"
+                            Content="Insert into Layout  &#x2192;"
+                            Style="{StaticResource AccentButton}"
+                            Click="insert_tool"
+                            Padding="10,6"
+                            Margin="0,6,0,0"/>
+                </Grid>
+            </Border>
+
+            <!-- Grid splitter -->
+            <GridSplitter Grid.Column="1"
+                          Width="4"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Stretch"
+                          Background="Transparent"/>
+
+            <!-- RIGHT COLUMN: Layout Tree -->
+            <Border Grid.Column="2" Background="White"
+                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="1"
+                    CornerRadius="3" Padding="8">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Section title -->
+                    <TextBlock Grid.Row="0" Text="Layout Structure"
+                               FontSize="13" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimaryBrush}"
+                               Margin="0,0,0,6"/>
+
+                    <!-- Structure buttons toolbar -->
+                    <WrapPanel Grid.Row="1" Margin="0,0,0,6">
+                        <Button Content="+ Tab"
+                                Style="{StaticResource ToolbarButton}"
+                                Click="add_tab" Margin="0,0,4,2"/>
+                        <Button Content="+ Panel"
+                                Style="{StaticResource ToolbarButton}"
+                                Click="add_panel" Margin="0,0,4,2"/>
+                        <Button Content="+ Stack"
+                                Style="{StaticResource ToolbarButton}"
+                                Click="add_stack" Margin="0,0,4,2"/>
+                        <Button Content="+ Separator"
+                                Style="{StaticResource ToolbarButton}"
+                                Click="add_separator" Margin="0,0,4,2"/>
+                        <Button Content="+ Slideout"
+                                Style="{StaticResource ToolbarButton}"
+                                Click="add_slideout" Margin="0,0,4,2"/>
+                    </WrapPanel>
+
+                    <!-- Layout tree -->
+                    <TreeView Grid.Row="2" x:Name="layout_tv"
+                              BorderThickness="1"
+                              BorderBrush="{StaticResource BorderBrush}"
+                              ItemTemplate="{StaticResource LayoutNodeTemplate}"
+                              ItemContainerStyle="{StaticResource TreeItemContainer}"
+                              Padding="4"/>
+
+                    <!-- Move / Remove buttons -->
+                    <StackPanel Grid.Row="3" Orientation="Horizontal"
+                                Margin="0,6,0,0">
+                        <Button Content="Move Up"
+                                Style="{StaticResource ToolbarButton}"
+                                Click="move_up" Margin="0,0,4,0"/>
+                        <Button Content="Move Down"
+                                Style="{StaticResource ToolbarButton}"
+                                Click="move_down" Margin="0,0,4,0"/>
+                        <Button Content="Remove"
+                                Style="{StaticResource ToolbarButton}"
+                                Click="remove_node" Margin="0,0,4,0"
+                                Foreground="{StaticResource WarningBrush}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- FOOTER -->
+        <Border Grid.Row="2" Background="White"
+                BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,1,0,0"
+                Padding="12,8">
+            <StackPanel Orientation="Horizontal"
+                        HorizontalAlignment="Right">
+                <Button Content="Cancel"
+                        Style="{StaticResource FlatButton}"
+                        Click="cancel_click"
+                        Padding="16,6" Margin="0,0,8,0"/>
+                <Button Content="Save Layout"
+                        Style="{StaticResource AccentButton}"
+                        Click="save_click"
+                        Padding="16,6"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

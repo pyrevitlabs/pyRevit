@@ -228,7 +228,7 @@ def _is_stack_type(comp):
     return type_id and 'stack' in type_id.lower()
 
 
-def _serialize_layout_yaml(data):
+def serialize_layout_yaml(data):
     """Serialize layout data to YAML string.
 
     Produces clean, human-readable YAML without relying on YamlDotNet
@@ -243,6 +243,10 @@ def _serialize_layout_yaml(data):
     lines = []
     _yaml_dump(data, lines, indent=0)
     return '\n'.join(lines) + '\n'
+
+
+# Keep backwards-compatible alias
+_serialize_layout_yaml = serialize_layout_yaml
 
 
 def _yaml_dump(obj, lines, indent):
