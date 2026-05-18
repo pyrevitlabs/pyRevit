@@ -103,6 +103,7 @@ def parse_extension_layout(extension, tool_index, layout_file):
         return
 
     layout_dir = op.dirname(layout_file)
+    referenced_tools = set()
 
     for tab_data in tabs_data:
         tab = _create_tab(tab_data, ext_name, ext_dir)
@@ -112,11 +113,21 @@ def parse_extension_layout(extension, tool_index, layout_file):
         panels_data = tab_data.get(exts.LAYOUT_PANELS_KEY, [])
         for panel_data in panels_data:
             panel = _create_panel(panel_data, ext_name, ext_dir, tool_index,
-                                  layout_dir)
+                                  layout_dir, referenced_tools)
             if panel is not None:
                 tab.add_component(panel)
 
         extension.add_component(tab)
+
+    # Attach tools not referenced in the layout as assembly-only commands.
+    # They get compiled into the DLL but don't appear in the ribbon,
+    # so layout changes don't require a new assembly build.
+    unreferenced = [comp for name, comp in tool_index.items()
+                    if name not in referenced_tools]
+    if unreferenced:
+        extension._assembly_only_commands = unreferenced
+        mlogger.debug('Layout: %d tool(s) not in layout, '
+                      'included as assembly-only', len(unreferenced))
 
     mlogger.debug('Layout parsing complete for %s: %d tab(s)',
                   ext_name, len(extension.components))
@@ -149,7 +160,8 @@ def _create_tab(tab_data, ext_name, ext_dir):
     return tab
 
 
-def _create_panel(panel_data, ext_name, ext_dir, tool_index, layout_dir=None):
+def _create_panel(panel_data, ext_name, ext_dir, tool_index, layout_dir=None,
+                  referenced_tools=None):
     """Create a Panel component from layout YAML data.
 
     Handles both inline layout and external panel.yaml file references.
@@ -160,6 +172,7 @@ def _create_panel(panel_data, ext_name, ext_dir, tool_index, layout_dir=None):
         ext_dir (str): Extension directory path
         tool_index (dict): Tool name to component mapping
         layout_dir (str): Directory of the active layout file (for custom cached layouts)
+        referenced_tools (set): Set to track tool names placed in the layout
 
     Returns:
         Panel or None: Created panel component
@@ -204,7 +217,8 @@ def _create_panel(panel_data, ext_name, ext_dir, tool_index, layout_dir=None):
     panel.unique_name = make_layout_unique_name(ext_name, panel_name)
 
     if layout_list:
-        _populate_panel(panel, layout_list, tool_index, ext_name)
+        _populate_panel(panel, layout_list, tool_index, ext_name,
+                        referenced_tools)
 
     mlogger.debug('Created layout panel: %s with %d component(s)',
                   panel_name, len(panel.components))
@@ -261,7 +275,8 @@ def _load_panel_layout_file_path(filepath):
     return panel_data.get(exts.LAYOUT_KEY, [])
 
 
-def _populate_panel(panel, layout_list, tool_index, ext_name):
+def _populate_panel(panel, layout_list, tool_index, ext_name,
+                    referenced_tools=None):
     """Populate a panel with components based on layout list.
 
     Resolves each layout entry to either a tool from the index,
@@ -272,20 +287,22 @@ def _populate_panel(panel, layout_list, tool_index, ext_name):
         layout_list (list): Layout entries from YAML
         tool_index (dict): Tool name to component mapping
         ext_name (str): Extension name for unique name generation
+        referenced_tools (set): Set to track tool names placed in the layout
     """
     stack_counter = 0
 
     for entry in layout_list:
         if isinstance(entry, str):
             # String entry: tool name, separator, or slideout
-            _resolve_string_entry(entry, panel, tool_index)
+            _resolve_string_entry(entry, panel, tool_index,
+                                  referenced_tools)
         elif isinstance(entry, dict):
             # Dict entry: could be a stack grouping
             if exts.LAYOUT_STACK_KEY in entry:
                 stack_children = entry[exts.LAYOUT_STACK_KEY]
                 _create_stack(
                     stack_children, panel, tool_index,
-                    ext_name, stack_counter
+                    ext_name, stack_counter, referenced_tools
                 )
                 stack_counter += 1
             else:
@@ -299,7 +316,7 @@ def _populate_panel(panel, layout_list, tool_index, ext_name):
             )
 
 
-def _resolve_string_entry(entry, parent, tool_index):
+def _resolve_string_entry(entry, parent, tool_index, referenced_tools=None):
     """Resolve a string layout entry and add to parent.
 
     Handles:
@@ -311,6 +328,7 @@ def _resolve_string_entry(entry, parent, tool_index):
         entry (str): The string entry from layout YAML
         parent: Parent container to add component to
         tool_index (dict): Tool name to component mapping
+        referenced_tools (set): Set to track tool names placed in the layout
     """
     # Check for separator
     if exts.SEPARATOR_IDENTIFIER in entry:
@@ -332,6 +350,8 @@ def _resolve_string_entry(entry, parent, tool_index):
     tool_name = entry.strip()
     if tool_name in tool_index:
         parent.add_component(tool_index[tool_name])
+        if referenced_tools is not None:
+            referenced_tools.add(tool_name)
     else:
         mlogger.warning(
             'Tool "%s" referenced in layout but not found in tool index',
@@ -339,7 +359,8 @@ def _resolve_string_entry(entry, parent, tool_index):
         )
 
 
-def _create_stack(children_names, panel, tool_index, ext_name, stack_idx):
+def _create_stack(children_names, panel, tool_index, ext_name, stack_idx,
+                  referenced_tools=None):
     """Create a GenericStack with children from tool index.
 
     Args:
@@ -348,6 +369,7 @@ def _create_stack(children_names, panel, tool_index, ext_name, stack_idx):
         tool_index (dict): Tool name to component mapping
         ext_name (str): Extension name
         stack_idx (int): Stack counter for unique name generation
+        referenced_tools (set): Set to track tool names placed in the layout
     """
     from pyrevit.extensions.components import GenericStack
 
@@ -367,6 +389,8 @@ def _create_stack(children_names, panel, tool_index, ext_name, stack_idx):
         child_name = child_name.strip()
         if child_name in tool_index:
             stack.add_component(tool_index[child_name])
+            if referenced_tools is not None:
+                referenced_tools.add(child_name)
         else:
             mlogger.warning(
                 'Tool "%s" referenced in stack but not found in tool index',

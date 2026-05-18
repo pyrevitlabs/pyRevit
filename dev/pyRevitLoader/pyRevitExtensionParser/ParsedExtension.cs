@@ -29,6 +29,14 @@ namespace pyRevitExtensionParser
         /// These must be applied after the full UI is built using the Revit ribbon API.
         /// </summary>
         public List<ExternalLayoutDirective> ExternalLayoutDirectives { get; set; } = new List<ExternalLayoutDirective>();
+
+        /// <summary>
+        /// Tools from the tool index that are NOT referenced in the layout YAML.
+        /// These are included in assembly generation but NOT shown in the ribbon UI.
+        /// This ensures all tools have compiled command types available, so adding
+        /// a tool to the layout later doesn't require a new assembly build.
+        /// </summary>
+        public List<ParsedComponent> AssemblyOnlyComponents { get; set; }
         
         // Cache directory existence checks to avoid repeated file system calls
         private Dictionary<string, bool> _dirExistsCache = new Dictionary<string, bool>();
@@ -253,6 +261,8 @@ namespace pyRevitExtensionParser
         /// <summary>
         /// Collects all command components from this extension (cached after first call).
         /// Builds control IDs for each component based on hierarchy.
+        /// Also includes assembly-only components (tools not in the layout but still
+        /// compiled into the DLL so they're available if the layout changes).
         /// </summary>
         public IEnumerable<ParsedComponent> CollectCommandComponents()
         {
@@ -261,6 +271,14 @@ namespace pyRevitExtensionParser
                 _cachedCommandComponents = new List<ParsedComponent>();
                 // Start with no parent control ID - tabs will be the first level
                 CollectInto(_cachedCommandComponents, this.Children, null);
+
+                // Include tools that exist on disk but aren't referenced in the layout.
+                // They won't appear in the ribbon, but their command types will be
+                // compiled into the assembly so layout changes don't require a rebuild.
+                if (AssemblyOnlyComponents != null)
+                {
+                    CollectInto(_cachedCommandComponents, AssemblyOnlyComponents, null);
+                }
             }
             return _cachedCommandComponents;
         }

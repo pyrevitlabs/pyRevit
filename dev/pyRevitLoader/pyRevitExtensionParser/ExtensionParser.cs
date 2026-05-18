@@ -484,13 +484,16 @@ namespace pyRevitExtensionParser
             // Check for layout-based parsing (extension_layout.yaml)
             var config = GetConfig();
             List<ParsedComponent> children;
+            List<ParsedComponent> assemblyOnlyComponents = null;
             if (LayoutParser.HasLayoutFile(extDir))
             {
                 LogDebug($"Using layout-based parsing for extension: {extName}");
-                children = LayoutParser.ParseLayout(
+                var layoutResult = LayoutParser.ParseLayout(
                     extDir, extName,
                     extensionTemplates.Count > 0 ? extensionTemplates : null,
                     revitYear);
+                children = layoutResult.Tabs;
+                assemblyOnlyComponents = layoutResult.UnreferencedTools;
             }
             else
             {
@@ -519,7 +522,8 @@ namespace pyRevitExtensionParser
                 Context = parsedBundle?.GetFormattedContext(),
                 Engine = parsedBundle?.Engine,
                 Config = extConfig,
-                RocketModeCompatible = rocketModeCompatible
+                RocketModeCompatible = rocketModeCompatible,
+                AssemblyOnlyComponents = assemblyOnlyComponents
             };
 
             ReorderByLayout(parsedExtension, parsedExtension, null);

@@ -8,6 +8,22 @@ using static pyRevitExtensionParser.ExtensionParser;
 namespace pyRevitExtensionParser
 {
     /// <summary>
+    /// Result of parsing an extension layout.
+    /// </summary>
+    public class LayoutParseResult
+    {
+        /// <summary>Tabs that form the ribbon UI hierarchy.</summary>
+        public List<ParsedComponent> Tabs { get; set; } = new List<ParsedComponent>();
+
+        /// <summary>
+        /// Tools from the tool index that are NOT referenced in the layout.
+        /// These should be compiled into the assembly but not shown in the ribbon,
+        /// so that layout changes don't require a new assembly build.
+        /// </summary>
+        public List<ParsedComponent> UnreferencedTools { get; set; } = new List<ParsedComponent>();
+    }
+
+    /// <summary>
     /// Parses extension_layout.yaml files to build the component tree.
     /// When an extension has an extension_layout.yaml, tools are discovered
     /// from a flat tools/ directory and arranged into tabs/panels based on
@@ -82,7 +98,7 @@ namespace pyRevitExtensionParser
         /// <param name="inheritedTemplates">Templates inherited from extension bundle.yaml</param>
         /// <param name="revitYear">Running Revit version year (0 to skip filtering)</param>
         /// <returns>List of ParsedComponent (tabs) representing the layout tree</returns>
-        public static List<ParsedComponent> ParseLayout(
+        public static LayoutParseResult ParseLayout(
             string extensionDir,
             string extensionName,
             Dictionary<string, string> inheritedTemplates,
@@ -102,13 +118,23 @@ namespace pyRevitExtensionParser
             // Parse the layout YAML
             var layoutYaml = LoadYaml(layoutPath);
             if (layoutYaml == null)
-                return new List<ParsedComponent>();
+                return new LayoutParseResult();
+
+            // Track which tools are referenced by the layout
+            var referencedTools = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             // Build the component tree from layout
             var layoutDir = Path.GetDirectoryName(layoutPath);
-            var tabs = BuildComponentTree(layoutYaml, extensionDir, layoutDir, extensionName, toolIndex);
+            var tabs = BuildComponentTree(layoutYaml, extensionDir, layoutDir, extensionName, toolIndex, referencedTools);
 
-            return tabs;
+            // Collect tools that exist on disk but aren't in the layout.
+            // These will be compiled into the assembly but not shown in the ribbon.
+            var unreferenced = toolIndex
+                .Where(kvp => !referencedTools.Contains(kvp.Key))
+                .Select(kvp => kvp.Value)
+                .ToList();
+
+            return new LayoutParseResult { Tabs = tabs, UnreferencedTools = unreferenced };
         }
 
         #region Tool Index
@@ -393,7 +419,8 @@ namespace pyRevitExtensionParser
             string extensionDir,
             string layoutDir,
             string extensionName,
-            Dictionary<string, ParsedComponent> toolIndex)
+            Dictionary<string, ParsedComponent> toolIndex,
+            HashSet<string> referencedTools)
         {
             var tabs = new List<ParsedComponent>();
 
@@ -411,7 +438,7 @@ namespace pyRevitExtensionParser
                 if (tabMapping == null)
                     continue;
 
-                var tab = CreateTab(tabMapping, extensionDir, layoutDir, extensionName, toolIndex);
+                var tab = CreateTab(tabMapping, extensionDir, layoutDir, extensionName, toolIndex, referencedTools);
                 if (tab != null)
                     tabs.Add(tab);
             }
@@ -427,7 +454,8 @@ namespace pyRevitExtensionParser
             string extensionDir,
             string layoutDir,
             string extensionName,
-            Dictionary<string, ParsedComponent> toolIndex)
+            Dictionary<string, ParsedComponent> toolIndex,
+            HashSet<string> referencedTools)
         {
             var name = GetScalar(GetMappingValue(tabMapping, NameKey));
             if (string.IsNullOrEmpty(name))
@@ -463,7 +491,7 @@ namespace pyRevitExtensionParser
                 if (panelMapping == null)
                     continue;
 
-                var panel = CreatePanel(panelMapping, extensionDir, layoutDir, extensionName, toolIndex);
+                var panel = CreatePanel(panelMapping, extensionDir, layoutDir, extensionName, toolIndex, referencedTools);
                 if (panel != null)
                     tab.Children.Add(panel);
             }
@@ -480,7 +508,8 @@ namespace pyRevitExtensionParser
             string extensionDir,
             string layoutDir,
             string extensionName,
-            Dictionary<string, ParsedComponent> toolIndex)
+            Dictionary<string, ParsedComponent> toolIndex,
+            HashSet<string> referencedTools)
         {
             var name = GetScalar(GetMappingValue(panelMapping, NameKey));
             if (string.IsNullOrEmpty(name))
@@ -526,7 +555,7 @@ namespace pyRevitExtensionParser
 
             if (layoutList != null)
             {
-                PopulatePanel(panel, layoutList, extensionName, toolIndex);
+                PopulatePanel(panel, layoutList, extensionName, toolIndex, referencedTools);
             }
 
             return panel;
@@ -558,7 +587,8 @@ namespace pyRevitExtensionParser
             ParsedComponent panel,
             YamlSequenceNode layoutList,
             string extensionName,
-            Dictionary<string, ParsedComponent> toolIndex)
+            Dictionary<string, ParsedComponent> toolIndex,
+            HashSet<string> referencedTools)
         {
             foreach (var item in layoutList.Children)
             {
@@ -597,6 +627,7 @@ namespace pyRevitExtensionParser
                         if (toolIndex.TryGetValue(value, out var tool))
                         {
                             panel.Children.Add(tool);
+                            referencedTools.Add(value);
                         }
                         else
                         {
@@ -612,7 +643,7 @@ namespace pyRevitExtensionParser
                     var stackNode = GetMappingValue(mappingNode, StackKey) as YamlSequenceNode;
                     if (stackNode != null)
                     {
-                        var stack = CreateStack(stackNode, panel, extensionName, toolIndex);
+                        var stack = CreateStack(stackNode, panel, extensionName, toolIndex, referencedTools);
                         if (stack != null)
                             panel.Children.Add(stack);
                     }
@@ -628,7 +659,8 @@ namespace pyRevitExtensionParser
             YamlSequenceNode stackItems,
             ParsedComponent parentPanel,
             string extensionName,
-            Dictionary<string, ParsedComponent> toolIndex)
+            Dictionary<string, ParsedComponent> toolIndex,
+            HashSet<string> referencedTools)
         {
             var stackChildren = new List<ParsedComponent>();
 
@@ -641,6 +673,7 @@ namespace pyRevitExtensionParser
                 if (toolIndex.TryGetValue(toolName, out var tool))
                 {
                     stackChildren.Add(tool);
+                    referencedTools.Add(toolName);
                 }
                 else
                 {

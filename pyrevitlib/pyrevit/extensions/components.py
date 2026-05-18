@@ -477,6 +477,7 @@ class Extension(GenericUIContainer):
     def __init__(self, cmp_path=None):
         self.pyrvt_version = None
         self.dir_hash_value = None
+        self._assembly_only_commands = []
         # using classname otherwise exceptions in superclasses won't show
         GenericUIContainer.__init__(self, cmp_path=cmp_path)
 
@@ -555,7 +556,10 @@ class Extension(GenericUIContainer):
         return coreutils.get_str_hash(safe_strtype(self.get_cache_data()))
 
     def get_all_commands(self):
-        return self.find_components_of_type(GenericUICommand)
+        cmds = self.find_components_of_type(GenericUICommand)
+        if self._assembly_only_commands:
+            cmds.extend(self._assembly_only_commands)
+        return cmds
 
     def get_manifest_file(self):
         return self.get_bundle_file(exts.EXT_MANIFEST_FILE)
