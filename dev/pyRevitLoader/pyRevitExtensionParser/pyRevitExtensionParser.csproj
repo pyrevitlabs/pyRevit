@@ -12,6 +12,7 @@
         <UseLoader>false</UseLoader>
         <UseIronPython>false</UseIronPython>
         <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
+        <LangVersion>8.0</LangVersion>
         <!-- Deploy to both IPY342 and IPY2712PR directories -->
         <DeployToAllVersions>true</DeployToAllVersions>
     </PropertyGroup>

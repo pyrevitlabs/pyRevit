@@ -11,6 +11,7 @@ namespace pyRevitExtensionParserTest
     public class SmartButtonTests : TempFileTestBase
     {
         private string _extensionDir;
+        private static readonly MockLogger _mockLogger = new MockLogger();
 
         [SetUp]
         public override void BaseSetUp()
@@ -427,7 +428,7 @@ print('Config dialog')
                 "ConfigScriptPath should be different from ScriptPath");
             
             // Generate code using RoslynCommandTypeGenerator
-            var codeGenerator = new pyRevitAssemblyBuilder.AssemblyMaker.RoslynCommandTypeGenerator();
+            var codeGenerator = new pyRevitAssemblyBuilder.AssemblyMaker.RoslynCommandTypeGenerator(_mockLogger);
             var generatedCode = codeGenerator.GenerateExtensionCode(extension, "2024");
             
             // Verify the generated code contains the config script path

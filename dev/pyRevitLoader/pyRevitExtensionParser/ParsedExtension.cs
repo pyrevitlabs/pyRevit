@@ -37,6 +37,20 @@ namespace pyRevitExtensionParser
         /// a tool to the layout later doesn't require a new assembly build.
         /// </summary>
         public List<ParsedComponent> AssemblyOnlyComponents { get; set; }
+
+        /// <summary>
+        /// Gets or sets the list of users authorized to access this extension.
+        /// When populated, only users in this list can use the extension.
+        /// When null or empty, all users are allowed (unless AuthorizedGroups restricts access).
+        /// </summary>
+        public List<string>? AuthorizedUsers { get; set; }
+
+        /// <summary>
+        /// Gets or sets the list of Windows security groups authorized to access this extension.
+        /// When populated, users must be a member of at least one of these groups to use the extension.
+        /// When null or empty, no group restriction is applied.
+        /// </summary>
+        public List<string>? AuthorizedGroups { get; set; }
         
         // Cache directory existence checks to avoid repeated file system calls
         private Dictionary<string, bool> _dirExistsCache = new Dictionary<string, bool>();

@@ -189,6 +189,12 @@ class DeveloperSamplePanel(forms.WPFPanel):
     def enable_btn_clicked(self, sender, args):
         self.enable_element(self.target_button)
 
+    # ---- output ------------------------- --------------------------------
+
+    def output_btn_clicked(self, sender, args):
+        self.output.print_md("Hello world!")
+        self.logger.warning("Be careful!")
+
     # ---- dispatch --------------------------------------------------------
     # Pattern: UI thread -> dispatch() -> background thread
     #          background thread -> dispatch() -> UI thread (label update)

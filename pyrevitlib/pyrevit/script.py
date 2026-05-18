@@ -158,12 +158,13 @@ def get_output():
     return output.get_output()
 
 
-def get_config(section=None):
+def get_config(section=None, reload=False):
     """Create and return config section parser object for current script.
 
     Args:
         section (str, optional): config section name. If not provided,
             it will default to the command name plus the 'config' suffix.
+        reload (bool, optional): forces a reload, in case changes were made.
 
     Returns:
         (pyrevit.coreutils.configparser.PyRevitConfigSectionParser):
@@ -173,6 +174,8 @@ def get_config(section=None):
     if not section:
         script_cfg_postfix = '_config'
         section = EXEC_PARAMS.command_name + script_cfg_postfix
+    if reload:
+        user_config.reload()
 
     try:
         return user_config.get_section(section)

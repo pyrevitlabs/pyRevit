@@ -12,6 +12,7 @@ layout:
   - Unit Tests
   - Engine Tests
   - Bundle Tests
+  - Icon Inheritance Examples
   - Context Tests
   - Misc Tests[title:Third-Party\nUnit Tests]
   - Debug Dialog Config
@@ -19,3 +20,4 @@ layout:
   - Test ComboBox
 
 template_test: Bundle liquid templating works (https://www.youtube.com/watch?v=)
+docpath: https://docs.pyrevitlabs.io/

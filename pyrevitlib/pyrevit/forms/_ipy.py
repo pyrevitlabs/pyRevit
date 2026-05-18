@@ -104,7 +104,12 @@ Attributes:
 def _make_param_def(param, istype):
     """Build a ParamDef from a Revit parameter object."""
     if param.HasValue:
-        display_value_str = param.AsValueString() or param.AsString()
+        value = param.AsValueString() or param.AsString()
+        if isinstance(value, str):
+            stripped_value = value.strip()
+            display_value_str = value if stripped_value else None
+        else:
+            display_value_str = value or None
     else:
         display_value_str = None
 
@@ -546,6 +551,9 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
         Subclass this, set the three required class attributes, then register
         and open the panel through the module-level helpers.
 
+        Use self.logger and self.output instead of using script.get_logger() and script.get_output() 
+        to ensure correct titles in the output window.
+
         Required class attributes:
             panel_id (str): stable UUID string identifying the panel in Revit.
             panel_source (str): XAML filename (resolved relative to the command).
@@ -621,6 +629,35 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
         else:
             wpf.LoadComponent(self, framework.StringReader(xaml_source))
         self.thread_id = framework.get_current_thread_id()
+
+    def _get_panel_output(self):
+        """Get current output window and keep its title in sync with panel_title."""
+        out = getattr(self, '_output', None)
+        try:
+            from pyrevit import script as _script
+            current_out = _script.get_output()
+            if current_out:
+                current_out.set_title(self.panel_title)
+                self._output = current_out
+                out = current_out
+        except Exception:
+            pass
+        return out
+
+    @property
+    def logger(self):
+        """Logger named after the panel, created on first access."""
+        try:
+            logger = self._logger
+        except AttributeError:
+            logger = self._logger = get_logger(self.panel_title)
+        self._get_panel_output()
+        return logger
+
+    @property
+    def output(self):
+        """Output window with title corrected to panel_title whenever accessed."""
+        return self._get_panel_output()
 
 
 class _WPFPanelProvider(UI.IDockablePaneProvider):

@@ -1,47 +1,75 @@
 title:
-  en_us: Keep Mirrored
-  fr_fr: Conserve symétrisés
-  ru: Удержать отзеркаленные
-  chinese_s: 保留已镜像图元
-  es_es: Mantener reflejados
-  de_de: Nur gespiegelte Elemente in aktueller Auswahl belassen
-  pt_br: Manter Espelhados
+  en_us: Keep Mirrored ●
+  fr_fr: Conserve symétrisés ●
+  ru: Удержать отзеркаленные ●
+  chinese_s: 保留已镜像图元 ●
+  es_es: Mantener reflejados ●
+  de_de: Nur gespiegelte Elemente in aktueller Auswahl belassen ●
+  pt_br: Manter Espelhados ●
 tooltip:
   en_us: >-
-    Keep only mirrored elements in current selection
+    Keep only mirrored elements in current selection.
+    If nothing is selected, pick a region to filter from.
 
     Shift-Click:
 
-    Keep only not-Mirrored
+    Keep only not-mirrored elements.
+    If nothing is selected, pick a region to filter from.
   fr_fr: >-
-    Conserver uniquement les éléments symétrisés dans la sélection actuelle
+    Conserver uniquement les éléments symétrisés dans la sélection actuelle.
+    Si rien n'est sélectionné, délimitez une zone à filtrer.
 
-    Shift-Clic :
+    Shift-Clic :
 
-    Conserver uniquement les non-symétrisés
+    Conserver uniquement les non-symétrisés.
+    Si rien n'est sélectionné, délimitez une zone à filtrer.
   ru: >-
     Удерживает только отзеркаленные элементы в текущем выделении.
+    Если ничего не выбрано, выберите область для фильтрации.
 
     Shift-Click:
 
-    Удержать только не отзеркаленные.
-  chinese_s: "在当前选择中仅保留已镜像的图元\nShift+单击：\n仅保留未镜像的图元"
+    Удержать только не отзеркаленные элементы.
+    Если ничего не выбрано, выберите область для фильтрации.
+  chinese_s: >-
+    在当前选择中仅保留已镜像的图元。
+    若未选择任何内容，则框选区域进行过滤。
+
+    Shift+单击：
+
+    仅保留未镜像的图元。
+    若未选择任何内容，则框选区域进行过滤。
   es_es: >-
-    Mantener solo elementos reflejados en la selección actual
+    Mantener solo elementos reflejados en la selección actual.
+    Si no hay nada seleccionado, delimite una región para filtrar.
 
     Shift-Clic:
 
-    Mantener solo no reflejados
+    Mantener solo no reflejados.
+    Si no hay nada seleccionado, delimite una región para filtrar.
   de_de: >-
-    Die aktuelle Elementauswahl wird so vermindert,  dass nur gespiegelte Elemente in der Auswahl verbleiben.  Die Elemente werden also nicht gelöscht,  sondern nur aus der aktuellen Auswahl entfernt.
+    Die aktuelle Elementauswahl wird so vermindert, dass nur gespiegelte Elemente
+    in der Auswahl verbleiben. Die Elemente werden nicht gelöscht, sondern nur aus
+    der aktuellen Auswahl entfernt.
+    Wenn nichts ausgewählt ist, kann ein Bereich zum Filtern gewählt werden.
 
     Shift-Click:
 
-    Die aktuelle Elementauswahl wird so vermindert,  dass nur NICHT-gespiegelte Elemente in der Auswahl verbleiben.
+    Die aktuelle Elementauswahl wird so vermindert, dass nur NICHT-gespiegelte
+    Elemente in der Auswahl verbleiben.
+    Wenn nichts ausgewählt ist, kann ein Bereich zum Filtern gewählt werden.
   pt_br: >-
-    Manter apenas elementos espelhados na seleção atual
-    
+    Manter apenas elementos espelhados na seleção atual.
+    Se nada estiver selecionado, selecione uma região para filtrar.
+
     Shift-Clique:
-    
-    Manter apenas não espelhados
-context: selection
+
+    Manter apenas não espelhados.
+    Se nada estiver selecionado, selecione uma região para filtrar.
+context:
+  any:
+    - selection
+    - active-plan-view
+    - active-section-view
+    - active-3d-view
+    - active-elevation-view

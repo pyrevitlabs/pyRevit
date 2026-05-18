@@ -1,4 +1,4 @@
-﻿using pyRevitExtensionParser;
+using pyRevitExtensionParser;
 using System.IO;
 using System.Linq;
 using NUnit.Framework;
@@ -9,7 +9,9 @@ namespace pyRevitExtensionParserTest
 	internal class ParsedBundleTests
 	{
         private IEnumerable<ParsedExtension>? _installedExtensions;
-        
+
+        private static readonly MockLogger _mockLogger = new MockLogger();
+
         [SetUp]
         public void Setup()
         {
@@ -318,7 +320,7 @@ context:
             TestContext.Out.WriteLine($"Component Context: {testBundleButton.Context}");
             
             // Generate code
-            var codeGenerator = new pyRevitAssemblyBuilder.AssemblyMaker.RoslynCommandTypeGenerator();
+            var codeGenerator = new pyRevitAssemblyBuilder.AssemblyMaker.RoslynCommandTypeGenerator(_mockLogger);
             var generatedCode = codeGenerator.GenerateExtensionCode(extension, "2024");
             
             // Sanitize the class name to match what's generated
@@ -454,6 +456,123 @@ is_beta: true
         }
 
         [Test]
+        public void TestInheritIconKeyDefaultsTrueAndSupportsFalse()
+        {
+            var defaultFile = Path.GetTempFileName();
+            var falseFile = Path.GetTempFileName();
+            File.WriteAllText(defaultFile, "title: Test\n");
+            File.WriteAllText(falseFile, "title: Test\ninherit_icon: false\n");
+
+            try
+            {
+                var defaultBundle = BundleParser.BundleYamlParser.Parse(defaultFile);
+                var falseBundle = BundleParser.BundleYamlParser.Parse(falseFile);
+
+                Assert.That(defaultBundle.InheritIcon, Is.True);
+                Assert.That(falseBundle.InheritIcon, Is.False);
+            }
+            finally
+            {
+                File.Delete(defaultFile);
+                File.Delete(falseFile);
+            }
+        }
+
+        [Test]
+        public void TestLargeIconKeyDefaultsFalseAndSupportsTrue()
+        {
+            var defaultFile = Path.GetTempFileName();
+            var trueFile = Path.GetTempFileName();
+            File.WriteAllText(defaultFile, "title: Test\n");
+            File.WriteAllText(trueFile, "title: Test\nlarge_icon: true\n");
+
+            try
+            {
+                var defaultBundle = BundleParser.BundleYamlParser.Parse(defaultFile);
+                var trueBundle = BundleParser.BundleYamlParser.Parse(trueFile);
+
+                Assert.That(defaultBundle.LargeIcon, Is.False);
+                Assert.That(trueBundle.LargeIcon, Is.True);
+            }
+            finally
+            {
+                File.Delete(defaultFile);
+                File.Delete(trueFile);
+            }
+        }
+
+        [Test]
+        public void TestParsedComponentInheritIconDefaultsAndOverrides()
+        {
+            var extensionDir = Path.Combine(Path.GetTempPath(), $"InheritIcon_{System.Guid.NewGuid():N}.extension");
+            var defaultPulldownDir = Path.Combine(extensionDir, "Test.panel", "Default.pulldown");
+            var disabledPulldownDir = Path.Combine(extensionDir, "Test.panel", "Disabled.pulldown");
+            Directory.CreateDirectory(defaultPulldownDir);
+            Directory.CreateDirectory(disabledPulldownDir);
+
+            try
+            {
+                File.WriteAllText(Path.Combine(defaultPulldownDir, "bundle.yaml"), "title: Default\n");
+                File.WriteAllText(Path.Combine(disabledPulldownDir, "bundle.yaml"), "title: Disabled\ninherit_icon: false\n");
+
+                var parsedExtension = ParseInstalledExtensions(new[] { extensionDir }).First();
+                var components = GetAllComponentsFlat(parsedExtension).ToList();
+                var defaultPulldown = components.First(c => c.DisplayName == "Default");
+                var disabledPulldown = components.First(c => c.DisplayName == "Disabled");
+
+                Assert.That(defaultPulldown.InheritIcon, Is.True);
+                Assert.That(disabledPulldown.InheritIcon, Is.False);
+            }
+            finally
+            {
+                if (Directory.Exists(extensionDir))
+                    Directory.Delete(extensionDir, true);
+            }
+        }
+
+        [Test]
+        public void TestNestedStackPulldownAndSplitInheritIconParsing()
+        {
+            var extensionDir = Path.Combine(Path.GetTempPath(), $"NestedInheritIcon_{System.Guid.NewGuid():N}.extension");
+            var stackDir = Path.Combine(extensionDir, "Test.panel", "Icon Stack.stack");
+            var disabledPulldownDir = Path.Combine(stackDir, "Stack Pulldown.pulldown");
+            var disabledSplitDir = Path.Combine(stackDir, "Stack Split.splitbutton");
+            var defaultSplitDir = Path.Combine(stackDir, "Default Split.splitbutton");
+            Directory.CreateDirectory(disabledPulldownDir);
+            Directory.CreateDirectory(disabledSplitDir);
+            Directory.CreateDirectory(defaultSplitDir);
+
+            try
+            {
+                File.WriteAllText(Path.Combine(stackDir, "bundle.yaml"), "title: Icon Stack\ninherit_icon: false\nlarge_icon: true\n");
+                File.WriteAllText(Path.Combine(disabledPulldownDir, "bundle.yaml"), "title: Stack Pulldown\ninherit_icon: false\nlarge_icon: true\n");
+                File.WriteAllText(Path.Combine(disabledSplitDir, "bundle.yaml"), "title: Stack Split\ninherit_icon: false\nlarge_icon: true\n");
+                File.WriteAllText(Path.Combine(defaultSplitDir, "bundle.yaml"), "title: Default Split\n");
+
+                var parsedExtension = ParseInstalledExtensions(new[] { extensionDir }).First();
+                var components = GetAllComponentsFlat(parsedExtension).ToList();
+                var stack = components.First(c => c.DisplayName == "Icon Stack");
+                var disabledPulldown = components.First(c => c.DisplayName == "Stack Pulldown");
+                var disabledSplit = components.First(c => c.DisplayName == "Stack Split");
+                var defaultSplit = components.First(c => c.DisplayName == "Default Split");
+
+                Assert.That(stack.InheritIcon, Is.False);
+                Assert.That(stack.LargeIcon, Is.True);
+                Assert.That(disabledPulldown.InheritIcon, Is.False);
+                Assert.That(disabledPulldown.LargeIcon, Is.True);
+                Assert.That(disabledSplit.InheritIcon, Is.False);
+                Assert.That(disabledSplit.LargeIcon, Is.True);
+                Assert.That(defaultSplit.InheritIcon, Is.True);
+                Assert.That(defaultSplit.LargeIcon, Is.False);
+            }
+            finally
+            {
+                if (Directory.Exists(extensionDir))
+                    Directory.Delete(extensionDir, true);
+            }
+        }
+
+        [Test]
         public void TestEngineTypeIsNotEmittedByDefaultForPythonScripts()
         {
             var extensionDir = Path.Combine(Path.GetTempPath(), $"EngineTypeDefault_{System.Guid.NewGuid():N}.extension");
@@ -465,7 +584,7 @@ is_beta: true
                 File.WriteAllText(Path.Combine(bundleDir, "script.py"), "#! python3\nprint(3/0)\n");
 
                 var parsedExtension = ParseInstalledExtensions(new[] { extensionDir }).First();
-                var codeGenerator = new pyRevitAssemblyBuilder.AssemblyMaker.RoslynCommandTypeGenerator();
+                var codeGenerator = new pyRevitAssemblyBuilder.AssemblyMaker.RoslynCommandTypeGenerator(_mockLogger);
                 var generatedCode = codeGenerator.GenerateExtensionCode(parsedExtension, "2024");
 
                 Assert.That(generatedCode, Does.Not.Contain("\\\"type\\\":\\\"IronPython\\\""),
@@ -491,7 +610,7 @@ is_beta: true
                 File.WriteAllText(Path.Combine(bundleDir, "bundle.yaml"), "engine:\n  type: IronPython\n");
 
                 var parsedExtension = ParseInstalledExtensions(new[] { extensionDir }).First();
-                var codeGenerator = new pyRevitAssemblyBuilder.AssemblyMaker.RoslynCommandTypeGenerator();
+                var codeGenerator = new pyRevitAssemblyBuilder.AssemblyMaker.RoslynCommandTypeGenerator(_mockLogger);
                 var generatedCode = codeGenerator.GenerateExtensionCode(parsedExtension, "2024");
 
                 Assert.That(generatedCode, Does.Contain("\\\"type\\\":\\\"IronPython\\\""),

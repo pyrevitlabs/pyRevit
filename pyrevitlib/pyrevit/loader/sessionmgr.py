@@ -49,6 +49,12 @@ mlogger = logger.get_logger(__name__)
 # Build strategy constant (Roslyn is the only supported strategy)
 BUILD_STRATEGY_ROSLYN = "Roslyn"
 
+# Minimum Revit version that supports the new C# loader.
+# Revit 2019/2020 ship an older .NET Framework and system assemblies
+# (System.Runtime.CompilerServices.Unsafe, System.Collections.Immutable)
+# that are incompatible with the Roslyn version bundled in pyRevit.
+NEW_LOADER_MIN_REVIT_VERSION = 2021
+
 
 AssembledExtension = namedtuple("AssembledExtension", ["ext", "assm"])
 
@@ -71,6 +77,11 @@ def _clear_running_engines():
 def _setup_output():
     # create output window and assign handle
     out_window = runtime.types.ScriptConsole()
+    # protect from close_other_outputs triggered by startup-script windows
+    try:
+        out_window.IsSessionOutput = True
+    except Exception:
+        pass
     runtime_info = sessioninfo.get_runtime_info()
     out_window.AppVersion = "{}:{}:{}".format(
         runtime_info.pyrevit_version,
@@ -384,6 +395,23 @@ def load_session():
     # create a new session
     if not user_config.new_loader:
         mlogger.info("Creating new pyRevit session with pyRevitLoader.py...")
+        mlogger.debug(
+            "The legacy Python loader is deprecated and will be removed in "
+            "future releases. Enable the new loader in pyRevit settings."
+        )
+        _new_session()
+    elif HOST_APP.is_older_than(NEW_LOADER_MIN_REVIT_VERSION):
+        mlogger.warning(
+            "The new C# loader is not supported on Revit %s (requires Revit %s+). "
+            "Falling back to the legacy Python loader automatically.",
+            HOST_APP.version,
+            NEW_LOADER_MIN_REVIT_VERSION,
+        )
+        mlogger.warning(
+            "The legacy Python loader is deprecated and will be removed in "
+            "future releases. Upgrade to Revit %s or newer to use the new loader.",
+            NEW_LOADER_MIN_REVIT_VERSION,
+        )
         _new_session()
     else:
         mlogger.info("Creating new Session with pyRevitAssemblyMaker.dll...")

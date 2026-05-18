@@ -23,7 +23,7 @@ from sectionbox_utils import (
     apply_plan_viewrange_from_sectionbox,
     to_world_identity,
 )
-from sectionbox_actions import toggle, hide, align_to_face, temp_switch
+from sbox.sbox_actions import toggle, hide, align_to_face, temp_switch
 from sectionbox_geometry import (
     get_section_box_info,
     get_section_box_face_info,

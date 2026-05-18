@@ -1,0 +1,6 @@
+title: Inheritance Off
+inherit_icon: false
+tooltip: Shows that child buttons without icons stay iconless when inheritance is disabled.
+layout:
+  - No Inherited Icon
+  - Own Icon

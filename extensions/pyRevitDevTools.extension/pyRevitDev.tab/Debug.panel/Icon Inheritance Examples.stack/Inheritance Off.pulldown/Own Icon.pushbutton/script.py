@@ -1,0 +1,1 @@
+print("Own icon example")

@@ -44,9 +44,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// Creates an ExtensionManagerService instance.
         /// </summary>
         /// <returns>A new IExtensionManagerService instance.</returns>
-        public static IExtensionManagerService CreateExtensionManagerService(int revitYear = 0)
+        public static IExtensionManagerService CreateExtensionManagerService(int revitYear = 0, UIApplication? uiApplication = null, ILogger? logger = null)
         {
-            return new ExtensionManagerService(revitYear);
+            return new ExtensionManagerService(revitYear, uiApplication, logger);
         }
 
         /// <summary>
@@ -130,18 +130,19 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <param name="uiApplication">The Revit UIApplication instance.</param>
         /// <param name="logger">The logger instance.</param>
         /// <param name="buttonPostProcessor">The button post-processor instance.</param>
+        /// <param name="buildContext">Shared build context that carries the current per-build settings.</param>
         /// <returns>A new IButtonBuilderFactory instance.</returns>
-        public static IButtonBuilderFactory CreateButtonBuilderFactory(UIApplication uiApplication, ILogger logger, IButtonPostProcessor buttonPostProcessor)
+        public static IButtonBuilderFactory CreateButtonBuilderFactory(UIApplication uiApplication, ILogger logger, IButtonPostProcessor buttonPostProcessor, BuildContext buildContext)
         {
             // Create script initializers
             var smartButtonScriptInitializer = new SmartButtonScriptInitializer(uiApplication, logger);
-            
+
             // Create individual button builders
             var linkButtonBuilder = new LinkButtonBuilder(logger, buttonPostProcessor);
             var pushButtonBuilder = new PushButtonBuilder(logger, buttonPostProcessor, smartButtonScriptInitializer);
             var panelButtonBuilder = new PanelButtonBuilder(logger, buttonPostProcessor);
-            var pulldownButtonBuilder = new PulldownButtonBuilder(logger, buttonPostProcessor, linkButtonBuilder, smartButtonScriptInitializer);
-            var splitButtonBuilder = new SplitButtonBuilder(logger, buttonPostProcessor, linkButtonBuilder);
+            var pulldownButtonBuilder = new PulldownButtonBuilder(buildContext, logger, buttonPostProcessor, linkButtonBuilder, smartButtonScriptInitializer);
+            var splitButtonBuilder = new SplitButtonBuilder(buildContext, logger, buttonPostProcessor, linkButtonBuilder, smartButtonScriptInitializer);
 
             // Create factory with all builders
             var builders = new List<IButtonBuilder>
@@ -162,15 +163,16 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <param name="uiApplication">The Revit UIApplication instance.</param>
         /// <param name="logger">The logger instance.</param>
         /// <param name="buttonPostProcessor">The button post-processor instance.</param>
+        /// <param name="buildContext">Shared build context that carries the current per-build settings.</param>
         /// <returns>A new IStackBuilder instance.</returns>
-        public static IStackBuilder CreateStackBuilder(UIApplication uiApplication, ILogger logger, IButtonPostProcessor buttonPostProcessor)
+        public static IStackBuilder CreateStackBuilder(UIApplication uiApplication, ILogger logger, IButtonPostProcessor buttonPostProcessor, BuildContext buildContext)
         {
             var smartButtonScriptInitializer = new SmartButtonScriptInitializer(uiApplication, logger);
             var linkButtonBuilder = new LinkButtonBuilder(logger, buttonPostProcessor);
-            var pulldownButtonBuilder = new PulldownButtonBuilder(logger, buttonPostProcessor, linkButtonBuilder, smartButtonScriptInitializer);
-            var splitButtonBuilder = new SplitButtonBuilder(logger, buttonPostProcessor, linkButtonBuilder);
-            
-            return new StackBuilder(logger, buttonPostProcessor, linkButtonBuilder, pulldownButtonBuilder, splitButtonBuilder, smartButtonScriptInitializer);
+            var pulldownButtonBuilder = new PulldownButtonBuilder(buildContext, logger, buttonPostProcessor, linkButtonBuilder, smartButtonScriptInitializer);
+            var splitButtonBuilder = new SplitButtonBuilder(buildContext, logger, buttonPostProcessor, linkButtonBuilder, smartButtonScriptInitializer);
+
+            return new StackBuilder(buildContext, logger, buttonPostProcessor, linkButtonBuilder, pulldownButtonBuilder, splitButtonBuilder, smartButtonScriptInitializer);
         }
 
         /// <summary>
@@ -215,6 +217,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             IButtonBuilderFactory buttonBuilderFactory,
             IStackBuilder stackBuilder,
             IComboBoxBuilder comboBoxBuilder,
+            BuildContext buildContext,
             IUIRibbonScanner? ribbonScanner = null)
         {
             return new UIManagerService(
@@ -226,6 +229,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 buttonBuilderFactory,
                 stackBuilder,
                 comboBoxBuilder,
+                buildContext,
                 ribbonScanner);
         }
 
@@ -251,7 +255,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             // Create core services
             var assemblyBuilder = CreateAssemblyBuilderService(revitVersion, buildStrategy, logger);
             int.TryParse(revitVersion, out int revitYear);
-            var extensionManager = CreateExtensionManagerService(revitYear);
+            var extensionManager = CreateExtensionManagerService(revitYear, uiApplication, logger);
             var hookManager = CreateHookManager(logger);
             
             // Create icon and tooltip managers
@@ -259,14 +263,17 @@ namespace pyRevitAssemblyBuilder.SessionManager
             var tooltipManager = CreateTooltipManager(logger);
             var buttonPostProcessor = CreateButtonPostProcessor(logger, iconManager, tooltipManager);
             
-            // Create UI builders
+            // Create UI builders. The BuildContext is shared by reference between the UIManager
+            // (writer) and every builder that needs to know the current beta / version snapshot,
+            // so all readers observe the same value within a single BuildUI call.
+            var buildContext = new BuildContext();
             var panelStyleManager = CreatePanelStyleManager(logger);
             var tabBuilder = CreateTabBuilder(uiApplication, logger);
             var panelBuilder = CreatePanelBuilder(uiApplication, logger, panelStyleManager);
-            var buttonBuilderFactory = CreateButtonBuilderFactory(uiApplication, logger, buttonPostProcessor);
-            var stackBuilder = CreateStackBuilder(uiApplication, logger, buttonPostProcessor);
+            var buttonBuilderFactory = CreateButtonBuilderFactory(uiApplication, logger, buttonPostProcessor, buildContext);
+            var stackBuilder = CreateStackBuilder(uiApplication, logger, buttonPostProcessor, buildContext);
             var comboBoxBuilder = CreateComboBoxBuilder(uiApplication, logger, buttonPostProcessor);
-            
+
             // Create ribbon scanner for UI cleanup
             var ribbonScanner = CreateUIRibbonScanner(logger);
 
@@ -280,6 +287,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 buttonBuilderFactory,
                 stackBuilder,
                 comboBoxBuilder,
+                buildContext,
                 ribbonScanner);
 
             return new SessionManagerService(

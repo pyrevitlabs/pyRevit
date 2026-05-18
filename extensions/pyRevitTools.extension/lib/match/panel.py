@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import re
 
-from pyrevit import script, forms, revit, op
-from pyrevit import UI
+from pyrevit import forms, revit, op
+from pyrevit import DB, UI
 from pyrevit.revit.events import _GenericExternalEventHandler
 from pyrevit.framework import ComponentModel
 from pyrevit.compat import get_elementid_value_func
@@ -10,7 +10,6 @@ from pyrevit.compat import get_elementid_value_func
 from match_utils import (
     PropKeyValue,
     get_source_properties,
-    safe_get_parameter,
     paste_props,
 )
 from filter_utils import (
@@ -22,7 +21,6 @@ from filter_utils import (
 )
 
 get_elementid_value = get_elementid_value_func()
-logger = script.get_logger()
 
 MAX_HISTORY_ITEMS = 50
 
@@ -77,7 +75,7 @@ class ParameterItem(_INotifyBase):
 
     @property
     def Category(self):
-        """Single category name, 'multiple', or em-dash when unknown."""
+        """Single category name, 'multiple', or 'unknown'."""
         cats = self._pkv.categories or []
         if not cats:
             return "unknown"
@@ -140,7 +138,12 @@ class MatchHistoryClipboard(forms.WPFPanel):
         if not props:
             return
         new_items = [ParameterItem(p) for p in props]
-        self._items = (new_items + self._items)[:MAX_HISTORY_ITEMS]
+        new_props = [ni.source_prop for ni in new_items]
+        filtered_old = [
+            item for item in self._items
+            if item.source_prop not in new_props
+        ]
+        self._items = (new_items + filtered_old)[:MAX_HISTORY_ITEMS]
         for item in self._items:
             item.IsSelected = False
         self._refresh_list()
@@ -257,10 +260,10 @@ class MatchHistoryClipboard(forms.WPFPanel):
             return
         param_id, _ = get_color_source_parameter(revit.doc, revit.active_view, elem)
         if not param_id:
-            logger.warning("No simple equals filter found on active view.")
+            self.logger.warning("No simple equals filter found on active view.")
             return
         try:
-            tparam = safe_get_parameter(elem, param_id)
+            tparam = revit.query.get_param(elem, param_id)
             if not tparam:
                 return
             value = revit.query.get_param_value(tparam)
@@ -268,7 +271,7 @@ class MatchHistoryClipboard(forms.WPFPanel):
                 PropKeyValue(
                     name=tparam.Definition.Name,
                     datatype=tparam.StorageType,
-                    value=get_elementid_value(value),
+                    value=get_elementid_value(value) if isinstance(value, DB.ElementId) else value,
                     istype=False,
                     display_value=tparam.AsValueString() or str(value),
                     categories=[elem.Category],
@@ -278,7 +281,7 @@ class MatchHistoryClipboard(forms.WPFPanel):
             self._items[0].IsSelected = True
             self._update_ui_state()
         except Exception as ex:
-            logger.warning("load_from_filter_and_element: %s", ex)
+            self.logger.warning("load_from_filter_and_element: %s", ex)
 
     # ── paste handlers ───────────────────────────────────────────────────────
 

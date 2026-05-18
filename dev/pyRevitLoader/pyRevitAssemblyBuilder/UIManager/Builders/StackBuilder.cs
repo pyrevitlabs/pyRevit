@@ -5,6 +5,7 @@ using System.Linq;
 using Autodesk.Revit.UI;
 using pyRevitAssemblyBuilder.AssemblyMaker;
 using pyRevitAssemblyBuilder.SessionManager;
+using pyRevitAssemblyBuilder.UIManager;
 using pyRevitAssemblyBuilder.UIManager.Buttons;
 using pyRevitAssemblyBuilder.UIManager.Icons;
 using pyRevitExtensionParser;
@@ -17,6 +18,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
     /// </summary>
     public class StackBuilder : IStackBuilder
     {
+        private readonly BuildContext _buildContext;
         private readonly ILogger _logger;
         private readonly IButtonPostProcessor _buttonPostProcessor;
         private readonly Buttons.LinkButtonBuilder _linkButtonBuilder;
@@ -27,6 +29,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
         /// <summary>
         /// Initializes a new instance of the <see cref="StackBuilder"/> class.
         /// </summary>
+        /// <param name="buildContext">Shared build context that carries the current per-build settings.</param>
         /// <param name="logger">The logger instance.</param>
         /// <param name="buttonPostProcessor">The button post-processor.</param>
         /// <param name="linkButtonBuilder">The link button builder.</param>
@@ -34,6 +37,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
         /// <param name="splitButtonBuilder">The split button builder.</param>
         /// <param name="smartButtonScriptInitializer">Optional SmartButton script initializer.</param>
         public StackBuilder(
+            BuildContext buildContext,
             ILogger logger,
             IButtonPostProcessor buttonPostProcessor,
             Buttons.LinkButtonBuilder linkButtonBuilder,
@@ -41,6 +45,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
             Buttons.SplitButtonBuilder splitButtonBuilder,
             SmartButtonScriptInitializer? smartButtonScriptInitializer = null)
         {
+            _buildContext = buildContext ?? throw new ArgumentNullException(nameof(buildContext));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _buttonPostProcessor = buttonPostProcessor ?? throw new ArgumentNullException(nameof(buttonPostProcessor));
             _linkButtonBuilder = linkButtonBuilder ?? throw new ArgumentNullException(nameof(linkButtonBuilder));
@@ -58,10 +63,23 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                 return;
             }
 
-            var children = (component.Children ?? Enumerable.Empty<ParsedComponent>()).ToList();
+            var settings = _buildContext.CurrentSettings;
+            var children = new List<ParsedComponent>();
+            foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
+            {
+                if (ComponentSupportUtils.IsStackChildVisible(
+                        child,
+                        settings.CurrentVersion,
+                        settings.LoadBeta,
+                        _logger))
+                {
+                    children.Add(child);
+                }
+            }
+
             if (children.Count < 2)
             {
-                _logger.Debug($"Stack '{component.DisplayName}' has fewer than 2 items, skipping.");
+                _logger.Debug($"Stack '{component.DisplayName}' has fewer than 2 visible items after filtering, skipping.");
                 return;
             }
 
@@ -75,7 +93,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                 // Stack already exists - update the existing items instead of creating new ones
                 // This handles the reload case where the stack was already created
                 _logger.Debug($"Stack '{component.DisplayName}' already exists. Updating {existingItems.Count} existing items.");
-                UpdateExistingStackItems(existingItems, children, assemblyInfo);
+                UpdateExistingStackItems(component, existingItems, children, assemblyInfo);
                 return;
             }
 
@@ -126,20 +144,27 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
 
             if (itemDataList.Count >= 2)
             {
-                IList<RibbonItem>? stackedItems = null;
-                if (itemDataList.Count == 2)
-                    stackedItems = parentPanel.AddStackedItems(itemDataList[0], itemDataList[1]);
-                else
-                    stackedItems = parentPanel.AddStackedItems(itemDataList[0], itemDataList[1], itemDataList[2]);
-
-                if (stackedItems != null)
+                try
                 {
-                    ProcessStackedItems(stackedItems, originalItems, assemblyInfo);
+                    IList<RibbonItem>? stackedItems = null;
+                    if (itemDataList.Count == 2)
+                        stackedItems = parentPanel.AddStackedItems(itemDataList[0], itemDataList[1]);
+                    else
+                        stackedItems = parentPanel.AddStackedItems(itemDataList[0], itemDataList[1], itemDataList[2]);
+
+                    if (stackedItems != null)
+                    {
+                        ProcessStackedItems(component, stackedItems, originalItems, assemblyInfo);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.Warning($"Stack '{component.DisplayName}' skipped: {ex.Message}");
                 }
             }
             else
             {
-                _logger.Debug($"Stack '{component.DisplayName}' has fewer than 2 items after filtering, skipping.");
+                _logger.Debug($"Stack '{component.DisplayName}' has fewer than 2 visible items after filtering, skipping.");
             }
         }
 
@@ -184,7 +209,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
         /// Updates existing stack items with new configuration (title, icon, tooltip, etc.)
         /// This is called when a stack already exists and we need to update it during reload.
         /// </summary>
-        private void UpdateExistingStackItems(List<RibbonItem> existingItems, List<ParsedComponent> children, ExtensionAssemblyInfo assemblyInfo)
+        private void UpdateExistingStackItems(ParsedComponent stackComponent, List<RibbonItem> existingItems, List<ParsedComponent> children, ExtensionAssemblyInfo assemblyInfo)
         {
             var minCount = Math.Min(existingItems.Count, children.Count);
 
@@ -208,14 +233,22 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                     {
                         if (childComponent.Type == CommandComponentType.LinkButton)
                         {
-                            _linkButtonBuilder.UpdateExistingLinkButton(pushBtn, childComponent);
+                            _linkButtonBuilder.UpdateExistingLinkButton(
+                                pushBtn,
+                                childComponent,
+                                stackComponent,
+                                IconModeHelper.GetCompactIconMode(childComponent));
                         }
                         else
                         {
                             UpdatePushButtonCommandBinding(pushBtn, childComponent, assemblyInfo);
                         }
 
-                        _buttonPostProcessor.Process(pushBtn, childComponent);
+                        _buttonPostProcessor.Process(
+                            pushBtn,
+                            childComponent,
+                            stackComponent,
+                            IconModeHelper.GetCompactIconMode(childComponent));
 
                         // Execute __selfinit__ for SmartButtons
                         if (childComponent.Type == CommandComponentType.SmartButton && _smartButtonScriptInitializer != null)
@@ -228,15 +261,23 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                             }
                         }
                     }
-                    else if (ribbonItem is PulldownButton pdBtn)
-                    {
-                        _buttonPostProcessor.Process(pdBtn, childComponent);
-                        _pulldownButtonBuilder.AddChildrenToPulldown(pdBtn, childComponent, assemblyInfo);
-                    }
                     else if (ribbonItem is SplitButton splitBtn)
                     {
-                        _buttonPostProcessor.Process(splitBtn, childComponent);
+                        _buttonPostProcessor.Process(
+                            splitBtn,
+                            childComponent,
+                            stackComponent,
+                            IconModeHelper.GetCompactIconMode(childComponent));
                         _splitButtonBuilder.AddChildrenToSplitButton(splitBtn, childComponent, assemblyInfo);
+                    }
+                    else if (ribbonItem is PulldownButton pdBtn)
+                    {
+                        _buttonPostProcessor.Process(
+                            pdBtn,
+                            childComponent,
+                            stackComponent,
+                            IconModeHelper.GetCompactIconMode(childComponent));
+                        _pulldownButtonBuilder.AddChildrenToPulldown(pdBtn, childComponent, assemblyInfo);
                     }
 
                     _logger.Debug($"Updated existing stack item '{childComponent.DisplayName}' (index {i}).");
@@ -251,7 +292,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
         /// <summary>
         /// Processes stacked items after they are added to the panel.
         /// </summary>
-        private void ProcessStackedItems(IList<RibbonItem> stackedItems, List<ParsedComponent> originalItems, ExtensionAssemblyInfo assemblyInfo)
+        private void ProcessStackedItems(ParsedComponent stackComponent, IList<RibbonItem> stackedItems, List<ParsedComponent> originalItems, ExtensionAssemblyInfo assemblyInfo)
         {
             for (int i = 0; i < stackedItems.Count; i++)
             {
@@ -261,7 +302,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                 // Apply post-processing to push buttons in stack
                 if (ribbonItem is PushButton pushBtn)
                 {
-                    _buttonPostProcessor.Process(pushBtn, origComponent);
+                    _buttonPostProcessor.Process(pushBtn, origComponent, stackComponent, IconModeHelper.GetCompactIconMode(origComponent));
 
                     // Execute __selfinit__ for SmartButtons in stack
                     if (origComponent.Type == CommandComponentType.SmartButton && _smartButtonScriptInitializer != null)
@@ -275,21 +316,12 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                     }
                 }
 
-                if (ribbonItem is PulldownButton pdBtn)
-                {
-                    // Apply post-processing to the pulldown button itself in stack
-                    _buttonPostProcessor.Process(pdBtn, origComponent);
-
-                    // Add children to pulldown
-                    _pulldownButtonBuilder.AddChildrenToPulldown(pdBtn, origComponent, assemblyInfo);
-                }
-
-                if (ribbonItem is SplitButton splitBtn)
+                else if (ribbonItem is SplitButton splitBtn)
                 {
                     try
                     {
                         // Apply post-processing to the split button itself in stack
-                        _buttonPostProcessor.Process(splitBtn, origComponent);
+                        _buttonPostProcessor.Process(splitBtn, origComponent, stackComponent, IconModeHelper.GetCompactIconMode(origComponent));
 
                         // Add children to split button
                         _splitButtonBuilder.AddChildrenToSplitButton(splitBtn, origComponent, assemblyInfo);
@@ -300,6 +332,21 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                     {
                         _logger.Error($"Failed to process split button '{origComponent.DisplayName}' in stack (index {i}). Exception: {ex.Message}");
                     }
+                }
+                else if (ribbonItem is PulldownButton pdBtn)
+                {
+                    // Apply post-processing to the pulldown button itself in stack
+                    _buttonPostProcessor.Process(
+                        pdBtn,
+                        origComponent,
+                        stackComponent,
+                        IconModeHelper.GetCompactIconMode(origComponent));
+
+                    // Add children to pulldown
+                    _pulldownButtonBuilder.AddChildrenToPulldown(
+                        pdBtn,
+                        origComponent,
+                        assemblyInfo);
                 }
             }
         }

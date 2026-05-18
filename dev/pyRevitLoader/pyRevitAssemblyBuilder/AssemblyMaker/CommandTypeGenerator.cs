@@ -17,10 +17,28 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
     /// </summary>
     public class RoslynCommandTypeGenerator
     {
+        private readonly SessionManager.ILogger _logger;
+
+        private struct SkippedCommandInfo
+        {
+            public string SafeClassName;
+            public string BundleDirectory;
+        }
+
         // Cache the pyRevit root derived from DLL location
         // Uses marker-based detection (pyRevitfile or pyrevitlib directory)
         // for robustness against directory structure changes.
         private static readonly string _pyRevitRoot = GetPyRevitRoot();
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="RoslynCommandTypeGenerator"/> class.
+        /// </summary>
+        /// <param name="logger">The logger instance for reporting skipped commands.</param>
+        /// <exception cref="ArgumentNullException">Thrown when logger is null.</exception>
+        public RoslynCommandTypeGenerator(SessionManager.ILogger logger)
+        {
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
         
         /// <summary>
         /// Finds the pyRevit root directory by searching upward for marker files/directories.
@@ -58,7 +76,10 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             sb.AppendLine("using PyRevitLabs.PyRevit.Runtime;");
             sb.AppendLine();
 
-            // Fix for #3140: Track emitted class names to prevent Roslyn CS0101
+            // Clear skipped commands from any previous generation
+            var skippedCommands = new List<SkippedCommandInfo>();
+
+            // Track emitted class names to prevent Roslyn CS0101
             // (duplicate type definition) which kills the entire extension assembly.
             // The legacy loader isolates failures per-command via try/except in
             // typemaker.make_bundle_types(); this HashSet provides equivalent safety.
@@ -72,21 +93,29 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 .Where(d => !string.IsNullOrEmpty(d))
                 .ToList();
 
-            foreach (var cmd in extension.CollectCommandComponents())
+            var commands = extension.CollectCommandComponents().ToList();
+            var totalCommands = commands.Count;
+
+            foreach (var cmd in commands)
             {
                 string safeClassName = SanitizeClassName(cmd.UniqueId);
 
                 if (!emittedClassNames.Add(safeClassName))
                 {
                     // Duplicate — skip this command to avoid CS0101.
-                    // Emit a comment in the generated .cs so the user can diagnose
-                    // which script was dropped (the .cs file is saved alongside the DLL).
-                    sb.AppendLine($"// WARNING [#3140]: Skipped duplicate class '{safeClassName}'");
-                    sb.AppendLine($"//   Script: {cmd.ScriptPath ?? "(no script)"}");
-                    sb.AppendLine($"//   UniqueId: {cmd.UniqueId}");
-                    sb.AppendLine($"//   Two bundle directories produced the same UniqueId.");
-                    sb.AppendLine($"//   Rename one directory to fix this.");
-                    sb.AppendLine();
+                    // Log an error so user sees it, and track for summary.
+                    _logger.Error($"Skipped duplicate command: '{safeClassName}'. " +
+                                  $"Script: {cmd.ScriptPath ?? "<none>"}. " +
+                                  $"UniqueId: {cmd.UniqueId}. " +
+                                  $"Two bundle directories produced the same UniqueId. " +
+                                  $"Rename one directory to fix this.");
+
+                    skippedCommands.Add(new SkippedCommandInfo
+                    {
+                        SafeClassName = safeClassName,
+                        BundleDirectory = cmd.Directory
+                    });
+
                     continue;
                 }
 
@@ -184,6 +213,20 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                     sb.AppendLine("}");
                     sb.AppendLine();
                 }
+            }
+
+            // Report summary of skipped commands
+            if (skippedCommands.Count > 0)
+            {
+                var skippedList = string.Join(
+                    "; ",
+                    skippedCommands.Select(s =>
+                        $"{s.SafeClassName} ({(string.IsNullOrEmpty(s.BundleDirectory) ? "<unknown dir>" : s.BundleDirectory)})"));
+
+                _logger.Warning($"{skippedCommands.Count} duplicate command(s) skipped " +
+                                $"out of {totalCommands} total commands in extension '{extension.Name}': " +
+                                $"{skippedList}. " +
+                                $"Review error logs above for details on which commands were dropped.");
             }
 
             return sb.ToString();

@@ -1,14 +1,33 @@
-"""keeps elements with painted faces in current selection and filters everything else out."""
+"""Keep elements with painted faces in current selection.
 
-from pyrevit import revit, DB
+If nothing is selected, pick a region to filter painted elements from.
+"""
+from pyrevit import revit, UI
 
 
-selection = revit.get_selection()
+def _has_painted_faces(el):
+    try:
+        material_ids = el.GetMaterialIds(True)
+        return material_ids.Count > 0
+    except Exception:
+        return False
 
 
-filtered_elements = []
-for el in selection:
-    if len(list(el.GetMaterialIds(True))) > 0:
-        filtered_elements.append(el.Id)
+class PaintedElementsFilter(UI.Selection.ISelectionFilter):
+    def AllowElement(self, element):
+        return _has_painted_faces(element)
 
-selection.set_to(filtered_elements)
+    def AllowReference(self, reference, point):
+        return False
+
+
+selection = list(revit.get_selection())
+if selection:
+    filtered = [el.Id for el in selection if _has_painted_faces(el)]
+    revit.get_selection().set_to(filtered)
+else:
+    try:
+        elements = revit.pick_rectangle(pick_filter=PaintedElementsFilter())
+        revit.get_selection().set_to(elements)
+    except Exception:
+        pass

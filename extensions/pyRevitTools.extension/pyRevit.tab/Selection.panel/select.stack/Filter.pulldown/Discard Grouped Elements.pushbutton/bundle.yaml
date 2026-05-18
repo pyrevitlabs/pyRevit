@@ -7,12 +7,33 @@ title:
   de_de: Gruppierte Elemente von der aktuellen Auswahl ausschliessen
   pt_br: Descartar Elementos Agrupados
 tooltip:
-  en_us: Discards (not delete) grouped elements from the current selection
-  fr_fr: Supprime (ne supprime pas) les éléments groupés de la sélection actuelle
-  ru: Отбросить (не удалить) сгруппированные элементы с текущего выделения.
-  chinese_s: 从当前选择中排除（非删除）已编组的图元
-  es_es: Descarta (no elimina) elementos agrupados de la selección actual
+  en_us: >-
+    Discards (not delete) grouped elements from the current selection.
+    If nothing is selected, pick a region to filter from.
+  fr_fr: >-
+    Supprime (ne supprime pas) les éléments groupés de la sélection actuelle.
+    Si rien n'est sélectionné, délimitez une zone à filtrer.
+  ru: >-
+    Отбросить (не удалить) сгруппированные элементы с текущего выделения.
+    Если ничего не выбрано, выберите область для фильтрации.
+  chinese_s: >-
+    从当前选择中排除（非删除）已编组的图元。
+    若未选择任何内容，则框选区域进行过滤。
+  es_es: >-
+    Descarta (no elimina) elementos agrupados de la selección actual.
+    Si no hay nada seleccionado, delimite una región para filtrar.
   de_de: >-
-    Die aktuelle Elementauswahl wird so vermindert,  dass keine gruppierte Elemente mehr in der Auswahl vorhanden sind.  Die Elemente werden also nicht gelöscht,  sondern nur aus der aktuellen Auswahl entfernt.
-  pt_br: Descarta (não exclui) elementos agrupados da seleção atual
-context: Selection
+    Die aktuelle Elementauswahl wird so vermindert, dass keine gruppierten Elemente
+    mehr in der Auswahl vorhanden sind. Die Elemente werden nicht gelöscht, sondern
+    nur aus der aktuellen Auswahl entfernt.
+    Wenn nichts ausgewählt ist, kann ein Bereich zum Filtern gewählt werden.
+  pt_br: >-
+    Descarta (não exclui) elementos agrupados da seleção atual.
+    Se nada estiver selecionado, selecione uma região para filtrar.
+context:
+  any:
+    - selection
+    - active-plan-view
+    - active-section-view
+    - active-3d-view
+    - active-elevation-view
