@@ -5,7 +5,7 @@ import os.path as op
 from pyrevit import script
 from pyrevit.extensions.toolindex import build_tool_index
 from pyrevit.extensions.layout_parser import get_layout_file, parse_extension_layout
-from pyrevit.extensions.components import Extension, Tab, Panel, GenericStack
+from pyrevit.extensions.components import Extension
 import pyrevit.extensions as exts
 
 output = script.get_output()

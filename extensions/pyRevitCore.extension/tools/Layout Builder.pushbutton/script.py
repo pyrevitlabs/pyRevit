@@ -517,8 +517,6 @@ class LayoutBuilderWindow(forms.WPFWindow):
 
     def _find_tree_container(self, parent, data_item):
         """Walk the TreeView visual tree to find the TreeViewItem for data_item."""
-        from pyrevit.framework import Windows
-
         if parent is None:
             return None
         generator = parent.ItemContainerGenerator

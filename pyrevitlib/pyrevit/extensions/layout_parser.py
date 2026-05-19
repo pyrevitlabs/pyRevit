@@ -8,15 +8,10 @@ uimaker.py consumes.
 import os
 import os.path as op
 
-from pyrevit import coreutils
 from pyrevit.coreutils import yaml
 from pyrevit.coreutils.logger import get_logger
 import pyrevit.extensions as exts
-from pyrevit.extensions.genericcomps import (
-    GenericUIComponent,
-    GenericUIContainer,
-    LayoutItem,
-)
+from pyrevit.extensions.genericcomps import GenericUIComponent
 from pyrevit.extensions.toolindex import make_layout_unique_name
 
 # pylint: disable=W0703,C0302,C0103

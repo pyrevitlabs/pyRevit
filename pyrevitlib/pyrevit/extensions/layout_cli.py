@@ -8,7 +8,6 @@ These can be invoked as developer pushbutton scripts in Revit,
 or called programmatically.
 """
 
-import os
 import os.path as op
 from collections import OrderedDict
 
@@ -186,22 +185,14 @@ def _build_panel_layout(panel):
         list: Layout entries (strings and dicts)
     """
     layout = []
-    stack_buffer = []
 
     # Use iter() to respect layout ordering from bundle.yaml
     for comp in iter(panel):
         type_id = getattr(comp, "type_id", "")
 
         if type_id == exts.SEPARATOR_IDENTIFIER:
-            # Flush any pending stack
-            if stack_buffer:
-                layout.append({"stack": stack_buffer})
-                stack_buffer = []
             layout.append("---")
         elif type_id == exts.SLIDEOUT_IDENTIFIER:
-            if stack_buffer:
-                layout.append({"stack": stack_buffer})
-                stack_buffer = []
             layout.append(">>>")
         elif _is_stack_type(comp):
             # This is a stack - inline its children (iter respects bundle.yaml order)
@@ -216,10 +207,6 @@ def _build_panel_layout(panel):
         else:
             # Regular tool
             layout.append(comp.name)
-
-    # Flush remaining stack buffer
-    if stack_buffer:
-        layout.append({"stack": stack_buffer})
 
     return layout
 
