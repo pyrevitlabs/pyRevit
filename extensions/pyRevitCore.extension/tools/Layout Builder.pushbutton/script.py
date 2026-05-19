@@ -298,7 +298,7 @@ def _set_custom_layout_config(extension_name, layout_path):
     """Set custom_layout_path in user config for the given extension."""
     from pyrevit.userconfig import user_config
 
-    section_name = extension_name + ".extension"
+    section_name = extension_name + exts.UI_EXTENSION_POSTFIX
     if not user_config.has_section(section_name):
         user_config.add_section(section_name)
     section = user_config.get_section(section_name)
@@ -313,7 +313,7 @@ def _get_custom_layout_path(extension_name):
 
         if user_config.disable_custom_layouts:
             return None
-        section_name = extension_name + ".extension"
+        section_name = extension_name + exts.UI_EXTENSION_POSTFIX
         if user_config.has_section(section_name):
             section = user_config.get_section(section_name)
             path = section.get_option("custom_layout_path", default_value="")
@@ -661,7 +661,7 @@ ext_dirs = []
 if op.isdir(extensions_dir):
     for entry in os.listdir(extensions_dir):
         ext_path = op.join(extensions_dir, entry)
-        if entry.endswith(".extension") and op.isdir(ext_path):
+        if entry.endswith(exts.UI_EXTENSION_POSTFIX) and op.isdir(ext_path):
             ext_dirs.append(ext_path)
 
 if not ext_dirs:

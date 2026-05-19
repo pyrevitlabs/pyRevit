@@ -208,7 +208,7 @@ def _scan_legacy_subdir(search_dir, tools_dir, ext_name, tool_index, cmp_types):
 
         # Check if this is a .tab, .panel, or .stack (structural container)
         dir_ext = _get_dir_extension(full_path)
-        if dir_ext in (".tab", ".panel", ".stack"):
+        if dir_ext in (exts.TAB_POSTFIX, exts.PANEL_POSTFIX, exts.STACK_BUTTON_POSTFIX):
             # Recurse into structural containers
             _scan_legacy_subdir(full_path, None, ext_name, tool_index, cmp_types)
             continue

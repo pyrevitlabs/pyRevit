@@ -56,7 +56,7 @@ def get_layout_file(extension_dir):
         # Global toggle: skip custom layouts when disabled
         if not user_config.disable_custom_layouts:
             ext_name = op.splitext(op.basename(extension_dir))[0]
-            section_name = ext_name + ".extension"
+            section_name = ext_name + exts.UI_EXTENSION_POSTFIX
             if user_config.has_section(section_name):
                 section = user_config.get_section(section_name)
                 custom_path = section.get_option("custom_layout_path", default_value="")

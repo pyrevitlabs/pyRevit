@@ -5,6 +5,7 @@ import os.path as op
 from pyrevit import script, forms
 from pyrevit.extensions.layout_cli import list_tools
 from pyrevit.extensions.layout_parser import has_layout_file
+import pyrevit.extensions as exts
 
 output = script.get_output()
 output.print_md("# Extension Tool List")
@@ -19,7 +20,7 @@ extensions_dir = op.join(repo_root, "extensions")
 ext_dirs = []
 for entry in os.listdir(extensions_dir):
     ext_path = op.join(extensions_dir, entry)
-    if entry.endswith(".extension") and op.isdir(ext_path):
+    if entry.endswith(exts.UI_EXTENSION_POSTFIX) and op.isdir(ext_path):
         ext_dirs.append(ext_path)
 
 if not ext_dirs:

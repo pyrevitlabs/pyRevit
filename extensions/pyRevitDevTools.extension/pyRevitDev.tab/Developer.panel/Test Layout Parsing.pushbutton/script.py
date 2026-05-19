@@ -6,6 +6,7 @@ from pyrevit import script
 from pyrevit.extensions.toolindex import build_tool_index
 from pyrevit.extensions.layout_parser import get_layout_file, parse_extension_layout
 from pyrevit.extensions.components import Extension, Tab, Panel, GenericStack
+import pyrevit.extensions as exts
 
 output = script.get_output()
 output.print_md("# Layout Parsing Test")
@@ -21,7 +22,7 @@ output.print_md("## Scanning for layout-enabled extensions")
 layout_extensions = []
 for entry in os.listdir(extensions_dir):
     ext_path = op.join(extensions_dir, entry)
-    if entry.endswith(".extension") and op.isdir(ext_path):
+    if entry.endswith(exts.UI_EXTENSION_POSTFIX) and op.isdir(ext_path):
         lf = get_layout_file(ext_path)
         if lf:
             layout_extensions.append((entry, ext_path, lf))
@@ -42,7 +43,7 @@ for ext_name, test_ext_dir, layout_file in layout_extensions:
 
     # Tool index building
     output.print_md("## Tool Index")
-    tools_dir = op.join(test_ext_dir, "tools")
+    tools_dir = op.join(test_ext_dir, exts.TOOLS_DIR_NAME)
     tool_index = build_tool_index(tools_dir, test_ext_dir)
     output.print_md("Found **{}** tools:".format(len(tool_index)))
 
