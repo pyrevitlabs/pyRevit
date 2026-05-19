@@ -389,7 +389,7 @@ namespace pyRevitExtensionParser
         /// <summary>
         /// Internal accessor for GetConfig, used by LayoutParser for custom layout path resolution.
         /// </summary>
-        internal static PyRevitConfig GetConfigPublic() => GetConfig();
+        internal static PyRevitConfig GetConfigInternal() => GetConfig();
 
         /// <summary>
         /// Parses a single extension from the given extension directory path

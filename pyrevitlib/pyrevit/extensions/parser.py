@@ -117,13 +117,9 @@ def get_parsed_extension(extension):
     When extension_layout.yaml is present, uses layout-based parsing.
     Otherwise falls back to the legacy directory-walking parser.
     """
-    try:
-        from pyrevit.extensions.layout_parser import get_layout_file, \
-            parse_extension_layout
-        from pyrevit.extensions.toolindex import build_tool_index
-    except Exception:
-        _parse_for_components(extension)
-        return extension
+    from pyrevit.extensions.layout_parser import get_layout_file, \
+        parse_extension_layout
+    from pyrevit.extensions.toolindex import build_tool_index
 
     layout_file = get_layout_file(extension.directory)
 

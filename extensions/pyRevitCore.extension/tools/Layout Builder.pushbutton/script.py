@@ -1,4 +1,4 @@
-#pylint: disable=E0401,C0103,W0603
+# pylint: disable=E0401,C0103,W0603
 """Visual editor for extension ribbon layouts.
 
 Opens a WPF window with two columns:
@@ -8,24 +8,25 @@ Opens a WPF window with two columns:
 Users can insert tools, create structure elements (Tab, Panel, Stack,
 Separator, Slideout), move/remove items, and save to extension_layout.yaml.
 """
+
 import os
 import os.path as op
-import codecs
 from collections import OrderedDict
 
 from pyrevit import script, forms
 from pyrevit.coreutils import yaml as pyyaml
 from pyrevit.framework import ObservableCollection
-from pyrevit.extensions.layout_cli import serialize_layout_yaml
 from pyrevit.extensions.layout_parser import has_layout_file, list_layout_presets
 from pyrevit.extensions.toolindex import build_tool_index
 from pyrevit.loader import sessionmgr
 import pyrevit.extensions as exts
 
+mlogger = script.get_logger()
 
 # ---------------------------------------------------------------------------
 # Data model
 # ---------------------------------------------------------------------------
+
 
 class LayoutNode(forms.Reactive):
     """A node in the layout tree (tab, panel, stack, tool, separator, etc.)."""
@@ -40,8 +41,6 @@ class LayoutNode(forms.Reactive):
         if children:
             for child in children:
                 self.add_child(child)
-
-    # -- properties exposed to WPF binding --
 
     @forms.reactive
     def node_type(self):
@@ -81,8 +80,6 @@ class LayoutNode(forms.Reactive):
     @property
     def children(self):
         return self._children
-
-    # -- tree manipulation --
 
     def add_child(self, child):
         child.parent = self
@@ -143,6 +140,7 @@ class ToolItem(forms.Reactive):
 # YAML <-> LayoutNode conversion
 # ---------------------------------------------------------------------------
 
+
 def _layout_entry_to_node(entry):
     """Convert a single layout YAML entry to a LayoutNode."""
     if isinstance(entry, str):
@@ -153,8 +151,7 @@ def _layout_entry_to_node(entry):
         return LayoutNode("tool", name=entry)
     if isinstance(entry, dict):
         if exts.LAYOUT_STACK_KEY in entry:
-            children = [_layout_entry_to_node(e)
-                        for e in entry[exts.LAYOUT_STACK_KEY]]
+            children = [_layout_entry_to_node(e) for e in entry[exts.LAYOUT_STACK_KEY]]
             return LayoutNode("stack", children=children)
     return None
 
@@ -186,8 +183,7 @@ def load_layout_tree(layout_file, extension_dir):
                         pdata = pyyaml.load_as_dict(panel_path)
                         layout_items = pdata.get(exts.LAYOUT_KEY, [])
                         if not panel_title:
-                            panel_title = pdata.get(
-                                exts.LAYOUT_TITLE_KEY, "")
+                            panel_title = pdata.get(exts.LAYOUT_TITLE_KEY, "")
                             panel_node._title = panel_title
 
             for entry in layout_items:
@@ -297,7 +293,8 @@ def _get_layout_cache_dir(extension_name):
 def _set_custom_layout_config(extension_name, layout_path):
     """Set custom_layout_path in user config for the given extension."""
     from pyrevit.userconfig import user_config
-    section_name = extension_name + ".extension"
+
+    section_name = extension_name + exts.UI_EXTENSION_POSTFIX
     if not user_config.has_section(section_name):
         user_config.add_section(section_name)
     section = user_config.get_section(section_name)
@@ -309,23 +306,26 @@ def _get_custom_layout_path(extension_name):
     """Get custom layout path from user config, if set and valid."""
     try:
         from pyrevit.userconfig import user_config
+
         if user_config.disable_custom_layouts:
             return None
-        section_name = extension_name + ".extension"
+        section_name = extension_name + exts.UI_EXTENSION_POSTFIX
         if user_config.has_section(section_name):
             section = user_config.get_section(section_name)
-            path = section.get_option("custom_layout_path",
-                                      default_value="")
+            path = section.get_option("custom_layout_path", default_value="")
             if path and op.isfile(path):
                 return path
-    except Exception:
-        pass
+    except Exception as err:
+        mlogger.debug(
+            "Could not read custom layout config for %s: %s", extension_name, err
+        )
     return None
 
 
 # ---------------------------------------------------------------------------
 # WPF Window
 # ---------------------------------------------------------------------------
+
 
 class LayoutBuilderWindow(forms.WPFWindow):
     """Main layout builder window."""
@@ -361,15 +361,15 @@ class LayoutBuilderWindow(forms.WPFWindow):
             from pyrevit.framework import Windows
             self.load_preset_btn.Visibility = Windows.Visibility.Collapsed
 
-    # -- tool list helpers --
-
     def _update_missing_flags(self):
         """Flag tool nodes that reference tools not in the index."""
+
         def _walk(node):
             if node.node_type == "tool":
                 node.is_missing = node.name not in self._tool_index
             for child in node.children:
                 _walk(child)
+
         for root in self._roots:
             _walk(root)
 
@@ -385,13 +385,10 @@ class LayoutBuilderWindow(forms.WPFWindow):
 
     def _apply_tool_filter(self, search_text):
         search_lower = search_text.lower()
-        filtered = [t for t in self._all_tools
-                    if search_lower in t.name.lower()]
+        filtered = [t for t in self._all_tools if search_lower in t.name.lower()]
         if not self._show_all:
             filtered = [t for t in filtered if not t.placed]
         self.tools_lb.ItemsSource = ObservableCollection[object](filtered)
-
-    # -- XAML event handlers --
 
     def search_changed(self, sender, args):
         self._apply_tool_filter(self.search_tb.Text)
@@ -432,9 +429,7 @@ class LayoutBuilderWindow(forms.WPFWindow):
 
     def toggle_show_all(self, sender, args):
         self._show_all = not self._show_all
-        self.show_all_btn.Content = (
-            "Hide Placed" if self._show_all else "Show All"
-        )
+        self.show_all_btn.Content = "Hide Placed" if self._show_all else "Show All"
         self._apply_tool_filter(self.search_tb.Text)
 
     def insert_tool(self, sender, args):
@@ -462,10 +457,7 @@ class LayoutBuilderWindow(forms.WPFWindow):
         self._update_placed_flags()
 
     def add_tab(self, sender, args):
-        name = forms.ask_for_string(
-            prompt="Tab name:",
-            title="Add Tab"
-        )
+        name = forms.ask_for_string(prompt="Tab name:", title="Add Tab")
         if name:
             node = LayoutNode("tab", name=name)
             self._roots.Add(node)
@@ -484,10 +476,7 @@ class LayoutBuilderWindow(forms.WPFWindow):
             forms.alert("Select a Tab (or an item inside a Tab) first.")
             return
 
-        name = forms.ask_for_string(
-            prompt="Panel name:",
-            title="Add Panel"
-        )
+        name = forms.ask_for_string(prompt="Panel name:", title="Add Panel")
         if name:
             node = LayoutNode("panel", name=name)
             tab.add_child(node)
@@ -564,7 +553,6 @@ class LayoutBuilderWindow(forms.WPFWindow):
 
     def _find_tree_container(self, parent, data_item):
         """Walk the TreeView visual tree to find the TreeViewItem for data_item."""
-        from pyrevit.framework import Windows
         if parent is None:
             return None
         generator = parent.ItemContainerGenerator
@@ -632,16 +620,17 @@ class LayoutBuilderWindow(forms.WPFWindow):
         # Validate
         warnings = []
         missing_names = []
+
         def _collect_missing(node):
             if node.node_type == "tool" and node.is_missing:
                 missing_names.append(node.name)
             for child in node.children:
                 _collect_missing(child)
+
         for tab in roots:
             _collect_missing(tab)
             if not tab.children or tab.children.Count == 0:
-                warnings.append(
-                    "Tab '{}' has no panels.".format(tab.name))
+                warnings.append("Tab '{}' has no panels.".format(tab.name))
             for panel in tab.children:
                 for item in panel.children:
                     if item.node_type == "stack":
@@ -649,12 +638,14 @@ class LayoutBuilderWindow(forms.WPFWindow):
                         if count < 2 or count > 3:
                             warnings.append(
                                 "Stack in panel '{}' has {} items "
-                                "(recommended 2-3).".format(
-                                    panel.name, count))
+                                "(recommended 2-3).".format(panel.name, count)
+                            )
         if missing_names:
             warnings.append(
                 "Missing tools (will not appear in ribbon): {}".format(
-                    ", ".join(missing_names)))
+                    ", ".join(missing_names)
+                )
+            )
 
         if warnings:
             msg = "Warnings:\n" + "\n".join(warnings) + "\n\nSave anyway?"
@@ -663,15 +654,13 @@ class LayoutBuilderWindow(forms.WPFWindow):
 
         # Save as custom user layout (not overwriting extension source)
         data = tree_to_yaml_dict(roots)
-        content = serialize_layout_yaml(data)
 
         cache_dir = _get_layout_cache_dir(self._extension_name)
         if not op.isdir(cache_dir):
             os.makedirs(cache_dir)
 
         layout_path = op.join(cache_dir, exts.EXT_LAYOUT_FILE)
-        with codecs.open(layout_path, "w", "utf-8") as f:
-            f.write(content)
+        pyyaml.dump_dict(data, layout_path)
 
         # Point user config to the cached layout
         _set_custom_layout_config(self._extension_name, layout_path)
@@ -679,7 +668,7 @@ class LayoutBuilderWindow(forms.WPFWindow):
         forms.alert(
             "Custom layout saved to:\n{}\n\n"
             "pyRevit will now reload to apply changes.".format(layout_path),
-            title="Saved"
+            title="Saved",
         )
         self.Close()
         sessionmgr.reload_pyrevit()
@@ -695,15 +684,14 @@ class LayoutBuilderWindow(forms.WPFWindow):
 # Find extensions root
 # __file__ is at: extensions/<ext>.extension/tools/<bundle>.pushbutton/script.py
 # 4 dirname calls from __file__ reaches the extensions/ directory
-extensions_dir = op.dirname(op.dirname(op.dirname(op.dirname(
-    op.abspath(__file__)))))
+extensions_dir = op.dirname(op.dirname(op.dirname(op.dirname(op.abspath(__file__)))))
 
 # Also check user extensions from pyRevit config
 ext_dirs = []
 if op.isdir(extensions_dir):
     for entry in os.listdir(extensions_dir):
         ext_path = op.join(extensions_dir, entry)
-        if entry.endswith(".extension") and op.isdir(ext_path):
+        if entry.endswith(exts.UI_EXTENSION_POSTFIX) and op.isdir(ext_path):
             ext_dirs.append(ext_path)
 
 if not ext_dirs:
@@ -713,9 +701,7 @@ if not ext_dirs:
 # Let user pick an extension
 ext_names = [op.basename(d) for d in ext_dirs]
 selected = forms.SelectFromList.show(
-    ext_names,
-    title="Select Extension to Edit",
-    multiselect=False
+    ext_names, title="Select Extension to Edit", multiselect=False
 )
 if not selected:
     script.exit()

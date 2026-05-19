@@ -1,12 +1,13 @@
-#pylint: disable=E0401
+# pylint: disable=E0401
 import os
 import os.path as op
 
 from pyrevit import script, forms
 from pyrevit.extensions.layout_cli import generate_layout
 from pyrevit.extensions.layout_parser import has_layout_file
+import pyrevit.extensions as exts
 
-split_panels = __shiftclick__  #pylint: disable=E0602
+split_panels = __shiftclick__  # pylint: disable=E0602
 
 output = script.get_output()
 output.print_md("# Generate Extension Layout")
@@ -14,15 +15,16 @@ if split_panels:
     output.print_md("*Mode: separate panel files*")
 
 # Find extensions root
-repo_root = op.dirname(op.dirname(op.dirname(op.dirname(op.dirname(
-    op.dirname(op.abspath(__file__)))))))
-extensions_dir = op.join(repo_root, 'extensions')
+repo_root = op.dirname(
+    op.dirname(op.dirname(op.dirname(op.dirname(op.dirname(op.abspath(__file__))))))
+)
+extensions_dir = op.join(repo_root, "extensions")
 
 # List available extensions
 ext_dirs = []
 for entry in os.listdir(extensions_dir):
     ext_path = op.join(extensions_dir, entry)
-    if entry.endswith('.extension') and op.isdir(ext_path):
+    if entry.endswith(exts.UI_EXTENSION_POSTFIX) and op.isdir(ext_path):
         ext_dirs.append(ext_path)
 
 if not ext_dirs:
@@ -32,9 +34,7 @@ if not ext_dirs:
 # Let user pick an extension
 ext_names = [op.basename(d) for d in ext_dirs]
 selected = forms.SelectFromList.show(
-    ext_names,
-    title="Select Extension",
-    multiselect=False
+    ext_names, title="Select Extension", multiselect=False
 )
 
 if not selected:
@@ -45,11 +45,12 @@ selected_dir = ext_dirs[ext_names.index(selected)]
 # Warn if extension already has a layout file
 if has_layout_file(selected_dir):
     proceed = forms.alert(
-        'This extension already has an extension_layout.yaml file. '
-        'The generator parses legacy .tab/.panel/ folders which may '
-        'no longer exist.\n\n'
-        'Proceed anyway?',
-        yes=True, no=True
+        "This extension already has an extension_layout.yaml file. "
+        "The generator parses legacy .tab/.panel/ folders which may "
+        "no longer exist.\n\n"
+        "Proceed anyway?",
+        yes=True,
+        no=True,
     )
     if not proceed:
         script.exit()
@@ -65,8 +66,7 @@ output.print_md("**Output directory:** `{}`".format(output_dir))
 
 # Generate
 try:
-    generated = generate_layout(selected_dir, output_dir,
-                                split_panels=split_panels)
+    generated = generate_layout(selected_dir, output_dir, split_panels=split_panels)
     if generated:
         output.print_md("## Generated Files")
         for f in generated:
@@ -77,11 +77,12 @@ try:
         # Show content of main layout file
         layout_file = generated[0]
         output.print_md("## extension_layout.yaml content:")
-        with open(layout_file, 'r') as fh:
+        with open(layout_file, "r") as fh:
             output.print_md("```yaml\n{}\n```".format(fh.read()))
     else:
         output.print_md("**No files generated.** Extension may have no components.")
 except Exception as err:
     output.print_md("**ERROR:** {}".format(str(err)))
     import traceback
+
     output.print_md("```\n{}\n```".format(traceback.format_exc()))
