@@ -38,14 +38,7 @@ def make_layout_unique_name(extension_name, tool_name):
 
 
 def _get_extension_name(extension_dir):
-    """Extract extension name from extension directory path.
-
-    Args:
-        extension_dir (str): Path to the .extension directory
-
-    Returns:
-        str: Extension name without .extension suffix
-    """
+    """Extract extension name from extension directory path."""
     return op.splitext(op.basename(extension_dir))[0]
 
 
@@ -222,14 +215,7 @@ def _scan_legacy_subdir(search_dir, tools_dir, ext_name, tool_index, cmp_types):
 
 
 def _get_dir_extension(dir_path):
-    """Get the extension/postfix of a directory name.
-
-    Args:
-        dir_path (str): Path to the directory
-
-    Returns:
-        str: Lowercase extension (e.g. '.tab', '.panel', '.pushbutton')
-    """
+    """Return the lowercase postfix of a directory name (e.g. '.pushbutton')."""
     name = op.basename(dir_path)
     dot_idx = name.rfind(".")
     if dot_idx > 0:

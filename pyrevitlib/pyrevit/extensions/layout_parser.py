@@ -137,16 +137,7 @@ def parse_extension_layout(extension, tool_index, layout_file):
 
 
 def _create_tab(tab_data, ext_name, ext_dir):
-    """Create a Tab component from layout YAML data.
-
-    Args:
-        tab_data (dict): Tab definition from YAML
-        ext_name (str): Extension name
-        ext_dir (str): Extension directory path
-
-    Returns:
-        Tab or None: Created tab component
-    """
+    """Create a Tab component from layout YAML data."""
     tab_name = tab_data.get(exts.LAYOUT_NAME_KEY)
     if not tab_name:
         mlogger.error('Tab definition missing "name" key')

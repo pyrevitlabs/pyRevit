@@ -42,8 +42,6 @@ class LayoutNode(forms.Reactive):
             for child in children:
                 self.add_child(child)
 
-    # -- properties exposed to WPF binding --
-
     @forms.reactive
     def node_type(self):
         return self._node_type
@@ -82,8 +80,6 @@ class LayoutNode(forms.Reactive):
     @property
     def children(self):
         return self._children
-
-    # -- tree manipulation --
 
     def add_child(self, child):
         child.parent = self
@@ -359,8 +355,6 @@ class LayoutBuilderWindow(forms.WPFWindow):
 
         self.header_tb.Text = "Layout Builder - {}".format(extension_name)
 
-    # -- tool list helpers --
-
     def _update_missing_flags(self):
         """Flag tool nodes that reference tools not in the index."""
 
@@ -389,8 +383,6 @@ class LayoutBuilderWindow(forms.WPFWindow):
         if not self._show_all:
             filtered = [t for t in filtered if not t.placed]
         self.tools_lb.ItemsSource = ObservableCollection[object](filtered)
-
-    # -- XAML event handlers --
 
     def search_changed(self, sender, args):
         self._apply_tool_filter(self.search_tb.Text)
