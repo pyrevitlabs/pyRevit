@@ -23,6 +23,34 @@ from pyrevit.extensions.toolindex import make_layout_unique_name
 mlogger = get_logger(__name__)
 
 
+def list_layout_presets(extension_dir):
+    """List developer-provided layout presets in <ext>/layouts/.
+
+    Each `*.layout.yaml` file in the extension's `layouts/` subfolder is
+    treated as a named preset. The preset name is the filename with the
+    `.layout.yaml` suffix stripped.
+
+    Args:
+        extension_dir (str): Path to the .extension directory
+
+    Returns:
+        list[tuple[str, str]]: Sorted list of (preset_name, file_path).
+    """
+    presets_dir = op.join(extension_dir, exts.LAYOUTS_DIR_NAME)
+    if not op.isdir(presets_dir):
+        return []
+
+    presets = []
+    suffix = exts.LAYOUT_PRESET_POSTFIX
+    for entry in os.listdir(presets_dir):
+        if entry.endswith(suffix):
+            name = entry[:-len(suffix)]
+            if name:
+                presets.append((name, op.join(presets_dir, entry)))
+    presets.sort(key=lambda p: p[0].lower())
+    return presets
+
+
 def has_layout_file(extension_dir):
     """Check if extension_layout.yaml exists in extension directory.
 

@@ -180,6 +180,8 @@ SLIDEOUT_IDENTIFIER = '>>>'
 EXT_LAYOUT_FILE = 'extension_layout.yaml'
 PANEL_LAYOUT_POSTFIX = '.panel.yaml'
 TOOLS_DIR_NAME = 'tools'
+LAYOUTS_DIR_NAME = 'layouts'
+LAYOUT_PRESET_POSTFIX = '.layout.yaml'
 
 # layout YAML keys
 LAYOUT_TABS_KEY = 'tabs'

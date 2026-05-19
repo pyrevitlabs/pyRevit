@@ -190,10 +190,19 @@
         <Border Grid.Row="0" Background="White"
                 BorderBrush="{StaticResource BorderBrush}" BorderThickness="0,0,0,1"
                 Padding="12,8">
-            <TextBlock x:Name="header_tb"
-                       Text="Extension Layout Builder"
-                       FontSize="16" FontWeight="SemiBold"
-                       Foreground="{StaticResource AccentBrush}"/>
+            <DockPanel>
+                <Button x:Name="load_preset_btn"
+                        DockPanel.Dock="Right"
+                        Content="Load Preset..."
+                        Style="{StaticResource ToolbarButton}"
+                        Click="load_preset"
+                        VerticalAlignment="Center"/>
+                <TextBlock x:Name="header_tb"
+                           Text="Extension Layout Builder"
+                           FontSize="16" FontWeight="SemiBold"
+                           Foreground="{StaticResource AccentBrush}"
+                           VerticalAlignment="Center"/>
+            </DockPanel>
         </Border>
 
         <!-- TWO-COLUMN CONTENT -->

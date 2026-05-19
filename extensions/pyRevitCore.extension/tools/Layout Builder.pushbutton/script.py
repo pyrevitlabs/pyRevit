@@ -17,7 +17,7 @@ from pyrevit import script, forms
 from pyrevit.coreutils import yaml as pyyaml
 from pyrevit.framework import ObservableCollection
 from pyrevit.extensions.layout_cli import serialize_layout_yaml
-from pyrevit.extensions.layout_parser import has_layout_file
+from pyrevit.extensions.layout_parser import has_layout_file, list_layout_presets
 from pyrevit.extensions.toolindex import build_tool_index
 from pyrevit.loader import sessionmgr
 import pyrevit.extensions as exts
@@ -355,6 +355,12 @@ class LayoutBuilderWindow(forms.WPFWindow):
 
         self.header_tb.Text = "Layout Builder - {}".format(extension_name)
 
+        # Show the Load Preset button only when the extension ships presets
+        self._presets = list_layout_presets(extension_dir)
+        if not self._presets:
+            from pyrevit.framework import Windows
+            self.load_preset_btn.Visibility = Windows.Visibility.Collapsed
+
     # -- tool list helpers --
 
     def _update_missing_flags(self):
@@ -389,6 +395,40 @@ class LayoutBuilderWindow(forms.WPFWindow):
 
     def search_changed(self, sender, args):
         self._apply_tool_filter(self.search_tb.Text)
+
+    def load_preset(self, sender, args):
+        """Load a developer-provided preset from <ext>/layouts/.
+
+        Replaces the current tree. Confirms first if the tree is non-empty
+        so a user editing a layout doesn't lose their work by accident.
+        """
+        if not self._presets:
+            forms.alert("No layout presets found in this extension.")
+            return
+
+        preset_names = [name for name, _ in self._presets]
+        choice = forms.SelectFromList.show(
+            preset_names,
+            title="Load Layout Preset",
+            multiselect=False
+        )
+        if not choice:
+            return
+
+        if self._roots.Count > 0:
+            if not forms.alert(
+                "Loading a preset will replace the current layout. Continue?",
+                yes=True, no=True
+            ):
+                return
+
+        preset_path = dict(self._presets)[choice]
+        new_roots = load_layout_tree(preset_path, self._extension_dir)
+
+        self._roots.Clear()
+        for r in new_roots:
+            self._roots.Add(r)
+        self._update_placed_flags()
 
     def toggle_show_all(self, sender, args):
         self._show_all = not self._show_all

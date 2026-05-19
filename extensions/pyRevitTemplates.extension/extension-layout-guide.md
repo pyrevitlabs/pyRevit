@@ -163,14 +163,48 @@ Names are case-insensitive during lookup but should match the folder name for cl
 
 ## Custom User Layouts
 
-Users can import custom layouts via **Settings > Extension Layout**:
+Custom layouts override the bundled `extension_layout.yaml` but reference the same tools. This lets users rearrange the ribbon without modifying extension source files. Custom layouts are stored in `%APPDATA%\pyRevit\Layouts\{ExtensionName}\` and resolved per extension via a `custom_layout_path` entry in the user INI.
 
-- **Import** - Copies layout YAML files to `%APPDATA%\pyRevit\Layouts\{ExtensionName}\` and configures pyRevit to use them instead of the bundled layout.
-- **Export** - Copies the currently active layout files to a folder for editing.
-- **Reset** - Clears the custom layout and reverts to the bundled default.
-- **Disable All Custom Layouts** - A global toggle that temporarily ignores all user custom layouts without deleting them.
+There are two ways to author one:
 
-Custom layouts override the bundled `extension_layout.yaml` but reference the same tools. This lets users rearrange the ribbon without modifying extension source files.
+### Layout Builder (visual editor)
+
+Launch **Layout Builder** from the `pyRevit` tab. The window has two panes:
+
+- **Left** - searchable list of all tools discoverable in the extension, with a "Show All / Hide Placed" toggle.
+- **Right** - the current tab/panel/stack/tool tree, with buttons to add Tab/Panel/Stack/Separator/Slideout, move items up/down, remove items, and insert the selected tool at the selected location.
+
+Saving writes the result to the custom-layout cache for the chosen extension and reloads pyRevit. The bundled extension source is never modified.
+
+If the extension ships layout presets (see below), a **Load Preset** button is shown.
+
+### Settings dialog (file-based import/export)
+
+Under **Settings > Extension Layout** the dialog lists every extension that contains an `extension_layout.yaml`, with a `Custom` / `Default` status column and per-row buttons:
+
+- **Import** - Copies layout YAML files (`extension_layout.yaml` plus any `*.panel.yaml` siblings) from a folder you pick into `%APPDATA%\pyRevit\Layouts\{ExtensionName}\` and points pyRevit at them.
+- **Export** - Copies the currently active layout files to a folder you pick, ready for editing in any text editor.
+- **Reset** - Clears the custom layout for that extension and reverts to the bundled default.
+
+A global **Disable all custom layouts** checkbox temporarily ignores every user custom layout without deleting them — useful for support diagnostics.
+
+## Developer-Shipped Layout Presets
+
+Extension authors can bundle alternative layouts as **presets** under `<extension>/layouts/`:
+
+```
+MyExtension.extension/
+    extension_layout.yaml           # default layout
+    layouts/
+        Minimal.layout.yaml         # preset: "Minimal"
+        Detailer.layout.yaml        # preset: "Detailer"
+    tools/
+        ...
+```
+
+Each `*.layout.yaml` file uses the same schema as `extension_layout.yaml`. The preset name is the filename with `.layout.yaml` stripped. Presets are surfaced to users through the Layout Builder's **Load Preset** button. Loading a preset replaces the current draft in the builder; nothing is written until the user saves.
+
+Use presets to ship alternative workflows (e.g. "Author", "Reviewer", "Detailer") without forcing one layout on every user.
 
 ## Complete Example
 
@@ -215,6 +249,6 @@ This matches the format produced by the auto-generator. See the bundled
 ## Notes
 
 - If `extension_layout.yaml` is missing, the extension falls back to legacy folder-based parsing automatically.
-- Tools not referenced in any layout YAML will not appear in the ribbon (they are discovered but not placed).
+- Tools not referenced in any layout YAML will not appear in the ribbon, but they are still compiled into the extension assembly. This means editing the layout (via Layout Builder or by hand) to surface a previously-hidden tool does not require an assembly rebuild on the next reload.
 - Duplicate tool names across `tools/` and legacy folders: the `tools/` version takes priority.
 - After changing layout files, a pyRevit reload is required to see changes.

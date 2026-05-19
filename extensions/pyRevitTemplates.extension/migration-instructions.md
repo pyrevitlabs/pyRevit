@@ -17,15 +17,21 @@ The layout system scans both `tools/` and legacy folders for tool bundles, so yo
 
 ## Step 1: Generate Layout YAML (Automated)
 
-pyRevit includes a developer tool that generates layout YAML files by parsing your existing folder structure:
+pyRevit includes a generator that parses your existing folder structure and emits the equivalent layout YAML. Use whichever entry point is convenient:
 
 ### Using the Dev Pushbutton (in Revit)
 
-1. Enable the **pyRevitDevTools** extension in Settings > Extensions
-2. Reload pyRevit
-3. Run the **Generate Layout** button from the Dev Tools tab
-4. Select your extension directory
-5. The tool generates `extension_layout.yaml` and any needed `*.panel.yaml` files
+The `pyRevitDevTools` extension ships with this repository. To use it in Revit:
+
+1. Add the `pyRevitDevTools.extension` directory to **Settings > Custom Extension Directories** (or attach the dev clone, which already includes it).
+2. Reload pyRevit. A `pyRevitDev` tab appears.
+3. Run **Generate Layout** from the `Developer` panel.
+4. Pick the target extension.
+5. The tool writes `extension_layout.yaml` (and, with shift-click, separate `*.panel.yaml` files for complex panels) into the extension directory or an output folder you choose.
+
+### Using the Layout Builder (in Revit)
+
+If you'd rather author the layout interactively instead of generating it from an existing folder structure, use **Layout Builder** in the `pyRevit` tab. It saves to the user's custom-layout cache, so you can copy the result back into the extension source once you're happy with it.
 
 ### Using Python (programmatically)
 
@@ -35,12 +41,16 @@ from pyrevit.extensions.layout_cli import generate_layout
 # Generate layout files in the extension directory
 files = generate_layout(r'C:\path\to\MyExtension.extension')
 print('Generated:', files)
+
+# Or split complex panels into separate files
+files = generate_layout(r'C:\path\to\MyExtension.extension',
+                        split_panels=True)
 ```
 
 The generator:
 - Reads the existing `.tab/.panel/.stack/` structure
 - Respects ordering from `bundle.yaml` layout keys
-- Creates external `*.panel.yaml` files for panels with more than 3 items
+- Creates external `*.panel.yaml` files when `split_panels=True`
 - Preserves separators (`---`) and slideouts (`>>>`)
 - Handles stacks and their children
 
@@ -175,6 +185,7 @@ BIMTools.extension/
 - **Unique IDs change** - Layout mode generates unique IDs as `extensionname_toolname` (flat), vs the legacy path-based format. This means compiled command caches from the previous format are invalid. Delete `%APPDATA%\pyRevit\{RevitVersion}\*.dll` and `*.cs` files if you encounter "Wrong Full Class Name" errors after migrating.
 - **Case insensitive** - Tool name lookups are case-insensitive, but keep the YAML reference matching the folder name for clarity.
 - **`bundle.yaml` still matters for tools** - Each tool bundle can still have a `bundle.yaml` for title, tooltip, icon settings, supported Revit versions, etc. Only the *structural* layout information (panel ordering, stacks) moves to the YAML.
+- **Hidden tools are still compiled** - Tools present in `tools/` (or legacy folders) but not referenced in the layout do not appear in the ribbon, but their command types are still compiled into the extension assembly. Surfacing them later by editing the layout does not require an assembly rebuild.
 
 ## Troubleshooting
 
