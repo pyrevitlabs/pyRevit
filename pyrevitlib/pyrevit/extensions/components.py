@@ -561,6 +561,16 @@ class Extension(GenericUIContainer):
             cmds.extend(self._assembly_only_commands)
         return cmds
 
+    def set_assembly_only_commands(self, commands):
+        """Set commands that are compiled into the assembly but absent from the UI.
+
+        Used by the layout-based parser to register tools that exist in
+        the tools/ directory but are not referenced by extension_layout.yaml.
+        Including them in the assembly keeps the DLL stable across layout
+        edits, so re-arranging the ribbon does not force a rebuild.
+        """
+        self._assembly_only_commands = list(commands)
+
     def get_manifest_file(self):
         return self.get_bundle_file(exts.EXT_MANIFEST_FILE)
 

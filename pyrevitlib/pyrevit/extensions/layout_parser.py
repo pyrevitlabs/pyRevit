@@ -122,9 +122,9 @@ def parse_extension_layout(extension, tool_index, layout_file):
         comp for name, comp in tool_index.items() if name not in referenced_tools
     ]
     if unreferenced:
-        extension._assembly_only_commands = unreferenced
+        extension.set_assembly_only_commands(unreferenced)
         mlogger.debug(
-            "Layout: %d tool(s) not in layout, " "included as assembly-only",
+            "Layout: %d tool(s) not in layout, included as assembly-only",
             len(unreferenced),
         )
 
