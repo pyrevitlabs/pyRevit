@@ -11,6 +11,7 @@ import os.path as op
 from pyrevit.coreutils import yaml
 from pyrevit.coreutils.logger import get_logger
 import pyrevit.extensions as exts
+from pyrevit.extensions.components import Tab, Panel, GenericStack
 from pyrevit.extensions.genericcomps import GenericUIComponent
 from pyrevit.extensions.toolindex import make_layout_unique_name
 
@@ -146,8 +147,6 @@ def _create_tab(tab_data, ext_name, ext_dir):
     Returns:
         Tab or None: Created tab component
     """
-    from pyrevit.extensions.components import Tab
-
     tab_name = tab_data.get(exts.LAYOUT_NAME_KEY)
     if not tab_name:
         mlogger.error('Tab definition missing "name" key')
@@ -180,8 +179,6 @@ def _create_panel(
     Returns:
         Panel or None: Created panel component
     """
-    from pyrevit.extensions.components import Panel
-
     if layout_dir is None:
         layout_dir = ext_dir
 
@@ -371,8 +368,6 @@ def _create_stack(
         stack_idx (int): Stack counter for unique name generation
         referenced_tools (set): Set to track tool names placed in the layout
     """
-    from pyrevit.extensions.components import GenericStack
-
     stack_name = "_stack_%d" % stack_idx
     stack = GenericStack(cmp_path=None)
     stack.name = stack_name
