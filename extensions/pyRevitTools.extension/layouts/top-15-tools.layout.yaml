@@ -1,20 +1,20 @@
 tabs:
-  - name: "pyRevit"
-    panels:
-      - name: "Top Tools"
-        layout:
-          - "sync"
-          - "Tab Coloring"
-          - "Sync Views"
-          - "Pick"
-          - "Isolate"
-          - "Match"
-          - "ReNumber"
-          - "Patterns"
-          - "Inspect"
-          - "ColorSplasher"
-          - "Keynotes"
-          - "Legends"
-          - "Overkill"
-          - "Cycle Family Types"
-          - "Preflight Checks"
+- name: pyRevit
+  panels:
+  - name: Top Tools
+    layout:
+    - sync
+    - Tab Coloring
+    - Sync Views
+    - Pick
+    - Isolate
+    - Match
+    - ReNumber
+    - Patterns
+    - Inspect
+    - ColorSplasher
+    - Keynotes
+    - Legends
+    - Overkill
+    - Cycle Family Types
+    - Preflight Checks

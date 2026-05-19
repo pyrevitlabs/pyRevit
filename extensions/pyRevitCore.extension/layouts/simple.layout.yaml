@@ -1,13 +1,14 @@
 tabs:
-  - name: "pyRevit"
-    panels:
-      - name: "pyRevit"
-        layout:
-          - "Search"
-          - ">>>"
-          - stack:
-              - "About"
-              - "Update"
-              - "Extensions"
-          - "Settings"
-          - "Layout Builder"
+- name: pyRevit
+  panels:
+  - name: pyRevit
+    layout:
+    - Search
+    - '>>>'
+    - stack:
+      - About
+      - Update
+      - Extensions
+    - Settings
+    - Layout Builder
+

@@ -80,7 +80,7 @@ layout:
   - "MyPulldown"        # References tools/MyPulldown.pulldown/
 ```
 
-Tool names can be quoted or unquoted in YAML. The auto-generator quotes all values for consistency, but both forms are valid.
+Tool names can be quoted or unquoted in YAML — the parser accepts both.
 
 ### Stack (mapping)
 
@@ -159,7 +159,7 @@ Tools are referenced by their **folder name without the postfix**:
 | `MyTool.pulldown` | `"MyTool"` or `MyTool` |
 | `Sync Views.smartbutton` | `"Sync Views"` |
 
-Names are case-insensitive during lookup but should match the folder name for clarity. Names containing spaces should be quoted.
+Names are case-insensitive during lookup but should match the folder name for clarity. Names are valid YAML strings either way — the auto-generator emits values unquoted where YAML allows it and quotes only when needed (e.g. `'---'`, `'>>>'`).
 
 ## Custom User Layouts
 
