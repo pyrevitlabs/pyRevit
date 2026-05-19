@@ -222,5 +222,3 @@ def _is_stack_type(comp):
     """
     type_id = getattr(comp, "type_id", "")
     return type_id and "stack" in type_id.lower()
-
-
