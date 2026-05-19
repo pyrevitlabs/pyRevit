@@ -347,7 +347,7 @@ namespace pyRevitExtensionParser
             var uniquePath = $"{extensionName}_{toolName}";
 
             // Use the shared single-bundle parser
-            return ExtensionParser.ParseSingleComponent(
+            return ExtensionParser.ParseSingleBundle(
                 bundleDir, componentType, extensionName, uniquePath,
                 inheritedTemplates, revitYear);
         }
