@@ -4,6 +4,7 @@ Scans the tools/ directory recursively, creates component objects for
 each recognized bundle, and returns a name-keyed dictionary for lookup
 by the layout parser.
 """
+
 import os
 import os.path as op
 
@@ -16,8 +17,7 @@ from pyrevit.extensions.parser import (
     _get_subcomponents_classes,
 )
 
-
-#pylint: disable=W0703,C0302,C0103
+# pylint: disable=W0703,C0302,C0103
 mlogger = get_logger(__name__)
 
 
@@ -34,9 +34,7 @@ def make_layout_unique_name(extension_name, tool_name):
         str: Cleaned unique name
     """
     raw = exts.UNIQUE_ID_SEPARATOR.join([extension_name, tool_name])
-    return coreutils.cleanup_string(
-        raw, skip=[exts.UNIQUE_ID_SEPARATOR]
-    ).lower()
+    return coreutils.cleanup_string(raw, skip=[exts.UNIQUE_ID_SEPARATOR]).lower()
 
 
 def _get_extension_name(extension_dir):
@@ -95,22 +93,28 @@ def build_tool_index(tools_dir, extension_dir):
     from pyrevit.extensions.genericcomps import (
         GenericUICommand,
     )
-    panel_child_types = [GenericStack, GenericUICommandGroup,
-                         GenericUICommand, NoScriptButton]
+
+    panel_child_types = [
+        GenericStack,
+        GenericUICommandGroup,
+        GenericUICommand,
+        NoScriptButton,
+    ]
     all_cmp_types = _get_subcomponents_classes(panel_child_types)
 
     # Scan tools/ directory first (takes priority on duplicates)
     if op.isdir(tools_dir):
         _scan_directory(tools_dir, ext_name, tool_index, all_cmp_types)
-        mlogger.debug('Built tool index with %d entries from: %s',
-                      len(tool_index), tools_dir)
+        mlogger.debug(
+            "Built tool index with %d entries from: %s", len(tool_index), tools_dir
+        )
 
     # Also scan legacy folder structure (.tab/.panel/) for tool bundles
-    _scan_legacy_directory(extension_dir, tools_dir, ext_name,
-                           tool_index, all_cmp_types)
+    _scan_legacy_directory(
+        extension_dir, tools_dir, ext_name, tool_index, all_cmp_types
+    )
 
-    mlogger.debug('Tool index has %d total entries after legacy scan',
-                  len(tool_index))
+    mlogger.debug("Tool index has %d total entries after legacy scan", len(tool_index))
     return tool_index
 
 
@@ -126,12 +130,12 @@ def _scan_directory(search_dir, ext_name, tool_index, cmp_types):
     try:
         entries = os.listdir(search_dir)
     except OSError as err:
-        mlogger.error('Cannot list directory %s: %s', search_dir, err)
+        mlogger.error("Cannot list directory %s: %s", search_dir, err)
         return
 
     for entry in entries:
         # skip hidden/private entries
-        if entry.startswith(('.', '_')):
+        if entry.startswith((".", "_")):
             continue
 
         full_path = op.join(search_dir, entry)
@@ -150,8 +154,7 @@ def _scan_directory(search_dir, ext_name, tool_index, cmp_types):
             _scan_directory(full_path, ext_name, tool_index, cmp_types)
 
 
-def _scan_legacy_directory(extension_dir, tools_dir, ext_name,
-                           tool_index, cmp_types):
+def _scan_legacy_directory(extension_dir, tools_dir, ext_name, tool_index, cmp_types):
     """Scan legacy .tab/.panel/ folder structure for tool bundles.
 
     Walks the extension directory recursively. Directories with .tab or
@@ -167,12 +170,10 @@ def _scan_legacy_directory(extension_dir, tools_dir, ext_name,
         tool_index (dict): Accumulator dict to populate
         cmp_types (list): List of recognized component type classes
     """
-    _scan_legacy_subdir(extension_dir, tools_dir, ext_name,
-                        tool_index, cmp_types)
+    _scan_legacy_subdir(extension_dir, tools_dir, ext_name, tool_index, cmp_types)
 
 
-def _scan_legacy_subdir(search_dir, tools_dir, ext_name,
-                        tool_index, cmp_types):
+def _scan_legacy_subdir(search_dir, tools_dir, ext_name, tool_index, cmp_types):
     """Recursively scan a legacy directory for tool bundles.
 
     Args:
@@ -185,12 +186,12 @@ def _scan_legacy_subdir(search_dir, tools_dir, ext_name,
     try:
         entries = os.listdir(search_dir)
     except OSError as err:
-        mlogger.error('Cannot list directory %s: %s', search_dir, err)
+        mlogger.error("Cannot list directory %s: %s", search_dir, err)
         return
 
     for entry in entries:
         # skip hidden/private entries
-        if entry.startswith(('.', '_')):
+        if entry.startswith((".", "_")):
             continue
 
         full_path = op.join(search_dir, entry)
@@ -200,16 +201,16 @@ def _scan_legacy_subdir(search_dir, tools_dir, ext_name,
             continue
 
         # Skip the tools/ directory (already indexed)
-        if tools_dir and op.normcase(op.abspath(full_path)) == \
-                op.normcase(op.abspath(tools_dir)):
+        if tools_dir and op.normcase(op.abspath(full_path)) == op.normcase(
+            op.abspath(tools_dir)
+        ):
             continue
 
         # Check if this is a .tab, .panel, or .stack (structural container)
         dir_ext = _get_dir_extension(full_path)
-        if dir_ext in ('.tab', '.panel', '.stack'):
+        if dir_ext in (".tab", ".panel", ".stack"):
             # Recurse into structural containers
-            _scan_legacy_subdir(full_path, None, ext_name,
-                                tool_index, cmp_types)
+            _scan_legacy_subdir(full_path, None, ext_name, tool_index, cmp_types)
             continue
 
         # Check if this is a recognized tool bundle
@@ -230,10 +231,10 @@ def _get_dir_extension(dir_path):
         str: Lowercase extension (e.g. '.tab', '.panel', '.pushbutton')
     """
     name = op.basename(dir_path)
-    dot_idx = name.rfind('.')
+    dot_idx = name.rfind(".")
     if dot_idx > 0:
         return name[dot_idx:].lower()
-    return ''
+    return ""
 
 
 def _index_tool(tool_path, cmp_type, ext_name, tool_index):
@@ -251,8 +252,7 @@ def _index_tool(tool_path, cmp_type, ext_name, tool_index):
     try:
         component = cmp_type(cmp_path=tool_path)
     except Exception as err:
-        mlogger.error('Failed to create component from %s: %s',
-                      tool_path, err)
+        mlogger.error("Failed to create component from %s: %s", tool_path, err)
         return
 
     tool_name = component.name
@@ -261,8 +261,10 @@ def _index_tool(tool_path, cmp_type, ext_name, tool_index):
     if tool_name in tool_index:
         mlogger.warning(
             'Duplicate tool name "%s" found at %s. '
-            'Skipping (first occurrence at %s wins).',
-            tool_name, tool_path, tool_index[tool_name].directory
+            "Skipping (first occurrence at %s wins).",
+            tool_name,
+            tool_path,
+            tool_index[tool_name].directory,
         )
         return
 
@@ -276,8 +278,9 @@ def _index_tool(tool_path, cmp_type, ext_name, tool_index):
         _update_child_unique_names(component, ext_name)
 
     tool_index[tool_name] = component
-    mlogger.debug('Indexed tool: %s (%s) from %s',
-                  tool_name, cmp_type.type_id, tool_path)
+    mlogger.debug(
+        "Indexed tool: %s (%s) from %s", tool_name, cmp_type.type_id, tool_path
+    )
 
 
 def _update_child_unique_names(container, ext_name):
@@ -292,8 +295,7 @@ def _update_child_unique_names(container, ext_name):
     """
     for child in container.components:
         child.unique_name = make_layout_unique_name(
-            ext_name,
-            container.name + exts.UNIQUE_ID_SEPARATOR + child.name
+            ext_name, container.name + exts.UNIQUE_ID_SEPARATOR + child.name
         )
         if child.is_container:
             _update_child_unique_names(child, ext_name)
