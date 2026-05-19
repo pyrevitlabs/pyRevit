@@ -936,471 +936,23 @@ namespace pyRevitExtensionParser
                     continue;
 
                 var namePart = Path.GetFileNameWithoutExtension(dir).Replace(" ", "");
-                var displayName = Path.GetFileNameWithoutExtension(dir);
                 var fullPath = string.IsNullOrEmpty(parentPath)
                     ? $"{extensionName}_{namePart}"
                     : $"{parentPath}_{namePart}";
 
-                string scriptPath = null;
-
-                if (componentType == CommandComponentType.UrlButton)
-                {
-                    var yaml = Path.Combine(dir, "bundle.yaml");
-                    if (FileExists(yaml))
-                        scriptPath = yaml;
-                }
-
-                if (scriptPath == null)
-                {
-                    // Look for script files in order of preference: .py, .cs, .vb, .rb, .dyn, .gh, .ghx, .rfa
-                    // Use cached file listing instead of EnumerateFiles
-                    var dirFiles = GetFilesInDirectory(dir, "*script.*", SearchOption.TopDirectoryOnly);
-                    var validEndings = new[] { "script", "_script", "-script", ".script" };
-                    dirFiles = dirFiles.Where(f =>
-                        validEndings.Any(end => Path.GetFileNameWithoutExtension(f).EndsWith(end, StringComparison.OrdinalIgnoreCase))
-                    ).ToArray();
-                    
-                    // Check for scripts in priority order
-                    var scriptExtensions = new[] { ".py", ".cs", ".vb", ".rb", ".dyn", ".gh", ".ghx", ".rfa" };
-                    foreach (var scriptExt in scriptExtensions)
-                    {
-                        var scriptFile = $"script{scriptExt}";
-                        scriptPath = dirFiles.FirstOrDefault(f =>
-                            f.EndsWith(scriptFile, StringComparison.OrdinalIgnoreCase));
-                        if (scriptPath != null)
-                            break;
-                    }
-
-                    // If no script.* file found, look for any file with the target extensions
-                    // This handles cases like BIM1_ArrowHeadSwitcher_script.dyn
-                    if (scriptPath == null)
-                    {
-                        var allFiles = GetFilesInDirectory(dir, "*", SearchOption.TopDirectoryOnly);
-                        foreach (var scriptExt in scriptExtensions)
-                        {
-                            // Look for any file ending with _script{ext} or just {ext}
-                            scriptPath = allFiles.FirstOrDefault(f =>
-                                (f.EndsWith($"_script{scriptExt}", StringComparison.OrdinalIgnoreCase) ||
-                                 (f.EndsWith(scriptExt, StringComparison.OrdinalIgnoreCase) &&
-                                  !f.EndsWith($"_config{scriptExt}", StringComparison.OrdinalIgnoreCase))));
-                            if (scriptPath != null)
-                                break;
-                        }
-                    }
-                }
-
-                if (scriptPath == null &&
-                   (componentType == CommandComponentType.PushButton ||
-                    componentType == CommandComponentType.SmartButton ||
-                    componentType == CommandComponentType.PullDown ||
-                    componentType == CommandComponentType.SplitButton ||
-                    componentType == CommandComponentType.SplitPushButton ||
-                    componentType == CommandComponentType.InvokeButton))
-                {
-                    var yaml = Path.Combine(dir, "bundle.yaml");
-                    if (FileExists(yaml))
-                        scriptPath = yaml;
-                }
-
-                // Look for config script (*config.py, *config.cs, etc.)
-                // e.g. both "config.py" and "name_config.py" will match
-                string configScriptPath = null;
-                var configExtensions = new[] { ".py", ".cs", ".vb", ".rb", ".dyn", ".gh", ".ghx" };
-                var allDirFiles = GetFilesInDirectory(dir, "*", SearchOption.TopDirectoryOnly);
-                // Prefer exact "config{ext}" match, then fall back to postfix "*config{ext}"
-                foreach (var configExt in configExtensions)
-                {
-                    var configFile = $"config{configExt}";
-                    configScriptPath = allDirFiles.FirstOrDefault(f =>
-                        Path.GetFileName(f).Equals(configFile, StringComparison.OrdinalIgnoreCase));
-                    if (configScriptPath != null)
-                        break;
-                }
-                if (configScriptPath == null)
-                {
-                    foreach (var configExt in configExtensions)
-                    {
-                        var configPostfix = $"config{configExt}";
-                        configScriptPath = allDirFiles.FirstOrDefault(f =>
-                            Path.GetFileName(f).EndsWith(configPostfix, StringComparison.OrdinalIgnoreCase));
-                        if (configScriptPath != null)
-                            break;
-                    }
-                }
-                // If no separate config script found, use the main script path
-                if (configScriptPath == null)
-                    configScriptPath = scriptPath;
-
-                // Handle .content bundles - special logic for Revit family (.rfa) files
-                // Content bundles load RFA files, with scriptPath being the primary content
-                // and configScriptPath being the alternative content (CTRL+Click)
-                if (componentType == CommandComponentType.ContentButton)
-                {
-                    var bundleYaml = Path.Combine(dir, "bundle.yaml");
-                    ParsedBundle tempBundle = null;
-                    if (FileExists(bundleYaml))
-                    {
-                        try
-                        {
-                            tempBundle = BundleParser.BundleYamlParser.Parse(bundleYaml);
-                        }
-                        catch (Exception ex)
-                        {
-                            LogParseException(bundleYaml, ex);
-                        }
-                    }
-
-                    // Try to get content from bundle.yaml metadata first
-                    if (tempBundle != null && !string.IsNullOrEmpty(tempBundle.Content))
-                    {
-                        scriptPath = ResolveContentPath(dir, tempBundle.Content);
-                    }
-
-                    // If no content in metadata, use naming convention
-                    if (scriptPath == null)
-                    {
-                        // Look for version-specific content first: content_{version}.rfa
-                        var versionedContent = GetFilesInDirectory(dir, "content_*.rfa", SearchOption.TopDirectoryOnly)
-                            .FirstOrDefault();
-                        if (versionedContent != null)
-                        {
-                            scriptPath = versionedContent;
-                        }
-                        else
-                        {
-                            // Look for default content.rfa
-                            var defaultContent = Path.Combine(dir, "content.rfa");
-                            if (FileExists(defaultContent))
-                            {
-                                scriptPath = defaultContent;
-                            }
-                            else
-                            {
-                                // Look for any .rfa file in the directory
-                                var anyRfa = GetFilesInDirectory(dir, "*.rfa", SearchOption.TopDirectoryOnly)
-                                    .FirstOrDefault();
-                                if (anyRfa != null)
-                                {
-                                    scriptPath = anyRfa;
-                                }
-                            }
-                        }
-                    }
-
-                    // Handle alternative content (CTRL+Click)
-                    if (tempBundle != null && !string.IsNullOrEmpty(tempBundle.ContentAlt))
-                    {
-                        configScriptPath = ResolveContentPath(dir, tempBundle.ContentAlt);
-                    }
-                    else
-                    {
-                        // Look for version-specific alternative content: other_{version}.rfa
-                        var versionedAltContent = GetFilesInDirectory(dir, "other_*.rfa", SearchOption.TopDirectoryOnly)
-                            .FirstOrDefault();
-                        if (versionedAltContent != null)
-                        {
-                            configScriptPath = versionedAltContent;
-                        }
-                        else
-                        {
-                            // Look for default other.rfa
-                            var defaultAltContent = Path.Combine(dir, "other.rfa");
-                            if (FileExists(defaultAltContent))
-                            {
-                                configScriptPath = defaultAltContent;
-                            }
-                            else
-                            {
-                                // Fall back to main content path
-                                configScriptPath = scriptPath;
-                            }
-                        }
-                    }
-                }
-
-                // Look for on/off icons for smartbuttons and toggle buttons
-                string onIconPath = null, onIconDarkPath = null, offIconPath = null, offIconDarkPath = null;
-                if (componentType == CommandComponentType.SmartButton ||
-                    componentType == CommandComponentType.PushButton)
-                {
-                    // Parse on/off icons with theme support
-                    (onIconPath, onIconDarkPath, offIconPath, offIconDarkPath) = ParseToggleIcons(dir);
-                }
-
-                // Look for tooltip media file (tooltip.mp4, tooltip.swf, tooltip.png)
-                var mediaFile = FindMediaFile(dir);
-
-                // Look for help file (help.* pattern) for file-based help
-                var helpFile = FindHelpFile(dir);
-
-                var bundleFile = Path.Combine(dir, "bundle.yaml");
-
-                // Then parse bundle and override with bundle values if they exist
-                ParsedBundle bundleInComponent = null;
-                if (FileExists(bundleFile))
-                {
-                    try
-                    {
-                        bundleInComponent = BundleParser.BundleYamlParser.Parse(bundleFile);
-                    }
-                    catch (Exception ex)
-                    {
-                        LogParseException(bundleFile, ex);
-                    }
-                }
-
-                // Merge templates: inherited templates + current bundle templates
-                // Current bundle templates override inherited ones
-                var mergedTemplates = new Dictionary<string, string>();
-                if (inheritedTemplates != null)
-                {
-                    foreach (var kvp in inheritedTemplates)
-                    {
-                        mergedTemplates[kvp.Key] = kvp.Value;
-                    }
-                }
-                if (bundleInComponent?.Templates != null)
-                {
-                    foreach (var kvp in bundleInComponent.Templates)
-                    {
-                        mergedTemplates[kvp.Key] = kvp.Value;
-                    }
-                }
-
-                // Get author from bundle to add to templates for child components
-                // This allows children to use {{author}} to inherit from parent
-                string bundleAuthor = bundleInComponent?.Author;
-                if (!string.IsNullOrEmpty(bundleAuthor) && !bundleAuthor.Contains("{{"))
-                {
-                    // Only add if it's a concrete value, not a template reference itself
-                    mergedTemplates["author"] = bundleAuthor;
-                }
-
-                // Pass merged templates to child components
-                var children = ParseComponents(dir, extensionName, fullPath, mergedTemplates, revitYear);
-
-                // First, get values from Python script
-                string title = null, author = null, doc = null;
-                string scriptContext = null, scriptHelpUrl = null, scriptHighlight = null;
-                string scriptMinRevitVersion = null, scriptMaxRevitVersion = null;
-                bool scriptIsBeta = false, scriptCleanEngine = false, scriptFullFrameEngine = false, scriptPersistentEngine = false;
-                Dictionary<string, string> scriptLocalizedTitles = null;
-                Dictionary<string, string> scriptLocalizedTooltips = null;
-                Dictionary<string, string> scriptLocalizedHelpUrls = null;
-
-                if (scriptPath != null && scriptPath.EndsWith(".py", StringComparison.OrdinalIgnoreCase))
-                {
-                    var scriptConstants = ReadPythonScriptConstants(scriptPath);
-                    title = scriptConstants.Title;
-                    scriptLocalizedTitles = scriptConstants.LocalizedTitles;
-                    author = scriptConstants.Author;
-                    doc = scriptConstants.Doc;
-                    scriptLocalizedTooltips = scriptConstants.LocalizedTooltips;
-                    scriptContext = scriptConstants.Context;
-                    scriptHelpUrl = scriptConstants.HelpUrl;
-                    scriptLocalizedHelpUrls = scriptConstants.LocalizedHelpUrls;
-                    scriptHighlight = scriptConstants.Highlight;
-                    scriptMinRevitVersion = scriptConstants.MinRevitVersion;
-                    scriptMaxRevitVersion = scriptConstants.MaxRevitVersion;
-                    scriptIsBeta = scriptConstants.IsBeta;
-                    scriptCleanEngine = scriptConstants.CleanEngine;
-                    scriptFullFrameEngine = scriptConstants.FullFrameEngine;
-                    scriptPersistentEngine = scriptConstants.PersistentEngine;
-                }
-
-                // Override script values with bundle values (bundle takes precedence)
-                if (bundleInComponent != null)
-                {
-                    // Use default locale for initial title/tooltip assignment
-                    var bundleTitle = GetLocalizedValue(bundleInComponent.Titles);
-                    if (string.IsNullOrEmpty(bundleTitle) &&
-                        bundleInComponent.Titles != null &&
-                        bundleInComponent.Titles.TryGetValue("en_us", out var bundleTitleEnUs))
-                    {
-                        bundleTitle = bundleTitleEnUs;
-                    }
-
-                    var bundleTooltip = GetLocalizedValue(bundleInComponent.Tooltips);
-                    if (string.IsNullOrEmpty(bundleTooltip) &&
-                        bundleInComponent.Tooltips != null &&
-                        bundleInComponent.Tooltips.TryGetValue("en_us", out var bundleTooltipEnUs))
-                    {
-                        bundleTooltip = bundleTooltipEnUs;
-                    }
-
-                    if (!string.IsNullOrEmpty(bundleTitle))
-                        title = bundleTitle;
-
-                    if (!string.IsNullOrEmpty(bundleTooltip))
-                        doc = bundleTooltip;
-
-                    if (!string.IsNullOrEmpty(bundleInComponent.Author))
-                        author = bundleInComponent.Author;
-                }
-
-                // Merge localized values: bundle takes precedence over script
-                var finalLocalizedTitles = scriptLocalizedTitles ?? new Dictionary<string, string>();
-                var finalLocalizedTooltips = scriptLocalizedTooltips ?? new Dictionary<string, string>();
-                var finalLocalizedHelpUrls = scriptLocalizedHelpUrls ?? new Dictionary<string, string>();
-
-                // If bundle has localized values, they override script values
-                if (bundleInComponent?.Titles != null)
-                {
-                    foreach (var kvp in bundleInComponent.Titles)
-                    {
-                        finalLocalizedTitles[kvp.Key] = kvp.Value;
-                    }
-                }
-
-                if (bundleInComponent?.Tooltips != null)
-                {
-                    foreach (var kvp in bundleInComponent.Tooltips)
-                    {
-                        finalLocalizedTooltips[kvp.Key] = kvp.Value;
-                    }
-                }
-
-                if (bundleInComponent?.HelpUrls != null)
-                {
-                    foreach (var kvp in bundleInComponent.HelpUrls)
-                    {
-                        finalLocalizedHelpUrls[kvp.Key] = kvp.Value;
-                    }
-                }
-
-                // Apply template substitution to string values
-                title = SubstituteTemplates(title, mergedTemplates);
-                doc = SubstituteTemplates(doc, mergedTemplates);
-                author = SubstituteTemplates(author, mergedTemplates);
-                var hyperlink = SubstituteTemplates(bundleInComponent?.Hyperlink, mergedTemplates);
-                var bundleHelpUrl = SubstituteTemplates(bundleInComponent?.HelpUrl, mergedTemplates);
-                scriptHelpUrl = SubstituteTemplates(scriptHelpUrl, mergedTemplates);
-
-                // Apply template substitution to localized values
-                finalLocalizedTitles = SubstituteTemplatesInDict(finalLocalizedTitles, mergedTemplates);
-                finalLocalizedTooltips = SubstituteTemplatesInDict(finalLocalizedTooltips, mergedTemplates);
-                finalLocalizedHelpUrls = SubstituteTemplatesInDict(finalLocalizedHelpUrls, mergedTemplates);
-
-                // Determine final context: bundle takes precedence over script
-                // bundleInComponent?.GetFormattedContext() returns "(zero-doc)" when no context in bundle
-                // so we need to check if there's actually a context defined in the bundle
-                string finalContext;
-                var bundleContext = bundleInComponent?.GetFormattedContext();
-                if (bundleInComponent != null &&
-                    (bundleInComponent.ContextItems?.Count > 0 ||
-                     bundleInComponent.ContextRules?.Count > 0 ||
-                     !string.IsNullOrEmpty(bundleInComponent.Context)))
-                {
-                    // Bundle has explicit context defined
-                    finalContext = bundleContext;
-                }
-                else if (!string.IsNullOrEmpty(scriptContext))
-                {
-                    // Use script context
-                    finalContext = scriptContext;
-                }
-                else
-                {
-                    // No context defined - button will always be available (no availability class)
-                    finalContext = null;
-                }
-
-                // Determine final highlight: bundle takes precedence over script
-                string finalHighlight = !string.IsNullOrEmpty(bundleInComponent?.Highlight)
-                    ? bundleInComponent.Highlight
-                    : scriptHighlight;
-
-                // Determine final help URL: bundle helpurl takes precedence over script helpurl
-                string finalHelpUrl = !string.IsNullOrEmpty(bundleHelpUrl)
-                    ? bundleHelpUrl
-                    : scriptHelpUrl;
-
-                // Determine final help URL: bundle hyperlink takes precedence over script helpurl
-                string finalHyperlink = !string.IsNullOrEmpty(hyperlink) ? hyperlink : scriptHelpUrl;
-
-                // Determine final min Revit version: bundle takes precedence over script
-                string finalMinRevitVersion = !string.IsNullOrEmpty(bundleInComponent?.MinRevitVersion)
-                    ? bundleInComponent.MinRevitVersion
-                    : scriptMinRevitVersion;
-
-                // Determine final max Revit version: bundle takes precedence over script
-                string finalMaxRevitVersion = !string.IsNullOrEmpty(bundleInComponent?.MaxRevitVersion)
-                    ? bundleInComponent.MaxRevitVersion
-                    : scriptMaxRevitVersion;
-
-                // Determine final beta status: bundle takes precedence over script
-                bool finalIsBeta = bundleInComponent != null && bundleInComponent.IsBeta
-                    ? bundleInComponent.IsBeta
-                    : scriptIsBeta;
-
-                // Determine final engine config: bundle takes precedence, but script can add flags
-                var finalEngine = bundleInComponent?.Engine ?? new EngineConfig();
-                if (scriptCleanEngine) finalEngine.Clean = true;
-                if (scriptFullFrameEngine) finalEngine.FullFrame = true;
-                if (scriptPersistentEngine) finalEngine.Persistent = true;
-
-                // Component-level version gate: skip this component (and its children) if it declares
-                // a version range that doesn't include the running Revit year.
-                if (!IsRevitVersionCompatible(finalMinRevitVersion, finalMaxRevitVersion, revitYear, displayName))
-                    continue;
-
-                components.Add(new ParsedComponent
-                {
-                    Name = namePart,
-                    DisplayName = displayName,
-                    ScriptPath = scriptPath,
-                    ConfigScriptPath = configScriptPath,
-                    Tooltip = doc ?? "",
-                    UniqueId = SanitizeClassName(fullPath.ToLowerInvariant()),
-                    Type = componentType,
-                    Children = children,
-                    BundleFile = FileExists(bundleFile) ? bundleFile : null,
-                    LayoutOrder = bundleInComponent?.LayoutOrder,
-                    LayoutItemTitles = bundleInComponent?.LayoutItemTitles,
-                    LayoutDirectives = bundleInComponent?.LayoutDirectives,
-                    Title = title,
-                    Author = author,
-                    Context = finalContext,
-                    Hyperlink = finalHyperlink,
-                    HelpUrl = finalHelpUrl,
-                    Highlight = finalHighlight,
-                    MinRevitVersion = finalMinRevitVersion,
-                    MaxRevitVersion = finalMaxRevitVersion,
-                    IsBeta = finalIsBeta,
-                    Collapsed = bundleInComponent?.Collapsed ?? false,
-                    InheritIcon = bundleInComponent?.InheritIcon ?? true,
-                    LargeIcon = bundleInComponent?.LargeIcon ?? false,
-                    PanelBackground = bundleInComponent?.PanelBackground,
-                    TitleBackground = bundleInComponent?.TitleBackground,
-                    SlideoutBackground = bundleInComponent?.SlideoutBackground,
-                    Icons = ParseIconsForComponent(dir),
-                    TargetAssembly = bundleInComponent?.Assembly,
-                    CommandClass = bundleInComponent?.CommandClass,
-                    AvailabilityClass = bundleInComponent?.AvailabilityClass,
-                    Modules = bundleInComponent?.Modules ?? new List<string>(),
-                    LocalizedTitles = finalLocalizedTitles.Count > 0 ? finalLocalizedTitles : null,
-                    LocalizedTooltips = finalLocalizedTooltips.Count > 0 ? finalLocalizedTooltips : null,
-                    LocalizedHelpUrls = finalLocalizedHelpUrls.Count > 0 ? finalLocalizedHelpUrls : null,
-                    Directory = dir,
-                    Engine = finalEngine,
-                    Members = bundleInComponent?.Members ?? new List<ComboBoxMember>(),
-                    OnIconPath = onIconPath,
-                    OnIconDarkPath = onIconDarkPath,
-                    OffIconPath = offIconPath,
-                    OffIconDarkPath = offIconDarkPath,
-                    MediaFile = mediaFile,
-                    HelpFile = helpFile
-                });
+                var component = ParseSingleBundle(dir, componentType, extensionName, fullPath, inheritedTemplates, revitYear);
+                if (component != null)
+                    components.Add(component);
             }
 
             return components;
         }
 
         /// <summary>
-        /// Parses a single component directory into a ParsedComponent.
-        /// This is the extracted per-directory logic from ParseComponents,
-        /// exposed as an internal method so the LayoutParser can reuse it
-        /// for tools discovered from the flat tools/ directory.
+        /// Parses a single bundle directory into a ParsedComponent. Shared by
+        /// the directory-walking ParseComponents path and the layout-driven
+        /// LayoutParser path, so script detection, icon parsing, version gating,
+        /// etc. stay in one place.
         /// </summary>
         /// <param name="dir">Path to the component bundle directory</param>
         /// <param name="componentType">The component type (from folder extension)</param>
@@ -1409,7 +961,7 @@ namespace pyRevitExtensionParser
         /// <param name="inheritedTemplates">Templates inherited from parent</param>
         /// <param name="revitYear">Running Revit version year (0 to skip filtering)</param>
         /// <returns>A ParsedComponent, or null if version-incompatible</returns>
-        internal static ParsedComponent ParseSingleComponent(
+        internal static ParsedComponent ParseSingleBundle(
             string dir,
             CommandComponentType componentType,
             string extensionName,
@@ -1574,6 +1126,7 @@ namespace pyRevitExtensionParser
             }
 
             var mediaFile = FindMediaFile(dir);
+            var helpFile = FindHelpFile(dir);
             var bundleFile = Path.Combine(dir, "bundle.yaml");
 
             ParsedBundle bundleInComponent = null;
@@ -1691,6 +1244,7 @@ namespace pyRevitExtensionParser
             doc = SubstituteTemplates(doc, mergedTemplates);
             author = SubstituteTemplates(author, mergedTemplates);
             var hyperlink = SubstituteTemplates(bundleInComponent?.Hyperlink, mergedTemplates);
+            var bundleHelpUrl = SubstituteTemplates(bundleInComponent?.HelpUrl, mergedTemplates);
             scriptHelpUrl = SubstituteTemplates(scriptHelpUrl, mergedTemplates);
 
             finalLocalizedTitles = SubstituteTemplatesInDict(finalLocalizedTitles, mergedTemplates);
@@ -1720,8 +1274,8 @@ namespace pyRevitExtensionParser
                 ? bundleInComponent.Highlight
                 : scriptHighlight;
 
-            string finalHelpUrl = !string.IsNullOrEmpty(bundleInComponent?.HelpUrl)
-                ? bundleInComponent.HelpUrl
+            string finalHelpUrl = !string.IsNullOrEmpty(bundleHelpUrl)
+                ? bundleHelpUrl
                 : scriptHelpUrl;
 
             string finalHyperlink = !string.IsNullOrEmpty(hyperlink) ? hyperlink : scriptHelpUrl;
@@ -1771,6 +1325,8 @@ namespace pyRevitExtensionParser
                 MaxRevitVersion = finalMaxRevitVersion,
                 IsBeta = finalIsBeta,
                 Collapsed = bundleInComponent?.Collapsed ?? false,
+                InheritIcon = bundleInComponent?.InheritIcon ?? true,
+                LargeIcon = bundleInComponent?.LargeIcon ?? false,
                 PanelBackground = bundleInComponent?.PanelBackground,
                 TitleBackground = bundleInComponent?.TitleBackground,
                 SlideoutBackground = bundleInComponent?.SlideoutBackground,
@@ -1789,7 +1345,8 @@ namespace pyRevitExtensionParser
                 OnIconDarkPath = onIconDarkPath,
                 OffIconPath = offIconPath,
                 OffIconDarkPath = offIconDarkPath,
-                MediaFile = mediaFile
+                MediaFile = mediaFile,
+                HelpFile = helpFile
             };
         }
 

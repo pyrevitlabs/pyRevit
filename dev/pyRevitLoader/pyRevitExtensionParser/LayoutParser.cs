@@ -347,7 +347,7 @@ namespace pyRevitExtensionParser
             var uniquePath = $"{extensionName}_{toolName}";
 
             // Use the shared single-bundle parser
-            return ExtensionParser.ParseSingleComponent(
+            return ExtensionParser.ParseSingleBundle(
                 bundleDir, componentType, extensionName, uniquePath,
                 inheritedTemplates, revitYear);
         }
@@ -590,6 +590,7 @@ namespace pyRevitExtensionParser
             Dictionary<string, ParsedComponent> toolIndex,
             HashSet<string> referencedTools)
         {
+            int stackCounter = 0;
             foreach (var item in layoutList.Children)
             {
                 if (item is YamlScalarNode scalarNode)
@@ -598,7 +599,8 @@ namespace pyRevitExtensionParser
                     if (string.IsNullOrEmpty(value))
                         continue;
 
-                    if (value.Contains("---"))
+                    var trimmed = value.Trim();
+                    if (trimmed == "---")
                     {
                         // Separator
                         panel.Children.Add(new ParsedComponent
@@ -609,7 +611,7 @@ namespace pyRevitExtensionParser
                             Directory = panel.Directory
                         });
                     }
-                    else if (value.Contains(">>>"))
+                    else if (trimmed == ">>>")
                     {
                         // Slideout marker
                         panel.Children.Add(new ParsedComponent
@@ -624,15 +626,15 @@ namespace pyRevitExtensionParser
                     else
                     {
                         // Tool name reference - look up in index
-                        if (toolIndex.TryGetValue(value, out var tool))
+                        if (toolIndex.TryGetValue(trimmed, out var tool))
                         {
                             panel.Children.Add(tool);
-                            referencedTools.Add(value);
+                            referencedTools.Add(trimmed);
                         }
                         else
                         {
                             ExtensionParser.LogWarning(
-                                $"Layout: Tool \"{value}\" referenced in panel " +
+                                $"Layout: Tool \"{trimmed}\" referenced in panel " +
                                 $"\"{panel.DisplayName}\" not found in tools/ directory");
                         }
                     }
@@ -643,9 +645,12 @@ namespace pyRevitExtensionParser
                     var stackNode = GetMappingValue(mappingNode, StackKey) as YamlSequenceNode;
                     if (stackNode != null)
                     {
-                        var stack = CreateStack(stackNode, panel, extensionName, toolIndex, referencedTools);
+                        var stack = CreateStack(stackNode, panel, extensionName, toolIndex, referencedTools, stackCounter);
                         if (stack != null)
+                        {
                             panel.Children.Add(stack);
+                            stackCounter++;
+                        }
                     }
                 }
             }
@@ -660,7 +665,8 @@ namespace pyRevitExtensionParser
             ParsedComponent parentPanel,
             string extensionName,
             Dictionary<string, ParsedComponent> toolIndex,
-            HashSet<string> referencedTools)
+            HashSet<string> referencedTools,
+            int stackIndex)
         {
             var stackChildren = new List<ParsedComponent>();
 
@@ -686,10 +692,12 @@ namespace pyRevitExtensionParser
             if (stackChildren.Count == 0)
                 return null;
 
-            // Generate a unique name for the stack from its children
-            var stackName = string.Join("", stackChildren.Select(c => c.Name));
+            // Use a stable per-panel counter so two stacks can't collide
+            // when concatenated child names happen to match (e.g. ["A","BC"]
+            // and ["AB","C"] would both yield "ABC").
+            var stackName = $"_stack_{stackIndex}";
             var uniqueId = ExtensionParser.SanitizeClassName(
-                $"{extensionName}_{stackName}".ToLowerInvariant());
+                $"{extensionName}_{parentPanel.Name}_{stackName}".ToLowerInvariant());
 
             return new ParsedComponent
             {

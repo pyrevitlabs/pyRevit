@@ -93,7 +93,7 @@ namespace pyRevitExtensionParser
             get
             {
                 var value = _ini.IniReadValue("core", "disable_custom_layouts");
-                return bool.TryParse(value, out var result) ? result : false;
+                return TryParseConfigBool(value, out var result) && result;
             }
             set
             {

@@ -568,8 +568,13 @@ class Extension(GenericUIContainer):
         the tools/ directory but are not referenced by extension_layout.yaml.
         Including them in the assembly keeps the DLL stable across layout
         edits, so re-arranging the ribbon does not force a rebuild.
+
+        Non-command components (stacks, groups) are filtered out so that
+        callers of get_all_commands receive only GenericUICommand instances.
         """
-        self._assembly_only_commands = list(commands)
+        self._assembly_only_commands = [
+            c for c in commands if isinstance(c, GenericUICommand)
+        ]
 
     def get_manifest_file(self):
         return self.get_bundle_file(exts.EXT_MANIFEST_FILE)

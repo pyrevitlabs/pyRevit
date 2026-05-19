@@ -126,10 +126,9 @@ def get_parsed_extension(extension):
     if layout_file:
         mlogger.debug('Using layout-based parsing for: %s', extension.name)
         tools_dir = op.join(extension.directory, exts.TOOLS_DIR_NAME)
-        if op.exists(tools_dir):
-            tool_index = build_tool_index(tools_dir, extension.directory)
-        else:
-            tool_index = {}
+        # build_tool_index handles missing tools_dir and also scans the
+        # legacy .tab/.panel/ hierarchy, supporting hybrid layouts.
+        tool_index = build_tool_index(tools_dir, extension.directory)
         parse_extension_layout(extension, tool_index, layout_file)
     else:
         _parse_for_components(extension)
