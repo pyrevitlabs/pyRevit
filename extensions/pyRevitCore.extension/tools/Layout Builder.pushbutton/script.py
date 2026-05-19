@@ -11,13 +11,11 @@ Separator, Slideout), move/remove items, and save to extension_layout.yaml.
 
 import os
 import os.path as op
-import codecs
 from collections import OrderedDict
 
 from pyrevit import script, forms
 from pyrevit.coreutils import yaml as pyyaml
 from pyrevit.framework import ObservableCollection
-from pyrevit.extensions.layout_cli import serialize_layout_yaml
 from pyrevit.extensions.layout_parser import has_layout_file
 from pyrevit.extensions.toolindex import build_tool_index
 from pyrevit.loader import sessionmgr
@@ -622,15 +620,13 @@ class LayoutBuilderWindow(forms.WPFWindow):
 
         # Save as custom user layout (not overwriting extension source)
         data = tree_to_yaml_dict(roots)
-        content = serialize_layout_yaml(data)
 
         cache_dir = _get_layout_cache_dir(self._extension_name)
         if not op.isdir(cache_dir):
             os.makedirs(cache_dir)
 
         layout_path = op.join(cache_dir, exts.EXT_LAYOUT_FILE)
-        with codecs.open(layout_path, "w", "utf-8") as f:
-            f.write(content)
+        pyyaml.dump_dict(data, layout_path)
 
         # Point user config to the cached layout
         _set_custom_layout_config(self._extension_name, layout_path)

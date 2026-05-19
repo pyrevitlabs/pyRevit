@@ -10,9 +10,9 @@ or called programmatically.
 
 import os
 import os.path as op
-import codecs
 from collections import OrderedDict
 
+from pyrevit.coreutils import yaml as pyyaml
 from pyrevit.coreutils.logger import get_logger
 import pyrevit.extensions as exts
 
@@ -76,7 +76,10 @@ def generate_layout(extension_dir, output_dir=None, split_panels=False):
                     # Write each panel to a separate .panel.yaml file
                     panel_filename = panel_name.replace(" ", "") + ".panel.yaml"
                     panel_filepath = op.join(output_dir, panel_filename)
-                    _write_panel_yaml(panel_filepath, panel_name, layout_list)
+                    panel_data = OrderedDict()
+                    panel_data["title"] = panel_name
+                    panel_data["layout"] = layout_list
+                    pyyaml.dump_dict(panel_data, panel_filepath)
                     panel_entry["layout_file"] = panel_filename
                     generated_files.append(panel_filepath)
                 else:
@@ -90,10 +93,8 @@ def generate_layout(extension_dir, output_dir=None, split_panels=False):
         tabs_data.append(tab_entry)
 
     # Write extension_layout.yaml
-    layout_content = _serialize_layout_yaml({"tabs": tabs_data})
     layout_filepath = op.join(output_dir, exts.EXT_LAYOUT_FILE)
-    with codecs.open(layout_filepath, "w", "utf-8") as f:
-        f.write(layout_content)
+    pyyaml.dump_dict({"tabs": tabs_data}, layout_filepath)
     generated_files.insert(0, layout_filepath)
 
     mlogger.info(
@@ -236,127 +237,3 @@ def _is_stack_type(comp):
     return type_id and "stack" in type_id.lower()
 
 
-def serialize_layout_yaml(data):
-    """Serialize layout data to YAML string.
-
-    Produces clean, human-readable YAML without relying on YamlDotNet
-    serializer (which may not handle Python dicts well in IronPython).
-
-    Args:
-        data (dict): Layout data structure
-
-    Returns:
-        str: YAML string
-    """
-    lines = []
-    _yaml_dump(data, lines, indent=0)
-    return "\n".join(lines) + "\n"
-
-
-# Keep backwards-compatible alias
-_serialize_layout_yaml = serialize_layout_yaml
-
-
-def _yaml_dump(obj, lines, indent):
-    """Recursively dump a Python object to YAML lines.
-
-    Args:
-        obj: Object to serialize (dict, list, or scalar)
-        lines (list): Accumulator for output lines
-        indent (int): Current indentation level
-    """
-    prefix = "  " * indent
-
-    if isinstance(obj, dict):
-        for key, value in obj.items():
-            if isinstance(value, (dict, list)):
-                lines.append("%s%s:" % (prefix, key))
-                _yaml_dump(value, lines, indent + 1)
-            else:
-                lines.append("%s%s: %s" % (prefix, key, _yaml_scalar(value)))
-    elif isinstance(obj, list):
-        for item in obj:
-            if isinstance(item, dict):
-                # First key on the same line as the dash
-                keys = list(item.keys())
-                if keys:
-                    first_key = keys[0]
-                    first_val = item[first_key]
-                    if isinstance(first_val, (dict, list)):
-                        lines.append("%s- %s:" % (prefix, first_key))
-                        _yaml_dump(first_val, lines, indent + 2)
-                    else:
-                        lines.append(
-                            "%s- %s: %s" % (prefix, first_key, _yaml_scalar(first_val))
-                        )
-                    # Remaining keys at deeper indent
-                    for key in keys[1:]:
-                        val = item[key]
-                        if isinstance(val, (dict, list)):
-                            lines.append("%s  %s:" % (prefix, key))
-                            _yaml_dump(val, lines, indent + 2)
-                        else:
-                            lines.append(
-                                "%s  %s: %s" % (prefix, key, _yaml_scalar(val))
-                            )
-            else:
-                lines.append("%s- %s" % (prefix, _yaml_scalar(item)))
-
-
-def _yaml_scalar(value):
-    """Format a scalar value for YAML output.
-
-    Args:
-        value: Scalar value to format
-
-    Returns:
-        str: Formatted YAML scalar
-    """
-    if value is None:
-        return "null"
-    s = str(value)
-    # Quote if contains special chars or looks like a YAML directive
-    if any(
-        c in s
-        for c in (
-            ":",
-            "#",
-            "{",
-            "}",
-            "[",
-            "]",
-            ",",
-            "&",
-            "*",
-            "?",
-            "|",
-            "-",
-            "<",
-            ">",
-            "=",
-            "!",
-            "%",
-            "@",
-            "`",
-        )
-    ):
-        return '"%s"' % s.replace('"', '\\"')
-    if s in ("true", "false", "null", "yes", "no", "on", "off"):
-        return '"%s"' % s
-    return '"%s"' % s
-
-
-def _write_panel_yaml(filepath, panel_name, layout_list):
-    """Write a panel.yaml file.
-
-    Args:
-        filepath (str): Output file path
-        panel_name (str): Panel display name/title
-        layout_list (list): Layout entries
-    """
-    data = OrderedDict()
-    data["title"] = panel_name
-    data["layout"] = layout_list
-    content = _serialize_layout_yaml(data)
-    with codecs.open(filepath, "w", "utf-8") as f:
-        f.write(content)
