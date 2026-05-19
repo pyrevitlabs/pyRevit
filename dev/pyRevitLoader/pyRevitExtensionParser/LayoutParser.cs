@@ -54,7 +54,7 @@ namespace pyRevitExtensionParser
 
             // Check custom layout path in config first
             var extName = Path.GetFileNameWithoutExtension(extensionDir);
-            var config = ExtensionParser.GetConfigPublic();
+            var config = ExtensionParser.GetConfigInternal();
             var customPath = config?.GetCustomLayoutPath(extName);
             if (!string.IsNullOrEmpty(customPath))
                 return true;
@@ -78,7 +78,7 @@ namespace pyRevitExtensionParser
 
             // Check custom layout path in config first
             var extName = Path.GetFileNameWithoutExtension(extensionDir);
-            var config = ExtensionParser.GetConfigPublic();
+            var config = ExtensionParser.GetConfigInternal();
             var customPath = config?.GetCustomLayoutPath(extName);
             if (!string.IsNullOrEmpty(customPath))
                 return customPath;

@@ -140,7 +140,6 @@ namespace pyRevitExtensionParser
             }
         }
 
-
         /// <summary>
         /// Gets or sets whether to load beta/experimental commands.
         /// </summary>

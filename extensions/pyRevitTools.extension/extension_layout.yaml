@@ -1,78 +1,78 @@
 tabs:
-  - name: "pyRevit"
+  - name: pyRevit
     panels:
-      - name: "Toggles"
+      - name: Toggles
         layout:
           - stack:
-              - "Tab Coloring"
-              - "Override 2D"
-              - "MinifyUI"
+              - Tab Coloring
+              - Override 2D
+              - MinifyUI
           - stack:
-              - "Imported"
-              - "SectionBox"
-              - "Sync Views"
+              - Imported
+              - SectionBox
+              - Sync Views
           - stack:
-              - "sync"
-              - "ViewRange"
-      - name: "Selection"
+              - sync
+              - ViewRange
+      - name: Selection
         layout:
-          - "Pick"
-          - "Set Workset"
+          - Pick
+          - Set Workset
           - stack:
-              - "Isolate"
-              - "Filter"
-              - "Select"
+              - Isolate
+              - Filter
+              - Select
           - stack:
-              - "MAppend"
-              - "MWrite"
-              - "MRead"
+              - MAppend
+              - MWrite
+              - MRead
           - stack:
-              - "Copy State"
-              - "Paste State"
-              - "Memory"
-      - name: "Analysis"
+              - Copy State
+              - Paste State
+              - Memory
+      - name: Analysis
         layout:
-          - "ColorSplasher"
+          - ColorSplasher
           - stack:
-              - "Sum"
-              - "Analyse"
-              - "Inspect"
-      - name: "Modify"
+              - Sum
+              - Analyse
+              - Inspect
+      - name: Modify
         layout:
           - stack:
-              - "Match"
-              - "Patterns"
-              - "Overkill"
+              - Match
+              - Patterns
+              - Overkill
           - stack:
-              - "Flip"
-              - "ReNumber"
-              - "ReValue"
+              - Flip
+              - ReNumber
+              - ReValue
           - stack:
-              - "Edit"
-              - "Override"
-              - "Groups"
-          - "---"
-          - "3D"
-      - name: "Drawing Set"
+              - Edit
+              - Override
+              - Groups
+          - '---'
+          - 3D
+      - name: Drawing Set
         layout:
-          - "Sheets"
-          - "Revision"
-          - "Keynotes"
+          - Sheets
+          - Revision
+          - Keynotes
           - stack:
-              - "Legends"
-              - "Schedules"
-              - "Views"
-          - "---"
-          - "Print Sheets"
-      - name: "Project"
+              - Legends
+              - Schedules
+              - Views
+          - '---'
+          - Print Sheets
+      - name: Project
         layout:
-          - "Preflight Checks"
+          - Preflight Checks
           - stack:
-              - "Get Central Path"
-              - "Get RVT Info"
-              - "Team"
+              - Get Central Path
+              - Get RVT Info
+              - Team
           - stack:
-              - "Cycle Family Types"
-              - "Family"
-              - "Links"
-          - "Wipe"
+              - Cycle Family Types
+              - Family
+              - Links
+          - Wipe

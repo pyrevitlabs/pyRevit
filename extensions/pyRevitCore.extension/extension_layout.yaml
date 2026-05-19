@@ -1,27 +1,27 @@
 tabs:
-  - name: "pyRevit"
+  - name: pyRevit
     panels:
-      - name: "pyRevit"
+      - name: pyRevit
         layout:
           - stack:
-              - "Search"
-              - "Spy"
-              - "Reload"
-          - ">>>"
-          - "About"
-          - "Update"
-          - "Extensions"
+              - Search
+              - Spy
+              - Reload
+          - '>>>'
+          - About
+          - Update
+          - Extensions
           - stack:
-              - "Wiki"
-              - "Blog"
-              - "Repo"
+              - Wiki
+              - Blog
+              - Repo
           - stack:
-              - "apidocs"
-              - "emojis"
-              - "rpw Docs"
+              - apidocs
+              - emojis
+              - rpw Docs
           - stack:
-              - "Icons8"
-              - "RegEx Tool"
-              - "Report Bugs"
-          - "Settings"
-          - "Layout Builder"
+              - Icons8
+              - RegEx Tool
+              - Report Bugs
+          - Settings
+          - Layout Builder
