@@ -21,6 +21,8 @@ from pyrevit.extensions.toolindex import build_tool_index
 from pyrevit.loader import sessionmgr
 import pyrevit.extensions as exts
 
+mlogger = script.get_logger()
+
 # ---------------------------------------------------------------------------
 # Data model
 # ---------------------------------------------------------------------------
@@ -317,8 +319,10 @@ def _get_custom_layout_path(extension_name):
             path = section.get_option("custom_layout_path", default_value="")
             if path and op.isfile(path):
                 return path
-    except Exception:
-        pass
+    except Exception as err:
+        mlogger.debug(
+            "Could not read custom layout config for %s: %s", extension_name, err
+        )
     return None
 
 

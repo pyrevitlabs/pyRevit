@@ -57,8 +57,10 @@ def get_layout_file(extension_dir):
                 custom_path = section.get_option("custom_layout_path", default_value="")
                 if custom_path and op.isfile(custom_path):
                     return custom_path
-    except Exception:
-        pass
+    except Exception as err:
+        mlogger.debug(
+            "Could not read custom layout config for %s: %s", extension_dir, err
+        )
 
     # Bundled layout file
     bundled = op.join(extension_dir, exts.EXT_LAYOUT_FILE)
