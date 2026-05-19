@@ -5,6 +5,7 @@ import os.path as op
 from pyrevit import script, forms
 from pyrevit.extensions.layout_cli import generate_layout
 from pyrevit.extensions.layout_parser import has_layout_file
+from pyrevit.userconfig import user_config
 import pyrevit.extensions as exts
 
 split_panels = __shiftclick__  # pylint: disable=E0602
@@ -14,18 +15,20 @@ output.print_md("# Generate Extension Layout")
 if split_panels:
     output.print_md("*Mode: separate panel files*")
 
-# Find extensions root
-repo_root = op.dirname(
-    op.dirname(op.dirname(op.dirname(op.dirname(op.dirname(op.abspath(__file__))))))
-)
-extensions_dir = op.join(repo_root, "extensions")
-
-# List available extensions
+# Enumerate UI extensions across all configured pyRevit extension roots.
 ext_dirs = []
-for entry in os.listdir(extensions_dir):
-    ext_path = op.join(extensions_dir, entry)
-    if entry.endswith(exts.UI_EXTENSION_POSTFIX) and op.isdir(ext_path):
-        ext_dirs.append(ext_path)
+seen = set()
+for root_dir in user_config.get_ext_root_dirs():
+    if not op.isdir(root_dir):
+        continue
+    for entry in os.listdir(root_dir):
+        ext_path = op.join(root_dir, entry)
+        if entry.endswith(exts.UI_EXTENSION_POSTFIX) and op.isdir(ext_path):
+            key = op.normcase(op.abspath(ext_path))
+            if key in seen:
+                continue
+            seen.add(key)
+            ext_dirs.append(ext_path)
 
 if not ext_dirs:
     output.print_md("**No extensions found!**")

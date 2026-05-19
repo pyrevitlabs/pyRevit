@@ -681,17 +681,23 @@ class LayoutBuilderWindow(forms.WPFWindow):
 # Extension selection (entry point)
 # ---------------------------------------------------------------------------
 
-# Find extensions root
-# __file__ is at: extensions/<ext>.extension/tools/<bundle>.pushbutton/script.py
-# 4 dirname calls from __file__ reaches the extensions/ directory
-extensions_dir = op.dirname(op.dirname(op.dirname(op.dirname(op.abspath(__file__)))))
+# Discover every UI extension across all configured pyRevit extension
+# roots (shipped + user-installed) so the picker isn't limited to the
+# folder this script happens to live in.
+from pyrevit.userconfig import user_config
 
-# Also check user extensions from pyRevit config
 ext_dirs = []
-if op.isdir(extensions_dir):
-    for entry in os.listdir(extensions_dir):
-        ext_path = op.join(extensions_dir, entry)
+seen = set()
+for root_dir in user_config.get_ext_root_dirs():
+    if not op.isdir(root_dir):
+        continue
+    for entry in os.listdir(root_dir):
+        ext_path = op.join(root_dir, entry)
         if entry.endswith(exts.UI_EXTENSION_POSTFIX) and op.isdir(ext_path):
+            key = op.normcase(op.abspath(ext_path))
+            if key in seen:
+                continue
+            seen.add(key)
             ext_dirs.append(ext_path)
 
 if not ext_dirs:

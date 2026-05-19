@@ -6,23 +6,27 @@ from pyrevit import script
 from pyrevit.extensions.toolindex import build_tool_index
 from pyrevit.extensions.layout_parser import get_layout_file, parse_extension_layout
 from pyrevit.extensions.components import Extension
+from pyrevit.userconfig import user_config
 import pyrevit.extensions as exts
 
 output = script.get_output()
 output.print_md("# Layout Parsing Test")
 
-# Find extensions root
-repo_root = op.dirname(
-    op.dirname(op.dirname(op.dirname(op.dirname(op.dirname(op.abspath(__file__))))))
-)
-extensions_dir = op.join(repo_root, "extensions")
-
-# Find all extensions with layout files
+# Find all extensions with layout files across all configured ext roots.
 output.print_md("## Scanning for layout-enabled extensions")
 layout_extensions = []
-for entry in os.listdir(extensions_dir):
-    ext_path = op.join(extensions_dir, entry)
-    if entry.endswith(exts.UI_EXTENSION_POSTFIX) and op.isdir(ext_path):
+seen = set()
+for root_dir in user_config.get_ext_root_dirs():
+    if not op.isdir(root_dir):
+        continue
+    for entry in os.listdir(root_dir):
+        ext_path = op.join(root_dir, entry)
+        if not (entry.endswith(exts.UI_EXTENSION_POSTFIX) and op.isdir(ext_path)):
+            continue
+        key = op.normcase(op.abspath(ext_path))
+        if key in seen:
+            continue
+        seen.add(key)
         lf = get_layout_file(ext_path)
         if lf:
             layout_extensions.append((entry, ext_path, lf))

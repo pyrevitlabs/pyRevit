@@ -1574,6 +1574,7 @@ namespace pyRevitExtensionParser
             }
 
             var mediaFile = FindMediaFile(dir);
+            var helpFile = FindHelpFile(dir);
             var bundleFile = Path.Combine(dir, "bundle.yaml");
 
             ParsedBundle bundleInComponent = null;
@@ -1771,6 +1772,8 @@ namespace pyRevitExtensionParser
                 MaxRevitVersion = finalMaxRevitVersion,
                 IsBeta = finalIsBeta,
                 Collapsed = bundleInComponent?.Collapsed ?? false,
+                InheritIcon = bundleInComponent?.InheritIcon ?? true,
+                LargeIcon = bundleInComponent?.LargeIcon ?? false,
                 PanelBackground = bundleInComponent?.PanelBackground,
                 TitleBackground = bundleInComponent?.TitleBackground,
                 SlideoutBackground = bundleInComponent?.SlideoutBackground,
@@ -1789,7 +1792,8 @@ namespace pyRevitExtensionParser
                 OnIconDarkPath = onIconDarkPath,
                 OffIconPath = offIconPath,
                 OffIconDarkPath = offIconDarkPath,
-                MediaFile = mediaFile
+                MediaFile = mediaFile,
+                HelpFile = helpFile
             };
         }
 

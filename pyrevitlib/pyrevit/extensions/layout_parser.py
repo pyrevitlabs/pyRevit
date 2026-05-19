@@ -336,8 +336,8 @@ def _resolve_string_entry(entry, parent, tool_index, referenced_tools=None):
     """Resolve a string layout entry and add to parent.
 
     Handles:
-        - Separator identifiers ('---')
-        - Slideout identifiers ('>>>' or '>>>>>')
+        - Separator identifier ('---')
+        - Slideout identifier ('>>>')
         - Tool name references (lookup in tool_index)
 
     Args:
@@ -346,24 +346,23 @@ def _resolve_string_entry(entry, parent, tool_index, referenced_tools=None):
         tool_index (dict): Tool name to component mapping
         referenced_tools (set): Set to track tool names placed in the layout
     """
-    # Check for separator
-    if exts.SEPARATOR_IDENTIFIER in entry:
+    tool_name = entry.strip()
+
+    if tool_name == exts.SEPARATOR_IDENTIFIER:
         separator = GenericUIComponent()
         separator.type_id = exts.SEPARATOR_IDENTIFIER
         separator.name = exts.SEPARATOR_IDENTIFIER
         parent.add_component(separator)
         return
 
-    # Check for slideout
-    if exts.SLIDEOUT_IDENTIFIER in entry:
+    if tool_name == exts.SLIDEOUT_IDENTIFIER:
         slideout = GenericUIComponent()
         slideout.type_id = exts.SLIDEOUT_IDENTIFIER
         slideout.name = exts.SLIDEOUT_IDENTIFIER
         parent.add_component(slideout)
         return
 
-    # Tool name reference
-    tool_name = entry.strip()
+
     if tool_name in tool_index:
         parent.add_component(tool_index[tool_name])
         if referenced_tools is not None:

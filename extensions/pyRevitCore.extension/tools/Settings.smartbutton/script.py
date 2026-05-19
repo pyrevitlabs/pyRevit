@@ -5,7 +5,7 @@ import os
 import os.path as op
 import re
 
-from pyrevit import HOST_APP, EXEC_PARAMS
+from pyrevit import HOST_APP, EXEC_PARAMS, PYREVIT_APP_DIR
 from pyrevit.compat import NETCORE
 from pyrevit.framework import System, Windows, Controls, Documents
 from pyrevit.runtime.types import EventType, EventUtils
@@ -87,11 +87,6 @@ class RevitVersionCB:
         self.IsEnabled = is_enabled  # Whether the checkbox is enabled
 
 
-PYREVIT_APP_DIR = os.environ.get(
-    'APPDATA', op.expanduser('~')
-)
-
-
 class LayoutExtensionItem(object):
     """Row item for the per-extension layout ListView."""
 
@@ -108,7 +103,7 @@ class LayoutExtensionItem(object):
             self.Status = 'Default'
 
     def _get_cache_dir(self):
-        return op.join(PYREVIT_APP_DIR, 'pyRevit', 'Layouts', self.Name)
+        return op.join(PYREVIT_APP_DIR, 'Layouts', self.Name)
 
 
 class SettingsWindow(forms.WPFWindow):
@@ -575,6 +570,7 @@ class SettingsWindow(forms.WPFWindow):
     def import_layout_for_ext(self, sender, args):
         """Import custom layout files for a specific extension."""
         import shutil
+        import tempfile
         item = sender.Tag
         if not item:
             return
@@ -591,17 +587,25 @@ class SettingsWindow(forms.WPFWindow):
             forms.alert('Selected folder must contain extension_layout.yaml')
             return
 
-        # Copy files to appdata cache
+        # Stage in a temp dir first; only swap the cache once the copy
+        # succeeds so a failure mid-copy doesn't strand the user without
+        # a layout and a config pointing to a deleted file.
         cache_dir = item._get_cache_dir()
-        if op.isdir(cache_dir):
-            shutil.rmtree(cache_dir)
-        os.makedirs(cache_dir)
-
-        # Copy extension_layout.yaml + all *.panel.yaml
-        shutil.copy2(layout_file, cache_dir)
-        for f in os.listdir(src_dir):
-            if f.endswith('.panel.yaml'):
-                shutil.copy2(op.join(src_dir, f), cache_dir)
+        cache_parent = op.dirname(cache_dir)
+        if not op.isdir(cache_parent):
+            os.makedirs(cache_parent)
+        tmp_dir = tempfile.mkdtemp(prefix='_import_', dir=cache_parent)
+        try:
+            shutil.copy2(layout_file, tmp_dir)
+            for f in os.listdir(src_dir):
+                if f.endswith('.panel.yaml'):
+                    shutil.copy2(op.join(src_dir, f), tmp_dir)
+            if op.isdir(cache_dir):
+                shutil.rmtree(cache_dir)
+            shutil.move(tmp_dir, cache_dir)
+        except Exception:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+            raise
 
         # Set config to point to cached layout
         cached_layout = op.join(cache_dir, 'extension_layout.yaml')
