@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Threading;
@@ -6,30 +7,31 @@ using Autodesk.Revit.UI;
 
 namespace PyRevitLabs.PyRevit.Shell {
     /// <summary>
-    /// Public launch entry points for the interactive shell.
+    /// Public launch entry points for the interactive shell, called from the launcher script.
     ///
     /// These are deliberately thin and free of IronPython/AvalonEdit references so the assembly
     /// resolver is installed *before* the JIT has to load those dependencies (which live next to
-    /// this DLL in engines/IPY342, not on Revit's probing path). The heavy work happens in
+    /// this DLL in its engine folder, not on Revit's probing path). The heavy work happens in
     /// <see cref="ShellLauncher"/>, whose methods are only JIT-compiled once these run.
+    ///
+    /// <paramref name="searchPaths"/> is the launcher's sys.path, forwarded to the REPL engine so
+    /// <c>from pyrevit import ...</c> resolves exactly as in a normal script.
     /// </summary>
     public static class Shell {
-        public static void Modal(UIApplication uiapp) {
+        public static void Modal(UIApplication uiapp, IList<string> searchPaths) {
             ShellAssemblyResolver.Install();
-            ShellLauncher.ShowModal(uiapp);
+            ShellLauncher.ShowModal(uiapp, searchPaths);
         }
 
-        public static void Modeless(UIApplication uiapp) {
+        public static void Modeless(UIApplication uiapp, IList<string> searchPaths) {
             ShellAssemblyResolver.Install();
-            ShellLauncher.ShowModeless(uiapp);
+            ShellLauncher.ShowModeless(uiapp, searchPaths);
         }
     }
 
     /// <summary>
-    /// Resolves the shell's private dependencies (IronPython 3.4, the DLR and AvalonEdit) from the
-    /// folder this assembly was loaded from. The shell ships into engines/IPY342, which Revit does
-    /// not probe, and pyRevit may be running a different engine entirely, so explicit resolution is
-    /// required for the shell to load regardless of the active engine.
+    /// Resolves the shell's private dependencies (AvalonEdit, and the forked IronPython/DLR) from
+    /// the engine folder this assembly was loaded from, which Revit does not probe.
     /// </summary>
     internal static class ShellAssemblyResolver {
         static int _installed;

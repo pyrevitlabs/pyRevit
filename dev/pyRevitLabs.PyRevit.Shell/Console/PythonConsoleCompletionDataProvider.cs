@@ -157,7 +157,9 @@ namespace PythonConsoleControl
             //string dirCommand = "dir(" + objectName + ")";
             string dirCommand = "sorted([m for m in dir(" + name + ") if not m.startswith('__')], key = str.lower) + sorted([m for m in dir(" + name + ") if m.startswith('__')])";
             object value = commandLine.ScriptScope.Engine.CreateScriptSourceFromString(dirCommand, SourceCodeKind.Expression).Execute(commandLine.ScriptScope);
-            foreach (object member in (value as IronPython.Runtime.PythonList))
+            // dir() returns a Python list whose concrete type differs between IronPython forks
+            // (PythonList on IPY3, List on IPY2); iterate it through the fork-agnostic interface.
+            foreach (object member in (value as System.Collections.IEnumerable))
             {
                 bool isInstance = false;
 

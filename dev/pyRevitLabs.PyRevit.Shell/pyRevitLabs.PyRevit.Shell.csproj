@@ -5,7 +5,6 @@
     <UseRevit>true</UseRevit>
     <UseWpf>true</UseWpf>
     <UseWindowsForms>true</UseWindowsForms>
-    <IronPythonVersion>IPY342</IronPythonVersion>
     <AssemblyName>pyRevitLabs.PyRevit.Shell</AssemblyName>
     <RootNamespace>PyRevitLabs.PyRevit.Shell</RootNamespace>
     <LangVersion>latest</LangVersion>

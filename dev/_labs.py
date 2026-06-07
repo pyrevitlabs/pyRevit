@@ -163,6 +163,11 @@ def build_runtime(args: Dict[str, str]):
 
 
 def build_shell(args: Dict[str, str]):
-    """Build pyRevit interactive shell (IPY342, all target frameworks)."""
+    """Build pyRevit interactive shell (per IronPython fork, all target frameworks)."""
     config = args.get("<config>") or "Release"
-    _build("shell", configs.SHELL, config=config)
+
+    IPY2712PR = "IPY2712PR"
+    IPY342 = "IPY342"
+
+    _build(f"shell {IPY2712PR}", configs.SHELL, config=config + f" {IPY2712PR}")
+    _build(f"shell {IPY342}", configs.SHELL, config=config + f" {IPY342}")
