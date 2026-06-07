@@ -38,5 +38,6 @@ def build_binaries(_: Dict[str, str]):
     labs.build_labs(_)
     labs.build_engines(_)
     labs.build_runtime(_)
+    labs.build_shell(_)
     telem.build_telem(_)
     autoc.build_autocmp(_)

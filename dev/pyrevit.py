@@ -117,6 +117,7 @@ COMMANDS = [
     Command(name="build", target="deps", args=[], run=labs.build_deps),
     Command(name="build", target="labs", args=["[<config>]"], run=labs.build_labs),
     Command(name="build", target="engines", args=["[<config>]"], run=labs.build_engines),
+    Command(name="build", target="shell", args=["[<config>]"], run=labs.build_shell),
     Command(name="build", target="autocmp", args=[], run=autoc.build_autocmp),
     Command(name="build", target="telem", args=[], run=telem.build_telem),
     Command(name="build", target="installers", args=[], run=release.build_installers),

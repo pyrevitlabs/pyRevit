@@ -1,0 +1,12 @@
+<Window x:Class="PyRevitLabs.PyRevit.Shell.InteractiveShellWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:console="clr-namespace:PythonConsoleControl"
+        Title="pyRevit Python Shell"
+        Height="500" Width="850" MinHeight="200" MinWidth="400"
+        Background="#FF1F2D3D"
+        WindowStartupLocation="CenterScreen">
+    <Grid>
+        <console:IronPythonConsoleControl x:Name="consoleControl" />
+    </Grid>
+</Window>

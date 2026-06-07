@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Platforms>x64</Platforms>
+    <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
+    <UseRevit>true</UseRevit>
+    <UseWpf>true</UseWpf>
+    <UseWindowsForms>true</UseWindowsForms>
+    <IronPythonVersion>IPY342</IronPythonVersion>
+    <AssemblyName>pyRevitLabs.PyRevit.Shell</AssemblyName>
+    <RootNamespace>PyRevitLabs.PyRevit.Shell</RootNamespace>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <!-- Embed the AvalonEdit syntax themes under the logical names the ported console expects
+       (PythonConsoleControl.xaml.cs loads them by these exact manifest resource names) -->
+  <ItemGroup>
+    <None Remove="Console\Resources\Python.xshd" />
+    <None Remove="Console\Resources\Python-Dark.xshd" />
+    <EmbeddedResource Include="Console\Resources\Python.xshd" LogicalName="PythonConsoleControl.Resources.Python.xshd" />
+    <EmbeddedResource Include="Console\Resources\Python-Dark.xshd" LogicalName="PythonConsoleControl.Resources.Python-Dark.xshd" />
+  </ItemGroup>
+</Project>

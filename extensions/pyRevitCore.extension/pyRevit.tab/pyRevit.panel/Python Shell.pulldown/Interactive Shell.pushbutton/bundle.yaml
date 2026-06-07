@@ -1,0 +1,8 @@
+title:
+  en_us: Interactive Shell
+tooltip:
+  en_us: >-
+    Open an interactive IronPython 3.4 shell (modal). Type Python and see results immediately,
+    with syntax highlighting and CTRL+SPACE autocompletion. Revit is blocked while the shell is
+    open, so a transaction can span several prompts.
+context: zero-doc

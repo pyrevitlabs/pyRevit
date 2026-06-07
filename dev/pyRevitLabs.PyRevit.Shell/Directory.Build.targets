@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <!-- Inherit dev-level baseline RevitVersion, REVIT#### constants and UseRevit->Nice3point packages -->
+    <Import Project="../Directory.Build.targets" />
+
+    <ItemGroup>
+        <!-- IronPython 3.4.2 (IPY342) from NuGet: same engine identity pyRevit ships in
+             engines/IPY342, and brings the DLR (Microsoft.Scripting/Dynamic) including the
+             Hosting.Shell REPL layer the console host is built on -->
+        <PackageReference Include="IronPython" Version="3.4.2" />
+        <!-- Interactive editor surface (the one genuinely new third-party dependency).
+             NuGet package id is "AvalonEdit"; the assembly/namespace is ICSharpCode.AvalonEdit -->
+        <PackageReference Include="AvalonEdit" Version="6.3.0.90" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Required by the C# 'dynamic' used to drive sys.meta_path on .NET Framework -->
+        <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="Microsoft.CSharp" />
+    </ItemGroup>
+
+    <!-- The shell is self-contained: at runtime it resolves IronPython/DLR/AvalonEdit from its own
+         engines/IPY342 folder (see ShellAssemblyResolver) and reads pyRevit's stdlib zip from the
+         sibling pyRevitLoader.dll by reflection, so it works no matter which engine pyRevit is
+         currently running. No compile-time reference to the per-engine pyRevit assemblies. -->
+
+    <!-- Deploy only the new assemblies into the IPY342 engine folder; the IronPython/DLR copies
+         pulled by NuGet are already present there from the runtime/loader builds -->
+    <Target Name="DeployShell" AfterTargets="AfterBuild">
+        <ItemGroup>
+            <ShellDeployFiles Include="$(TargetPath)" />
+            <ShellDeployFiles Include="$(TargetDir)ICSharpCode.AvalonEdit.dll" />
+        </ItemGroup>
+        <Copy SourceFiles="@(ShellDeployFiles)" DestinationFolder="$(PyRevitEnginesDir)\IPY342" SkipUnchangedFiles="true" />
+        <Message Importance="high" Text="$(MSBuildProjectName) ($(TargetFramework)) -> $([System.IO.Path]::GetFullPath('$(PyRevitEnginesDir)\IPY342'))" />
+    </Target>
+</Project>
