@@ -611,7 +611,7 @@ class ExtensionsWindow(forms.WPFWindow):
                     # Clear stored token if field is empty
                     try:
                         pkg.config.private_repo = False
-                        pkg.config.token = ""
+                        credentials.delete_token(self.selected_pkg.ext_pkg.config_section_name)
                     except Exception:
                         pass
                 # TODO this reimport is necessary, otherwise it crashes
