@@ -156,7 +156,7 @@ def _perform_onsessionloadstart_ops():
         from pyrevit.coreutils import credentials
         credentials.migrate_legacy_token()
     except Exception as cred_migration_err:
-        mlogger.warning(
+        mlogger.debug(
             "Skipping legacy credential migration: %s", cred_migration_err
         )
 

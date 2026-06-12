@@ -42,9 +42,6 @@ _KEY_ENCRYPTED = "token_dpapi"
 # Legacy plaintext keys that old install code wrote into extension sections
 _LEGACY_PLAINTEXT_KEYS = ("token", "password", "username")
 
-# Old global sections from earlier iterations of this module
-_OBSOLETE_SECTIONS = ("github", "git_credentials")
-
 
 # ------------------------------------------------------------------
 # DPAPI helpers
@@ -107,36 +104,6 @@ def _delete_config(key, section_name):
 # ------------------------------------------------------------------
 
 def migrate_legacy_token():
-    """Migrate old-format tokens to per-extension DPAPI storage.
-
-    Handles:
-    1. Plaintext token/password in extension config sections (private_repo=True)
-       -> encrypted token_dpapi in the same section; plaintext keys removed
-    2. Old global [github] / [git_credentials] sections from earlier module
-       versions -> sections removed (tokens cannot be attributed to a specific
-       extension and were effectively non-functional anyway)
-
-    Safe to call on every startup -- no-op when nothing to migrate.
-    Failures are logged as warnings and never propagate to the caller.
-    """
-    # Remove obsolete global sections that stored one token for all extensions.
-    # These tokens can't be re-attributed to individual extensions, and the
-    # code that wrote them was buggy (auth never actually worked), so the
-    # user will need to re-enter credentials.
-    for section_name in _OBSOLETE_SECTIONS:
-        try:
-            user_config.get_section(section_name)
-            user_config.remove_section(section_name)
-            user_config.save_changes()
-            mlogger.debug("credentials: removed obsolete section [%s]", section_name)
-        except Exception:
-            pass
-
-    # Migrate per-extension plaintext tokens in-place.
-    _migrate_extension_plaintext_tokens()
-
-
-def _migrate_extension_plaintext_tokens():
     """Encrypt plaintext token/password keys in extension config sections.
 
     Old install code wrote ``token`` or ``password`` directly into each

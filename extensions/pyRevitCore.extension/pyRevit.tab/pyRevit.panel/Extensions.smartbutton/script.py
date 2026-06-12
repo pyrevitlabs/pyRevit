@@ -439,7 +439,7 @@ class ExtensionsWindow(forms.WPFWindow):
             # Pre-fill token from stored config if available
             stored_token = ""
             try:
-                stored_token = ext_pkg_item.ext_pkg.config.token or ""
+                stored_token = credentials.get_token(ext_pkg_item.ext_pkg.config_section_name) or ""
             except Exception:
                 pass
             self.custom_token_pb.Password = stored_token
@@ -604,7 +604,9 @@ class ExtensionsWindow(forms.WPFWindow):
                     logger.debug("Could not set config.url for pkg: %s", e)
                 if token:
                     pkg.config.private_repo = True
-                    pkg.config.token = token
+                    credentials.set_token(
+                        self.selected_pkg.ext_pkg.config_section_name, token
+                    )
                 else:
                     # Clear stored token if field is empty
                     try:
