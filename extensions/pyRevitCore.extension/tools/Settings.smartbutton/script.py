@@ -5,7 +5,7 @@ import os
 import os.path as op
 import re
 
-from pyrevit import HOST_APP, EXEC_PARAMS, PYREVIT_APP_DIR
+from pyrevit import HOST_APP, EXEC_PARAMS
 from pyrevit.compat import NETCORE
 from pyrevit.framework import System, Windows, Controls, Documents
 from pyrevit.runtime.types import EventType, EventUtils
@@ -103,7 +103,8 @@ class LayoutExtensionItem(object):
             self.Status = 'Default'
 
     def _get_cache_dir(self):
-        return op.join(PYREVIT_APP_DIR, 'Layouts', self.Name)
+        from pyrevit.extensions.layout_parser import get_layout_cache_dir
+        return get_layout_cache_dir(self.Name)
 
 
 class SettingsWindow(forms.WPFWindow):
@@ -603,9 +604,13 @@ class SettingsWindow(forms.WPFWindow):
             if op.isdir(cache_dir):
                 shutil.rmtree(cache_dir)
             shutil.move(tmp_dir, cache_dir)
-        except Exception:
+        except Exception as import_err:
             shutil.rmtree(tmp_dir, ignore_errors=True)
-            raise
+            logger.error('Failed to import layout: %s', import_err)
+            forms.alert(
+                'Failed to import layout files:\n{}'.format(import_err)
+            )
+            return
 
         # Set config to point to cached layout
         cached_layout = op.join(cache_dir, 'extension_layout.yaml')

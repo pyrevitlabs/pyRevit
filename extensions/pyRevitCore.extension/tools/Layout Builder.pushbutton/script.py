@@ -16,7 +16,11 @@ from collections import OrderedDict
 from pyrevit import script, forms
 from pyrevit.coreutils import yaml as pyyaml
 from pyrevit.framework import ObservableCollection
-from pyrevit.extensions.layout_parser import has_layout_file, list_layout_presets
+from pyrevit.extensions.layout_parser import (
+    get_layout_cache_dir,
+    has_layout_file,
+    list_layout_presets,
+)
 from pyrevit.extensions.toolindex import build_tool_index
 from pyrevit.loader import sessionmgr
 import pyrevit.extensions as exts
@@ -278,16 +282,6 @@ def _find_container_for(target_node, child_type):
 # ---------------------------------------------------------------------------
 # Custom layout storage
 # ---------------------------------------------------------------------------
-
-APPDATA_DIR = os.environ.get("APPDATA", op.expanduser("~"))
-
-
-def _get_layout_cache_dir(extension_name):
-    """Get the user-specific cache directory for custom layouts.
-
-    Follows the same convention as Settings: %APPDATA%/pyRevit/Layouts/<Name>/
-    """
-    return op.join(APPDATA_DIR, "pyRevit", "Layouts", extension_name)
 
 
 def _set_custom_layout_config(extension_name, layout_path):
@@ -655,7 +649,7 @@ class LayoutBuilderWindow(forms.WPFWindow):
         # Save as custom user layout (not overwriting extension source)
         data = tree_to_yaml_dict(roots)
 
-        cache_dir = _get_layout_cache_dir(self._extension_name)
+        cache_dir = get_layout_cache_dir(self._extension_name)
         if not op.isdir(cache_dir):
             os.makedirs(cache_dir)
 
@@ -681,58 +675,64 @@ class LayoutBuilderWindow(forms.WPFWindow):
 # Extension selection (entry point)
 # ---------------------------------------------------------------------------
 
-# Discover every UI extension across all configured pyRevit extension
-# roots (shipped + user-installed) so the picker isn't limited to the
-# folder this script happens to live in.
-from pyrevit.userconfig import user_config
 
-ext_dirs = []
-seen = set()
-for root_dir in user_config.get_ext_root_dirs():
-    if not op.isdir(root_dir):
-        continue
-    for entry in os.listdir(root_dir):
-        ext_path = op.join(root_dir, entry)
-        if entry.endswith(exts.UI_EXTENSION_POSTFIX) and op.isdir(ext_path):
-            key = op.normcase(op.abspath(ext_path))
-            if key in seen:
-                continue
-            seen.add(key)
-            ext_dirs.append(ext_path)
+def main():
+    from pyrevit.userconfig import user_config
 
-if not ext_dirs:
-    forms.alert("No extensions found!")
-    script.exit()
+    # Discover every UI extension across all configured pyRevit extension
+    # roots (shipped + user-installed) so the picker isn't limited to the
+    # folder this script happens to live in.
+    ext_dirs = []
+    seen = set()
+    for root_dir in user_config.get_ext_root_dirs():
+        if not op.isdir(root_dir):
+            continue
+        for entry in os.listdir(root_dir):
+            ext_path = op.join(root_dir, entry)
+            if entry.endswith(exts.UI_EXTENSION_POSTFIX) and op.isdir(ext_path):
+                key = op.normcase(op.abspath(ext_path))
+                if key in seen:
+                    continue
+                seen.add(key)
+                ext_dirs.append(ext_path)
 
-# Let user pick an extension
-ext_names = [op.basename(d) for d in ext_dirs]
-selected = forms.SelectFromList.show(
-    ext_names, title="Select Extension to Edit", multiselect=False
-)
-if not selected:
-    script.exit()
+    if not ext_dirs:
+        forms.alert("No extensions found!")
+        script.exit()
 
-selected_dir = ext_dirs[ext_names.index(selected)]
-selected_name = op.splitext(selected)[0]
+    # Let user pick an extension
+    ext_names = [op.basename(d) for d in ext_dirs]
+    selected = forms.SelectFromList.show(
+        ext_names, title="Select Extension to Edit", multiselect=False
+    )
+    if not selected:
+        script.exit()
 
-# Build tool index
-tools_dir = op.join(selected_dir, exts.TOOLS_DIR_NAME)
-tool_index = build_tool_index(tools_dir, selected_dir)
+    selected_dir = ext_dirs[ext_names.index(selected)]
+    selected_name = op.splitext(selected)[0]
 
-# Load existing layout or start empty
-# Priority: custom user layout > bundled extension layout > empty
-custom_layout = _get_custom_layout_path(selected_name)
-if custom_layout:
-    roots = load_layout_tree(custom_layout, selected_dir)
-elif has_layout_file(selected_dir):
-    layout_file = op.join(selected_dir, exts.EXT_LAYOUT_FILE)
-    if op.isfile(layout_file):
-        roots = load_layout_tree(layout_file, selected_dir)
+    # Build tool index
+    tools_dir = op.join(selected_dir, exts.TOOLS_DIR_NAME)
+    tool_index = build_tool_index(tools_dir, selected_dir)
+
+    # Load existing layout or start empty
+    # Priority: custom user layout > bundled extension layout > empty
+    custom_layout = _get_custom_layout_path(selected_name)
+    if custom_layout:
+        roots = load_layout_tree(custom_layout, selected_dir)
+    elif has_layout_file(selected_dir):
+        layout_file = op.join(selected_dir, exts.EXT_LAYOUT_FILE)
+        if op.isfile(layout_file):
+            roots = load_layout_tree(layout_file, selected_dir)
+        else:
+            roots = []
     else:
         roots = []
-else:
-    roots = []
 
-# Show the builder window
-window = LayoutBuilderWindow(selected_dir, selected_name, tool_index, roots)
-window.show_dialog()
+    # Show the builder window
+    window = LayoutBuilderWindow(selected_dir, selected_name, tool_index, roots)
+    window.show_dialog()
+
+
+if __name__ == "__main__":
+    main()

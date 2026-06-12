@@ -11,11 +11,6 @@ import os.path as op
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 import pyrevit.extensions as exts
-from pyrevit.extensions.parser import (
-    _parse_for_components,
-    _create_subcomponents,
-    _get_subcomponents_classes,
-)
 
 # pylint: disable=W0703,C0302,C0103
 mlogger = get_logger(__name__)
@@ -78,6 +73,7 @@ def build_tool_index(tools_dir, extension_dir):
 
     # Get all known component types that can appear as tools
     # (everything that can be a child of a Panel)
+    from pyrevit.extensions.parser import _get_subcomponents_classes
     from pyrevit.extensions.components import (
         GenericStack,
         GenericUICommandGroup,
@@ -259,6 +255,8 @@ def _index_tool(tool_path, cmp_type, ext_name, tool_index):
 
     # For container tools, parse their children
     if component.is_container:
+        from pyrevit.extensions.parser import _parse_for_components
+
         _parse_for_components(component)
         # Update unique names for children too
         _update_child_unique_names(component, ext_name)

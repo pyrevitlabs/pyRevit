@@ -8,6 +8,7 @@ uimaker.py consumes.
 import os
 import os.path as op
 
+from pyrevit import PYREVIT_APP_DIR
 from pyrevit.coreutils import yaml
 from pyrevit.coreutils.logger import get_logger
 import pyrevit.extensions as exts
@@ -57,6 +58,18 @@ def has_layout_file(extension_dir):
         bool: True if layout file found
     """
     return op.isfile(op.join(extension_dir, exts.EXT_LAYOUT_FILE))
+
+
+def get_layout_cache_dir(extension_name):
+    """Get the user-specific cache directory for custom layouts.
+
+    Args:
+        extension_name (str): Name of the extension (without .extension suffix)
+
+    Returns:
+        str: Path to <PYREVIT_APP_DIR>/Layouts/<extension_name>
+    """
+    return op.join(PYREVIT_APP_DIR, "Layouts", extension_name)
 
 
 def get_layout_file(extension_dir):
@@ -361,7 +374,6 @@ def _resolve_string_entry(entry, parent, tool_index, referenced_tools=None):
         slideout.name = exts.SLIDEOUT_IDENTIFIER
         parent.add_component(slideout)
         return
-
 
     if tool_name in tool_index:
         parent.add_component(tool_index[tool_name])

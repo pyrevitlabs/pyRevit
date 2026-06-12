@@ -49,19 +49,7 @@ namespace pyRevitExtensionParser
         /// </summary>
         public static bool HasLayoutFile(string extensionDir)
         {
-            if (string.IsNullOrEmpty(extensionDir))
-                return false;
-
-            // Check custom layout path in config first
-            var extName = Path.GetFileNameWithoutExtension(extensionDir);
-            var config = ExtensionParser.GetConfigInternal();
-            var customPath = config?.GetCustomLayoutPath(extName);
-            if (!string.IsNullOrEmpty(customPath))
-                return true;
-
-            // Check bundled layout file
-            var layoutPath = Path.Combine(extensionDir, LayoutFileName);
-            return File.Exists(layoutPath);
+            return GetLayoutFilePath(extensionDir) != null;
         }
 
         /// <summary>
@@ -105,8 +93,14 @@ namespace pyRevitExtensionParser
             int revitYear)
         {
             // Resolve layout file (custom path > bundled)
-            var layoutPath = GetLayoutFilePath(extensionDir)
-                             ?? Path.Combine(extensionDir, LayoutFileName);
+            var layoutPath = GetLayoutFilePath(extensionDir);
+            if (layoutPath == null)
+            {
+                ExtensionParser.LogWarning(
+                    $"Layout: No layout file found for {extensionDir}");
+                return new LayoutParseResult();
+            }
+
             var toolsDir = Path.Combine(extensionDir, ToolsDirName);
 
             // Build tool index from tools/ directory
