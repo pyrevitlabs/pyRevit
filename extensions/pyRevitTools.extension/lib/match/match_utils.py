@@ -33,7 +33,7 @@ class PropKeyValue(object):
         self.datatype = datatype
         self.value = value
         self.istype = istype
-        self.display_value = display_value or name
+        self.display_value = str(display_value or value)
         self.categories = categories if categories is not None else []
 
     @staticmethod
@@ -103,7 +103,7 @@ def match_prop(dest_inst, dest_type, src_props):
             mlogger.debug('Parameter "%s"not found on target.', pkv.name)
 
 
-def get_source_properties(src_element, simple=False):
+def get_source_properties(src_element, simple=False, preselect=None):
     """Return info on selected properties."""
     mlogger = get_logger(__name__)
     props = []
@@ -117,6 +117,7 @@ def get_source_properties(src_element, simple=False):
             multiple=True,
             include_instance=True,
             include_type=True,
+            preselect=preselect,
         )
         or []
     )
@@ -143,7 +144,7 @@ def get_source_properties(src_element, simple=False):
                     datatype=tparam.StorageType,
                     value=value,
                     istype=sparam.istype,
-                    display_value=tparam.AsValueString() if not simple else None,
+                    display_value=tparam.AsValueString(),
                     categories=[src_element.Category] if not simple else [],
                 )
             )

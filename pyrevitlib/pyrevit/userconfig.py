@@ -315,6 +315,26 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             CONSTS.ConfigsNewLoaderKey,
             value=state
         )
+
+    @property
+    def read_script_metadata(self):
+        """Whether to read script metadata (__title__, __author__, etc) from Python scripts.
+        
+        When False, pyRevit will skip reading metadata from .py script files and will
+        only use values from bundle.yaml. This improves startup performance but may
+        affect commands that rely on script-level metadata.
+        """
+        return self.core.get_option(
+            CONSTS.ConfigsReadScriptMetadataKey,
+            default_value=CONSTS.ConfigsReadScriptMetadataDefault,
+        )
+
+    @read_script_metadata.setter
+    def read_script_metadata(self, state):
+        self.core.set_option(
+            CONSTS.ConfigsReadScriptMetadataKey,
+            value=state
+        )
     
     @property
     def output_close_others(self):

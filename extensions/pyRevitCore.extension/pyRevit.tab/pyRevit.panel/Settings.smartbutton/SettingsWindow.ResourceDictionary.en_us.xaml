@@ -60,6 +60,20 @@
     <system:String x:Key="CoreSettings.Loader">Loader</system:String>
     <system:String x:Key="CoreSettings.Loader.Description">Configure pyRevit's assembly loading mechanism. The new loader is a C# implementation that uses Roslyn build strategy</system:String>
     <system:String x:Key="CoreSettings.Loader.NewLoader">Enables new pyRevit loader (beta) (Restarting Revit is required)</system:String>
+    <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata">Read script metadata (Reload Required)</system:String>
+    <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata.Description">
+        When enabled, pyRevit reads script metadata (__title__, __author__, __doc__, etc.) from Python script files.
+        Disabling this option can improve startup performance but commands may lose metadata defined in scripts.
+        Bundle.yaml values will still be used regardless of this setting.
+    </system:String>
+    <system:String x:Key="CoreSettings.Loader.NewLoader.Changed">
+        The new loader setting has changed. Reloading pyRevit is required for this
+        change to take effect. Do you want to reload now?
+    </system:String>
+    <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata.Changed">
+        The read script metadata setting has changed. Reloading pyRevit is required
+        for this change to take effect. Do you want to reload now?
+    </system:String>
 
     <system:String x:Key="CoreSettings.CloseOtherConsoles">Close other open consoles</system:String>
     <system:String x:Key="CoreSettings.CloseOtherConsoles.Description">

@@ -1,15 +1,29 @@
-"""Discards (not delete) grouped elements from the current selection."""
+"""Discard grouped elements from current selection.
 
-from pyrevit import revit, DB
+If nothing is selected, pick a region to filter non-grouped elements from.
+"""
+from pyrevit import revit, DB, UI
 
 
-selection = revit.get_selection()
+def _is_non_grouped(el):
+    return el.GroupId == DB.ElementId.InvalidElementId and not isinstance(el, DB.Group)
 
 
-filtered_elements = []
-for el in selection:
-    if el.GroupId == DB.ElementId.InvalidElementId \
-            and not isinstance(el, DB.Group):
-        filtered_elements.append(el.Id)
+class NonGroupedSelectionFilter(UI.Selection.ISelectionFilter):
+    def AllowElement(self, element):
+        return _is_non_grouped(element)
 
-selection.set_to(filtered_elements)
+    def AllowReference(self, reference, point):
+        return False
+
+
+selection = list(revit.get_selection())
+if selection:
+    filtered = [el.Id for el in selection if _is_non_grouped(el)]
+    revit.get_selection().set_to(filtered)
+else:
+    try:
+        elements = revit.pick_rectangle(pick_filter=NonGroupedSelectionFilter())
+        revit.get_selection().set_to(elements)
+    except Exception:
+        pass

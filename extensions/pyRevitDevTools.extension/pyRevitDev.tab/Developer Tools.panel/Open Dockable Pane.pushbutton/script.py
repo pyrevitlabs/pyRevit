@@ -2,8 +2,6 @@
 #pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 
 
-__title__ = 'Open\nPanel'
-__context__ = 'zero-doc'
 
 
 from pyrevit import forms

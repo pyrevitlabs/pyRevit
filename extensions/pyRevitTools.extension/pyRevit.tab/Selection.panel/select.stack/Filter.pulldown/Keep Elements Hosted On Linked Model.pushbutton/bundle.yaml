@@ -7,11 +7,33 @@ title:
   de_de: Aufwahl auf Elemente mit verknüpftem Modell als Host reduzieren
   pt_br: Elementos Hospedados em Modelo Vinculado
 tooltip:
-  en_us: Looks into the current selection elements and keeps the ones hosted on a linked model surface
-  fr_fr: Examine les éléments de la sélection actuelle et conserve ceux hébergés sur une surface de modèle liée
-  ru: Просматривает текущие выделенные элементы и сохраняет те, которые размещены на связанной модели.
-  chinese_s: 检查当前选择中的图元，并保留那些基于链接模型表面的图元
-  es_es: Examina los elementos de la selección actual y mantiene los que están alojados en una superficie de modelo vinculado
-  de_de: Untersucht die aktuelle Auswahl an Elementen und behält nur Elemente in der Auswahl, die auf einer Fläche eines verknüpften Modells gehostet sind.
-  pt_br: Verifica os elementos da seleção atual e mantém aqueles hospedados em uma superfície de modelo vinculado
-context: Selection
+  en_us: >-
+    Keeps elements hosted on a linked model surface in current selection.
+    If nothing is selected, pick a region to filter from.
+  fr_fr: >-
+    Conserve les éléments hébergés sur une surface de modèle lié dans la sélection actuelle.
+    Si rien n'est sélectionné, délimitez une zone à filtrer.
+  ru: >-
+    Сохраняет элементы, размещённые на поверхности связанной модели, в текущем выделении.
+    Если ничего не выбрано, выберите область для фильтрации.
+  chinese_s: >-
+    在当前选择中保留基于链接模型表面的图元。
+    若未选择任何内容，则框选区域进行过滤。
+  es_es: >-
+    Mantiene los elementos alojados en una superficie de modelo vinculado en la selección actual.
+    Si no hay nada seleccionado, delimite una región para filtrar.
+  de_de: >-
+    Behält nur Elemente in der Auswahl, die auf einer Fläche eines verknüpften Modells
+    gehostet sind. Die Elemente werden nicht gelöscht, sondern nur aus der aktuellen
+    Auswahl entfernt.
+    Wenn nichts ausgewählt ist, kann ein Bereich zum Filtern gewählt werden.
+  pt_br: >-
+    Mantém os elementos hospedados em uma superfície de modelo vinculado na seleção atual.
+    Se nada estiver selecionado, selecione uma região para filtrar.
+context:
+  any:
+    - selection
+    - active-plan-view
+    - active-section-view
+    - active-3d-view
+    - active-elevation-view

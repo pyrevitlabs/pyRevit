@@ -1,0 +1,12 @@
+title:
+  en_us: Test pyRevit Button (Custom)
+  chinese_s: 测试按钮
+highlight: updated
+help_url: https://www.youtube.com/channel/UC-0THIvKRd6n7T2a5aKYaGg
+author: >-
+  {{author}}
+
+  John Doe
+context:
+- OST_Walls
+- OST_TextNotes

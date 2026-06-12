@@ -103,7 +103,11 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
         /// <summary>
         /// Updates an existing link button's properties and command binding.
         /// </summary>
-        internal void UpdateExistingLinkButton(PushButton linkBtn, ParsedComponent component)
+        internal void UpdateExistingLinkButton(
+            PushButton linkBtn,
+            ParsedComponent component,
+            ParsedComponent? parentComponent = null,
+            IconMode iconMode = IconMode.LargeAndSmall)
         {
             try
             {
@@ -115,7 +119,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                         linkBtn.AvailabilityClassName = availabilityClassName;
 
                     linkBtn.ItemText = buttonText;
-                    ButtonPostProcessor.Process(linkBtn, component);
+                    ButtonPostProcessor.Process(linkBtn, component, parentComponent, iconMode);
 
                     linkBtn.Enabled = true;
                     linkBtn.Visible = true;

@@ -149,7 +149,7 @@ namespace pyRevitLabs.TargetApps.Revit {
 
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
-        private RevitProduct(HostProductInfo prodInfo) {
+        private RevitProduct(HostProductInfo prodInfo, bool isListedInHostsDatabase = true) {
             Name = prodInfo.release;
             try {
                 Version = new Version(prodInfo.version);
@@ -157,10 +157,15 @@ namespace pyRevitLabs.TargetApps.Revit {
             catch { Version = null; }
             BuildNumber = prodInfo.build;
             BuildTarget = prodInfo.target;
+            IsListedInHostsDatabase = isListedInHostsDatabase;
         }
 
         public override string ToString() {
-            return string.Format("{0} | Version: {1} | Build: {2}({3}) | Language: {4} | Path: \"{5}\"", Name, Version, BuildNumber, BuildTarget, LanguageCode, InstallLocation);
+            var result = string.Format("{0} | Version: {1} | Build: {2}({3}) | Language: {4} | Path: \"{5}\"",
+                                       Name, Version, BuildNumber, BuildTarget, LanguageCode, InstallLocation);
+            if (!IsListedInHostsDatabase)
+                result += " | Note: not listed in pyrevit-hosts.json";
+            return result;
         }
 
         public override int GetHashCode() {
@@ -168,6 +173,7 @@ namespace pyRevitLabs.TargetApps.Revit {
         }
 
         public string Name { get; private set; }
+        public bool IsListedInHostsDatabase { get; private set; }
         public int ProductYear {
             get {
                 int prodYear = 0;
@@ -224,6 +230,37 @@ namespace pyRevitLabs.TargetApps.Revit {
 
         public static RevitProduct LookupRevitProduct(Version version) {
             return LookupRevitProduct(version.ToString());
+        }
+
+        public static RevitProduct ResolveProduct(string identifier, string binaryFilePath = null) {
+            logger.Debug("Looking up Revit Product in database...");
+            var revitProduct = LookupRevitProduct(identifier);
+            if (revitProduct != null)
+                return revitProduct;
+
+            logger.Debug("Could not determine Revit Product from version \"{0}\" in pyrevit-hosts.json", identifier);
+            if (binaryFilePath == null) {
+                logger.Debug("Revit version \"{0}\" not found in pyrevit-hosts.json and no binary path available to read version info", identifier);
+                return null;
+            }
+
+            try {
+                var prodInfo = RevitProductData.GetBinaryProductInfo(binaryFilePath);
+                logger.Debug("Read build number \"{0}\" from binary at \"{1}\"", prodInfo.build, binaryFilePath);
+                revitProduct = LookupRevitProduct(prodInfo.build);
+                if (revitProduct is null) {
+                    logger.Info("Version \"{0}\" (build: {1}) not found in pyrevit-hosts.json. Using product information from binary file. " +
+                               "Consider updating pyrevit-hosts.json if this version should be officially supported.",
+                               identifier, prodInfo.build);
+                    revitProduct = new RevitProduct(prodInfo, isListedInHostsDatabase: false);
+                }
+                return revitProduct;
+            }
+            catch (Exception ex) {
+                logger.Debug(ex, "Revit version \"{0}\" not found in pyrevit-hosts.json and failed to read product info from binary at \"{1}\"",
+                            identifier, binaryFilePath);
+            }
+            return null;
         }
 
         public static List<RevitProduct> ListInstalledProducts() {
@@ -342,43 +379,8 @@ namespace pyRevitLabs.TargetApps.Revit {
             }
         }
 
-        private static RevitProduct FindRevitProduct(string regVersion, string binaryFilePath)
-        {
-            logger.Debug("Looking up Revit Product in database...");
-            var revitProduct = LookupRevitProduct(regVersion);
-            if (revitProduct != null)
-            { 
-                return revitProduct; 
-            }
-
-            logger.Debug("Could not determine Revit Product from version \"{0}\" in pyrevit-hosts.json", regVersion);
-            // try to get product key from binary version
-            if (binaryFilePath == null)
-            {
-                logger.Debug("Revit version \"{0}\" not found in pyrevit-hosts.json and no binary path available to read version info", regVersion);
-                return null;
-            }
-            try
-            {
-                var prodInfo = RevitProductData.GetBinaryProductInfo(binaryFilePath);
-                logger.Debug("Read build number \"{0}\" from binary at \"{1}\"", prodInfo.build, binaryFilePath);
-                revitProduct = LookupRevitProduct(prodInfo.build);
-                // If still not found in database, create from binary info
-                if (revitProduct is null)
-                {
-                    logger.Info("Version \"{0}\" (build: {1}) not found in pyrevit-hosts.json. Using product information from binary file. " +
-                               "Consider updating pyrevit-hosts.json if this version should be officially supported.", 
-                               regVersion, prodInfo.build);
-                    revitProduct = new RevitProduct(prodInfo);
-                }
-                return revitProduct;
-            }
-            catch (Exception ex)
-            {
-                logger.Debug(ex, "Revit version \"{0}\" not found in pyrevit-hosts.json and failed to read product info from binary at \"{1}\"", 
-                            regVersion, binaryFilePath);
-            }
-            return null;
+        private static RevitProduct FindRevitProduct(string regVersion, string binaryFilePath) {
+            return ResolveProduct(regVersion, binaryFilePath);
         }
 
         public static List<RevitProduct> ListSupportedProducts() {

@@ -91,4 +91,16 @@ def post_comment(ticket: str, comment: str):
     """Post a comment on an issue thead"""
     logger.debug("posting comment on ticket #%s", ticket)
     ticket_url = API_ISSUE_COMMENTS.format(ticket=ticket)
-    _post_github(ticket_url, json.dumps({"body": comment}))
+    res = _post_github(ticket_url, json.dumps({"body": comment}))
+    if not res.ok:
+        logger.error(
+            "failed to post comment on issue #%s: %s %s",
+            ticket,
+            res.status_code,
+            res.text,
+        )
+        raise RuntimeError(
+            "failed to post comment on issue #{}: {} {}".format(
+                ticket, res.status_code, res.text
+            )
+        )

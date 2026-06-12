@@ -132,7 +132,7 @@ If the new Revit requires a new .NET version, update the GitHub Actions workflow
 
 ### 5.1 Add .NET SDK setup
 
-Edit `.github/workflows/main.yml` and add a new setup step:
+Edit `.github/workflows/ci.yml` (and `wip.yml` / `release.yml` if they install their own SDKs) and add a new setup step:
 
 ```yaml
 - name: Prepare .NET XX.0
@@ -264,7 +264,7 @@ pipenv run pyrevit build products Debug
 | `dev/Directory.Build.props` | Common project properties and NuGet packages |
 | `dev/libs/Revit/YYYY/` | Version-specific DLLs (Xceed.Wpf.AvalonDock) |
 | `bin/pyrevit-hosts.json` | Revit build registry for version detection |
-| `.github/workflows/main.yml` | CI/CD pipeline configuration |
+| `.github/workflows/ci.yml`, `wip.yml`, `release.yml` | CI/CD pipeline configuration |
 | `release/CodeDependencies.iss` | .NET runtime installer procedures |
 | `release/pyrevit.iss` | Main pyRevit installer script |
 

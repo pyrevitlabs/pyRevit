@@ -56,9 +56,23 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
         SmallOnly,
 
         /// <summary>
-        /// Apply only the small icon to both Image and LargeImage properties.
-        /// Used for pulldown sub-buttons where both properties need the same small icon.
+        /// Apply a medium (24x24) icon to LargeImage and a small (16x16) icon to Image.
+        /// Used for compact ribbon contexts to match the Python loader's ICON_MEDIUM behavior.
         /// </summary>
-        SmallToBoth
+        MediumAndSmall
+    }
+
+    /// <summary>
+    /// Resolves icon modes for common ribbon contexts.
+    /// </summary>
+    public static class IconModeHelper
+    {
+        /// <summary>
+        /// Resolves icon mode for compact contexts such as pulldowns, split children, and stacks.
+        /// </summary>
+        public static IconMode GetCompactIconMode(ParsedComponent component)
+        {
+            return component?.LargeIcon == true ? IconMode.LargeAndSmall : IconMode.MediumAndSmall;
+        }
     }
 }

@@ -87,6 +87,14 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
         }
 
         /// <summary>
+        /// Resolves icon mode for compact contexts such as pulldowns, split children, and stacks.
+        /// </summary>
+        protected static IconMode GetCompactIconMode(ParsedComponent component)
+        {
+            return IconModeHelper.GetCompactIconMode(component);
+        }
+
+        /// <summary>
         /// Updates command binding for an existing push button.
         /// </summary>
         protected void UpdatePushButtonCommandBinding(PushButton? button, ParsedComponent component, ExtensionAssemblyInfo assemblyInfo)

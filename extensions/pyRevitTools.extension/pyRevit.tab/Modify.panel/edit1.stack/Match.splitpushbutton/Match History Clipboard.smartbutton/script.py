@@ -3,7 +3,7 @@ from pyrevit.revit import ui
 from pyrevit.framework import Threading, System
 import pyrevit.extensions as exts
 from pyrevit.coreutils.ribbon import ICON_MEDIUM
-from match import panel
+from match import clipboard
 
 
 def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
@@ -19,8 +19,8 @@ def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
 
     def update_icon_from_pane():
         try:
-            if forms.is_registered_dockable_panel(panel.MatchHistoryClipboard):
-                dockable = forms.get_dockable_panel(panel.MatchHistoryClipboard)
+            if forms.is_registered_dockable_panel(clipboard.MatchHistoryClipboard):
+                dockable = forms.get_dockable_panel(clipboard.MatchHistoryClipboard)
                 set_icon(dockable.IsShown())
             else:
                 set_icon(False)
@@ -55,8 +55,8 @@ def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
 
 
 if __name__ == "__main__":
-    if forms.is_registered_dockable_panel(panel.MatchHistoryClipboard):
-        dockable_panel = forms.get_dockable_panel(panel.MatchHistoryClipboard)
+    if forms.is_registered_dockable_panel(clipboard.MatchHistoryClipboard):
+        dockable_panel = forms.get_dockable_panel(clipboard.MatchHistoryClipboard)
         forms.toggle_dockable_panel(
-            panel.MatchHistoryClipboard, not dockable_panel.IsShown()
+            clipboard.MatchHistoryClipboard, not dockable_panel.IsShown()
         )

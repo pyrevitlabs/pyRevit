@@ -1,6 +1,5 @@
 from pyrevit import forms
 
-__context__ = 'zero-doc'
 
 
 selected_switch, switches = \

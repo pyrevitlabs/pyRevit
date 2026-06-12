@@ -1,9 +1,4 @@
 # -*- coding: UTF-8 -*-
-
-__cleanengine__ = True
-__fullframeengine__ = True
-__persistentengine__ = True
-
 from traceback import format_exc
 from csv import writer, reader
 from os.path import isfile
@@ -19,17 +14,19 @@ from pyrevit.script import get_config, get_logger
 from pyrevit.forms import alert, show_balloon
 from pyrevit.output.cards import card_builder, create_frame
 from pyrevit.revit.db import ProjectInfo as RevitProjectInfo
-import sys
 import os
-# Add current directory to path for local imports
-_current_dir = os.path.dirname(os.path.abspath(__file__))
-if _current_dir not in sys.path:
-    sys.path.insert(0, _current_dir)
 
+from pyrevit.coreutils import applocales
 from pyrevit.preflight import PreflightTestCase
-from check_translations import DocstringMeta
 import pyrevit.revit.db.query as q
 import pyrevit.revit.db.count as cnt
+
+_XAML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "locale", "Checks.xaml")
+
+
+def _t(key):
+    return applocales.get_locale_string_from_xaml(_XAML, key)
+
 
 logger = get_logger()
 
@@ -84,7 +81,9 @@ _PresureLossReport = getattr(DB.ViewType, "PresureLossReport", None)
 _SystemsAnalysisReport = getattr(DB.ViewType, "SystemsAnalysisReport", None)
 VALID_VIEW_TYPES = list(_VALID_VIEW_TYPES_BASE)
 if _PresureLossReport is not None:
-    VALID_VIEW_TYPES.insert(VALID_VIEW_TYPES.index(DB.ViewType.LoadsReport) + 1, _PresureLossReport)
+    VALID_VIEW_TYPES.insert(
+        VALID_VIEW_TYPES.index(DB.ViewType.LoadsReport) + 1, _PresureLossReport
+    )
 if _SystemsAnalysisReport is not None:
     VALID_VIEW_TYPES.append(_SystemsAnalysisReport)
 
@@ -632,7 +631,8 @@ class ReportData:
         """
         Exports the current data to a CSV file.
         If the CSV file does not exist, it creates a new file and writes the headers and data.
-        If the CSV file exists, it appends the data only if a row with the same date and document name does not already exist.
+        If the CSV file exists, it appends the data only if a row with the same date and document 
+        name does not already exist.
 
         Args:
             export_file_path (str): The path to the CSV file. Defaults to EXPORT_FILE_PATH.
@@ -957,18 +957,17 @@ def audit_document(doc, output):
             "N/A",
             "N/A",
         ]
-        from check_translations import get_check_translation
-        output.print_md("# {}".format(get_check_translation("AuditAllMainFileInfos")))
+        output.print_md("# {}".format(_t("AuditAllMainFileInfos")))
         translated_headers = [
-            get_check_translation("AuditAllProjectName"),
-            get_check_translation("AuditAllProjectNumber"),
-            get_check_translation("AuditAllClientName"),
-            get_check_translation("AuditAllProjectPhases"),
-            get_check_translation("AuditAllWorksets"),
-            get_check_translation("AuditAllLinkedFileName"),
-            get_check_translation("ModelCheckerInstanceName"),
-            get_check_translation("AuditAllLoadedStatus"),
-            get_check_translation("ModelCheckerPinnedStatus")
+            _t("AuditAllProjectName"),
+            _t("AuditAllProjectNumber"),
+            _t("AuditAllClientName"),
+            _t("AuditAllProjectPhases"),
+            _t("AuditAllWorksets"),
+            _t("AuditAllLinkedFileName"),
+            _t("ModelCheckerInstanceName"),
+            _t("AuditAllLoadedStatus"),
+            _t("ModelCheckerPinnedStatus"),
         ]
         output.print_table([project_info], columns=translated_headers)
 
@@ -978,6 +977,12 @@ def audit_document(doc, output):
         links_documents_data = []
         for rvt_link_instance in q.get_linked_model_instances(doc).ToElements():
             link_doc = rvt_link_instance.GetLinkDocument()
+            if not link_doc:
+                logger.error(
+                    "Link '%s' is not loaded -- skipping.",
+                    q.get_rvt_link_instance_name(rvt_link_instance)
+                )
+                continue
             link_document_data = ReportData(link_doc)
             link_data.append(
                 [
@@ -998,12 +1003,14 @@ def audit_document(doc, output):
             )
             links_documents_data.append(link_document_data)
         if link_data:
-            output.print_md("# {}".format(get_check_translation("AuditAllLinkedFilesInfos")))
+            output.print_md("# {}".format(_t("AuditAllLinkedFilesInfos")))
             output.print_table(link_data, columns=translated_headers)
             links_cards = card_builder(
-                50, data.links_info.rvtlinks_count, " {}".format(get_check_translation("AuditAllLinks"))
+                50, data.links_info.rvtlinks_count, " {}".format(_t("AuditAllLinks"))
             ) + card_builder(
-                0, data.links_info.rvtlinks_unpinned_count, " {}".format(get_check_translation("AuditAllLinksNotPinned"))
+                0,
+                data.links_info.rvtlinks_unpinned_count,
+                " {}".format(_t("AuditAllLinksNotPinned")),
             )
 
         output.print_md(
@@ -1015,7 +1022,7 @@ def audit_document(doc, output):
         data.export_to_csv()
 
         if data.rvtlinks_elements_items:
-            output.print_md("# {}".format(get_check_translation("ModelCheckerRVTLinks")))
+            output.print_md("# {}".format(_t("ModelCheckerRVTLinks")))
             for link_doc_data in links_documents_data:
                 generate_rvt_links_report(link_doc_data, output)
     except Exception as e:
@@ -1038,14 +1045,15 @@ def generate_rvt_links_report(link_document_data, output):
     output.print_md("## " + doc_clean_name)
     output.print_md("___")
     links_data = ""
-    from check_translations import get_check_translation
     if link_document_data.rvtlinks_elements_items:
         links_data = card_builder(
-            50, link_document_data.links_info.rvtlinks_count, " {}".format(get_check_translation("AuditAllLinks"))
+            50,
+            link_document_data.links_info.rvtlinks_count,
+            " {}".format(_t("AuditAllLinks")),
         ) + card_builder(
             0,
             link_document_data.links_info.rvtlinks_unpinned_count,
-            " {}".format(get_check_translation("AuditAllLinksNotPinned")),
+            " {}".format(_t("AuditAllLinksNotPinned")),
         )
     html_content = generate_html_content(link_document_data, links_data)
     output.print_html(html_content)
@@ -1053,14 +1061,7 @@ def generate_rvt_links_report(link_document_data, output):
 
 
 class ModelChecker(PreflightTestCase):
-    __metaclass__ = DocstringMeta
-    _docstring_key = "CheckDescription_AuditAll"
-    
-    @property
-    def name(self):
-        from check_translations import get_check_translation
-        return get_check_translation("CheckName_AuditAll")
-    
+    name = _t("CheckName_AuditAll")
     author = "Jean-Marc Couffin"
 
     def setUp(self, doc, output):
@@ -1074,3 +1075,6 @@ class ModelChecker(PreflightTestCase):
         endtime_hms = str(timedelta(seconds=endtime))
         endtime_hms_claim = " \n\nCheck duration " + endtime_hms[0:7]
         output.print_md(endtime_hms_claim)
+
+
+ModelChecker.__doc__ = _t("CheckDescription_AuditAll")

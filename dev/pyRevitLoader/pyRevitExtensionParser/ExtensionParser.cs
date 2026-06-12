@@ -217,6 +217,17 @@ namespace pyRevitExtensionParser
         /// </summary>
         private static string _cachedLocale = null;
 
+        // Per-session cache for ReadScriptMetadata so we don't re-read the INI
+        // once per script during a single parse pass.
+        private static bool? _readScriptMetadataCache;
+
+        private static bool ReadScriptMetadataEnabled()
+        {
+            if (!_readScriptMetadataCache.HasValue)
+                _readScriptMetadataCache = GetConfig().ReadScriptMetadata;
+            return _readScriptMetadataCache.Value;
+        }
+
         /// <summary>
         /// Clears all static caches to force re-parsing of extensions.
         /// This should be called before reloading pyRevit to ensure newly installed
@@ -230,7 +241,8 @@ namespace pyRevitExtensionParser
             _cachedExtensionRoots = null;
             PyRevitConfig.ClearCache();
             _pythonScriptCache.Clear();
-            BundleParser.BundleYamlParser.ClearCache(); 
+            _readScriptMetadataCache = null;
+            BundleParser.BundleYamlParser.ClearCache();
         }
 
         /// <summary>
@@ -396,6 +408,11 @@ namespace pyRevitExtensionParser
         {
             var extName = Path.GetFileNameWithoutExtension(extDir);
 
+            // skip disabled extensions before walking the component tree
+            var extConfig = GetConfig().ParseExtensionByName(extName);
+            if (extConfig != null && extConfig.Disabled)
+                return null;
+
             var bundlePath = Path.Combine(extDir, "bundle.yaml");
             ParsedBundle parsedBundle = null;
             if (FileExists(bundlePath))
@@ -508,15 +525,9 @@ namespace pyRevitExtensionParser
                 rocketModeCompatible = true;
             }
 
-            // FIXED — pass revitYear through:
             var children = ParseComponents(extDir, extName, null,
                 extensionTemplates.Count > 0 ? extensionTemplates : null,
                 revitYear);
-
-            // Read extension config from pyRevit config file (cached).
-            // Config is keyed by folder name (e.g. [extension_test.extension]) so it matches install and Python.
-            var config = GetConfig();
-            var extConfig = config.ParseExtensionByName(extName);
 
             var parsedExtension = new ParsedExtension
             {
@@ -886,6 +897,22 @@ namespace pyRevitExtensionParser
             return result;
         }
 
+        /// <summary>
+        /// Merges bundle-level localized values over script-level ones; bundle wins on key collision.
+        /// </summary>
+        private static Dictionary<string, string> MergeLocalized(
+            Dictionary<string, string> scriptLocalized,
+            Dictionary<string, string> bundleLocalized)
+        {
+            if (bundleLocalized == null || bundleLocalized.Count == 0)
+                return scriptLocalized;
+
+            var result = scriptLocalized ?? new Dictionary<string, string>(bundleLocalized.Count);
+            foreach (var kvp in bundleLocalized)
+                result[kvp.Key] = kvp.Value;
+            return result;
+        }
+
         private static List<ParsedComponent> ParseComponents(
             string baseDir,
             string extensionName,
@@ -919,6 +946,8 @@ namespace pyRevitExtensionParser
                     ? $"{extensionName}_{namePart}"
                     : $"{parentPath}_{namePart}";
 
+                var bundleDirFiles = GetFilesInDirectory(dir, "*", SearchOption.TopDirectoryOnly);
+
                 string scriptPath = null;
 
                 if (componentType == CommandComponentType.UrlButton)
@@ -930,16 +959,15 @@ namespace pyRevitExtensionParser
 
                 if (scriptPath == null)
                 {
-                    // Look for script files in order of preference: .py, .cs, .vb, .rb, .dyn, .gh, .ghx, .rfa
-                    // Use cached file listing instead of EnumerateFiles
-                    var dirFiles = GetFilesInDirectory(dir, "*script.*", SearchOption.TopDirectoryOnly);
                     var validEndings = new[] { "script", "_script", "-script", ".script" };
-                    dirFiles = dirFiles.Where(f =>
-                        validEndings.Any(end => Path.GetFileNameWithoutExtension(f).EndsWith(end, StringComparison.OrdinalIgnoreCase))
-                    ).ToArray();
-                    
-                    // Check for scripts in priority order
+                    var dirFiles = bundleDirFiles.Where(f =>
+                    {
+                        var nameNoExt = Path.GetFileNameWithoutExtension(f);
+                        return validEndings.Any(end => nameNoExt.EndsWith(end, StringComparison.OrdinalIgnoreCase));
+                    }).ToArray();
+
                     var scriptExtensions = new[] { ".py", ".cs", ".vb", ".rb", ".dyn", ".gh", ".ghx", ".rfa" };
+
                     foreach (var scriptExt in scriptExtensions)
                     {
                         var scriptFile = $"script{scriptExt}";
@@ -953,11 +981,10 @@ namespace pyRevitExtensionParser
                     // This handles cases like BIM1_ArrowHeadSwitcher_script.dyn
                     if (scriptPath == null)
                     {
-                        var allFiles = GetFilesInDirectory(dir, "*", SearchOption.TopDirectoryOnly);
                         foreach (var scriptExt in scriptExtensions)
                         {
                             // Look for any file ending with _script{ext} or just {ext}
-                            scriptPath = allFiles.FirstOrDefault(f =>
+                            scriptPath = bundleDirFiles.FirstOrDefault(f =>
                                 (f.EndsWith($"_script{scriptExt}", StringComparison.OrdinalIgnoreCase) ||
                                  (f.EndsWith(scriptExt, StringComparison.OrdinalIgnoreCase) &&
                                   !f.EndsWith($"_config{scriptExt}", StringComparison.OrdinalIgnoreCase))));
@@ -984,12 +1011,11 @@ namespace pyRevitExtensionParser
                 // e.g. both "config.py" and "name_config.py" will match
                 string configScriptPath = null;
                 var configExtensions = new[] { ".py", ".cs", ".vb", ".rb", ".dyn", ".gh", ".ghx" };
-                var allDirFiles = GetFilesInDirectory(dir, "*", SearchOption.TopDirectoryOnly);
                 // Prefer exact "config{ext}" match, then fall back to postfix "*config{ext}"
                 foreach (var configExt in configExtensions)
                 {
                     var configFile = $"config{configExt}";
-                    configScriptPath = allDirFiles.FirstOrDefault(f =>
+                    configScriptPath = bundleDirFiles.FirstOrDefault(f =>
                         Path.GetFileName(f).Equals(configFile, StringComparison.OrdinalIgnoreCase));
                     if (configScriptPath != null)
                         break;
@@ -999,7 +1025,7 @@ namespace pyRevitExtensionParser
                     foreach (var configExt in configExtensions)
                     {
                         var configPostfix = $"config{configExt}";
-                        configScriptPath = allDirFiles.FirstOrDefault(f =>
+                        configScriptPath = bundleDirFiles.FirstOrDefault(f =>
                             Path.GetFileName(f).EndsWith(configPostfix, StringComparison.OrdinalIgnoreCase));
                         if (configScriptPath != null)
                             break;
@@ -1009,37 +1035,41 @@ namespace pyRevitExtensionParser
                 if (configScriptPath == null)
                     configScriptPath = scriptPath;
 
+                var bundleFile = Path.Combine(dir, "bundle.yaml");
+                ParsedBundle bundleInComponent = null;
+                if (FileExists(bundleFile))
+                {
+                    try
+                    {
+                        bundleInComponent = BundleParser.BundleYamlParser.Parse(bundleFile);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogParseException(bundleFile, ex);
+                    }
+                }
+
                 // Handle .content bundles - special logic for Revit family (.rfa) files
                 // Content bundles load RFA files, with scriptPath being the primary content
                 // and configScriptPath being the alternative content (CTRL+Click)
                 if (componentType == CommandComponentType.ContentButton)
                 {
-                    var bundleYaml = Path.Combine(dir, "bundle.yaml");
-                    ParsedBundle tempBundle = null;
-                    if (FileExists(bundleYaml))
-                    {
-                        try
-                        {
-                            tempBundle = BundleParser.BundleYamlParser.Parse(bundleYaml);
-                        }
-                        catch (Exception ex)
-                        {
-                            LogParseException(bundleYaml, ex);
-                        }
-                    }
-
                     // Try to get content from bundle.yaml metadata first
-                    if (tempBundle != null && !string.IsNullOrEmpty(tempBundle.Content))
+                    if (bundleInComponent != null && !string.IsNullOrEmpty(bundleInComponent.Content))
                     {
-                        scriptPath = ResolveContentPath(dir, tempBundle.Content);
+                        scriptPath = ResolveContentPath(dir, bundleInComponent.Content);
                     }
 
                     // If no content in metadata, use naming convention
                     if (scriptPath == null)
                     {
                         // Look for version-specific content first: content_{version}.rfa
-                        var versionedContent = GetFilesInDirectory(dir, "content_*.rfa", SearchOption.TopDirectoryOnly)
-                            .FirstOrDefault();
+                        var versionedContent = bundleDirFiles.FirstOrDefault(f =>
+                        {
+                            var name = Path.GetFileName(f);
+                            return name.StartsWith("content_", StringComparison.OrdinalIgnoreCase)
+                                && name.EndsWith(".rfa", StringComparison.OrdinalIgnoreCase);
+                        });
                         if (versionedContent != null)
                         {
                             scriptPath = versionedContent;
@@ -1055,8 +1085,8 @@ namespace pyRevitExtensionParser
                             else
                             {
                                 // Look for any .rfa file in the directory
-                                var anyRfa = GetFilesInDirectory(dir, "*.rfa", SearchOption.TopDirectoryOnly)
-                                    .FirstOrDefault();
+                                var anyRfa = bundleDirFiles.FirstOrDefault(f =>
+                                    f.EndsWith(".rfa", StringComparison.OrdinalIgnoreCase));
                                 if (anyRfa != null)
                                 {
                                     scriptPath = anyRfa;
@@ -1066,15 +1096,19 @@ namespace pyRevitExtensionParser
                     }
 
                     // Handle alternative content (CTRL+Click)
-                    if (tempBundle != null && !string.IsNullOrEmpty(tempBundle.ContentAlt))
+                    if (bundleInComponent != null && !string.IsNullOrEmpty(bundleInComponent.ContentAlt))
                     {
-                        configScriptPath = ResolveContentPath(dir, tempBundle.ContentAlt);
+                        configScriptPath = ResolveContentPath(dir, bundleInComponent.ContentAlt);
                     }
                     else
                     {
                         // Look for version-specific alternative content: other_{version}.rfa
-                        var versionedAltContent = GetFilesInDirectory(dir, "other_*.rfa", SearchOption.TopDirectoryOnly)
-                            .FirstOrDefault();
+                        var versionedAltContent = bundleDirFiles.FirstOrDefault(f =>
+                        {
+                            var name = Path.GetFileName(f);
+                            return name.StartsWith("other_", StringComparison.OrdinalIgnoreCase)
+                                && name.EndsWith(".rfa", StringComparison.OrdinalIgnoreCase);
+                        });
                         if (versionedAltContent != null)
                         {
                             configScriptPath = versionedAltContent;
@@ -1110,22 +1144,6 @@ namespace pyRevitExtensionParser
 
                 // Look for help file (help.* pattern) for file-based help
                 var helpFile = FindHelpFile(dir);
-
-                var bundleFile = Path.Combine(dir, "bundle.yaml");
-
-                // Then parse bundle and override with bundle values if they exist
-                ParsedBundle bundleInComponent = null;
-                if (FileExists(bundleFile))
-                {
-                    try
-                    {
-                        bundleInComponent = BundleParser.BundleYamlParser.Parse(bundleFile);
-                    }
-                    catch (Exception ex)
-                    {
-                        LogParseException(bundleFile, ex);
-                    }
-                }
 
                 // Merge templates: inherited templates + current bundle templates
                 // Current bundle templates override inherited ones
@@ -1216,41 +1234,16 @@ namespace pyRevitExtensionParser
                         author = bundleInComponent.Author;
                 }
 
-                // Merge localized values: bundle takes precedence over script
-                var finalLocalizedTitles = scriptLocalizedTitles ?? new Dictionary<string, string>();
-                var finalLocalizedTooltips = scriptLocalizedTooltips ?? new Dictionary<string, string>();
-                var finalLocalizedHelpUrls = scriptLocalizedHelpUrls ?? new Dictionary<string, string>();
-
-                // If bundle has localized values, they override script values
-                if (bundleInComponent?.Titles != null)
-                {
-                    foreach (var kvp in bundleInComponent.Titles)
-                    {
-                        finalLocalizedTitles[kvp.Key] = kvp.Value;
-                    }
-                }
-
-                if (bundleInComponent?.Tooltips != null)
-                {
-                    foreach (var kvp in bundleInComponent.Tooltips)
-                    {
-                        finalLocalizedTooltips[kvp.Key] = kvp.Value;
-                    }
-                }
-
-                if (bundleInComponent?.HelpUrls != null)
-                {
-                    foreach (var kvp in bundleInComponent.HelpUrls)
-                    {
-                        finalLocalizedHelpUrls[kvp.Key] = kvp.Value;
-                    }
-                }
+                var finalLocalizedTitles = MergeLocalized(scriptLocalizedTitles, bundleInComponent?.Titles);
+                var finalLocalizedTooltips = MergeLocalized(scriptLocalizedTooltips, bundleInComponent?.Tooltips);
+                var finalLocalizedHelpUrls = MergeLocalized(scriptLocalizedHelpUrls, bundleInComponent?.HelpUrls);
 
                 // Apply template substitution to string values
                 title = SubstituteTemplates(title, mergedTemplates);
                 doc = SubstituteTemplates(doc, mergedTemplates);
                 author = SubstituteTemplates(author, mergedTemplates);
                 var hyperlink = SubstituteTemplates(bundleInComponent?.Hyperlink, mergedTemplates);
+                var bundleHelpUrl = SubstituteTemplates(bundleInComponent?.HelpUrl, mergedTemplates);
                 scriptHelpUrl = SubstituteTemplates(scriptHelpUrl, mergedTemplates);
 
                 // Apply template substitution to localized values
@@ -1288,8 +1281,8 @@ namespace pyRevitExtensionParser
                     : scriptHighlight;
 
                 // Determine final help URL: bundle helpurl takes precedence over script helpurl
-                string finalHelpUrl = !string.IsNullOrEmpty(bundleInComponent?.HelpUrl)
-                    ? bundleInComponent.HelpUrl
+                string finalHelpUrl = !string.IsNullOrEmpty(bundleHelpUrl)
+                    ? bundleHelpUrl
                     : scriptHelpUrl;
 
                 // Determine final help URL: bundle hyperlink takes precedence over script helpurl
@@ -1345,6 +1338,8 @@ namespace pyRevitExtensionParser
                     MaxRevitVersion = finalMaxRevitVersion,
                     IsBeta = finalIsBeta,
                     Collapsed = bundleInComponent?.Collapsed ?? false,
+                    InheritIcon = bundleInComponent?.InheritIcon ?? true,
+                    LargeIcon = bundleInComponent?.LargeIcon ?? false,
                     PanelBackground = bundleInComponent?.PanelBackground,
                     TitleBackground = bundleInComponent?.TitleBackground,
                     SlideoutBackground = bundleInComponent?.SlideoutBackground,
@@ -1353,9 +1348,9 @@ namespace pyRevitExtensionParser
                     CommandClass = bundleInComponent?.CommandClass,
                     AvailabilityClass = bundleInComponent?.AvailabilityClass,
                     Modules = bundleInComponent?.Modules ?? new List<string>(),
-                    LocalizedTitles = finalLocalizedTitles.Count > 0 ? finalLocalizedTitles : null,
-                    LocalizedTooltips = finalLocalizedTooltips.Count > 0 ? finalLocalizedTooltips : null,
-                    LocalizedHelpUrls = finalLocalizedHelpUrls.Count > 0 ? finalLocalizedHelpUrls : null,
+                    LocalizedTitles = (finalLocalizedTitles != null && finalLocalizedTitles.Count > 0) ? finalLocalizedTitles : null,
+                    LocalizedTooltips = (finalLocalizedTooltips != null && finalLocalizedTooltips.Count > 0) ? finalLocalizedTooltips : null,
+                    LocalizedHelpUrls = (finalLocalizedHelpUrls != null && finalLocalizedHelpUrls.Count > 0) ? finalLocalizedHelpUrls : null,
                     Directory = dir,
                     Engine = finalEngine,
                     Members = bundleInComponent?.Members ?? new List<ComboBoxMember>(),
@@ -1569,147 +1564,187 @@ namespace pyRevitExtensionParser
 
         private static PythonScriptConstants ReadPythonScriptConstants(string scriptPath)
         {
-            // Check cache first
+            if (!ReadScriptMetadataEnabled())
+                return new PythonScriptConstants();
+
             if (_pythonScriptCache.TryGetValue(scriptPath, out var cached))
                 return cached;
 
+            var result = ParseScriptConstants(scriptPath);
+            _pythonScriptCache[scriptPath] = result;
+            return result;
+        }
+
+        /// <summary>
+        /// Reads dunder metadata (__title__, __author__, __doc__, ...) directly from
+        /// a Python script and returns it as a bundle.yaml-shaped dictionary.
+        /// Bypasses both the read_script_metadata user setting and the per-path cache,
+        /// so migration / tooling callers always receive the script's raw declarations.
+        /// </summary>
+        public static IReadOnlyDictionary<string, object> ReadScriptMetadata(string scriptPath)
+        {
+            var yaml = new Dictionary<string, object>();
+            if (string.IsNullOrEmpty(scriptPath) || !File.Exists(scriptPath))
+                return yaml;
+
+            var c = ParseScriptConstants(scriptPath);
+
+            if (c.LocalizedTitles != null && c.LocalizedTitles.Count > 0)
+                yaml["title"] = c.LocalizedTitles;
+            else if (!string.IsNullOrEmpty(c.Title))
+                yaml["title"] = c.Title;
+
+            if (!string.IsNullOrEmpty(c.Author))
+                yaml["author"] = c.Author;
+
+            if (c.LocalizedTooltips != null && c.LocalizedTooltips.Count > 0)
+                yaml["tooltip"] = c.LocalizedTooltips;
+            else if (!string.IsNullOrEmpty(c.Doc))
+                yaml["tooltip"] = c.Doc;
+
+            if (c.LocalizedHelpUrls != null && c.LocalizedHelpUrls.Count > 0)
+                yaml["help_url"] = c.LocalizedHelpUrls;
+            else if (!string.IsNullOrEmpty(c.HelpUrl))
+                yaml["help_url"] = c.HelpUrl;
+
+            if (c.ContextItems != null && c.ContextItems.Count > 0)
+            {
+                yaml["context"] = c.ContextItems;
+            }
+            else if (!string.IsNullOrEmpty(c.Context))
+            {
+                // Strip the parser's surrounding "(...)" so the yaml value matches the
+                // shape humans write (a bare string like "zero-doc" or "selection").
+                var ctx = c.Context.Trim();
+                if (ctx.Length >= 2 && ctx[0] == '(' && ctx[ctx.Length - 1] == ')')
+                    ctx = ctx.Substring(1, ctx.Length - 2);
+                yaml["context"] = ctx;
+            }
+
+            if (!string.IsNullOrEmpty(c.Highlight))
+                yaml["highlight"] = c.Highlight;
+            if (!string.IsNullOrEmpty(c.MinRevitVersion))
+                yaml["min_revit_version"] = c.MinRevitVersion;
+            if (!string.IsNullOrEmpty(c.MaxRevitVersion))
+                yaml["max_revit_version"] = c.MaxRevitVersion;
+            if (c.IsBeta)
+                yaml["is_beta"] = true;
+
+            var engine = new Dictionary<string, object>();
+            if (c.CleanEngine) engine["clean"] = true;
+            if (c.FullFrameEngine) engine["full_frame"] = true;
+            if (c.PersistentEngine) engine["persistent"] = true;
+            if (engine.Count > 0)
+                yaml["engine"] = engine;
+
+            return yaml;
+        }
+
+        private static PythonScriptConstants ParseScriptConstants(string scriptPath)
+        {
             var result = new PythonScriptConstants();
 
             try
             {
-                // Read all lines to handle multiline strings properly
-                var allLines = File.ReadAllLines(scriptPath);
-                var lineIndex = 0;
-
-                foreach (var line in allLines)
+                // Stream lines lazily (File.ReadLines) instead of eager File.ReadAllLines.
+                // This keeps peak memory bounded and lets ExtractPythonMultilineString
+                // consume continuation lines straight from the enumerator instead of
+                // allocating a fresh List<string> per multi-line dunder.
+                using (var enumerator = File.ReadLines(scriptPath).GetEnumerator())
                 {
-                    var trimmedLine = line.TrimStart();
-
-                    if (trimmedLine.StartsWith("__title__"))
+                    while (enumerator.MoveNext())
                     {
-                        // Check if it's a dictionary
-                        var dictValue = ExtractPythonDictionary(trimmedLine);
-                        if (dictValue != null)
+                        var trimmedLine = enumerator.Current.TrimStart();
+
+                        if (trimmedLine.StartsWith("__title__"))
                         {
-                            result.LocalizedTitles = LocaleSupport.NormalizeLocaleDict(dictValue);
-                            // Get default locale value for backward compatibility
-                            result.Title = GetLocalizedValue(result.LocalizedTitles);
-                        }
-                        else
-                        {
-                            // Check if it's a multiline triple-quoted string
-                            if (trimmedLine.Contains("\"\"\""))
+                            var dictValue = ExtractPythonDictionary(trimmedLine);
+                            if (dictValue != null)
                             {
-                                var remainingLines = allLines.Skip(lineIndex + 1).ToList();
-                                result.Title = ExtractPythonMultilineString(trimmedLine, remainingLines);
+                                result.LocalizedTitles = LocaleSupport.NormalizeLocaleDict(dictValue);
+                                result.Title = GetLocalizedValue(result.LocalizedTitles);
+                            }
+                            else if (trimmedLine.Contains("\"\"\""))
+                            {
+                                result.Title = ExtractPythonMultilineString(trimmedLine, enumerator);
                             }
                             else
                             {
                                 result.Title = ExtractPythonConstantValue(trimmedLine);
                             }
                         }
-                    }
-                    else if (trimmedLine.StartsWith("__authors__"))
-                    {
-                        // __authors__ is a list, join with newline like Python does
-                        var listValue = ExtractPythonList(trimmedLine);
-                        if (listValue != null && listValue.Count > 0)
+                        else if (trimmedLine.StartsWith("__authors__"))
                         {
-                            result.Author = string.Join("\n", listValue);
+                            // __authors__ is a list, join with newline like Python does
+                            var listValue = ExtractPythonList(trimmedLine);
+                            if (listValue != null && listValue.Count > 0)
+                                result.Author = string.Join("\n", listValue);
                         }
-                    }
-                    else if (trimmedLine.StartsWith("__author__"))
-                    {
-                        // Only use __author__ if __authors__ wasn't found
-                        if (string.IsNullOrEmpty(result.Author))
+                        else if (trimmedLine.StartsWith("__author__"))
                         {
-                            result.Author = ExtractPythonConstantValue(trimmedLine);
+                            // Only use __author__ if __authors__ wasn't found
+                            if (string.IsNullOrEmpty(result.Author))
+                                result.Author = ExtractPythonConstantValue(trimmedLine);
                         }
-                    }
-                    else if (trimmedLine.StartsWith("__doc__"))
-                    {
-                        // Check if it's a dictionary for multi-language tooltip
-                        var dictValue = ExtractPythonDictionary(trimmedLine);
-                        if (dictValue != null)
+                        else if (trimmedLine.StartsWith("__doc__"))
                         {
-                            result.LocalizedTooltips = LocaleSupport.NormalizeLocaleDict(dictValue);
-                            // Get default locale value for backward compatibility
-                            result.Doc = GetLocalizedValue(result.LocalizedTooltips);
-                        }
-                        else
-                        {
-                            // Check if it's a multiline triple-quoted string
-                            if (trimmedLine.Contains("\"\"\""))
+                            var dictValue = ExtractPythonDictionary(trimmedLine);
+                            if (dictValue != null)
                             {
-                                var remainingLines = allLines.Skip(lineIndex + 1).ToList();
-                                result.Doc = ExtractPythonMultilineString(trimmedLine, remainingLines);
+                                result.LocalizedTooltips = LocaleSupport.NormalizeLocaleDict(dictValue);
+                                result.Doc = GetLocalizedValue(result.LocalizedTooltips);
+                            }
+                            else if (trimmedLine.Contains("\"\"\""))
+                            {
+                                result.Doc = ExtractPythonMultilineString(trimmedLine, enumerator);
                             }
                             else
                             {
                                 result.Doc = ExtractPythonConstantValue(trimmedLine);
                             }
                         }
-                    }
-                    else if (trimmedLine.StartsWith("__helpurl__"))
-                    {
-                        // Check if it's a dictionary for multi-language help URL
-                        var dictValue = ExtractPythonDictionary(trimmedLine);
-                        if (dictValue != null)
+                        else if (trimmedLine.StartsWith("__helpurl__"))
                         {
-                            result.LocalizedHelpUrls = LocaleSupport.NormalizeLocaleDict(dictValue);
-                            // Get default locale value for backward compatibility
-                            result.HelpUrl = GetLocalizedValue(result.LocalizedHelpUrls);
+                            var dictValue = ExtractPythonDictionary(trimmedLine);
+                            if (dictValue != null)
+                            {
+                                result.LocalizedHelpUrls = LocaleSupport.NormalizeLocaleDict(dictValue);
+                                result.HelpUrl = GetLocalizedValue(result.LocalizedHelpUrls);
+                            }
+                            else
+                            {
+                                result.HelpUrl = ExtractPythonConstantValue(trimmedLine);
+                            }
                         }
-                        else
+                        else if (trimmedLine.StartsWith("__context__"))
                         {
-                            result.HelpUrl = ExtractPythonConstantValue(trimmedLine);
+                            var listValue = ExtractPythonList(trimmedLine);
+                            if (listValue != null && listValue.Count > 0)
+                            {
+                                result.ContextItems = listValue;
+                                // Format as context string (ALL must match)
+                                result.Context = "(" + string.Join("&", listValue) + ")";
+                            }
+                            else
+                            {
+                                result.Context = NormalizeContextString(ExtractPythonConstantValue(trimmedLine));
+                            }
                         }
+                        else if (trimmedLine.StartsWith("__highlight__"))
+                            result.Highlight = ExtractPythonConstantValue(trimmedLine);
+                        else if (trimmedLine.StartsWith("__min_revit_ver__"))
+                            result.MinRevitVersion = ExtractPythonValue(trimmedLine);
+                        else if (trimmedLine.StartsWith("__max_revit_ver__"))
+                            result.MaxRevitVersion = ExtractPythonValue(trimmedLine);
+                        else if (trimmedLine.StartsWith("__beta__"))
+                            result.IsBeta = ExtractPythonBoolValue(trimmedLine);
+                        else if (trimmedLine.StartsWith("__cleanengine__"))
+                            result.CleanEngine = ExtractPythonBoolValue(trimmedLine);
+                        else if (trimmedLine.StartsWith("__fullframeengine__"))
+                            result.FullFrameEngine = ExtractPythonBoolValue(trimmedLine);
+                        else if (trimmedLine.StartsWith("__persistentengine__"))
+                            result.PersistentEngine = ExtractPythonBoolValue(trimmedLine);
                     }
-                    else if (trimmedLine.StartsWith("__context__"))
-                    {
-                        // Check if it's a list
-                        var listValue = ExtractPythonList(trimmedLine);
-                        if (listValue != null && listValue.Count > 0)
-                        {
-                            result.ContextItems = listValue;
-                            // Format as context string (ALL must match)
-                            result.Context = "(" + string.Join("&", listValue) + ")";
-                        }
-                        else
-                        {
-                            result.Context = NormalizeContextString(ExtractPythonConstantValue(trimmedLine));
-                        }
-                    }
-                    else if (trimmedLine.StartsWith("__highlight__"))
-                    {
-                        result.Highlight = ExtractPythonConstantValue(trimmedLine);
-                    }
-                    else if (trimmedLine.StartsWith("__min_revit_ver__"))
-                    {
-                        result.MinRevitVersion = ExtractPythonValue(trimmedLine);
-                    }
-                    else if (trimmedLine.StartsWith("__max_revit_ver__"))
-                    {
-                        result.MaxRevitVersion = ExtractPythonValue(trimmedLine);
-                    }
-                    else if (trimmedLine.StartsWith("__beta__"))
-                    {
-                        result.IsBeta = ExtractPythonBoolValue(trimmedLine);
-                    }
-                    else if (trimmedLine.StartsWith("__cleanengine__"))
-                    {
-                        result.CleanEngine = ExtractPythonBoolValue(trimmedLine);
-                    }
-                    else if (trimmedLine.StartsWith("__fullframeengine__"))
-                    {
-                        result.FullFrameEngine = ExtractPythonBoolValue(trimmedLine);
-                    }
-                    else if (trimmedLine.StartsWith("__persistentengine__"))
-                    {
-                        result.PersistentEngine = ExtractPythonBoolValue(trimmedLine);
-                    }
-
-                    lineIndex++;
                 }
             }
             catch (Exception ex)
@@ -1717,7 +1752,6 @@ namespace pyRevitExtensionParser
                 LogParseException(scriptPath, ex);
             }
 
-            _pythonScriptCache[scriptPath] = result;
             return result;
         }
 
@@ -1793,12 +1827,12 @@ namespace pyRevitExtensionParser
         }
 
         /// <summary>
-        /// Extracts a multiline Python string literal (triple-quoted) from the remaining lines.
+        /// Extracts a multiline Python string literal (triple-quoted) starting at firstLine,
+        /// consuming additional lines from the enumerator until the closing triple quote.
         /// Handles docstrings and other multiline string content.
         /// </summary>
-        private static string ExtractPythonMultilineString(string firstLine, IEnumerable<string> remainingLines)
+        private static string ExtractPythonMultilineString(string firstLine, IEnumerator<string> enumerator)
         {
-            // Find the opening triple quote position in the first line
             var firstLineTrimmed = firstLine.TrimStart();
             int firstQuotePos = firstLineTrimmed.IndexOf("\"\"\"");
             if (firstQuotePos == -1)
@@ -1807,42 +1841,36 @@ namespace pyRevitExtensionParser
             int contentStart = firstQuotePos + 3;
             string partialContent = firstLineTrimmed.Substring(contentStart);
 
-            // Check if the closing quote is on the same line
+            // Closing quote on the same line — single-line triple-quoted literal.
             int closingQuotePos = partialContent.IndexOf("\"\"\"");
             if (closingQuotePos != -1)
-            {
-                // Single-line multiline string
                 return partialContent.Substring(0, closingQuotePos);
-            }
 
-            // Need to read more lines to find the closing triple quote
             var content = new StringBuilder();
             content.Append(partialContent);
             content.Append("\n");
 
-            foreach (var line in remainingLines)
+            while (enumerator.MoveNext())
             {
+                var line = enumerator.Current;
                 content.Append(line);
                 content.Append("\n");
 
-                // Check if this line contains the closing triple quote
                 if (line.Contains("\"\"\""))
                 {
-                    // Find the last occurrence of triple quotes in this line
                     var lastQuotePos = line.LastIndexOf("\"\"\"");
                     if (lastQuotePos > 0)
                     {
-                        // Remove the content after the closing triple quote (including the quote itself)
+                        // Strip the just-appended line + newline and replace with the
+                        // content up to (but not including) the closing triple quote.
                         var beforeClosing = line.Substring(0, lastQuotePos);
-                        // Remove the content we just added and replace with proper content
-                        content.Length -= line.Length + 1; // Remove the last line + newline
+                        content.Length -= line.Length + 1;
                         content.Append(beforeClosing);
                     }
                     break;
                 }
             }
 
-            // Process escape sequences in the collected content
             return ProcessPythonEscapeSequences(content.ToString());
         }
 

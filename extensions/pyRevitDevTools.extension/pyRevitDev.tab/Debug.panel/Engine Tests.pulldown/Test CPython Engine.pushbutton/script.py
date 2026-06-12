@@ -5,7 +5,6 @@ eval/exec, stdlib modules, and unicode support."""
 import sys
 import os
 
-__context__ = 'zero-doc'
 
 print('Python version: {}'.format(sys.version))
 print('\n## sys.path:')

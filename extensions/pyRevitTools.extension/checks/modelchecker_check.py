@@ -5,15 +5,19 @@ from pyrevit import coreutils
 from pyrevit import revit, DB
 from pyrevit.compat import get_elementid_value_func
 
-import sys
 import os
-# Add current directory to path for local imports
-_current_dir = os.path.dirname(os.path.abspath(__file__))
-if _current_dir not in sys.path:
-    sys.path.insert(0, _current_dir)
 
+from pyrevit.coreutils import applocales
 from pyrevit.preflight import PreflightTestCase
-from check_translations import DocstringMeta
+
+_XAML = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "locale", "Checks.xaml"
+)
+
+
+def _t(key):
+    return applocales.get_locale_string_from_xaml(_XAML, key)
+
 
 # webpage with explanations of bad practices in revit maybe it could be configurable in the future?
 WIKI_ARTICLE = "https://www.modelical.com/en/gdocs/revit-arc-best-practices/"
@@ -242,11 +246,13 @@ def dashboardCenterMaker(value):
     html_code = "<div class='dashboardCenter'>" + content + "</div>"
     print(coreutils.prepare_html_str(html_code))
 
+
 def dashboardLeftMaker(value):
     """dashboard HTMl maker - div for left aligning"""
     content = str(value)
     html_code = "<div class='dashboardLeft'>" + content + "</div>"
     print(coreutils.prepare_html_str(html_code))
+
 
 def path2fileName(file_path, divider):
     """returns file name - everything in path from "\\" or "/" to the end"""
@@ -267,9 +273,8 @@ def checkModel(doc, output):
     projectClient = project_info_collector.ClientName
     get_elementid_value = get_elementid_value_func()
     if len(name) == 0:
-        from check_translations import get_check_translation
         # name = "Not saved file"
-        printedName = get_check_translation("ModelCheckerNotSavedFile")
+        printedName = _t("ModelCheckerNotSavedFile")
     else:
         try:
             central_path = revit.query.get_central_path(doc)
@@ -287,8 +292,7 @@ def checkModel(doc, output):
             except:
                 # detached file
                 printedName = file_path
-    from check_translations import get_check_translation
-    output.print_md("# **{}**".format(get_check_translation("ModelCheckerTitle")))
+    output.print_md("# **{}**".format(_t("ModelCheckerTitle")))
     output.print_md("---")
 
     # first JS to avoid error in IE output window when at first run
@@ -314,13 +318,16 @@ def checkModel(doc, output):
         .WhereElementIsNotElementType()
         .ToElements()
     )
-    rvtlinkdocs = [i.GetLinkDocument() for i in DB.FilteredElementCollector(doc).OfClass(DB.RevitLinkInstance)]
+    rvtlinkdocs = [
+        i.GetLinkDocument()
+        for i in DB.FilteredElementCollector(doc).OfClass(DB.RevitLinkInstance)
+    ]
 
-    rvtlinkdocsName, rvtlink_instance_name =  [], []
+    rvtlinkdocsName, rvtlink_instance_name = [], []
     if len(rvtlinks_id_collector):
         for i in rvtlinks_id_collector:
-            rvtlinkdocsName.append(revit.query.get_name(i).split(' : ')[0])
-            rvtlink_instance_name.append(revit.query.get_name(i).split(' : ')[1])
+            rvtlinkdocsName.append(revit.query.get_name(i).split(" : ")[0])
+            rvtlink_instance_name.append(revit.query.get_name(i).split(" : ")[1])
 
         rvtlinksCount = len(rvtlinks_id_collector)
         # output.print_md(str(rvtlinksCount) +" Revit Links")
@@ -331,17 +338,17 @@ def checkModel(doc, output):
         for x in rvtlinks_id_collector:
             rvtlinkspinnedCount.append(x.Pinned)
         for i in rvtlinkspinnedCount:
-            if i==True:
-                rvtlink_instance_pinned.append('Pinned')
+            if i == True:
+                rvtlink_instance_pinned.append("Pinned")
             else:
-                rvtlink_instance_pinned.append('UnPinned')
+                rvtlink_instance_pinned.append("UnPinned")
         rvtlinkspinnedCountTrue = sum(rvtlinkspinnedCount)
         # print(str(rvtlinkspinnedCountTrue) +" Revit Links pinned")
     else:
         pass
 
     ### View collectors
-    
+
     # views
     views_id_collector = (
         DB.FilteredElementCollector(doc)
@@ -363,7 +370,6 @@ def checkModel(doc, output):
                 or viewNameString[-7:-2] == "Copie"
                 or viewNameString[-5:] == "Copie"
                 or viewNameString[-5:] == "Coupe"
-
             ):
                 copiedView += 1
         except:
@@ -407,8 +413,7 @@ def checkModel(doc, output):
     for v in viewTemplates:
         if v.Id not in appliedTemplates:
             unusedViewTemplates.append(v.Name)
-    unusedViewTemplatesCount = (len(unusedViewTemplates))
-
+    unusedViewTemplatesCount = len(unusedViewTemplates)
 
     # schedules
     schedules_id_collector = (
@@ -420,7 +425,7 @@ def checkModel(doc, output):
     scheduleCount = 0
     ### scheduleNames = []
     for schedule in schedules_id_collector:
-        if not(schedule.IsTitleblockRevisionSchedule):
+        if not (schedule.IsTitleblockRevisionSchedule):
             scheduleCount += 1
     ###        scheduleNames.append((schedule.Name))
     ### output.print_md("<br />".join(scheduleNames))
@@ -441,9 +446,11 @@ def checkModel(doc, output):
     # it is something with schedules on more sheets maybe...
     for schedule in scheduleCollector:
         schedName = schedule.Name
-        if (schedName[:19] != "<Revision Schedule>"            
+        if (
+            schedName[:19] != "<Revision Schedule>"
             # to support french files
-            or schedName[:28] != "<Nomenclature des révisions>"):
+            or schedName[:28] != "<Nomenclature des révisions>"
+        ):
             if schedName not in schedulesOnSheet:
                 if get_elementid_value(schedule.OwnerViewId) != -1:
                     # print schedName
@@ -453,9 +460,11 @@ def checkModel(doc, output):
     # there is need to iterate class and category filter to get all schedule - UnionWith didn't work
     for schedule in ScheduleCollectorInstances:
         schedName = schedule.Name
-        if (schedName[:19] != "<Revision Schedule>"            
+        if (
+            schedName[:19] != "<Revision Schedule>"
             # to support french files
-            or schedName[:28] != "<Nomenclature des révisions>"):
+            or schedName[:28] != "<Nomenclature des révisions>"
+        ):
             if schedName not in schedulesOnSheet:
                 if get_elementid_value(schedule.OwnerViewId) != -1:
                     # print schedName
@@ -520,7 +529,6 @@ def checkModel(doc, output):
     dwgCount = len(dwg_collector)
     linkedDwg = dwgCount - importedDwg
 
-
     # families
     graphFCatHeadings = []
     graphFCatData = []
@@ -541,9 +549,7 @@ def checkModel(doc, output):
 
     # Text notes width factor != 1
     textNoteType_collector = (
-        DB.FilteredElementCollector(doc)
-        .OfClass(DB.TextNoteType)
-        .ToElements()
+        DB.FilteredElementCollector(doc).OfClass(DB.TextNoteType).ToElements()
     )
     textnoteWFcount = 0
     for textnote in textNoteType_collector:
@@ -583,12 +589,14 @@ def checkModel(doc, output):
     activated_analytical_model_elements_count = 0
 
     param = DB.BuiltInParameter.STRUCTURAL_ANALYTICAL_MODEL
-    provider = DB.ParameterValueProvider( DB.ElementId( param ) )
+    provider = DB.ParameterValueProvider(DB.ElementId(param))
     evaluator = DB.FilterNumericEquals()
-    rule = DB.FilterIntegerRule( provider, evaluator, 1 )
-    filter = DB.ElementParameterFilter( rule )
+    rule = DB.FilterIntegerRule(provider, evaluator, 1)
+    filter = DB.ElementParameterFilter(rule)
 
-    analyticalCollector = DB.FilteredElementCollector( doc ).WherePasses( filter ).ToElements()
+    analyticalCollector = (
+        DB.FilteredElementCollector(doc).WherePasses(filter).ToElements()
+    )
 
     activated_analytical_model_elements_count = str(len(analyticalCollector))
 
@@ -610,7 +618,7 @@ def checkModel(doc, output):
     modelGroup = (
         DB.FilteredElementCollector(doc)
         .OfCategory(DB.BuiltInCategory.OST_IOSModelGroups)
-        .WhereElementIsNotElementType()   
+        .WhereElementIsNotElementType()
     )
     modelGroupCount = 0
     for element in modelGroup:
@@ -626,14 +634,14 @@ def checkModel(doc, output):
 
     # reference plane without name
     refPlaneCollector = (
-        DB.FilteredElementCollector(doc)
-        .OfClass(DB.ReferencePlane)
-        .ToElements()
+        DB.FilteredElementCollector(doc).OfClass(DB.ReferencePlane).ToElements()
     )
     RefPCount = len(refPlaneCollector)
     noNameRefPCount = 0
     for refPlane in refPlaneCollector:
-        if (refPlane.Name == "Reference Plane" or refPlane.Name == "Plan de référence"): # for french compatibility
+        if (
+            refPlane.Name == "Reference Plane" or refPlane.Name == "Plan de référence"
+        ):  # for french compatibility
             noNameRefPCount += 1
 
     # Element Count
@@ -648,18 +656,19 @@ def checkModel(doc, output):
             return [x for inner in lst for x in inner_lists(inner)]
         else:
             return [lst]
-    #Get list of phases in Doc and RVT Links
-    #Get current document
+
+    # Get list of phases in Doc and RVT Links
+    # Get current document
     linkdocPhasesName = []
 
-    def DocPhases(doc, links = []):
-        #Get document phases
+    def DocPhases(doc, links=[]):
+        # Get document phases
         docPhases = doc.Phases
-        #Get document phases names
+        # Get document phases names
         docPhasesName = []
         for i in docPhases:
             docPhasesName.append(i.Name)
-        #Get links phases
+        # Get links phases
         for x in links:
             linkdocPhases = []
             try:
@@ -667,23 +676,23 @@ def checkModel(doc, output):
                     linkdocPhases.append(y.Name)
                 linkdocPhasesName.append(linkdocPhases)
             except:
-                linkdocPhasesName.append(['Link Unloaded'])
+                linkdocPhasesName.append(["Link Unloaded"])
         return docPhasesName, linkdocPhasesName
 
-    #Call for phases definition
-    phase = inner_lists(DocPhases(doc,rvtlinkdocs))
+    # Call for phases definition
+    phase = inner_lists(DocPhases(doc, rvtlinkdocs))
 
     ### tresholds ###
     # RVT links
     rvtlinksTres = 100
-    rvtlinksPinnedTres =  -1 # The logic for threshold sometimes needs to be reverted
+    rvtlinksPinnedTres = -1  # The logic for threshold sometimes needs to be reverted
 
     if not len(rvtlinks_id_collector):
         pass
     else:
-        if rvtlinksCount == rvtlinkspinnedCountTrue :
+        if rvtlinksCount == rvtlinkspinnedCountTrue:
             rvtlinksPinnedTres = rvtlinksCount
-        else :
+        else:
             pass
     # Views
     viewTres = 500
@@ -716,11 +725,11 @@ def checkModel(doc, output):
     else:
         inPlaceFamilyTres = familiesTres * 0.2
         genericModelTres = familiesTres * 0.2
-    notParamFamiliesTres = familyCount * 0.3 
-    #TextNotes
+    notParamFamiliesTres = familyCount * 0.3
+    # TextNotes
     textnoteWFtres = 0
     textnoteCaps = 0
-     # Ramps
+    # Ramps
     rampTres = 0
     # Architectural columns
     archTres = 0
@@ -737,55 +746,71 @@ def checkModel(doc, output):
     # Elements count
     elementsTres = 1000000
 
-
     ### Dashaboard starts here ###
 
     ## RVT file dashboard section
-    from check_translations import get_check_translation
-    output.print_md("# {}<br />".format(get_check_translation("ModelCheckerRVTFile")))
-    projectInfo = "Current file name: "+ printedName + "<br />Project Name: " + projectName + "<br />Project Number: " + str(projectNumber) + "<br />Client Name: " + projectClient
+    output.print_md("# {}<br />".format(_t("ModelCheckerRVTFile")))
+    projectInfo = (
+        "Current file name: "
+        + printedName
+        + "<br />Project Name: "
+        + projectName
+        + "<br />Project Number: "
+        + str(projectNumber)
+        + "<br />Client Name: "
+        + projectClient
+    )
     output.print_md(projectInfo)
 
     ## RVT Links dashboard section
     # print RVT links names
     output.print_md("---")
-    output.print_md("# {}".format(get_check_translation("ModelCheckerRVTLinks")))
+    output.print_md("# {}".format(_t("ModelCheckerRVTLinks")))
     if not len(rvtlinks_id_collector):
-        output.print_md(get_check_translation("ModelCheckerNoLinks"))
+        output.print_md(_t("ModelCheckerNoLinks"))
     else:
         rvtlinkdocsNameFormated, rvtlink_instance_name_formated = [], []
         for i, j in zip(rvtlinkdocsName, rvtlink_instance_name):
             rvtlinkdocsNameFormated.append(i)
             rvtlink_instance_name_formated.append(j)
-        rvtlinks_data = zip(*[rvtlinkdocsNameFormated, rvtlink_instance_name_formated, rvtlink_instance_pinned])
+        rvtlinks_data = zip(
+            *[
+                rvtlinkdocsNameFormated,
+                rvtlink_instance_name_formated,
+                rvtlink_instance_pinned,
+            ]
+        )
 
-        output.print_table(rvtlinks_data, columns=[
-            get_check_translation("ModelCheckerInstanceFileName"),
-            get_check_translation("ModelCheckerInstanceName"),
-            get_check_translation("ModelCheckerPinnedStatus")
-        ], formats=None, title='', last_line_style='')
+        output.print_table(
+            rvtlinks_data,
+            columns=[
+                _t("ModelCheckerInstanceFileName"),
+                _t("ModelCheckerInstanceName"),
+                _t("ModelCheckerPinnedStatus"),
+            ],
+            formats=None,
+            title="",
+            last_line_style="",
+        )
         # Make row
-        htmlRowRVTlinks = (
-            dashboardRectMaker(rvtlinksCount, "RVTLinks", rvtlinksTres) + 
-            dashboardRectMaker(rvtlinkspinnedCountTrue, "RVTLinks<br>pinned", rvtlinksPinnedTres)
+        htmlRowRVTlinks = dashboardRectMaker(
+            rvtlinksCount, "RVTLinks", rvtlinksTres
+        ) + dashboardRectMaker(
+            rvtlinkspinnedCountTrue, "RVTLinks<br>pinned", rvtlinksPinnedTres
         )
         dashboardLeftMaker(htmlRowRVTlinks)
 
     output.print_md("---")
     ## Views dashboard section
     # print Views section header
-    output.print_md("# {}".format(get_check_translation("ModelCheckerViews")))
+    output.print_md("# {}".format(_t("ModelCheckerViews")))
 
     # Make row
     htmlRowViews = (
         dashboardRectMaker(viewCount, "Views", viewTres)
+        + dashboardRectMaker(copiedView, "Copied Views", copiedViewTres)
         + dashboardRectMaker(
-            copiedView, "Copied Views", copiedViewTres
-        )
-        + dashboardRectMaker(
-            viewsNotOnSheet,
-            "Views<br>not on Sheet",
-            viewNotOnSheetTres
+            viewsNotOnSheet, "Views<br>not on Sheet", viewNotOnSheetTres
         )
     )
     dashboardLeftMaker(htmlRowViews)
@@ -795,27 +820,22 @@ def checkModel(doc, output):
     output.print_md("# View Templates")
 
     # Make row
-    htmlRowViews = (
-        dashboardRectMaker(len(viewTemplates), "View Templates", viewTemplatesTres)
-        + dashboardRectMaker(unusedViewTemplatesCount, "Unused View Templates", unusedViewTemplateTres)
-
+    htmlRowViews = dashboardRectMaker(
+        len(viewTemplates), "View Templates", viewTemplatesTres
+    ) + dashboardRectMaker(
+        unusedViewTemplatesCount, "Unused View Templates", unusedViewTemplateTres
     )
     dashboardLeftMaker(htmlRowViews)
 
     ## Schedule dashboard section
     # print Schedules section header
-    output.print_md("# {}".format(get_check_translation("ModelCheckerSchedules")))
+    output.print_md("# {}".format(_t("ModelCheckerSchedules")))
 
     # Make row
-    htmlRowSchedules = (
-        dashboardRectMaker(
-            scheduleCount, "Schedules", scheduleTres
-        )
-        + dashboardRectMaker(
-            scheduleNotOnSheet,
-            "Schedules<br>not on Sheet",
-            schedulesNotOnSheetTres
-        )
+    htmlRowSchedules = dashboardRectMaker(
+        scheduleCount, "Schedules", scheduleTres
+    ) + dashboardRectMaker(
+        scheduleNotOnSheet, "Schedules<br>not on Sheet", schedulesNotOnSheetTres
     )
     dashboardLeftMaker(htmlRowSchedules)
 
@@ -824,25 +844,18 @@ def checkModel(doc, output):
     output.print_md("# Sheets")
 
     # Make row
-    htmlRowSheets = (
-        dashboardRectMaker(sheetCount, "Sheets", sheetsTres)
-    )
+    htmlRowSheets = dashboardRectMaker(sheetCount, "Sheets", sheetsTres)
     dashboardLeftMaker(htmlRowSheets)
 
     ## Warnings dashboard section
     # print Warnings section header
-    output.print_md("# {}".format(get_check_translation("ModelCheckerWarnings")))
+    output.print_md("# {}".format(_t("ModelCheckerWarnings")))
     # Make row
     if allWarningsCount != 0:
-        htmlRowWarnings = (
-            dashboardRectMaker(
-                allWarningsCount, "Warnings", warningsTres
-            )
-            + dashboardRectMaker(
-                criticalWarningCount,
-                "Critical <br>Warnings",
-                criticalWarningsTres
-            )
+        htmlRowWarnings = dashboardRectMaker(
+            allWarningsCount, "Warnings", warningsTres
+        ) + dashboardRectMaker(
+            criticalWarningCount, "Critical <br>Warnings", criticalWarningsTres
         )
         dashboardLeftMaker(htmlRowWarnings)
         # warnings count per type doughnut
@@ -853,54 +866,44 @@ def checkModel(doc, output):
             "fontSize": 25,
             "fontColor": "#000",
             "fontStyle": "bold",
-            "position": "left"
+            "position": "left",
         }
         chartWarnings.options.legend = {"position": "top", "fullWidth": False}
-        chartWarnings.data.labels = [x.encode('UTF-8') for x in warnDescriptionHeadings]
+        chartWarnings.data.labels = [x.encode("UTF-8") for x in warnDescriptionHeadings]
         set_w = chartWarnings.data.new_dataset("Not Standard")
         set_w.data = warnSet
         set_w.backgroundColor = COLORS
         chartWarnings.draw()
     else:
-        output.print_md(get_check_translation("ModelCheckerNoWarnings"))
+        output.print_md(_t("ModelCheckerNoWarnings"))
 
     ## Materials dashboard section
     # print Materials section header
-    output.print_md("# {}".format(get_check_translation("ModelCheckerMaterials")))
+    output.print_md("# {}".format(_t("ModelCheckerMaterials")))
 
     # Make row
-    htmlRowMaterials = (
-        dashboardRectMaker(
-            materialCount, "Materials", materialsTres
-        )
-    )
+    htmlRowMaterials = dashboardRectMaker(materialCount, "Materials", materialsTres)
     dashboardLeftMaker(htmlRowMaterials)
 
     ## Line patterns dashboard section
     # print Line patterns section header
-    output.print_md("# {}".format(get_check_translation("ModelCheckerLinePatterns")))
+    output.print_md("# {}".format(_t("ModelCheckerLinePatterns")))
 
     # Make row
-    htmlRowLinePatterns = (dashboardRectMaker(
-            linePatternCount, "Line Patterns", linePatternsTres
-        )
+    htmlRowLinePatterns = dashboardRectMaker(
+        linePatternCount, "Line Patterns", linePatternsTres
     )
     dashboardLeftMaker(htmlRowLinePatterns)
 
     ## DWGs dashboard section
     # print DWGs section header
-    output.print_md("# {}".format(get_check_translation("ModelCheckerDWGs")))
+    output.print_md("# {}".format(_t("ModelCheckerDWGs")))
 
     # Make row
-    htmlRowDWGs = (dashboardRectMaker(
-            importedDwg, "Imported DWGs", importedDwgTres
-        )
-        + dashboardRectMaker(
-            linkedDwg, "Linked DWGs", linkedDwgTres
-        )
-        + dashboardRectMaker(
-            dwgNotCurrentView, "DWGs in 3D", dwgNotCurrentViewTres
-        )
+    htmlRowDWGs = (
+        dashboardRectMaker(importedDwg, "Imported DWGs", importedDwgTres)
+        + dashboardRectMaker(linkedDwg, "Linked DWGs", linkedDwgTres)
+        + dashboardRectMaker(dwgNotCurrentView, "DWGs in 3D", dwgNotCurrentViewTres)
     )
     dashboardLeftMaker(htmlRowDWGs)
 
@@ -912,9 +915,7 @@ def checkModel(doc, output):
     graphCatHeadings = []
     graphCatData = []
     elements = (
-        DB.FilteredElementCollector(doc)
-        .WhereElementIsNotElementType()
-        .ToElements()
+        DB.FilteredElementCollector(doc).WhereElementIsNotElementType().ToElements()
     )
 
     catBanlist = [
@@ -962,7 +963,6 @@ def checkModel(doc, output):
     for i in graphCatHeadings:
         count = graphCatData.count(i)
         catSet.append(count)
-    
 
     graphCatHeadings = [x.encode("UTF8") for x in graphCatHeadings]
 
@@ -970,26 +970,19 @@ def checkModel(doc, output):
     htmlRowLoadableFamilies = (
         dashboardRectMaker(familyCount, "Families", familiesTres)
         + dashboardRectMaker(
-            inPlaceFamilyCount,
-            "In Place <br>Families",
-            inPlaceFamilyTres
+            inPlaceFamilyCount, "In Place <br>Families", inPlaceFamilyTres
         )
         + dashboardRectMaker(
-            NotParamFamiliesCount,
-            "Families <br>not parametric",
-            notParamFamiliesTres
+            NotParamFamiliesCount, "Families <br>not parametric", notParamFamiliesTres
         )
         + dashboardRectMaker(
-            generic_model_elements_count, 
-            "Generic models", 
-            genericModelTres    
+            generic_model_elements_count, "Generic models", genericModelTres
         )
     )
     dashboardLeftMaker(htmlRowLoadableFamilies)
 
-
     if inPlaceFamilyCount != 0:
-            # INPLACE CATEGORY GRAPH
+        # INPLACE CATEGORY GRAPH
         fCatSet = []
         # sorting results in chart legend
         graphFCatHeadings.sort()
@@ -1008,7 +1001,7 @@ def checkModel(doc, output):
             "fontSize": 25,
             "fontColor": "#000",
             "fontStyle": "bold",
-            "position": "left"
+            "position": "left",
         }
         chartFCategories.data.labels = graphFCatHeadings
         set_a = chartFCategories.data.new_dataset("Not Standard")
@@ -1032,105 +1025,74 @@ def checkModel(doc, output):
 
     ## Text Notes dashboard section
     # print Text Notes section header
-    output.print_md("# {}".format(get_check_translation("ModelCheckerTextNotes")))
+    output.print_md("# {}".format(_t("ModelCheckerTextNotes")))
 
     # Make row
-    htmlRowTextNotes = (dashboardRectMaker(
-            textnoteWFcount,
-            "Text - Width <br>Factor changed",
-            textnoteWFtres
-        )
-        + dashboardRectMaker(
-            capsCount, "Text - AllCaps", textnoteCaps
-        )
-    )
+    htmlRowTextNotes = dashboardRectMaker(
+        textnoteWFcount, "Text - Width <br>Factor changed", textnoteWFtres
+    ) + dashboardRectMaker(capsCount, "Text - AllCaps", textnoteCaps)
     dashboardLeftMaker(htmlRowTextNotes)
 
     ## System families dashboard section
     # print System families section header
-    output.print_md("# {}".format(get_check_translation("ModelCheckerSystemFamilies")))
+    output.print_md("# {}".format(_t("ModelCheckerSystemFamilies")))
 
     # Make row
-    htmlRowTextNotes = (dashboardRectMaker(
-            ramp_collector, "Ramps", rampTres)
+    htmlRowTextNotes = (
+        dashboardRectMaker(ramp_collector, "Ramps", rampTres)
+        + dashboardRectMaker(archColumn_collector, "Architecural <br>Columns", archTres)
         + dashboardRectMaker(
-            archColumn_collector,
-            "Architecural <br>Columns",
-            archTres
-        )
-        + dashboardRectMaker(
-            activated_analytical_model_elements_count, 
-            "elements with analytical model activated", 
-            activated_analytical_model_elements_count_tres   
+            activated_analytical_model_elements_count,
+            "elements with analytical model activated",
+            activated_analytical_model_elements_count_tres,
         )
     )
     dashboardLeftMaker(htmlRowTextNotes)
 
-
     ## Groups dashboard section
     # print Groups section header
-    output.print_md("# {}".format(get_check_translation("ModelCheckerGroups")))
+    output.print_md("# {}".format(_t("ModelCheckerGroups")))
     # Make row
-    htmlRowGroupsTypes = (
-        dashboardRectMaker(
-            detailGroupTypeCount,
-            "Detail Group <br>Types",
-            detailGroupTypeTres
-        )
-        + dashboardRectMaker(
-            modelGroupTypeCount,
-            "Model Group <br>Types",
-            modelGroupTypeTres
-        )
+    htmlRowGroupsTypes = dashboardRectMaker(
+        detailGroupTypeCount, "Detail Group <br>Types", detailGroupTypeTres
+    ) + dashboardRectMaker(
+        modelGroupTypeCount, "Model Group <br>Types", modelGroupTypeTres
     )
     dashboardLeftMaker(htmlRowGroupsTypes)
 
-    htmlRowGroups = (dashboardRectMaker(
-            detailGroupCount, "Detail Groups", detailGroupTres
-        )
-        + dashboardRectMaker(
-            modelGroupCount, "Model Groups", modelGroupTres
-        )
-    )
+    htmlRowGroups = dashboardRectMaker(
+        detailGroupCount, "Detail Groups", detailGroupTres
+    ) + dashboardRectMaker(modelGroupCount, "Model Groups", modelGroupTres)
     dashboardLeftMaker(htmlRowGroups)
 
     ## Reference Planes dashboard section
     # print Reference Planes section header
-    output.print_md("# {}".format(get_check_translation("ModelCheckerReferencePlanes")))
+    output.print_md("# {}".format(_t("ModelCheckerReferencePlanes")))
     # Make row
-    htmlRowRefPlanes = (
-        dashboardRectMaker(
-            noNameRefPCount,
-            "NoName <br>Reference Planes",
-            noNameRefPTres
-        )
-        + dashboardRectMaker(
-            RefPCount,
-            "Reference Planes",
-            RefPTres
-        )
-    )
+    htmlRowRefPlanes = dashboardRectMaker(
+        noNameRefPCount, "NoName <br>Reference Planes", noNameRefPTres
+    ) + dashboardRectMaker(RefPCount, "Reference Planes", RefPTres)
     dashboardLeftMaker(htmlRowRefPlanes)
 
     ## Phases dashboard section
     # print Phases section header
-    output.print_md("# {}\n".format(get_check_translation("ModelCheckerPhases")))
-    rvtlinkdocsName.insert(0,printedName)
-    filePhases = rvtlinkdocsName,[','.join(i) for i in phase]
-    output.print_table(zip(*filePhases), columns=[
-        get_check_translation("ModelCheckerInstanceFileName"),
-        get_check_translation("ModelCheckerPhases")
-    ], formats=None, title='', last_line_style='')
+    output.print_md("# {}\n".format(_t("ModelCheckerPhases")))
+    rvtlinkdocsName.insert(0, printedName)
+    filePhases = rvtlinkdocsName, [",".join(i) for i in phase]
+    output.print_table(
+        zip(*filePhases),
+        columns=[_t("ModelCheckerInstanceFileName"), _t("ModelCheckerPhases")],
+        formats=None,
+        title="",
+        last_line_style="",
+    )
 
     ## Elements count dashboard section
     # print Elements count section header
-    output.print_md("# {}".format(get_check_translation("ModelCheckerElementsCount")))
+    output.print_md("# {}".format(_t("ModelCheckerElementsCount")))
 
     # Make row
-    htmlRowElementsCount = (dashboardRectMaker(
-            elementCount, "Elements", elementsTres
-        )
-    )
+    htmlRowElementsCount = dashboardRectMaker(elementCount, "Elements", elementsTres)
     dashboardLeftMaker(htmlRowElementsCount)
 
     # divider
@@ -1173,9 +1135,7 @@ def checkModel(doc, output):
     graphWorksetsData = []
 
     elcollector = (
-        DB.FilteredElementCollector(doc)
-        .WhereElementIsNotElementType()
-        .ToElements()
+        DB.FilteredElementCollector(doc).WhereElementIsNotElementType().ToElements()
     )
     if doc.IsWorkshared:
         worksetTable = doc.GetWorksetTable()
@@ -1184,8 +1144,16 @@ def checkModel(doc, output):
             worksetKind = str(worksetTable.GetWorkset(worksetId).Kind)
             if worksetKind == "UserWorkset":
                 worksetName = worksetTable.GetWorkset(worksetId).Name
-                if hasattr(element, "Name") and hasattr(element, "Category") and hasattr(element.Category, "Name"):
-                    if element.Name not in ('DefaultLocation', '', None) or element.Category.Name not in ('', None):
+                if (
+                    hasattr(element, "Name")
+                    and hasattr(element, "Category")
+                    and hasattr(element.Category, "Name")
+                ):
+                    if element.Name not in (
+                        "DefaultLocation",
+                        "",
+                        None,
+                    ) or element.Category.Name not in ("", None):
                         # Removes the location objects from the list as well as empty elements or proxies
                         if worksetName not in worksetNames:
                             worksetNames.append(worksetName)
@@ -1227,23 +1195,18 @@ def checkModel(doc, output):
             chartWorksets.set_height(200)
             chartWorksets.draw()
 
-class ModelChecker(PreflightTestCase):
-    __metaclass__ = DocstringMeta
-    _docstring_key = "CheckDescription_ModelChecker"
-    
-    @property
-    def name(self):
-        from check_translations import get_check_translation
-        return get_check_translation("CheckName_ModelChecker")
-    
-    author = "David Vadkerti, Jean-Marc Couffin"
 
+class ModelChecker(PreflightTestCase):
+    name = _t("CheckName_ModelChecker")
+    author = "David Vadkerti, Jean-Marc Couffin"
 
     def startTest(self, doc, output):
         timer = coreutils.Timer()
         checkModel(doc, output)
         endtime = timer.get_time()
         endtime_hms = str(datetime.timedelta(seconds=endtime))
-        from check_translations import get_check_translation
-        endtime_hms_claim = "{} {}".format(get_check_translation("TransactionTook"), endtime_hms)
+        endtime_hms_claim = "{} {}".format(_t("TransactionTook"), endtime_hms)
         print(endtime_hms_claim)
+
+
+ModelChecker.__doc__ = _t("CheckDescription_ModelChecker")

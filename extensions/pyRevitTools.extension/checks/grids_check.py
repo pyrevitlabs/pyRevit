@@ -1,14 +1,16 @@
 # -*- coding: UTF-8 -*-
-import sys
 import os
-# Add current directory to path for local imports
-_current_dir = os.path.dirname(os.path.abspath(__file__))
-if _current_dir not in sys.path:
-    sys.path.insert(0, _current_dir)
 
-from pyrevit import script, revit, DB, DOCS
+from pyrevit import script, DB, DOCS
+from pyrevit.coreutils import applocales
 from pyrevit.preflight import PreflightTestCase
-from check_translations import DocstringMeta
+
+_XAML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "locale", "Checks.xaml")
+
+
+def _t(key):
+    return applocales.get_locale_string_from_xaml(_XAML, key)
+
 
 doc = DOCS.doc
 
@@ -64,40 +66,34 @@ def grids_scoped(document=doc):
 
 
 def checkModel(doc, output):
-    from check_translations import get_check_translation
     output = script.get_output()
     output.close_others()
-    output.print_md("# {}".format(get_check_translation("GridsDataLister")))
+    output.print_md("# {}".format(_t("GridsDataLister")))
     count = grids_count()
-    output.print_md("## {0}: {1}".format(get_check_translation("NumberOfGrids"), count))
-    names = grids_names() # [1,2,3,4]
-    types = grids_types() # [bubble, bubble, bubble, bubble]
-    pinned = grids_pinned() # [True, False, True, False]
-    scoper = grids_scoped() # [Name of scope, Name of scope, Name of scope, Name of scope]
-    output.print_table(
-        table_data=zip(names, types, pinned, scoper),
-        title=get_check_translation("Grids"),
-        columns=[
-            get_check_translation("Name"),
-            get_check_translation("Type"),
-            get_check_translation("Pinned"),
-            get_check_translation("ScopeBox")
-        ]
-    )
-
+    output.print_md("## {0}: {1}".format(_t("NumberOfGrids"), count))
+    names = grids_names()
+    types = grids_types()
+    pinned = grids_pinned()
+    scoper = grids_scoped()
+    if count > 0:
+        output.print_table(
+            table_data=zip(names, types, pinned, scoper),
+            title=_t("Grids"),
+            columns=[
+                _t("Name"),
+                _t("Type"),
+                _t("Pinned"),
+                _t("ScopeBox"),
+            ]
+        )
 
 
 class ModelChecker(PreflightTestCase):
-    __metaclass__ = DocstringMeta
-    _docstring_key = "CheckDescription_GridsDataLister"
-    
-    @property
-    def name(self):
-        from check_translations import get_check_translation
-        return get_check_translation("CheckName_GridsDataLister")
-    
+    name = _t("CheckName_GridsDataLister")
     author = "Jean-Marc Couffin"
-
 
     def startTest(self, doc, output):
         checkModel(doc, output)
+
+
+ModelChecker.__doc__ = _t("CheckDescription_GridsDataLister")

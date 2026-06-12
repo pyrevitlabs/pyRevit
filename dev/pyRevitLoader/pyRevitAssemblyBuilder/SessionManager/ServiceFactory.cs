@@ -127,16 +127,13 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <summary>
         /// Creates a ButtonBuilderFactory with all registered button builders.
         /// </summary>
-        /// <param name="uiApplication">The Revit UIApplication instance.</param>
         /// <param name="logger">The logger instance.</param>
         /// <param name="buttonPostProcessor">The button post-processor instance.</param>
         /// <param name="buildContext">Shared build context that carries the current per-build settings.</param>
+        /// <param name="smartButtonScriptInitializer">The shared SmartButton script initializer.</param>
         /// <returns>A new IButtonBuilderFactory instance.</returns>
-        public static IButtonBuilderFactory CreateButtonBuilderFactory(UIApplication uiApplication, ILogger logger, IButtonPostProcessor buttonPostProcessor, BuildContext buildContext)
+        public static IButtonBuilderFactory CreateButtonBuilderFactory(ILogger logger, IButtonPostProcessor buttonPostProcessor, BuildContext buildContext, SmartButtonScriptInitializer smartButtonScriptInitializer)
         {
-            // Create script initializers
-            var smartButtonScriptInitializer = new SmartButtonScriptInitializer(uiApplication, logger);
-
             // Create individual button builders
             var linkButtonBuilder = new LinkButtonBuilder(logger, buttonPostProcessor);
             var pushButtonBuilder = new PushButtonBuilder(logger, buttonPostProcessor, smartButtonScriptInitializer);
@@ -160,14 +157,13 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// <summary>
         /// Creates a StackBuilder instance.
         /// </summary>
-        /// <param name="uiApplication">The Revit UIApplication instance.</param>
         /// <param name="logger">The logger instance.</param>
         /// <param name="buttonPostProcessor">The button post-processor instance.</param>
         /// <param name="buildContext">Shared build context that carries the current per-build settings.</param>
+        /// <param name="smartButtonScriptInitializer">The shared SmartButton script initializer.</param>
         /// <returns>A new IStackBuilder instance.</returns>
-        public static IStackBuilder CreateStackBuilder(UIApplication uiApplication, ILogger logger, IButtonPostProcessor buttonPostProcessor, BuildContext buildContext)
+        public static IStackBuilder CreateStackBuilder(ILogger logger, IButtonPostProcessor buttonPostProcessor, BuildContext buildContext, SmartButtonScriptInitializer smartButtonScriptInitializer)
         {
-            var smartButtonScriptInitializer = new SmartButtonScriptInitializer(uiApplication, logger);
             var linkButtonBuilder = new LinkButtonBuilder(logger, buttonPostProcessor);
             var pulldownButtonBuilder = new PulldownButtonBuilder(buildContext, logger, buttonPostProcessor, linkButtonBuilder, smartButtonScriptInitializer);
             var splitButtonBuilder = new SplitButtonBuilder(buildContext, logger, buttonPostProcessor, linkButtonBuilder, smartButtonScriptInitializer);
@@ -270,8 +266,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
             var panelStyleManager = CreatePanelStyleManager(logger);
             var tabBuilder = CreateTabBuilder(uiApplication, logger);
             var panelBuilder = CreatePanelBuilder(uiApplication, logger, panelStyleManager);
-            var buttonBuilderFactory = CreateButtonBuilderFactory(uiApplication, logger, buttonPostProcessor, buildContext);
-            var stackBuilder = CreateStackBuilder(uiApplication, logger, buttonPostProcessor, buildContext);
+            var smartButtonScriptInitializer = new SmartButtonScriptInitializer(uiApplication, logger);
+            var buttonBuilderFactory = CreateButtonBuilderFactory(logger, buttonPostProcessor, buildContext, smartButtonScriptInitializer);
+            var stackBuilder = CreateStackBuilder(logger, buttonPostProcessor, buildContext, smartButtonScriptInitializer);
             var comboBoxBuilder = CreateComboBoxBuilder(uiApplication, logger, buttonPostProcessor);
 
             // Create ribbon scanner for UI cleanup

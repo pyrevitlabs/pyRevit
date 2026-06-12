@@ -1,0 +1,73 @@
+name: pyRevit Notify
+
+on:
+  workflow_call:
+    inputs:
+      head_sha:
+        required: true
+        type: string
+      build:
+        required: true
+        type: string
+        description: "wip or release"
+      build_version:
+        required: false
+        type: string
+      notify_url:
+        required: true
+        type: string
+
+jobs:
+  notify:
+    runs-on: windows-2025
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.head_sha }}
+
+      - name: Prepare Python 3.14
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: '3.14'
+          cache: 'pipenv'
+
+      - name: Prepare pipenv
+        run: |
+          pip install pipenv
+          pipenv sync --dev
+
+      - name: Validate notify URL (release)
+        if: inputs.build == 'release'
+        shell: bash
+        run: |
+          if [ -z "${{ inputs.notify_url }}" ]; then
+            echo "notify_url is empty; cannot notify issues" >&2
+            exit 1
+          fi
+
+      - name: Validate build version input (wip)
+        if: inputs.build == 'wip'
+        shell: bash
+        run: |
+          if [ -z "${{ inputs.build_version }}" ]; then
+            echo "build_version is empty for wip notify" >&2
+            exit 1
+          fi
+
+      - name: Align build version (wip)
+        if: inputs.build == 'wip'
+        shell: bash
+        run: |
+          printf '%s' "${{ inputs.build_version }}" > pyrevitlib/pyrevit/version
+
+      - name: Notify Issue Threads
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pipenv run pyrevit notify ${{ inputs.build }} ${{ inputs.notify_url }}

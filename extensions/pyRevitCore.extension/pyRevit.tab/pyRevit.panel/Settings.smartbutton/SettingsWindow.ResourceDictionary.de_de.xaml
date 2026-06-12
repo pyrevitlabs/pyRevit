@@ -57,6 +57,24 @@
     <system:String x:Key="CoreSettings.Development.Description">Verschiedene Optionen für die pyRevit-Entwicklung</system:String>
     <system:String x:Key="CoreSettings.Development.LoadBeta">Beta-Tools laden (Skripte mit __beta__ = True, Neuladen erforderlich)</system:String>
 
+    <system:String x:Key="CoreSettings.Loader">Lader</system:String>
+    <system:String x:Key="CoreSettings.Loader.Description">Konfigurieren Sie den Assembly-Lademechanismus von pyRevit. Der neue Loader ist eine C#-Implementierung, die die Roslyn-Build-Strategie verwendet</system:String>
+    <system:String x:Key="CoreSettings.Loader.NewLoader">Aktiviert den neuen pyRevit Loader (Beta) (Neustart von Revit erforderlich)</system:String>
+    <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata">Skript-Metadaten lesen (Neuladen erforderlich)</system:String>
+    <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata.Description">
+        Wenn diese Option aktiviert ist, liest pyRevit Skriptmetadaten (__title__, __author__, __doc__ usw.) aus Python-Skriptdateien.
+        Das Deaktivieren dieser Option kann die Startleistung verbessern, aber Befehle können Metadaten verlieren, die in Skripten definiert sind.
+        Bundle.yaml-Werte werden unabhängig von dieser Einstellung immer verwendet.
+    </system:String>
+    <system:String x:Key="CoreSettings.Loader.NewLoader.Changed">
+        Die Einstellung für den neuen Loader wurde geändert. Ein Neuladen von pyRevit ist
+        erforderlich, damit die Änderung wirksam wird. Möchten Sie jetzt neu laden?
+    </system:String>
+    <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata.Changed">
+        Die Einstellung zum Lesen von Skriptmetadaten wurde geändert. Ein Neuladen von
+        pyRevit ist erforderlich, damit die Änderung wirksam wird. Möchten Sie jetzt neu laden?
+    </system:String>
+
     <system:String x:Key="CoreSettings.CloseOtherConsoles">Andere geöffnete Konsolen schließen</system:String>
     <system:String x:Key="CoreSettings.CloseOtherConsoles.Description">
         Wenn aktiviert, schließt pyRevit andere Ausgabekonsolen, wenn ein neues Skript ausgeführt wird.

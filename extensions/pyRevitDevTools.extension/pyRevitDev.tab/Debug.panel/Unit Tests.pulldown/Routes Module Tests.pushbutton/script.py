@@ -7,7 +7,6 @@ import pyrevit.unittests as tests_pkg
 from pyrevit.unittests.runner import run_module_tests
 
 
-__context__ = 'zero-doc'
 
 
 TEST_MODULE_PREFIX = 'test_routes_'

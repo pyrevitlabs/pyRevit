@@ -7,7 +7,6 @@ from pyrevit import script
 from pyrevit import forms
 
 
-__author__ = 'Dan Mapes\n{{author}}'
 __contact__ = 'https://github.com/DMapes'
 
 

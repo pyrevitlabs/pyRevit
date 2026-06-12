@@ -4,7 +4,6 @@ from pyrevit import revit, DB
 from pyrevit import script
 
 # adapted from https://thebuildingcoder.typepad.com/blog/2012/06/create-section-view-parallel-to-wall.html
-__author__ = 'Source: Jeremy Tammik\nAdapted by: {{author}}'
 
 logger = script.get_logger()
 output = script.get_output()

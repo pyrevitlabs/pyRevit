@@ -1,0 +1,171 @@
+name: pyRevit WIP
+
+# Called from ci.yml after build — not workflow_run (GITHUB_TOKEN cannot post issue comments there).
+on:
+  workflow_call:
+    inputs:
+      head_sha:
+        required: true
+        type: string
+      ci_run_id:
+        required: true
+        type: string
+      build_version:
+        required: true
+        type: string
+      install_version:
+        required: true
+        type: string
+    outputs:
+      workflow_run_id:
+        description: Actions run id for this WIP workflow (artifacts and notify link)
+        value: ${{ jobs.sign-wip.outputs.workflow_run_id }}
+
+concurrency:
+  group: pyrevit-wip-${{ inputs.head_sha }}
+  cancel-in-progress: true
+
+jobs:
+  sign-wip:
+    runs-on: windows-2025
+    permissions:
+      contents: read
+      actions: write
+    environment: production
+    outputs:
+      workflow_run_id: ${{ steps.runmeta.outputs.run_id }}
+
+    steps:
+      - name: Record workflow run id
+        id: runmeta
+        shell: bash
+        run: echo "run_id=${{ github.run_id }}" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout Repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.head_sha }}
+
+      - name: Download unsigned bin artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: unsigned-bin-${{ inputs.head_sha }}
+          run-id: ${{ inputs.ci_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: bin/
+
+      - name: Download stamped release metadata
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: stamped-release-metadata-${{ inputs.head_sha }}
+          run-id: ${{ inputs.ci_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: .
+
+      - name: Prepare Python 3.14
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: '3.14'
+          cache: 'pipenv'
+
+      - name: Prepare pipenv
+        run: |
+          pip install pipenv
+          pipenv sync --dev
+
+      - name: Prepare msbuild
+        uses: microsoft/setup-msbuild@30375c66a4eea26614e0d39710365f22f8b0af57 # v3
+
+      - name: Sign binaries
+        uses: Azure/artifact-signing-action@c7ab2a863ab5f9a846ddb8265964877ef296ee82 # v2.0.0
+        with:
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          endpoint: ${{ secrets.AZURE_ENDPOINT }}
+          signing-account-name: ${{ secrets.AZURE_CODE_SIGNING_NAME }}
+          certificate-profile-name: ${{ secrets.AZURE_CERT_PROFILE_NAME }}
+          files-folder: bin/
+          files-folder-filter: pyrevit*.exe,pyRevit*.dll
+          files-folder-recurse: false
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+
+      - name: Build Installers
+        run: pipenv run pyrevit build installers
+
+      - name: Sign installers
+        uses: Azure/artifact-signing-action@c7ab2a863ab5f9a846ddb8265964877ef296ee82 # v2.0.0
+        with:
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          endpoint: ${{ secrets.AZURE_ENDPOINT }}
+          signing-account-name: ${{ secrets.AZURE_CODE_SIGNING_NAME }}
+          certificate-profile-name: ${{ secrets.AZURE_CERT_PROFILE_NAME }}
+          files-folder: dist/
+          files-folder-filter: pyRevit*.exe,pyRevit*.msi,pyrevit*.exe
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+
+      - name: Build Choco Package
+        run: pipenv run pyrevit build choco
+
+      - name: Sign Choco Package
+        shell: pwsh
+        env:
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          TS_ACCOUNT: ${{ secrets.AZURE_CODE_SIGNING_NAME }}
+          TS_PROFILE: ${{ secrets.AZURE_CERT_PROFILE_NAME }}
+          TS_ENDPOINT: ${{ secrets.AZURE_ENDPOINT }}
+        run: |
+          dotnet tool install --global sign --prerelease
+          & "$env:USERPROFILE\.dotnet\tools\sign.exe" code trusted-signing `
+            dist\pyrevit-cli.*.nupkg `
+            --trusted-signing-account "$env:TS_ACCOUNT" `
+            --trusted-signing-certificate-profile "$env:TS_PROFILE" `
+            --trusted-signing-endpoint "$env:TS_ENDPOINT" `
+            --file-digest SHA256 `
+            --timestamp-url http://timestamp.acs.microsoft.com `
+            --timestamp-digest SHA256
+
+      - name: Upload signed WIP artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: pyrevit-wip-installers-${{ inputs.install_version }}
+          path: |
+            dist/**
+            !dist/**/*.wixpdb
+
+      - name: Delete temporary CI artifacts
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $headers = @{
+            Authorization = "Bearer $env:GITHUB_TOKEN"
+            Accept = "application/vnd.github+json"
+            "X-GitHub-Api-Version" = "2022-11-28"
+          }
+          $artifactNames = @(
+            "unsigned-bin-${{ inputs.head_sha }}",
+            "stamped-release-metadata-${{ inputs.head_sha }}"
+          )
+          $listUrl = "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ inputs.ci_run_id }}/artifacts?per_page=100"
+          $artifacts = (Invoke-RestMethod -Method Get -Uri $listUrl -Headers $headers).artifacts
+          foreach ($artifactName in $artifactNames) {
+            $artifact = $artifacts | Where-Object { $_.name -eq $artifactName } | Select-Object -First 1
+            if (-not $artifact) {
+              Write-Host "No artifact named '$artifactName' found on run ${{ inputs.ci_run_id }}."
+              continue
+            }
+            $deleteUrl = "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/$($artifact.id)"
+            Invoke-RestMethod -Method Delete -Uri $deleteUrl -Headers $headers | Out-Null
+            Write-Host "Deleted artifact '$artifactName' (id=$($artifact.id))."
+          }

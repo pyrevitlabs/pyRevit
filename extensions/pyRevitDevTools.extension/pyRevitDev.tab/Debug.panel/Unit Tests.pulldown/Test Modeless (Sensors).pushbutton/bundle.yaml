@@ -1,0 +1,4 @@
+author: '{{author}}'
+context: zero-doc
+engine:
+  persistent: true

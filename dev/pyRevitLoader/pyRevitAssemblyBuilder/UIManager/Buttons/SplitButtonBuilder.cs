@@ -79,7 +79,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 if (splitBtn != null)
                 {
                     // Apply post-processing to split button
-                    ButtonPostProcessor.Process(splitBtn, component);
+                    ButtonPostProcessor.Process(splitBtn, component, null, IconMode.LargeAndSmall);
 
                     // Add children
                     AddChildrenToSplitButton(splitBtn, component, assemblyInfo, visibleChildren);
@@ -130,7 +130,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 splitBtn.ItemText = splitButtonText;
 
                 // Re-apply post-processing (icon, tooltip, etc.)
-                ButtonPostProcessor.Process(splitBtn, component);
+                ButtonPostProcessor.Process(splitBtn, component, null, IconMode.LargeAndSmall);
 
                 splitBtn.Enabled = true;
                 splitBtn.Visible = true;
@@ -235,7 +235,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
             }
 
             Logger.Debug($"Split button '{component.DisplayName}' has {childCount} children added.");
-            
+
             // Set the first child button as the current button to activate the split button
             // Without a current button set, the split button appears inactive/grayed out
             if (firstButton != null)
@@ -285,7 +285,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                     var subBtn = splitBtn.AddPushButton(pushButtonData);
                     if (subBtn != null)
                     {
-                        ButtonPostProcessor.Process(subBtn, sub, component);
+                        ButtonPostProcessor.Process(subBtn, sub, component, GetCompactIconMode(sub));
 
                         // Execute __selfinit__ for SmartButton in split button
                         if (_smartButtonScriptInitializer != null)
@@ -322,7 +322,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                     var subBtn = splitBtn.AddPushButton(pushButtonData);
                     if (subBtn != null)
                     {
-                        ButtonPostProcessor.Process(subBtn, sub, component);
+                        ButtonPostProcessor.Process(subBtn, sub, component, GetCompactIconMode(sub));
                         Logger.Debug($"Added child button '{sub.DisplayName}' to split button '{component.DisplayName}'.");
                         return subBtn;
                     }
@@ -346,7 +346,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                         var linkSubBtn = splitBtn.AddPushButton(subLinkData);
                         if (linkSubBtn != null)
                         {
-                            ButtonPostProcessor.Process(linkSubBtn, sub, component);
+                            ButtonPostProcessor.Process(linkSubBtn, sub, component, GetCompactIconMode(sub));
                             Logger.Debug($"Added link button '{sub.DisplayName}' to split button '{component.DisplayName}'.");
                             return linkSubBtn;
                         }
@@ -440,10 +440,9 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
 
                         if (sub.Type == CommandComponentType.LinkButton)
                         {
-                            _linkButtonBuilder.UpdateExistingLinkButton(existingBtn, sub);
+                            _linkButtonBuilder.UpdateExistingLinkButton(existingBtn, sub, component, GetCompactIconMode(sub));
                             if (!wasVisible && IsRibbonItemVisible(existingBtn, fallbackVisible: false))
                                 newlyVisibleNames.Add(sub.DisplayName);
-
                             Logger.Debug($"Updated existing link button '{sub.DisplayName}' in split button '{component.DisplayName}'.");
                             continue;
                         }
@@ -458,7 +457,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
 
                         // Re-apply all post-processing (icon, tooltip, highlight)
                         // This ensures changes to bundle.yaml are reflected
-                        ButtonPostProcessor.Process(existingBtn, sub, component);
+                        ButtonPostProcessor.Process(existingBtn, sub, component, GetCompactIconMode(sub));
 
                         // Ensure button is active
                         existingBtn.Enabled = true;

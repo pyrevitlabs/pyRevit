@@ -137,6 +137,7 @@
             <Setter Property="Padding" Value="0"/>
             <Setter Property="Margin" Value="0"/>
             <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
             <Setter Property="AllowDrop" Value="True"/>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding locked}" Value="True">
@@ -156,9 +157,13 @@
         <!-- ============================================================ -->
         <HierarchicalDataTemplate x:Key="KeynoteTreeItem"
                                   ItemsSource="{Binding children}">
-            <Border x:Name="itemBorder" Padding="4,4" Margin="0,0,0,0"
+            <Border x:Name="itemBorder" Padding="4,4" Margin="0,0,16,0"
                     CornerRadius="3"
                     AllowDrop="True"
+                    HorizontalAlignment="Stretch"
+                    MaxWidth="{Binding ActualWidth,
+                                       RelativeSource={RelativeSource AncestorType=TreeViewItem},
+                                       Mode=OneWay}"
                     DragOver="tree_item_drag_over"
                     DragLeave="tree_item_drag_leave"
                     Drop="tree_item_drop">
@@ -189,8 +194,7 @@
                                Foreground="{StaticResource TextPrimaryBrush}"
                                FontSize="13"
                                VerticalAlignment="Center"
-                               TextTrimming="CharacterEllipsis"
-                               TextWrapping="NoWrap"/>
+                               TextWrapping="Wrap"/>
 
                     <!-- STATUS BADGES -->
                     <StackPanel Grid.Column="2" Orientation="Horizontal"
@@ -510,7 +514,7 @@
 
             <TreeView x:Name="keynotes_tv"
                       BorderThickness="0" Background="Transparent" Padding="6,4"
-                      ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                       VirtualizingPanel.IsVirtualizing="True"
                       VirtualizingPanel.VirtualizationMode="Recycling"
                       ItemTemplate="{StaticResource KeynoteTreeItem}"

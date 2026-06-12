@@ -135,7 +135,11 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 pdBtn.ItemText = pulldownText;
 
                 // Re-apply post-processing (icon, tooltip, etc.)
-                ButtonPostProcessor.Process(pdBtn, component);
+                ButtonPostProcessor.Process(
+                    pdBtn,
+                    component,
+                    null,
+                    IconMode.LargeAndSmall);
 
                 pdBtn.Enabled = true;
                 pdBtn.Visible = true;
@@ -179,7 +183,11 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
             }
 
             // Apply post-processing to the pulldown button itself
-            ButtonPostProcessor.Process(pdBtn, component);
+            ButtonPostProcessor.Process(
+                pdBtn,
+                component,
+                null,
+                IconMode.LargeAndSmall);
 
             // Add children
             AddChildrenToPulldown(pdBtn, component, assemblyInfo, visibleChildren);
@@ -255,7 +263,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 var subBtn = pdBtn.AddPushButton(CreatePushButtonData(sub, assemblyInfo!));
                 if (subBtn != null)
                 {
-                    ButtonPostProcessor.Process(subBtn, sub, component, IconMode.SmallToBoth);
+                    ButtonPostProcessor.Process(subBtn, sub, component, GetCompactIconMode(sub));
                 }
                 return;
             }
@@ -265,7 +273,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 var smartSubBtn = pdBtn.AddPushButton(CreatePushButtonData(sub, assemblyInfo!));
                 if (smartSubBtn != null)
                 {
-                    ButtonPostProcessor.Process(smartSubBtn, sub, component, IconMode.SmallToBoth);
+                    ButtonPostProcessor.Process(smartSubBtn, sub, component, GetCompactIconMode(sub));
 
                     // Execute __selfinit__ for SmartButton in pulldown
                     if (_smartButtonScriptInitializer != null)
@@ -289,7 +297,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                     var linkSubBtn = pdBtn.AddPushButton(linkData);
                     if (linkSubBtn != null)
                     {
-                        ButtonPostProcessor.Process(linkSubBtn, sub, component, IconMode.SmallToBoth);
+                        ButtonPostProcessor.Process(linkSubBtn, sub, component, GetCompactIconMode(sub));
                     }
                 }
             }
@@ -362,7 +370,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                     {
                         if (sub.Type == CommandComponentType.LinkButton)
                         {
-                            _linkButtonBuilder.UpdateExistingLinkButton(existingBtn, sub);
+                            _linkButtonBuilder.UpdateExistingLinkButton(existingBtn, sub, component, GetCompactIconMode(sub));
                             Logger.Debug($"Updated existing link button '{sub.DisplayName}' in pulldown '{component.DisplayName}'.");
                             continue;
                         }
@@ -377,7 +385,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
 
                         // Re-apply all post-processing (icon, tooltip, highlight)
                         // This ensures changes to bundle.yaml are reflected
-                        ButtonPostProcessor.Process(existingBtn, sub, component, IconMode.SmallToBoth);
+                        ButtonPostProcessor.Process(existingBtn, sub, component, GetCompactIconMode(sub));
 
                         // Ensure button is active
                         existingBtn.Enabled = true;

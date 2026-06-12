@@ -1,11 +1,11 @@
 title:
-  en_us: Match properties
-  fr_fr: Correspondance des propriétés
-  ru: Сверить параметры
-  chinese_s: 匹配属性
-  es_es: Coincidir propiedades
-  de_de: Kopiere Eigenschaften
-  pt_br: Igualar Propriedades
+  en_us: Match properties ●
+  fr_fr: Correspondance des propriétés ●
+  ru: Сверить параметры ●
+  chinese_s: 匹配属性 ●
+  es_es: Coincidir propiedades ●
+  de_de: Kopiere Eigenschaften ●
+  pt_br: Igualar Propriedades ●
 tooltip:
   en_us: >-
     Match instance or type properties between elements and their types
@@ -51,4 +51,5 @@ tooltip:
     
     Reaplicar as propriedades igualadas anteriores
 author: '{{author}}'
-
+engine:
+  persistent: true

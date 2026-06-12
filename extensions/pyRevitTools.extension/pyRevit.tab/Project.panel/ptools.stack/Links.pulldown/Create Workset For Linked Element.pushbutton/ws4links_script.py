@@ -17,7 +17,7 @@ translations = TRANSLATIONS_SCRIPT.get(
 
 def main():
     """Main function to create worksets for linked elements."""
-    my_config = script.get_config()
+    my_config = script.get_config(reload=True)
 
     set_type_ws = my_config.get_option("set_type_ws", False)
     set_all = my_config.get_option("set_all", False)

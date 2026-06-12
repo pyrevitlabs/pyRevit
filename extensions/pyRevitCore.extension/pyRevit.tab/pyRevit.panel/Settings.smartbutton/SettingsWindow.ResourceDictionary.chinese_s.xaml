@@ -56,6 +56,22 @@
     <system:String x:Key="CoreSettings.Development.Description">pyRevit 开发的各种选项</system:String>
     <system:String x:Key="CoreSettings.Development.LoadBeta">加载 Beta 工具（__beta__ = True 的脚本，需要重新加载）</system:String>
 
+    <system:String x:Key="CoreSettings.Loader">加载器</system:String>
+    <system:String x:Key="CoreSettings.Loader.Description">配置 pyRevit 的程序集加载机制。新的加载器是使用 Roslyn 构建策略的 C# 实现</system:String>
+    <system:String x:Key="CoreSettings.Loader.NewLoader">启用新的 pyRevit 加载器（测试版）（需要重启 Revit）</system:String>
+    <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata">读取脚本元数据（需要重新加载）</system:String>
+    <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata.Description">
+        启用后，pyRevit 将从 Python 脚本文件中读取脚本元数据（__title__、__author__、__doc__ 等）。
+        禁用此选项可以提高启动性能，但命令可能会丢失在脚本中定义的元数据。
+        无论此设置如何，bundle.yaml 的值仍将被使用。
+    </system:String>
+    <system:String x:Key="CoreSettings.Loader.NewLoader.Changed">
+        新加载器设置已更改。需要重新加载 pyRevit 才能使更改生效。是否立即重新加载？
+    </system:String>
+    <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata.Changed">
+        读取脚本元数据设置已更改。需要重新加载 pyRevit 才能使更改生效。是否立即重新加载？
+    </system:String>
+
     <system:String x:Key="CoreSettings.CloseOtherConsoles">关闭其他打开的控制台</system:String>
     <system:String x:Key="CoreSettings.CloseOtherConsoles.Description">
         如果启用，pyRevit 将在运行新脚本时关闭其他输出控制台。

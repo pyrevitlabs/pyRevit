@@ -33,7 +33,24 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 // initialize
                 PythonEngine.ProgramName = "pyrevit";
                 if (!PythonEngine.IsInitialized) {
-                        PythonEngine.Initialize();
+                        try {
+                            PythonEngine.Initialize();
+                        }
+                        catch (Exception ex) when (
+                            ex.ToString().IndexOf("DesktopConnector", StringComparison.OrdinalIgnoreCase) >= 0) {
+                            // Pythonnet scans all AppDomain assemblies during Initialize().
+                            // If a Revit document was opened, ADC assemblies are loaded but
+                            // DesktopConnectorInterop may be missing (ADC not installed).
+                            // Pythonnet may still have initialized successfully despite this.
+                            logger.Warn("CPython init encountered missing DesktopConnector assembly: {0}", ex.Message);
+                            if (!PythonEngine.IsInitialized) {
+                                throw new Exception(
+                                    "CPython engine failed to initialize. "
+                                    + "DesktopConnectorInterop assembly could not be loaded. "
+                                    + "Install Autodesk Desktop Connector or retry before opening a document.",
+                                    ex);
+                            }
+                        }
                 }
                 // if this is a new engine, save the syspaths
                 StoreSearchPaths();

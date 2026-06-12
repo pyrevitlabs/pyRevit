@@ -31,7 +31,8 @@ class PyRevitConfigSectionParser(object):
 
     def __getattr__(self, param_name):
         try:
-            value = self._parser.get(self._section_name, param_name)
+            raw_value = self._parser.get(self._section_name, param_name)
+            value = raw_value
             try:
                 try:
                     return json.loads(value)  #pylint: disable=W0123
@@ -58,7 +59,14 @@ class PyRevitConfigSectionParser(object):
                             value = "\"%s\"" % value
                         return json.loads(value)  #pylint: disable=W0123
             except Exception:
-                return value
+                # All decode attempts failed. The local 'value' has been
+                # mutated by the fallback chain (string-escape encoded,
+                # possibly wrapped in quotes). Returning the mutated form
+                # would cause __setattr__ to re-encode it via json.dumps
+                # and produce progressively-bloated stored values on each
+                # round-trip (escape-doubling bug for telemetry config
+                # fields). Return the original raw bytes instead.
+                return raw_value
         except (configparser.NoOptionError, configparser.NoSectionError):
             raise AttributeError('Parameter does not exist in config file: {}'
                                  .format(param_name))
@@ -71,11 +79,27 @@ class PyRevitConfigSectionParser(object):
         else:
             # if not used by this object, then set a config section
             try:
+                new_value = json.dumps(value,
+                                       separators=(',', ':'),
+                                       ensure_ascii=False)
+                # Idempotency check: skip the write when the encoded value
+                # is byte-identical to what's already stored. Prevents
+                # progressive escape-doubling on round-trip cycles when
+                # the read path returns a value that re-encodes longer
+                # than the stored value (escape-doubling bug for
+                # telemetry config fields). Side benefit: eliminates
+                # redundant disk writes when nothing has changed.
+                try:
+                    current_value = self._parser.get(self._section_name,
+                                                     param_name)
+                    if current_value == new_value:
+                        return
+                except (configparser.NoOptionError,
+                        configparser.NoSectionError):
+                    pass
                 return self._parser.set(self._section_name,
                                         param_name,
-                                        json.dumps(value,
-                                                   separators=(',', ':'),
-                                                   ensure_ascii=False))
+                                        new_value)
             except Exception as set_err:
                 raise PyRevitException('Error setting parameter value. '
                                        '| {}'.format(set_err))

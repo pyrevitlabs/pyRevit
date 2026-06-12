@@ -3,8 +3,6 @@
 from pyrevit import script
 from pyrevit.coreutils.ribbon import ICON_MEDIUM
 
-__context__ = 'zero-doc'
-__highlight__= 'updated'
 
 
 config = script.get_config()

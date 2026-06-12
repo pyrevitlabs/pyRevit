@@ -28,7 +28,7 @@ namespace pyRevitCLI {
         PrintLocalRevits(bool running = false) {
             if (running) {
                 PyRevitCLIAppCmds.PrintHeader("Running Revit Instances");
-                foreach (var revit in RevitController.ListRunningRevits().OrderByDescending(x => x.RevitProduct.Version)) {
+                foreach (var revit in RevitController.ListRunningRevits().OrderByDescending(x => x.RevitProduct?.Version ?? new Version(0, 0))) {
                     var line = revit.ToString();
                     global::System.Console.WriteLine(line);
                 }

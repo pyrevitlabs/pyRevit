@@ -60,6 +60,20 @@
     <system:String x:Key="CoreSettings.Loader">Carregador</system:String>
     <system:String x:Key="CoreSettings.Loader.Description">Configurar o mecanismo de carregamento de montagem do pyRevit. O novo carregador é uma implementação C# que usa a estratégia de compilação Roslyn</system:String>
     <system:String x:Key="CoreSettings.Loader.NewLoader">Ativa o novo carregador pyRevit (beta) (Reinicialização do Revit necessária)</system:String>
+    <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata">Ler metadados dos scripts (Reinicialização necessária)</system:String>
+    <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata.Description">
+        Quando ativado, o pyRevit lê os metadados dos scripts (__title__, __author__, __doc__, etc.) dos arquivos de scripts Python.
+        Desativar esta opção pode melhorar o desempenho da inicialização, mas os comandos podem perder metadados definidos nos scripts.
+        Os valores de bundle.yaml ainda serão usados independentemente desta configuração.
+    </system:String>
+    <system:String x:Key="CoreSettings.Loader.NewLoader.Changed">
+        A configuração do novo carregador foi alterada. É necessário reiniciar o pyRevit para
+        que a alteração tenha efeito. Deseja reiniciar agora?
+    </system:String>
+    <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata.Changed">
+        A configuração de leitura de metadados dos scripts foi alterada. É necessário
+        reiniciar o pyRevit para que a alteração tenha efeito. Deseja reiniciar agora?
+    </system:String>
 
     <system:String x:Key="CoreSettings.CloseOtherConsoles">Fechar outros consoles abertos</system:String>
     <system:String x:Key="CoreSettings.CloseOtherConsoles.Description">

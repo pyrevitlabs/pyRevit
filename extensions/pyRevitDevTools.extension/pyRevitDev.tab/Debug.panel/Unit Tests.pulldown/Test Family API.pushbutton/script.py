@@ -16,7 +16,6 @@ from pyrevit.revit.db.create import FamilyLoaderOptionsHandler
 from pyrevit.revit.db.transaction import Transaction
 from pyrevit.compat import get_elementid_value_func
 
-__context__ = "doc-project"
 
 TEMP_FAMILY_NAME = "pyRevitTestFamily"
 TEST_PARAMETER_NAME = "Test Parameter"

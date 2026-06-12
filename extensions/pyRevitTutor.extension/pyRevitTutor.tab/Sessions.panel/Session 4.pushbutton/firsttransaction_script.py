@@ -1,6 +1,5 @@
 """Basics of transactions. Updates comment parameter on all sheets and delete all walls."""
 
-__title__ = 'First\nTransactions'
 
 from pyrevit import HOST_APP
 from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, Transaction, TransactionGroup, BuiltInParameter

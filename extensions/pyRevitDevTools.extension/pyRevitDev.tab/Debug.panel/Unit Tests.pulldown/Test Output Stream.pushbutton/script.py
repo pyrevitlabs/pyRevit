@@ -4,7 +4,6 @@ from pyrevit import script
 from pyrevit import labs
 
 
-__context__ = 'zero-doc'
 
 
 output = script.get_output()

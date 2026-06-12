@@ -1,0 +1,183 @@
+name: pyRevit CI
+
+on:
+  pull_request:
+    types: [opened, reopened]
+    branches: [develop, master]
+    paths:
+      - '.github/workflows/**'
+      - 'bin/**'
+      - 'dev/**'
+      - 'extensions/**'
+      - 'pyrevitlib/**'
+      - 'release/**'
+      - 'site-packages/**'
+  push:
+    branches: [develop, master]
+    tags: ['v*']
+    paths:
+      - '.github/workflows/**'
+      - 'bin/**'
+      - 'dev/**'
+      - 'extensions/**'
+      - 'pyrevitlib/**'
+      - 'release/**'
+      - 'site-packages/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  MainRepo: "pyrevitlabs/pyRevit"
+
+concurrency:
+  group: pyrevit-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    outputs:
+      build_version: ${{ steps.versionmeta.outputs.build_version }}
+      install_version: ${{ steps.versionmeta.outputs.install_version }}
+    runs-on: windows-2025
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Checkout submodules
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.SUBMODULES_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -n "${GH_TOKEN:-}" ]; then
+            git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
+          fi
+          git submodule sync --recursive
+          git submodule update --init --recursive
+
+      - name: Prepare Python 3.14
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: '3.14'
+          cache: 'pipenv'
+
+      - name: Prepare pipenv
+        run: |
+          pip install pipenv
+          pipenv sync --dev
+
+      - name: Cache NuGet packages
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/Directory.Build.props') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Prepare msbuild
+        uses: microsoft/setup-msbuild@30375c66a4eea26614e0d39710365f22f8b0af57 # v3
+
+      - name: Check Build Environment
+        if: github.repository == env.MainRepo
+        run: pipenv run pyrevit check
+
+      - name: Update Copyright Info
+        if: github.repository == env.MainRepo
+        run: pipenv run pyrevit set year
+
+      - name: Update Build Info (WIP)
+        if: github.repository == env.MainRepo && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/develop'
+        run: pipenv run pyrevit set build wip
+
+      - name: Update Build Info (Release)
+        if: github.repository == env.MainRepo && github.event_name == 'push' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
+        run: pipenv run pyrevit set build release
+
+      - name: Publish Build Info
+        if: github.repository == env.MainRepo
+        run: pipenv run pyrevit set products
+
+      - name: Capture build versions
+        id: versionmeta
+        shell: bash
+        run: |
+          echo "build_version=$(tr -d '\r\n' < pyrevitlib/pyrevit/version)" >> "$GITHUB_OUTPUT"
+          echo "install_version=$(tr -d '\r\n' < release/version)" >> "$GITHUB_OUTPUT"
+
+      - name: Build Products
+        run: pipenv run pyrevit build products
+
+      - name: Verify LibGit2 native DLL in bin
+        shell: pwsh
+        run: |
+          & "${{ github.workspace }}/release/Verify-LibGit2NativeDll.ps1"
+
+      - name: Upload unsigned bin artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: unsigned-bin-${{ github.sha }}
+          path: bin/**
+
+      - name: Stage stamped release metadata
+        if: github.repository == env.MainRepo
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf ci-stamped
+          mkdir -p ci-stamped/release/choco
+          cp release/version ci-stamped/release/version
+          cp release/pyrevit.iss ci-stamped/release/pyrevit.iss
+          cp release/pyrevit-admin.iss ci-stamped/release/pyrevit-admin.iss
+          cp release/pyrevit-cli.iss ci-stamped/release/pyrevit-cli.iss
+          cp release/pyrevit-cli-admin.iss ci-stamped/release/pyrevit-cli-admin.iss
+          cp release/pyrevit-common.props ci-stamped/release/pyrevit-common.props
+          cp release/choco/pyrevit-cli.nuspec ci-stamped/release/choco/pyrevit-cli.nuspec
+
+      - name: Upload stamped release metadata
+        if: github.repository == env.MainRepo
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: stamped-release-metadata-${{ github.sha }}
+          path: ci-stamped/**
+
+  wip:
+    needs: build
+    if: >
+      github.repository == 'pyrevitlabs/pyRevit' &&
+      github.ref == 'refs/heads/develop' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    permissions:
+      contents: read
+      actions: write
+    uses: ./.github/workflows/wip.yml
+    with:
+      head_sha: ${{ github.sha }}
+      ci_run_id: ${{ github.run_id }}
+      build_version: ${{ needs.build.outputs.build_version }}
+      install_version: ${{ needs.build.outputs.install_version }}
+    secrets: inherit
+
+  notify:
+    needs: [build, wip]
+    if: >
+      github.repository == 'pyrevitlabs/pyRevit' &&
+      github.ref == 'refs/heads/develop' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    uses: ./.github/workflows/notify.yml
+    with:
+      head_sha: ${{ github.sha }}
+      build: wip
+      build_version: ${{ needs.build.outputs.build_version }}
+      notify_url: https://github.com/${{ github.repository }}/actions/runs/${{ needs.wip.outputs.workflow_run_id }}
+    secrets: inherit

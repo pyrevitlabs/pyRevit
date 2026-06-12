@@ -1,18 +1,18 @@
 # -*- coding: UTF-8 -*-
 import datetime
+import os
 
 from pyrevit import coreutils
 from pyrevit import DB
-
-import sys
-import os
-# Add current directory to path for local imports
-_current_dir = os.path.dirname(os.path.abspath(__file__))
-if _current_dir not in sys.path:
-    sys.path.insert(0, _current_dir)
-
+from pyrevit.coreutils import applocales
 from pyrevit.preflight import PreflightTestCase
-from check_translations import DocstringMeta
+
+_XAML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "locale", "Checks.xaml")
+
+
+def _t(key):
+    return applocales.get_locale_string_from_xaml(_XAML, key)
+
 
 # LISTS
 # COLORS for chart.js graphs - chartCategories.randomize_colors() sometimes
@@ -69,22 +69,6 @@ COLORS = 10 * [
     "#fff0e6",
     "#e97800",
     "#a6c844",
-    "#ffc299",
-    "#ff751a",
-    "#cc5200",
-    "#ff6666",
-    "#ffd480",
-    "#b33c00",
-    "#ff884d",
-    "#d9d9d9",
-    "#9988bb",
-    "#4d4d4d",
-    "#9988bb",
-    "#4d4d4d",
-    "#e97800",
-    "#a6c844",
-    "#4d4d4d",
-    "#fff0d9",
     "#ffc299",
     "#ff751a",
     "#cc5200",
@@ -155,6 +139,7 @@ COLORS = 10 * [
     "#a6c844",
 ]
 
+
 def checkModel(doc, output):
     """Check given model"""
 
@@ -182,25 +167,26 @@ def checkModel(doc, output):
                     element_data.append(element.Category.Name)
                     element_data.append(element.Name)
                     element_data.append(element.Id)
-                    # element_data.append(output.linkify(element.Id)) Does not seem to work due to massive amount of elements
+                    # element_data.append(output.linkify(element.Id)) Does not seem to work due
+                    # to massive amount of elements
                     if worksetName not in worksets_names:
                         worksets_names.append(worksetName)
                     graph_workset_data.append(worksetName)
-            except:
+            except Exception:
                 pass
-            
-            # make sure there is no empty data in the set of 4 data, this check allows the following lambda function to work
-            if len(element_data) == 4: 
+
+            # make sure there is no empty data in the set of 4 data, this check allows the following
+            # lambda function to work
+            if len(element_data) == 4:
                 data.append(element_data)
 
     # sort by workset name
-    from check_translations import get_check_translation
     data = sorted(data, key=lambda x: x[0])
     output.print_table(data, columns=[
-        get_check_translation("WorksetName"),
-        get_check_translation("ElementCategory"),
-        get_check_translation("ElementName"),
-        get_check_translation("ElementId")
+        _t("WorksetName"),
+        _t("ElementCategory"),
+        _t("ElementName"),
+        _t("ElementId"),
     ])
 
     # sorting results in chart legend
@@ -217,7 +203,7 @@ def checkModel(doc, output):
         chartWorksets = output.make_doughnut_chart()
         chartWorksets.options.title = {
             "display": True,
-            "text": get_check_translation("ElementCountByWorkset"),
+            "text": _t("ElementCountByWorkset"),
             "fontSize": 25,
             "fontColor": "#000",
             "fontStyle": "bold",
@@ -239,14 +225,7 @@ def checkModel(doc, output):
 
 
 class ModelChecker(PreflightTestCase):
-    __metaclass__ = DocstringMeta
-    _docstring_key = "CheckDescription_ElementsPerWorksets"
-    
-    @property
-    def name(self):
-        from check_translations import get_check_translation
-        return get_check_translation("CheckName_ElementsPerWorksets")
-    
+    name = _t("CheckName_ElementsPerWorksets")
     author = "Jean-Marc Couffin"
 
     def startTest(self, doc, output):
@@ -254,6 +233,8 @@ class ModelChecker(PreflightTestCase):
         checkModel(doc, output)
         endtime = timer.get_time()
         endtime_hms = str(datetime.timedelta(seconds=endtime))
-        from check_translations import get_check_translation
-        endtime_hms_claim = "{} {}".format(get_check_translation("TransactionTook"), endtime_hms)
+        endtime_hms_claim = "{} {}".format(_t("TransactionTook"), endtime_hms)
         print(endtime_hms_claim)
+
+
+ModelChecker.__doc__ = _t("CheckDescription_ElementsPerWorksets")

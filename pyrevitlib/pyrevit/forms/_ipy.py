@@ -12,7 +12,7 @@ import sys
 import os
 import os.path as op
 import string
-from collections import OrderedDict, namedtuple
+from collections import OrderedDict
 import threading
 import datetime
 import webbrowser
@@ -69,39 +69,7 @@ WPF_VISIBLE = framework.Windows.Visibility.Visible
 XAML_FILES_DIR = op.dirname(__file__)
 
 
-ParamDef = namedtuple(
-    "ParamDef",
-    [
-        "name",
-        "istype",
-        "definition",
-        "isreadonly",
-        "isunit",
-        "storagetype",
-        "displayvalue",
-        "hasvalue",
-        "grouptype",
-        "isshared",
-        "paramid",
-    ],
-)
-"""Parameter definition tuple.
-Attributes:
-    name (str): parameter name
-    istype (bool): true if type parameter, otherwise false
-    definition (Autodesk.Revit.DB.Definition): parameter definition object
-    isreadonly (bool): true if the parameter value can't be edited
-    isunit (bool): true if its ForgeTypeId is measurable
-    storagetype (Autodesk.Revit.DB.StorageType): String, Integer, Double or ElementId
-    displayvalue (str): display string of the current parameter value, or None
-    hasvalue (bool): true if the parameter has a value to display
-    grouptype (str): name of parameter group
-    isshared (bool): is the parameter shared
-    paramid (str): stringified parameter ElementId (integer id)
-"""
-
-
-def _make_param_def(param, istype):
+def _make_param_def(param, istype, checked=False):
     """Build a ParamDef from a Revit parameter object."""
     if param.HasValue:
         value = param.AsValueString() or param.AsString()
@@ -133,7 +101,21 @@ def _make_param_def(param, istype):
         ),
         isshared=param.IsShared,
         paramid=str(param.Id),
+        checked=checked,
     )
+
+
+def _get_preselect_names(preselect):
+    """Return a set of names from a preselect list for item matching."""
+    if not preselect:
+        return set()
+    names = set()
+    for item in preselect:
+        if isinstance(item, str):
+            names.add(item)
+        elif hasattr(item, "name"):
+            names.add(item.name)
+    return names
 
 
 # https://gui-at.blogspot.com/2009/11/inotifypropertychanged-in-ironpython.html
@@ -939,6 +921,93 @@ class TemplateListItem(Reactive):
     @checkable.setter
     def checkable(self, value):
         self._checkable = value
+
+
+class ParamDef(TemplateListItem):
+    """Parameter definition for :func:`select_parameters`.
+
+    Inherits from :obj:`TemplateListItem` for use with SelectFromList.
+
+    Attributes:
+        name (str): parameter name
+        istype (bool): true if type parameter, otherwise false
+        definition (Autodesk.Revit.DB.Definition): parameter definition object
+        isreadonly (bool): true if the parameter value can't be edited
+        isunit (bool): true if its ForgeTypeId is measurable
+        storagetype (Autodesk.Revit.DB.StorageType): String, Integer, Double or ElementId
+        displayvalue (str): display string of the current parameter value, or None
+        hasvalue (bool): true if the parameter has a value to display
+        grouptype (str): name of parameter group
+        isshared (bool): is the parameter shared
+        paramid (str): stringified parameter ElementId (integer id)
+    """
+
+    _fields = (
+        "name",
+        "istype",
+        "definition",
+        "isreadonly",
+        "isunit",
+        "storagetype",
+        "displayvalue",
+        "hasvalue",
+        "grouptype",
+        "isshared",
+        "paramid",
+    )
+
+    def __init__(
+        self,
+        name,
+        istype,
+        definition,
+        isreadonly,
+        isunit,
+        storagetype,
+        displayvalue,
+        hasvalue,
+        grouptype,
+        isshared,
+        paramid,
+        checked=False,
+    ):
+        super(ParamDef, self).__init__(orig_item=None, checked=checked)
+        self._name = name
+        self.istype = istype
+        self.definition = definition
+        self.isreadonly = isreadonly
+        self.isunit = isunit
+        self.storagetype = storagetype
+        self.displayvalue = displayvalue
+        self.hasvalue = hasvalue
+        self.grouptype = grouptype
+        self.isshared = isshared
+        self.paramid = paramid
+
+    @property
+    def name(self):
+        """Parameter name."""
+        return self._name
+
+    def unwrap(self):
+        """Return self so SelectFromList returns ParamDef instances."""
+        return self
+
+    def __nonzero__(self):
+        return True
+
+    def __iter__(self):
+        for f in self._fields:
+            yield getattr(self, f)
+
+    def __len__(self):
+        return len(self._fields)
+
+    def __getitem__(self, index):
+        return tuple(self)[index]
+
+    def _asdict(self):
+        return {f: getattr(self, f) for f in self._fields}
 
 
 class SelectFromList(TemplateUserInputWindow):
@@ -2334,8 +2403,8 @@ class LevelOption(TemplateListItem):
 class FamilyParamOption(TemplateListItem):
     """Level wrapper for :func:`select_family_parameters`."""
 
-    def __init__(self, fparam, builtin=False, labeled=False, associated=False):
-        super(FamilyParamOption, self).__init__(fparam)
+    def __init__(self, fparam, builtin=False, labeled=False, associated=False, checked=False):
+        super(FamilyParamOption, self).__init__(fparam, checked=checked)
         self.isbuiltin = builtin
         self.islabeled = labeled
         self.isassociated = associated
@@ -2951,6 +3020,7 @@ def select_parameters(
     include_instance=True,
     include_type=True,
     exclude_readonly=True,
+    preselect=None,
 ):
     """Standard form for selecting parameters from given element.
 
@@ -2965,13 +3035,15 @@ def select_parameters(
         include_instance (bool, optional): list instance parameters
         include_type (bool, optional): list type parameters
         exclude_readonly (bool, optional): only shows parameters that are editable
+        preselect (list[ParamDef | str], optional):
+            list of ParamDef objects or parameter name strings to pre-check
 
     Returns:
         (list[ParamDef]): list of paramdef objects
 
     Examples:
         ```python
-        forms.select_parameter(
+        forms.select_parameters(
             src_element,
             title='Select Parameters',
             multiple=True,
@@ -2981,49 +3053,70 @@ def select_parameters(
         [<ParamDef >, <ParamDef >]
         ```
     """
+    preselect_names = _get_preselect_names(preselect)
     param_defs = []
     non_storage_type = coreutils.get_enum_none(DB.StorageType)
     if include_instance:
-        # collect instance parameters
         param_defs.extend(
             [
-                _make_param_def(x, istype=False)
+                _make_param_def(
+                    x,
+                    istype=False,
+                    checked=x.Definition.Name in preselect_names,
+                )
                 for x in src_element.Parameters
                 if x.StorageType != non_storage_type
             ]
         )
 
     if include_type:
-        # collect type parameters
         src_type = revit.query.get_type(src_element) if src_element else None
         if src_type is not None:
             param_defs.extend(
                 [
-                    _make_param_def(x, istype=True)
+                    _make_param_def(
+                        x,
+                        istype=True,
+                        checked=x.Definition.Name in preselect_names,
+                    )
                     for x in src_type.Parameters
                     if x.StorageType != non_storage_type
                 ]
             )
 
     if exclude_readonly:
-        param_defs = filter(lambda x: not x.isreadonly, param_defs)
+        param_defs = [x for x in param_defs if not x.isreadonly]
 
     if filterfunc:
         param_defs = filter(filterfunc, param_defs)
 
-    param_defs.sort(key=lambda x: x.name)
+    param_defs = sorted(param_defs, key=lambda x: x.name)
 
     itemplate = utils.load_ctrl_template(
         os.path.join(XAML_FILES_DIR, "ParameterItemStyle.xaml")
     )
     selected_params = SelectFromList.show(
-        param_defs,
+        {
+            "All Parameters": param_defs,
+            "Instance Parameters": [x for x in param_defs if not x.istype],
+            "Type Parameters": [x for x in param_defs if x.istype],
+        },
         title=title,
         button_name=button_name,
+        group_selector_title="Parameter Filters:",
         width=500,
         multiselect=multiple,
         item_template=itemplate,
     )
+
+    if selected_params and isinstance(selected_params, list):
+        seen = set()
+        deduped = []
+        for p in selected_params:
+            if id(p) not in seen:
+                seen.add(id(p))
+                deduped.append(p)
+        selected_params = deduped
 
     return selected_params
 
@@ -3039,6 +3132,7 @@ def select_family_parameters(
     include_builtin=True,
     include_labeled=True,
     include_associated=True,
+    preselect=None,
 ):
     """Standard form for selecting parameters from given family document.
 
@@ -3056,6 +3150,8 @@ def select_family_parameters(
         include_labeled (bool, optional): list parameters used as labels
         include_associated (bool, optional):
             list parameters associated to others
+        preselect (list[FamilyParamOption | str], optional):
+            list of FamilyParamOption objects or parameter name strings to pre-check
 
     Returns:
         (list[DB.FamilyParameter]): list of family parameter objects
@@ -3069,12 +3165,13 @@ def select_family_parameters(
             include_instance=True,
             include_type=True
         )
-        [<DB.FamilyParameter >, <DB.FamilyParameter >]
+        [<FamilyParamOption >, <FamilyParamOption >]
         ```
     """
+    preselect_names = _get_preselect_names(preselect)
     family_doc = family_doc or DOCS.doc
     family_params = revit.query.get_family_parameters(family_doc)
-    # get all params used in labeles
+    # get all params used in labels
     label_param_ids = [
         x.Id for x in revit.query.get_family_label_parameters(family_doc)
     ]
@@ -3104,6 +3201,7 @@ def select_family_parameters(
                 builtin=get_elementid_value(family_param.Id) < 0,
                 labeled=family_param.Id in label_param_ids,
                 associated=associated_to_others,
+                checked=family_param.Definition.Name in preselect_names,
             )
         )
 
@@ -3127,6 +3225,15 @@ def select_family_parameters(
         multiselect=multiple,
         item_template=itemplate,
     )
+
+    if selected_params and isinstance(selected_params, list):
+        seen = set()
+        deduped = []
+        for p in selected_params:
+            if id(p) not in seen:
+                seen.add(id(p))
+                deduped.append(p)
+        selected_params = deduped
 
     return selected_params
 

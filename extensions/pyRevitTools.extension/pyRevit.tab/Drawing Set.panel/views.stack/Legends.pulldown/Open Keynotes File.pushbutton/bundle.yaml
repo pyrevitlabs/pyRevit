@@ -1,16 +1,20 @@
+author: >-
+  Dan Mapes
+
+  {{author}}
 title:
-  en_us: Open keynotes file
-  fr_fr: Ouvrir le fichier de notes d'identification
-  ru: Открыть файл ключевых пометок
-  chinese_s: 打开注释文件
-  es_es: Abrir archivo de notas clave
   de_de: Bauelementschlüssel-Datei öffnen
+  ru: Открыть файл ключевых пометок
   pt_br: Abrir Arquivo de Notas-Chave
-tooltip:
-  en_us: Open keynotes file
-  fr_fr: Ouvrir le fichier de notes d'identification
-  ru: Открывает файл ключевых пометок.
-  chinese_s: 打开注释文件
   es_es: Abrir archivo de notas clave
+  fr_fr: Ouvrir le fichier de notes d'identification
+  en_us: Open keynotes file
+  chinese_s: 打开注释文件
+tooltip:
   de_de: Öffnet die Bauelementschlüssel Datei
+  ru: Открывает файл ключевых пометок.
   pt_br: Abrir arquivo de notas-chave
+  es_es: Abrir archivo de notas clave
+  fr_fr: Ouvrir le fichier de notes d'identification
+  en_us: Open keynotes file
+  chinese_s: 打开注释文件

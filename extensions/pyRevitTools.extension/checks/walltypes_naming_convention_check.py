@@ -5,22 +5,21 @@ import json
 from collections import Counter
 
 # Revit-specific imports
-from pyrevit import coreutils, revit, script, DOCS
+from pyrevit import coreutils, script, DOCS
 from pyrevit.forms import pick_file
 from Autodesk.Revit.DB import BuiltInCategory, FilteredElementCollector
 
-# Set up preflight for model check
-import sys
 import os
-# Add current directory to path for local imports
-_current_dir = os.path.dirname(os.path.abspath(__file__))
-if _current_dir not in sys.path:
-    sys.path.insert(0, _current_dir)
 
+from pyrevit.coreutils import applocales
 from pyrevit.preflight import PreflightTestCase
-from check_translations import DocstringMeta
 
-import json
+_XAML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "locale", "Checks.xaml")
+
+
+def _t(key):
+    return applocales.get_locale_string_from_xaml(_XAML, key)
+
 
 def pick_json():
     # Set default directory
@@ -31,8 +30,7 @@ def pick_json():
 
     # Check if a file was selected
     if not json_file_path:
-        from check_translations import get_check_translation
-        raise FileNotFoundError(get_check_translation("NamingConventionNoFileSelected"))
+        raise FileNotFoundError(_t("NamingConventionNoFileSelected"))
 
     # Load JSON data
     with open(json_file_path, "r") as f:
@@ -43,17 +41,22 @@ def pick_json():
 def print_red(output, text):
     output.print_html('<div style="color:red">{}</div>'.format(text))
 
+
 # Function to check the model's wall naming conventions
 def check_model(doc, output):
     """
     Checks if wall types in the model match the allowed wall names list.
     Displays summary with correct and incorrect wall names.
     """
-    from check_translations import get_check_translation
-    output.print_md('# {}'.format(get_check_translation("NamingConventionReport")))
+    output.print_md("# {}".format(_t("NamingConventionReport")))
 
     # Get all wall elements and their names
-    walls = FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_Walls).WhereElementIsNotElementType().ToElements()
+    walls = (
+        FilteredElementCollector(doc)
+        .OfCategory(BuiltInCategory.OST_Walls)
+        .WhereElementIsNotElementType()
+        .ToElements()
+    )
     # Count occurrences of each wall name
     wall_counts = Counter((wall.Name for wall in walls))
 
@@ -65,37 +68,34 @@ def check_model(doc, output):
 
     # Prepare data for output table
     data = [
-        (wall_type, count, get_check_translation("NamingConventionWrongName") if wall_type in wrong_wall_names else "")
+        (
+            wall_type,
+            count,
+            _t("NamingConventionWrongName") if wall_type in wrong_wall_names else "",
+        )
         for wall_type, count in wall_counts.items()
     ]
 
     # Print table and highlight incorrect wall names
     output.print_table(
         table_data=data,
-        title=get_check_translation("NamingConventionWallCheck"),
+        title=_t("NamingConventionWallCheck"),
         columns=[
-            get_check_translation("NamingConventionWallType"),
-            get_check_translation("NamingConventionCount"),
-            get_check_translation("NamingConventionStatus")
+            _t("NamingConventionWallType"),
+            _t("NamingConventionCount"),
+            _t("NamingConventionStatus"),
         ],
-        formats=['', '{}', '']
+        formats=["", "{}", ""],
     )
 
     if wrong_wall_names:
-        output.print_md('## {}'.format(get_check_translation("NamingConventionIncorrectlyNamed")))
+        output.print_md("## {}".format(_t("NamingConventionIncorrectlyNamed")))
         for wrong in wrong_wall_names:
             print_red(output, wrong)
 
 
 class ModelChecker(PreflightTestCase):
-    __metaclass__ = DocstringMeta
-    _docstring_key = "CheckDescription_NamingConvention"
-    
-    @property
-    def name(self):
-        from check_translations import get_check_translation
-        return get_check_translation("CheckName_NamingConvention")
-    
+    name = _t("CheckName_NamingConvention")
     author = "Andreas Draxl"
 
     def startTest(self, doc, output):
@@ -103,8 +103,10 @@ class ModelChecker(PreflightTestCase):
         check_model(doc, output)
         endtime = timer.get_time()
         endtime_hms = str(datetime.timedelta(seconds=endtime))
-        from check_translations import get_check_translation
-        print("{} {}".format(get_check_translation("TransactionTook"), endtime_hms))
+        print("{} {}".format(_t("TransactionTook"), endtime_hms))
+
+
+ModelChecker.__doc__ = _t("CheckDescription_NamingConvention")
 
 
 # Initialize variables

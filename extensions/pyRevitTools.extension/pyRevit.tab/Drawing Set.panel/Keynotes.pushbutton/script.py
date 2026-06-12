@@ -42,7 +42,6 @@ from pyrevit.interop import adc
 
 import keynotesdb as kdb
 
-__persistentengine__ = True
 
 logger = script.get_logger()
 output = script.get_output()
@@ -534,7 +533,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._used_keysdict = defaultdict(list)
         self._used_typesdict = defaultdict(set)
         try:
-            self._used_keysdict, self._used_typesdict = self.get_used_keynote_elements()
+            self._used_keysdict, self._used_typesdict = \
+                self.get_used_keynote_elements()
         except Exception:
             pass
 
@@ -552,17 +552,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         # Auto-refresh — subscribe to Revit's DocumentChanged event
         # so usage counts and type filters update instantly.
+        # Deferred to Loaded event to avoid delegate creation crash
+        # during __init__ (IronPython .NET interop limitation).
         self._refresh_pending = False
         self._doc_changed_app = None
-        try:
-            self._doc_changed_app = HOST_APP.uiapp.Application
-            self._doc_changed_app.DocumentChanged += self._on_doc_changed
-        except Exception:
-            try:
-                self._doc_changed_app = HOST_APP.app
-                self._doc_changed_app.DocumentChanged += self._on_doc_changed
-            except Exception:
-                self._doc_changed_app = None
+        self.Loaded += self._on_window_loaded
 
         self.load_config(reset_config)
         self._update_full_tree()
@@ -810,7 +804,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 used[key].append(kn.Id)
                 # Detect keynote type from the tag's source param
                 try:
-                    src = kn.Parameter[DB.BuiltInParameter.KEY_SOURCE_PARAM]
+                    src = kn.Parameter[
+                        DB.BuiltInParameter.KEY_SOURCE_PARAM]
                     if src and src.HasValue:
                         val = src.AsString()
                         if val:
@@ -1409,6 +1404,18 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._search_timer.Stop()
         self._update_full_tree(fast_filter=True)
 
+    def _on_window_loaded(self, sender, args):
+        """Subscribe to DocumentChanged after window is fully loaded."""
+        try:
+            self._doc_changed_app = HOST_APP.uiapp.Application
+            self._doc_changed_app.DocumentChanged += self._on_doc_changed
+        except Exception:
+            try:
+                self._doc_changed_app = HOST_APP.app
+                self._doc_changed_app.DocumentChanged += self._on_doc_changed
+            except Exception:
+                self._doc_changed_app = None
+
     def _on_doc_changed(self, sender, args):
         """Fires on the Revit thread after any document change.
         Refreshes keynote usage data and updates the tree."""
@@ -1437,8 +1444,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         try:
             self.Dispatcher.BeginInvoke(
                 System.Action(_update_ui),
-                Windows.Threading.DispatcherPriority.Background,
-            )
+                Windows.Threading.DispatcherPriority.Background)
         except Exception:
             self._refresh_pending = False
 
@@ -1657,9 +1663,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
             def _query_used():
                 try:
-                    self._used_keysdict, self._used_typesdict = (
+                    self._used_keysdict, self._used_typesdict = \
                         self.get_used_keynote_elements()
-                    )
                 except Exception:
                     pass
 
@@ -1933,15 +1938,16 @@ class KeynoteManagerWindow(forms.WPFWindow):
         postcmd = self.postable_keynote_command
 
         def _do():
-            keynotes_cat = revit.query.get_category(DB.BuiltInCategory.OST_KeynoteTags)
+            keynotes_cat = revit.query.get_category(
+                DB.BuiltInCategory.OST_KeynoteTags)
             if not keynotes_cat:
-                self._place_result = "no_family"
+                self._place_result = 'no_family'
                 return
             def_id = revit.doc.GetDefaultFamilyTypeId(keynotes_cat.Id)
             if not def_id or not revit.doc.GetElement(def_id):
-                self._place_result = "no_family"
+                self._place_result = 'no_family'
                 return
-            self._place_result = "ok"
+            self._place_result = 'ok'
             DocumentEventUtils.PostCommandAndUpdateNewElementProperties(
                 HOST_APP.uiapp,
                 revit.doc,
@@ -1952,19 +1958,17 @@ class KeynoteManagerWindow(forms.WPFWindow):
             )
 
         def _on_placed():
-            result = getattr(self, "_place_result", None)
-            if result == "no_family":
+            result = getattr(self, '_place_result', None)
+            if result == 'no_family':
                 forms.alert(
                     "No Keynote Tag family is loaded in this project.\n\n"
                     "Please load a Keynote Tag family from the library "
                     "before placing keynotes.",
-                    title="Keynote Tag Missing",
-                )
+                    title="Keynote Tag Missing")
                 return
             try:
-                self._used_keysdict, self._used_typesdict = (
+                self._used_keysdict, self._used_typesdict = \
                     self.get_used_keynote_elements()
-                )
             except Exception:
                 pass
             self._update_full_tree()
@@ -1996,9 +2000,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self._connect_kfile()
             self._needs_update = True
             try:
-                self._used_keysdict, self._used_typesdict = (
-                    self.get_used_keynote_elements()
-                )
+                self._used_keysdict, self._used_typesdict = self.get_used_keynote_elements()
             except Exception as ex:
                 logger.debug("Refresh used keys failed | %s" % ex)
             self._update_full_tree()

@@ -3,6 +3,7 @@ using pyRevitExtensionParserTest;
 using pyRevitExtensionParserTest.TestHelpers;
 using pyRevitAssemblyBuilder.AssemblyMaker;
 using System.IO;
+using System.Reflection;
 using System.Text;
 using NUnit.Framework;
 using static pyRevitExtensionParser.ExtensionParser;
@@ -24,6 +25,28 @@ namespace pyRevitExtensionParserTester
             {
                 Assert.Fail($"Extension path not found: {_extensionPath}");
             }
+        }
+
+        [TearDown]
+        public void ResetParserConfig()
+        {
+            PyRevitConfig.ClearCache();
+            ClearAllCaches();
+        }
+
+        private void UseTestPyRevitConfig(string iniContent)
+        {
+            var configPath = Path.Combine(TestTempDir, "pyRevit_config.ini");
+            File.WriteAllText(configPath, iniContent);
+            var cfg = PyRevitConfig.Load(configPath);
+            // ClearAllCaches() also calls PyRevitConfig.ClearCache(), so set the
+            // default instance after parser caches are cleared.
+            ClearAllCaches();
+            var field = typeof(PyRevitConfig).GetField(
+                "_defaultInstance",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Assert.IsNotNull(field, "PyRevitConfig._defaultInstance field not found");
+            field.SetValue(null, cfg);
         }
 
         [Test]
@@ -457,6 +480,121 @@ tooltip: Bundle Tooltip
             Assert.IsTrue(extension.RocketModeCompatible, "pyRevitCore should always be rocket mode compatible");
 
             Directory.Delete(extensionDir, true);
+        }
+
+        [Test]
+        public void TestReadScriptMetadataDisabled_SkipsScriptTitle()
+        {
+            UseTestPyRevitConfig("[core]\nread_script_metadata = false\n\n");
+
+            var extensionDir = Path.Combine(TestTempDir, "NoScriptMeta.extension");
+            var bundleDir = Path.Combine(extensionDir, "TestPanel.panel", "MetaButton.pushbutton");
+            Directory.CreateDirectory(bundleDir);
+
+            File.WriteAllText(
+                Path.Combine(bundleDir, "script.py"),
+                "__title__ = 'Script Only Title'\n");
+
+            var extensions = ParseInstalledExtensions(extensionDir).ToList();
+            Assert.AreEqual(1, extensions.Count);
+            var button = FindComponentRecursively(extensions[0], "MetaButton");
+            Assert.IsNotNull(button);
+            Assert.IsTrue(
+                string.IsNullOrEmpty(button.Title),
+                "Title should be empty when read_script_metadata is false and bundle.yaml has no title");
+            Assert.AreEqual("MetaButton", button.DisplayName);
+
+            // bundle.yaml title must still apply when script metadata reads are off
+            File.WriteAllText(
+                Path.Combine(bundleDir, "bundle.yaml"),
+                "title: YAML Title\n");
+            ClearAllCaches();
+            extensions = ParseInstalledExtensions(extensionDir).ToList();
+            button = FindComponentRecursively(extensions[0], "MetaButton");
+            Assert.IsNotNull(button);
+            Assert.AreEqual(
+                "YAML Title",
+                button.Title,
+                "bundle.yaml title should load when read_script_metadata is false");
+            Assert.AreNotEqual("Script Only Title", button.Title);
+        }
+
+        [Test]
+        public void TestReadScriptMetadataEnabled_ReadsScriptTitle()
+        {
+            UseTestPyRevitConfig("[core]\nread_script_metadata = true\n\n");
+
+            var extensionDir = Path.Combine(TestTempDir, "WithScriptMeta.extension");
+            var bundleDir = Path.Combine(extensionDir, "TestPanel.panel", "MetaButton.pushbutton");
+            Directory.CreateDirectory(bundleDir);
+
+            File.WriteAllText(
+                Path.Combine(bundleDir, "script.py"),
+                "__title__ = 'Script Only Title'\n");
+
+            var extensions = ParseInstalledExtensions(extensionDir).ToList();
+            Assert.AreEqual(1, extensions.Count);
+            var button = FindComponentRecursively(extensions[0], "MetaButton");
+            Assert.IsNotNull(button);
+            Assert.AreEqual("Script Only Title", button.Title);
+        }
+
+        [Test]
+        public void TestReadScriptMetadataApi_IgnoresUserSetting()
+        {
+            UseTestPyRevitConfig("[core]\nread_script_metadata = false\n\n");
+
+            var bundleDir = Path.Combine(TestTempDir, "ApiTest.pushbutton");
+            Directory.CreateDirectory(bundleDir);
+            var scriptPath = Path.Combine(bundleDir, "script.py");
+            File.WriteAllText(scriptPath, "__title__ = 'API Title'\n__author__ = 'API Author'\n");
+
+            var yaml = ExtensionParser.ReadScriptMetadata(scriptPath);
+            Assert.IsTrue(yaml.ContainsKey("title"));
+            Assert.AreEqual("API Title", yaml["title"]);
+            Assert.IsTrue(yaml.ContainsKey("author"));
+            Assert.AreEqual("API Author", yaml["author"]);
+        }
+
+        [Test]
+        public void TestDisabledExtension_SkipsParseTree()
+        {
+            var extensionDir = Path.Combine(TestTempDir, "DisabledExt.extension");
+            var bundleDir = Path.Combine(extensionDir, "TestPanel.panel", "AnyButton.pushbutton");
+            Directory.CreateDirectory(bundleDir);
+            File.WriteAllText(Path.Combine(bundleDir, "script.py"), "__title__ = 'Should Not Load'\n");
+
+            UseTestPyRevitConfig(
+                "[core]\nread_script_metadata = true\n\n" +
+                "[DisabledExt.extension]\n" +
+                "disabled = true\n");
+
+            var extensions = ParseInstalledExtensions(extensionDir).ToList();
+            Assert.AreEqual(0, extensions.Count,
+                "Disabled extensions should not be returned by ParseInstalledExtensions");
+        }
+
+        [Test]
+        public void TestMultilineScriptTitle_StreamingParser()
+        {
+            UseTestPyRevitConfig("[core]\nread_script_metadata = true\n\n");
+
+            var extensionDir = Path.Combine(TestTempDir, "MultilineMeta.extension");
+            var bundleDir = Path.Combine(extensionDir, "TestPanel.panel", "MultiButton.pushbutton");
+            Directory.CreateDirectory(bundleDir);
+
+            var scriptContent = new StringBuilder();
+            scriptContent.AppendLine("__title__ = \"\"\"Line One");
+            scriptContent.AppendLine("Line Two");
+            scriptContent.AppendLine("Line Three\"\"\"");
+            File.WriteAllText(Path.Combine(bundleDir, "script.py"), scriptContent.ToString());
+
+            var extensions = ParseInstalledExtensions(extensionDir).ToList();
+            Assert.AreEqual(1, extensions.Count);
+            var button = FindComponentRecursively(extensions[0], "MultiButton");
+            Assert.IsNotNull(button);
+            Assert.IsTrue(button.Title.Contains("Line One"), "Expected multiline title content");
+            Assert.IsTrue(button.Title.Contains("Line Three"), "Expected multiline title content");
         }
 
         private ParsedComponent? FindComponentRecursively(ParsedComponent? component, string targetName)

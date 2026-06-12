@@ -1332,6 +1332,18 @@
         "version": "21.1.0.108"
     },
     {
+        "build": "20200715_1022",
+        "meta": {
+            "schema": "1.0",
+            "source": "https://www.autodesk.com/support/technical/article/caas/sfdcarticles/sfdcarticles/How-to-tie-the-Build-number-with-the-Revit-update.html"
+        },
+        "notes": "",
+        "product": "Autodesk Revit",
+        "release": "2021.1 (Install)",
+        "target": "x64",
+        "version": "21.1.1.109"
+    },
+    {
         "build": "20200826_1250",
         "meta": {
             "schema": "1.0",
@@ -1356,6 +1368,18 @@
         "version": "21.1.10.26"
     },
     {
+        "build": "20200917_1545",
+        "meta": {
+            "schema": "1.0",
+            "source": "https://www.autodesk.com/support/technical/article/caas/sfdcarticles/sfdcarticles/How-to-tie-the-Build-number-with-the-Revit-update.html"
+        },
+        "notes": "",
+        "product": "Autodesk Revit",
+        "release": "2021.1.1 (Install)",
+        "target": "x64",
+        "version": "21.1.11.27"
+    },
+    {
         "build": "20201109_1530",
         "meta": {
             "schema": "1.0",
@@ -1366,6 +1390,18 @@
         "release": "2021.1.2",
         "target": "x64",
         "version": "21.1.20.44"
+    },
+    {
+        "build": "20201116_1100",
+        "meta": {
+            "schema": "1.0",
+            "source": "https://www.autodesk.com/support/technical/article/caas/sfdcarticles/sfdcarticles/How-to-tie-the-Build-number-with-the-Revit-update.html"
+        },
+        "notes": "",
+        "product": "Autodesk Revit",
+        "release": "2021.1.2 (Install)",
+        "target": "x64",
+        "version": "21.1.21.45"
     },
     {
         "build": "20210224_1515",
@@ -1644,6 +1680,18 @@
         "version": "21.1.70.21"
     },
     {
+        "build": "20230515_0935",
+        "meta": {
+            "schema": "1.0",
+            "source": "https://help.autodesk.com/view/RVT/2021/ENU/?guid=RevitReleaseNotes_2021updates_2021_1_8_html"
+        },
+        "notes": "https://help.autodesk.com/view/RVT/2021/ENU/?guid=RevitReleaseNotes_2021updates_2021_1_8_html",
+        "product": "Autodesk Revit",
+        "release": "2021.1.8",
+        "target": "x64",
+        "version": "21.1.80.35"
+    },
+    {
         "build": "20230515_1515",
         "meta": {
             "schema": "1.0",
@@ -1858,7 +1906,7 @@
         "release": "2023.1.6",
         "target": "x64",
         "version": "23.1.60.36"
-    },    
+    },
     {
         "build": "20250410_1515",
         "meta": {
@@ -2135,7 +2183,7 @@
         "target": "x64",
         "version": "25.4.10.45"
     },
-        {
+    {
         "build": "20250515_1515",
         "meta": {
             "schema": "1.0",
@@ -2147,7 +2195,7 @@
         "target": "x64",
         "version": "25.4.20.11"
     },
-        {
+    {
         "build": "20250809_1515",
         "meta": {
             "schema": "1.0",
@@ -2160,6 +2208,18 @@
         "version": "25.4.30.29"
     },
     {
+        "build": "20250815_1515",
+        "meta": {
+            "schema": "1.0",
+            "source": "https://help.autodesk.com/view/RVT/2025/ENU/?guid=RevitReleaseNotes_2025updates_2025_4_3_html"
+        },
+        "notes": "https://help.autodesk.com/view/RVT/2025/ENU/?guid=RevitReleaseNotes_2025updates_2025_4_3_html",
+        "product": "Autodesk Revit",
+        "release": "2025.4.3 Update",
+        "target": "x64",
+        "version": "25.4.30.30"
+    },
+    {
         "build": "20251111_1515",
         "meta": {
             "schema": "1.0",
@@ -2170,6 +2230,18 @@
         "release": "2025.4.4",
         "target": "x64",
         "version": "25.4.41.14"
+    },
+    {
+        "build": "20260410_1515",
+        "meta": {
+            "schema": "1.0",
+            "source": "https://help.autodesk.com/view/RVT/2025/ENU/?guid=RevitReleaseNotes_2025updates_2025_4_5_html"
+        },
+        "notes": "https://help.autodesk.com/view/RVT/2025/ENU/?guid=RevitReleaseNotes_2025updates_2025_4_5_html",
+        "product": "Autodesk Revit",
+        "release": "2025.4.5 Update",
+        "target": "x64",
+        "version": "25.4.50.35"
     },
     {
         "build": "20250227_1515",
@@ -2244,6 +2316,18 @@
         "version": "26.4.0.32"
     },
     {
+        "build": "20260406_1515",
+        "meta": {
+            "schema": "1.0",
+            "source": "https://help.autodesk.com/view/RVT/2026/ENU/?guid=RevitReleaseNotes_2026updates_2026_4_1_html"
+        },
+        "notes": "https://help.autodesk.com/view/RVT/2026/ENU/?guid=RevitReleaseNotes_2026updates_2026_4_1_html",
+        "product": "Autodesk Revit",
+        "release": "2026.4.1 Update",
+        "target": "x64",
+        "version": "26.4.10.51"
+    },
+    {
         "build": "20251022_1005",
         "meta": {
             "schema": "1.0",
@@ -2290,5 +2374,17 @@
         "release": "2027.0.1 Update",
         "target": "x64",
         "version": "27.0.10.13"
+    },
+    {
+        "build": "20260417_1515",
+        "meta": {
+            "schema": "1.0",
+            "source": "https://help.autodesk.com/view/RVT/2027/ENU/?guid=RevitReleaseNotes_2027updates_2027_0_2_html"
+        },
+        "notes": "https://help.autodesk.com/view/RVT/2027/ENU/?guid=RevitReleaseNotes_2027updates_2027_0_2_html",
+        "product": "Autodesk Revit",
+        "release": "2027.0.2 Update",
+        "target": "x64",
+        "version": "27.0.20.10"
     }
 ]

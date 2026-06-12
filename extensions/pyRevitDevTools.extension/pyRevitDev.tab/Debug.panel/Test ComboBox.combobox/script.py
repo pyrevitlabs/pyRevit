@@ -12,7 +12,6 @@ Note: This ComboBox is driven only by event handler functions.
 #pylint: disable=C0103,E0401
 from Autodesk.Revit.UI import TaskDialog
 
-__context__ = 'zero-doc'
 
 
 def _ensure_dynamic_items(ctx):

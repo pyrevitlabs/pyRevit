@@ -59,11 +59,6 @@ AUTOCOMPPATH = "dev/pyRevitLabs/pyRevitCLIAutoComplete"
 AUTOCOMP = op.join(AUTOCOMPPATH, "pyrevit-autocomplete.go")
 AUTOCOMPBIN = op.join(BINPATH, "pyrevit-autocomplete.exe")
 
-# telemetry server files
-TELEMETRYSERVERPATH = op.join(DEVPATH, "pyRevitTelemetryServer")
-TELEMETRYSERVER = op.join(TELEMETRYSERVERPATH, "main.go")
-TELEMETRYSERVERBIN = op.join(BINPATH, "pyrevit-telemetryserver.exe")
-
 # python docs
 DOCS_DIR = op.join(ROOT, "docs")
 DOCS_BUILD = op.join(DOCS_DIR, "_build")

@@ -607,7 +607,8 @@ class Extension(GenericUIContainer):
 
     def get_checks(self):
         check_scripts = os.listdir(self.checks_path) if self.checks_path else []
-        return [op.join(self.checks_path, x) for x in check_scripts]
+        return [op.join(self.checks_path, x) for x in check_scripts
+                if x.endswith('.py')]
 
 
 class LibraryExtension(GenericComponent):

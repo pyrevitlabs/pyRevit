@@ -1,7 +1,5 @@
 """Generate python stubs for this Revit version API."""
 #pylint: disable=import-error,invalid-name,broad-except
-__title__ = 'Generate\nAPI Stubs'
-__context__ = 'zero-doc'
 
 from pyrevit.coreutils import assmutils
 from pyrevit import labs
