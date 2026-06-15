@@ -569,12 +569,19 @@ class Extension(GenericUIContainer):
         Including them in the assembly keeps the DLL stable across layout
         edits, so re-arranging the ribbon does not force a rebuild.
 
-        Non-command components (stacks, groups) are filtered out so that
-        callers of get_all_commands receive only GenericUICommand instances.
+        Container tools (pulldowns, splitbuttons) are unwrapped so their
+        child commands are included. Callers of get_all_commands receive only
+        GenericUICommand instances.
         """
-        self._assembly_only_commands = [
-            c for c in commands if isinstance(c, GenericUICommand)
-        ]
+        assembly_cmds = []
+        for comp in commands:
+            if isinstance(comp, GenericUICommand):
+                assembly_cmds.append(comp)
+            elif comp.is_container:
+                assembly_cmds.extend(
+                    comp.find_components_of_type(GenericUICommand)
+                )
+        self._assembly_only_commands = assembly_cmds
 
     def get_manifest_file(self):
         return self.get_bundle_file(exts.EXT_MANIFEST_FILE)

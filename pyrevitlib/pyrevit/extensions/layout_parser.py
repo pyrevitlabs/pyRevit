@@ -401,7 +401,11 @@ def _create_stack(
     stack_name = "_stack_%d" % stack_idx
     stack = GenericStack(cmp_path=None)
     stack.name = stack_name
-    stack.unique_name = make_layout_unique_name(ext_name, stack_name)
+    panel_name_part = panel.name.replace(" ", "")
+    stack.unique_name = make_layout_unique_name(
+        ext_name,
+        panel_name_part + exts.UNIQUE_ID_SEPARATOR + stack_name,
+    )
 
     for child_name in children_names:
         if not isinstance(child_name, str):

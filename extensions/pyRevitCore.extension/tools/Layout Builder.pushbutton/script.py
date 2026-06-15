@@ -166,6 +166,7 @@ def load_layout_tree(layout_file, extension_dir):
     if not data or exts.LAYOUT_TABS_KEY not in data:
         return []
 
+    layout_dir = op.dirname(layout_file)
     roots = []
     for tab_data in data[exts.LAYOUT_TABS_KEY]:
         tab_name = tab_data.get(exts.LAYOUT_NAME_KEY, "")
@@ -182,7 +183,9 @@ def load_layout_tree(layout_file, extension_dir):
             if not layout_items:
                 panel_file = panel_data.get(exts.LAYOUT_FILE_KEY, "")
                 if panel_file:
-                    panel_path = op.join(extension_dir, panel_file)
+                    panel_path = op.join(layout_dir, panel_file)
+                    if not op.isfile(panel_path):
+                        panel_path = op.join(extension_dir, panel_file)
                     if op.isfile(panel_path):
                         pdata = pyyaml.load_as_dict(panel_path)
                         layout_items = pdata.get(exts.LAYOUT_KEY, [])
