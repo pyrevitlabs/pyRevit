@@ -217,6 +217,9 @@ class RequestHandler(UI.IExternalEventHandler):
         # if route pattern has parameter, provide those as well
         if request.params:
             kwargs.update({x.key: x.value for x in request.params})
+        # if query parameters are present, provide those as well
+        if request.query_params:
+            kwargs.update(request.query_params)
         # add host api context params
         kwargs[ARGS_UIAPP] = uiapp
         kwargs[ARGS_UIDOC] = uidoc
