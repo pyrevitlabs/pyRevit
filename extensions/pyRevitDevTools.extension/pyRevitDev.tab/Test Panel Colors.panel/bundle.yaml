@@ -7,7 +7,7 @@ title:
   de_de: Test-Panel-Farben
   pt_br: Testar Cores do Painel
 layout:
-  - ButtonA
+  - ButtonC
   - ">>>"
   - ButtonB
 

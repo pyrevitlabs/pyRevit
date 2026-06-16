@@ -1,0 +1,12 @@
+title:
+  en_us: Layout
+  fr_fr: Disposition
+  ru: Макет
+  chinese_s: 布局
+  es_es: Diseño
+  de_de: Layout
+  pt_br: Layout
+layout:
+  - Generate Layout
+  - List Tools
+  - Test Layout Parsing

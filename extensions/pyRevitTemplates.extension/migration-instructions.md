@@ -25,7 +25,7 @@ The `pyRevitDevTools` extension ships with this repository. To use it in Revit:
 
 1. Add the `pyRevitDevTools.extension` directory to **Settings > Custom Extension Directories** (or attach the dev clone, which already includes it).
 2. Reload pyRevit. A `pyRevitDev` tab appears.
-3. Run **Generate Layout** from the `Developer` panel.
+3. Run **Generate Layout** from the `Layout` panel.
 4. Pick the target extension.
 5. The tool writes `extension_layout.yaml` (and, with shift-click, separate `*.panel.yaml` files for complex panels) into the extension directory or an output folder you choose.
 

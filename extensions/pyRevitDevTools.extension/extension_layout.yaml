@@ -1,0 +1,104 @@
+tabs:
+- name: pyRevitDev
+  panels:
+  - name: Debug
+    layout:
+    - Logs
+    - '---'
+    - Unit Tests
+    - Engine Tests
+    - Bundle Tests
+    - stack:
+      - Icon Size
+      - Inheritance Off
+    - Context Tests
+    - Misc Tests
+    - Debug Dialog Config
+    - '---'
+    - Test ComboBox
+    title:
+      es_es: Depuración
+      fr_fr: Débogage
+      chinese_s: 调试
+      ru: Отладка
+      en_us: Debug
+      de_de: Debuggen
+      pt_br: Depurar
+  - name: Test Panel Background
+    background: '#BB005591'
+    layout:
+    - ButtonA
+    title:
+      es_es: Fondo del panel de prueba
+      fr_fr: Arrière-plan du panneau de test
+      chinese_s: 测试面板背景
+      ru: Фон тестовой панели
+      en_us: Test Panel Background
+      de_de: Test-Panel-Hintergrund
+      pt_br: Testar Fundo do Painel
+  - name: Test Panel Colors
+    background:
+      slideout: '#E25200'
+      title: '#E2A000'
+      panel: '#BB005591'
+    layout:
+    - ButtonC
+    - '>>>'
+    - ButtonB
+    title:
+      es_es: Colores del panel de prueba
+      fr_fr: Couleurs du panneau de test
+      chinese_s: 测试面板颜色
+      ru: Цвета тестовой панели
+      en_us: Test Panel Colors
+      de_de: Test-Panel-Farben
+      pt_br: Testar Cores do Painel
+  - name: Developer Tools
+    layout:
+    - Developer Docs
+    - Generate API Stubs
+    - Get Extension Hashes
+    - Open Dockable Pane
+    - '---'
+    - stack:
+      - apidocs
+      - Json
+      - RegEx Tool
+    title:
+      es_es: Herramientas de desarrollador
+      fr_fr: Outils de développeur
+      chinese_s: 开发者工具
+      ru: Инструменты разработчика
+      en_us: Developer Tools
+      de_de: Entwicklertools
+      pt_br: Ferramentas de Desenvolvedor
+  - name: Developer Examples
+    layout:
+    - CLR
+    - Inspect IExporter
+    - DirectContext3D
+    - Settings Window
+    - Modeless
+    - DockablePane
+    - ExportIFC
+    title:
+      es_es: Ejemplos de desarrollador
+      fr_fr: Exemples de développeur
+      chinese_s: 开发者示例
+      ru: Примеры разработчика
+      en_us: Developer Examples
+      de_de: Entwicklerbeispiele
+      pt_br: Exemplos de Desenvolvedor
+  - name: Layout
+    layout:
+    - Generate Layout
+    - List Tools
+    - Test Layout Parsing
+    title:
+      es_es: Diseño
+      fr_fr: Disposition
+      chinese_s: 布局
+      ru: Макет
+      en_us: Layout
+      de_de: Layout
+      pt_br: Layout
