@@ -614,7 +614,7 @@ def find_pyrevitcmd(pyrevitcmd_unique_id):
 
     Examples:
         ```python
-        cmd = find_pyrevitcmd('pyrevitcore_pyrevit_pyrevit_tools_reload')
+        cmd = find_pyrevitcmd('pyrevitcore_reload')
         command_instance = cmd()
         command_instance.Execute() # Provide commandData, message, elements
         ```
