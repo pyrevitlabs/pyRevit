@@ -52,6 +52,7 @@ def generate_layout(extension_dir, output_dir=None, split_panels=False):
         return []
 
     generated_files = []
+    used_panel_filenames = set()
 
     # Build the extension_layout.yaml content
     tabs_data = []
@@ -73,8 +74,12 @@ def generate_layout(extension_dir, output_dir=None, split_panels=False):
 
             if layout_list:
                 if split_panels:
-                    # Write each panel to a separate .panel.yaml file
-                    panel_filename = panel_name.replace(" ", "") + ".panel.yaml"
+                    # Write each panel to a separate .panel.yaml file.
+                    # Qualify by tab so same-named panels in different tabs
+                    # don't overwrite each other.
+                    panel_filename = _unique_panel_filename(
+                        tab.name, panel_name, used_panel_filenames
+                    )
                     panel_filepath = op.join(output_dir, panel_filename)
                     panel_data = OrderedDict()
                     panel_data["title"] = panel_name
@@ -174,6 +179,31 @@ def _collect_commands(component, results):
 
     for child in getattr(component, "components", []):
         _collect_commands(child, results)
+
+
+def _unique_panel_filename(tab_name, panel_name, used):
+    """Build a collision-free .panel.yaml filename for a panel.
+
+    Qualifies the filename with the tab name so two panels with the same
+    name in different tabs don't share a file, and appends a numeric suffix
+    if a collision still occurs.
+
+    Args:
+        tab_name (str): Name of the owning tab
+        panel_name (str): Name of the panel
+        used (set): Filenames already emitted in this run (mutated)
+
+    Returns:
+        str: A filename not present in ``used``.
+    """
+    base = "{}_{}".format(tab_name.replace(" ", ""), panel_name.replace(" ", ""))
+    candidate = base + exts.PANEL_LAYOUT_POSTFIX
+    idx = 2
+    while candidate in used:
+        candidate = "{}_{}{}".format(base, idx, exts.PANEL_LAYOUT_POSTFIX)
+        idx += 1
+    used.add(candidate)
+    return candidate
 
 
 def _build_panel_layout(panel):

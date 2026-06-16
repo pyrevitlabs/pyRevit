@@ -107,6 +107,28 @@ class LayoutExtensionItem(object):
         return get_layout_cache_dir(self.Name)
 
 
+def _collect_layout_file_warnings(layout_file, src_dir):
+    """Warn about panel layout_file references that won't be copied.
+
+    Only files following the .panel.yaml convention are copied alongside
+    extension_layout.yaml. A reference to a misnamed or missing file would
+    render an empty panel after reload, so surface it to the user instead.
+    """
+    import pyrevit.extensions as exts
+    from pyrevit.extensions.layout_parser import get_referenced_panel_files
+
+    warnings = []
+    for ref in get_referenced_panel_files(layout_file):
+        if not ref.endswith(exts.PANEL_LAYOUT_POSTFIX):
+            warnings.append(
+                '"{}" is not named "*{}" and will not be copied; '
+                'rename it to include it.'.format(ref, exts.PANEL_LAYOUT_POSTFIX)
+            )
+        elif not op.isfile(op.join(src_dir, ref)):
+            warnings.append('referenced panel file "{}" is missing.'.format(ref))
+    return warnings
+
+
 class SettingsWindow(forms.WPFWindow):
     """pyRevit Settings window that handles setting the pyRevit configs"""
 
@@ -622,10 +644,14 @@ class SettingsWindow(forms.WPFWindow):
         user_config.save_changes()
 
         self._refresh_layout_list()
-        forms.alert(
+        msg = (
             'Custom layout imported for "{}". '
             'Reload pyRevit to apply.'.format(item.Name)
         )
+        layout_warnings = _collect_layout_file_warnings(layout_file, src_dir)
+        if layout_warnings:
+            msg += '\n\nWarnings:\n- ' + '\n- '.join(layout_warnings)
+        forms.alert(msg)
 
     def export_layout_for_ext(self, sender, args):
         """Export active layout files for a specific extension."""
@@ -656,7 +682,11 @@ class SettingsWindow(forms.WPFWindow):
             if f.endswith('.panel.yaml'):
                 shutil.copy2(op.join(src_dir, f), dest_dir)
 
-        forms.alert('Layout files exported to:\n{}'.format(dest_dir))
+        msg = 'Layout files exported to:\n{}'.format(dest_dir)
+        layout_warnings = _collect_layout_file_warnings(layout_file, src_dir)
+        if layout_warnings:
+            msg += '\n\nWarnings:\n- ' + '\n- '.join(layout_warnings)
+        forms.alert(msg)
 
     def reset_layout_for_ext(self, sender, args):
         """Reset custom layout for a specific extension."""

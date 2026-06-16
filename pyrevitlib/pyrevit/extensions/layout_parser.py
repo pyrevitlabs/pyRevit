@@ -197,6 +197,33 @@ def get_layout_file(extension_dir):
     )
 
 
+def get_referenced_panel_files(layout_file):
+    """Collect the panel layout_file references declared in a layout file.
+
+    Args:
+        layout_file (str): Path to an extension_layout.yaml file.
+
+    Returns:
+        list[str]: The layout_file values referenced by panels, in order and
+            de-duplicated. Empty list if the file cannot be read.
+    """
+    try:
+        layout_data = yaml.load_as_dict(layout_file)
+    except Exception as err:
+        mlogger.debug("Could not read layout file %s: %s", layout_file, err)
+        return []
+
+    refs = []
+    if layout_data:
+        for tab_data in layout_data.get(exts.LAYOUT_TABS_KEY, []) or []:
+            for panel_data in tab_data.get(exts.LAYOUT_PANELS_KEY, []) or []:
+                if isinstance(panel_data, dict):
+                    ref = panel_data.get(exts.LAYOUT_FILE_KEY)
+                    if ref and ref not in refs:
+                        refs.append(ref)
+    return refs
+
+
 def parse_extension_layout(extension, tool_index, layout_file):
     """Parse layout file and build Tab/Panel/Tool tree on extension.
 
