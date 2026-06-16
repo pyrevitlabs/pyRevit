@@ -14,6 +14,7 @@ from collections import OrderedDict
 from pyrevit.coreutils import yaml as pyyaml
 from pyrevit.coreutils.logger import get_logger
 import pyrevit.extensions as exts
+from pyrevit.extensions import layout_parser
 
 # pylint: disable=W0703,C0302,C0103
 mlogger = get_logger(__name__)
@@ -191,22 +192,21 @@ def _build_panel_layout(panel):
         type_id = getattr(comp, "type_id", "")
 
         if type_id == exts.SEPARATOR_IDENTIFIER:
-            layout.append("---")
+            layout.append(layout_parser.encode_separator_entry())
         elif type_id == exts.SLIDEOUT_IDENTIFIER:
-            layout.append(">>>")
+            layout.append(layout_parser.encode_slideout_entry())
         elif _is_stack_type(comp):
-            # This is a stack - inline its children (iter respects bundle.yaml order)
+            # Stacks have no UI of their own; inline their children
             stack_children = [
-                c.name
+                layout_parser.encode_tool_entry(c.name)
                 for c in iter(comp)
                 if getattr(c, "type_id", "")
                 not in (exts.SEPARATOR_IDENTIFIER, exts.SLIDEOUT_IDENTIFIER)
             ]
             if stack_children:
-                layout.append({"stack": stack_children})
+                layout.append(layout_parser.encode_stack_entry(stack_children))
         else:
-            # Regular tool
-            layout.append(comp.name)
+            layout.append(layout_parser.encode_tool_entry(comp.name))
 
     return layout
 
@@ -220,5 +220,4 @@ def _is_stack_type(comp):
     Returns:
         bool: True if component is a stack type
     """
-    type_id = getattr(comp, "type_id", "")
-    return type_id and "stack" in type_id.lower()
+    return getattr(comp, "type_id", "") == exts.STACK_BUTTON_POSTFIX

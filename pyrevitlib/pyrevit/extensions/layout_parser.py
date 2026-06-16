@@ -20,6 +20,68 @@ from pyrevit.extensions.toolindex import make_layout_unique_name
 mlogger = get_logger(__name__)
 
 
+# ---------------------------------------------------------------------------
+# Layout entry grammar
+#
+# A panel's "layout" is a list of entries. Each entry is one of a small set
+# of kinds. These helpers are the single source of truth for that wire format
+# so the loader, the CLI generator (layout_cli), and the Layout Builder UI all
+# read and write it identically; changing the format in one place updates all.
+# ---------------------------------------------------------------------------
+
+LAYOUT_ENTRY_SEPARATOR = "separator"
+LAYOUT_ENTRY_SLIDEOUT = "slideout"
+LAYOUT_ENTRY_STACK = "stack"
+LAYOUT_ENTRY_TOOL = "tool"
+LAYOUT_ENTRY_UNKNOWN = "unknown"
+
+
+def classify_layout_entry(entry):
+    """Classify a single raw entry from a panel's layout list.
+
+    Args:
+        entry: A raw YAML value from the layout list (str or dict).
+
+    Returns:
+        tuple[str, object]: (kind, payload) where kind is one of the
+            LAYOUT_ENTRY_* constants:
+                separator / slideout -> payload is None
+                tool                 -> payload is the stripped tool name
+                stack                -> payload is the raw child entry list
+                unknown              -> payload is the original entry
+    """
+    if isinstance(entry, str):
+        name = entry.strip()
+        if name == exts.SEPARATOR_IDENTIFIER:
+            return (LAYOUT_ENTRY_SEPARATOR, None)
+        if name == exts.SLIDEOUT_IDENTIFIER:
+            return (LAYOUT_ENTRY_SLIDEOUT, None)
+        return (LAYOUT_ENTRY_TOOL, name)
+    if isinstance(entry, dict) and exts.LAYOUT_STACK_KEY in entry:
+        return (LAYOUT_ENTRY_STACK, entry[exts.LAYOUT_STACK_KEY])
+    return (LAYOUT_ENTRY_UNKNOWN, entry)
+
+
+def encode_separator_entry():
+    """Wire-format layout entry for a separator."""
+    return exts.SEPARATOR_IDENTIFIER
+
+
+def encode_slideout_entry():
+    """Wire-format layout entry for a slideout."""
+    return exts.SLIDEOUT_IDENTIFIER
+
+
+def encode_tool_entry(tool_name):
+    """Wire-format layout entry for a tool reference."""
+    return tool_name
+
+
+def encode_stack_entry(child_entries):
+    """Wire-format layout entry for a stack of already-encoded children."""
+    return {exts.LAYOUT_STACK_KEY: child_entries}
+
+
 def list_layout_presets(extension_dir):
     """List developer-provided layout presets in <ext>/layouts/.
 
@@ -323,66 +385,52 @@ def _populate_panel(panel, layout_list, tool_index, ext_name, referenced_tools=N
     stack_counter = 0
 
     for entry in layout_list:
-        if isinstance(entry, str):
-            # String entry: tool name, separator, or slideout
-            _resolve_string_entry(entry, panel, tool_index, referenced_tools)
-        elif isinstance(entry, dict):
-            # Dict entry: could be a stack grouping
-            if exts.LAYOUT_STACK_KEY in entry:
-                stack_children = entry[exts.LAYOUT_STACK_KEY]
-                _create_stack(
-                    stack_children,
-                    panel,
-                    tool_index,
-                    ext_name,
-                    stack_counter,
-                    referenced_tools,
-                )
-                stack_counter += 1
-            else:
-                mlogger.warning("Unknown dict entry in panel layout: %s", entry)
+        kind, payload = classify_layout_entry(entry)
+        if kind == LAYOUT_ENTRY_SEPARATOR:
+            panel.add_component(_make_marker(exts.SEPARATOR_IDENTIFIER))
+        elif kind == LAYOUT_ENTRY_SLIDEOUT:
+            panel.add_component(_make_marker(exts.SLIDEOUT_IDENTIFIER))
+        elif kind == LAYOUT_ENTRY_TOOL:
+            _place_tool(payload, panel, tool_index, referenced_tools)
+        elif kind == LAYOUT_ENTRY_STACK:
+            _create_stack(
+                payload, panel, tool_index, ext_name, stack_counter, referenced_tools
+            )
+            stack_counter += 1
         else:
-            mlogger.warning("Unknown layout entry type (%s): %s", type(entry), entry)
+            mlogger.warning("Unknown layout entry (%s): %s", type(entry), entry)
 
 
-def _resolve_string_entry(entry, parent, tool_index, referenced_tools=None):
-    """Resolve a string layout entry and add to parent.
+def _make_marker(identifier):
+    """Create a separator/slideout marker component."""
+    marker = GenericUIComponent()
+    marker.type_id = identifier
+    marker.name = identifier
+    return marker
 
-    Handles:
-        - Separator identifier ('---')
-        - Slideout identifier ('>>>')
-        - Tool name references (lookup in tool_index)
+
+def _place_tool(tool_name, parent, tool_index, referenced_tools=None):
+    """Resolve a tool name against the index and add it to the parent.
 
     Args:
-        entry (str): The string entry from layout YAML
-        parent: Parent container to add component to
+        tool_name (str): Tool name referenced in the layout
+        parent: Parent container to add the resolved component to
         tool_index (dict): Tool name to component mapping
         referenced_tools (set): Set to track tool names placed in the layout
+
+    Returns:
+        bool: True if the tool was found and placed.
     """
-    tool_name = entry.strip()
-
-    if tool_name == exts.SEPARATOR_IDENTIFIER:
-        separator = GenericUIComponent()
-        separator.type_id = exts.SEPARATOR_IDENTIFIER
-        separator.name = exts.SEPARATOR_IDENTIFIER
-        parent.add_component(separator)
-        return
-
-    if tool_name == exts.SLIDEOUT_IDENTIFIER:
-        slideout = GenericUIComponent()
-        slideout.type_id = exts.SLIDEOUT_IDENTIFIER
-        slideout.name = exts.SLIDEOUT_IDENTIFIER
-        parent.add_component(slideout)
-        return
-
     if tool_name in tool_index:
         parent.add_component(tool_index[tool_name])
         if referenced_tools is not None:
             referenced_tools.add(tool_name)
-    else:
-        mlogger.warning(
-            'Tool "%s" referenced in layout but not found in tool index', tool_name
-        )
+        return True
+
+    mlogger.warning(
+        'Tool "%s" referenced in layout but not found in tool index', tool_name
+    )
+    return False
 
 
 def _create_stack(
@@ -407,22 +455,12 @@ def _create_stack(
         panel_name_part + exts.UNIQUE_ID_SEPARATOR + stack_name,
     )
 
-    for child_name in children_names:
-        if not isinstance(child_name, str):
-            mlogger.warning(
-                "Stack child must be a string tool name, got: %s", type(child_name)
-            )
-            continue
-
-        child_name = child_name.strip()
-        if child_name in tool_index:
-            stack.add_component(tool_index[child_name])
-            if referenced_tools is not None:
-                referenced_tools.add(child_name)
+    for child in children_names:
+        kind, payload = classify_layout_entry(child)
+        if kind == LAYOUT_ENTRY_TOOL:
+            _place_tool(payload, stack, tool_index, referenced_tools)
         else:
-            mlogger.warning(
-                'Tool "%s" referenced in stack but not found in tool index', child_name
-            )
+            mlogger.warning("Stack child must be a tool name, got: %s", child)
 
     if stack.components:
         panel.add_component(stack)

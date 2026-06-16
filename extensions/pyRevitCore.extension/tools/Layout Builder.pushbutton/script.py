@@ -20,6 +20,15 @@ from pyrevit.extensions.layout_parser import (
     get_layout_cache_dir,
     has_layout_file,
     list_layout_presets,
+    classify_layout_entry,
+    encode_separator_entry,
+    encode_slideout_entry,
+    encode_tool_entry,
+    encode_stack_entry,
+    LAYOUT_ENTRY_SEPARATOR,
+    LAYOUT_ENTRY_SLIDEOUT,
+    LAYOUT_ENTRY_TOOL,
+    LAYOUT_ENTRY_STACK,
 )
 from pyrevit.extensions.toolindex import build_tool_index
 from pyrevit.loader import sessionmgr
@@ -147,16 +156,16 @@ class ToolItem(forms.Reactive):
 
 def _layout_entry_to_node(entry):
     """Convert a single layout YAML entry to a LayoutNode."""
-    if isinstance(entry, str):
-        if entry == exts.SEPARATOR_IDENTIFIER:
-            return LayoutNode("separator")
-        if entry == exts.SLIDEOUT_IDENTIFIER:
-            return LayoutNode("slideout")
-        return LayoutNode("tool", name=entry)
-    if isinstance(entry, dict):
-        if exts.LAYOUT_STACK_KEY in entry:
-            children = [_layout_entry_to_node(e) for e in entry[exts.LAYOUT_STACK_KEY]]
-            return LayoutNode("stack", children=children)
+    kind, payload = classify_layout_entry(entry)
+    if kind == LAYOUT_ENTRY_SEPARATOR:
+        return LayoutNode("separator")
+    if kind == LAYOUT_ENTRY_SLIDEOUT:
+        return LayoutNode("slideout")
+    if kind == LAYOUT_ENTRY_TOOL:
+        return LayoutNode("tool", name=payload)
+    if kind == LAYOUT_ENTRY_STACK:
+        children = [_layout_entry_to_node(e) for e in payload]
+        return LayoutNode("stack", children=children)
     return None
 
 
@@ -236,15 +245,15 @@ def tree_to_yaml_dict(roots):
 def _node_to_layout_entry(node):
     """Convert a LayoutNode to a YAML layout entry."""
     if node.node_type == "separator":
-        return exts.SEPARATOR_IDENTIFIER
+        return encode_separator_entry()
     if node.node_type == "slideout":
-        return exts.SLIDEOUT_IDENTIFIER
+        return encode_slideout_entry()
     if node.node_type == "tool":
-        return node.name
+        return encode_tool_entry(node.name)
     if node.node_type == "stack":
         children = [_node_to_layout_entry(c) for c in node.children]
-        return {"stack": children}
-    return node.name
+        return encode_stack_entry(children)
+    return encode_tool_entry(node.name)
 
 
 # ---------------------------------------------------------------------------
