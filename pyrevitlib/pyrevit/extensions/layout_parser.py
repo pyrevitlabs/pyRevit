@@ -301,6 +301,41 @@ def parse_extension_layout(extension, tool_index, layout_file):
     return True
 
 
+def _coerce_bool(value):
+    """Coerce a YAML scalar (native bool or string) to a bool."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() == "true"
+    return False
+
+
+def _apply_highlight(comp, data):
+    """Apply the highlight directive from a layout entry to a component."""
+    highlight = data.get(exts.MDATA_HIGHLIGHT_KEY)
+    if highlight and isinstance(highlight, str):
+        comp.highlight_type = highlight.lower()
+
+
+def _apply_panel_metadata(panel, data):
+    """Apply panel presentation metadata from a layout entry.
+
+    Mirrors the bundle.yaml keys the legacy parser honors so a panel keeps
+    its appearance when defined in (or migrated to) a layout file.
+    """
+    _apply_highlight(panel, data)
+    panel.collapsed = _coerce_bool(data.get(exts.MDATA_COLLAPSED_KEY))
+    panel.is_beta = _coerce_bool(data.get(exts.MDATA_BETA_SCRIPT))
+
+    background = data.get(exts.MDATA_BACKGROUND_KEY)
+    if isinstance(background, dict):
+        panel.title_background = background.get(exts.MDATA_BACKGROUND_TITLE_KEY)
+        panel.slideout_background = background.get(exts.MDATA_BACKGROUND_SLIDEOUT_KEY)
+        panel.panel_background = background.get(exts.MDATA_BACKGROUND_PANEL_KEY)
+    elif isinstance(background, str):
+        panel.panel_background = background
+
+
 def _create_tab(tab_data, ext_name, ext_dir):
     """Create a Tab component from layout YAML data."""
     tab_name = tab_data.get(exts.LAYOUT_NAME_KEY)
@@ -312,6 +347,7 @@ def _create_tab(tab_data, ext_name, ext_dir):
     tab.name = tab_name
     tab._ui_title = tab_data.get(exts.LAYOUT_TITLE_KEY, tab_name)
     tab.unique_name = make_layout_unique_name(ext_name, tab_name)
+    _apply_highlight(tab, tab_data)
 
     mlogger.debug("Created layout tab: %s", tab_name)
     return tab
@@ -338,30 +374,31 @@ def _create_panel(
     if layout_dir is None:
         layout_dir = ext_dir
 
-    # panel_data can be a dict with name + layout/layout_file
+    # Resolve the source dict that carries this panel's title, presentation
+    # metadata, and layout. For inline panels that is the entry itself; for
+    # string/layout_file references it is the external .panel.yaml.
     if isinstance(panel_data, str):
-        # Simple string reference - look for panel.yaml file
         panel_name = panel_data
-        panel_title = panel_data
-        layout_list = _load_panel_layout_file(panel_name, ext_dir, layout_dir)
+        source = _load_panel_file_dict(
+            panel_name + exts.PANEL_LAYOUT_POSTFIX, ext_dir, layout_dir
+        )
+        panel_title = source.get(exts.LAYOUT_TITLE_KEY, panel_name)
     elif isinstance(panel_data, dict):
         panel_name = panel_data.get(exts.LAYOUT_NAME_KEY)
         if not panel_name:
             mlogger.error('Panel definition missing "name" key')
             return None
-        panel_title = panel_data.get(exts.LAYOUT_TITLE_KEY, panel_name)
 
-        # Check for external layout file reference
         layout_file_ref = panel_data.get(exts.LAYOUT_FILE_KEY)
         if layout_file_ref:
-            # Try layout directory first (custom cached layouts), then ext_dir
-            filepath = op.join(layout_dir, layout_file_ref)
-            if not op.isfile(filepath):
-                filepath = op.join(ext_dir, layout_file_ref)
-            layout_list = _load_panel_layout_file_path(filepath)
+            source = _load_panel_file_dict(layout_file_ref, ext_dir, layout_dir)
+            # An explicit title on the outer entry wins over the file's.
+            panel_title = panel_data.get(exts.LAYOUT_TITLE_KEY) or source.get(
+                exts.LAYOUT_TITLE_KEY, panel_name
+            )
         else:
-            # Inline layout
-            layout_list = panel_data.get(exts.LAYOUT_KEY, [])
+            source = panel_data
+            panel_title = panel_data.get(exts.LAYOUT_TITLE_KEY, panel_name)
     else:
         mlogger.error("Invalid panel definition type: %s", type(panel_data))
         return None
@@ -370,7 +407,9 @@ def _create_panel(
     panel.name = panel_name
     panel._ui_title = panel_title
     panel.unique_name = make_layout_unique_name(ext_name, panel_name)
+    _apply_panel_metadata(panel, source)
 
+    layout_list = source.get(exts.LAYOUT_KEY, [])
     if layout_list:
         _populate_panel(panel, layout_list, tool_index, ext_name, referenced_tools)
 
@@ -382,53 +421,34 @@ def _create_panel(
     return panel
 
 
-def _load_panel_layout_file(panel_name, ext_dir, layout_dir=None):
-    """Load a panel layout from {PanelName}.panel.yaml.
+def _load_panel_file_dict(filename, ext_dir, layout_dir=None):
+    """Load a panel definition dict from a .panel.yaml file.
 
     Checks layout_dir first (for custom cached layouts), then ext_dir.
 
     Args:
-        panel_name (str): Panel name to look up
+        filename (str): Panel file name (e.g. "Edit.panel.yaml")
         ext_dir (str): Extension directory path
         layout_dir (str): Directory of the active layout file
 
     Returns:
-        list: Layout entries, or empty list if not found
+        dict: Parsed panel file (title/metadata/layout), or {} if not found.
     """
-    filename = panel_name + exts.PANEL_LAYOUT_POSTFIX
-    # Try layout directory first (custom cached layouts)
-    if layout_dir:
-        filepath = op.join(layout_dir, filename)
+    for base in (layout_dir, ext_dir):
+        if not base:
+            continue
+        filepath = op.join(base, filename)
         if op.isfile(filepath):
-            return _load_panel_layout_file_path(filepath)
-    # Fall back to extension directory
-    filepath = op.join(ext_dir, filename)
-    return _load_panel_layout_file_path(filepath)
+            try:
+                return yaml.load_as_dict(filepath) or {}
+            except Exception as err:
+                mlogger.error(
+                    "Failed to read panel layout file %s: %s", filepath, err
+                )
+                return {}
 
-
-def _load_panel_layout_file_path(filepath):
-    """Load panel layout from a specific file path.
-
-    Args:
-        filepath (str): Path to the .panel.yaml file
-
-    Returns:
-        list: Layout entries, or empty list if not found
-    """
-    if not op.isfile(filepath):
-        mlogger.debug("Panel layout file not found: %s", filepath)
-        return []
-
-    try:
-        panel_data = yaml.load_as_dict(filepath)
-    except Exception as err:
-        mlogger.error("Failed to read panel layout file %s: %s", filepath, err)
-        return []
-
-    if not panel_data:
-        return []
-
-    return panel_data.get(exts.LAYOUT_KEY, [])
+    mlogger.debug("Panel layout file not found: %s", filename)
+    return {}
 
 
 def _populate_panel(panel, layout_list, tool_index, ext_name, referenced_tools=None):

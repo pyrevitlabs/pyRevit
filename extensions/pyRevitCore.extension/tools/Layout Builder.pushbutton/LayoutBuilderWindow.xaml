@@ -297,23 +297,30 @@
                                Margin="0,0,0,6"/>
 
                     <!-- Structure buttons toolbar -->
-                    <WrapPanel Grid.Row="1" Margin="0,0,0,6">
-                        <Button Content="+ Tab"
+                    <DockPanel Grid.Row="1" Margin="0,0,0,6">
+                        <Button x:Name="properties_btn"
+                                DockPanel.Dock="Right"
+                                Content="Properties..."
                                 Style="{StaticResource ToolbarButton}"
-                                Click="add_tab" Margin="0,0,4,2"/>
-                        <Button Content="+ Panel"
-                                Style="{StaticResource ToolbarButton}"
-                                Click="add_panel" Margin="0,0,4,2"/>
-                        <Button Content="+ Stack"
-                                Style="{StaticResource ToolbarButton}"
-                                Click="add_stack" Margin="0,0,4,2"/>
-                        <Button Content="+ Separator"
-                                Style="{StaticResource ToolbarButton}"
-                                Click="add_separator" Margin="0,0,4,2"/>
-                        <Button Content="+ Slideout"
-                                Style="{StaticResource ToolbarButton}"
-                                Click="add_slideout" Margin="0,0,4,2"/>
-                    </WrapPanel>
+                                Click="edit_properties" Margin="8,0,0,2"/>
+                        <WrapPanel>
+                            <Button Content="+ Tab"
+                                    Style="{StaticResource ToolbarButton}"
+                                    Click="add_tab" Margin="0,0,4,2"/>
+                            <Button Content="+ Panel"
+                                    Style="{StaticResource ToolbarButton}"
+                                    Click="add_panel" Margin="0,0,4,2"/>
+                            <Button Content="+ Stack"
+                                    Style="{StaticResource ToolbarButton}"
+                                    Click="add_stack" Margin="0,0,4,2"/>
+                            <Button Content="+ Separator"
+                                    Style="{StaticResource ToolbarButton}"
+                                    Click="add_separator" Margin="0,0,4,2"/>
+                            <Button Content="+ Slideout"
+                                    Style="{StaticResource ToolbarButton}"
+                                    Click="add_slideout" Margin="0,0,4,2"/>
+                        </WrapPanel>
+                    </DockPanel>
 
                     <!-- Layout tree -->
                     <TreeView Grid.Row="2" x:Name="layout_tv"
@@ -321,6 +328,7 @@
                               BorderBrush="{StaticResource BorderBrush}"
                               ItemTemplate="{StaticResource LayoutNodeTemplate}"
                               ItemContainerStyle="{StaticResource TreeItemContainer}"
+                              SelectedItemChanged="tree_selection_changed"
                               Padding="4"/>
 
                     <!-- Move / Remove buttons -->

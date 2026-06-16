@@ -1,0 +1,128 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Properties"
+        Width="460" Height="580"
+        MinWidth="400" MinHeight="480"
+        ResizeMode="CanResize"
+        WindowStartupLocation="CenterOwner">
+
+    <Grid Margin="14" Background="White">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <TextBlock x:Name="dlg_header" Grid.Row="0"
+                   Text="Properties"
+                   FontSize="15" FontWeight="SemiBold"
+                   Margin="0,0,0,12"/>
+
+        <!-- Highlight -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
+            <TextBlock Text="Highlight:" Width="90" VerticalAlignment="Center"/>
+            <ComboBox x:Name="highlight_cb" Width="180"/>
+        </StackPanel>
+
+        <!-- Panel-only fields -->
+        <StackPanel x:Name="panel_section" Grid.Row="2" Margin="0,0,0,10">
+            <CheckBox x:Name="collapsed_chk" Content="Start collapsed" Margin="0,0,0,6"/>
+            <CheckBox x:Name="isbeta_chk"
+                      Content="Beta (hidden unless beta tools are enabled)"
+                      Margin="0,0,0,10"/>
+
+            <TextBlock Text="Background" FontWeight="SemiBold" Margin="0,0,0,6"/>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Panel:"
+                           VerticalAlignment="Center"/>
+                <Border Grid.Row="0" Grid.Column="1" x:Name="bg_panel_sw"
+                        Width="42" Height="18" Margin="0,2"
+                        BorderBrush="#999999" BorderThickness="1"/>
+                <Button Grid.Row="0" Grid.Column="2" Content="Pick..."
+                        Click="pick_bg_panel" Margin="6,2,0,2" Padding="6,2"/>
+                <Button Grid.Row="0" Grid.Column="3" Content="Clear"
+                        Click="clear_bg_panel" Margin="4,2,0,2" Padding="6,2"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Title bar:"
+                           VerticalAlignment="Center"/>
+                <Border Grid.Row="1" Grid.Column="1" x:Name="bg_title_sw"
+                        Width="42" Height="18" Margin="0,2"
+                        BorderBrush="#999999" BorderThickness="1"/>
+                <Button Grid.Row="1" Grid.Column="2" Content="Pick..."
+                        Click="pick_bg_title" Margin="6,2,0,2" Padding="6,2"/>
+                <Button Grid.Row="1" Grid.Column="3" Content="Clear"
+                        Click="clear_bg_title" Margin="4,2,0,2" Padding="6,2"/>
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Slideout:"
+                           VerticalAlignment="Center"/>
+                <Border Grid.Row="2" Grid.Column="1" x:Name="bg_slideout_sw"
+                        Width="42" Height="18" Margin="0,2"
+                        BorderBrush="#999999" BorderThickness="1"/>
+                <Button Grid.Row="2" Grid.Column="2" Content="Pick..."
+                        Click="pick_bg_slideout" Margin="6,2,0,2" Padding="6,2"/>
+                <Button Grid.Row="2" Grid.Column="3" Content="Clear"
+                        Click="clear_bg_slideout" Margin="4,2,0,2" Padding="6,2"/>
+            </Grid>
+        </StackPanel>
+
+        <!-- Title (per-locale) -->
+        <Grid Grid.Row="3" x:Name="title_section">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Text="Title" FontWeight="SemiBold"
+                       Margin="0,0,0,2"/>
+            <TextBlock Grid.Row="1"
+                       Text="One row per locale (e.g. en_us). Leave the locale blank for a single, non-localized title."
+                       TextWrapping="Wrap"
+                       FontSize="11" Foreground="#777777" Margin="0,0,0,4"/>
+
+            <DataGrid Grid.Row="2" x:Name="title_dg"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="True"
+                      HeadersVisibility="Column"
+                      GridLinesVisibility="All"
+                      SelectionMode="Single">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Locale" Width="150"
+                        Binding="{Binding locale, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                    <DataGridTextColumn Header="Title" Width="*"
+                        Binding="{Binding title, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,6,0,0">
+                <Button Content="+ Add Locale" Click="add_locale_row" Padding="8,3"/>
+                <Button Content="Remove Row" Click="remove_locale_row"
+                        Padding="8,3" Margin="6,0,0,0"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="4" Orientation="Horizontal"
+                    HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button Content="Cancel" Click="cancel" Padding="16,6" Margin="0,0,8,0"/>
+            <Button Content="OK" Click="ok" Padding="16,6"/>
+        </StackPanel>
+    </Grid>
+</Window>

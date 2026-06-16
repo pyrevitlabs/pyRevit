@@ -52,19 +52,58 @@ tabs:
 
 | Key | Required | Description |
 |-----|----------|-------------|
-| `name` | Yes | Tab name (also used as the display title) |
-| `title` | No | Display title if different from name |
+| `name` | Yes | Tab name. Also the ribbon-tab display text and the key extensions merge on |
+| `title` | No | Reserved for parity with panels; the ribbon tab currently displays `name` |
+| `highlight` | No | `new` or `updated` — shows a highlight badge on the tab |
 | `panels` | Yes | List of panel definitions |
 
 ### Panel Properties
 
 | Key | Required | Description |
 |-----|----------|-------------|
-| `name` | Yes | Panel name (display title shown below the panel) |
+| `name` | Yes | Panel name (identity within the tab) |
+| `title` | No | Display title shown below the panel; defaults to `name`. May be a locale map (see below) |
 | `layout` | Either this or `layout_file` | Inline list of layout items |
 | `layout_file` | Either this or `layout` | Path to an external `.panel.yaml` file |
+| `highlight` | No | `new` or `updated` — shows a highlight badge on the panel |
+| `collapsed` | No | `true` to start the panel collapsed |
+| `is_beta` | No | `true` to hide the panel unless beta tools are enabled |
+| `background` | No | Panel background color(s) — string or `{panel, title, slideout}` map |
 
-The parser looks up keys by name, so key ordering does not affect behavior. The auto-generator outputs `name` and `title` keys first for readability.
+The parser looks up keys by name, so key ordering does not affect behavior. The auto-generator outputs `name`/`title` first, then presentation keys, then `layout`.
+
+### Panel Appearance
+
+```yaml
+panels:
+  - name: "Modeling"
+    highlight: new            # "new" or "updated" badge
+    collapsed: true           # start collapsed
+    background: "#2D2D30"     # single color for the whole panel
+    layout:
+      - "Create Wall"
+  - name: "Review"
+    background:               # or target parts individually
+      panel: "#1E1E1E"
+      title: "#007ACC"
+      slideout: "#252526"
+    layout:
+      - "Audit"
+```
+
+### Localized Titles (i18n)
+
+A panel `title` may be a locale map instead of a string. The Layout Builder displays the resolved label for the active locale and preserves the full map on save:
+
+```yaml
+panels:
+  - name: "Selection"
+    title:
+      en_us: "Selection"
+      chinese_s: "选择"
+    layout:
+      - "Pick"
+```
 
 ## Panel Layout Items
 
@@ -147,7 +186,7 @@ layout:
       - "MRead"
 ```
 
-The `title` key is informational (the panel name comes from the `name` key in `extension_layout.yaml`). The auto-generator always outputs `title` before `layout`.
+The panel `name` comes from the entry in `extension_layout.yaml`; the external file carries the `title`, the `layout`, and any presentation keys (`highlight`, `collapsed`, `background`, `is_beta`). A `title` set on the outer entry takes precedence over the file's. The auto-generator outputs `title` before `layout`.
 
 ## Tool Naming
 
@@ -251,4 +290,6 @@ This matches the format produced by the auto-generator. See the bundled
 - If `extension_layout.yaml` is missing, the extension falls back to legacy folder-based parsing automatically.
 - Tools not referenced in any layout YAML will not appear in the ribbon, but they are still compiled into the extension assembly. This means editing the layout (via Layout Builder or by hand) to surface a previously-hidden tool does not require an assembly rebuild on the next reload.
 - Duplicate tool names across `tools/` and legacy folders: the `tools/` version takes priority.
+- A tool referenced from more than one location is placed once (at its first reference); the duplicate is logged and skipped, since a tool maps to a single command.
+- Panel appearance from `bundle.yaml` (`highlight`, `collapsed`, `background`, `is_beta`) and localized `title`s are carried over by the auto-generator when migrating a legacy extension, so the ribbon looks the same after conversion.
 - After changing layout files, a pyRevit reload is required to see changes.

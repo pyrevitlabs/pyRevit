@@ -15,6 +15,7 @@ from collections import OrderedDict
 
 from pyrevit import script, forms
 from pyrevit.coreutils import yaml as pyyaml
+from pyrevit.coreutils import applocales
 from pyrevit.framework import ObservableCollection
 from pyrevit.extensions.layout_parser import (
     get_layout_cache_dir,
@@ -41,13 +42,27 @@ mlogger = script.get_logger()
 # ---------------------------------------------------------------------------
 
 
+def _resolve_title(title):
+    """Resolve a possibly-localized title (str or {locale: str}) for display.
+
+    Titles may be a plain string or a locale map; preserve the original on
+    the node for round-tripping and only resolve a readable label here.
+    """
+    if isinstance(title, dict):
+        return applocales.get_locale_string(title)
+    return title
+
+
 class LayoutNode(forms.Reactive):
     """A node in the layout tree (tab, panel, stack, tool, separator, etc.)."""
 
-    def __init__(self, node_type, name="", title="", children=None):
+    def __init__(self, node_type, name="", title="", children=None, extra=None):
         self._node_type = node_type
         self._name = name
         self._title = title
+        # non-structural keys (highlight, collapsed, background, ...) carried
+        # through unchanged so a save doesn't drop metadata the editor ignores
+        self._extra = extra or OrderedDict()
         self._missing = False
         self._children = ObservableCollection[object]()
         self.parent = None
@@ -73,7 +88,7 @@ class LayoutNode(forms.Reactive):
     def display_name(self):
         if self._node_type in ("separator", "slideout"):
             return ""
-        label = self._title or self._name
+        label = _resolve_title(self._title) or self._name
         if self._missing:
             label += "  [missing]"
         return label
@@ -89,6 +104,15 @@ class LayoutNode(forms.Reactive):
     @property
     def title(self):
         return self._title
+
+    @title.setter
+    def title(self, value):
+        self._title = value
+        self.OnPropertyChanged("display_name")
+
+    @property
+    def extra(self):
+        return self._extra
 
     @property
     def children(self):
@@ -149,6 +173,39 @@ class ToolItem(forms.Reactive):
         self.OnPropertyChanged("display")
 
 
+class LocaleTitleRow(forms.Reactive):
+    """Editable (locale, title) pair shown in the properties dialog grid."""
+
+    def __init__(self, locale="", title=""):
+        self._locale = locale or ""
+        self._title = title or ""
+
+    @forms.reactive
+    def locale(self):
+        return self._locale
+
+    @locale.setter
+    def locale(self, value):
+        self._locale = value or ""
+
+    @forms.reactive
+    def title(self):
+        return self._title
+
+    @title.setter
+    def title(self, value):
+        self._title = value or ""
+
+
+def _truthy(value):
+    """Coerce a YAML scalar (native bool or string) to a bool."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() == "true"
+    return bool(value)
+
+
 # ---------------------------------------------------------------------------
 # YAML <-> LayoutNode conversion
 # ---------------------------------------------------------------------------
@@ -169,6 +226,28 @@ def _layout_entry_to_node(entry):
     return None
 
 
+# Keys with dedicated handling; any other key on a tab/panel entry is carried
+# through verbatim so saving doesn't drop metadata the editor doesn't edit.
+_TAB_STRUCTURAL_KEYS = frozenset(
+    [exts.LAYOUT_NAME_KEY, exts.LAYOUT_TITLE_KEY, exts.LAYOUT_PANELS_KEY]
+)
+_PANEL_STRUCTURAL_KEYS = frozenset(
+    [
+        exts.LAYOUT_NAME_KEY,
+        exts.LAYOUT_TITLE_KEY,
+        exts.LAYOUT_KEY,
+        exts.LAYOUT_FILE_KEY,
+    ]
+)
+
+
+def _passthrough_keys(data, structural_keys):
+    """Collect non-structural keys from an entry for round-trip preservation."""
+    return OrderedDict(
+        (k, v) for k, v in data.items() if k not in structural_keys
+    )
+
+
 def load_layout_tree(layout_file, extension_dir):
     """Parse extension_layout.yaml into a list of root LayoutNode (tabs)."""
     data = pyyaml.load_as_dict(layout_file)
@@ -180,15 +259,21 @@ def load_layout_tree(layout_file, extension_dir):
     for tab_data in data[exts.LAYOUT_TABS_KEY]:
         tab_name = tab_data.get(exts.LAYOUT_NAME_KEY, "")
         tab_title = tab_data.get(exts.LAYOUT_TITLE_KEY, "")
-        tab_node = LayoutNode("tab", name=tab_name, title=tab_title)
+        tab_node = LayoutNode(
+            "tab",
+            name=tab_name,
+            title=tab_title,
+            extra=_passthrough_keys(tab_data, _TAB_STRUCTURAL_KEYS),
+        )
 
         for panel_data in tab_data.get(exts.LAYOUT_PANELS_KEY, []):
             panel_name = panel_data.get(exts.LAYOUT_NAME_KEY, "")
             panel_title = panel_data.get(exts.LAYOUT_TITLE_KEY, "")
-            panel_node = LayoutNode("panel", name=panel_name, title=panel_title)
+            # Panel title and metadata live with the layout definition: the
+            # entry itself when inline, or the external .panel.yaml otherwise.
+            meta_source = panel_data
 
             layout_items = panel_data.get(exts.LAYOUT_KEY, [])
-            # If panel uses external layout_file, load it
             if not layout_items:
                 panel_file = panel_data.get(exts.LAYOUT_FILE_KEY, "")
                 if panel_file:
@@ -196,11 +281,18 @@ def load_layout_tree(layout_file, extension_dir):
                     if not op.isfile(panel_path):
                         panel_path = op.join(extension_dir, panel_file)
                     if op.isfile(panel_path):
-                        pdata = pyyaml.load_as_dict(panel_path)
+                        pdata = pyyaml.load_as_dict(panel_path) or {}
                         layout_items = pdata.get(exts.LAYOUT_KEY, [])
+                        meta_source = pdata
                         if not panel_title:
                             panel_title = pdata.get(exts.LAYOUT_TITLE_KEY, "")
-                            panel_node._title = panel_title
+
+            panel_node = LayoutNode(
+                "panel",
+                name=panel_name,
+                title=panel_title,
+                extra=_passthrough_keys(meta_source, _PANEL_STRUCTURAL_KEYS),
+            )
 
             for entry in layout_items:
                 node = _layout_entry_to_node(entry)
@@ -220,6 +312,7 @@ def tree_to_yaml_dict(roots):
         tab_entry["name"] = tab.name
         if tab.title and tab.title != tab.name:
             tab_entry["title"] = tab.title
+        tab_entry.update(tab.extra)
 
         panels_data = []
         for panel in tab.children:
@@ -227,6 +320,7 @@ def tree_to_yaml_dict(roots):
             panel_entry["name"] = panel.name
             if panel.title and panel.title != panel.name:
                 panel_entry["title"] = panel.title
+            panel_entry.update(panel.extra)
 
             layout_list = []
             for item in panel.children:
@@ -329,8 +423,210 @@ def _get_custom_layout_path(extension_name):
 
 
 # ---------------------------------------------------------------------------
-# WPF Window
+# WPF Windows
 # ---------------------------------------------------------------------------
+
+
+class PropertiesDialog(forms.WPFWindow):
+    """Edit presentation metadata + title for a tab or panel node.
+
+    Mutates the node in place on OK. Title is edited as a per-locale grid so
+    localized titles round-trip; an empty locale key means a plain string.
+    """
+
+    def __init__(self, node):
+        forms.WPFWindow.__init__(self, "PropertiesDialog.xaml")
+        from pyrevit.framework import Windows
+        self._windows = Windows
+        self._node = node
+        self.saved = False
+        self._is_panel = node.node_type == "panel"
+
+        self._bg_panel = None
+        self._bg_title = None
+        self._bg_slideout = None
+
+        self.dlg_header.Text = (
+            "Panel Properties" if self._is_panel else "Tab Properties"
+        )
+
+        # Highlight options
+        self._highlight_none = "(none)"
+        self.highlight_cb.ItemsSource = [
+            self._highlight_none,
+            exts.MDATA_HIGHLIGHT_TYPE_NEW,
+            exts.MDATA_HIGHLIGHT_TYPE_UPDATED,
+        ]
+        current_highlight = node.extra.get(exts.MDATA_HIGHLIGHT_KEY)
+        self.highlight_cb.SelectedItem = (
+            current_highlight
+            if current_highlight in (exts.MDATA_HIGHLIGHT_TYPE_NEW,
+                                     exts.MDATA_HIGHLIGHT_TYPE_UPDATED)
+            else self._highlight_none
+        )
+
+        if self._is_panel:
+            self.collapsed_chk.IsChecked = _truthy(
+                node.extra.get(exts.MDATA_COLLAPSED_KEY)
+            )
+            self.isbeta_chk.IsChecked = _truthy(
+                node.extra.get(exts.MDATA_BETA_SCRIPT)
+            )
+            background = node.extra.get(exts.MDATA_BACKGROUND_KEY)
+            if isinstance(background, dict):
+                self._bg_panel = background.get(exts.MDATA_BACKGROUND_PANEL_KEY)
+                self._bg_title = background.get(exts.MDATA_BACKGROUND_TITLE_KEY)
+                self._bg_slideout = background.get(
+                    exts.MDATA_BACKGROUND_SLIDEOUT_KEY
+                )
+            elif isinstance(background, str):
+                self._bg_panel = background
+            self._refresh_swatches()
+        else:
+            # Tabs only carry highlight: the ribbon displays the tab name, not
+            # a (localized) title, so don't offer title editing for tabs.
+            self.panel_section.Visibility = Windows.Visibility.Collapsed
+            self.title_section.Visibility = Windows.Visibility.Collapsed
+            self.Height = 190
+
+        # Title grid (per-locale), panels only. A plain-string title shows as
+        # one blank-key row; the raw value is rebuilt from the grid on OK.
+        self._title_rows = ObservableCollection[object]()
+        if self._is_panel:
+            title = node.title
+            if isinstance(title, dict):
+                for locale_key, value in title.items():
+                    self._title_rows.Add(LocaleTitleRow(locale_key, value))
+            elif isinstance(title, str) and title:
+                self._title_rows.Add(LocaleTitleRow("", title))
+            self.title_dg.ItemsSource = self._title_rows
+
+    def _set_swatch(self, swatch, color):
+        if color:
+            try:
+                swatch.Background = \
+                    self._windows.Media.BrushConverter().ConvertFromString(color)
+                return
+            except Exception:
+                pass
+        swatch.Background = self._windows.Media.Brushes.Transparent
+
+    def _refresh_swatches(self):
+        self._set_swatch(self.bg_panel_sw, self._bg_panel)
+        self._set_swatch(self.bg_title_sw, self._bg_title)
+        self._set_swatch(self.bg_slideout_sw, self._bg_slideout)
+
+    def _pick_color(self, current):
+        # ask_for_color's default parser requires 8-digit ARGB; only seed it
+        # when the current value is in that form (legacy values may be #RRGGBB
+        # or named colors, which the picker can't pre-load).
+        default = current if (current and len(current.replace("#", "")) == 8) else None
+        color = forms.ask_for_color(default=default)
+        # the picker returns None on cancel; white is its no-color sentinel
+        if color and color.lower() != "#ffffffff":
+            return color
+        return current
+
+    def pick_bg_panel(self, sender, args):
+        self._bg_panel = self._pick_color(self._bg_panel)
+        self._refresh_swatches()
+
+    def pick_bg_title(self, sender, args):
+        self._bg_title = self._pick_color(self._bg_title)
+        self._refresh_swatches()
+
+    def pick_bg_slideout(self, sender, args):
+        self._bg_slideout = self._pick_color(self._bg_slideout)
+        self._refresh_swatches()
+
+    def clear_bg_panel(self, sender, args):
+        self._bg_panel = None
+        self._refresh_swatches()
+
+    def clear_bg_title(self, sender, args):
+        self._bg_title = None
+        self._refresh_swatches()
+
+    def clear_bg_slideout(self, sender, args):
+        self._bg_slideout = None
+        self._refresh_swatches()
+
+    def add_locale_row(self, sender, args):
+        self._title_rows.Add(LocaleTitleRow("", ""))
+
+    def remove_locale_row(self, sender, args):
+        row = self.title_dg.SelectedItem
+        if row:
+            self._title_rows.Remove(row)
+
+    def _collect_background(self):
+        if self._bg_title or self._bg_slideout:
+            background = OrderedDict()
+            if self._bg_panel:
+                background[exts.MDATA_BACKGROUND_PANEL_KEY] = self._bg_panel
+            if self._bg_title:
+                background[exts.MDATA_BACKGROUND_TITLE_KEY] = self._bg_title
+            if self._bg_slideout:
+                background[exts.MDATA_BACKGROUND_SLIDEOUT_KEY] = self._bg_slideout
+            return background
+        return self._bg_panel
+
+    def _collect_title(self):
+        rows = [
+            (r.locale.strip(), r.title)
+            for r in self._title_rows
+            if r.title
+        ]
+        if not rows:
+            return ""
+        keyed = [(k, v) for k, v in rows if k]
+        if keyed:
+            result = OrderedDict()
+            for locale_key, value in keyed:
+                result[locale_key] = value
+            return result
+        # No locale keys: a single plain (non-localized) title
+        return rows[0][1]
+
+    def _apply_to_node(self):
+        node = self._node
+        extra = node.extra
+
+        highlight = self.highlight_cb.SelectedItem
+        if highlight and highlight != self._highlight_none:
+            extra[exts.MDATA_HIGHLIGHT_KEY] = highlight
+        else:
+            extra.pop(exts.MDATA_HIGHLIGHT_KEY, None)
+
+        if self._is_panel:
+            if self.collapsed_chk.IsChecked:
+                extra[exts.MDATA_COLLAPSED_KEY] = True
+            else:
+                extra.pop(exts.MDATA_COLLAPSED_KEY, None)
+
+            if self.isbeta_chk.IsChecked:
+                extra[exts.MDATA_BETA_SCRIPT] = True
+            else:
+                extra.pop(exts.MDATA_BETA_SCRIPT, None)
+
+            background = self._collect_background()
+            if background:
+                extra[exts.MDATA_BACKGROUND_KEY] = background
+            else:
+                extra.pop(exts.MDATA_BACKGROUND_KEY, None)
+
+        node.title = self._collect_title()
+
+    def ok(self, sender, args):
+        # flush any in-progress grid edit (cell, then row)
+        self.title_dg.CommitEdit()
+        self.title_dg.CommitEdit()
+        self._apply_to_node()
+        self.saved = True
+        self.Close()
+
+    def cancel(self, sender, args):
+        self.Close()
 
 
 class LayoutBuilderWindow(forms.WPFWindow):
@@ -366,6 +662,24 @@ class LayoutBuilderWindow(forms.WPFWindow):
         if not self._presets:
             from pyrevit.framework import Windows
             self.load_preset_btn.Visibility = Windows.Visibility.Collapsed
+
+        # Properties applies only to a selected tab/panel
+        self.properties_btn.IsEnabled = False
+
+    def tree_selection_changed(self, sender, args):
+        node = self.layout_tv.SelectedItem
+        self.properties_btn.IsEnabled = bool(node) and node.node_type in (
+            "tab",
+            "panel",
+        )
+
+    def edit_properties(self, sender, args):
+        """Open the properties dialog for the selected tab or panel."""
+        node = self.layout_tv.SelectedItem
+        if not node or node.node_type not in ("tab", "panel"):
+            forms.alert("Select a Tab or Panel to edit its properties.")
+            return
+        PropertiesDialog(node).show_dialog()
 
     def _update_missing_flags(self):
         """Flag tool nodes that reference tools not in the index."""

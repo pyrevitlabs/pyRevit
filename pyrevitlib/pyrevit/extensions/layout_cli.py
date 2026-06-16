@@ -61,6 +61,8 @@ def generate_layout(extension_dir, output_dir=None, split_panels=False):
         tab_entry["name"] = tab.name
         if hasattr(tab, "_ui_title") and tab._ui_title and tab._ui_title != tab.name:
             tab_entry["title"] = tab._ui_title
+        if getattr(tab, "highlight_type", None):
+            tab_entry[exts.MDATA_HIGHLIGHT_KEY] = tab.highlight_type
 
         panels_data = []
         # Use iter() to get layout-ordered panels (respects bundle.yaml layout key)
@@ -69,26 +71,35 @@ def generate_layout(extension_dir, output_dir=None, split_panels=False):
             panel_entry = OrderedDict()
             panel_entry["name"] = panel_name
 
+            panel_title = getattr(panel, "_ui_title", None)
+            has_custom_title = panel_title and panel_title != panel_name
+            panel_meta = _collect_panel_meta(panel)
+
             # Build layout list for this panel
             layout_list = _build_panel_layout(panel)
 
-            if layout_list:
-                if split_panels:
-                    # Write each panel to a separate .panel.yaml file.
-                    # Qualify by tab so same-named panels in different tabs
-                    # don't overwrite each other.
-                    panel_filename = _unique_panel_filename(
-                        tab.name, panel_name, used_panel_filenames
-                    )
-                    panel_filepath = op.join(output_dir, panel_filename)
-                    panel_data = OrderedDict()
-                    panel_data["title"] = panel_name
-                    panel_data["layout"] = layout_list
-                    pyyaml.dump_dict(panel_data, panel_filepath)
-                    panel_entry["layout_file"] = panel_filename
-                    generated_files.append(panel_filepath)
-                else:
-                    # Inline all layouts into extension_layout.yaml
+            if split_panels and layout_list:
+                # Write each panel to a separate .panel.yaml file.
+                # Qualify by tab so same-named panels in different tabs
+                # don't overwrite each other.
+                panel_filename = _unique_panel_filename(
+                    tab.name, panel_name, used_panel_filenames
+                )
+                panel_filepath = op.join(output_dir, panel_filename)
+                panel_data = OrderedDict()
+                if has_custom_title:
+                    panel_data["title"] = panel_title
+                panel_data.update(panel_meta)
+                panel_data["layout"] = layout_list
+                pyyaml.dump_dict(panel_data, panel_filepath)
+                panel_entry["layout_file"] = panel_filename
+                generated_files.append(panel_filepath)
+            else:
+                # Inline all layouts into extension_layout.yaml
+                if has_custom_title:
+                    panel_entry["title"] = panel_title
+                panel_entry.update(panel_meta)
+                if layout_list:
                     panel_entry["layout"] = layout_list
 
             panels_data.append(panel_entry)
@@ -179,6 +190,43 @@ def _collect_commands(component, results):
 
     for child in getattr(component, "components", []):
         _collect_commands(child, results)
+
+
+def _collect_background(panel):
+    """Reconstruct a panel's background as a layout value (str or dict)."""
+    panel_bg = getattr(panel, "panel_background", None)
+    title_bg = getattr(panel, "title_background", None)
+    slideout_bg = getattr(panel, "slideout_background", None)
+
+    if title_bg or slideout_bg:
+        background = OrderedDict()
+        if panel_bg:
+            background[exts.MDATA_BACKGROUND_PANEL_KEY] = panel_bg
+        if title_bg:
+            background[exts.MDATA_BACKGROUND_TITLE_KEY] = title_bg
+        if slideout_bg:
+            background[exts.MDATA_BACKGROUND_SLIDEOUT_KEY] = slideout_bg
+        return background
+    return panel_bg
+
+
+def _collect_panel_meta(panel):
+    """Collect a parsed panel's presentation metadata as layout keys.
+
+    Excludes title and layout, which the caller writes separately. Only
+    non-default values are emitted so generated layouts stay minimal.
+    """
+    meta = OrderedDict()
+    if getattr(panel, "highlight_type", None):
+        meta[exts.MDATA_HIGHLIGHT_KEY] = panel.highlight_type
+    if getattr(panel, "collapsed", False):
+        meta[exts.MDATA_COLLAPSED_KEY] = True
+    if getattr(panel, "is_beta", False):
+        meta[exts.MDATA_BETA_SCRIPT] = True
+    background = _collect_background(panel)
+    if background:
+        meta[exts.MDATA_BACKGROUND_KEY] = background
+    return meta
 
 
 def _unique_panel_filename(tab_name, panel_name, used):
