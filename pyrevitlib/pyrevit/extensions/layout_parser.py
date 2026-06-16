@@ -134,6 +134,50 @@ def get_layout_cache_dir(extension_name):
     return op.join(PYREVIT_APP_DIR, "Layouts", extension_name)
 
 
+def get_custom_layout_file(extension_dir):
+    """Resolve the user-configured custom layout override for an extension.
+
+    Args:
+        extension_dir (str): Path to the .extension directory
+
+    Returns:
+        str or None: Path to an existing custom layout file, or None.
+    """
+    try:
+        from pyrevit.userconfig import user_config
+
+        # Global toggle: skip custom layouts when disabled
+        if user_config.disable_custom_layouts:
+            return None
+        ext_name = op.splitext(op.basename(extension_dir))[0]
+        section_name = ext_name + exts.UI_EXTENSION_POSTFIX
+        if user_config.has_section(section_name):
+            section = user_config.get_section(section_name)
+            custom_path = section.get_option("custom_layout_path", default_value="")
+            if custom_path and op.isfile(custom_path):
+                return custom_path
+    except Exception as err:
+        mlogger.debug(
+            "Could not read custom layout config for %s: %s", extension_dir, err
+        )
+    return None
+
+
+def get_bundled_layout_file(extension_dir):
+    """Resolve the extension's bundled extension_layout.yaml, if present.
+
+    Args:
+        extension_dir (str): Path to the .extension directory
+
+    Returns:
+        str or None: Path to the bundled layout file, or None.
+    """
+    bundled = op.join(extension_dir, exts.EXT_LAYOUT_FILE)
+    if op.isfile(bundled):
+        return bundled
+    return None
+
+
 def get_layout_file(extension_dir):
     """Resolve which layout file to use for an extension.
 
@@ -148,29 +192,9 @@ def get_layout_file(extension_dir):
     Returns:
         str or None: Path to the layout file, or None for legacy mode
     """
-    # Check user config for custom layout path
-    try:
-        from pyrevit.userconfig import user_config
-
-        # Global toggle: skip custom layouts when disabled
-        if not user_config.disable_custom_layouts:
-            ext_name = op.splitext(op.basename(extension_dir))[0]
-            section_name = ext_name + exts.UI_EXTENSION_POSTFIX
-            if user_config.has_section(section_name):
-                section = user_config.get_section(section_name)
-                custom_path = section.get_option("custom_layout_path", default_value="")
-                if custom_path and op.isfile(custom_path):
-                    return custom_path
-    except Exception as err:
-        mlogger.debug(
-            "Could not read custom layout config for %s: %s", extension_dir, err
-        )
-
-    # Bundled layout file
-    bundled = op.join(extension_dir, exts.EXT_LAYOUT_FILE)
-    if op.isfile(bundled):
-        return bundled
-    return None
+    return get_custom_layout_file(extension_dir) or get_bundled_layout_file(
+        extension_dir
+    )
 
 
 def parse_extension_layout(extension, tool_index, layout_file):
@@ -184,6 +208,10 @@ def parse_extension_layout(extension, tool_index, layout_file):
         extension: Extension object to populate
         tool_index (dict): Mapping of tool name to component object
         layout_file (str): Path to the extension_layout.yaml file
+
+    Returns:
+        bool: True if the layout produced at least one tab. False signals the
+            caller to fall back to another layout file or to legacy parsing.
     """
     ext_dir = extension.directory
     ext_name = op.splitext(op.basename(ext_dir))[0]
@@ -192,19 +220,20 @@ def parse_extension_layout(extension, tool_index, layout_file):
         layout_data = yaml.load_as_dict(layout_file)
     except Exception as err:
         mlogger.error("Failed to read layout file %s: %s", layout_file, err)
-        return
+        return False
 
     if not layout_data:
         mlogger.warning("Layout file is empty: %s", layout_file)
-        return
+        return False
 
     tabs_data = layout_data.get(exts.LAYOUT_TABS_KEY, [])
     if not tabs_data:
         mlogger.warning("No tabs defined in layout file: %s", layout_file)
-        return
+        return False
 
     layout_dir = op.dirname(layout_file)
     referenced_tools = set()
+    tabs_added = 0
 
     for tab_data in tabs_data:
         tab = _create_tab(tab_data, ext_name, ext_dir)
@@ -220,6 +249,11 @@ def parse_extension_layout(extension, tool_index, layout_file):
                 tab.add_component(panel)
 
         extension.add_component(tab)
+        tabs_added += 1
+
+    if not tabs_added:
+        mlogger.warning("No valid tabs produced from layout file: %s", layout_file)
+        return False
 
     # Attach tools not referenced in the layout as assembly-only commands.
     # They get compiled into the DLL but don't appear in the ribbon,
@@ -237,6 +271,7 @@ def parse_extension_layout(extension, tool_index, layout_file):
     mlogger.debug(
         "Layout parsing complete for %s: %d tab(s)", ext_name, len(extension.components)
     )
+    return True
 
 
 def _create_tab(tab_data, ext_name, ext_dir):
@@ -421,16 +456,26 @@ def _place_tool(tool_name, parent, tool_index, referenced_tools=None):
     Returns:
         bool: True if the tool was found and placed.
     """
-    if tool_name in tool_index:
-        parent.add_component(tool_index[tool_name])
-        if referenced_tools is not None:
-            referenced_tools.add(tool_name)
-        return True
+    if tool_name not in tool_index:
+        mlogger.warning(
+            'Tool "%s" referenced in layout but not found in tool index', tool_name
+        )
+        return False
 
-    mlogger.warning(
-        'Tool "%s" referenced in layout but not found in tool index', tool_name
-    )
-    return False
+    # A tool is one compiled command; placing the same instance in two
+    # locations would corrupt its parent/control id. Each tool may appear once.
+    if referenced_tools is not None and tool_name in referenced_tools:
+        mlogger.warning(
+            'Tool "%s" is referenced more than once in the layout; '
+            "a tool can appear in only one location. Ignoring the duplicate.",
+            tool_name,
+        )
+        return False
+
+    parent.add_component(tool_index[tool_name])
+    if referenced_tools is not None:
+        referenced_tools.add(tool_name)
+    return True
 
 
 def _create_stack(

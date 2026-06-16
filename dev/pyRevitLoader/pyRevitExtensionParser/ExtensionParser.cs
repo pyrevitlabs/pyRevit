@@ -524,8 +524,22 @@ namespace pyRevitExtensionParser
                     extDir, extName,
                     extensionTemplates.Count > 0 ? extensionTemplates : null,
                     revitYear);
-                children = layoutResult.Tabs;
-                assemblyOnlyComponents = layoutResult.UnreferencedTools;
+                if (layoutResult.Tabs.Count > 0)
+                {
+                    children = layoutResult.Tabs;
+                    assemblyOnlyComponents = layoutResult.UnreferencedTools;
+                }
+                else
+                {
+                    // No valid layout produced any tabs; an invalid layout must
+                    // not wipe the ribbon, so fall back to legacy parsing.
+                    LogWarning(
+                        $"Layout parsing produced no tabs for {extName}; " +
+                        "using legacy directory parsing");
+                    children = ParseComponents(extDir, extName, null,
+                        extensionTemplates.Count > 0 ? extensionTemplates : null,
+                        revitYear);
+                }
             }
             else
             {

@@ -61,17 +61,33 @@ namespace pyRevitExtensionParser
         /// </summary>
         public static string GetLayoutFilePath(string extensionDir)
         {
+            return GetCustomLayoutFilePath(extensionDir)
+                ?? GetBundledLayoutFilePath(extensionDir);
+        }
+
+        /// <summary>
+        /// Resolves the user-configured custom layout override for the extension,
+        /// or null when none is configured (or the configured file is missing).
+        /// </summary>
+        public static string GetCustomLayoutFilePath(string extensionDir)
+        {
             if (string.IsNullOrEmpty(extensionDir))
                 return null;
 
-            // Check custom layout path in config first
             var extName = Path.GetFileNameWithoutExtension(extensionDir);
             var config = ExtensionParser.GetConfigInternal();
             var customPath = config?.GetCustomLayoutPath(extName);
-            if (!string.IsNullOrEmpty(customPath))
-                return customPath;
+            return string.IsNullOrEmpty(customPath) ? null : customPath;
+        }
 
-            // Bundled layout file
+        /// <summary>
+        /// Resolves the extension's bundled extension_layout.yaml, or null when absent.
+        /// </summary>
+        public static string GetBundledLayoutFilePath(string extensionDir)
+        {
+            if (string.IsNullOrEmpty(extensionDir))
+                return null;
+
             var layoutPath = Path.Combine(extensionDir, LayoutFileName);
             return File.Exists(layoutPath) ? layoutPath : null;
         }
@@ -92,9 +108,20 @@ namespace pyRevitExtensionParser
             Dictionary<string, string> inheritedTemplates,
             int revitYear)
         {
-            // Resolve layout file (custom path > bundled)
-            var layoutPath = GetLayoutFilePath(extensionDir);
-            if (layoutPath == null)
+            // Candidate layouts in priority order: custom override, then bundled.
+            // A broken override or bundled layout should never wipe the ribbon;
+            // fall through to the next candidate (and the caller falls back to
+            // legacy parsing when none of them produce tabs).
+            var candidates = new List<string>();
+            var customPath = GetCustomLayoutFilePath(extensionDir);
+            if (!string.IsNullOrEmpty(customPath))
+                candidates.Add(customPath);
+            var bundledPath = GetBundledLayoutFilePath(extensionDir);
+            if (!string.IsNullOrEmpty(bundledPath) &&
+                !candidates.Contains(bundledPath, StringComparer.OrdinalIgnoreCase))
+                candidates.Add(bundledPath);
+
+            if (candidates.Count == 0)
             {
                 ExtensionParser.LogWarning(
                     $"Layout: No layout file found for {extensionDir}");
@@ -109,26 +136,38 @@ namespace pyRevitExtensionParser
             // Also scan legacy folder structure (.tab/.panel/) for tool bundles
             ScanLegacyDirectoryForTools(extensionDir, extensionName, inheritedTemplates, revitYear, toolIndex);
 
-            // Parse the layout YAML
-            var layoutYaml = LoadYaml(layoutPath);
-            if (layoutYaml == null)
-                return new LayoutParseResult();
+            foreach (var layoutPath in candidates)
+            {
+                var layoutYaml = LoadYaml(layoutPath);
+                if (layoutYaml == null)
+                    continue;
 
-            // Track which tools are referenced by the layout
-            var referencedTools = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                // Track which tools are referenced by the layout
+                var referencedTools = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            // Build the component tree from layout
-            var layoutDir = Path.GetDirectoryName(layoutPath);
-            var tabs = BuildComponentTree(layoutYaml, extensionDir, layoutDir, extensionName, toolIndex, referencedTools);
+                var layoutDir = Path.GetDirectoryName(layoutPath);
+                var tabs = BuildComponentTree(layoutYaml, extensionDir, layoutDir, extensionName, toolIndex, referencedTools);
+                if (tabs.Count == 0)
+                {
+                    ExtensionParser.LogWarning(
+                        $"Layout: No tabs produced from layout file, falling back: {layoutPath}");
+                    continue;
+                }
 
-            // Collect tools that exist on disk but aren't in the layout.
-            // These will be compiled into the assembly but not shown in the ribbon.
-            var unreferenced = toolIndex
-                .Where(kvp => !referencedTools.Contains(kvp.Key))
-                .Select(kvp => kvp.Value)
-                .ToList();
+                // Collect tools that exist on disk but aren't in the layout.
+                // These will be compiled into the assembly but not shown in the ribbon.
+                var unreferenced = toolIndex
+                    .Where(kvp => !referencedTools.Contains(kvp.Key))
+                    .Select(kvp => kvp.Value)
+                    .ToList();
 
-            return new LayoutParseResult { Tabs = tabs, UnreferencedTools = unreferenced };
+                return new LayoutParseResult { Tabs = tabs, UnreferencedTools = unreferenced };
+            }
+
+            ExtensionParser.LogWarning(
+                $"Layout: No valid layout for {extensionName}; " +
+                "caller should fall back to legacy parsing");
+            return new LayoutParseResult();
         }
 
         #region Tool Index
@@ -620,16 +659,25 @@ namespace pyRevitExtensionParser
                     else
                     {
                         // Tool name reference - look up in index
-                        if (toolIndex.TryGetValue(trimmed, out var tool))
-                        {
-                            panel.Children.Add(tool);
-                            referencedTools.Add(trimmed);
-                        }
-                        else
+                        if (!toolIndex.TryGetValue(trimmed, out var tool))
                         {
                             ExtensionParser.LogWarning(
                                 $"Layout: Tool \"{trimmed}\" referenced in panel " +
                                 $"\"{panel.DisplayName}\" not found in tools/ directory");
+                        }
+                        else if (referencedTools.Contains(trimmed))
+                        {
+                            // A tool is one compiled command; the same instance
+                            // cannot live in two locations without corrupting its id.
+                            ExtensionParser.LogWarning(
+                                $"Layout: Tool \"{trimmed}\" is referenced more than once; " +
+                                $"a tool can appear in only one location. Ignoring the " +
+                                $"duplicate in panel \"{panel.DisplayName}\".");
+                        }
+                        else
+                        {
+                            panel.Children.Add(tool);
+                            referencedTools.Add(trimmed);
                         }
                     }
                 }
@@ -670,16 +718,23 @@ namespace pyRevitExtensionParser
                 if (string.IsNullOrEmpty(toolName))
                     continue;
 
-                if (toolIndex.TryGetValue(toolName, out var tool))
-                {
-                    stackChildren.Add(tool);
-                    referencedTools.Add(toolName);
-                }
-                else
+                if (!toolIndex.TryGetValue(toolName, out var tool))
                 {
                     ExtensionParser.LogWarning(
                         $"Layout: Tool \"{toolName}\" referenced in stack " +
                         $"(panel \"{parentPanel.DisplayName}\") not found in tools/ directory");
+                }
+                else if (referencedTools.Contains(toolName))
+                {
+                    ExtensionParser.LogWarning(
+                        $"Layout: Tool \"{toolName}\" is referenced more than once; " +
+                        $"a tool can appear in only one location. Ignoring the " +
+                        $"duplicate in stack (panel \"{parentPanel.DisplayName}\").");
+                }
+                else
+                {
+                    stackChildren.Add(tool);
+                    referencedTools.Add(toolName);
                 }
             }
 

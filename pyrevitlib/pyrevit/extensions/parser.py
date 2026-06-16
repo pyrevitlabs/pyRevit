@@ -114,26 +114,44 @@ def get_parsed_extension(extension):
     can be accessed by iterating the _get_component.
     See _basecomponents for types.
 
-    When extension_layout.yaml is present, uses layout-based parsing.
-    Otherwise falls back to the legacy directory-walking parser.
+    When a layout file is present, uses layout-based parsing. An invalid
+    layout never wipes the ribbon: parsing falls back from the custom
+    override to the bundled layout, then to the legacy directory walk.
     """
-    from pyrevit.extensions.layout_parser import get_layout_file, \
-        parse_extension_layout
+    from pyrevit.extensions.layout_parser import get_custom_layout_file, \
+        get_bundled_layout_file, parse_extension_layout
     from pyrevit.extensions.toolindex import build_tool_index
 
-    layout_file = get_layout_file(extension.directory)
+    # Candidate layouts in priority order: custom override, then bundled.
+    candidates = []
+    for layout_file in (get_custom_layout_file(extension.directory),
+                        get_bundled_layout_file(extension.directory)):
+        if layout_file and layout_file not in candidates:
+            candidates.append(layout_file)
 
-    if layout_file:
+    if candidates:
         mlogger.debug('Using layout-based parsing for: %s', extension.name)
         tools_dir = op.join(extension.directory, exts.TOOLS_DIR_NAME)
         # build_tool_index handles missing tools_dir and also scans the
         # legacy .tab/.panel/ hierarchy, supporting hybrid layouts.
         tool_index = build_tool_index(tools_dir, extension.directory)
-        parse_extension_layout(extension, tool_index, layout_file)
-    else:
-        _parse_for_components(extension)
+        for layout_file in candidates:
+            _reset_components(extension)
+            if parse_extension_layout(extension, tool_index, layout_file):
+                return extension
+            mlogger.warning('Layout file failed to parse, falling back: %s',
+                            layout_file)
+        mlogger.warning('No valid layout for %s; using legacy directory parsing',
+                        extension.name)
 
+    _reset_components(extension)
+    _parse_for_components(extension)
     return extension
+
+
+def _reset_components(extension):
+    """Clear components from a prior parse attempt before re-parsing."""
+    extension.components = []
 
 
 def parse_dir_for_ext_type(root_dir, parent_cmp_type):
