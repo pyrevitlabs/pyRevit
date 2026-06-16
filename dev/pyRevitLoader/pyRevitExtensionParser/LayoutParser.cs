@@ -43,6 +43,15 @@ namespace pyRevitExtensionParser
         private const string LayoutFileKey = "layout_file";
         private const string StackKey = "stack";
 
+        // Presentation metadata keys (mirror the bundle.yaml keys the legacy
+        // parser honors, so layout-defined tabs/panels keep their appearance)
+        private const string HighlightKey = "highlight";
+        private const string CollapsedKey = "collapsed";
+        private const string IsBetaKey = "is_beta";
+        private const string BackgroundKey = "background";
+        private const string BgPanelKey = "panel";
+        private const string BgSlideoutKey = "slideout";
+
         /// <summary>
         /// Checks whether an extension directory has an extension_layout.yaml file,
         /// or a custom layout path configured.
@@ -513,6 +522,9 @@ namespace pyRevitExtensionParser
                 Children = new List<ParsedComponent>()
             };
 
+            // Tabs only carry highlight (the ribbon shows the tab name, not title)
+            ApplyComponentMetadata(tabMapping, tab, isPanel: false);
+
             // Parse panels
             var panelsNode = GetMappingValue(tabMapping, PanelsKey) as YamlSequenceNode;
             if (panelsNode == null)
@@ -551,7 +563,25 @@ namespace pyRevitExtensionParser
                 return null;
             }
 
-            var title = GetScalar(GetMappingValue(panelMapping, TitleKey)) ?? name;
+            // The panel's title, presentation metadata, and layout live with the
+            // layout definition: the inline entry, or the external .panel.yaml.
+            var source = panelMapping;
+            var layoutFileName = GetScalar(GetMappingValue(panelMapping, LayoutFileKey));
+            if (!string.IsNullOrEmpty(layoutFileName))
+            {
+                // Try layout directory first (for custom cached layouts), fall back to extension dir
+                var panelLayoutPath = Path.Combine(layoutDir, layoutFileName);
+                if (!File.Exists(panelLayoutPath))
+                    panelLayoutPath = Path.Combine(extensionDir, layoutFileName);
+                var fileMapping = LoadPanelFileMapping(panelLayoutPath);
+                if (fileMapping != null)
+                    source = fileMapping;
+            }
+
+            // An explicit title on the outer entry wins over the file's.
+            var title = GetScalar(GetMappingValue(panelMapping, TitleKey))
+                ?? GetScalar(GetMappingValue(source, TitleKey))
+                ?? name;
             var namePart = name.Replace(" ", "");
             var uniqueId = ExtensionParser.SanitizeClassName(
                 $"{extensionName}_{namePart}".ToLowerInvariant());
@@ -567,25 +597,9 @@ namespace pyRevitExtensionParser
                 Children = new List<ParsedComponent>()
             };
 
-            // Determine layout source: external file or inline
-            YamlSequenceNode layoutList = null;
+            ApplyComponentMetadata(source, panel, isPanel: true);
 
-            var layoutFileName = GetScalar(GetMappingValue(panelMapping, LayoutFileKey));
-            if (!string.IsNullOrEmpty(layoutFileName))
-            {
-                // Try layout directory first (for custom cached layouts), fall back to extension dir
-                var panelLayoutPath = Path.Combine(layoutDir, layoutFileName);
-                if (!File.Exists(panelLayoutPath))
-                    panelLayoutPath = Path.Combine(extensionDir, layoutFileName);
-                layoutList = LoadPanelLayoutFile(panelLayoutPath);
-            }
-
-            if (layoutList == null)
-            {
-                // Try inline layout
-                layoutList = GetMappingValue(panelMapping, LayoutKey) as YamlSequenceNode;
-            }
-
+            var layoutList = GetMappingValue(source, LayoutKey) as YamlSequenceNode;
             if (layoutList != null)
             {
                 PopulatePanel(panel, layoutList, extensionName, toolIndex, referencedTools);
@@ -595,19 +609,78 @@ namespace pyRevitExtensionParser
         }
 
         /// <summary>
-        /// Loads a .panel.yaml file and returns the layout sequence node.
+        /// Loads a .panel.yaml file and returns its root mapping (title,
+        /// presentation metadata, and layout), or null when missing/invalid.
         /// </summary>
-        private static YamlSequenceNode LoadPanelLayoutFile(string panelLayoutPath)
+        private static YamlMappingNode LoadPanelFileMapping(string panelLayoutPath)
         {
             var panelYaml = LoadYaml(panelLayoutPath);
             if (panelYaml == null)
             {
                 ExtensionParser.LogWarning(
                     $"Layout: Panel layout file not found or invalid: {panelLayoutPath}");
-                return null;
+            }
+            return panelYaml;
+        }
+
+        /// <summary>
+        /// Applies presentation metadata (highlight for tabs/panels; collapsed,
+        /// beta, and background for panels) from a layout mapping onto a component.
+        /// </summary>
+        private static void ApplyComponentMetadata(
+            YamlMappingNode mapping, ParsedComponent component, bool isPanel)
+        {
+            if (mapping == null)
+                return;
+
+            var highlight = GetScalar(GetMappingValue(mapping, HighlightKey));
+            if (!string.IsNullOrEmpty(highlight))
+                component.Highlight = highlight.ToLowerInvariant();
+
+            if (!isPanel)
+                return;
+
+            component.Collapsed = ParseBool(GetMappingValue(mapping, CollapsedKey));
+            component.IsBeta = ParseBool(GetMappingValue(mapping, IsBetaKey));
+            ApplyBackground(GetMappingValue(mapping, BackgroundKey), component);
+        }
+
+        /// <summary>
+        /// Applies a panel background, either a single color string or a mapping
+        /// with panel/title/slideout keys (matches BundleParser.ParseBackground).
+        /// </summary>
+        private static void ApplyBackground(YamlNode node, ParsedComponent component)
+        {
+            if (node is YamlScalarNode scalar)
+            {
+                component.PanelBackground = scalar.Value;
+                return;
             }
 
-            return GetMappingValue(panelYaml, LayoutKey) as YamlSequenceNode;
+            if (!(node is YamlMappingNode map))
+                return;
+
+            foreach (var entry in map.Children)
+            {
+                var key = GetScalar(entry.Key)?.Trim().ToLowerInvariant();
+                var value = GetScalar(entry.Value);
+                if (key == BgPanelKey)
+                    component.PanelBackground = value;
+                else if (key == TitleKey)
+                    component.TitleBackground = value;
+                else if (key == BgSlideoutKey)
+                    component.SlideoutBackground = value;
+            }
+        }
+
+        /// <summary>
+        /// Parses a YAML scalar as a boolean (true/false, case-insensitive).
+        /// </summary>
+        private static bool ParseBool(YamlNode node)
+        {
+            var value = GetScalar(node);
+            return !string.IsNullOrEmpty(value)
+                && value.Trim().Equals("true", StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
