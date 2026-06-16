@@ -23,6 +23,9 @@ mlogger = get_logger(__name__)
 
 EXT_HASH_VALUE_KEY = "dir_hash_value"
 EXT_HASH_VERSION_KEY = "pyrvt_version"
+# Cache key for assembly-only commands. Must match the Extension attribute
+# name, since get_cache_data serializes the instance __dict__ verbatim.
+EXT_ASSEMBLY_ONLY_KEY = "_assembly_only_commands"
 
 
 # Derived classes here correspond to similar elements in Revit ui.
@@ -516,9 +519,23 @@ class Extension(GenericUIContainer):
         patfile += "|(\\" + exts.JSON_FILE_FORMAT + ")"
         from pyrevit.revit import ui
 
-        return coreutils.calculate_dir_hash(self.directory, pat, patfile) + str(
+        hash_value = coreutils.calculate_dir_hash(self.directory, pat, patfile) + str(
             ui.get_current_theme()
         )
+
+        # Custom layout files can live outside the extension directory, so the
+        # directory walk above never sees them. Fold the active custom layout's
+        # mtime into the hash so editing or switching it invalidates the cache.
+        from pyrevit.extensions.layout_parser import get_custom_layout_file
+
+        custom_layout = get_custom_layout_file(self.directory)
+        if custom_layout:
+            try:
+                hash_value += str(op.getmtime(custom_layout))
+            except OSError:
+                pass
+
+        return hash_value
 
     def _update_from_directory(self):  # pylint: disable=W0221
         # using classname otherwise exceptions in superclasses won't show

@@ -90,6 +90,44 @@ def _make_sub_cmp_from_cache(parent_cmp, cached_sub_cmps):
                 parent_cmp.add_component(loaded_cmp)
 
 
+def _make_assembly_only_from_cache(installed_ext, cached_cmps):
+    """Restore assembly-only commands from cache.
+
+    Tools present on disk but absent from the layout are compiled into the
+    assembly without appearing in the UI. They live outside the component
+    tree, so the recursive sub-component maker does not rebuild them; without
+    this they are dropped on every cache reload and the rebuilt assembly loses
+    their command types.
+    """
+    if not cached_cmps:
+        return
+
+    # All concrete command types, keyed by type_id (recursive: covers types
+    # nested under intermediate bases such as NoScriptButton).
+    cmd_classes = {}
+    pending = list(gencomps.GenericUICommand.__subclasses__())
+    while pending:
+        cmd_class = pending.pop()
+        pending.extend(cmd_class.__subclasses__())
+        type_id = getattr(cmd_class, gencomps.TYPE_ID_KEY, None)
+        if type_id:
+            cmd_classes[type_id] = cmd_class
+
+    restored = []
+    for cached_cmp in cached_cmps:
+        cmd_class = cmd_classes.get(cached_cmp.get(gencomps.TYPE_ID_KEY))
+        if cmd_class is None:
+            mlogger.debug('Skipping assembly-only cache entry of unknown type: %s',
+                          cached_cmp.get(gencomps.TYPE_ID_KEY))
+            continue
+        loaded_cmp = cmd_class()
+        loaded_cmp.load_cache_data(cached_cmp)
+        restored.append(loaded_cmp)
+
+    if restored:
+        installed_ext.set_assembly_only_commands(restored)
+
+
 def _read_cache_for(cached_ext):
     try:
         mlogger.debug('Reading cache for: %s', cached_ext)
@@ -131,6 +169,10 @@ def get_cached_extension(installed_ext):
     # get cached sub component dictionary and call recursive maker function
     _make_sub_cmp_from_cache(installed_ext,
                                 cached_ext_dict.pop(gencomps.SUB_CMP_KEY))
+    # restore assembly-only commands (absent from the tree above)
+    _make_assembly_only_from_cache(
+        installed_ext,
+        cached_ext_dict.get(comps.EXT_ASSEMBLY_ONLY_KEY, []))
     mlogger.debug('Load successful...')
     # except Exception as err:
     #     mlogger.debug('Error reading cache...')

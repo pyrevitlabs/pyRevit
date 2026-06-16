@@ -207,6 +207,21 @@ namespace pyRevitExtensionParser
                     }
                 }
 
+                // Custom layout files can live outside the extension directory,
+                // so the walk above never sees them. Fold the active custom
+                // layout's mtime into the hash so editing or switching it
+                // invalidates the cache.
+                try
+                {
+                    var customLayout = LayoutParser.GetCustomLayoutFilePath(Directory);
+                    if (!string.IsNullOrEmpty(customLayout) && File.Exists(customLayout))
+                        mtimeSum += new FileInfo(customLayout).LastWriteTimeUtc.Ticks;
+                }
+                catch
+                {
+                    // best-effort: ignore custom layout mtime errors
+                }
+
                 // Use MD5 hash like Python's get_str_hash()
                 // Include the seed in the hash to differentiate between build strategies
                 using (var md5 = MD5.Create())
