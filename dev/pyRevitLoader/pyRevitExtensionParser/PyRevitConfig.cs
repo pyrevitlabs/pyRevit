@@ -85,25 +85,6 @@ namespace pyRevitExtensionParser
         }
 
         /// <summary>
-        /// Gets or sets whether the new loader architecture is enabled.
-        /// </summary>
-        /// <remarks>
-        /// Defaults to false if not configured or if the value cannot be parsed.
-        /// </remarks>
-        public bool NewLoader
-        {
-            get
-            {
-                var value = _ini.IniReadValue("core", "new_loader");
-                return bool.TryParse(value, out var result) ? result : true;
-            }
-            set
-            {
-                _ini.IniWriteValue("core", "new_loader", value ? TrueString : FalseString);
-            }
-        }
-
-        /// <summary>
         /// Gets or sets whether Rocket Mode is enabled.
         /// </summary>
         /// <remarks>

@@ -158,7 +158,6 @@ class SettingsWindow(forms.WPFWindow):
 
         self.loadbetatools_cb.IsChecked = user_config.load_beta
 
-        self.new_loader.IsChecked = user_config.new_loader
         self.read_script_metadata_cb.IsChecked = user_config.read_script_metadata
 
         self.minimize_consoles_cb.IsChecked = user_config.output_close_others
@@ -521,10 +520,6 @@ class SettingsWindow(forms.WPFWindow):
         """Callback method for resetting cache config to defaults"""
         self.bincache_rb.IsChecked = True
 
-    def new_loader_changed(self, sender, args):
-        """Callback method for when new_loader toggle changes"""
-        pass
-
     def copy_envvar_value(self, sender, args):
         """Callback method for copying selected env var value to clipboard"""
         script.clipboard_copy(self.envvars_lb.SelectedItem.Value)
@@ -865,13 +860,9 @@ class SettingsWindow(forms.WPFWindow):
 
         user_config.load_beta = self.loadbetatools_cb.IsChecked
 
-        loader_setting_changed = (
-            self.new_loader.IsChecked != user_config.new_loader
-        )
         metadata_setting_changed = (
             self.read_script_metadata_cb.IsChecked != user_config.read_script_metadata
         )
-        user_config.new_loader = self.new_loader.IsChecked
         user_config.read_script_metadata = self.read_script_metadata_cb.IsChecked
 
         user_config.output_close_others = self.minimize_consoles_cb.IsChecked
@@ -882,12 +873,6 @@ class SettingsWindow(forms.WPFWindow):
 
         if self.reload_requested:
             return False
-        if loader_setting_changed:
-            return forms.alert(
-                self.get_locale_string("CoreSettings.Loader.NewLoader.Changed"),
-                yes=True,
-                no=True,
-            )
         if metadata_setting_changed:
             return forms.alert(
                 self.get_locale_string("CoreSettings.Loader.ReadScriptMetadata.Changed"),

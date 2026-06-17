@@ -87,9 +87,11 @@ For debugging C# code:
 ### Loading Sequence
 1. Revit reads `.addin` manifest from Addins folder
 2. Manifest points to `pyRevitLoader.dll` (C#)
-3. Loader launches `pyrevitloader.py` in IronPython
-4. Python script calls `pyrevit.loader.sessionmgr.load_session()`
-5. Extensions are discovered and UI is built
+3. `PyRevitLoaderApplication.OnStartup` calls the C# session manager directly (no IronPython bootstrap)
+4. `SessionManagerService.LoadSession` runs `session_preload.py`, builds extension assemblies and UI in C#, then runs `session_postload.py`
+5. The preload/postload scripts drive the residual Python session services (telemetry, routes, output window, hooks framework) through the runtime engine
+
+Reload re-enters the same C# orchestrator via `PyRevitLoaderApplication.LoadSession`. The legacy pure-Python loader has been removed; the C# loader requires Revit 2021+.
 
 ### Key Components
 - **pyRevitLoader** (`dev/pyRevitLoader/`): Revit add-in entry point

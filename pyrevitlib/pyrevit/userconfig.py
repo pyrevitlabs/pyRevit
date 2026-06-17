@@ -306,21 +306,6 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             value=state
         )
     @property
-    def new_loader(self):
-        """Whether to use new csharp loader."""
-        return self.core.get_option(
-            CONSTS.ConfigsNewLoaderKey,
-            default_value=CONSTS.ConfigsNewLoaderDefault,
-        )
-    
-    @new_loader.setter
-    def new_loader(self, state):
-        self.core.set_option(
-            CONSTS.ConfigsNewLoaderKey,
-            value=state
-        )
-
-    @property
     def read_script_metadata(self):
         """Whether to read script metadata (__title__, __author__, etc) from Python scripts.
         

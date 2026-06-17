@@ -37,8 +37,8 @@ Whether you want to create tools, troubleshoot issues, or contribute code, under
 
     - Revit reads the `.addin` manifest in the Addins folders
     - The `.addin` manifest points to `pyRevitLoader.dll`
-    - `pyRevitLoader.dll` launches `pyrevitloader.py` inside an IronPython environment
-    - `pyrevitloader.py` calls functions from the `pyrevit` python package to build the UI and the buttons commands.
+    - `pyRevitLoader.dll` calls the C# session manager directly to build the UI and the button commands
+    - The C# session manager runs `session_preload.py` / `session_postload.py` to drive the Python services that have not yet been ported to C#
 
 ### .addin Manifest
 
@@ -53,7 +53,7 @@ Whether you want to create tools, troubleshoot issues, or contribute code, under
 The `pyRevitLoader.dll` file is a small C# program that:
 
 - Ensures required .NET assemblies are loaded.
-- Loads the IronPython engine and runs pyRevit’s Python startup script (`pyrevitloader.py`).
+- Calls the C# session manager directly to load the session (no IronPython bootstrap).
 
 ???+ info
 
@@ -75,21 +75,23 @@ They share the same source code, but are _compiled against_ the different .net r
     Since we cannot have multiple IronPython engines running at the same time, if the user switches the engine in the configuration, pyRevit will change the `.addin` manifest mentioned above to point to the correct dll path.
     It may be that sometimes the addin is not created correctly or points to the wrong path, and this is why most of the times the `pyrevit attach` command solves the installation issues.
 
-### Startup Script: `pyrevitloader.py`
+### Session loading
 
-This Python script is the first code executed by pyRevit inside Revit. It:
+`PyRevitLoaderApplication.OnStartup` calls `SessionManagerService.LoadSession`, which:
 
-- Sets up environment variables.
-- Initializes the logging system and prepares the script console
-- Checks for updates if enabled, pulling changes for pyRevit and extensions.
-- Loads extensions and creates UI elements like ribbons and buttons (see [below](#extensions-discovery)).
-- Activates hooks, which enable features like event-driven scripts.
-- Initializes API routes and Telemetry, if enabled
+- Runs `session_preload.py` to set up environment variables, the logging/script console, update checks, telemetry, and API routes.
+- Loads extensions and creates UI elements like ribbons and buttons in C# (see [below](#extensions-discovery)).
+- Registers and activates hooks, which enable features like event-driven scripts.
+- Runs `session_postload.py` to finalize the session (cleanup, doc colorizer, routes server, output teardown).
+
+A reload re-enters the same `LoadSession` entry, so initial startup and reload share one code path.
 
 ???+ info
 
-    `pyrevitloader.py` is a small script that just calls the [pyrevit.loader.sessionmgr.load_session][] function.
-    That function is responsible to do all the things mentioned above.
+    `session_preload.py` and `session_postload.py` are small scripts that call
+    [pyrevit.loader.sessionmgr.perform_preload][] and
+    [pyrevit.loader.sessionmgr.perform_postload][]. They drive the residual Python
+    session services that have not yet been ported to C#.
 
 ### Extensions discovery
 

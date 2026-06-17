@@ -120,6 +120,12 @@ namespace pyRevitAssemblyBuilder.SessionManager
             SeedEnvironmentDictionary();
             _logger.Debug($"[PERF] SeedEnvironmentDictionary: {stepStopwatch.ElapsedMilliseconds}ms");
 
+            // Drive the residual Python session services (env/session, telemetry,
+            // routes, output window, hooks framework) that are not yet ported to C#.
+            stepStopwatch.Restart();
+            ExecuteEntryScript(Constants.PRELOAD_SCRIPT, "pyRevit Preload");
+            _logger.Debug($"[PERF] Preload: {stepStopwatch.ElapsedMilliseconds}ms");
+
             // Get all library extensions first - they need to be available to all UI extensions.
             // First call also populates the shared ParseInstalledExtensions cache used by the
             // later GetInstalledUIExtensions() call, so this Stopwatch is really measuring the
@@ -275,6 +281,12 @@ namespace pyRevitAssemblyBuilder.SessionManager
             _ribbonScanner.CleanupOrphanedElements();
             _logger.Debug($"[PERF] CleanupOrphanedElements: {stepStopwatch.ElapsedMilliseconds}ms");
 
+            // Finalize via the residual Python post-load services (assembly/appdata
+            // cleanup, hook activation, doc colorizer, routes server, output teardown).
+            stepStopwatch.Restart();
+            ExecuteEntryScript(Constants.POSTLOAD_SCRIPT, "pyRevit Postload");
+            _logger.Debug($"[PERF] Postload: {stepStopwatch.ElapsedMilliseconds}ms");
+
             totalStopwatch.Stop();
             _logger.Info($"Session loaded in {totalStopwatch.ElapsedMilliseconds}ms");
         }
@@ -417,6 +429,98 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 _logger.Error($"Startup script '{extension?.Name}' failed: {ex.Message}");
                 Trace.WriteLine($"Startup script '{extension?.Name}' failed: {ex}");
             }
+        }
+
+        /// <summary>
+        /// Runs a pyRevit session entry script (preload/postload) through the runtime
+        /// ScriptExecutor. These scripts drive the residual Python session services that
+        /// have not yet been ported to C#. Failures are logged but never abort the load.
+        /// </summary>
+        /// <param name="scriptFileName">Entry script file name located in the engines directory.</param>
+        /// <param name="commandName">Display name reported for the script run.</param>
+        private void ExecuteEntryScript(string scriptFileName, string commandName)
+        {
+            if (_scriptDataType == null || _scriptRuntimeConfigsType == null || _executeScriptMethod == null)
+            {
+                _logger.Warning($"Cannot run '{scriptFileName}': runtime executor not initialized.");
+                return;
+            }
+
+            // Entry scripts live in the engines directory, one level above the runtime
+            // assemblies (bin/<rt>/engines/<script>, alongside the loader's engine folders).
+            var enginesDir = string.IsNullOrEmpty(_binDir) ? null : System.IO.Path.GetDirectoryName(_binDir);
+            var scriptPath = enginesDir != null
+                ? System.IO.Path.Combine(enginesDir, scriptFileName)
+                : null;
+
+            if (scriptPath == null || !System.IO.File.Exists(scriptPath))
+            {
+                _logger.Warning($"Session entry script not found: {scriptPath ?? scriptFileName}");
+                return;
+            }
+
+            try
+            {
+                var searchPaths = BuildCoreSearchPaths();
+                var scriptData = CreateEntryScriptData(scriptPath, commandName);
+                var scriptRuntimeConfigs = CreateScriptRuntimeConfigs(searchPaths);
+
+                var result = _executeScriptMethod.Invoke(null, new[] { scriptData, scriptRuntimeConfigs, null });
+                if (result != null && (int)result != 0)
+                    _logger.Warning($"'{scriptFileName}' returned non-zero result: {result}");
+            }
+            catch (System.Reflection.TargetInvocationException tie)
+            {
+                var ex = tie.InnerException ?? tie;
+                _logger.Error($"'{scriptFileName}' failed: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error($"'{scriptFileName}' failed: {ex.Message}");
+            }
+        }
+
+        private object CreateEntryScriptData(string scriptPath, string commandName)
+        {
+            if (_scriptDataType == null)
+                throw new InvalidOperationException("ScriptData type not initialized");
+
+            var scriptData = Activator.CreateInstance(_scriptDataType)
+                ?? throw new InvalidOperationException("Failed to create ScriptData instance");
+            SetMemberValue(_scriptDataType, scriptData, "ScriptPath", scriptPath);
+            SetMemberValue(_scriptDataType, scriptData, "ConfigScriptPath", null);
+            SetMemberValue(_scriptDataType, scriptData, "CommandUniqueId", string.Empty);
+            SetMemberValue(_scriptDataType, scriptData, "CommandName", commandName);
+            SetMemberValue(_scriptDataType, scriptData, "CommandBundle", string.Empty);
+            SetMemberValue(_scriptDataType, scriptData, "CommandExtension", string.Empty);
+            SetMemberValue(_scriptDataType, scriptData, "IsStartupScript", true);
+            SetMemberValue(_scriptDataType, scriptData, "HelpSource", string.Empty);
+            return scriptData;
+        }
+
+        /// <summary>
+        /// Builds the core pyRevit search paths (pyrevitlib + site-packages) used by the
+        /// session entry scripts, which do not belong to any extension.
+        /// </summary>
+        private List<string> BuildCoreSearchPaths()
+        {
+            var searchPaths = new List<string>();
+
+            if (_pyRevitRoot == null)
+                _pyRevitRoot = FindPyRevitRoot(_binDir) ?? string.Empty;
+
+            if (!string.IsNullOrEmpty(_pyRevitRoot))
+            {
+                var pyRevitLibDir = System.IO.Path.Combine(_pyRevitRoot, Constants.PYREVIT_LIB_DIR);
+                if (DirectoryExistsCached(pyRevitLibDir))
+                    searchPaths.Add(pyRevitLibDir);
+
+                var sitePackagesDir = System.IO.Path.Combine(_pyRevitRoot, Constants.SITE_PACKAGES_DIR);
+                if (DirectoryExistsCached(sitePackagesDir))
+                    searchPaths.Add(sitePackagesDir);
+            }
+
+            return searchPaths;
         }
 
         /// <summary>
