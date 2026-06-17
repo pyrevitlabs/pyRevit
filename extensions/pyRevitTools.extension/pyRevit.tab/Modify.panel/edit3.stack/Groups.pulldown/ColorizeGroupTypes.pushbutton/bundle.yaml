@@ -1,5 +1,6 @@
 title:
   en_us: Colorize Group Types
+  ko: 그룹 유형 색상화
   fr_fr: Colorer les types de groupes
   ru: Раскрасить типы групп
   chinese_s: 着色组类型
@@ -15,6 +16,7 @@ tooltip:
 
     Note:
     Groups with only 1 instance on views will be colored in gray
+  ko: "선택한 뷰 또는 활성 뷰에서 동일한 그룹 유형의 모든 인스턴스가 같은 색상으로 표시되도록 그래픽을 재지정합니다. 여러 뷰를 선택한 후 실행하면 한 번에 모든 뷰의 그룹 유형을 색상화할 수 있습니다. 참고: 뷰에 인스턴스가 1개뿐인 그룹은 회색으로 표시됩니다."
   fr_fr: |-
     Remplace les graphismes des occurences de groupes sur les vues sélectionnées ou
     la vue active de telle sorte que toutes les occurences du même type de groupe

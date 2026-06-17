@@ -1,5 +1,6 @@
 title:
   en_us: Pin All Viewports
+  ko: 모든 뷰포트 고정
   fr_fr: Epingler toutes les Vues
   ru: Прикрепить все видовые экраны
   chinese_s: 锁定所有视口
@@ -12,6 +13,7 @@ tooltip:
 
     Shift-Click:
     Pin all viewports on active sheet
+  ko: "선택한 시트의 모든 뷰포트를 고정합니다. Shift+클릭: 활성 시트의 모든 뷰포트를 고정합니다."
   fr_fr: |-
     Épingler toutes les vues sur les feuilles sélectionnées.
 

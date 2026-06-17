@@ -1,5 +1,6 @@
 title:
   en_us: Purge Memory Files
+  ko: 메모리 파일 삭제
   fr_fr: Purger les fichiers Mémoire
   ru: Очистить файлы памяти
   chinese_s: 清除内存文件
@@ -8,6 +9,7 @@ title:
   pt_br: Eliminar Arquivos de Memória
 tooltip:
   en_us: Deletes all the temporary selection data files folder. This will clear all selection memories
+  ko: 모든 임시 선택 데이터 파일 폴더를 삭제합니다. 이렇게 하면 모든 선택 메모리가 지워집니다
   fr_fr: Supprime tout le dossier des fichiers de données de sélection temporaire. Cela effacera toutes les mémoires de sélection
   ru: Удаляет всю папку временных файлов данных выбора. Это очистит всю память выбора.
   chinese_s: 删除所有临时选择数据文件文件夹。这将清除所有选择内存

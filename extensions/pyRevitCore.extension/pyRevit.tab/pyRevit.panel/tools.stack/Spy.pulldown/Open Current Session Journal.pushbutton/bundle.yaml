@@ -1,5 +1,6 @@
 title:
   en_us: Open Current Session Journal
+  ko: 현재 세션 저널 열기
   fr_fr: Ouvre le journal de la session actuel
   ru: Открыть текущий журнал сессии
   chinese_s: 打开当前会话日志
@@ -7,6 +8,7 @@ title:
   de_de: Öffne die aktuelle Journal Datei
 tooltip:
   en_us: Open current session journal file
+  ko: 현재 세션 저널 파일을 엽니다
   fr_fr: Ouvre le journal de la session actuel
   ru: Открывает текущий файл журнала сессии.
   chinese_s: 打开当前会话日志文件

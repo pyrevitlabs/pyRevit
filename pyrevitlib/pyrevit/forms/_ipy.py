@@ -619,9 +619,9 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
             from pyrevit import script as _script
             current_out = _script.get_output()
             if current_out:
-                current_out.set_title(self.panel_title)
                 self._output = current_out
                 out = current_out
+                current_out.set_title(self.panel_title)
         except Exception:
             pass
         return out

@@ -1,5 +1,6 @@
 title:
   en_us: Remove Empty Tags
+  ko: 빈 태그 제거
   fr_fr: Enlever les étiquettes vides
   ru: Удалить пустые марки
   chinese_s: 移除空标记
@@ -13,6 +14,7 @@ tooltip:
     Shift+Click:
 
     Remove tags in selected views
+  ko: 현재 뷰에서 빈 태그를 제거합니다
   fr_fr: >-
     Supprime les étiquettes vides dans la vue actuelle
 

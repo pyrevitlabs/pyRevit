@@ -2,6 +2,7 @@ title:
   en_us: |-
     Color
     Splasher
+  ko: Color Splasher
   fr_fr: |-
     Color
     Splasher
@@ -28,6 +29,7 @@ tooltip:
     First Dynamo - Python edition December 2023: Nonica by Estudio Alonso Candau SLP - Jaime Alonso Candau - See specific non-commercial license agreement for Nonica in the script
 
     Refactored, pyRevit-ed and added View Filters Creation version by Jean-Marc Couffin, December 2023, October 2025
+  ko: Color Splasher는 활성 뷰의 요소를 매개변수 값에 따라 색상화합니다. 범례 또는 뷰 필터 목록 생성도 가능합니다.
   fr_fr: >-
     Color Splasher permet de colorer les éléments de la vue active en fonction de leurs valeurs de paramètre. Il permet également la création d'une légende ou d'une liste de filtres de vue.
 

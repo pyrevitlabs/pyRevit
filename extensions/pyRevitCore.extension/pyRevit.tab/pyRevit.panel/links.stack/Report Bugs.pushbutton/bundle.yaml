@@ -1,5 +1,6 @@
 title:
   en_us: Report Bugs
+  ko: 버그 신고
   fr_fr: Signaler les bugs
   ru: Сообщить об ошибках
   chinese_s: 报告错误
@@ -8,6 +9,7 @@ title:
   pt_br: Relatar Erros
 tooltip:
   en_us: Opens the issue tracker on github to report bugs and issues
+  ko: 버그 및 문제를 보고하기 위해 github 이슈 트래커를 엽니다
   fr_fr: Ouvre le suivi des problèmes sur GitHub pour signaler des bugs et des problèmes
   ru: Открывает issue на github, чтобы сообщать о багах и ошибках.
   chinese_s: 打开 GitHub 上的问题跟踪器，报告错误和问题

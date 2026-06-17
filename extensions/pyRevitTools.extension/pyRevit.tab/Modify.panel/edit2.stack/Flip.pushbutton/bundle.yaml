@@ -1,5 +1,6 @@
 title:
   en_us: Flip
+  ko: 뒤집기
   fr_fr: Inverser
   ru: Разворот
   chinese_s: 翻转
@@ -8,6 +9,7 @@ title:
   pt_br: Inverter
 tooltip:
   en_us: Provides options for flipping (Hand/Face) selected elements
+  ko: 선택한 요소에 대한 뒤집기(손/면) 옵션을 제공합니다
   fr_fr: Fournit des options pour symétriser (Main/Face) des éléments sélectionnés
   ru: Предоставляет настройки для разворота выделенных элементов.
   chinese_s: 为选定的图元提供翻转选项（翻转方向/翻转面）

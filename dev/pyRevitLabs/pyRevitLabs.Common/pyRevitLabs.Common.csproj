@@ -21,6 +21,10 @@
         <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'" Include="MadMilkman.Ini.Unofficial" Version="1.0.1"/>
 
         <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="System.Management"/>
+        <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="System.Net.Http"/>
+        <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="System.IO.Compression"/>
+        <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="System.IO.Compression.FileSystem"/>
+        <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="System.Text.Encoding.CodePages" Version="7.0.0"/>
         <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'" Include="System.Management" Version="10.0.5"/>
     </ItemGroup>
 

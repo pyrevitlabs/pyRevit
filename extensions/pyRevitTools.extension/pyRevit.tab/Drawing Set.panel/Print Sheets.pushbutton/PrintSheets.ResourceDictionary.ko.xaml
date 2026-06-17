@@ -1,0 +1,43 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">시트 인쇄</system:String>
+
+    <system:String x:Key="Model">모델</system:String>
+    <system:String x:Key="LinkedPrefix">링크: </system:String>
+    <system:String x:Key="SheetIndex">시트 인덱스</system:String>
+
+    <system:String x:Key="SheetOrdering">시트 순서</system:String>
+    <system:String x:Key="ReversePrintOrder">인쇄 순서 반전</system:String>
+    <system:String x:Key="ShowNonPrintableSheets">인쇄 불가 시트 표시 (회색으로 표시)</system:String>
+    <system:String x:Key="IncludeNonPrintableInIndexing">인덱싱에 인쇄 불가 시트 포함</system:String>
+    <system:String x:Key="IndexDigits">인덱스 자릿수</system:String>
+    <system:String x:Key="IndexStart">인덱스 시작</system:String>
+    <system:String x:Key="Reset">초기화</system:String>
+
+    <system:String x:Key="SheetPrinting">시트 인쇄</system:String>
+    <system:String x:Key="CombineIntoOnePDF">하나의 PDF로 결합</system:String>
+    <system:String x:Key="ExportDWG">DWG 내보내기</system:String>
+    <system:String x:Key="NamingFormat">명명 형식</system:String>
+    <system:String x:Key="EditFormats">형식 편집</system:String>
+    <system:String x:Key="Printer">프린터</system:String>
+    <system:String x:Key="PageSettings">페이지 설정</system:String>
+    <system:String x:Key="IncompatibleWithPrinter">프린터와 호환되지 않음</system:String>
+
+    <system:String x:Key="ListOfSheets">선택한 시트 인덱스의 시트 목록</system:String>
+    <system:String x:Key="SetPrintSettings">인쇄 설정 지정</system:String>
+    <system:String x:Key="ResetPrintSettings">인쇄 설정 초기화</system:String>
+    <system:String x:Key="Guide">안내</system:String>
+    <system:String x:Key="GuideText">인쇄 설정은 표제란 유형에서 설정할 수 있습니다. 표제란 패밀리에 "Print Setting" 유형 매개변수(텍스트 형식)를 생성하고 매개변수 값을 원하는 인쇄 설정 이름으로 지정하세요. "가변 용지 크기" 사용 시 이 도구가 이 매개변수 값을 기준으로 올바른 인쇄 설정을 자동으로 할당합니다</system:String>
+
+    <system:String x:Key="KudosToRyan">Ryan McCullough의 PrintFromIndex에 감사드립니다</system:String>
+
+    <system:String x:Key="CopySheetFileNames">시트 파일 이름 복사</system:String>
+
+    <system:String x:Key="PrintIndex">인쇄 인덱스</system:String>
+    <system:String x:Key="SheetNumber">시트 번호</system:String>
+    <system:String x:Key="SheetName">시트 이름</system:String>
+    <system:String x:Key="SheetRevision">시트 수정 (날짜순 정렬)</system:String>
+    <system:String x:Key="PrintSetting">인쇄 설정</system:String>
+    <system:String x:Key="FileName">파일 이름</system:String>
+</ResourceDictionary>

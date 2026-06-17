@@ -1,5 +1,6 @@
 title:
   en_us: Icons8
+  ko: Icons8
   fr_fr: Icons8
   ru: Icons8
   chinese_s: Icons8 网站
@@ -8,6 +9,7 @@ title:
   pt_br: Icons8
 tooltip:
   en_us: Opens the website that is providing the icons for the tools
+  ko: 도구 아이콘을 제공하는 웹사이트를 엽니다
   fr_fr: Ouvre le site web qui fournit les icônes pour les outils
   ru: Открывает сайт, который предоставляет иконки для инструментов.
   chinese_s: 打开提供工具图标的网站

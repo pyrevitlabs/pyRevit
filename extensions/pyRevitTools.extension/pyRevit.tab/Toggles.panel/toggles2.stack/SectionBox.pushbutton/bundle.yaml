@@ -1,5 +1,6 @@
 title:
   en_us: Section Box
+  ko: 단면 상자
   fr_fr: Zone de coupe
   ru: Края 3D вида
   chinese_s: 剖面框
@@ -9,6 +10,7 @@ title:
 tooltip:
   en_us: >-
     Toggles either the visibility or the active state of the section box; or temporarily switches to a sectionbox around selected objects in the current 3D view — depending on configuration (shift + click). In active mode, the current box is saved when disabled and restored when re-enabled.
+  ko: 단면 상자의 가시성 또는 활성 상태를 전환하거나, 현재 3D 뷰에서 선택한 객체 주변으로 임시 단면 상자로 전환합니다(구성에 따라 shift+클릭). 활성 모드에서는 비활성화 시 현재 상자가 저장되고 다시 활성화 시 복원됩니다.
   fr_fr: >-
     Bascule soit la visibilité, soit l’état actif de la boîte de section ; ou bascule temporairement vers une boîte de section entourant les objets sélectionnés dans la vue 3D actuelle — selon la configuration (Maj + clic). En mode actif, la boîte actuelle est enregistrée lors de la désactivation et restaurée lors de la réactivation.
 

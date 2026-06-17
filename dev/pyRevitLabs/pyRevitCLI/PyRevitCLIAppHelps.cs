@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using pyRevitLabs.Common.Extensions;
 
@@ -30,7 +30,7 @@ namespace pyRevitCLI
                             { "configs",                "Manage pyRevit configurations" },
                         },
                         commands: new Dictionary<string, string>() {
-                            { "clone",                  "Create a clone of pyRevit on this machine" },
+                            { "clone",                  "Create a clone of pyRevit (downloads pre-built bin/ from public GitHub Release assets)" },
                             { "extend",                 "Create a clone of a third-party pyRevit extension on this machine" },
                             { "attach",                 "Attach pyRevit clone to installed Revit" },
                             { "switch",                 "Switch active pyRevit clone" },
@@ -105,7 +105,7 @@ namespace pyRevitCLI
                             { "version",                "Get/Set version of a clone deployed from git repo" },
                             { "commit",                 "Get/Set head commit of a clone deployed from git repo" },
                             { "origin",                 "Get/Set origin of a clone deployed from git repo" },
-                            { "update",                 "Update clone to latest using the original source, deployment, and branch" },
+                            { "update",                 "Update clone to latest using the original source, deployment, and branch (refreshes bin/ from CI unless --skip-bin)" },
                             { "deployments",            "List deployments available in a clone" },
                             { "engines",                "List engines available in a clone" },
                         },
@@ -121,6 +121,7 @@ namespace pyRevitCLI
                             { "--reset",                "Reset remote origin url to default" },
                             { "--clearconfigs",         "Clear pyRevit configurations." },
                             { "--all",                  "All clones" },
+                            { "--skip-bin",             "Skip downloading CI binaries on update" },
                             { "--branch",               "Branch to clone from" },
                         });
                     break;

@@ -1,0 +1,14 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">ReValue</system:String>
+    <system:String x:Key="Parameter">매개변수:</system:String>
+    <system:String x:Key="Guide">안내</system:String>
+    <system:String x:Key="GuideText">형식 사용: 첫 번째 상자에 기존 값의 패턴을, 두 번째 상자에 새 형식을 지정합니다. 예를 들어, 값이 "OVERALL 1ST FLOOR"인 경우 첫 번째 상자에 "{type} {lvl}ST {name}"을 입력할 수 있습니다. 도구가 지정된 형식을 값에 일치시키고 해당 부분을 추출합니다. 두 번째 상자에 "LEVEL {lvl} - {type} {name} PLAN"을 지정하면 "LEVEL 1 - OVERALL FLOOR PLAN"으로 값이 변경됩니다.&#x0a;&#x0a;정규식 사용: 첫 번째 상자에 형식 찾기 "{}"가 없으면 정규식 지원을 사용하는 찾기/바꾸기 모드로 작동합니다.</system:String>
+    <system:String x:Key="OriginalPattern">원래 패턴:</system:String>
+    <system:String x:Key="NewPattern">새 패턴:</system:String>
+    <system:String x:Key="ApplyNewValues">새 값 적용</system:String>
+    <system:String x:Key="MarkSelectedAsFinal">선택 항목을 최종으로 표시</system:String>
+    <system:String x:Key="OldValue">이전 값</system:String>
+    <system:String x:Key="NewValue">새 값</system:String>
+</ResourceDictionary>

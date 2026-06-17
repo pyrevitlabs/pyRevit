@@ -1,5 +1,6 @@
 title:
   en_us: Select Group and Subgroup Elements
+  ko: 그룹 및 하위 그룹 요소 선택
   fr_fr: Sélectionner les Eléments du Groupe et des Groupes Imbriqués
   ru: Выделить элементы групп и подгрупп
   chinese_s: 选择组和子组内的图元
@@ -8,6 +9,7 @@ title:
   pt_br: Selecionar Elementos de Grupo e Subgrupo
 tooltip:
   en_us: Replaces current selection with elements inside the groups and their subgroups.
+  ko: 현재 선택 항목을 그룹 및 하위 그룹 내의 요소로 교체합니다.
   fr_fr: Remplace la sélection du groupe par les éléments du Groupe et des Groupes Imbriqués
   ru: Заменяет текущее выделение элементами внутри групп и их подгрупп.
   chinese_s: 用组及其子组内部的图元替换当前选择集

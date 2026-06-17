@@ -1,5 +1,6 @@
 title:
   en_us: apidocs.co
+  ko: apidocs.co
   fr_fr: apidocs.co
   ru: apidocs.co
   chinese_s: apidocs.co
@@ -8,6 +9,7 @@ title:
   pt_br: Apidocs.Co
 tooltip:
   en_us: Opens the latest version of Revit on apidocs.co
+  ko: apidocs.co에서 최신 버전의 Revit을 엽니다
   fr_fr: Ouvre la dernière version de Revit sur apidocs.co
   ru: Открывает последнюю версию документации Revit на apidocs.co.
   chinese_s: 打开 apidocs.co 上的最新版本的 Revit

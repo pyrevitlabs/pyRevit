@@ -1,5 +1,6 @@
 title:
   en_us: Wipe SubCategories
+  ko: 하위 카테고리 삭제
   fr_fr: Supprimer toutes les sous-catégories
   ru: Очистить подкатегории
   chinese_s: 清除子类别
@@ -8,6 +9,7 @@ title:
   pt_br: Remover Subcategorias
 tooltip:
   en_us: Reset all model categories and subcategories back to default
+  ko: 모든 모델 카테고리와 하위 카테고리를 기본값으로 재설정합니다
   fr_fr: Réinitialise toutes les catégories et sous-catégories
   ru: Сбрасывает все категории и подкатегории моделей до значений по умолчанию.
   chinese_s: 将所有模型类别和子类别重置为默认状态

@@ -1,5 +1,6 @@
 title:
   en_us: Cycle Types
+  ko: 유형 순환
   fr_fr: Parcourir les types
   ru: Круг типов
   chinese_s: Cycle Types
@@ -8,6 +9,7 @@ title:
   pt_br: Alternar Tipos
 tooltip:
   en_us: Cycle family types
+  ko: 패밀리 유형 순환
   fr_fr: Parcourir les types de familles
   ru: Последовательно переключает типы семейств.
   chinese_s: 循环切换族类型

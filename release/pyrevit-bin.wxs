@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
     <Fragment>
         <DirectoryRef Id="INSTALLDIR">
@@ -74,9 +74,6 @@
             <Component Id="cmp3BF19003A1E045D0971150BF5DBFF670" Guid="*">
                 <File Id="filD0636E2F3CD12184AF290D58A0369E3A" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit-products.json" />
             </Component>
-            <Component Id="cmpFC2E350C95E73B51AAF91A7051B3317D" Guid="*">
-                <File Id="fil9D9CA28FA73B41A9BA127C9970E070F8" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit-stubsbuilder.exe" />
-            </Component>
             <Component Id="cmpABFD324B27973D0D293493CB552AA06E" Guid="*">
                 <File Id="filCD962B3D0A8AA347B24C56BF834211EC" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit-telemetryserver.exe" />
             </Component>
@@ -148,9 +145,6 @@
             </Component>
             <Component Id="cmpE080F84AE061A54E1912EF098BE168CE" Guid="*">
                 <File Id="filCC08450191ACBFD9E5A29221EB4D6167" KeyPath="yes" Source="$(var.PyRevitBinDir)\pyrevit_settings.png" />
-            </Component>
-            <Component Id="cmp17024913AA93E8E641365EC02260BFE3" Guid="*">
-                <File Id="fil4C92993A75DFB38BBCA3D6B87D39E2C4" KeyPath="yes" Source="$(var.PyRevitBinDir)\PythonStubsBuilder.dll" />
             </Component>
             <Component Id="cmpE04D14A7F24BBF58DC163D2FDD8965DD" Guid="*">
                 <File Id="filCD1D020CA2F7A6EB25642113CE8803B6" KeyPath="yes" Source="$(var.PyRevitBinDir)\Rhino3dmIO.dll" />

@@ -1,5 +1,6 @@
 title:
   en_us: Toggle Grid Bubbles by Direction
+  ko: 방향별 그리드 버블 전환
   fr_fr: Basculer les bulles de quadrillage par direction
   ru: Переключить марки осей сетки по направлению
   chinese_s: 按方向切换轴网气泡
@@ -14,6 +15,7 @@ tooltip:
     will be affected, otherwise only the selected grids will be affected.
 
     Works in both plan/ceiling views as well as section/elevation views.
+  ko: 활성 뷰에서 방향별로 그리드 버블을 전환합니다.
   fr_fr: >-
     Basculer les bulles (symboles) de quadrillage dans la vue active par direction. 
 

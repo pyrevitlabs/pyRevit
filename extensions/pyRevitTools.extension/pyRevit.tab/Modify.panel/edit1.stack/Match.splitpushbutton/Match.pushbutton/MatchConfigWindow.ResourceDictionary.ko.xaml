@@ -1,0 +1,33 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">일치 옵션</system:String>
+
+    <system:String x:Key="CheckAll">모두 선택</system:String>
+    <system:String x:Key="CheckNone">모두 해제</system:String>
+    <system:String x:Key="SaveOptions">옵션 저장</system:String>
+
+    <system:String x:Key="DimensionOverrides">치수 재정의:</system:String>
+    <system:String x:Key="PrefixValue">접두사 값</system:String>
+    <system:String x:Key="AboveValue">위 값</system:String>
+    <system:String x:Key="ReplacedValue">대체 값</system:String>
+    <system:String x:Key="TextPosition">텍스트 위치</system:String>
+    <system:String x:Key="BelowValue">아래 값</system:String>
+    <system:String x:Key="PostfixValue">접미사 값</system:String>
+
+    <system:String x:Key="ElementGraphicsOverrides">요소 그래픽 재정의:</system:String>
+    <system:String x:Key="Halftone">하프톤</system:String>
+    <system:String x:Key="Transparency">투명도</system:String>
+
+    <system:String x:Key="Surface">표면</system:String>
+    <system:String x:Key="LineColor">선 색상</system:String>
+    <system:String x:Key="LinePattern">선 패턴</system:String>
+    <system:String x:Key="LineWeight">선 두께</system:String>
+    <system:String x:Key="Foreground">전경</system:String>
+    <system:String x:Key="FillColor">채우기 색상</system:String>
+    <system:String x:Key="FillPattern">채우기 패턴</system:String>
+    <system:String x:Key="FillPatternVisibility">채우기 패턴 가시성</system:String>
+    <system:String x:Key="Background">배경</system:String>
+
+    <system:String x:Key="Cut">절단</system:String>
+</ResourceDictionary>

@@ -1,5 +1,6 @@
 title:
   en_us: Wipe Attached Constraints
+  ko: 연결된 구속 조건 삭제
   fr_fr: Supprimer les contraintes attachées
   ru: Очистить прикрепленные ограничения
   chinese_s: 清除附着约束
@@ -8,6 +9,7 @@ title:
   pt_br: Remover Restrições Anexadas
 tooltip:
   en_us: Deletes all attached_constraints attached to the selected object
+  ko: 선택한 객체에 연결된 모든 구속 조건을 삭제합니다
   fr_fr: Supprime toutes les contraintes attachées à l'objet sélectionné
   ru: Удаляет все прикрепленные ограничения прикрепленные к выделенному элементу.
   chinese_s: 删除附加到所选对象上的所有附着约束

@@ -1,5 +1,6 @@
 title:
   en_us: Export view as image
+  ko: 뷰를 이미지로 내보내기
   fr_fr: Exporter une vue comme image
   ru: Экспортировать вид как изображение
   chinese_s: 将视图导出为图像
@@ -8,6 +9,7 @@ title:
   pt_br: Exportar Vista Como Imagem
 tooltip:
   en_us: Exports the current view to a 600DPI PNG image
+  ko: 현재 뷰를 600DPI PNG 이미지로 내보냅니다
   fr_fr: Exporter la vue actuelle au format PNG avec une résolution de 600DPI
   ru: Эспортирует текущий вид в PNG изображение с разрешением 600DPI.
   chinese_s: 将当前视图导出为 600 DPI 的 PNG 图像

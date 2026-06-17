@@ -1,5 +1,6 @@
 title:
   en_us: List Schedules on Sheets
+  ko: 시트의 일람표 목록
   fr_fr: Lister les nomenclatures sur les feuilles
   ru: Показать спецификации на листах
   chinese_s: 列出图纸上的明细表
@@ -8,6 +9,7 @@ title:
   pt_br: Listar Tabelas em Folhas
 tooltip:
   en_us: List Schedules on Sheets
+  ko: 시트의 일람표 목록
   fr_fr: Lister les nomenclatures sur les feuilles
   ru: Показывает спецификации на листах.
   chinese_s: 列出图纸上的明细表

@@ -1,5 +1,6 @@
 title:
   en_us: Wipe Unused Filters
+  ko: 사용되지 않는 필터 삭제
   fr_fr: Supprimer les filtres de vue inutilisés
   ru: Очистить неиспользуемые фильтры
   chinese_s: 清除未使用的过滤器
@@ -8,6 +9,7 @@ title:
   pt_br: Remover Filtros Não Utilizados
 tooltip:
   en_us: Deletes all view parameter filters that has not been listed on any views. This includes sheets as well
+  ko: 뷰에 나열되지 않은 모든 뷰 매개변수 필터를 삭제합니다. 시트도 포함됩니다
   fr_fr: Supprime tous les filtres de paramètres de vue qui n'ont été répertoriés dans aucune vue. Cela inclut aussi les feuilles
   ru: Удаляет все фильтры параметров вида которые не были использованы ни в одном из представлений.
   chinese_s: 删除所有未在任何视图中列出的视图参数过滤器。这同样包括图纸

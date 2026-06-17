@@ -2,7 +2,7 @@
 
 The pyRevit repository is organized in the following folders:
 
-- `bin` contains the binaries (dll and other support files) for pyRevit; usually a source repository doesn't have these, but it was made like this to be able to switch pyRevit versions using clones. This may change in the future and we could get rid of most content of this folder. Note that in this folder there also are the python envrionments  (for example the CPython dlls and core packages).
+- `bin` is **not tracked in git**. It holds runtime binaries (DLLs, engines, CLI, CPython under `cengines/`, etc.) produced locally by `dotnet run -- ci` in [`build/`](../build/) or downloaded by `pyrevit clone` / `pyrevit clones update` from public CI Release assets. See [Clone workflows](dev-guide.md#clone-workflows) for the two supported setups. Static sources live under [`release/bin-assets/`](../release/bin-assets/), [`release/cengines/`](../release/cengines/), and [`release/pyrevit-hosts.json`](../release/pyrevit-hosts.json).
 - `dev` is where the c# code resides.
 - `docs` is for the automatic generation of the [documentation website](https://docs.pyrevitlabs.io/)
 - `extensions` holds the various pyRevit extensions; the pyRevitCore.extension is the one that build the `pyRevit` ribbon tab, the others can be enabled via the Extension button inside pyRevit itself. `pyRevitDevTools` is quite handy to run tests and check if pyRevit (and the modifications you'll do) is running fine.

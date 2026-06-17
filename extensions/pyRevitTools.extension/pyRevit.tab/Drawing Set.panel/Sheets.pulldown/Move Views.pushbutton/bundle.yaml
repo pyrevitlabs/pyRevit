@@ -1,5 +1,6 @@
 title:
   en_us: Move Viewports (Model, Detail) To Other Sheets
+  ko: 다른 시트로 뷰포트(모델, 상세도) 이동
   fr_fr: Déplacer les fenêtres sélectionnées vers les feuilles sélectionnées
   ru: Переместить видовые экраны (модель, узел) на другие листы
   chinese_s: 移动视口（模型、详图）到其他图纸
@@ -11,6 +12,7 @@ tooltip:
     Open the source sheet. Run this script and select destination sheet. Select
     Viewports and push Finish button on the properties bar. The selected views
     will be MOVED to the destination sheet
+  ko: 원본 시트를 엽니다. 이 스크립트를 실행하고 대상 시트를 선택합니다. 뷰포트를 선택하고 특성 막대의 완료 버튼을 누릅니다. 선택한 뷰가 대상 시트로 이동됩니다.
   fr_fr: >-
     Ouvrez la feuille source. Exécutez ce script et sélectionnez la feuille de
     destination. Sélectionnez les vues et appuyez sur le bouton Terminer dans la

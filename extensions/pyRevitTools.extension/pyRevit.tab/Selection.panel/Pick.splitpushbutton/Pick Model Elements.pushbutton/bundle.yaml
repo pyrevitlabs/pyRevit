@@ -1,5 +1,6 @@
 title:
   en_us: Pick Model Elements
+  ko: 모델 요소 선택
   fr_fr: Sélectionner des éléments de modèle
   ru: Выбрать элементы модели
   chinese_s: 选择模型图元
@@ -8,6 +9,7 @@ title:
   pt_br: Selecionar Elementos de Modelo
 tooltip:
   en_us: Activates selection tool that picks only Model elements
+  ko: 모델 요소만 선택하는 선택 도구를 활성화합니다
   fr_fr: Active l'outil de sélection qui choisit seulement les éléments de modèle
   ru: Активирует инструмент выбора, который выбирает только элементы модели.
   chinese_s: 激活仅选择模型图元的选择工具

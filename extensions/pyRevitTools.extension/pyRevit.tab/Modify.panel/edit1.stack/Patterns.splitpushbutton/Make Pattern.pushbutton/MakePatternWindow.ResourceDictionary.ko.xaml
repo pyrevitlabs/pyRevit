@@ -1,0 +1,26 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">패턴 만들기</system:String>
+
+    <system:String x:Key="EnterNewPatternName">새 패턴 이름 입력</system:String>
+    <system:String x:Key="SelectPatternToExport">내보낼 패턴 선택</system:String>
+
+    <system:String x:Key="ExportPATFile">PAT 파일 내보내기</system:String>
+    <system:String x:Key="CreatePattern">패턴 만들기</system:String>
+    <system:String x:Key="NoLineworkSelected">선 작업이 선택되지 않음</system:String>
+    <system:String x:Key="IncompatibleViewType">호환되지 않는 뷰 유형</system:String>
+
+    <system:String x:Key="ResolverOptions">해석기 옵션</system:String>
+    <system:String x:Key="CreateFilledRegion">채워진 영역 만들기</system:String>
+    <system:String x:Key="UseHighestResolution">최고 해상도 사용</system:String>
+    <system:String x:Key="CapturedViewScale">캡처된 뷰 축척</system:String>
+    <system:String x:Key="ScaleMultiplier">축척 배수</system:String>
+    <system:String x:Key="RotationInDegrees">회전 (도)</system:String>
+    <system:String x:Key="FlipHorizontally">수평 반전</system:String>
+    <system:String x:Key="FlipVertically">수직 반전</system:String>
+
+    <system:String x:Key="PatternType">패턴 유형</system:String>
+    <system:String x:Key="DetailPattern">상세 패턴</system:String>
+    <system:String x:Key="ModelPattern">모델 패턴</system:String>
+</ResourceDictionary>

@@ -1,5 +1,6 @@
 title:
   en_us: Shake filled regions
+  ko: 채워진 영역 흔들기
   fr_fr: Agiter les zones remplies
   ru: Встряхнуть цветовые области
   chinese_s: 刷新填充区域
@@ -9,6 +10,7 @@ title:
 tooltip:
   en_us: >-
     Moves all Filled Regions on the seleced views back-and-forth by a tiny  amount to push Revit to regenerate the filled region and update the  display. This tool is meant to be used in conjunction with the  "Convert Line Styles" tool. The convert tool updates the line  styles inside Filled region but does not currently shake the  filled regions (Revit crashes on large models.)
+  ko: 선택한 뷰의 모든 채워진 영역을 아주 조금 앞뒤로 이동하여 Revit이 채워진 영역을 재생성하고 표시를 업데이트하도록 합니다. 이 도구는 "선 스타일 변환" 도구와 함께 사용하기 위한 것입니다. 변환 도구는 채워진 영역 내부의 선 스타일을 업데이트하지만 현재 채워진 영역을 흔들지는 않습니다(대형 모델에서 Revit이 충돌할 수 있음).
   fr_fr: >-
     Déplace puis replace toutes les zones remplies dans les vues  sélectionnées afin de forcer Revit à régénérer les vues. Cet  outil est conçu pour être utilisé avec l'outil "Convertir les  styles de lignes". L'outil de conversion met à jour les styles  de lignes dans les zones remplies mais n'agite pas les zones  remplies (Revit tend à crasher sur les grands modèles)
   ru: >-

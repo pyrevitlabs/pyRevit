@@ -1,5 +1,6 @@
 title:
   en_us: Override dimensions
+  ko: 치수 재지정
   fr_fr: Remplacement des valeurs des dimensions
   ru: Изменить размеры
   chinese_s: 替换标注
@@ -8,6 +9,7 @@ title:
   pt_br: Substituir Cotas
 tooltip:
   en_us: Provides options for overriding values on selected dimensions
+  ko: 선택한 치수의 값 재지정 옵션을 제공합니다
   fr_fr: Donne des options pour le remplacement des valeurs des dimensions sélectionnées
   ru: Предоставляет возможности для обновления значений на выделенных размерах.
   chinese_s: 为选定标注提供替换其值的选项

@@ -3,6 +3,7 @@ title:
   en_us: |-
     Make
     Pattern
+  ko: 패턴 만들기
   fr_fr: |-
     Créer
     Hachure
@@ -30,6 +31,7 @@ tooltip:
 
 
     TRICK: You can convert existing pattern types by selecting a filled region only and create the opposite pattern type (selected drafting filled region
+  ko: 상세 선, 곡선, 원, 타원 또는 채워진 영역을 사용하여 상세도 뷰에서 패턴 타일을 그립니다.
   fr_fr: >-
     Dessinez votre motif dans une vue détaillée en utilisant des lignes de détail, des courbes, des cercles ou des ellipses, voire des régions remplies
 

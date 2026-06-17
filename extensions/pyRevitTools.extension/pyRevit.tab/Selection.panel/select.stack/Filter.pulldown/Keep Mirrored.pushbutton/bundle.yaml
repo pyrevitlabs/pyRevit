@@ -1,5 +1,6 @@
 title:
   en_us: Keep Mirrored ●
+  ko: 미러 유지 ●
   fr_fr: Conserve symétrisés ●
   ru: Удержать отзеркаленные ●
   chinese_s: 保留已镜像图元 ●
@@ -15,6 +16,7 @@ tooltip:
 
     Keep only not-mirrored elements.
     If nothing is selected, pick a region to filter from.
+  ko: 현재 선택 항목에서 미러된 요소만 유지합니다. 선택 항목이 없으면 영역을 지정합니다.
   fr_fr: >-
     Conserver uniquement les éléments symétrisés dans la sélection actuelle.
     Si rien n'est sélectionné, délimitez une zone à filtrer.

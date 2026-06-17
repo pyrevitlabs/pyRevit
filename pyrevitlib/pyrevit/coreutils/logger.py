@@ -1,264 +1,182 @@
-"""Core logging module for pyRevit."""
-import sys
-import os.path as op
+"""Runtime-backed logging for pyRevit."""
+import io
 import logging
+import os.path as op
+import sys
+import threading
+import traceback
 
-#pylint: disable=W0703,C0302,C0103
 from pyrevit import EXEC_PARAMS, USER_DESKTOP
-from pyrevit.compat import safe_strtype, PY3, IRONPY3
-from pyrevit import PYREVIT_VERSION_APP_DIR, PYREVIT_FILE_PREFIX_STAMPED
+from pyrevit.compat import safe_strtype
 from pyrevit import coreutils
-from pyrevit.coreutils import envvars
-
-LOG_REC_FORMAT = "%(levelname)s [%(name)s] %(message)s"
-LOG_REC_FORMAT_HEADER = \
-    coreutils.prepare_html_str(
-        "<strong>%(levelname)s</strong> [%(name)s] %(message)s"
-        )
-LOG_REC_FORMAT_HEADER_NO_NAME = \
-    coreutils.prepare_html_str(
-        "<strong>%(levelname)s</strong>\n%(message)s"
-        )
-LOG_REC_FORMAT_EMOJI = "{emoji} %(levelname)s [%(name)s] %(message)s"
-LOG_REC_FORMAT_FILE = "%(asctime)s %(levelname)s [%(name)s] %(message)s"
-LOG_REC_FORMAT_FILE_C = "%(asctime)s %(levelname)s [<{}> %(name)s] %(message)s"
-
-LOG_REC_FORMAT_HTML = \
-    coreutils.prepare_html_str('<div class="logdefault {style}">{message}</div>')
-
-LOG_REC_CLASS_ERROR = 'logerror'
-LOG_REC_FORMAT_ERROR = \
-    LOG_REC_FORMAT_HTML.format(style=LOG_REC_CLASS_ERROR,
-                               message=LOG_REC_FORMAT_HEADER)
-
-LOG_REC_CLASS_WARNING = 'logwarning'
-LOG_REC_FORMAT_WARNING = \
-    LOG_REC_FORMAT_HTML.format(style=LOG_REC_CLASS_WARNING,
-                               message=LOG_REC_FORMAT_HEADER)
-
-LOG_REC_CLASS_CRITICAL = 'logcritical'
-LOG_REC_FORMAT_CRITICAL = \
-    LOG_REC_FORMAT_HTML.format(style=LOG_REC_CLASS_CRITICAL,
-                               message=LOG_REC_FORMAT_HEADER)
-
-LOG_REC_CLASS_SUCCESS = 'logsuccess'
-LOG_REC_FORMAT_SUCCESS = \
-    LOG_REC_FORMAT_HTML.format(style=LOG_REC_CLASS_SUCCESS,
-                               message=LOG_REC_FORMAT_HEADER_NO_NAME)
-
-LOG_REC_CLASS_DEPRECATE = 'logdeprecate'
-LOG_REC_FORMAT_DEPRECATE = \
-    LOG_REC_FORMAT_HTML.format(style=LOG_REC_CLASS_DEPRECATE,
-                               message=LOG_REC_FORMAT_HEADER_NO_NAME)
 
 
-# Setting default global logging level
 DEFAULT_LOGGING_LEVEL = logging.WARNING
-
-# add deprecate logging level
 DEPRECATE_LOG_LEVEL = 25
-logging.addLevelName(DEPRECATE_LOG_LEVEL, "DEPRECATE")
-
-# add success logging level
 SUCCESS_LOG_LEVEL = 80
+
+logging.addLevelName(DEPRECATE_LOG_LEVEL, "DEPRECATE")
 logging.addLevelName(SUCCESS_LOG_LEVEL, "SUCCESS")
 
 
-# must be the same in this file and pyrevit/loader/runtime/envdict.cs
-# this is because the csharp code hasn't been compiled when the
-# logger module is imported in the other modules
-envvars.set_pyrevit_env_var(envvars.LOGGING_LEVEL_ENVVAR,
-                            DEFAULT_LOGGING_LEVEL)
-envvars.set_pyrevit_env_var(envvars.FILELOGGING_ENVVAR,
-                            False)
+def _resolve_service():
+    """Resolve against the active command on every call for persistent engines."""
+    try:
+        runtime = EXEC_PARAMS.script_runtime
+        if runtime:
+            service = getattr(runtime, 'LoggerService', None)
+            if service is not None:
+                return service
+        from pyrevit.runtime.types import ScriptLoggerService
+        return ScriptLoggerService.GetDefault()
+    except Exception:
+        return None
 
 
-# Creating default file log name and status
-FILE_LOG_FILENAME = '{}runtime.log'.format(PYREVIT_FILE_PREFIX_STAMPED)
-FILE_LOG_FILEPATH = op.join(PYREVIT_VERSION_APP_DIR, FILE_LOG_FILENAME)
-FILE_LOGGING_DEFAULT_STATE = False
+def _safe_text(value):
+    try:
+        return safe_strtype(value)
+    except Exception:
+        try:
+            return safe_strtype(repr(value))
+        except Exception:
+            return '<unprintable>'
 
 
-# custom logger methods --------------------------------------------------------
-# (for module consistency and custom adjustments)
-class DispatchingFormatter(object):
-    """Dispatching formatter to format by log level.
-
-    Args:
-        log_formatters (dict[int:logging.Formatter]):
-            dict of level:formatter key pairs
-        log_default_formatter (logging.Formatter): default formatter
-    """
-    def __init__(self, log_formatters, log_default_formatter):
-        self._formatters = log_formatters
-        self._default_formatter = log_default_formatter
-
-    def format(self, record):
-        """Format given record by log level."""
-        formatter = self._formatters.get(record.levelno,
-                                         self._default_formatter)
-        return formatter.format(record)
+def _format_message(message, args):
+    text = _safe_text(message)
+    if args:
+        try:
+            if len(args) == 1 and isinstance(args[0], dict):
+                text = text % args[0]
+            else:
+                text = text % args
+        except Exception:
+            rendered_args = ' '.join(_safe_text(arg) for arg in args)
+            if rendered_args:
+                text = '{} {}'.format(text, rendered_args)
+    return text.replace(op.sep, '/')
 
 
-class LoggerWrapper(logging.Logger):
-    """Custom logging object."""
-    def __init__(self, *args):
-        logging.Logger.__init__(self, *args)
-        self._has_errors = False
-        self._filelogstate = False
-        self._curlevel = DEFAULT_LOGGING_LEVEL
+def _format_current_exception():
+    exc_type, exc_value, exc_traceback = sys.exc_info()
+    if exc_type is None:
+        return ''
+    try:
+        return ''.join(traceback.format_exception(
+            exc_type, exc_value, exc_traceback)).rstrip()
+    except Exception:
+        return _safe_text(exc_value)
 
-    def findCaller(self, stack_info=False, stacklevel=1):
-        """Override findCaller for IronPython 3 compatibility.
-        
-        IronPython 3.4 has issues with stack frame inspection that causes
-        IndexError when the logging module tries to find caller information.
-        This override returns safe default values for IronPython 3.
-        """
-        if IRONPY3:
-            return ("(unknown)", 0, "(unknown)", None)
-        else:
-            return logging.Logger.findCaller(self)
 
-    def _log(self, level, msg, args, exc_info=None, extra=None,
-             stack_info=False, stacklevel=1): #pylint: disable=W0221
-        self._has_errors = (self._has_errors or level >= logging.ERROR)
+def _append_exception(message, exception_text):
+    if not exception_text:
+        return message
+    if not message:
+        return exception_text
+    return '{}\n{}'.format(message, exception_text)
 
-        # any report other than logging.INFO level,
-        # needs to cleanup < and > character to avoid html conflict
-        if not isinstance(msg, str):
-            msg_str = safe_strtype(msg)
-            # get rid of unicode characters
-            msg_str = msg_str.encode('ascii', 'ignore')
-            msg_str = msg_str.replace(op.sep, '/')
-        else:
-            msg_str = msg
-        
-        # IronPython 3 has issues with stack frame inspection in logging
-        # Use a custom implementation that bypasses problematic code paths
-        if IRONPY3:
-            # Create LogRecord directly without stack inspection
-            record = logging.LogRecord(
-                self.name, level, "(unknown)", 0, msg_str, args, exc_info,
-                func="(unknown)"
-            )
-            if extra:
-                for key in extra:
-                    record.__dict__[key] = extra[key]
-            # Directly call our callHandlers to avoid logging internals
-            self.callHandlers(record)
-        else:
-            logging.Logger._log(self, level, msg_str, args,
-                                exc_info=exc_info, extra=extra)
 
-    def callHandlers(self, record):
-        """Override logging.Logger.callHandlers."""
-        for hdlr in self.handlers:
-            try:
-                # stream-handler only records based on current level
-                if isinstance(hdlr, logging.StreamHandler) \
-                        and record.levelno >= self._curlevel:
-                    if IRONPY3:
-                        # Direct write for IronPython 3 to avoid handler internals
-                        try:
-                            msg = hdlr.format(record)
-                            hdlr.stream.write(msg + '\n')
-                            hdlr.stream.flush()
-                        except Exception:
-                            pass
-                    else:
-                        hdlr.handle(record)
-                # file-handler must record everything
-                elif isinstance(hdlr, logging.FileHandler) \
-                        and self._filelogstate:
-                    if IRONPY3:
-                        # Direct write for IronPython 3 to avoid handler internals
-                        try:
-                            msg = hdlr.format(record)
-                            hdlr.stream.write(msg + '\n')
-                            hdlr.stream.flush()
-                        except Exception:
-                            pass
-                    else:
-                        hdlr.handle(record)
-            except Exception:
-                # Silently ignore handler errors for IronPython 3
-                if not IRONPY3:
-                    raise
+class LoggerWrapper(object):
+    """Small Python facade over the active runtime logging service."""
+
+    def __init__(self, name):
+        self.name = name
+
+    def _emit(self, level, message, args=(), exception_text=''):
+        service = _resolve_service()
+        if service is None:
+            return
+        rendered = _append_exception(
+            _format_message(message, args),
+            exception_text)
+        try:
+            service.Log(self.name, int(level), rendered)
+        except Exception:
+            pass
+
+    def debug(self, message, *args, **kwargs):
+        self._emit(logging.DEBUG, message, args)
+
+    def info(self, message, *args, **kwargs):
+        self._emit(logging.INFO, message, args)
+
+    def warning(self, message, *args, **kwargs):
+        self._emit(logging.WARNING, message, args)
+
+    warn = warning
+
+    def error(self, message, *args, **kwargs):
+        exception_text = _format_current_exception() \
+            if kwargs.get('exc_info') else ''
+        self._emit(logging.ERROR, message, args, exception_text)
+
+    def exception(self, message, *args, **kwargs):
+        self._emit(logging.ERROR, message, args, _format_current_exception())
+
+    def critical(self, message, *args, **kwargs):
+        self._emit(logging.CRITICAL, message, args)
+
+    def success(self, message, *args, **kwargs):
+        self._emit(SUCCESS_LOG_LEVEL, message, args)
+
+    def deprecate(self, message, *args, **kwargs):
+        self._emit(DEPRECATE_LOG_LEVEL, message, args)
 
     def isEnabledFor(self, level):
-        """Override logging.Logger.isEnabledFor."""
-        # update current logging level and file logging state
-        self._filelogstate = \
-            envvars.get_pyrevit_env_var(envvars.FILELOGGING_ENVVAR)
-        self._curlevel = \
-            envvars.get_pyrevit_env_var(envvars.LOGGING_LEVEL_ENVVAR)
-
-        # the loader assembly sets EXEC_PARAMS.debug_mode to true if
-        # user Ctrl-clicks on the button at script runtime.
-        if EXEC_PARAMS.debug_mode:
-            self._curlevel = logging.DEBUG
-
-        # if file logging is disabled, return the current logging level
-        # but if it's enabled, return the file logging level so the record
-        # is generated and logged by file-handler. The stream-handler still
-        # outputs the record based on the current logging level
-        if self._filelogstate:
-            return level >= logging.DEBUG
-
-        return level >= self._curlevel
+        service = _resolve_service()
+        if service is None:
+            return False
+        try:
+            return bool(service.IsEnabled(int(level)))
+        except Exception:
+            return False
 
     def is_enabled_for(self, level):
-        """Check if logger is enabled for level in pyRevit environment."""
-        self._curlevel = \
-            envvars.get_pyrevit_env_var(envvars.LOGGING_LEVEL_ENVVAR)
-
-        # the loader assembly sets EXEC_PARAMS.debug_mode to true if
-        # user Ctrl-clicks on the button at script runtime.
-        if EXEC_PARAMS.debug_mode:
-            self._curlevel = logging.DEBUG
-
-        return level >= self._curlevel
-
-    @staticmethod
-    def _reset_logger_env_vars(log_level):
-        envvars.set_pyrevit_env_var(envvars.LOGGING_LEVEL_ENVVAR, log_level)
+        service = _resolve_service()
+        if service is None:
+            return False
+        try:
+            return bool(service.IsVisibleEnabled(int(level)))
+        except Exception:
+            return False
 
     def has_errors(self):
-        """Check if logger has reported any errors."""
-        return self._has_errors
+        service = _resolve_service()
+        if service is None:
+            return False
+        try:
+            return bool(service.HasErrors)
+        except Exception:
+            return False
 
     def set_level(self, level):
-        """Set logging level to level."""
-        self._reset_logger_env_vars(level)
+        service = _resolve_service()
+        if service is not None:
+            service.SetMinimumLevel(int(level))
 
     def set_quiet_mode(self):
-        """Activate quiet mode. All log levels are disabled."""
-        self._reset_logger_env_vars(logging.CRITICAL)
+        self.set_level(logging.CRITICAL)
 
     def set_verbose_mode(self):
-        """Activate verbose mode. Log levels >= INFO are enabled."""
-        self._reset_logger_env_vars(logging.INFO)
+        self.set_level(logging.INFO)
 
     def set_debug_mode(self):
-        """Activate debug mode. Log levels >= DEBUG are enabled."""
-        self._reset_logger_env_vars(logging.DEBUG)
+        self.set_level(logging.DEBUG)
 
     def reset_level(self):
-        """Reset logging level back to default."""
-        self._reset_logger_env_vars(DEFAULT_LOGGING_LEVEL)
+        self.set_level(DEFAULT_LOGGING_LEVEL)
 
     def get_level(self):
-        """Return current logging level."""
-        return envvars.get_pyrevit_env_var(envvars.LOGGING_LEVEL_ENVVAR)
+        service = _resolve_service()
+        if service is None:
+            return DEFAULT_LOGGING_LEVEL
+        try:
+            return int(service.GetMinimumLevel())
+        except Exception:
+            return DEFAULT_LOGGING_LEVEL
 
     def log_parse_except(self, parsed_file, parse_ex):
-        """Logs a file parsing exception.
-
-        Args:
-            parsed_file (str): File path that failed the parsing
-            parse_ex (Exception): Parsing exception
-        """
         err_msg = '<strong>Error while parsing file:</strong>\n{file}\n' \
                   '<strong>Error type:</strong> {type}\n' \
                   '<strong>Error Message:</strong> {errmsg}\n' \
@@ -266,154 +184,101 @@ class LoggerWrapper(logging.Logger):
                   '<strong>Line Text:</strong> {linetext}' \
                   .format(file=parsed_file,
                           type=parse_ex.__class__.__name__,
-                          errmsg=parse_ex.msg if hasattr(parse_ex, 'msg') else "",
-                          lineno=parse_ex.lineno if hasattr(parse_ex, 'lineno') else 0,
-                          colno=parse_ex.offset if hasattr(parse_ex, 'offset') else 0,
-                          linetext=parse_ex.text if hasattr(parse_ex, 'text') else "",
-                          )
+                          errmsg=getattr(parse_ex, 'msg', ''),
+                          lineno=getattr(parse_ex, 'lineno', 0),
+                          colno=getattr(parse_ex, 'offset', 0),
+                          linetext=getattr(parse_ex, 'text', ''))
         self.error(coreutils.prepare_html_str(err_msg))
 
-    def success(self, message, *args, **kws):
-        """Log a success message.
-
-        Args:
-            message (str): success message
-            *args (Any): extra agruments passed to the log function
-            **kws (Any): extra agruments passed to the log function
-        """
-        if self.isEnabledFor(SUCCESS_LOG_LEVEL):
-            # Yes, logger takes its '*args' as 'args'.
-            self._log(SUCCESS_LOG_LEVEL, message, args, **kws)
-
-    def deprecate(self, message, *args, **kws):
-        """Log a deprecation message.
-
-        Args:
-            message (str): deprecation message
-            *args (Any): extra agruments passed to the log function
-            **kws (Any): extra agruments passed to the log function
-        """
-        if self.isEnabledFor(DEPRECATE_LOG_LEVEL):
-            # Yes, logger takes its '*args' as 'args'.
-            self._log(DEPRECATE_LOG_LEVEL, message, args, **kws)
-
     def dev_log(self, source, message=''):
-        """Appends a message to a log file.
-
-        Args:
-            source (str): source of the message
-            message (str): message to log
-        """
-        devlog_fname = \
-            '{}.log'.format(EXEC_PARAMS.command_uniqueid or self.name)
-        with open(op.join(USER_DESKTOP, devlog_fname), 'a') as devlog_file:
-            devlog_file.writelines('{tstamp} [{exid}] {src}: {msg}\n'.format(
-                tstamp=EXEC_PARAMS.exec_timestamp,
-                exid=EXEC_PARAMS.exec_id,
-                src=source,
-                msg=message,
-                ))
+        """Append a command-specific developer note on the user's desktop."""
+        devlog_fname = '{}.log'.format(
+            EXEC_PARAMS.command_uniqueid or self.name)
+        with io.open(op.join(USER_DESKTOP, devlog_fname), 'a', encoding='utf-8') \
+                as devlog_file:
+            devlog_file.write(
+                '{tstamp} [{exid}] {src}: {msg}\n'.format(
+                    tstamp=EXEC_PARAMS.exec_timestamp,
+                    exid=EXEC_PARAMS.exec_id,
+                    src=_safe_text(source),
+                    msg=_safe_text(message)))
 
 
-# setting up handlers and formatters -------------------------------------------
-stdout_hndlr = logging.StreamHandler(sys.stdout)
-# e.g [_parser] DEBUG: Can not create command.
-default_formatter = logging.Formatter(LOG_REC_FORMAT)
-formatters = {
-    SUCCESS_LOG_LEVEL: logging.Formatter(LOG_REC_FORMAT_SUCCESS),
-    logging.ERROR: logging.Formatter(LOG_REC_FORMAT_ERROR),
-    logging.WARNING: logging.Formatter(LOG_REC_FORMAT_WARNING),
-    logging.CRITICAL: logging.Formatter(LOG_REC_FORMAT_CRITICAL),
-    DEPRECATE_LOG_LEVEL: logging.Formatter(LOG_REC_FORMAT_DEPRECATE)
-    }
-stdout_hndlr.setFormatter(DispatchingFormatter(formatters, default_formatter))
+class _RuntimeLoggingHandler(logging.Handler):
+    """Forward root-propagated standard records without applying policy."""
+
+    _pyrevit_runtime_bridge = True
+    _emitting = threading.local()
+
+    def emit(self, record):
+        if getattr(self._emitting, 'active', False):
+            return
+
+        self._emitting.active = True
+        try:
+            try:
+                message = record.getMessage()
+            except Exception:
+                message = _format_message(record.msg, record.args or ())
+
+            if record.exc_info:
+                try:
+                    exc_text = ''.join(traceback.format_exception(
+                        *record.exc_info)).rstrip()
+                except Exception:
+                    exc_text = _safe_text(record.exc_info[1])
+                message = _append_exception(_safe_text(message), exc_text)
+
+            service = _resolve_service()
+            if service is not None:
+                service.Log(record.name, int(record.levelno), _safe_text(message))
+        except Exception:
+            pass
+        finally:
+            self._emitting.active = False
 
 
-file_hndlr = logging.FileHandler(FILE_LOG_FILEPATH, mode='a', delay=True)
-file_formatter = logging.Formatter(LOG_REC_FORMAT_FILE)
-file_hndlr.setFormatter(file_formatter)
+def _install_standard_logging_bridge():
+    root_logger = logging.getLogger()
+    for handler in root_logger.handlers:
+        if getattr(handler, '_pyrevit_runtime_bridge', False):
+            return handler
 
-
-def get_stdout_hndlr():
-    """Return stdout logging handler object.
-
-    Returns:
-        (logging.StreamHandler):
-            configured instance of python's native stream handler
-    """
-    global stdout_hndlr     #pylint: disable=W0603
-
-    return stdout_hndlr
-
-
-def get_file_hndlr():
-    """Return file logging handler object.
-
-    Returns:
-        (logging.FileHandler):
-            configured instance of python's native stream handler
-    """
-    global file_hndlr       #pylint: disable=W0603
-
-    if EXEC_PARAMS.command_mode:
-        cmd_file_hndlr = logging.FileHandler(FILE_LOG_FILEPATH,
-                                             mode='a', delay=True)
-        logformat = LOG_REC_FORMAT_FILE_C.format(EXEC_PARAMS.command_name)
-        formatter = logging.Formatter(logformat)
-        cmd_file_hndlr.setFormatter(formatter)
-        return cmd_file_hndlr
-    else:
-        return file_hndlr
-
-
-# setting up public logger. this will be imported in with other modules -------
-logging.setLoggerClass(LoggerWrapper)
+    handler = _RuntimeLoggingHandler()
+    handler.setLevel(logging.NOTSET)
+    root_logger.addHandler(handler)
+    root_logger.setLevel(logging.DEBUG)
+    return handler
 
 
 loggers = {}
 
 
 def get_logger(logger_name):
-    """Register and return a logger with given name.
-
-    Caches all registered loggers and returns the same logger object on
-    second call with the same logger name.
-
-    Args:
-        logger_name (str): logger name
-
-    Returns:
-        (LoggerWrapper): logger object wrapper python's native logger
-
-    Examples:
-        ```python
-        get_logger('my command')
-        ```
-        <LoggerWrapper ...>
-    """
-    if loggers.get(logger_name):
-        return loggers.get(logger_name)
-    else:
-        logger = logging.getLogger(logger_name)    # type: LoggerWrapper
-        logger.addHandler(get_stdout_hndlr())
-        logger.propagate = False
-        logger.addHandler(get_file_hndlr())
-        loggers.update({logger_name: logger})
-        return logger
+    """Return the cached runtime-backed facade for ``logger_name``."""
+    logger = loggers.get(logger_name)
+    if logger is None:
+        logger = LoggerWrapper(logger_name)
+        loggers[logger_name] = logger
+    return logger
 
 
 def set_file_logging(status):
-    """Set file logging status (enable/disable).
-
-    Args:
-        status (bool): True to enable, False to disable
-    """
-    envvars.set_pyrevit_env_var(envvars.FILELOGGING_ENVVAR, status)
+    """Enable or disable the runtime-owned default log file."""
+    service = _resolve_service()
+    if service is not None:
+        service.SetFileLogging(bool(status))
 
 
 def loggers_have_errors():
-    """Check if any errors have been reported by any of registered loggers."""
-    for logger in loggers.values():
-        if logger.has_errors():
-            return True
-    return False
+    """Return whether the active runtime logging service recorded an error."""
+    service = _resolve_service()
+    if service is None:
+        return False
+    try:
+        return bool(service.HasErrors)
+    except Exception:
+        return False
+
+
+_install_standard_logging_bridge()

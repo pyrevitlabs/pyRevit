@@ -1,6 +1,7 @@
 title:
   en_us: |-
     Query View Sheet Placement
+  ko: 뷰 시트 배치 쿼리
   fr_fr: |-
     Rechercher les vues non placées
   ru: |-
@@ -15,6 +16,7 @@ title:
 tooltip:
   en_us: |-
     Lists views that have not been placed on any sheets
+  ko: 시트에 배치되지 않은 뷰를 나열합니다.
   fr_fr: |-
     Répertorie les vues qui n'ont été placées sur aucune feuille
   ru: |-

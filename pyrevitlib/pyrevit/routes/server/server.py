@@ -5,7 +5,6 @@
 # pylint: disable=missing-docstring
 import sys
 import traceback
-import cgi
 import json
 import threading
 
@@ -73,13 +72,13 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
     def _prepare_request(self, route, path, method):
         # process request data
         data = None
-        content_length = self.headers.getheader("content-length")  # type: str
+        content_length = self.headers.get("content-length")  # type: str
         if content_length and content_length.isnumeric():
             data = self.rfile.read(int(content_length))
             # format data
-            content_type_header = self.headers.getheader("content-type")
+            content_type_header = self.headers.get("content-type")
             if content_type_header:
-                content_type, _ = cgi.parse_header(content_type_header)
+                content_type = content_type_header.split(";")[0].strip()
                 if content_type == "application/json":
                     data = json.loads(data)
 
@@ -185,14 +184,14 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
             self._handle_route(method=method)
         except Exception as ex:
             # get exception info
-            sys.exc_type, sys.exc_value, sys.exc_traceback = sys.exc_info()
+            exc_type, exc_value, exc_tb = sys.exc_info()
             # go back one frame to grab exception stack from handler
             # and grab traceback lines
-            tb_report = "".join(traceback.format_tb(sys.exc_traceback)[1:])
+            tb_report = "".join(traceback.format_tb(exc_tb)[1:])
             self._write_response(
                 excp.ServerException(
                     message=str(ex),
-                    exception_type=sys.exc_type,
+                    exception_type=exc_type,
                     exception_traceback=tb_report,
                 )
             )

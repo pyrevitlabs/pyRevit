@@ -1,5 +1,6 @@
 title:
   en_us: Select Element Types
+  ko: 요소 유형 선택
   fr_fr: Sélectionner les types de l'élément
   ru: Выделить типы элементов
   chinese_s: 选择图元类型
@@ -11,6 +12,7 @@ tooltip:
     This tool allows you to select ElementTypes of a specified category.
     Note:  ElementTypes aren't identified in the Revit UI when selected.  Meaning they are visible in the filter window of Revit,  but there is no way to know if it is an Element or an ElementType
     as Revit displays the Category of the said Element or ElementType.
+  ko: "지정된 카테고리의 요소 유형을 선택할 수 있습니다. 참고: 선택 시 Revit UI에서 요소 유형이 식별되지 않습니다. Revit의 필터 창에는 표시되지만 요소인지 요소 유형인지 구별할 수 없습니다."
   fr_fr: >
     Cet outil vous permet de sélectionner les ElementTypes d'une catégorie spécifiée.
     Note:

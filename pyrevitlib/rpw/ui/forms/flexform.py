@@ -59,7 +59,7 @@ class FlexForm(Window):
         self.ui.Title = title
         self.values = {}
 
-        for key, value in kwargs.iteritems():
+        for key, value in kwargs.items():
             setattr(self, key, value)
 
         for n, component in enumerate(components):
@@ -128,7 +128,7 @@ class RpwControlMixin():
 
         # Inject Any other Custom Values into Component
         # Updating __dict__ fails due to how .NET inheritance/properties works
-        for key, value in kwargs.iteritems():
+        for key, value in kwargs.items():
             setattr(self, key, value)
 
 

@@ -1,5 +1,6 @@
 title:
   en_us: Highlight 2D
+  ko: 2D 강조
   fr_fr: Surligner 2D
   ru: Подсветить 2D
   chinese_s: 高亮显示二维图元
@@ -8,6 +9,7 @@ title:
   pt_br: Destacar 2D
 tooltip:
   en_us: Higlight 2D elements in red
+  ko: 2D 요소를 빨간색으로 강조
   fr_fr: Suriligner les éléments 2D elements en Rouge
   ru: Подсвечивает 2D элементы красным цветом
   chinese_s: 将二维图元以红色高亮显示

@@ -1,5 +1,6 @@
 title:
   en_us: Set Revision On Sheets
+  ko: 시트에 수정 사항 설정
   fr_fr: Active la Révision sur les Feuilles
   ru: Установить изменение на листах
   chinese_s: 在图纸上设置修订
@@ -9,6 +10,7 @@ title:
 tooltip:
   en_us: >-
     Select a revision from the list of revisions and this script set that revision on all sheets in the model as an additional revision.   Shift+Click bypasses the issued check.
+  ko: 수정 목록에서 수정 사항을 선택하면 모델의 모든 시트에 해당 수정 사항을 추가 수정으로 설정합니다. Shift+클릭으로 발행 여부 확인을 건너뜁니다.
   fr_fr: >-
     Sélectionnez une révision dans la liste des révisions et ce script définit cette révision sur toutes les feuilles du modèle en tant que révision supplémentaire.   Maj+Clic contourne la vérification de publication.
   ru: >-

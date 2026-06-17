@@ -1,0 +1,27 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <!-- Default Title -->
+    <system:String x:Key="SelectFromList.DefaultTitle">사용자 입력</system:String>
+
+    <!-- Group Selector -->
+    <system:String x:Key="SelectFromList.GroupSelector.Label">목록 그룹:</system:String>
+
+    <!-- Buttons -->
+    <system:String x:Key="SelectFromList.CheckAll.Button">모두 선택</system:String>
+    <system:String x:Key="SelectFromList.UncheckAll.Button">모두 해제</system:String>
+    <system:String x:Key="SelectFromList.ToggleAll.Button">모두 전환</system:String>
+    <system:String x:Key="SelectFromList.Reset.Button">초기화</system:String>
+    <system:String x:Key="SelectFromList.Select.Button">선택</system:String>
+
+    <!-- Dynamic button labels (when filtered) -->
+    <system:String x:Key="SelectFromList.Check.Button">체크</system:String>
+    <system:String x:Key="SelectFromList.Uncheck.Button">체크 해제</system:String>
+    <system:String x:Key="SelectFromList.Toggle.Button">전환</system:String>
+
+    <!-- Tooltips -->
+    <system:String x:Key="SelectFromList.RegexToggle.Tooltip">정규식 필터링과 퍼지 필터링 간 전환합니다</system:String>
+
+</ResourceDictionary>

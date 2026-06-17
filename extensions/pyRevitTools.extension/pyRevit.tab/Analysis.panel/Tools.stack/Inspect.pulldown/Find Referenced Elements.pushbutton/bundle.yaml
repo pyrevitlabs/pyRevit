@@ -1,6 +1,7 @@
 context: selection
 title:
   en_us: Find referenced elements
+  ko: 참조된 요소 찾기
   fr_fr: Trouver les éléments référencés
   ru: Найти связанные элементы
   chinese_s: 查找引用的图元
@@ -9,6 +10,7 @@ title:
   pt_br: Encontrar Elementos Referenciados
 tooltip:
   en_us: Lists all the elements that are tied to the selected element. For example elements tags or dimensions
+  ko: "선택한 요소에 연결된 모든 요소를 나열합니다(예: 요소 태그 또는 치수)."
   fr_fr: Lister tous les éléments qui sont liés à l'élément sélectionné. Par exemple, les étiquettes et les dimensions
   ru: Выводит все элементы, которые связаны с выделенным элементом. Например, элементы маркировки или размеров.
   chinese_s: 列出所有与所选图元关联的图元。例如，该图元的标记或尺寸标注

@@ -1,5 +1,6 @@
 title:
   en_us: Get Central Path
+  ko: 중앙 경로 가져오기
   fr_fr: Obtenir le chemin du Central
   ru: Получить путь к ФХ
   chinese_s: 获取中心文件路径
@@ -13,6 +14,7 @@ tooltip:
     Shift+Click:
 
     Open model file in Explorer, or open ACC Docs project page for cloud models.
+  ko: 중앙 모델(공유 작업)의 전체 경로 또는 로컬 모델 경로를 출력합니다.
   fr_fr: >-
     Afficher le chemin complet du modèle central (partagé) ou du modèle local.
 

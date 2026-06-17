@@ -1,5 +1,6 @@
 title:
   en_us: Isolate
+  ko: 격리
   fr_fr: Isoler
   ru: Изолировать
   chinese_s: 隔离
@@ -11,6 +12,7 @@ tooltip:
     Isolates specific elements in current view and
 
     put the view in isolate element mode
+  ko: 현재 뷰에서 특정 요소를 격리하고 뷰를 요소 격리 모드로 설정합니다.
   fr_fr: >-
     Isole des éléments spécifiques dans la vue actuelle et
 

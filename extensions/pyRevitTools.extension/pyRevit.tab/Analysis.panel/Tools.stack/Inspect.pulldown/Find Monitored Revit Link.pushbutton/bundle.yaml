@@ -1,5 +1,6 @@
 title:
   en_us: Find monitored Revit links
+  ko: 모니터링되는 Revit 링크 찾기
   fr_fr: Trouver les liens Revit monitorés
   ru: Найти отслеживаемые ссылки Revit
   chinese_s: 查找被监视的 Revit 链接
@@ -8,6 +9,7 @@ title:
   pt_br: Encontrar Vínculos do Revit Monitorados
 tooltip:
   en_us: List Revit link that is being monitored by selected element(s)
+  ko: 선택한 요소에 의해 모니터링되는 Revit 링크를 나열합니다
   fr_fr: Lister les liens Revit qui sont monitorés par l'élément sélectionné
   ru: Выводит связи Revit, отслеживаемые у выделенных элементов.
   chinese_s: 列出被所选图元监视的 Revit 链接

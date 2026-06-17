@@ -1,5 +1,6 @@
 title:
   en_us: List/Select TitleBlocks on Sheets
+  ko: 시트의 표제란 목록/선택
   fr_fr: Lister les Cartouches sur les Feuilles
   ru: Показать/Выделить основные надписи на листах
   chinese_s: 列出/选择图纸上的标题栏
@@ -8,6 +9,7 @@ title:
   pt_br: Listar/Selecionar Margens e Carimbos em Folhas
 tooltip:
   en_us: Lists title blocks on selected sheets for review or selection
+  ko: 검토 또는 선택을 위해 선택한 시트의 표제란을 나열합니다
   fr_fr: >-
     Répertorie les cartouches sur les feuilles sélectionnées pour examen ou
     sélection

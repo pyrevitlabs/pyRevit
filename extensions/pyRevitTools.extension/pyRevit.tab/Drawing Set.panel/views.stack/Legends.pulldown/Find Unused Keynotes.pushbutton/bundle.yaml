@@ -1,5 +1,6 @@
 title:
   en_us: Find Unused Keynotes
+  ko: 사용되지 않는 키노트 찾기
   fr_fr: Find Unused Keynotes
   ru: Найти неиспользуемые ключевые пометки
   chinese_s: 查找未使用的注释
@@ -8,6 +9,7 @@ title:
   pt_br: Encontrar Notas-Chave Não Utilizadas
 tooltip:
   en_us: Lists keynotes that have not been used in this model
+  ko: 이 모델에서 사용되지 않은 키노트를 나열합니다
   fr_fr: Lists keynotes that have not been used in this model
   ru: Показывает ключевые пометки, которые не используются в этой модели.
   chinese_s: 列出此模型中未使用的注释

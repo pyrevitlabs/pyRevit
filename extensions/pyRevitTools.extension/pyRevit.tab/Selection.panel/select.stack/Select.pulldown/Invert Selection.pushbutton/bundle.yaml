@@ -1,5 +1,6 @@
 title:
   en_us: Invert Selection
+  ko: 선택 반전
   fr_fr: Inverser la sélection
   ru: Инвертировать выделение
   chinese_s: 反选
@@ -13,6 +14,7 @@ tooltip:
     Shift-Click:
 
     Select group members instead of parent group elements
+  ko: 활성 뷰에서 선택을 반전합니다
   fr_fr: >-
     Inverse la sélection dans la vue active
 

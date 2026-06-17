@@ -1,5 +1,6 @@
 title:
   en_us: Show nested group structure
+  ko: 중첩 그룹 구조 표시
   fr_fr: Montre la structure des groupes imbriqués
   ru: Показать структуру вложенных групп
   chinese_s: 显示嵌套组结构
@@ -8,6 +9,7 @@ title:
   pt_br: Mostrar Estrutura de Grupos Aninhados
 tooltip:
   en_us: List the nested group structure around the selected group or element
+  ko: 선택한 그룹 또는 요소 주변의 중첩 그룹 구조를 나열합니다
   fr_fr: Répertoriez la structure du groupe imbriqué autour du groupe ou de l'élément sélectionné
   ru: Показывает структуру вложенных групп выделенной группы или элемента.
   chinese_s: 列出围绕选定组或图元的嵌套组结构

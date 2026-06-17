@@ -1,0 +1,8 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="AuthorLabel">작성자</system:String>
+    <system:String x:Key="ExtensionLabel">확장 패키지</system:String>
+    <system:String x:Key="SelectPreflightCheckTitle">사전 점검 선택</system:String>
+    <system:String x:Key="RunCheckButton">점검 실행</system:String>
+</ResourceDictionary>

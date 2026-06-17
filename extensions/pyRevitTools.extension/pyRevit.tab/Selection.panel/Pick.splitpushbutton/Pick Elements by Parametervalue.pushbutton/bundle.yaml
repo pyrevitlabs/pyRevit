@@ -1,5 +1,6 @@
 title:
   en_us: Pick Elements by Parameter Value
+  ko: 매개변수 값으로 요소 선택
   fr_fr: Sélectionner des éléments par valeur de paramètre
   ru: Выбрать элементы по значению параметра
   chinese_s: 按参数值选择图元
@@ -9,6 +10,7 @@ title:
 
 tooltip:
   en_us: Select elements that match the chosen parameter value(s). By default, any parameter match is accepted. Hold Shift while clicking to require all parameter values to match.
+  ko: 선택한 매개변수 값과 일치하는 요소를 선택합니다. 기본적으로 매개변수 일치 중 하나만 허용됩니다. Shift를 누른 채 클릭하면 모든 매개변수 값이 일치해야 합니다.
   fr_fr: Sélectionne les éléments correspondant aux valeurs de paramètres choisies. Par défaut, une correspondance suffit. Maintenez Maj en cliquant pour exiger que toutes les valeurs correspondent.
   ru: Выбирает элементы с совпадающими значениями параметров. По умолчанию достаточно любого совпадения. Удерживайте Shift при щелчке, чтобы требовать совпадение всех параметров.
   chinese_s: 选择与所选参数值匹配的图元。默认情况下，任意一个参数匹配即可。按住 Shift 单击以要求所有参数值都匹配。

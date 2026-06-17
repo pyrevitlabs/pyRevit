@@ -1,5 +1,6 @@
 title:
   en_us: Match History Clipboard
+  ko: 히스토리 클립보드 일치
   fr_fr: Historique Presse-papiers
   ru: История буфера совпадений
   chinese_s: 匹配历史剪贴板
@@ -14,6 +15,7 @@ tooltip:
     the current selection.
     Up to 50 entries are kept in history so you can reuse values
     across multiple operations without re-picking.
+  ko: 히스토리 클립보드 고정 창을 표시하거나 숨깁니다. 요소 또는 뷰 필터에서 매개변수 값을 불러온 다음, 원하는 수의 요소에 붙여넣기 - 하나씩, 박스 선택 또는 현재 선택에서 적용할 수 있습니다. 최대 50개의 항목이 기록되어 여러 작업에서 재사용 가능합니다.
   fr_fr: >
     Afficher/masquer le panneau Historique Presse-papiers.
     Chargez des valeurs de paramètres depuis des éléments ou des filtres de

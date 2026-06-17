@@ -240,9 +240,6 @@ namespace PyRevitRunner {
             envData[EnvDictionaryKeys.IPYVersion] = ipyVersion;
             envData[EnvDictionaryKeys.CPYVersion] = cpyVersion;
 
-            envData[EnvDictionaryKeys.LoggingLevel] = (int)PyRevitConfigs.GetLoggingLevel();
-            envData[EnvDictionaryKeys.FileLogging] = PyRevitConfigs.GetFileLogging();
-
             envData[EnvDictionaryKeys.TelemetryUTCTimeStamps] = PyRevitConfigs.GetUTCStamps();
             envData[EnvDictionaryKeys.TelemetryState] = PyRevitConfigs.GetTelemetryStatus();
             envData[EnvDictionaryKeys.TelemetryFilePath] = PyRevitConfigs.GetTelemetryFilePath();

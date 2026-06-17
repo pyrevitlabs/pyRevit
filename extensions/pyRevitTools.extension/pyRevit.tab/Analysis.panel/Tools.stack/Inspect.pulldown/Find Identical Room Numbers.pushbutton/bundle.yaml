@@ -1,5 +1,6 @@
 title:
   en_us: Find identical room numbers
+  ko: 동일한 방 번호 찾기
   fr_fr: Trouver les numéros de pièces identiques
   ru: Найти одинаковые номера помещений
   chinese_s: 查找相同房间编号
@@ -8,6 +9,7 @@ title:
   pt_br: Encontrar Números de Ambiente Idênticos
 tooltip:
   en_us: Finds and lists rooms with identical numbers
+  ko: 동일한 번호의 방을 찾아 나열합니다
   fr_fr: Trouver et lister les pièces avec un numéro identique
   ru: Находит и выводит помещения с одинаковыми номерами.
   chinese_s: 查找并列出编号相同的房间

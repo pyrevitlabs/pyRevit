@@ -141,16 +141,19 @@ def get_pyrevit_version():
 
 
 def get_logger():
-    """Create and return logger named for current script.
+    """Return the runtime-backed logging facade for the current script.
 
     Returns:
-        (pyrevit.coreutils.logger.LoggerWrapper): Logger object
+        (pyrevit.coreutils.logger.LoggerWrapper): Logging facade
     """
     return logger.get_logger(EXEC_PARAMS.command_name)
 
 
 def get_output():
-    """Return object wrapping output window for current script.
+    """Return a wrapper bound to the current script output.
+
+    The output binding is captured immediately. Retain the returned wrapper
+    when using it from deferred or modeless callbacks after the command returns.
 
     Returns:
         (pyrevit.output.PyRevitOutputWindow): Output wrapper object
