@@ -1,5 +1,6 @@
 title:
   en_us: Custom Properties
+  ko: 사용자 지정 속성
   fr_fr: Propriétés personnalisées
   ru: Свойства элемента
   chinese_s: 自定义属性
@@ -15,6 +16,7 @@ tooltip:
 
     Open configuration to add or remove tracked parameters and
     enable or disable the pane on startup.
+  ko: 사용자 지정 속성 도킹 창을 전환하여 검사 및 편집합니다
   fr_fr: >-
     Afficher/masquer le panneau Propriétés personnalisées pour inspecter
     et modifier les paramètres de l'élément Revit sélectionné.

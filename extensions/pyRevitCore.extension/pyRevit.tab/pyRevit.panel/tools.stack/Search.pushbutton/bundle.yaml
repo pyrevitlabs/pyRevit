@@ -1,5 +1,6 @@
 tooltip:
   en_us: The best interface ever!
+  ko: 최고의 인터페이스!
   fr_fr: La meilleure interface!
   ru: Самый лучший интерфейс!
   chinese_s: 最好的界面！
@@ -8,6 +9,7 @@ tooltip:
   pt_br: A melhor interface de todas!
 title:
   en_us: 'Search'
+  ko: 검색
   fr_fr: 'Rechercher'
   ru: Поиск
   chinese_s: 搜索

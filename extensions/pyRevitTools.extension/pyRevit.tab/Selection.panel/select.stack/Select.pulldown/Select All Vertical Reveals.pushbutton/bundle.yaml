@@ -1,5 +1,6 @@
 title:
   en_us: Select Vertical/Horizontal Reveals
+  ko: 수직/수평 리빌 선택
   fr_fr: Sélectionner les profils verticaux/horizontaux
   ru: Выделить вертикальные/горизонтальные профили
   chinese_s: 选择垂直/水平凹槽
@@ -13,6 +14,7 @@ tooltip:
     Shift-Click:
 
     Select horizontal reveals
+  ko: 프로젝트에서 모든 수직(기본값) 또는 수평 리빌을 선택합니다
   fr_fr: >-
     Sélectionne tous les profils verticaux (par défaut) ou horizontaux dans le projet
 

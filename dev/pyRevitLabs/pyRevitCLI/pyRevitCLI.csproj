@@ -1,8 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AssemblyName>pyrevit</AssemblyName>
-    <ApplicationIcon>pyrevit_cli.ico</ApplicationIcon>
+    <ApplicationIcon>..\..\..\release\bin-assets\pyrevit_cli.ico</ApplicationIcon>
     <ApplicationManifest>pyrevit.manifest</ApplicationManifest>
     <SignAssembly>true</SignAssembly>
     

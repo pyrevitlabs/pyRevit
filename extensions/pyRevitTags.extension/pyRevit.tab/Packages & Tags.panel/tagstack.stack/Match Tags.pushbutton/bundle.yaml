@@ -1,5 +1,6 @@
 title:
   en_us: Match Tags
+  ko: 태그 일치
   fr_fr: Faire correspondre les étiquettes
   ru: Сверить марки
   chinese_s: 匹配标签
@@ -8,6 +9,7 @@ title:
   pt_br: Igualar Identificadores
 tooltip:
   en_us: Match Tags between selected elements. First you need to create a project parameter 'DOCTAG' and apply it to the project categories
+  ko: 선택한 요소 간에 태그 일치. 먼저 프로젝트 매개변수 'DOCTAG'를 만들고 프로젝트 카테고리에 적용해야 합니다
   fr_fr: Faire correspondre les étiquettes entre les éléments sélectionnés. Vous devez d'abord créer un paramètre de projet 'DOCTAG' et l'appliquer aux catégories du projet
   ru: Сравнивает марки между выделенными элементами. Первым делом нужно создать проектный параметр 'DOCTAG' и применить его к категориям проекта.
   chinese_s: 比较选定元素之间的标签。首先需要创建项目参数 'DOCTAG' 并将其应用到项目类别

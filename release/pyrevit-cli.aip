@@ -68,7 +68,6 @@
     <ROW Component="Nett.dll" ComponentId="{614741B2-7619-48FE-A227-35F9AFD1FEFD}" Directory_="APPDIR" Attributes="0" KeyPath="Nett.dll"/>
     <ROW Component="OpenMcdf.dll" ComponentId="{A809334E-CD23-41B4-A3FD-2782A4DB17BD}" Directory_="APPDIR" Attributes="0" KeyPath="OpenMcdf.dll"/>
     <ROW Component="ProductInformation" ComponentId="{23703FE9-535E-4128-81CE-D1375CCC4B97}" Directory_="APPDIR" Attributes="4" KeyPath="Version"/>
-    <ROW Component="PythonStubsBuilder.dll" ComponentId="{40986E3B-855B-422F-AC2E-CC7929B6AB12}" Directory_="APPDIR" Attributes="256" KeyPath="PythonStubsBuilder.dll"/>
     <ROW Component="Rhino3dmIO.dll" ComponentId="{A0DE7D23-6BD0-4D6E-B5D7-2A97DE77F4D9}" Directory_="APPDIR" Attributes="0" KeyPath="Rhino3dmIO.dll"/>
     <ROW Component="System.Collections.Immutable.dll" ComponentId="{C851BB28-4188-43ED-902C-2A337255E446}" Directory_="APPDIR" Attributes="0" KeyPath="System.Collections.Immutable.dll"/>
     <ROW Component="System.Memory.dll" ComponentId="{C2931F3E-28DD-407E-B62F-AD20B265456C}" Directory_="APPDIR" Attributes="0" KeyPath="System.Memory.dll"/>
@@ -96,7 +95,6 @@
     <ROW Component="pyrevit.exe" ComponentId="{65B737C7-06F2-485E-9C00-7B41E5C84B87}" Directory_="APPDIR" Attributes="0" KeyPath="pyrevit.exe"/>
     <ROW Component="pyrevitautocomplete.exe" ComponentId="{34EC4D1D-C1C3-4FA6-A566-3D4FF1B5A764}" Directory_="APPDIR" Attributes="256" KeyPath="pyrevitautocomplete.exe"/>
     <ROW Component="pyrevitdoctor.exe" ComponentId="{60FB3E69-F4F7-464C-8B71-4557D84CDE53}" Directory_="APPDIR" Attributes="0" KeyPath="pyrevitdoctor.exe"/>
-    <ROW Component="pyrevitstubsbuilder.exe" ComponentId="{CB24E7C0-1F7B-4C6E-B02E-5C39C787E41A}" Directory_="APPDIR" Attributes="256" KeyPath="pyrevitstubsbuilder.exe"/>
     <ROW Component="pyrevittelemetryserver.exe" ComponentId="{51991C58-24A0-480B-9A3F-8D40FC6231EA}" Directory_="APPDIR" Attributes="256" KeyPath="pyrevittelemetryserver.exe"/>
     <ROW Component="pyrevittoast.exe" ComponentId="{A7D691B8-D7DC-4BDB-9824-93B63E59F586}" Directory_="APPDIR" Attributes="256" KeyPath="pyrevittoast.exe"/>
     <ROW Component="rhino3dmio_native.dll" ComponentId="{F17336E6-2E4F-4A2A-A6EB-7FF7DFCC4EC3}" Directory_="APPDIR" Attributes="256" KeyPath="rhino3dmio_native.dll"/>
@@ -143,8 +141,6 @@
     <ROW File="pyrevittoast.exe" Component_="pyrevittoast.exe" FileName="PYREVI~3.EXE|pyrevit-toast.exe" Attributes="512" SourcePath="..\bin\pyrevit-toast.exe" SelfReg="false" DigSign="true"/>
     <ROW File="Rhino3dmIO.dll" Component_="Rhino3dmIO.dll" FileName="RHINO3~1.DLL|Rhino3dmIO.dll" Attributes="512" SourcePath="..\bin\Rhino3dmIO.dll" SelfReg="false"/>
     <ROW File="rhino3dmio_native.dll" Component_="rhino3dmio_native.dll" FileName="RHINO3~2.DLL|rhino3dmio_native.dll" Attributes="512" SourcePath="..\bin\rhino3dmio_native.dll" SelfReg="false"/>
-    <ROW File="pyrevitstubsbuilder.exe" Component_="pyrevitstubsbuilder.exe" FileName="PYREVI~4.EXE|pyrevit-stubsbuilder.exe" Attributes="512" SourcePath="..\bin\pyrevit-stubsbuilder.exe" SelfReg="false" DigSign="true"/>
-    <ROW File="PythonStubsBuilder.dll" Component_="PythonStubsBuilder.dll" FileName="PYTHON~1.DLL|PythonStubsBuilder.dll" Attributes="512" SourcePath="..\bin\PythonStubsBuilder.dll" SelfReg="false"/>
     <ROW File="pyrevittelemetryserver.exe" Component_="pyrevittelemetryserver.exe" FileName="PYREVI~1.EXE|pyrevit-telemetryserver.exe" Attributes="0" SourcePath="..\bin\pyrevit-telemetryserver.exe" SelfReg="false" DigSign="true"/>
     <ROW File="System.Reflection.Metadata.dll" Component_="System.Reflection.Metadata.dll" FileName="SYSTEM~1.DLL|System.Reflection.Metadata.dll" Attributes="0" SourcePath="..\bin\System.Reflection.Metadata.dll" SelfReg="false"/>
     <ROW File="Microsoft.CodeAnalysis.CSharp.dll" Component_="Microsoft.CodeAnalysis.CSharp.dll" FileName="MICROS~3.DLL|Microsoft.CodeAnalysis.CSharp.dll" Attributes="0" SourcePath="..\bin\Microsoft.CodeAnalysis.CSharp.dll" SelfReg="false"/>
@@ -170,7 +166,7 @@
     <ROW Action="AI_DetectSoftware" Sequence="101"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.BuildComponent">
-    <ROW BuildKey="DefaultBuild" BuildName="DefaultBuild" BuildOrder="1" BuildType="1" PackageFolder="[|AI_AIP_FOLDER]..\dist" PackageFileName="[|ProductName]_[|ProductVersion]_signed" Languages="en" InstallationType="2" CabsLocation="1" CompressCabs="false" UseLzma="true" LzmaMethod="2" LzmaCompressionLevel="2" PackageType="1" FilesInsideExe="true" ExeIconPath="..\bin\pyrevit_cli.ico" ExtractionFolder="[AppDataFolder][|Manufacturer]\[|ProductName] [|ProductVersion]\install" ExtUI="true" UseLargeSchema="true" MsiPackageType="x64"/>
+    <ROW BuildKey="DefaultBuild" BuildName="DefaultBuild" BuildOrder="1" BuildType="1" PackageFolder="[|AI_AIP_FOLDER]..\dist" PackageFileName="[|ProductName]_[|ProductVersion]_signed" Languages="en" InstallationType="2" CabsLocation="1" CompressCabs="false" UseLzma="true" LzmaMethod="2" LzmaCompressionLevel="2" PackageType="1" FilesInsideExe="true" ExeIconPath="..\release\bin-assets\pyrevit_cli.ico" ExtractionFolder="[AppDataFolder][|Manufacturer]\[|ProductName] [|ProductVersion]\install" ExtUI="true" UseLargeSchema="true" MsiPackageType="x64"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.CacheComponent">
     <ATTRIBUTE name="Enable" value="false"/>
@@ -309,7 +305,6 @@
     <ROW Feature_="MainFeature" Component_="Nett.dll"/>
     <ROW Feature_="MainFeature" Component_="OpenMcdf.dll"/>
     <ROW Feature_="MainFeature" Component_="ProductInformation"/>
-    <ROW Feature_="MainFeature" Component_="PythonStubsBuilder.dll"/>
     <ROW Feature_="MainFeature" Component_="Rhino3dmIO.dll"/>
     <ROW Feature_="MainFeature" Component_="System.Windows.Interactivity.dll"/>
     <ROW Feature_="MainFeature" Component_="YamlDotNet.dll"/>
@@ -327,7 +322,6 @@
     <ROW Feature_="MainFeature" Component_="pyRevitLabs.TargetApps.Revit.dll"/>
     <ROW Feature_="MainFeature" Component_="pyrevit.exe"/>
     <ROW Feature_="MainFeature" Component_="pyrevitautocomplete.exe"/>
-    <ROW Feature_="MainFeature" Component_="pyrevitstubsbuilder.exe"/>
     <ROW Feature_="MainFeature" Component_="pyrevittelemetryserver.exe"/>
     <ROW Feature_="MainFeature" Component_="pyrevittoast.exe"/>
     <ROW Feature_="MainFeature" Component_="rhino3dmio_native.dll"/>
@@ -347,7 +341,7 @@
     <ROW Feature_="MainFeature" Component_="pyrevitdoctor.exe"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiIconsComponent">
-    <ROW Name="pyrevit_cli.exe" SourcePath="..\bin\pyrevit_cli.ico" Index="0"/>
+    <ROW Name="pyrevit_cli.exe" SourcePath="..\release\bin-assets\pyrevit_cli.ico" Index="0"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiInstExSeqComponent">
     <ROW Action="AI_STORE_LOCATION" Condition="(Not Installed) OR REINSTALL" Sequence="1502"/>

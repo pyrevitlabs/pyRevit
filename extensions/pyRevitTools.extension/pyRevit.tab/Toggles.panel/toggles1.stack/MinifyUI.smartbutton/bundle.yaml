@@ -1,5 +1,6 @@
 title:
   en_us: Minify Revit UI
+  ko: Revit UI 최소화
   fr_fr: Minimiser UI Revit
   ru: Мини-ть RevitUI
   chinese_s: 简化 Revit 界面
@@ -13,6 +14,7 @@ tooltip:
     Shift+Click:
 
     Customize which tabs should be hidden in minified mode
+  ko: 열린 Revit 탭 목록을 줄입니다
   fr_fr: >-
     Réduire la liste des onglets Revit ouverts
 

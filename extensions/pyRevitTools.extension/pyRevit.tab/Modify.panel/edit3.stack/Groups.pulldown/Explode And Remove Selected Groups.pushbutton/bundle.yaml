@@ -1,5 +1,6 @@
 title:
   en_us: Explode and remove selected groups
+  ko: 그룹 분해 및 제거
   fr_fr: Explose et supprime les groupes sélectionnés
   ru: Разрушить и удалить выделенные группы
   chinese_s: 分解并移除选定组
@@ -10,6 +11,7 @@ tooltip:
   en_us: >-
     Explodes all instances of the selected groups and removes
     the group definition from project browser
+  ko: 선택한 그룹의 모든 인스턴스를 분해하고 프로젝트 탐색기에서 그룹 정의를 제거합니다.
   fr_fr: >-
     Explose toutes les occurences des groupes sélectionnés et supprime
     la définition de groupe depuis le navigateur de projet

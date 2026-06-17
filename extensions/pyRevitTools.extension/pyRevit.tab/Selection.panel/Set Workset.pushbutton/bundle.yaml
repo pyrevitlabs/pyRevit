@@ -3,6 +3,10 @@ title:
     Set
 
     Workset
+  ko: >-
+    설정
+
+    워크셋
   fr_fr: >-
     Active
 
@@ -31,6 +35,7 @@ tooltip:
     Shift + Click
 
     Can be configured to also set Workplane to the elements schedule level, Phase of current View.
+  ko: 선택 항목에서 활성 워크셋을 설정합니다.
   fr_fr: >-
     Rend le sous-projet de la sélection actif.
 

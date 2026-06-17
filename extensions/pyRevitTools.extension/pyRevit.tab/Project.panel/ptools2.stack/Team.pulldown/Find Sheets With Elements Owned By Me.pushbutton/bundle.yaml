@@ -1,5 +1,6 @@
 title:
   en_us: Find Sheets With Elements Owned By Me
+  ko: 내가 소유한 요소가 있는 시트 찾기
   fr_fr: Trouver les feuilles avec des éléments en ma possession
   ru: Найти листы с моими элементами
   chinese_s: 查找包含我拥有的图元的图纸
@@ -8,6 +9,7 @@ title:
   pt_br: Encontrar Folhas com Elementos Sob Minha Posse
 tooltip:
   en_us: Lists all sheets containing elements currently "owned" by the user. "Owned" elements are the elements by the user since the last synchronize and release.
+  ko: 현재 사용자가 "소유"한 요소가 포함된 모든 시트를 나열합니다. "소유" 요소는 마지막 동기화 및 해제 이후 사용자의 요소입니다.
   fr_fr: Répertorie toutes les feuilles contenant des éléments actuellement « possédés » par l'utilisateur. Les éléments « possédés » sont les éléments de l'utilisateur depuis la dernière synchronisation et la dernière version.
   ru: Показывает все листы содержащие элементы текущего пользователя. "Принадлежащие" элементы - это элементы созданные пользователем с момента последней синхронизации.
   chinese_s: 列出包含当前由用户“拥有”的图元的所有图纸。“拥有”的图元是指自上次同步并释放后，由该用户负责的图元

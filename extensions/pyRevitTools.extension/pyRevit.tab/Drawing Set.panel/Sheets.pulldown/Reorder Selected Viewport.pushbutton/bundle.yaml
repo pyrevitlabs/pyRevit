@@ -1,5 +1,6 @@
 title:
   en_us: Reorder Selected Viewport
+  ko: 선택한 뷰포트 순서 변경
   fr_fr: Réarranger les Vues Sélectionnées
   ru: Изменить порядок выделенного видового экрана
   chinese_s: 重排选定视口
@@ -8,6 +9,7 @@ title:
   pt_br: Reordenar Viewport Selecionada
 tooltip:
   en_us: Reorders the selected viewport on current sheet
+  ko: 현재 시트에서 선택한 뷰포트의 순서를 변경합니다
   fr_fr: Réarrange les vues sélectionnés sur la feuille actuelle
   ru: Переупорядочивает выбранный видовой экран на текущем листе.
   chinese_s: 在当前图纸上重新排序选定的视口

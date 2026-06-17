@@ -1,5 +1,6 @@
 title:
   en_us: Pushbutton with config
+  ko: 설정이 있는 푸시버튼
   fr_fr: Bouton avec configuration
   ru: Кнопка с конфигурацией
   chinese_s: Pushbutton with config
@@ -8,6 +9,7 @@ title:
   pt_br: Botão com Configuração
 tooltip:
   en_us: Quality control use shift+click to configure the tests
+  ko: 품질 관리 - shift+클릭으로 테스트를 구성합니다
   fr_fr: "Contrôle qualité, utilisez shift click pour configurer les tests"
   ru: Контроль качества, используйте shift+click для настройки тестов
   chinese_s: 质量控制，使用 shift+click 配置测试

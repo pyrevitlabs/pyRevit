@@ -1,6 +1,7 @@
 help_url: '{{docpath}}ThzcRM_Tj8g'
 title:
   en_us: Copy legends to others documents
+  ko: 다른 문서에 범례 복사
   fr_fr: Copier les légendes dans les autres documents
   ru: Копировать легенды в другие документы
   chinese_s: 将图例复制到其他文档
@@ -9,6 +10,7 @@ title:
   pt_br: Copiar Legendas para Outros Documentos
 tooltip:
   en_us: Copy legends to others documents
+  ko: 다른 문서에 범례 복사
   fr_fr: Copier les légendes dans les autres documents
   ru: Копирует легенды в другие документы.
   chinese_s: 将图例复制到其他文档

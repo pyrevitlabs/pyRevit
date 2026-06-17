@@ -3,6 +3,10 @@ title:
     Manage
 
     Packages
+  ko: >-
+    관리
+
+    패키지
   fr_fr: >-
     Gérer
 
@@ -29,6 +33,7 @@ title:
     Pacotes
 tooltip:
   en_us: Manage sheet packages
+  ko: 시트 패키지 관리
   fr_fr: Gérer les paquets de feuilles
   ru: Управляет пакетами листов.
   chinese_s: 管理图纸包

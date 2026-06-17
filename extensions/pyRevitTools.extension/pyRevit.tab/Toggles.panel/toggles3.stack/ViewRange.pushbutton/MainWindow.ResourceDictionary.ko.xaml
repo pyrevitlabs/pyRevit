@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">뷰 범위 편집기</system:String>
+    <system:String x:Key="Plane">평면</system:String>
+    <system:String x:Key="Elevation">고도</system:String>
+    <system:String x:Key="OffsetFromLevel">레벨로부터의 오프셋</system:String>
+    <system:String x:Key="AssociatedLevel">연결된 레벨</system:String>
+    <system:String x:Key="TopPlane">상단 평면</system:String>
+    <system:String x:Key="CutPlane">절단 평면</system:String>
+    <system:String x:Key="BottomPlane">하단 평면</system:String>
+    <system:String x:Key="ViewDepth">뷰 깊이</system:String>
+    <system:String x:Key="ApplyChanges">변경 사항 적용</system:String>
+    <system:String x:Key="ResetToOriginal">원래대로 초기화</system:String>
+</ResourceDictionary>

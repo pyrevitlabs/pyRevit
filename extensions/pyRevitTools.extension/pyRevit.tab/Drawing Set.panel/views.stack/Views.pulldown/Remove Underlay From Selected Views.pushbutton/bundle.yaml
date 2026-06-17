@@ -1,5 +1,6 @@
 title:
   en_us: Remove Underlay From Selected Views
+  ko: 선택한 뷰에서 밑그림 제거
   fr_fr: Enlève les fonds de plans des vues sélectionnées
   ru: Удалить подложку у выделенных видов
   chinese_s: 从选定视图中移除底图
@@ -8,6 +9,7 @@ title:
   pt_br: Remover Subjacência das Vistas Selecionadas
 tooltip:
   en_us: Removes Underlay From Selected Views
+  ko: 선택한 뷰에서 밑그림을 제거합니다
   fr_fr: Enlève les fonds de plans des vues sélectionnées
   ru: Удаляет подложку у выделенных видов.
   chinese_s: 从选定视图中移除底图

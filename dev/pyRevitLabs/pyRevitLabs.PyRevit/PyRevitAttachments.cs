@@ -18,7 +18,18 @@ using pyRevitLabs.TargetApps.Revit;
 namespace pyRevitLabs.PyRevit {
     public static class PyRevitAttachments {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
-        
+
+        // session cache for GetAttachedCached(). GetAttachments() re-reads the
+        // addin manifests and the clones registry from disk on every
+        // enumeration, but within a running Revit session those inputs only
+        // change through Attach/Detach or clone registry edits, which
+        // invalidate this cache. The IronPython loader and the C# runtime share
+        // it because both reference this single assembly; on reload it is
+        // cleared via ClearAttachmentCache().
+        private static readonly Dictionary<int, PyRevitAttachment> _attachmentCache =
+            new Dictionary<int, PyRevitAttachment>();
+        private static readonly object _attachmentCacheLock = new object();
+
         // managing attachments ======================================================================================
         // attach primary or given clone to revit version
         // @handled @logs
@@ -51,6 +62,8 @@ namespace pyRevitLabs.PyRevit {
             }
             else
                 throw new PyRevitException($"Engine {engineVer} can not be used as runtime.");
+
+            ClearAttachmentCache();
         }
 
         // attach clone to all installed revit versions
@@ -65,6 +78,7 @@ namespace pyRevitLabs.PyRevit {
         public static void Detach(int revitYear, bool currentAndAllUsers = false) {
             logger.Debug("Detaching from Revit {0}", revitYear);
             RevitAddons.RemoveManifestFile(revitYear, PyRevitConsts.AddinName, currentAndAllUsers: currentAndAllUsers);
+            ClearAttachmentCache();
         }
 
         // detach pyrevit attachment
@@ -123,16 +137,41 @@ namespace pyRevitLabs.PyRevit {
         // get all attachments for a revit version
         // @handled @logs
         public static List<PyRevitAttachment> GetAllAttached(int revitYear) {
-            var attachments = GetAttachments().Where(x => x.Product.ProductYear == revitYear);
-            if (attachments.Count() > 0)
-                return attachments.OrderBy(x => x.AllUsers).ToList();
-            return new List<PyRevitAttachment>();
-        }            
+            // enumerate once; GetAttachments() re-reads manifests and the clones
+            // registry from disk on every enumeration
+            return GetAttachments()
+                .Where(x => x.Product.ProductYear == revitYear)
+                .OrderBy(x => x.AllUsers)
+                .ToList();
+        }
 
         // get attachment for a revit version
         // @handled @logs
         public static PyRevitAttachment GetAttached(int revitYear) {
             return GetAllAttached(revitYear)?.FirstOrDefault();
+        }
+
+        // get attachment for a revit version, cached for the running session.
+        // invalidated by Attach/Detach, clone registry changes, and reload.
+        // @handled @logs
+        public static PyRevitAttachment GetAttachedCached(int revitYear) {
+            lock (_attachmentCacheLock) {
+                // a missing manifest is cached as null so the disk scan is not
+                // repeated for an unattached session
+                if (_attachmentCache.TryGetValue(revitYear, out var cached))
+                    return cached;
+                var attachment = GetAttached(revitYear);
+                _attachmentCache[revitYear] = attachment;
+                return attachment;
+            }
+        }
+
+        // drop cached attachments so the next lookup re-reads from disk
+        // @handled @logs
+        public static void ClearAttachmentCache() {
+            lock (_attachmentCacheLock) {
+                _attachmentCache.Clear();
+            }
         }
 
     }

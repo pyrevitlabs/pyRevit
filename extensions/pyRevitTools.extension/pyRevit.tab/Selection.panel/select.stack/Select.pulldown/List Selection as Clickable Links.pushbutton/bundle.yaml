@@ -1,5 +1,6 @@
 title:
   en_us: List Selection as Clickable Links
+  ko: 선택 항목을 클릭 가능한 링크로 표시
   fr_fr: Liste de sélection sous forme de liens cliquables
   ru: Показать выделение в виде ссылок
   chinese_s: 将选择集列为可点击链接
@@ -8,6 +9,7 @@ title:
   pt_br: Listar Seleção Como Links Clicáveis
 tooltip:
   en_us: Lists the selected element ids as clickable links. This is a quick way to go through a series of elements
+  ko: 선택한 요소 ID를 클릭 가능한 링크로 나열합니다. 일련의 요소를 빠르게 탐색하는 방법입니다
   fr_fr: Répertorie les identifiants d'éléments sélectionnés sous forme de liens cliquables. C'est un moyen rapide de parcourir une série d'éléments
   ru: Показывает выделенные элементы ввиде ссылок. Это быстрый способ выделять ряд элементов.
   chinese_s: 将选定图元的ID列为可点击链接。这是快速浏览一系列图元的方法

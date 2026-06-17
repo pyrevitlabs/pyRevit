@@ -1,5 +1,6 @@
 title:
   en_us: Wipe Unpurgeable Viewport Types
+  ko: 삭제 불가 뷰포트 유형 삭제
   fr_fr: Supprimer les types de fenêtres non-purgeables
   ru: Очистить неочищаемые типы видовых экранов
   chinese_s: 清除不可清理的视口类型
@@ -9,6 +10,7 @@ title:
 tooltip:
   en_us: >-
     Asks user to select the viewport types to be converted  and the viewport type to be replaced with. I made this  tool to fix a problem with viewport types duplicating  themselves during a project and would become unpurgable  viewport types
+  ko: 변환할 뷰포트 유형과 교체할 뷰포트 유형을 선택하도록 합니다. 프로젝트 중 뷰포트 유형이 자체적으로 복제되어 삭제할 수 없는 뷰포트 유형이 되는 문제를 해결하기 위해 만든 도구입니다.
   fr_fr: >-
     Demande à l'utilisateur de sélectionner les types de  vues à convertir et le type de vues à remplacer. J'ai  fait cet outil pour résoudre un problème avec les types  de vues qui se dupliquent au cours d'un projet et  deviendraient des types de fenêtres non purgeables
   ru: >-

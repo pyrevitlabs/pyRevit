@@ -1,5 +1,6 @@
 title:
   en_us: ReOrder Sheets
+  ko: 시트 순서 변경
   fr_fr: Réorganiser les Feuilles
   ru: Переупорядочить листы
   chinese_s: 重新排序图纸
@@ -12,6 +13,7 @@ tooltip:
 
     This tool looks for project parameters (on Sheets) that are Instance, of
     type Integer, and have "Order" in their names
+  ko: 시트 인덱스에서 순서대로 항목을 인쇄합니다
   fr_fr: >-
     Imprimer les éléments dans l'ordre à partir d'un index de feuilles
 

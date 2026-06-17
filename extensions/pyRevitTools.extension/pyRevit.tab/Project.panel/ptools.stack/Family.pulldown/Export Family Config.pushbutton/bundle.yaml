@@ -1,5 +1,6 @@
 title:
   en_us: Export Family Config
+  ko: 패밀리 구성 내보내기
   fr_fr: Exporter la configuration de la famille
   ru: Экспортировать конфигурацию семейства
   chinese_s: 导出族配置
@@ -15,6 +16,7 @@ tooltip:
     providing info about the parameters and types defined in the family.
 
     The structure of this config file is as shown below:
+  ko: 패밀리 구성을 yaml 파일로 내보냅니다.
   fr_fr: >-
     Exportez les configurations de famille vers le fichier yaml.
 

@@ -1,5 +1,6 @@
 title:
   en_us: Font Replacement
+  ko: 글꼴 교체
   fr_fr: Remplacement de police de caractère
   ru: Замена шрифта
   chinese_s: 字体替换
@@ -8,6 +9,7 @@ title:
   pt_br: Substituição de Fonte
 tooltip:
   en_us: Font Replacement for Dimensions, Text Notes Types and inside Families (All optional)
+  ko: 치수, 텍스트 메모 유형 및 패밀리 내부의 글꼴 교체(모두 선택 사항)
   fr_fr: Remplacement de police de caractère pour les dimensions, les types de notes de texte et à l'intérieur des familles (tous facultatifs)
   ru: Замена шрифта для размеров, типов текстовых заметок и внутри семейств (все необязательные)
   chinese_s: 为标注、文字注释类型以及族内的文字进行字体替换（所有选项均可选）

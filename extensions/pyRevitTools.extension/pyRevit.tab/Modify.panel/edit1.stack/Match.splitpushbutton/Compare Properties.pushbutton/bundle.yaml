@@ -1,5 +1,6 @@
 title:
   en_us: Compare properties
+  ko: 속성 비교
   fr_fr: Comparer les propriétés
   ru: Сравнить параметры
   chinese_s: 比较属性
@@ -8,6 +9,7 @@ title:
   pt_br: Comparar Propriedades
 tooltip:
   en_us: Compare instance and type properties between two elements
+  ko: 두 요소 간의 인스턴스 및 유형 속성을 비교합니다
   fr_fr: Comparer les paramètres d'instance et d'occurence entre deux éléments
   ru: Сравнивает параметры экземпляри и типа между двумя элементами.
   chinese_s: 比较两个图元之间的实例属性和类型属性

@@ -1,6 +1,7 @@
 title:
   en_us: |-
     Create schedule from CSV
+  ko: CSV로 일람표 생성
   fr_fr: |-
     Créer une nomenclature à partir d'un CSV
   ru: |-
@@ -31,6 +32,7 @@ tooltip:
       B,Value21,Value22
 
       C,Value32,Value32
+  ko: 기존 CSV 파일을 키 일람표로 가져옵니다. CSV 첫 번째 행은 필드 이름, 첫 번째 필드는 "Key Name"이어야 합니다.
   fr_fr: |-
     Importer un fichier CSV existant en tant que programme clé
 

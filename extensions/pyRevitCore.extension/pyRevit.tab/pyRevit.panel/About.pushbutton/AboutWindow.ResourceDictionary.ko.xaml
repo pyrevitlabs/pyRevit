@@ -1,0 +1,20 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <system:String x:Key="pyRevit.Title">pyRevit</system:String>
+    <system:String x:Key="pyRevit.Engine">IronPython {} (cpython {}) 기반으로 실행 중</system:String>
+    <system:String x:Key="pyRevit.RocketMode.Enabled">로켓 모드 활성화됨</system:String>
+    <system:String x:Key="pyRevit.RocketMode.Disabled">로켓 모드 비활성화됨</system:String>
+
+    <system:String x:Key="Button.Wiki">Wiki</system:String>
+    <system:String x:Key="Button.Twitter">Twitter</system:String>
+    <system:String x:Key="Button.Blog">Blog</system:String>
+    <system:String x:Key="Button.GitHub">GitHub</system:String>
+    <system:String x:Key="Button.YouTube">YouTube</system:String>
+    <system:String x:Key="Button.License">라이선스</system:String>
+    <system:String x:Key="Button.Support">지원</system:String>
+    <system:String x:Key="Button.Credits">크레딧</system:String>
+    <system:String x:Key="Button.ReleaseNotes">릴리스 노트</system:String>
+</ResourceDictionary>

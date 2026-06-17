@@ -1,5 +1,6 @@
 title:
   en_us: Wipe Empty Elevation Tags
+  ko: 빈 입면 태그 삭제
   fr_fr: Supprimer les étiquettes d'élévation vides
   ru: Очистить пустые марки уровней
   chinese_s: 清除空的立面标记
@@ -9,6 +10,7 @@ title:
 tooltip:
   en_us: >-
     Generally if all elevations creates by an elevation tag  are deleted from the model, the empty elevation tag still  remains in its location. This script will delete all  empty elevation tags from the model
+  ko: 일반적으로 입면 태그로 생성된 모든 입면도가 모델에서 삭제되면 빈 입면 태그가 위치에 남아 있습니다. 이 스크립트는 모델에서 모든 빈 입면 태그를 삭제합니다.
   fr_fr: >-
     En général, si toutes les élévations créées par une  étiquette d'élévation sont supprimées du modèle,  l'étiquette d'élévation vide reste toujours à son  emplacement. Ce script supprimera toutes les  étiquettes d'élévation vides du modèle
   ru: >-

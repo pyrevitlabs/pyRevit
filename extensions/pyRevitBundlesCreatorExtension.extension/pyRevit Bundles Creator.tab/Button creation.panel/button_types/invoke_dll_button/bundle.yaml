@@ -1,5 +1,6 @@
 title:
   en_us: Invoke C# DLL Button
+  ko: C# DLL 버튼 실행
   fr_fr: Bouton Invoke C# DLL
   ru: Кнопка Invoke C# DLL
   chinese_s: Invoke C# DLL 按钮
@@ -8,6 +9,7 @@ title:
   pt_br: Botão para Invocar Dll C#
 tooltip:
   en_us: Invoke C# DLL Button
+  ko: C# DLL 버튼 실행
   fr_fr: Douton Invoke C# DLL
   ru: Кнопка Invoke C# DLL
   chinese_s: Invoke C# DLL 按钮

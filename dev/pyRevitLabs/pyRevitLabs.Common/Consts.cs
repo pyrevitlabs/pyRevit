@@ -34,6 +34,8 @@ namespace pyRevitLabs.Common {
         public const string TargetBranch = OriginalRepoDefaultBranch;
         //public const string TargetBranch = @"develop/newexec";
 
+        public static readonly string[] SupportedCiBinBranches = { "develop", "master" };
+
         /// <summary>Branch used only for downloading pyrevit-hosts.json (develop has latest host data).</summary>
         public const string HostsFileBranch = "develop";
 

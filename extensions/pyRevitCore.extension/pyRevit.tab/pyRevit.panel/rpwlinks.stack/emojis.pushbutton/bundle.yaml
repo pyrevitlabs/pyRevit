@@ -1,5 +1,6 @@
 title:
   en_us: emojis
+  ko: 이모지
   fr_fr: emojis
   ru: emojis
   chinese_s: 表情符号
@@ -8,6 +9,7 @@ title:
   pt_br: Emojis
 tooltip:
   en_us: Prints all available emojis with shorthand codes
+  ko: 사용 가능한 모든 이모지를 약식 코드와 함께 출력합니다
   fr_fr: Affiche tous les emojis disponibles avec leurs codes abrégés
   ru: Печатает все доступные эмоджи с сокращенными кодами.
   chinese_s: 打印所有可用的 emojis 及其缩写代码

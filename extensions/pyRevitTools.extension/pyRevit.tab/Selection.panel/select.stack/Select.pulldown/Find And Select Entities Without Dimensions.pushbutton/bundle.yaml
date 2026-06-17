@@ -1,5 +1,6 @@
 title:
   en_us: Find And Select Entities Without Dimensions
+  ko: 치수 없는 요소 찾아 선택
   fr_fr: Cherche et trouve les éléments sans dimensions
   ru: Найти и выделить элементы без размеров
   chinese_s: 查找并选择无关联标注的图元
@@ -8,6 +9,7 @@ title:
   pt_br: Encontrar e Selecionar Elementos sem Cotas
 tooltip:
   en_us: Selects elements with no associated dimensions in current view
+  ko: 현재 뷰에서 연결된 치수가 없는 요소를 선택합니다
   fr_fr: Sélectionne les éléments sans dimensions associées dans la vue actuelle
   ru: Выделяет элементы без связанных размеров в текущем виде.
   chinese_s: 在当前视图中选择没有关联标注的图元

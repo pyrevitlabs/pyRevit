@@ -1,5 +1,6 @@
 title:
   en_us: Imported
+  ko: 가져오기됨
   fr_fr: Importés
   ru: Импортер
   chinese_s: 导入类别
@@ -8,6 +9,7 @@ title:
   pt_br: Importado
 tooltip:
   en_us: Toggles visibility of imported categories on current view
+  ko: 현재 뷰에서 가져온 카테고리의 가시성을 전환합니다
   fr_fr: Bascule la visibilité des catégories importées sur la vue actuelle
   ru: Переключает видимость импортированных категорий в текущем виде.
   chinese_s: 在当前视图中切换导入类别的可见性

@@ -1,5 +1,6 @@
 title:
   en_us: Keep Editable
+  ko: 편집 가능 유지
   fr_fr: Conserver les éditables
   ru: Удержать редактируемые
   chinese_s: 保留可编辑图元
@@ -10,6 +11,7 @@ tooltip:
   en_us: >-
     Keeps only editable elements (unclaimed or owned by current user) in current
     selection. If nothing is selected, pick a region to filter from.
+  ko: 현재 선택 항목에서 편집 가능한 요소(미청구 또는 현재 사용자 소유)만 유지합니다
   fr_fr: >-
     Conserve uniquement les éléments éditables (non réclamés ou appartenant à
     l'utilisateur actuel) dans la sélection actuelle. Si rien n'est sélectionné,

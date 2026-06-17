@@ -1,5 +1,6 @@
 title:
   en_us: Convert line styles
+  ko: 선 스타일 변환
   fr_fr: Changer les styles de lignes
   ru: Конвертировать стили линий
   chinese_s: 转换线样式
@@ -14,6 +15,7 @@ tooltip:
     The script will correct the line styles in the model
     HOWEVER the lines that are part of a group will not be affected
     Also see the "Shake Filled Regions" tool
+  ko: 선 스타일을 변환하는 도구입니다. 도구를 실행하고 교체할 스타일의 선을 선택한 다음 대상 스타일의 선을 선택합니다. 스크립트가 모델의 선 스타일을 수정하지만 그룹에 속한 선은 영향을 받지 않습니다. "채워진 영역 흔들기" 도구도 참조하세요.
   fr_fr: >-
     Il s'agit d'un outil pour convertir les styles de ligne. Exécutez l'outil,
     sélectionnez une ligne avec le style à remplacer, puis

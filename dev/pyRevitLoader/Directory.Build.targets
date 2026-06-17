@@ -81,49 +81,47 @@
       where commonFolder = bin/netcore/ (or bin/netfx/), so engine-folder copies
       are redundant duplicates.
     -->
+    <PropertyGroup>
+        <DeployCopyRetryCount>10</DeployCopyRetryCount>
+        <DeployCopyRetryWaitSeconds>1</DeployCopyRetryWaitSeconds>
+        <DeployCopyExcludeFiles>Xceed.Wpf.AvalonDock.dll Microsoft.CodeAnalysis.dll Microsoft.CodeAnalysis.CSharp.dll Microsoft.CodeAnalysis.CSharp.resources.dll Microsoft.CodeAnalysis.resources.dll Microsoft.CodeAnalysis.VisualBasic.dll Microsoft.CodeAnalysis.VisualBasic.resources.dll YamlDotNet.dll DotNetVersionFinder.dll LibGit2Sharp.dll MadMilkman.Ini.dll OpenMcdf.dll pyRevitLabs.Common.dll</DeployCopyExcludeFiles>
+        <DeployCopyExcludeWildcards>Microsoft.Bcl.*.dll git2-*.dll System.*.dll</DeployCopyExcludeWildcards>
+    </PropertyGroup>
+
     <Target Name="Deploy" AfterTargets="AfterBuild" Condition="'$(SkipPyRevitDeploy)' != 'true'">
-        <ItemGroup>
-            <AllFilesToCopy Include="$(TargetDir)\**\*.dll"
-                            Exclude="$(TargetDir)\**\Xceed.Wpf.AvalonDock.dll;
-                                     $(TargetDir)\**\Microsoft.CodeAnalysis.dll;
-                                     $(TargetDir)\**\Microsoft.CodeAnalysis.CSharp.dll;
-                                     $(TargetDir)\**\Microsoft.CodeAnalysis.CSharp.resources.dll;
-                                     $(TargetDir)\**\Microsoft.CodeAnalysis.resources.dll;
-                                     $(TargetDir)\**\Microsoft.CodeAnalysis.VisualBasic.dll;
-                                     $(TargetDir)\**\Microsoft.CodeAnalysis.VisualBasic.resources.dll;
-                                     $(TargetDir)\**\Microsoft.Bcl.*.dll;
-                                     $(TargetDir)\**\YamlDotNet.dll;
-                                     $(TargetDir)\**\DotNetVersionFinder.dll;
-                                     $(TargetDir)\**\LibGit2Sharp.dll;
-                                     $(TargetDir)\**\git2-*.dll;
-                                     $(TargetDir)\**\MadMilkman.Ini.dll;
-                                     $(TargetDir)\**\OpenMcdf.dll;
-                                     $(TargetDir)\**\pyRevitLabs.Common.dll;
-                                     $(TargetDir)\**\System.*.dll"
-                            Condition="'$(IsTestProject)' != 'true'"/>
-        </ItemGroup>
-        
-        <!-- Default deployment to single version -->
-        <Copy SourceFiles="@(AllFilesToCopy)" 
-                DestinationFolder="$(PyRevitEnginesDir)\$(IronPythonVersion)" 
-                Condition="'$(DeployToAllVersions)' != 'true'" />
+        <!-- Robocopy provides /R retry semantics; MSBuild Copy lacks RetryCount in this project graph. -->
+        <Exec Command="robocopy &quot;$(TargetDir.TrimEnd('\'))&quot; &quot;$(PyRevitEnginesDir)\$(IronPythonVersion)&quot; *.dll /R:$(DeployCopyRetryCount) /W:$(DeployCopyRetryWaitSeconds) /XF $(DeployCopyExcludeFiles) $(DeployCopyExcludeWildcards) /NP /NFL /NDL /NJH /NJS /IS /IT"
+              IgnoreExitCode="true"
+              Condition="'$(DeployToAllVersions)' != 'true' AND '$(IsTestProject)' != 'true'">
+            <Output TaskParameter="ExitCode" PropertyName="_DeployCopyExitCode" />
+        </Exec>
+        <Error Text="Failed to deploy engine binaries to $(PyRevitEnginesDir)\$(IronPythonVersion)."
+               Condition="'$(DeployToAllVersions)' != 'true' AND '$(IsTestProject)' != 'true' AND $(_DeployCopyExitCode) &gt;= 8" />
         <Message Importance="high" 
                 Text="$(MSBuildProjectName) -> Copy to $([System.IO.Path]::GetFullPath('$(PyRevitEnginesDir)\$(IronPythonVersion)'))"
-                Condition="'$(DeployToAllVersions)' != 'true'" />
+                Condition="'$(DeployToAllVersions)' != 'true' AND '$(IsTestProject)' != 'true'" />
         
         <!-- Multi-version deployment for shared components -->
-        <Copy SourceFiles="@(AllFilesToCopy)" 
-                DestinationFolder="$(PyRevitEnginesDir)\IPY342" 
-                Condition="'$(DeployToAllVersions)' == 'true'" />
+        <Exec Command="robocopy &quot;$(TargetDir.TrimEnd('\'))&quot; &quot;$(PyRevitEnginesDir)\IPY342&quot; *.dll /R:$(DeployCopyRetryCount) /W:$(DeployCopyRetryWaitSeconds) /XF $(DeployCopyExcludeFiles) $(DeployCopyExcludeWildcards) /NP /NFL /NDL /NJH /NJS /IS /IT"
+              IgnoreExitCode="true"
+              Condition="'$(DeployToAllVersions)' == 'true' AND '$(IsTestProject)' != 'true'">
+            <Output TaskParameter="ExitCode" PropertyName="_DeployCopyExitCode" />
+        </Exec>
+        <Error Text="Failed to deploy engine binaries to $(PyRevitEnginesDir)\IPY342."
+               Condition="'$(DeployToAllVersions)' == 'true' AND '$(IsTestProject)' != 'true' AND $(_DeployCopyExitCode) &gt;= 8" />
         <Message Importance="high" 
                 Text="$(MSBuildProjectName) -> Copy to $([System.IO.Path]::GetFullPath('$(PyRevitEnginesDir)\IPY342'))"
-                Condition="'$(DeployToAllVersions)' == 'true'" />
-        <Copy SourceFiles="@(AllFilesToCopy)" 
-                DestinationFolder="$(PyRevitEnginesDir)\IPY2712PR" 
-                Condition="'$(DeployToAllVersions)' == 'true'" />
+                Condition="'$(DeployToAllVersions)' == 'true' AND '$(IsTestProject)' != 'true'" />
+        <Exec Command="robocopy &quot;$(TargetDir.TrimEnd('\'))&quot; &quot;$(PyRevitEnginesDir)\IPY2712PR&quot; *.dll /R:$(DeployCopyRetryCount) /W:$(DeployCopyRetryWaitSeconds) /XF $(DeployCopyExcludeFiles) $(DeployCopyExcludeWildcards) /NP /NFL /NDL /NJH /NJS /IS /IT"
+              IgnoreExitCode="true"
+              Condition="'$(DeployToAllVersions)' == 'true' AND '$(IsTestProject)' != 'true'">
+            <Output TaskParameter="ExitCode" PropertyName="_DeployCopyExitCode" />
+        </Exec>
+        <Error Text="Failed to deploy engine binaries to $(PyRevitEnginesDir)\IPY2712PR."
+               Condition="'$(DeployToAllVersions)' == 'true' AND '$(IsTestProject)' != 'true' AND $(_DeployCopyExitCode) &gt;= 8" />
         <Message Importance="high" 
                 Text="$(MSBuildProjectName) -> Copy to $([System.IO.Path]::GetFullPath('$(PyRevitEnginesDir)\IPY2712PR'))"
-                Condition="'$(DeployToAllVersions)' == 'true'" />
+                Condition="'$(DeployToAllVersions)' == 'true' AND '$(IsTestProject)' != 'true'" />
     </Target>
 
     <!-- DeployCodeAnalysisDlls disabled: CodeAnalysis DLLs are deployed by pyRevitLabs.Common

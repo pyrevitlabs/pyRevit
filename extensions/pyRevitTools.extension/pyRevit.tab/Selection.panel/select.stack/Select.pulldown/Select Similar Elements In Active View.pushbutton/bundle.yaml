@@ -1,5 +1,6 @@
 title:
   en_us: Select Similar Elements In Active View
+  ko: 활성 뷰에서 유사한 요소 선택
   fr_fr: Sélectionner les éléments similaires dans la vue active
   ru: Выделить похожие элементы в текущем виде
   chinese_s: 在活动视图中选择类似图元
@@ -15,6 +16,7 @@ tooltip:
     Shift-Click :
 
     select in whole project
+  ko: 현재와 유사한 요소를 선택합니다
   fr_fr: >-
     Sélectionne des éléments similaires aux éléments
 

@@ -2,6 +2,7 @@ title:
   en_us: |-
     Print
     Sheets
+  ko: 시트 인쇄
   fr_fr: |-
     Imprimer
     Feuilles
@@ -41,6 +42,7 @@ tooltip:
     non-printable characters from the sheet numbers,
     in case an error in the tool causes these characters
     to remain.
+  ko: "시트 인덱스에서 순서대로 시트를 인쇄합니다. 참고: Revit 2022 이하에서 '하나의 파일로 결합' 옵션 사용 시 내부 인쇄 엔진의 올바른 정렬을 위해 시트 번호 앞에 비인쇄 문자가 추가됩니다. 도면 인덱스에서 시트 번호 필터링 시 이 점을 고려하세요. 프로젝트 정보 매개변수로 'Naming Format'을 추가하면 기본 인쇄 명명 형식을 정의할 수 있습니다. Shift+클릭: 오류로 남은 비인쇄 문자를 시트 번호에서 제거합니다."
   fr_fr: >-
     Imprimez les feuilles dans l'ordre à partir d'un index de feuille.
 

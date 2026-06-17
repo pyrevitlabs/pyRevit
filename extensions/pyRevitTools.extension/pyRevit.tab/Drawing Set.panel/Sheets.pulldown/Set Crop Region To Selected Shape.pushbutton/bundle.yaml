@@ -1,5 +1,6 @@
 title:
   en_us: Set Crop Region To Selected Shape
+  ko: 선택한 형태로 자르기 영역 설정
   fr_fr: Définir la zone cadrée sur la forme sélectionnée
   ru: Установить границу обрезки на выделенной форме
   chinese_s: 将裁剪区域设置为选定形状
@@ -12,6 +13,7 @@ tooltip:
     detail lines). Then select the boundary and the destination viewport and run
     the script. This script will apply the drafted boundary to the view of the
     selected viewport
+  ko: 시트에 원하는 자르기 경계를 닫힌 다각형으로 그립니다(상세 선 사용). 그런 다음 경계와 대상 뷰포트를 선택하고 스크립트를 실행합니다. 이 스크립트는 그린 경계를 선택한 뷰포트의 뷰에 적용합니다.
   fr_fr: >-
     Dessinez la limite de cadrage souhaitée sous forme de polygone fermé sur
     votre feuille (à l'aide de lignes de détail). Sélectionnez ensuite la limite

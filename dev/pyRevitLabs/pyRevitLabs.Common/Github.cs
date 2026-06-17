@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
+using System.Net.Http;
 using System.Text.RegularExpressions;
 
 using pyRevitLabs.Common;
@@ -86,28 +86,32 @@ namespace pyRevitLabs.Common {
         public static IEnumerable<T> GetReleasesFromAPI<T>(string endpoint, out string nextendpoint) {
             // make github api call and get a list of releases
             // https://developer.github.com/v3/repos/releases/
-            HttpWebRequest request = CommonUtils.GetHttpWebRequest(endpoint);
-            // if (AuthToken is null)
-                // throw new Exception("Missing authorization token. Set on GITHUBTOKEN env var");
-            
-            // request.Headers.Add(HttpRequestHeader.Authorization, $"token {AuthToken}");
-            var response = request.GetResponse();
+            using (var response = CommonUtils.GetHttpResponse(endpoint)) {
+                // if (AuthToken is null)
+                    // throw new Exception("Missing authorization token. Set on GITHUBTOKEN env var");
 
-            // extract list of  PyRevitRelease from json
-            IList<T> releases;
-            using (var reader = new StreamReader(response.GetResponseStream())) {
-                releases = JsonConvert.DeserializeObject<IList<T>>(reader.ReadToEnd());
+                // response.Headers.Add(HttpRequestHeader.Authorization, $"token {AuthToken}");
+                IList<T> releases;
+                using (var reader = new StreamReader(response.Content.ReadAsStreamAsync().GetAwaiter().GetResult())) {
+                    releases = JsonConvert.DeserializeObject<IList<T>>(reader.ReadToEnd());
+                }
+
+                string linkHeader = null;
+                if (response.Headers.TryGetValues("Link", out var linkValues))
+                    linkHeader = linkValues.FirstOrDefault();
+
+                var m = linkHeader != null
+                    ? Regex.Match(linkHeader, "\\<(?<next>[^<>]+?)\\>;\\srel=\"next\"")
+                    : Match.Empty;
+                if (m.Success)
+                    nextendpoint = m.Groups["next"].Value;
+                else
+                    nextendpoint = null;
+
+                logger.Debug("Next release list is at {0}", nextendpoint);
+
+                return releases;
             }
-
-            var m = Regex.Match(response.Headers["Link"], "\\<(?<next>[^<>]+?)\\>;\\srel=\"next\"");
-            if (m.Success)
-                nextendpoint = m.Groups["next"].Value;
-            else
-                nextendpoint = null;
-
-            logger.Debug("Next release list is at {0}", nextendpoint);
-
-            return releases;
         }
 
         public static List<T> GetReleases<T>(string repoId) {

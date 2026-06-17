@@ -4,6 +4,8 @@ using System.IO.Compression;
 using System.Drawing;
 using System.Linq;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Reflection;
 using System.Resources;
@@ -13,6 +15,7 @@ namespace pyRevitLabs.Emojis {
         private static ZipArchive _emojiZip = null;
         private static ImageConverter _converter = new ImageConverter();
         private static Dictionary<string, string> _encodedEmoji = new Dictionary<string, string>();
+        private static Dictionary<string, string> _normalizedEmojiAliases = null;
         
         public const string EmojiSpanTemplate = "<span><img src=\"data:image/png;base64,{0}\" class=\"emoji\" title=\"{1}\"></span>";
 
@@ -2646,32 +2649,98 @@ namespace pyRevitLabs.Emojis {
             if (_emojiZip is null)
                 ExtractEmojis();
 
-            var matches = new Regex(@"\:(?<code>[^\s]+?)\:").Matches(input)
-                .Cast<Match>()
-                .Select(m => m.Groups["code"].Value)
-                .Distinct();
-            // find the emoji shorthands
-            foreach (var emojiShortCode in matches) {
-                if (EmojiDict.ContainsKey(emojiShortCode)) {
-                    // find the emoji unicode
-                    var shortHand = string.Format(":{0}:", emojiShortCode);
-                    // find the emoji image
-                    var emojiFile = string.Format("{0}.png", EmojiDict[emojiShortCode].ToLower());
-                    // convert emoji image data to base64
-                    try {
-                        string encodedEmoji = string.Empty;
-                        if (!_encodedEmoji.TryGetValue(emojiFile, out encodedEmoji)) {
-                            ZipArchiveEntry entry = _emojiZip.GetEntry(emojiFile);
-                            encodedEmoji = Convert.ToBase64String(GetData(entry.Open()));
-                            _encodedEmoji[emojiFile] = encodedEmoji;
-                        }
-                        var emojiSpan = string.Format(EmojiSpanTemplate, encodedEmoji, shortHand);
-                        input = input.Replace(shortHand, emojiSpan);
-                    }
-                    catch { }
+            return Regex.Replace(input, @"\:(?<code>[^:]+?)\:", ReplaceEmojiShortCode);
+        }
+
+        private static string ReplaceEmojiShortCode(Match match) {
+            var emojiShortCode = ResolveEmojiShortCode(match.Groups["code"].Value);
+            if (emojiShortCode == null || !EmojiDict.ContainsKey(emojiShortCode))
+                return match.Value;
+
+            var shortHand = string.Format(":{0}:", emojiShortCode);
+            var emojiFile = string.Format("{0}.png", EmojiDict[emojiShortCode].ToLower());
+            try {
+                string encodedEmoji = string.Empty;
+                if (!_encodedEmoji.TryGetValue(emojiFile, out encodedEmoji)) {
+                    ZipArchiveEntry entry = _emojiZip.GetEntry(emojiFile);
+                    encodedEmoji = Convert.ToBase64String(GetData(entry.Open()));
+                    _encodedEmoji[emojiFile] = encodedEmoji;
+                }
+                return string.Format(EmojiSpanTemplate, encodedEmoji, shortHand);
+            }
+            catch {
+                return match.Value;
+            }
+        }
+
+        private static string NormalizeEmojiShortCode(string shortcode, bool dropNonAsciiBase = false) {
+            var compacted = Regex.Replace(
+                shortcode,
+                @"(?:<br\s*/?>|\s)+",
+                string.Empty,
+                RegexOptions.IgnoreCase);
+
+            if (dropNonAsciiBase) {
+                var asciiBuilder = new StringBuilder();
+                foreach (var chr in compacted)
+                    if (chr <= 127)
+                        asciiBuilder.Append(chr);
+                compacted = asciiBuilder.ToString();
+            }
+
+            var normalized = compacted.Normalize(NormalizationForm.FormD);
+            var shortcodeBuilder = new StringBuilder();
+            foreach (var chr in normalized) {
+                var category = CharUnicodeInfo.GetUnicodeCategory(chr);
+                if (category == UnicodeCategory.NonSpacingMark)
+                    continue;
+                if ((chr >= 'A' && chr <= 'Z')
+                        || (chr >= 'a' && chr <= 'z')
+                        || (chr >= '0' && chr <= '9')
+                        || chr == '_'
+                        || chr == '-')
+                    shortcodeBuilder.Append(chr);
+            }
+            return shortcodeBuilder.ToString();
+        }
+
+        private static string ResolveEmojiShortCode(string shortcode) {
+            var compacted = Regex.Replace(
+                shortcode,
+                @"(?:<br\s*/?>|\s)+",
+                string.Empty,
+                RegexOptions.IgnoreCase);
+
+            if (EmojiDict.ContainsKey(compacted))
+                return compacted;
+
+            var normalized = NormalizeEmojiShortCode(compacted);
+            if (_normalizedEmojiAliases == null)
+                BuildNormalizedEmojiAliases();
+
+            string resolved;
+            return _normalizedEmojiAliases.TryGetValue(normalized, out resolved)
+                ? resolved
+                : null;
+        }
+
+        private static void BuildNormalizedEmojiAliases() {
+            _normalizedEmojiAliases = new Dictionary<string, string>();
+            foreach (var emojiShortCode in EmojiDict.Keys) {
+                AddNormalizedEmojiAlias(NormalizeEmojiShortCode(emojiShortCode), emojiShortCode);
+                AddNormalizedEmojiAlias(NormalizeEmojiShortCode(emojiShortCode, dropNonAsciiBase: true), emojiShortCode);
+                if (emojiShortCode.Length > 0 && emojiShortCode[0] > 127) {
+                    var normalized = NormalizeEmojiShortCode(emojiShortCode);
+                    if (normalized.Length > 1)
+                        AddNormalizedEmojiAlias(normalized.Substring(1), emojiShortCode);
                 }
             }
-            return input;
+        }
+
+        private static void AddNormalizedEmojiAlias(string normalizedShortCode, string emojiShortCode) {
+            if (!string.IsNullOrEmpty(normalizedShortCode)
+                    && !_normalizedEmojiAliases.ContainsKey(normalizedShortCode))
+                _normalizedEmojiAliases[normalizedShortCode] = emojiShortCode;
         }
 
         private static void ExtractEmojis() {

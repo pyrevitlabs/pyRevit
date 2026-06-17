@@ -20,6 +20,10 @@ title:
     Manage
 
     Keynotes
+  ko: >-
+    관리
+
+    키노트
   chinese_s: 管理注释
 engine:
   persistent: true
@@ -76,6 +80,7 @@ tooltip:
 
 
     Reset window configurations and open.
+  ko: 프로젝트 키노트를 관리합니다.
   chinese_s: >-
     管理项目注释
 

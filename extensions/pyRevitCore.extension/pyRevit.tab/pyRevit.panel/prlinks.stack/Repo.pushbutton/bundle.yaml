@@ -1,5 +1,6 @@
 title:
   en_us: Repo
+  ko: 저장소
   fr_fr: Dépôt
   ru: Репо
   chinese_s: 仓库
@@ -8,6 +9,7 @@ title:
   pt_br: Repositório
 tooltip:
   en_us: Opens the git repository page
+  ko: git 저장소 페이지를 엽니다
   fr_fr: Ouvre la page du dépôt git
   ru: Открывает страницу git репозитория.
   chinese_s: 打开 git 仓库页面

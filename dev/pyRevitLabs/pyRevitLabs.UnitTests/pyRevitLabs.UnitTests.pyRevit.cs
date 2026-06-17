@@ -120,7 +120,7 @@ namespace pyRevitLabs.UnitTests.pyRevit {
         public void HostFileURL_UsesDevelopBranch_Test() {
             var url = RevitProductData.HostFileURL;
             Assert.IsTrue(url.Contains("develop"), "HostFileURL should use develop branch. URL: " + url);
-            Assert.IsTrue(url.Contains("pyrevit-hosts.json"), "HostFileURL should point to pyrevit-hosts.json. URL: " + url);
+            Assert.IsTrue(url.Contains("release/pyrevit-hosts.json"), "HostFileURL should point to release/pyrevit-hosts.json. URL: " + url);
         }
     }
 }

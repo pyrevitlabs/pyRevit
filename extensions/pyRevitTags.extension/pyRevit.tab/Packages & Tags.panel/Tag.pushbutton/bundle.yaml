@@ -3,6 +3,7 @@ title:
     Tag
 
     Selected
+  ko: 태그
   fr_fr: >-
     Étiquete
 
@@ -29,6 +30,7 @@ title:
     Selecionados
 tooltip:
   en_us: Apply tag to selected elements. First you need to create a project parameter 'DOCTAG' and apply it to the project categories
+  ko: 선택한 요소에 태그 적용. 먼저 프로젝트 매개변수 'DOCTAG'를 만들고 프로젝트 카테고리에 적용해야 합니다
   fr_fr: Appliquer une étiquette aux éléments sélectionnés. Vous devez d'abord créer un paramètre de projet 'DOCTAG' et l'appliquer aux catégories du projet
   ru: Применяет марку к выделенным элементам.
   chinese_s: 将标签应用到选定的元素。首先需要创建项目参数 'DOCTAG' 并将其应用到项目类别

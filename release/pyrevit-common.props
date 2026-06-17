@@ -1,33 +1,30 @@
-<?xml version='1.0' encoding='utf-8'?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="15.0">
-    <PropertyGroup>
-        <Version>6.4.0.26098</Version>
-        <Copyright>Copyright © 2014-2025</Copyright>
-        <Company>pyRevitLabs.io</Company>
-    </PropertyGroup>
-
-    <PropertyGroup>
-        <PyRevitRootDir>$(MSBuildThisFileDirectory)\..\</PyRevitRootDir>
-        <PyRevitBinDir>$(PyRevitRootDir)\bin\</PyRevitBinDir>
-        <PyRevitDistDir>$(PyRevitRootDir)\dist\</PyRevitDistDir>
-        <OutputPath>$(PyRevitDistDir)</OutputPath>
-    </PropertyGroup>
-
-    <PropertyGroup>
-        <ProductVersion>3.10</ProductVersion>
-        <SchemaVersion>2.0</SchemaVersion>
-        <OutputType>Package</OutputType>
-        <DefineSolutionProperties>false</DefineSolutionProperties>
-        <DefineConstants>$(DefineConstants);PyRevitBinDir=$(PyRevitBinDir)</DefineConstants>
-        <DefineConstants>$(DefineConstants);Version=$(Version)</DefineConstants>
-        <DefineConstants>$(DefineConstants);Company=$(Company)</DefineConstants>
-        <DefineConstants>$(DefineConstants);Language=1033</DefineConstants>
-    </PropertyGroup>
-
-    <PropertyGroup>
-        <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
-        <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
-        <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
-        <WarningLevel>0</WarningLevel>
-    </PropertyGroup>
+  <PropertyGroup>
+    <Version>6.4.0.26166</Version>
+    <Copyright>2014-2026</Copyright>
+    <Company>pyRevitLabs.io</Company>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PyRevitRootDir>$(MSBuildThisFileDirectory)\..\</PyRevitRootDir>
+    <PyRevitBinDir>$(PyRevitRootDir)\bin\</PyRevitBinDir>
+    <PyRevitDistDir>$(PyRevitRootDir)\dist\</PyRevitDistDir>
+    <OutputPath>$(PyRevitDistDir)</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ProductVersion>3.10</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <OutputType>Package</OutputType>
+    <DefineSolutionProperties>false</DefineSolutionProperties>
+    <DefineConstants>$(DefineConstants);PyRevitBinDir=$(PyRevitBinDir)</DefineConstants>
+    <DefineConstants>$(DefineConstants);Version=$(Version)</DefineConstants>
+    <DefineConstants>$(DefineConstants);Company=$(Company)</DefineConstants>
+    <DefineConstants>$(DefineConstants);Language=1033</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+    <Configuration Condition="'$(Configuration)' == ''">Release</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
+    <WarningLevel>0</WarningLevel>
+  </PropertyGroup>
 </Project>

@@ -1,5 +1,6 @@
 title:
   en_us: Copy Revisions to Open Documents
+  ko: 열린 문서에 수정 사항 복사
   fr_fr: Copier les Révision vers les Documents Ouverts
   ru: Копировать изменения в открытые документы
   chinese_s: 将修订复制到已打开的文档
@@ -8,6 +9,7 @@ title:
   pt_br: Copiar Revisões para Documentos Abertos
 tooltip:
   en_us: Copy selected revisions from current model to selected open models
+  ko: 현재 모델에서 선택한 열린 모델로 수정 사항을 복사합니다.
   fr_fr: Copie les révisions sélectionnées du modèle actuel vers les modèles ouverts
   ru: Копирует выделенные изменения из текущей модели в выделенные открытые модели.
   chinese_s: 将选定修订从当前模型复制到选定的已打开模型

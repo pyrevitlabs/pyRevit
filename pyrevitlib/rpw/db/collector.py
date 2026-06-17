@@ -25,14 +25,12 @@ Note:
     | ``Custom`` = where
 
 """
-
 from rpw import revit, DB
 from rpw.utils.dotnet import List
 from rpw.base import BaseObjectWrapper, BaseObject
 from rpw.exceptions import RpwException, RpwTypeError, RpwCoerceError
 from rpw.db.element import Element
 from rpw.db.builtins import BicEnum, BipEnum
-from rpw.ui.selection import Selection
 from rpw.db.collection import ElementSet
 from rpw.utils.coerce import to_element_id, to_element_ids
 from rpw.utils.coerce import to_category, to_class
@@ -496,6 +494,7 @@ class Collector(BaseObjectWrapper):
 
     def select(self):
         """ Selects Collector Elements on the UI """
+        from rpw.ui.selection import Selection
         Selection(self.element_ids)
 
     def get_first(self, wrapped=True):
@@ -627,7 +626,7 @@ class ParameterFilter(BaseObjectWrapper):
                 raise RpwException('Rule not valid: {}'.format(condition))
 
         rules = []
-        for condition_name, condition_value in conditions.iteritems():
+        for condition_name, condition_value in conditions.items():
 
             # Returns on of the CreateRule factory method names above
             rule_factory_name = ParameterFilter.RULES.get(condition_name)
@@ -686,3 +685,4 @@ class ParameterFilter(BaseObjectWrapper):
 
     def __repr__(self):
         return super(ParameterFilter, self).__repr__(data=self.conditions)
+
