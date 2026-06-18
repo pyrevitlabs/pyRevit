@@ -17,7 +17,6 @@ from pyrevit import framework
 from pyrevit.coreutils import Timer
 from pyrevit.coreutils import assmutils
 from pyrevit.coreutils import envvars
-from pyrevit.coreutils import appdata
 from pyrevit.coreutils import logger
 from pyrevit.loader import sessioninfo
 from pyrevit.loader import hooks
@@ -149,9 +148,6 @@ def _perform_onsessionloadstart_ops():
 
 
 def _perform_onsessionloadcomplete_ops():
-    # clean up temp app files between sessions.
-    appdata.cleanup_appdata_folder()
-
     # activate hooks now
     hooks.activate()
 

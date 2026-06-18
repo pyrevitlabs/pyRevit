@@ -69,7 +69,7 @@ namespace PyRevitLoader
 			// Load the session directly through the C# session manager. The Python
 			// pre/post-load services are driven from within LoadSession, so Revit
 			// startup no longer bootstraps an IronPython engine to reach the loader.
-			return LoadSession();
+			return LoadSessionInternal(firstLoad: true);
 		}
 
 		private static void LoadAssembliesInFolder(string folder)
@@ -90,9 +90,14 @@ namespace PyRevitLoader
 			}
 		}
 
+		// Reload entry invoked by the Python session manager via reflection
+		// (GetMethod("LoadSession")). Must stay the only static method named LoadSession
+		// so that lookup remains unambiguous. A reload is never the first load.
+		public static Result LoadSession() => LoadSessionInternal(firstLoad: false);
+
 		// Shared entry for initial startup and reload. The C# SessionManagerService
 		// drives the full load, including the residual Python pre/post-load services.
-		public static Result LoadSession()
+		private static Result LoadSessionInternal(bool firstLoad)
 		{
 			try
 			{
@@ -110,7 +115,7 @@ namespace PyRevitLoader
 					AssemblyBuildStrategy.Roslyn,
 					uiApplication);
 
-				sessionManager.LoadSession();
+				sessionManager.LoadSession(firstLoad);
 
 				return Result.Succeeded;
 			}

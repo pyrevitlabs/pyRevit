@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using Autodesk.Revit.UI;
 using pyRevitAssemblyBuilder.AssemblyMaker;
 using pyRevitAssemblyBuilder.UIManager;
@@ -85,7 +86,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         ///    - Executes startup scripts if present
         ///    - Creates the UI
         /// </remarks>
-        public void LoadSession()
+        public void LoadSession(bool firstLoad)
         {
             var totalStopwatch = Stopwatch.StartNew();
             var stepStopwatch = new Stopwatch();
@@ -285,8 +286,12 @@ namespace pyRevitAssemblyBuilder.SessionManager
             CleanupStaleAssemblyFiles();
             _logger.Debug($"[PERF] CleanupStaleAssemblyFiles: {stepStopwatch.ElapsedMilliseconds}ms");
 
-            // Finalize via the residual Python post-load services (appdata cleanup,
-            // hook activation, doc colorizer, routes server, output teardown).
+            stepStopwatch.Restart();
+            CleanupAppDataFolder(firstLoad);
+            _logger.Debug($"[PERF] CleanupAppDataFolder: {stepStopwatch.ElapsedMilliseconds}ms");
+
+            // Finalize via the residual Python post-load services (hook activation,
+            // doc colorizer, routes server, output teardown).
             stepStopwatch.Restart();
             ExecuteEntryScript(Constants.POSTLOAD_SCRIPT, "pyRevit Postload");
             _logger.Debug($"[PERF] Postload: {stepStopwatch.ElapsedMilliseconds}ms");
@@ -363,6 +368,55 @@ namespace pyRevitAssemblyBuilder.SessionManager
             catch (Exception ex)
             {
                 _logger.Debug($"Could not delete '{path}': {ex.Message}");
+            }
+        }
+
+        private static readonly Regex _pidStampedUserRegex =
+            new Regex(@"^pyRevit_(?<version>\d{4})_(?<user>.+)_(?<pid>\d+)_(?<fname>.+)", RegexOptions.Compiled);
+        private static readonly Regex _pidStampedRegex =
+            new Regex(@"^pyRevit_(?<version>\d{4})_(?<pid>\d+)_(?<fname>.+)", RegexOptions.Compiled);
+
+        /// <summary>
+        /// On the initial session load, removes pid-stamped appdata files left behind by Revit
+        /// instances that are no longer running. Skipped on reload, matching the first-load guard
+        /// of the former Python appdata.cleanup_appdata_folder().
+        /// </summary>
+        private void CleanupAppDataFolder(bool firstLoad)
+        {
+            if (!firstLoad)
+                return;
+
+            try
+            {
+                var version = _uiApp.Application.VersionNumber;
+                var appDataDir = System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "pyRevit",
+                    version);
+
+                if (!System.IO.Directory.Exists(appDataDir))
+                    return;
+
+                var runningPids = new HashSet<int>();
+                foreach (var proc in Process.GetProcessesByName(Process.GetCurrentProcess().ProcessName))
+                    runningPids.Add(proc.Id);
+
+                foreach (var filePath in System.IO.Directory.GetFiles(appDataDir))
+                {
+                    var fileName = System.IO.Path.GetFileName(filePath);
+                    var match = _pidStampedUserRegex.Match(fileName);
+                    if (!match.Success)
+                        match = _pidStampedRegex.Match(fileName);
+                    if (!match.Success)
+                        continue;
+
+                    if (int.TryParse(match.Groups["pid"].Value, out var pid) && !runningPids.Contains(pid))
+                        TryDeleteFile(filePath);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning($"Appdata cleanup failed: {ex.Message}");
             }
         }
 
