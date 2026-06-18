@@ -281,14 +281,89 @@ namespace pyRevitAssemblyBuilder.SessionManager
             _ribbonScanner.CleanupOrphanedElements();
             _logger.Debug($"[PERF] CleanupOrphanedElements: {stepStopwatch.ElapsedMilliseconds}ms");
 
-            // Finalize via the residual Python post-load services (assembly/appdata
-            // cleanup, hook activation, doc colorizer, routes server, output teardown).
+            stepStopwatch.Restart();
+            CleanupStaleAssemblyFiles();
+            _logger.Debug($"[PERF] CleanupStaleAssemblyFiles: {stepStopwatch.ElapsedMilliseconds}ms");
+
+            // Finalize via the residual Python post-load services (appdata cleanup,
+            // hook activation, doc colorizer, routes server, output teardown).
             stepStopwatch.Restart();
             ExecuteEntryScript(Constants.POSTLOAD_SCRIPT, "pyRevit Postload");
             _logger.Debug($"[PERF] Postload: {stepStopwatch.ElapsedMilliseconds}ms");
 
             totalStopwatch.Stop();
             _logger.Info($"Session loaded in {totalStopwatch.ElapsedMilliseconds}ms");
+        }
+
+        /// <summary>
+        /// Removes stale pyRevit extension assemblies (and their .log siblings) left in the
+        /// appdata version folder by previous sessions. Skipped when other Revit instances are
+        /// open, since they may have those assemblies loaded, and never removes an assembly that
+        /// is currently loaded in this AppDomain.
+        /// </summary>
+        private void CleanupStaleAssemblyFiles()
+        {
+            try
+            {
+                var processName = Process.GetCurrentProcess().ProcessName;
+                if (Process.GetProcessesByName(processName).Length != 1)
+                    return;
+
+                var version = _uiApp.Application.VersionNumber;
+                var appDataDir = System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "pyRevit",
+                    version);
+
+                if (!System.IO.Directory.Exists(appDataDir))
+                    return;
+
+                var loadedLocations = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    if (asm.IsDynamic)
+                        continue;
+                    try
+                    {
+                        if (!string.IsNullOrEmpty(asm.Location))
+                            loadedLocations.Add(System.IO.Path.GetFullPath(asm.Location));
+                    }
+                    catch
+                    {
+                        // assemblies without a backing file have no location
+                    }
+                }
+
+                var prefix = $"pyRevit_{version}_";
+                foreach (var dllPath in System.IO.Directory.GetFiles(appDataDir, "*.dll"))
+                {
+                    if (!System.IO.Path.GetFileName(dllPath).StartsWith(prefix, StringComparison.Ordinal))
+                        continue;
+
+                    if (loadedLocations.Contains(System.IO.Path.GetFullPath(dllPath)))
+                        continue;
+
+                    TryDeleteFile(dllPath);
+                    TryDeleteFile(System.IO.Path.ChangeExtension(dllPath, ".log"));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning($"Stale assembly cleanup failed: {ex.Message}");
+            }
+        }
+
+        private void TryDeleteFile(string path)
+        {
+            try
+            {
+                if (System.IO.File.Exists(path))
+                    System.IO.File.Delete(path);
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug($"Could not delete '{path}': {ex.Message}");
+            }
         }
 
         private void SeedEnvironmentDictionary()

@@ -20,7 +20,6 @@ from pyrevit.coreutils import envvars
 from pyrevit.coreutils import appdata
 from pyrevit.coreutils import logger
 from pyrevit.loader import sessioninfo
-from pyrevit.loader import asmmaker
 from pyrevit.loader import hooks
 from pyrevit.labs import PyRevit
 from pyrevit.userconfig import user_config
@@ -150,9 +149,6 @@ def _perform_onsessionloadstart_ops():
 
 
 def _perform_onsessionloadcomplete_ops():
-    # cleanup old assembly files.
-    asmmaker.cleanup_assembly_files()
-
     # clean up temp app files between sessions.
     appdata.cleanup_appdata_folder()
 
