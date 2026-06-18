@@ -1,5 +1,6 @@
 title:
   en_us: Triangles count per family type
+  ko: 패밀리 유형별 삼각형 수
   fr_fr: Décompte des Triangles par type de famille
   ru: Количество треугольников по типам семейств
   chinese_s: 按族类型统计三角形面数
@@ -8,6 +9,7 @@ title:
   pt_br: Contagem de Triângulos por Tipo de Família
 tooltip:
   en_us: Triangles count per family type. The result is a table sorted from the smallest number of faces to the largest, with a grand total.
+  ko: 패밀리 유형별 삼각형 수. 결과는 면 수가 가장 작은 것부터 가장 큰 것 순으로 정렬된 표와 합계로 표시됩니다.
   fr_fr: Compte de Triangles par type de famille. Le résultat est un tableau classé du plus petit nombre de faces au plus grand, avec un grand total.
   ru: Количество треугольников по типам семейств. Результат - таблица, отсортированная от наименьшего числа граней к наибольшему, с итоговой суммой.
   chinese_s: 按族类型统计三角形面数。结果是一个按面数从少到多排序的表格，并包含总计

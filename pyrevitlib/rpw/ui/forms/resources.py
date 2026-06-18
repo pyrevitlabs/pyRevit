@@ -2,7 +2,6 @@
 Consolidate all imports and resources for other forms based classes to use.
 
 """  #
-
 import sys
 
 from abc import ABCMeta
@@ -42,10 +41,9 @@ ASSEMBLY_FILE_EXT = '.dll'
 ipy_assmname = '{prefix}IronPython'.format(prefix=eng.EnginePrefix)
 ipy_dllpath = op.join(eng.EnginePath, ipy_assmname + ASSEMBLY_FILE_EXT)
 if PY3:
-    clr.AddReference(ipy_dllpath)
+    clr.AddReference(ipy_assmname)
 else:
     clr.AddReferenceToFileAndPath(ipy_dllpath)
-
 import IronPython
 
 # WPF
@@ -61,3 +59,4 @@ try:
 except Exception:
     clr.AddReferenceToFileAndPath(wpf_dllpath)
     import wpf
+

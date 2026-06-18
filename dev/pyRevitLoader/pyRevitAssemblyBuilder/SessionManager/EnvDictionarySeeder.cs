@@ -32,8 +32,6 @@ namespace pyRevitAssemblyBuilder.SessionManager
         private const string KeyClone                = "PYREVIT_CLONE";
         private const string KeyIPYVersion           = "PYREVIT_IPYVERSION";
         private const string KeyCPYVersion           = "PYREVIT_CPYVERSION";
-        private const string KeyLoggingLevel         = "PYREVIT_LOGGINGLEVEL";
-        private const string KeyFileLogging          = "PYREVIT_FILELOGGING";
         private const string KeyTelemetryState       = "PYREVIT_TELEMETRYSTATE";
         private const string KeyTelemetryUTC         = "PYREVIT_TELEMETRYUTCTIMESTAMPS";
         private const string KeyTelemetryFileDir     = "PYREVIT_TELEMETRYDIR";
@@ -71,13 +69,6 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 [KeyIPYVersion]         = ReadIPYVersion(pyRevitRoot),
                 [KeyCPYVersion]         = ReadCPYVersion(pyRevitRoot),
 
-                // Fix for #3203: PyRevitConfig.LoggingLevel returns a pyRevit enum
-                // (0=Quiet, 1=Verbose, 2=Debug) but the Python logger reads this
-                // env var as a Python logging module level (10=DEBUG, 20=INFO, 30=WARNING).
-                // Translate to avoid corrupting the Python logging threshold.
-                [KeyLoggingLevel]       = ToPythonLoggingLevel(config.LoggingLevel),
-                [KeyFileLogging]        = config.FileLogging,
-
                 [KeyTelemetryState]     = config.TelemetryState,
                 [KeyTelemetryUTC]       = config.TelemetryUTCTimeStamps,
                 [KeyTelemetryFileDir]   = config.TelemetryFilePath,
@@ -106,27 +97,6 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 ?? throw new InvalidOperationException("Cannot find EnvDictionary.Seed(Dictionary<string, object>) method.");
 
             seedMethod.Invoke(null, new object[] { values });
-        }
-
-        /// <summary>
-        /// Converts PyRevitConfig's logging level enum (0=Quiet, 1=Verbose, 2=Debug)
-        /// to Python's logging module level (30=WARNING, 20=INFO, 10=DEBUG).
-        /// <para>
-        /// Python's logger (pyrevitlib/pyrevit/coreutils/logger.py) reads PYREVIT_LOGGINGLEVEL
-        /// and compares it directly: <c>record.levelno >= _curlevel</c>.  The Python logging
-        /// constants are DEBUG=10, INFO=20, WARNING=30.  If we store 0 (pyRevit Quiet) the
-        /// comparison <c>10 >= 0</c> is always true — every message passes, which forces the
-        /// console window open.
-        /// </para>
-        /// </summary>
-        internal static int ToPythonLoggingLevel(int pyrevitLevel)
-        {
-            switch (pyrevitLevel)
-            {
-                case 2:  return 10;   // Debug   → logging.DEBUG
-                case 1:  return 20;   // Verbose → logging.INFO
-                default: return 30;   // Quiet   → logging.WARNING (Python default)
-            }
         }
 
         internal static string ReadPyRevitVersion(string pyRevitRoot)

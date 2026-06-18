@@ -1,18 +1,24 @@
-new Vue({
-    el: '#editor',
-    data: {
-        input: '# hello'
-    },
-    computed: {
-        compiledMarkdown: function() {
-            return marked(this.input, {
-                sanitize: true
-            })
+if (!window.Vue || !window.marked || !window._) {
+    document.getElementById('editor').style.display = 'none';
+    document.getElementById('load-error').style.display = 'block';
+}
+else {
+    new Vue({
+        el: '#editor',
+        data: {
+            input: '# hello'
+        },
+        computed: {
+            compiledMarkdown: function() {
+                return marked(this.input, {
+                    sanitize: true
+                })
+            }
+        },
+        methods: {
+            update: _.debounce(function(e) {
+                this.input = e.target.value
+            }, 300)
         }
-    },
-    methods: {
-        update: _.debounce(function(e) {
-            this.input = e.target.value
-        }, 300)
-    }
-})
+    })
+}

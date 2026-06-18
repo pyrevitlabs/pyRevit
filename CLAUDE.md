@@ -8,7 +8,7 @@ pyRevit is a Rapid Application Development (RAD) environment for Autodesk Revit.
 
 ## Repository Structure
 
-- `bin/` - Pre-built binaries (DLLs) and Python engines (IPY2712PR, IPY342, CPY3123)
+- `bin/` - Generated product binaries (DLLs, engines, CLI). Built locally via `dotnet run -- ci` or downloaded anonymously from public CI Release assets by `pyrevit clone`. Not tracked in git. Static sources: `release/bin-assets/`, `release/cengines/`, `release/pyrevit-hosts.json`.
 - `dev/` - C# source code, build scripts, and solution files
 - `docs/` - Documentation source for the website (mkdocs)
 - `extensions/` - pyRevit extensions (tools visible in Revit ribbon)

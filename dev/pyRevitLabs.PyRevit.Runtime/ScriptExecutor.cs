@@ -31,11 +31,24 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public void Execute(UIApplication uiApp) {
             if (ScriptData != null && ScriptRuntimeConfigs != null) {
-                // provide the given uiapp
-                ScriptRuntimeConfigs.UIApp = uiApp;
+                try {
+                    // provide the given uiapp
+                    ScriptRuntimeConfigs.UIApp = uiApp;
 
-                // request execution and set results
-                Result = ScriptExecutor.ExecuteScript(ScriptData, ScriptRuntimeConfigs);
+                    // request execution and set results
+                    Result = ScriptExecutor.ExecuteScript(ScriptData, ScriptRuntimeConfigs);
+                }
+                finally {
+                    // release the executed script's references; this handler lives
+                    // for the whole process and would otherwise pin the previous
+                    // session's runtime objects (UIApp, documents) across reloads.
+                    // NOTE: these fields are a singleton and not thread-safe. A
+                    // concurrent non-blocking RequestExecuteScript can overwrite a
+                    // pending script before Execute() fires for it; this is a
+                    // pre-existing limitation of the single-handler design.
+                    ScriptData = null;
+                    ScriptRuntimeConfigs = null;
+                }
             }
         }
 
@@ -56,6 +69,25 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private static ExternalEvent extExecEvent;
 
         public static void Initialize() {
+            // Idempotent on purpose. The ExternalEvent is scoped to the add-in
+            // lifetime (the loader stays registered for the whole Revit process),
+            // not to a pyRevit session, so the same event remains valid across
+            // reloads and is reused instead of recreated. Reusing it avoids
+            // leaking an undisposed ExternalEvent + handler on every reload
+            // (Revit holds a strong reference to the handler) and avoids breaking
+            // an in-flight RequestExecuteScript. Both the python and c# session
+            // managers call Initialize() during a single load, so the early
+            // return also collapses that double call.
+            // NOTE: assemblies load into the default (non-collectible)
+            // AssemblyLoadContext, so there is no per-session context to pin or
+            // unload here; revisit this if pyRevit ever adopts collectible load
+            // contexts, where disposing the old event on reload would matter.
+            // The check-then-create below is intentionally unlocked: both call
+            // sites run on the Revit main thread during init, so there is no
+            // concurrent entry to guard against.
+            if (extExecEvent != null)
+                return;
+
             mainThreadId = Thread.CurrentThread.ManagedThreadId;
             extExecEventHandler = new ScriptExecutorExternalEventHandler();
             extExecEvent = ExternalEvent.Create(extExecEventHandler);

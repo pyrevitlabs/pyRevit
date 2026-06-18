@@ -1,5 +1,6 @@
 title:
   en_us: Pushbutton
+  ko: 푸시버튼
   fr_fr: Bouton Pushbutton
   ru: Кнопка Pushbutton
   chinese_s: Pushbutton 按钮
@@ -8,6 +9,7 @@ title:
   pt_br: Botão
 tooltip:
   en_us: Pushbutton
+  ko: 푸시버튼
   fr_fr: Bouton Pushbutton
   ru: Кнопка Pushbutton
   chinese_s: Pushbutton 按钮

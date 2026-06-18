@@ -1,5 +1,6 @@
 title:
   en_us: Copy Viewports (Legends) To Other Sheets
+  ko: 다른 시트에 뷰포트(범례) 복사
   fr_fr: >-
     Copier / mettre à jour les vues sélectionnées dans les feuilles
     sélectionnées
@@ -14,6 +15,7 @@ tooltip:
     Viewports and push Finish button on the properties bar. The selected views
     will be added to the destination sheets. If the view or schedule already
     exists on that sheet, the location and type will be updated
+  ko: 원본 시트를 엽니다. 이 스크립트를 실행하고 대상 시트를 선택합니다. 뷰포트를 선택하고 특성 막대의 완료 버튼을 누릅니다. 선택한 뷰가 대상 시트에 추가됩니다. 뷰 또는 일람표가 해당 시트에 이미 있으면 위치와 유형이 업데이트됩니다.
   fr_fr: >-
     Ouvrez la feuille source. Exécutez ce script et sélectionnez les feuilles de
     destination. Sélectionnez Vues et appuyez sur le bouton Terminer dans la

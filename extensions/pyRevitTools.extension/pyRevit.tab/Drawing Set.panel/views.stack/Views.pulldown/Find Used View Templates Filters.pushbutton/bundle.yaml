@@ -1,5 +1,6 @@
 title:
   en_us: Find Used View Templates Filters
+  ko: 사용된 뷰 템플릿 필터 찾기
   fr_fr: Trouver les filtres de gabarits de vue utilisés
   ru: Найти используемые шаблоны видов в фильтрах
   chinese_s: 查找已使用的视图样板过滤器
@@ -8,6 +9,7 @@ title:
   pt_br: Encontrar Filtros de Modelos de Vista Usados
 tooltip:
   en_us: Lists all view templates and the filters that has been assigned to each
+  ko: 모든 뷰 템플릿과 각 뷰 템플릿에 지정된 필터를 나열합니다
   fr_fr: Répertorie tous les gabartis de vue et les filtres qui ont été attribués à chacun
   ru: Показывает все шаблоны видов и фильтры, которые были применены к ним.
   chinese_s: 列出所有视图样板及其已分配的过滤器

@@ -1,6 +1,7 @@
 context: selection
 title:
   en_us: Count lines of selected style
+  ko: 선택 스타일 선 개수
   fr_fr: Compter les lignes d'un style choisi
   ru: Посчитать линии выделенного стиля
   chinese_s: 统计选定线样式的线数量
@@ -13,6 +14,7 @@ tooltip:
 
 
     CTRL-Click: Lists every matching line
+  ko: "선택한 선과 스타일이 일치하는 모델의 모든 선을 셉니다. CTRL+클릭: 일치하는 모든 선을 나열합니다."
   fr_fr: >-
     Compte toutes les lignes du modèle avec un style correspondant à la ligne sélectionnée
 

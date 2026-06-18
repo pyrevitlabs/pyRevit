@@ -1,5 +1,6 @@
 title:
   en_us: Select All Text Notes
+  ko: 모든 텍스트 메모 선택
   fr_fr: Sélectionner toutes les notes textuelles
   ru: Выделить все текстовые примечания
   chinese_s: 选择所有文字注释
@@ -8,6 +9,7 @@ title:
   pt_br: Selecionar Todas as Notas de Texto
 tooltip:
   en_us: Selects all Text Note elements in the model. This is helpful for spell checking.
+  ko: 모델의 모든 텍스트 메모 요소를 선택합니다. 맞춤법 검사에 유용합니다.
   fr_fr: Sélectionne tous les éléments de catégorie note textuelle dans le modèle. Ceci est utile pour la vérification orthographique.
   ru: Выделяет все текстовые заметки в модели. Это полезно для проверки правописания.
   chinese_s: 选择模型中的所有文字注释图元。此功能有助于进行拼写检查

@@ -4,6 +4,7 @@ using System.Text;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
@@ -16,6 +17,16 @@ namespace pyRevitLabs.Common {
         // private static int lastReport;
 
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+
+        private static readonly HttpClient HttpClient;
+        private static readonly HttpClient ConnectivityClient;
+
+        static CommonUtils() {
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            HttpClient = new HttpClient();
+            HttpClient.DefaultRequestHeaders.UserAgent.ParseAdd("pyrevit-cli");
+            ConnectivityClient = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+        }
 
         [DllImport("ole32.dll")]
         private static extern int StgIsStorageFile([MarshalAs(UnmanagedType.LPWStr)] string pwcsName);
@@ -117,46 +128,36 @@ namespace pyRevitLabs.Common {
             return Math.Abs(System.IO.File.GetLastWriteTimeUtc(filepath).GetHashCode()).ToString();
         }
 
-        public static WebClient GetWebClient() {
-            if (CheckInternetConnection()) {
-                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                return new WebClient();
-            }
-            else
+        public static HttpResponseMessage GetHttpResponse(string url) {
+            logger.Debug("Building HTTP request for: \"{0}\"", url);
+            if (!CheckInternetConnection())
                 throw new pyRevitNoInternetConnectionException();
+
+            return HttpClient.GetAsync(url).GetAwaiter().GetResult();
         }
 
-        public static HttpWebRequest GetHttpWebRequest(string url) {
-            logger.Debug("Building HTTP request for: \"{0}\"", url);
-            if (CheckInternetConnection()) {
-                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-                request.UserAgent = "pyrevit-cli";
-                return request;
-            }
-            else
+        public static HttpResponseMessage SendHttpRequest(HttpRequestMessage request) {
+            if (!CheckInternetConnection())
                 throw new pyRevitNoInternetConnectionException();
+
+            return HttpClient.SendAsync(request).GetAwaiter().GetResult();
+        }
+
+        public static void CopyHttpContentToFile(HttpContent content, string destPath) {
+            using (var stream = content.ReadAsStreamAsync().GetAwaiter().GetResult())
+            using (var fileStream = File.Create(destPath))
+                stream.CopyTo(fileStream);
         }
 
         public static string DownloadFile(string url, string destPath) {
+            if (!CheckInternetConnection())
+                throw new pyRevitNoInternetConnectionException();
+
             try {
-                using (var client = GetWebClient()) {
-                    client.Headers.Add("User-Agent", "pyrevit-cli");
-                    //if (GlobalConfigs.ReportProgress) {
-                    //    logger.Debug("Downloading (async) \"{0}\"", url);
-
-                    //    client.DownloadProgressChanged += Client_DownloadProgressChanged;
-
-                    //    lastReport = 0;
-                    //    client.DownloadFileAsync(new Uri(url), destPath, progressToken);
-
-                    //    // wait until download is complete
-                    //    while (client.IsBusy) ;
-                    //}
-                    //else {
-                    logger.Debug("Downloading \"{0}\"", url);
-                    client.DownloadFile(url, destPath);
-                    //}
+                logger.Debug("Downloading \"{0}\"", url);
+                using (var response = HttpClient.GetAsync(url).GetAwaiter().GetResult()) {
+                    response.EnsureSuccessStatusCode();
+                    CopyHttpContentToFile(response.Content, destPath);
                 }
             }
             catch (Exception dlEx) {
@@ -200,9 +201,9 @@ namespace pyRevitLabs.Common {
 
         public static bool CheckInternetConnection() {
             try {
-                using (var client = new WebClient())
-                using (client.OpenRead("http://clients3.google.com/generate_204")) {
-                    return true;
+                using (var response = ConnectivityClient.GetAsync("http://clients3.google.com/generate_204")
+                    .GetAwaiter().GetResult()) {
+                    return response.IsSuccessStatusCode;
                 }
             }
             catch {
@@ -266,18 +267,18 @@ namespace pyRevitLabs.Common {
         }
 
         public static bool VerifyUrl(string url) {
-            if (CheckInternetConnection()) {
-                HttpWebRequest request = GetHttpWebRequest(url);
-                try {
-                    var response = request.GetResponse();
-                }
-                catch (Exception ex) {
-                    logger.Debug(ex);
-                    return false;
+            if (!CheckInternetConnection())
+                return true;
+
+            try {
+                using (var response = GetHttpResponse(url)) {
+                    return true;
                 }
             }
-
-            return true;
+            catch (Exception ex) {
+                logger.Debug(ex);
+                return false;
+            }
         }
 
         public static void OpenInExplorer(string resourcePath) {

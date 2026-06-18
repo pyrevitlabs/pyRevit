@@ -1,5 +1,6 @@
 title:
   en_us: Match properties ●
+  ko: 속성 일치 ●
   fr_fr: Correspondance des propriétés ●
   ru: Сверить параметры ●
   chinese_s: 匹配属性 ●
@@ -14,6 +15,7 @@ tooltip:
     Shift+Click:
 
     Reapply the previous matched properties
+  ko: 요소와 해당 유형 간의 인스턴스 또는 유형 속성을 일치시킵니다.
   fr_fr: >-
     Fait correspondre les paramètres d'instance et de type entre les éléments et leurs types
 

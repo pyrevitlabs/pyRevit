@@ -5,7 +5,7 @@ vs using execute_in_revit_context() from modeless WPF windows.
 """
 
 from pyrevit import revit, DB
-from pyrevit import forms
+from pyrevit import forms, script
 from pyrevit.revit.events import execute_in_revit_context
 from pyrevit.compat import get_elementid_value_func
 
@@ -32,7 +32,7 @@ class ExampleUI(forms.WPFWindow):
         <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                 Title="Execute in Revit Context Example"
-                Width="400" Height="340"
+                Width="400" Height="380"
                 WindowStartupLocation="CenterScreen"
                 ShowInTaskbar="False"
                 ResizeMode="CanMinimize">
@@ -75,11 +75,18 @@ class ExampleUI(forms.WPFWindow):
                         Margin="0,5"
                         Background="#CCFFCC"
                         Click="update_correct_clicked"/>
+
+                <Button Name="output_button"
+                        Content="Output"
+                        Height="30"
+                        Margin="0,5"
+                        Click="output_clicked"/>
             </StackPanel>
         </Window>
         """
 
         forms.WPFWindow.__init__(self, xaml_layout, literal_string=True)
+        self.output = script.get_output()
         self.selected_element = None
 
     def pick_element_clicked(self, sender, args):
@@ -142,6 +149,12 @@ class ExampleUI(forms.WPFWindow):
         # execute_in_revit_context(
         #     lambda: update_element_comment(self.selected_element, comment)
         # )
+
+    def output_clicked(self, sender, args):
+        """Example of using output."""
+        self.output.print_md("This is output from the modeless dialog!")
+        self.output.log_info("This is a log message from the modeless dialog.")
+        self.output.log_warning("This is a warning from the modeless dialog.")
 
 
 if __name__ == "__main__":

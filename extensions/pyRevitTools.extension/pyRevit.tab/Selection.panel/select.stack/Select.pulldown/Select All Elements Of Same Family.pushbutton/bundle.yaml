@@ -1,5 +1,6 @@
 title:
   en_us: Select All Elements Of Same Family
+  ko: 같은 패밀리의 모든 요소 선택
   fr_fr: Sélectionner tous les éléments de la même famille
   ru: Выделить все элементы в одинаковым семейством
   chinese_s: 选择同族的所有图元
@@ -8,6 +9,7 @@ title:
   pt_br: Selecionar Todos os Elementos da Mesma Família
 tooltip:
   en_us: Selects all elements (in model) of the same family as the currently selected object
+  ko: 현재 선택한 객체와 같은 패밀리의 모든 요소(모델 내)를 선택합니다
   fr_fr: Sélectionne tous les éléments (dans le modèle) de la même famille que l'objet actuellement sélectionné
   ru: Выделяет все элементы (в модели) с одинковым семейством, что и текущий выделенный элемент.
   chinese_s: 选择（模型中）与当前选定对象属于同一族的所有图元

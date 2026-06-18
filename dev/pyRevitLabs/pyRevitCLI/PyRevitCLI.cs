@@ -305,7 +305,8 @@ namespace pyRevitCLI
                     PyRevitCLICloneCmds.UpdateClone(
                             allClones: arguments["--all"].IsTrue,
                             cloneName: TryGetValue("<clone_name>"),
-                            credentials: TryGetCredentials()
+                            credentials: TryGetCredentials(),
+                            skipBin: arguments["--skip-bin"].IsTrue
                             );
 
                 else

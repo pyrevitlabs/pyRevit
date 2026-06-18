@@ -1,5 +1,6 @@
 title:
   en_us: Generate FilledRegion Swatches
+  ko: 채워진 영역 견본 생성
   fr_fr: Créer des légendes de motifs de surfaces
   ru: Генерировать образцы цветовых областей
   chinese_s: 生成填充区域样本
@@ -8,6 +9,7 @@ title:
   pt_br: Gerar Amostras de Região Preenchida
 tooltip:
   en_us: Generate filledregion swatches in active view
+  ko: 활성 뷰에서 채워진 영역 견본을 생성합니다
   fr_fr: Générer des légendes de motifs de surfaces dans la vue active
   ru: Генерирует образцы цветовых областей в активном представлении.
   chinese_s: 在活动视图中生成填充区域样本

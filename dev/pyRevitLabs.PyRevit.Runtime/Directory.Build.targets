@@ -55,6 +55,9 @@
         <PackageReference Include="AirspaceFixer" Version="1.0.6" />
         <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'"  Include="ControlzEx" Version="7.0.3" />
         <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'"  Include="ControlzEx" Version="7.0.3" />
+        <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="System.Text.Encoding.CodePages" Version="7.0.0" />
+        <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'" Include="System.Management" Version="10.0.5" />
+        <PackageReference Condition="'$(TargetFramework)' == 'net8.0-windows'" Include="System.CodeDom" Version="10.0.5" />
     </ItemGroup>
 
     <Target Name="Deploy" AfterTargets="AfterBuild">

@@ -6,6 +6,7 @@ Features:
 - Indent / Outdent to promote or demote nodes (Tab / Shift+Tab)
 - Move Up / Move Down to reorder siblings (Ctrl+Up / Ctrl+Down)
 - Drag-and-drop to reparent across the tree
+- Collapse All / Expand All tree controls
 - Search with smart filters
 - Keyboard shortcuts (F2, F5, Ctrl+N, Ctrl+D, Del, Tab, Shift+Tab)
 
@@ -558,6 +559,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._doc_changed_app = None
         self.Loaded += self._on_window_loaded
 
+        self.set_image_source(self.expandAllIcon, "expand_all.png")
+        self.set_image_source(self.collapseAllIcon, "collapse_all.png")
+
         self.load_config(reset_config)
         self._update_full_tree()
         self._update_status_bar()
@@ -780,6 +784,82 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 if sub:
                     return [root] + sub
         return None
+
+    def _set_all_tree_items_expanded(self, expanded, max_passes=2):
+        """Set IsExpanded on tree containers with bounded layout passes."""
+        tv = self.keynotes_tv
+        if not tv:
+            return False
+
+        def _safe_update_layout():
+            try:
+                tv.UpdateLayout()
+                return True
+            except Exception as ex:
+                logger.warning("Expand/collapse tree update failed | %s" % ex)
+                return False
+
+        if not _safe_update_layout():
+            return False
+
+        missing_any = False
+        for _ in range(max_passes):
+            missing_in_pass = False
+            root_gen = tv.ItemContainerGenerator
+            queue = []
+            for root in tv.Items:
+                root_container = root_gen.ContainerFromItem(root)
+                if root_container is None:
+                    missing_in_pass = True
+                    continue
+                queue.append(root_container)
+
+            while queue:
+                container = queue.pop()
+                if not container or not hasattr(container, "IsExpanded"):
+                    continue
+                container.IsExpanded = expanded
+                gen = container.ItemContainerGenerator
+                for child in container.Items:
+                    child_container = gen.ContainerFromItem(child)
+                    if child_container is None:
+                        missing_in_pass = True
+                        continue
+                    queue.append(child_container)
+
+            if not missing_in_pass:
+                _safe_update_layout()
+                return True
+
+            missing_any = True
+            if expanded:
+                if not _safe_update_layout():
+                    return False
+            else:
+                break
+
+        _safe_update_layout()
+        return not missing_any
+
+    def expand_all_tree(self, sender, args):
+        def _do_expand():
+            self._set_all_tree_items_expanded(True, max_passes=3)
+
+        self.Dispatcher.BeginInvoke(
+            System.Action(_do_expand), Windows.Threading.DispatcherPriority.Loaded
+        )
+
+    def collapse_all_tree(self, sender, args):
+        def _do_collapse():
+            collapsed = self._set_all_tree_items_expanded(False, max_passes=1)
+            if not collapsed:
+                # Some deep virtualized branches may not be realized on demand.
+                self._set_all_tree_items_expanded(True, max_passes=3)
+                self._set_all_tree_items_expanded(False, max_passes=1)
+
+        self.Dispatcher.BeginInvoke(
+            System.Action(_do_collapse), Windows.Threading.DispatcherPriority.Loaded
+        )
 
     # =========================================================================
     # USED KEYNOTE TRACKING

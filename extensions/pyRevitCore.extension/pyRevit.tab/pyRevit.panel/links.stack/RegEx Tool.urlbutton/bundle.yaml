@@ -1,5 +1,6 @@
 title:
   en_us: RegEx Tool
+  ko: 정규식 도구
   fr_fr: RegEx Tool
   ru: RegEx Tool
   chinese_s: RegEx 工具
@@ -8,6 +9,7 @@ title:
   pt_br: Ferramenta Regex
 tooltip:
   en_us: Opens RegExr website that is used to create and test regular expressions
+  ko: 정규식을 만들고 테스트하는 RegExr 웹사이트를 엽니다
   fr_fr: Ouvre le site web RegExr qui est utilisé pour créer et tester des expressions régulières
   ru: Открывает сайт RegExr, которы используется для создания и тестирования регулярных выражений.
   chinese_s: 打开 RegExr 网站，用于创建和测试正则表达式

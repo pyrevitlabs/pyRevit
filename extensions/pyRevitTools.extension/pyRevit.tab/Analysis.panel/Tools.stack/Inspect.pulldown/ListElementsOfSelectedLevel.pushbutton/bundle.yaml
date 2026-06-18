@@ -1,5 +1,6 @@
 title:
   en_us: List Elements of Selected Level(s)
+  ko: 선택한 레벨의 요소 목록
   fr_fr: Lister les éléments du ou des niveau(x) sélectionné(s)
   ru: Отобразить список элементов выбранного уровня(ов)
   chinese_s: 列出选定标高上的图元
@@ -8,6 +9,7 @@ title:
   pt_br: Listar Elementos do(s) Nível(is) Selecionado(s)
 tooltip:
   en_us: List all Elements of the selected level(s)
+  ko: 선택한 레벨의 모든 요소를 나열합니다
   fr_fr: Lister les éléments du ou des niveau(x) sélectionné(s)
   ru: Отображает все элементы на выделенных уровнях.
   chinese_s: 列出所选标高上的所有图元

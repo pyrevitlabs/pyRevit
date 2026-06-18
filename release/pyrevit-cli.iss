@@ -1,6 +1,6 @@
 #define MyAppName "pyRevit CLI"
 #define MyAppUUID "9557b432-cf79-4ece-91cf-b8f996c88b47"
-#define MyAppVersion "6.4.0.26098"
+#define MyAppVersion "6.4.0.26166"
 #define MyAppPublisher "pyRevitLabs"
 #define MyAppURL "pyrevitlabs.io"
 #define MyAppExeName "pyrevit.exe"
@@ -15,7 +15,7 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-AppCopyright=Copyright © 2014-2025 pyRevitLabs.io
+AppCopyright=Copyright © 2014-2026 pyRevitLabs.io
 LicenseFile=..\LICENSE.txt
 ; Installer
 DefaultGroupName={#MyAppName}
@@ -32,7 +32,7 @@ PrivilegesRequired=lowest
 OutputDir=..\dist
 ; See dev/scripts/config.py INSTALLER_EXES
 OutputBaseFilename=pyRevit_CLI_{#MyAppVersion}_signed
-SetupIconFile=..\bin\pyrevit_cli.ico
+SetupIconFile=..\release\bin-assets\pyrevit_cli.ico
 Compression=lzma
 SolidCompression=yes
 DisableWelcomePage=no

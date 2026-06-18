@@ -1,5 +1,6 @@
 title:
   en_us: Select topmost groups
+  ko: 최상위 그룹 선택
   fr_fr: Sélectionner les groupes supérieurs
   ru: Выбрать самую верхнюю группу
   chinese_s: 选择最高层级的组
@@ -14,6 +15,7 @@ tooltip:
     Shift+Click:
 
     Include not-grouped elements
+  ko: 선택한 요소를 포함하는 그룹 인스턴스를 선택합니다
   fr_fr: >-
     Sélectionne les occurences du groupe qui contiennent les éléments sélectionnés
     Par défaut, les éléments non groupés sont exclus de la sélection

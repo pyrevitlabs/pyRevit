@@ -1,5 +1,6 @@
 title:
   en_us: Find all groups with text notes
+  ko: 텍스트 메모가 있는 모든 그룹 찾기
   fr_fr: Trouver tous les groupes avec des notes textuelles
   ru: Найти все группы с текстовыми примечаниями
   chinese_s: 查找所有包含文字注释的组
@@ -8,6 +9,7 @@ title:
   pt_br: Encontrar Todos os Grupos com Notas de Texto
 tooltip:
   en_us: List all detail groups that include a text element inside them. This is helpful for spell checking.
+  ko: 내부에 텍스트 요소가 포함된 모든 상세도 그룹을 나열합니다. 맞춤법 검사에 유용합니다.
   fr_fr: Liste tous les groupes de détail qui incluent une note textuelle. Utile pour la correction orthographique.
   ru: Показывает все группы, которые включают в себя текстовые примечания. Данный инструмент полезен для проверки правописания.
   chinese_s: 列出内部包含文本元素的所有详图组。这对于拼写检查很有帮助。

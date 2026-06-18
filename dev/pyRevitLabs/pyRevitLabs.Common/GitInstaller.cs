@@ -273,8 +273,34 @@ namespace pyRevitLabs.Common {
             return head;
         }
 
-        // get the checkedout branch from repopath
-        // @handled @logs
+        public static bool IsLocalAheadOfTrackingBranch(string repoPath) {
+            if (!IsValidRepo(repoPath))
+                return false;
+
+            using (var repo = new Repository(repoPath)) {
+                var tracked = repo.Head?.TrackedBranch;
+                if (tracked == null)
+                    return false;
+
+                var divergence = repo.ObjectDatabase.CalculateHistoryDivergence(repo.Head.Tip, tracked.Tip);
+                return divergence.AheadBy > 0;
+            }
+        }
+
+        public static bool IsSyncedWithTrackingBranch(string repoPath) {
+            if (!IsValidRepo(repoPath))
+                return true;
+
+            using (var repo = new Repository(repoPath)) {
+                var tracked = repo.Head?.TrackedBranch;
+                if (tracked == null)
+                    return true;
+
+                var divergence = repo.ObjectDatabase.CalculateHistoryDivergence(repo.Head.Tip, tracked.Tip);
+                return divergence.AheadBy == 0 && divergence.BehindBy == 0;
+            }
+        }
+
         public static string GetRemoteUrl(string repoPath, string remoteName) {
             if (IsValidRepo(repoPath)) {
                 try {

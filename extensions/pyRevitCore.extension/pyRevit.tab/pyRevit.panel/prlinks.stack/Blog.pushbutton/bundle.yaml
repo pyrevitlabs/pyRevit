@@ -1,5 +1,6 @@
 title:
   en_us: Blog
+  ko: 블로그
   fr_fr: Blog
   ru: Блог
   chinese_s: 博客
@@ -8,6 +9,7 @@ title:
   pt_br: Blog
 tooltip:
   en_us: Opens the pyRevit blog.
+  ko: pyRevit 블로그를 엽니다.
   fr_fr: Ouvre le blog de pyRevit.
   ru: Открывает блог pyRevit.
   chinese_s: 打开 pyRevit 博客。

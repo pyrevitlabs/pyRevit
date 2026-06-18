@@ -1,5 +1,6 @@
 title:
   en_us: Copy selected view templates to other open models
+  ko: 다른 열린 모델에 선택한 뷰 템플릿을 복사합니다.
   fr_fr: Copier les gabarits de vue sélectionnés vers des modèles ouverts
   ru: Копировать выделенные шаблоны видов в другие открытые модели
   chinese_s: 将选定的视图样板复制到其他已打开的模型
@@ -8,6 +9,7 @@ title:
   pt_br: Copiar Modelos de Vista Selecionados para Outros Modelos Abertos
 tooltip:
   en_us: Copy selected view templates to other open models
+  ko: 다른 열린 모델에 선택한 뷰 템플릿을 복사합니다.
   fr_fr: Copier les gabarits de vue sélectionnés vers d'autres modèles ouverts
   ru: Копирует выделенные шаблоны видов в другие открытые модели.
   chinese_s: 将选定的视图样板复制到其他已打开的模型

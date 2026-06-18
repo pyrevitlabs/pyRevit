@@ -1,5 +1,6 @@
 title:
   en_us: Place origin marker
+  ko: 원점 마커 배치
   fr_fr: Placer une borne sur l'origine
   ru: Разместить маркер начала координат
   chinese_s: 放置原点标记
@@ -8,6 +9,7 @@ title:
   pt_br: Inserir Marcador de Origem
 tooltip:
   en_us: Place a cross marker at the Earth origin at 0,0,0
+  ko: 0,0,0 좌표의 원점에 십자 마커를 배치합니다
   fr_fr: Place une borne en forme de croix sur l'origine de la terre 0,0,0
   ru: Размещает маркер (крест) в начало координат на 0,0,0.
   chinese_s: 在坐标（0,0,0）的地球原点处放置一个十字标记

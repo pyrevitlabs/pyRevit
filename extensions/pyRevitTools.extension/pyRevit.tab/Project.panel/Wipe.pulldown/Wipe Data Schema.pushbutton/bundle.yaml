@@ -1,5 +1,6 @@
 title:
   en_us: Wipe Data Schema
+  ko: 데이터 스키마 삭제
   fr_fr: Efface les schémas de données
   ru: Очистить Data Schema
   chinese_s: 清除数据模式
@@ -8,6 +9,7 @@ title:
   pt_br: Remover Esquema de Dados
 tooltip:
   en_us: Erase selected data schema and its entities
+  ko: 선택한 데이터 스키마와 해당 엔티티를 지웁니다
   fr_fr: Supprime les schémas de données sélectionnés et ses entités
   ru: Очищает выделенную data schema и ее сущности.
   chinese_s: 清除选定的数据模式及其包含的实体

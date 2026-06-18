@@ -1,5 +1,6 @@
 title:
   en_us: Find All Loaded Assemblies
+  ko: 모든 로드된 어셈블리 찾기
   fr_fr: Rechercher tous les DLL chargés
   ru: Найти все загруженные сборки
   chinese_s: 查找所有加载的程序集
@@ -8,6 +9,7 @@ title:
   pt_br: Encontrar Todos os Assemblies Carregados
 tooltip:
   en_us: List all currently loaded assemblies
+  ko: 현재 로드된 모든 어셈블리를 나열합니다
   fr_fr: Lister tous les DLL chargés
   ru: Показывает все загруженные в данный момент сборки.
   chinese_s: 列出所有当前加载的程序集

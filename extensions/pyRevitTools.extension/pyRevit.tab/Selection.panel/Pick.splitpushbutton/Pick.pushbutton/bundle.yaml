@@ -1,5 +1,6 @@
 title:
   en_us: Pick
+  ko: 선택
   fr_fr: Sélectionner
   ru: Выбрать
   chinese_s: 选择
@@ -13,6 +14,7 @@ tooltip:
     Shift-Click:
 
     Pick favorites from all available categories
+  ko: 특정 유형의 요소를 선택하는 선택 도구를 활성화합니다
   fr_fr: >-
     Active l'outil de sélection qui sélectionne un type d'élément spécifique
 

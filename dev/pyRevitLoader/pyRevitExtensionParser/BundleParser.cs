@@ -403,6 +403,12 @@ namespace pyRevitExtensionParser
             {
                 foreach (var child in list.Children)
                 {
+                    if (child is YamlMappingNode childMap)
+                    {
+                        ParseContextMap(childMap, parsed);
+                        continue;
+                    }
+
                     var text = GetScalar(child);
                     if (!string.IsNullOrEmpty(text))
                         parsed.ContextItems.Add(text);
@@ -410,9 +416,12 @@ namespace pyRevitExtensionParser
                 return;
             }
 
-            if (!(node is YamlMappingNode map))
-                return;
+            if (node is YamlMappingNode map)
+                ParseContextMap(map, parsed);
+        }
 
+        private static void ParseContextMap(YamlMappingNode map, ParsedBundle parsed)
+        {
             foreach (var entry in map.Children)
             {
                 var key = GetScalar(entry.Key)?.Trim().ToLowerInvariant();

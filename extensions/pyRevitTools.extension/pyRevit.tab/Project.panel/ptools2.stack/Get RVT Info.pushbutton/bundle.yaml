@@ -1,5 +1,6 @@
 title:
   en_us: Get RVT Info
+  ko: RVT 정보 가져오기
   fr_fr: Obtenir les infos d'un RVT
   ru: Получить RVT инфу
   chinese_s: 获取 RVT 文件信息
@@ -8,6 +9,7 @@ title:
   pt_br: Obter Informações do Rvt
 tooltip:
   en_us: Get information from a RVT file
+  ko: RVT 파일에서 정보를 가져옵니다
   fr_fr: Obtenir les informations d'un fichier RVT
   ru: Получает информацию из RVT файла.
   chinese_s: 从 RVT 文件中获取信息

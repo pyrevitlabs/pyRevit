@@ -1,6 +1,7 @@
 help_url: '{{docpath}}pIjDd4dZng0'
 title:
   en_us: Orient view to face
+  ko: 뷰를 면에 방향 맞추기
   fr_fr: Orienter la vue sur la face
   ru: Расположить вид по границе
   chinese_s: 将视图对齐到面
@@ -9,6 +10,7 @@ title:
   pt_br: Orientar Vista para a Face
 tooltip:
   en_us: Reorients the current 3D view camera, perpendicular to the selected face. This tool will set a sketch plane over the selected face for 3d drawing
+  ko: 현재 3D 뷰 카메라를 선택한 면에 수직으로 재방향 설정합니다. 이 도구는 3D 드로잉을 위해 선택한 면 위에 스케치 평면을 설정합니다
   fr_fr: Réoriente la caméra de vue 3D actuelle, perpendiculairement à la face sélectionnée. Cet outil définira un plan d'esquisse sur la face sélectionnée pour le dessin 3D
   ru: Распологает текущую камеру 3D вида перпедикулярно выбранной грани. Данный инструмент установит плоскость эскиза над выделенной грани для 3D проектирования.
   chinese_s: 重新定向当前三维视图的相机，使其垂直于选定的面。此工具将在选定面上设置一个草图平面，以便进行三维绘制

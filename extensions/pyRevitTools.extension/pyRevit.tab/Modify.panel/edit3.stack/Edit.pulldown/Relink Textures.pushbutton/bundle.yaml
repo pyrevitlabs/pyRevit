@@ -1,5 +1,6 @@
 title:
   en_us: Relink Textures
+  ko: 텍스처 다시 연결
   fr_fr: Relier les textures
   ru: Повторно связать текстуры
   chinese_s: 重链材质
@@ -10,6 +11,7 @@ tooltip:
   en_us: >-
     Step 1: Click to select texture folders. If the location of missing textures is unknown, select the entire drive (e.g. C:).
     Step 2: Click the button again to relink textures. The process may take several minutes.
+  ko: "1단계: 클릭하여 텍스처 폴더를 선택합니다. 누락된 텍스처의 위치를 모르는 경우 전체 드라이브(예: C:)를 선택합니다. 2단계: 버튼을 다시 클릭하여 텍스처를 다시 연결합니다. 이 과정은 몇 분이 걸릴 수 있습니다."
   fr_fr: >-
     Etape 1 : Cliquez pour sélectionner les dossiers de textures. Si l'emplacement des textures manquantes est inconnu, sélectionnez le disque complet (ex : C:).
   ru: >-

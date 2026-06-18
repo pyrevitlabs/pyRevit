@@ -1,6 +1,7 @@
 help_url: '{{docpath}}SJzs9ZxqRYc'
 title:
   en_us: Batch Sheet Maker
+  ko: 일괄 시트 생성
   fr_fr: Création de Feuilles en Groupe
   ru: Пакетное создание листов
   chinese_s: 批量图纸生成器
@@ -11,6 +12,7 @@ tooltip:
   en_us: >-
     Enter sheet names and numbers in the text box and this tool will create all
     at once
+  ko: 텍스트 상자에 시트 이름과 번호를 입력하면 이 도구가 한 번에 모두 생성합니다.
   fr_fr: >-
     Entrez les noms et les numéros de feuilles dans la zone de texte et cet
     outil les créera toutes

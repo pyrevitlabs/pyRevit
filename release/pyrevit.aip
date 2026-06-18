@@ -507,7 +507,6 @@
     <ROW Component="Nett.dll" ComponentId="{997AAC0C-D2F6-4508-8BF5-364DAD5607D1}" Directory_="bin_Dir" Attributes="0" KeyPath="Nett.dll"/>
     <ROW Component="OpenMcdf.dll" ComponentId="{54325791-3BE4-4F6E-9633-98DAD732310E}" Directory_="bin_Dir" Attributes="0" KeyPath="OpenMcdf.dll"/>
     <ROW Component="ProductInformation" ComponentId="{23703FE9-535E-4128-81CE-D1375CCC4B97}" Directory_="APPDIR" Attributes="4" KeyPath="Version"/>
-    <ROW Component="PythonStubsBuilder.dll" ComponentId="{D7CFC3CF-CBBD-456F-87DB-9B4CF83B6EC0}" Directory_="bin_Dir" Attributes="256" KeyPath="PythonStubsBuilder.dll"/>
     <ROW Component="Reference.pdf_1" ComponentId="{AC63891B-07F7-43CD-A59F-EC556332D6B7}" Directory_="tests_Dir" Attributes="0" KeyPath="Reference.pdf_1" Type="0"/>
     <ROW Component="Rhino3dmIO.dll_1" ComponentId="{327F435B-743B-4997-81AF-F32D82336AAD}" Directory_="bin_Dir" Attributes="0" KeyPath="Rhino3dmIO.dll_1"/>
     <ROW Component="System.Collections.Immutable.dll" ComponentId="{60435D40-52DB-413D-8B1F-DDB58ECA52A5}" Directory_="bin_Dir" Attributes="0" KeyPath="System.Collections.Immutable.dll"/>
@@ -852,7 +851,6 @@
     <ROW Component="pyrevitautocomplete.exe" ComponentId="{8D5454E0-B165-4E7F-9645-D4E90E7F051F}" Directory_="bin_Dir" Attributes="256" KeyPath="pyrevitautocomplete.exe"/>
     <ROW Component="pyrevitcore_globals.py" ComponentId="{988FB6D6-DEA9-49EE-AFC0-59EAED2BE70B}" Directory_="lib_1_Dir" Attributes="0" KeyPath="pyrevitcore_globals.py" Type="0"/>
     <ROW Component="pyrevitdoctor.exe" ComponentId="{D2366036-F15A-4205-A9B4-3BE785DA7683}" Directory_="bin_Dir" Attributes="0" KeyPath="pyrevitdoctor.exe"/>
-    <ROW Component="pyrevitstubsbuilder.exe" ComponentId="{52379BF5-41B2-4570-A034-2AF417600F73}" Directory_="bin_Dir" Attributes="256" KeyPath="pyrevitstubsbuilder.exe"/>
     <ROW Component="pyrevittelemetryserver.exe" ComponentId="{B6854845-1733-4046-B422-3AC3D25C2146}" Directory_="bin_Dir" Attributes="256" KeyPath="pyrevittelemetryserver.exe"/>
     <ROW Component="pyrevittoast.exe" ComponentId="{EF1D7E18-9E01-4F5C-A727-04BCFFA31AD6}" Directory_="bin_Dir" Attributes="256" KeyPath="pyrevittoast.exe"/>
     <ROW Component="python3_compat.py" ComponentId="{4039D4D2-4195-402A-B9B4-0EF16145B52C}" Directory_="munch_Dir" Attributes="0" KeyPath="python3_compat.py" Type="0"/>
@@ -2332,7 +2330,7 @@
     <ROW File="pyRevitLabs.MahAppsMetro.dll" Component_="pyRevitLabs.MahAppsMetro.dll" FileName="PYREVI~8.DLL|pyRevitLabs.MahAppsMetro.dll" Attributes="0" SourcePath="..\bin\pyRevitLabs.MahAppsMetro.dll" SelfReg="false"/>
     <ROW File="pyRevitLabs.TargetApps.AutoCAD.dll" Component_="pyRevitLabs.TargetApps.AutoCAD.dll" FileName="PYREVI~9.DLL|pyRevitLabs.TargetApps.AutoCAD.dll" Attributes="0" SourcePath="..\bin\pyRevitLabs.TargetApps.AutoCAD.dll" SelfReg="false"/>
     <ROW File="pyRevitLabs.TargetApps.Navisworks.dll" Component_="pyRevitLabs.TargetApps.Navisworks.dll" FileName="PYREV~10.DLL|pyRevitLabs.TargetApps.Navisworks.dll" Attributes="0" SourcePath="..\bin\pyRevitLabs.TargetApps.Navisworks.dll" SelfReg="false"/>
-    <ROW File="pyrevit_cli.ico" Component_="LibGit2Sharp.dll.config" FileName="PYREVI~2.ICO|pyrevit_cli.ico" Attributes="0" SourcePath="..\bin\pyrevit_cli.ico" SelfReg="false"/>
+    <ROW File="pyrevit_cli.ico" Component_="LibGit2Sharp.dll.config" FileName="PYREVI~2.ICO|pyrevit_cli.ico" Attributes="0" SourcePath="..\release\bin-assets\pyrevit_cli.ico" SelfReg="false"/>
     <ROW File="pyRevitLabs.NLog.dll" Component_="pyRevitLabs.NLog.dll" FileName="PYREV~11.DLL|pyRevitLabs.NLog.dll" Attributes="0" SourcePath="..\bin\pyRevitLabs.NLog.dll" SelfReg="false"/>
     <ROW File="pyRevitLabs.PyRevit.dll" Component_="pyRevitLabs.PyRevit.dll" FileName="PYREV~12.DLL|pyRevitLabs.PyRevit.dll" Attributes="0" SourcePath="..\bin\pyRevitLabs.PyRevit.dll" SelfReg="false"/>
     <ROW File="pyrevit_outputwindow.png" Component_="LibGit2Sharp.dll.config" FileName="PYREVI~1.PNG|pyrevit_outputwindow.png" Attributes="0" SourcePath="..\bin\pyrevit_outputwindow.png" SelfReg="false"/>
@@ -2689,8 +2687,6 @@
     <ROW File="bundle.yaml_32" Component_="_layout_6" FileName="BUNDLE~1.YAM|bundle.yaml" Attributes="0" SourcePath="..\extensions\pyRevitTags.extension\pyRevit.tab\bundle.yaml" SelfReg="false"/>
     <ROW File="bundle.yaml_33" Component_="_layout_5" FileName="BUNDLE~1.YAM|bundle.yaml" Attributes="0" SourcePath="..\extensions\pyRevitTags.extension\pyRevit.tab\Packages &amp; Tags.panel\bundle.yaml" SelfReg="false"/>
     <ROW File="bundle.yaml_34" Component_="_layout_17" FileName="BUNDLE~1.YAM|bundle.yaml" Attributes="0" SourcePath="..\extensions\pyRevitTags.extension\pyRevit.tab\Packages &amp; Tags.panel\tagstack.stack\bundle.yaml" SelfReg="false"/>
-    <ROW File="pyrevitstubsbuilder.exe" Component_="pyrevitstubsbuilder.exe" FileName="PYREVI~4.EXE|pyrevit-stubsbuilder.exe" Attributes="0" SourcePath="..\bin\pyrevit-stubsbuilder.exe" SelfReg="false" DigSign="true"/>
-    <ROW File="PythonStubsBuilder.dll" Component_="PythonStubsBuilder.dll" FileName="PYTHON~1.DLL|PythonStubsBuilder.dll" Attributes="0" SourcePath="..\bin\PythonStubsBuilder.dll" SelfReg="false"/>
     <ROW File="CLREngine.cs" Component_="baseclasses.cs" FileName="CLRENG~1.CS|CLREngine.cs" Attributes="0" SourcePath="..\pyrevitlib\pyrevit\runtime\CLREngine.cs" SelfReg="false"/>
     <ROW File="ContentEngine.cs" Component_="baseclasses.cs" FileName="CONTEN~1.CS|ContentEngine.cs" Attributes="0" SourcePath="..\pyrevitlib\pyrevit\runtime\ContentEngine.cs" SelfReg="false"/>
     <ROW File="CPythonEngine.cs" Component_="baseclasses.cs" FileName="CPYTHO~1.CS|CPythonEngine.cs" Attributes="0" SourcePath="..\pyrevitlib\pyrevit\runtime\CPythonEngine.cs" SelfReg="false"/>
@@ -3248,7 +3244,6 @@
     <ROW Feature_="MainFeature" Component_="Nett.dll"/>
     <ROW Feature_="MainFeature" Component_="OpenMcdf.dll"/>
     <ROW Feature_="MainFeature" Component_="ProductInformation"/>
-    <ROW Feature_="MainFeature" Component_="PythonStubsBuilder.dll"/>
     <ROW Feature_="MainFeature" Component_="Reference.pdf_1"/>
     <ROW Feature_="MainFeature" Component_="Rhino3dmIO.dll_1"/>
     <ROW Feature_="MainFeature" Component_="System.Windows.Interactivity.dll"/>
@@ -3548,7 +3543,6 @@
     <ROW Feature_="MainFeature" Component_="pyrevitargs"/>
     <ROW Feature_="MainFeature" Component_="pyrevitautocomplete.exe"/>
     <ROW Feature_="MainFeature" Component_="pyrevitcore_globals.py"/>
-    <ROW Feature_="MainFeature" Component_="pyrevitstubsbuilder.exe"/>
     <ROW Feature_="MainFeature" Component_="pyrevittelemetryserver.exe"/>
     <ROW Feature_="MainFeature" Component_="pyrevittoast.exe"/>
     <ROW Feature_="MainFeature" Component_="python3_compat.py"/>
