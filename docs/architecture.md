@@ -63,7 +63,7 @@ There are multiple versions of `pyRevitLoader.dll` to support:
 
 - different Revit versions:
     - One for Revit 2025 and newer, built with .NET 8.
-    - Another for older Revit versions, built with the .NET Framework.
+    - Another for Revit 2021-2024, built with the .NET Framework.
 - different IronPython versions; to this date:
     - version 2.7.12, the default one
     - version 3.4.0, more recent but not fully tested.
