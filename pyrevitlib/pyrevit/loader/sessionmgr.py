@@ -130,9 +130,6 @@ def _perform_onsessionloadstart_ops():
     # reset the list of assemblies loaded under pyRevit session
     sessioninfo.set_loaded_pyrevit_assemblies([])
 
-    # init executor
-    runtime_types.ScriptExecutor.Initialize()
-
     # init routes
     routes.init()
 
@@ -315,20 +312,9 @@ def load_session():
     return _invoke_csharp_loadsession()
 
 
-def _perform_onsessionreload_ops():
-    pass
-
-
-def _perform_onsessionreloadcomplete_ops():
-    pass
-
-
 def reload_pyrevit():
-    _perform_onsessionreload_ops()
     mlogger.info("Reloading....")
-    session_Id = load_session()
-    _perform_onsessionreloadcomplete_ops()
-    return session_Id
+    return load_session()
 
 
 # -----------------------------------------------------------------------------
