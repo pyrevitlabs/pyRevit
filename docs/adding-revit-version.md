@@ -236,10 +236,15 @@ If needed, add new `_OR_GREATER` constants in `dev/Directory.Build.targets`:
 
 ### 8.1 Build the products
 
+The build is driven by the C# ModularPipelines project under `build/`. Run from `build/`:
+
 ```shell
-pipenv run pyrevit build labs Debug
-pipenv run pyrevit build products Debug
+cd build
+dotnet run -c Debug -- ci
+cd ..
 ```
+
+For Release stamping on the new Revit version, run with `Build__Channel=release` (or `wip`) instead of the default `none`. See [`build/README.md`](../build/README.md) for full options.
 
 ### 8.2 Attach and test
 
