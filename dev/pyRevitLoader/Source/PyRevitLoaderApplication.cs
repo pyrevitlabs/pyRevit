@@ -1,3 +1,20 @@
+/*
+   ██▓███▓██   ██▓ ██▀███  ▓█████ ██▒   █▓ ██▓▄▄▄█████▓
+  ▓██░  ██▒██  ██▒▓██ ▒ ██▒▓█   ▀▓██░   █▒▓██▒▓  ██▒ ▓▒
+  ▓██░ ██▓▒▒██ ██░▓██ ░▄█ ▒▒███   ▓██  █▒░▒██▒▒ ▓██░ ▒░
+  ▒██▄█▓▒ ▒░ ▐██▓░▒██▀▀█▄  ▒▓█  ▄  ▒██ █░░░██░░ ▓██▓ ░
+  ▒██▒ ░  ░░ ██▒▓░░██▓ ▒██▒░▒████▒  ▒▀█░  ░██░  ▒██▒ ░
+  ▒▓▒░ ░  ░ ██▒▒▒ ░ ▒▓ ░▒▓░░░ ▒░ ░  ░ ▐░  ░▓    ▒ ░░
+  ░▒ ░    ▓██ ░▒░   ░▒ ░ ▒░ ░ ░  ░  ░ ░░   ▒ ░    ░
+  ░░      ▒ ▒ ░░    ░░   ░    ░       ░░   ▒ ░  ░
+          ░ ░        ░        ░  ░     ░   ░
+          ░ ░                         ░
+
+  This is the entry point for pyRevit. Revit loads the PyRevitLoader.dll addon
+  at startup, and PyRevitLoaderApplication.OnStartup calls into the C# session
+  manager to build the UI and the button commands.
+ */
+
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.UI;
 using pyRevitAssemblyBuilder.AssemblyMaker;
