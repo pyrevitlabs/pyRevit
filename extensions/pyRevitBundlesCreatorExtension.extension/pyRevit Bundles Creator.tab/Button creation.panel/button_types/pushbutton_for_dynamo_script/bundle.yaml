@@ -2,6 +2,7 @@ engine:
   clean: true
 title:
   en_us: Pushbutton for Dynamo Script
+  ko: Dynamo 스크립트 푸시버튼.
   fr_fr: Bouton pour Dynamo Script
   ru: Кнопка для Dynamo Script
   chinese_s: Pushbutton for Dynamo Script
@@ -10,6 +11,7 @@ title:
   pt_br: Botão para Script do Dynamo
 tooltip:
   en_us: Pushbutton for Dynamo Script
+  ko: Dynamo 스크립트 푸시버튼.
   fr_fr: Bouton pour Dynamo Script
   ru: Кнопка для Dynamo Script
   chinese_s: Pushbutton for Dynamo Script

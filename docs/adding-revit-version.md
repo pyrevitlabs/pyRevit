@@ -102,7 +102,7 @@ This DLL is required for the dockable console functionality in Revit 2018+.
 
 ## Step 4: Update Host Registry
 
-Add entries for the new Revit builds in `bin/pyrevit-hosts.json`.
+Add entries for the new Revit builds in [`release/pyrevit-hosts.json`](../release/pyrevit-hosts.json). CI copies this file into `bin/` at build time.
 
 Example entry:
 
@@ -263,7 +263,7 @@ pipenv run pyrevit build products Debug
 | `dev/Directory.Build.targets` | Version constants and framework mappings |
 | `dev/Directory.Build.props` | Common project properties and NuGet packages |
 | `dev/libs/Revit/YYYY/` | Version-specific DLLs (Xceed.Wpf.AvalonDock) |
-| `bin/pyrevit-hosts.json` | Revit build registry for version detection |
+| `release/pyrevit-hosts.json` | Revit build registry for version detection (staged to `bin/` by CI) |
 | `.github/workflows/ci.yml`, `wip.yml`, `release.yml` | CI/CD pipeline configuration |
 | `release/CodeDependencies.iss` | .NET runtime installer procedures |
 | `release/pyrevit.iss` | Main pyRevit installer script |

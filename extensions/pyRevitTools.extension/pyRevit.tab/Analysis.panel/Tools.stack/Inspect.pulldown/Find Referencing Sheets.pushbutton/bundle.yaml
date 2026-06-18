@@ -1,5 +1,6 @@
 title:
   en_us: Find Referencing Sheets
+  ko: 참조 시트 찾기
   fr_fr: Trouver les feuilles qui référencent la vue
   ru: Найти связанные листы
   chinese_s: 查找引用图纸
@@ -11,6 +12,7 @@ tooltip:
     Find all sheets referencing the current view
 
     Especially useful for finding legends
+  ko: 현재 뷰를 참조하는 모든 시트 찾기
   fr_fr: >-
     Trouver toutes les vues qui référencent la vue active
 

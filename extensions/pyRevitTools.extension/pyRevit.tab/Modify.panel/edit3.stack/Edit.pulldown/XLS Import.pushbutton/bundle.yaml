@@ -1,5 +1,6 @@
 title:
   en_us: Import Parameters from Excel
+  ko: Excel에서 매개변수 가져오기
   fr_fr: Importer les paramètres depuis Excel
   ru: Импорт параметров из Excel
   chinese_s: 从 Excel 导入参数
@@ -11,6 +12,7 @@ tooltip:
     Imports element parameter values from a previously exported Excel file.
     The file must contain valid element IDs and parameter values in configured unittype.
     Read-only and unsupported parameters will be skipped. User-modifiable status is ignored.
+  ko: 이전에 내보낸 Excel 파일에서 요소 매개변수 값을 가져옵니다.
   fr_fr: >-
     Importe les valeurs des paramètres d’éléments depuis un fichier Excel précédemment exporté.
     Le fichier doit contenir des identifiants d’éléments valides et des valeurs de paramètres dans le type d’unité configuré.

@@ -1,5 +1,6 @@
 title:
   en_us: Creates print set from selected views
+  ko: 선택 뷰 인쇄 세트 생성
   fr_fr: Créer des impressions depuis les vues sélectionnées
   ru: Создать набор печати из выделенных видов
   chinese_s: 从选定视图创建打印集
@@ -8,6 +9,7 @@ title:
   pt_br: Criar Conjunto de Impressão a Partir de Vistas Selecionadas
 tooltip:
   en_us: Creates print set from selected views
+  ko: 선택 뷰 인쇄 세트 생성
   fr_fr: Créer des impressions depuis les vues sélectionnées
   ru: Создает набор печати из выделенных видов.
   chinese_s: 从选定视图创建打印集

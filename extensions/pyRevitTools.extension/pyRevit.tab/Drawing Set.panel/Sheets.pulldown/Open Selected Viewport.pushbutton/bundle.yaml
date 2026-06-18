@@ -1,5 +1,6 @@
 title:
   en_us: Open Selected Viewports
+  ko: 선택한 뷰포트 열기
   fr_fr: Ouvrir les Vues Sélectionnées
   ru: Откройте выделенные видовые экраны
   chinese_s: 打开选定视口
@@ -11,6 +12,7 @@ tooltip:
     Opens the view associated to the selected viewport. You can assign a
     shortcut to this tool and this is a quick way top open the views when
     working on sheets
+  ko: 선택한 뷰포트와 연결된 뷰를 엽니다.
   fr_fr: >-
     Ouvre la vue associée à la fenêtre sélectionnée. Vous pouvez attribuer un
     raccourci à cet outil et c'est un moyen rapide d'ouvrir les vues lorsque

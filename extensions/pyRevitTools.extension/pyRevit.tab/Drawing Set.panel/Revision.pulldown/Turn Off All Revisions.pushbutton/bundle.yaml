@@ -1,5 +1,6 @@
 title:
   en_us: Turn Off all revisions
+  ko: 모든 수정 사항 끄기
   fr_fr: Eteindre toutes les révisions
   ru: Отключить все изменения
   chinese_s: 关闭所有修订
@@ -8,6 +9,7 @@ title:
   pt_br: Desativar Todas as Revisões
 tooltip:
   en_us: Sets the revision visibility parameter to None for all revisions
+  ko: 모든 수정 사항의 수정 가시성 매개변수를 없음으로 설정합니다
   fr_fr: Définit le paramètre de visibilité des révisions sur Aucun pour toutes les révisions
   ru: Устанавливает параметр видимости изменений на 'Нет' для всех изменений.
   chinese_s: 将所有修订的修订可见性参数设置为“无”

@@ -1,6 +1,7 @@
 title:
   en_us: |-
     Search Views By Filter
+  ko: 필터로 뷰 검색
   fr_fr: |-
     Rechercher les vues par filtrage
   ru: Найти виды по фильтру
@@ -14,6 +15,7 @@ title:
 tooltip:
   en_us: |-
     Lists views based on a search option
+  ko: 검색 옵션을 기반으로 뷰를 나열합니다.
   fr_fr: |-
     Lister les vues à partir d'options de recherche
   ru: Показывает все виды на основе параметра поиска.

@@ -1,5 +1,6 @@
 title:
   en_us: Wipe Model Components
+  ko: 모델 구성요소 삭제
   fr_fr: Supprimer les éléments de modèle
   ru: Очистить компоненты модели
   chinese_s: 清除模型构件
@@ -9,6 +10,7 @@ title:
 tooltip:
   en_us: >-
     This tools helps you to remove extra unnecessary information  in the model when sending to a contractor or consultant.  Run the tools and select the categories that you'd like to  be removed from the model. Then hit "Wipe Model" and the  process will go through each category and will remove them.  You might see some errors or warnings from Revit (since  this is a very destructive) process but generally they  should not crash the script.
+  ko: 도급업체나 컨설턴트에게 전송할 때 모델의 불필요한 추가 정보를 제거하는 데 도움을 줍니다. 도구를 실행하고 모델에서 제거할 카테고리를 선택합니다. 그런 다음 "모델 삭제"를 누르면 각 카테고리를 처리하여 제거합니다. Revit에서 일부 오류나 경고가 표시될 수 있지만(매우 파괴적인 작업이므로) 일반적으로 스크립트가 충돌하지는 않습니다.
   fr_fr: >-
     Cet outil vous aide à supprimer des informations  supplémentaires inutiles dans le modèle lors de l'envoi à  un entrepreneur ou un consultant. Exécutez les outils et  sélectionnez les catégories que vous souhaitez supprimer  du modèle. Appuyez ensuite sur "Effacer le modèle" et le  processus passera par chaque catégorie et les supprimera.  Vous pouvez voir des erreurs ou des avertissements de Revit  (puisqu'il s'agit d'un processus très destructeur),  mais en général, ils ne devraient pas faire planter le script.
   ru: >-

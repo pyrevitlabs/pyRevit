@@ -8,12 +8,12 @@ from pyrevit.revit.events import execute_in_revit_context
 from pyrevit.framework import ComponentModel, wpf, Controls, Uri, UriKind, ResourceDictionary
 from pyrevit.compat import get_elementid_value_func
 
-from match_utils import (
+from match.match_utils import (
     PropKeyValue,
     get_source_properties,
     paste_props,
 )
-from filter_utils import (
+from match.filter_utils import (
     dissect_parameter_filter,
     get_color_source_parameter,
     get_most_common_ogs_brush,

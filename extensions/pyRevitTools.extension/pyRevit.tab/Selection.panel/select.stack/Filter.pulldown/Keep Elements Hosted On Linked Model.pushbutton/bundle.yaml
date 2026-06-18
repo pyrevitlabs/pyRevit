@@ -1,5 +1,6 @@
 title:
   en_us: Elements Hosted On Linked Model
+  ko: 링크된 모델에 호스트된 요소
   fr_fr: Eléments hébergés sur un modèle lié
   ru: Удержать элементы рамещенные на связанной модели
   chinese_s: 基于链接模型的图元
@@ -10,6 +11,7 @@ tooltip:
   en_us: >-
     Keeps elements hosted on a linked model surface in current selection.
     If nothing is selected, pick a region to filter from.
+  ko: 현재 선택 항목에서 링크된 모델 면에 호스트된 요소를 유지합니다.
   fr_fr: >-
     Conserve les éléments hébergés sur une surface de modèle lié dans la sélection actuelle.
     Si rien n'est sélectionné, délimitez une zone à filtrer.

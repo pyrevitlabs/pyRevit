@@ -1,5 +1,6 @@
 title:
   en_us: Copy State
+  ko: 상태 복사
   fr_fr: Copier l'état
   ru: Копировать
   chinese_s: 复制状态
@@ -13,6 +14,7 @@ tooltip:
     view to memory. e.g. Visibility Graphics settings or
 
     Zoom state. Run it and see how it works
+  ko: 활성 뷰의 원하는 매개변수 상태를 복사합니다.
   fr_fr: >-
     Copie l'état du paramètre souhaité de la vue
 

@@ -1,5 +1,6 @@
 title:
   en_us: Synchronize
+  ko: 동기화
   fr_fr: Synchroniser
   ru: Синхронизация
   chinese_s: 同步
@@ -11,6 +12,10 @@ tooltip:
     Replace the sync button
 
     Shift+Click: Enable or disable closing of inactive windows and activating the starting view
+  ko: >-
+    동기화 버튼을 교체합니다
+
+    Shift+클릭: 비활성 창 닫기 및 시작 뷰 활성화를 켜거나 끕니다
   fr_fr: >-
     Remplace le bouton de synchronisation
 

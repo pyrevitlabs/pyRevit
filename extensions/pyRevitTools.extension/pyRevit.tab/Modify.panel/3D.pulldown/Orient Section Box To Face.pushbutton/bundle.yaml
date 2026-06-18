@@ -1,6 +1,7 @@
 help_url: '{{docpath}}b050tpp4vCE&t=42s'
 title:
   en_us: Orient section box to face
+  ko: 단면 상자를 면에 방향 맞추기
   fr_fr: Orienter la zone de coupe sur la face
   ru: Расположить границы 3D вида по грани
   chinese_s: 将剖面框对齐到面
@@ -9,6 +10,7 @@ title:
   pt_br: Orientar Caixa de Corte para a Face
 tooltip:
   en_us: Aligns the section box of the current 3D view to selected face
+  ko: 현재 3D 뷰의 단면 상자를 선택한 면에 정렬합니다
   fr_fr: Aligne la zone de coupe de la vue 3D actuelle sur la face sélectionnée
   ru: Выравнивает границы 3D вида текущего 3D вида по выделенной границе.
   chinese_s: 将当前三维视图的剖面框与选定的面对齐

@@ -1,5 +1,6 @@
 title:
   en_us: Wipe Unused View Templates
+  ko: 사용되지 않는 뷰 템플릿 삭제
   fr_fr: Supprimer les gabarits de vue inutilisés
   ru: Очистить неиспользуемые шаблоны видов
   chinese_s: 清除未使用的视图样板
@@ -8,6 +9,7 @@ title:
   pt_br: Remover Modelos de Vista Não Utilizados
 tooltip:
   en_us: Deletes all unused view templates (Any view template that has not been assigned to a view)
+  ko: 사용되지 않는 모든 뷰 템플릿을 삭제합니다(뷰에 지정되지 않은 모든 뷰 템플릿)
   fr_fr: Supprime tous les gabarits de vue inutilisés (Tout gabarit de vue qui n'a pas été affecté à une vue)
   ru: Удаляет все неиспользованные шаблоны видов (Любой шаблон вида, не назначенный к виду).
   chinese_s: 删除所有未使用的视图样板（即未分配给任何视图的视图样板）

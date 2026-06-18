@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
-from pyrevit import DB
 from pyrevit import script
 from pyrevit import labs
+from pyrevit.compat import get_elementid_from_value_func
 
 
 
 
 output = script.get_output()
 logger = script.get_logger()
+get_elementid_from_value = get_elementid_from_value_func()
 
 output.set_title('Output Tests')
 
@@ -24,7 +25,7 @@ output.print_html('<div style="background:green">{} END</div>'.format('Test '*25
 
 output.print_md('**Testing linkify:**')
 print('Clickable element id: {}'
-      .format(output.linkify(DB.ElementId(1557))))
+      .format(output.linkify(get_elementid_from_value(1557))))
 
 output.print_md('**Testing emojify:**')
 emoji_str = ''

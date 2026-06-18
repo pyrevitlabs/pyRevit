@@ -26,6 +26,7 @@ from pyrevit.loader import sessioninfo
 from pyrevit.loader import asmmaker
 from pyrevit.loader import uimaker
 from pyrevit.loader import hooks
+from pyrevit.labs import PyRevit
 from pyrevit.userconfig import user_config
 from pyrevit.extensions import extensionmgr
 from pyrevit.versionmgr import updater
@@ -75,11 +76,14 @@ def _clear_running_engines():
 
 
 def _setup_output():
-    # create output window and assign handle
-    out_window = runtime.types.ScriptConsole()
+    # route C#-side NLog messages into the session output window
+    runtime_types.ScriptOutput.ConfigureLogging()
+    # create the runtime-owned singleton output window and assign handle
+    out = runtime_types.ScriptOutput.GetDefault()
+    out_window = out.window
     # protect from close_other_outputs triggered by startup-script windows
     try:
-        out_window.IsSessionOutput = True
+        out.set_session_output(True)
     except Exception:
         pass
     runtime_info = sessioninfo.get_runtime_info()
@@ -92,19 +96,20 @@ def _setup_output():
     # create output stream and set stdout to it
     # we're not opening the output window here.
     # The output stream will open the window if anything is being printed.
-    outstr = runtime.types.ScriptIO(out_window)
+    outstr = out.output_stream
     sys.stdout = outstr
     # sys.stderr = outstr
-    stdout_hndlr = logger.get_stdout_hndlr()
-    stdout_hndlr.stream = outstr
 
-    return out_window
+    # return the runtime wrapper so self_destruct works on first load too
+    return out
 
 
 def _cleanup_output():
+    try:
+        runtime_types.ScriptOutput.GetDefault().set_session_output(False)
+    except Exception:
+        pass
     sys.stdout = None
-    stdout_hndlr = logger.get_stdout_hndlr()
-    stdout_hndlr.stream = None
 
 
 # -----------------------------------------------------------------------------
@@ -306,7 +311,7 @@ def _new_session_csharp():
         # Call the LoadSession method with logger and build strategy
         mlogger.info("Loading session using C# LoadSession method...")
         result = load_session_method.Invoke(
-            None, framework.Array[object]([mlogger, build_strategy])
+            None, framework.Array[object]([build_strategy])
         )
 
         # Check if the result indicates success (Result.Succeeded = 0)
@@ -374,20 +379,28 @@ def load_session():
     Returns:
         (str): sesion uuid
     """
+    # clear the session attachment cache so a re-attached clone is picked up
+    # on reload. must run before setup_runtime_vars() which is the first
+    # attachment consumer
+    PyRevit.PyRevitAttachments.ClearAttachmentCache()
+
     # setup runtime environment variables
     sessioninfo.setup_runtime_vars()
+
+    # start timing before output setup so the reported load time reflects the
+    # full user wait, including first-load output window construction
+    timer = Timer()
 
     # the loader dll addon, does not create an output window
     # if an output window is not provided, create one
     if EXEC_PARAMS.first_load:
         output_window = _setup_output()
+        output_setup_time = timer.get_time()
     else:
         from pyrevit import script
 
         output_window = script.get_output()
-
-    # initialize timer to measure load time
-    timer = Timer()
+        output_setup_time = None
 
     # perform pre-load tasks
     _perform_onsessionloadstart_ops()
@@ -424,17 +437,18 @@ def load_session():
     endtime = timer.get_time()
     success_emoji = ":OK_hand:" if endtime < 3.00 else ":thumbs_up:"
     mlogger.info("Load time: %s seconds %s", endtime, success_emoji)
+    if output_setup_time is not None:
+        mlogger.debug(
+            "Load breakdown: output setup %.3fs | session build %.3fs",
+            output_setup_time,
+            endtime - output_setup_time,
+        )
 
     # if everything went well, self destruct
     try:
         timeout = user_config.startuplog_timeout
         if timeout > 0 and not logger.loggers_have_errors():
-            if EXEC_PARAMS.first_load:
-                # output_window is of type ScriptConsole
-                output_window.SelfDestructTimer(timeout)
-            else:
-                # output_window is of type PyRevitOutputWindow
-                output_window.self_destruct(timeout)
+            output_window.self_destruct(timeout)
     except Exception as imp_err:
         mlogger.error("Error setting up self_destruct on output window | %s", imp_err)
 
@@ -625,6 +639,21 @@ def find_pyrevitcmd(pyrevitcmd_unique_id):
     Returns:
         (type):Type for the command with matching unique name
     """
+    def _normalize_lookup_id(value):
+        if not value:
+            return ""
+
+        normalized = []
+        for char in str(value).lower():
+            normalized.append(char if char.isalnum() else "_")
+
+        if normalized and normalized[0].isdigit():
+            normalized.insert(0, "_")
+
+        return "".join(normalized)
+
+    lookup_id = _normalize_lookup_id(pyrevitcmd_unique_id)
+
     # go through assmebles loaded under current pyRevit session
     # and try to find the command
     mlogger.debug("Searching for pyrevit command: %s", pyrevitcmd_unique_id)
@@ -635,7 +664,10 @@ def find_pyrevitcmd(pyrevitcmd_unique_id):
             mlogger.debug("Found assm: %s", loaded_assm_name)
             for pyrvt_type in loaded_assm[0].GetTypes():
                 mlogger.debug("Found Type: %s", pyrvt_type)
-                if pyrvt_type.FullName == pyrevitcmd_unique_id:
+                if pyrvt_type.FullName == pyrevitcmd_unique_id \
+                        or pyrvt_type.Name == pyrevitcmd_unique_id \
+                        or _normalize_lookup_id(pyrvt_type.FullName) == lookup_id \
+                        or _normalize_lookup_id(pyrvt_type.Name) == lookup_id:
                     mlogger.debug("Found pyRevit command in %s", loaded_assm_name)
                     return pyrvt_type
             mlogger.debug("Could not find pyRevit command.")
@@ -657,7 +689,7 @@ def create_tmp_commanddata():
 
 
 def execute_command_cls(
-    extcmd_type, arguments=None, config_mode=False, exec_from_ui=False
+    extcmd_type, arguments=None, config_mode=False, exec_from_ui=True
 ):
 
     command_instance = extcmd_type()
@@ -716,6 +748,8 @@ def execute_extension_startup_script(script_path, ext_name, sys_paths=None):
     script_data.CommandBundle = ""
     script_data.CommandExtension = ext_name
     script_data.HelpSource = ""
+    # route this script's output to the shared session output window
+    script_data.IsStartupScript = True
 
     script_runtime_cfg = runtime.types.ScriptRuntimeConfigs()
     script_runtime_cfg.CommandData = create_tmp_commanddata()

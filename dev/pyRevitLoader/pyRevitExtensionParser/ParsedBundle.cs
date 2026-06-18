@@ -32,6 +32,9 @@ namespace pyRevitExtensionParser
         /// Whether this is a NOT rule (inverted logic)
         /// </summary>
         public bool IsNot => RuleType?.StartsWith("not_") == true;
+
+        private string BaseRuleType =>
+            IsNot && RuleType.Length > 4 ? RuleType.Substring(4) : RuleType;
         
         /// <summary>
         /// Gets the separator character for this rule type
@@ -40,8 +43,7 @@ namespace pyRevitExtensionParser
         {
             get
             {
-                var baseType = IsNot ? RuleType.Substring(4) : RuleType;
-                switch (baseType?.ToLowerInvariant())
+                switch (BaseRuleType?.ToLowerInvariant())
                 {
                     case "any": return '|';
                     case "exact": return ';';
@@ -59,8 +61,14 @@ namespace pyRevitExtensionParser
         {
             if (Items == null || Items.Count == 0)
                 return string.Empty;
-                
+
             var joined = string.Join(Separator.ToString(), Items);
+            if (string.Equals(BaseRuleType, "exact", System.StringComparison.OrdinalIgnoreCase)
+                && Items.Count == 1)
+            {
+                joined += Separator;
+            }
+
             var formatted = "(" + joined + ")";
             
             return IsNot ? "!" + formatted : formatted;
@@ -338,33 +346,30 @@ namespace pyRevitExtensionParser
         /// </returns>
         public string GetFormattedContext()
         {
-            // If we have context rules, format them
-            if (ContextRules != null && ContextRules.Count > 0)
+            if ((ContextItems != null && ContextItems.Count > 0)
+                || (ContextRules != null && ContextRules.Count > 0))
             {
                 var formattedRules = new List<string>();
+                if (ContextItems != null && ContextItems.Count > 0)
+                {
+                    formattedRules.Add("(" + string.Join("&", ContextItems) + ")");
+                }
+
                 foreach (var rule in ContextRules)
                 {
                     formattedRules.Add(rule.ToFormattedString());
                 }
-                // Join multiple rules with & (ALL)
+
                 return string.Join("&", formattedRules);
             }
-            
-            // If we have context items (list format), join with & (ALL must match)
-            if (ContextItems != null && ContextItems.Count > 0)
-            {
-                return "(" + string.Join("&", ContextItems) + ")";
-            }
-            
-            // Simple string context - wrap in parentheses if not already
+
             if (!string.IsNullOrEmpty(Context))
             {
                 if (Context.StartsWith("(") && Context.EndsWith(")"))
                     return Context;
                 return "(" + Context + ")";
             }
-            
-            // No context defined - return null (button always available, no availability class needed)
+
             return null;
         }
 

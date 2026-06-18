@@ -1,5 +1,6 @@
 title:
   en_us: List DWGs
+  ko: DWG 목록
   fr_fr: Lister les fichier DWG
   ru: Показать DWG
   chinese_s: 列出 DWG 文件
@@ -8,6 +9,7 @@ title:
   pt_br: Listar Dwgs
 tooltip:
   en_us: Lists all linked and imported DWG instances with worksets and creator
+  ko: 워크셋 및 작성자 정보와 함께 연결되고 가져온 모든 DWG 인스턴스를 나열합니다
   fr_fr: Répertorie toutes les instances DWG liées et importées avec les sous-projets et le créateur
   ru: Показывает все сявзанные и импортированные экземпляры DWG с рабочими наборами и создателем.
   chinese_s: 列出所有链接和导入的 DWG 实例，并显示其工作集和创建者

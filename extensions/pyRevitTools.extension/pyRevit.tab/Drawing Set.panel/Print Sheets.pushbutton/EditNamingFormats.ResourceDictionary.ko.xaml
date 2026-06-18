@@ -1,0 +1,18 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">명명 형식</system:String>
+
+    <system:String x:Key="NamingFormats">명명 형식</system:String>
+    <system:String x:Key="Save">저장</system:String>
+    <system:String x:Key="Duplicate">복제</system:String>
+    <system:String x:Key="Delete">삭제</system:String>
+
+    <system:String x:Key="FormatTitle">형식 제목</system:String>
+    <system:String x:Key="FormatTitleDescription">이 특정 명명 형식의 이름입니다. 쉽게 이해하고 찾을 수 있는 설명적인 이름을 지정하세요. 예: "서울시 전자 허가"</system:String>
+
+    <system:String x:Key="Template">템플릿</system:String>
+    <system:String x:Key="TemplateDescription">실제 명명 형식 템플릿입니다. 각 "{}" (태그)는 PDF 파일 이름 생성 시 채워질 값을 나타냅니다. 아래 나열된 태그 중에서 선택하여 이 상자로 드래그하세요.</system:String>
+
+    <system:String x:Key="DragAndDropHint">아래 포맷터에서 드래그 앤 드롭하세요. 포맷터 위에 마우스를 올리면 설명이 표시됩니다</system:String>
+</ResourceDictionary>

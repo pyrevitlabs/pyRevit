@@ -1,5 +1,6 @@
 title:
   en_us: Load Families
+  ko: 패밀리 로드
   fr_fr: Charger les familles
   ru: Загрузить семейства
   chinese_s: 加载族
@@ -11,6 +12,7 @@ tooltip:
     This tool gives you the option to load multiple Families from a folder and its subfolders.
 
     You can choose to load the Family with all its Types, or select Types for each Family.
+  ko: 폴더와 하위 폴더에서 여러 패밀리를 로드하는 옵션을 제공합니다.
   fr_fr: >-
     Cet outil vous donne la possibilité de charger plusieurs familles à partir d'un dossier et de ses sous-dossiers. 
 

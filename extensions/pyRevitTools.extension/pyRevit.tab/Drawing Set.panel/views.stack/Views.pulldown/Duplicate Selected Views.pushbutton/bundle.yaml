@@ -1,6 +1,7 @@
 title:
   en_us: |-
     Duplicate Selected Views
+  ko: 선택한 뷰 복제
   fr_fr: |-
     Dupliquer les vues sélectionnées
   ru: |-
@@ -15,6 +16,7 @@ title:
 tooltip:
   en_us: |-
     Batch duplicates the selected views with or without detailing
+  ko: 선택한 뷰를 상세도 포함 여부에 관계없이 일괄 복제합니다.
   fr_fr: |-
     Dupliquer les vues sélectionnées avec ou sans détails
   ru: Пакетно копирует выделенные виды с/без детализации.

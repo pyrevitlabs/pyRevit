@@ -1,5 +1,6 @@
 title:
   en_us: Merge / Adjust text elements
+  ko: 텍스트 요소 병합/조정
   fr_fr: Remplacement texte
   ru: Изменить текст
   chinese_s: 合并/调整文本元素
@@ -8,6 +9,7 @@ title:
   pt_br: Combinar / Ajustar Elementos de Texto
 tooltip:
   en_us: Provides options for merging or adjusting the style of selected text notes
+  ko: 선택한 텍스트 메모의 병합 또는 스타일 조정 옵션을 제공합니다
   fr_fr: Donne des options pour le remplacement graphiques des notes textuelles sélectionnés
   ru: Предоставляет возможности для переопределения видимости/графики на выделенных текстовых примечаниях.
   chinese_s: 提供用于合并或调整选定文字注释样式的选项

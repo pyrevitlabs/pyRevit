@@ -1,5 +1,6 @@
 title:
   en_us: Convert Family To Face Host Based
+  ko: 패밀리를 면 기반으로 변환
   fr_fr: Convertir la famille en famille par face
   ru: Конвертировать семейство в размещаемые на гранях
   chinese_s: 将族转换为基于面主体
@@ -9,6 +10,7 @@ title:
 tooltip:
   en_us: >-
     This script removes all instances of the selected element  Family and tries to convert the family into face host based.  Only families of CommunicationDevices, DataDevices,  DuctTerminal, ElectricalEquipment, ElectricalFixtures,  FireAlarmDevices, LightingDevices, LightingFixtures,  MechanicalEquipment, NurseCallDevices, PlumbingFixtures,  SecurityDevices, Sprinklers, TelephoneDevices can be  converted
+  ko: 선택한 요소 패밀리의 모든 인스턴스를 제거하고 패밀리를 면 기반으로 변환합니다. 통신 장치, 데이터 장치, 덕트 터미널, 전기 장비, 전기 기구, 화재 경보 장치, 조명 장치, 조명 기구, 기계 장비, 간호사 호출 장치, 배관 기구, 보안 장치, 스프링클러, 전화 장치 패밀리만 변환 가능합니다.
   fr_fr: >-
     Ce script supprime toutes les instances de l'élément sélectionné  Famille et essaie de convertir la famille en famille hébergée  par face. Seules les familles de CommunicationDevices, DataDevices,  DuctTerminal, ElectricalEquipments, ElectricalFixtures,  FireAlarmDevices, LightingDevices, LightingFixtures,  MechanicalEquipments, NurseCallDevices, PlumbingFixtures,  SecurityDevices, Sprinklers, TelephoneDevices peuvent  être converties
   ru: >-

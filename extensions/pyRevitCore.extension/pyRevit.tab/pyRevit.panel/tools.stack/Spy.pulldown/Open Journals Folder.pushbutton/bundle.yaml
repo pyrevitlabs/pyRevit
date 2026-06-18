@@ -1,5 +1,6 @@
 title:
   en_us: Open Journals Folder
+  ko: 저널 폴더 열기
   fr_fr: Ouvrir le dossier des fichiers journaux
   ru: Открыть папку с журналами
   chinese_s: 打开日志文件夹
@@ -7,6 +8,7 @@ title:
   de_de: Öffne den Ordner mit den Journal Dateien
 tooltip:
   en_us: Opens the Revit journals folder for current user
+  ko: 현재 사용자의 Revit 저널 폴더를 엽니다
   fr_fr: Ouvre le dossier contenant les fichiers journaux Revit pour l'utilisateur actuel
   ru: Открывает папку журналов Revit текущего пользователя.
   chinese_s: 打开 Revit 日志文件夹

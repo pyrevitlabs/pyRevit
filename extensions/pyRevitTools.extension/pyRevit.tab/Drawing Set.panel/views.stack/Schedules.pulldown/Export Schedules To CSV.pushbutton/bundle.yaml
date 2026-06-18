@@ -1,6 +1,7 @@
 title:
   en_us: |-
     Export Schedules To CSV
+  ko: 일람표를 CSV로 내보내기
   fr_fr: |-
     Exporter les nomenclatures en CSV
   ru: |-
@@ -18,6 +19,7 @@ tooltip:
     Shift-Click:
 
     Pick from default output locations
+  ko: "선택한 일람표를 CSV 파일로 내보냅니다. Shift+클릭: 기본 출력 위치에서 선택합니다."
   fr_fr: |-
     Exporte les nomenclatures sélectionnées vers des fichiers CSV
 

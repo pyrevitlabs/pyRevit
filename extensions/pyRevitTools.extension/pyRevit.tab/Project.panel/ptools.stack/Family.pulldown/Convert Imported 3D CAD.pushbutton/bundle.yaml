@@ -1,5 +1,6 @@
 title:
   en_us: Convert Imported 3D CAD
+  ko: 가져온 3D CAD 변환
   fr_fr: Convertir un élément CAD 3D importé
   ru: Конвертировать импортированные 3D CAD
   chinese_s: 转换导入的 3D CAD
@@ -8,6 +9,7 @@ title:
   pt_br: Converter Cad 3D Importado
 tooltip:
   en_us: Convert Imported CAD Symbol to FreeForm or DirectShape Elements
+  ko: 가져온 CAD 기호를 FreeForm 또는 DirectShape 요소로 변환합니다.
   fr_fr: Convertir un symbole CAD importé en éléments FreeForm ou DirectShape
   ru: Конвертирует импортированные CAD модели в формообразующий элемент или DirectShape.
   chinese_s: 将导入的 CAD 符号转换为自由形状或注入形状图元

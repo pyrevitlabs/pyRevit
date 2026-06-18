@@ -18,52 +18,12 @@ jobs:
       contents: write
       actions: write
     environment: production
-    outputs:
-      release_url: ${{ steps.publish_release.outputs.url }}
-      build_version: ${{ steps.buildversion.outputs.content }}
-      install_version: ${{ steps.installversion.outputs.content }}
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
-
-      - name: Validate tag matches version
-        shell: bash
-        run: |
-          FILE_VERSION=$(cat pyrevitlib/pyrevit/version)
-          TAG_VERSION=${GITHUB_REF_NAME#v}
-          if [ "$FILE_VERSION" != "$TAG_VERSION" ]; then
-            echo "Tag version ($TAG_VERSION) does not match pyrevitlib/pyrevit/version ($FILE_VERSION)" >&2
-            exit 1
-          fi
-
-      - name: Prepare Python 3.14
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-        with:
-          python-version: '3.14'
-          cache: 'pipenv'
-
-      - name: Prepare pipenv
-        run: |
-          pip install pipenv
-          pipenv sync --dev
-
-      - name: Prepare msbuild
-        uses: microsoft/setup-msbuild@30375c66a4eea26614e0d39710365f22f8b0af57 # v3
-
-      - name: Get Install Version
-        id: installversion
-        uses: juliangruber/read-file-action@271ff311a4947af354c6abcd696a306553b9ec18 # v1.1.8
-        with:
-          path: release/version
-
-      - name: Get Build Version
-        id: buildversion
-        uses: juliangruber/read-file-action@271ff311a4947af354c6abcd696a306553b9ec18 # v1.1.8
-        with:
-          path: pyrevitlib/pyrevit/version
 
       - name: Wait for CI to complete on tagged commit
         id: wait_ci
@@ -93,13 +53,12 @@ jobs:
           exit 1
 
       - name: Download unsigned bin artifact
-        uses: dawidd6/action-download-artifact@b6e2e70617bc3265edd6dab6c906732b2f1ae151 # v21
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
-          workflow: ci.yml
-          commit: ${{ github.sha }}
           name: unsigned-bin-${{ github.sha }}
+          run-id: ${{ steps.wait_ci.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           path: bin/
-          if_no_artifact_found: fail
 
       - name: Download stamped release metadata
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -109,91 +68,30 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: .
 
-      - name: Sign binaries
-        uses: Azure/artifact-signing-action@c7ab2a863ab5f9a846ddb8265964877ef296ee82 # v2.0.0
+      - name: Cache NuGet packages
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
-          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
-          endpoint: ${{ secrets.AZURE_ENDPOINT }}
-          signing-account-name: ${{ secrets.AZURE_CODE_SIGNING_NAME }}
-          certificate-profile-name: ${{ secrets.AZURE_CERT_PROFILE_NAME }}
-          files-folder: bin/
-          files-folder-filter: pyrevit*.exe,pyRevit*.dll
-          files-folder-recurse: false
-          file-digest: SHA256
-          timestamp-rfc3161: http://timestamp.acs.microsoft.com
-          timestamp-digest: SHA256
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/Directory.Build.props', 'build/Build.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
 
-      - name: Build Installers
-        run: pipenv run pyrevit build installers
-
-      - name: Sign installers
-        uses: Azure/artifact-signing-action@c7ab2a863ab5f9a846ddb8265964877ef296ee82 # v2.0.0
-        with:
-          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
-          endpoint: ${{ secrets.AZURE_ENDPOINT }}
-          signing-account-name: ${{ secrets.AZURE_CODE_SIGNING_NAME }}
-          certificate-profile-name: ${{ secrets.AZURE_CERT_PROFILE_NAME }}
-          files-folder: dist/
-          files-folder-filter: pyRevit*.exe,pyRevit*.msi,pyrevit*.exe
-          file-digest: SHA256
-          timestamp-rfc3161: http://timestamp.acs.microsoft.com
-          timestamp-digest: SHA256
-
-      - name: Build Choco Package
-        run: pipenv run pyrevit build choco
-
-      - name: Sign Choco Package
-        shell: pwsh
+      - name: Run release pipeline
+        id: pipeline
+        working-directory: build
         env:
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-          TS_ACCOUNT: ${{ secrets.AZURE_CODE_SIGNING_NAME }}
-          TS_PROFILE: ${{ secrets.AZURE_CERT_PROFILE_NAME }}
-          TS_ENDPOINT: ${{ secrets.AZURE_ENDPOINT }}
-        run: |
-          dotnet tool install --global sign --prerelease
-          & "$env:USERPROFILE\.dotnet\tools\sign.exe" code trusted-signing `
-            dist\pyrevit-cli.*.nupkg `
-            --trusted-signing-account "$env:TS_ACCOUNT" `
-            --trusted-signing-certificate-profile "$env:TS_PROFILE" `
-            --trusted-signing-endpoint "$env:TS_ENDPOINT" `
-            --file-digest SHA256 `
-            --timestamp-url http://timestamp.acs.microsoft.com `
-            --timestamp-digest SHA256
-
-      - name: Generate Release Notes
-        env:
+          DOTNET_ENVIRONMENT: Production
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pipenv run pyrevit report releasenotes > release_notes.md
-
-      - name: Publish GitHub Release
-        id: publish_release
-        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ steps.buildversion.outputs.content }}
-          name: pyRevit v${{ steps.installversion.outputs.content }}
-          body_path: release_notes.md
-          draft: true
-          prerelease: false
-          files: |
-            dist/pyRevit_${{ steps.installversion.outputs.content }}_signed.exe
-            dist/pyRevit_${{ steps.installversion.outputs.content }}_admin_signed.exe
-            dist/pyRevit_CLI_${{ steps.installversion.outputs.content }}_signed.exe
-            dist/pyRevit_CLI_${{ steps.installversion.outputs.content }}_admin_signed.exe
-            dist/pyRevit_CLI_${{ steps.installversion.outputs.content }}_admin_signed.msi
-            dist/pyrevit-cli.${{ steps.installversion.outputs.content }}.nupkg
-
-      - name: Publish Chocolatey
-        run: |
-          choco apikey --key ${{ secrets.CHOCO_TOKEN }} --source https://push.chocolatey.org/
-          choco push dist/pyrevit-cli.${{ steps.installversion.outputs.content }}.nupkg -s https://push.chocolatey.org/
+          Build__Channel: release
+          Signing__TenantId: ${{ secrets.AZURE_TENANT_ID }}
+          Signing__ClientId: ${{ secrets.AZURE_CLIENT_ID }}
+          Signing__ClientSecret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          Signing__Endpoint: ${{ secrets.AZURE_ENDPOINT }}
+          Signing__SigningAccountName: ${{ secrets.AZURE_CODE_SIGNING_NAME }}
+          Signing__CertificateProfileName: ${{ secrets.AZURE_CERT_PROFILE_NAME }}
+          Publish__ChocoToken: ${{ secrets.CHOCO_TOKEN }}
+          Publish__WingetToken: ${{ secrets.WINGET_GITHUB_TOKEN }}
+        run: dotnet run -c Release -- release pack sign publish
 
       - name: Delete temporary CI artifacts
         shell: pwsh
@@ -226,14 +124,35 @@ jobs:
   notify:
     needs: release
     if: github.repository == 'pyrevitlabs/pyRevit' && github.ref_type == 'tag'
+    runs-on: windows-2025
     permissions:
       contents: read
       issues: write
       pull-requests: write
-    uses: ./.github/workflows/notify.yml
-    with:
-      head_sha: ${{ github.sha }}
-      build: release
-      build_version: ${{ needs.release.outputs.build_version }}
-      notify_url: ${{ needs.release.outputs.release_url }}
-    secrets: inherit
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+
+      - name: Resolve release URL
+        id: release_url
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          URL=$(gh release view "$TAG" --json url --jq .url -R "$GITHUB_REPOSITORY")
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Notify linked issues
+        continue-on-error: true
+        working-directory: build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          Build__Channel: release
+          Build__NotifyUrl: ${{ steps.release_url.outputs.url }}
+        run: dotnet run -c Release -- notify

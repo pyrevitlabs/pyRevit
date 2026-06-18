@@ -778,10 +778,27 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             mlogger.error('Error setting list of user extension folders. | %s',
                           write_err)
 
-    def get_current_attachment(self):
-        """Return current pyRevit attachment."""
+    def get_current_attachment(self, cached=True):
+        """Return current pyRevit attachment.
+
+        The lookup re-reads the addin manifests and the clones registry from
+        disk, but those inputs cannot change for the running session except
+        through Attach/Detach or clone registry edits (which invalidate the
+        cache). The shared cache lets all script engines (startup scripts,
+        smartbuttons, commands, hooks) reuse a single disk lookup. Cleared on
+        reload by sessionmgr.load_session().
+
+        Args:
+            cached (bool): set False to bypass the session cache when the
+                attachment may have changed out of process (e.g. before
+                rewriting it from the settings dialog).
+        """
         try:
-            return PyRevit.PyRevitAttachments.GetAttached(int(HOST_APP.version))
+            host_version = int(HOST_APP.version)
+            if cached:
+                return PyRevit.PyRevitAttachments.GetAttachedCached(
+                    host_version)
+            return PyRevit.PyRevitAttachments.GetAttached(host_version)
         except PyRevitException as ex:
             mlogger.error('Error getting current attachment. | %s', ex)
 

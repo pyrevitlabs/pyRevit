@@ -1,5 +1,6 @@
 title:
   en_us: Create Workset For Linked Element
+  ko: 링크된 요소의 워크셋 생성
   fr_fr: Créer un sous-projet pour les fichiers liés
   ru: Создать рабочий набор для связанного элемента
   chinese_s: 为链接图元创建工作集
@@ -9,6 +10,7 @@ title:
 tooltip:
   en_us: >-
     This tool will create a workset for the selected linked element based on its name.  If the model is not workshared, it will be converted into a workshared model. Configurable options: - include all elements instead of only selected ones - apply workset to the element type as well - use custom prefixes
+  ko: "선택한 링크된 요소의 이름을 기반으로 워크셋을 생성합니다. 모델이 공유 작업 모델이 아닌 경우 공유 작업 모델로 변환됩니다. 구성 가능한 옵션: 선택한 요소만 대신 모든 요소 포함, 요소 유형에도 워크셋 적용, 사용자 지정 접두사 사용."
   fr_fr: >-
     Cet outil créera un sous-projet (workset) pour l'élément lié sélectionné en fonction de son nom.  Si le modèle n'est pas encore partagé, il sera converti en modèle partagé. Paramètres disponibles : - appliquer à tous les éléments au lieu des seuls sélectionnés - affecter aussi le type d'élément - utiliser des préfixes personnalisés
   ru: >-

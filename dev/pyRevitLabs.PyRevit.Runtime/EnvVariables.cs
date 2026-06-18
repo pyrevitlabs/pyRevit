@@ -12,6 +12,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static string EnvVarsDictKey = keyPrefix + "EnvVarsDict";
         public static string EnginesDictKey = keyPrefix + "CachedEngines";
         public static string IronPythonEngineDefaultOutputStreamCfgKey = keyPrefix + "CachedEngineDefaultOutputStreamCfg";
+        public static string IronPythonEngineDefaultErrorStreamCfgKey = keyPrefix + "CachedEngineDefaultErrorStreamCfg";
         public static string IronPythonEngineDefaultInputStreamCfgKey = keyPrefix + "CachedEngineDefaultInputStreamCfg";
         public static string OutputWindowsDictKey = keyPrefix + "OutputWindowsDict";
     }
@@ -26,9 +27,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static string Clone = string.Format("{0}_CLONE", keyPrefix);
         public static string IPYVersion = string.Format("{0}_IPYVERSION", keyPrefix);
         public static string CPYVersion = string.Format("{0}_CPYVERSION", keyPrefix);
-
-        public static string LoggingLevel = string.Format("{0}_LOGGINGLEVEL", keyPrefix);
-        public static string FileLogging = string.Format("{0}_FILELOGGING", keyPrefix);
 
         public static string LoadedAssms = string.Format("{0}_LOADEDASSMS", keyPrefix);
         public static string RefedAssms = string.Format("{0}_REFEDASSMS", keyPrefix);
@@ -64,9 +62,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public string PyRevitClone;
         public string PyRevitIPYVersion;
         public string PyRevitCPYVersion;
-
-        public int LoggingLevel;
-        public bool FileLogging;
 
         public string[] LoadedAssemblies;
         public string[] ReferencedAssemblies;
@@ -111,12 +106,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             if (_envData.Contains(EnvDictionaryKeys.CPYVersion))
                 PyRevitCPYVersion = (string)_envData[EnvDictionaryKeys.CPYVersion];
-
-            // logging
-            if (_envData.Contains(EnvDictionaryKeys.LoggingLevel))
-                LoggingLevel = (int)_envData[EnvDictionaryKeys.LoggingLevel];
-            if (_envData.Contains(EnvDictionaryKeys.FileLogging))
-                FileLogging = (bool)_envData[EnvDictionaryKeys.FileLogging];
 
             // assemblies
             if (_envData.Contains(EnvDictionaryKeys.LoadedAssms))

@@ -1,5 +1,6 @@
 title:
   en_us: Find all groups containing selected group
+  ko: 선택한 그룹을 포함하는 모든 그룹 찾기
   fr_fr: Trouver tous les groupes contenant le groupe sélectionné
   ru: Найти все группы содержащие выделенную группу
   chinese_s: 查找包含选定组的所有组
@@ -8,6 +9,7 @@ title:
   pt_br: Encontrar Todos os Grupos Contendo o Grupo Selecionado
 tooltip:
   en_us: List all groups that includethe selected group element as a nested group
+  ko: 선택한 그룹 요소를 중첩 그룹으로 포함하는 모든 그룹을 나열합니다
   fr_fr: Liste tous les groupes comprenant l'élément du groupe sélectionné comme un groupe imbriqué
   ru: Показывает все группы, которые включают выделенный элемент группы как вложенную группу.
   chinese_s: 列出所有将选定组图元作为嵌套组包含在内的组

@@ -1,5 +1,6 @@
 title:
   en_us: Remove Revision From Sheets
+  ko: 시트에서 수정 사항 제거
   fr_fr: Enlève une Révision des Feuilles
   ru: Удалить изменения с листов
   chinese_s: 从图纸中移除修订
@@ -10,6 +11,7 @@ tooltip:
   en_us: >-
     Select a revision from the list of revisions and this script will remove
     that revision from all sheets if it has not been "clouded" on the sheet
+  ko: 수정 목록에서 수정 사항을 선택하면 시트에 수정 기호가 없는 경우 모든 시트에서 해당 수정 사항을 제거합니다.
   fr_fr: >-
     Sélectionnez une révision de la liste des révisions et ce script va retirer
     la révision de toutes les feuilles si aucun nuage de révision n'a été

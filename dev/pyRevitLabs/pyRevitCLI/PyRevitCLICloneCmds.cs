@@ -235,7 +235,7 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        UpdateClone(bool allClones, string cloneName, GitInstallerCredentials credentials) {
+        UpdateClone(bool allClones, string cloneName, GitInstallerCredentials credentials, bool skipBin) {
             // TODO: ask for closing running Revits
 
             // prepare a list of clones to be updated
@@ -266,7 +266,7 @@ namespace pyRevitCLI {
             // update clones that do not include this process
             foreach (var clone in targetClones) {
                 logger.Debug("Updating clone \"{0}\"", clone.Name);
-                PyRevitClones.Update(clone, credentials);
+                PyRevitClones.Update(clone, credentials, skipBin: skipBin);
             }
 
             // now update myClone if any, as last step

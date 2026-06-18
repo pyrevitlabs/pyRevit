@@ -1,6 +1,7 @@
 help_url: '{{docpath}}9Q-J6mWBYJI&t=17s'
 title:
   en_us: Copy Sheets To Open Documents
+  ko: 열린 문서에 시트 복사
   fr_fr: Copier des Feuilles vers des Documents Ouverts
   ru: Копировать листы в открытые документы
   chinese_s: 将图纸复制到已打开的文档
@@ -14,6 +15,7 @@ tooltip:
     (Revit API does not provide a method to create Legend views so this script
     needs to duplicate an existing one to create a new Legend)
     The tool does not copy model views (floorplans, elevations, sections, ...)
+  ko: 선택한 또는 현재 시트를 Revit에서 열려 있는 다른 프로젝트에 복사합니다. 대상 문서에 범례 뷰가 하나 이상 있어야 합니다(Revit API는 범례 뷰 생성 방법을 제공하지 않으므로 기존 뷰를 복제합니다). 모델 뷰(평면도, 입면도, 단면도 등)는 복사되지 않습니다.
   fr_fr: >-
     Copie les feuilles sélectionnées ou en cours dans d'autres projets
     actuellement ouverts dans Revit. Assurez-vous que les documents de

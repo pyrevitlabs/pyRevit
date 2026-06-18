@@ -1,0 +1,400 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <system:String x:Key="Title">pyRevit 설정</system:String>
+    <system:String x:Key="CoreSettings.Title">핵심 설정</system:String>
+    <system:String x:Key="CoreSettings.General">일반</system:String>
+    <system:String x:Key="CoreSettings.RocketMode">로켓 모드 &#x1F680; (재로드 필요)</system:String>
+    <system:String x:Key="CoreSettings.RocketMode.Description">
+        pyRevit 로켓 모드 스위치입니다.
+        활성화 시 pyRevit은 로켓 모드를 지원하는 각 확장에 대해
+        공유 엔진을 사용합니다. pyRevit 개발자의 경우
+        사용자 정의 파이썬 모듈이 활성 문서, 요소 정보 등
+        Revit의 정보를 유지하는 모듈 수준 변수를 사용하지 않아야 합니다.
+        로켓 모드를 사용하는 이유? 엄청난 속도 향상!!
+    </system:String>
+
+    <system:String x:Key="CoreSettings.CheckUpdates">시작 시 업데이트 확인</system:String>
+    <system:String x:Key="CoreSettings.CheckUpdates.Description">
+        활성화 시 pyRevit은 Revit 시작 시 설치된 모든 확장의 업데이트를 확인합니다.
+        인터넷 연결이 감지되지 않으면 업데이트 확인을 건너뜁니다.
+    </system:String>
+
+    <system:String x:Key="CoreSettings.Engines">엔진</system:String>
+    <system:String x:Key="CoreSettings.ActiveEngine">활성 엔진:</system:String>
+    <system:String x:Key="CoreSettings.ActiveCPythonEngine">활성 CPython 엔진:</system:String>
+    <system:String x:Key="CoreSettings.UsingCPython">CPython 사용:</system:String>
+
+    <system:String x:Key="CoreSettings.UsingCPython.Description1">
+        pyRevit은 활성 IronPython 엔진 대신 CPython(x64) 엔진을 사용하여 명령을 실행할 수 있습니다.
+        즉, Revit 환경에서 모든 CPython 모듈(예: numpy, scipy)을 사용할 수 있습니다.
+        Revit은 x64 프로그램이므로 CPython x64 버전에서만 작동합니다.
+    </system:String>
+
+    <system:String x:Key="CoreSettings.UsingCPython.Description2">
+        CPython 엔진은 pyRevit에 포함되어 있으므로 별도로 설치할 필요가 없습니다.
+        그러나 타사 라이브러리를 사용하려면 선택한 엔진과 동일한 버전의 CPython이
+        컴퓨터에 설치되어 있어야 합니다.
+    </system:String>
+
+    <system:String x:Key="CoreSettings.UsingCPython.Description3">
+        PYTHONPATH 환경 변수가 "site-packages" 디렉터리를 가리켜야
+        "pip" 패키지 관리자로 설치된 모듈을 찾고 로드할 수 있습니다.
+    </system:String>
+
+    <system:String x:Key="CoreSettings.UsingCPython.Description4">
+        CPython으로 스크립트를 실행하려면 스크립트 파일의 첫 번째 줄이 다음과 같아야 합니다:
+    </system:String>
+
+    <system:String x:Key="CoreSettings.UsingCPython.Description5">
+        엔진을 변경한 후 설정을 저장하고 Revit을 다시 시작하세요.
+    </system:String>
+
+    <system:String x:Key="CoreSettings.Development">개발</system:String>
+    <system:String x:Key="CoreSettings.Development.Description">pyRevit 개발을 위한 기타 옵션</system:String>
+    <system:String x:Key="CoreSettings.Development.LoadBeta">베타 도구 로드 (__beta__ = True인 스크립트, 재로드 필요)</system:String>
+
+    <system:String x:Key="CoreSettings.Loader">로더</system:String>
+    <system:String x:Key="CoreSettings.Loader.Description">pyRevit의 어셈블리 로딩 메커니즘을 구성합니다. 새 로더는 Roslyn 빌드 전략을 사용하는 C# 구현입니다</system:String>
+    <system:String x:Key="CoreSettings.Loader.NewLoader">새 pyRevit 로더 활성화 (베타) (Revit 다시 시작 필요)</system:String>
+    <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata">스크립트 메타데이터 읽기 (재로드 필요)</system:String>
+    <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata.Description">
+        활성화 시 pyRevit이 Python 스크립트 파일에서 스크립트 메타데이터(__title__, __author__, __doc__ 등)를 읽습니다.
+        이 옵션을 비활성화하면 시작 성능이 향상되지만 스크립트에 정의된 메타데이터가 손실될 수 있습니다.
+        Bundle.yaml 값은 이 설정에 관계없이 계속 사용됩니다.
+    </system:String>
+    <system:String x:Key="CoreSettings.Loader.NewLoader.Changed">
+        새 로더 설정이 변경되었습니다. 이 변경 사항을 적용하려면 pyRevit을 다시 로드해야 합니다.
+        지금 다시 로드하시겠습니까?
+    </system:String>
+    <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata.Changed">
+        스크립트 메타데이터 읽기 설정이 변경되었습니다. 이 변경 사항을 적용하려면 pyRevit을 다시 로드해야 합니다.
+        지금 다시 로드하시겠습니까?
+    </system:String>
+
+    <system:String x:Key="CoreSettings.CloseOtherConsoles">다른 열린 콘솔 닫기</system:String>
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.Description">
+        활성화 시 새 스크립트가 실행될 때 다른 출력 콘솔을 닫습니다.
+        열린 출력 창의 수를 줄이는 데 도움이 됩니다.
+        여러 출력 데이터를 비교하지 않는 한 이 옵션을 활성화하세요.
+    </system:String>
+
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.Toggle">열린 콘솔 수 최소화:</system:String>
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.Current">현재 명령 콘솔</system:String>
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.Current.Description">
+        현재 실행 중인 명령과 관련된 모든 콘솔 창을 닫습니다.
+    </system:String>
+
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.CloseAll">모든 콘솔</system:String>
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.CloseAll.Description">
+        실행 중인 명령과 관련 없는 콘솔 포함 현재 열린 모든 콘솔 창을 닫습니다.
+    </system:String>
+
+    <system:String x:Key="CoreSettings.Caching">캐싱</system:String>
+    <system:String x:Key="CoreSettings.Caching.Button">캐싱을 기본값으로 초기화</system:String>
+    <system:Double x:Key="CoreSettings.Caching.Button.With">200</system:Double>
+
+    <system:String x:Key="CoreSettings.Caching.Description">
+        pyRevit는 확장 데이터를 캐시하여 더 빠르게 실행합니다.
+        이 섹션에서 캐싱 유형을 제어합니다.
+        이 설정을 변경한 후 다시 시작해야 합니다.
+    </system:String>
+
+    <system:String x:Key="CoreSettings.BinaryCache">이진 캐시</system:String>
+    <system:String x:Key="CoreSettings.BinaryCache.Description">
+        이진 캐시가 가장 빠르지만 캐시 파일은 사람이 읽을 수 없어
+        디버깅에 별로 유용하지 않습니다.
+    </system:String>
+
+    <system:String x:Key="CoreSettings.ASCIICache">ASCII 캐시</system:String>
+    <system:String x:Key="CoreSettings.ASCIICache.Description">
+        ASCII 캐시 파일은 JSON 파일로 사람이 읽을 수 있습니다.
+        디버깅 목적에 매우 유용합니다.
+    </system:String>
+
+    <system:String x:Key="EnvironmentVariables.Title">환경 변수</system:String>
+    <system:String x:Key="EnvironmentVariables.Description">
+        환경 변수는 현재 애플리케이션 도메인(AppDomain)에 설정되며
+        스크립트에서 사용할 수 있습니다. 보고 모드 설정을 위한 전역 플래그로 사용되며
+        스크립트(예: 동기화 뷰)에서 현재 토글 상태를 설정하는 데도 사용됩니다.
+        이 변수들은 pyrevit.script 모듈을 통해 스크립트에서 액세스할 수 있습니다.
+    </system:String>
+
+    <system:String x:Key="EnvironmentVariables.ListView.VariableName">변수 이름</system:String>
+    <system:String x:Key="EnvironmentVariables.ListView.VariableValue">값</system:String>
+
+    <system:String x:Key="ReportingLevels.Title">보고 수준</system:String>
+    <system:String x:Key="ReportingLevels.Button">보고 수준을 기본값으로 초기화</system:String>
+    <system:Double x:Key="ReportingLevels.Button.Width">200</system:Double>
+
+    <system:String x:Key="ReportingLevels.NoReporting">보고 없음 (logging.WARNING 이상)</system:String>
+    <system:String x:Key="ReportingLevels.NoReporting.Description">
+        로깅 시스템에서 보고가 출력되지 않습니다.
+        즉, pyRevit은 Revit 시작 시 출력 창을 표시하지 않으며
+        모든 INFO 메시지가 억제됩니다.
+        경고, 오류, 치명적 오류만 출력됩니다.
+    </system:String>
+
+    <system:String x:Key="ReportingLevels.Verbose">자세히 (logging.INFO 이상)</system:String>
+    <system:String x:Key="ReportingLevels.Verbose.Description">
+        자세한 보고는 출력 창을 열고 정보 메시지만 출력합니다.
+        이 메시지들은 현재 pyRevit 세션에 대한 가장 기본적인 필수 정보를
+        사용자에게 제공하기 위한 것입니다.
+    </system:String>
+
+    <system:String x:Key="ReportingLevels.Verbose.Timeout.Start">오류가 없으면 시작 창을 다음 시간 후 닫기:</system:String>
+    <system:String x:Key="ReportingLevels.Verbose.Timeout.Finish">초. (0으로 설정하면 항상 열린 상태 유지)</system:String>
+
+    <system:String x:Key="ReportingLevels.Debug">디버그 모드 (logging.DEBUG 이상)</system:String>
+    <system:String x:Key="ReportingLevels.Debug.Description">
+        pyRevit 디버그 모드를 활성화하여 모든 구성 요소와 스크립트가
+        디버그 메시지를 보고할 수 있게 합니다. 일반적으로 매우 긴 보고서가 생성되고
+        스크립트 실행 시간이 증가하지만 디버깅에 매우 유용합니다.
+        디버깅 목적으로만 활성화하세요.
+    </system:String>
+
+    <system:String x:Key="ReportingLevels.FileDebug">파일 디버그 로깅</system:String>
+    <system:String x:Key="ReportingLevels.FileDebug.Description">
+        pyRevit 파일 디버그 모드를 활성화합니다. 세션 중 모든 디버그 메시지
+        (로더 또는 도구에서)가 pyRevit 앱 데이터 폴더의 로그 파일에 기록됩니다.
+        이 파일들은 Revit 세션별로 태그되며 매번 Revit 로드 시 자동으로 정리됩니다.
+    </system:String>
+
+    <system:String x:Key="StartupChecks.Title">시작 점검</system:String>
+    <system:String x:Key="StartupChecks.Description">
+        필요한 호스트 빌드 번호를 설정할 수 있습니다.
+        pyRevit은 다른 빌드 번호를 가진 호스트에서 실행되면
+        경고를 표시합니다. 비활성화하려면 비워 두세요.
+    </system:String>
+
+    <system:String x:Key="StartupChecks.Build">필요한 빌드 번호 (빌드):</system:String>
+    <system:String x:Key="StartupChecks.Build.Button">현재 호스트 빌드 번호로 설정</system:String>
+    <system:String x:Key="StartupChecks.Build.Button.ToolTip">필요한 빌드 번호를 현재 호스트 빌드 번호로 설정합니다</system:String>
+    <system:Double x:Key="StartupChecks.Build.Button.Width">200</system:Double>
+
+    <system:String x:Key="StartupChecks.MinimumSpace">호스트 드라이브의 최소 여유 공간 (기가바이트):</system:String>
+    <system:String x:Key="StartupChecks.MinimumSpace.Description">
+        호스트 드라이브의 최소 여유 공간을 설정할 수 있습니다.
+        여유 공간이 최솟값보다 적으면 pyRevit이 경고를 표시합니다.
+        비활성화하려면 0으로 설정하세요.
+    </system:String>
+
+    <system:String x:Key="Routes.Title">라우트</system:String>
+    <system:String x:Key="Routes.Docs">pyRevit 라우트 문서 보기</system:String>
+    <system:String x:Key="Routes.Description">
+        라우트 서버는 pyRevit의 일부로 파이썬으로 구현된 HTTP API 마이크로 프레임워크 및 서버입니다.
+        서버에는 python flask에서 영감을 받은 파이썬 모듈(pyrevit.routes)이 포함되어 있으며
+        확장에서 사용자 정의 API를 쉽게 정의할 수 있는 함수, 유형, 데코레이터를 제공합니다.
+    </system:String>
+
+    <system:String x:Key="Routes.Check">라우트 서버 (베타)</system:String>
+    <system:String x:Key="Routes.RestAPI">REST API 설정</system:String>
+    <system:String x:Key="Routes.RestAPI.Check">pyrevit-core/</system:String>
+
+    <system:String x:Key="Routes.RestAPI.Check.Docs">
+        pyRevit 런타임 API 문서 보기
+    </system:String>
+
+    <system:String x:Key="Routes.RestAPI.Check.Description">
+        pyRevitCore 확장은 pyRevit 환경을 관리하기 위한 기본 REST API를 구현합니다
+    </system:String>
+
+    <system:String x:Key="Telemetry.Title">원격 측정</system:String>
+    <system:String x:Key="Telemetry.Description">
+        원격 측정 시스템은 pyRevit 확장의 각 도구 사용을 기록합니다.
+        원격 측정을 활성화하고 서버(pyRevit에는 내장 원격 측정 서버가 있음)로 데이터를 보내거나
+        지정된 디렉터리의 일련의 JSON 파일로 보낼 수 있습니다.
+        활성화된 경우 시스템은 여기에 제공된 대상으로 원격 측정 레코드를 보냅니다.
+        필드 중 하나를 비워 두면 해당 대상으로의 원격 측정 레코드 전송이 비활성화됩니다.
+    </system:String>
+
+    <system:String x:Key="Telemetry.Settings">전역 원격 측정 설정</system:String>
+    <system:String x:Key="Telemetry.Settings.UseUTC">UTC 타임스탬프 사용</system:String>
+    <system:String x:Key="Telemetry.ScriptTelemetry">스크립트 원격 측정</system:String>
+    <system:String x:Key="Telemetry.SendTelemetry">원격 측정 전송 대상</system:String>
+    <system:String x:Key="Telemetry.Hooks">훅</system:String>
+    <system:String x:Key="Telemetry.CommandBundles">명령 번들</system:String>
+    <system:String x:Key="Telemetry.ServerUrl">스크립트 원격 측정 서버 URL 또는 API 엔드포인트</system:String>
+    <system:String x:Key="Telemetry.ServerUrl.Example">예시</system:String>
+    <system:String x:Key="Telemetry.ServerUrl.Description">
+        대상 디렉터리가 제공된 경우 pyRevit은 큰 파일 생성을 방지하기 위해 각 pyRevit 세션마다 새 JSON 파일을 생성합니다.
+        세션 ID가 JSON 파일 이름에 추가됩니다.
+    </system:String>
+
+    <system:String x:Key="Telemetry.Application">애플리케이션 원격 측정</system:String>
+    <system:String x:Key="Telemetry.Application.Description">
+        애플리케이션 원격 측정 시스템은 이벤트 핸들러에서 수집된 이벤트 정보를 아래의 원격 측정 서버로 전송합니다.
+        아래 나열된 각 이벤트에 대해 이벤트 로깅을 전환할 수 있습니다.
+    </system:String>
+
+    <system:String x:Key="Telemetry.Application.ServerUrl">
+        애플리케이션 원격 측정 서버 URL 또는 API 엔드포인트 (예: http://telemetryserver.io):
+    </system:String>
+
+    <system:String x:Key="Telemetry.Application.ToggleAll">모두 전환</system:String>
+    <system:Double x:Key="Telemetry.Application.ToggleAll.Width">80</system:Double>
+
+    <system:String x:Key="Telemetry.JsonFile">현재 원격 측정 JSON 파일:</system:String>
+    <system:String x:Key="Telemetry.JsonFile.Button">폴더 열기</system:String>
+    <system:Double x:Key="Telemetry.JsonFile.Button.Width">90</system:Double>
+    <system:String x:Key="Telemetry.JsonFile.Button.ToolTip">현재 원격 측정 폴더 열기</system:String>
+    <system:String x:Key="Telemetry.DataFolder">스크립트 원격 측정 데이터 폴더 (예: C:\pyRevitTelemetry):</system:String>
+    <system:String x:Key="Telemetry.DataFolder.Button.ToolTip">원격 측정 폴더 선택</system:String>
+    <system:String x:Key="Telemetry.Reset.Button">초기화</system:String>
+    <system:Double x:Key="Telemetry.Reset.Button.Width">48</system:Double>
+    <system:String x:Key="Telemetry.Reset.Button.ToolTip">원격 측정 폴더를 기본값으로 초기화합니다</system:String>
+    <system:String x:Key="Telemetry.Events">활성 애플리케이션 원격 측정 이벤트 선택</system:String>
+
+    <system:String x:Key="SupportedRevitVersions.Title">지원되는 Revit 버전</system:String>
+    <system:String x:Key="SupportedRevitVersions.Description">
+        여기서 설치된 Revit 버전에 대해 pyRevit을 비활성화하거나 활성화할 수 있습니다.
+        이 작업은 %appdata%/Autodesk/Revit/Addins 폴더에서 pyRevit.addin 매니페스트 파일을 제거합니다.
+        &lt;current&gt; 또는 &lt;all users&gt;로 표시된 Revit 버전에 대한 첨부는 읽기 전용이며 변경할 수 없습니다.
+    </system:String>
+
+    <system:String x:Key="UI-UX.Title">UI / UX</system:String>
+    <system:String x:Key="UI-UX.Description">
+        이 섹션은 사용자 인터페이스(UI) 및 사용자 경험(UX)과 관련된 모든 설정을 제공합니다.
+    </system:String>
+
+    <system:String x:Key="UI-UX.RegionSettings">지역 설정</system:String>
+    <system:String x:Key="UI-UX.SelectLanguage">UI 언어 선택:</system:String>
+    <system:String x:Key="UI-UX.RegionSettingsLink">pyRevit 번역 도움말</system:String>
+
+    <system:String x:Key="UI-UX.TabColoring">탭 색상 지정</system:String>
+    <system:String x:Key="UI-UX.ColoringStyle">색상 지정 스타일</system:String>
+    <system:String x:Key="UI-UX.ColorizeOpenDocuments">열린 문서에 색상 지정</system:String>
+    <system:String x:Key="UI-UX.KeepOpenTabs">문서별로 열린 탭 정렬 유지</system:String>
+
+    <system:String x:Key="UI-UX.ProjectTabStyle">프로젝트 탭 스타일</system:String>
+    <system:Double x:Key="UI-UX.ProjectTabStyle.Width">100</system:Double>
+
+    <system:String x:Key="UI-UX.FamilyTabStyle">패밀리 탭 스타일</system:String>
+    <system:Double x:Key="UI-UX.FamilyTabStyle.Width">100</system:Double>
+
+    <system:String x:Key="UI-UX.ProjectSample1">프로젝트 1</system:String>
+    <system:String x:Key="UI-UX.ProjectSample2">프로젝트 2</system:String>
+
+    <system:String x:Key="UI-UX.FamilySample1">패밀리 1</system:String>
+    <system:String x:Key="UI-UX.FamilySample2">패밀리 2</system:String>
+
+    <system:String x:Key="UI-UX.ColoringTheme">색상 지정 테마</system:String>
+    <system:String x:Key="UI-UX.ColoringTheme.Description1">
+        문서 탭이 열릴 때 적용할 일련의 색상을 선택합니다.
+    </system:String>
+    <system:String x:Key="UI-UX.ColoringTheme.Description2">
+        "순서별" 그룹의 색상은 열리는 순서대로 문서에 적용됩니다. 모든 색상이 사용되면 더 이상 탭 색상 지정이 적용되지 않습니다.
+    </system:String>
+    <system:String x:Key="UI-UX.ColoringTheme.Description3">
+        "필터별" 그룹의 색상은 지정된 이름 필터와 일치하는 탭에 적용됩니다. 필터가 탭 이름과 일치하면 필터별 색상이 해당 탭의 순서별 색상보다 우선합니다.
+    </system:String>
+
+    <system:String x:Key="UI-UX.ColoringTheme.Reset">초기화</system:String>
+    <GridLength x:Key="UI-UX.ColoringTheme.Reset.Width">50</GridLength>
+    <GridLength x:Key="UI-UX.ColoringTheme.Reset.Width2">190</GridLength>
+
+    <system:String x:Key="UI-UX.ColoringTheme.ByOrder">순서별</system:String>
+    <system:Double x:Key="UI-UX.ColoringTheme.ByOrder.Width">55</system:Double>
+
+    <system:String x:Key="UI-UX.ColoringTheme.ByFilter">필터별</system:String>
+    <system:Double x:Key="UI-UX.ColoringTheme.ByFilter.Width">55</system:Double>
+
+    <system:String x:Key="UI-UX.ColoringTheme.FilterRegex">필터 (정규식)</system:String>
+    <GridLength x:Key="UI-UX.ColoringTheme.FilterRegex.Width">80</GridLength>
+    <GridLength x:Key="UI-UX.ColoringTheme.FilterRegex.Width2">160</GridLength>
+
+    <system:String x:Key="UI-UX.ColoringTheme.Parallax">
+        "Parallax Tabbed Views"를 만든 Parallax 팀에 감사드립니다
+    </system:String>
+
+    <system:String x:Key="UI-UX.OutputWindow">출력 창</system:String>
+    <system:String x:Key="UI-UX.OutputStyling">출력 스타일링 (CSS 스타일시트)</system:String>
+    <system:String x:Key="UI-UX.PickCssToolTip">기본값을 재정의할 CSS 스타일 시트를 선택하세요.</system:String>
+    <system:String x:Key="UI-UX.ResetCss">초기화</system:String>
+    <system:Double x:Key="UI-UX.ResetCss.Width">50</system:Double>
+    <system:String x:Key="UI-UX.ResetCssToolTip">CSS 스타일 시트를 기본값으로 초기화합니다.</system:String>
+    <system:String x:Key="UI-UX.AddToolDebug">도구 팁에 도구 디버그 정보 추가 (예: 클래스 및 어셈블리 이름)</system:String>
+
+    <system:String x:Key="Extensions.Title">사용자 정의 확장 디렉터리</system:String>
+    <system:String x:Key="Extensions.Description">
+        pyRevit는 사용자 정의 폴더에서 확장을 검색할 수 있습니다.
+        원하는 디렉터리에 사용자 정의 확장을 설정하고 여기에 디렉터리 주소를 추가하세요.
+        pyRevit은 시작 시 이 폴더를 검색하고 확장을 로드합니다. 이를 통해
+        사용자 정의 확장을 pyRevit의 기본 확장 폴더와 분리하여
+        자신의 확장 폴더를 걱정하지 않고 pyRevit을 업그레이드/제거할 수 있습니다.
+    </system:String>
+
+    <system:String x:Key="Extensions.Info">변경 사항을 적용하려면 재로드가 필요합니다.</system:String>
+    <system:String x:Key="Extensions.Button.Add">폴더 추가</system:String>
+    <system:String x:Key="Extensions.Button.Remove">선택 항목 제거</system:String>
+    <system:String x:Key="Extensions.Button.RemoveAll">모두 제거</system:String>
+    <system:String x:Key="Extensions.Button.Reveal">탐색기에서 표시</system:String>
+
+    <system:String x:Key="Settings.Title">설정 가져오기 / 내보내기</system:String>
+    <system:String x:Key="Settings.Import">설정 가져오기</system:String>
+    <system:String x:Key="Settings.Export">설정 내보내기</system:String>
+
+    <system:String x:Key="JustSave">설정만 저장</system:String>
+    <system:String x:Key="SaveAndReload">설정 저장 및 재로드</system:String>
+
+    <system:String x:Key="Events.TypeEvent" xml:space="preserve">API 이벤트 유형:           </system:String>
+    <system:String x:Key="Events.pyRevitHook" xml:space="preserve">pyRevit 이벤트/훅 이름:  {}</system:String>
+    <system:String x:Key="Events.NotSupport">이 Revit 버전에서는 지원되지 않음</system:String>
+
+    <system:String x:Key="Events.CommandExecuted" xml:space="preserve">명령 실행됨
+</system:String>
+    <system:String x:Key="Events.CommandExecuted.EventType" xml:space="preserve">이벤트 유형:               journal-command-exec
+</system:String>
+    <system:String x:Key="Events.CommandExecuted.TracksExecution" xml:space="preserve">활성 저널 파일의 명령 실행을 추적합니다. 포함 항목:
+</system:String>
+    <system:String x:Key="Events.CommandExecuted.BuiltinCommands" xml:space="preserve">  내장 명령 (예: ID_OBJECTS_WALL)
+</system:String>
+    <system:String x:Key="Events.CommandExecuted.ThirdPartyCommands" xml:space="preserve">  타사 명령 (예: CustomCtrl_%CustomCtrl_%Site Designer%Modify%Sidewalk)
+</system:String>
+    <system:String x:Key="Events.CommandExecuted.pyRevitCommands" xml:space="preserve">  pyRevit 명령 (예: CustomCtrl_%CustomCtrl_%pyRevit%pyRevit%Settings)
+</system:String>
+
+    <system:String x:Key="RevitAttachment.Current">&lt;현재&gt;</system:String>
+    <system:String x:Key="RevitAttachment.AllUsers">&lt;모든 사용자&gt;</system:String>
+    <system:String x:Key="RevitAttachment.NotAttached">&lt;첨부되지 않음&gt;</system:String>
+    <system:String x:Key="RevitAttachment.NotInstalled">&lt;설치되지 않음&gt;</system:String>
+
+    <system:String x:Key="Engines.WasChanged">
+        활성 엔진이 변경되었습니다.
+        변경 사항을 적용하려면 Revit을 다시 시작하세요.
+    </system:String>
+
+    <system:String x:Key="Engines.CPython.WasChanged">
+        활성 CPython 엔진이 변경되었습니다.
+        변경 사항을 적용하려면 Revit을 다시 시작하세요.
+    </system:String>
+
+    <system:String x:Key="Telemetry.Status">알 수 없는 상태. 테스트하려면 여기를 클릭하세요</system:String>
+
+    <system:String x:Key="Routes.Changed">
+        라우트 서버 설정이 변경되었습니다.
+        이 변경 사항을 적용하려면 pyRevit 재로드가 필요합니다.
+        지금 재로드하시겠습니까?
+    </system:String>
+
+    <system:String x:Key="Routes.RestChanged">
+        pyRevit 코어 REST API 설정이 변경되었습니다.
+        이 변경 사항을 적용하려면 pyRevit 재로드가 필요합니다.
+        지금 재로드하시겠습니까?
+    </system:String>
+
+    <system:String x:Key="UI-UX.LangChanged">
+        UI 언어가 변경되었습니다. 이 변경 사항을 적용하려면
+        pyRevit 재로드가 필요합니다. 지금 재로드하시겠습니까?
+    </system:String>
+
+    <system:String x:Key="UI-UX.NeedReload">
+        pyRevit UI 구성이 변경되었습니다. 이 변경 사항을 적용하려면
+        pyRevit 재로드가 필요합니다. 지금 재로드하시겠습니까?
+    </system:String>
+
+    <system:String x:Key="pyRevit.AdminInstall">pyRevit 설정이 관리자에 의해 설정되어 있습니다.</system:String>
+
+</ResourceDictionary>

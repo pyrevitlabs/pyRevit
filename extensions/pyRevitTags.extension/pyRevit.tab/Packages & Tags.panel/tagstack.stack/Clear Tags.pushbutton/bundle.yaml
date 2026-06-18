@@ -1,5 +1,6 @@
 title:
   en_us: Clear Tags
+  ko: 태그 지우기
   fr_fr: Effacer les étiquettes
   ru: Очистить марки
   chinese_s: 清除标签
@@ -8,6 +9,7 @@ title:
   pt_br: Limpar Identificadores
 tooltip:
   en_us: Clear tag information from selected elements. First you need to create a project parameter 'DOCTAG' and apply it to the project categories
+  ko: 선택한 요소의 태그 정보 지우기. 먼저 프로젝트 매개변수 'DOCTAG'를 만들고 프로젝트 카테고리에 적용해야 합니다
   fr_fr: Effacer les informations des étiquettes des éléments sélectionnés. Vous devez d'abord créer un paramètre de projet 'DOCTAG' et l'appliquer aux catégories du projet
   ru: Очищает информацию о марках выделенных элементов.
   chinese_s: 清除选定元素中的标签信息。首先需要创建项目参数 'DOCTAG' 并将其应用到项目类别

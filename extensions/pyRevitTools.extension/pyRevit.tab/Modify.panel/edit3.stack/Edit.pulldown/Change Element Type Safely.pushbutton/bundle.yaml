@@ -1,5 +1,6 @@
 title:
   en_us: Change element type safely
+  ko: 요소 유형 안전하게 변경
   fr_fr: Changer le type d'élément de façon sécuritaire
   ru: Безопасно изменить тип элемента
   chinese_s: 安全更改图元类型
@@ -9,6 +10,7 @@ title:
 tooltip:
   en_us: >-
     Changes element type of the selected elements to a the element type of a picked element, while maintaining the values of all instance parameters. First select all the elements that you want to change the type for and run this tool. Then select the element that has the source element type
+  ko: 선택한 요소의 요소 유형을 선택한 요소의 요소 유형으로 변경하면서 모든 인스턴스 매개변수 값을 유지합니다. 먼저 유형을 변경할 모든 요소를 선택하고 이 도구를 실행합니다. 그런 다음 원본 요소 유형이 있는 요소를 선택합니다.
   fr_fr: >-
     Changer le type des éléments sélectionnés par le type de l'élément sélectionné, tout en maintenant les valeurs des paramètres d'occurence. Sélectionnez tous les éléments dont vous souhaitez changer le type et lancer l'outil. Puis sélectionner le type d'élément source.
   ru: >-

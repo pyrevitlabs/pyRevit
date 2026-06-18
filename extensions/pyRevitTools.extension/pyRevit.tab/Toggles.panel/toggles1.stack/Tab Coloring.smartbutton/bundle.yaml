@@ -1,5 +1,6 @@
 title:
   en_us: Tab Coloring
+  ko: 탭 색상
   fr_fr: Colorer les onglets
   ru: Окрасить вкладки
   chinese_s: 选项卡着色
@@ -8,6 +9,7 @@ title:
   pt_br: Colorir Abas
 tooltip:
   en_us: Does its best at visually separating open documents
+  ko: 열린 문서를 시각적으로 구분하기 위해 최선을 다합니다
   fr_fr: Améliore la distinction entre les documents ouverts
   ru: Делает все возможное для визуального разделения открытых документов.
   chinese_s: 尽最大努力通过视觉区分打开的文档

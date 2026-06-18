@@ -1,5 +1,6 @@
 tooltip:
   en_us: Searches the script folders and create buttons for the new script or newly installed extensions
+  ko: 스크립트 폴더를 검색하고 새 스크립트 또는 새로 설치된 확장 패키지의 버튼을 만듭니다
   fr_fr: Recherche de nouveaux scripts dans le dossier de scripts et crée de nouveau bouton ou ajoute une nouvelle extension
   ru: Находит папки со скриптами и создает кнопки новых криптов или новых устанновленных расширений.
   chinese_s: 搜索脚本文件夹并创建按钮，用于新的脚本或新安装的扩展
@@ -10,6 +11,7 @@ engine:
   clean: true
 title:
   en_us: 'Reload'
+  ko: 다시 로드
   fr_fr: 'Recharger'
   ru: Обновить
   chinese_s: 重新加载

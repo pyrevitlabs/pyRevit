@@ -1,6 +1,7 @@
 context: selection
 title:
   en_us: Find sheets showing selected element
+  ko: 선택한 요소가 표시된 시트 찾기
   fr_fr: Trouver les feuilles montrant l'élément sélectionné
   ru: Найти листы, на которых видны выделенные элементы
   chinese_s: 查找显示所选图元的图纸
@@ -9,6 +10,7 @@ title:
   pt_br: Encontrar Folhas Exibindo Elemento Selecionado
 tooltip:
   en_us: Lists all sheets and views that the selected elements is visible in
+  ko: 선택한 요소가 표시되는 모든 시트와 뷰를 나열합니다
   fr_fr: Lister toutes les feuilles et vues dans lesquelles l'élément sélectionné est visible
   ru: Выводит все листы и виды, на которых видны выбранные элементы.
   chinese_s: 列出所选图元可见的所有图纸和视图

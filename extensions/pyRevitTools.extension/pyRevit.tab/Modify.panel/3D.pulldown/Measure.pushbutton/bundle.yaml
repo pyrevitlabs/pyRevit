@@ -1,5 +1,6 @@
 title:
   en_us: 3D Measure
+  ko: 3D 측정
   fr_fr: Mesure 3D
   ru: 3D Измерение
   chinese_s: 三维测量
@@ -8,6 +9,7 @@ title:
   pt_br: Medição 3D
 tooltip:
   en_us: Measure distances between two points with visual aids and measurement history, the results are copied to the clipboard at the closing of the window
+  ko: 시각적 보조 도구와 측정 기록으로 두 점 사이의 거리를 측정하며, 창을 닫을 때 결과가 클립보드에 복사됩니다
   fr_fr: Mesurer les distances entre deux points avec des aides visuelles et un historique des mesures, les résultats sont copiés dans le presse-papiers à la fermeture de la fenêtre
   ru: Измерение расстояний между двумя точками с визуальными помощниками и историей измерений, результаты копируются в буфер обмена при закрытии окна
   chinese_s: 测量两点之间的距离，提供视觉辅助和测量历史记录。关闭窗口时，结果将复制到剪贴板

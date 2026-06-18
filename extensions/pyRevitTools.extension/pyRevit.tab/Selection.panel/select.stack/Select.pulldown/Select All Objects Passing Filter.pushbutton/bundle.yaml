@@ -1,5 +1,6 @@
 title:
   en_us: Select All Objects Passing Filter
+  ko: 필터를 통과하는 모든 객체 선택
   fr_fr: Sélectionner tous les objets correspondant au filtre
   ru: Выделить все объекты, проходящие через фильтр
   chinese_s: 选择所有通过过滤器的图元
@@ -9,6 +10,7 @@ title:
 tooltip:
   en_us: >-
     Selects all elements that pass one or more selected filters and are visible in the active view. Useful for quickly filtering elements based on predefined conditions. Can be configured for elements in project instead of view, excluding nested, reverse the filter.
+  ko: 활성 뷰에서 하나 이상의 선택한 필터를 통과하고 표시되는 모든 요소를 선택합니다. 사전 정의된 조건으로 요소를 빠르게 필터링하는 데 유용합니다. 뷰 대신 프로젝트의 요소, 중첩 제외, 필터 반전으로 구성할 수 있습니다.
   fr_fr: >-
     Sélectionne tous les éléments correspondant à un ou plusieurs filtres choisis, visibles dans la vue active. Utile pour filtrer rapidement selon des critères définis. Peut être configuré pour les éléments du projet entier, exclure les éléments imbriqués, ou inverser le filtre.
   ru: >-

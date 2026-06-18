@@ -469,6 +469,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             SetMemberValue(_scriptDataType, scriptData, "CommandName", $"Starting {extension.Name}");
             SetMemberValue(_scriptDataType, scriptData, "CommandBundle", string.Empty);
             SetMemberValue(_scriptDataType, scriptData, "CommandExtension", extension.Name);
+            SetMemberValue(_scriptDataType, scriptData, "IsStartupScript", true);
             SetMemberValue(_scriptDataType, scriptData, "HelpSource", string.Empty);
             return scriptData;
         }

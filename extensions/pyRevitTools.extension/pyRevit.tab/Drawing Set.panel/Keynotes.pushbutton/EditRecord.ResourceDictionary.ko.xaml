@@ -1,0 +1,48 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">키노트 편집</system:String>
+    <system:String x:Key="KeynoteTitle">키노트 키</system:String>
+    <system:String x:Key="ParentTitle">키노트 상위 항목</system:String>
+    <system:String x:Key="ApplyChanges">변경 사항 적용</system:String>
+    <system:String x:Key="UpperInfo">대문자로</system:String>
+    <system:String x:Key="LowerInfo">소문자로</system:String>
+    <system:String x:Key="TitleCaseInfo">제목 형식으로</system:String>
+    <system:String x:Key="SentenceCaseInfo">문장 형식으로</system:String>
+    <system:String x:Key="TranslateInfo">번역</system:String>
+    <system:String x:Key="TemplatesInfo">템플릿</system:String>
+
+    <system:String x:Key="AddCategoryTitle">카테고리 추가</system:String>
+    <system:String x:Key="CreateCategoryKey">카테고리 키 생성</system:String>
+    <system:String x:Key="AddCategoryApply">카테고리 추가</system:String>
+
+    <system:String x:Key="EditCategoryTitle">카테고리 편집</system:String>
+    <system:String x:Key="EditCategoryKey">카테고리 키</system:String>
+    <system:String x:Key="EditCategoryApply">카테고리 업데이트</system:String>
+
+    <system:String x:Key="AddKeynoteTitle">키노트 추가</system:String>
+    <system:String x:Key="CreateKeynoteKey">키노트 키 생성</system:String>
+    <system:String x:Key="AddKeynoteApply">키노트 추가</system:String>
+
+    <system:String x:Key="EditKeynoteTitle">키노트 편집</system:String>
+    <system:String x:Key="EditKeynoteKey">키노트 키</system:String>
+    <system:String x:Key="EditKeynoteApply">키노트 업데이트</system:String>
+
+    <system:String x:Key="CategoryKeyValidate">카테고리에는 고유한 키가 있어야 합니다.</system:String>
+    <system:String x:Key="CategoryTitleValidate">카테고리에는 제목이 있어야 합니다.</system:String>
+    <system:String x:Key="CategoryTitleRemoved">기존 제목이 제거되었습니다. 카테고리에는 제목이 있어야 합니다.</system:String>
+
+    <system:String x:Key="KeynoteKeyValidate">키노트에는 고유한 키가 있어야 합니다.</system:String>
+    <system:String x:Key="KeynoteTextValidate">키노트에는 텍스트가 있어야 합니다.</system:String>
+    <system:String x:Key="KeynoteParentValidate">키노트에는 상위 항목이 있어야 합니다.</system:String>
+    <system:String x:Key="KeynoteTextRemoved">기존 텍스트가 제거되었습니다. 키노트에는 텍스트가 있어야 합니다.</system:String>
+
+    <system:String x:Key="EnterUniqueKey">고유한 키를 입력하세요</system:String>
+    <system:String x:Key="PickParent">상위 항목 선택...</system:String>
+
+    <system:String x:Key="SelectTemplate">템플릿 선택</system:String>
+    <system:String x:Key="TemplateReserved">-- 향후 사용을 위해 예약됨 --</system:String>
+    <system:String x:Key="TemplateDontUse">!! 사용하지 마세요 !!</system:String>
+    <system:String x:Key="ComingSoon">아직 구현되지 않았습니다. 곧 제공됩니다.</system:String>
+
+</ResourceDictionary>

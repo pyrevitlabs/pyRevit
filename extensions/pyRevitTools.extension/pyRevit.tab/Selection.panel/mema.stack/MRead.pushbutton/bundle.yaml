@@ -1,6 +1,7 @@
 help_url: '{{docpath}}pAM-ARIXXLw'
 title:
   en_us: MRead
+  ko: 메모리 읽기
   fr_fr: MLire
   ru: ПВыделить
   chinese_s: M读取
@@ -12,6 +13,7 @@ tooltip:
     Read selection from memory
 
     Works like the MR button in a calculator. This is a project-dependent memory. Every project has its own selection memory saved in %appdata%/pyRevit folder as *.pym files
+  ko: 메모리에서 선택 읽기
   fr_fr: >-
     Lire la sélection de la mémoire
 

@@ -3,6 +3,7 @@ title:
     Preflight
 
     Checks
+  ko: 사전 점검
   fr_fr: >-
     Preflight
 
@@ -26,6 +27,7 @@ title:
     Checks
 tooltip:
   en_us: Run builtin or custom preflight checks on your models. Shift + click to configure the tool the first time.
+  ko: 모델에서 기본 제공 또는 사용자 지정 사전 점검을 실행합니다. Shift+클릭으로 처음 도구를 구성합니다.
   fr_fr: Lance des validations preflight incluses ou personnalisées sur vos fichiers. Shift + click pour configurer loutil la première fois.
   ru: Запустить встроенные или настраеваемые предварительные проверки вашей модели.
   chinese_s: 在您的模型上运行内置的或自定义的预检检查。首次使用时，请按 Shift + 单击以配置此工具

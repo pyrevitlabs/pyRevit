@@ -1,5 +1,6 @@
 title:
   en_us: Convert drafting to legend
+  ko: 제도 뷰를 범례로 변환
   fr_fr: Convertir vues de dessin en légendes
   ru: Конвертировать чертеж в легенду
   chinese_s: 将详图视图转换为图例视图
@@ -8,6 +9,7 @@ title:
   pt_br: Converter Vista de Desenho em Legenda
 tooltip:
   en_us: Converts selected drafting views to legend views
+  ko: 선택한 제도 뷰를 범례 뷰로 변환합니다
   fr_fr: Convertir les vues de dessin sélectionnées en vue de légende
   ru: Конвертирует выделенный чертеж в легенду.
   chinese_s: 将选定的详图视图转换为图例视图
