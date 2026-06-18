@@ -14,9 +14,31 @@ import os.path as op
 # and crash Revit.
 sys.setrecursionlimit(1000)
 
-repo_path = op.dirname(op.dirname(op.dirname(op.dirname(__file__))))
-sys.path.append(op.join(repo_path, 'pyrevitlib'))
-sys.path.append(op.join(repo_path, 'site-packages'))
+# Discover the pyRevit root by walking up from this file's location until the
+# pyrevitlib directory is found.  This handles both installed layouts
+# (bin/engines/<script>) and build layouts (bin/netcore/engines/<script>).
+def _find_pyrevit_root(start):
+    current = op.abspath(start)
+    while True:
+        if op.isdir(op.join(current, 'pyrevitlib')):
+            return current
+        parent = op.dirname(current)
+        if parent == current:
+            return None
+        current = parent
+
+_root = _find_pyrevit_root(op.dirname(op.abspath(__file__)))
+if _root:
+    _pyrevitlib = op.join(_root, 'pyrevitlib')
+    _site_packages = op.join(_root, 'site-packages')
+    if _pyrevitlib not in sys.path:
+        sys.path.insert(0, _pyrevitlib)
+    if op.isdir(_site_packages) and _site_packages not in sys.path:
+        sys.path.insert(0, _site_packages)
+else:
+    raise RuntimeError(
+        "pyRevit root not found: could not locate 'pyrevitlib' by walking up from '{}'".format(__file__)
+    )
 
 from pyrevit.loader import sessionmgr
 

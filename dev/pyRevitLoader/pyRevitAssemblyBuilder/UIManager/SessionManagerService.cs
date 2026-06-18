@@ -575,12 +575,24 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 return;
             }
 
-            // Entry scripts live in the engines directory, one level above the runtime
-            // assemblies (bin/<rt>/engines/<script>, alongside the loader's engine folders).
-            var enginesDir = string.IsNullOrEmpty(_binDir) ? null : System.IO.Path.GetDirectoryName(_binDir);
-            var scriptPath = enginesDir != null
-                ? System.IO.Path.Combine(enginesDir, scriptFileName)
-                : null;
+            // Entry scripts live in the engines directory alongside the engine subfolders.
+            // The loader DLL may reside inside an engine version subfolder (one level below engines/)
+            // or directly in engines/ itself, so check both locations.
+            string? scriptPath = null;
+            if (!string.IsNullOrEmpty(_binDir))
+            {
+                var candidate = System.IO.Path.Combine(_binDir, scriptFileName);
+                if (System.IO.File.Exists(candidate))
+                {
+                    scriptPath = candidate;
+                }
+                else
+                {
+                    var parent = System.IO.Path.GetDirectoryName(_binDir);
+                    if (parent != null)
+                        scriptPath = System.IO.Path.Combine(parent, scriptFileName);
+                }
+            }
 
             if (scriptPath == null || !System.IO.File.Exists(scriptPath))
             {
