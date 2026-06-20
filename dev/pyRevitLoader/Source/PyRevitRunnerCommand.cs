@@ -197,6 +197,21 @@ namespace PyRevitRunner {
             }
         }
 
+        // Returns the user-configured output stylesheet, or the bundled outputstyles.css from the
+        // attached clone when none is set. The default is applied here because the env dictionary is
+        // seeded before any script imports pyrevit.output, which is what otherwise supplies it.
+        // Returns empty when the bundled stylesheet cannot be located.
+        private static string ResolveOutputStyleSheet(string configuredStyleSheet, string clonePath) {
+            if (!string.IsNullOrEmpty(configuredStyleSheet))
+                return configuredStyleSheet;
+
+            if (string.IsNullOrEmpty(clonePath))
+                return string.Empty;
+
+            var bundled = Path.Combine(PyRevitClone.GetPyRevitPath(clonePath), "output", "outputstyles.css");
+            return File.Exists(bundled) ? bundled : string.Empty;
+        }
+
         private static void LogRunnerError(string logFilePath, Exception ex) {
             if (string.IsNullOrWhiteSpace(logFilePath))
                 return;
@@ -251,7 +266,8 @@ namespace PyRevitRunner {
             envData[EnvDictionaryKeys.AppTelemetryEventFlags] = PyRevitConfigs.GetAppTelemetryFlags();
 
             envData[EnvDictionaryKeys.AutoUpdating] = PyRevitConfigs.GetAutoUpdate();
-            envData[EnvDictionaryKeys.OutputStyleSheet] = PyRevitConfigs.GetOutputStyleSheet();
+            envData[EnvDictionaryKeys.OutputStyleSheet] =
+                ResolveOutputStyleSheet(PyRevitConfigs.GetOutputStyleSheet(), attachment?.Clone?.ClonePath);
 
             if (!envData.Contains(EnvDictionaryKeys.Hooks))
                 envData[EnvDictionaryKeys.Hooks] = new Dictionary<string, Dictionary<string, string>>();
