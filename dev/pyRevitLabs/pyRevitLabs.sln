@@ -57,6 +57,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.Configurations"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.Configurations.Ini", "pyRevitLabs.Configurations.Ini\pyRevitLabs.Configurations.Ini.csproj", "{B5F57C5E-F245-4F92-B44C-F0C99CA3FC00}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.Configurations.Tests", "tests\pyRevitLabs.Configurations.Tests\pyRevitLabs.Configurations.Tests.csproj", "{3FB477D3-C7AC-49E1-BF0F-855908D94465}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pyRevitLabs.Configurations.Ini.Tests", "tests\pyRevitLabs.Configurations.Ini.Tests\pyRevitLabs.Configurations.Ini.Tests.csproj", "{9834385B-6D51-4E7B-A4A9-FC76A0D1236C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -259,6 +265,30 @@ Global
 		{B5F57C5E-F245-4F92-B44C-F0C99CA3FC00}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B5F57C5E-F245-4F92-B44C-F0C99CA3FC00}.Release|x86.ActiveCfg = Release|Any CPU
 		{B5F57C5E-F245-4F92-B44C-F0C99CA3FC00}.Release|x86.Build.0 = Release|Any CPU
+		{3FB477D3-C7AC-49E1-BF0F-855908D94465}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{3FB477D3-C7AC-49E1-BF0F-855908D94465}.Debug|x64.Build.0 = Debug|Any CPU
+		{3FB477D3-C7AC-49E1-BF0F-855908D94465}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3FB477D3-C7AC-49E1-BF0F-855908D94465}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3FB477D3-C7AC-49E1-BF0F-855908D94465}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{3FB477D3-C7AC-49E1-BF0F-855908D94465}.Debug|x86.Build.0 = Debug|Any CPU
+		{3FB477D3-C7AC-49E1-BF0F-855908D94465}.Release|x64.ActiveCfg = Release|Any CPU
+		{3FB477D3-C7AC-49E1-BF0F-855908D94465}.Release|x64.Build.0 = Release|Any CPU
+		{3FB477D3-C7AC-49E1-BF0F-855908D94465}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3FB477D3-C7AC-49E1-BF0F-855908D94465}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3FB477D3-C7AC-49E1-BF0F-855908D94465}.Release|x86.ActiveCfg = Release|Any CPU
+		{3FB477D3-C7AC-49E1-BF0F-855908D94465}.Release|x86.Build.0 = Release|Any CPU
+		{9834385B-6D51-4E7B-A4A9-FC76A0D1236C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{9834385B-6D51-4E7B-A4A9-FC76A0D1236C}.Debug|x64.Build.0 = Debug|Any CPU
+		{9834385B-6D51-4E7B-A4A9-FC76A0D1236C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9834385B-6D51-4E7B-A4A9-FC76A0D1236C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9834385B-6D51-4E7B-A4A9-FC76A0D1236C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{9834385B-6D51-4E7B-A4A9-FC76A0D1236C}.Debug|x86.Build.0 = Debug|Any CPU
+		{9834385B-6D51-4E7B-A4A9-FC76A0D1236C}.Release|x64.ActiveCfg = Release|Any CPU
+		{9834385B-6D51-4E7B-A4A9-FC76A0D1236C}.Release|x64.Build.0 = Release|Any CPU
+		{9834385B-6D51-4E7B-A4A9-FC76A0D1236C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9834385B-6D51-4E7B-A4A9-FC76A0D1236C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9834385B-6D51-4E7B-A4A9-FC76A0D1236C}.Release|x86.ActiveCfg = Release|Any CPU
+		{9834385B-6D51-4E7B-A4A9-FC76A0D1236C}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -266,6 +296,8 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{1347631C-E332-42BC-9CEA-82316B734AE0} = {E17D68C8-87FC-33C3-C0B8-39062840C42E}
 		{B5F57C5E-F245-4F92-B44C-F0C99CA3FC00} = {E17D68C8-87FC-33C3-C0B8-39062840C42E}
+		{3FB477D3-C7AC-49E1-BF0F-855908D94465} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{9834385B-6D51-4E7B-A4A9-FC76A0D1236C} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {29169547-9C0C-4620-A37C-77CB6B30F4F0}
