@@ -2650,7 +2650,7 @@ namespace pyRevitLabs.Emojis {
                 ExtractEmojis();
 
             // The shortcode must not span whitespace or colons
-            return Regex.Replace(input, @"\:(?<code>[^\s:]+?)\:", ReplaceEmojiShortCode);
+            return Regex.Replace(input, @"\:(?<code>[^\s:]+)\:", ReplaceEmojiShortCode);
         }
 
         private static string ReplaceEmojiShortCode(Match match) {
