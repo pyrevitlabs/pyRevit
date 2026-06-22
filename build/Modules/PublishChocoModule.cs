@@ -43,18 +43,44 @@ public sealed class PublishChocoModule(IOptions<PublishOptions> publishOptions) 
             },
             cancellationToken: cancellationToken);
 
-        await context.Shell.Command.ExecuteCommandLineTool(
-            new GenericCommandLineToolOptions("choco")
+        try
+        {
+            await context.Shell.Command.ExecuteCommandLineTool(
+                new GenericCommandLineToolOptions("choco")
+                {
+                    Arguments =
+                    [
+                        "push",
+                        packagePath,
+                        "-s",
+                        publishOptions.Value.ChocoSource,
+                    ],
+                },
+                cancellationToken: cancellationToken);
+        }
+        catch (Exception ex) when (IsAlreadyPublishedConflict(ex))
+        {
+            context.Summary.KeyValue(
+                "Choco",
+                "Push",
+                "skipped (version already published)");
+        }
+    }
+
+    private static bool IsAlreadyPublishedConflict(Exception exception)
+    {
+        for (var current = exception; current is not null; current = current.InnerException)
+        {
+            var message = current.Message;
+            if (message.Contains("409", StringComparison.Ordinal)
+                || message.Contains("Conflict", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("already exists", StringComparison.OrdinalIgnoreCase))
             {
-                Arguments =
-                [
-                    "push",
-                    packagePath,
-                    "-s",
-                    publishOptions.Value.ChocoSource,
-                ],
-            },
-            cancellationToken: cancellationToken);
+                return true;
+            }
+        }
+
+        return false;
     }
 
 }
