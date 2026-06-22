@@ -111,6 +111,19 @@ namespace pyRevitAssemblyBuilder.SessionManager
             seedMethod.Invoke(null, new object[] { values });
         }
 
+        internal static string ResolveOutputStyleSheet(string configuredStyleSheet, string pyRevitRoot)
+        {
+            var configured = configuredStyleSheet?.Trim();
+            if (!string.IsNullOrEmpty(configured) && File.Exists(configured))
+                return configured;
+
+            if (string.IsNullOrEmpty(pyRevitRoot))
+                return string.Empty;
+
+            var bundled = Path.Combine(pyRevitRoot, "pyrevitlib", "pyrevit", "output", "outputstyles.css");
+            return File.Exists(bundled) ? bundled : string.Empty;
+        }
+
         /// <summary>
         /// Returns the Revit version already seeded into the AppDomain env dictionary by the
         /// Python sessioninfo step (the precise subversion, e.g. "2025.4.10"), or null if none

@@ -197,13 +197,10 @@ namespace PyRevitRunner {
             }
         }
 
-        // Returns the user-configured output stylesheet, or the bundled outputstyles.css from the
-        // attached clone when none is set. The default is applied here because the env dictionary is
-        // seeded before any script imports pyrevit.output, which is what otherwise supplies it.
-        // Returns empty when the bundled stylesheet cannot be located.
         private static string ResolveOutputStyleSheet(string configuredStyleSheet, string clonePath) {
-            if (!string.IsNullOrEmpty(configuredStyleSheet))
-                return configuredStyleSheet;
+            var configured = configuredStyleSheet?.Trim();
+            if (!string.IsNullOrEmpty(configured) && File.Exists(configured))
+                return configured;
 
             if (string.IsNullOrEmpty(clonePath))
                 return string.Empty;
