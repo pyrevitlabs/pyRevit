@@ -10,6 +10,7 @@ public static class PyRevitPaths
     public static string DevPath => Path.Combine(Root, "dev");
     public static string BinPath => Path.Combine(Root, "bin");
     public static string DistPath => Path.Combine(Root, "dist");
+    public static string GitHubReleaseUrlFile => Path.Combine(DistPath, "github-release-url.txt");
     public static string ReleasePath => Path.Combine(Root, "release");
 
     public static string LabsSolution => Path.Combine(DevPath, "pyRevitLabs", "pyRevitLabs.sln");

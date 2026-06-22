@@ -61,6 +61,12 @@ public sealed class PublishGithubReleaseModule(IOptions<PublishOptions> publishO
             }, cancellationToken)
             .ProcessInParallel();
 
+        Directory.CreateDirectory(PyRevitPaths.DistPath);
+        await File.WriteAllTextAsync(
+            PyRevitPaths.GitHubReleaseUrlFile,
+            release.HtmlUrl,
+            cancellationToken);
+
         context.Summary.KeyValue("Deployment", "GitHub", release.HtmlUrl);
         return release.HtmlUrl;
     }

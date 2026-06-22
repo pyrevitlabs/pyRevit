@@ -26,6 +26,11 @@ public sealed class NotifyIssuesModule(IOptions<BuildOptions> buildOptions) : Mo
         var notifyUrl = buildOptions.Value.NotifyUrl;
         if (string.IsNullOrWhiteSpace(notifyUrl))
         {
+            notifyUrl = ReadPublishedReleaseUrl();
+        }
+
+        if (string.IsNullOrWhiteSpace(notifyUrl))
+        {
             context.Summary.Warning("NotifyUrl is not set; skipping issue notifications.");
             return;
         }
@@ -116,6 +121,17 @@ public sealed class NotifyIssuesModule(IOptions<BuildOptions> buildOptions) : Mo
                     posted,
                     tickets.Count));
         }
+    }
+
+    internal static string? ReadPublishedReleaseUrl()
+    {
+        if (!File.Exists(PyRevitPaths.GitHubReleaseUrlFile))
+        {
+            return null;
+        }
+
+        var url = File.ReadAllText(PyRevitPaths.GitHubReleaseUrlFile).Trim();
+        return string.IsNullOrWhiteSpace(url) ? null : url;
     }
 
     private static async Task<string> FindLatestTagAsync(IModuleContext context, CancellationToken cancellationToken)
