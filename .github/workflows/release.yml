@@ -14,6 +14,10 @@ on:
         description: Published release URL (required for notify-only runs)
         type: string
         required: false
+      tag_ref:
+        description: Release tag to notify for (e.g. v6.5.0.26173+1406)
+        type: string
+        required: false
 
 concurrency:
   group: pyrevit-release-${{ github.ref }}
@@ -143,6 +147,8 @@ jobs:
   notify:
     needs: release
     if: |
+      always() &&
+      !cancelled() &&
       github.repository == 'pyrevitlabs/pyRevit' && (
         (github.event_name == 'push' && github.ref_type == 'tag' && needs.release.result == 'success') ||
         (github.event_name == 'workflow_dispatch' && inputs.notify_only == true)
@@ -158,7 +164,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
-          ref: ${{ github.ref }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_ref || github.ref }}
 
       - name: Notify linked issues
         continue-on-error: true
