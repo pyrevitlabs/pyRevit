@@ -25,6 +25,12 @@ public sealed record CoreSection
     [KeyName("closeoutputmode")]
     public string? CloseOutputMode { get; set; }
 
+    [KeyName("new_loader")]
+    public bool? NewLoader { get; set; } = true;
+
+    [KeyName("read_script_metadata")]
+    public bool? ReadScriptMetadata { get; set; } = true;
+
     [KeyName("autoupdate")]
     public bool? AutoUpdate { get; set; }
 

@@ -270,6 +270,60 @@ class PyRevitConfig(object):
         self.core.LoadBeta = state
 
     @property
+    def new_loader(self):
+        """Whether to use new csharp loader."""
+        return self.core.NewLoader
+
+    @new_loader.setter
+    def new_loader(self, state):
+        self.core.NewLoader = state
+
+    @property
+    def read_script_metadata(self):
+        """Whether to read script metadata (__title__, __author__, etc) from Python scripts.
+
+        When False, pyRevit will skip reading metadata from .py script files and will
+        only use values from bundle.yaml. This improves startup performance but may
+        affect commands that rely on script-level metadata.
+        """
+        return self.core.ReadScriptMetadata
+
+    @read_script_metadata.setter
+    def read_script_metadata(self, state):
+        self.core.ReadScriptMetadata = state
+
+    @property
+    def output_close_others(self):
+        """Whether to close other output windows."""
+        return self.core.CloseOtherOutputs
+
+    @output_close_others.setter
+    def output_close_others(self, state):
+        self.core.CloseOtherOutputs = state
+
+    @property
+    def output_close_mode_enum(self):
+        """Output window closing mode as enum (CurrentCommand | CloseAll)."""
+        value = self.core.CloseOutputMode
+        if not value:
+            value = CONSTS.ConfigsCloseOutputModeDefault
+
+        value_lc = str(value).lower()
+
+        if value_lc == str(CONSTS.ConfigsCloseOutputModeCloseAll).lower():
+            return PyRevit.OutputCloseMode.CloseAll
+        else:
+            return PyRevit.OutputCloseMode.CurrentCommand
+
+    @output_close_mode_enum.setter
+    def output_close_mode_enum(self, mode):
+        """Store string in INI, mapped from enum."""
+        if mode == PyRevit.OutputCloseMode.CloseAll:
+            self.core.CloseOutputMode = CONSTS.ConfigsCloseOutputModeCloseAll
+        else:
+            self.core.CloseOutputMode = CONSTS.ConfigsCloseOutputModeCurrentCommand
+
+    @property
     def cpython_engine_version(self):
         """CPython engine version to use."""
         return self.core.CpythonEngineVersion
@@ -464,15 +518,21 @@ class PyRevitConfig(object):
         Returns:
             (list[str]): External user extension directories.
         """
-        dir_list = set()
+        # Fix for #3193: preserve deterministic ordering with the default
+        # path first, removing duplicates while keeping config-file order.
+        seen = set()
+        dir_list = []
         if include_default:
-            # add default ext path
-            dir_list.add(THIRDPARTY_EXTENSIONS_DEFAULT_DIR)
+            norm = op.normpath(THIRDPARTY_EXTENSIONS_DEFAULT_DIR)
+            if norm not in seen:
+                seen.add(norm)
+                dir_list.append(norm)
         try:
-            dir_list.update([
-                op.expandvars(op.normpath(x))
-                for x in (self.core.UserExtensions or [])
-            ])
+            for x in (self.core.UserExtensions or []):
+                norm = op.expandvars(op.normpath(x))
+                if norm not in seen:
+                    seen.add(norm)
+                    dir_list.append(norm)
         except Exception as read_err:
             mlogger.error('Error reading list of user extension folders. | %s',
                           read_err)
@@ -514,10 +574,21 @@ class PyRevitConfig(object):
             mlogger.error('Error setting list of user extension folders. | %s',
                           write_err)
 
-    def get_current_attachment(self):
-        """Return current pyRevit attachment."""
+    def get_current_attachment(self, cached=True):
+        """Return current pyRevit attachment.
+
+        The shared C# attachment cache lets all script engines reuse a single
+        disk lookup. Cleared on reload and on Attach/Detach/clone changes.
+
+        Args:
+            cached (bool): set False to bypass the session cache when the
+                attachment may have changed out of process.
+        """
         try:
-            return PyRevit.PyRevitAttachments.GetAttached(int(HOST_APP.version))
+            host_version = int(HOST_APP.version)
+            if cached:
+                return PyRevit.PyRevitAttachments.GetAttachedCached(host_version)
+            return PyRevit.PyRevitAttachments.GetAttached(host_version)
         except PyRevitException as ex:
             mlogger.error('Error getting current attachment. | %s', ex)
 

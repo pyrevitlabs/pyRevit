@@ -170,7 +170,7 @@ def get_config(section=None, reload=False):
         reload (bool, optional): forces a reload, in case changes were made.
 
     Returns:
-        (pyrevit.coreutils.configparser.PyRevitConfigSectionParser):
+        (pyrevit.coreutils.configparser.ConfigSection):
             Config section parser object
     """
     from pyrevit.userconfig import user_config
