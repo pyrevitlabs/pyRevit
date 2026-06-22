@@ -12,8 +12,10 @@ public sealed class ResolveVersioningModule(IOptions<BuildOptions> buildOptions)
     protected override Task<VersionInfo?> ExecuteAsync(IModuleContext context, CancellationToken cancellationToken)
     {
         var baseVersion = VersionHelper.ReadBuildVersion();
-        var buildVersion = VersionHelper.UpdateBuildNumber(baseVersion.Split('+')[0].Split('-')[0]);
-        buildVersion = VersionHelper.ApplyChannel(buildVersion, buildOptions.Value.Channel);
+        var buildVersion = VersionHelper.ResolveBuildVersion(
+            baseVersion,
+            buildOptions.Value.Channel,
+            VersionHelper.IsVersionTagBuild());
         var versionInfo = VersionHelper.CreateVersionInfo(buildVersion);
         context.Summary.KeyValue("Build", "Version", versionInfo.BuildVersion);
         context.Summary.KeyValue("Build", "InstallVersion", versionInfo.InstallVersion);

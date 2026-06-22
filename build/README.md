@@ -111,7 +111,7 @@ dotnet test tests/Build.Tests.csproj -c Release
 
 | Args | Purpose |
 |------|---------|
-| `ci` (default) | Stamp versions, build products, verify LibGit2, stage release metadata |
+| `ci` (default) | Stamp versions, build products, verify LibGit2, stage release metadata (tag builds preserve the committed version; branch builds re-stamp) |
 | `pack` | Restore CI-stamped metadata (if present), build Inno/MSI installers and Chocolatey package (requires `bin/`) |
 | `sign` | Sign binaries, installers, and `.nupkg` via `sign code trusted-signing` |
 | `publish` | Generate release notes, create draft GitHub release, push Chocolatey |
