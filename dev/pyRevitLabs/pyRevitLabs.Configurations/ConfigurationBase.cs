@@ -128,7 +128,17 @@ public abstract class ConfigurationBase : IConfiguration
         if (!HasSectionKey(sectionName, keyName))
             return defaultValue;
 
-        return (T) GetValueImpl(typeof(T), sectionName, keyName);
+        try
+        {
+            return (T) GetValueImpl(typeof(T), sectionName, keyName);
+        }
+        catch (Exception)
+        {
+            // A malformed/legacy value (e.g. escape-doubling corruption from
+            // older configs) must not take down config loading; fall back to
+            // the default, matching pyRevit's historical read tolerance.
+            return defaultValue;
+        }
     }
 
     public object? GetValueOrDefault(Type typeObject, string sectionName, string keyName, object? defaultValue = default)
@@ -145,7 +155,16 @@ public abstract class ConfigurationBase : IConfiguration
         if (!HasSectionKey(sectionName, keyName))
             return defaultValue;
 
-        return GetValueImpl(typeObject, sectionName, keyName);
+        try
+        {
+            return GetValueImpl(typeObject, sectionName, keyName);
+        }
+        catch (Exception)
+        {
+            // Tolerate malformed/legacy values; fall back to the default
+            // rather than failing the entire section/config load.
+            return defaultValue;
+        }
     }
 
     /// <inheritdoc />
