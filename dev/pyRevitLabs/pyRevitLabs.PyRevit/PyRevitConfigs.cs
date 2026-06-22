@@ -38,29 +38,65 @@ namespace pyRevitLabs.PyRevit
         /// </remarks>
         public static IConfigurationService GetConfigFile(string overrideName = default)
         {
-            string userConfig = PyRevitConsts.ConfigFilePath;
+            // Per-user (APPDATA) config is the writable target and takes priority,
+            // matching pyRevit's historical discovery. The admin/all-users config
+            // (ProgramData) is an org default that a non-elevated Revit session
+            // often cannot write, so it is used read-only when the user has no
+            // own config yet. This avoids "access denied" when an all-users
+            // install marker routes the install scope to ProgramData.
+            string userConfig =
+                PyRevitConsts.FindConfigFileInDirectory(PyRevitLabsConsts.PyRevitPath)
+                ?? Path.Combine(PyRevitLabsConsts.PyRevitPath, PyRevitConsts.DefaultConfigsFileName);
             string adminConfig = PyRevitConsts.AdminConfigFilePath;
 
-            // create admin config
-            if (!File.Exists(userConfig)
-                && File.Exists(adminConfig)
-                && new FileInfo(adminConfig).IsReadOnly)
+            // No per-user config yet, but an admin config exists.
+            if (!File.Exists(userConfig) && File.Exists(adminConfig))
             {
-                _logger.Debug("Creating admin config service {@ConfigPath}...", adminConfig);
-                return CreateConfiguration(adminConfig, true, overrideName);
-            }
+                // Admin config not writable by this process -> use it read-only.
+                if (new FileInfo(adminConfig).IsReadOnly || !IsFileWritable(adminConfig))
+                {
+                    _logger.Debug("Using read-only admin config {@ConfigPath}...", adminConfig);
+                    return CreateConfiguration(adminConfig, true, overrideName);
+                }
 
-            // copy admin config to user config
-            // first run when user config not created
-            if (!File.Exists(userConfig)
-                && !new FileInfo(adminConfig).IsReadOnly)
-            {
-                _logger.Debug("Copy admin config file...");
-                SetupConfig(adminConfig);
+                // Writable admin config -> seed it into the per-user location.
+                _logger.Debug("Seeding admin config into user config {@ConfigPath}...", userConfig);
+                SeedToUserConfig(adminConfig, userConfig);
             }
 
             _logger.Debug("Creating user config service {@ConfigPath}...", userConfig);
             return CreateConfiguration(userConfig, false, overrideName);
+        }
+
+        // FileInfo.IsReadOnly only reflects the read-only attribute, not the
+        // directory ACL. A ProgramData config is typically not flagged read-only
+        // yet a non-elevated process cannot write it; probe with an actual open.
+        private static bool IsFileWritable(string filePath)
+        {
+            try
+            {
+                using (new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
+                    return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static void SeedToUserConfig(string sourceFile, string targetFile)
+        {
+            try
+            {
+                var dir = Path.GetDirectoryName(targetFile);
+                if (!string.IsNullOrEmpty(dir))
+                    CommonUtils.EnsurePath(dir);
+                File.WriteAllText(targetFile, File.ReadAllText(sourceFile));
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug("Could not seed admin config to user config: {0}", ex.Message);
+            }
         }
 
         /// <summary>
