@@ -93,7 +93,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 [KeyAppTelemetryFlags]  = config.AppTelemetryEventFlags,
 
                 [KeyAutoUpdating]       = config.AutoUpdate,
-                [KeyOutputStyleSheet]   = config.OutputStyleSheet,
+                [KeyOutputStyleSheet]   = ResolveOutputStyleSheet(config.OutputStyleSheet, pyRevitRoot),
             };
 
             // Delegate to EnvDictionary.Seed() in the Runtime, which owns PythonDictionary creation.
@@ -109,6 +109,19 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 ?? throw new InvalidOperationException("Cannot find EnvDictionary.Seed(Dictionary<string, object>) method.");
 
             seedMethod.Invoke(null, new object[] { values });
+        }
+
+        internal static string ResolveOutputStyleSheet(string configuredStyleSheet, string pyRevitRoot)
+        {
+            var configured = configuredStyleSheet?.Trim();
+            if (!string.IsNullOrEmpty(configured) && File.Exists(configured))
+                return configured;
+
+            if (string.IsNullOrEmpty(pyRevitRoot))
+                return string.Empty;
+
+            var bundled = Path.Combine(pyRevitRoot, "pyrevitlib", "pyrevit", "output", "outputstyles.css");
+            return File.Exists(bundled) ? bundled : string.Empty;
         }
 
         /// <summary>

@@ -2649,7 +2649,7 @@ namespace pyRevitLabs.Emojis {
             if (_emojiZip is null)
                 ExtractEmojis();
 
-            return Regex.Replace(input, @"\:(?<code>[^:]+?)\:", ReplaceEmojiShortCode);
+            return Regex.Replace(input, @"\:(?<code>[^:]+)\:", ReplaceEmojiShortCode);
         }
 
         private static string ReplaceEmojiShortCode(Match match) {
