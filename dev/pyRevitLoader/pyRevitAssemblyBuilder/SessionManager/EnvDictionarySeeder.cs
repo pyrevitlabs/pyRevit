@@ -111,6 +111,12 @@ namespace pyRevitAssemblyBuilder.SessionManager
             seedMethod.Invoke(null, new object[] { values });
         }
 
+        /// <summary>
+        /// Returns the user-configured output stylesheet, or the bundled outputstyles.css when none
+        /// is set. The default is applied here because the session window renders loader output
+        /// before any script imports pyrevit.output, which is what otherwise supplies it.
+        /// Returns empty when the bundled stylesheet cannot be located.
+        /// </summary>
         internal static string ResolveOutputStyleSheet(string configuredStyleSheet, string pyRevitRoot)
         {
             var configured = configuredStyleSheet?.Trim();
@@ -139,24 +145,6 @@ namespace pyRevitAssemblyBuilder.SessionManager
             }
             catch { /* fall back to the loader-supplied version */ }
             return null;
-        }
-
-        /// <summary>
-        /// Returns the user-configured output stylesheet, or the bundled outputstyles.css when none
-        /// is set. The default is applied here because the session window renders loader output
-        /// before any script imports pyrevit.output, which is what otherwise supplies it.
-        /// Returns empty when the bundled stylesheet cannot be located.
-        /// </summary>
-        internal static string ResolveOutputStyleSheet(string configuredStyleSheet, string pyRevitRoot)
-        {
-            if (!string.IsNullOrEmpty(configuredStyleSheet))
-                return configuredStyleSheet;
-
-            if (string.IsNullOrEmpty(pyRevitRoot))
-                return string.Empty;
-
-            var bundled = Path.Combine(pyRevitRoot, "pyrevitlib", "pyrevit", "output", "outputstyles.css");
-            return File.Exists(bundled) ? bundled : string.Empty;
         }
 
         internal static string ReadPyRevitVersion(string pyRevitRoot)
