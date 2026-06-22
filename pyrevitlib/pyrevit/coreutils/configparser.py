@@ -46,7 +46,14 @@ class ConfigSection(object):
 
     def get_option(self, op_name, default_value=None):
         value = self.__configuration.GetValueOrDefault(self.__section_name, op_name, "")
-        return json.loads(value) if value else default_value
+        if not value:
+            return default_value
+        try:
+            return json.loads(value)
+        except (ValueError, TypeError):
+            # Legacy/non-JSON values (bare Windows paths, single-quoted
+            # strings, Python bools) must not crash the read; return raw.
+            return value
 
     def set_option(self, op_name, value):
         self.__configuration.SetValue(self.__section_name, op_name,

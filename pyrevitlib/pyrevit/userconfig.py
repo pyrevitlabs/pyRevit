@@ -443,7 +443,8 @@ class PyRevitConfig(object):
     @property
     def apptelemetry_event_flags(self):
         """Telemetry event flags."""
-        return str(hex(self.telemetry.AppTelemetryEventFlags))
+        flags = self.telemetry.AppTelemetryEventFlags
+        return str(hex(flags)) if flags is not None else ""
 
     @apptelemetry_event_flags.setter
     def apptelemetry_event_flags(self, flags):
@@ -656,6 +657,11 @@ class PyRevitConfig(object):
             self._update_env()
         else:
             mlogger.debug('Config is in admin mode. Skipping save.')
+
+    def reload(self):
+        """Reload configuration from disk, discarding unsaved in-memory edits."""
+        self.config_service = PyRevit.PyRevitConfigs.GetConfigFile()
+        self.config_sections = ConfigSections(self.config_service)
 
     @staticmethod
     def get_list_separator():

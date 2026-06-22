@@ -128,7 +128,7 @@ public sealed class ConfigurationService : IConfigurationService
         if (!_configurations.TryGetValue(configurationName, out IConfiguration? configuration))
             throw new ArgumentException($"Configuration with name {configurationName} not found");
 
-        return configuration.GetValue<T>(sectionName, keyName);
+        return configuration.GetValueOrDefault<T>(sectionName, keyName, defaultValue);
     }
 
     private void SaveSection(Type configurationType, object sectionValue, IConfiguration configuration)
@@ -142,9 +142,13 @@ public sealed class ConfigurationService : IConfigurationService
             object? defaultValue = GetKeyValue(Configurations, propertyInfo, sectionName, keyName);
 
             object? keyValue = propertyInfo.GetValue(sectionValue);
+            // A null property means "not provided by this caller" -> leave any
+            // existing value untouched. Removing here let a partial-section save
+            // (e.g. PyRevitConfigs.SetRocketMode passing a single-field record)
+            // strip every other key in the section.
             if (keyValue is null)
-                configuration.RemoveOption(sectionName, keyName);
-            else if(!keyValue.Equals(defaultValue))
+                continue;
+            if (!keyValue.Equals(defaultValue))
                 configuration.SetValue(sectionName, keyName, keyValue);
         }
 

@@ -208,10 +208,10 @@ namespace pyRevitLabs.PyRevit
         public static void SetUTCStamps(bool state,
             string revitVersion = ConfigurationService.DefaultConfigurationName)
         {
-            _logger.Debug("Setting telemetry utc timestamps to {@TelemetryStatus}...", state);
+            _logger.Debug("Setting telemetry utc timestamps to {@UseUtc}...", state);
 
             IConfigurationService cfg = GetConfigFile(revitVersion);
-            cfg.SaveSection(revitVersion, new TelemetrySection() {TelemetryStatus = state});
+            cfg.SaveSection(revitVersion, new TelemetrySection() {TelemetryUseUtcTimeStamps = state});
         }
 
         // routes
