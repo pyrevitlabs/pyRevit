@@ -6,6 +6,8 @@ using System.Linq;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
+using pyRevitLabs.Configurations;
+using pyRevitLabs.Configurations.Sections;
 using pyRevitLabs.NLog;
 
 namespace pyRevitLabs.PyRevit
@@ -113,7 +115,7 @@ namespace pyRevitLabs.PyRevit
         {
             // safely get clone list
             var cfg = PyRevitConfigs.GetConfigFile();
-            var clonesDict = cfg.GetDictValue(PyRevitConsts.EnvConfigsSectionName, PyRevitConsts.EnvConfigsInstalledClonesKey);
+            var clonesDict = cfg.Environment.Clones;
 
             var validatedClones = new List<PyRevitClone>();
             if (clonesDict is null)
@@ -735,11 +737,10 @@ namespace pyRevitLabs.PyRevit
         public static void SaveRegisteredClones(IEnumerable<PyRevitClone> clonesList)
         {
             var cfg = PyRevitConfigs.GetConfigFile();
-            var newValueDic = clonesList.ToDictionary(x => x.Name, x => x.ClonePath);
-            cfg.SetValue(
-                PyRevitConsts.EnvConfigsSectionName,
-                PyRevitConsts.EnvConfigsInstalledClonesKey,
-                newValueDic);
+            cfg.SaveSection(
+                ConfigurationService.DefaultConfigurationName,
+                new EnvironmentSection()
+                    {Clones = clonesList.ToDictionary(item => item.Name, item => item.ClonePath)});
             PyRevitAttachments.ClearAttachmentCache();
         }
     }

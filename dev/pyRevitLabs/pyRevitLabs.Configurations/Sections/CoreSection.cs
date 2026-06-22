@@ -19,6 +19,12 @@ public sealed record CoreSection
     [KeyName("loadbeta")]
     public bool? LoadBeta { get; set; }
 
+    [KeyName("closeotheroutputs")]
+    public bool? CloseOtherOutputs { get; set; }
+
+    [KeyName("closeoutputmode")]
+    public string? CloseOutputMode { get; set; }
+
     [KeyName("autoupdate")]
     public bool? AutoUpdate { get; set; }
 

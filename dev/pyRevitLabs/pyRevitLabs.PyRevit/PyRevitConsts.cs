@@ -42,7 +42,7 @@ namespace pyRevitLabs.PyRevit {
         public const string ReleaseDirName = "release";
         public const string SitePackagesDirName = "site-packages";
         public const string PyRevitfileFilename = "PyRevitfile";
-
+        
         public const string NetFxFolder = "netfx";
         public const string NetCoreFolder = "netcore";
 
@@ -207,7 +207,7 @@ namespace pyRevitLabs.PyRevit {
         public static string FindConfigFileInDirectory(string sourcePath) {
             var configMatcher = new Regex(ConfigsFileRegexPattern, RegexOptions.IgnoreCase);
             // capture exceptions that might occur getting the files under sourcePath
-            //
+            // 
             try {
                 if (CommonUtils.VerifyPath(sourcePath))
                     foreach (string subFile in Directory.GetFiles(sourcePath))

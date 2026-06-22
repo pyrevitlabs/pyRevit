@@ -6,11 +6,13 @@ using System.Reflection;
 using DocoptNet;
 using pyRevitCLI.Properties;
 using pyRevitLabs.Common;
+using pyRevitLabs.Configurations;
 using pyRevitLabs.NLog;
 using pyRevitLabs.NLog.Config;
 using pyRevitLabs.NLog.Targets;
 using pyRevitLabs.PyRevit;
 using Console = Colorful.Console;
+using Environment = System.Environment;
 
 
 // NOTE:
@@ -456,12 +458,15 @@ namespace pyRevitCLI
                 }
 
                 else if (any("enable", "disable"))
+                {
+                    string revitVersion = TryGetValue("<revit_year>") ?? ConfigurationService.DefaultConfigurationName;
                     PyRevitCLIExtensionCmds.ToggleExtension(
+                        revitVersion: revitVersion,
                         enable: arguments["enable"].IsTrue,
                         cloneName: TryGetValue("<clone_name>"),
                         extName: TryGetValue("<extension_name>")
-                    );
-
+                    ); 
+                }
                 else if (all("sources")) {
                     if (IsHelpMode)
                         PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.ExtensionsSources);
@@ -615,12 +620,14 @@ namespace pyRevitCLI
             }
 
             else if (all("configs")) {
+                string revitVersion = TryGetValue("<revit_year>") ?? ConfigurationService.DefaultConfigurationName;
+                
                 if (IsHelpMode)
                     PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Configs);
 
                 else if (all("bincache")) {
                     if (any("enable", "disable"))
-                        PyRevitConfigs.SetBinaryCaches(arguments["enable"].IsTrue);
+                        PyRevitConfigs.SetBinaryCaches(arguments["enable"].IsTrue, revitVersion);
                     else
                         Console.WriteLine(string.Format("Binary cache is {0}",
                                                         PyRevitConfigs.GetBinaryCaches() ? "Enabled" : "Disabled"));
@@ -628,7 +635,7 @@ namespace pyRevitCLI
 
                 else if (all("checkupdates")) {
                     if (any("enable", "disable"))
-                        PyRevitConfigs.SetCheckUpdates(arguments["enable"].IsTrue);
+                        PyRevitConfigs.SetCheckUpdates(arguments["enable"].IsTrue, revitVersion);
                     else
                         Console.WriteLine(string.Format("Check Updates is {0}",
                                                         PyRevitConfigs.GetCheckUpdates() ? "Enabled" : "Disabled"));
@@ -636,7 +643,7 @@ namespace pyRevitCLI
 
                 else if (all("autoupdate")) {
                     if (any("enable", "disable"))
-                        PyRevitConfigs.SetAutoUpdate(arguments["enable"].IsTrue);
+                        PyRevitConfigs.SetAutoUpdate(arguments["enable"].IsTrue, revitVersion);
                     else
                         Console.WriteLine(string.Format("Auto Update is {0}",
                                                         PyRevitConfigs.GetAutoUpdate() ? "Enabled" : "Disabled"));
@@ -644,7 +651,7 @@ namespace pyRevitCLI
 
                 else if (all("rocketmode")) {
                     if (any("enable", "disable"))
-                        PyRevitConfigs.SetRocketMode(arguments["enable"].IsTrue);
+                        PyRevitConfigs.SetRocketMode(arguments["enable"].IsTrue, revitVersion);
                     else
                         Console.WriteLine(string.Format("Rocket Mode is {0}",
                                                         PyRevitConfigs.GetRocketMode() ? "Enabled" : "Disabled"));
@@ -652,13 +659,13 @@ namespace pyRevitCLI
 
                 else if (all("logs")) {
                     if (all("none"))
-                        PyRevitConfigs.SetLoggingLevel(PyRevitLogLevels.Quiet);
+                        PyRevitConfigs.SetLoggingLevel(PyRevitLogLevels.Quiet, revitVersion);
 
                     else if (all("verbose"))
-                        PyRevitConfigs.SetLoggingLevel(PyRevitLogLevels.Verbose);
+                        PyRevitConfigs.SetLoggingLevel(PyRevitLogLevels.Verbose, revitVersion);
 
                     else if (all("debug"))
-                        PyRevitConfigs.SetLoggingLevel(PyRevitLogLevels.Debug);
+                        PyRevitConfigs.SetLoggingLevel(PyRevitLogLevels.Debug, revitVersion);
 
                     else
                         Console.WriteLine(string.Format("Logging Level is {0}", PyRevitConfigs.GetLoggingLevel().ToString()));
@@ -666,7 +673,7 @@ namespace pyRevitCLI
 
                 else if (all("filelogging")) {
                     if (any("enable", "disable"))
-                        PyRevitConfigs.SetFileLogging(arguments["enable"].IsTrue);
+                        PyRevitConfigs.SetFileLogging(arguments["enable"].IsTrue, revitVersion);
                     else
                         Console.WriteLine(string.Format("File Logging is {0}",
                                                         PyRevitConfigs.GetFileLogging() ? "Enabled" : "Disabled"));
@@ -677,12 +684,12 @@ namespace pyRevitCLI
                         Console.WriteLine(string.Format("Startup log timeout is set to: {0}",
                                                         PyRevitConfigs.GetStartupLogTimeout()));
                     else
-                        PyRevitConfigs.SetStartupLogTimeout(int.Parse(TryGetValue("<timeout>")));
+                        PyRevitConfigs.SetStartupLogTimeout(int.Parse(TryGetValue("<timeout>")), revitVersion);
                 }
 
                 else if (all("loadbeta")) {
                     if (any("enable", "disable"))
-                        PyRevitConfigs.SetLoadBetaTools(arguments["enable"].IsTrue);
+                        PyRevitConfigs.SetLoadBetaTools(arguments["enable"].IsTrue, revitVersion);
                     else
                         Console.WriteLine(string.Format("Load Beta is {0}",
                                                         PyRevitConfigs.GetLoadBetaTools() ? "Enabled" : "Disabled"));
@@ -693,12 +700,12 @@ namespace pyRevitCLI
                         Console.WriteLine(string.Format("CPython version is set to: {0}",
                                                         PyRevitConfigs.GetCpythonEngineVersion()));
                     else
-                        PyRevitConfigs.SetCpythonEngineVersion(int.Parse(TryGetValue("<cpy_version>")));
+                        PyRevitConfigs.SetCpythonEngineVersion(int.Parse(TryGetValue("<cpy_version>")), revitVersion);
                 }
 
                 else if (all("usercanupdate")) {
                     if (any("yes", "no"))
-                        PyRevitConfigs.SetUserCanUpdate(arguments["yes"].IsTrue);
+                        PyRevitConfigs.SetUserCanUpdate(arguments["yes"].IsTrue, revitVersion);
                     else
                         Console.WriteLine(string.Format("User {0} update",
                                                         PyRevitConfigs.GetUserCanUpdate() ? "CAN" : "CAN NOT"));
@@ -706,7 +713,7 @@ namespace pyRevitCLI
 
                 else if (all("usercanextend")) {
                     if (any("yes", "no"))
-                        PyRevitConfigs.SetUserCanExtend(arguments["yes"].IsTrue);
+                        PyRevitConfigs.SetUserCanExtend(arguments["yes"].IsTrue, revitVersion);
                     else
                         Console.WriteLine(string.Format("User {0} extend",
                                                         PyRevitConfigs.GetUserCanExtend() ? "CAN" : "CAN NOT"));
@@ -714,7 +721,7 @@ namespace pyRevitCLI
 
                 else if (all("usercanconfig")) {
                     if (any("yes", "no"))
-                        PyRevitConfigs.SetUserCanConfig(arguments["yes"].IsTrue);
+                        PyRevitConfigs.SetUserCanConfig(arguments["yes"].IsTrue, revitVersion);
                     else
                         Console.WriteLine(string.Format("User {0} config",
                                                         PyRevitConfigs.GetUserCanConfig() ? "CAN" : "CAN NOT"));
@@ -723,7 +730,7 @@ namespace pyRevitCLI
 
                 else if (all("colordocs")) {
                     if (any("enable", "disable"))
-                        PyRevitConfigs.SetColorizeDocs(arguments["enable"].IsTrue);
+                        PyRevitConfigs.SetColorizeDocs(arguments["enable"].IsTrue, revitVersion);
                     else
                         Console.WriteLine(string.Format("Doc Colorizer is {0}",
                                                         PyRevitConfigs.GetColorizeDocs() ? "Enabled" : "Disabled"));
@@ -731,7 +738,7 @@ namespace pyRevitCLI
 
                 else if (all("tooltipdebuginfo")) {
                     if (any("enable", "disable"))
-                        PyRevitConfigs.SetAppendTooltipEx(arguments["enable"].IsTrue);
+                        PyRevitConfigs.SetAppendTooltipEx(arguments["enable"].IsTrue, revitVersion);
                     else
                         Console.WriteLine(string.Format("Doc Colorizer is {0}",
                                                         PyRevitConfigs.GetAppendTooltipEx() ? "Enabled" : "Disabled"));
@@ -744,24 +751,24 @@ namespace pyRevitCLI
                             Console.WriteLine(string.Format("Routes Port: {0}", PyRevitConfigs.GetRoutesServerPort()));
                         }
                         else
-                            PyRevitConfigs.SetRoutesServerPort(int.Parse(portNumber));
+                            PyRevitConfigs.SetRoutesServerPort(int.Parse(portNumber), revitVersion);
                     }
 
                     else if (all("coreapi")) {
                         if (all("enable"))
-                            PyRevitConfigs.SetRoutesLoadCoreAPIStatus(true);
+                            PyRevitConfigs.SetRoutesLoadCoreAPIStatus(true, revitVersion);
                         else if (all("disable"))
-                            PyRevitConfigs.SetRoutesLoadCoreAPIStatus(false);
+                            PyRevitConfigs.SetRoutesLoadCoreAPIStatus(false, revitVersion);
                         else
                             Console.WriteLine(string.Format("Routes Core API is {0}",
                                                             PyRevitConfigs.GetRoutesLoadCoreAPIStatus() ? "Enabled" : "Disabled"));
                     }
 
                     else if (all("enable"))
-                        PyRevitConfigs.EnableRoutesServer();
+                        PyRevitConfigs.EnableRoutesServer(revitVersion);
 
                     else if (all("disable"))
-                        PyRevitConfigs.DisableRoutesServer();
+                        PyRevitConfigs.DisableRoutesServer(revitVersion);
 
                     else {
                         Console.WriteLine(string.Format("Routes Server is {0}",
@@ -772,7 +779,7 @@ namespace pyRevitCLI
                 else if (all("telemetry")) {
                     if (all("utc")) {
                         if (any("yes", "no"))
-                            PyRevitConfigs.SetUTCStamps(arguments["yes"].IsTrue);
+                            PyRevitConfigs.SetUTCStamps(arguments["yes"].IsTrue, revitVersion);
                         else
                             Console.WriteLine(PyRevitConfigs.GetUTCStamps() ? "Using UTC timestamps" : "Using Local timestamps");
                     }
@@ -782,7 +789,7 @@ namespace pyRevitCLI
                         if (destPath is null)
                             Console.WriteLine(string.Format("Telemetry File Path: {0}", PyRevitConfigs.GetAppTelemetryFlags()));
                         else
-                            PyRevitConfigs.EnableTelemetry(telemetryFileDir: destPath);
+                            PyRevitConfigs.EnableTelemetry(telemetryFileDir: destPath, revitVersion: revitVersion);
                     }
 
                     else if (all("server")) {
@@ -790,22 +797,22 @@ namespace pyRevitCLI
                         if (serverUrl is null)
                             Console.WriteLine(string.Format("Telemetry Server Url: {0}", PyRevitConfigs.GetAppTelemetryFlags()));
                         else
-                            PyRevitConfigs.EnableTelemetry(telemetryServerUrl: serverUrl);
+                            PyRevitConfigs.EnableTelemetry(telemetryServerUrl: serverUrl, revitVersion: revitVersion);
 
                     }
 
                     else if (all("hooks")) {
                         if (any("yes", "no"))
-                            PyRevitConfigs.SetTelemetryIncludeHooks(arguments["yes"].IsTrue);
+                            PyRevitConfigs.SetTelemetryIncludeHooks(arguments["yes"].IsTrue, revitVersion);
                         else
                             Console.WriteLine(PyRevitConfigs.GetTelemetryIncludeHooks() ? "Sending telemetry for hooks" : "Not sending telemetry for hooks");
                     }
 
                     else if (all("enable"))
-                        PyRevitConfigs.EnableTelemetry();
+                        PyRevitConfigs.EnableTelemetry(revitVersion: revitVersion);
 
                     else if (all("disable"))
-                        PyRevitConfigs.DisableTelemetry();
+                        PyRevitConfigs.DisableTelemetry(revitVersion: revitVersion);
 
                     else {
                         Console.WriteLine(string.Format("Telemetry is {0}",
@@ -821,7 +828,7 @@ namespace pyRevitCLI
                         if (flagsValue is null)
                             Console.WriteLine(string.Format("App Telemetry Flags: {0}", PyRevitConfigs.GetAppTelemetryFlags()));
                         else
-                            PyRevitConfigs.SetAppTelemetryFlags(flags: flagsValue);
+                            PyRevitConfigs.SetAppTelemetryFlags(flags: flagsValue, revitVersion: revitVersion);
                     }
 
                     else if (all("server")) {
@@ -829,15 +836,15 @@ namespace pyRevitCLI
                         if (serverPath is null)
                             Console.WriteLine(string.Format("App Telemetry Server: {0}", PyRevitConfigs.GetAppTelemetryServerUrl()));
                         else
-                            PyRevitConfigs.EnableAppTelemetry(apptelemetryServerUrl: serverPath);
+                            PyRevitConfigs.EnableAppTelemetry(apptelemetryServerUrl: serverPath, revitVersion: revitVersion);
 
                     }
 
                     else if (all("enable"))
-                        PyRevitConfigs.EnableAppTelemetry();
+                        PyRevitConfigs.EnableAppTelemetry(revitVersion);
 
                     else if (all("disable"))
-                        PyRevitConfigs.DisableAppTelemetry();
+                        PyRevitConfigs.DisableAppTelemetry(revitVersion);
 
                     else {
                         Console.WriteLine(string.Format("App Telemetry is {0}",
@@ -853,7 +860,7 @@ namespace pyRevitCLI
                         Console.WriteLine(string.Format("Output Style Sheet is set to: {0}",
                                                         PyRevitConfigs.GetOutputStyleSheet()));
                     else
-                        PyRevitConfigs.SetOutputStyleSheet(TryGetValue("<css_path>"));
+                        PyRevitConfigs.SetOutputStyleSheet(TryGetValue("<css_path>"), revitVersion);
                 }
 
                 else if (all("seed"))
@@ -863,12 +870,14 @@ namespace pyRevitCLI
                     if (arguments["<option_path>"] != null) {
                         // extract section and option names
                         string orignalOptionValue = TryGetValue("<option_path>");
-                        if (orignalOptionValue.Split(':').Count() == 2) {
+                        if (orignalOptionValue.Split(':').Count() == 2)
+                        {
                             string configSection = orignalOptionValue.Split(':')[0];
                             string configOption = orignalOptionValue.Split(':')[1];
 
-                            var cfg = PyRevitConfigs.GetConfigFile();
-                            cfg.SetValue(configSection, configOption, arguments["enable"].IsTrue);
+                            var cfg = PyRevitConfigs.GetConfigFile(revitVersion);
+                            cfg.SetSectionKeyValue(
+                                revitVersion, configSection, configOption, arguments["enable"].IsTrue);
                         }
                         else
                             PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Main);
@@ -883,18 +892,19 @@ namespace pyRevitCLI
                             string configSection = orignalOptionValue.Split(':')[0];
                             string configOption = orignalOptionValue.Split(':')[1];
 
-                            var cfg = PyRevitConfigs.GetConfigFile();
+                            var cfg = PyRevitConfigs.GetConfigFile(revitVersion);
 
                             // if no value provided, read the value
                             var optValue = TryGetValue("<option_value>");
-                            if (optValue != null)
-                                cfg.SetValue(configSection, configOption, optValue);
-                            else if (optValue is null) {
-                                var existingVal = cfg.GetValue(configSection, configOption);
-                                if (existingVal != null)
-                                    Console.WriteLine( string.Format("{0} = {1}", configOption, existingVal));
+                            if (optValue is not null)
+                                cfg.SetSectionKeyValue(revitVersion, configSection, configOption, optValue);
+                            else
+                            {
+                                var existingVal = cfg.GetSectionKeyValueOrDefault<string>(revitVersion, configSection, configOption);
+                                if (!string.IsNullOrEmpty(existingVal))
+                                    Console.WriteLine($"{configOption} = {existingVal}");
                                 else
-                                    Console.WriteLine(string.Format("Configuration key \"{0}\" is not set", configOption));
+                                    Console.WriteLine($"Configuration key \"{configOption}\" is not set");
                             }
                         }
                         else
