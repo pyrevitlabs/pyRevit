@@ -83,8 +83,10 @@ public sealed class PublishWingetModule(IOptions<PublishOptions> publishOptions)
             arguments.Add("-s");
         }
 
+        var wingetCreate = ToolResolutionHelper.ResolveWingetCreateExecutable(publishOptions.WingetCreateExe);
+
         await context.Shell.Command.ExecuteCommandLineTool(
-            new GenericCommandLineToolOptions(publishOptions.WingetCreateExe)
+            new GenericCommandLineToolOptions(wingetCreate)
             {
                 Arguments = arguments,
             },

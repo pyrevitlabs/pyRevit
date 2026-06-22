@@ -26,6 +26,30 @@ public static class ToolResolutionHelper
         return null;
     }
 
+    public static string ResolveWingetCreateExecutable(string configuredExe)
+    {
+        if (string.IsNullOrWhiteSpace(configuredExe))
+        {
+            configuredExe = "wingetcreate.exe";
+        }
+
+        if (Path.IsPathRooted(configuredExe) && File.Exists(configuredExe))
+        {
+            return configuredExe;
+        }
+
+        var onPath = ResolveOnPath(Path.GetFileNameWithoutExtension(configuredExe));
+        if (!string.IsNullOrWhiteSpace(onPath))
+        {
+            return onPath;
+        }
+
+        throw new FileNotFoundException(
+            "wingetcreate.exe is required for WinGet publishing but was not found on PATH. "
+            + "Install it from https://aka.ms/wingetcreate/latest or set Publish__WingetCreateExe.",
+            configuredExe);
+    }
+
     public static string ResolvePowerShellExecutable()
     {
         var candidates = new[]
