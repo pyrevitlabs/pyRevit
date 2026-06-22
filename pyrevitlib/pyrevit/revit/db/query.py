@@ -687,7 +687,7 @@ def get_families(doc=None, only_editable=True):
     }.values()
     if only_editable:
         return [x for x in families if x.IsEditable]
-    return families
+    return list(families)
 
 
 def get_noteblock_families(doc=None):
