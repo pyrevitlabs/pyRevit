@@ -33,9 +33,17 @@ public static class ToolResolutionHelper
             configuredExe = "wingetcreate.exe";
         }
 
-        if (Path.IsPathRooted(configuredExe) && File.Exists(configuredExe))
+        var isPath = Path.IsPathRooted(configuredExe)
+            || configuredExe.Contains(Path.DirectorySeparatorChar)
+            || configuredExe.Contains(Path.AltDirectorySeparatorChar);
+
+        if (isPath)
         {
-            return configuredExe;
+            var fullPath = Path.GetFullPath(configuredExe);
+            if (File.Exists(fullPath))
+            {
+                return fullPath;
+            }
         }
 
         var onPath = ResolveOnPath(Path.GetFileNameWithoutExtension(configuredExe));
@@ -45,8 +53,8 @@ public static class ToolResolutionHelper
         }
 
         throw new FileNotFoundException(
-            "wingetcreate.exe is required for WinGet publishing but was not found on PATH. "
-            + "Install it from https://aka.ms/wingetcreate/latest or set Publish__WingetCreateExe.",
+            "wingetcreate.exe is required for WinGet publishing but was not found at the configured path and was not found on PATH. "
+            + "Install it from https://aka.ms/wingetcreate/latest or set Publish__WingetCreateExe to a valid path.",
             configuredExe);
     }
 
