@@ -18,6 +18,8 @@ jobs:
       contents: write
       actions: write
     environment: production
+    outputs:
+      release_url: ${{ steps.capture_url.outputs.release_url }}
 
     steps:
       - name: Checkout Repository
@@ -93,6 +95,14 @@ jobs:
           Publish__WingetToken: ${{ secrets.WINGET_GITHUB_TOKEN }}
         run: dotnet run -c Release -- release pack sign publish
 
+      - name: Capture release URL
+        id: capture_url
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL=$(tr -d '\r\n' < dist/github-release-url.txt)
+          echo "release_url=$URL" >> "$GITHUB_OUTPUT"
+
       - name: Delete temporary CI artifacts
         shell: pwsh
         env:
@@ -137,22 +147,11 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.sha }}
 
-      - name: Resolve release URL
-        id: release_url
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          TAG="${GITHUB_REF_NAME}"
-          URL=$(gh release view "$TAG" --json url --jq .url -R "$GITHUB_REPOSITORY")
-          echo "url=$URL" >> "$GITHUB_OUTPUT"
-
       - name: Notify linked issues
         continue-on-error: true
         working-directory: build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           Build__Channel: release
-          Build__NotifyUrl: ${{ steps.release_url.outputs.url }}
+          Build__NotifyUrl: ${{ needs.release.outputs.release_url }}
         run: dotnet run -c Release -- notify

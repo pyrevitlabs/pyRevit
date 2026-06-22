@@ -33,4 +33,56 @@ public sealed class NotifyIssuesModuleTests
             Array.Empty<string>(),
             IssueReferenceHelper.ExtractIssueNumbers("no ticket here").ToList());
     }
+
+    [TestMethod]
+    public void ReadPublishedReleaseUrl_returns_null_when_file_missing()
+    {
+        var path = PyRevitPaths.GitHubReleaseUrlFile;
+        var existed = File.Exists(path);
+        var previous = existed ? File.ReadAllText(path) : null;
+        try
+        {
+            if (existed)
+            {
+                File.Delete(path);
+            }
+
+            Assert.IsNull(NotifyIssuesModule.ReadPublishedReleaseUrl());
+        }
+        finally
+        {
+            if (existed && previous is not null)
+            {
+                Directory.CreateDirectory(PyRevitPaths.DistPath);
+                File.WriteAllText(path, previous);
+            }
+        }
+    }
+
+    [TestMethod]
+    public void ReadPublishedReleaseUrl_reads_trimmed_url_from_dist_file()
+    {
+        Directory.CreateDirectory(PyRevitPaths.DistPath);
+        var path = PyRevitPaths.GitHubReleaseUrlFile;
+        var existed = File.Exists(path);
+        var previous = existed ? File.ReadAllText(path) : null;
+        const string expected = "https://github.com/pyrevitlabs/pyRevit/releases/tag/v6.5.0.26173%2B1406";
+        try
+        {
+            File.WriteAllText(path, expected + "\r\n");
+
+            Assert.AreEqual(expected, NotifyIssuesModule.ReadPublishedReleaseUrl());
+        }
+        finally
+        {
+            if (existed && previous is not null)
+            {
+                File.WriteAllText(path, previous);
+            }
+            else if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+    }
 }
