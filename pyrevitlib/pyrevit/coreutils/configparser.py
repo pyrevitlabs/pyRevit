@@ -51,8 +51,8 @@ class ConfigSection(object):
         try:
             return json.loads(value)
         except (ValueError, TypeError):
-            # Legacy/non-JSON values (bare Windows paths, single-quoted
-            # strings, Python bools) must not crash the read; return raw.
+            # Non-JSON values (bare Windows paths, single-quoted strings,
+            # Python bools) are returned as-is rather than parsed.
             return value
 
     def set_option(self, op_name, value):

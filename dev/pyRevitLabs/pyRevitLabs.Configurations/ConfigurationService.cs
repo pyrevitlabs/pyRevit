@@ -142,10 +142,9 @@ public sealed class ConfigurationService : IConfigurationService
             object? defaultValue = GetKeyValue(Configurations, propertyInfo, sectionName, keyName);
 
             object? keyValue = propertyInfo.GetValue(sectionValue);
-            // A null property means "not provided by this caller" -> leave any
-            // existing value untouched. Removing here let a partial-section save
-            // (e.g. PyRevitConfigs.SetRocketMode passing a single-field record)
-            // strip every other key in the section.
+            // A null property is treated as "not set by this caller": its
+            // existing stored value is left untouched. Only non-null properties
+            // are written.
             if (keyValue is null)
                 continue;
             if (!keyValue.Equals(defaultValue))

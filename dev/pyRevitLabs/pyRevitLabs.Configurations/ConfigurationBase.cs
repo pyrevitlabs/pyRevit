@@ -134,9 +134,8 @@ public abstract class ConfigurationBase : IConfiguration
         }
         catch (Exception)
         {
-            // A malformed/legacy value (e.g. escape-doubling corruption from
-            // older configs) must not take down config loading; fall back to
-            // the default, matching pyRevit's historical read tolerance.
+            // Return the default when the stored value cannot be deserialized,
+            // so a single malformed value does not fail the whole section load.
             return defaultValue;
         }
     }
@@ -161,8 +160,7 @@ public abstract class ConfigurationBase : IConfiguration
         }
         catch (Exception)
         {
-            // Tolerate malformed/legacy values; fall back to the default
-            // rather than failing the entire section/config load.
+            // Return the default when the stored value cannot be deserialized.
             return defaultValue;
         }
     }

@@ -519,8 +519,8 @@ class PyRevitConfig(object):
         Returns:
             (list[str]): External user extension directories.
         """
-        # Fix for #3193: preserve deterministic ordering with the default
-        # path first, removing duplicates while keeping config-file order.
+        # Deterministic ordering: default path first, then config-file order,
+        # with duplicate paths removed.
         seen = set()
         dir_list = []
         if include_default:

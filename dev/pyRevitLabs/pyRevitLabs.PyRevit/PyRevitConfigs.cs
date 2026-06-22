@@ -38,12 +38,10 @@ namespace pyRevitLabs.PyRevit
         /// </remarks>
         public static IConfigurationService GetConfigFile(string overrideName = default)
         {
-            // Per-user (APPDATA) config is the writable target and takes priority,
-            // matching pyRevit's historical discovery. The admin/all-users config
-            // (ProgramData) is an org default that a non-elevated Revit session
-            // often cannot write, so it is used read-only when the user has no
-            // own config yet. This avoids "access denied" when an all-users
-            // install marker routes the install scope to ProgramData.
+            // The per-user (APPDATA) config is the writable target and takes
+            // priority. The admin/all-users config (ProgramData) is used only
+            // when no per-user config exists, and is opened read-only when the
+            // current process cannot write it.
             string userConfig =
                 PyRevitConsts.FindConfigFileInDirectory(PyRevitLabsConsts.PyRevitPath)
                 ?? Path.Combine(PyRevitLabsConsts.PyRevitPath, PyRevitConsts.DefaultConfigsFileName);
@@ -68,9 +66,9 @@ namespace pyRevitLabs.PyRevit
             return CreateConfiguration(userConfig, false, overrideName);
         }
 
-        // FileInfo.IsReadOnly only reflects the read-only attribute, not the
-        // directory ACL. A ProgramData config is typically not flagged read-only
-        // yet a non-elevated process cannot write it; probe with an actual open.
+        // Reports whether the current process can write the file by opening it
+        // for read/write. The read-only file attribute alone does not reflect
+        // directory ACL denials.
         private static bool IsFileWritable(string filePath)
         {
             try
