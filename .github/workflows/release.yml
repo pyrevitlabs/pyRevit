@@ -5,6 +5,15 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      notify_only:
+        description: Run notify job only (skip release pipeline)
+        type: boolean
+        default: false
+      release_url:
+        description: Published release URL (required for notify-only runs)
+        type: string
+        required: false
 
 concurrency:
   group: pyrevit-release-${{ github.ref }}
@@ -12,7 +21,7 @@ concurrency:
 
 jobs:
   release:
-    if: github.repository == 'pyrevitlabs/pyRevit' && github.ref_type == 'tag'
+    if: github.repository == 'pyrevitlabs/pyRevit' && github.ref_type == 'tag' && github.event_name == 'push'
     runs-on: windows-2025
     permissions:
       contents: write
@@ -133,7 +142,11 @@ jobs:
 
   notify:
     needs: release
-    if: github.repository == 'pyrevitlabs/pyRevit' && github.ref_type == 'tag'
+    if: |
+      github.repository == 'pyrevitlabs/pyRevit' && (
+        (github.event_name == 'push' && github.ref_type == 'tag' && needs.release.result == 'success') ||
+        (github.event_name == 'workflow_dispatch' && inputs.notify_only == true)
+      )
     runs-on: windows-2025
     permissions:
       contents: read
@@ -145,13 +158,14 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
-          ref: ${{ github.sha }}
+          ref: ${{ github.ref }}
 
       - name: Notify linked issues
         continue-on-error: true
         working-directory: build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
           Build__Channel: release
-          Build__NotifyUrl: ${{ needs.release.outputs.release_url }}
+          Build__NotifyUrl: ${{ github.event_name == 'workflow_dispatch' && inputs.release_url || needs.release.outputs.release_url }}
         run: dotnet run -c Release -- notify
