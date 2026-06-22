@@ -2,19 +2,19 @@
 import datetime
 
 from pyrevit import coreutils
-from pyrevit import script
-from pyrevit import revit, DB
+from pyrevit import DB
 
-import sys
 import os
-# Add current directory to path for local imports
-_current_dir = os.path.dirname(os.path.abspath(__file__))
-if _current_dir not in sys.path:
-    sys.path.insert(0, _current_dir)
 
+from pyrevit.coreutils import applocales
 from pyrevit.preflight import PreflightTestCase
-from pyrevit.compat import safe_strtype
-from check_translations import DocstringMeta
+
+_XAML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "locale", "Checks.xaml")
+
+
+def _t(key):
+    return applocales.get_locale_string_from_xaml(_XAML, key)
+
 
 WIKI_ARTICLE = ""
 
@@ -266,14 +266,14 @@ def dashboardCenterMaker(value):
     """dashboard HTMl maker - div for center aligning"""
     content = str(value)
     html_code = "<div class='dashboardCenter'>" + content + "</div>"
-    print (coreutils.prepare_html_str(html_code))
+    print(coreutils.prepare_html_str(html_code))
 
 
 def dashboardLeftMaker(value):
     """dashboard HTMl maker - div for left aligning"""
     content = str(value)
     html_code = "<div class='dashboardLeft'>" + content + "</div>"
-    print (coreutils.prepare_html_str(html_code))
+    print(coreutils.prepare_html_str(html_code))
 
 
 def path2fileName(file_path, divider):
@@ -287,8 +287,7 @@ def path2fileName(file_path, divider):
 def checkModel(doc, output):
     """Check given model"""
 
-    from check_translations import get_check_translation
-    output.print_md("# **{}**".format(get_check_translation("RVTLinksWarningChecker")))
+    output.print_md("# **{}**".format(_t("RVTLinksWarningChecker")))
     output.print_md("---")
 
     # first JS to avoid error in IE output window when at first run
@@ -372,7 +371,7 @@ def checkModel(doc, output):
 
             ## Warnings file dashboard section
             # output.print_md(str(fileWarnings))
-            output.print_md("# {}<br />".format(get_check_translation("RVTLinksWarningsCount")))
+            output.print_md("# {}<br />".format(_t("RVTLinksWarningsCount")))
 
             # Doughnut pie
             chartWarnings = output.make_doughnut_chart()
@@ -394,53 +393,40 @@ def checkModel(doc, output):
             # tables
             output.print_table(
                 links_warnings_count,
-                columns=[
-                    get_check_translation("RVTLinksFileName"),
-                    get_check_translation("RVTLinksWarningsCountLabel")
-                ],
+                columns=[_t("RVTLinksFileName"), _t("RVTLinksWarningsCountLabel")],
                 formats=None,
                 title="",
                 last_line_style="",
             )
-            output.print_md("# {}<br />".format(get_check_translation("RVTLinksWarningsDetails")))
+            output.print_md("# {}<br />".format(_t("RVTLinksWarningsDetails")))
             output.print_table(
                 zip(*fileWarnings),
                 columns=[
-                    get_check_translation("RVTLinksFileName"),
-                    get_check_translation("RVTLinksWarningsLabel"),
-                    get_check_translation("RVTLinksIds")
+                    _t("RVTLinksFileName"),
+                    _t("RVTLinksWarningsLabel"),
+                    _t("RVTLinksIds"),
                 ],
                 formats=None,
                 title="",
                 last_line_style="",
             )
         else:
-            output.print_md(
-                "<b>{}</b>".format(get_check_translation("RVTLinksLoadAllLinks"))
-            )
+            output.print_md("<b>{}</b>".format(_t("RVTLinksLoadAllLinks")))
     else:
-        output.print_md(
-            "<b>{}</b>".format(get_check_translation("RVTLinksLoadAtLeastOne"))
-        )
+        output.print_md("<b>{}</b>".format(_t("RVTLinksLoadAtLeastOne")))
 
 
 class ModelChecker(PreflightTestCase):
-    __metaclass__ = DocstringMeta
-    _docstring_key = "CheckDescription_RVTLinksWarnings"
-    
-    @property
-    def name(self):
-        from check_translations import get_check_translation
-        return get_check_translation("CheckName_RVTLinksWarnings")
-    
+    name = _t("CheckName_RVTLinksWarnings")
     author = "Jean-Marc Couffin"
-
 
     def startTest(self, doc, output):
         timer = coreutils.Timer()
         checkModel(doc, output)
         endtime = timer.get_time()
         endtime_hms = str(datetime.timedelta(seconds=endtime))
-        from check_translations import get_check_translation
-        endtime_hms_claim = "{} {}".format(get_check_translation("TransactionTook"), endtime_hms)
-        print (endtime_hms_claim)
+        endtime_hms_claim = "{} {}".format(_t("TransactionTook"), endtime_hms)
+        print(endtime_hms_claim)
+
+
+ModelChecker.__doc__ = _t("CheckDescription_RVTLinksWarnings")

@@ -1,5 +1,6 @@
 title:
   en_us: Wipe ArrowHeads type
+  ko: 화살표 유형 삭제
   fr_fr: Supprimer les têtes de flèches de manière radicale
   ru: Удалить типы засечек
   chinese_s: 清除箭头符号类型
@@ -8,6 +9,7 @@ title:
   pt_br: Remover Tipos de Ponta de Seta
 tooltip:
   en_us: Wipe selected arrow-head types
+  ko: 선택한 화살표 유형 삭제
   fr_fr: Supprimer les têtes de flèches de manière radicale
   ru: Удаляет выделенные типы засечек
   chinese_s: 清除选定的箭头符号类型

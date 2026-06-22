@@ -1,0 +1,2 @@
+title: Own Icon
+tooltip: This child keeps its own icon even though parent inheritance is disabled.

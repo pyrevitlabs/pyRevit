@@ -1,0 +1,43 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <!-- Фиксированные строки параметров -->
+    <system:String x:Key="LblWorkset">Рабочий набор</system:String>
+    <system:String x:Key="ChkWorkset.Tooltip">Включить рабочий набор в копирование</system:String>
+    <system:String x:Key="ComboWorkset.Tooltip">Пользовательский рабочий набор этого элемента.</system:String>
+    <system:String x:Key="LblDesignOption">Вариант проектирования</system:String>
+    <system:String x:Key="ChkDesignOption.Tooltip">Вариант проектирования доступен только для чтения</system:String>
+    <system:String x:Key="TbDesignOption.Tooltip">Только чтение. Принадлежность к варианту проектирования не может быть изменена через API.</system:String>
+
+    <!-- Раздел параметров -->
+    <system:String x:Key="LblParameters">Параметры</system:String>
+
+    <!-- Кнопки действий -->
+    <system:String x:Key="BtnCopy">Копировать</system:String>
+    <system:String x:Key="BtnCopy.Tooltip">Копировать отмеченные параметры из текущего выделения</system:String>
+    <system:String x:Key="BtnPaste">Вставить</system:String>
+    <system:String x:Key="BtnPaste.Tooltip">Заполнить поля из буфера обмена — нажмите «Применить» для сохранения</system:String>
+    <system:String x:Key="BtnFilter">Фильтр</system:String>
+    <system:String x:Key="BtnFilter.Tooltip">Создать/применить фильтр равенства для отмеченных параметров</system:String>
+    <system:String x:Key="BtnApply">Применить</system:String>
+
+    <!-- Вариант проектирования — значение по умолчанию -->
+    <system:String x:Key="MainModel">Основная модель</system:String>
+
+    <!-- Сообщения о состоянии -->
+    <system:String x:Key="Varies">Различается</system:String>
+    <system:String x:Key="StatusNoSelection">Нет выбора</system:String>
+    <system:String x:Key="StatusOneElement">1 элемент</system:String>
+    <system:String x:Key="StatusElements">{} элементов</system:String>
+    <system:String x:Key="StatusCopied">Скопировано {} параметр(ов)</system:String>
+
+    <!-- Подсказки параметров -->
+    <system:String x:Key="TooltipParamNotFound">Параметр не найден в выбранных элементах</system:String>
+    <system:String x:Key="TooltipParamMissing">Параметр недоступен для всех выбранных элементов</system:String>
+    <system:String x:Key="TooltipParamReadOnly">Параметр недоступен для записи для всех выбранных элементов</system:String>
+    <system:String x:Key="TooltipParamOpaque">Целочисленный параметр — только отображение</system:String>
+    <system:String x:Key="TooltipMixedValues">Различные значения в выборке</system:String>
+    <system:String x:Key="TooltipUndo">Сбросить до текущего значения элемента</system:String>
+
+</ResourceDictionary>

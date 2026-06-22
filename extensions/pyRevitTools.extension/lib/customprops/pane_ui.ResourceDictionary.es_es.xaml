@@ -1,0 +1,43 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <!-- Filas de parámetros fijos -->
+    <system:String x:Key="LblWorkset">Workset</system:String>
+    <system:String x:Key="ChkWorkset.Tooltip">Incluir workset en la copia</system:String>
+    <system:String x:Key="ComboWorkset.Tooltip">Workset de usuario de este elemento.</system:String>
+    <system:String x:Key="LblDesignOption">Opción de diseño</system:String>
+    <system:String x:Key="ChkDesignOption.Tooltip">La opción de diseño es de solo lectura</system:String>
+    <system:String x:Key="TbDesignOption.Tooltip">Solo lectura. La pertenencia a opciones de diseño no se puede cambiar a través de la API.</system:String>
+
+    <!-- Sección de parámetros -->
+    <system:String x:Key="LblParameters">Parámetros</system:String>
+
+    <!-- Botones de acción -->
+    <system:String x:Key="BtnCopy">Copiar</system:String>
+    <system:String x:Key="BtnCopy.Tooltip">Copiar parámetros marcados de la selección actual</system:String>
+    <system:String x:Key="BtnPaste">Pegar</system:String>
+    <system:String x:Key="BtnPaste.Tooltip">Rellenar campos desde el portapapeles — pulsar Aplicar para confirmar</system:String>
+    <system:String x:Key="BtnFilter">Filtro</system:String>
+    <system:String x:Key="BtnFilter.Tooltip">Crear/aplicar un filtro de igualdad de vista para los parámetros marcados</system:String>
+    <system:String x:Key="BtnApply">Aplicar</system:String>
+
+    <!-- Opción de diseño — valor por defecto -->
+    <system:String x:Key="MainModel">Modelo principal</system:String>
+
+    <!-- Mensajes de estado -->
+    <system:String x:Key="Varies">Varios</system:String>
+    <system:String x:Key="StatusNoSelection">Sin selección</system:String>
+    <system:String x:Key="StatusOneElement">1 elemento</system:String>
+    <system:String x:Key="StatusElements">{} elementos</system:String>
+    <system:String x:Key="StatusCopied">{} parámetro(s) copiado(s)</system:String>
+
+    <!-- Información sobre herramientas de parámetros -->
+    <system:String x:Key="TooltipParamNotFound">Parámetro no encontrado en los elementos seleccionados</system:String>
+    <system:String x:Key="TooltipParamMissing">Parámetro no disponible para todos los elementos seleccionados</system:String>
+    <system:String x:Key="TooltipParamReadOnly">Parámetro no editable para todos los elementos seleccionados</system:String>
+    <system:String x:Key="TooltipParamOpaque">Parámetro de opción entera — solo lectura</system:String>
+    <system:String x:Key="TooltipMixedValues">Valores mixtos en la selección</system:String>
+    <system:String x:Key="TooltipUndo">Restablecer al valor del elemento actual</system:String>
+
+</ResourceDictionary>

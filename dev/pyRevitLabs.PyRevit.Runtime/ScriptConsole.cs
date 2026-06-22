@@ -167,6 +167,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private bool _contentLoaded;
         private bool _debugMode;
         private bool _frozen = false;
+
+        // Guards against re-entrant render pumping. All output windows share the
+        // main UI thread dispatcher, so a synchronous render pump triggered by one
+        // window can run another window's queued render and recurse until the stack
+        // overflows. Skipping a re-entrant call breaks that chain.
+        [ThreadStatic]
+        private static bool _renderingFrame;
         private string _lastLine = string.Empty;
         private DispatcherTimer _animationTimer;
         private System.Windows.Forms.HtmlElement _lastDocumentBody = null;
@@ -428,6 +435,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             System.Windows.Forms.Application.DoEvents();
         }
 
+        internal void WaitReadyBrowserLite() {
+            System.Windows.Forms.Application.DoEvents();
+        }
+
         public string OutputTitle {
             get {
                 return Title;
@@ -469,6 +480,40 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
+        private bool IsScrolledNearBottom() {
+            if (ActiveDocument == null || ActiveDocument.Body == null)
+                return true;
+            try {
+                var body = ActiveDocument.Body;
+                var docHeight = body.ScrollRectangle.Height;
+                var view = ActiveDocument.Window;
+                if (docHeight <= 0 || view.Size.Height >= docHeight)
+                    return true;
+                return (body.ScrollTop + view.Size.Height) >= (docHeight - 50);
+            }
+            catch {
+                return true;
+            }
+        }
+
+        internal void ForceRenderFrame() {
+            if (_renderingFrame)
+                return;
+            _renderingFrame = true;
+            try {
+                if (Dispatcher != null
+                        && !Dispatcher.HasShutdownStarted
+                        && !Dispatcher.HasShutdownFinished) {
+                    Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
+                }
+            }
+            catch {
+            }
+            finally {
+                _renderingFrame = false;
+            }
+        }
+
         public void FocusOutput() {
             renderer.Focus();
         }
@@ -496,13 +541,33 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 _lastLine = OutputText;
 
             if (!_frozen) {
-                WaitReadyBrowser();
-                ActiveDocument.Body.AppendChild(ComposeEntry(OutputText, HtmlElementType));
-                ScrollToBottom();
+                if (ActiveDocument != null) {
+                    ActiveDocument.Body.AppendChild(ComposeEntry(OutputText, HtmlElementType));
+                    if (IsScrolledNearBottom())
+                        ScrollToBottom();
+                }
             }
             else if (_lastDocumentBody != null) {
                 _lastDocumentBody.AppendChild(ComposeEntry(OutputText, HtmlElementType));
             }
+        }
+
+        /// <summary>
+        /// Append one buffered stream payload as a single output entry,
+        /// keeping multi-line html constructs intact.
+        /// </summary>
+        public void AppendHtmlFragment(string OutputText, string HtmlElementType) {
+            if (string.IsNullOrEmpty(OutputText))
+                return;
+
+            OutputText = OutputText.Replace("\r\n", "\n");
+            if (OutputText.Length == 0)
+                return;
+
+            AppendText(OutputText, HtmlElementType, record: false);
+
+            // track the latest (possibly incomplete) line so input-prompt detection stays accurate
+            _lastLine = OutputText.Substring(OutputText.LastIndexOf('\n') + 1).TrimEnd('\r');
         }
 
         public void AppendError(string OutputText, ScriptEngineType engineType) {
@@ -608,7 +673,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
                 else if (inputUrl.StartsWith("revit")) {
                     e.Cancel = true;
-                    ScriptConsoleUtils.ProcessUrl(_uiApp, inputUrl);
+                    ScriptConsoleUtils.ProcessUrl(_uiApp, inputUrl, this);
                     return;
                 }
                 else if (inputUrl.StartsWith("file")) {

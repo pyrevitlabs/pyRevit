@@ -1,5 +1,6 @@
 title:
   en_us: Developer Tools
+  ko: 개발자 도구
   fr_fr: Outils de développeur
   ru: Инструменты разработчика
   chinese_s: 开发者工具
@@ -8,8 +9,8 @@ title:
   pt_br: Ferramentas de Desenvolvedor
 layout:
   - Developer Docs
-  - Generate API Stubs
   - Get Extension Hashes
   - Open Dockable Pane
+  - Migrate Bundle
   - -----
   - links

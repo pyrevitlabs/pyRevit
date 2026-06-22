@@ -3,25 +3,27 @@
 import math
 from pyrevit import revit, DB, DOCS, HOST_APP
 from pyrevit import script
-import sys
 import os
-# Add current directory to path for local imports
-_current_dir = os.path.dirname(os.path.abspath(__file__))
-if _current_dir not in sys.path:
-    sys.path.insert(0, _current_dir)
 
+from pyrevit.coreutils import applocales
 from pyrevit.preflight import PreflightTestCase
-from check_translations import DocstringMeta
+
+_XAML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "locale", "Checks.xaml")
+
+
+def _t(key):
+    return applocales.get_locale_string_from_xaml(_XAML, key)
+
 
 doc = DOCS.doc  # Current Document
 output = script.get_output()
 divider = "_" * 120
 INTERNAL_ORIGIN = (0, 0, 0)
 EXTENT_DISTANCE = 52800  # Linear Feet
-BAD_STRG = '### :thumbs_down_medium_skin_tone: ............'
-GOOD_STRG = '### :OK_hand_medium_skin_tone: ............'
-WARN_STRG = '### :warning: ............'
-CRITERIA_STRG = '10 Mi (16KM) away from the Internal Origin.'
+BAD_STRG = "### :thumbs_down_medium_skin_tone: ............"
+GOOD_STRG = "### :OK_hand_medium_skin_tone: ............"
+WARN_STRG = "### :warning: ............"
+CRITERIA_STRG = "10 Mi (16KM) away from the Internal Origin."
 
 
 def class_collectors(document=doc, class_type=None):
@@ -35,14 +37,17 @@ def class_collectors(document=doc, class_type=None):
         elements (list): A list of elements of the specified class type.
     """
     if class_type:
-        return (DB.FilteredElementCollector(document).
-                WhereElementIsNotElementType().
-                OfClass(class_type).
-                ToElementIds())
+        return (
+            DB.FilteredElementCollector(document)
+            .WhereElementIsNotElementType()
+            .OfClass(class_type)
+            .ToElementIds()
+        )
     else:
-        return (DB.FilteredElementCollector(document).
-                WhereElementIsNotElementType.
-                ToElementIds())
+        return DB.FilteredElementCollector(
+            document
+        ).WhereElementIsNotElementType.ToElementIds()
+
 
 def make_temp_view(document=doc):
     """
@@ -53,24 +58,28 @@ def make_temp_view(document=doc):
     Returns:
         view (View3D): The temporary 3D view.
     """
-    view_3D_types = (DB.FilteredElementCollector(document)
-                     .OfClass(DB.ViewFamilyType)
-                     .WhereElementIsElementType()
-                     .ToElements())
+    view_3D_types = (
+        DB.FilteredElementCollector(document)
+        .OfClass(DB.ViewFamilyType)
+        .WhereElementIsElementType()
+        .ToElements()
+    )
     three_d_view_type = next(
-        v for v in view_3D_types 
-        if v.ViewFamily == DB.ViewFamily.ThreeDimensional
-            )
-    
+        v for v in view_3D_types if v.ViewFamily == DB.ViewFamily.ThreeDimensional
+    )
+
     view = DB.View3D.CreateIsometric(document, three_d_view_type.Id)
-    worksets = (DB.FilteredWorksetCollector(document).
-                OfKind(DB.WorksetKind.UserWorkset).
-                ToWorksets())
+    worksets = (
+        DB.FilteredWorksetCollector(document)
+        .OfKind(DB.WorksetKind.UserWorkset)
+        .ToWorksets()
+    )
     for ws in worksets:
         view.SetWorksetVisibility(ws.Id, DB.WorksetVisibility.Visible)
     view.IsSectionBoxActive = False
     view.IsSectionBoxActive = True
     return view
+
 
 def get_temp_view_bbox(document=doc, element=None):
     """
@@ -89,13 +98,11 @@ def get_temp_view_bbox(document=doc, element=None):
 
     return bbox
 
-def hide_linked_elements(document=doc, 
-                  view=None, 
-                  hide_cads=True, 
-                  hide_rvts=True):
+
+def hide_linked_elements(document=doc, view=None, hide_cads=True, hide_rvts=True):
     """
     Hides all Revit Links and CAD Links in the 3D view
-    
+
     Args:
         doc (Document): The current document.
         view (View3D): The 3D view to hide the elements in.
@@ -111,7 +118,8 @@ def hide_linked_elements(document=doc,
         view.HideElements(revit_link_types)
     if cads_link_types and hide_cads:
         (view.HideElements(cads_link_types))
-        
+
+
 def get_all_cads(document=doc):
     """
     Gets all CAD Links in the model.
@@ -119,9 +127,10 @@ def get_all_cads(document=doc):
         doc (Document): The current document.
     Returns:
         cads (list): A list of CAD Links in the model.
-        """
+    """
     cads = class_collectors(document, DB.ImportInstance)
     return cads
+
 
 def get_all_rvts(document=doc):
     """
@@ -130,9 +139,10 @@ def get_all_rvts(document=doc):
         doc (Document): The current document.
     Returns:
         rvts (list): A list of Revit Links in the model.
-        """
+    """
     rvts = class_collectors(document, DB.RevitLinkInstance)
     return rvts
+
 
 def get_far_elements(document=doc, cad=False, rvt=False):
     """
@@ -145,46 +155,46 @@ def get_far_elements(document=doc, cad=False, rvt=False):
     Returns:
         bad_elements (list): A list of elements that are more than 10 miles
         from the internal origin.
-        """
+    """
     # region determine elements to check
     bad_elements = []
     temp_view = make_temp_view(document)
     if cad:
-        elementsids = (get_all_cads(document))
+        elementsids = get_all_cads(document)
     elif rvt:
-        elementsids = (get_all_rvts(document))
+        elementsids = get_all_rvts(document)
     elif not cad and not rvt:
-        hide_linked_elements(document,
-                        temp_view,
-                        hide_cads=True,
-                        hide_rvts=True)
+        hide_linked_elements(document, temp_view, hide_cads=True, hide_rvts=True)
         temp_view.IsSectionBoxActive = True
         temp_view.IsSectionBoxActive = False
-        elementsids = (DB.FilteredElementCollector(document, temp_view.Id).
-                        WhereElementIsNotElementType().
-                        ToElementIds())
+        elementsids = (
+            DB.FilteredElementCollector(document, temp_view.Id)
+            .WhereElementIsNotElementType()
+            .ToElementIds()
+        )
     # endregion
     # region Check Bounding Box and report bad elements
     for elementid in elementsids:
         element = document.GetElement(elementid)
-        if ((element.get_BoundingBox(temp_view)) 
-            and (hasattr(element, 'Name') 
-            and  hasattr(element, 'Category')) 
-            and ("Section Box" not in element.Name) 
+        if (
+            (element.get_BoundingBox(temp_view))
+            and (hasattr(element, "Name") and hasattr(element, "Category"))
+            and ("Section Box" not in element.Name)
             and ("3D View" not in element.Name)
-            and (element.Category.Name != "Cameras") 
-            and (element.Category.Name != "Levels") 
-            and (element.Category.Name != "Grids")):
+            and (element.Category.Name != "Cameras")
+            and (element.Category.Name != "Levels")
+            and (element.Category.Name != "Grids")
+        ):
             bbox = element.get_BoundingBox(temp_view)
-            if (check_bounding_box(bbox, INTERNAL_ORIGIN, EXTENT_DISTANCE)
-                    == 0):
+            if check_bounding_box(bbox, INTERNAL_ORIGIN, EXTENT_DISTANCE) == 0:
                 bad_elements.append(element)
     # endregion
     return bad_elements
 
+
 def report_point(message, point, distance, document=doc, distance_only=False):
     """
-    Reports the coordinates, distance and angle between a point and the 
+    Reports the coordinates, distance and angle between a point and the
     internal origin.
     Args:
         message (str): The message to display.
@@ -195,8 +205,13 @@ def report_point(message, point, distance, document=doc, distance_only=False):
         tuple: The message, the point coordinates, the distance, and the angle.
     """
     angle = calculate_angle(point, INTERNAL_ORIGIN)
-    return (message, " " if distance_only else convert_values(document, point), 
-            convert_units(distance, document), " " if distance_only else angle)
+    return (
+        message,
+        " " if distance_only else convert_values(document, point),
+        convert_units(distance, document),
+        " " if distance_only else angle,
+    )
+
 
 def convert_values(document=doc, *values):
     """
@@ -209,18 +224,21 @@ def convert_values(document=doc, *values):
     """
 
     if HOST_APP.is_newer_than(2021):
-        ui_units = (document.GetUnits().GetFormatOptions(DB.SpecTypeId.Length)
-                    .GetUnitTypeId())
+        ui_units = (
+            document.GetUnits().GetFormatOptions(DB.SpecTypeId.Length).GetUnitTypeId()
+        )
     else:
-        ui_units = (document.GetUnits().GetFormatOptions(DB.UnitType.UT_Length)
-                    .DisplayUnits)
+        ui_units = (
+            document.GetUnits().GetFormatOptions(DB.UnitType.UT_Length).DisplayUnits
+        )
 
     return [
         "{:.2f}".format(DB.UnitUtils.ConvertFromInternalUnits(val, ui_units))
-        for value in values for val in (
-            value if isinstance(value, tuple) else (value,))
+        for value in values
+        for val in (value if isinstance(value, tuple) else (value,))
     ]
-    
+
+
 def convert_units(distance, document=doc):
     """
     Converts internal units to display units.
@@ -229,19 +247,25 @@ def convert_units(distance, document=doc):
         document (Document): The document object containing unit settings.
     Returns:
         str: The distance converted to display units.
-    """    
+    """
 
     if HOST_APP.is_newer_than(2021):
-        ui_units = DB.UnitFormatUtils.Format(units=document.GetUnits(),
-                                            specTypeId=DB.SpecTypeId.Length,
-                                            value=distance,
-                                            forEditing=True)
+        ui_units = DB.UnitFormatUtils.Format(
+            units=document.GetUnits(),
+            specTypeId=DB.SpecTypeId.Length,
+            value=distance,
+            forEditing=True,
+        )
     else:
-        ui_units = DB.UnitFormatUtils.Format(units=document.GetUnits(),
-                                             unitType=DB.UnitType.UT_Length, 
-                                             value=distance, maxAccuracy=False, 
-                                             forEditing=True)
+        ui_units = DB.UnitFormatUtils.Format(
+            units=document.GetUnits(),
+            unitType=DB.UnitType.UT_Length,
+            value=distance,
+            maxAccuracy=False,
+            forEditing=True,
+        )
     return ui_units
+
 
 def calculate_distance(point1, point2):
     """
@@ -253,9 +277,11 @@ def calculate_distance(point1, point2):
         distance (float): The distance between the two points."""
     x1, y1, z1 = point1
     x2, y2, z2 = point2
-    distance =( #rounded to the nearest inch
-        math.sqrt((x2 - x1)**2 + (y2 - y1)**2 + (z2 - z1)**2))
+    distance = math.sqrt(  # rounded to the nearest inch
+        (x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2
+    )
     return distance
+
 
 def calculate_horizontal_distance(point1, point2):
     """Calculates the horizontal distance between two points.
@@ -266,10 +292,11 @@ def calculate_horizontal_distance(point1, point2):
         distance (float): The horizontal distance between the two points."""
     x1, y1, z1 = point1
     x2, y2, z2 = point2
-    distance = math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+    distance = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
     return distance
 
-def calculate_delta(point1, point2, delta='x'):
+
+def calculate_delta(point1, point2, delta="x"):
     """Calculates the delta X, Y or Z between two points.
     Args:
         point1 (tuple): The coordinates of the first point.
@@ -279,13 +306,14 @@ def calculate_delta(point1, point2, delta='x'):
         delta (float): The delta between the two points."""
     x1, y1, z1 = point1
     x2, y2, z2 = point2
-    if delta == 'x':
+    if delta == "x":
         delta = abs(x2 - x1)
-    elif delta == 'y':
+    elif delta == "y":
         delta = abs(y2 - y1)
-    elif delta == 'z':
+    elif delta == "z":
         delta = abs(z2 - z1)
     return delta
+
 
 def calculate_angle(point1, point2):
     """
@@ -301,6 +329,7 @@ def calculate_angle(point1, point2):
     # Calculate the angle using the arctangent function
     angle = round(math.degrees(math.atan2(y2 - y1, x2 - x1)), 2)
     return angle
+
 
 def points_distances_angles(point):
     """
@@ -322,6 +351,7 @@ def points_distances_angles(point):
     angles = convert_units(calculate_angle(point, INTERNAL_ORIGIN))
     return x, y, z, distances, angles
 
+
 def check_bounding_box(bbox, intorig, extentdistance):
     """
     Checks if the domain of the bounding box is more than 10
@@ -334,12 +364,15 @@ def check_bounding_box(bbox, intorig, extentdistance):
         Status (int): The status of the bounding box."""
     min = (bbox.Min.X, bbox.Min.Y, bbox.Min.Z)
     max = (bbox.Max.X, bbox.Max.Y, bbox.Max.Z)
-    if (calculate_distance(min, intorig) > extentdistance or 
-        calculate_distance(max, intorig) > extentdistance):
+    if (
+        calculate_distance(min, intorig) > extentdistance
+        or calculate_distance(max, intorig) > extentdistance
+    ):
         Status = 0
     else:
         Status = 1
     return Status
+
 
 def get_project_base_and_survey_pts(document=doc):
     """
@@ -351,16 +384,11 @@ def get_project_base_and_survey_pts(document=doc):
         survey_point_coordinates (tuple): The coordinates of the survey point.
     """
     base_point = DB.BasePoint.GetProjectBasePoint(document).Position
-    base_point_coordinates = (
-                                base_point.X,
-                                base_point.Y,
-                                base_point.Z)
+    base_point_coordinates = (base_point.X, base_point.Y, base_point.Z)
     survey_point = DB.BasePoint.GetSurveyPoint(document).Position
-    survey_point_coordinates = (
-                                survey_point.X,
-                                survey_point.Y,
-                                survey_point.Z)
+    survey_point_coordinates = (survey_point.X, survey_point.Y, survey_point.Z)
     return base_point_coordinates, survey_point_coordinates
+
 
 def get_model_units_type(document=doc):
     """
@@ -372,6 +400,7 @@ def get_model_units_type(document=doc):
     """
     unitsystem = document.DisplayUnitSystem
     return unitsystem
+
 
 def get_design_options_elements(document=doc):
     """
@@ -385,20 +414,23 @@ def get_design_options_elements(document=doc):
     """
     design_option_elements = []
     design_option_sets = []
-    design_options = (DB.FilteredElementCollector(document).
-                        OfClass(DB.DesignOption).
-                        ToElements())
+    design_options = (
+        DB.FilteredElementCollector(document).OfClass(DB.DesignOption).ToElements()
+    )
 
     for do in design_options:
         option_set_param = DB.BuiltInParameter.OPTION_SET_ID
         option_set_id = do.get_Parameter(option_set_param).AsElementId()
         design_option_sets.append(option_set_id)
         design_option_filter = DB.ElementDesignOptionFilter(do.Id)
-        x = (DB.FilteredElementCollector(document).
-                WherePasses(design_option_filter).
-                ToElements())
+        x = (
+            DB.FilteredElementCollector(document)
+            .WherePasses(design_option_filter)
+            .ToElements()
+        )
         design_option_elements.append(x)
     return design_options, design_option_elements, design_option_sets
+
 
 def check_model_coordinates(document=doc):
     """
@@ -411,16 +443,16 @@ def check_model_coordinates(document=doc):
     unit_system = get_model_units_type(document=doc)
     # region HTML Styling
     output = script.get_output()
-    output.add_style('cover {color:black; font-size:24pt; font-weight:bold;}')
-    output.add_style('header {color:black; font-size:15pt;}')
+    output.add_style("cover {color:black; font-size:24pt; font-weight:bold;}")
+    output.add_style("header {color:black; font-size:15pt;}")
     # endregion
     # region Print Header
     output.print_html(
-    ('<cover>__________:satellite_antenna:__10-Mile Radar___________</cover>'))
+        ("<cover>__________:satellite_antenna:__10-Mile Radar___________</cover>")
+    )
     print(divider)
     print("")
-    from check_translations import get_check_translation
-    output.print_md('# {}'.format(get_check_translation("RadarCheckingModelPlacement")))
+    output.print_md("# {}".format(_t("RadarCheckingModelPlacement")))
     print(divider)
     # endregion
     # region Check the distances of base and survey points
@@ -428,47 +460,73 @@ def check_model_coordinates(document=doc):
     basptdistance = abs(calculate_distance(baspt, INTERNAL_ORIGIN))
     surveydistance = abs(calculate_distance(survpt, INTERNAL_ORIGIN))
     if abs(basptdistance > EXTENT_DISTANCE):
-        output.print_md('{} {} {}'.
-                        format(BAD_STRG, get_check_translation("RadarBasePointMoreThan"), get_check_translation("Radar10MilesAway")))
+        output.print_md(
+            "{} {} {}".format(
+                BAD_STRG, _t("RadarBasePointMoreThan"), _t("Radar10MilesAway")
+            )
+        )
     if abs(surveydistance > EXTENT_DISTANCE):
-        output.print_md('{} {} {}'.
-                        format(BAD_STRG, get_check_translation("RadarSurveyPointMoreThan"), get_check_translation("Radar10MilesAway")))
+        output.print_md(
+            "{} {} {}".format(
+                BAD_STRG, _t("RadarSurveyPointMoreThan"), _t("Radar10MilesAway")
+            )
+        )
     else:
-        output.print_md('{} {} {}'.
-                        format(GOOD_STRG, get_check_translation("RadarSurveyPointLessThan"), get_check_translation("Radar10MilesAway")))
+        output.print_md(
+            "{} {} {}".format(
+                GOOD_STRG, _t("RadarSurveyPointLessThan"), _t("Radar10MilesAway")
+            )
+        )
     basptdistance = calculate_distance(baspt, INTERNAL_ORIGIN)
     # endregion
     # region Print Table
     tbdata = [
-        report_point(get_check_translation("RadarProjectBasePointCoords"), 
-                     baspt, basptdistance),
-        report_point(get_check_translation("RadarSurveyPointCoords"), 
-                     survpt, surveydistance),
-        report_point(get_check_translation("RadarBaseToSurveyDeltaX"), 
-                     baspt, calculate_delta(baspt, survpt, delta = 'x'), 
-                     distance_only=True),
-        report_point(get_check_translation("RadarBaseToSurveyDeltaY"), 
-                     baspt, calculate_delta(baspt, survpt, delta = 'y'), 
-                     distance_only=True),
-        report_point(get_check_translation("RadarPlanarDistance"), 
-                     baspt, calculate_horizontal_distance(baspt, survpt), 
-                     distance_only=True),
-        report_point(get_check_translation("RadarTotalDistance"), 
-                     baspt, calculate_distance(baspt, survpt), 
-                     distance_only=True),
-        report_point(get_check_translation("RadarProjectElevation"), 
-                     baspt, calculate_delta(baspt, survpt, delta = 'z'),
-                        distance_only=True)
+        report_point(_t("RadarProjectBasePointCoords"), baspt, basptdistance),
+        report_point(_t("RadarSurveyPointCoords"), survpt, surveydistance),
+        report_point(
+            _t("RadarBaseToSurveyDeltaX"),
+            baspt,
+            calculate_delta(baspt, survpt, delta="x"),
+            distance_only=True,
+        ),
+        report_point(
+            _t("RadarBaseToSurveyDeltaY"),
+            baspt,
+            calculate_delta(baspt, survpt, delta="y"),
+            distance_only=True,
+        ),
+        report_point(
+            _t("RadarPlanarDistance"),
+            baspt,
+            calculate_horizontal_distance(baspt, survpt),
+            distance_only=True,
+        ),
+        report_point(
+            _t("RadarTotalDistance"),
+            baspt,
+            calculate_distance(baspt, survpt),
+            distance_only=True,
+        ),
+        report_point(
+            _t("RadarProjectElevation"),
+            baspt,
+            calculate_delta(baspt, survpt, delta="z"),
+            distance_only=True,
+        ),
     ]
-    output.print_table(table_data=tbdata, 
-                    title=get_check_translation("RadarProjectCoordinates"),
-                    columns=
-                        [get_check_translation("RadarPoints"),
-                        ' ' + get_check_translation("RadarXYZCoordinates"),
-                        ' {} ({} )  '.format(get_check_translation("RadarDistance"), str(unit_system)),
-                        ' {}  '.format(get_check_translation("RadarAngle"))],
-                    formats=['', '' , '', '', '', ''])
+    output.print_table(
+        table_data=tbdata,
+        title=_t("RadarProjectCoordinates"),
+        columns=[
+            _t("RadarPoints"),
+            " " + _t("RadarXYZCoordinates"),
+            " {} ({} )  ".format(_t("RadarDistance"), str(unit_system)),
+            " {}  ".format(_t("RadarAngle")),
+        ],
+        formats=["", "", "", "", "", ""],
+    )
     # endregion
+
 
 def check_model_extents(document=doc):
     """
@@ -478,24 +536,32 @@ def check_model_extents(document=doc):
     Returns:
         Test Score (int): The score of the test.
     """
-    from check_translations import get_check_translation
     print("")
-    output.print_md('# {}'.format(get_check_translation("RadarChecking3DViewBBox")))
+    output.print_md("# {}".format(_t("RadarChecking3DViewBBox")))
     bbox = get_temp_view_bbox(document)
     min = (bbox.Min.X, bbox.Min.Y, bbox.Min.Z)
     max = (bbox.Max.X, bbox.Max.Y, bbox.Max.Z)
     print("")
     print(divider)
     print("")
-    if (calculate_distance(min, INTERNAL_ORIGIN) > EXTENT_DISTANCE or 
-        calculate_distance(max, INTERNAL_ORIGIN) > EXTENT_DISTANCE):
-        output.print_md('{} {} {}'.
-                        format(BAD_STRG, get_check_translation("Radar3DViewBBoxMoreThan"), get_check_translation("Radar10MilesAway")))
+    if (
+        calculate_distance(min, INTERNAL_ORIGIN) > EXTENT_DISTANCE
+        or calculate_distance(max, INTERNAL_ORIGIN) > EXTENT_DISTANCE
+    ):
+        output.print_md(
+            "{} {} {}".format(
+                BAD_STRG, _t("Radar3DViewBBoxMoreThan"), _t("Radar10MilesAway")
+            )
+        )
         return 0
     else:
-        output.print_md('{} {} {}'.
-                        format(GOOD_STRG, get_check_translation("Radar3DViewBBoxLessThan"), get_check_translation("Radar10MilesAway")))
+        output.print_md(
+            "{} {} {}".format(
+                GOOD_STRG, _t("Radar3DViewBBoxLessThan"), _t("Radar10MilesAway")
+            )
+        )
         return 1
+
 
 def check_design_options(document=doc):
     """
@@ -505,17 +571,16 @@ def check_design_options(document=doc):
     Returns:
         Test Score (int): The score of the test.
     """
-    from check_translations import get_check_translation
     print("")
     print(divider)
-    output.print_md('# {}'.format(get_check_translation("RadarCheckingDesignOptions")))
+    output.print_md("# {}".format(_t("RadarCheckingDesignOptions")))
     print(divider)
     design_option_objects = get_design_options_elements(document)
     violating_design_option_objects = []
     violating_options = []
     violating_option_sets = []
     option_set_param = DB.BuiltInParameter.OPTION_SET_ID
-    
+
     for x in design_option_objects[1]:
         for y in x:
             dbbox = y.get_BoundingBox(None)
@@ -524,44 +589,49 @@ def check_design_options(document=doc):
             else:
                 dbmin = (dbbox.Min.X, dbbox.Min.Y, dbbox.Min.Z)
                 dbmax = (dbbox.Max.X, dbbox.Max.Y, dbbox.Max.Z)
-                if (calculate_distance(dbmin, INTERNAL_ORIGIN) > EXTENT_DISTANCE
-                or 
-                calculate_distance(dbmax, INTERNAL_ORIGIN) > EXTENT_DISTANCE):
+                if (
+                    calculate_distance(dbmin, INTERNAL_ORIGIN) > EXTENT_DISTANCE
+                    or calculate_distance(dbmax, INTERNAL_ORIGIN) > EXTENT_DISTANCE
+                ):
                     violating_design_option_objects.append(y)
                     if y.DesignOption.Name not in violating_options:
                         violating_options.append(y.DesignOption)
                         violating_option_sets.append(
-                                                y.DesignOption.
-                                                get_Parameter(option_set_param).
-                                                AsElementId())
+                            y.DesignOption.get_Parameter(option_set_param).AsElementId()
+                        )
     if len(violating_design_option_objects) > 0:
-        output.print_md('{} {} {}'.
-                            format(BAD_STRG, get_check_translation("RadarDesignOptionsMoreThan"), get_check_translation("Radar10MilesAway")))
+        output.print_md(
+            "{} {} {}".format(
+                BAD_STRG, _t("RadarDesignOptionsMoreThan"), _t("Radar10MilesAway")
+            )
+        )
         if len(violating_design_option_objects) > 10:
-            output.print_md('{} {}'.
-                            format(WARN_STRG, get_check_translation("RadarShowingFirst10")))
-            output.print_md('{} {}'.
-                            format(WARN_STRG, get_check_translation("RadarManualInvestigation")))
+            output.print_md("{} {}".format(WARN_STRG, _t("RadarShowingFirst10")))
+            output.print_md("{} {}".format(WARN_STRG, _t("RadarManualInvestigation")))
         counter = 0
         limit = 10
         violating_design_option_objects = violating_design_option_objects[:limit]
         for x in violating_design_option_objects:
             setid = violating_option_sets[counter]
-            print(output.linkify(x.Id) + 
-                    "   " +
-                    str(x.Name) +
-                    " - {} ".format(get_check_translation("RadarIsPartOf")) +
-                    str(doc.GetElement(setid).Name) +
-                    " - " +
-                    str(x.DesignOption.Name)
-                    )
+            print(
+                output.linkify(x.Id)
+                + "   "
+                + str(x.Name)
+                + " - {} ".format(_t("RadarIsPartOf"))
+                + str(doc.GetElement(setid).Name)
+                + " - "
+                + str(x.DesignOption.Name)
+            )
             counter += 1
         return 0
     else:
         output.print_md(
-            '{} {} {}'.
-            format(GOOD_STRG, get_check_translation("RadarNoObjectInDesignOption"), get_check_translation("Radar10MilesAway")))
+            "{} {} {}".format(
+                GOOD_STRG, _t("RadarNoObjectInDesignOption"), _t("Radar10MilesAway")
+            )
+        )
         return 1
+
 
 def check_linked_elements(document=doc):
     """
@@ -573,9 +643,8 @@ def check_linked_elements(document=doc):
     """
     # region collect bad cads and rvts
     limit = 5
-    from check_translations import get_check_translation
     print(divider)
-    output.print_md('# {}'.format(get_check_translation("RadarCheckingCADRVT")))
+    output.print_md("# {}".format(_t("RadarCheckingCADRVT")))
     print(divider)
     badcads = get_far_elements(doc, cad=True, rvt=False)
     badcads = badcads[:limit]
@@ -585,17 +654,22 @@ def check_linked_elements(document=doc):
     # region Print Results
     if badcads:
         for x in badcads:
-            print(output.linkify(x.Id)+"__" + 
-                str(x.Name) + '  ' + str(x.Category.Name))
+            print(
+                output.linkify(x.Id) + "__" + str(x.Name) + "  " + str(x.Category.Name)
+            )
 
     if badrvts:
         for x in badrvts:
-            print(output.linkify(x.Id)+"__" + 
-                str(x.Name) + '  ' + str(x.Category.Name))
+            print(
+                output.linkify(x.Id) + "__" + str(x.Name) + "  " + str(x.Category.Name)
+            )
 
     else:
-        output.print_md('{} {} {}'.
-                        format(GOOD_STRG, get_check_translation("RadarAllCADRVTLessThan"), get_check_translation("Radar10MilesAway")))
+        output.print_md(
+            "{} {} {}".format(
+                GOOD_STRG, _t("RadarAllCADRVTLessThan"), _t("Radar10MilesAway")
+            )
+        )
         test_score = 2
         print(divider)
     # endregion
@@ -603,59 +677,58 @@ def check_linked_elements(document=doc):
     hide_linked_elements(document, make_temp_view(document), True, True)
     cleanbbox = get_temp_view_bbox(doc)
     if check_bounding_box(cleanbbox, INTERNAL_ORIGIN, EXTENT_DISTANCE) == 0:
-        output.print_md('{} {}'.
-                        format(BAD_STRG, get_check_translation("RadarDistantObjectsDetected")))
-        output.print_md('{} {}'.format(WARN_STRG, get_check_translation("RadarFurtherAnalysis")))
+        output.print_md("{} {}".format(BAD_STRG, _t("RadarDistantObjectsDetected")))
+        output.print_md("{} {}".format(WARN_STRG, _t("RadarFurtherAnalysis")))
     else:
-        output.print_md('{} {} {}'.
-                        format(GOOD_STRG, get_check_translation("RadarAllObjectsLessThan"), get_check_translation("Radar10MilesAway")))
+        output.print_md(
+            "{} {} {}".format(
+                GOOD_STRG, _t("RadarAllObjectsLessThan"), _t("Radar10MilesAway")
+            )
+        )
         script.exit()
     # endregion
-    from check_translations import get_check_translation
     print(divider)
-    output.print_md('# {}'.format(get_check_translation("RadarCheckingEverything")))
-    output.print_md('# {}'.format(get_check_translation("RadarPleaseBePatient")))
+    output.print_md("# {}".format(_t("RadarCheckingEverything")))
+    output.print_md("# {}".format(_t("RadarPleaseBePatient")))
 
-def check_all_elements(document=doc): 
+
+def check_all_elements(document=doc):
     """
     Checks the extents of all elements in the model.
     Args:
         doc (Document): The current document.
     Returns:
         None
-        """
+    """
     print(divider)
-    badelements = get_far_elements(document,False, False)                                          
+    badelements = get_far_elements(document, False, False)
     limit = 10
     badelements = badelements[:limit]
     if badelements:
-        from check_translations import get_check_translation
         if len(badelements) > limit:
-            output.print_md('{} {}'.
-                            format(WARN_STRG, get_check_translation("RadarShowingFirst10")))
-            output.print_md('{} {}'.
-                            format(WARN_STRG, get_check_translation("RadarManualInvestigation")))
-        output.print_md('{} {} {}'.
-                        format(BAD_STRG, get_check_translation("RadarElementsMoreThan"), get_check_translation("Radar10MilesAway")))
+            output.print_md("{} {}".format(WARN_STRG, _t("RadarShowingFirst10")))
+            output.print_md("{} {}".format(WARN_STRG, _t("RadarManualInvestigation")))
+            output.print_md(
+                "{} {} {}".format(
+                    BAD_STRG, _t("RadarElementsMoreThan"), _t("Radar10MilesAway")
+                )
+            )
         for x in badelements:
-            print(output.linkify(x.Id)+ '  ' + 
-                    str(x.Name) + '  ' + str(x.Category.Name))
+            print(
+                output.linkify(x.Id) + "  " + str(x.Name) + "  " + str(x.Category.Name)
+            )
 
     else:
-        from check_translations import get_check_translation
-        output.print_md('{} {} {}'.
-                        format(GOOD_STRG, get_check_translation("RadarAllObjectsLessThan"), get_check_translation("Radar10MilesAway")))
-    output.print_md('# {}'.format(get_check_translation("RadarAllTestsCompleted")))
+        output.print_md(
+            "{} {} {}".format(
+                GOOD_STRG, _t("RadarAllObjectsLessThan"), _t("Radar10MilesAway")
+            )
+        )
+    output.print_md("# {}".format(_t("RadarAllTestsCompleted")))
+
 
 class ModelChecker(PreflightTestCase):
-    __metaclass__ = DocstringMeta
-    _docstring_key = "CheckDescription_10MileRadar"
-    
-    @property
-    def name(self):
-        from check_translations import get_check_translation
-        return get_check_translation("CheckName_10MileRadar")
-    
+    name = _t("CheckName_10MileRadar")
     author = "Tay Othman"
 
     def setUp(self, doc, output):
@@ -666,21 +739,34 @@ class ModelChecker(PreflightTestCase):
             check_model_coordinates(doc)
             task_1 = check_model_extents(doc)
             task_2 = check_design_options(doc)
-            from check_translations import get_check_translation
             if task_1 + task_2 < 2:
                 output.print_md(
-                    ('{} {} {}'.
-                     format(BAD_STRG, get_check_translation("Radar3DViewBBoxMoreThan"), get_check_translation("Radar10MilesAway"))))
+                    (
+                        "{} {} {}".format(
+                            BAD_STRG,
+                            _t("Radar3DViewBBoxMoreThan"),
+                            _t("Radar10MilesAway"),
+                        )
+                    )
+                )
                 check_linked_elements(doc)
                 check_all_elements(doc)
             else:
                 output.print_md(
-                    ('{} {} {}'.
-                     format(GOOD_STRG, get_check_translation("Radar3DViewBBoxLessThan"), get_check_translation("Radar10MilesAway"))))
-
+                    (
+                        "{} {} {}".format(
+                            GOOD_STRG,
+                            _t("Radar3DViewBBoxLessThan"),
+                            _t("Radar10MilesAway"),
+                        )
+                    )
+                )
 
     def tearDown(self, doc, output):
         pass
 
     def doCleanups(self, doc, output):
         pass
+
+
+ModelChecker.__doc__ = _t("CheckDescription_10MileRadar")

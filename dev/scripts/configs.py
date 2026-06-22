@@ -59,11 +59,6 @@ AUTOCOMPPATH = "dev/pyRevitLabs/pyRevitCLIAutoComplete"
 AUTOCOMP = op.join(AUTOCOMPPATH, "pyrevit-autocomplete.go")
 AUTOCOMPBIN = op.join(BINPATH, "pyrevit-autocomplete.exe")
 
-# telemetry server files
-TELEMETRYSERVERPATH = op.join(DEVPATH, "pyRevitTelemetryServer")
-TELEMETRYSERVER = op.join(TELEMETRYSERVERPATH, "main.go")
-TELEMETRYSERVERBIN = op.join(BINPATH, "pyrevit-telemetryserver.exe")
-
 # python docs
 DOCS_DIR = op.join(ROOT, "docs")
 DOCS_BUILD = op.join(DOCS_DIR, "_build")
@@ -156,8 +151,9 @@ PYREVIT_WIP_VERSION_EXT = "-wip"
 PYREVIT_VERSION_FILE = op.join(PYREVIT_MODULE_PATH, "version")
 PYREVIT_INSTALL_VERSION_FILE = op.join(RELEASE_PATH, "version")
 
-# data files
-PYREVIT_HOSTS_DATAFILE = op.join(BINPATH, "pyrevit-hosts.json")
+# data files (tracked templates under release/; runtime copies live in bin/)
+PYREVIT_HOSTS_DATAFILE = op.join(RELEASE_PATH, "pyrevit-hosts.json")
+PYREVIT_PRODUCTS_TEMPLATE = op.join(RELEASE_PATH, "pyrevit-products.json")
 PYREVIT_PRODUCTS_DATAFILE = op.join(BINPATH, "pyrevit-products.json")
 
 # files containing version definition

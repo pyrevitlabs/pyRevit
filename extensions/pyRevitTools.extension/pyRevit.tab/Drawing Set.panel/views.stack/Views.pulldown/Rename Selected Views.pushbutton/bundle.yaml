@@ -1,6 +1,7 @@
 title:
   en_us: |-
     Rename Selected Views
+  ko: 선택한 뷰 이름 변경
   fr_fr: |-
     Renommer les vues sélectionnées
   ru: |-
@@ -15,6 +16,7 @@ title:
 tooltip:
   en_us: |-
     Changes the selected view names
+  ko: 선택한 뷰의 이름을 변경합니다.
   fr_fr: |-
     Changer le nom des vues sélectionnées
   ru: |-

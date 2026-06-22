@@ -198,6 +198,12 @@ namespace pyRevitExtensionParser
                 case "collapsed":
                     parsed.Collapsed = ParseBool(valueNode);
                     return;
+                case "inherit_icon":
+                    parsed.InheritIcon = ParseBool(valueNode);
+                    return;
+                case "large_icon":
+                    parsed.LargeIcon = ParseBool(valueNode);
+                    return;
                 default:
                     // Keep existing behavior where unknown top-level scalar key-value pairs
                     // are treated as template values.
@@ -397,6 +403,12 @@ namespace pyRevitExtensionParser
             {
                 foreach (var child in list.Children)
                 {
+                    if (child is YamlMappingNode childMap)
+                    {
+                        ParseContextMap(childMap, parsed);
+                        continue;
+                    }
+
                     var text = GetScalar(child);
                     if (!string.IsNullOrEmpty(text))
                         parsed.ContextItems.Add(text);
@@ -404,9 +416,12 @@ namespace pyRevitExtensionParser
                 return;
             }
 
-            if (!(node is YamlMappingNode map))
-                return;
+            if (node is YamlMappingNode map)
+                ParseContextMap(map, parsed);
+        }
 
+        private static void ParseContextMap(YamlMappingNode map, ParsedBundle parsed)
+        {
             foreach (var entry in map.Children)
             {
                 var key = GetScalar(entry.Key)?.Trim().ToLowerInvariant();

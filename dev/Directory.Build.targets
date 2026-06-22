@@ -81,6 +81,11 @@
         <DefineConstants>$(DefineConstants);REVIT2027;REVIT2021_OR_GREATER;REVIT2022_OR_GREATER</DefineConstants>
     </PropertyGroup>
 
+    <!-- SDK 10 + net48 Revit API source generators can NRE without affecting build output. -->
+    <PropertyGroup Condition="'$(UseRevit)' == 'true' and '$(TargetFramework)' == 'net48'">
+        <NoWarn>$(NoWarn);CS8785</NoWarn>
+    </PropertyGroup>
+
     <!-- Xceed.Wpf.AvalonDock reference (must be in targets to use RevitDevDir and RevitVersion) -->
     <ItemGroup Condition="'$(UseRevit)' == 'true'">
         <Reference

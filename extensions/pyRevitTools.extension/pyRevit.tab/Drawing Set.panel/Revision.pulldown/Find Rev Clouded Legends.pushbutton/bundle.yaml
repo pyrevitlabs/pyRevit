@@ -1,5 +1,6 @@
 title:
   en_us: Find Legends with Revision Clouds
+  ko: 수정 기호가 있는 범례 찾기
   fr_fr: Rechercher des légendes avec nuages ​​de révision
   ru: Найти легенды с пометочными облаками
   chinese_s: 查找带修订云线的图例
@@ -8,6 +9,7 @@ title:
   pt_br: Encontrar Legendas com Nuvens de Revisão
 tooltip:
   en_us: Lists all legends with revision clouds on them. Legends with revision clouds will not trigger the sheet index of the sheet they are placed on and that is why this tool is useful
+  ko: 수정 기호가 있는 모든 범례를 나열합니다. 수정 기호가 있는 범례는 배치된 시트의 시트 인덱스를 트리거하지 않으므로 이 도구가 유용합니다
   fr_fr: Répertorie toutes les légendes avec des nuages ​​de révision dessus. Les légendes avec des nuages ​​de révision ne déclencheront pas l'index de la feuille sur laquelle elles sont placées et c'est pourquoi cet outil est utile
   ru: Показывает все легенды с пометочными облаками на них. Легенты с пометочными облаками не будут запускать индексацию листов, на котором они размещены, и поэтому данный инструмент будет полезен.
   chinese_s: 列出所有带有修订云线的图例。带有修订云线的图例不会触发它们所在图纸的图纸索引，因此此工具很有用

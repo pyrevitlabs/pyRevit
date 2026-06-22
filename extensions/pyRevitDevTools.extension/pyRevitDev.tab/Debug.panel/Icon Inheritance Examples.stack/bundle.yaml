@@ -1,0 +1,5 @@
+title: Icon Inheritance
+tooltip: Examples for inherited pulldown icons and large icon opt-in in compact stack layouts.
+layout:
+  - Icon Size
+  - Inheritance Off

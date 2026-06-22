@@ -32,8 +32,6 @@ namespace pyRevitAssemblyBuilder.SessionManager
         private const string KeyClone                = "PYREVIT_CLONE";
         private const string KeyIPYVersion           = "PYREVIT_IPYVERSION";
         private const string KeyCPYVersion           = "PYREVIT_CPYVERSION";
-        private const string KeyLoggingLevel         = "PYREVIT_LOGGINGLEVEL";
-        private const string KeyFileLogging          = "PYREVIT_FILELOGGING";
         private const string KeyTelemetryState       = "PYREVIT_TELEMETRYSTATE";
         private const string KeyTelemetryUTC         = "PYREVIT_TELEMETRYUTCTIMESTAMPS";
         private const string KeyTelemetryFileDir     = "PYREVIT_TELEMETRYDIR";
@@ -45,6 +43,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
         private const string KeyAppTelemetryFlags    = "PYREVIT_APPTELEMETRYEVENTFLAGS";
         private const string KeyAutoUpdating         = "PYREVIT_AUTOUPDATE";
         private const string KeyOutputStyleSheet     = "PYREVIT_STYLESHEET";
+
+        // Must match DomainStorageKeys.EnvVarsDictKey in the Runtime (EnvVariables.cs).
+        // Kept as a literal because pyRevitAssemblyBuilder does not reference that assembly.
+        private const string KeyEnvVarsDict          = "PYREVITEnvVarsDict";
 
         /// <summary>
         /// Builds the session environment dictionary and stores it in the AppDomain via a reflection
@@ -62,21 +64,22 @@ namespace pyRevitAssemblyBuilder.SessionManager
         {
             var config = PyRevitConfig.Load();
 
+            // Revit version is seeded earlier by Python sessioninfo as the precise subversion
+            // (e.g. "2025.4.10"); the loader only knows the major VersionNumber (e.g. "2025").
+            // Preserve the already-seeded value so a single session keeps one host version
+            // (SessionInfo / output-window identity) instead of flipping it mid-startup.
+            var seededAppVersion = ReadSeededAppVersion();
+
             var values = new Dictionary<string, object>
             {
                 [KeySessionUUID]        = Guid.NewGuid().ToString(),
-                [KeyRevitVersion]       = uiApp?.Application?.VersionNumber ?? string.Empty,
+                [KeyRevitVersion]       = !string.IsNullOrEmpty(seededAppVersion)
+                                              ? seededAppVersion!
+                                              : (uiApp?.Application?.VersionNumber ?? string.Empty),
                 [KeyVersion]            = ReadPyRevitVersion(pyRevitRoot),
                 [KeyClone]              = "Unknown",
                 [KeyIPYVersion]         = ReadIPYVersion(pyRevitRoot),
                 [KeyCPYVersion]         = ReadCPYVersion(pyRevitRoot),
-
-                // Fix for #3203: PyRevitConfig.LoggingLevel returns a pyRevit enum
-                // (0=Quiet, 1=Verbose, 2=Debug) but the Python logger reads this
-                // env var as a Python logging module level (10=DEBUG, 20=INFO, 30=WARNING).
-                // Translate to avoid corrupting the Python logging threshold.
-                [KeyLoggingLevel]       = ToPythonLoggingLevel(config.LoggingLevel),
-                [KeyFileLogging]        = config.FileLogging,
 
                 [KeyTelemetryState]     = config.TelemetryState,
                 [KeyTelemetryUTC]       = config.TelemetryUTCTimeStamps,
@@ -90,7 +93,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 [KeyAppTelemetryFlags]  = config.AppTelemetryEventFlags,
 
                 [KeyAutoUpdating]       = config.AutoUpdate,
-                [KeyOutputStyleSheet]   = config.OutputStyleSheet,
+                [KeyOutputStyleSheet]   = ResolveOutputStyleSheet(config.OutputStyleSheet, pyRevitRoot),
             };
 
             // Delegate to EnvDictionary.Seed() in the Runtime, which owns PythonDictionary creation.
@@ -109,24 +112,39 @@ namespace pyRevitAssemblyBuilder.SessionManager
         }
 
         /// <summary>
-        /// Converts PyRevitConfig's logging level enum (0=Quiet, 1=Verbose, 2=Debug)
-        /// to Python's logging module level (30=WARNING, 20=INFO, 10=DEBUG).
-        /// <para>
-        /// Python's logger (pyrevitlib/pyrevit/coreutils/logger.py) reads PYREVIT_LOGGINGLEVEL
-        /// and compares it directly: <c>record.levelno >= _curlevel</c>.  The Python logging
-        /// constants are DEBUG=10, INFO=20, WARNING=30.  If we store 0 (pyRevit Quiet) the
-        /// comparison <c>10 >= 0</c> is always true — every message passes, which forces the
-        /// console window open.
-        /// </para>
+        /// Returns the user-configured output stylesheet, or the bundled outputstyles.css when none
+        /// is set. The default is applied here because the session window renders loader output
+        /// before any script imports pyrevit.output, which is what otherwise supplies it.
+        /// Returns empty when the bundled stylesheet cannot be located.
         /// </summary>
-        internal static int ToPythonLoggingLevel(int pyrevitLevel)
+        internal static string ResolveOutputStyleSheet(string configuredStyleSheet, string pyRevitRoot)
         {
-            switch (pyrevitLevel)
+            var configured = configuredStyleSheet?.Trim();
+            if (!string.IsNullOrEmpty(configured) && File.Exists(configured))
+                return configured;
+
+            if (string.IsNullOrEmpty(pyRevitRoot))
+                return string.Empty;
+
+            var bundled = Path.Combine(pyRevitRoot, "pyrevitlib", "pyrevit", "output", "outputstyles.css");
+            return File.Exists(bundled) ? bundled : string.Empty;
+        }
+
+        /// <summary>
+        /// Returns the Revit version already seeded into the AppDomain env dictionary by the
+        /// Python sessioninfo step (the precise subversion, e.g. "2025.4.10"), or null if none
+        /// is present yet. Lets Seed() avoid clobbering it with the loader's major-only version.
+        /// </summary>
+        private static string? ReadSeededAppVersion()
+        {
+            try
             {
-                case 2:  return 10;   // Debug   → logging.DEBUG
-                case 1:  return 20;   // Verbose → logging.INFO
-                default: return 30;   // Quiet   → logging.WARNING (Python default)
+                if (AppDomain.CurrentDomain.GetData(KeyEnvVarsDict) is System.Collections.IDictionary dict
+                        && dict.Contains(KeyRevitVersion))
+                    return dict[KeyRevitVersion] as string;
             }
+            catch { /* fall back to the loader-supplied version */ }
+            return null;
         }
 
         internal static string ReadPyRevitVersion(string pyRevitRoot)

@@ -1,5 +1,6 @@
 title:
   en_us: Generate Revision Report
+  ko: 수정 사항 보고서 생성
   fr_fr: Générer un Rapport des Révisions
   ru: Создать отчет изменений
   chinese_s: 生成修订报告
@@ -8,6 +9,7 @@ title:
   pt_br: Gerar Relatório de Revisão
 tooltip:
   en_us: Generates a report from all revisions in current project
+  ko: 현재 프로젝트의 모든 수정 사항에서 보고서를 생성합니다
   fr_fr: Génère un rapport de toutes les révisions dans le projet actuel
   ru: Создаст отчет для всех изменений в текущем проекте.
   chinese_s: 根据当前项目中的所有修订生成报告

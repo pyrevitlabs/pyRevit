@@ -1,0 +1,13 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <system:String x:Key="Window.Title">Свойства элемента – Настройка дополнительных параметров</system:String>
+    <system:String x:Key="ChkEnableStartup">Загружать панель при запуске</system:String>
+    <system:String x:Key="TbRestartHint">Для применения изменений параметров запуска требуется перезапуск Revit.</system:String>
+    <system:String x:Key="TbParamsHint">Введите по одному имени параметра в строку. Панель обновляется при следующем изменении выделения — перезапуск не требуется.</system:String>
+    <system:String x:Key="TbExamples">Примеры: Комментарии, Марка, Производитель, Комментарии к типу</system:String>
+    <system:String x:Key="BtnCancel">Отмена</system:String>
+    <system:String x:Key="BtnSave">Сохранить</system:String>
+
+</ResourceDictionary>

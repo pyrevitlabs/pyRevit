@@ -1,5 +1,6 @@
 title:
   en_us: Save Families
+  ko: 패밀리 저장
   fr_fr: Sauvegarder les familles
   ru: Сохранить семейства
   chinese_s: 保存族
@@ -8,6 +9,7 @@ title:
   pt_br: Salvar Famílias
 tooltip:
   en_us: Saves chosen families from the project
+  ko: 프로젝트에서 선택한 패밀리를 저장합니다
   fr_fr: Sauvegarder les familles sélectionnées dans le projet
   ru: Сохраняет выбранные семейства из проекта.
   chinese_s: 从项目中保存选定的族

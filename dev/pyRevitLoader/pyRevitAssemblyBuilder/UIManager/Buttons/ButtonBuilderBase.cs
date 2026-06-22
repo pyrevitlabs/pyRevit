@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Autodesk.Revit.UI;
@@ -37,6 +38,17 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
         public bool CanHandle(CommandComponentType componentType)
         {
             return SupportedTypes.Contains(componentType);
+        }
+
+        /// <summary>
+        /// Times an AddItem-style ribbon call and records it for [PERF] instrumentation.
+        /// </summary>
+        protected T TimedAddItem<T>(Func<T> addItem)
+        {
+            var sw = Stopwatch.StartNew();
+            var item = addItem();
+            ButtonPostProcessor.RecordAddItemMs(sw.ElapsedMilliseconds);
+            return item;
         }
 
         /// <inheritdoc/>
@@ -84,6 +96,14 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 sb.Insert(0, '_');
 
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Resolves icon mode for compact contexts such as pulldowns, split children, and stacks.
+        /// </summary>
+        protected static IconMode GetCompactIconMode(ParsedComponent component)
+        {
+            return IconModeHelper.GetCompactIconMode(component);
         }
 
         /// <summary>

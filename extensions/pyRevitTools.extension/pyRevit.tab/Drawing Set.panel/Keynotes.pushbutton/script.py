@@ -6,6 +6,7 @@ Features:
 - Indent / Outdent to promote or demote nodes (Tab / Shift+Tab)
 - Move Up / Move Down to reorder siblings (Ctrl+Up / Ctrl+Down)
 - Drag-and-drop to reparent across the tree
+- Collapse All / Expand All tree controls
 - Search with smart filters
 - Keyboard shortcuts (F2, F5, Ctrl+N, Ctrl+D, Del, Tab, Shift+Tab)
 
@@ -42,7 +43,6 @@ from pyrevit.interop import adc
 
 import keynotesdb as kdb
 
-__persistentengine__ = True
 
 logger = script.get_logger()
 output = script.get_output()
@@ -534,7 +534,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._used_keysdict = defaultdict(list)
         self._used_typesdict = defaultdict(set)
         try:
-            self._used_keysdict, self._used_typesdict = self.get_used_keynote_elements()
+            self._used_keysdict, self._used_typesdict = \
+                self.get_used_keynote_elements()
         except Exception:
             pass
 
@@ -552,17 +553,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         # Auto-refresh — subscribe to Revit's DocumentChanged event
         # so usage counts and type filters update instantly.
+        # Deferred to Loaded event to avoid delegate creation crash
+        # during __init__ (IronPython .NET interop limitation).
         self._refresh_pending = False
         self._doc_changed_app = None
-        try:
-            self._doc_changed_app = HOST_APP.uiapp.Application
-            self._doc_changed_app.DocumentChanged += self._on_doc_changed
-        except Exception:
-            try:
-                self._doc_changed_app = HOST_APP.app
-                self._doc_changed_app.DocumentChanged += self._on_doc_changed
-            except Exception:
-                self._doc_changed_app = None
+        self.Loaded += self._on_window_loaded
+
+        self.set_image_source(self.expandAllIcon, "expand_all.png")
+        self.set_image_source(self.collapseAllIcon, "collapse_all.png")
 
         self.load_config(reset_config)
         self._update_full_tree()
@@ -787,6 +785,82 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     return [root] + sub
         return None
 
+    def _set_all_tree_items_expanded(self, expanded, max_passes=2):
+        """Set IsExpanded on tree containers with bounded layout passes."""
+        tv = self.keynotes_tv
+        if not tv:
+            return False
+
+        def _safe_update_layout():
+            try:
+                tv.UpdateLayout()
+                return True
+            except Exception as ex:
+                logger.warning("Expand/collapse tree update failed | %s" % ex)
+                return False
+
+        if not _safe_update_layout():
+            return False
+
+        missing_any = False
+        for _ in range(max_passes):
+            missing_in_pass = False
+            root_gen = tv.ItemContainerGenerator
+            queue = []
+            for root in tv.Items:
+                root_container = root_gen.ContainerFromItem(root)
+                if root_container is None:
+                    missing_in_pass = True
+                    continue
+                queue.append(root_container)
+
+            while queue:
+                container = queue.pop()
+                if not container or not hasattr(container, "IsExpanded"):
+                    continue
+                container.IsExpanded = expanded
+                gen = container.ItemContainerGenerator
+                for child in container.Items:
+                    child_container = gen.ContainerFromItem(child)
+                    if child_container is None:
+                        missing_in_pass = True
+                        continue
+                    queue.append(child_container)
+
+            if not missing_in_pass:
+                _safe_update_layout()
+                return True
+
+            missing_any = True
+            if expanded:
+                if not _safe_update_layout():
+                    return False
+            else:
+                break
+
+        _safe_update_layout()
+        return not missing_any
+
+    def expand_all_tree(self, sender, args):
+        def _do_expand():
+            self._set_all_tree_items_expanded(True, max_passes=3)
+
+        self.Dispatcher.BeginInvoke(
+            System.Action(_do_expand), Windows.Threading.DispatcherPriority.Loaded
+        )
+
+    def collapse_all_tree(self, sender, args):
+        def _do_collapse():
+            collapsed = self._set_all_tree_items_expanded(False, max_passes=1)
+            if not collapsed:
+                # Some deep virtualized branches may not be realized on demand.
+                self._set_all_tree_items_expanded(True, max_passes=3)
+                self._set_all_tree_items_expanded(False, max_passes=1)
+
+        self.Dispatcher.BeginInvoke(
+            System.Action(_do_collapse), Windows.Threading.DispatcherPriority.Loaded
+        )
+
     # =========================================================================
     # USED KEYNOTE TRACKING
     # =========================================================================
@@ -810,7 +884,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 used[key].append(kn.Id)
                 # Detect keynote type from the tag's source param
                 try:
-                    src = kn.Parameter[DB.BuiltInParameter.KEY_SOURCE_PARAM]
+                    src = kn.Parameter[
+                        DB.BuiltInParameter.KEY_SOURCE_PARAM]
                     if src and src.HasValue:
                         val = src.AsString()
                         if val:
@@ -1409,6 +1484,18 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._search_timer.Stop()
         self._update_full_tree(fast_filter=True)
 
+    def _on_window_loaded(self, sender, args):
+        """Subscribe to DocumentChanged after window is fully loaded."""
+        try:
+            self._doc_changed_app = HOST_APP.uiapp.Application
+            self._doc_changed_app.DocumentChanged += self._on_doc_changed
+        except Exception:
+            try:
+                self._doc_changed_app = HOST_APP.app
+                self._doc_changed_app.DocumentChanged += self._on_doc_changed
+            except Exception:
+                self._doc_changed_app = None
+
     def _on_doc_changed(self, sender, args):
         """Fires on the Revit thread after any document change.
         Refreshes keynote usage data and updates the tree."""
@@ -1437,8 +1524,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         try:
             self.Dispatcher.BeginInvoke(
                 System.Action(_update_ui),
-                Windows.Threading.DispatcherPriority.Background,
-            )
+                Windows.Threading.DispatcherPriority.Background)
         except Exception:
             self._refresh_pending = False
 
@@ -1657,9 +1743,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
             def _query_used():
                 try:
-                    self._used_keysdict, self._used_typesdict = (
+                    self._used_keysdict, self._used_typesdict = \
                         self.get_used_keynote_elements()
-                    )
                 except Exception:
                     pass
 
@@ -1933,15 +2018,16 @@ class KeynoteManagerWindow(forms.WPFWindow):
         postcmd = self.postable_keynote_command
 
         def _do():
-            keynotes_cat = revit.query.get_category(DB.BuiltInCategory.OST_KeynoteTags)
+            keynotes_cat = revit.query.get_category(
+                DB.BuiltInCategory.OST_KeynoteTags)
             if not keynotes_cat:
-                self._place_result = "no_family"
+                self._place_result = 'no_family'
                 return
             def_id = revit.doc.GetDefaultFamilyTypeId(keynotes_cat.Id)
             if not def_id or not revit.doc.GetElement(def_id):
-                self._place_result = "no_family"
+                self._place_result = 'no_family'
                 return
-            self._place_result = "ok"
+            self._place_result = 'ok'
             DocumentEventUtils.PostCommandAndUpdateNewElementProperties(
                 HOST_APP.uiapp,
                 revit.doc,
@@ -1952,19 +2038,17 @@ class KeynoteManagerWindow(forms.WPFWindow):
             )
 
         def _on_placed():
-            result = getattr(self, "_place_result", None)
-            if result == "no_family":
+            result = getattr(self, '_place_result', None)
+            if result == 'no_family':
                 forms.alert(
                     "No Keynote Tag family is loaded in this project.\n\n"
                     "Please load a Keynote Tag family from the library "
                     "before placing keynotes.",
-                    title="Keynote Tag Missing",
-                )
+                    title="Keynote Tag Missing")
                 return
             try:
-                self._used_keysdict, self._used_typesdict = (
+                self._used_keysdict, self._used_typesdict = \
                     self.get_used_keynote_elements()
-                )
             except Exception:
                 pass
             self._update_full_tree()
@@ -1996,9 +2080,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self._connect_kfile()
             self._needs_update = True
             try:
-                self._used_keysdict, self._used_typesdict = (
-                    self.get_used_keynote_elements()
-                )
+                self._used_keysdict, self._used_typesdict = self.get_used_keynote_elements()
             except Exception as ex:
                 logger.debug("Refresh used keys failed | %s" % ex)
             self._update_full_tree()

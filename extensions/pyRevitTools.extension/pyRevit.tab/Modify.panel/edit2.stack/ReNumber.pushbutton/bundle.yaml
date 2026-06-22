@@ -1,5 +1,6 @@
 title:
   en_us: Renumber
+  ko: 번호 다시 매기기
   fr_fr: Renuméroter
   ru: Перенумеровать
   chinese_s: 重新编号
@@ -8,6 +9,7 @@ title:
   pt_br: Renumerar
 tooltip:
   en_us: ReNumber numbered elements in order of selection. Shift-Click to choose duplicate handling (Alert, Skip, or Sweep).
+  ko: 선택 순서대로 번호가 매겨진 요소 재번호 지정. Shift+클릭으로 중복 처리 방식 선택(알림, 건너뜀, 순차 처리).
   fr_fr: Renuméroter les éléments dans l'ordre de sélection. Maj+Clic pour gérer les doublons (Alerte, Ignorer ou Balayer).
   ru: Перенумеровать пронумерованные элементы в порядке выделения. Shift+Клик для выбора обработки дублей (Предупреждение, Пропуск или Сквозная нумерация).
   chinese_s: 按照选择顺序，为已编号的图元重新编号。按住 Shift 单击可选择重复项处理方式（提示、跳过或覆盖）。

@@ -275,6 +275,63 @@ context:
         }
 
         [Test]
+        public void TestContextListParsesExactRuleEntries()
+        {
+            var yamlContent = @"title:
+  en_us: Test Exact Context Rule
+context:
+  - exact:
+    - OST_Dimensions
+";
+            var tempFile = Path.GetTempFileName();
+            File.WriteAllText(tempFile, yamlContent);
+
+            try
+            {
+                var bundle = BundleParser.BundleYamlParser.Parse(tempFile);
+
+                Assert.That(bundle.ContextItems, Is.Empty);
+                Assert.That(bundle.ContextRules, Has.Count.EqualTo(1));
+
+                var exactRule = bundle.ContextRules.FirstOrDefault(r => r.RuleType == "exact");
+                Assert.That(exactRule, Is.Not.Null);
+                Assert.That(exactRule.Items, Is.EqualTo(new[] { "OST_Dimensions" }));
+                Assert.That(bundle.GetFormattedContext(), Is.EqualTo("(OST_Dimensions;)"));
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
+        [Test]
+        public void TestContextListParsesMixedScalarAndRuleEntries()
+        {
+            var yamlContent = @"title:
+  en_us: Test Mixed Context List
+context:
+  - doc-project
+  - exact:
+    - OST_Dimensions
+";
+            var tempFile = Path.GetTempFileName();
+            File.WriteAllText(tempFile, yamlContent);
+
+            try
+            {
+                var bundle = BundleParser.BundleYamlParser.Parse(tempFile);
+
+                Assert.That(bundle.ContextItems, Is.EqualTo(new[] { "doc-project" }));
+                Assert.That(bundle.ContextRules, Has.Count.EqualTo(1));
+                Assert.That(bundle.GetFormattedContext(), Is.EqualTo("(doc-project)&(OST_Dimensions;)"));
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
+        [Test]
         public void TestDefaultContextWhenNotSpecified()
         {
             // Test that context is null when not specified (no availability class will be created)
@@ -452,6 +509,123 @@ is_beta: true
             finally
             {
                 File.Delete(tempFile);
+            }
+        }
+
+        [Test]
+        public void TestInheritIconKeyDefaultsTrueAndSupportsFalse()
+        {
+            var defaultFile = Path.GetTempFileName();
+            var falseFile = Path.GetTempFileName();
+            File.WriteAllText(defaultFile, "title: Test\n");
+            File.WriteAllText(falseFile, "title: Test\ninherit_icon: false\n");
+
+            try
+            {
+                var defaultBundle = BundleParser.BundleYamlParser.Parse(defaultFile);
+                var falseBundle = BundleParser.BundleYamlParser.Parse(falseFile);
+
+                Assert.That(defaultBundle.InheritIcon, Is.True);
+                Assert.That(falseBundle.InheritIcon, Is.False);
+            }
+            finally
+            {
+                File.Delete(defaultFile);
+                File.Delete(falseFile);
+            }
+        }
+
+        [Test]
+        public void TestLargeIconKeyDefaultsFalseAndSupportsTrue()
+        {
+            var defaultFile = Path.GetTempFileName();
+            var trueFile = Path.GetTempFileName();
+            File.WriteAllText(defaultFile, "title: Test\n");
+            File.WriteAllText(trueFile, "title: Test\nlarge_icon: true\n");
+
+            try
+            {
+                var defaultBundle = BundleParser.BundleYamlParser.Parse(defaultFile);
+                var trueBundle = BundleParser.BundleYamlParser.Parse(trueFile);
+
+                Assert.That(defaultBundle.LargeIcon, Is.False);
+                Assert.That(trueBundle.LargeIcon, Is.True);
+            }
+            finally
+            {
+                File.Delete(defaultFile);
+                File.Delete(trueFile);
+            }
+        }
+
+        [Test]
+        public void TestParsedComponentInheritIconDefaultsAndOverrides()
+        {
+            var extensionDir = Path.Combine(Path.GetTempPath(), $"InheritIcon_{System.Guid.NewGuid():N}.extension");
+            var defaultPulldownDir = Path.Combine(extensionDir, "Test.panel", "Default.pulldown");
+            var disabledPulldownDir = Path.Combine(extensionDir, "Test.panel", "Disabled.pulldown");
+            Directory.CreateDirectory(defaultPulldownDir);
+            Directory.CreateDirectory(disabledPulldownDir);
+
+            try
+            {
+                File.WriteAllText(Path.Combine(defaultPulldownDir, "bundle.yaml"), "title: Default\n");
+                File.WriteAllText(Path.Combine(disabledPulldownDir, "bundle.yaml"), "title: Disabled\ninherit_icon: false\n");
+
+                var parsedExtension = ParseInstalledExtensions(new[] { extensionDir }).First();
+                var components = GetAllComponentsFlat(parsedExtension).ToList();
+                var defaultPulldown = components.First(c => c.DisplayName == "Default");
+                var disabledPulldown = components.First(c => c.DisplayName == "Disabled");
+
+                Assert.That(defaultPulldown.InheritIcon, Is.True);
+                Assert.That(disabledPulldown.InheritIcon, Is.False);
+            }
+            finally
+            {
+                if (Directory.Exists(extensionDir))
+                    Directory.Delete(extensionDir, true);
+            }
+        }
+
+        [Test]
+        public void TestNestedStackPulldownAndSplitInheritIconParsing()
+        {
+            var extensionDir = Path.Combine(Path.GetTempPath(), $"NestedInheritIcon_{System.Guid.NewGuid():N}.extension");
+            var stackDir = Path.Combine(extensionDir, "Test.panel", "Icon Stack.stack");
+            var disabledPulldownDir = Path.Combine(stackDir, "Stack Pulldown.pulldown");
+            var disabledSplitDir = Path.Combine(stackDir, "Stack Split.splitbutton");
+            var defaultSplitDir = Path.Combine(stackDir, "Default Split.splitbutton");
+            Directory.CreateDirectory(disabledPulldownDir);
+            Directory.CreateDirectory(disabledSplitDir);
+            Directory.CreateDirectory(defaultSplitDir);
+
+            try
+            {
+                File.WriteAllText(Path.Combine(stackDir, "bundle.yaml"), "title: Icon Stack\ninherit_icon: false\nlarge_icon: true\n");
+                File.WriteAllText(Path.Combine(disabledPulldownDir, "bundle.yaml"), "title: Stack Pulldown\ninherit_icon: false\nlarge_icon: true\n");
+                File.WriteAllText(Path.Combine(disabledSplitDir, "bundle.yaml"), "title: Stack Split\ninherit_icon: false\nlarge_icon: true\n");
+                File.WriteAllText(Path.Combine(defaultSplitDir, "bundle.yaml"), "title: Default Split\n");
+
+                var parsedExtension = ParseInstalledExtensions(new[] { extensionDir }).First();
+                var components = GetAllComponentsFlat(parsedExtension).ToList();
+                var stack = components.First(c => c.DisplayName == "Icon Stack");
+                var disabledPulldown = components.First(c => c.DisplayName == "Stack Pulldown");
+                var disabledSplit = components.First(c => c.DisplayName == "Stack Split");
+                var defaultSplit = components.First(c => c.DisplayName == "Default Split");
+
+                Assert.That(stack.InheritIcon, Is.False);
+                Assert.That(stack.LargeIcon, Is.True);
+                Assert.That(disabledPulldown.InheritIcon, Is.False);
+                Assert.That(disabledPulldown.LargeIcon, Is.True);
+                Assert.That(disabledSplit.InheritIcon, Is.False);
+                Assert.That(disabledSplit.LargeIcon, Is.True);
+                Assert.That(defaultSplit.InheritIcon, Is.True);
+                Assert.That(defaultSplit.LargeIcon, Is.False);
+            }
+            finally
+            {
+                if (Directory.Exists(extensionDir))
+                    Directory.Delete(extensionDir, true);
             }
         }
 

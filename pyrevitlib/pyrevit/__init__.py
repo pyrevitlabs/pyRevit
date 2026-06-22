@@ -19,6 +19,14 @@ import os.path as op
 from collections import namedtuple
 import traceback
 import re
+
+# Perf instrumentation must be the first pyrevit import so the first mark
+# below times as close to "pyrevit module load entry" as the import order
+# allows. Each mark is a no-op until the pyRevit logger is importable and
+# only surfaces when DEBUG logging is enabled.
+from pyrevit._perf import mark as _perfmark
+_perfmark("pyrevit.__init__:entry")
+
 from pyrevit.compat import PY3
 
 import clr  # pylint: disable=E0401
@@ -26,6 +34,7 @@ import clr  # pylint: disable=E0401
 import System
 
 from pyrevit import compat
+_perfmark("pyrevit.__init__:after compat+clr+System")
 
 PYREVIT_ADDON_NAME = 'pyRevit'
 PYREVIT_CLI_NAME = 'pyrevit.exe'
@@ -107,8 +116,10 @@ from pyrevit.compat import safe_strtype
 from pyrevit.framework import Process
 from pyrevit.framework import Windows
 from pyrevit.framework import Forms
+_perfmark("pyrevit.__init__:after framework")
 from pyrevit import api
 from pyrevit.api import DB, UI, ApplicationServices, AdWindows
+_perfmark("pyrevit.__init__:after api")
 
 # -----------------------------------------------------------------------------
 # Base Exceptions
@@ -823,4 +834,6 @@ PYREVIT_FILE_PREFIX_STAMPED_USER_REGEX = \
 # -----------------------------------------------------------------------------
 # config labs modules
 # -----------------------------------------------------------------------------
+_perfmark("pyrevit.__init__:before labs")
 from pyrevit import labs
+_perfmark("pyrevit.__init__:after labs (exit)")

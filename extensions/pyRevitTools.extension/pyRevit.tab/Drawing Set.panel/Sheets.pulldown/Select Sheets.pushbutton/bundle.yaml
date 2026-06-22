@@ -1,5 +1,6 @@
 title:
   en_us: Select Sheets
+  ko: 시트 선택
   fr_fr: Sélectionner les feuilles
   ru: Выделить листы
   chinese_s: 选择图纸
@@ -8,6 +9,7 @@ title:
   pt_br: Selecionar Folhas
 tooltip:
   en_us: Select multiple sheets from a list
+  ko: 목록에서 여러 시트를 선택합니다
   fr_fr: Sélectionnez plusieurs feuilles depusi une liste
   ru: Выделить несколько листов из списка.
   chinese_s: 从列表中选择多张图纸

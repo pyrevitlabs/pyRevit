@@ -12,9 +12,12 @@ import os.path as op
 import imp
 import inspect
 
+from pyrevit.coreutils.logger import get_logger
 from pyrevit.extensions import extensionmgr
 from pyrevit.extensions import extpackages as extpkg
 from pyrevit.preflight.case import PreflightTestCase
+
+mlogger = get_logger(__name__)
 
 
 def _grab_test_types(module):
@@ -50,10 +53,16 @@ class PreflightCheck(object):
             if extension_pkg:
                 self.author = extension_pkg.author
 
-        desc_lines = getattr(self.check_case, "__doc__", "").strip().split('\n')
-        if desc_lines:
-            self.subtitle = desc_lines[0]
-            self.description = '\n'.join([x.strip() for x in desc_lines[1:]])
+        doc_str = (getattr(self.check_case, "__doc__", None) or "").strip()
+        if not doc_str:
+            mlogger.error(
+                "PreflightCheck '%s' in '%s' has no docstring -- "
+                "add a class-level docstring (first line becomes the subtitle).",
+                self.name, op.basename(script_path)
+            )
+        desc_lines = doc_str.split('\n') if doc_str else ['']
+        self.subtitle = desc_lines[0]
+        self.description = '\n'.join(x.strip() for x in desc_lines[1:])
 
 
 def run_preflight_check(check, doc, output):

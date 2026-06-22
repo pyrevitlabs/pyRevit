@@ -124,6 +124,26 @@ namespace pyRevitExtensionParser
         }
 
         /// <summary>
+        /// Gets or sets whether to read script metadata (__title__, __author__, etc.) from Python script files.
+        /// </summary>
+        /// <remarks>
+        /// When false, bundles rely solely on bundle.yaml for display metadata, which reduces startup time.
+        /// When true (default), script-level dunders are merged with bundle.yaml (bundle wins on conflict).
+        /// </remarks>
+        public bool ReadScriptMetadata
+        {
+            get
+            {
+                var value = _ini.IniReadValue("core", "read_script_metadata");
+                return bool.TryParse(value, out var result) ? result : true;
+            }
+            set
+            {
+                _ini.IniWriteValue("core", "read_script_metadata", value ? TrueString : FalseString);
+            }
+        }
+
+        /// <summary>
         /// Gets or sets whether to load beta/experimental commands.
         /// </summary>
         /// <remarks>
@@ -420,15 +440,6 @@ namespace pyRevitExtensionParser
                 return null;
 
             var value = rawValue.Trim();
-            if (value.Length >= 2)
-            {
-                var first = value[0];
-                var last = value[value.Length - 1];
-                if ((first == '"' && last == '"') || (first == '\'' && last == '\''))
-                {
-                    value = value.Substring(1, value.Length - 2).Trim();
-                }
-            }
 
             if (string.IsNullOrEmpty(value))
                 return null;

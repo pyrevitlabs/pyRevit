@@ -60,6 +60,20 @@
     <system:String x:Key="CoreSettings.Loader">Chargeur</system:String>
     <system:String x:Key="CoreSettings.Loader.Description">Configurer le mécanisme de chargement des assemblies de pyRevit. Le nouveau chargeur est une implémentation C# qui utilise la stratégie de compilation Roslyn</system:String>
     <system:String x:Key="CoreSettings.Loader.NewLoader">Active une nouvelle version du chargeur pyRevit (bêta) (Le redémarrage de Revit est requis)</system:String>
+    <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata">Lire les métadonnées des scripts (Redémarrage requis)</system:String>
+    <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata.Description">
+        Lorsqu'elle est activée, pyRevit lit les métadonnées des scripts (__title__, __author__, __doc__, etc.) à partir des fichiers de scripts Python.
+        La désactivation de cette option peut améliorer les performances de démarrage, mais les commandes peuvent perdre les métadonnées définies dans les scripts.
+        Les valeurs de bundle.yaml seront toujours utilisées quelle que soit ce paramètre.
+    </system:String>
+    <system:String x:Key="CoreSettings.Loader.NewLoader.Changed">
+        Le paramètre du nouveau chargeur a changé. Un rechargement de pyRevit est requis pour
+        que ce changement prenne effet. Voulez-vous recharger maintenant ?
+    </system:String>
+    <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata.Changed">
+        Le paramètre de lecture des métadonnées des scripts a changé. Un rechargement de
+        pyRevit est requis pour que ce changement prenne effet. Voulez-vous recharger maintenant ?
+    </system:String>
 
     <system:String x:Key="CoreSettings.CloseOtherConsoles">Fermer les consoles ouvertes</system:String>
     <system:String x:Key="CoreSettings.CloseOtherConsoles.Description">

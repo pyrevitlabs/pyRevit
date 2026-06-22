@@ -27,5 +27,13 @@ namespace pyRevitAssemblyBuilder.UIManager
         /// <param name="extension">The parsed extension containing UI component definitions.</param>
         /// <param name="assemblyInfo">Information about the assembly containing command implementations.</param>
         void BuildUI(ParsedExtension extension, ExtensionAssemblyInfo assemblyInfo);
+
+        /// <summary>
+        /// Emits the per-extension [PERF] breakdown lines collected during the most recent
+        /// <see cref="BuildUI"/> call. Intended to be called by the session manager immediately
+        /// after the wrapping <c>[PERF] {ext.Name} - BuildUI: Xms</c> line.
+        /// </summary>
+        /// <param name="extensionName">The extension name to use as a prefix on each emitted line.</param>
+        void EmitBuildUIPerfLines(string extensionName);
     }
 }

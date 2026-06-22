@@ -88,20 +88,40 @@ def set_telemetry_utc_timestamp(state):
     user_config.telemetry_utc_timestamp = state
 
 
-def set_telemetry_file_dir(file_dir):
+def set_telemetry_file_dir(file_dir, persist=True):
+    """Set telemetry file directory in env, optionally persisting to config.
+
+    Args:
+        file_dir (str): directory path to write telemetry files into
+        persist (bool): if True (default), write the value back to
+            user_config and trigger a save. Pass False from setup_telemetry
+            to avoid the redundant round-trip read-write cycle that
+            previously fed the escape-doubling bug.
+    """
     if not file_dir or not op.isdir(file_dir):
         disable_telemetry_to_file()
     envvars.set_pyrevit_env_var(envvars.TELEMETRYDIR_ENVVAR, file_dir)
-    user_config.telemetry_file_dir = file_dir
+    if persist:
+        user_config.telemetry_file_dir = file_dir
 
 
 def set_telemetry_file_path(file_path):
     envvars.set_pyrevit_env_var(envvars.TELEMETRYFILE_ENVVAR, file_path)
 
 
-def set_telemetry_server_url(server_url):
+def set_telemetry_server_url(server_url, persist=True):
+    """Set telemetry server URL in env, optionally persisting to config.
+
+    Args:
+        server_url (str): telemetry server URL
+        persist (bool): if True (default), write the value back to
+            user_config and trigger a save. Pass False from setup_telemetry
+            to avoid the redundant round-trip read-write cycle that
+            previously fed the escape-doubling bug.
+    """
     envvars.set_pyrevit_env_var(envvars.TELEMETRYSERVER_ENVVAR, server_url)
-    user_config.telemetry_server_url = server_url
+    if persist:
+        user_config.telemetry_server_url = server_url
 
 
 def set_telemetry_include_hooks(state):
@@ -149,9 +169,19 @@ def get_apptelemetry_event_flags():
     return coreutils.hex2int_long(flags_hex)
 
 
-def set_apptelemetry_server_url(server_url):
+def set_apptelemetry_server_url(server_url, persist=True):
+    """Set app telemetry server URL in env, optionally persisting to config.
+
+    Args:
+        server_url (str): app telemetry server URL
+        persist (bool): if True (default), write the value back to
+            user_config and trigger a save. Pass False from setup_telemetry
+            to avoid the redundant round-trip read-write cycle that
+            previously fed the escape-doubling bug.
+    """
     envvars.set_pyrevit_env_var(envvars.APPTELEMETRYSERVER_ENVVAR, server_url)
-    user_config.apptelemetry_server_url = server_url
+    if persist:
+        user_config.apptelemetry_server_url = server_url
 
 
 def set_apptelemetry_event_flags(event_flags):
@@ -232,7 +262,10 @@ def setup_telemetry(session_id=None):
     # read or setup default values for file telemetry
     # default file path and name for telemetry
     telemetry_file_dir = user_config.telemetry_file_dir
-    set_telemetry_file_dir(telemetry_file_dir)
+    # persist=False: this is a startup-time push from user_config to env,
+    # not a value change. Avoids redundant round-trip writes that
+    # previously fed the escape-doubling bug.
+    set_telemetry_file_dir(telemetry_file_dir, persist=False)
 
     # check file telemetry config and setup destination
     if not telemetry_file_dir or coreutils.is_blank(telemetry_file_dir):
@@ -271,7 +304,8 @@ def setup_telemetry(session_id=None):
         disable_telemetry_to_server()
     else:
         # if config exists, setup server logging
-        set_telemetry_server_url(telemetry_server_url)
+        # persist=False: pure startup-time push from user_config to env.
+        set_telemetry_server_url(telemetry_server_url, persist=False)
 
     # set telemetry script types
     set_telemetry_include_hooks(user_config.telemetry_include_hooks)
@@ -291,7 +325,8 @@ def setup_telemetry(session_id=None):
         disable_apptelemetry_to_server()
     else:
         # if config exists, setup server logging
-        set_apptelemetry_server_url(apptelemetry_server_url)
+        # persist=False: pure startup-time push from user_config to env.
+        set_apptelemetry_server_url(apptelemetry_server_url, persist=False)
 
     # setup events
     new_telemetry_handler = EventTelemetry(session_id, HOST_APP.username)

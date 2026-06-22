@@ -1,5 +1,6 @@
 title:
   en_us: List Legends on Sheets
+  ko: 시트의 범례 목록
   fr_fr: Lister les légendes sur les feuilles
   ru: Показать легенды на листах
   chinese_s: 列出图纸上的图例
@@ -8,6 +9,7 @@ title:
   pt_br: Listar Legendas em Folhas
 tooltip:
   en_us: List Legends on Sheets
+  ko: 시트의 범례 목록
   fr_fr: Lister les légendes sur les feuilles
   ru: Показывает легенды на листах
   chinese_s: 列出图纸上的图例

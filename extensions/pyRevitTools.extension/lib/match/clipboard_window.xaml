@@ -1,0 +1,6 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Match Properties – Recall"
+        Width="420"
+        SizeToContent="Height"
+        ResizeMode="CanResizeWithGrip"/>

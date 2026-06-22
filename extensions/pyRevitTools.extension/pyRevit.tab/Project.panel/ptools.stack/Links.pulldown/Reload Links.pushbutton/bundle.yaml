@@ -1,5 +1,6 @@
 title:
   en_us: Reload Links
+  ko: 링크 다시 로드
   fr_fr: Recharger les liens
   ru: Перезагрузить связи
   chinese_s: 重新加载链接
@@ -11,6 +12,7 @@ tooltip:
     Reloads choosen Revit, CAD and DWG Links
 
     Can reload links "locally" for workshared models
+  ko: 선택한 Revit, CAD 및 DWG 링크를 다시 로드합니다
   fr_fr: >-
     Recharge les liens Revit, CAD et DWG choisis
 

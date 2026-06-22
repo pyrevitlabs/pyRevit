@@ -1,0 +1,10 @@
+title: |
+    Migrate
+    Bundle
+tooltip: |
+  Scan an extension folder and copy script metadata (__title__, __author__, etc.)
+  into each bundle's bundle.yaml so you can disable inline script metadata reads
+  for faster startup. Choose merge policy and optional script cleanup.
+context: zero-doc
+authors:
+  - Roman Golev

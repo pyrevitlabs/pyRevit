@@ -5,7 +5,6 @@
 # pylint: disable=missing-docstring
 import sys
 import traceback
-import cgi
 import json
 import threading
 
@@ -13,6 +12,11 @@ from pyrevit.api import UI
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.compat import PY3
 from pyrevit.compat import urlparse
+
+if PY3:
+    from urllib.parse import parse_qs
+else:
+    from urlparse import parse_qs
 
 from pyrevit.routes.server import exceptions as excp
 from pyrevit.routes.server import base
@@ -52,15 +56,16 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
                     api_path = "/" + "/".join(levels[2:])
                 else:
                     api_path = "/"
-                return api_name, api_path
-        return None, None
+                query_string = url_parts.query
+                return api_name, api_path, query_string
+        return None, None, None
 
     def _parse_request_info(self):
         # find the app
-        api_name, api_path = self._parse_api_path()  # type: str, str
+        api_name, api_path, query_string = self._parse_api_path()  # type: str, str, str
         if not api_name:
             raise excp.APINotDefinedException(api_name)
-        return api_name, api_path
+        return api_name, api_path, query_string
 
     def _find_route_handler(self, api_name, path, method):
         route, route_handler = router.get_route_handler(
@@ -70,24 +75,32 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
             raise excp.RouteHandlerNotDefinedException(api_name, path, method)
         return route, route_handler
 
-    def _prepare_request(self, route, path, method):
+    def _prepare_request(self, route, path, method, query_string=None):
         # process request data
         data = None
-        content_length = self.headers.getheader("content-length")  # type: str
+        content_length = self.headers.get("content-length")  # type: str
         if content_length and content_length.isnumeric():
             data = self.rfile.read(int(content_length))
             # format data
-            content_type_header = self.headers.getheader("content-type")
+            content_type_header = self.headers.get("content-type")
             if content_type_header:
-                content_type, _ = cgi.parse_header(content_type_header)
+                content_type = content_type_header.split(";")[0].strip()
                 if content_type == "application/json":
                     data = json.loads(data)
+
+        # parse query string into a dictionary
+        query_params = {}
+        if query_string:
+            # parse_qs returns lists for values; flatten single values to strings
+            parsed = parse_qs(query_string)
+            query_params = {k: v[0] if len(v) == 1 else v for k, v in parsed.items()}
 
         return base.Request(
             path=path,
             method=method,
             data=data,
             params=router.extract_route_params(route.pattern, path),
+            query_params=query_params,
         )
 
     def _prepare_host_handler(self, request, route_handler):
@@ -139,13 +152,13 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
 
     def _handle_route(self, method):
         # process the given url and find API and route
-        api_name, path = self._parse_request_info()
+        api_name, path, query_string = self._parse_request_info()
 
         # find the handler function registered by the API and route
         route, route_handler = self._find_route_handler(api_name, path, method)
 
         # prepare a request obj to be passed to registered handler
-        request = self._prepare_request(route, path, method)
+        request = self._prepare_request(route, path, method, query_string)
 
         # if handler has uiapp in arguments, run in host api context
         if handler.RequestHandler.wants_api_context(route_handler):
@@ -185,14 +198,14 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
             self._handle_route(method=method)
         except Exception as ex:
             # get exception info
-            sys.exc_type, sys.exc_value, sys.exc_traceback = sys.exc_info()
+            exc_type, exc_value, exc_tb = sys.exc_info()
             # go back one frame to grab exception stack from handler
             # and grab traceback lines
-            tb_report = "".join(traceback.format_tb(sys.exc_traceback)[1:])
+            tb_report = "".join(traceback.format_tb(exc_tb)[1:])
             self._write_response(
                 excp.ServerException(
                     message=str(ex),
-                    exception_type=sys.exc_type,
+                    exception_type=exc_type,
                     exception_traceback=tb_report,
                 )
             )

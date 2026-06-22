@@ -1,0 +1,271 @@
+name: pyRevit CI
+
+on:
+  pull_request:
+    types: [opened, reopened]
+    branches: [develop, master]
+    paths:
+      - '.github/workflows/**'
+      - 'build/**'
+      - 'dev/**'
+      - 'extensions/**'
+      - 'pyrevitlib/**'
+      - 'release/**'
+      - 'site-packages/**'
+  push:
+    branches: [develop, master]
+    tags: ['v*']
+    paths:
+      - '.github/workflows/**'
+      - 'build/**'
+      - 'dev/**'
+      - 'extensions/**'
+      - 'pyrevitlib/**'
+      - 'release/**'
+      - 'site-packages/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  MainRepo: "pyrevitlabs/pyRevit"
+
+concurrency:
+  group: pyrevit-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    permissions:
+      contents: write
+      actions: read
+      packages: write
+    outputs:
+      build_version: ${{ steps.versionmeta.outputs.build_version }}
+      install_version: ${{ steps.versionmeta.outputs.install_version }}
+    runs-on: windows-2025
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          token: ${{ secrets.SUBMODULES_TOKEN || github.token }}
+
+      - name: Cache NuGet packages
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/Directory.Build.props', 'build/Build.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Run CI pipeline
+        working-directory: build
+        env:
+          DOTNET_ENVIRONMENT: ${{ github.repository == env.MainRepo && 'Production' || 'Development' }}
+          Build__Channel: ${{ github.ref == 'refs/heads/develop' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && 'wip' || ((github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v')) && 'release') || 'none' }}
+        run: dotnet run -c Release -- ci
+
+      - name: Run build unit tests
+        working-directory: build
+        run: dotnet test tests/Build.Tests.csproj -c Release
+
+      - name: Capture build versions
+        id: versionmeta
+        shell: bash
+        run: |
+          echo "build_version=$(tr -d '\r\n' < pyrevitlib/pyrevit/version)" >> "$GITHUB_OUTPUT"
+          echo "install_version=$(tr -d '\r\n' < release/version)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload unsigned bin artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: unsigned-bin-${{ github.sha }}
+          path: bin/**
+
+      - name: Publish unsigned bin to GitHub Release
+        if: >
+          github.repository == env.MainRepo &&
+          (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+          (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')
+        shell: pwsh
+        working-directory: ${{ github.workspace }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH_NAME: ${{ github.ref_name }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $branch = $env:BRANCH_NAME
+          $sha = $env:COMMIT_SHA
+          $safeBranch = $branch -replace '[/\\]', '-'
+          $shaZip = "unsigned-bin-$sha.zip"
+          $branchZip = "unsigned-bin-$safeBranch-latest.zip"
+          Compress-Archive -Path bin -DestinationPath $shaZip -Force
+          Copy-Item $shaZip $branchZip -Force
+          gh release view ci-binaries 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create ci-binaries --prerelease --title "CI Binaries" --notes "Pre-built bin/ from CI (anonymous download for pyrevit clone)."
+          }
+          gh release upload ci-binaries $shaZip --clobber
+          gh release upload ci-binaries $branchZip --clobber
+
+      - name: Prune old CI bin release assets
+        if: >
+          github.repository == env.MainRepo &&
+          (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+          (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $keep = New-Object System.Collections.Generic.HashSet[string]
+          foreach ($branch in @('develop', 'master')) {
+            $runs = gh api "repos/pyrevitlabs/pyRevit/actions/workflows/ci.yml/runs" `
+              -f branch=$branch -f status=completed -f per_page=10 `
+              --jq '.workflow_runs[] | select(.conclusion=="success") | .head_sha'
+            $runs | Select-Object -First 3 | ForEach-Object { [void]$keep.Add($_) }
+          }
+          $assets = gh release view ci-binaries --json assets --jq '.assets[].name'
+          foreach ($asset in $assets) {
+            if ($asset -match '^unsigned-bin-.+-latest\.zip$') { continue }
+            if ($asset -notmatch '^unsigned-bin-([a-f0-9]{40})\.zip$') { continue }
+            $sha = $Matches[1]
+            if (-not $keep.Contains($sha)) {
+              gh release delete-asset ci-binaries $asset --yes
+            }
+          }
+
+      - name: Publish unsigned bin NuGet package
+        if: >
+          github.repository == env.MainRepo &&
+          (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+          (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')
+        shell: pwsh
+        working-directory: ${{ github.workspace }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $sha = $env:COMMIT_SHA
+          $shortSha = $sha.Substring(0, 7)
+          $version = "1.0.0-ci-$shortSha"
+          $shaZip = "unsigned-bin-$sha.zip"
+          if (-not (Test-Path $shaZip)) {
+            Compress-Archive -Path bin -DestinationPath $shaZip -Force
+          }
+          $nugetVersion = '6.12.2'
+          $nugetUrl = "https://dist.nuget.org/win-x86-commandline/v$nugetVersion/nuget.exe"
+          Invoke-WebRequest -Uri $nugetUrl -OutFile nuget.exe
+          $nuget = ".\nuget.exe"
+          $nuspec = @"
+          <?xml version="1.0" encoding="utf-8"?>
+          <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+            <metadata>
+              <id>PyRevit.UnsignedBin</id>
+              <version>$version</version>
+              <authors>pyRevitLabs</authors>
+              <description>Unsigned pyRevit bin/ output from CI commit $sha</description>
+            </metadata>
+            <files>
+              <file src="$shaZip" target="content" />
+            </files>
+          </package>
+          "@
+          Set-Content -Path PyRevit.UnsignedBin.nuspec -Value $nuspec -Encoding UTF8
+          & $nuget pack PyRevit.UnsignedBin.nuspec -OutputDirectory .
+          dotnet nuget push "PyRevit.UnsignedBin.$version.nupkg" `
+            --source "https://nuget.pkg.github.com/pyrevitlabs/index.json" `
+            --api-key $env:GITHUB_TOKEN `
+            --skip-duplicate
+
+      - name: Prune old CI bin NuGet package versions
+        if: >
+          github.repository == env.MainRepo &&
+          (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+          (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $keep = New-Object System.Collections.Generic.HashSet[string]
+          foreach ($branch in @('develop', 'master')) {
+            $runs = gh api "repos/pyrevitlabs/pyRevit/actions/workflows/ci.yml/runs" `
+              -f branch=$branch -f status=completed -f per_page=10 `
+              --jq '.workflow_runs[] | select(.conclusion=="success") | .head_sha'
+            $runs | Select-Object -First 2 | ForEach-Object { [void]$keep.Add($_) }
+          }
+          $versions = gh api --paginate "orgs/pyrevitlabs/packages/nuget/pyrevit.unsignedbin/versions" | ConvertFrom-Json
+          foreach ($version in $versions) {
+            if ($version.name -notmatch '^1\.0\.0-ci-([a-f0-9]{7})$') { continue }
+            $shortSha = $Matches[1]
+            $shouldKeep = $false
+            foreach ($fullSha in $keep) {
+              if ($fullSha.StartsWith($shortSha)) {
+                $shouldKeep = $true
+                break
+              }
+            }
+            if (-not $shouldKeep) {
+              gh api --method DELETE "orgs/pyrevitlabs/packages/nuget/pyrevit.unsignedbin/versions/$($version.id)"
+              Write-Host "Deleted package version $($version.name) (id=$($version.id))."
+            }
+          }
+
+      - name: Upload stamped release metadata
+        if: github.repository == env.MainRepo
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: stamped-release-metadata-${{ github.sha }}
+          path: ci-stamped/**
+
+  wip:
+    needs: build
+    if: >
+      github.repository == 'pyrevitlabs/pyRevit' &&
+      github.ref == 'refs/heads/develop' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    permissions:
+      contents: read
+      actions: write
+    uses: ./.github/workflows/wip.yml
+    with:
+      head_sha: ${{ github.sha }}
+      ci_run_id: ${{ github.run_id }}
+      install_version: ${{ needs.build.outputs.install_version }}
+    secrets: inherit
+
+  notify:
+    needs: [build, wip]
+    if: >
+      github.repository == 'pyrevitlabs/pyRevit' &&
+      github.ref == 'refs/heads/develop' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: windows-2025
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+
+      - name: Notify linked issues
+        continue-on-error: true
+        working-directory: build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          Build__Channel: wip
+          Build__NotifyUrl: https://github.com/${{ github.repository }}/actions/runs/${{ needs.wip.outputs.workflow_run_id }}
+        run: dotnet run -c Release -- notify

@@ -1,0 +1,13 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <system:String x:Key="Window.Title">元素属性 – 配置附加参数</system:String>
+    <system:String x:Key="ChkEnableStartup">启动时加载面板</system:String>
+    <system:String x:Key="TbRestartHint">启动更改需要重启 Revit 后才能生效。</system:String>
+    <system:String x:Key="TbParamsHint">每行输入一个参数名称。下次选择更改时面板会更新 — 无需重启。</system:String>
+    <system:String x:Key="TbExamples">示例：注释、标记、制造商、类型注释</system:String>
+    <system:String x:Key="BtnCancel">取消</system:String>
+    <system:String x:Key="BtnSave">保存</system:String>
+
+</ResourceDictionary>

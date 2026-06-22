@@ -157,8 +157,9 @@ class SettingsWindow(forms.WPFWindow):
         self.minhostdrivefreespace_tb.Text = str(user_config.min_host_drivefreespace)
 
         self.loadbetatools_cb.IsChecked = user_config.load_beta
-        
+
         self.new_loader.IsChecked = user_config.new_loader
+        self.read_script_metadata_cb.IsChecked = user_config.read_script_metadata
 
         self.minimize_consoles_cb.IsChecked = user_config.output_close_others
 
@@ -470,9 +471,10 @@ class SettingsWindow(forms.WPFWindow):
         return str(version) == EXEC_PARAMS.engine_ver
 
     def update_addinfiles(self):
-        """Enables/Disables the adding files for different Revit versions."""
-        # update active engine
-        attachment = user_config.get_current_attachment()
+        """Enables/Disables the addin files for different Revit versions."""
+        # read fresh: this attachment is rewritten below, so a value cached
+        # before an out-of-process change must not be written back
+        attachment = user_config.get_current_attachment(cached=False)
         if attachment:
             # if attachment is for all users dont attempt at making changes
             # user probably does not have write access and this fails
@@ -862,13 +864,37 @@ class SettingsWindow(forms.WPFWindow):
             user_config.min_host_drivefreespace = 0
 
         user_config.load_beta = self.loadbetatools_cb.IsChecked
+
+        loader_setting_changed = (
+            self.new_loader.IsChecked != user_config.new_loader
+        )
+        metadata_setting_changed = (
+            self.read_script_metadata_cb.IsChecked != user_config.read_script_metadata
+        )
         user_config.new_loader = self.new_loader.IsChecked
+        user_config.read_script_metadata = self.read_script_metadata_cb.IsChecked
 
         user_config.output_close_others = self.minimize_consoles_cb.IsChecked
         if self.closewindows_current_rb.IsChecked:
             user_config.output_close_mode_enum = PyRevit.OutputCloseMode.CurrentCommand
         else:
             user_config.output_close_mode_enum = PyRevit.OutputCloseMode.CloseAll
+
+        if self.reload_requested:
+            return False
+        if loader_setting_changed:
+            return forms.alert(
+                self.get_locale_string("CoreSettings.Loader.NewLoader.Changed"),
+                yes=True,
+                no=True,
+            )
+        if metadata_setting_changed:
+            return forms.alert(
+                self.get_locale_string("CoreSettings.Loader.ReadScriptMetadata.Changed"),
+                yes=True,
+                no=True,
+            )
+        return False
 
     def _save_engines(self):
         # set active cpython engine

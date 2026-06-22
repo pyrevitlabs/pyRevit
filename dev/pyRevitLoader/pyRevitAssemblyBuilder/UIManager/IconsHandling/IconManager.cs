@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
@@ -21,6 +23,10 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
         private readonly ILogger _logger;
         private readonly RevitThemeDetector _themeDetector;
         private readonly BitmapCache _cache;
+
+        // Accumulated time spent decoding cache misses (BitmapImage + EnsureProperDpi),
+        // summed across every LoadBitmapSource call since the last reset.
+        private long _decodeMs;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IconManager"/> class.
@@ -48,16 +54,18 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
         /// <inheritdoc/>
         public void ApplyIcon(object item, ParsedComponent component, ParsedComponent parentComponent = null, IconMode iconMode = IconMode.LargeAndSmall)
         {
-            // If the component doesn't have icons, try to use parent's icons
+            // If the component doesn't have icons, try to use the parent's icons when
+            // this component allows inheritance.
             var sourceComponent = component;
             if (!component.HasValidIcons)
             {
-                if (parentComponent != null && parentComponent.HasValidIcons)
+                if (component.InheritIcon && parentComponent != null && parentComponent.HasValidIcons)
                 {
                     sourceComponent = parentComponent;
                 }
                 else
                 {
+                    ClearIconsOnItem(item);
                     return;
                 }
             }
@@ -65,12 +73,12 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
             try
             {
                 var isDarkTheme = _themeDetector.IsDarkTheme();
-                var largeIcon = GetBestIconForSizeWithTheme(sourceComponent, UIManagerConstants.ICON_LARGE, isDarkTheme);
                 var smallIcon = GetBestIconForSizeWithTheme(sourceComponent, UIManagerConstants.ICON_SMALL, isDarkTheme);
 
                 switch (iconMode)
                 {
                     case IconMode.LargeAndSmall:
+                        var largeIcon = GetBestIconForSizeWithTheme(sourceComponent, UIManagerConstants.ICON_LARGE, isDarkTheme);
                         ApplyLargeAndSmallIcons(item, largeIcon, smallIcon, sourceComponent.DisplayName);
                         break;
 
@@ -78,8 +86,9 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
                         ApplySmallIconOnly(item, smallIcon, sourceComponent.DisplayName);
                         break;
 
-                    case IconMode.SmallToBoth:
-                        ApplySmallIconToBoth(item, smallIcon, sourceComponent.DisplayName);
+                    case IconMode.MediumAndSmall:
+                        var mediumIcon = GetBestIconForSizeWithTheme(sourceComponent, UIManagerConstants.ICON_MEDIUM, isDarkTheme);
+                        ApplyMediumAndSmallIcons(item, mediumIcon, smallIcon, sourceComponent.DisplayName);
                         break;
                 }
             }
@@ -123,19 +132,27 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
         }
 
         /// <summary>
-        /// Applies the small icon to both Image and LargeImage properties.
-        /// Used for pulldown sub-buttons where both properties need the same small icon.
+        /// Applies medium and small icons for compact ribbon contexts.
         /// </summary>
-        private void ApplySmallIconToBoth(object item, ComponentIcon smallIcon, string displayName)
+        private void ApplyMediumAndSmallIcons(object item, ComponentIcon mediumIcon, ComponentIcon smallIcon, string displayName)
         {
-            if (smallIcon == null)
+            if (mediumIcon == null && smallIcon == null)
                 return;
 
-            var smallBitmap = LoadBitmapSource(smallIcon.FilePath, UIManagerConstants.ICON_SMALL);
-            if (smallBitmap != null)
+            BitmapSource mediumBitmap = null;
+            BitmapSource smallBitmap = null;
+
+            if (mediumIcon != null)
             {
-                SetIconsOnItem(item, smallBitmap, smallBitmap);
+                mediumBitmap = LoadBitmapSource(mediumIcon.FilePath, UIManagerConstants.ICON_MEDIUM);
             }
+
+            if (smallIcon != null)
+            {
+                smallBitmap = LoadBitmapSource(smallIcon.FilePath, UIManagerConstants.ICON_SMALL);
+            }
+
+            SetIconsOnItem(item, mediumBitmap, smallBitmap);
         }
 
         /// <summary>
@@ -177,6 +194,40 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
             }
         }
 
+        /// <summary>
+        /// Clears existing icons when the resolved component icon source is intentionally empty.
+        /// This keeps reloads in sync when parent icon inheritance is disabled or an icon is removed.
+        /// </summary>
+        private void ClearIconsOnItem(object item)
+        {
+            switch (item)
+            {
+                // SplitButton must come before PulldownButton because SplitButton derives from PulldownButton
+                case SplitButton splitButton:
+                    splitButton.LargeImage = null;
+                    splitButton.Image = null;
+                    break;
+
+                case PulldownButton pulldownButton:
+                    pulldownButton.LargeImage = null;
+                    pulldownButton.Image = null;
+                    break;
+
+                case PushButton pushButton:
+                    pushButton.LargeImage = null;
+                    pushButton.Image = null;
+                    break;
+
+                case ComboBox comboBox:
+                    comboBox.Image = null;
+                    break;
+
+                case Autodesk.Revit.UI.ComboBoxMember comboBoxMember:
+                    comboBoxMember.Image = null;
+                    break;
+            }
+        }
+
         /// <inheritdoc/>
         public BitmapSource LoadBitmapSource(string imagePath, int targetSize = 0)
         {
@@ -195,6 +246,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
             if (_cache.TryGet(imagePath, targetSize, out var cachedBitmap))
                 return cachedBitmap;
 
+            var sw = Stopwatch.StartNew();
             try
             {
                 var bitmap = new BitmapImage();
@@ -226,6 +278,22 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
                 _logger.Debug($"Failed to load bitmap source from '{imagePath}'. Exception: {ex.Message}");
                 return null;
             }
+            finally
+            {
+                Interlocked.Add(ref _decodeMs, sw.ElapsedMilliseconds);
+            }
+        }
+
+        /// <summary>
+        /// Returns the cache hit/miss counts and accumulated decode time since the last call,
+        /// then resets both to zero. Used by per-extension instrumentation to attribute icon
+        /// work to a single <c>BuildUI</c> window.
+        /// </summary>
+        public (int CacheHits, int CacheMisses, long DecodeMs) ResetAndGetStats()
+        {
+            var cache = _cache.ResetAndGetStats();
+            var decode = Interlocked.Exchange(ref _decodeMs, 0);
+            return (cache.Hits, cache.Misses, decode);
         }
 
         /// <inheritdoc/>

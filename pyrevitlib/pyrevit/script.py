@@ -141,16 +141,19 @@ def get_pyrevit_version():
 
 
 def get_logger():
-    """Create and return logger named for current script.
+    """Return the runtime-backed logging facade for the current script.
 
     Returns:
-        (pyrevit.coreutils.logger.LoggerWrapper): Logger object
+        (pyrevit.coreutils.logger.LoggerWrapper): Logging facade
     """
     return logger.get_logger(EXEC_PARAMS.command_name)
 
 
 def get_output():
-    """Return object wrapping output window for current script.
+    """Return a wrapper bound to the current script output.
+
+    The output binding is captured immediately. Retain the returned wrapper
+    when using it from deferred or modeless callbacks after the command returns.
 
     Returns:
         (pyrevit.output.PyRevitOutputWindow): Output wrapper object
@@ -158,12 +161,13 @@ def get_output():
     return output.get_output()
 
 
-def get_config(section=None):
+def get_config(section=None, reload=False):
     """Create and return config section parser object for current script.
 
     Args:
         section (str, optional): config section name. If not provided,
             it will default to the command name plus the 'config' suffix.
+        reload (bool, optional): forces a reload, in case changes were made.
 
     Returns:
         (pyrevit.coreutils.configparser.PyRevitConfigSectionParser):
@@ -173,6 +177,8 @@ def get_config(section=None):
     if not section:
         script_cfg_postfix = '_config'
         section = EXEC_PARAMS.command_name + script_cfg_postfix
+    if reload:
+        user_config.reload()
 
     try:
         return user_config.get_section(section)

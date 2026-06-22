@@ -38,6 +38,9 @@ Examples:
 import os
 import os.path as op
 
+from pyrevit._perf import mark as _perfmark, time_block as _perfblock
+_perfmark("pyrevit.userconfig:entry")
+
 from pyrevit import EXEC_PARAMS, HOME_DIR, HOST_APP
 from pyrevit import PyRevitException
 from pyrevit import EXTENSIONS_DEFAULT_DIR, THIRDPARTY_EXTENSIONS_DEFAULT_DIR
@@ -51,6 +54,7 @@ from pyrevit.coreutils import appdata
 from pyrevit.coreutils import configparser
 from pyrevit.coreutils import logger
 from pyrevit.versionmgr import upgrade
+_perfmark("pyrevit.userconfig:after imports")
 # pylint: disable=C0103,C0413,W0703
 DEFAULT_CSV_SEPARATOR = ','
 
@@ -313,6 +317,26 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
     def new_loader(self, state):
         self.core.set_option(
             CONSTS.ConfigsNewLoaderKey,
+            value=state
+        )
+
+    @property
+    def read_script_metadata(self):
+        """Whether to read script metadata (__title__, __author__, etc) from Python scripts.
+        
+        When False, pyRevit will skip reading metadata from .py script files and will
+        only use values from bundle.yaml. This improves startup performance but may
+        affect commands that rely on script-level metadata.
+        """
+        return self.core.get_option(
+            CONSTS.ConfigsReadScriptMetadataKey,
+            default_value=CONSTS.ConfigsReadScriptMetadataDefault,
+        )
+
+    @read_script_metadata.setter
+    def read_script_metadata(self, state):
+        self.core.set_option(
+            CONSTS.ConfigsReadScriptMetadataKey,
             value=state
         )
     
@@ -758,28 +782,48 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             mlogger.error('Error setting list of user extension folders. | %s',
                           write_err)
 
-    def get_current_attachment(self):
-        """Return current pyRevit attachment."""
+    def get_current_attachment(self, cached=True):
+        """Return current pyRevit attachment.
+
+        The lookup re-reads the addin manifests and the clones registry from
+        disk, but those inputs cannot change for the running session except
+        through Attach/Detach or clone registry edits (which invalidate the
+        cache). The shared cache lets all script engines (startup scripts,
+        smartbuttons, commands, hooks) reuse a single disk lookup. Cleared on
+        reload by sessionmgr.load_session().
+
+        Args:
+            cached (bool): set False to bypass the session cache when the
+                attachment may have changed out of process (e.g. before
+                rewriting it from the settings dialog).
+        """
         try:
-            return PyRevit.PyRevitAttachments.GetAttached(int(HOST_APP.version))
+            host_version = int(HOST_APP.version)
+            if cached:
+                return PyRevit.PyRevitAttachments.GetAttachedCached(
+                    host_version)
+            return PyRevit.PyRevitAttachments.GetAttached(host_version)
         except PyRevitException as ex:
             mlogger.error('Error getting current attachment. | %s', ex)
 
     def get_active_cpython_engine(self):
         """Return active cpython engine."""
         # try to find attachment and get engines from the clone
-        attachment = self.get_current_attachment()
+        with _perfblock("userconfig.get_active_cpython_engine:GetAttached"):
+            attachment = self.get_current_attachment()
         if attachment and attachment.Clone:
             clone = attachment.Clone
         else:
             # if can not find attachment, instantiate a temp clone
             try:
-                clone = PyRevit.PyRevitClone(clonePath=HOME_DIR)
+                with _perfblock("userconfig.get_active_cpython_engine:PyRevitClone(HOME_DIR) fallback"):
+                    clone = PyRevit.PyRevitClone(clonePath=HOME_DIR)
             except Exception as cEx:
                 mlogger.debug('Can not create clone from path: %s', str(cEx))
                 clone = None
         # find cpython engines
-        engines = clone.GetCPythonEngines() if clone else []
+        with _perfblock("userconfig.get_active_cpython_engine:clone.GetCPythonEngines"):
+            engines = clone.GetCPythonEngines() if clone else []
         cpy_engines_dict = {x.Version: x for x in engines}
         mlogger.debug('cpython engines dict: %s', cpy_engines_dict)
 
@@ -875,9 +919,10 @@ LOCAL_CONFIG_FILE = ADMIN_CONFIG_FILE = USER_CONFIG_FILE = CONFIG_FILE = ''
 user_config = None
 
 # location for default pyRevit config files
-LOCAL_CONFIG_FILE = find_config_file(HOME_DIR)
-ADMIN_CONFIG_FILE = find_config_file(PYREVIT_ALLUSER_APP_DIR)
-USER_CONFIG_FILE = find_config_file(PYREVIT_APP_DIR)
+with _perfblock("pyrevit.userconfig:find_config_file x3 (HOME / ALLUSER / USER)"):
+    LOCAL_CONFIG_FILE = find_config_file(HOME_DIR)
+    ADMIN_CONFIG_FILE = find_config_file(PYREVIT_ALLUSER_APP_DIR)
+    USER_CONFIG_FILE = find_config_file(PYREVIT_APP_DIR)
 
 # decide which config file to use
 # check if a config file is inside the repo. for developers config override
@@ -932,13 +977,19 @@ mlogger.debug('Using %s config file: %s', CONFIG_TYPE, CONFIG_FILE)
 # read config, or setup default config file if not available
 # this pushes reading settings at first import of this module.
 try:
-    verify_configs(CONFIG_FILE)
-    user_config = PyRevitConfig(cfg_file_path=CONFIG_FILE,
-                                config_type=CONFIG_TYPE)
-    upgrade.upgrade_user_config(user_config)
-    user_config.save_changes()
+    with _perfblock("pyrevit.userconfig:verify_configs(CONFIG_FILE)"):
+        verify_configs(CONFIG_FILE)
+    with _perfblock("pyrevit.userconfig:PyRevitConfig(__init__)"):
+        user_config = PyRevitConfig(cfg_file_path=CONFIG_FILE,
+                                    config_type=CONFIG_TYPE)
+    with _perfblock("pyrevit.userconfig:upgrade.upgrade_user_config"):
+        upgrade.upgrade_user_config(user_config)
+    with _perfblock("pyrevit.userconfig:user_config.save_changes"):
+        user_config.save_changes()
 except Exception as cfg_err:
     mlogger.debug('Can not read confing file at: %s | %s',
                     CONFIG_FILE, cfg_err)
     mlogger.debug('Using configs in memory...')
     user_config = verify_configs()
+
+_perfmark("pyrevit.userconfig:exit (user_config ready)")

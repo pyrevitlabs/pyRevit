@@ -1,5 +1,6 @@
 title:
   en_us: Create Buttons
+  ko: 버튼 만들기
   fr_fr: Créer des boutons
   ru: Создать кнопки
   chinese_s: 创建按钮
@@ -8,6 +9,7 @@ title:
   pt_br: Criar Botões
 tooltip:
   en_us: Create Buttons
+  ko: 버튼 만들기
   fr_fr: Créer des boutons
   ru: Создает кнопки.
   chinese_s: 创建按钮

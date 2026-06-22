@@ -265,6 +265,58 @@
             "website": "https://t3lab.space/",
             "image": "",
             "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "type": "extension",
+            "rocket_mode_compatible": "True",
+            "name": "Wood-Framing",
+            "description": "Wood framing automation for Autodesk Revit - walls, floors, ceilings, roofs",
+            "author": "Roi Hason @ Swich Design",
+            "author_profile": "https://www.linkedin.com/in/roi-h-0564a3114",
+            "url": "https://github.com/Swichllc/PyRevit-Wood-Framing-extension.git",
+            "website": "https://swichdesign.com/",
+            "image": "",
+            "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "type": "extension",
+            "rocket_mode_compatible": "True",
+            "name": "P13",
+            "description": "BIM automation tools and extensions for Revit.",
+            "author": "Permpong Taweekul",
+            "author_profile": "https://github.com/permpong13",
+            "url": "https://github.com/permpong13/P13.git",
+            "website": "https://github.com/permpong13/P13",
+            "image": "",
+            "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "rocket_mode_compatible": "False",
+            "type": "extension",
+            "name": "Seed43",
+            "description": "Free Tools for automating repetitive Revit workflows, no subscriptions, no paywalls.",
+            "author": "Seed43",
+            "author_profile": "https://www.linkedin.com/company/seed43/",
+            "url": "https://github.com/Seed-43/Seed43.git",
+            "website": "https://seed43.org",
+            "image": "https://github.com/Seed-43/Seed43/blob/main/Seed43.png",
+            "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "type": "extension",
+            "rocket_mode_compatible": "True",
+            "name": "BMT",
+            "description": "BMT - free productivity tools for Revit by Biminent.",
+            "author": "Viktor Kuzev",
+            "author_profile": "https://biminent.com",
+            "url": "https://github.com/biminent/pyRevitExtension.git",
+            "website": "https://biminent.com",
+            "image": "",
+            "dependencies": []
         }
     ]
 }

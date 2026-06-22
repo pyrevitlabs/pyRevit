@@ -1,5 +1,6 @@
 title:
   en_us: Wipe Selected Families
+  ko: 선택한 패밀리 삭제
   fr_fr: Supprimer les familles sélectionnées
   ru: Очистить выделенные семейства
   chinese_s: 清除选定族
@@ -8,6 +9,7 @@ title:
   pt_br: Remover Famílias Selecionadas
 tooltip:
   en_us: Wipe families of selected instances
+  ko: 선택한 인스턴스의 패밀리를 삭제합니다.
   fr_fr: Supprime les familles sélectionnées
   ru: Очищает выделенные экземпляры семейств
   chinese_s: 清除选定实例所属的族

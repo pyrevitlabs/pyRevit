@@ -1,6 +1,5 @@
 """Calculates total volume of all walls in the model."""
 
-__title__ = 'Total\nVolume'
 
 from pyrevit import HOST_APP
 from Autodesk.Revit.DB import FilteredElementCollector, BuiltInCategory, BuiltInParameter

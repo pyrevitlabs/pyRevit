@@ -1,5 +1,6 @@
 title:
   en_us: Increment Selected Sheet Numbers
+  ko: 선택한 시트 번호 증가
   fr_fr: Incrémenter les Numéros des Feuilles Sélectionnées
   ru: Увеличить номер выделенного листа
   chinese_s: 递增选定图纸编号
@@ -10,6 +11,7 @@ tooltip:
   en_us: >-
     Increases the sheet number of the selected sheets by one. The sheet name
     change will be printed if logging is set to Verbose in pyRevit settings
+  ko: 선택한 시트의 시트 번호를 하나 증가시킵니다. pyRevit 설정에서 로깅이 자세히로 설정된 경우 시트 이름 변경이 출력됩니다.
   fr_fr: >-
     Augmente de un le numéro de feuille des feuilles sélectionnées. Le
     changement de nom de feuille sera imprimé si la journalisation est définie

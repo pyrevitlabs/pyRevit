@@ -9,6 +9,8 @@ Examples:
 #pylint: disable=W0703,C0302,C0103,W0614,E0401,W0611,C0413,ungrouped-imports
 import os.path as op
 from pyrevit.compat import IRONPY, NETCORE, PY2
+from pyrevit._perf import mark as _perfmark
+_perfmark("pyrevit.framework:entry")
 
 import clr
 import System
@@ -36,6 +38,7 @@ clr.AddReference('PresentationCore')
 clr.AddReference('PresentationFramework')
 clr.AddReference('System.Xml.Linq')
 clr.AddReference('WindowsBase')
+_perfmark("pyrevit.framework:after clr.AddReference (System+WPF)")
 
 from System import AppDomain, Version
 from System import Type
@@ -89,6 +92,7 @@ from System import Math
 from System.Management import ManagementObjectSearcher
 from System.Runtime.Serialization import FormatterServices
 from System.Linq import Enumerable
+_perfmark("pyrevit.framework:after `from System.* import` block")
 
 import pyrevit.engine as eng
 
@@ -146,6 +150,7 @@ except Exception:
 
 clr.AddReference('pyRevitLabs.Emojis')
 import pyRevitLabs.Emojis as Emojis
+_perfmark("pyrevit.framework:after IronPython+WPF+SQLite+CPDialogs+Emojis refs")
 
 
 # do not import anything from pyrevit before this

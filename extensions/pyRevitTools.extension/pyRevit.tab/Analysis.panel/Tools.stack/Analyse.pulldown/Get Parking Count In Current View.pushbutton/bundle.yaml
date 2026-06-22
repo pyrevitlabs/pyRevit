@@ -1,5 +1,6 @@
 title:
   en_us: Get Parking Count In Current View
+  ko: 현재 뷰의 주차 공간 수 가져오기
 
   fr_fr: Obtenir le nombre de stationnements dans la vue actuelle
   ru: Получить количество парковок на текущем виде
@@ -9,6 +10,7 @@ title:
   pt_br: Obter Contagem de Vagas na Vista Atual
 tooltip:
   en_us: Get a total count and types of parking elements in the current view
+  ko: 현재 뷰의 주차 요소 총 수 및 유형을 가져옵니다
   fr_fr: Obtenez un nombre total et les types d'éléments de stationnement dans la vue actuelle
   ru: Получает общее количество парковочных элементов на текущем виде.
   chinese_s: 获取当前视图中停车位图元的总数与类型

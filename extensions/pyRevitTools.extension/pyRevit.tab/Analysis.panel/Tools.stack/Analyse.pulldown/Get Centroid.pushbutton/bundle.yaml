@@ -1,5 +1,6 @@
 title:
   en_us: Get Centroid
+  ko: 무게중심 가져오기
   fr_fr: Obtenir le centre de gravité
   ru: Получить центр тяжести
   chinese_s: 获取质心
@@ -8,6 +9,7 @@ title:
   pt_br: Obter Centroide
 tooltip:
   en_us: Calculates the centroid of the selected elements geometry and places three model lines intersecting at the centroid. Config mode can be used to specify a Line Style that will be used in the future as a default.
+  ko: 선택한 요소의 형상 무게중심을 계산하고 무게중심에서 교차하는 세 개의 모델 선을 배치합니다. 구성 모드에서 기본값으로 사용할 선 스타일을 지정할 수 있습니다.
   fr_fr: Calcule le centre de gravité de la géométrie des éléments sélectionnés et place trois lignes de modèle qui se croisent au centre de gravité. Le mode de configuration peut être utilisé pour spécifier un style de ligne qui sera utilisé à l'avenir comme valeur par défaut.
   ru: Вычисляет центр тяжести геометрии выбранных элементов и размещает три моделируемые линии, пересекающиеся в центре тяжести. Режим конфигурации может использоваться для указания стиля линии, который будет использоваться в будущем по умолчанию.
   chinese_s: 计算选定元素几何的质心，并在质心处放置三条相交的模型线。配置模式可用于指定将来用作默认值的线样式。

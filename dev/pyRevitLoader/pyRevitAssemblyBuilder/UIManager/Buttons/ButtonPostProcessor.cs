@@ -1,6 +1,8 @@
 #nullable enable
 using System;
 using System.Collections;
+using System.Diagnostics;
+using System.Threading;
 using Autodesk.Revit.UI;
 using Autodesk.Windows;
 using pyRevitAssemblyBuilder.UIManager.Icons;
@@ -21,6 +23,17 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
         private readonly ILogger _logger;
         private readonly IIconManager _iconManager;
         private readonly ITooltipManager _tooltipManager;
+
+        // Total post-processing time across all Process(...) calls in the current build window.
+        // Interlocked so a future off-thread caller (e.g. parallel icon warm-up) can't tear it.
+        private long _processMs;
+        private int _processCalls;
+
+        // AddItem timing accumulator. Builders call RecordAddItemMs around their
+        // parentPanel.AddItem(...) / splitBtn.AddPushButton(...) calls so we can answer
+        // "is the Revit ribbon API itself the bottleneck?" per extension.
+        private long _addItemMs;
+        private int _addItemCalls;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ButtonPostProcessor"/> class.
@@ -56,24 +69,47 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
             if (ribbonItem == null || component == null)
                 return;
 
+            Interlocked.Increment(ref _processCalls);
+            var sw = Stopwatch.StartNew();
+
             try
             {
-                // Apply icon (with optional parent fallback)
                 _iconManager.ApplyIcon(ribbonItem, component, parentComponent, iconMode);
-
-                // Apply tooltip (text + media)
                 _tooltipManager.ApplyTooltip(ribbonItem, component);
-
-                // Apply contextual help (F1 help URL)
                 ApplyContextualHelp(ribbonItem, component);
-
-                // Apply highlight (new/updated badge)
                 ApplyHighlight(ribbonItem, component);
             }
             catch (Exception ex)
             {
                 _logger.Debug($"Failed to process button '{component.DisplayName}'. Exception: {ex.Message}");
             }
+            finally
+            {
+                Interlocked.Add(ref _processMs, sw.ElapsedMilliseconds);
+            }
+        }
+
+        /// <inheritdoc/>
+        public (long ProcessMs, int Calls) ResetAndGetStats()
+        {
+            var ms = Interlocked.Exchange(ref _processMs, 0);
+            var calls = Interlocked.Exchange(ref _processCalls, 0);
+            return (ms, calls);
+        }
+
+        /// <inheritdoc/>
+        public void RecordAddItemMs(long elapsedMs)
+        {
+            Interlocked.Add(ref _addItemMs, elapsedMs);
+            Interlocked.Increment(ref _addItemCalls);
+        }
+
+        /// <inheritdoc/>
+        public (long AddItemMs, int Calls) ResetAndGetAddItemStats()
+        {
+            var ms = Interlocked.Exchange(ref _addItemMs, 0);
+            var calls = Interlocked.Exchange(ref _addItemCalls, 0);
+            return (ms, calls);
         }
 
         /// <inheritdoc/>

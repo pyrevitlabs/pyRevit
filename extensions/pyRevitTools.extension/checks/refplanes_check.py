@@ -1,25 +1,21 @@
 # -*- coding: UTF-8 -*-
 import datetime
+import os
 
 from pyrevit import coreutils
-from pyrevit import script
-from pyrevit import revit, DB
-
-import sys
-import os
-# Add current directory to path for local imports
-_current_dir = os.path.dirname(os.path.abspath(__file__))
-if _current_dir not in sys.path:
-    sys.path.insert(0, _current_dir)
-
+from pyrevit import DB
+from pyrevit.coreutils import applocales
 from pyrevit.preflight import PreflightTestCase
-from pyrevit.compat import safe_strtype
-from check_translations import DocstringMeta
+
+_XAML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "locale", "Checks.xaml")
+
+
+def _t(key):
+    return applocales.get_locale_string_from_xaml(_XAML, key)
+
 
 def checkModel(doc, output):
-    from check_translations import get_check_translation
-    
-    output.print_md("### {0}<br />".format(get_check_translation("ReferencePlanes")))
+    output.print_md("### {0}<br />".format(_t("ReferencePlanes")))
     # reference plane without name
     refPlaneCollector = (
         DB.FilteredElementCollector(doc)
@@ -27,35 +23,30 @@ def checkModel(doc, output):
         .ToElements()
     )
     RefPCount = len(refPlaneCollector)
-    output.print_md("\n**{0} **{1} \n\n".format(get_check_translation("ReferencePlanesCount"), RefPCount))
+    output.print_md("\n**{0} **{1} \n\n".format(_t("ReferencePlanesCount"), RefPCount))
     noNameRefPCount = 0
-    
+
     refPlaneList, refPlanNames = [], []
 
     for refPlane in refPlaneCollector:
         refPlaneList.append(refPlane.Id)
         refPlanNames.append(refPlane.Name)
         output.print_md("{0} {1}\t\t{2} {3}"
-                        .format(get_check_translation("NameLabel"), refPlane.Name,
-                                get_check_translation("IdLabel"), output.linkify(refPlane.Id)))
+                        .format(_t("NameLabel"), refPlane.Name,
+                                _t("IdLabel"), output.linkify(refPlane.Id)))
+
 
 class ModelChecker(PreflightTestCase):
-    __metaclass__ = DocstringMeta
-    _docstring_key = "CheckDescription_ReferencePlanLister"
-    
-    @property
-    def name(self):
-        from check_translations import get_check_translation
-        return get_check_translation("CheckName_ReferencePlanLister")
-    
+    name = _t("CheckName_ReferencePlanLister")
     author = "Jean-Marc Couffin"
-
 
     def startTest(self, doc, output):
         timer = coreutils.Timer()
         checkModel(doc, output)
         endtime = timer.get_time()
         endtime_hms = str(datetime.timedelta(seconds=endtime))
-        from check_translations import get_check_translation
-        endtime_hms_claim = "{} {}".format(get_check_translation("TransactionTook"), endtime_hms)
+        endtime_hms_claim = "{} {}".format(_t("TransactionTook"), endtime_hms)
         print(endtime_hms_claim)
+
+
+ModelChecker.__doc__ = _t("CheckDescription_ReferencePlanLister")

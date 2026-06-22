@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
 """Match instance or type properties between elements and their types.
 
 Shift+Click:
-Reapply the previous matched properties.
+Open a modeless recall window pre-filled with the last matched properties.
 
 """
 import pickle
@@ -11,6 +12,7 @@ from pyrevit import forms
 from pyrevit import script
 
 from match.match_utils import get_source_properties, match_prop
+from match.clipboard import RecallWindow
 
 
 logger = script.get_logger()
@@ -22,13 +24,12 @@ MEMFILE = script.get_instance_data_file(file_id="MatchSelectedProperties")
 
 def recall():
     """Load last matched properties from memory."""
-    data = []
     try:
         with open(MEMFILE, "rb") as mf:
-            data = pickle.load(mf)
+            return pickle.load(mf)
     except Exception as ex:
         logger.debug("Failed loading matched properties from memory | %s", str(ex))
-    return data
+    return None, []
 
 
 def remember(src_props):
@@ -37,45 +38,40 @@ def remember(src_props):
         pickle.dump(src_props, mf)
 
 
-# main
-source_props = []
+# ── Shift+Click: open modeless recall window ─────────────────────────────────
 if EXEC_PARAMS.config_mode:
-    target_type, source_props = recall()
-    logger.debug("Recalled data: %s", source_props)
+    target_type, recalled_props = recall()
+    RecallWindow(target_type, recalled_props, MEMFILE).Show()
+    script.exit()
 
-if not source_props:
-    # try use selected elements
-    selected_elements = revit.get_selection().elements
-    if len(selected_elements) == 1 and forms.alert(
-        "Use selected %s?"
-        % ("view" if isinstance(selected_elements[0], DB.View) else "element"),
-        yes=True,
-        no=True,
-    ):
-        source_element = selected_elements[0]
-        target_type = "Views" if isinstance(source_element, DB.View) else "Elements"
-    else:
-        source_element = None
-        # ask for type of elements to match
-        # some are not selectable in graphical views
-        target_type = forms.CommandSwitchWindow.show(
-            ["Elements", "Views"], message="Pick type of targets:"
+# ── Normal click ─────────────────────────────────────────────────────────────
+source_props = []
+source_element = None
+
+selected_elements = revit.get_selection().elements
+if len(selected_elements) == 1 and forms.alert(
+    "Use selected %s?"
+    % ("view" if isinstance(selected_elements[0], DB.View) else "element"),
+    yes=True,
+    no=True,
+):
+    source_element = selected_elements[0]
+    target_type = "Views" if isinstance(source_element, DB.View) else "Elements"
+else:
+    target_type = forms.CommandSwitchWindow.show(
+        ["Elements", "Views"], message="Pick type of targets:"
+    )
+    if target_type == "Elements":
+        with forms.WarningBar(title="Pick source object:"):
+            source_element = revit.pick_element()
+    elif target_type == "Views":
+        source_element = forms.select_views(
+            title="Select Source View", multiple=False
         )
 
-        # determine source element
-        if target_type == "Elements":
-            with forms.WarningBar(title="Pick source object:"):
-                source_element = revit.pick_element()
-        elif target_type == "Views":
-            source_element = forms.select_views(
-                title="Select Source View", multiple=False
-            )
-
-    # grab properties from source element
-    if source_element:
-        if not source_props:
-            source_props = get_source_properties(source_element, simple=True)
-            remember((target_type, source_props))
+if source_element:
+    source_props = get_source_properties(source_element, simple=True)
+    remember((target_type, source_props))
 
 # apply values
 if source_props:

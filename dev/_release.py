@@ -342,9 +342,13 @@ def _build_choco_packages():
 
 
 def build_installers(_: Dict[str, str]):
-    """Build pyRevit and CLI installers"""
+    """Build pyRevit and CLI installers (Inno Setup + MSI)."""
     _build_installers()
     _build_msi_installers()
+
+
+def build_choco(_: Dict[str, str]):
+    """Build Chocolatey package (must run after installers are signed)."""
     _build_choco_packages()
 
 

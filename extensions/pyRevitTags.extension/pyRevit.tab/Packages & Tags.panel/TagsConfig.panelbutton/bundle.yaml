@@ -1,5 +1,6 @@
 title:
   en_us: Tags Config
+  ko: 태그 구성
   fr_fr: Configuration des étiquettes
   ru: Конфигурация марок
   chinese_s: 标签配置
@@ -8,6 +9,7 @@ title:
   pt_br: Config. de Identificadores
 tooltip:
   en_us: Tags configuration options. First you need to create a project parameter 'DOCTAG' and apply it to the project categories
+  ko: 태그 구성 옵션. 먼저 프로젝트 매개변수 'DOCTAG'를 만들고 프로젝트 카테고리에 적용해야 합니다
   fr_fr: Options de configuration des étiquettes. Vous devez d'abord créer un paramètre de projet 'DOCTAG' et l'appliquer aux catégories du projet
   ru: Открывает настройки маркирования.
   chinese_s: 标签配置选项。首先需要创建项目参数 'DOCTAG' 并将其应用到项目类别

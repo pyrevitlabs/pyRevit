@@ -3,6 +3,7 @@ title:
     Manage
 
     Tags
+  ko: 관리
   fr_fr: >-
     Gérer
 
@@ -29,6 +30,7 @@ title:
     Identificadores
 tooltip:
   en_us: Manage tags in project or selected elements. First you need to create a project parameter 'DOCTAG' and apply it to the project categories
+  ko: 프로젝트 또는 선택한 요소의 태그 관리. 먼저 프로젝트 매개변수 'DOCTAG'를 만들고 프로젝트 카테고리에 적용해야 합니다
   fr_fr: Gérer les étiquettes dans le projet ou les éléments sélectionnés. Vous devez d'abord créer un paramètre de projet 'DOCTAG' et l'appliquer aux catégories du projet
   ru: Управляет марками в проекте или выделенными элементами.
   chinese_s: 管理项目或选定元素中的标签。首先需要创建项目参数 'DOCTAG' 并将其应用到项目类别

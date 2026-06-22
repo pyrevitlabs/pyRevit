@@ -1,5 +1,6 @@
 """Revit events handler management."""
 #pylint: disable=unused-argument
+from collections import deque
 from pyrevit import HOST_APP
 from pyrevit import EXEC_PARAMS, DB, UI
 from pyrevit import framework
@@ -143,19 +144,22 @@ def stop_events():
 
 class _GenericExternalEventHandler(UI.IExternalEventHandler):
     def __init__(self):
-        self.func = None
-        self.args = ()
-        self.kwargs = {}
+        self._queue = deque()
 
     def Execute(self, uiapp):
-        try:
-            if self.func:
-                self.func(*self.args, **self.kwargs)
-        except Exception as ex:
-            mlogger.error("ExternalEvent error: {}".format(ex))
+        while self._queue:
+            fn = self._queue.popleft()
+            try:
+                fn()
+            except Exception as ex:
+                mlogger.error("ExternalEvent error: {}".format(ex))
 
     def GetName(self):
         return "GenericExternalEventHandler"
+
+    def schedule(self, func):
+        self._queue.append(func)
+
 
 if compat.IRONPY:
     _HANDLER = _GenericExternalEventHandler()
@@ -199,7 +203,40 @@ def execute_in_revit_context(func, *args, **kwargs):
     """
     if not compat.IRONPY:
         PyRevitCPythonNotSupported("pyrevit.revit.events.execute_in_revit_context")
-    _HANDLER.func = func
-    _HANDLER.args = args
-    _HANDLER.kwargs = kwargs
+
+    # Snapshot module-level imports from the function's globals at scheduling
+    # time. When the ExternalEvent fires asynchronously, the IronPython engine
+    # may have cleared the script scope (non-persistent engines) or module
+    # references may be stale after extension changes / session reload.
+    # This affects any module whose __init__.py uses conditional imports at
+    # load time (e.g. forms, revit submodules). Only module-type objects are
+    # restored to avoid contaminating mutable script state (doc, uidoc, etc.).
+    _module_type = type(compat)
+    _saved_modules = {
+        k: v for k, v in func.__globals__.items()
+        if type(v) is _module_type
+    }
+
+    def _wrapper():
+        # types.FunctionType with closures is not supported in IronPython 2,
+        # so we do a bounded mutation: save, patch, call, restore.
+        _MISSING = object()
+        g = func.__globals__
+        saved = {
+            k: g.get(k, _MISSING)
+            for k in _saved_modules
+            if k not in g or g[k] is None
+        }
+        for k in saved:
+            g[k] = _saved_modules[k]
+        try:
+            func(*args, **kwargs)
+        finally:
+            for k, old in saved.items():
+                if old is _MISSING:
+                    g.pop(k, None)
+                else:
+                    g[k] = old
+
+    _HANDLER.schedule(_wrapper)
     _EXTERNAL_EVENT.Raise()

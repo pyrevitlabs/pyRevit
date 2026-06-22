@@ -12,8 +12,7 @@
     └── msbuild                 building msi installers using Wix Tools
     └── certutil                managing signing certificate
     └── signtool                digitally signing binaries
-    gcc                     for building sqlite package in telemetry server (http://mingw.org)
-    go                      for building telemetry server (https://golang.org)
+    go                      for building pyRevit autocomplete application (https://golang.org)
     Inno Setup Compiler     for buidling installers (https://jrsoftware.org/isinfo.php)
     └── iscc                    buidling installers from scripts
     choco                   for building and publishing choco packages (https://chocolatey.org)
@@ -23,7 +22,6 @@
     python 3                for the build tools (https://www.python.org/downloads/)
     pygount                 for counting code lines (https://pypi.org/project/pygount/)
     git                     for creating release reports (https://git-scm.com)
-    docker                  for telemetry server tests (https://www.docker.com/products/docker-desktop)
 
     Some of the commands call web APIs for necessary information.
     Access tokens must be set in env vars otherwise access will be
@@ -67,7 +65,6 @@ import _changelog as clog
 import _hostdata as hostdata
 import _release as release
 import _props as props
-import _telem as telem
 import _misc as misc
 
 
@@ -114,15 +111,14 @@ COMMANDS = [
     Command(name="sign", target="installers", args=[], run=release.sign_installers),
     # build
     Command(name="build", target="products", args=["[<config>]"], run=build.build_binaries),
+    Command(name="build", target="deps", args=[], run=labs.build_deps),
     Command(name="build", target="labs", args=["[<config>]"], run=labs.build_labs),
     Command(name="build", target="engines", args=["[<config>]"], run=labs.build_engines),
     Command(name="build", target="autocmp", args=[], run=autoc.build_autocmp),
-    Command(name="build", target="telem", args=[], run=telem.build_telem),
     Command(name="build", target="installers", args=[], run=release.build_installers),
+    Command(name="build", target="choco", args=[], run=release.build_choco),
     Command(name="build", target="commit", args=[], run=release.commit_and_tag_build),
     Command(name="clean", target="labs", args=[], run=build.clean_build),
-    # unit testing
-    Command(name="test", target="telem", args=[], run=telem.start_telem),
     # manual data setters
     Command(name="set", target="year", args=[], run=props.set_year),
     Command(name="set", target="version", args=["<ver>"], run=props.set_ver),

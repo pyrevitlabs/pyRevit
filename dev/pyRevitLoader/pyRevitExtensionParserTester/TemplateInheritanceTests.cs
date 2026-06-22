@@ -81,49 +81,47 @@ namespace pyRevitExtensionParserTest
         }
 
         /// <summary>
-        /// Tests that docpath template from parent bundle.yaml is substituted in 
+        /// Tests that docpath template from parent bundle.yaml is substituted in
         /// Test pyRevit Bundle.pushbutton help_url.
-        /// 
+        ///
+        /// Debug.panel/bundle.yaml defines:
+        ///   docpath: https://docs.pyrevitlabs.io/
+        ///
         /// Test pyRevit Bundle.pushbutton/bundle.yaml uses:
         ///   help_url: "{{docpath}}"
-        /// 
-        /// Note: docpath needs to be defined in a parent bundle.yaml for this to work.
+        ///
+        /// Expected final help_url: https://docs.pyrevitlabs.io/
         /// </summary>
         [Test]
         public void TestDocpathTemplateInHelpUrl()
         {
-            // First verify what docpath is defined as (if at all)
-            var debugPanelBundlePath = Path.Combine(_debugPanelPath, "bundle.yaml");
-            if (File.Exists(debugPanelBundlePath))
-            {
-                var debugPanelBundle = BundleParser.BundleYamlParser.Parse(debugPanelBundlePath);
-                TestContext.Out.WriteLine($"Debug.panel templates: {string.Join(", ", debugPanelBundle.Templates.Keys)}");
-                foreach (var kvp in debugPanelBundle.Templates)
-                {
-                    TestContext.Out.WriteLine($"  {kvp.Key}: {kvp.Value}");
-                }
-            }
-
             // Parse the extension
             var extensions = ExtensionParser.ParseInstalledExtensions(_extensionPath).ToList();
+            Assert.That(extensions.Count, Is.EqualTo(1), "Should parse one extension");
+
             var extension = extensions[0];
 
             // Navigate to Test pyRevit Bundle button
             var devTab = extension.Children?.FirstOrDefault(c => c.Name == "pyRevitDev");
-            var debugPanel = devTab?.Children?.FirstOrDefault(c => c.Name == "Debug");
-            var bundleTestsPulldown = debugPanel?.Children?.FirstOrDefault(c => c.Name == "BundleTests");
-            var testBundleButton = bundleTestsPulldown?.Children?.FirstOrDefault(c => c.Name == "TestpyRevitBundle");
+            Assert.That(devTab, Is.Not.Null, "Should find pyRevitDev tab");
 
+            var debugPanel = devTab.Children?.FirstOrDefault(c => c.Name == "Debug");
+            Assert.That(debugPanel, Is.Not.Null, "Should find Debug panel");
+
+            var bundleTestsPulldown = debugPanel.Children?.FirstOrDefault(c => c.Name == "BundleTests");
+            Assert.That(bundleTestsPulldown, Is.Not.Null, "Should find BundleTests pulldown");
+
+            var testBundleButton = bundleTestsPulldown.Children?.FirstOrDefault(c => c.Name == "TestpyRevitBundle");
             Assert.That(testBundleButton, Is.Not.Null, "Should find Test pyRevit Bundle button");
 
-            TestContext.Out.WriteLine($"Button Hyperlink: {testBundleButton.Hyperlink ?? "null"}");
-            
-            // If docpath template is not defined, the hyperlink will still contain {{docpath}}
-            // This test documents the current behavior
-            if (testBundleButton.Hyperlink != null && testBundleButton.Hyperlink.Contains("{{docpath}}"))
-            {
-                TestContext.Out.WriteLine("Note: docpath template is not defined in parent bundle.yaml");
-            }
+            TestContext.Out.WriteLine($"Button HelpUrl: {testBundleButton.HelpUrl ?? "null"}");
+
+            // The help_url "{{docpath}}" should be substituted with the value from Debug.panel/bundle.yaml
+            Assert.That(testBundleButton.HelpUrl, Is.Not.Null, "HelpUrl should not be null");
+            Assert.That(testBundleButton.HelpUrl, Does.Not.Contain("{{docpath}}"),
+                "HelpUrl should not contain unsubstituted template variable");
+            Assert.That(testBundleButton.HelpUrl, Is.EqualTo("https://docs.pyrevitlabs.io/"),
+                "HelpUrl should be substituted with docpath value from parent bundle.yaml");
         }
 
         /// <summary>
@@ -211,6 +209,12 @@ namespace pyRevitExtensionParserTest
                 "Debug.panel bundle.yaml should contain template_test");
             Assert.That(bundle.Templates["template_test"], Does.StartWith("Bundle liquid templating works"),
                 "template_test should have correct value");
+
+            // Verify docpath is parsed
+            Assert.That(bundle.Templates.ContainsKey("docpath"), Is.True,
+                "Debug.panel bundle.yaml should contain docpath");
+            Assert.That(bundle.Templates["docpath"], Is.EqualTo("https://docs.pyrevitlabs.io/"),
+                "docpath should have correct value");
         }
 
         /// <summary>

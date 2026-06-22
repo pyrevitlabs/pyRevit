@@ -167,22 +167,25 @@ class RequestHandler(UI.IExternalEventHandler):
                 # now call handler, and save response
                 response = handler(**kwargs)  # pylint: disable=not-callable
             except Exception as hndlr_ex:
-                # grab original CLS exception
-                clsx = hndlr_ex.clsException  # pylint: disable=no-member
+                # grab original CLS exception (IronPython 2 exposes
+                # .clsException; IronPython 3 may not)
+                clsx = getattr(hndlr_ex, "clsException", None)
                 # get exception info
-                sys.exc_type, sys.exc_value, sys.exc_traceback = sys.exc_info()
+                exc_type, exc_value, exc_tb = sys.exc_info()
                 # go back one frame to grab exception stack from handler
                 # and grab traceback lines
-                tb_report = "".join(traceback.format_tb(sys.exc_traceback)[1:])
+                tb_report = "".join(traceback.format_tb(exc_tb)[1:])
                 # wrap all the exception info
                 response = excp.RouteHandlerException(
                     message=str(hndlr_ex),
-                    exception_type=sys.exc_type,
+                    exception_type=exc_type,
                     exception_traceback=tb_report,
-                    clsx_message=clsx.Message,
-                    clsx_source=clsx.Source,
-                    clsx_stacktrace=clsx.StackTrace,
-                    clsx_targetsite=clsx.TargetSite.ToString(),
+                    clsx_message=clsx.Message if clsx else str(hndlr_ex),
+                    clsx_source=clsx.Source if clsx else "",
+                    clsx_stacktrace=clsx.StackTrace if clsx else tb_report,
+                    clsx_targetsite=(
+                        clsx.TargetSite.ToString() if clsx else ""
+                    ),
                 )
         else:
             response = excp.RouteHandlerIsNotCallableException(handler.__name__)
@@ -217,6 +220,10 @@ class RequestHandler(UI.IExternalEventHandler):
         # if route pattern has parameter, provide those as well
         if request.params:
             kwargs.update({x.key: x.value for x in request.params})
+        # if query parameters are present, provide those as well
+        if request.query_params:
+            reserved = {ARGS_REQUEST, ARGS_UIAPP, ARGS_UIDOC, ARGS_DOC}
+            kwargs.update({k: v for k, v in request.query_params.items() if k not in reserved})
         # add host api context params
         kwargs[ARGS_UIAPP] = uiapp
         kwargs[ARGS_UIDOC] = uidoc

@@ -48,5 +48,6 @@
     <v:String x:Key="AddCustomExtension.NameToolTip">扩展名称（例如 MyTools）</v:String>
     <v:String x:Key="AddCustomExtension.TokenLabel">令牌（可选）：</v:String>
     <v:String x:Key="AddCustomExtension.TokenToolTip">公开仓库请留空</v:String>
+    <v:String x:Key="AddCustomExtension.RevealTokenToolTip">按住以显示令牌</v:String>
     <v:String x:Key="AddCustomExtension.AddAndInstall">添加并安装</v:String>
 </ResourceDictionary>

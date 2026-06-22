@@ -48,5 +48,6 @@
     <v:String x:Key="AddCustomExtension.NameToolTip">Nombre de la extensión (p. ej., MyTools)</v:String>
     <v:String x:Key="AddCustomExtension.TokenLabel">Token (opcional):</v:String>
     <v:String x:Key="AddCustomExtension.TokenToolTip">Dejar vacío para repositorios públicos</v:String>
+    <v:String x:Key="AddCustomExtension.RevealTokenToolTip">Mantén pulsado para mostrar el token</v:String>
     <v:String x:Key="AddCustomExtension.AddAndInstall">Añadir e instalar</v:String>
 </ResourceDictionary>

@@ -1,5 +1,6 @@
 title:
   en_us: Add Views to Sheets
+  ko: 시트에 뷰 추가
   fr_fr: Ajouter des vues aux feuilles
   ru: Добавить виды на листы
   chinese_s: 将视图添加到图纸
@@ -13,6 +14,7 @@ tooltip:
     Shift+Click:
 
     Pick source views from list instead of selection or active view
+  ko: "선택한 뷰(콜아웃, 단면, 입면)를 선택한 시트에 추가합니다. 모델 뷰는 여러 시트에 존재할 수 없으므로 첫 번째 선택 시트에만 추가됩니다. 뷰를 선택하지 않으면 활성 뷰가 기본값입니다. Shift+클릭: 선택 또는 활성 뷰 대신 목록에서 원본 뷰를 선택합니다."
   fr_fr: >-
     Ajoute les vues sélectionnées (légendes, coupes, élévations) aux feuilles sélectionnées. Les vues de modèle ne seront ajoutées qu'à la première feuille sélectionnée car elles ne peuvent pas exister sur plusieurs feuilles. La commande passe par défaut à la vue active si aucune vue n'est sélectionnée
 

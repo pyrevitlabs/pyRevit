@@ -3,7 +3,6 @@ import xml.etree.ElementTree as ET
 
 from pyrevit import script
 
-__context__ = 'zero-doc'
 
 
 utf8xml = script.get_bundle_file('utf8.xml')

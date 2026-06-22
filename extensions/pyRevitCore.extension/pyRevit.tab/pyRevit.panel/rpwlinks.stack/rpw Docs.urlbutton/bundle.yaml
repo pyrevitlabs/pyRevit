@@ -1,5 +1,6 @@
 title:
   en_us: rpw
+  ko: rpw
   fr_fr: rpw
   ru: rpw
   chinese_s: RevitPythonWrapper 文档
@@ -8,6 +9,7 @@ title:
   pt_br: Rpw
 tooltip:
   en_us: Opens the documentation page for RevitPythonWrapper
+  ko: RevitPythonWrapper 문서 페이지를 엽니다
   fr_fr: Ouvre la page de documentation pour RevitPythonWrapper
   ru: Открывает страницу документации для RevitPythonWrapper.
   chinese_s: 打开 RevitPythonWrapper 的文档页面

@@ -99,7 +99,7 @@ namespace PyRevitLoader
 			return result;
 		}
 
-		public static Result LoadSession(object pythonLogger = null, string buildStrategy = null)
+		public static Result LoadSession(string buildStrategy = null)
 		{
 			try
 			{
@@ -122,8 +122,7 @@ namespace PyRevitLoader
 				var sessionManager = ServiceFactory.CreateSessionManagerService(
 					revitVersion,
 					strategyEnum,
-					uiApplication,
-					pythonLogger);
+					uiApplication);
 
 				// Load the session using the C# SessionManagerService
 				sessionManager.LoadSession();

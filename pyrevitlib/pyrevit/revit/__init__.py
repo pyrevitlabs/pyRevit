@@ -7,31 +7,50 @@ from pyrevit import PyRevitException
 from pyrevit import framework
 from pyrevit.coreutils.logger import get_logger
 from pyrevit import DB, UI
+from pyrevit._perf import mark as _perfmark
+_perfmark("pyrevit.revit:entry")
 
 #pylint: disable=W0401
 from pyrevit.revit.db import *
+_perfmark("pyrevit.revit:after `from pyrevit.revit.db import *`")
 from pyrevit.revit.db import query
 from pyrevit.revit.db import select
 from pyrevit.revit.db import create
 from pyrevit.revit.db import update
 from pyrevit.revit.db import ensure
 from pyrevit.revit.db import delete
+_perfmark("pyrevit.revit:after db.query/select/create/update/ensure/delete")
 from pyrevit.revit.db.transaction import *
+_perfmark("pyrevit.revit:after db.transaction *")
 from pyrevit.revit.db import failure
+_perfmark("pyrevit.revit:after db.failure")
 from pyrevit.revit.db.pickling import *
+_perfmark("pyrevit.revit:after db.pickling *")
 from pyrevit.revit.journals import *
+_perfmark("pyrevit.revit:after journals *")
 from pyrevit.revit.selection import *
+_perfmark("pyrevit.revit:after selection *")
 from pyrevit.revit import ui
+_perfmark("pyrevit.revit:after ui")
 from pyrevit.revit import tabs
+_perfmark("pyrevit.revit:after tabs")
 from pyrevit.revit import events
+_perfmark("pyrevit.revit:after events")
 from pyrevit.revit import report
+_perfmark("pyrevit.revit:after report")
 from pyrevit.revit import files
+_perfmark("pyrevit.revit:after files")
 from pyrevit.revit import serverutils
+_perfmark("pyrevit.revit:after serverutils")
 from pyrevit.revit import geom
+_perfmark("pyrevit.revit:after geom")
 from pyrevit.revit import units
+_perfmark("pyrevit.revit:after units")
 from pyrevit.revit import features
+_perfmark("pyrevit.revit:after features")
 from pyrevit.revit import bim360
 from pyrevit.revit import dc3dserver
+_perfmark("pyrevit.revit:after bim360/dc3dserver (exit)")
 
 
 #pylint: disable=W0703,C0302,C0103

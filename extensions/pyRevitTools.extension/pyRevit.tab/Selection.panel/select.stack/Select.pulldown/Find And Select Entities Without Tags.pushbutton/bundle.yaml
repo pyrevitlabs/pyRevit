@@ -1,5 +1,6 @@
 title:
   en_us: Find And Select Entities Without Tags
+  ko: 태그 없는 요소 찾아 선택
   fr_fr: Rechercher et sélectionner des éléments sans étiquettes
   ru: Найти и выделить элементы без марок
   chinese_s: 查找并选择无关联标记的图元
@@ -8,6 +9,7 @@ title:
   pt_br: Encontrar e Selecionar Elementos sem Identificadores
 tooltip:
   en_us: Selects elements with no associated tags in current view
+  ko: 현재 뷰에서 연결된 태그가 없는 요소를 선택합니다
   fr_fr: Sélectionne les éléments sans étiquettes associées dans la vue actuelle
   ru: Выделяет элементы без связанных марок в текущем виде.
   chinese_s: 在当前视图中选择没有关联标记的图元

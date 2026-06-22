@@ -1,5 +1,6 @@
 title:
   en_us: Paste State
+  ko: 상태 붙여넣기
   fr_fr: Coller l'état
   ru: Вставить
   chinese_s: 粘贴状态
@@ -15,6 +16,7 @@ tooltip:
     Shift-Click:
 
     Show additional options
+  ko: 복사된 상태를 활성 뷰에 적용합니다
   fr_fr: >-
     Applique l'état copié à la vue active
 

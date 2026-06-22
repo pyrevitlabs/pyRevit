@@ -1,6 +1,7 @@
 help_url: '{{docpath}}SrjyyGvarhw'
 title:
   en_us: Match
+  ko: 일치
   fr_fr: Correspondance
   ru: Сверка
   chinese_s: 匹配
@@ -15,6 +16,7 @@ tooltip:
     Shift-Click:
 
     Shows Match Config window
+  ko: 그래픽 재지정이 있는 원본 객체를 선택한 다음 대상 객체를 하나씩 선택하면 그래픽 재지정이 일치합니다.
   fr_fr: >-
     Choisissez l'objet source qui a le remplacement graphique d'élément auquel vous souhaitez faire correspondre, puis choisissez les objets de destination un par un et cet outil fera correspondre les remplacements graphiques
 

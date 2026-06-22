@@ -11,10 +11,6 @@ from pyrevit.runtime import types as runtime_types
 from pyrevit import script
 
 
-__context__ = 'zero-doc'
-__title__ = "Test Persistent Engine (NonModal)"
-__author__ = "{{author}}"
-__persistentengine__ = True
 
 logger = script.get_logger()
 

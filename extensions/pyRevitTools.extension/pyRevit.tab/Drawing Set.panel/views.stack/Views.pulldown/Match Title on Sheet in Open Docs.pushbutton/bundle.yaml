@@ -1,5 +1,6 @@
 title:
   en_us: Match Title On Sheet in Open Docs
+  ko: 열린 문서의 시트 표시 제목 일치
   fr_fr: Faire correspondre le titre sur la feuille dans les modèles ouverts
   ru: Сопоставить заголовк листа в открытх документах
   chinese_s: 匹配打开文档中的图纸标题
@@ -9,6 +10,7 @@ title:
 tooltip:
   en_us: >-
     Matches the "Title On Sheet" value of all views in open documents  to current document so all views with matching names will have  matching "Title On Sheet" values
+  ko: 열린 문서의 모든 뷰의 "시트 표시 제목" 값을 현재 문서에 맞춥니다. 이름이 일치하는 모든 뷰가 동일한 "시트 표시 제목" 값을 갖게 됩니다.
   fr_fr: >-
     Fait correspondre à la valeur « Titre sur la feuille » de toutes  les vues dans les documents ouverts au document actuel afin que  toutes les vues avec des noms correspondants aient des valeurs
     « Titre sur la feuille » correspondantes
