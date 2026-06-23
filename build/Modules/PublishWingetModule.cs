@@ -34,7 +34,7 @@ public sealed class PublishWingetModule(IOptions<PublishOptions> publishOptions)
         var pyRevitUrls = BuildPyRevitUrls(versionInfo, releaseTag);
         var cliUrls = BuildCliUrls(versionInfo, releaseTag);
 
-        await RunWingetCreateUpdate(
+        await PublishPackageAsync(
             context,
             publishOptions.Value,
             "pyRevit.pyRevit",
@@ -43,7 +43,7 @@ public sealed class PublishWingetModule(IOptions<PublishOptions> publishOptions)
             outputDir,
             cancellationToken);
 
-        await RunWingetCreateUpdate(
+        await PublishPackageAsync(
             context,
             publishOptions.Value,
             "pyRevit.pyRevit.CLI",
@@ -53,9 +53,44 @@ public sealed class PublishWingetModule(IOptions<PublishOptions> publishOptions)
             cancellationToken);
     }
 
-    private static async Task RunWingetCreateUpdate(
+    private static async Task PublishPackageAsync(
         IModuleContext context,
-        PublishOptions publishOptions,
+        PublishOptions options,
+        string packageId,
+        string installVersion,
+        IEnumerable<string> urls,
+        string outputDir,
+        CancellationToken cancellationToken)
+    {
+        await RunWingetCreateGenerateAsync(
+            context,
+            options,
+            packageId,
+            installVersion,
+            urls,
+            outputDir,
+            cancellationToken);
+
+        var versionDir = WingetManifestHelper.FindVersionManifestDirectory(outputDir, packageId, installVersion);
+        WingetManifestHelper.RemoveElevationProhibited(versionDir);
+
+        if (!options.SubmitWinget)
+        {
+            return;
+        }
+
+        await RunWingetCreateSubmitAsync(
+            context,
+            options,
+            packageId,
+            installVersion,
+            versionDir,
+            cancellationToken);
+    }
+
+    private static async Task RunWingetCreateGenerateAsync(
+        IModuleContext context,
+        PublishOptions options,
         string packageId,
         string installVersion,
         IEnumerable<string> urls,
@@ -73,18 +108,51 @@ public sealed class PublishWingetModule(IOptions<PublishOptions> publishOptions)
         arguments.AddRange(urls);
         arguments.AddRange(["-o", outputDir, "--no-open"]);
 
-        if (!string.IsNullOrWhiteSpace(publishOptions.WingetToken))
+        if (!string.IsNullOrWhiteSpace(options.WingetToken))
         {
-            arguments.AddRange(["-t", publishOptions.WingetToken]);
+            arguments.AddRange(["-t", options.WingetToken]);
         }
 
-        if (publishOptions.SubmitWinget)
-        {
-            arguments.Add("-s");
-        }
+        var wingetCreate = ToolResolutionHelper.ResolveWingetCreateExecutable(options.WingetCreateExe);
 
         await context.Shell.Command.ExecuteCommandLineTool(
-            new GenericCommandLineToolOptions(publishOptions.WingetCreateExe)
+            new GenericCommandLineToolOptions(wingetCreate)
+            {
+                Arguments = arguments,
+            },
+            cancellationToken: cancellationToken);
+    }
+
+    private static async Task RunWingetCreateSubmitAsync(
+        IModuleContext context,
+        PublishOptions options,
+        string packageId,
+        string installVersion,
+        string versionDir,
+        CancellationToken cancellationToken)
+    {
+        var arguments = new List<string>
+        {
+            "submit",
+            versionDir,
+            "-t",
+            options.WingetToken,
+            "--no-open",
+            "-p",
+            string.Format("New version: {0} version {1}", packageId, installVersion),
+        };
+
+        if (!string.IsNullOrWhiteSpace(options.WingetReplaceVersion)
+            && !string.Equals(options.WingetReplaceVersion, installVersion, StringComparison.OrdinalIgnoreCase))
+        {
+            arguments.Add("-r");
+            arguments.Add(options.WingetReplaceVersion);
+        }
+
+        var wingetCreate = ToolResolutionHelper.ResolveWingetCreateExecutable(options.WingetCreateExe);
+
+        await context.Shell.Command.ExecuteCommandLineTool(
+            new GenericCommandLineToolOptions(wingetCreate)
             {
                 Arguments = arguments,
             },
