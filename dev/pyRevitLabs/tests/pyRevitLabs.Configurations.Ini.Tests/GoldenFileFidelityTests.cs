@@ -167,6 +167,30 @@ public class GoldenFileFidelityTests
         }
     }
 
+    [Fact] // A corrupt value is repaired even when the config is already at the current version.
+    public void Migration_SelfHeals_WhenAlreadyStamped()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"selfheal_{Guid.NewGuid():N}.ini");
+        File.WriteAllText(path,
+            "[core]\nconfig_version = 1\nrocketmode = true\n\n[environment]\nclones = \"oops\"\n");
+        try
+        {
+            var service = new ConfigurationBuilder(false)
+                .AddIniConfiguration(path, ConfigurationService.DefaultConfigurationName).Build();
+
+            var result = ConfigurationMigrator.Migrate(service);
+            Assert.True(result.Migrated);
+            Assert.Contains("environment.clones", result.ResetKeys);
+
+            var reread = IniConfiguration.Create(path);
+            Assert.False(reread.HasSectionKey("environment", "clones"));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     // ---- diagnostics ----
 
     [Fact] // A value that fails to deserialize reports through the diagnostic sink.

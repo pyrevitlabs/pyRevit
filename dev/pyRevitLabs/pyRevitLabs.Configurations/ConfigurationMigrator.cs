@@ -31,10 +31,11 @@ public sealed class ConfigurationMigrationResult
 }
 
 /// <summary>
-/// Version-gated, one-time repair of an existing configuration. Removes
-/// typed-section values that no longer parse to their declared type and
-/// telemetry fields blown up by escape-doubling, then stamps the schema
-/// version so the migration does not run again.
+/// Repairs a configuration on load: drops typed-section values that no longer
+/// parse to their declared type and telemetry fields blown up by
+/// escape-doubling, and stamps a schema version. The repair runs whenever such
+/// a value is present on a writable config (so corruption introduced after the
+/// first run still self-heals); a config with nothing to fix is a no-op.
 /// </summary>
 public static class ConfigurationMigrator
 {
@@ -61,8 +62,8 @@ public static class ConfigurationMigrator
     };
 
     /// <summary>
-    /// Migrates the service's default configuration when its stamped version is
-    /// older than <see cref="CurrentVersion"/>.
+    /// Repairs the service's default configuration and stamps the schema version
+    /// when needed. A clean, already-stamped config performs no write.
     /// </summary>
     public static ConfigurationMigrationResult Migrate(IConfigurationService service)
     {
@@ -71,12 +72,16 @@ public static class ConfigurationMigrator
 
         IConfiguration config = service[ConfigurationService.DefaultConfigurationName];
         int version = ReadVersion(config);
-        if (version >= CurrentVersion)
+
+        // Scan without mutating, so a config with nothing to repair never writes.
+        var badKeys = FindUnreadableKeys(config);
+        bool needsVersionStamp = version < CurrentVersion;
+        if (badKeys.Count == 0 && !needsVersionStamp)
             return NotMigrated;
 
         // Back up before mutating. If the file exists but cannot be backed up,
-        // skip this run so a recoverable copy is preserved; the migration
-        // retries on a later load once the cause (disk, ACLs) is resolved.
+        // skip this run so a recoverable copy is preserved; the repair retries
+        // on a later load once the cause (disk, ACLs) is resolved.
         bool hasFile = !string.IsNullOrEmpty(config.ConfigurationPath)
                        && File.Exists(config.ConfigurationPath);
         string? backupPath = TryBackup(config.ConfigurationPath);
@@ -84,9 +89,28 @@ public static class ConfigurationMigrator
             return new ConfigurationMigrationResult(false, true, version, null, Array.Empty<string>());
 
         var resetKeys = new List<string>();
+        foreach ((string section, string key) in badKeys)
+        {
+            config.RemoveOption(section, key);
+            resetKeys.Add(section + "." + key);
+        }
 
-        // Drop typed-section values that no longer parse to their declared type;
-        // reads then fall back to the section default.
+        if (needsVersionStamp)
+            config.SetValue(VersionSection, VersionKey, CurrentVersion);
+
+        config.SaveConfiguration();
+        return new ConfigurationMigrationResult(true, false, version, backupPath, resetKeys);
+    }
+
+    /// <summary>
+    /// Finds present keys whose stored value cannot be read: typed-section
+    /// values that fail to parse to their declared type, and telemetry fields
+    /// whose length indicates an escape-doubling blow-up.
+    /// </summary>
+    private static List<(string Section, string Key)> FindUnreadableKeys(IConfiguration config)
+    {
+        var bad = new List<(string, string)>();
+
         foreach (Type sectionType in KnownSections)
         {
             string section = SectionName(sectionType);
@@ -102,26 +126,19 @@ public static class ConfigurationMigrator
                 }
                 catch
                 {
-                    config.RemoveOption(section, key);
-                    resetKeys.Add(section + "." + key);
+                    bad.Add((section, key));
                 }
             }
         }
 
-        // Drop telemetry fields whose length indicates an escape-doubling blow-up.
         foreach ((string section, string key) in BloatFields)
         {
             string? raw = config.GetRawValueOrDefault(section, key);
             if (raw != null && raw.Length > MaxFieldLength)
-            {
-                config.RemoveOption(section, key);
-                resetKeys.Add(section + "." + key);
-            }
+                bad.Add((section, key));
         }
 
-        config.SetValue(VersionSection, VersionKey, CurrentVersion);
-        config.SaveConfiguration();
-        return new ConfigurationMigrationResult(true, false, version, backupPath, resetKeys);
+        return bad;
     }
 
     private static int ReadVersion(IConfiguration config)

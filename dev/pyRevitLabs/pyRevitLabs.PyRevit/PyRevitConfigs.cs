@@ -76,12 +76,17 @@ namespace pyRevitLabs.PyRevit
                 _logger.Warn("Skipped config migration for {@ConfigPath}: could not create a backup; "
                     + "will retry on a later load.", userConfig);
             }
+            else if (migration.ResetKeys.Count > 0)
+            {
+                _logger.Info("Repaired config {@ConfigPath}: reset {@Count} invalid value(s); backup: {@BackupPath}",
+                    userConfig, migration.ResetKeys.Count, migration.BackupPath);
+                foreach (string key in migration.ResetKeys)
+                    _logger.Warn("Reset invalid config value: {@Key}", key);
+            }
             else if (migration.Migrated)
             {
-                _logger.Info("Migrated config {@ConfigPath} from v{@FromVersion} to v{@ToVersion}; backup: {@BackupPath}",
-                    userConfig, migration.FromVersion, ConfigurationMigrator.CurrentVersion, migration.BackupPath);
-                foreach (string key in migration.ResetKeys)
-                    _logger.Warn("Reset invalid config value during migration: {@Key}", key);
+                _logger.Debug("Stamped config version {@Version} for {@ConfigPath}",
+                    ConfigurationMigrator.CurrentVersion, userConfig);
             }
 
             return service;
