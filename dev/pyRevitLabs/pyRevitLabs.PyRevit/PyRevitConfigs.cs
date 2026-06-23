@@ -78,6 +78,8 @@ namespace pyRevitLabs.PyRevit
             string programDataConfig = PyRevitConsts.ConfigFilePath;
             if (ConfigFileHasClones(programDataConfig))
                 return;
+            if (File.Exists(programDataConfig) && new FileInfo(programDataConfig).Length > 0)
+                return;
 
             string appDataConfig = Path.Combine(
                 PyRevitLabsConsts.PyRevitPath,
