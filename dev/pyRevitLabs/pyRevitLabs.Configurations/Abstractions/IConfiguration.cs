@@ -16,6 +16,11 @@ public interface IConfiguration
     internal object GetValue(Type typeObject, string sectionName, string keyName);
     internal object? GetValueOrDefault(Type typeObject, string sectionName, string keyName, object? defaultValue = default);
 
+    // Raw access to the stored value text (canonical JSON). Lets a caller that
+    // does its own (de)serialization round-trip a value with a single encode.
+    string? GetRawValueOrDefault(string sectionName, string keyName, string? defaultValue = null);
+    void SetRawValue(string sectionName, string keyName, string rawValue);
+
     bool RemoveSection(string sectionName);
     bool RemoveOption(string sectionName, string keyName);
 

@@ -198,6 +198,36 @@ public abstract class ConfigurationBase : IConfiguration
         SetValueImpl<T>(sectionName, keyName, value);
     }
 
+    /// <inheritdoc />
+    public string? GetRawValueOrDefault(string sectionName, string keyName, string? defaultValue = null)
+    {
+        if (string.IsNullOrWhiteSpace(sectionName))
+            throw new ArgumentException("Value cannot be null or whitespace.", nameof(sectionName));
+
+        if (string.IsNullOrWhiteSpace(keyName))
+            throw new ArgumentException("Value cannot be null or whitespace.", nameof(keyName));
+
+        if (!HasSection(sectionName) || !HasSectionKey(sectionName, keyName))
+            return defaultValue;
+
+        return GetRawValueImpl(sectionName, keyName);
+    }
+
+    /// <inheritdoc />
+    public void SetRawValue(string sectionName, string keyName, string rawValue)
+    {
+        if (rawValue is null)
+            throw new ArgumentNullException(nameof(rawValue));
+
+        if (string.IsNullOrWhiteSpace(sectionName))
+            throw new ArgumentException("Value cannot be null or whitespace.", nameof(sectionName));
+
+        if (string.IsNullOrWhiteSpace(keyName))
+            throw new ArgumentException("Value cannot be null or whitespace.", nameof(keyName));
+
+        SetRawValueImpl(sectionName, keyName, rawValue);
+    }
+
     protected abstract void SaveConfigurationImpl();
     protected abstract void SaveConfigurationImpl(string configurationPath);
 
@@ -212,4 +242,7 @@ public abstract class ConfigurationBase : IConfiguration
 
     protected abstract void SetValueImpl<T>(string sectionName, string keyName, T value);
     protected abstract object GetValueImpl(Type typeObject, string sectionName, string keyName);
+
+    protected abstract string GetRawValueImpl(string sectionName, string keyName);
+    protected abstract void SetRawValueImpl(string sectionName, string keyName, string rawValue);
 }

@@ -45,7 +45,7 @@ class ConfigSection(object):
         return self.__configuration.HasSectionKey(self.__section_name, option_name)
 
     def get_option(self, op_name, default_value=None):
-        value = self.__configuration.GetValueOrDefault(self.__section_name, op_name, "")
+        value = self.__configuration.GetRawValueOrDefault(self.__section_name, op_name, None)
         if not value:
             return default_value
         try:
@@ -56,8 +56,9 @@ class ConfigSection(object):
             return value
 
     def set_option(self, op_name, value):
-        self.__configuration.SetValue(self.__section_name, op_name,
-                                      json.dumps(value, separators=(',', ':'), ensure_ascii=False))
+        self.__configuration.SetRawValue(
+            self.__section_name, op_name,
+            json.dumps(value, separators=(',', ':'), ensure_ascii=False))
 
     def remove_option(self, option_name):
         return self.__configuration.RemoveOption(self.__section_name, option_name)

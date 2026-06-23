@@ -76,6 +76,16 @@ namespace pyRevitLabs.Configurations.Tests
                 throw new NotImplementedException();
             }
 
+            public string? GetRawValueOrDefault(string sectionName, string keyName, string? defaultValue = null)
+            {
+                throw new NotImplementedException();
+            }
+
+            public void SetRawValue(string sectionName, string keyName, string rawValue)
+            {
+                throw new NotImplementedException();
+            }
+
             public void SaveConfiguration()
             {
                 throw new NotImplementedException();

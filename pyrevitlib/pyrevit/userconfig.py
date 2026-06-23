@@ -69,11 +69,16 @@ class _SectionCompatWrapper(object):
         self._config = configuration
 
     def get_option(self, key, default=None):
-        value = self._config.GetValueOrDefault(self._section_name, key, "")
-        return json.loads(value) if value else default
+        value = self._config.GetRawValueOrDefault(self._section_name, key, None)
+        if not value:
+            return default
+        try:
+            return json.loads(value)
+        except (ValueError, TypeError):
+            return value
 
     def set_option(self, key, value):
-        self._config.SetValue(
+        self._config.SetRawValue(
             self._section_name, key,
             json.dumps(value, separators=(',', ':'), ensure_ascii=False)
         )

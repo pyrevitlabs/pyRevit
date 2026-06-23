@@ -135,11 +135,25 @@ public sealed class IniConfiguration : ConfigurationBase
                 return (long?)hexValue;
         }
 
-        // Python configparser expects raw string and does json.loads() itself (handles arrays, objects, primitives)
-        if (targetType == typeof(string))
-            return raw;
-
         return JsonConvert.DeserializeObject(raw, typeObject)
                ?? throw new ConfigurationException("Cannot deserialize value using the specified key.");
+    }
+
+    /// <inheritdoc />
+    protected override string GetRawValueImpl(string sectionName, string keyName)
+    {
+        return _iniFile[sectionName][keyName];
+    }
+
+    /// <inheritdoc />
+    protected override void SetRawValueImpl(string sectionName, string keyName, string rawValue)
+    {
+        if (!HasSection(sectionName))
+            _iniFile.Sections.AddSection(sectionName);
+
+        if (!HasSectionKey(sectionName, keyName))
+            _iniFile[sectionName].AddKey(keyName);
+
+        _iniFile[sectionName][keyName] = rawValue;
     }
 }
