@@ -63,7 +63,9 @@ namespace pyRevitLabs.PyRevit
             }
 
             _logger.Debug("Creating user config service {@ConfigPath}...", userConfig);
-            return CreateConfiguration(userConfig, false, overrideName);
+            var service = CreateConfiguration(userConfig, false, overrideName);
+            ConfigurationMigrator.Migrate(service);
+            return service;
         }
 
         // Reports whether the current process can write the file by opening it

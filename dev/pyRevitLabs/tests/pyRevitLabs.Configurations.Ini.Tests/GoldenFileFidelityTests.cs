@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using pyRevitLabs.Configurations;
 using pyRevitLabs.Configurations.Abstractions;
+using pyRevitLabs.Configurations.Ini.Extensions;
 
 namespace pyRevitLabs.Configurations.Ini.Tests;
 
@@ -104,6 +106,51 @@ public class GoldenFileFidelityTests
 
             var reread = IniConfiguration.Create(path);
             Assert.Equal("fr_fr", reread.GetValue<string>("core", "user_locale"));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    // ---- migration ----
+
+    [Fact] // A value that no longer parses to its declared type is dropped, and the schema version is stamped.
+    public void Migration_RepairsCorruptValue_AndStampsVersion()
+    {
+        var path = TempCopy("corrupted_clones.ini");
+        try
+        {
+            var service = new ConfigurationBuilder(false)
+                .AddIniConfiguration(path, ConfigurationService.DefaultConfigurationName)
+                .Build();
+
+            Assert.True(ConfigurationMigrator.Migrate(service));
+
+            var reread = IniConfiguration.Create(path);
+            Assert.False(reread.HasSectionKey("environment", "clones"));
+            Assert.Equal(ConfigurationMigrator.CurrentVersion, reread.GetValue<int>("core", "config_version"));
+            Assert.True(reread.GetValue<bool>("core", "rocketmode"));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact] // Re-running migration on an already-stamped config does nothing.
+    public void Migration_IsIdempotent()
+    {
+        var path = TempCopy("populated.ini");
+        try
+        {
+            var first = new ConfigurationBuilder(false)
+                .AddIniConfiguration(path, ConfigurationService.DefaultConfigurationName).Build();
+            Assert.True(ConfigurationMigrator.Migrate(first));
+
+            var second = new ConfigurationBuilder(false)
+                .AddIniConfiguration(path, ConfigurationService.DefaultConfigurationName).Build();
+            Assert.False(ConfigurationMigrator.Migrate(second));
         }
         finally
         {
