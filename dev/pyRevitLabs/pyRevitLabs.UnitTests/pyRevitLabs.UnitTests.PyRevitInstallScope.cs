@@ -10,17 +10,33 @@ namespace pyRevitLabs.UnitTests {
     [TestClass]
     public class PyRevitInstallScopeTests {
         private string _tempRoot;
+        private string _previousPyRevitPathOverride;
+        private string _previousProgramDataPathOverride;
 
         [TestInitialize]
         public void Setup() {
             _tempRoot = Path.Combine(Path.GetTempPath(), "pyRevitInstallScope_" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(_tempRoot);
+            _previousPyRevitPathOverride = Environment.GetEnvironmentVariable(PyRevitLabsConsts.PyRevitPathOverrideEnvVar);
+            _previousProgramDataPathOverride = Environment.GetEnvironmentVariable(PyRevitLabsConsts.PyRevitProgramDataPathOverrideEnvVar);
+            Environment.SetEnvironmentVariable(
+                PyRevitLabsConsts.PyRevitPathOverrideEnvVar,
+                Path.Combine(_tempRoot, "AppDataPyRevit"));
+            Environment.SetEnvironmentVariable(
+                PyRevitLabsConsts.PyRevitProgramDataPathOverrideEnvVar,
+                Path.Combine(_tempRoot, "ProgramDataPyRevit"));
             PyRevitInstallScope.ClearCachedInstallScope();
         }
 
         [TestCleanup]
         public void Cleanup() {
             PyRevitInstallScope.ClearCachedInstallScope();
+            Environment.SetEnvironmentVariable(
+                PyRevitLabsConsts.PyRevitPathOverrideEnvVar,
+                _previousPyRevitPathOverride);
+            Environment.SetEnvironmentVariable(
+                PyRevitLabsConsts.PyRevitProgramDataPathOverrideEnvVar,
+                _previousProgramDataPathOverride);
             if (Directory.Exists(_tempRoot))
                 Directory.Delete(_tempRoot, recursive: true);
         }
