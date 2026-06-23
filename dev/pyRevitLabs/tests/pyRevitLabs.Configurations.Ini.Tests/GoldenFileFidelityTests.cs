@@ -132,7 +132,9 @@ public class GoldenFileFidelityTests
                 .AddIniConfiguration(path, ConfigurationService.DefaultConfigurationName)
                 .Build();
 
-            Assert.True(ConfigurationMigrator.Migrate(service));
+            var result = ConfigurationMigrator.Migrate(service);
+            Assert.True(result.Migrated);
+            Assert.Contains("environment.clones", result.ResetKeys);
 
             var reread = IniConfiguration.Create(path);
             Assert.False(reread.HasSectionKey("environment", "clones"));
@@ -153,11 +155,11 @@ public class GoldenFileFidelityTests
         {
             var first = new ConfigurationBuilder(false)
                 .AddIniConfiguration(path, ConfigurationService.DefaultConfigurationName).Build();
-            Assert.True(ConfigurationMigrator.Migrate(first));
+            Assert.True(ConfigurationMigrator.Migrate(first).Migrated);
 
             var second = new ConfigurationBuilder(false)
                 .AddIniConfiguration(path, ConfigurationService.DefaultConfigurationName).Build();
-            Assert.False(ConfigurationMigrator.Migrate(second));
+            Assert.False(ConfigurationMigrator.Migrate(second).Migrated);
         }
         finally
         {

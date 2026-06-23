@@ -53,7 +53,7 @@ namespace pyRevitLabs.PyRevit
                 // Admin config not writable by this process -> use it read-only.
                 if (new FileInfo(adminConfig).IsReadOnly || !IsFileWritable(adminConfig))
                 {
-                    _logger.Debug("Using read-only admin config {@ConfigPath}...", adminConfig);
+                    _logger.Info("Using read-only admin config {@ConfigPath}; user changes will not be saved.", adminConfig);
                     return CreateConfiguration(adminConfig, true, overrideName);
                 }
 
@@ -64,7 +64,21 @@ namespace pyRevitLabs.PyRevit
 
             _logger.Debug("Creating user config service {@ConfigPath}...", userConfig);
             var service = CreateConfiguration(userConfig, false, overrideName);
-            ConfigurationMigrator.Migrate(service);
+
+            var migration = ConfigurationMigrator.Migrate(service);
+            if (migration.BackupFailed)
+            {
+                _logger.Warn("Skipped config migration for {@ConfigPath}: could not create a backup; "
+                    + "will retry on a later load.", userConfig);
+            }
+            else if (migration.Migrated)
+            {
+                _logger.Info("Migrated config {@ConfigPath} from v{@FromVersion} to v{@ToVersion}; backup: {@BackupPath}",
+                    userConfig, migration.FromVersion, ConfigurationMigrator.CurrentVersion, migration.BackupPath);
+                foreach (string key in migration.ResetKeys)
+                    _logger.Warn("Reset invalid config value during migration: {@Key}", key);
+            }
+
             return service;
         }
 

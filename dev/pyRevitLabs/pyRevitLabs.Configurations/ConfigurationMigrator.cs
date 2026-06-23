@@ -6,6 +6,31 @@ using pyRevitLabs.Configurations.Sections;
 namespace pyRevitLabs.Configurations;
 
 /// <summary>
+/// Outcome of a <see cref="ConfigurationMigrator.Migrate"/> call. Carries the
+/// reset keys and the backup path so the caller can log the repair (the
+/// Configurations assembly has no logging dependency of its own).
+/// </summary>
+public sealed class ConfigurationMigrationResult
+{
+    public bool Migrated { get; }
+    public bool BackupFailed { get; }
+    public int FromVersion { get; }
+    public string? BackupPath { get; }
+    public IReadOnlyList<string> ResetKeys { get; }
+
+    internal ConfigurationMigrationResult(
+        bool migrated, bool backupFailed, int fromVersion,
+        string? backupPath, IReadOnlyList<string> resetKeys)
+    {
+        Migrated = migrated;
+        BackupFailed = backupFailed;
+        FromVersion = fromVersion;
+        BackupPath = backupPath;
+        ResetKeys = resetKeys;
+    }
+}
+
+/// <summary>
 /// Version-gated, one-time repair of an existing configuration. Removes
 /// typed-section values that no longer parse to their declared type and
 /// telemetry fields blown up by escape-doubling, then stamps the schema
@@ -18,6 +43,9 @@ public static class ConfigurationMigrator
     private const string VersionSection = "core";
     private const string VersionKey = "config_version";
     private const int MaxFieldLength = 8192;
+
+    private static readonly ConfigurationMigrationResult NotMigrated =
+        new(false, false, 0, null, Array.Empty<string>());
 
     private static readonly Type[] KnownSections =
     {
@@ -34,18 +62,28 @@ public static class ConfigurationMigrator
 
     /// <summary>
     /// Migrates the service's default configuration when its stamped version is
-    /// older than <see cref="CurrentVersion"/>. Returns true when a migration ran.
+    /// older than <see cref="CurrentVersion"/>.
     /// </summary>
-    public static bool Migrate(IConfigurationService service)
+    public static ConfigurationMigrationResult Migrate(IConfigurationService service)
     {
         if (service is null)
             throw new ArgumentNullException(nameof(service));
 
         IConfiguration config = service[ConfigurationService.DefaultConfigurationName];
-        if (ReadVersion(config) >= CurrentVersion)
-            return false;
+        int version = ReadVersion(config);
+        if (version >= CurrentVersion)
+            return NotMigrated;
 
-        TryBackup(config.ConfigurationPath);
+        // Back up before mutating. If the file exists but cannot be backed up,
+        // skip this run so a recoverable copy is preserved; the migration
+        // retries on a later load once the cause (disk, ACLs) is resolved.
+        bool hasFile = !string.IsNullOrEmpty(config.ConfigurationPath)
+                       && File.Exists(config.ConfigurationPath);
+        string? backupPath = TryBackup(config.ConfigurationPath);
+        if (hasFile && backupPath is null)
+            return new ConfigurationMigrationResult(false, true, version, null, Array.Empty<string>());
+
+        var resetKeys = new List<string>();
 
         // Drop typed-section values that no longer parse to their declared type;
         // reads then fall back to the section default.
@@ -65,6 +103,7 @@ public static class ConfigurationMigrator
                 catch
                 {
                     config.RemoveOption(section, key);
+                    resetKeys.Add(section + "." + key);
                 }
             }
         }
@@ -74,12 +113,15 @@ public static class ConfigurationMigrator
         {
             string? raw = config.GetRawValueOrDefault(section, key);
             if (raw != null && raw.Length > MaxFieldLength)
+            {
                 config.RemoveOption(section, key);
+                resetKeys.Add(section + "." + key);
+            }
         }
 
         config.SetValue(VersionSection, VersionKey, CurrentVersion);
         config.SaveConfiguration();
-        return true;
+        return new ConfigurationMigrationResult(true, false, version, backupPath, resetKeys);
     }
 
     private static int ReadVersion(IConfiguration config)
@@ -91,20 +133,21 @@ public static class ConfigurationMigrator
         return int.TryParse(raw!.Trim().Trim('"'), out int version) ? version : 0;
     }
 
-    private static void TryBackup(string path)
+    private static string? TryBackup(string path)
     {
         try
         {
-            if (!string.IsNullOrEmpty(path) && File.Exists(path))
-            {
-                string backup = path + ".v0." + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".bak";
-                if (!File.Exists(backup))
-                    File.Copy(path, backup);
-            }
+            if (string.IsNullOrEmpty(path) || !File.Exists(path))
+                return null;
+
+            string backup = path + ".v0." + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".bak";
+            if (!File.Exists(backup))
+                File.Copy(path, backup);
+            return backup;
         }
         catch
         {
-            // best effort: a missing backup must not block migration
+            return null;
         }
     }
 
