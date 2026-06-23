@@ -29,6 +29,11 @@ namespace pyRevitLabs.PyRevit
     {
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
+        static PyRevitConfigs()
+        {
+            ConfigurationDiagnostics.Warn = message => _logger.Warn(message);
+        }
+
         /// <summary>
         /// Returns config file.
         /// </summary>

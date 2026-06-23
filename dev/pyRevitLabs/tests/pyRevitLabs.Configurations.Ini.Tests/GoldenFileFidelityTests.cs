@@ -166,4 +166,23 @@ public class GoldenFileFidelityTests
             File.Delete(path);
         }
     }
+
+    // ---- diagnostics ----
+
+    [Fact] // A value that fails to deserialize reports through the diagnostic sink.
+    public void TolerantRead_ReportsFallback_ViaDiagnostics()
+    {
+        var messages = new List<string>();
+        ConfigurationDiagnostics.Warn = messages.Add;
+        try
+        {
+            var cfg = Load("corrupted_clones.ini");
+            cfg.GetValueOrDefault("environment", "clones", new Dictionary<string, string>());
+            Assert.Contains(messages, m => m.Contains("clones"));
+        }
+        finally
+        {
+            ConfigurationDiagnostics.Warn = null;
+        }
+    }
 }
