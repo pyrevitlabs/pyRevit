@@ -31,97 +31,26 @@ namespace pyRevitLabs.PyRevit
 
         static PyRevitConfigs()
         {
+            // Route the Configurations-layer diagnostics (discovery, migration,
+            // tolerant-read fallbacks) to the pyRevit log.
             ConfigurationDiagnostics.Warn = message => _logger.Warn(message);
+            ConfigurationDiagnostics.Info = message => _logger.Info(message);
         }
 
         /// <summary>
-        /// Returns config file.
+        /// Returns the shared config service, built once per configuration name and
+        /// cached for the process. Call <see cref="ReloadConfig"/> after a settings
+        /// change to force the next access to re-read from disk.
         /// </summary>
         /// <returns>Returns admin config if admin config exists and readonly and user config not found.</returns>
-        /// <remarks>
-        /// Seeds admin config file when user config not found and admin config not readonly.
-        /// </remarks>
         public static IConfigurationService GetConfigFile(string overrideName = default)
-        {
-            // The per-user (APPDATA) config is the writable target and takes
-            // priority. The admin/all-users config (ProgramData) is used only
-            // when no per-user config exists, and is opened read-only when the
-            // current process cannot write it.
-            string userConfig =
-                PyRevitConsts.FindConfigFileInDirectory(PyRevitLabsConsts.PyRevitPath)
-                ?? Path.Combine(PyRevitLabsConsts.PyRevitPath, PyRevitConsts.DefaultConfigsFileName);
-            string adminConfig = PyRevitConsts.AdminConfigFilePath;
+            => PyRevitConfigService.GetShared(overrideName);
 
-            // No per-user config yet, but an admin config exists.
-            if (!File.Exists(userConfig) && File.Exists(adminConfig))
-            {
-                // Admin config not writable by this process -> use it read-only.
-                if (new FileInfo(adminConfig).IsReadOnly || !IsFileWritable(adminConfig))
-                {
-                    _logger.Info("Using read-only admin config {@ConfigPath}; user changes will not be saved.", adminConfig);
-                    return CreateConfiguration(adminConfig, true, overrideName);
-                }
-
-                // Writable admin config -> seed it into the per-user location.
-                _logger.Debug("Seeding admin config into user config {@ConfigPath}...", userConfig);
-                SeedToUserConfig(adminConfig, userConfig);
-            }
-
-            _logger.Debug("Creating user config service {@ConfigPath}...", userConfig);
-            var service = CreateConfiguration(userConfig, false, overrideName);
-
-            var migration = ConfigurationMigrator.Migrate(service);
-            if (migration.BackupFailed)
-            {
-                _logger.Warn("Skipped config migration for {@ConfigPath}: could not create a backup; "
-                    + "will retry on a later load.", userConfig);
-            }
-            else if (migration.ResetKeys.Count > 0)
-            {
-                _logger.Info("Repaired config {@ConfigPath}: reset {@Count} invalid value(s); backup: {@BackupPath}",
-                    userConfig, migration.ResetKeys.Count, migration.BackupPath);
-                foreach (string key in migration.ResetKeys)
-                    _logger.Warn("Reset invalid config value: {@Key}", key);
-            }
-            else if (migration.Migrated)
-            {
-                _logger.Debug("Stamped config version {@Version} for {@ConfigPath}",
-                    ConfigurationMigrator.CurrentVersion, userConfig);
-            }
-
-            return service;
-        }
-
-        // Reports whether the current process can write the file by opening it
-        // for read/write. The read-only file attribute alone does not reflect
-        // directory ACL denials.
-        private static bool IsFileWritable(string filePath)
-        {
-            try
-            {
-                using (new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
-                    return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private static void SeedToUserConfig(string sourceFile, string targetFile)
-        {
-            try
-            {
-                var dir = Path.GetDirectoryName(targetFile);
-                if (!string.IsNullOrEmpty(dir))
-                    CommonUtils.EnsurePath(dir);
-                File.WriteAllText(targetFile, File.ReadAllText(sourceFile));
-            }
-            catch (Exception ex)
-            {
-                _logger.Debug("Could not seed admin config to user config: {0}", ex.Message);
-            }
-        }
+        /// <summary>
+        /// Drops the cached config service(s) so the next <see cref="GetConfigFile"/>
+        /// rebuilds from disk. Used when settings are edited and a reload is required.
+        /// </summary>
+        public static void ReloadConfig() => PyRevitConfigService.Reload();
 
         /// <summary>
         /// Removes user config file.
@@ -129,6 +58,7 @@ namespace pyRevitLabs.PyRevit
         /// <exception cref="PyRevitException"></exception>
         public static void DeleteConfig()
         {
+            PyRevitConfigService.Reload();
             if (!File.Exists(PyRevitConsts.ConfigFilePath)) return;
 
             _logger.Info("Deleting config {@ConfigPath}...", PyRevitConsts.ConfigFilePath);
@@ -183,6 +113,7 @@ namespace pyRevitLabs.PyRevit
         // if admin config file exists, create initial config file from seed config
         public static void SetupConfig(string templateConfigFilePath = null)
         {
+            PyRevitConfigService.Reload();
             string sourceFile = templateConfigFilePath;
             string targetFile = PyRevitConsts.ConfigFilePath;
 
@@ -203,22 +134,6 @@ namespace pyRevitLabs.PyRevit
             {
                 throw new PyRevitException($"Failed configuring config file from template at {sourceFile}...", ex);
             }
-        }
-
-        private static IConfigurationService CreateConfiguration(string configPath, bool readOnly, string overrideName)
-        {
-            var builder = new ConfigurationBuilder(readOnly)
-                .AddIniConfiguration(configPath, ConfigurationService.DefaultConfigurationName, readOnly);
-
-            if (!string.IsNullOrEmpty(overrideName)
-                && overrideName?.Equals(ConfigurationService.DefaultConfigurationName) != true)
-            {
-                builder.AddIniConfiguration(
-                    Path.ChangeExtension(configPath,
-                        $"{overrideName}{IniConfiguration.DefaultFileExtension}"), overrideName, readOnly);
-            }
-
-            return builder.Build();
         }
 
         // specific configuration public access  ======================================================================

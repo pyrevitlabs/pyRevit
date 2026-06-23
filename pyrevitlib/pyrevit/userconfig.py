@@ -649,10 +649,18 @@ class PyRevitConfig(object):
     def save_changes(self):
         """Save user config into associated config file."""
         if not self._admin:
+            # Capture the edited section snapshots before saving any of them:
+            # SaveSection refreshes the service's live snapshots, so reading
+            # self.config_service.Routes/Telemetry after the first save would
+            # return reloaded objects without the pending in-memory edits.
+            core = self.config_service.Core
+            routes = self.config_service.Routes
+            telemetry = self.config_service.Telemetry
+
             # Pass C# section objects so SaveSection gets correct Type and writes INI
-            self.config_service.SaveSection(ConfigurationService.DefaultConfigurationName, self.config_service.Core)
-            self.config_service.SaveSection(ConfigurationService.DefaultConfigurationName, self.config_service.Routes)
-            self.config_service.SaveSection(ConfigurationService.DefaultConfigurationName, self.config_service.Telemetry)
+            self.config_service.SaveSection(ConfigurationService.DefaultConfigurationName, core)
+            self.config_service.SaveSection(ConfigurationService.DefaultConfigurationName, routes)
+            self.config_service.SaveSection(ConfigurationService.DefaultConfigurationName, telemetry)
 
             # save all sections (need to dynamic section on python)
             self.config_service[ConfigurationService.DefaultConfigurationName].SaveConfiguration()
@@ -664,6 +672,9 @@ class PyRevitConfig(object):
 
     def reload(self):
         """Reload configuration from disk, discarding unsaved in-memory edits."""
+        # Drop the cached shared service so the next access re-reads from disk
+        # across every consumer, not just this object.
+        PyRevit.PyRevitConfigs.ReloadConfig()
         self.config_service = PyRevit.PyRevitConfigs.GetConfigFile()
         self.config_sections = ConfigSections(self.config_service)
 

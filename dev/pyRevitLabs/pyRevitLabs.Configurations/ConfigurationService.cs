@@ -152,6 +152,12 @@ public sealed class ConfigurationService : IConfigurationService
         }
 
         configuration.SaveConfiguration();
+
+        // Rebuild the typed section snapshots so readers of this (now cached and
+        // shared) service observe the values just written. Callers that save
+        // several sections in sequence must capture each section object before the
+        // first save, since this swaps the live snapshot instances.
+        ReloadLoadConfigurations();
     }
 
     private static object CreateSection(Type configurationType, params IConfiguration[] configurations)

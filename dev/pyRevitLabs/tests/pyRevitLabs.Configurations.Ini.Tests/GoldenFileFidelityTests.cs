@@ -4,6 +4,7 @@ using System.IO;
 using pyRevitLabs.Configurations;
 using pyRevitLabs.Configurations.Abstractions;
 using pyRevitLabs.Configurations.Ini.Extensions;
+using pyRevitLabs.Configurations.Sections;
 
 namespace pyRevitLabs.Configurations.Ini.Tests;
 
@@ -113,6 +114,54 @@ public class GoldenFileFidelityTests
 
             var reread = IniConfiguration.Create(path);
             Assert.Equal("fr_fr", reread.GetValue<string>("core", "user_locale"));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact] // After SaveSection, the same service instance's typed snapshot reflects the write (shared-cache freshness).
+    public void SaveSection_RefreshesTypedSnapshot_OnSameInstance()
+    {
+        var path = TempCopy("populated.ini");
+        try
+        {
+            var service = new ConfigurationBuilder(false)
+                .AddIniConfiguration(path, ConfigurationService.DefaultConfigurationName).Build();
+
+            Assert.NotEqual(99, service.Core.StartupLogTimeout);
+            service.SaveSection(ConfigurationService.DefaultConfigurationName,
+                new CoreSection { StartupLogTimeout = 99 });
+
+            // Without rebuilding the service, the snapshot must show the saved value.
+            Assert.Equal(99, service.Core.StartupLogTimeout);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    // Documents a known SaveSection defect: a sparse section POCO writes every
+    // non-null property, so saving one key overwrites siblings (here userextensions
+    // is wiped by the section's empty-list default). Un-skip once single-key saves
+    // replace the sparse-POCO save in the per-key setters.
+    [Fact(Skip = "Blocked on sparse-POCO SaveSection fix (Phase 3.2)")]
+    public void SaveSection_SingleProperty_DoesNotClobberSiblings()
+    {
+        var path = TempCopy("populated.ini");
+        try
+        {
+            var service = new ConfigurationBuilder(false)
+                .AddIniConfiguration(path, ConfigurationService.DefaultConfigurationName).Build();
+
+            service.SaveSection(ConfigurationService.DefaultConfigurationName,
+                new CoreSection { StartupLogTimeout = 99 });
+
+            var reread = IniConfiguration.Create(path);
+            var exts = reread.GetValue<List<string>>("core", "userextensions");
+            Assert.Equal(2, exts.Count);
         }
         finally
         {
