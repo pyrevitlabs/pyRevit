@@ -15,4 +15,10 @@ public sealed class PublishOptions
     public bool DraftRelease { get; set; } = true;
 
     public bool SubmitWinget { get; set; } = true;
+
+    /// <summary>
+    /// When set, passed to wingetcreate submit as --replace for re-publishing an existing catalog version.
+    /// Leave empty for normal new-version submissions.
+    /// </summary>
+    public string WingetReplaceVersion { get; set; } = string.Empty;
 }

@@ -4,6 +4,11 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      winget_replace_version:
+        description: Optional catalog version to replace when re-submitting (e.g. 6.5.0.26173). Leave empty for normal new-version releases.
+        required: false
+        default: ''
 
 jobs:
   winget:
@@ -32,4 +37,5 @@ jobs:
           Publish__WingetToken: ${{ secrets.WINGET_GITHUB_TOKEN }}
           Publish__SubmitWinget: true
           Publish__WingetCreateExe: ${{ env.WINGET_CREATE_EXE }}
+          Publish__WingetReplaceVersion: ${{ inputs.winget_replace_version }}
         run: dotnet run -c Release -- winget
