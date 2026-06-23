@@ -126,8 +126,10 @@ begin
   if not Result then
     Log('Failed to execute pyrevit ' + Params)
   else if ResultCode <> 0 then
+  begin
     Log('pyrevit exited with code ' + IntToStr(ResultCode) + ': ' + Params);
-end;
+    Result := False;
+  end;
 
 procedure RunAdminPostInstallCommands;
 begin
