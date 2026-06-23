@@ -456,8 +456,8 @@ namespace pyRevitExtensionParser
         /// <param name="customPath">
         /// Optional custom path to the configuration file. 
         /// If null, uses the same discovery as pyRevitLabs/Python: first <c>*.ini</c> under
-        /// <c>%APPDATA%\pyRevit\</c> matching the labs config filename pattern, else
-        /// <c>%APPDATA%\pyRevit\pyRevit_config.ini</c>.
+        /// the active install-scope config directory (AppData or ProgramData) matching
+        /// the labs config filename pattern, else <c>pyRevit_config.ini</c> in that directory.
         /// </param>
         /// <returns>A new <see cref="PyRevitConfig"/> instance for the specified configuration file.</returns>
         /// <remarks>
