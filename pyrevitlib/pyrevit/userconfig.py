@@ -930,6 +930,29 @@ if LOCAL_CONFIG_FILE:
     CONFIG_TYPE = 'Local'
     CONFIG_FILE = LOCAL_CONFIG_FILE
 
+# admin installer scope: machine config lives under ProgramData
+elif op.isfile(op.join(PYREVIT_ALLUSER_APP_DIR, CONSTS.InstallAllUsersMarkerFileName)):
+    if not ADMIN_CONFIG_FILE:
+        try:
+            PyRevit.PyRevitConfigs.SetupConfig()
+            ADMIN_CONFIG_FILE = find_config_file(PYREVIT_ALLUSER_APP_DIR)
+        except Exception as adminInstallEx:
+            mlogger.warning(
+                'Failed to initialize ProgramData config for admin install: %s',
+                adminInstallEx
+            )
+    if ADMIN_CONFIG_FILE:
+        CONFIG_FILE = ADMIN_CONFIG_FILE
+    else:
+        CONFIG_FILE = op.join(
+            PYREVIT_ALLUSER_APP_DIR,
+            PyRevit.PyRevitConsts.DefaultConfigsFileName
+        )
+    if ADMIN_CONFIG_FILE and not os.access(ADMIN_CONFIG_FILE, os.W_OK):
+        CONFIG_TYPE = 'Admin'
+    else:
+        CONFIG_TYPE = 'AdminInstall'
+
 # check to see if there is any config file provided by admin
 elif ADMIN_CONFIG_FILE \
         and os.access(ADMIN_CONFIG_FILE, os.W_OK) \

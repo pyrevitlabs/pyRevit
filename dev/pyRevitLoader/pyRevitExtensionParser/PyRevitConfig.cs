@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 
+using pyRevitLabs.Common;
+
 namespace pyRevitExtensionParser
 {
     /// <summary>
@@ -454,8 +456,8 @@ namespace pyRevitExtensionParser
         /// <param name="customPath">
         /// Optional custom path to the configuration file. 
         /// If null, uses the same discovery as pyRevitLabs/Python: first <c>*.ini</c> under
-        /// <c>%APPDATA%\pyRevit\</c> matching the labs config filename pattern, else
-        /// <c>%APPDATA%\pyRevit\pyRevit_config.ini</c>.
+        /// the active install-scope config directory (AppData or ProgramData) matching
+        /// the labs config filename pattern, else <c>pyRevit_config.ini</c> in that directory.
         /// </param>
         /// <returns>A new <see cref="PyRevitConfig"/> instance for the specified configuration file.</returns>
         /// <remarks>
@@ -493,11 +495,9 @@ namespace pyRevitExtensionParser
                 if (_defaultInstance != null)
                     return _defaultInstance;
 
-                var appDataPyRevit = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                    "pyRevit");
-                var discovered = TryFindConfigIniInDirectory(appDataPyRevit);
-                var fallback = Path.Combine(appDataPyRevit, "pyRevit_config.ini");
+                var configRoot = PyRevitInstallScope.GetConfigDirectory();
+                var discovered = TryFindConfigIniInDirectory(configRoot);
+                var fallback = Path.Combine(configRoot, PyRevitLabsConsts.DefaultConfigsFileName);
                 var finalPath = discovered ?? fallback;
 
                 // Ensure the file exists so Python's configparser can write to it

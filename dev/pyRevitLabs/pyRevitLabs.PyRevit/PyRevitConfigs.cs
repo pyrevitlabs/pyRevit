@@ -48,6 +48,8 @@ namespace pyRevitLabs.PyRevit
         // get config file
         public static PyRevitConfig GetConfigFile()
         {
+            MigrateSplitAdminConfigIfNeeded();
+
             // make sure the file exists and if not create an empty one
             string userConfig = PyRevitConsts.ConfigFilePath;
             string adminConfig = PyRevitConsts.AdminConfigFilePath;
@@ -66,6 +68,51 @@ namespace pyRevitLabs.PyRevit
             }
 
             return new PyRevitConfig(userConfig);
+        }
+
+        private static void MigrateSplitAdminConfigIfNeeded()
+        {
+            if (!PyRevitInstallScope.IsAllUsersInstall())
+                return;
+
+            string programDataConfig = PyRevitConsts.ConfigFilePath;
+            if (ConfigFileHasClones(programDataConfig))
+                return;
+            if (File.Exists(programDataConfig) && new FileInfo(programDataConfig).Length > 0)
+                return;
+
+            string appDataConfig = Path.Combine(
+                PyRevitLabsConsts.PyRevitPath,
+                PyRevitConsts.DefaultConfigsFileName);
+            var appDataDiscovered = PyRevitConsts.FindConfigFileInDirectory(PyRevitLabsConsts.PyRevitPath);
+            if (appDataDiscovered != null)
+                appDataConfig = appDataDiscovered;
+
+            if (!ConfigFileHasClones(appDataConfig))
+                return;
+
+            logger.Debug(
+                "Migrating admin install config from \"{0}\" to ProgramData",
+                appDataConfig);
+            SetupConfig(appDataConfig);
+        }
+
+        private static bool ConfigFileHasClones(string configPath)
+        {
+            if (!CommonUtils.VerifyFile(configPath))
+                return false;
+            try
+            {
+                var cfg = new PyRevitConfig(configPath);
+                var clonesDict = cfg.GetDictValue(
+                    PyRevitConsts.EnvConfigsSectionName,
+                    PyRevitConsts.EnvConfigsInstalledClonesKey);
+                return clonesDict != null && clonesDict.Count > 0;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         // deletes config file
