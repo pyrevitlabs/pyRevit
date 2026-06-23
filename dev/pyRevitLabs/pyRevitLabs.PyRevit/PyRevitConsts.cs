@@ -191,17 +191,7 @@ namespace pyRevitLabs.PyRevit {
 
 
         // install scope: true only when admin installer created the all-users marker
-        private static bool? _isInstallAllUsers;
-        public static bool IsInstallAllUsers() {
-            if (_isInstallAllUsers.HasValue)
-                return _isInstallAllUsers.Value;
-            string markerPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
-                PyRevitLabsConsts.AppdataDirName,
-                InstallAllUsersMarkerFileName);
-            _isInstallAllUsers = File.Exists(markerPath);
-            return _isInstallAllUsers.Value;
-        }
+        public static bool IsInstallAllUsers() => PyRevitInstallScope.IsAllUsersInstall();
 
         // methods
         public static string FindConfigFileInDirectory(string sourcePath) {
@@ -228,7 +218,7 @@ namespace pyRevitLabs.PyRevit {
         // @reviewed
         public static string ConfigFilePath {
             get {
-                string configRoot = IsInstallAllUsers() ? PyRevitLabsConsts.PyRevitProgramDataPath : PyRevitLabsConsts.PyRevitPath;
+                string configRoot = PyRevitInstallScope.GetConfigDirectory();
                 var cfgFile = FindConfigFileInDirectory(configRoot);
                 return cfgFile != null ? cfgFile : Path.Combine(configRoot, DefaultConfigsFileName);
             }

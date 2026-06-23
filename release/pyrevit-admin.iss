@@ -77,34 +77,73 @@ Source: "..\pyRevitfile"; DestDir: "{app}"; Flags: ignoreversion; Components: co
 ; https://stackoverflow.com/a/9962307/2350244 (mod path module)
 Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\bin"
 
-[Run]
-Filename: "{app}\bin\pyrevit.exe"; Description: "Clearning caches..."; Parameters: "caches clear --all"; Flags: runhidden
-Filename: "{app}\bin\pyrevit.exe"; Description: "Detach existing clones..."; Parameters: "detach --all"; Flags: runhidden
-Filename: "{app}\bin\pyrevit.exe"; Description: "Registering this clone..."; Parameters: "clones add this master --force"; Flags: runhidden
-Filename: "{app}\bin\pyrevit.exe"; Description: "Attaching this clone..."; Parameters: "attach master default --installed --allusers"; Flags: runhidden
-
 [UninstallRun]
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "ClearCaches"; Parameters: "caches clear --all"; Flags: runhidden
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detach --all"; Flags: runhidden
 
 [Code]
-procedure CurStepChanged(CurStep: TSetupStep);
+function CreateInstallAllUsersMarker: Boolean;
 var
   ProgramDataPyRevit: String;
   MarkerPath: String;
 begin
-  if CurStep = ssPostInstall then
+  Result := False;
+  ProgramDataPyRevit := ExpandConstant('{commonappdata}\pyRevit');
+  MarkerPath := ProgramDataPyRevit + '\install_all_users';
+  if ForceDirectories(ProgramDataPyRevit) then
   begin
-    ProgramDataPyRevit := ExpandConstant('{commonappdata}\pyRevit');
-    MarkerPath := ProgramDataPyRevit + '\install_all_users';
-    if ForceDirectories(ProgramDataPyRevit) then
-      SaveStringToFile(MarkerPath, 'AllUsers', False)
-    else
+    if SaveStringToFile(MarkerPath, 'AllUsers', False) then
     begin
-      Log('Could not create ProgramData\pyRevit for install_all_users marker');
-      MsgBox('Warning: Could not create all-users marker file. Config will use per-user scope.', mbInformation, MB_OK);
-    end;
+      Log('Created install_all_users marker at: ' + MarkerPath);
+      Result := True;
+    end
+    else
+      Log('Could not write install_all_users marker: ' + MarkerPath);
+  end
+  else
+  begin
+    Log('Could not create ProgramData\pyRevit for install_all_users marker');
+    MsgBox('Warning: Could not create all-users marker file. Config will use per-user scope.', mbInformation, MB_OK);
   end;
+end;
+
+function RunPyRevitCommand(const Params: String; const AsOriginalUser: Boolean): Boolean;
+var
+  ResultCode: Integer;
+  PyRevitExe: String;
+begin
+  Result := False;
+  PyRevitExe := ExpandConstant('{app}\bin\pyrevit.exe');
+  if not FileExists(PyRevitExe) then
+  begin
+    Log('pyrevit.exe not found: ' + PyRevitExe);
+    Exit;
+  end;
+  if AsOriginalUser then
+    Result := ExecAsOriginalUser(PyRevitExe, Params, ExpandConstant('{app}\bin'), SW_HIDE, ewWaitUntilTerminated, ResultCode)
+  else
+    Result := Exec(PyRevitExe, Params, ExpandConstant('{app}\bin'), SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  if not Result then
+    Log('Failed to execute pyrevit ' + Params)
+  else if ResultCode <> 0 then
+    Log('pyrevit exited with code ' + IntToStr(ResultCode) + ': ' + Params);
+end;
+
+procedure RunAdminPostInstallCommands;
+begin
+  if not CreateInstallAllUsersMarker then
+    Log('Continuing post-install without all-users marker; clone registry may use per-user config.');
+
+  RunPyRevitCommand('caches clear --all', True);
+  RunPyRevitCommand('detach --all', True);
+  RunPyRevitCommand('clones add this master --force', False);
+  RunPyRevitCommand('attach master default --installed --allusers', False);
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssPostInstall then
+    RunAdminPostInstallCommands;
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 
+using pyRevitLabs.Common;
+
 namespace pyRevitExtensionParser
 {
     /// <summary>
@@ -493,11 +495,9 @@ namespace pyRevitExtensionParser
                 if (_defaultInstance != null)
                     return _defaultInstance;
 
-                var appDataPyRevit = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                    "pyRevit");
-                var discovered = TryFindConfigIniInDirectory(appDataPyRevit);
-                var fallback = Path.Combine(appDataPyRevit, "pyRevit_config.ini");
+                var configRoot = PyRevitInstallScope.GetConfigDirectory();
+                var discovered = TryFindConfigIniInDirectory(configRoot);
+                var fallback = Path.Combine(configRoot, PyRevitInstallScope.DefaultConfigsFileName);
                 var finalPath = discovered ?? fallback;
 
                 // Ensure the file exists so Python's configparser can write to it
