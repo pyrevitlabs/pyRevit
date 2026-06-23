@@ -27,5 +27,5 @@ public record TelemetrySection
     public string? AppTelemetryServerUrl { get; set; }
 
     [KeyName("apptelemetry_event_flags")]
-    public int? AppTelemetryEventFlags { get; set; }
+    public string? AppTelemetryEventFlags { get; set; }
 }

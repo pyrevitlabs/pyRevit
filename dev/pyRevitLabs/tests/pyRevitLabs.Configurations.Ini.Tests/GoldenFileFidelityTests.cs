@@ -85,6 +85,13 @@ public class GoldenFileFidelityTests
         Assert.Equal("fallback", cfg.GetValueOrDefault<string>("core", "user_locale", "fallback"));
     }
 
+    [Fact] // Large hex telemetry flags round-trip as a string (no 32-bit overflow).
+    public void TelemetryEventFlags_LargeHex_ReadsAsString()
+    {
+        var cfg = Load("populated.ini");
+        Assert.Equal("0x4000400004003", cfg.GetValue<string>("telemetry", "apptelemetry_event_flags"));
+    }
+
     // ---- string-encoding contract ----
 
     [Fact] // GetValue<string> returns the decoded value, not the JSON-quoted raw string.

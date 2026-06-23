@@ -448,12 +448,11 @@ class PyRevitConfig(object):
     @property
     def apptelemetry_event_flags(self):
         """Telemetry event flags."""
-        flags = self.telemetry.AppTelemetryEventFlags
-        return str(hex(flags)) if flags is not None else ""
+        return self.telemetry.AppTelemetryEventFlags or ""
 
     @apptelemetry_event_flags.setter
     def apptelemetry_event_flags(self, flags):
-        self.telemetry.AppTelemetryEventFlags = int(flags, 16)
+        self.telemetry.AppTelemetryEventFlags = flags
 
     @property
     def user_can_update(self):

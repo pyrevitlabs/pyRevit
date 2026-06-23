@@ -24,6 +24,9 @@ class ConfigSection(object):
                .format(id(self), self.__section_name)
 
     def __getattr__(self, param_name):
+        if not self.has_option(param_name):
+            raise AttributeError(
+                'Parameter does not exist in config file: {}'.format(param_name))
         return self.get_option(param_name)
 
     def __setattr__(self, param_name, value):

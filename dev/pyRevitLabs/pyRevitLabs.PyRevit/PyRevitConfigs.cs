@@ -396,7 +396,7 @@ namespace pyRevitLabs.PyRevit
         public static string GetAppTelemetryFlags()
         {
             IConfigurationService cfg = GetConfigFile();
-            return cfg.Telemetry.AppTelemetryEventFlags?.ToString("X") ?? string.Empty;
+            return cfg.Telemetry.AppTelemetryEventFlags ?? string.Empty;
         }
 
         public static void SetAppTelemetryFlags(string flags,
@@ -407,7 +407,7 @@ namespace pyRevitLabs.PyRevit
             IConfigurationService cfg = GetConfigFile(revitVersion);
             cfg.SaveSection(revitVersion,
                 new TelemetrySection()
-                    {AppTelemetryEventFlags = int.Parse(flags, System.Globalization.NumberStyles.HexNumber)});
+                    {AppTelemetryEventFlags = flags});
         }
 
         // caching
