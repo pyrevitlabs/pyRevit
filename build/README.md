@@ -143,7 +143,7 @@ Non-secret defaults live in [`appsettings.json`](appsettings.json). Override via
 | `Signing__TenantId`, `Signing__ClientId`, `Signing__ClientSecret`, `Signing__Endpoint`, `Signing__SigningAccountName`, `Signing__CertificateProfileName` | Azure Trusted Signing |
 | `Publish__ChocoToken` | Chocolatey push token |
 | `Publish__WingetToken` | WinGet manifest submit token |
-| `Publish__WingetReplaceVersion` | Optional: pass to `wingetcreate submit --replace` when re-publishing an existing catalog version |
+| `Publish__WingetReplaceVersion` | Optional previous catalog version for `wingetcreate submit -r` when replacing an older entry (must differ from the version being submitted) |
 | `GITHUB_TOKEN` | GitHub API access for releases/notify |
 | `GITHUBTOKEN` | Optional: pyRevit CLI fallback to Actions artifacts for private forks (`actions:read`) |
 

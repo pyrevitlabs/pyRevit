@@ -142,7 +142,8 @@ public sealed class PublishWingetModule(IOptions<PublishOptions> publishOptions)
             string.Format("New version: {0} version {1}", packageId, installVersion),
         };
 
-        if (!string.IsNullOrWhiteSpace(options.WingetReplaceVersion))
+        if (!string.IsNullOrWhiteSpace(options.WingetReplaceVersion)
+            && !string.Equals(options.WingetReplaceVersion, installVersion, StringComparison.OrdinalIgnoreCase))
         {
             arguments.Add("-r");
             arguments.Add(options.WingetReplaceVersion);

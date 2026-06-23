@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       winget_replace_version:
-        description: Optional catalog version to replace when re-submitting (e.g. 6.5.0.26173). Leave empty for normal new-version releases.
+        description: Optional previous catalog version to replace when submitting a newer version (must differ from the version in release/version). Leave empty for normal releases and same-version resubmits.
         required: false
         default: ''
 
