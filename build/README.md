@@ -115,7 +115,7 @@ dotnet test tests/Build.Tests.csproj -c Release
 | `pack` | Restore CI-stamped metadata (if present), build Inno/MSI installers and Chocolatey package (requires `bin/`) |
 | `sign` | Sign binaries, installers, and `.nupkg` via `sign code trusted-signing` |
 | `publish` | Generate release notes, create draft GitHub release, push Chocolatey |
-| `winget` | Generate WinGet manifests, strip `elevationProhibited` from user installers, submit PRs to winget-pkgs |
+| `winget` | Generate WinGet manifests (machine-scope installers only), strip `elevationProhibited` if present, submit PRs to winget-pkgs |
 | `notify` | Comment on linked GitHub issues |
 
 Combine modes as needed, e.g. WIP pack+sign:
