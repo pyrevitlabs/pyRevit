@@ -40,7 +40,7 @@
       <Compile Include="ParserLogger.cs" />
       <Compile Include="PyRevitConfig.cs" />
       <Compile Include="ExtensionParser.cs" />
-      <Compile Include="IniFile.cs" />
+      <Compile Include="PythonListParser.cs" />
     </ItemGroup>
 
 </Project>
