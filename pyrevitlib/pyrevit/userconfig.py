@@ -931,7 +931,7 @@ if LOCAL_CONFIG_FILE:
     CONFIG_FILE = LOCAL_CONFIG_FILE
 
 # admin installer scope: machine config lives under ProgramData
-elif op.isfile(op.join(PYREVIT_ALLUSER_APP_DIR, 'install_all_users')):
+elif op.isfile(op.join(PYREVIT_ALLUSER_APP_DIR, CONSTS.InstallAllUsersMarkerFileName)):
     if not ADMIN_CONFIG_FILE:
         try:
             PyRevit.PyRevitConfigs.SetupConfig()
