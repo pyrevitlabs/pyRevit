@@ -130,6 +130,7 @@ begin
     Log('pyrevit exited with code ' + IntToStr(ResultCode) + ': ' + Params);
     Result := False;
   end;
+end;
 
 procedure RunAdminPostInstallCommands;
 begin
