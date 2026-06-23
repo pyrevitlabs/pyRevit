@@ -1,193 +1,189 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Text.RegularExpressions;
+using pyRevitLabs.Configurations;
+using pyRevitLabs.Configurations.Abstractions;
+using pyRevitLabs.Configurations.Ini;
+using pyRevitLabs.Json;
 
 namespace pyRevitExtensionParser
 {
     /// <summary>
-    /// Provides access to pyRevit configuration settings stored in an INI file.
-    /// Handles core settings like user extensions, locale, loader options, and extension-specific configurations.
+    /// Adapter over the shared pyRevit configuration service, exposing the typed
+    /// core/telemetry settings and per-extension sections the loader reads.
+    /// Backed by one process-wide instance so the loader, CLI, and Python engines
+    /// agree on the same file. Stored values are decoded tolerantly: a
+    /// JSON-encoded value is unescaped, a bare legacy value is returned as-is.
     /// </summary>
     public class PyRevitConfig
     {
-        /// <summary>
-        /// The underlying INI file handler for reading and writing configuration values.
-        /// </summary>
-        private readonly IniFile _ini;
+        private readonly IConfiguration _config;
 
         /// <summary>
-        /// Cached default-path instance. Cleared via <see cref="ClearCache"/> at the
-        /// start of each session load so that config changes made between reloads are
-        /// picked up.  Custom-path calls bypass this cache.
+        /// Cached default instance over the shared service. Cleared via
+        /// <see cref="ClearCache"/> at the start of each session load so config
+        /// changes made between reloads are picked up. Custom-path calls bypass it.
         /// </summary>
         private static volatile PyRevitConfig _defaultInstance;
         private static readonly object _cacheLock = new object();
 
         /// <summary>
-        /// Cached values for boolean conversion to avoid repeated string allocations.
-        /// </summary>
-        private const string TrueString = "true";
-        private const string FalseString = "false";
-        
-        /// <summary>
         /// Gets the full path to the configuration file.
         /// </summary>
-        public string ConfigPath { get; }
+        public string ConfigPath => _config.ConfigurationPath;
 
         /// <summary>
-        /// Gets or sets the user extensions configuration as a raw string.
-        /// This can be a single path or a Python-style list of paths.
-        /// Use <see cref="UserExtensionsList"/> for parsed list access.
+        /// Initializes a new instance over the given configuration source.
         /// </summary>
-        /// <remarks>
-        /// Returns null if the value is not set or empty.
-        /// Trailing/leading whitespace is automatically trimmed on read.
-        /// </remarks>
-        public string UserExtensions 
+        public PyRevitConfig(IConfiguration config)
         {
-            get
+            _config = config ?? throw new ArgumentNullException(nameof(config));
+        }
+
+        // ── value access ──────────────────────────────────────────────────────────
+
+        private string ReadRaw(string section, string key)
+        {
+            return _config.GetRawValueOrDefault(section, key, null);
+        }
+
+        // Decodes a stored string the way Python user_config does: a JSON-encoded
+        // value is unescaped, a bare legacy value is returned unchanged.
+        private string ReadString(string section, string key)
+        {
+            var raw = ReadRaw(section, key);
+            if (string.IsNullOrEmpty(raw))
+                return raw;
+            try
             {
-                var value = _ini.IniReadValue("core", "userextensions");
-                return string.IsNullOrEmpty(value) ? null : value.Trim();
+                return JsonConvert.DeserializeObject<string>(raw) ?? raw;
             }
-            set
+            catch
             {
-                _ini.IniWriteValue("core", "userextensions", value);
+                return raw;
             }
         }
 
+        private bool ReadBool(string section, string key, bool defaultValue)
+        {
+            return bool.TryParse(ReadRaw(section, key), out var result) ? result : defaultValue;
+        }
+
+        private int ReadInt(string section, string key, int defaultValue)
+        {
+            var raw = ReadRaw(section, key);
+            if (string.IsNullOrEmpty(raw))
+                return defaultValue;
+            return int.TryParse(raw.Trim().Trim('"'), out var result) ? result : defaultValue;
+        }
+
+        private void Write(string section, string key, string jsonValue)
+        {
+            _config.SetRawValue(section, key, jsonValue);
+            _config.SaveConfiguration();
+        }
+
+        private static string JsonString(string value)
+        {
+            return JsonConvert.SerializeObject(value ?? string.Empty);
+        }
+
+        private static string JsonBool(bool value)
+        {
+            return value ? "true" : "false";
+        }
+
+        // ── core ────────────────────────────────────────────────────────────────
+
         /// <summary>
-        /// Gets or sets the user's locale preference for pyRevit interface.
+        /// Gets or sets the user extensions configuration as a raw list string.
+        /// Use <see cref="UserExtensionsList"/> for parsed list access.
         /// </summary>
-        /// <remarks>
-        /// Expected format: language code (e.g., "en-US", "de-DE", "fr-FR").
-        /// Returns null if not configured.
-        /// </remarks>
-        /// <example>
-        /// config.UserLocale = "en-US";
-        /// </example>
+        public string UserExtensions
+        {
+            get
+            {
+                var value = ReadRaw("core", "userextensions");
+                return string.IsNullOrEmpty(value) ? null : value.Trim();
+            }
+            set { Write("core", "userextensions", value); }
+        }
+
+        /// <summary>
+        /// Gets or sets the user's locale preference (e.g. "en_us").
+        /// </summary>
         public string UserLocale
         {
             get
             {
-                var value = _ini.IniReadValue("core", "user_locale");
+                var value = ReadString("core", "user_locale");
                 if (string.IsNullOrEmpty(value))
                     return null;
 
                 var normalized = NormalizeLocaleValue(value);
                 return string.IsNullOrEmpty(normalized) ? null : normalized;
             }
-            set
-            {
-                _ini.IniWriteValue("core", "user_locale", value);
-            }
+            set { Write("core", "user_locale", JsonString(value)); }
         }
 
         /// <summary>
-        /// Gets or sets whether the new loader architecture is enabled.
+        /// Gets or sets whether the new loader architecture is enabled (default true).
         /// </summary>
-        /// <remarks>
-        /// Defaults to false if not configured or if the value cannot be parsed.
-        /// </remarks>
         public bool NewLoader
         {
-            get
-            {
-                var value = _ini.IniReadValue("core", "new_loader");
-                return bool.TryParse(value, out var result) ? result : true;
-            }
-            set
-            {
-                _ini.IniWriteValue("core", "new_loader", value ? TrueString : FalseString);
-            }
+            get { return ReadBool("core", "new_loader", true); }
+            set { Write("core", "new_loader", JsonBool(value)); }
         }
 
         /// <summary>
-        /// Gets or sets whether Rocket Mode is enabled.
+        /// Gets or sets whether Rocket Mode is enabled (default false).
         /// </summary>
-        /// <remarks>
-        /// When true, pyRevit skips non-critical startup work (e.g. icon pre-loading)
-        /// to reduce session load time. Defaults to false.
-        /// </remarks>
         public bool RocketMode
         {
-            get
-            {
-                var value = _ini.IniReadValue("core", "rocketmode");
-                return bool.TryParse(value, out var result) && result;
-            }
-            set
-            {
-                _ini.IniWriteValue("core", "rocketmode", value ? TrueString : FalseString);
-            }
+            get { return ReadBool("core", "rocketmode", false); }
+            set { Write("core", "rocketmode", JsonBool(value)); }
         }
 
         /// <summary>
-        /// Gets or sets whether to read script metadata (__title__, __author__, etc.) from Python script files.
+        /// Gets or sets whether to read script-level metadata dunders (default true).
         /// </summary>
-        /// <remarks>
-        /// When false, bundles rely solely on bundle.yaml for display metadata, which reduces startup time.
-        /// When true (default), script-level dunders are merged with bundle.yaml (bundle wins on conflict).
-        /// </remarks>
         public bool ReadScriptMetadata
         {
-            get
-            {
-                var value = _ini.IniReadValue("core", "read_script_metadata");
-                return bool.TryParse(value, out var result) ? result : true;
-            }
-            set
-            {
-                _ini.IniWriteValue("core", "read_script_metadata", value ? TrueString : FalseString);
-            }
+            get { return ReadBool("core", "read_script_metadata", true); }
+            set { Write("core", "read_script_metadata", JsonBool(value)); }
         }
 
         /// <summary>
-        /// Gets or sets whether to load beta/experimental commands.
+        /// Gets or sets whether to load beta/experimental commands (default false).
+        /// Reads <c>loadbeta</c> first, falling back to legacy <c>load_beta</c>.
         /// </summary>
-        /// <remarks>
-        /// When false (default), commands marked as beta (bundle <c>is_beta</c> or script <c>__beta__</c>) will not be loaded.
-        /// When true, beta commands will be visible in the UI.
-        /// Defaults to false if not configured or if the value cannot be parsed.
-        /// Reads <c>loadbeta</c> first (same INI key as pyRevitLabs and Python <c>user_config.load_beta</c>);
-        /// falls back to <c>load_beta</c> for older INI files written by earlier C# builds.
-        /// </remarks>
         public bool LoadBeta
         {
             get
             {
-                var value = _ini.IniReadValue("core", "loadbeta");
+                var value = ReadRaw("core", "loadbeta");
                 if (string.IsNullOrWhiteSpace(value))
-                    value = _ini.IniReadValue("core", "load_beta");
+                    value = ReadRaw("core", "load_beta");
                 return TryParseConfigBool(value, out var result) && result;
             }
             set
             {
-                _ini.IniWriteValue("core", "loadbeta", value ? TrueString : FalseString);
-                // Drop legacy key so the file does not show two competing entries.
-                _ini.IniRemoveKey("core", "load_beta");
+                _config.SetRawValue("core", "loadbeta", JsonBool(value));
+                // Drop the legacy key so the file does not carry two competing entries.
+                _config.RemoveOption("core", "load_beta");
+                _config.SaveConfiguration();
             }
         }
 
         /// <summary>
-        /// Gets or sets the logging verbosity level.
+        /// Gets the logging verbosity level (0 = Quiet, 1 = Verbose, 2 = Debug),
+        /// derived from the [core] verbose and debug keys.
         /// </summary>
-        /// <remarks>
-        /// 0 = Quiet (default), 1 = Verbose, 2 = Debug.
-        /// Derived from the [core] verbose and debug keys, matching PyRevitLogLevels in the CLI library.
-        /// Read-only; change level by setting the [core] verbose or debug INI keys.
-        /// </remarks>
         public int LoggingLevel
         {
             get
             {
-                var verbose = _ini.IniReadValue("core", "verbose");
-                var debug = _ini.IniReadValue("core", "debug");
-                bool isDebug = bool.TryParse(debug, out var d) && d;
-                bool isVerbose = bool.TryParse(verbose, out var v) && v;
-                if (isDebug) return 2;
-                if (isVerbose) return 1;
+                if (ReadBool("core", "debug", false)) return 2;
+                if (ReadBool("core", "verbose", false)) return 1;
                 return 0;
             }
         }
@@ -197,15 +193,8 @@ namespace pyRevitExtensionParser
         /// </summary>
         public bool FileLogging
         {
-            get
-            {
-                var value = _ini.IniReadValue("core", "filelogging");
-                return bool.TryParse(value, out var result) && result;
-            }
-            set
-            {
-                _ini.IniWriteValue("core", "filelogging", value ? TrueString : FalseString);
-            }
+            get { return ReadBool("core", "filelogging", false); }
+            set { Write("core", "filelogging", JsonBool(value)); }
         }
 
         /// <summary>
@@ -213,70 +202,59 @@ namespace pyRevitExtensionParser
         /// </summary>
         public bool AutoUpdate
         {
-            get
-            {
-                var value = _ini.IniReadValue("core", "autoupdate");
-                return bool.TryParse(value, out var result) && result;
-            }
-            set
-            {
-                _ini.IniWriteValue("core", "autoupdate", value ? TrueString : FalseString);
-            }
+            get { return ReadBool("core", "autoupdate", false); }
+            set { Write("core", "autoupdate", JsonBool(value)); }
         }
 
         /// <summary>
-        /// Gets or sets the path to a custom CSS stylesheet for pyRevit output windows.
+        /// Gets or sets the path to a custom CSS stylesheet for output windows.
         /// </summary>
         public string OutputStyleSheet
         {
             get
             {
-                var value = _ini.IniReadValue("core", "outputstylesheet");
+                var value = ReadString("core", "outputstylesheet");
                 return string.IsNullOrEmpty(value) ? string.Empty : value.Trim();
             }
-            set
-            {
-                _ini.IniWriteValue("core", "outputstylesheet", value ?? string.Empty);
-            }
+            set { Write("core", "outputstylesheet", JsonString(value)); }
         }
 
-        // ── Telemetry ────────────────────────────────────────────────────────────
+        /// <summary>
+        /// Gets or sets the timeout (seconds) for displaying startup log messages (default 10).
+        /// </summary>
+        public int StartupLogTimeout
+        {
+            get { return ReadInt("core", "startuplogtimeout", 10); }
+            set { Write("core", "startuplogtimeout", value.ToString()); }
+        }
+
+        /// <summary>
+        /// Gets or sets the user extensions as a parsed list of paths.
+        /// </summary>
+        public List<string> UserExtensionsList
+        {
+            get { return PythonListParser.Parse(ReadRaw("core", "userextensions")); }
+            set { Write("core", "userextensions", PythonListParser.ToPythonListString(value)); }
+        }
+
+        // ── telemetry ─────────────────────────────────────────────────────────────
 
         /// <summary>
         /// Gets or sets whether script-execution telemetry is enabled.
         /// </summary>
         public bool TelemetryState
         {
-            get
-            {
-                var value = _ini.IniReadValue("telemetry", "active");
-                return bool.TryParse(value, out var result) && result;
-            }
-            set
-            {
-                _ini.IniWriteValue("telemetry", "active", value ? TrueString : FalseString);
-            }
+            get { return ReadBool("telemetry", "active", false); }
+            set { Write("telemetry", "active", JsonBool(value)); }
         }
 
         /// <summary>
-        /// Gets or sets whether telemetry timestamps are recorded in UTC.
+        /// Gets or sets whether telemetry timestamps are recorded in UTC (default true).
         /// </summary>
         public bool TelemetryUTCTimeStamps
         {
-            get
-            {
-                var value = _ini.IniReadValue("telemetry", "utc_timestamps");
-                if (bool.TryParse(value, out var result))
-                    return result;
-
-                // Default to true when the value is missing or unparseable so that
-                // loader behavior matches CLI/user_config defaults.
-                return true;
-            }
-            set
-            {
-                _ini.IniWriteValue("telemetry", "utc_timestamps", value ? TrueString : FalseString);
-            }
+            get { return ReadBool("telemetry", "utc_timestamps", true); }
+            set { Write("telemetry", "utc_timestamps", JsonBool(value)); }
         }
 
         /// <summary>
@@ -286,13 +264,10 @@ namespace pyRevitExtensionParser
         {
             get
             {
-                var value = _ini.IniReadValue("telemetry", "telemetry_file_dir");
+                var value = ReadString("telemetry", "telemetry_file_dir");
                 return string.IsNullOrEmpty(value) ? string.Empty : value.Trim();
             }
-            set
-            {
-                _ini.IniWriteValue("telemetry", "telemetry_file_dir", value ?? string.Empty);
-            }
+            set { Write("telemetry", "telemetry_file_dir", JsonString(value)); }
         }
 
         /// <summary>
@@ -302,13 +277,10 @@ namespace pyRevitExtensionParser
         {
             get
             {
-                var value = _ini.IniReadValue("telemetry", "telemetry_server_url");
+                var value = ReadString("telemetry", "telemetry_server_url");
                 return string.IsNullOrEmpty(value) ? string.Empty : value.Trim();
             }
-            set
-            {
-                _ini.IniWriteValue("telemetry", "telemetry_server_url", value ?? string.Empty);
-            }
+            set { Write("telemetry", "telemetry_server_url", JsonString(value)); }
         }
 
         /// <summary>
@@ -316,15 +288,8 @@ namespace pyRevitExtensionParser
         /// </summary>
         public bool TelemetryIncludeHooks
         {
-            get
-            {
-                var value = _ini.IniReadValue("telemetry", "include_hooks");
-                return bool.TryParse(value, out var result) && result;
-            }
-            set
-            {
-                _ini.IniWriteValue("telemetry", "include_hooks", value ? TrueString : FalseString);
-            }
+            get { return ReadBool("telemetry", "include_hooks", false); }
+            set { Write("telemetry", "include_hooks", JsonBool(value)); }
         }
 
         /// <summary>
@@ -332,15 +297,8 @@ namespace pyRevitExtensionParser
         /// </summary>
         public bool AppTelemetryState
         {
-            get
-            {
-                var value = _ini.IniReadValue("telemetry", "active_app");
-                return bool.TryParse(value, out var result) && result;
-            }
-            set
-            {
-                _ini.IniWriteValue("telemetry", "active_app", value ? TrueString : FalseString);
-            }
+            get { return ReadBool("telemetry", "active_app", false); }
+            set { Write("telemetry", "active_app", JsonBool(value)); }
         }
 
         /// <summary>
@@ -350,13 +308,10 @@ namespace pyRevitExtensionParser
         {
             get
             {
-                var value = _ini.IniReadValue("telemetry", "apptelemetry_server_url");
+                var value = ReadString("telemetry", "apptelemetry_server_url");
                 return string.IsNullOrEmpty(value) ? string.Empty : value.Trim();
             }
-            set
-            {
-                _ini.IniWriteValue("telemetry", "apptelemetry_server_url", value ?? string.Empty);
-            }
+            set { Write("telemetry", "apptelemetry_server_url", JsonString(value)); }
         }
 
         /// <summary>
@@ -366,72 +321,81 @@ namespace pyRevitExtensionParser
         {
             get
             {
-                var value = _ini.IniReadValue("telemetry", "apptelemetry_event_flags");
+                var value = ReadString("telemetry", "apptelemetry_event_flags");
                 return string.IsNullOrEmpty(value) ? string.Empty : value.Trim();
             }
-            set
+            set { Write("telemetry", "apptelemetry_event_flags", JsonString(value)); }
+        }
+
+        // ── loading & per-extension config ────────────────────────────────────────
+
+        /// <summary>
+        /// Loads the shared pyRevit configuration, or a one-off configuration from
+        /// <paramref name="customPath"/> (used by tests). The default instance is
+        /// cached for the session; call <see cref="ClearCache"/> to force a re-read.
+        /// </summary>
+        public static PyRevitConfig Load(string customPath = null)
+        {
+            // Custom-path calls are never cached and never touch the shared service.
+            if (!string.IsNullOrEmpty(customPath))
+                return new PyRevitConfig(IniConfiguration.Create(customPath));
+
+            if (_defaultInstance != null)
+                return _defaultInstance;
+
+            lock (_cacheLock)
             {
-                _ini.IniWriteValue("telemetry", "apptelemetry_event_flags", value ?? string.Empty);
+                if (_defaultInstance != null)
+                    return _defaultInstance;
+
+                _defaultInstance = new PyRevitConfig(
+                    PyRevitConfigService.GetShared()[ConfigurationService.DefaultConfigurationName]);
+                return _defaultInstance;
             }
         }
 
         /// <summary>
-        /// Gets or sets the timeout (in seconds) for displaying startup log messages.
+        /// Clears the cached default instance and the shared service cache so the
+        /// next <see cref="Load()"/> re-reads from disk. Called at session reload
+        /// via <see cref="ExtensionParser.ClearAllCaches"/>.
         /// </summary>
-        /// <remarks>
-        /// Default value is 10 seconds if not configured or if the value cannot be parsed.
-        /// This controls how long startup diagnostic messages remain visible.
-        /// </remarks>
-        /// <value>Timeout in seconds. Must be a positive integer.</value>
-        public int StartupLogTimeout
+        public static void ClearCache()
         {
-            get
+            lock (_cacheLock)
             {
-                var value = _ini.IniReadValue("core", "startuplogtimeout");
-                return int.TryParse(value, out var result) ? result : 10;
+                _defaultInstance = null;
             }
-            set
-            {
-                _ini.IniWriteValue("core", "startuplogtimeout", value.ToString());
-            }
+            PyRevitConfigService.Reload();
         }
+
         /// <summary>
-        /// Gets or sets the user extensions as a parsed list of paths.
-        /// This property automatically converts between Python list format and C# List.
+        /// Retrieves the configuration for a specific extension by its name
+        /// (without the .extension or .lib suffix), or null if not configured.
         /// </summary>
-        /// <remarks>
-        /// <para>Returns an empty list if no extensions are configured.</para>
-        /// <para>Each path typically points to a pyRevit extension directory.</para>
-        /// <para>The underlying storage format is Python-style: ["path1", "path2"]</para>
-        /// </remarks>
-        /// <example>
-        /// <code>
-        /// config.UserExtensionsList = new List&lt;string&gt; 
-        /// { 
-        ///     @"C:\pyRevit\Extensions\MyExtension",
-        ///     @"D:\CustomExtensions\AnotherExtension"
-        /// };
-        /// </code>
-        /// </example>
-        public List<string> UserExtensionsList
+        public ExtensionConfig ParseExtensionByName(string extensionName)
         {
-            get
+            var possibleSections = new[]
             {
-                return _ini.GetPythonList("core", "userextensions");
-            }
-            set
+                $"{extensionName}.extension",
+                $"{extensionName}.lib"
+            };
+
+            foreach (var section in possibleSections)
             {
-                _ini.IniWriteValue("core", "userextensions", PythonListParser.ToPythonListString(value));
+                if (!_config.HasSection(section))
+                    continue;
+
+                return new ExtensionConfig
+                {
+                    Name = extensionName,
+                    Disabled = ReadBool(section, "disabled", false),
+                    PrivateRepo = ReadBool(section, "private_repo", false),
+                    Username = ReadString(section, "username"),
+                    Password = ReadString(section, "password")
+                };
             }
-        }
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PyRevitConfig"/> class with the specified configuration file path.
-        /// </summary>
-        /// <param name="configPath">The full path to the pyRevit configuration INI file.</param>
-        public PyRevitConfig(string configPath)
-        {
-            ConfigPath = configPath;
-            _ini = new IniFile(configPath);
+
+            return null;
         }
 
         private static string NormalizeLocaleValue(string rawValue)
@@ -449,177 +413,7 @@ namespace pyRevitExtensionParser
         }
 
         /// <summary>
-        /// Loads a pyRevit configuration from the default or specified location.
-        /// </summary>
-        /// <param name="customPath">
-        /// Optional custom path to the configuration file. 
-        /// If null, uses the same discovery as pyRevitLabs/Python: first <c>*.ini</c> under
-        /// <c>%APPDATA%\pyRevit\</c> matching the labs config filename pattern, else
-        /// <c>%APPDATA%\pyRevit\pyRevit_config.ini</c>.
-        /// </param>
-        /// <returns>A new <see cref="PyRevitConfig"/> instance for the specified configuration file.</returns>
-        /// <remarks>
-        /// When loading from the default path (i.e. <paramref name="customPath"/> is null), this method
-        /// eagerly creates an empty <c>pyRevit_config.ini</c> file (and its parent directory) if it does
-        /// not already exist, so that Python's <c>configparser</c> can save settings without manual
-        /// intervention.  The result is cached for the lifetime of the session; call
-        /// <see cref="ClearCache"/> to force a re-read on the next call.
-        /// <para>
-        /// When a <paramref name="customPath"/> is supplied (e.g. in tests), the call is never cached
-        /// and no file is created.
-        /// </para>
-        /// </remarks>
-        /// <example>
-        /// <code>
-        /// // Load from default location
-        /// var config = PyRevitConfig.Load();
-        /// 
-        /// // Load from custom location
-        /// var customConfig = PyRevitConfig.Load(@"C:\MyApp\custom_config.ini");
-        /// </code>
-        /// </example>
-        public static PyRevitConfig Load(string customPath = null)
-        {
-            // Custom-path calls (used by tests) always create a fresh instance — no caching.
-            if (!string.IsNullOrEmpty(customPath))
-                return new PyRevitConfig(customPath);
-
-            // Return cached default-path instance.
-            if (_defaultInstance != null)
-                return _defaultInstance;
-
-            lock (_cacheLock)
-            {
-                if (_defaultInstance != null)
-                    return _defaultInstance;
-
-                var appDataPyRevit = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                    "pyRevit");
-                var discovered = TryFindConfigIniInDirectory(appDataPyRevit);
-                var fallback = Path.Combine(appDataPyRevit, "pyRevit_config.ini");
-                var finalPath = discovered ?? fallback;
-
-                // Ensure the file exists so Python's configparser can write to it
-                if (!File.Exists(finalPath))
-                {
-                    Directory.CreateDirectory(Path.GetDirectoryName(finalPath));
-                    File.Create(finalPath).Dispose();
-                }
-
-                _defaultInstance = new PyRevitConfig(finalPath);
-                return _defaultInstance;
-            }
-        }
-
-        /// <summary>
-        /// Clears the cached default-path config instance so that the next
-        /// <see cref="Load()"/> call re-reads from disk.  Called at session reload
-        /// via <see cref="ExtensionParser.ClearAllCaches"/>.
-        /// </summary>
-        public static void ClearCache()
-        {
-            lock (_cacheLock)
-            {
-                _defaultInstance = null;
-            }
-        }
-
-        /// <summary>
-        /// Matches pyRevitLabs <c>ConfigsFileRegexPattern</c> (first match wins).
-        /// </summary>
-        private static string TryFindConfigIniInDirectory(string directory)
-        {
-            if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory))
-                return null;
-
-            try
-            {
-                var configMatcher = new Regex(@".*[pyrevit|config].*\.ini", RegexOptions.IgnoreCase);
-                foreach (var fullPath in Directory.GetFiles(directory, "*.ini", SearchOption.TopDirectoryOnly))
-                {
-                    if (configMatcher.IsMatch(Path.GetFileName(fullPath)))
-                        return fullPath;
-                }
-            }
-            catch
-            {
-                // ignore
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Retrieves the configuration for a specific extension by its name.
-        /// </summary>
-        /// <param name="extensionName">
-        /// The name of the extension (without the .extension or .lib suffix).
-        /// For example, use "pyRevitCore" not "pyRevitCore.extension".
-        /// </param>
-        /// <returns>
-        /// An <see cref="ExtensionConfig"/> object containing the extension's configuration,
-        /// or null if the extension is not found in the configuration.
-        /// </returns>
-        /// <remarks>
-        /// <para>This method searches for extensions in the following section name formats:</para>
-        /// <list type="bullet">
-        /// <item><description>{extensionName}.extension</description></item>
-        /// <item><description>{extensionName}.lib</description></item>
-        /// </list>
-        /// <para>The method is optimized to minimize INI file reads by checking for section existence first.</para>
-        /// </remarks>
-        /// <example>
-        /// <code>
-        /// var config = PyRevitConfig.Load();
-        /// var extConfig = config.ParseExtensionByName("pyRevitCore");
-        /// if (extConfig != null &amp;&amp; !extConfig.Disabled)
-        /// {
-        ///     // Extension is enabled
-        /// }
-        /// </code>
-        /// </example>
-        public ExtensionConfig ParseExtensionByName(string extensionName)
-        {
-            // Try both possible section names directly
-            var possibleSections = new[]
-            {
-                $"{extensionName}.extension",
-                $"{extensionName}.lib"
-            };
-
-            foreach (var section in possibleSections)
-            {
-                // Optimization: Read all values once and cache them to minimize P/Invoke calls
-                var disabledValue = _ini.IniReadValue(section, "disabled");
-                var privateRepoValue = _ini.IniReadValue(section, "private_repo");
-                var usernameValue = _ini.IniReadValue(section, "username");
-                
-                // Check if section exists by verifying any key has a value
-                if (!string.IsNullOrEmpty(disabledValue) || 
-                    !string.IsNullOrEmpty(privateRepoValue) ||
-                    !string.IsNullOrEmpty(usernameValue))
-                {
-                    // Section exists, parse all values
-                    // Read password only if section exists (one less P/Invoke call for non-existent sections)
-                    var passwordValue = _ini.IniReadValue(section, "password");
-                    
-                    return new ExtensionConfig
-                    {
-                        Name = extensionName,
-                        Disabled = bool.TryParse(disabledValue, out var disabled) && disabled,
-                        PrivateRepo = bool.TryParse(privateRepoValue, out var privateRepo) && privateRepo,
-                        Username = usernameValue,
-                        Password = passwordValue
-                    };
-                }
-            }
-
-            return null; // Return null if the extension is not found
-        }
-
-        /// <summary>
-        /// Parses booleans from INI values (matches Python/json-style and common variants).
+        /// Parses booleans from config values (json-style plus common variants).
         /// </summary>
         private static bool TryParseConfigBool(string raw, out bool result)
         {
@@ -763,7 +557,7 @@ namespace pyRevitExtensionParser
         /// When false, each execution starts fresh. Defaults to false.
         /// </remarks>
         public bool Persistent { get; set; } = false;
-        
+
         /// <summary>
         /// Gets or sets whether the script should execute on the main UI thread.
         /// </summary>
@@ -782,7 +576,7 @@ namespace pyRevitExtensionParser
         /// <para>When true for Dynamo scripts, runs on main thread with automatic execution.</para>
         /// </remarks>
         public bool? Automate { get; set; }
-        
+
         /// <summary>
         /// Gets or sets the path to a Dynamo script file (.dyn).
         /// </summary>
@@ -833,7 +627,7 @@ namespace pyRevitExtensionParser
         /// <para>Format and usage depend on Dynamo engine implementation.</para>
         /// </remarks>
         public string DynamoModelNodesInfo { get; set; }
-        
+
         /// <summary>
         /// Gets whether the engine requires execution on the main thread.
         /// </summary>
