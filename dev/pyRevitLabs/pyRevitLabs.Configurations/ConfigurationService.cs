@@ -1,4 +1,5 @@
 using System.Collections;
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using pyRevitLabs.Configurations.Abstractions;
@@ -172,10 +173,30 @@ public sealed class ConfigurationService : IConfigurationService
             string keyName = GetCustomAttribute<KeyNameAttribute>(propertyInfo)?.KeyName ?? propertyInfo.Name;
 
             object? keyValue = GetKeyValue(configurations, propertyInfo, sectionName, keyName);
-            propertyInfo.SetValue(sectionConfiguration, keyValue ?? propertyInfo.GetValue(sectionConfiguration));
+            // Apply the declared default for keys absent from every config, so a
+            // section's defaults live on the read path rather than as field
+            // initializers (which would otherwise be written back on a sparse save).
+            propertyInfo.SetValue(sectionConfiguration,
+                keyValue ?? GetPropertyDefault(propertyInfo) ?? propertyInfo.GetValue(sectionConfiguration));
         }
 
         return sectionConfiguration!;
+    }
+
+    private static object? GetPropertyDefault(PropertyInfo propertyInfo)
+    {
+        if (GetCustomAttribute<DefaultValueAttribute>(propertyInfo) is { } defaultAttr)
+            return defaultAttr.Value;
+
+        Type type = propertyInfo.PropertyType;
+        if (type.IsGenericType)
+        {
+            Type definition = type.GetGenericTypeDefinition();
+            if (definition == typeof(List<>) || definition == typeof(Dictionary<,>))
+                return Activator.CreateInstance(type);
+        }
+
+        return null;
     }
 
     private static object? GetKeyValue(

@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using pyRevitLabs.Configurations.Attributes;
 
 namespace pyRevitLabs.Configurations.Sections;
@@ -12,7 +13,8 @@ public sealed record RoutesSection
     public string? Host { get; set; }
 
     [KeyName("port")]
-    public int? Port { get; set; } = 48884;
+    [DefaultValue(48884)]
+    public int? Port { get; set; }
 
     [KeyName("core_api")]
     public bool? LoadCoreApi { get; set; }

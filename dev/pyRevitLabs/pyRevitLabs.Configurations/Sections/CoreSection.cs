@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using pyRevitLabs.Configurations.Abstractions;
 using pyRevitLabs.Configurations.Attributes;
 
@@ -26,10 +27,12 @@ public sealed record CoreSection
     public string? CloseOutputMode { get; set; }
 
     [KeyName("new_loader")]
-    public bool? NewLoader { get; set; } = true;
+    [DefaultValue(true)]
+    public bool? NewLoader { get; set; }
 
     [KeyName("read_script_metadata")]
-    public bool? ReadScriptMetadata { get; set; } = true;
+    [DefaultValue(true)]
+    public bool? ReadScriptMetadata { get; set; }
 
     [KeyName("autoupdate")]
     public bool? AutoUpdate { get; set; }
@@ -38,19 +41,24 @@ public sealed record CoreSection
     public bool? CheckUpdates { get; set; }
 
     [KeyName("usercanupdate")]
-    public bool? UserCanUpdate { get; set; } = true;
+    [DefaultValue(true)]
+    public bool? UserCanUpdate { get; set; }
 
     [KeyName("usercanextend")]
-    public bool? UserCanExtend { get; set; } = true;
+    [DefaultValue(true)]
+    public bool? UserCanExtend { get; set; }
 
     [KeyName("usercanconfig")]
-    public bool? UserCanConfig { get; set; } = true;
+    [DefaultValue(true)]
+    public bool? UserCanConfig { get; set; }
 
     [KeyName("rocketmode")]
-    public bool? RocketMode { get; set; } = true;
+    [DefaultValue(true)]
+    public bool? RocketMode { get; set; }
 
     [KeyName("user_locale")]
-    public string? UserLocale { get; set; } = "en_us";
+    [DefaultValue("en_us")]
+    public string? UserLocale { get; set; }
 
     [KeyName("debug")]
     public bool? Debug { get; set; }
@@ -62,7 +70,8 @@ public sealed record CoreSection
     public bool? FileLogging { get; set; }
 
     [KeyName("startuplogtimeout")]
-    public int? StartupLogTimeout { get; set; } = 10;
+    [DefaultValue(10)]
+    public int? StartupLogTimeout { get; set; }
 
     [KeyName("cpyengine")]
     public int? CpythonEngineVersion { get; set; }
@@ -82,6 +91,8 @@ public sealed record CoreSection
     [KeyName("outputstylesheet")]
     public string? OutputStyleSheet { get; set; }
 
+    // No initializer: an unset value stays null so a sparse-section save does not
+    // rewrite (and clobber) this key. CreateSection supplies an empty list on read.
     [KeyName("userextensions")]
-    public List<string> UserExtensions { get; set; } = new();
+    public List<string>? UserExtensions { get; set; }
 }

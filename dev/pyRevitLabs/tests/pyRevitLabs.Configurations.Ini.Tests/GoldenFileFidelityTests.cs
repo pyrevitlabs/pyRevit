@@ -143,11 +143,7 @@ public class GoldenFileFidelityTests
         }
     }
 
-    // Documents a known SaveSection defect: a sparse section POCO writes every
-    // non-null property, so saving one key overwrites siblings (here userextensions
-    // is wiped by the section's empty-list default). Un-skip once single-key saves
-    // replace the sparse-POCO save in the per-key setters.
-    [Fact(Skip = "Blocked on sparse-POCO SaveSection fix (Phase 3.2)")]
+    [Fact] // Saving one property via a sparse section POCO must not clobber sibling keys.
     public void SaveSection_SingleProperty_DoesNotClobberSiblings()
     {
         var path = TempCopy("populated.ini");
@@ -161,12 +157,51 @@ public class GoldenFileFidelityTests
 
             var reread = IniConfiguration.Create(path);
             var exts = reread.GetValue<List<string>>("core", "userextensions");
-            Assert.Equal(2, exts.Count);
+            Assert.Equal(2, exts.Count);                          // sibling list preserved
+            Assert.Equal(99, reread.GetValue<int>("core", "startuplogtimeout")); // intended write applied
         }
         finally
         {
             File.Delete(path);
         }
+    }
+
+    [Fact] // Explicitly setting a property to its own default value still persists (not skipped as "unset").
+    public void SaveSection_SetToDefaultValue_StillWrites()
+    {
+        // rocketmode default is true; start from a file that has it false.
+        var path = Path.Combine(Path.GetTempPath(), $"settodefault_{Guid.NewGuid():N}.ini");
+        File.WriteAllText(path, "[core]\nrocketmode = false\n");
+        try
+        {
+            var service = new ConfigurationBuilder(false)
+                .AddIniConfiguration(path, ConfigurationService.DefaultConfigurationName).Build();
+
+            service.SaveSection(ConfigurationService.DefaultConfigurationName,
+                new CoreSection { RocketMode = true });
+
+            var reread = IniConfiguration.Create(path);
+            Assert.True(reread.GetValue<bool>("core", "rocketmode"));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact] // Section defaults still apply on read for keys absent from the file.
+    public void Defaults_AppliedOnRead_WhenKeyAbsent()
+    {
+        var service = new ConfigurationBuilder(false)
+            .AddIniConfiguration(Path.Combine(FixtureDir, "empty.ini"),
+                ConfigurationService.DefaultConfigurationName).Build();
+
+        Assert.True(service.Core.RocketMode);          // [DefaultValue(true)]
+        Assert.Equal("en_us", service.Core.UserLocale); // [DefaultValue("en_us")]
+        Assert.Equal(10, service.Core.StartupLogTimeout); // [DefaultValue(10)]
+        Assert.Equal(48884, service.Routes.Port);       // [DefaultValue(48884)]
+        Assert.NotNull(service.Environment.Clones);     // empty-collection default
+        Assert.Empty(service.Environment.Clones!);
     }
 
     // ---- migration ----
