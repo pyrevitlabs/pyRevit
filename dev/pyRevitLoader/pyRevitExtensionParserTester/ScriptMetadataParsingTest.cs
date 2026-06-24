@@ -575,6 +575,24 @@ tooltip: Bundle Tooltip
         }
 
         [Test]
+        public void TestDefaultDisabledExtension_SkipsParseTreeWithoutConfigSection()
+        {
+            var extensionDir = Path.Combine(TestTempDir, "OptOutExt.extension");
+            var bundleDir = Path.Combine(extensionDir, "TestPanel.panel", "AnyButton.pushbutton");
+            Directory.CreateDirectory(bundleDir);
+            File.WriteAllText(Path.Combine(bundleDir, "script.py"), "__title__ = 'Should Not Load'\n");
+            File.WriteAllText(
+                Path.Combine(extensionDir, "extension.json"),
+                "{\"name\":\"OptOutExt\",\"type\":\"extension\",\"default_enabled\":\"False\"}\n");
+
+            UseTestPyRevitConfig("[core]\nread_script_metadata = true\n\n");
+
+            var extensions = ParseInstalledExtensions(extensionDir).ToList();
+            Assert.AreEqual(0, extensions.Count,
+                "default_enabled=False should skip extension when no config section exists");
+        }
+
+        [Test]
         public void TestMultilineScriptTitle_StreamingParser()
         {
             UseTestPyRevitConfig("[core]\nread_script_metadata = true\n\n");

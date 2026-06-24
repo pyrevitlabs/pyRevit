@@ -48,14 +48,14 @@ namespace pyRevitLabs.PyRevit {
                 return;
             }
 
-            logger.Debug("Saving config file \"{0}\"", PyRevitConsts.ConfigFilePath);
+            logger.Debug("Saving config file \"{0}\"", ConfigFilePath);
             try {
-                _config.Save(PyRevitConsts.ConfigFilePath);
+                _config.Save(ConfigFilePath);
             }
             catch (Exception ex)
             {
                 throw new PyRevitException(
-                    $"Failed to save config to \"{PyRevitConsts.ConfigFilePath}\". | {ex.Message}");
+                    $"Failed to save config to \"{ConfigFilePath}\". | {ex.Message}");
             }
         }
 
@@ -151,6 +151,26 @@ namespace pyRevitLabs.PyRevit {
                 logger.Debug(string.Format("Config \"{0}:{1}\" not set.", sectionName, keyName));
                 return false;
             }
+        }
+
+        public bool HasSection(string sectionName) {
+            return _config.Sections.Contains(sectionName);
+        }
+
+        public List<string> GetSectionNames() {
+            var names = new List<string>();
+            foreach (var section in _config.Sections)
+                names.Add(section.Name);
+            return names;
+        }
+
+        public List<string> GetSectionKeyNames(string sectionName) {
+            var keys = new List<string>();
+            if (!_config.Sections.Contains(sectionName))
+                return keys;
+            foreach (var key in _config.Sections[sectionName].Keys)
+                keys.Add(key.Name);
+            return keys;
         }
     }
 }

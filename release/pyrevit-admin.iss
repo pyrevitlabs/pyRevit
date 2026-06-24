@@ -82,31 +82,6 @@ Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "ClearCaches"; Parameters: "caches
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detach --all"; Flags: runhidden
 
 [Code]
-function CreateInstallAllUsersMarker: Boolean;
-var
-  ProgramDataPyRevit: String;
-  MarkerPath: String;
-begin
-  Result := False;
-  ProgramDataPyRevit := ExpandConstant('{commonappdata}\pyRevit');
-  MarkerPath := ProgramDataPyRevit + '\install_all_users';
-  if ForceDirectories(ProgramDataPyRevit) then
-  begin
-    if SaveStringToFile(MarkerPath, 'AllUsers', False) then
-    begin
-      Log('Created install_all_users marker at: ' + MarkerPath);
-      Result := True;
-    end
-    else
-      Log('Could not write install_all_users marker: ' + MarkerPath);
-  end
-  else
-  begin
-    Log('Could not create ProgramData\pyRevit for install_all_users marker');
-    MsgBox('Warning: Could not create all-users marker file. Config will use per-user scope.', mbInformation, MB_OK);
-  end;
-end;
-
 function RunPyRevitCommand(const Params: String; const AsOriginalUser: Boolean): Boolean;
 var
   ResultCode: Integer;
@@ -134,9 +109,6 @@ end;
 
 procedure RunAdminPostInstallCommands;
 begin
-  if not CreateInstallAllUsersMarker then
-    Log('Continuing post-install without all-users marker; clone registry may use per-user config.');
-
   RunPyRevitCommand('caches clear --all', True);
   RunPyRevitCommand('detach --all', True);
   if not RunPyRevitCommand('clones add this master --force', False) then
@@ -151,26 +123,14 @@ begin
       'Run the following from an elevated command prompt in the install bin folder:' + #13#10 +
       '  pyrevit attach master default --installed --allusers',
       mbError, MB_OK);
+  if not RunPyRevitCommand('configs seedshippeddefaults', False) then
+    Log('pyrevit configs seedshippeddefaults failed or was skipped');
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssPostInstall then
     RunAdminPostInstallCommands;
-end;
-
-procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
-var
-  MarkerPath: String;
-begin
-  if CurUninstallStep = usPostUninstall then
-  begin
-    MarkerPath := ExpandConstant('{commonappdata}\pyRevit\install_all_users');
-    if FileExists(MarkerPath) and DeleteFile(MarkerPath) then
-      Log('Removed install_all_users marker')
-    else if FileExists(MarkerPath) then
-      Log('Could not remove install_all_users marker: ' + MarkerPath);
-  end;
 end;
 
 function InitializeSetup: Boolean;
