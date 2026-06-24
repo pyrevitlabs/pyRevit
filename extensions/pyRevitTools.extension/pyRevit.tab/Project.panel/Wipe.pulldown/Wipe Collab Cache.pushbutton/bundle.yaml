@@ -1,5 +1,6 @@
 title:
   en_us: Wipe BIM360 Collab Cache
+  ko: BIM360 협업 캐시 삭제
   fr_fr: Supprimer le cache BIM360
   ru: Очистить кэш BIM360 Collab
   chinese_s: 清除 BIM360 协作缓存
@@ -8,6 +9,7 @@ title:
   pt_br: Remover Cache de Colaboração Bim360
 tooltip:
   en_us: Erase selected BIM360 collaboration cache
+  ko: 선택한 BIM360 협업 캐시를 지웁니다
   fr_fr: Efface le Collaboration Cache de BIM360
   ru: Очищает выбранный кэш совместной работы BIM360.
   chinese_s: 清除选定的 BIM360 协作缓存

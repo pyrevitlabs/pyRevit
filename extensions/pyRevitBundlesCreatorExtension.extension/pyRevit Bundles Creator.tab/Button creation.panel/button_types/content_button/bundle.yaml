@@ -1,5 +1,6 @@
 title:
   en_us: Content Button
+  ko: 콘텐츠 버튼
   fr_fr: Bouton de contenu
   ru: Кнопка контента
   chinese_s: 内容按钮
@@ -8,6 +9,7 @@ title:
   pt_br: Botão de Conteúdo
 tooltip:
   en_us: Content Button
+  ko: 콘텐츠 버튼
   fr_fr: Bouton de contenu
   ru: Кнопка контента
   chinese_s: 内容按钮

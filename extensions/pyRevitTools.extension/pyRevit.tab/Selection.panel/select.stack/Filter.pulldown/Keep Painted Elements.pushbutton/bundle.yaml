@@ -1,5 +1,6 @@
 title:
   en_us: Keep Painted Elements
+  ko: 페인트된 요소 유지
   fr_fr: Conserve les éléments peints
   ru: Удержать раскрашенные элементы
   chinese_s: 保留已涂刷图元
@@ -10,6 +11,7 @@ tooltip:
   en_us: >-
     Keeps elements with painted faces in current selection and filters everything else out.
     If nothing is selected, pick a region to filter from.
+  ko: 현재 선택 항목에서 페인트된 면이 있는 요소를 유지하고 나머지를 필터링합니다.
   fr_fr: >-
     Conserve les éléments avec des faces peintes dans la sélection actuelle et filtre tout le reste.
     Si rien n'est sélectionné, délimitez une zone à filtrer.

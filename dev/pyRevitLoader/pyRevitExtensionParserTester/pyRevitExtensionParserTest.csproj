@@ -66,8 +66,13 @@
     <Compile Include="HelpFileTests.cs" />
     <Compile Include="ScriptMetadataParsingTest.cs" />
     <Compile Include="VersionFilteringTests.cs" />
-    <Compile Include="EnvDictionarySeederTests.cs" />
     <Compile Include="PyRevitRootResolutionTests.cs" />
+    <Compile Include="ScriptLoggerServiceTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Condition="'$(TargetFramework)' == 'net48'" Include="..\..\pyRevitLabs.PyRevit.Runtime\2024\pyRevitLabs.PyRevit.Runtime.2024.csproj" AdditionalProperties="Configuration=Debug IPY342" />
+    <ProjectReference Condition="'$(TargetFramework)' == 'net8.0-windows'" Include="..\..\pyRevitLabs.PyRevit.Runtime\2026\pyRevitLabs.PyRevit.Runtime.2026.csproj" AdditionalProperties="Configuration=Debug IPY342" />
   </ItemGroup>
 
   <ItemGroup>

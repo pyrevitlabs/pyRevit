@@ -1,5 +1,6 @@
 title:
   en_us: Prev
+  ko: 이전
   fr_fr: Précédent
   ru: Предыдущий
   chinese_s: 上一个
@@ -13,6 +14,7 @@ tooltip:
     Click +1
 
     Shift+Click +10
+  ko: 선택 메모리에서 이전 요소를 선택합니다.
   fr_fr: >-
     Sélectionnez l'élément précédent dans la mémoire de sélection.
 

@@ -74,7 +74,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 // Use Title from bundle.yaml if available, with config script indicator if applicable
                 var splitButtonText = ButtonPostProcessor.GetButtonText(component);
                 var splitData = new SplitButtonData(component.DisplayName, splitButtonText);
-                var splitBtn = parentPanel.AddItem(splitData) as SplitButton;
+                var splitBtn = TimedAddItem(() => parentPanel.AddItem(splitData) as SplitButton);
 
                 if (splitBtn != null)
                 {
@@ -282,7 +282,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 try
                 {
                     var pushButtonData = CreatePushButtonData(sub, assemblyInfo!);
-                    var subBtn = splitBtn.AddPushButton(pushButtonData);
+                    var subBtn = TimedAddItem(() => splitBtn.AddPushButton(pushButtonData));
                     if (subBtn != null)
                     {
                         ButtonPostProcessor.Process(subBtn, sub, component, GetCompactIconMode(sub));
@@ -319,7 +319,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 try
                 {
                     var pushButtonData = CreatePushButtonData(sub, assemblyInfo!);
-                    var subBtn = splitBtn.AddPushButton(pushButtonData);
+                    var subBtn = TimedAddItem(() => splitBtn.AddPushButton(pushButtonData));
                     if (subBtn != null)
                     {
                         ButtonPostProcessor.Process(subBtn, sub, component, GetCompactIconMode(sub));
@@ -343,7 +343,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                     var subLinkData = _linkButtonBuilder.CreateLinkButtonData(sub);
                     if (subLinkData != null)
                     {
-                        var linkSubBtn = splitBtn.AddPushButton(subLinkData);
+                        var linkSubBtn = TimedAddItem(() => splitBtn.AddPushButton(subLinkData));
                         if (linkSubBtn != null)
                         {
                             ButtonPostProcessor.Process(linkSubBtn, sub, component, GetCompactIconMode(sub));

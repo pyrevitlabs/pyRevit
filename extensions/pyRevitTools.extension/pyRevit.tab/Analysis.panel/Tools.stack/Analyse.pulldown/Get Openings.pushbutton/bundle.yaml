@@ -1,5 +1,6 @@
 title:
   en_us: Get Openings
+  ko: 개구부 가져오기
   fr_fr: Obtenir les ouvertures
   ru: Получить отверстия
   chinese_s: 获取洞口
@@ -9,6 +10,7 @@ title:
 tooltip:
   en_us: |
     Scans through the project for openings. A list with clickable links will be presented. Open a 3D view to access and see the selected openings. A selection filter will be created or updated to select all openings with one click.
+  ko: 프로젝트에서 개구부를 스캔합니다. 클릭 가능한 링크가 포함된 목록이 표시됩니다. 3D 뷰를 열어 선택한 개구부를 확인할 수 있습니다. 한 번의 클릭으로 모든 개구부를 선택하는 선택 필터가 생성되거나 업데이트됩니다.
   fr_fr: |
     Examine le projet à la recherche d'ouvertures. Une liste avec des liens cliquables sera présentée. Ouvrez une vue 3D pour accéder et voir les ouvertures sélectionnées. Un filtre de sélection sera créé ou mis à jour pour sélectionner toutes les ouvertures en un seul clic.
   ru: |

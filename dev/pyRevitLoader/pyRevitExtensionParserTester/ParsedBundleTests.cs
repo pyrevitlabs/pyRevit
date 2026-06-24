@@ -275,6 +275,63 @@ context:
         }
 
         [Test]
+        public void TestContextListParsesExactRuleEntries()
+        {
+            var yamlContent = @"title:
+  en_us: Test Exact Context Rule
+context:
+  - exact:
+    - OST_Dimensions
+";
+            var tempFile = Path.GetTempFileName();
+            File.WriteAllText(tempFile, yamlContent);
+
+            try
+            {
+                var bundle = BundleParser.BundleYamlParser.Parse(tempFile);
+
+                Assert.That(bundle.ContextItems, Is.Empty);
+                Assert.That(bundle.ContextRules, Has.Count.EqualTo(1));
+
+                var exactRule = bundle.ContextRules.FirstOrDefault(r => r.RuleType == "exact");
+                Assert.That(exactRule, Is.Not.Null);
+                Assert.That(exactRule.Items, Is.EqualTo(new[] { "OST_Dimensions" }));
+                Assert.That(bundle.GetFormattedContext(), Is.EqualTo("(OST_Dimensions;)"));
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
+        [Test]
+        public void TestContextListParsesMixedScalarAndRuleEntries()
+        {
+            var yamlContent = @"title:
+  en_us: Test Mixed Context List
+context:
+  - doc-project
+  - exact:
+    - OST_Dimensions
+";
+            var tempFile = Path.GetTempFileName();
+            File.WriteAllText(tempFile, yamlContent);
+
+            try
+            {
+                var bundle = BundleParser.BundleYamlParser.Parse(tempFile);
+
+                Assert.That(bundle.ContextItems, Is.EqualTo(new[] { "doc-project" }));
+                Assert.That(bundle.ContextRules, Has.Count.EqualTo(1));
+                Assert.That(bundle.GetFormattedContext(), Is.EqualTo("(doc-project)&(OST_Dimensions;)"));
+            }
+            finally
+            {
+                File.Delete(tempFile);
+            }
+        }
+
+        [Test]
         public void TestDefaultContextWhenNotSpecified()
         {
             // Test that context is null when not specified (no availability class will be created)

@@ -1,5 +1,6 @@
 title:
   en_us: Match Value Picker
+  ko: 값 선택기 일치
   fr_fr: Sélecteur de valeur (Correspondance)
   ru: Подбор значения
   chinese_s: 匹配数值拾取器
@@ -12,7 +13,7 @@ tooltip:
     Pick a value from an element and apply it to others.
     Works like an eyedropper for parameter values.
     Requires an active "equals" filter in the current view. Without it, nothing will happen.
-
+  ko: 요소에서 값을 선택하여 다른 요소에 적용합니다.
   fr_fr: >-
     Sélectionnez une valeur sur un élément et appliquez-la aux autres.
     Fonctionne comme une pipette pour les valeurs de paramètres.

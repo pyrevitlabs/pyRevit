@@ -1,5 +1,6 @@
 title:
   en_us: Wiki
+  ko: 위키
   fr_fr: Wiki
   ru: Wiki
   chinese_s: 维基
@@ -8,6 +9,7 @@ title:
   pt_br: Wiki
 tooltip:
   en_us: Opens the wiki page
+  ko: 위키 페이지를 엽니다
   fr_fr: Ouvre la page wiki
   ru: Открывает страницу wiki.
   chinese_s: 打开 wiki 页面

@@ -22,7 +22,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\pyRevitLabs\pyRevitLabs.Common\pyRevitLabs.Common.csproj" />
+        <ProjectReference Include="..\..\pyRevitLabs\pyRevitLabs.Common\pyRevitLabs.Common.csproj"
+                          AdditionalProperties="Configuration=$(Configuration)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(TargetFramework)' == 'net48'">

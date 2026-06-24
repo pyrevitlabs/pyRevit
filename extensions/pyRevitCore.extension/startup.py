@@ -1,5 +1,8 @@
 """pyRevit core startup script"""
 #pylint: disable=import-error,unused-import,invalid-name
+from pyrevit._perf import mark as _perfmark
+_perfmark("startup.pyRevitCore:entry")
+
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.userconfig import user_config
 
@@ -11,3 +14,5 @@ mlogger = get_logger(__name__)
 if user_config.load_core_api:
     import pyrevitcore_api
     # mlogger.info("pyRevit Core Routes API is activated")
+
+_perfmark("startup.pyRevitCore:exit")

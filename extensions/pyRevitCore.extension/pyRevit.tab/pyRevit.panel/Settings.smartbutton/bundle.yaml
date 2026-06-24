@@ -1,5 +1,6 @@
 title:
   en_us: Settings
+  ko: 설정
   fr_fr: Paramètres
   ru: Настройки
   chinese_s: 设置
@@ -13,6 +14,7 @@ tooltip:
     Shift-Click:
 
     Shows config file in explorer.
+  ko: pyRevit 기본 설정 창을 표시합니다. pyRevit 로드 방식을 사용자 지정하고 기본 매개변수를 설정할 수 있습니다.
   fr_fr: >-
     Affiche la fenêtre des préférences pour pyRevit. Vous pouvez personnaliser la façon dont pyRevit charge et définir ici quelques paramètres de base.
 

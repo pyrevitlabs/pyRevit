@@ -270,6 +270,19 @@
             "builtin": "False",
             "type": "extension",
             "rocket_mode_compatible": "True",
+            "name": "Wood-Framing",
+            "description": "Wood framing automation for Autodesk Revit - walls, floors, ceilings, roofs",
+            "author": "Roi Hason @ Swich Design",
+            "author_profile": "https://www.linkedin.com/in/roi-h-0564a3114",
+            "url": "https://github.com/Swichllc/PyRevit-Wood-Framing-extension.git",
+            "website": "https://swichdesign.com/",
+            "image": "",
+            "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "type": "extension",
+            "rocket_mode_compatible": "True",
             "name": "P13",
             "description": "BIM automation tools and extensions for Revit.",
             "author": "Permpong Taweekul",
@@ -290,6 +303,19 @@
             "url": "https://github.com/Seed-43/Seed43.git",
             "website": "https://seed43.org",
             "image": "https://github.com/Seed-43/Seed43/blob/main/Seed43.png",
+            "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "type": "extension",
+            "rocket_mode_compatible": "True",
+            "name": "BMT",
+            "description": "BMT - free productivity tools for Revit by Biminent.",
+            "author": "Viktor Kuzev",
+            "author_profile": "https://biminent.com",
+            "url": "https://github.com/biminent/pyRevitExtension.git",
+            "website": "https://biminent.com",
+            "image": "",
             "dependencies": []
         }
     ]

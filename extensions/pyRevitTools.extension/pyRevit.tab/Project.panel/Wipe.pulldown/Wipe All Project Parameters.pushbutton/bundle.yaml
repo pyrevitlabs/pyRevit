@@ -1,5 +1,6 @@
 title:
   en_us: Wipe All Project Parameters
+  ko: 모든 프로젝트 매개변수 삭제
   fr_fr: Effacer tous les paramètres de projet
   ru: Очистить все параметры проекта
   chinese_s: 清除所有项目参数
@@ -8,6 +9,7 @@ title:
   pt_br: Remover Todos os Parâmetros do Projeto
 tooltip:
   en_us: Wipe All Project Parameters
+  ko: 모든 프로젝트 매개변수 삭제
   fr_fr: Effacer tous les paramètres de projet
   ru: Очищает все параметры проекта.
   chinese_s: 清除所有项目参数

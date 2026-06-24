@@ -1,5 +1,6 @@
 title:
   en_us: About
+  ko: 정보
   fr_fr: A Propos
   ru: О программе
   chinese_s: 关于
@@ -9,6 +10,7 @@ title:
 tooltip:
   en_us: >-
     About pyRevit. Opens the pyRevit blog website. You can find detailed information on how pyRevit works, updates about the new tools and changes, and a lot of other information there.
+  ko: pyRevit 정보. pyRevit 블로그 웹사이트를 엽니다. pyRevit 작동 방식에 대한 자세한 정보, 새 도구 및 변경 사항에 대한 업데이트 등 다양한 정보를 확인할 수 있습니다.
   fr_fr: >-
     À propos de pyRevit. Ouvre le site web du blog pyRevit. Vous pouvez y trouver des informations détaillées sur le fonctionnement de pyRevit, des mises à jour sur les nouveaux outils et les changements, et beaucoup d'autres informations.
   ru: >-

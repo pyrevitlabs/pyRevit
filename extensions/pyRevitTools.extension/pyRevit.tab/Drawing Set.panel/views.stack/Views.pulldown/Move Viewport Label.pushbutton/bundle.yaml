@@ -1,6 +1,7 @@
 title:
   en_us: |-
     Move Viewport Label
+  ko: 뷰포트 레이블 이동
   fr_fr: |-
     Déplacer le Titre de la Fenêtre
   ru: |-
@@ -15,6 +16,7 @@ title:
 tooltip:
   en_us: |-
     Move Viewport Label
+  ko: 뷰포트 레이블을 이동합니다.
   fr_fr: |-
     Déplacer le Titre de la Fenêtre
   ru: |-

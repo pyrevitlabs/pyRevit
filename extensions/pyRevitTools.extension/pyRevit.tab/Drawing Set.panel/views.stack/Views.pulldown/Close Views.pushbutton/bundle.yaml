@@ -1,6 +1,7 @@
 title:
   en_us: |-
     Close Tabs
+  ko: 탭 닫기
   fr_fr: |-
     Fermer les onglets
   ru: Закрыть вкладки
@@ -14,6 +15,7 @@ title:
 tooltip:
   en_us: |-
     Close everything but the selected views.
+  ko: 선택한 뷰를 제외한 모든 것을 닫습니다.
   fr_fr: |-
     Fermez tout sauf les vues sélectionnées.
   ru: |-

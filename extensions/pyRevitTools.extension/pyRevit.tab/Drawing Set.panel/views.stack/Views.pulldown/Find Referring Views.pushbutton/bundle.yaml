@@ -1,6 +1,7 @@
 title:
   en_us: |-
     Open Refererring Views
+  ko: 참조 뷰 열기
   fr_fr: |-
     Ouvrir les vues en référence
   ru: |-
@@ -15,6 +16,7 @@ title:
 tooltip:
   en_us: |-
     List all view that are referring the selected viewports or active view
+  ko: 선택한 뷰포트 또는 활성 뷰를 참조하는 모든 뷰를 나열합니다.
   fr_fr: |-
     Répertorier toutes les vues faisant référence aux fenêtres sélectionnées ou à la vue active
   ru: |-

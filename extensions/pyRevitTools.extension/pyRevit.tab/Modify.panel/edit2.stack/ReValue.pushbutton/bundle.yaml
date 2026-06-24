@@ -1,6 +1,7 @@
 help_url: '{{docpath}}-JDgiP3gK9Y'
 title:
   en_us: ReValue
+  ko: 값 변경
   fr_fr: ReValoriser
   ru: ПереЗначить
   chinese_s: 重设值
@@ -9,6 +10,7 @@ title:
   pt_br: ReValue
 tooltip:
   en_us: Reformat parameter string values (Super handy for renaming elements)
+  ko: 매개변수 문자열 값 재형식화(요소 이름 변경에 매우 유용)
   fr_fr: Reformater les valeurs textuelles des paramètres (Super pratique pour renommer des éléments)
   ru: Переформировать значение строковых параметров (очень удобно для переименования элементов).
   chinese_s: 重新格式化参数字符串值（对重命名图元超级有用）

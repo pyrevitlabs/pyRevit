@@ -52,7 +52,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
             try
             {
                 var panelBtnData = CreatePushButtonData(component, assemblyInfo);
-                var panelBtn = parentPanel.AddItem(panelBtnData) as PushButton;
+                var panelBtn = TimedAddItem(() => parentPanel.AddItem(panelBtnData) as PushButton);
 
                 if (panelBtn != null)
                 {

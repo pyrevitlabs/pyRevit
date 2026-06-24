@@ -17,8 +17,12 @@ body {
 
 </style>
 <svg width="960" height="960"></svg>
-<script src="https://unpkg.com/d3"></script>
+<script src="https://unpkg.com/d3@4.13.0/build/d3.min.js"></script>
 <script>
+if (!window.d3) {
+  document.body.insertAdjacentHTML("afterbegin", "<p>D3 failed to load.</p>");
+}
+else {
 
 var matrix = [
   [11975,  5871, 8916, 2868],
@@ -100,4 +104,5 @@ function groupTicks(d, step) {
   });
 }
 
+}
 </script>

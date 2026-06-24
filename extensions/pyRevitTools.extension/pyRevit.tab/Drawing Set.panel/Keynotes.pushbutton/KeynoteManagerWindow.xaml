@@ -405,6 +405,21 @@
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal">
+                        <Button x:Name="expandAllBtn" Style="{StaticResource ToolbarButton}" Width="28"
+                                ToolTip="Expand all" Click="expand_all_tree">
+                            <Image x:Name="expandAllIcon" Width="16" Height="16"
+                                   Stretch="Uniform" SnapsToDevicePixels="True"
+                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                        </Button>
+                        <Button x:Name="collapseAllBtn" Style="{StaticResource ToolbarButton}" Width="28"
+                                ToolTip="Collapse all" Click="collapse_all_tree">
+                            <Image x:Name="collapseAllIcon" Width="16" Height="16"
+                                   Stretch="Uniform" SnapsToDevicePixels="True"
+                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                        </Button>
+
+                        <Rectangle Style="{StaticResource ToolbarSep}"/>
+
                         <!-- Add Group / Keynote -->
                         <Button x:Name="addCategoryBtn" Style="{StaticResource ToolbarButton}"
                                 ToolTip="Add group (top-level category)" Click="add_category">

@@ -1,5 +1,6 @@
 title:
   en_us: Select All Objects Of Selected Type
+  ko: 선택한 유형의 모든 객체 선택
   fr_fr: Sélectionner tous les objets du type sélectionné
   ru: Выделить все объекты выделенного типа
   chinese_s: 选择选定类型的所有图元
@@ -17,6 +18,7 @@ tooltip:
     Shift-Click:
 
     Show Results
+  ko: 선택한 요소와 같은 유형의 모든 요소를 선택합니다.
   fr_fr: >-
     Sélectionnez tous les éléments du même type que l'élément sélectionné
 

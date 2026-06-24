@@ -1,5 +1,6 @@
 title:
   en_us: Set Crop Box Line Weight
+  ko: 자르기 영역 선 두께 설정
   fr_fr: Changer l'épaisseur de la Zone Cadrée
   ru: Установить толщину линии границы обрезки
   chinese_s: 设置裁剪框线宽
@@ -8,6 +9,7 @@ title:
   pt_br: Definir Espessura de Linha da Caixa de Recorte
 tooltip:
   en_us: Set Crop Box Line Weight for selected views and views placed on sheets
+  ko: 선택한 뷰와 시트에 배치된 뷰의 자르기 영역 선 두께를 설정합니다
   fr_fr: Changer l'épaisseur de la Zone Cadrée pour les vues sélectionnées et placées sur les feuilles
   ru: Установить толщину линии границы обрезки для выбранных видов и видов размещенных на листах.
   chinese_s: 为选定视图和放置在图纸上的视图设置裁剪框线宽

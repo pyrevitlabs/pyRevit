@@ -40,6 +40,8 @@ namespace pyRevitLabs.PyRevit
             var normalPath = repoPath.NormalizeAsPath();
             logger.Debug("Registering clone \"{0}\"", normalPath);
 
+            WarnIfBinEnginesMissing(normalPath);
+
             var clone = new PyRevitClone(repoPath, name: cloneName);
 
             var registeredClones = GetRegisteredClones();
@@ -223,7 +225,12 @@ namespace pyRevitLabs.PyRevit
                                           string destPath = null,
                                           GitInstallerCredentials credentials = null)
         {
+            if (destPath != null)
+                destPath = CommonUtils.ExpandEnvironmentPath(destPath);
+
             string repoSourcePath = repoUrl ?? PyRevitLabsConsts.OriginalRepoGitPath;
+            if (!repoSourcePath.IsValidHttpUrl())
+                repoSourcePath = CommonUtils.ExpandEnvironmentPath(repoSourcePath);
             string repoBranch = branchName != null ? branchName : PyRevitLabsConsts.TargetBranch;
             logger.Debug("Repo source determined as \"{0}:{1}\"", repoSourcePath, repoBranch);
 
@@ -264,8 +271,17 @@ namespace pyRevitLabs.PyRevit
                 try
                 {
                     PyRevitClone.VerifyCloneValidity(clonedPath);
+                    InstallBinariesForRepoClone(clonedPath, repoSourcePath, BinArtifactInstallMode.Clone);
                     logger.Debug("Clone successful \"{0}\"", clonedPath);
                     RegisterClone(cloneName, clonedPath);
+                }
+                catch (pyRevitBinArtifactNotFoundException ex)
+                {
+                    logger.Warn(
+                        "Git clone succeeded but CI binaries could not be installed at \"{0}\" | {1}",
+                        clonedPath,
+                        ex.Message);
+                    throw;
                 }
                 catch (Exception ex)
                 {
@@ -294,8 +310,15 @@ namespace pyRevitLabs.PyRevit
                                            string deploymentName = null,
                                            string branchName = null,
                                            string imagePath = null,
-                                           string destPath = null)
+                                           string destPath = null,
+                                           bool installBinaries = true,
+                                           BinArtifactInstallMode binInstallMode = BinArtifactInstallMode.Clone)
         {
+            if (destPath != null)
+                destPath = CommonUtils.ExpandEnvironmentPath(destPath);
+            if (imagePath != null)
+                imagePath = CommonUtils.ExpandEnvironmentPath(imagePath);
+
             string repoBranch = branchName != null ? branchName : PyRevitLabsConsts.TargetBranch;
             string imageSource = imagePath != null ? imagePath : GithubAPI.GetBranchArchiveUrl(PyRevitLabsConsts.OriginalRepoId, repoBranch);
             string imageFilePath = null;
@@ -329,7 +352,7 @@ namespace pyRevitLabs.PyRevit
             {
                 try
                 {
-                    var pkgDest = Path.Combine(Environment.GetEnvironmentVariable("TEMP"), Path.GetFileName(imageSource));
+                    var pkgDest = Path.Combine(CommonUtils.GetUserTempDirectory(), Path.GetFileName(imageSource));
                     logger.Info("Downloading package \"{0}\"", imageSource);
                     logger.Debug("Downloading package \"{0}\" to \"{1}\"", imageSource, pkgDest);
                     imageFilePath =
@@ -362,7 +385,7 @@ namespace pyRevitLabs.PyRevit
                     );
             }
             var stagedImage = Path.Combine(
-                Environment.GetEnvironmentVariable("TEMP"),
+                CommonUtils.GetUserTempDirectory(),
                 Path.GetFileNameWithoutExtension(imageFilePath)
                 );
 
@@ -455,13 +478,23 @@ namespace pyRevitLabs.PyRevit
                 }
 
                 // register the clone
+                if (installBinaries) {
+                    InstallBinariesForImageClone(
+                        destPath,
+                        GithubRepoHelper.ParseRepoId(imageSource),
+                        repoBranch,
+                        binInstallMode);
+                }
                 VerifyAndRegisterClone(cloneName, destPath);
 
                 logger.Info("Package deployed and registered.");
             }
             catch (PyRevitException ex)
             {
-                logger.Error("Can not find a valid clone inside extracted package. | {0}", ex.Message);
+                var errMsg = ex.Message;
+                if (errMsg != null && errMsg.IndexOf('%') >= 0)
+                    errMsg += " Path may contain unexpanded environment variables; ensure TEMP and --dest resolve to absolute paths.";
+                logger.Error("Can not find a valid clone inside extracted package. | {0}", errMsg);
             }
         }
 
@@ -575,7 +608,7 @@ namespace pyRevitLabs.PyRevit
             }
         }
 
-        private static void ReDeployClone(PyRevitClone clone, GitInstallerCredentials credentials)
+        private static void ReDeployClone(PyRevitClone clone, GitInstallerCredentials credentials, bool skipBin = false)
         {
             // grab clone arguments from inside of clone
             var cloneName = clone.Name;
@@ -592,7 +625,9 @@ namespace pyRevitLabs.PyRevit
                 deploymentName: cloneDeployArgs.DeploymentName,
                 branchName: cloneDeployArgs.BranchName,
                 imagePath: cloneDeployArgs.Url,
-                destPath: clonePath
+                destPath: clonePath,
+                installBinaries: !skipBin,
+                binInstallMode: BinArtifactInstallMode.Update
                 );
         }
 
@@ -623,7 +658,7 @@ namespace pyRevitLabs.PyRevit
 
         // force update given or all registered clones
         // @handled @logs
-        public static void Update(PyRevitClone clone, GitInstallerCredentials credentials)
+        public static void Update(PyRevitClone clone, GitInstallerCredentials credentials, bool skipBin = false)
         {
             // current user config
             logger.Debug("Updating pyRevit clone \"{0}\"", clone.Name);
@@ -632,21 +667,81 @@ namespace pyRevitLabs.PyRevit
                 var res = GitInstaller.ForcedUpdate(clone.ClonePath, credentials);
                 if (res <= UpdateStatus.Conflicts)
                     throw new PyRevitException(string.Format("Error updating clone \"{0}\"", clone.Name));
+
+                if (!skipBin)
+                    InstallBinariesForRepoClone(
+                        clone.ClonePath,
+                        clone.Origin,
+                        BinArtifactInstallMode.Update);
             }
             else
             {
                 // re-deploying is how the no-git clones get updated
-                ReDeployClone(clone, credentials);
+                ReDeployClone(clone, credentials, skipBin: skipBin);
             }
         }
 
         // force update given or all registered clones
         // @handled @logs
-        public static void UpdateAllClones(GitInstallerCredentials credentials)
+        public static void UpdateAllClones(GitInstallerCredentials credentials, bool skipBin = false)
         {
             logger.Debug("Updating all pyRevit clones");
             foreach (var clone in GetRegisteredClones())
-                Update(clone, credentials);
+                Update(clone, credentials, skipBin: skipBin);
+        }
+
+        private static void InstallBinariesForRepoClone(
+            string clonePath,
+            string repoUrl,
+            BinArtifactInstallMode mode) {
+            try {
+                BinArtifactInstaller.InstallForRepoClone(clonePath, repoUrl, mode);
+            }
+            catch (pyRevitMissingGithubTokenException) {
+                throw;
+            }
+            catch (pyRevitBinArtifactNotFoundException) {
+                throw;
+            }
+            catch (Exception ex) {
+                throw new PyRevitException(
+                    string.Format("Error installing CI binaries for clone \"{0}\" | {1}", clonePath, ex.Message),
+                    ex);
+            }
+        }
+
+        private static void InstallBinariesForImageClone(
+            string clonePath,
+            string repoId,
+            string branchName,
+            BinArtifactInstallMode mode) {
+            try {
+                BinArtifactInstaller.InstallForImageClone(clonePath, repoId, branchName, mode);
+            }
+            catch (pyRevitMissingGithubTokenException) {
+                throw;
+            }
+            catch (pyRevitBinArtifactNotFoundException) {
+                throw;
+            }
+            catch (Exception ex) {
+                throw new PyRevitException(
+                    string.Format("Error installing CI binaries for clone \"{0}\" | {1}", clonePath, ex.Message),
+                    ex);
+            }
+        }
+
+        private static void WarnIfBinEnginesMissing(string clonePath) {
+            var netfxEngines = Path.Combine(clonePath, "bin", "netfx", "engines");
+            var netcoreEngines = Path.Combine(clonePath, "bin", "netcore", "engines");
+            if (CommonUtils.VerifyPath(netfxEngines) || CommonUtils.VerifyPath(netcoreEngines))
+                return;
+
+            logger.Warn(
+                "Clone at \"{0}\" does not contain built binaries under bin/*/engines. "
+                + "Run \"dotnet run -- ci\" in the repository root, "
+                + "or install with \"pyrevit clone\" to download pre-built binaries from CI.",
+                clonePath);
         }
 
         // updates the config value for registered clones
@@ -658,6 +753,7 @@ namespace pyRevitLabs.PyRevit
                 PyRevitConsts.EnvConfigsSectionName,
                 PyRevitConsts.EnvConfigsInstalledClonesKey,
                 newValueDic);
+            PyRevitAttachments.ClearAttachmentCache();
         }
     }
 }

@@ -21,7 +21,7 @@ Usage:
 	pyrevit clones commit <clone_name> [<commit_hash>] [--log=<log_file>]
 	pyrevit clones origin <clone_name> --reset [--log=<log_file>]
 	pyrevit clones origin <clone_name> [<origin_url>] [--log=<log_file>]
-	pyrevit clones update (--all | <clone_name>) [--log=<log_file>] [(--username=<username> --password=<password> | --token=<auth_token>)]
+	pyrevit clones update (--all | <clone_name>) [--skip-bin] [--log=<log_file>] [(--username=<username> --password=<password> | --token=<auth_token>)]
 	pyrevit clones deployments <clone_name>
 	pyrevit clones engines <clone_name>
 	pyrevit attach (-h | --help)
@@ -102,6 +102,7 @@ Usage:
 	pyrevit configs apptelemetry server [<server_path>] [--log=<log_file>]
 	pyrevit configs outputcss [<css_path>] [--log=<log_file>]
 	pyrevit configs seed [--lock] [--log=<log_file>]
+	pyrevit configs seedshippeddefaults [--log=<log_file>]
 	pyrevit configs <option_path> [(enable | disable)] [--log=<log_file>]
 	pyrevit configs <option_path> [<option_value>] [--log=<log_file>]
     pyrevit doctor (-h | --help)

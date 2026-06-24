@@ -1,5 +1,6 @@
 title:
   en_us: Wipe Family Parameters
+  ko: 패밀리 매개변수 삭제
   fr_fr: Supprimer les paramètres des familles
   ru: Стереть параметры семейства
   chinese_s: 清除族参数
@@ -13,6 +14,7 @@ tooltip:
     in dimensions as labels and also resets the value for the other
 
     parameters to zero or null
+  ko: 사용되지 않은 모든 사용자 정의 매개변수를 제거합니다.
   fr_fr: >-
     Ce script supprime tous les paramètres personnalisés qui n'ont pas été utilisés
 

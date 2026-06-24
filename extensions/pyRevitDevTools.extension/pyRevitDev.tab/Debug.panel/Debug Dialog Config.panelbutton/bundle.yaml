@@ -5,6 +5,7 @@ title:
   es_es: Configuración del panel
   fr_fr: Configuration du Panneau
   en_us: Panel Configuration
+  ko: 패널 구성
   chinese_s: 面板配置
 help_url: https://www.youtube.com/channel/UC-0THIvKRd6n7T2a5aKYaGg
 author: Test User
@@ -16,4 +17,5 @@ tooltips:
   es_es: Configurar opciones de visualización del panel y ajustes de depuración
   fr_fr: Configurer les options d'affichage du panneau et les paramtres de débogage
   en_us: Configure panel display options and debug settings
+  ko: 패널 표시 옵션 및 디버그 설정을 구성합니다
   chinese_s: 配置面板显示选项和调试设置

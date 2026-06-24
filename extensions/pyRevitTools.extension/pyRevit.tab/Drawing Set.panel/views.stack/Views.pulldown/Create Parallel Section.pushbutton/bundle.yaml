@@ -9,6 +9,7 @@ title:
   es_es: Crear sección paralela
   fr_fr: Créer une coupe parallèle
   en_us: Create Parallel Section
+  ko: 평행 단면 생성
   chinese_s: 创建平行剖面
 tooltip:
   de_de: Es wird ein paralleler Schnitt zu der aktuell ausgewählten Element erstellt (z.B. Wand)
@@ -17,4 +18,5 @@ tooltip:
   es_es: Crear sección paralela al plano de las paredes seleccionadas o elemento planar
   fr_fr: Créer une coupe parallèle au plan des murs ou de l'élément planaire sélectionné
   en_us: Create section parallel to the plane of selected walls or planar element
+  ko: 선택한 벽 또는 평면 요소의 평면에 평행한 단면을 생성합니다
   chinese_s: 创建与选定墙或平面图元平面平行的剖面

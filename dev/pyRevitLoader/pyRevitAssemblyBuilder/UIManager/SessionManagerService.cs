@@ -120,10 +120,22 @@ namespace pyRevitAssemblyBuilder.SessionManager
             SeedEnvironmentDictionary();
             _logger.Debug($"[PERF] SeedEnvironmentDictionary: {stepStopwatch.ElapsedMilliseconds}ms");
 
-            // Get all library extensions first - they need to be available to all UI extensions
+            // Get all library extensions first - they need to be available to all UI extensions.
+            // First call also populates the shared ParseInstalledExtensions cache used by the
+            // later GetInstalledUIExtensions() call, so this Stopwatch is really measuring the
+            // full filesystem walk + bundle.yaml parse, not the lib-only filter. Hence the
+            // [PERF] label below is "ParseAllExtensions" rather than "GetLibraryExtensions".
             stepStopwatch.Restart();
             var libraryExtensions = _extensionManager?.GetInstalledLibraryExtensions()?.ToList() ?? new List<ParsedExtension>();
-            _logger.Debug($"[PERF] GetLibraryExtensions: {stepStopwatch.ElapsedMilliseconds}ms");
+            var parseElapsed = stepStopwatch.ElapsedMilliseconds;
+            var parseStats = ExtensionParser.ResetAndGetParseStats();
+            var uiParseCount = parseStats.Count(p => p.Kind == "ui");
+            var libParseCount = parseStats.Count(p => p.Kind == "lib");
+            _logger.Debug($"[PERF] ParseAllExtensions: {parseElapsed}ms ({uiParseCount} ui, {libParseCount} lib)");
+            foreach (var (name, _, elapsedMs) in parseStats.OrderByDescending(p => p.ElapsedMs))
+            {
+                _logger.Debug($"[PERF]   parse '{name}': {elapsedMs}ms");
+            }
 
             // Pre-compute library extension lib paths once to avoid N*lib_count Directory.Exists checks
             // in BuildSearchPaths() for each UI extension. Optimization for #3268.
@@ -231,6 +243,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     stepStopwatch.Restart();
                     _uiManager?.BuildUI(ext, assmInfo);
                     _logger.Debug($"[PERF] {ext.Name} - BuildUI: {stepStopwatch.ElapsedMilliseconds}ms");
+                    _uiManager?.EmitBuildUIPerfLines(ext.Name);
                     _logger.Info($"UI created for extension: {ext.Name}");
                 }
                 catch (Exception ex)
@@ -469,6 +482,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             SetMemberValue(_scriptDataType, scriptData, "CommandName", $"Starting {extension.Name}");
             SetMemberValue(_scriptDataType, scriptData, "CommandBundle", string.Empty);
             SetMemberValue(_scriptDataType, scriptData, "CommandExtension", extension.Name);
+            SetMemberValue(_scriptDataType, scriptData, "IsStartupScript", true);
             SetMemberValue(_scriptDataType, scriptData, "HelpSource", string.Empty);
             return scriptData;
         }

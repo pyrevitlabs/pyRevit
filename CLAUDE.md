@@ -8,7 +8,7 @@ pyRevit is a Rapid Application Development (RAD) environment for Autodesk Revit.
 
 ## Repository Structure
 
-- `bin/` - Pre-built binaries (DLLs) and Python engines (IPY2712PR, IPY342, CPY3123)
+- `bin/` - Generated product binaries (DLLs, engines, CLI). Built locally via `dotnet run -- ci` or downloaded anonymously from public CI Release assets by `pyrevit clone`. Not tracked in git. Static sources: `release/bin-assets/`, `release/cengines/`, `release/pyrevit-hosts.json`.
 - `dev/` - C# source code, build scripts, and solution files
 - `docs/` - Documentation source for the website (mkdocs)
 - `extensions/` - pyRevit extensions (tools visible in Revit ribbon)
@@ -22,7 +22,7 @@ pyRevit is a Rapid Application Development (RAD) environment for Autodesk Revit.
 
 - **Python**: IronPython 2.7.12 (default), CPython 3.12.3, IronPython 3.4.0
 - **C#**: .NET Framework 4.8 (Revit 2017-2024), .NET 8.0 (Revit 2025+)
-- **Go**: Telemetry server (`dev/pyRevitTelemetryServer/`)
+- **Go**: pyRevit autocomplete application (`dev/pyRevitLabs/pyRevitCLIAutoComplete`)
 - **Build Tools**: Visual Studio 2022, pipenv, MSBuild, Inno Setup
 
 ## Build Commands
@@ -40,7 +40,6 @@ pipenv run pyrevit build products Debug  # Build in Debug mode
 pipenv run pyrevit build labs         # Build main project only
 pipenv run pyrevit build engines      # Build Python engines
 pipenv run pyrevit build installers   # Create Inno Setup installers
-pipenv run pyrevit build telem        # Build telemetry server
 
 # Cleaning
 pipenv run pyrevit clean labs         # Clean build artifacts
@@ -62,14 +61,6 @@ pipenv run check-docstrings           # Lint docstrings with ruff
 ```
 
 ## Testing
-
-```bash
-# Test telemetry server (requires Docker)
-pipenv run pyrevit test telem
-
-# Python unit tests are in pyrevitlib/pyrevit/unittests/
-# C# unit tests are in dev/pyRevitLabs/pyRevitLabs.UnitTests/
-```
 
 To test in Revit:
 ```bash

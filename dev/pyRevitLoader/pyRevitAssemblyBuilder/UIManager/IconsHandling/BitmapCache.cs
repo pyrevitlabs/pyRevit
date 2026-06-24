@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Threading;
 using System.Windows.Media.Imaging;
 
 namespace pyRevitAssemblyBuilder.UIManager.Icons
@@ -13,6 +14,9 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
         // Key format: "filepath|size"
         private readonly ConcurrentDictionary<string, BitmapSource> _cache = new ConcurrentDictionary<string, BitmapSource>();
 
+        private int _hits;
+        private int _misses;
+
         /// <summary>
         /// Tries to get a cached bitmap for the given path and size.
         /// </summary>
@@ -23,7 +27,26 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
         public bool TryGet(string imagePath, int targetSize, out BitmapSource bitmap)
         {
             var key = BuildKey(imagePath, targetSize);
-            return _cache.TryGetValue(key, out bitmap);
+            if (_cache.TryGetValue(key, out bitmap))
+            {
+                Interlocked.Increment(ref _hits);
+                return true;
+            }
+
+            Interlocked.Increment(ref _misses);
+            return false;
+        }
+
+        /// <summary>
+        /// Returns the accumulated (hits, misses) counters since the last reset and clears them.
+        /// Used by per-extension instrumentation to attribute cache behaviour to a single
+        /// <c>BuildUI</c> window.
+        /// </summary>
+        public (int Hits, int Misses) ResetAndGetStats()
+        {
+            var hits = Interlocked.Exchange(ref _hits, 0);
+            var misses = Interlocked.Exchange(ref _misses, 0);
+            return (hits, misses);
         }
 
         /// <summary>

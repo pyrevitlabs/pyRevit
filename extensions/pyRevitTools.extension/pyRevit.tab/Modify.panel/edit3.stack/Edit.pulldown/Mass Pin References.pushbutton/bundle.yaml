@@ -1,5 +1,6 @@
 title:
   en_us: Mass Pin/Unpin References
+  ko: 참조 일괄 고정/고정 해제
   fr_fr: Épinglage/Désépinglage massif des références
   ru: Массовое закрепление/открепление ссылок
   chinese_s: 批量锁定/解锁参照
@@ -12,6 +13,7 @@ tooltip:
 
     Shift-Click:
     Unpins all pinned instances in the selected categories.
+  ko: "하나 이상의 카테고리(예: 그리드, 레벨, 링크)를 선택하여 모델의 모든 고정되지 않은 인스턴스를 고정합니다. Shift+클릭: 선택한 카테고리의 모든 고정된 인스턴스의 고정을 해제합니다."
   fr_fr: |
     Permet de sélectionner une ou plusieurs catégories (ex : grilles, niveaux, liens) et d’épingler toutes les instances non épinglées dans le modèle.
 

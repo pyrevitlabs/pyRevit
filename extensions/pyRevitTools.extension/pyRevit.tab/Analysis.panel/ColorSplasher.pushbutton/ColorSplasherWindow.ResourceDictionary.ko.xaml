@@ -1,0 +1,100 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <!-- Window Title -->
+    <system:String x:Key="ColorSplasher.Title">매개변수 값으로 요소 색상 지정</system:String>
+
+    <!-- Section Labels -->
+    <system:String x:Key="ColorSplasher.Labels.CategorySelection">카테고리 선택</system:String>
+    <system:String x:Key="ColorSplasher.Labels.ParameterSelection">매개변수 선택</system:String>
+    <system:String x:Key="ColorSplasher.Labels.ValuesColorAssignment">값 색상 할당</system:String>
+    <system:String x:Key="ColorSplasher.Labels.ManageSchemes">구성표 관리</system:String>
+    <system:String x:Key="ColorSplasher.Labels.GenerateColors">색상 생성</system:String>
+    <system:String x:Key="ColorSplasher.Labels.ApplySettings">설정 적용</system:String>
+
+    <!-- Buttons -->
+    <system:String x:Key="ColorSplasher.Buttons.SaveLoadScheme">색상 구성표 저장 / 불러오기</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.GradientColors">그라디언트 색상</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.RandomColors">무작위 색상</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.SetColors">색상 설정</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.Reset">초기화</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.CreateLegend">범례 생성</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.CreateViewFilters">뷰 필터 생성</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.SelectAll">모두 선택</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.SelectNone">선택 해제</system:String>
+
+    <!-- Checkboxes -->
+    <system:String x:Key="ColorSplasher.Checkboxes.ApplyLineColor">선 색상 적용</system:String>
+    <system:String x:Key="ColorSplasher.Checkboxes.ApplyForegroundPattern">전경 패턴 색상 적용</system:String>
+    <system:String x:Key="ColorSplasher.Checkboxes.ApplyBackgroundPattern">배경 패턴 색상 적용</system:String>
+    <system:String x:Key="ColorSplasher.Checkboxes.ApplyBackgroundPattern.RequiresRevit2019">배경 패턴 색상 적용 (Revit 2019 이상 필요)</system:String>
+
+    <!-- Tooltips -->
+    <system:String x:Key="ColorSplasher.Tooltips.CategorySelection">색상을 지정할 카테고리를 선택하세요.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.ParameterSelection">해당 값을 기준으로 요소에 색상을 지정할 매개변수를 선택하세요.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.ValuesColorAssignment">값을 클릭하여 색상을 재할당하세요.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.SaveLoadScheme">현재 색상 구성표를 저장하거나 기존 구성표를 불러오세요.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.GradientColors">첫 번째와 마지막 값의 색상을 기준으로 모든 값에 그라디언트 색상을 재할당합니다.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.RandomColors">모든 값에 새로운 무작위 색상을 재할당합니다.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.SetColors">뷰에서 요소별 색상을 교체합니다.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.Reset">Revit 뷰의 색상을 초기 상태로 되돌립니다.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.CreateLegend">모든 값과 색상에 대한 새 범례 뷰를 생성합니다.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.CreateViewFilters">모든 값과 색상에 대한 뷰 필터 및 규칙을 생성합니다.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.ApplyLineColor">활성화 시 투영 선 색상에 색상을 적용합니다.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.ApplyForegroundPattern">활성화 시 표면 및 절단 전경 패턴 색상에 색상을 적용합니다.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.ApplyBackgroundPattern">활성화 시 표면 및 절단 배경 패턴 색상에 색상을 적용합니다. Revit 2019 이상 필요.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.SearchParameters">입력하여 매개변수를 검색 및 필터링합니다.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.SelectAll">모든 매개변수 값에서 모든 요소를 선택합니다.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.SelectNone">Revit의 현재 선택을 지웁니다.</system:String>
+
+    <!-- Messages -->
+    <system:String x:Key="ColorSplasher.Messages.SelectCategoryHere">여기서 카테고리를 선택하세요!</system:String>
+    <system:String x:Key="ColorSplasher.Messages.SelectCategory">카테고리 선택</system:String>
+    <system:String x:Key="ColorSplasher.Messages.SelectParameter">매개변수 선택</system:String>
+    <system:String x:Key="ColorSplasher.Messages.SpacesColorScheme">*공간에는 뷰에서 색상 구성표가 필요할 수 있습니다.</system:String>
+    <system:String x:Key="ColorSplasher.Messages.NoCategorySelected">색상을 초기화하려면 카테고리를 선택하세요.</system:String>
+    <system:String x:Key="ColorSplasher.Messages.NoLegendView">새 범례를 생성하려면 범례 뷰가 하나 이상 있어야 합니다. 범례 뷰를 먼저 생성하세요.</system:String>
+    <system:String x:Key="ColorSplasher.Messages.NoItemsForLegend">범례를 생성할 항목이 없습니다. 카테고리와 값이 있는 매개변수를 선택하세요.</system:String>
+    <system:String x:Key="ColorSplasher.Messages.LegendCreated">범례가 성공적으로 생성되었습니다: {0}</system:String>
+    <system:String x:Key="ColorSplasher.Messages.LegendFailed">범례 생성에 실패했습니다: {0}</system:String>
+    <system:String x:Key="ColorSplasher.Messages.FilterNotSupported">이 유형의 매개변수에 대한 필터 생성은 지원되지 않습니다.</system:String>
+    <system:String x:Key="ColorSplasher.Messages.FilterCreationFailed">뷰 필터가 생성되지 않았습니다. 선택한 매개변수가 Revit에 노출되지 않아 규칙을 생성할 수 없습니다.</system:String>
+    <system:String x:Key="ColorSplasher.Messages.ViewTypeNotSupported">{0} 뷰에서는 가시성 설정을 변경할 수 없습니다. 현재 뷰를 변경하세요.</system:String>
+    <system:String x:Key="ColorSplasher.Messages.UnableToAccessDocument">Revit 문서에 액세스할 수 없습니다</system:String>
+    <system:String x:Key="ColorSplasher.Messages.UnableToAccessDocument.Content">Revit 프로젝트가 열려 있는지 확인하고 다시 시도하세요.</system:String>
+
+    <!-- Placeholders -->
+    <system:String x:Key="ColorSplasher.Placeholders.SearchParameters">매개변수 검색...</system:String>
+    <system:String x:Key="ColorSplasher.Placeholders.SelectCategoryAndParameter">카테고리와 매개변수를 선택하면 매개변수 값이 표시됩니다</system:String>
+    <system:String x:Key="ColorSplasher.Messages.ShiftClickToSelect">Shift+클릭으로 요소를 선택합니다</system:String>
+
+    <!-- Save/Load Dialog -->
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.Title">색상 구성표 저장 / 불러오기</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.IfLoading">색상 구성표 불러오기 시:</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.LoadByValue">매개변수 값으로 불러오기.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.LoadByValue.Tooltip">불러오기 전용. 저장 시 항목의 값을 기준으로 색상 구성표를 불러옵니다.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.LoadByPosition">창의 위치로 불러오기.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.LoadByPosition.Tooltip">불러오기 전용. 저장 시 항목의 위치를 기준으로 색상 구성표를 불러옵니다.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.SaveButton">색상 구성표 저장</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.LoadButton">색상 구성표 불러오기</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.IfLoading.Tooltip">불러오기 전용.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.SaveTitle">색상 구성표 저장 경로 지정</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.LoadTitle">색상 구성표 불러오기 경로 지정</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.NoColorsDetected">색상이 감지되지 않음</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.NoColorsDetected.Message">기본 창의 값 목록이 비어 있습니다. 카테고리와 매개변수를 선택하여 색상이 있는 항목을 추가하세요.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.NoValuesDetected">값이 감지되지 않음</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.NoValuesDetected.Message">기본 창의 값 목록이 비어 있습니다. 카테고리와 매개변수를 선택하여 색상을 적용할 항목을 추가하세요.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.ErrorSaving">구성표 저장 오류</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.ErrorLoading">구성표 불러오기 오류</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.FileDoesNotExist">파일이 존재하지 않습니다.</system:String>
+
+    <!-- TaskDialog Titles -->
+    <system:String x:Key="ColorSplasher.TaskDialog.Title">매개변수로 요소 색상 지정</system:String>
+    <system:String x:Key="ColorSplasher.TaskDialog.Error">Color Splasher 오류</system:String>
+
+    <!-- Legend Name Prefix -->
+    <system:String x:Key="ColorSplasher.LegendNamePrefix">Color Splasher - </system:String>
+
+</ResourceDictionary>

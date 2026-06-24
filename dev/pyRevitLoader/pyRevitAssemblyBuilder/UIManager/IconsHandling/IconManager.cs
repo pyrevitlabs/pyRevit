@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media;
@@ -21,6 +23,10 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
         private readonly ILogger _logger;
         private readonly RevitThemeDetector _themeDetector;
         private readonly BitmapCache _cache;
+
+        // Accumulated time spent decoding cache misses (BitmapImage + EnsureProperDpi),
+        // summed across every LoadBitmapSource call since the last reset.
+        private long _decodeMs;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IconManager"/> class.
@@ -240,6 +246,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
             if (_cache.TryGet(imagePath, targetSize, out var cachedBitmap))
                 return cachedBitmap;
 
+            var sw = Stopwatch.StartNew();
             try
             {
                 var bitmap = new BitmapImage();
@@ -271,6 +278,22 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
                 _logger.Debug($"Failed to load bitmap source from '{imagePath}'. Exception: {ex.Message}");
                 return null;
             }
+            finally
+            {
+                Interlocked.Add(ref _decodeMs, sw.ElapsedMilliseconds);
+            }
+        }
+
+        /// <summary>
+        /// Returns the cache hit/miss counts and accumulated decode time since the last call,
+        /// then resets both to zero. Used by per-extension instrumentation to attribute icon
+        /// work to a single <c>BuildUI</c> window.
+        /// </summary>
+        public (int CacheHits, int CacheMisses, long DecodeMs) ResetAndGetStats()
+        {
+            var cache = _cache.ResetAndGetStats();
+            var decode = Interlocked.Exchange(ref _decodeMs, 0);
+            return (cache.Hits, cache.Misses, decode);
         }
 
         /// <inheritdoc/>

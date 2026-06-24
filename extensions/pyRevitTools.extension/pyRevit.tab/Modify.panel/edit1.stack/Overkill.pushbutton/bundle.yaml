@@ -1,5 +1,6 @@
 title:
   en_us: Overkill
+  ko: 중복선 삭제
   fr_fr: Overkill
   ru: Подчистить
   chinese_s: 删除重叠线
@@ -8,6 +9,7 @@ title:
   pt_br: Overkill
 tooltip:
   en_us: Deletes the lines overlapped by other lines (similar to AutoCAD Overkill)
+  ko: 다른 선과 겹치는 선을 삭제합니다(AutoCAD Overkill과 유사)
   fr_fr: Efface les lignes qui se superposent avec d'autres lignes (Similaire à la fonction Overkill dans Autocad)
   ru: Удаляет линии, перекрывающиеся другими линиями (аналогично AutoCAD Подчистить).
   chinese_s: 删除被其他线重叠的线（功能类似于 AutoCAD 的 Overkill 命令）

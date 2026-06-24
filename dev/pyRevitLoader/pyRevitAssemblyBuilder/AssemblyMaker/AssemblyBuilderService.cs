@@ -389,9 +389,18 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             return BitConverter.ToString(hash).Replace("-", string.Empty).ToLowerInvariant();
         }
 
-        // Perf fix for #3268 issue #7: The executing assembly never changes during a
-        // Revit session — cache the fingerprint once as a static readonly instead of
-        // re-reading file metadata and assembly version on every extension build.
+        // Cache invalidation must trigger when the loader's command-type generation can
+        // change between pyRevit versions, but not on every rebuild/redeploy. Key it on the
+        // loader's semantic version only: previously this also mixed in the DLL file write
+        // time, which changed on every loader rebuild/update and forced every extension to
+        // recompile on each load. Computed once per session.
+        //
+        // Developer caveat: if you change code-generation logic without bumping the
+        // assembly version, the cache will serve the previously built DLLs. To force
+        // a rebuild during generator development, delete
+        // %APPDATA%/pyRevit/{revitVersion}/pyRevit_*.dll (the existing
+        // cleanup_assembly_files also clears unloaded ones on the next single-instance
+        // shutdown).
         private static readonly string _assemblyBuildFingerprint = ComputeAssemblyBuildFingerprint();
 
         private static string GetAssemblyBuildFingerprint() => _assemblyBuildFingerprint;
@@ -400,12 +409,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         {
             try
             {
-                var asmPath = _executingAssemblyLocation;
-                var writeTime = File.Exists(asmPath)
-                    ? File.GetLastWriteTimeUtc(asmPath).Ticks.ToString()
-                    : "0";
-                var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0";
-                return string.Join("-", version, writeTime);
+                return Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0";
             }
             catch
             {

@@ -1,5 +1,7 @@
 #nullable enable
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Autodesk.Revit.UI;
 using pyRevitAssemblyBuilder.AssemblyMaker;
@@ -25,6 +27,7 @@ namespace pyRevitAssemblyBuilder.UIManager
         private readonly IStackBuilder _stackBuilder;
         private readonly IComboBoxBuilder _comboBoxBuilder;
         private readonly IUIRibbonScanner? _ribbonScanner;
+        private readonly SmartButtonScriptInitializer? _smartButtonScriptInitializer;
         private readonly UIApplication _uiApp;
         private readonly BuildContext _buildContext;
         private ParsedExtension? _currentExtension;
@@ -34,6 +37,46 @@ namespace pyRevitAssemblyBuilder.UIManager
         /// When true, non-critical startup work (e.g. icon pre-loading) is skipped to reduce load time.
         /// </summary>
         private bool _rocketMode;
+
+        /// <summary>
+        /// Per-type aggregated time spent at the top level of the current extension
+        /// (direct children of <c>extension.Children</c>). Populated during <see cref="BuildUI"/>
+        /// and read back by <see cref="EmitBuildUIPerfLines"/>.
+        /// </summary>
+        private readonly Dictionary<CommandComponentType, long> _topLevelMs = new Dictionary<CommandComponentType, long>();
+        private readonly Dictionary<CommandComponentType, int> _topLevelCount = new Dictionary<CommandComponentType, int>();
+
+        /// <summary>
+        /// Per-panel timing captured inside <see cref="HandleTab"/>. Recorded in build order
+        /// so the emitted lines stay deterministic across runs even when sorted by elapsed.
+        /// </summary>
+        private readonly List<(string PanelName, long ElapsedMs)> _panelTimings = new List<(string, long)>();
+
+        /// <summary>
+        /// Snapshot of <see cref="IButtonPostProcessor.ResetAndGetStats"/> taken at the end of
+        /// the most recent <see cref="BuildUI"/> call. Read by <see cref="EmitBuildUIPerfLines"/>.
+        /// </summary>
+        private (long ProcessMs, int Calls) _postProcessorStats;
+
+        /// <summary>
+        /// Snapshot of <see cref="IIconManager.ResetAndGetStats"/> taken at the end of the most
+        /// recent <see cref="BuildUI"/> call.
+        /// </summary>
+        private (int CacheHits, int CacheMisses, long DecodeMs) _iconStats;
+
+        /// <summary>
+        /// Snapshot of <see cref="IButtonPostProcessor.ResetAndGetAddItemStats"/> taken at the
+        /// end of the most recent <see cref="BuildUI"/> call.
+        /// </summary>
+        private (long AddItemMs, int Calls) _addItemStats;
+
+        /// <summary>
+        /// Snapshot of <see cref="SmartButtonScriptInitializer.ResetAndGetStats"/> taken at
+        /// the end of the most recent <see cref="BuildUI"/> call. Holds the per-stage breakdown
+        /// (engine init / compile / execute / invoke) plus per-button records for the [PERF] lines.
+        /// </summary>
+        private SmartButtonStats _smartButtonStats;
+
 
         /// <summary>
         /// Gets the UIApplication instance used by this service.
@@ -59,6 +102,7 @@ namespace pyRevitAssemblyBuilder.UIManager
         /// <param name="comboBoxBuilder">The combo box builder instance.</param>
         /// <param name="buildContext">Shared build context that holds the current per-build settings; updated at the start of each <see cref="BuildUI"/> call so all builders observe the same snapshot.</param>
         /// <param name="ribbonScanner">Optional ribbon scanner for tracking UI elements.</param>
+        /// <param name="smartButtonScriptInitializer">Optional SmartButton initializer; passed in only to read per-extension self-init timing.</param>
         public UIManagerService(
             UIApplication uiApp,
             ILogger logger,
@@ -69,7 +113,8 @@ namespace pyRevitAssemblyBuilder.UIManager
             IStackBuilder stackBuilder,
             IComboBoxBuilder comboBoxBuilder,
             BuildContext buildContext,
-            IUIRibbonScanner? ribbonScanner = null)
+            IUIRibbonScanner? ribbonScanner = null,
+            SmartButtonScriptInitializer? smartButtonScriptInitializer = null)
         {
             _uiApp = uiApp ?? throw new ArgumentNullException(nameof(uiApp));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -81,6 +126,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             _comboBoxBuilder = comboBoxBuilder ?? throw new ArgumentNullException(nameof(comboBoxBuilder));
             _buildContext = buildContext ?? throw new ArgumentNullException(nameof(buildContext));
             _ribbonScanner = ribbonScanner;
+            _smartButtonScriptInitializer = smartButtonScriptInitializer;
 
             RefreshBuildSettings(initial: true);
         }
@@ -144,14 +190,93 @@ namespace pyRevitAssemblyBuilder.UIManager
             // The OS file cache is already warm from bundle.yaml parsing in PASS 1.
 
             _currentExtension = extension;
+            _topLevelMs.Clear();
+            _topLevelCount.Clear();
+            _panelTimings.Clear();
+
+            // Clear per-build accumulators on shared collaborators so what we capture below
+            // attributes only to this extension's BuildUI window.
+            _buttonPostProcessor.ResetAndGetStats();
+            _buttonPostProcessor.ResetAndGetAddItemStats();
+            _buttonPostProcessor.IconManager?.ResetAndGetStats();
+            _smartButtonScriptInitializer?.ResetAndGetStats();
+
+            var topLevelSw = new Stopwatch();
             foreach (var component in extension.Children)
             {
                 if (component != null)
                 {
+                    topLevelSw.Restart();
                     RecursivelyBuildUI(component, null, null, extension.Name, assemblyInfo);
+                    var elapsed = topLevelSw.ElapsedMilliseconds;
+
+                    var key = component.Type;
+                    _topLevelMs[key] = _topLevelMs.TryGetValue(key, out var prev) ? prev + elapsed : elapsed;
+                    _topLevelCount[key] = _topLevelCount.TryGetValue(key, out var c) ? c + 1 : 1;
                 }
             }
+
+            _postProcessorStats = _buttonPostProcessor.ResetAndGetStats();
+            _addItemStats = _buttonPostProcessor.ResetAndGetAddItemStats();
+            _iconStats = _buttonPostProcessor.IconManager?.ResetAndGetStats() ?? (0, 0, 0L);
+            _smartButtonStats = _smartButtonScriptInitializer?.ResetAndGetStats();
             _currentExtension = null;
+        }
+
+        /// <summary>
+        /// Emits the per-extension [PERF] breakdown lines collected during the most recent
+        /// <see cref="BuildUI"/> call. Called by the session manager immediately after the
+        /// wrapping <c>[PERF] {ext.Name} - BuildUI: Xms</c> line so the sub-step detail sits
+        /// underneath it in the log.
+        /// </summary>
+        public void EmitBuildUIPerfLines(string extensionName)
+        {
+            if (string.IsNullOrEmpty(extensionName))
+                return;
+
+            foreach (var kv in _topLevelMs.OrderByDescending(p => p.Value))
+            {
+                var count = _topLevelCount.TryGetValue(kv.Key, out var n) ? n : 0;
+                _logger.Debug($"[PERF]   {extensionName}/{kv.Key} (x{count}): {kv.Value}ms");
+            }
+
+            foreach (var (panelName, elapsedMs) in _panelTimings.OrderByDescending(p => p.ElapsedMs))
+            {
+                _logger.Debug($"[PERF]   {extensionName}/Panel '{panelName}': {elapsedMs}ms");
+            }
+
+            var pp = _postProcessorStats;
+            if (pp.Calls > 0)
+            {
+                _logger.Debug($"[PERF]   {extensionName}/Post: {pp.ProcessMs}ms (x{pp.Calls})");
+            }
+
+            var ic = _iconStats;
+            if (ic.CacheHits > 0 || ic.CacheMisses > 0 || ic.DecodeMs > 0)
+            {
+                _logger.Debug(
+                    $"[PERF]   {extensionName}/Icons: hits={ic.CacheHits}, " +
+                    $"misses={ic.CacheMisses}, decode={ic.DecodeMs}ms");
+            }
+
+            var ai = _addItemStats;
+            if (ai.Calls > 0)
+            {
+                _logger.Debug($"[PERF]   {extensionName}/AddItem: {ai.AddItemMs}ms (x{ai.Calls})");
+            }
+
+            var sb = _smartButtonStats;
+            if (sb != null && sb.Calls > 0)
+            {
+                _logger.Debug($"[PERF]   {extensionName}/SmartButton: {sb.TotalMs}ms (x{sb.Calls})");
+                if (sb.PerButton != null)
+                {
+                    foreach (var btn in sb.PerButton)
+                    {
+                        _logger.Debug($"[PERF]     '{btn.Name}': {btn.TotalMs}ms");
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -248,9 +373,22 @@ namespace pyRevitAssemblyBuilder.UIManager
                 _logger.Debug($"Tab '{tabText}' has current Title '{renamedTabTitle}' — marked both as touched.");
             }
 
-            // Recursively build children, passing the renamed title so panels can dual-mark too
+            // Recursively build children, passing the renamed title so panels can dual-mark too.
+            // Time each child (typically a panel) individually so we can pinpoint a slow panel
+            // within an otherwise fast tab.
+            var childSw = new Stopwatch();
             foreach (var child in component.Children ?? Enumerable.Empty<ParsedComponent>())
+            {
+                if (child == null)
+                    continue;
+
+                childSw.Restart();
                 RecursivelyBuildUI(child, component, null, tabText, assemblyInfo, renamedTabTitle);
+                var elapsed = childSw.ElapsedMilliseconds;
+
+                var label = string.IsNullOrEmpty(child.DisplayName) ? child.Type.ToString() : child.DisplayName;
+                _panelTimings.Add((label, elapsed));
+            }
         }
 
         private void HandlePanel(ParsedComponent component, string tabName,

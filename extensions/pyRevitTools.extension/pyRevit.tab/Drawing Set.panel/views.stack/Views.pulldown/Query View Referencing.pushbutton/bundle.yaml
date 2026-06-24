@@ -1,6 +1,7 @@
 title:
   en_us: |-
     Query View Referencing
+  ko: 뷰 참조 쿼리
   fr_fr: |-
     Rechercher référencement des vues
   ru: |-
@@ -15,6 +16,7 @@ title:
 tooltip:
   en_us: |-
     Query all selected views and determine if referenced or not
+  ko: 선택한 모든 뷰의 참조 여부를 쿼리합니다.
   fr_fr: |-
     Interroger toutes les vues sélectionnées et déterminer si elles sont référencées ou non
   ru: |-

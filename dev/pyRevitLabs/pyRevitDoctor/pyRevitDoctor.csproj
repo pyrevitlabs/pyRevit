@@ -1,8 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AssemblyName>pyrevit-doctor</AssemblyName>
-    <ApplicationIcon>pyrevit-doctor.ico</ApplicationIcon>
+    <ApplicationIcon>..\..\..\release\bin-assets\pyrevit-doctor.ico</ApplicationIcon>
 
     <UseDefaultBin>true</UseDefaultBin>
     

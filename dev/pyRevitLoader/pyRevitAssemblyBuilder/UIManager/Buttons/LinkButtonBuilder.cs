@@ -65,7 +65,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 var linkData = CreateLinkButtonData(component);
                 if (linkData != null)
                 {
-                    var linkBtn = parentPanel.AddItem(linkData) as PushButton;
+                    var linkBtn = TimedAddItem(() => parentPanel.AddItem(linkData) as PushButton);
                     if (linkBtn != null)
                     {
                         ButtonPostProcessor.Process(linkBtn, component);

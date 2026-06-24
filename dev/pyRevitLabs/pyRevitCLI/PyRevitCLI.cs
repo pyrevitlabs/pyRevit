@@ -305,7 +305,8 @@ namespace pyRevitCLI
                     PyRevitCLICloneCmds.UpdateClone(
                             allClones: arguments["--all"].IsTrue,
                             cloneName: TryGetValue("<clone_name>"),
-                            credentials: TryGetCredentials()
+                            credentials: TryGetCredentials(),
+                            skipBin: arguments["--skip-bin"].IsTrue
                             );
 
                 else
@@ -857,6 +858,9 @@ namespace pyRevitCLI
 
                 else if (all("seed"))
                     PyRevitConfigs.SeedConfig(lockSeedConfig: arguments["--lock"].IsTrue);
+
+                else if (all("seedshippeddefaults"))
+                    PyRevitConfigs.SeedShippedExtensionDefaults();
 
                 else if (any("enable", "disable")) {
                     if (arguments["<option_path>"] != null) {

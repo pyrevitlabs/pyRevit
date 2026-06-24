@@ -1,5 +1,6 @@
 title:
   en_us: Override V/G
+  ko: 표시/그래픽 재지정
   fr_fr: Remplacement V/G
   ru: Изменить В/Г
   chinese_s: 替换可见性/图形
@@ -8,6 +9,7 @@ title:
   pt_br: Substituir V/G
 tooltip:
   en_us: Provides options for overriding Visibility/Graphics on selected elements
+  ko: 선택한 요소의 표시/그래픽 재지정 옵션을 제공합니다
   fr_fr: Donne des options de remplacement de visibilité/graphismes des éléments sélectionnés
   ru: Предоставляет возможности для переопределения видимости/графики на выделенных элементах.
   chinese_s: 提供用于替换选定图元的可见性/图形设置的选项

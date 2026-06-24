@@ -1,5 +1,6 @@
 title:
   en_us: Get in place families
+  ko: 인플레이스 패밀리 가져오기
   fr_fr: Familles InSitu
   ru: Получить семейства в контексте
   chinese_s: 获取内建族
@@ -8,6 +9,7 @@ title:
   pt_br: Obter Famílias No Local
 tooltip:
   en_us: Get a total count and types of In Place Family in the current document and create a new 3Dview named InPlace Families isolate them
+  ko: 현재 문서의 인플레이스 패밀리 총 수 및 유형을 가져오고 격리된 'InPlace Families'라는 새 3D 뷰를 생성합니다
   fr_fr: Obtenez un nombre total et des types de familles in situ dans le document actuel et créez une nouvelle vue 3D nommée Familles InPlace pour les isoler
   ru: Получает общее количество семейств в контексте текущего документа и создает новый 3D вид с именем InPlace Families, в котором изолирует их.
   chinese_s: 获取当前文档中内建族的总数与类型，并创建一个名为“内建族”的新三维视图以将其隔离

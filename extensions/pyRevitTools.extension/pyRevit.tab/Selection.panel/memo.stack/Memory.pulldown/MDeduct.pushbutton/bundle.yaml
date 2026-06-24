@@ -1,5 +1,6 @@
 title:
   en_us: MDeduct
+  ko: 메모리 제외
   fr_fr: MDéduire
   ru: ПУдалить
   chinese_s: M减去
@@ -11,6 +12,7 @@ tooltip:
     Deducts selection from memory keeping the rest
 
     Works like the M- button in a calculator. This is a project-dependent memory. Every project has its own selection memory saved in %appdata%/pyRevit folder as *.pym files
+  ko: 메모리에서 선택 항목을 제외하고 나머지를 유지합니다
   fr_fr: >-
     Déduit la sélection de la mémoire en gardant le reste
 

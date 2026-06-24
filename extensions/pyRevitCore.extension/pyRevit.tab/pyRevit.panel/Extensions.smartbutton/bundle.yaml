@@ -1,5 +1,6 @@
 title:
   en_us: Extensions
+  ko: 확장 패키지
   fr_fr: Extensions
   ru: Расширения
   chinese_s: 扩展
@@ -8,6 +9,7 @@ title:
   pt_br: Extensões
 tooltip:
   en_us: Add or remove pyRevit extensions
+  ko: pyRevit 확장 패키지를 추가하거나 제거합니다.
   fr_fr: Ajouter ou supprimer des extensions pyRevit
   ru: Добавляет или удаляет pyRevit расширения.
   chinese_s: 添加或删除 pyRevit 扩展

@@ -197,6 +197,18 @@ namespace PyRevitRunner {
             }
         }
 
+        private static string ResolveOutputStyleSheet(string configuredStyleSheet, string clonePath) {
+            var configured = configuredStyleSheet?.Trim();
+            if (!string.IsNullOrEmpty(configured) && File.Exists(configured))
+                return configured;
+
+            if (string.IsNullOrEmpty(clonePath))
+                return string.Empty;
+
+            var bundled = Path.Combine(PyRevitClone.GetPyRevitPath(clonePath), "output", "outputstyles.css");
+            return File.Exists(bundled) ? bundled : string.Empty;
+        }
+
         private static void LogRunnerError(string logFilePath, Exception ex) {
             if (string.IsNullOrWhiteSpace(logFilePath))
                 return;
@@ -240,9 +252,6 @@ namespace PyRevitRunner {
             envData[EnvDictionaryKeys.IPYVersion] = ipyVersion;
             envData[EnvDictionaryKeys.CPYVersion] = cpyVersion;
 
-            envData[EnvDictionaryKeys.LoggingLevel] = (int)PyRevitConfigs.GetLoggingLevel();
-            envData[EnvDictionaryKeys.FileLogging] = PyRevitConfigs.GetFileLogging();
-
             envData[EnvDictionaryKeys.TelemetryUTCTimeStamps] = PyRevitConfigs.GetUTCStamps();
             envData[EnvDictionaryKeys.TelemetryState] = PyRevitConfigs.GetTelemetryStatus();
             envData[EnvDictionaryKeys.TelemetryFilePath] = PyRevitConfigs.GetTelemetryFilePath();
@@ -254,7 +263,8 @@ namespace PyRevitRunner {
             envData[EnvDictionaryKeys.AppTelemetryEventFlags] = PyRevitConfigs.GetAppTelemetryFlags();
 
             envData[EnvDictionaryKeys.AutoUpdating] = PyRevitConfigs.GetAutoUpdate();
-            envData[EnvDictionaryKeys.OutputStyleSheet] = PyRevitConfigs.GetOutputStyleSheet();
+            envData[EnvDictionaryKeys.OutputStyleSheet] =
+                ResolveOutputStyleSheet(PyRevitConfigs.GetOutputStyleSheet(), attachment?.Clone?.ClonePath);
 
             if (!envData.Contains(EnvDictionaryKeys.Hooks))
                 envData[EnvDictionaryKeys.Hooks] = new Dictionary<string, Dictionary<string, string>>();

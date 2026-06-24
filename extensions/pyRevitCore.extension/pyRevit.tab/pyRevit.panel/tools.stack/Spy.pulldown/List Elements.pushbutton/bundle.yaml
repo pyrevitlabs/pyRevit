@@ -1,5 +1,6 @@
 title:
   en_us: List Elements
+  ko: 요소 목록
   fr_fr: Répertorier les éléments
   ru: Показать элементы
   chinese_s: 列出元素
@@ -8,6 +9,7 @@ title:
   pt_br: Listar Elementos
 tooltip:
   en_us: Lists specific elements from the model database
+  ko: 모델 데이터베이스에서 특정 요소를 나열합니다
   fr_fr: Répertorie les éléments spécifiques de la base de données du modèle
   ru: Показать определенные элементы из базы данных модели.
   chinese_s: 列出模型数据库中的特定元素

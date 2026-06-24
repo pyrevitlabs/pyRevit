@@ -21,6 +21,8 @@ from pyrevit import HOST_APP, EXEC_PARAMS, DOCS, BIN_DIR
 from pyrevit import PyRevitCPythonNotSupported, PyRevitException
 from pyrevit.compat import IRONPY
 from pyrevit.compat import safe_strtype, get_elementid_value_func
+from pyrevit._perf import mark as _perfmark
+_perfmark("pyrevit.forms._ipy:entry")
 
 if not IRONPY:
     raise PyRevitCPythonNotSupported("pyrevit.forms")
@@ -28,6 +30,7 @@ if not IRONPY:
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import colors
+_perfmark("pyrevit.forms._ipy:after coreutils+logger+colors")
 from pyrevit import framework
 from pyrevit.framework import System
 from pyrevit.framework import Threading
@@ -38,17 +41,25 @@ from pyrevit.framework import CPDialogs
 from pyrevit.framework import ComponentModel
 from pyrevit.framework import ObservableCollection
 from pyrevit.framework import Uri, UriKind, ResourceDictionary
+_perfmark("pyrevit.forms._ipy:after framework re-imports")
 from pyrevit.api import AdWindows
+_perfmark("pyrevit.forms._ipy:after pyrevit.api.AdWindows")
 from pyrevit import revit, UI, DB
+_perfmark("pyrevit.forms._ipy:after `from pyrevit import revit, UI, DB`")
 from pyrevit.forms import utils
 from pyrevit.forms import toaster
+_perfmark("pyrevit.forms._ipy:after forms.utils + forms.toaster")
 from pyrevit import versionmgr
+_perfmark("pyrevit.forms._ipy:after pyrevit.versionmgr")
 from pyrevit.userconfig import user_config
+_perfmark("pyrevit.forms._ipy:after `from pyrevit.userconfig import user_config`")
 
 import pyevent
+_perfmark("pyrevit.forms._ipy:after pyevent")
 
 import Autodesk.Windows.ComponentManager
 import Autodesk.Internal.InfoCenter
+_perfmark("pyrevit.forms._ipy:after Autodesk.Windows/Internal")
 
 
 mlogger = get_logger(__name__)
@@ -619,9 +630,9 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
             from pyrevit import script as _script
             current_out = _script.get_output()
             if current_out:
-                current_out.set_title(self.panel_title)
                 self._output = current_out
                 out = current_out
+                current_out.set_title(self.panel_title)
         except Exception:
             pass
         return out
@@ -4089,3 +4100,6 @@ def inform_wip():
         ```
     """
     alert("Work in progress.", exitscript=True)
+
+
+_perfmark("pyrevit.forms._ipy:exit (all class defs done)")

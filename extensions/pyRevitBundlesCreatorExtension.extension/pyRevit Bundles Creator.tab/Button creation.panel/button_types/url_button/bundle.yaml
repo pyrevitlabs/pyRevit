@@ -1,5 +1,6 @@
 title:
   en_us: URL Button
+  ko: URL 버튼
   fr_fr: Bouton URL
   ru: URL Button
   chinese_s: URL Button
@@ -8,6 +9,7 @@ title:
   pt_br: Botão de Url
 tooltip:
   en_us: URL Button
+  ko: URL 버튼
   fr_fr: Bouton URL
   ru: URL кнопка
   chinese_s: URL 按钮

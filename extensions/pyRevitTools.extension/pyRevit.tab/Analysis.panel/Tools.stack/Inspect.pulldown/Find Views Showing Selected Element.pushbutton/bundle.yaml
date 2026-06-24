@@ -1,6 +1,7 @@
 context: selection
 title:
   en_us: Find views showing selected element
+  ko: 선택한 요소가 표시된 뷰 찾기
   fr_fr: Trouver les vues montrant l'élément sélectionné
   ru: Найти виды, на которых видны выделенные элементы
   chinese_s: 查找显示所选图元的视图
@@ -9,6 +10,7 @@ title:
   pt_br: Encontrar Vistas Exibindo Elemento Selecionado
 tooltip:
   en_us: Lists all views that the selected elements is visible in
+  ko: 선택한 요소가 표시되는 모든 뷰를 나열합니다
   fr_fr: Lister toutes les vues dans lesquelles l'élément sélectionné est visible
   ru: Выводит все виды, на которых видны выбранные элементы.
   chinese_s: 列出所选图元可见的所有视图

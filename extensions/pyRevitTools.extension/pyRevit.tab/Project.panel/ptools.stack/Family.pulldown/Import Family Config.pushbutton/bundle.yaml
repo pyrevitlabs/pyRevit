@@ -1,5 +1,6 @@
 title:
   en_us: Import Family Config
+  ko: 패밀리 구성 가져오기
   fr_fr: Importer une configuration de famille
   ru: Импортировать конфигурацию семейства
   chinese_s: 导入族配置
@@ -15,6 +16,7 @@ tooltip:
     providing info about the parameters and types to be created.
 
     The structure of this config file is as shown below:
+  ko: yaml 파일에서 패밀리 구성을 가져오고 현재 패밀리를 수정합니다.
   fr_fr: >-
     Importez les configurations de famille à partir du fichier yaml et modifiez la famille actuelle.
 

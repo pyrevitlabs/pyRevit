@@ -89,13 +89,38 @@
                             MinHeight="28"
                             Margin="0,0,0,5"/>
                     <Label Grid.Row="2" Grid.Column="0" Content="{DynamicResource AddCustomExtension.TokenLabel}" VerticalAlignment="Center" FontSize="14" Margin="0,0,8,0"/>
-                    <PasswordBox Grid.Row="2" Grid.Column="1" x:Name="custom_token_pb"
+                    <!-- Token input: PasswordBox + plain-text reveal overlay + eye button -->
+                    <Grid Grid.Row="2" Grid.Column="1" Margin="0,0,10,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <PasswordBox Grid.Column="0" x:Name="custom_token_pb"
+                                     MinHeight="28"
+                                     Padding="5,4,5,4"
+                                     FontFamily="Consolas"
+                                     VerticalContentAlignment="Center"
+                                     ToolTip="{DynamicResource AddCustomExtension.TokenToolTip}"/>
+                        <!-- Reveal overlay: same geometry as PasswordBox, hidden by default -->
+                        <TextBox Grid.Column="0" x:Name="custom_token_tb"
                                  MinHeight="28"
                                  Padding="5,4,5,4"
                                  FontFamily="Consolas"
                                  VerticalContentAlignment="Center"
-                                 Margin="0,0,10,0"
+                                 Visibility="Collapsed"
+                                 IsReadOnly="True"
                                  ToolTip="{DynamicResource AddCustomExtension.TokenToolTip}"/>
+                        <Button Grid.Column="1" x:Name="reveal_token_b"
+                                Content="&#128065;"
+                                FontSize="14"
+                                MinWidth="28"
+                                MinHeight="28"
+                                Padding="4,0,4,0"
+                                Margin="4,0,0,0"
+                                ToolTip="{DynamicResource AddCustomExtension.RevealTokenToolTip}"
+                                PreviewMouseLeftButtonDown="reveal_token_mousedown"
+                                PreviewMouseLeftButtonUp="reveal_token_mouseup"/>
+                    </Grid>
                     <Button Grid.Row="2" Grid.Column="2" x:Name="install_custom_ext_b"
                             Content="{DynamicResource AddCustomExtension.AddAndInstall}"
                             Click="install_custom_extension"

@@ -9,7 +9,6 @@ from scripts import configs
 # import _apidocspy as apidocs # not used by new documentation workflow
 import _autocomplete as autoc
 import _labs as labs
-import _telem as telem
 
 import shutil
 
@@ -38,6 +37,4 @@ def build_binaries(_: Dict[str, str]):
     labs.build_labs(_)
     labs.build_engines(_)
     labs.build_runtime(_)
-    labs.build_shell(_)
-    telem.build_telem(_)
     autoc.build_autocmp(_)

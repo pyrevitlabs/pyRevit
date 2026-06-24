@@ -38,6 +38,13 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
         /// Clears the bitmap cache.
         /// </summary>
         void ClearCache();
+
+        /// <summary>
+        /// Returns the (cacheHits, cacheMisses, decodeMs) counters accumulated since the last
+        /// call and resets them to zero. Used by per-extension instrumentation to attribute
+        /// icon work to a single <c>BuildUI</c> window.
+        /// </summary>
+        (int CacheHits, int CacheMisses, long DecodeMs) ResetAndGetStats();
     }
 
     /// <summary>

@@ -1,6 +1,7 @@
 help_url: '{{docpath}}pAM-ARIXXLw'
 title:
   en_us: MWrite
+  ko: 메모리 저장
   fr_fr: MEcrire
   ru: ПЗаписать
   chinese_s: M写入
@@ -12,6 +13,7 @@ tooltip:
     Clear memory and Append current selection
 
     Works like the MC and M+ button in a calculator. This is a project-dependent memory. Every project has its own selection memory saved in %appdata%/pyRevit folder as *.pym files
+  ko: 메모리 지우고 현재 선택 추가
   fr_fr: >-
     Effacer la mémoire et ajouter la sélection actuelle
 

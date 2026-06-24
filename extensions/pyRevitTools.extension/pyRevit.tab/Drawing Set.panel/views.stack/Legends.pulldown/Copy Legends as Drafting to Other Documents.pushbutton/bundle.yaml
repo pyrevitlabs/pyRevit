@@ -1,6 +1,7 @@
 help_url: '{{docpath}}ThzcRM_Tj8g'
 title:
   en_us: Copy Legends as Drafting to Other Documents
+  ko: 범례를 제도 뷰로 다른 문서에 복사
   fr_fr: Copier les légendes comme vues de dessin dans les document ouverts
   ru: Копировать легенды как чертеж в другие документы
   chinese_s: 将图例复制为详图到其他文档
@@ -9,6 +10,7 @@ title:
   pt_br: Copiar Legendas Como Vista de Desenho para Outros Documentos
 tooltip:
   en_us: Converts selected legend views to detail views and copies them to all projects currently open in Revit
+  ko: 선택한 범례 뷰를 상세도 뷰로 변환하고 현재 Revit에서 열린 모든 프로젝트에 복사합니다
   fr_fr: Convertit les vues de légende sélectionnées en vues de détail et les copie dans tous les projets actuellement ouverts dans Revit
   ru: Конвертирует выделенные легены в чертеж и копирует их во все открыте проекты в Revit.
   chinese_s: 将选定的图例视图转换为详图视图，并将其复制到当前在 Revit 中打开的所有项目

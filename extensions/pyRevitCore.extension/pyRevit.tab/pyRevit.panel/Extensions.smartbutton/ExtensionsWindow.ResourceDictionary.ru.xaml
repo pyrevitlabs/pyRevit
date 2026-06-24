@@ -48,5 +48,6 @@
     <v:String x:Key="AddCustomExtension.NameToolTip">Имя расширения (напр., MyTools)</v:String>
     <v:String x:Key="AddCustomExtension.TokenLabel">Токен (необязательно):</v:String>
     <v:String x:Key="AddCustomExtension.TokenToolTip">Оставьте пустым для публичных репозиториев</v:String>
+    <v:String x:Key="AddCustomExtension.RevealTokenToolTip">Удерживайте, чтобы показать токен</v:String>
     <v:String x:Key="AddCustomExtension.AddAndInstall">Добавить и установить</v:String>
 </ResourceDictionary>

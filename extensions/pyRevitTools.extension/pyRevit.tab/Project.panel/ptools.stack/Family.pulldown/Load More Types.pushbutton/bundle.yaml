@@ -1,5 +1,6 @@
 title:
   en_us: Load More Types
+  ko: 추가 유형 로드
   fr_fr: Charger des types supplémentaires
   ru: Загрузить больше типов
   chinese_s: 加载更多类型
@@ -8,6 +9,7 @@ title:
   pt_br: Carregar Mais Tipos
 tooltip:
   en_us: Loads other types from selected family instance
+  ko: 선택한 패밀리 인스턴스에서 다른 유형을 로드합니다
   fr_fr: Charge d'autres types à partir de l'instance de famille sélectionnée
   ru: Загружает другие типы из выделенных экземпляров семейств.
   chinese_s: 从选定的族实例加载其他类型

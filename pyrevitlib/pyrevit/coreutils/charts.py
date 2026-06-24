@@ -56,7 +56,9 @@ class _ChartsDataSetEncode(JSONEncoder):
     """JSON encoder for chart data sets."""
     def default(self, dataset_obj):  # pylint: disable=E0202, W0221
         data_dict = dataset_obj.__dict__.copy()
-        for key, value in data_dict.items():
+        # iterate over a snapshot; on python 3 .items() is a live view and
+        # popping while iterating raises RuntimeError
+        for key, value in list(data_dict.items()):
             if key.startswith('_') or value == '' or value == []:
                 data_dict.pop(key)
 

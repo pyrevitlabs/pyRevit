@@ -56,5 +56,29 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
         /// <param name="component">The component to get text for.</param>
         /// <returns>The button text, with dot indicator if applicable.</returns>
         string GetButtonText(ParsedComponent component);
+
+        /// <summary>
+        /// Returns the total post-processing time collected since the last call (or since
+        /// construction) and resets the counters back to zero. Used by the session manager
+        /// to attribute [PERF] post-processing cost to each extension's <c>BuildUI</c> window.
+        /// </summary>
+        /// <returns>
+        /// A tuple of (processMs, calls). Both are 0 when no <see cref="Process"/> calls have
+        /// run since the previous reset.
+        /// </returns>
+        (long ProcessMs, int Calls) ResetAndGetStats();
+
+        /// <summary>
+        /// Adds <paramref name="elapsedMs"/> to the shared AddItem accumulator. Builders call
+        /// this from around their <c>parentPanel.AddItem(...)</c> / <c>splitBtn.AddPushButton(...)</c>
+        /// invocations so the per-extension instrumentation can quantify how much BuildUI time
+        /// is spent inside the Revit ribbon API itself.
+        /// </summary>
+        void RecordAddItemMs(long elapsedMs);
+
+        /// <summary>
+        /// Returns the accumulated AddItem timing collected since the last call and resets it.
+        /// </summary>
+        (long AddItemMs, int Calls) ResetAndGetAddItemStats();
     }
 }

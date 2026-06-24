@@ -1,5 +1,6 @@
 title:
   en_us: Family QuickCheck
+  ko: 패밀리 빠른 검사
   fr_fr: Vérification rapide des familles
   ru: Быстро проверить семейство
   chinese_s: 族快速检查
@@ -15,6 +16,7 @@ tooltip:
     github.com/frederic-beaupere
 
     PR731 https://github.com/pyrevitlabs/pyRevit/pull/731
+  ko: 손상된 Revit 패밀리를 탐지하는 비완전 검사.
   fr_fr: >-
     Vérification non exhaustive pour détecter les familles Revit corrompues.
 

@@ -9,6 +9,7 @@ title:
   es_es: Abrir archivo de notas clave
   fr_fr: Ouvrir le fichier de notes d'identification
   en_us: Open keynotes file
+  ko: 키노트 파일 열기
   chinese_s: 打开注释文件
 tooltip:
   de_de: Öffnet die Bauelementschlüssel Datei
@@ -17,4 +18,5 @@ tooltip:
   es_es: Abrir archivo de notas clave
   fr_fr: Ouvrir le fichier de notes d'identification
   en_us: Open keynotes file
+  ko: 키노트 파일 열기
   chinese_s: 打开注释文件

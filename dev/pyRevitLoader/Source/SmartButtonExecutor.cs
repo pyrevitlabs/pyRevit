@@ -34,18 +34,18 @@ namespace PyRevitLoader {
         private void Log(string message) {
             _logger?.Invoke(message);
         }
-        
+
         /// <summary>
         /// Ensures the IronPython engine is initialized. Called once, reused for all buttons.
         /// </summary>
         private void EnsureEngineInitialized() {
             if (_engine != null)
                 return;
-                
+
             Log("Initializing shared IronPython engine for SmartButtons");
             _scriptExecutor = new ScriptExecutor(_revit, false);
             _engine = _scriptExecutor.CreateEngine();
-            
+
             // Cache base search paths
             _baseSearchPaths = new HashSet<string>(_engine.GetSearchPaths());
         }
@@ -61,7 +61,7 @@ namespace PyRevitLoader {
             string scriptPath,
             SmartButtonContext context,
             IEnumerable<string> additionalSearchPaths = null) {
-            
+
             if (string.IsNullOrEmpty(scriptPath) || !File.Exists(scriptPath)) {
                 return true; // Don't deactivate
             }
@@ -72,9 +72,9 @@ namespace PyRevitLoader {
             }
 
             try {
-                // Reuse the engine instead of creating new one each time
+                // Reuse the engine instead of creating new one each time.
                 EnsureEngineInitialized();
-                
+
                 // Create a fresh scope for this script (but reuse engine)
                 var scope = _scriptExecutor.SetupEnvironment(_engine);
 
@@ -127,7 +127,7 @@ namespace PyRevitLoader {
                     // Call __selfinit__(script_cmp, ui_button_cmp, __rvt__)
                     var ops = _engine.Operations;
                     var result = ops.Invoke(selfInitFunc, context, context, _revit);
-                    
+
                     // If __selfinit__ returns False, the button should be deactivated
                     if (result is bool boolResult && boolResult == false) {
                         Log($"__selfinit__ returned False for '{context.name}' - deactivating button");
