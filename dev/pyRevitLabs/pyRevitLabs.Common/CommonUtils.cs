@@ -43,6 +43,44 @@ namespace pyRevitLabs.Common {
             return false;
         }
 
+        /// <summary>
+        /// Expands %VAR% tokens in a user-supplied path (e.g. --dest=%LOCALAPPDATA%\pyRevit).
+        /// Repeats until stable so nested values like TEMP=%LOCALAPPDATA%\Temp resolve fully.
+        /// </summary>
+        public static string ExpandEnvironmentPath(string path) {
+            if (string.IsNullOrWhiteSpace(path))
+                return path;
+            return ExpandEnvironmentPathRecursive(path.Trim());
+        }
+
+        /// <summary>
+        /// User temp directory with environment variables expanded (handles TEMP=%LOCALAPPDATA%\Temp).
+        /// </summary>
+        public static string GetUserTempDirectory() {
+            var temp = Environment.GetEnvironmentVariable("TEMP");
+            var candidate = !string.IsNullOrWhiteSpace(temp)
+                ? ExpandEnvironmentPathRecursive(temp.Trim())
+                : ExpandEnvironmentPathRecursive("%TEMP%");
+            if (IsConcreteExpandedPath(candidate))
+                return candidate;
+            return Path.GetTempPath().TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        }
+
+        private static bool IsConcreteExpandedPath(string path) {
+            return !string.IsNullOrWhiteSpace(path) && path.IndexOf('%') < 0;
+        }
+
+        private static string ExpandEnvironmentPathRecursive(string path) {
+            var expanded = path;
+            for (int pass = 0; pass < 8; pass++) {
+                var next = Environment.ExpandEnvironmentVariables(expanded).Trim();
+                if (string.Equals(next, expanded, StringComparison.OrdinalIgnoreCase))
+                    break;
+                expanded = next;
+            }
+            return expanded;
+        }
+
         public static bool VerifyPythonScript(string path) {
             return VerifyFile(path) && path.ToLower().EndsWith(".py");
         }

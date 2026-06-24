@@ -677,16 +677,10 @@ def get_families(doc=None, only_editable=True):
               only includes families that are editable.
     """
     doc = doc or DOCS.doc
-    families = [
-        x.Family
-        for x in set(
-            DB.FilteredElementCollector(doc).WhereElementIsElementType().ToElements()
-        )
-        if isinstance(x, (DB.FamilySymbol, DB.AnnotationSymbolType))
-    ]
+    families = DB.FilteredElementCollector(doc).OfClass(DB.Family)
     if only_editable:
         return [x for x in families if x.IsEditable]
-    return families
+    return list(families)
 
 
 def get_noteblock_families(doc=None):

@@ -859,6 +859,9 @@ namespace pyRevitCLI
                 else if (all("seed"))
                     PyRevitConfigs.SeedConfig(lockSeedConfig: arguments["--lock"].IsTrue);
 
+                else if (all("seedshippeddefaults"))
+                    PyRevitConfigs.SeedShippedExtensionDefaults();
+
                 else if (any("enable", "disable")) {
                     if (arguments["<option_path>"] != null) {
                         // extract section and option names

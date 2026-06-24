@@ -2,6 +2,7 @@
 using System.IO;
 using System.Security.Principal;
 using System.Security.AccessControl;
+using System.Collections.Generic;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.NLog;
@@ -48,6 +49,8 @@ namespace pyRevitLabs.PyRevit
         // get config file
         public static PyRevitConfig GetConfigFile()
         {
+            MigrateSplitAdminConfigIfNeeded();
+
             // make sure the file exists and if not create an empty one
             string userConfig = PyRevitConsts.ConfigFilePath;
             string adminConfig = PyRevitConsts.AdminConfigFilePath;
@@ -66,6 +69,191 @@ namespace pyRevitLabs.PyRevit
             }
 
             return new PyRevitConfig(userConfig);
+        }
+
+        private static void MigrateSplitAdminConfigIfNeeded()
+        {
+            if (!PyRevitInstallScope.IsAllUsersInstall())
+                return;
+
+            string appDataConfig = Path.Combine(
+                PyRevitLabsConsts.PyRevitPath,
+                PyRevitConsts.DefaultConfigsFileName);
+            var appDataDiscovered = PyRevitConsts.FindConfigFileInDirectory(PyRevitLabsConsts.PyRevitPath);
+            if (appDataDiscovered != null)
+                appDataConfig = appDataDiscovered;
+
+            if (!CommonUtils.VerifyFile(appDataConfig))
+                return;
+
+            string programDataConfig = Path.Combine(
+                PyRevitLabsConsts.PyRevitProgramDataPath,
+                PyRevitConsts.DefaultConfigsFileName);
+            var programDataDiscovered = PyRevitConsts.FindConfigFileInDirectory(
+                PyRevitLabsConsts.PyRevitProgramDataPath);
+            if (programDataDiscovered != null)
+                programDataConfig = programDataDiscovered;
+
+            if (!CommonUtils.VerifyFile(programDataConfig))
+            {
+                logger.Debug(
+                    "Migrating admin install config from \"{0}\" to ProgramData",
+                    appDataConfig);
+                SetupConfig(appDataConfig);
+                return;
+            }
+
+            if (ConfigFileHasClones(programDataConfig) && !HasMissingExtensionSections(appDataConfig, programDataConfig))
+                return;
+
+            logger.Debug(
+                "Merging split admin install config from \"{0}\" into \"{1}\"",
+                appDataConfig,
+                programDataConfig);
+            MergeAdminConfigFiles(appDataConfig, programDataConfig);
+        }
+
+        private static bool HasMissingExtensionSections(string sourceConfig, string targetConfig)
+        {
+            try
+            {
+                var source = new PyRevitConfig(sourceConfig);
+                var target = new PyRevitConfig(targetConfig);
+                foreach (var sectionName in source.GetSectionNames())
+                {
+                    if (!IsExtensionConfigSection(sectionName))
+                        continue;
+                    if (!target.HasSection(sectionName))
+                        return true;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+            return false;
+        }
+
+        private static bool IsExtensionConfigSection(string sectionName)
+        {
+            return sectionName.EndsWith(PyRevitConsts.ExtensionUIPostfix, StringComparison.OrdinalIgnoreCase)
+                || sectionName.EndsWith(PyRevitConsts.ExtensionLibraryPostfix, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static void MergeAdminConfigFiles(string sourceConfigPath, string targetConfigPath)
+        {
+            var source = new PyRevitConfig(sourceConfigPath);
+            var target = new PyRevitConfig(targetConfigPath);
+
+            if (!ConfigFileHasClones(targetConfigPath))
+            {
+                var clonesDict = source.GetDictValue(
+                    PyRevitConsts.EnvConfigsSectionName,
+                    PyRevitConsts.EnvConfigsInstalledClonesKey);
+                if (clonesDict != null && clonesDict.Count > 0)
+                {
+                    target.SetValue(
+                        PyRevitConsts.EnvConfigsSectionName,
+                        PyRevitConsts.EnvConfigsInstalledClonesKey,
+                        clonesDict);
+                }
+            }
+
+            foreach (var sectionName in source.GetSectionNames())
+            {
+                if (!IsExtensionConfigSection(sectionName))
+                    continue;
+                if (target.HasSection(sectionName))
+                    continue;
+
+                foreach (var keyName in source.GetSectionKeyNames(sectionName))
+                {
+                    var value = source.GetValue(sectionName, keyName);
+                    if (value != null)
+                        target.SetValue(sectionName, keyName, value);
+                }
+            }
+        }
+
+        public static void SeedShippedExtensionDefaults(string clonePath = null)
+        {
+            string extensionsRoot = null;
+            if (!string.IsNullOrWhiteSpace(clonePath))
+            {
+                extensionsRoot = Path.Combine(clonePath, PyRevitConsts.ExtensionsDirName);
+            }
+            else
+            {
+                foreach (var clone in PyRevitClones.GetRegisteredClones())
+                {
+                    if (CommonUtils.VerifyPath(clone.ExtensionsPath))
+                    {
+                        extensionsRoot = clone.ExtensionsPath;
+                        break;
+                    }
+                }
+            }
+
+            if (!CommonUtils.VerifyPath(extensionsRoot))
+            {
+                logger.Debug("No shipped extensions directory found for seeding defaults.");
+                return;
+            }
+
+            var cfg = GetConfigFile();
+            foreach (var extDir in Directory.GetDirectories(extensionsRoot, "*" + PyRevitConsts.ExtensionUIPostfix))
+            {
+                try
+                {
+                    var ext = new PyRevitExtension(extDir);
+                    if (ext.Definition != null && !ext.Definition.DefaultEnabled)
+                    {
+                        var existing = cfg.GetValue(ext.ConfigName, PyRevitConsts.ExtensionDisabledKey);
+                        if (existing == null)
+                            cfg.SetValue(ext.ConfigName, PyRevitConsts.ExtensionDisabledKey, true);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.Debug("Skipping shipped extension seed for \"{0}\" | {1}", extDir, ex.Message);
+                }
+            }
+
+            foreach (var libDir in Directory.GetDirectories(extensionsRoot, "*" + PyRevitConsts.ExtensionLibraryPostfix))
+            {
+                try
+                {
+                    var ext = new PyRevitExtension(libDir);
+                    if (ext.Definition != null && !ext.Definition.DefaultEnabled)
+                    {
+                        var existing = cfg.GetValue(ext.ConfigName, PyRevitConsts.ExtensionDisabledKey);
+                        if (existing == null)
+                            cfg.SetValue(ext.ConfigName, PyRevitConsts.ExtensionDisabledKey, true);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    logger.Debug("Skipping shipped library seed for \"{0}\" | {1}", libDir, ex.Message);
+                }
+            }
+        }
+
+        private static bool ConfigFileHasClones(string configPath)
+        {
+            if (!CommonUtils.VerifyFile(configPath))
+                return false;
+            try
+            {
+                var cfg = new PyRevitConfig(configPath);
+                var clonesDict = cfg.GetDictValue(
+                    PyRevitConsts.EnvConfigsSectionName,
+                    PyRevitConsts.EnvConfigsInstalledClonesKey);
+                return clonesDict != null && clonesDict.Count > 0;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         // deletes config file

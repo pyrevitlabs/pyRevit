@@ -162,14 +162,12 @@ public sealed class PublishWingetModule(IOptions<PublishOptions> publishOptions)
     private static IEnumerable<string> BuildPyRevitUrls(VersionInfo versionInfo, string releaseTag)
     {
         var baseUrl = $"https://github.com/pyrevitlabs/pyRevit/releases/download/{releaseTag}/";
-        yield return $"{baseUrl}pyRevit_{versionInfo.InstallVersion}_signed.exe|x86|user";
         yield return $"{baseUrl}pyRevit_{versionInfo.InstallVersion}_admin_signed.exe|x64|machine";
     }
 
     private static IEnumerable<string> BuildCliUrls(VersionInfo versionInfo, string releaseTag)
     {
         var baseUrl = $"https://github.com/pyrevitlabs/pyRevit/releases/download/{releaseTag}/";
-        yield return $"{baseUrl}pyRevit_CLI_{versionInfo.InstallVersion}_signed.exe|x64|user";
         yield return $"{baseUrl}pyRevit_CLI_{versionInfo.InstallVersion}_admin_signed.exe|x64|machine";
         yield return $"{baseUrl}pyRevit_CLI_{versionInfo.InstallVersion}_admin_signed.msi|x64|machine";
     }

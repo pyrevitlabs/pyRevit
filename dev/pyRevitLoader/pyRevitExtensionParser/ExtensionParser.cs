@@ -438,6 +438,27 @@ namespace pyRevitExtensionParser
         // single cache without needing their own copy.  Fix for #3268.
         private static PyRevitConfig GetConfig() => PyRevitConfig.Load();
 
+        private static bool IsExtensionDefaultEnabled(string extDir)
+        {
+            var extensionJsonPath = Path.Combine(extDir, "extension.json");
+            if (!FileExists(extensionJsonPath))
+                return true;
+
+            try
+            {
+                var jsonContent = File.ReadAllText(extensionJsonPath);
+                var json = JObject.Parse(jsonContent);
+                var defaultEnabledValue = json["default_enabled"]?.ToString();
+                if (string.IsNullOrWhiteSpace(defaultEnabledValue))
+                    return true;
+                return defaultEnabledValue.Equals("true", StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return true;
+            }
+        }
+
         /// <summary>
         /// Parses a single extension from the given extension directory path
         /// </summary>
@@ -451,6 +472,8 @@ namespace pyRevitExtensionParser
             // skip disabled extensions before walking the component tree
             var extConfig = GetConfig().ParseExtensionByName(extName);
             if (extConfig != null && extConfig.Disabled)
+                return null;
+            if (extConfig == null && !IsExtensionDefaultEnabled(extDir))
                 return null;
 
             var bundlePath = Path.Combine(extDir, "bundle.yaml");
