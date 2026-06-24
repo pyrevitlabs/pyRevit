@@ -57,6 +57,22 @@ namespace pyRevitLabs.UnitTests {
         }
 
         [TestMethod]
+        public void GetUserTempDirectory_FallsBackToPathGetTempPathWhenUnexpanded() {
+            Environment.SetEnvironmentVariable("TEMP", "%NONEXISTENT_PYREVIT_VAR%\\Temp");
+            var tempDir = CommonUtils.GetUserTempDirectory();
+            Assert.IsFalse(tempDir.Contains("%"));
+            var expected = Path.GetTempPath().TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            Assert.AreEqual(expected, tempDir);
+        }
+
+        [TestMethod]
+        public void UserTemp_MatchesGetUserTempDirectory() {
+            Environment.SetEnvironmentVariable("LOCALAPPDATA", _tempRoot);
+            Environment.SetEnvironmentVariable("TEMP", "%LOCALAPPDATA%\\Temp");
+            Assert.AreEqual(CommonUtils.GetUserTempDirectory(), UserEnv.UserTemp);
+        }
+
+        [TestMethod]
         public void DeployFromImage_UsesExpandedTempForStaging() {
             var localAppData = Path.Combine(_tempRoot, "LocalAppData");
             Directory.CreateDirectory(localAppData);

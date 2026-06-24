@@ -110,8 +110,7 @@ namespace pyRevitLabs.Common {
 
         public static string UserHome => Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 
-        public static string UserTemp => CommonUtils.ExpandEnvironmentPath(
-            Environment.GetEnvironmentVariable("TEMP") ?? "%TEMP%");
+        public static string UserTemp => CommonUtils.GetUserTempDirectory();
 
         private static string[] _knownFolderGuids = new string[]
     {

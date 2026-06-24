@@ -58,9 +58,16 @@ namespace pyRevitLabs.Common {
         /// </summary>
         public static string GetUserTempDirectory() {
             var temp = Environment.GetEnvironmentVariable("TEMP");
-            if (!string.IsNullOrWhiteSpace(temp))
-                return ExpandEnvironmentPathRecursive(temp.Trim());
-            return ExpandEnvironmentPathRecursive("%TEMP%");
+            var candidate = !string.IsNullOrWhiteSpace(temp)
+                ? ExpandEnvironmentPathRecursive(temp.Trim())
+                : ExpandEnvironmentPathRecursive("%TEMP%");
+            if (IsConcreteExpandedPath(candidate))
+                return candidate;
+            return Path.GetTempPath().TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        }
+
+        private static bool IsConcreteExpandedPath(string path) {
+            return !string.IsNullOrWhiteSpace(path) && path.IndexOf('%') < 0;
         }
 
         private static string ExpandEnvironmentPathRecursive(string path) {
