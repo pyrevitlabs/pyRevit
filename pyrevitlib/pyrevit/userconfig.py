@@ -48,6 +48,7 @@ from pyrevit import PYREVIT_ALLUSER_APP_DIR, PYREVIT_APP_DIR
 from pyrevit.compat import winreg as wr
 
 from pyrevit.labs import PyRevit
+from pyrevit.labs import Common
 
 from pyrevit import coreutils
 from pyrevit.coreutils import appdata
@@ -918,11 +919,18 @@ def verify_configs(config_file_path=None):
 LOCAL_CONFIG_FILE = ADMIN_CONFIG_FILE = USER_CONFIG_FILE = CONFIG_FILE = ''
 user_config = None
 
+try:
+    Common.PyRevitInstallScope.SetRuntimeInstallRoot(HOME_DIR)
+except Exception as installRootEx:
+    mlogger.debug('Could not set runtime install root: %s', installRootEx)
+
 # location for default pyRevit config files
+_PROGRAM_DATA_CONFIG_DIR = Common.PyRevitLabsConsts.PyRevitProgramDataPath
+_USER_CONFIG_DIR = Common.PyRevitLabsConsts.PyRevitPath
 with _perfblock("pyrevit.userconfig:find_config_file x3 (HOME / ALLUSER / USER)"):
     LOCAL_CONFIG_FILE = find_config_file(HOME_DIR)
-    ADMIN_CONFIG_FILE = find_config_file(PYREVIT_ALLUSER_APP_DIR)
-    USER_CONFIG_FILE = find_config_file(PYREVIT_APP_DIR)
+    ADMIN_CONFIG_FILE = find_config_file(_PROGRAM_DATA_CONFIG_DIR)
+    USER_CONFIG_FILE = find_config_file(_USER_CONFIG_DIR)
 
 # decide which config file to use
 # check if a config file is inside the repo. for developers config override
@@ -930,24 +938,9 @@ if LOCAL_CONFIG_FILE:
     CONFIG_TYPE = 'Local'
     CONFIG_FILE = LOCAL_CONFIG_FILE
 
-# admin installer scope: machine config lives under ProgramData
-elif op.isfile(op.join(PYREVIT_ALLUSER_APP_DIR, CONSTS.InstallAllUsersMarkerFileName)):
-    if not ADMIN_CONFIG_FILE:
-        try:
-            PyRevit.PyRevitConfigs.SetupConfig()
-            ADMIN_CONFIG_FILE = find_config_file(PYREVIT_ALLUSER_APP_DIR)
-        except Exception as adminInstallEx:
-            mlogger.warning(
-                'Failed to initialize ProgramData config for admin install: %s',
-                adminInstallEx
-            )
-    if ADMIN_CONFIG_FILE:
-        CONFIG_FILE = ADMIN_CONFIG_FILE
-    else:
-        CONFIG_FILE = op.join(
-            PYREVIT_ALLUSER_APP_DIR,
-            PyRevit.PyRevitConsts.DefaultConfigsFileName
-        )
+# machine-wide install scope: shared config under ProgramData
+elif Common.PyRevitInstallScope.IsAllUsersInstall():
+    CONFIG_FILE = Common.PyRevitInstallScope.GetActiveConfigFilePath()
     if ADMIN_CONFIG_FILE and not os.access(ADMIN_CONFIG_FILE, os.W_OK):
         CONFIG_TYPE = 'Admin'
     else:
