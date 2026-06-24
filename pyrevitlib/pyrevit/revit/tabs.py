@@ -77,12 +77,24 @@ def _set_tab_filtercolors(tabcfgs, theme):
          for c in theme.TabFilterRules}
 
 
+def _style_at(index, default_index):
+    """Tab coloring style at index, falling back to default_index when index
+    is missing, non-numeric, or out of range."""
+    styles = types.TabColoringTheme.AvailableStyles
+    try:
+        return styles[int(index)]
+    except Exception:  #pylint: disable=broad-except
+        return styles[int(default_index)]
+
+
 def _get_tabstyle(tabcfgs):
     tabstyle_index = tabcfgs.get_option(
         'tabstyle_index',
         types.TabColoringTheme.DefaultTabColoringStyleIndex
         )
-    return types.TabColoringTheme.AvailableStyles[int(tabstyle_index)]
+    return _style_at(
+        tabstyle_index, types.TabColoringTheme.DefaultTabColoringStyleIndex
+        )
 
 
 def _set_tabstyle(tabcfgs, theme):
@@ -95,7 +107,10 @@ def _get_family_tabstyle(tabcfgs):
         'family_tabstyle_index',
         types.TabColoringTheme.DefaultFamilyTabColoringStyleIndex
         )
-    return types.TabColoringTheme.AvailableStyles[int(family_tabstyle_index)]
+    return _style_at(
+        family_tabstyle_index,
+        types.TabColoringTheme.DefaultFamilyTabColoringStyleIndex
+        )
 
 
 def _set_family_tabstyle(tabcfgs, theme):

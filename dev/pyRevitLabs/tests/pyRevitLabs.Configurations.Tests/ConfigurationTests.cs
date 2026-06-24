@@ -38,7 +38,6 @@ public abstract class ConfigurationTests
         _configuration.SetValue("telemetry", "utc_timestamps", true);
         _configuration.SetValue("telemetry", "active_app", true);
         _configuration.SetValue("telemetry", "apptelemetry_event_flags", "0x4000400004003");
-        _configuration.SetValue("telemetry", "apptelemetry_event_flags", "0x4000400004003");
         _configuration.SetValue("telemetry", "telemetry_server_url", "http://pyrevitlabs.io/api/v2/scripts");
         _configuration.SetValue("telemetry", "apptelemetry_server_url", "http://pyrevitlabs/api/v2/events");
     }

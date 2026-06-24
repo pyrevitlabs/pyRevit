@@ -70,7 +70,14 @@ class _SectionCompatWrapper(object):
 
     def get_option(self, key, default=None):
         value = self._config.GetValueOrDefault(self._section_name, key, "")
-        return json.loads(value) if value else default
+        if not value:
+            return default
+        try:
+            return json.loads(value)
+        except (ValueError, TypeError):
+            # Non-JSON values (bare Windows paths, single-quoted strings,
+            # Python bools) are returned as-is rather than parsed.
+            return value
 
     def set_option(self, key, value):
         self._config.SetValue(
@@ -135,8 +142,13 @@ class PyRevitConfig(object):
 
     @property
     def config_file(self):
-        """Current config file path."""
-        return PyRevit.PyRevitConsts.ConfigFilePath
+        """Path of the config file backing this configuration.
+
+        This is the file the service resolved on load, which may be a
+        read-only all-users config.
+        """
+        resolved = self._get_default_config().ConfigurationPath
+        return resolved or PyRevit.PyRevitConsts.ConfigFilePath
 
     @property
     def environment(self):
@@ -691,7 +703,7 @@ class PyRevitConfig(object):
         return self.config_sections.get_section(section_name)
 
     def remove_section(self, section_name):
-       self.config_sections.remove_section(section_name)
+        self.config_sections.remove_section(section_name)
 
 
 def find_config_file(target_path):
