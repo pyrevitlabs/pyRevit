@@ -1,0 +1,8 @@
+﻿title:
+  en_us: Interactive Shell (Dockable)
+tooltip:
+  en_us: >-
+    Open the interactive IronPython shell as a dockable pane and keep it open alongside your model.
+    Dock it anywhere in the Revit window. Revit stays interactive while the shell is open - select
+    elements in Revit, then query them live. Each statement runs in a fresh Revit API context.
+context: zero-doc

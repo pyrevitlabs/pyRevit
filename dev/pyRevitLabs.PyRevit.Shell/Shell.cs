@@ -3,16 +3,19 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Threading;
+using System.Windows.Controls;
 using Autodesk.Revit.UI;
+using PythonConsoleControl;
 
 namespace PyRevitLabs.PyRevit.Shell {
     /// <summary>
     /// Public launch entry points for the interactive shell, called from the launcher script.
     ///
-    /// These are deliberately thin and free of IronPython/AvalonEdit references so the assembly
-    /// resolver is installed *before* the JIT has to load those dependencies (which live next to
-    /// this DLL in its engine folder, not on Revit's probing path). The heavy work happens in
-    /// <see cref="ShellLauncher"/>, whose methods are only JIT-compiled once these run.
+    /// These are deliberately thin and free of IronPython/AvalonEdit references in their
+    /// parameter lists so the assembly resolver is installed *before* the JIT has to load those
+    /// dependencies (which live next to this DLL in its engine folder, not on Revit's probing
+    /// path). The heavy work happens in <see cref="ShellLauncher"/>, whose methods are only
+    /// JIT-compiled once these run.
     ///
     /// <paramref name="searchPaths"/> is the launcher's sys.path, forwarded to the REPL engine so
     /// <c>from pyrevit import ...</c> resolves exactly as in a normal script.
@@ -26,6 +29,18 @@ namespace PyRevitLabs.PyRevit.Shell {
         public static void Modeless(UIApplication uiapp, IList<string> searchPaths) {
             ShellAssemblyResolver.Install();
             ShellLauncher.ShowModeless(uiapp, searchPaths);
+        }
+
+        /// <summary>
+        /// Build a fully-wired interactive console control for hosting inside a Revit dockable
+        /// pane (pyRevit registers the pane itself through <c>forms.register_dockable_panel</c>
+        /// and places this control as the pane's framework element). The engine is configured with
+        /// the full pyRevit environment and each statement is marshaled through an ExternalEvent so
+        /// Revit stays interactive while the pane is open.
+        /// </summary>
+        public static UserControl CreateDockableConsole(UIApplication uiapp, IList<string> searchPaths) {
+            ShellAssemblyResolver.Install();
+            return ShellLauncher.CreateConfiguredConsole(uiapp, searchPaths);
         }
     }
 

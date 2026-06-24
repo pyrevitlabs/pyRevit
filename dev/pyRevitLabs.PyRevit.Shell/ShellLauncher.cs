@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+using System.Windows.Controls;
 using System.Windows.Threading;
 using Autodesk.Revit.UI;
 using Microsoft.Scripting.Hosting;
@@ -39,7 +40,7 @@ namespace PyRevitLabs.PyRevit.Shell {
             // Modeless: marshal each statement into a valid API context via an ExternalEvent so
             // Revit stays interactive while the shell is open.
             var commandCompleted = new AutoResetEvent(false);
-            var handler = new ShellExternalEventDispatcher(gui, commandCompleted);
+            var handler = new ShellExternalEventDispatcher(gui.ConsoleControl, commandCompleted);
             var externalEvent = ExternalEvent.Create(handler);
             gui.ConsoleControl.WithConsoleHost(host => {
                 Action<Action> dispatch = command => {
@@ -57,6 +58,37 @@ namespace PyRevitLabs.PyRevit.Shell {
             return gui;
         }
 
+        /// <summary>
+        /// Create a configured console control for a dockable pane. Same environment and modeless
+        /// dispatch as <see cref="ShowModeless"/>, but returns the bare control so pyRevit can host
+        /// it inside its own <c>WPFPanel</c>-based dockable pane.
+        /// </summary>
+        public static UserControl CreateConfiguredConsole(UIApplication uiapp, IList<string> searchPaths) {
+            var control = new IronPythonConsoleControl();
+            control.ApplyTheme(useDarkTheme: true);
+
+            var commandCompleted = new AutoResetEvent(false);
+            var handler = new ShellExternalEventDispatcher(control, commandCompleted);
+            var externalEvent = ExternalEvent.Create(handler);
+
+            control.WithConsoleHost(host => {
+                ConfigureEngineViaRuntime(host.Engine, uiapp, searchPaths);
+                host.Console.ScriptScope.SetVariable("__window__", control);
+
+                // Marshal each statement/completion into a valid Revit API context so Revit
+                // remains usable while the pane is open.
+                Action<Action> dispatch = command => {
+                    handler.Enqueue(command);
+                    externalEvent.Raise();
+                    commandCompleted.WaitOne();
+                };
+                host.Console.SetCommandDispatcher(dispatch);
+                host.Editor.SetCompletionDispatcher(dispatch);
+            });
+
+            return control;
+        }
+
         // Give the console's engine the full pyRevit environment (configured-fork engine, all
         // builtins incl. __scriptruntime__, RevitAPI, stdlib and the caller's sys.path) so the REPL
         // behaves like a normal pyRevit script.
@@ -70,8 +102,8 @@ namespace PyRevitLabs.PyRevit.Shell {
         // The full builtins live in the loaded per-version pyRevit runtime. This Revit-agnostic
         // shell can't reference a specific runtime version at compile time, so reach
         // InteractiveEngine by reflection; the engine object is the same DLR-fork identity as the
-        // loaded runtime, so the call binds cleanly.
-        static void ConfigureEngineViaRuntime(ScriptEngine engine, UIApplication uiapp, IList<string> searchPaths) {
+        // loaded runtime, so the call binds cleanly. Shared by the window-based and dockable shells.
+        internal static void ConfigureEngineViaRuntime(ScriptEngine engine, UIApplication uiapp, IList<string> searchPaths) {
             var runtimeAsm = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => {
                 var name = a.GetName().Name;
                 return name.StartsWith("pyRevitLabs.PyRevit.Runtime", StringComparison.Ordinal)
@@ -98,15 +130,16 @@ namespace PyRevitLabs.PyRevit.Shell {
     }
 
     /// <summary>
-    /// Runs queued REPL statements inside Revit's API context for the modeless shell.
+    /// Runs queued REPL statements inside Revit's API context for the modeless and dockable
+    /// shells. Reports failures back into the owning console control.
     /// </summary>
     public class ShellExternalEventDispatcher : IExternalEventHandler {
-        readonly InteractiveShellWindow _gui;
+        readonly IronPythonConsoleControl _consoleControl;
         readonly Queue<Action> _commands = new Queue<Action>();
         readonly AutoResetEvent _commandCompleted;
 
-        public ShellExternalEventDispatcher(InteractiveShellWindow gui, AutoResetEvent commandCompleted) {
-            _gui = gui;
+        public ShellExternalEventDispatcher(IronPythonConsoleControl consoleControl, AutoResetEvent commandCompleted) {
+            _consoleControl = consoleControl;
             _commandCompleted = commandCompleted;
         }
 
@@ -121,7 +154,7 @@ namespace PyRevitLabs.PyRevit.Shell {
                     command();
                 }
                 catch (Exception ex) {
-                    _gui.ConsoleControl.WithConsoleHost(host => {
+                    _consoleControl.WithConsoleHost(host => {
                         var formatter = host.Engine.GetService<ExceptionOperations>();
                         host.Console.WriteLine(formatter.FormatException(ex), Style.Error);
                     });
