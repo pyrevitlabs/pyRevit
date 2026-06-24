@@ -225,7 +225,12 @@ namespace pyRevitLabs.PyRevit
                                           string destPath = null,
                                           GitInstallerCredentials credentials = null)
         {
+            if (destPath != null)
+                destPath = CommonUtils.ExpandEnvironmentPath(destPath);
+
             string repoSourcePath = repoUrl ?? PyRevitLabsConsts.OriginalRepoGitPath;
+            if (!repoSourcePath.IsValidHttpUrl())
+                repoSourcePath = CommonUtils.ExpandEnvironmentPath(repoSourcePath);
             string repoBranch = branchName != null ? branchName : PyRevitLabsConsts.TargetBranch;
             logger.Debug("Repo source determined as \"{0}:{1}\"", repoSourcePath, repoBranch);
 
@@ -309,6 +314,11 @@ namespace pyRevitLabs.PyRevit
                                            bool installBinaries = true,
                                            BinArtifactInstallMode binInstallMode = BinArtifactInstallMode.Clone)
         {
+            if (destPath != null)
+                destPath = CommonUtils.ExpandEnvironmentPath(destPath);
+            if (imagePath != null)
+                imagePath = CommonUtils.ExpandEnvironmentPath(imagePath);
+
             string repoBranch = branchName != null ? branchName : PyRevitLabsConsts.TargetBranch;
             string imageSource = imagePath != null ? imagePath : GithubAPI.GetBranchArchiveUrl(PyRevitLabsConsts.OriginalRepoId, repoBranch);
             string imageFilePath = null;
@@ -342,7 +352,7 @@ namespace pyRevitLabs.PyRevit
             {
                 try
                 {
-                    var pkgDest = Path.Combine(Environment.GetEnvironmentVariable("TEMP"), Path.GetFileName(imageSource));
+                    var pkgDest = Path.Combine(CommonUtils.GetUserTempDirectory(), Path.GetFileName(imageSource));
                     logger.Info("Downloading package \"{0}\"", imageSource);
                     logger.Debug("Downloading package \"{0}\" to \"{1}\"", imageSource, pkgDest);
                     imageFilePath =
@@ -375,7 +385,7 @@ namespace pyRevitLabs.PyRevit
                     );
             }
             var stagedImage = Path.Combine(
-                Environment.GetEnvironmentVariable("TEMP"),
+                CommonUtils.GetUserTempDirectory(),
                 Path.GetFileNameWithoutExtension(imageFilePath)
                 );
 
@@ -481,7 +491,10 @@ namespace pyRevitLabs.PyRevit
             }
             catch (PyRevitException ex)
             {
-                logger.Error("Can not find a valid clone inside extracted package. | {0}", ex.Message);
+                var errMsg = ex.Message;
+                if (errMsg != null && errMsg.IndexOf('%') >= 0)
+                    errMsg += " Path may contain unexpanded environment variables; ensure TEMP and --dest resolve to absolute paths.";
+                logger.Error("Can not find a valid clone inside extracted package. | {0}", errMsg);
             }
         }
 
