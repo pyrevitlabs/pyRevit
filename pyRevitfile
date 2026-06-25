@@ -26,9 +26,8 @@ assembly = 'python312.dll'
 description = 'CPython Engine'
 
 [deployments]
-core = ['build', 'pyrevitlib', 'site-packages', 'pyRevitfile']
+core = ['pyrevitlib', 'site-packages', 'pyRevitfile']
 corex = [
-    'build',
     'extensions/pyRevitCore.extension',
     'extensions/extensions.json',
     'pyrevitlib',
@@ -36,7 +35,6 @@ corex = [
     'pyRevitfile',
 ]
 base = [
-    'build',
     'extensions/pyRevitBundlesCreatorExtension.extension',
     'extensions/pyRevitCore.extension',
     'extensions/pyRevitTags.extension',
@@ -47,7 +45,6 @@ base = [
     'pyRevitfile',
 ]
 basepublic = [
-    'build',
     'extensions/pyRevitCore.extension',
     'extensions/pyRevitTags.extension',
     'extensions/pyRevitTools.extension',
@@ -57,4 +54,4 @@ basepublic = [
     'site-packages',
     'pyRevitfile',
 ]
-basex = ['build', 'extensions', 'pyrevitlib', 'site-packages', 'pyRevitfile']
+basex = ['extensions', 'pyrevitlib', 'site-packages', 'pyRevitfile']
