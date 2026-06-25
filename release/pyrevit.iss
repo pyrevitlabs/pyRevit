@@ -1,6 +1,6 @@
 #define MyAppName "pyRevit"
 #define MyAppUUID "f2a3da53-6f34-41d5-abbd-389ffa7f4d5f"
-#define MyAppVersion "6.5.2.26175"
+#define MyAppVersion "6.5.3.26176"
 #define MyAppPublisher "pyRevitLabs"
 #define MyAppURL "pyrevitlabs.io"
 #include "CodeDependencies.iss"
