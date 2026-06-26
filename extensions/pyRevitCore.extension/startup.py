@@ -37,7 +37,7 @@ def _build_dockable_shell_console():
     """
     import clr
     from System import AppDomain
-    from System.IO import Path
+    from System.IO import Path, File
     from System.Collections.Generic import List
 
     # The shell DLL lives in the active engine folder next to pyRevitLoader; loading it from
@@ -50,7 +50,7 @@ def _build_dockable_shell_console():
     if engine_dir is None:
         return None
     shell_dll = Path.Combine(engine_dir, "pyRevitLabs.PyRevit.Shell.dll")
-    if not Path.Exists(shell_dll):
+    if not File.Exists(shell_dll):
         return None
     clr.AddReferenceToFileAndPath(shell_dll)
     from PyRevitLabs.PyRevit.Shell import Shell
