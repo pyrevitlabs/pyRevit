@@ -66,7 +66,8 @@ def _build_dockable_shell_console():
 
 try:
     from pyrevit import forms
-    from pyrevit.framework import System, Threading
+    from pyrevit.framework import System, Threading, Media
+    from pyrevit.revit import ui as rvt_ui
 
     class PythonShellDockablePanel(forms.WPFPanel):
         panel_title = "pyRevit Python Shell"
@@ -77,6 +78,9 @@ try:
             # Mark not-built before loading XAML, in case Loaded fires during LoadComponent.
             self._console = None
             forms.WPFPanel.__init__(self)
+            # Match the pane background to the active Revit UI theme so the shell does not flash
+            # dark on a light-themed Revit; the console control is themed by the shell assembly.
+            self._apply_panel_theme()
             # Defer building the console until the UI thread is idle (i.e. after pyRevit has
             # finished its startup pass), so the shell engine is configured against a fully
             # initialised pyRevit runtime. The Loaded handler below covers the same need; both
@@ -92,6 +96,18 @@ try:
         def on_loaded(self, sender, args):
             self._attach_console()
 
+        def _apply_panel_theme(self):
+            # UIThemeManager only exists in Revit 2024+; older releases have no dark theme and
+            # stay light, so any failure to resolve the theme falls back to light.
+            try:
+                is_dark = rvt_ui.get_current_theme() == rvt_ui.UITheme.Dark
+            except Exception:
+                is_dark = False
+            self.Background = (
+                Media.SolidColorBrush(Media.Color.FromRgb(0x1F, 0x2D, 0x3D))
+                if is_dark
+                else Media.SolidColorBrush(Media.Colors.White)
+            )
         def _attach_console(self):
             if self._console is not None:
                 return

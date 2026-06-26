@@ -1,6 +1,5 @@
-<Page xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+﻿<Page xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-      Background="#FF1F2D3D"
       Loaded="on_loaded">
     <Grid x:Name="console_host" />
 </Page>

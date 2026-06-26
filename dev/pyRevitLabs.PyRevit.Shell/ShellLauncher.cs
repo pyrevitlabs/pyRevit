@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -18,6 +18,7 @@ namespace PyRevitLabs.PyRevit.Shell {
     internal static class ShellLauncher {
         public static InteractiveShellWindow ShowModal(UIApplication uiapp, IList<string> searchPaths) {
             var gui = new InteractiveShellWindow();
+            gui.ApplyTheme(RevitThemeDetector.IsDarkTheme(uiapp));
             AttachEnvironment(gui, uiapp, searchPaths);
 
             // Modal: run typed code on this (the command's) thread. ShowDialog keeps pumping it,
@@ -35,6 +36,7 @@ namespace PyRevitLabs.PyRevit.Shell {
 
         public static InteractiveShellWindow ShowModeless(UIApplication uiapp, IList<string> searchPaths) {
             var gui = new InteractiveShellWindow();
+            gui.ApplyTheme(RevitThemeDetector.IsDarkTheme(uiapp));
             AttachEnvironment(gui, uiapp, searchPaths);
 
             // Modeless: marshal each statement into a valid API context via an ExternalEvent so
@@ -65,7 +67,7 @@ namespace PyRevitLabs.PyRevit.Shell {
         /// </summary>
         public static UserControl CreateConfiguredConsole(UIApplication uiapp, IList<string> searchPaths) {
             var control = new IronPythonConsoleControl();
-            control.ApplyTheme(useDarkTheme: true);
+            control.ApplyTheme(RevitThemeDetector.IsDarkTheme(uiapp));
 
             var commandCompleted = new AutoResetEvent(false);
             var handler = new ShellExternalEventDispatcher(control, commandCompleted);
