@@ -55,6 +55,12 @@ namespace PythonConsoleControl
             completionDispatcher = newDispatcher;
         }
 
+        /// <summary>
+        /// Whether completion popups should render with the dark theme. Set by the host control
+        /// when its theme is applied; read each time a completion window is created.
+        /// </summary>
+        public bool UseDarkCompletionTheme { get; set; }
+
         public bool WriteInProgress
         {
             get { return writeInProgress; }
@@ -347,6 +353,7 @@ namespace PythonConsoleControl
                         if (completions.Length > 0) textArea.Dispatcher.BeginInvoke(new Action(delegate()
                         {
                             completionWindow = new PythonConsoleCompletionWindow(textArea, this);
+                            completionWindow.ApplyTheme(UseDarkCompletionTheme);
                             IList<ICompletionData> data = completionWindow.CompletionList.CompletionData;
                             foreach (ICompletionData completion in completions)
                             {

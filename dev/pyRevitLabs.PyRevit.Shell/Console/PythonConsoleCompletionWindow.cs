@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Threading;
 using ICSharpCode.AvalonEdit.Document;
 using ICSharpCode.AvalonEdit.Editing;
@@ -69,6 +70,56 @@ namespace PythonConsoleControl
             EventInfo eventInfo = typeof(TextView).GetEvent("ScrollOffsetChanged");
             Delegate methodDelegate = Delegate.CreateDelegate(eventInfo.EventHandlerType, (this as CompletionWindowBase), "TextViewScrollOffsetChanged");
             eventInfo.RemoveEventHandler(this.TextArea.TextView, methodDelegate);
+        }
+
+        /// <summary>
+        /// Recolor the completion list and its description tooltip to match the host theme. Light
+        /// is the default WPF styling, so only the dark theme needs explicit brushes.
+        /// </summary>
+        public void ApplyTheme(bool useDarkTheme)
+        {
+            if (!useDarkTheme)
+                return;
+
+            var background = new SolidColorBrush(Color.FromRgb(0x25, 0x25, 0x26));
+            var foreground = new SolidColorBrush(Color.FromRgb(0xD4, 0xD4, 0xD4));
+            var border = new SolidColorBrush(Color.FromRgb(0x3F, 0x3F, 0x46));
+            var selection = new SolidColorBrush(Color.FromRgb(0x09, 0x4A, 0x77));
+
+            this.Background = background;
+            this.Foreground = foreground;
+            this.BorderBrush = border;
+
+            completionList.Background = background;
+            completionList.Foreground = foreground;
+
+            // The list's ListBox is created when the CompletionList template is applied, which may
+            // not have happened yet; style it now if present, otherwise once it loads.
+            if (completionList.ListBox != null)
+                StyleListBox(completionList.ListBox, background, foreground, border, selection);
+            else
+                completionList.Loaded += (s, e) =>
+                {
+                    if (completionList.ListBox != null)
+                        StyleListBox(completionList.ListBox, background, foreground, border, selection);
+                };
+
+            toolTip.Background = background;
+            toolTip.Foreground = foreground;
+            toolTip.BorderBrush = border;
+        }
+
+        static void StyleListBox(ListBox listBox, Brush background, Brush foreground, Brush border, Brush selection)
+        {
+            listBox.Background = background;
+            listBox.Foreground = foreground;
+            listBox.BorderBrush = border;
+            // Override the system selection brushes so the highlighted item stays readable on a
+            // dark background instead of using the default light-blue selection.
+            listBox.Resources[SystemColors.HighlightBrushKey] = selection;
+            listBox.Resources[SystemColors.HighlightTextBrushKey] = foreground;
+            listBox.Resources[SystemColors.InactiveSelectionHighlightBrushKey] = selection;
+            listBox.Resources[SystemColors.InactiveSelectionHighlightTextBrushKey] = foreground;
         }
 
         #region ToolTip handling

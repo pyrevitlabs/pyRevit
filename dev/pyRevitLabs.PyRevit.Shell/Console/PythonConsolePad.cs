@@ -37,6 +37,14 @@ namespace PythonConsoleControl
         }
 
         /// <summary>
+        /// Selects the theme used for completion popups created from now on.
+        /// </summary>
+        public void SetCompletionTheme(bool useDarkTheme)
+        {
+            pythonTextEditor.UseDarkCompletionTheme = useDarkTheme;
+        }
+
+        /// <summary>
         /// Sets the foreground color for the console text.
         /// </summary>
         public void SetForeground(Brush foreground)

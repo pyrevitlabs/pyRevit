@@ -85,6 +85,9 @@ namespace PythonConsoleControl
             _pad.SetBackground(backgroundBrush);
             _pad.SetForeground(_currentForeground);
 
+            // Completion popups are created on demand, so record the theme for the next one.
+            _pad.SetCompletionTheme(useDarkTheme);
+
             // Also set the line number margin colors if showing line numbers
             if (editor.ShowLineNumbers)
             {
