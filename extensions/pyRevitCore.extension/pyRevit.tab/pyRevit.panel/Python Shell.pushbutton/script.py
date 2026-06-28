@@ -1,0 +1,48 @@
+# -*- coding: utf-8 -*-
+"""Open the interactive pyRevit Python shell.
+
+How the shell opens (modal window, modeless window, or dockable pane) is configurable:
+Shift+Click this button to choose the mode.
+"""
+import sys
+import clr
+
+from pyrevit import script, forms
+from System import AppDomain
+from System.IO import Path
+from System.Collections.Generic import List
+
+# Must stay in sync with the dockable pane registered in pyRevitCore.extension/startup.py.
+DOCKABLE_PANEL_ID = "8e2a1f4b-3c57-4d9a-b6e8-7f1a2c3d4e5b"
+
+shell_mode = script.get_config().get_option("mode", "Modeless")
+
+
+def _load_shell():
+    # The shell DLL ships into the active engine folder (the IronPython fork pyRevit runs),
+    # alongside the loaded pyRevitLoader; loading it from there makes the shell use that engine.
+    engine_dir = None
+    for asm in AppDomain.CurrentDomain.GetAssemblies():
+        if asm.GetName().Name == "pyRevitLoader":
+            engine_dir = Path.GetDirectoryName(asm.Location)
+            break
+    clr.AddReferenceToFileAndPath(
+        Path.Combine(engine_dir, "pyRevitLabs.PyRevit.Shell.dll")
+    )
+    from PyRevitLabs.PyRevit.Shell import Shell
+
+    # Forward this engine's sys.path so `from pyrevit import ...` resolves in the shell as here.
+    search_paths = List[str]()
+    for path in sys.path:
+        search_paths.Add(path)
+    return Shell, search_paths
+
+
+if shell_mode == "Docked":
+    forms.open_dockable_panel(DOCKABLE_PANEL_ID)
+else:
+    shell, paths = _load_shell()
+    if shell_mode == "Modal":
+        shell.Modal(__revit__, paths)
+    else:
+        shell.Modeless(__revit__, paths)

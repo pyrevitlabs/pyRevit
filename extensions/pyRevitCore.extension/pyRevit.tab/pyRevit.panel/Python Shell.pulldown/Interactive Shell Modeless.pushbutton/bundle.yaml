@@ -1,8 +1,0 @@
-title:
-  en_us: Interactive Shell (Modeless)
-tooltip:
-  en_us: >-
-    Open an interactive IronPython 3.4 shell (modeless). Revit stays interactive while the shell
-    is open - select elements in Revit, then query them live. Each statement runs in a fresh Revit
-    API context.
-context: zero-doc
