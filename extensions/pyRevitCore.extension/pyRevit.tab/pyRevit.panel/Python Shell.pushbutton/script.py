@@ -39,7 +39,7 @@ def _load_shell():
     return Shell, search_paths
 
 
-if shell_mode == "Docked":
+if shell_mode in ("Docked", "Docked Editor"):
     forms.open_dockable_panel(DOCKABLE_PANEL_ID)
 else:
     shell, paths = _load_shell()

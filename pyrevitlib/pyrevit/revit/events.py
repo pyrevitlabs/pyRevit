@@ -1,4 +1,4 @@
-"""Revit events handler management."""
+﻿"""Revit events handler management."""
 #pylint: disable=unused-argument
 from collections import deque
 from pyrevit import HOST_APP
@@ -113,14 +113,36 @@ def unregister_exec_handlers(handler_group_id):
 
 def delayed_unregister_exec_handlers(handler_group_id):
     HANDLER_UNREGISTERER.handler_group_id = handler_group_id
-    HANDLER_UNREGISTERER_EXTEVENT.Raise()
+    ext_event = _get_unregisterer_extevent()
+    if ext_event is not None:
+        ext_event.Raise()
+
+
+def _get_unregisterer_extevent():
+    # The unregisterer external event must be created in a valid Revit API context. It is
+    # normally created at module import (below), but if this module is first imported outside
+    # an API context (e.g. from the interactive pyRevit shell, whose REPL runs statements on a
+    # non-command thread), creation is deferred and retried here on first use.
+    global HANDLER_UNREGISTERER_EXTEVENT
+    if HANDLER_UNREGISTERER_EXTEVENT is None:
+        try:
+            HANDLER_UNREGISTERER_EXTEVENT = UI.ExternalEvent.Create(HANDLER_UNREGISTERER)
+        except Exception:
+            HANDLER_UNREGISTERER_EXTEVENT = None
+    return HANDLER_UNREGISTERER_EXTEVENT
 
 
 REGISTERED_HANDLERS = {}
 HANDLER_UNREGISTERER = \
     FuncAsEventHandler(unregister_exec_handlers, purge=False)
-HANDLER_UNREGISTERER_EXTEVENT = \
-    UI.ExternalEvent.Create(HANDLER_UNREGISTERER)
+# ExternalEvent.Create requires a standard Revit API context. Importing this module outside
+# such a context (e.g. from the interactive shell) used to crash here, so tolerate the failure
+# and create the event lazily on first use (see _get_unregisterer_extevent) instead.
+try:
+    HANDLER_UNREGISTERER_EXTEVENT = \
+        UI.ExternalEvent.Create(HANDLER_UNREGISTERER)
+except Exception:
+    HANDLER_UNREGISTERER_EXTEVENT = None
 
 
 def handle(*args): #pylint: disable=no-method-argument
@@ -163,7 +185,23 @@ class _GenericExternalEventHandler(UI.IExternalEventHandler):
 
 if compat.IRONPY:
     _HANDLER = _GenericExternalEventHandler()
-    _EXTERNAL_EVENT = UI.ExternalEvent.Create(_HANDLER)
+    # See HANDLER_UNREGISTERER_EXTEVENT above: ExternalEvent.Create needs a standard API
+    # context, so tolerate failure at import (e.g. when imported from the interactive shell)
+    # and create lazily on first use via _get_execute_extevent().
+    try:
+        _EXTERNAL_EVENT = UI.ExternalEvent.Create(_HANDLER)
+    except Exception:
+        _EXTERNAL_EVENT = None
+
+
+def _get_execute_extevent():
+    global _EXTERNAL_EVENT
+    if _EXTERNAL_EVENT is None:
+        try:
+            _EXTERNAL_EVENT = UI.ExternalEvent.Create(_HANDLER)
+        except Exception:
+            _EXTERNAL_EVENT = None
+    return _EXTERNAL_EVENT
 
 
 def execute_in_revit_context(func, *args, **kwargs):
@@ -239,4 +277,6 @@ def execute_in_revit_context(func, *args, **kwargs):
                     g[k] = old
 
     _HANDLER.schedule(_wrapper)
-    _EXTERNAL_EVENT.Raise()
+    _ext_event = _get_execute_extevent()
+    if _ext_event is not None:
+        _ext_event.Raise()

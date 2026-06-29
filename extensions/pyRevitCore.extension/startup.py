@@ -1,4 +1,4 @@
-"""pyRevit core startup script"""
+﻿"""pyRevit core startup script"""
 #pylint: disable=import-error,unused-import,invalid-name
 from pyrevit._perf import mark as _perfmark
 _perfmark("startup.pyRevitCore:entry")
@@ -37,7 +37,7 @@ _SHELL_UIAPP = HOST_APP.uiapp
 
 
 def _build_dockable_shell_console():
-    """Return a configured IronPythonConsole control, or None if the shell is unavailable."""
+    """Return a configured Python shell control (console, or editor when configured) for the dockable pane."""
     import clr
     from System import AppDomain
     from System.IO import Path, File
@@ -64,7 +64,24 @@ def _build_dockable_shell_console():
     for path in sys.path:
         search_paths.Add(path)
 
+    # The dockable pane is shared; pick the editor surface when the user configured a "Docked"
+    # Editor" mode (same "mode" option the Python Shell pushbutton writes). Falls back to the
+    # console-only pane for every other mode.
+    if _get_shell_mode() == "Docked Editor":
+        return Shell.CreateDockableEditor(_SHELL_UIAPP, search_paths)
     return Shell.CreateDockableConsole(_SHELL_UIAPP, search_paths)
+
+
+def _get_shell_mode():
+    # Mirrors the pushbutton config section ("Python Shell_config") so the dockable pane honors the
+    # same preference the Python Shell button writes.
+    try:
+        section = user_config.get_section("Python Shell_config")
+        if section is None:
+            return "Modeless"
+        return section.get_option("mode", "Modeless")
+    except Exception:
+        return "Modeless"
 
 
 try:

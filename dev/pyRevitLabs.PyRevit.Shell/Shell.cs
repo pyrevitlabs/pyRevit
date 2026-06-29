@@ -61,6 +61,16 @@ namespace PyRevitLabs.PyRevit.Shell {
             ShellAssemblyResolver.Install();
             return ShellLauncher.CreateConfiguredConsole(uiapp, searchPaths);
         }
+        /// <summary>
+        /// Build a fully-wired Python editor (AvalonEdit + console) for hosting inside a Revit
+        /// dockable pane, mirroring <see cref="CreateDockableConsole"/> but with the code editor
+        /// surface on top. The editor's Run executes through the same ExternalEvent-driven dispatch
+        /// so Revit stays interactive while the pane is open.
+        /// </summary>
+        public static UserControl CreateDockableEditor(UIApplication uiapp, IList<string> searchPaths) {
+            ShellAssemblyResolver.Install();
+            return ShellLauncher.CreateConfiguredEditor(uiapp, searchPaths);
+        }
     }
 
     /// <summary>
