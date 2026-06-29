@@ -1,8 +1,9 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """Open the interactive pyRevit Python shell.
 
-How the shell opens (modal window, modeless window, or dockable pane) is configurable:
-Shift+Click this button to choose the mode.
+How the shell opens (modal window, modeless window, dockable pane, or the same
+windows with a built-in code editor) is configurable: Shift+Click this button to
+choose the mode.
 """
 import sys
 import clr
@@ -44,5 +45,9 @@ else:
     shell, paths = _load_shell()
     if shell_mode == "Modal":
         shell.Modal(__revit__, paths)
+    elif shell_mode == "Modal Editor":
+        shell.ModalEditor(__revit__, paths)
+    elif shell_mode == "Modeless Editor":
+        shell.ModelessEditor(__revit__, paths)
     else:
         shell.Modeless(__revit__, paths)

@@ -1,13 +1,16 @@
-# -*- coding: utf-8 -*-
-"""Choose how the pyRevit Python Shell opens: modal, modeless, or docked."""
+﻿# -*- coding: utf-8 -*-
+"""Choose how the pyRevit Python Shell opens: modal, modeless, docked, or with
+a built-in code editor panel."""
 from pyrevit import script, forms
 
 shell_config = script.get_config()
 current_mode = shell_config.get_option("mode", "Modeless")
 
 modes = [
-    "Modal",
     "Modeless",
+    "Modeless Editor",
+    "Modal",
+    "Modal Editor",
     "Docked",
 ]
 selected = forms.ask_for_one_item(

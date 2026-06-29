@@ -1,0 +1,11 @@
+﻿<Window x:Class="PyRevitLabs.PyRevit.Shell.InteractiveEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:PyRevitLabs.PyRevit.Shell"
+        Title="pyRevit Python Editor"
+        Height="650" Width="950" MinHeight="300" MinWidth="400"
+        WindowStartupLocation="CenterScreen">
+    <Grid>
+        <shell:EditorView x:Name="editorView" />
+    </Grid>
+</Window>

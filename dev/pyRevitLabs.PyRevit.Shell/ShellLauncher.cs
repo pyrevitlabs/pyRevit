@@ -12,12 +12,35 @@ using PythonConsoleControl;
 
 namespace PyRevitLabs.PyRevit.Shell {
     /// <summary>
+    /// Common surface the launcher needs from any shell window (console-only or editor): the
+    /// console control to wire the engine onto, plus theme/owner helpers. Lets the modal/modeless
+    /// paths be generic over the concrete window type.
+    /// </summary>
+    internal interface IShellWindow {
+        IronPythonConsoleControl ConsoleControl { get; }
+        void ApplyTheme(bool useDarkTheme);
+        void SetRevitAsWindowOwner();
+    }
+
+    /// <summary>
     /// Builds and shows the interactive shell window and wires its REPL to a valid Revit API
     /// context. Reached through <see cref="Shell"/> so the assembly resolver is installed first.
     /// </summary>
     internal static class ShellLauncher {
-        public static InteractiveShellWindow ShowModal(UIApplication uiapp, IList<string> searchPaths) {
-            var gui = new InteractiveShellWindow();
+        public static InteractiveShellWindow ShowModal(UIApplication uiapp, IList<string> searchPaths)
+            => ShowModalWindow<InteractiveShellWindow>(uiapp, searchPaths);
+
+        public static InteractiveEditorWindow ShowModalEditor(UIApplication uiapp, IList<string> searchPaths)
+            => ShowModalWindow<InteractiveEditorWindow>(uiapp, searchPaths);
+
+        public static InteractiveShellWindow ShowModeless(UIApplication uiapp, IList<string> searchPaths)
+            => ShowModelessWindow<InteractiveShellWindow>(uiapp, searchPaths);
+
+        public static InteractiveEditorWindow ShowModelessEditor(UIApplication uiapp, IList<string> searchPaths)
+            => ShowModelessWindow<InteractiveEditorWindow>(uiapp, searchPaths);
+
+        static T ShowModalWindow<T>(UIApplication uiapp, IList<string> searchPaths) where T : System.Windows.Window, IShellWindow, new() {
+            var gui = new T();
             gui.ApplyTheme(RevitThemeDetector.IsDarkTheme(uiapp));
             AttachEnvironment(gui, uiapp, searchPaths);
 
@@ -34,8 +57,8 @@ namespace PyRevitLabs.PyRevit.Shell {
             return gui;
         }
 
-        public static InteractiveShellWindow ShowModeless(UIApplication uiapp, IList<string> searchPaths) {
-            var gui = new InteractiveShellWindow();
+        static T ShowModelessWindow<T>(UIApplication uiapp, IList<string> searchPaths) where T : System.Windows.Window, IShellWindow, new() {
+            var gui = new T();
             gui.ApplyTheme(RevitThemeDetector.IsDarkTheme(uiapp));
             AttachEnvironment(gui, uiapp, searchPaths);
 
@@ -62,7 +85,7 @@ namespace PyRevitLabs.PyRevit.Shell {
 
         /// <summary>
         /// Create a configured console control for a dockable pane. Same environment and modeless
-        /// dispatch as <see cref="ShowModeless"/>, but returns the bare control so pyRevit can host
+        /// dispatch as <see cref="ShowModelessWindow"/>, but returns the bare control so pyRevit can host
         /// it inside its own <c>WPFPanel</c>-based dockable pane.
         /// </summary>
         public static UserControl CreateConfiguredConsole(UIApplication uiapp, IList<string> searchPaths) {
@@ -94,7 +117,7 @@ namespace PyRevitLabs.PyRevit.Shell {
         // Give the console's engine the full pyRevit environment (configured-fork engine, all
         // builtins incl. __scriptruntime__, RevitAPI, stdlib and the caller's sys.path) so the REPL
         // behaves like a normal pyRevit script.
-        static void AttachEnvironment(InteractiveShellWindow gui, UIApplication uiapp, IList<string> searchPaths) {
+        static void AttachEnvironment(IShellWindow gui, UIApplication uiapp, IList<string> searchPaths) {
             gui.ConsoleControl.WithConsoleHost(host => {
                 ConfigureEngineViaRuntime(host.Engine, uiapp, searchPaths);
                 host.Console.ScriptScope.SetVariable("__window__", gui);

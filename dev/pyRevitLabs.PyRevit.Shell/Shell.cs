@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -29,6 +29,25 @@ namespace PyRevitLabs.PyRevit.Shell {
         public static void Modeless(UIApplication uiapp, IList<string> searchPaths) {
             ShellAssemblyResolver.Install();
             ShellLauncher.ShowModeless(uiapp, searchPaths);
+        }
+
+        /// <summary>
+        /// Open the interactive shell with a code editor panel (AvalonEdit) above the REPL, in a
+        /// modal window. Same engine environment and dispatch as <see cref="Modal"/>; the editor's
+        /// Run sends the selection (or whole file) to the REPL.
+        /// </summary>
+        public static void ModalEditor(UIApplication uiapp, IList<string> searchPaths) {
+            ShellAssemblyResolver.Install();
+            ShellLauncher.ShowModalEditor(uiapp, searchPaths);
+        }
+
+        /// <summary>
+        /// Open the interactive shell with a code editor panel above the REPL, in a modeless
+        /// window that keeps Revit interactive (statements run through an ExternalEvent).
+        /// </summary>
+        public static void ModelessEditor(UIApplication uiapp, IList<string> searchPaths) {
+            ShellAssemblyResolver.Install();
+            ShellLauncher.ShowModelessEditor(uiapp, searchPaths);
         }
 
         /// <summary>
