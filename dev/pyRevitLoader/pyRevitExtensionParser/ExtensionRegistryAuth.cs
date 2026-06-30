@@ -206,7 +206,7 @@ namespace pyRevitExtensionParser
         {
             foreach (var value in source)
             {
-                if (!target.Contains(value, StringComparer.OrdinalIgnoreCase))
+                if (!target.Exists(x => string.Equals(x, value, StringComparison.OrdinalIgnoreCase)))
                     target.Add(value);
             }
         }
