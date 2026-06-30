@@ -244,6 +244,27 @@ namespace pyRevitExtensionParser
             _pythonScriptCache.Clear();
             _readScriptMetadataCache = null;
             BundleParser.BundleYamlParser.ClearCache();
+            ExtensionRegistryAuth.ClearCache();
+        }
+
+        internal static List<string> GetExtensionRootsForAuthLookup()
+        {
+            return GetCachedExtensionRoots();
+        }
+
+        internal static List<string> GetExtensionLookupSources()
+        {
+            return GetConfig().ExtensionLookupSources ?? new List<string>();
+        }
+
+        internal static bool FileExistsForAuthLookup(string path)
+        {
+            return FileExists(path);
+        }
+
+        internal static void LogParseExceptionForAuthLookup(string parsedFile, Exception ex)
+        {
+            LogParseException(parsedFile, ex);
         }
 
         /// <summary>
@@ -510,6 +531,7 @@ namespace pyRevitExtensionParser
             bool rocketModeCompatible = false;
             List<string> authUsers = null;
             List<string> authGroups = null;
+            string manifestName = null;
             var extensionJsonPath = Path.Combine(extDir, "extension.json");
             if (FileExists(extensionJsonPath))
             {
@@ -517,6 +539,8 @@ namespace pyRevitExtensionParser
                 {
                     var jsonContent = File.ReadAllText(extensionJsonPath);
                     var json = JObject.Parse(jsonContent);
+
+                    manifestName = json["name"]?.ToString();
 
                     // Read templates section if present
                     var templates = json["templates"] as JObject;
@@ -581,6 +605,13 @@ namespace pyRevitExtensionParser
                     LogParseException(extensionJsonPath, ex);
                 }
             }
+
+            ExtensionRegistryAuth.ApplyRegistryAuthorization(
+                extDir,
+                extName,
+                manifestName,
+                ref authUsers,
+                ref authGroups);
 
             // pyRevitCore is always rocket mode compatible (hardcoded, matches Python behavior)
             if (string.Equals(extName, "pyRevitCore", StringComparison.OrdinalIgnoreCase))

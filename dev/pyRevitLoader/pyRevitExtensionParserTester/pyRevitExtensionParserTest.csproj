@@ -51,6 +51,7 @@
     <Compile Include="CSharpScriptTests.cs" />
     <Compile Include="DynamoScriptTests.cs" />
     <Compile Include="ExtensionManagerServiceTests.cs" />
+    <Compile Include="ExtensionAuthUsersTests.cs" />
     <Compile Include="AssemblyBuilderServiceTests.cs" />
     <Compile Include="HookManagerTests.cs" />
     <Compile Include="SessionManagerIntegrationTests.cs" />

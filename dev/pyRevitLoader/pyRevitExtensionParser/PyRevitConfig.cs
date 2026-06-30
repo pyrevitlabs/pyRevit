@@ -426,6 +426,22 @@ namespace pyRevitExtensionParser
                 _ini.IniWriteValue("core", "userextensions", PythonListParser.ToPythonListString(value));
             }
         }
+
+        /// <summary>
+        /// Gets additional extension definition source files configured under [environment] sources.
+        /// Matches Python userconfig.get_ext_sources().
+        /// </summary>
+        public List<string> ExtensionLookupSources
+        {
+            get
+            {
+                return _ini.GetPythonList("environment", "sources");
+            }
+            set
+            {
+                _ini.IniWriteValue("environment", "sources", PythonListParser.ToPythonListString(value));
+            }
+        }
         /// <summary>
         /// Initializes a new instance of the <see cref="PyRevitConfig"/> class with the specified configuration file path.
         /// </summary>
