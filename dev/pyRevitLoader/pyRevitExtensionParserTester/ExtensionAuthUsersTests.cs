@@ -19,7 +19,7 @@ namespace pyRevitExtensionParserTester
             ClearAllCaches();
         }
 
-        private static void UseTestPyRevitConfig(string iniContent)
+        private void UseTestPyRevitConfig(string iniContent)
         {
             var configPath = Path.Combine(TestTempDir, "pyRevit_config.ini");
             File.WriteAllText(configPath, iniContent);
