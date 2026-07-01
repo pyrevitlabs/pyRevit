@@ -317,6 +317,19 @@
             "website": "https://biminent.com",
             "image": "",
             "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "type": "extension",
+            "rocket_mode_compatible": "True",
+            "name": "Blendit",
+            "description": "One-click Revit to Blender rendering. Sends the active 3D view to Blender and renders it through a curated pipeline: photoreal, clay and shadow-study modes plus NPR line/pen/sketch/cel/hatch, an interactive review session, SVG/PDF vector export, and procedural volumetric clouds. Blender runs as a separate process; the pipeline ships inside the extension. Free, MIT-licensed.",
+            "author": "lewismconte",
+            "author_profile": "https://github.com/lewismconte",
+            "url": "https://github.com/lewismconte/blendit.git",
+            "website": "https://github.com/lewismconte/blendit",
+            "image": "",
+            "dependencies": []
         }
     ]
 }
