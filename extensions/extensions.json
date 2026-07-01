@@ -328,7 +328,7 @@
             "author_profile": "https://github.com/lewismconte",
             "url": "https://github.com/lewismconte/blendit.git",
             "website": "https://github.com/lewismconte/blendit",
-            "image": "",
+            "image": "https://raw.githubusercontent.com/lewismconte/blendit/main/media/blendit_hero.png",
             "dependencies": []
         }
     ]
