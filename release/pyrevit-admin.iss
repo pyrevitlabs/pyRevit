@@ -1,6 +1,6 @@
 #define MyAppName "pyRevit"
 #define MyAppUUID "f2a3da53-6f34-41d5-abbd-389ffa7f4d5f"
-#define MyAppVersion "6.4.0.26166"
+#define MyAppVersion "6.5.3.26176"
 #define MyAppPublisher "pyRevitLabs"
 #define MyAppURL "pyrevitlabs.io"
 #include "CodeDependencies.iss"
@@ -77,48 +77,60 @@ Source: "..\pyRevitfile"; DestDir: "{app}"; Flags: ignoreversion; Components: co
 ; https://stackoverflow.com/a/9962307/2350244 (mod path module)
 Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\bin"
 
-[Run]
-Filename: "{app}\bin\pyrevit.exe"; Description: "Clearning caches..."; Parameters: "caches clear --all"; Flags: runhidden
-Filename: "{app}\bin\pyrevit.exe"; Description: "Detach existing clones..."; Parameters: "detach --all"; Flags: runhidden
-Filename: "{app}\bin\pyrevit.exe"; Description: "Registering this clone..."; Parameters: "clones add this master --force"; Flags: runhidden
-Filename: "{app}\bin\pyrevit.exe"; Description: "Attaching this clone..."; Parameters: "attach master default --installed --allusers"; Flags: runhidden
-
 [UninstallRun]
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "ClearCaches"; Parameters: "caches clear --all"; Flags: runhidden
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detach --all"; Flags: runhidden
 
 [Code]
-procedure CurStepChanged(CurStep: TSetupStep);
+function RunPyRevitCommand(const Params: String; const AsOriginalUser: Boolean): Boolean;
 var
-  ProgramDataPyRevit: String;
-  MarkerPath: String;
+  ResultCode: Integer;
+  PyRevitExe: String;
 begin
-  if CurStep = ssPostInstall then
+  Result := False;
+  PyRevitExe := ExpandConstant('{app}\bin\pyrevit.exe');
+  if not FileExists(PyRevitExe) then
   begin
-    ProgramDataPyRevit := ExpandConstant('{commonappdata}\pyRevit');
-    MarkerPath := ProgramDataPyRevit + '\install_all_users';
-    if ForceDirectories(ProgramDataPyRevit) then
-      SaveStringToFile(MarkerPath, 'AllUsers', False)
-    else
-    begin
-      Log('Could not create ProgramData\pyRevit for install_all_users marker');
-      MsgBox('Warning: Could not create all-users marker file. Config will use per-user scope.', mbInformation, MB_OK);
-    end;
+    Log('pyrevit.exe not found: ' + PyRevitExe);
+    Exit;
+  end;
+  if AsOriginalUser then
+    Result := ExecAsOriginalUser(PyRevitExe, Params, ExpandConstant('{app}\bin'), SW_HIDE, ewWaitUntilTerminated, ResultCode)
+  else
+    Result := Exec(PyRevitExe, Params, ExpandConstant('{app}\bin'), SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  if not Result then
+    Log('Failed to execute pyrevit ' + Params)
+  else if ResultCode <> 0 then
+  begin
+    Log('pyrevit exited with code ' + IntToStr(ResultCode) + ': ' + Params);
+    Result := False;
   end;
 end;
 
-procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
-var
-  MarkerPath: String;
+procedure RunAdminPostInstallCommands;
 begin
-  if CurUninstallStep = usPostUninstall then
-  begin
-    MarkerPath := ExpandConstant('{commonappdata}\pyRevit\install_all_users');
-    if FileExists(MarkerPath) and DeleteFile(MarkerPath) then
-      Log('Removed install_all_users marker')
-    else if FileExists(MarkerPath) then
-      Log('Could not remove install_all_users marker: ' + MarkerPath);
-  end;
+  RunPyRevitCommand('caches clear --all', True);
+  RunPyRevitCommand('detach --all', True);
+  if not RunPyRevitCommand('clones add this master --force', False) then
+    MsgBox(
+      'The pyRevit admin installer could not register the installed clone (pyrevit clones add).' + #13#10 + #13#10 +
+      'Run the following from an elevated command prompt in the install bin folder:' + #13#10 +
+      '  pyrevit clones add this master --force',
+      mbError, MB_OK);
+  if not RunPyRevitCommand('attach master default --installed --allusers', False) then
+    MsgBox(
+      'The pyRevit admin installer could not attach pyRevit to Revit for all users.' + #13#10 + #13#10 +
+      'Run the following from an elevated command prompt in the install bin folder:' + #13#10 +
+      '  pyrevit attach master default --installed --allusers',
+      mbError, MB_OK);
+  if not RunPyRevitCommand('configs seedshippeddefaults', False) then
+    Log('pyrevit configs seedshippeddefaults failed or was skipped');
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssPostInstall then
+    RunAdminPostInstallCommands;
 end;
 
 function InitializeSetup: Boolean;

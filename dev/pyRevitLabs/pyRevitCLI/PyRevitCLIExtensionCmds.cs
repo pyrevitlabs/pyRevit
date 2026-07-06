@@ -175,7 +175,7 @@ namespace pyRevitCLI {
             if (extName != null) {
                 PyRevitClone clone = null;
                 if (cloneName != null)
-                    clone = PyRevitClones.GetRegisteredClone(cloneName);
+                    clone = TryResolveShippedClone(cloneName);
 
                 if (enable) {
                     if (clone != null)
@@ -189,6 +189,30 @@ namespace pyRevitCLI {
                     else
                         PyRevitExtensions.DisableInstalledExtension(extName);
                 }
+            }
+        }
+
+        private static PyRevitClone TryResolveShippedClone(string cloneName) {
+            try {
+                return PyRevitClones.GetRegisteredClone(cloneName);
+            }
+            catch {
+                PyRevitClone fallbackClone = null;
+                foreach (var attachment in PyRevitAttachments.GetAttachments()) {
+                    try {
+                        var manifestClone = PyRevitClone.GetCloneFromManifest(attachment.Manifest);
+                        if (manifestClone.Matches(cloneName))
+                            return manifestClone;
+                        if (fallbackClone == null)
+                            fallbackClone = manifestClone;
+                    }
+                    catch {
+                        continue;
+                    }
+                }
+                if (fallbackClone != null)
+                    return new PyRevitClone(fallbackClone.ClonePath, name: cloneName);
+                return null;
             }
         }
 

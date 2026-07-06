@@ -836,4 +836,14 @@ PYREVIT_FILE_PREFIX_STAMPED_USER_REGEX = \
 # -----------------------------------------------------------------------------
 _perfmark("pyrevit.__init__:before labs")
 from pyrevit import labs
+from pyRevitLabs import Common as PyRevitLabsCommon
 _perfmark("pyrevit.__init__:after labs (exit)")
+
+# Align roaming/programdata paths with the C# install-scope resolver.
+ALLUSER_PROGRAMDATA = PyRevitLabsCommon.PyRevitLabsConsts.PyRevitProgramDataPath
+USER_ROAMING_DIR = PyRevitLabsCommon.PyRevitLabsConsts.PyRevitPath
+PYREVIT_ALLUSER_APP_DIR = ALLUSER_PROGRAMDATA
+PYREVIT_APP_DIR = USER_ROAMING_DIR
+PYREVIT_VERSION_APP_DIR = op.join(PYREVIT_APP_DIR, HOST_APP.version)
+THIRDPARTY_EXTENSIONS_DEFAULT_DIR = \
+    op.join(PYREVIT_APP_DIR, 'Extensions')

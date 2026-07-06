@@ -451,7 +451,7 @@ namespace pyRevitLabs.PyRevit {
                     try {
                         filePath =
                             CommonUtils.DownloadFile(fileOrUri,
-                                                     Path.Combine(Environment.GetEnvironmentVariable("TEMP"),
+                                                     Path.Combine(CommonUtils.GetUserTempDirectory(),
                                                                   PyRevitConsts.EnvConfigsExtensionDBFileName)
                             );
                     }

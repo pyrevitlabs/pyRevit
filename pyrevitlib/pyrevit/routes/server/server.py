@@ -13,6 +13,11 @@ from pyrevit.coreutils.logger import get_logger
 from pyrevit.compat import PY3
 from pyrevit.compat import urlparse
 
+if PY3:
+    from urllib.parse import parse_qs
+else:
+    from urlparse import parse_qs
+
 from pyrevit.routes.server import exceptions as excp
 from pyrevit.routes.server import base
 from pyrevit.routes.server import handler
@@ -51,15 +56,16 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
                     api_path = "/" + "/".join(levels[2:])
                 else:
                     api_path = "/"
-                return api_name, api_path
-        return None, None
+                query_string = url_parts.query
+                return api_name, api_path, query_string
+        return None, None, None
 
     def _parse_request_info(self):
         # find the app
-        api_name, api_path = self._parse_api_path()  # type: str, str
+        api_name, api_path, query_string = self._parse_api_path()  # type: str, str, str
         if not api_name:
             raise excp.APINotDefinedException(api_name)
-        return api_name, api_path
+        return api_name, api_path, query_string
 
     def _find_route_handler(self, api_name, path, method):
         route, route_handler = router.get_route_handler(
@@ -69,7 +75,7 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
             raise excp.RouteHandlerNotDefinedException(api_name, path, method)
         return route, route_handler
 
-    def _prepare_request(self, route, path, method):
+    def _prepare_request(self, route, path, method, query_string=None):
         # process request data
         data = None
         content_length = self.headers.get("content-length")  # type: str
@@ -82,11 +88,19 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
                 if content_type == "application/json":
                     data = json.loads(data)
 
+        # parse query string into a dictionary
+        query_params = {}
+        if query_string:
+            # parse_qs returns lists for values; flatten single values to strings
+            parsed = parse_qs(query_string)
+            query_params = {k: v[0] if len(v) == 1 else v for k, v in parsed.items()}
+
         return base.Request(
             path=path,
             method=method,
             data=data,
             params=router.extract_route_params(route.pattern, path),
+            query_params=query_params,
         )
 
     def _prepare_host_handler(self, request, route_handler):
@@ -138,13 +152,13 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
 
     def _handle_route(self, method):
         # process the given url and find API and route
-        api_name, path = self._parse_request_info()
+        api_name, path, query_string = self._parse_request_info()
 
         # find the handler function registered by the API and route
         route, route_handler = self._find_route_handler(api_name, path, method)
 
         # prepare a request obj to be passed to registered handler
-        request = self._prepare_request(route, path, method)
+        request = self._prepare_request(route, path, method, query_string)
 
         # if handler has uiapp in arguments, run in host api context
         if handler.RequestHandler.wants_api_context(route_handler):
