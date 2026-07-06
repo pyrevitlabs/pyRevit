@@ -21,7 +21,7 @@ import traceback
 
 from pyrevit import DB, UI
 from pyrevit.api import ExternalService as es
-from pyrevit.framework import Guid, List
+from pyrevit.framework import Guid
 from pyrevit.compat import get_elementid_value_func
 
 get_elementid_value = get_elementid_value_func()
@@ -147,7 +147,7 @@ class Handler(UI.ITemporaryGraphicsHandler):
             if self.guid in registered:
                 self.unregister()
             svc.AddServer(self)
-            active = List[Guid]()
+            active = svc.GetActiveServerIds()
             active.Add(self.guid)
             svc.SetActiveServers(active)
         except Exception:
@@ -244,6 +244,8 @@ class ControlManager(object):
         try:
             data = DB.InCanvasControlData(icon_path, position)
             index = self._mgr.AddControl(data, view.Id)
+            if index < 0:
+                return index
             view_id = get_elementid_value(view.Id)
             if view_id not in self._view_controls:
                 self._view_controls[view_id] = []
