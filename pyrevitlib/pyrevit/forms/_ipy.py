@@ -891,6 +891,8 @@ class TemplateListItem(Reactive):
     def __nonzero__(self):
         return self.state
 
+    __bool__ = __nonzero__
+
     def __str__(self):
         return self.name or str(self.item)
 
@@ -1006,6 +1008,8 @@ class ParamDef(TemplateListItem):
 
     def __nonzero__(self):
         return True
+
+    __bool__ = __nonzero__
 
     def __iter__(self):
         for f in self._fields:

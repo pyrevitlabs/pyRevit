@@ -99,6 +99,45 @@ class Py2IdiomTests(unittest.TestCase):
         self.assertIn("<strong>bold</strong>", html)
         self.assertIn(u"café", html)
 
+    def test_markdown_safemode(self):
+        """Raw-HTML postprocessor coerces the safeMode value to text."""
+        from pyrevit.coreutils import markdown
+
+        html = markdown.markdown(u"text <script>x</script>", safe_mode="escape")
+        self.assertIn("&lt;script&gt;", html)
+
+    def test_markdown_footnotes(self):
+        """Footnote reference numbers are text-coerced for ElementTree."""
+        from pyrevit.coreutils import markdown
+        from pyrevit.coreutils.markdown.extensions.footnotes import (
+            FootnoteExtension,
+        )
+
+        html = markdown.markdown(
+            u"body[^1]\n\n[^1]: note", extensions=[FootnoteExtension()]
+        )
+        self.assertIn("footnote", html)
+
+    def test_markdown_in_html_block(self):
+        """Markdown-inside-HTML tag placeholders are text-coerced (extra)."""
+        from pyrevit.coreutils import markdown
+        from pyrevit.coreutils.markdown.extensions.extra import ExtraExtension
+
+        html = markdown.markdown(
+            u'<div markdown="1">**bold**</div>', extensions=[ExtraExtension()]
+        )
+        self.assertIn("<strong>bold</strong>", html)
+
+    @unittest.skipUnless(IRONPY, "forms WPF classes are IronPython-only")
+    def test_forms_paramdef_truthiness(self):
+        """ParamDef instances stay truthy on Python 3 engines (__bool__)."""
+        from pyrevit.forms import _ipy
+
+        param_def = _ipy.ParamDef(
+            "name", False, None, False, False, None, "", True, None, False, 0
+        )
+        self.assertTrue(bool(param_def))
+
     @unittest.skipUnless(IRONPY, "forms WPF classes are IronPython-only")
     def test_forms_listitem_truthiness(self):
         """TemplateListItem truthiness follows checked state (__bool__)."""
@@ -124,6 +163,45 @@ class SortingTests(unittest.TestCase):
         env_vars = envvars.get_pyrevit_env_vars()
         items = sorted(env_vars.items(), key=lambda kv: str(kv[0]))
         self.assertEqual(len(items), len(env_vars))
+
+
+class QueryStringLookupTests(unittest.TestCase):
+    """String-identifier lookups in revit.db.query (isinstance str checks)."""
+
+    def setUp(self):
+        from pyrevit import revit
+
+        if not revit.doc:
+            self.skipTest("Requires open document")
+        if revit.doc.IsFamilyDocument:
+            self.skipTest("Requires project document, not family document")
+        self.doc = revit.doc
+
+    def test_get_param_by_name(self):
+        """get_param resolves a parameter passed by name string."""
+        from pyrevit.revit import query
+
+        pinfo = self.doc.ProjectInformation
+        param = None
+        for candidate in pinfo.Parameters:
+            param = candidate
+            break
+        if param is None:
+            self.skipTest("ProjectInformation has no parameters")
+        found = query.get_param(pinfo, param.Definition.Name)
+        self.assertIsNotNone(found)
+
+    def test_get_category_by_name(self):
+        """get_category resolves a category passed by name string."""
+        from pyrevit.revit import query
+
+        category = None
+        for candidate in self.doc.Settings.Categories:
+            category = candidate
+            break
+        found = query.get_category(category.Name, doc=self.doc)
+        self.assertIsNotNone(found)
+        self.assertEqual(found.Name, category.Name)
 
 
 class OutParamMarshalingTests(unittest.TestCase):

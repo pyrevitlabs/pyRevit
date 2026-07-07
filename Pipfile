@@ -35,3 +35,4 @@ allow_prereleases = false
 pyrevit = "python ./dev/pyrevit.py"
 docs = "mkdocs build"
 check-docstrings = "ruff check --fix pyrevitlib/pyrevit"
+check-py3 = "python ./dev/scripts/check_py3_compat.py"

@@ -242,7 +242,7 @@ def get_param(element, param_identifier, default=None):
         return default
 
     try:
-        if isinstance(param_identifier, (str, unicode)):
+        if isinstance(param_identifier, str):
             return _param_or_default(
                 element.LookupParameter(param_identifier), default
             )
@@ -1775,7 +1775,7 @@ def get_category(cat_input, doc=None):
     if isinstance(cat_input, DB.BuiltInCategory):
         return doc.Settings.Categories.get_Item(cat_input)
 
-    if isinstance(cat_input, (str, unicode)):
+    if isinstance(cat_input, str):
         for cat in get_doc_categories(doc):
             if cat.Name == cat_input:
                 return cat
