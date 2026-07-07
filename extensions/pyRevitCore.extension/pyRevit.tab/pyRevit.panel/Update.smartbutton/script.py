@@ -24,7 +24,7 @@ def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
             ui_button_cmp.set_icon(has_update_icon,
                                    icon_size=ribbon.ICON_LARGE)
     except Exception as ex:
-        logger.debug('Error in checking updates: %s', ex)
+        logger.error('Error in checking updates: %s', ex)
     return True
 
 
