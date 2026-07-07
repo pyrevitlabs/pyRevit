@@ -1,0 +1,6 @@
+title: Test Log Output - IronPython
+tooltip: >-
+  Output/log regression test for the IronPython engine: rapid stdout, every
+  logger level, print/logger/print_html ordering, emoji and unicode, a trailing
+  error log, and the full traceback from an uncaught exception must all render.
+context: zero-doc
