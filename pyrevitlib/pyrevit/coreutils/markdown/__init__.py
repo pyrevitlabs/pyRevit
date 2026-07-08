@@ -240,8 +240,9 @@ class Markdown(object):
                 # eg: extensions=['tables'] and PyTables is installed
                 raise ImportError
         except ImportError:
-            # Preppend `markdown.extensions.` to name
-            module_name = '.'.join(['markdown.extensions', ext_name])
+            # Resolve short names against this vendored copy's extensions
+            # subpackage, not a top-level `markdown` install
+            module_name = '.'.join([__name__, 'extensions', ext_name])
             try:
                 module = importlib.import_module(module_name)
                 logger.debug(

@@ -35,14 +35,19 @@ from . import Extension
 from .. import util
 from ..blockprocessors import BlockProcessor
 
+# Resolve against this vendored copy's package, not a top-level
+# `markdown` install
 extensions = [
-    'markdown.extensions.smart_strong',
-    'markdown.extensions.fenced_code',
-    'markdown.extensions.footnotes',
-    'markdown.extensions.attr_list',
-    'markdown.extensions.def_list',
-    'markdown.extensions.tables',
-    'markdown.extensions.abbr'
+    '.'.join([__package__, ext_name])
+    for ext_name in (
+        'smart_strong',
+        'fenced_code',
+        'footnotes',
+        'attr_list',
+        'def_list',
+        'tables',
+        'abbr',
+    )
 ]
 
 
