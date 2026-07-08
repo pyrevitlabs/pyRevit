@@ -15,7 +15,8 @@ Supports two API surfaces:
 
 import os.path as op
 from pyrevit import PyRevitException
-from pyrevit.framework import clr, Process, System
+from pyrevit import framework
+from pyrevit.framework import Process, System
 
 from pyrevit import HOST_APP
 
@@ -71,7 +72,7 @@ def _preload_wcf_for_public_api():
             full = op.join(sdk_path, dll)
             if op.exists(full):
                 try:
-                    clr.AddReferenceToFileAndPath(full)
+                    framework.add_reference_to_file(full)
                     loaded += 1
                 except Exception:
                     pass
@@ -86,7 +87,7 @@ def _preload_wcf_for_public_api():
         nnp = op.join(revit_dir, "System.ServiceModel.NetNamedPipe.dll")
         if op.exists(nnp):
             try:
-                clr.AddReferenceToFileAndPath(nnp)
+                framework.add_reference_to_file(nnp)
                 loaded += 1
             except Exception:
                 pass
@@ -145,7 +146,7 @@ def _preload_wcf_for_public_api():
     # Load the private implementation first (facade forwards to it)
     if spm_dll:
         try:
-            clr.AddReferenceToFileAndPath(spm_dll)
+            framework.add_reference_to_file(spm_dll)
             loaded += 1
         except Exception:
             pass
@@ -195,7 +196,7 @@ def _preload_wcf_for_public_api():
     contracts = op.join(ADC_ROOT, "Autodesk.DesktopConnector.API.Contracts.dll")
     if op.exists(contracts):
         try:
-            clr.AddReferenceToFileAndPath(contracts)
+            framework.add_reference_to_file(contracts)
             loaded += 1
         except Exception:
             pass
@@ -218,7 +219,7 @@ def _try_load_public_api():
     try:
         # Pre-load WCF + contracts BEFORE the Public API import
         _preload_wcf_for_public_api()
-        clr.AddReferenceToFileAndPath(dll)
+        framework.add_reference_to_file(dll)
         import Autodesk.DesktopConnector.API.Public as _pub
 
         if hasattr(_pub, "DesktopConnectorApiClient"):
@@ -243,7 +244,7 @@ def _try_load_legacy_api():
         if not op.exists(dll):
             continue
         try:
-            clr.AddReferenceToFileAndPath(dll)
+            framework.add_reference_to_file(dll)
             import Autodesk.DesktopConnector.API as _api
 
             # Verify service can instantiate (catches WCF failures early)

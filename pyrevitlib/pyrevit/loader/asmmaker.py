@@ -123,10 +123,9 @@ def _create_asm_file(extension, ext_asm_file_name, ext_asm_file_path):
     if NETCORE:
         # Load Lokad.ILPack assembly before importing from it
         # This is required because IronPython needs the assembly loaded in AppDomain
-        import clr
         import pyrevit
         ilpack_path = op.join(pyrevit.BIN_DIR, 'Lokad.ILPack.dll')
-        clr.AddReferenceToFileAndPath(ilpack_path)
+        framework.add_reference_to_file(ilpack_path)
         from Lokad.ILPack import AssemblyGenerator
         generator = AssemblyGenerator()
         generator.GenerateAssembly(asm_builder, ext_asm_file_path)

@@ -104,6 +104,19 @@ class ImportTests(unittest.TestCase):
             [], failures, "import failures:\n{}".format("\n".join(failures))
         )
 
+    def test_framework_asm_file_reference(self):
+        """framework.add_reference_to_file loads assemblies on any engine.
+
+        Uses an extensionless path to a managed assembly pyRevit already
+        ships, exercising the extension-resolution branch of the shim.
+        """
+        import os.path as op
+
+        from pyrevit import BIN_DIR, framework
+
+        framework.add_reference_to_file(op.join(BIN_DIR, "pyRevitLabs.Json"))
+        import pyRevitLabs.Json  # noqa pylint: disable=import-error,unused-import
+
     def test_interop_native_module_imports(self):
         """interop modules that load native/external binaries (opt-in)."""
         if not TEST_NATIVE_INTEROP:
