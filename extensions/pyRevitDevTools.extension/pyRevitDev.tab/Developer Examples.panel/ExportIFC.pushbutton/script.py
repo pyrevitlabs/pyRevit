@@ -64,7 +64,7 @@ else:
     output.print_md("**Config:** defaults only")
 
 output.print_md("**Runtime overrides:**")
-for k, v in sorted(overrides.items()):
+for k, v in sorted(overrides.items(), key=lambda kv: str(kv[0])):
     output.print_md("- `{}` = `{}`".format(k, v))
 
 # ---------------------------------------------------------------------------
