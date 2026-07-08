@@ -1,0 +1,58 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>false</UseWindowsForms>
+    <Platforms>x64</Platforms>
+    <AssemblyName>pyRevitShellDevHost</AssemblyName>
+    <RootNamespace>PyRevitLabs.PyRevit.Shell.DevHost</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <!-- Development-only host for the interactive shell. Never referenced by the product
+         build pipeline or any shipped solution, so it is not built in CI and never reaches
+         end users. Build/run it manually (see README.md in this folder). -->
+  </PropertyGroup>
+
+  <!-- The shell + its IronPython/AvalonEdit dependencies are taken from the deployed engine
+       folder (populated by the product shell build). Hardcoding the IPY2712PR fork keeps this
+       project on the normal Debug/Release configs and out of the forked-config machinery. -->
+  <ItemGroup>
+    <Reference Include="pyRevitLabs.PyRevit.Shell">
+      <HintPath>$(PyRevitEnginesDir)\IPY2712PR\pyRevitLabs.PyRevit.Shell.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="ICSharpCode.AvalonEdit">
+      <HintPath>$(PyRevitEnginesDir)\IPY2712PR\ICSharpCode.AvalonEdit.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="pyRevitLabs.IronPython">
+      <HintPath>$(PyRevitEnginesDir)\IPY2712PR\pyRevitLabs.IronPython.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="pyRevitLabs.IronPython.Modules">
+      <HintPath>$(PyRevitEnginesDir)\IPY2712PR\pyRevitLabs.IronPython.Modules.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="pyRevitLabs.Microsoft.Dynamic">
+      <HintPath>$(PyRevitEnginesDir)\IPY2712PR\pyRevitLabs.Microsoft.Dynamic.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="pyRevitLabs.Microsoft.Scripting">
+      <HintPath>$(PyRevitEnginesDir)\IPY2712PR\pyRevitLabs.Microsoft.Scripting.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="pyRevitLabs.Microsoft.Scripting.Metadata">
+      <HintPath>$(PyRevitEnginesDir)\IPY2712PR\pyRevitLabs.Microsoft.Scripting.Metadata.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- Opt-in: rebuild the shell (deploying the fresh DLL to the engine folder) before this host
+       compiles against it. Off by default so `dotnet run` is fast and works offline once the
+       shell is built. Enable with: -p:BuildShellBeforeHost=true -->
+  <Target Name="BuildShellBeforeHost" BeforeTargets="BeforeBuild" Condition="'$(BuildShellBeforeHost)' == 'true'">
+    <Exec Command='dotnet build "$(PyRevitRootDir)\dev\pyRevitLabs.PyRevit.Shell\pyRevitLabs.PyRevit.Shell.csproj" -c "$(Configuration) IPY2712PR" --nologo' />
+  </Target>
+
+</Project>
