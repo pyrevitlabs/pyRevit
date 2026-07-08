@@ -1,13 +1,52 @@
-﻿<UserControl x:Class="PyRevitLabs.PyRevit.Shell.EditorView"
+<UserControl x:Class="PyRevitLabs.PyRevit.Shell.EditorView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
              xmlns:console="clr-namespace:PythonConsoleControl">
 
     <UserControl.Resources>
+        <!-- Light-theme defaults; the dark palette is swapped in at runtime. -->
+        <SolidColorBrush x:Key="ShellBarBackground" Color="#F0F0F0" />
+        <SolidColorBrush x:Key="ShellBarForeground" Color="#1E1E1E" />
+        <SolidColorBrush x:Key="ShellSplitterBackground" Color="#E0E0E0" />
+        <SolidColorBrush x:Key="ShellRunGlyph" Color="#3D9142" />
+
         <Style TargetType="{x:Type ToolBar}">
             <Setter Property="Band" Value="0" />
             <Setter Property="BandIndex" Value="0" />
+            <Setter Property="Background" Value="{DynamicResource ShellBarBackground}" />
+            <Setter Property="Foreground" Value="{DynamicResource ShellBarForeground}" />
+        </Style>
+
+        <!-- Segoe Fluent Icons on Win11, falling back to MDL2 on Win10; glyphs inherit the
+             toolbar foreground so they follow the active theme without bitmap assets. -->
+        <Style x:Key="ToolGlyph" TargetType="{x:Type TextBlock}">
+            <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,0,4,0" />
+        </Style>
+
+        <Style x:Key="ToolLabel" TargetType="{x:Type TextBlock}">
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+
+        <Style x:Key="ToolButton" TargetType="{x:Type Button}"
+               BasedOn="{StaticResource {x:Static ToolBar.ButtonStyleKey}}">
+            <Setter Property="Padding" Value="6,3" />
+            <Setter Property="Foreground" Value="{DynamicResource ShellBarForeground}" />
+            <Style.Triggers>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.35" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="ToolCheckBox" TargetType="{x:Type CheckBox}"
+               BasedOn="{StaticResource {x:Static ToolBar.CheckBoxStyleKey}}">
+            <Setter Property="Padding" Value="4,3" />
+            <Setter Property="Foreground" Value="{DynamicResource ShellBarForeground}" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
     </UserControl.Resources>
 
@@ -20,24 +59,71 @@
         </Grid.RowDefinitions>
 
         <!-- Command panel -->
-        <ToolBarTray Grid.Row="0" IsLocked="True">
+        <ToolBarTray Grid.Row="0" IsLocked="True" Background="{DynamicResource ShellBarBackground}">
             <ToolBar>
-                <Button Content="New"   ToolTip="New file (Ctrl+N)"    Click="NewFileClick" />
-                <Button Content="Open"  ToolTip="Open file (Ctrl+O)"   Click="OpenFileClick" />
-                <Button Content="Save"  ToolTip="Save file (Ctrl+S)"   Click="SaveFileClick" />
-                <Button Content="Save As" ToolTip="Save file as (Ctrl+Shift+S)" Click="SaveAsFileClick" />
+                <Button Style="{StaticResource ToolButton}" ToolTip="New file (Ctrl+N)" Click="NewFileClick">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource ToolGlyph}" Text="&#xE7C3;" />
+                        <TextBlock Style="{StaticResource ToolLabel}" Text="New" />
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource ToolButton}" ToolTip="Open file (Ctrl+O)" Click="OpenFileClick">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource ToolGlyph}" Text="&#xE8E5;" />
+                        <TextBlock Style="{StaticResource ToolLabel}" Text="Open" />
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource ToolButton}" ToolTip="Save file (Ctrl+S)" Click="SaveFileClick">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource ToolGlyph}" Text="&#xE74E;" />
+                        <TextBlock Style="{StaticResource ToolLabel}" Text="Save" />
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource ToolButton}" ToolTip="Save file as (Ctrl+Shift+S)" Click="SaveAsFileClick">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource ToolGlyph}" Text="&#xE792;" />
+                        <TextBlock Style="{StaticResource ToolLabel}" Text="Save As" />
+                    </StackPanel>
+                </Button>
                 <Separator />
-                <Button Content="Cut"    ToolTip="Cut"   Command="Cut"   CommandTarget="{Binding ElementName=textEditor}" />
-                <Button Content="Copy"   ToolTip="Copy"  Command="Copy"  CommandTarget="{Binding ElementName=textEditor}" />
-                <Button Content="Paste"  ToolTip="Paste" Command="Paste" CommandTarget="{Binding ElementName=textEditor}" />
+                <Button Style="{StaticResource ToolButton}" ToolTip="Cut" Command="Cut" CommandTarget="{Binding ElementName=textEditor}">
+                    <TextBlock Style="{StaticResource ToolGlyph}" Text="&#xE8C6;" Margin="0" />
+                </Button>
+                <Button Style="{StaticResource ToolButton}" ToolTip="Copy" Command="Copy" CommandTarget="{Binding ElementName=textEditor}">
+                    <TextBlock Style="{StaticResource ToolGlyph}" Text="&#xE8C8;" Margin="0" />
+                </Button>
+                <Button Style="{StaticResource ToolButton}" ToolTip="Paste" Command="Paste" CommandTarget="{Binding ElementName=textEditor}">
+                    <TextBlock Style="{StaticResource ToolGlyph}" Text="&#xE77F;" Margin="0" />
+                </Button>
                 <Separator />
-                <Button Content="Undo"   ToolTip="Undo"  Command="Undo"  CommandTarget="{Binding ElementName=textEditor}" />
-                <Button Content="Redo"   ToolTip="Redo"  Command="Redo"  CommandTarget="{Binding ElementName=textEditor}" />
+                <Button Style="{StaticResource ToolButton}" ToolTip="Undo (Ctrl+Z)" Command="Undo" CommandTarget="{Binding ElementName=textEditor}">
+                    <TextBlock Style="{StaticResource ToolGlyph}" Text="&#xE7A7;" Margin="0" />
+                </Button>
+                <Button Style="{StaticResource ToolButton}" ToolTip="Redo (Ctrl+Y)" Command="Redo" CommandTarget="{Binding ElementName=textEditor}">
+                    <TextBlock Style="{StaticResource ToolGlyph}" Text="&#xE7A6;" Margin="0" />
+                </Button>
                 <Separator />
-                <CheckBox Content="Line numbers" IsChecked="{Binding ShowLineNumbers, ElementName=textEditor, Mode=TwoWay}" ToolTip="Toggle line numbers" />
-                <CheckBox Content="Word wrap"    IsChecked="{Binding WordWrap, ElementName=textEditor, Mode=TwoWay}"       ToolTip="Toggle word wrap" />
+                <CheckBox Style="{StaticResource ToolCheckBox}" ToolTip="Toggle line numbers"
+                          IsChecked="{Binding ShowLineNumbers, ElementName=textEditor, Mode=TwoWay}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource ToolGlyph}" Text="&#xE8FD;" />
+                        <TextBlock Style="{StaticResource ToolLabel}" Text="Lines" />
+                    </StackPanel>
+                </CheckBox>
+                <CheckBox Style="{StaticResource ToolCheckBox}" ToolTip="Toggle word wrap"
+                          IsChecked="{Binding WordWrap, ElementName=textEditor, Mode=TwoWay}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource ToolGlyph}" Text="&#xE751;" />
+                        <TextBlock Style="{StaticResource ToolLabel}" Text="Wrap" />
+                    </StackPanel>
+                </CheckBox>
                 <Separator />
-                <Button Content="Run" ToolTip="Run selection, or whole file, in the console (F5)" Click="RunClick" FontWeight="Bold" />
+                <Button Style="{StaticResource ToolButton}" ToolTip="Run selection, or whole file, in the console (F5)" Click="RunClick">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource ToolGlyph}" Text="&#xE768;" Foreground="{DynamicResource ShellRunGlyph}" />
+                        <TextBlock Style="{StaticResource ToolLabel}" Text="Run" FontWeight="SemiBold" />
+                    </StackPanel>
+                </Button>
             </ToolBar>
         </ToolBarTray>
 
@@ -55,6 +141,7 @@
                       Height="10"
                       HorizontalAlignment="Stretch"
                       VerticalAlignment="Center"
+                      Background="{DynamicResource ShellSplitterBackground}"
                       ResizeBehavior="PreviousAndNext" ResizeDirection="Rows" />
 
         <!-- Interactive console -->
