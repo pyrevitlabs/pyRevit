@@ -1,5 +1,5 @@
-import clr
 from pyrevit import DB
+from pyrevit.revit import query
 
 
 def get_all_levels(doc, include_linked=False):
@@ -167,18 +167,15 @@ def find_next_grid_in_direction(start_point, direction_vector, grids, tolerance)
         )
 
         # Try intersection
-        # weird ironpython stuff - can be changed if cpython ever gets up and running:
-        # https://forums.autodesk.com/t5/revit-api-forum/find-intersection-point-between-curves-using-cpython3/td-p/12413340
-        result = clr.Reference[DB.IntersectionResultArray]()
-        intersection_result = grid_line.Intersect(ray, result)
+        intersection_result, result = query.intersect_curves(grid_line, ray)
 
         if intersection_result != DB.SetComparisonResult.Overlap:
             continue
 
-        if result.Value.Size == 0:
+        if result.Size == 0:
             continue
 
-        intersection = result.Value.Item[0].XYZPoint
+        intersection = result.get_Item(0).XYZPoint
         to_intersection = intersection - start_point_flat
 
         distance_along_ray = to_intersection.DotProduct(direction_vector)

@@ -17,11 +17,16 @@ residuals are fixed.
 Checks:
     SYNTAX      file does not parse as Python 3 (print statements,
                 ``except X, e``, etc.)
+    SYNTAX-WARN parsing raises a SyntaxWarning (e.g. invalid escape
+                sequences like '\\d' in non-raw strings — a hard error in
+                future Pythons)
     PY2-ITER    .iteritems() / .iterkeys() / .itervalues()
     PY2-HASKEY  .has_key()
     PY2-NAME    xrange / basestring / unicode / unichr / long
     PY2-BOOL    class defines __nonzero__ without a __bool__ alias
     IPY-CLR     clr.AddReferenceToFileAndPath outside pyrevit.framework
+    CLR-REF     clr.Reference out-param marshaling outside the sanctioned
+                engine-dispatch wrappers
     SORT-KEY    sorted() over dict .items()/.values() without a key=
                 (tuple comparison can fall through to unorderable values)
 
@@ -35,6 +40,7 @@ import argparse
 import ast
 import sys
 import tokenize
+import warnings
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -62,8 +68,19 @@ IPY_CLR_EXEMPT = [
     "Engine Tests.pulldown/Test IronPython Compile.pushbutton/script.py",
 ]
 
+# Files hosting the sanctioned engine dispatch for clr.Reference out-param
+# marshaling; everywhere else should call their wrappers
+# (query.intersect_curves, create.load_family) instead
+CLR_REF_EXEMPT = [
+    "pyrevitlib/pyrevit/revit/db/create.py",
+    "pyrevitlib/pyrevit/revit/db/query.py",
+]
+
 PY2_ONLY_ITER_METHODS = {"iteritems", "iterkeys", "itervalues"}
-PY2_ONLY_NAMES = {"xrange", "basestring", "unicode", "unichr", "long"}
+PY2_ONLY_ITERTOOLS = {"ifilter", "ifilterfalse", "imap", "izip", "izip_longest"}
+PY2_ONLY_NAMES = {"xrange", "basestring", "unicode", "unichr", "long"} | (
+    PY2_ONLY_ITERTOOLS
+)
 ENGINE_GUARD_NAMES = {"PY2", "PY3", "IRONPY", "IRONPY2", "IRONPY3"}
 
 
@@ -162,7 +179,19 @@ def check_file(path):
         return findings
 
     try:
-        tree = ast.parse(source, filename=str(path))
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", SyntaxWarning)
+            tree = ast.parse(source, filename=str(path))
+        for warning in caught:
+            if issubclass(warning.category, SyntaxWarning):
+                findings.append(
+                    Finding(
+                        path,
+                        warning.lineno,
+                        "SYNTAX-WARN",
+                        str(warning.message),
+                    )
+                )
     except SyntaxError as err:
         findings.append(
             Finding(
@@ -183,6 +212,9 @@ def check_file(path):
     clr_exempt = any(
         path == REPO_ROOT.joinpath(*exempt.split("/")) for exempt in IPY_CLR_EXEMPT
     )
+    clr_ref_exempt = any(
+        path == REPO_ROOT.joinpath(*exempt.split("/")) for exempt in CLR_REF_EXEMPT
+    )
 
     for node in ast.walk(tree):
         if isinstance(node, ast.Attribute):
@@ -193,6 +225,18 @@ def check_file(path):
                         node.lineno,
                         "PY2-ITER",
                         ".{}() does not exist in Python 3".format(node.attr),
+                    )
+                )
+            elif (
+                node.attr in PY2_ONLY_ITERTOOLS
+                and "itertools" in set(_names_in(node.value))
+            ):
+                findings.append(
+                    Finding(
+                        path,
+                        node.lineno,
+                        "PY2-ITER",
+                        "itertools.{} does not exist in Python 3".format(node.attr),
                     )
                 )
             elif node.attr == "has_key":
@@ -212,6 +256,21 @@ def check_file(path):
                         "IPY-CLR",
                         "IronPython-only CLR API; route through the "
                         "pyrevit.framework shim",
+                    )
+                )
+            elif (
+                node.attr == "Reference"
+                and "clr" in set(_names_in(node.value))
+                and not clr_ref_exempt
+            ):
+                findings.append(
+                    Finding(
+                        path,
+                        node.lineno,
+                        "CLR-REF",
+                        "IronPython-only out-param marshaling; use "
+                        "query.intersect_curves / create.load_family or an "
+                        "engine-dispatched wrapper",
                     )
                 )
 
@@ -255,6 +314,22 @@ def check_file(path):
                         "Python 3 ignores __nonzero__".format(node.name),
                     )
                 )
+
+        elif isinstance(node, ast.ImportFrom):
+            if node.module == "itertools" and not _is_engine_guarded(
+                node, parents
+            ):
+                for alias in node.names:
+                    if alias.name in PY2_ONLY_ITERTOOLS:
+                        findings.append(
+                            Finding(
+                                path,
+                                node.lineno,
+                                "PY2-ITER",
+                                "itertools.{} does not exist in "
+                                "Python 3".format(alias.name),
+                            )
+                        )
 
         elif isinstance(node, ast.Call) and _keyless_sorted_over_dict_view(node):
             findings.append(

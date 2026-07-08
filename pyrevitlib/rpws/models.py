@@ -437,13 +437,13 @@ class TimeSpanEntry(datetime.timedelta):
         Args:
             timespan_string (str): Revit server timespan string
         """
-        days = re.findall('(\d+)D', timespan_string)
+        days = re.findall(r'(\d+)D', timespan_string)
         days = int(days[0]) if days else 0
 
-        minutes = re.findall('(\d+)M', timespan_string)
+        minutes = re.findall(r'(\d+)M', timespan_string)
         minutes = int(minutes[0]) if minutes else 0
 
-        seconds = re.findall('(\d+)\.(\d+)S', timespan_string)
+        seconds = re.findall(r'(\d+)\.(\d+)S', timespan_string)
         seconds, millisecs = (int(seconds[0][0]), int(seconds[0][1])) \
             if seconds else (0, 0)
 

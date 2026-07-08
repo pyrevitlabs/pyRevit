@@ -299,18 +299,16 @@ class OutParamMarshalingTests(unittest.TestCase):
             txn.RollBack()
 
     def test_curve_intersect_out_param(self):
-        """Curve.Intersect marshals the IntersectionResultArray ref.
+        """query.intersect_curves marshals the IntersectionResultArray ref.
 
-        Exercises the exact out-param pattern of query.get_gridpoints
-        (query.py's clr.Reference site) on pure geometry, with no element
-        creation or view dependency.
+        Exercises the out-param wrapper behind query.get_gridpoints on
+        pure geometry, with no element creation or view dependency.
         """
-        import clr
         from pyrevit import DB
+        from pyrevit.revit import query
 
         line_ns = DB.Line.CreateBound(DB.XYZ(0, -10, 0), DB.XYZ(0, 10, 0))
         line_ew = DB.Line.CreateBound(DB.XYZ(-10, 0, 0), DB.XYZ(10, 0, 0))
-        results = clr.Reference[DB.IntersectionResultArray]()
-        intres = line_ns.Intersect(line_ew, results)
+        intres, results = query.intersect_curves(line_ns, line_ew)
         self.assertEqual(intres, DB.SetComparisonResult.Overlap)
-        self.assertEqual(results.Value.Size, 1)
+        self.assertEqual(results.Size, 1)
