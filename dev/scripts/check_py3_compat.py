@@ -22,7 +22,13 @@ Checks:
                 future Pythons)
     PY2-ITER    .iteritems() / .iterkeys() / .itervalues()
     PY2-HASKEY  .has_key()
-    PY2-NAME    xrange / basestring / unicode / unichr / long
+    PY2-NAME    xrange / basestring / unicode / unichr / long / StandardError
+    PY2-BUILTIN a removed builtin called: raw_input / execfile / apply / cmp /
+                coerce / intern / buffer / reduce / reload / file (skipped
+                when the name is imported, e.g. functools.reduce)
+    PY2-MODULE  import of a stdlib module renamed/removed in Python 3
+                (StringIO, Queue, cPickle, ConfigParser, urllib2, ...)
+    PY2-NEXT    iterator class defines next() (with __iter__) but no __next__
     PY2-BOOL    class defines __nonzero__ without a __bool__ alias
     IPY-CLR     clr.AddReferenceToFileAndPath outside pyrevit.framework
     CLR-REF     clr.Reference out-param marshaling outside the sanctioned
@@ -87,10 +93,30 @@ CLR_REF_EXEMPT = [
 
 PY2_ONLY_ITER_METHODS = {"iteritems", "iterkeys", "itervalues"}
 PY2_ONLY_ITERTOOLS = {"ifilter", "ifilterfalse", "imap", "izip", "izip_longest"}
-PY2_ONLY_NAMES = {"xrange", "basestring", "unicode", "unichr", "long"} | (
-    PY2_ONLY_ITERTOOLS
-)
+PY2_ONLY_NAMES = {
+    "xrange", "basestring", "unicode", "unichr", "long", "StandardError",
+} | PY2_ONLY_ITERTOOLS
 ENGINE_GUARD_NAMES = {"PY2", "PY3", "IRONPY", "IRONPY2", "IRONPY3"}
+
+# Builtins removed in Python 3. Flagged only when CALLED, and skipped when the
+# name is imported (reduce/reload/intern have functools/importlib/sys homes) or
+# engine-guarded.
+PY2_REMOVED_BUILTIN_CALLS = {
+    "raw_input", "execfile", "apply", "coerce", "intern", "buffer",
+    "cmp", "reduce", "reload", "file",
+}
+
+# Stdlib modules renamed/removed in Python 3 (2to3 fix_imports). Matched on the
+# top-level import name; engine-guarded imports (compat shims) are skipped.
+PY2_ONLY_MODULES = {
+    "StringIO", "cStringIO", "Queue", "cPickle", "ConfigParser", "copy_reg",
+    "__builtin__", "HTMLParser", "htmlentitydefs", "urllib2", "urlparse",
+    "robotparser", "httplib", "cookielib", "Cookie", "BaseHTTPServer",
+    "SimpleHTTPServer", "CGIHTTPServer", "SocketServer", "xmlrpclib",
+    "SimpleXMLRPCServer", "Tkinter", "tkFileDialog", "tkMessageBox",
+    "thread", "dummy_thread", "UserDict", "UserList", "UserString",
+    "anydbm", "commands", "_winreg", "markupbase",
+}
 
 # Python-3 lazy views/iterators that were lists in Python 2. Indexing or
 # returning one bare breaks on any Python 3 engine (IronPython 3 included).
@@ -165,6 +191,12 @@ def _locally_defined_names(tree):
                     for target in sub.targets:
                         if isinstance(target, ast.Name):
                             defined.add(target.id)
+    # imported names anywhere suppress removed-builtin/name findings
+    # (e.g. `from functools import reduce`)
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
+            for alias in node.names:
+                defined.add(alias.asname or alias.name.split(".")[0])
     return defined
 
 
@@ -344,22 +376,79 @@ def check_file(path):
                         "Python 3 ignores __nonzero__".format(node.name),
                     )
                 )
-
-        elif isinstance(node, ast.ImportFrom):
-            if node.module == "itertools" and not _is_engine_guarded(
-                node, parents
+            if (
+                "next" in method_names
+                and "__iter__" in method_names
+                and "__next__" not in (method_names | assigned_names)
             ):
+                findings.append(
+                    Finding(
+                        path,
+                        node.lineno,
+                        "PY2-NEXT",
+                        "iterator class {} defines next() but no __next__; "
+                        "Python 3 uses __next__".format(node.name),
+                    )
+                )
+
+        elif isinstance(node, ast.Import):
+            if not _is_engine_guarded(node, parents):
                 for alias in node.names:
-                    if alias.name in PY2_ONLY_ITERTOOLS:
+                    if alias.name.split(".")[0] in PY2_ONLY_MODULES:
                         findings.append(
                             Finding(
                                 path,
                                 node.lineno,
-                                "PY2-ITER",
-                                "itertools.{} does not exist in "
+                                "PY2-MODULE",
+                                "module `{}` was renamed/removed in "
                                 "Python 3".format(alias.name),
                             )
                         )
+
+        elif isinstance(node, ast.ImportFrom):
+            if not _is_engine_guarded(node, parents):
+                if node.module == "itertools":
+                    for alias in node.names:
+                        if alias.name in PY2_ONLY_ITERTOOLS:
+                            findings.append(
+                                Finding(
+                                    path,
+                                    node.lineno,
+                                    "PY2-ITER",
+                                    "itertools.{} does not exist in "
+                                    "Python 3".format(alias.name),
+                                )
+                            )
+                if (
+                    node.level == 0
+                    and node.module
+                    and node.module.split(".")[0] in PY2_ONLY_MODULES
+                ):
+                    findings.append(
+                        Finding(
+                            path,
+                            node.lineno,
+                            "PY2-MODULE",
+                            "module `{}` was renamed/removed in "
+                            "Python 3".format(node.module),
+                        )
+                    )
+
+        elif (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id in PY2_REMOVED_BUILTIN_CALLS
+            and node.func.id not in local_names
+            and not _is_engine_guarded(node, parents)
+        ):
+            findings.append(
+                Finding(
+                    path,
+                    node.lineno,
+                    "PY2-BUILTIN",
+                    "{}() was removed in Python 3".format(node.func.id),
+                )
+            )
 
         elif isinstance(node, ast.Call) and _keyless_sorted_over_dict_view(node):
             findings.append(
