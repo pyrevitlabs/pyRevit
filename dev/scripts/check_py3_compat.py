@@ -53,10 +53,15 @@ DEFAULT_SCAN_ROOTS = [
     "extensions",
 ]
 
-# rpw is frozen as legacy-IronPython-only (analysis doc section 4.7) and is
-# excluded from the Python-3-supported surface.
+# Excluded from the Python-3-supported surface:
+# - rpw: frozen legacy, IronPython-WPF-locked (analysis doc section 4.7)
+# - coreutils/markdown: vendored python-markdown with no first-party runtime
+#   consumers (output.print_md renders via C#); a deprecated, unbundling
+#   candidate that scripts should replace with pip `markdown`, so it is not
+#   maintained against this checker
 EXCLUDED_DIRS = [
     "pyrevitlib/rpw",
+    "pyrevitlib/pyrevit/coreutils/markdown",
 ]
 
 # Files allowed to use IronPython-only CLR loading:

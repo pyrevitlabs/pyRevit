@@ -18,20 +18,7 @@ Static counterpart: ``dev/scripts/check_py3_compat.py`` (no Revit needed).
 import importlib
 import unittest
 
-from pyrevit.compat import IRONPY, IRONPY3, NETCORE
-
-# Markdown conversion needs ~768KB of stack under IronPython 3.4 (fat DLR
-# frames + recursive parser; measured standalone against the IPY342 engine).
-# On Revit's already-deep UI thread that overflows — an uncatchable
-# StackOverflowException that kills the process — so markdown tests are
-# excluded on that engine. The vendored package has no first-party runtime
-# consumers (output.print_md renders via C#); it is public surface for
-# third-party scripts only.
-MARKDOWN_IPY3_SKIP = unittest.skipIf(
-    IRONPY3,
-    "markdown conversion can overflow the host thread's stack under "
-    "IronPython 3 (hard-crashes Revit)",
-)
+from pyrevit.compat import IRONPY, NETCORE
 
 # Path to a loadable .rfa for the out/ref-marshaling test; injected by the
 # invoking tool because the fixture ships with the DevTools extension, not
@@ -44,7 +31,6 @@ CORE_MODULES = [
     "pyrevit.compat",
     "pyrevit.coreutils",
     "pyrevit.coreutils.envvars",
-    "pyrevit.coreutils.markdown",
     "pyrevit.coreutils.pyutils",
     "pyrevit.forms",
     "pyrevit.framework",
@@ -148,51 +134,6 @@ class Py2IdiomTests(unittest.TestCase):
             self.skipTest("Requires open project document")
         wrapper = db.ElementWrapper(revit.doc.ProjectInformation)
         self.assertIn("pyrevit.revit.db.ElementWrapper", repr(wrapper))
-
-    @MARKDOWN_IPY3_SKIP
-    def test_markdown_render(self):
-        """Vendored markdown renders bold + non-ASCII text on this engine."""
-        from pyrevit.coreutils import markdown
-
-        html = markdown.markdown(u"**bold** café")
-        self.assertIn("<strong>bold</strong>", html)
-        self.assertIn(u"café", html)
-
-    @MARKDOWN_IPY3_SKIP
-    def test_markdown_safemode(self):
-        """Raw-HTML postprocessor coerces the safeMode value to text."""
-        from pyrevit.coreutils import markdown
-
-        html = markdown.markdown(u"text <script>x</script>", safe_mode="escape")
-        self.assertIn("&lt;script&gt;", html)
-
-    @MARKDOWN_IPY3_SKIP
-    def test_markdown_footnotes(self):
-        """Footnote reference numbers are text-coerced for ElementTree."""
-        from pyrevit.coreutils import markdown
-        from pyrevit.coreutils.markdown.extensions.footnotes import (
-            FootnoteExtension,
-        )
-
-        html = markdown.markdown(
-            u"body[^1]\n\n[^1]: note", extensions=[FootnoteExtension()]
-        )
-        self.assertIn("footnote", html)
-
-    @unittest.skipIf(
-        IRONPY,
-        "extra's attr_list needs re.Scanner, which IronPython's "
-        ".NET-regex-based re module does not provide",
-    )
-    def test_markdown_in_html_block(self):
-        """Markdown-inside-HTML tag placeholders are text-coerced (extra)."""
-        from pyrevit.coreutils import markdown
-        from pyrevit.coreutils.markdown.extensions.extra import ExtraExtension
-
-        html = markdown.markdown(
-            u'<div markdown="1">**bold**</div>', extensions=[ExtraExtension()]
-        )
-        self.assertIn("<strong>bold</strong>", html)
 
     @unittest.skipUnless(IRONPY, "forms WPF classes are IronPython-only")
     def test_forms_paramdef_truthiness(self):
