@@ -36,6 +36,7 @@
       <Compile Include="ParserLogger.cs" />
       <Compile Include="PyRevitConfig.cs" />
       <Compile Include="ExtensionParser.cs" />
+      <Compile Include="ExtensionRegistryAuth.cs" />
       <Compile Include="IniFile.cs" />
     </ItemGroup>
 

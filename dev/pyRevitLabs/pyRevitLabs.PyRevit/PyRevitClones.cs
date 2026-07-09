@@ -46,18 +46,20 @@ namespace pyRevitLabs.PyRevit
 
             var registeredClones = GetRegisteredClones();
 
-            if (forceUpdate && registeredClones.Contains(clone))
-                registeredClones.Remove(clone);
-
-            if (!registeredClones.Contains(clone))
+            if (forceUpdate)
             {
-                registeredClones.Add(clone);
-                SaveRegisteredClones(registeredClones);
+                registeredClones.RemoveAll(
+                    registeredClone => registeredClone.Matches(cloneName) || registeredClone.Equals(clone));
             }
-            else
+            else if (registeredClones.Contains(clone))
+            {
                 throw new PyRevitException(
                     string.Format("Clone with repo path \"{0}\" already exists.", clone.ClonePath)
                     );
+            }
+
+            registeredClones.Add(clone);
+            SaveRegisteredClones(registeredClones);
         }
 
         // renames a clone in a configs
@@ -241,6 +243,9 @@ namespace pyRevitLabs.PyRevit
             // make sure destPath exists
             CommonUtils.EnsurePath(destPath);
 
+            // Drop stale registrations before cloning so a retried install can register cleanly.
+            PruneStaleCloneRegistrations();
+
             // check existing destination path
             if (CommonUtils.VerifyPath(destPath))
             {
@@ -273,7 +278,7 @@ namespace pyRevitLabs.PyRevit
                     PyRevitClone.VerifyCloneValidity(clonedPath);
                     InstallBinariesForRepoClone(clonedPath, repoSourcePath, BinArtifactInstallMode.Clone);
                     logger.Debug("Clone successful \"{0}\"", clonedPath);
-                    RegisterClone(cloneName, clonedPath);
+                    RegisterClone(cloneName, clonedPath, forceUpdate: true);
                 }
                 catch (pyRevitBinArtifactNotFoundException ex)
                 {
@@ -287,6 +292,7 @@ namespace pyRevitLabs.PyRevit
                 {
                     logger.Debug(string.Format("Exception occured after clone complete. Deleting clone \"{0}\" | {1}",
                                                clonedPath, ex.Message));
+                    UnregisterCloneAtPath(clonedPath);
                     try
                     {
                         CommonUtils.DeleteDirectory(clonedPath);
@@ -345,6 +351,9 @@ namespace pyRevitLabs.PyRevit
             }
 
             logger.Debug("Destination path determined as \"{0}\"", destPath);
+
+            // Drop stale registrations before deploying so a retried install can register cleanly.
+            PruneStaleCloneRegistrations();
 
             // process source
             // decide to download if source is a url
@@ -463,6 +472,7 @@ namespace pyRevitLabs.PyRevit
                 {
                     logger.Debug(string.Format("Exception occured after clone from image complete. " +
                                                "Deleting clone \"{0}\" | {1}", destPath, ex.Message));
+                    UnregisterCloneAtPath(destPath);
                     try
                     {
                         CommonUtils.DeleteDirectory(destPath);
@@ -506,12 +516,13 @@ namespace pyRevitLabs.PyRevit
             {
                 PyRevitClone.VerifyCloneValidity(clonePath);
                 logger.Debug("Clone successful \"{0}\"", clonePath);
-                RegisterClone(cloneName, clonePath);
+                RegisterClone(cloneName, clonePath, forceUpdate: true);
             }
             catch (Exception ex)
             {
                 logger.Debug(string.Format("Exception occured after clone complete. Deleting clone \"{0}\" | {1}",
                                            clonePath, ex.Message));
+                UnregisterCloneAtPath(clonePath);
                 try
                 {
                     CommonUtils.DeleteDirectory(clonePath);
@@ -728,6 +739,24 @@ namespace pyRevitLabs.PyRevit
                 throw new PyRevitException(
                     string.Format("Error installing CI binaries for clone \"{0}\" | {1}", clonePath, ex.Message),
                     ex);
+            }
+        }
+
+        private static void PruneStaleCloneRegistrations()
+        {
+            GetRegisteredClones();
+        }
+
+        private static void UnregisterCloneAtPath(string clonePath)
+        {
+            if (string.IsNullOrWhiteSpace(clonePath))
+                return;
+
+            var normalizedPath = clonePath.NormalizeAsPath();
+            foreach (var clone in GetRegisteredClones().ToList())
+            {
+                if (clone.ClonePath.Equals(normalizedPath, StringComparison.OrdinalIgnoreCase))
+                    UnregisterClone(clone);
             }
         }
 

@@ -12,9 +12,24 @@ namespace PyRevitLabs.PyRevit.Runtime {
     /// surface used by the script engines is implemented.
     /// </summary>
     public class ScriptIO : Stream, IDisposable {
+        // A buffered output entry carries the error state captured when it was
+        // enqueued, so normal output drained after an error is not retroactively
+        // rendered as an error just because the stream later saw a traceback.
+        private struct PendingEntry {
+            public readonly string Text;
+            public readonly bool IsError;
+            public readonly ScriptEngineType Engine;
+
+            public PendingEntry(string text, bool isError, ScriptEngineType engine) {
+                Text = text;
+                IsError = isError;
+                Engine = engine;
+            }
+        }
+
         private WeakReference<ScriptRuntime> _runtime;
         private WeakReference<ScriptConsole> _gui;
-        private readonly Queue<string> _pending = new Queue<string>();
+        private readonly Queue<PendingEntry> _pending = new Queue<PendingEntry>();
         private int _pendingChars;
         private readonly StringBuilder _partial = new StringBuilder();
         private readonly object _logLock = new object();
@@ -183,7 +198,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 FinalizePendingEntry(splitLargeEntries: false);
 
                 while (_pendingChars > MaxPendingChars && _pending.Count > 1)
-                    _pendingChars -= _pending.Dequeue().Length;
+                    _pendingChars -= _pending.Dequeue().Text.Length;
 
                 pendingChars = _pendingChars;
             }
@@ -192,6 +207,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public void WriteError(string error_msg, ScriptEngineType engineType) {
+            // Close out any buffered normal output first so it keeps its own
+            // (non-error) styling when it drains.
+            lock (this) {
+                FinalizePendingEntry(keepIncompleteShortcode: false);
+            }
             _errored = true;
             _erroredEngine = engineType;
             foreach (string message_part in error_msg.SplitIntoChunks(1024)) {
@@ -238,7 +258,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     FinalizePendingEntry();
 
                 while (_pendingChars > MaxPendingChars && _pending.Count > 1)
-                    _pendingChars -= _pending.Dequeue().Length;
+                    _pendingChars -= _pending.Dequeue().Text.Length;
 
                 pendingChars = _pendingChars;
             }
@@ -379,7 +399,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (entry.Length == 0)
                 return;
 
-            _pending.Enqueue(entry);
+            _pending.Enqueue(new PendingEntry(entry, _errored, _erroredEngine));
             _pendingChars += entry.Length;
         }
 
@@ -466,7 +486,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private bool FlushOneEntry() {
             ScriptConsole output;
-            string entry;
+            PendingEntry entry;
             bool morePending;
 
             lock (this) {
@@ -484,8 +504,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
 
                 entry = _pending.Dequeue();
-                _pendingChars -= entry.Length;
-                _lastEntryChars = entry.Length;
+                _pendingChars -= entry.Text.Length;
+                _lastEntryChars = entry.Text.Length;
                 morePending = _pending.Count > 0;
             }
 
@@ -498,13 +518,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return true;
         }
 
-        private void DrainOutput(ScriptConsole output, string pending) {
-            if (string.IsNullOrEmpty(pending))
+        private void DrainOutput(ScriptConsole output, PendingEntry pending) {
+            if (string.IsNullOrEmpty(pending.Text))
                 return;
 
-            var prefixed = PrefixStartupOutput(pending);
-            if (_errored)
-                output.AppendError(prefixed, _erroredEngine);
+            var prefixed = PrefixStartupOutput(pending.Text);
+            if (pending.IsError)
+                output.AppendError(prefixed, pending.Engine);
             else
                 output.AppendHtmlFragment(prefixed, ScriptConsoleConfigs.DefaultBlock);
         }
