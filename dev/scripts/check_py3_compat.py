@@ -349,6 +349,10 @@ def iter_python_files(roots, resolve_against):
     excluded = [REPO_ROOT.joinpath(*d.split("/")) for d in EXCLUDED_DIRS]
     for root in roots:
         root_path = root if root.is_absolute() else resolve_against / root
+        # A missing path must not silently scan nothing and pass green -
+        # this runs as a CI gate, where a typoed path would mask real findings
+        if not root_path.exists():
+            raise FileNotFoundError("path does not exist: {}".format(root_path))
         if root_path.is_file():
             candidates = [root_path]
         else:
@@ -382,9 +386,22 @@ def main():
 
     all_findings = []
     file_count = 0
-    for path in iter_python_files(roots, resolve_against):
-        file_count += 1
-        all_findings.extend(check_file(path))
+    try:
+        for path in iter_python_files(roots, resolve_against):
+            file_count += 1
+            all_findings.extend(check_file(path))
+    except FileNotFoundError as err:
+        print("error: {}".format(err), file=sys.stderr)
+        return 2
+
+    if file_count == 0:
+        print(
+            "error: scanned 0 files from {}".format(
+                ", ".join(str(r) for r in roots)
+            ),
+            file=sys.stderr,
+        )
+        return 2
 
     for finding in all_findings:
         print(finding)

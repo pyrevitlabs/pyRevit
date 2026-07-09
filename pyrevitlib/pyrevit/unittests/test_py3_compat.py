@@ -71,6 +71,12 @@ INTEROP_NATIVE_MODULES = [
 ]
 TEST_NATIVE_INTEROP = False
 
+# Re-importing a module that bakes a .NET interface implementation with a
+# fixed __namespace__ can raise a duplicate-type-name error under pythonnet
+# (the CLR type map survives a pyRevit reload). Opt-in because the reload it
+# simulates is disruptive to a live session; flip to run the investigation.
+TEST_HANDLER_REBAKE = False
+
 
 def _import_failures(module_names):
     failures = []
@@ -312,3 +318,24 @@ class OutParamMarshalingTests(unittest.TestCase):
         intres, results = query.intersect_curves(line_ns, line_ew)
         self.assertEqual(intres, DB.SetComparisonResult.Overlap)
         self.assertEqual(results.Size, 1)
+
+
+class InterfaceRebakeTests(unittest.TestCase):
+    """Investigation: re-baking a fixed-__namespace__ interface on reload."""
+
+    @unittest.skipUnless(
+        TEST_HANDLER_REBAKE, "set test_py3_compat.TEST_HANDLER_REBAKE to run"
+    )
+    def test_family_handler_reimport(self):
+        """Re-importing create.py must not raise a duplicate-type error.
+
+        FamilyLoaderOptionsHandler pins __namespace__; a pyRevit reload
+        clears sys.modules but not the CLR type map, so re-executing the
+        class body can collide under pythonnet. Reloading the module here
+        simulates that and surfaces the collision if it exists.
+        """
+        from pyrevit.revit import db
+
+        importlib.reload(db.create)
+        # instantiating proves the re-baked type is usable, not just defined
+        db.create.FamilyLoaderOptionsHandler()

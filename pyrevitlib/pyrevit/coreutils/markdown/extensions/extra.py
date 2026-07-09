@@ -36,9 +36,11 @@ from .. import util
 from ..blockprocessors import BlockProcessor
 
 # Resolve against this vendored copy's package, not a top-level
-# `markdown` install
+# `markdown` install. Derive from __name__ (always populated) rather than
+# __package__, whose value is unreliable on IronPython.
+_package = __name__.rsplit('.', 1)[0]
 extensions = [
-    '.'.join([__package__, ext_name])
+    '.'.join([_package, ext_name])
     for ext_name in (
         'smart_strong',
         'fenced_code',

@@ -351,7 +351,12 @@ class Markdown(object):
             return ''  # a blank unicode string
 
         try:
-            source = util.text_type(source)
+            # decode bytes explicitly: under Python 3, text_type is str and
+            # str(bytes) would silently yield "b'...'" instead of raising
+            if isinstance(source, bytes):
+                source = source.decode('utf-8')
+            else:
+                source = util.text_type(source)
         except UnicodeDecodeError as e:
             # Customise error message while maintaining original trackback
             e.reason += '. -- Note: Markdown only accepts unicode input!'

@@ -888,10 +888,12 @@ class TemplateListItem(Reactive):
         self._nameattr = name_attr
         self._checkable = checkable
 
-    def __nonzero__(self):
-        return self.state
+    def __bool__(self):
+        # Python 3 requires __bool__ to return an actual bool; state may be
+        # any truthy value (e.g. an int passed as `checked`)
+        return bool(self.state)
 
-    __bool__ = __nonzero__
+    __nonzero__ = __bool__
 
     def __str__(self):
         return self.name or str(self.item)
