@@ -13,6 +13,11 @@
   <!-- Embed the AvalonEdit syntax themes under the logical names the ported console expects
        (PythonConsoleControl.xaml.cs loads them by these exact manifest resource names) -->
   <ItemGroup>
+    <None Remove="Resources\pyrevit.ico" />
+    <Resource Include="Resources\pyrevit.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="Console\Resources\Python.xshd" />
     <None Remove="Console\Resources\Python-Dark.xshd" />
     <EmbeddedResource Include="Console\Resources\Python.xshd" LogicalName="PythonConsoleControl.Resources.Python.xshd" />

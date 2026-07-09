@@ -5,49 +5,11 @@
              xmlns:console="clr-namespace:PythonConsoleControl">
 
     <UserControl.Resources>
-        <!-- Light-theme defaults; the dark palette is swapped in at runtime. -->
-        <SolidColorBrush x:Key="ShellBarBackground" Color="#F0F0F0" />
-        <SolidColorBrush x:Key="ShellBarForeground" Color="#1E1E1E" />
-        <SolidColorBrush x:Key="ShellSplitterBackground" Color="#E0E0E0" />
-        <SolidColorBrush x:Key="ShellRunGlyph" Color="#3D9142" />
-
-        <Style TargetType="{x:Type ToolBar}">
-            <Setter Property="Band" Value="0" />
-            <Setter Property="BandIndex" Value="0" />
-            <Setter Property="Background" Value="{DynamicResource ShellBarBackground}" />
-            <Setter Property="Foreground" Value="{DynamicResource ShellBarForeground}" />
-        </Style>
-
-        <!-- Segoe Fluent Icons on Win11, falling back to MDL2 on Win10; glyphs inherit the
-             toolbar foreground so they follow the active theme without bitmap assets. -->
-        <Style x:Key="ToolGlyph" TargetType="{x:Type TextBlock}">
-            <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets" />
-            <Setter Property="FontSize" Value="14" />
-            <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="Margin" Value="0,0,4,0" />
-        </Style>
-
-        <Style x:Key="ToolLabel" TargetType="{x:Type TextBlock}">
-            <Setter Property="VerticalAlignment" Value="Center" />
-        </Style>
-
-        <Style x:Key="ToolButton" TargetType="{x:Type Button}"
-               BasedOn="{StaticResource {x:Static ToolBar.ButtonStyleKey}}">
-            <Setter Property="Padding" Value="6,3" />
-            <Setter Property="Foreground" Value="{DynamicResource ShellBarForeground}" />
-            <Style.Triggers>
-                <Trigger Property="IsEnabled" Value="False">
-                    <Setter Property="Opacity" Value="0.35" />
-                </Trigger>
-            </Style.Triggers>
-        </Style>
-
-        <Style x:Key="ToolCheckBox" TargetType="{x:Type CheckBox}"
-               BasedOn="{StaticResource {x:Static ToolBar.CheckBoxStyleKey}}">
-            <Setter Property="Padding" Value="4,3" />
-            <Setter Property="Foreground" Value="{DynamicResource ShellBarForeground}" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-        </Style>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/pyRevitLabs.PyRevit.Shell;component/Themes/ShellTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
     </UserControl.Resources>
 
     <Grid>
@@ -60,7 +22,7 @@
 
         <!-- Command panel -->
         <ToolBarTray Grid.Row="0" IsLocked="True" Background="{DynamicResource ShellBarBackground}">
-            <ToolBar>
+            <ToolBar Loaded="ToolBar_Loaded">
                 <Button Style="{StaticResource ToolButton}" ToolTip="New file (Ctrl+N)" Click="NewFileClick">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Style="{StaticResource ToolGlyph}" Text="&#xE7C3;" />

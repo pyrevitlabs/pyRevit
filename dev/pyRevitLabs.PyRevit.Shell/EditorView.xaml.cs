@@ -131,24 +131,19 @@ namespace PyRevitLabs.PyRevit.Shell {
         /// theme. Reuses the syntax-highlighting definitions already embedded in this assembly.
         /// </summary>
         public void ApplyTheme(bool useDarkTheme) {
-            ThemeToolBar(useDarkTheme);
+            ShellTheme.Apply(this, useDarkTheme);
             ThemeEditor(useDarkTheme);
             consoleControl.ApplyTheme(useDarkTheme);
         }
 
-        void ThemeToolBar(bool useDarkTheme) {
-            Resources["ShellBarBackground"] = new SolidColorBrush(useDarkTheme
-                ? Color.FromRgb(0x2A, 0x38, 0x47)
-                : Color.FromRgb(0xF0, 0xF0, 0xF0));
-            Resources["ShellBarForeground"] = new SolidColorBrush(useDarkTheme
-                ? Color.FromRgb(0xD4, 0xD4, 0xD4)
-                : Color.FromRgb(0x1E, 0x1E, 0x1E));
-            Resources["ShellSplitterBackground"] = new SolidColorBrush(useDarkTheme
-                ? Color.FromRgb(0x2A, 0x38, 0x47)
-                : Color.FromRgb(0xE0, 0xE0, 0xE0));
-            Resources["ShellRunGlyph"] = new SolidColorBrush(useDarkTheme
-                ? Color.FromRgb(0x6C, 0xC2, 0x6C)
-                : Color.FromRgb(0x3D, 0x91, 0x42));
+        // The stock ToolBar template reserves space for an overflow dropdown that renders as a
+        // system-colored spot on the themed bar; the shell never overflows, so remove it.
+        void ToolBar_Loaded(object sender, RoutedEventArgs e) {
+            var toolBar = (ToolBar)sender;
+            if (toolBar.Template.FindName("OverflowGrid", toolBar) is FrameworkElement overflowGrid)
+                overflowGrid.Visibility = Visibility.Collapsed;
+            if (toolBar.Template.FindName("MainPanelBorder", toolBar) is FrameworkElement mainPanelBorder)
+                mainPanelBorder.Margin = new Thickness(0);
         }
 
         void ThemeEditor(bool useDarkTheme) {

@@ -22,6 +22,7 @@ namespace PyRevitLabs.PyRevit.Shell {
         /// blends with the active Revit UI theme instead of always rendering dark.
         /// </summary>
         public void ApplyTheme(bool useDarkTheme) {
+            ShellTheme.Apply(this, useDarkTheme);
             editorView.ApplyTheme(useDarkTheme);
             Background = useDarkTheme
                 ? new SolidColorBrush(Color.FromRgb(0x1F, 0x2D, 0x3D)) // Revit dark blue-gray

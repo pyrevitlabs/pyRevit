@@ -68,6 +68,19 @@ dev\pyRevitLabs.PyRevit.Shell.DevHost\bin\Debug\net8.0-windows\pyRevitShellDevHo
 | `--console` | Open the REPL-only window (`InteractiveShellWindow`) |
 | `--dark` | Render with the dark theme (light by default) |
 
+App arguments go after `--` so `dotnet run` does not consume them:
+
+```powershell
+# editor + REPL, dark theme
+dotnet run --project dev/pyRevitLabs.PyRevit.Shell.DevHost -c Debug -- --dark
+
+# REPL-only window, dark theme
+dotnet run --project dev/pyRevitLabs.PyRevit.Shell.DevHost -c Debug -- --dark --console
+
+# from the built exe
+dev\pyRevitLabs.PyRevit.Shell.DevHost\bin\Debug\net8.0-windows\pyRevitShellDevHost.exe --dark
+```
+
 ## Notes
 
 - This host exercises the same `IronPythonConsoleControl` / `PythonConsoleHost` /
