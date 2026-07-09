@@ -125,7 +125,7 @@ class LogViewerWindow(forms.WPFWindow):
         self._current_entry_list = []
         self._log_files = \
             {op.basename(f): f for f in appdata.list_data_files('log')}
-        self.logfiles_cb.ItemsSource = self._log_files.keys()
+        self.logfiles_cb.ItemsSource = list(self._log_files.keys())
         runtime_logpath = logger.get_runtime_logfile_path()
         runtime_logname = op.basename(runtime_logpath) if runtime_logpath else None
         if runtime_logname and runtime_logname in self._log_files.keys():
@@ -173,7 +173,7 @@ class LogViewerWindow(forms.WPFWindow):
     def _append_log_file(self, log_file):
         base_name = op.basename(log_file)
         self._log_files[base_name] = log_file
-        self.logfiles_cb.ItemsSource = self._log_files.keys()
+        self.logfiles_cb.ItemsSource = list(self._log_files.keys())
         self.logfiles_cb.SelectedIndex = \
             self.logfiles_cb.ItemsSource.index(base_name)
 

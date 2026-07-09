@@ -1525,7 +1525,7 @@ def get_all_schedules(doc=None):
         .WhereElementIsNotElementType()
         .ToElements()
     )
-    return filter(is_schedule, all_scheds)
+    return list(filter(is_schedule, all_scheds))
 
 
 def get_view_by_name(view_name, view_types=None, doc=None):

@@ -29,6 +29,10 @@ Checks:
                 engine-dispatch wrappers
     SORT-KEY    sorted() over dict .items()/.values() without a key=
                 (tuple comparison can fall through to unorderable values)
+    PY3-VIEW    a bare dict view (keys/values/items) or map/filter/zip that
+                escapes local scope - indexed, returned, yielded, or stored
+                to an attribute; these are non-indexable lazy views in
+                Python 3 but were lists in Python 2 (wrap in list())
 
 A use of a PY2-NAME builtin is not flagged when it is guarded by an engine
 check the codebase already uses: an ``if`` test, an enclosing function's
@@ -87,6 +91,11 @@ PY2_ONLY_NAMES = {"xrange", "basestring", "unicode", "unichr", "long"} | (
     PY2_ONLY_ITERTOOLS
 )
 ENGINE_GUARD_NAMES = {"PY2", "PY3", "IRONPY", "IRONPY2", "IRONPY3"}
+
+# Python-3 lazy views/iterators that were lists in Python 2. Indexing or
+# returning one bare breaks on any Python 3 engine (IronPython 3 included).
+PY3_VIEW_METHODS = {"keys", "values", "items"}
+PY3_LAZY_BUILTINS = {"map", "filter", "zip"}
 
 
 class Finding:
@@ -172,6 +181,22 @@ def _keyless_sorted_over_dict_view(node):
         and isinstance(first.func, ast.Attribute)
         and first.func.attr in ("items", "values")
     )
+
+
+def _bare_py3_view(node):
+    """Return True if node is a bare Python-3 view/iterator call.
+
+    ``d.keys()`` / ``.values()`` / ``.items()`` or ``map()`` / ``filter()``
+    / ``zip()`` - each a subscriptable list in Python 2 but a lazy,
+    non-indexable view in Python 3. A ``list()``/``sorted()``/etc. wrapper is
+    a different node (its own Call), so wrapped uses are not matched here.
+    """
+    if not isinstance(node, ast.Call):
+        return False
+    func = node.func
+    if isinstance(func, ast.Attribute) and func.attr in PY3_VIEW_METHODS:
+        return True
+    return isinstance(func, ast.Name) and func.id in PY3_LAZY_BUILTINS
 
 
 def check_file(path):
@@ -344,6 +369,62 @@ def check_file(path):
                     "SORT-KEY",
                     "sorted() over dict view without key=; tuple comparison "
                     "can fall through to unorderable values in Python 3",
+                )
+            )
+
+        elif isinstance(node, ast.Subscript) and _bare_py3_view(node.value):
+            findings.append(
+                Finding(
+                    path,
+                    node.lineno,
+                    "PY3-VIEW",
+                    "indexing a Python-3 view/iterator (keys/values/items/"
+                    "map/filter/zip); wrap in list()",
+                )
+            )
+
+        elif (
+            isinstance(node, ast.Return)
+            and node.value is not None
+            and _bare_py3_view(node.value)
+        ):
+            findings.append(
+                Finding(
+                    path,
+                    node.lineno,
+                    "PY3-VIEW",
+                    "returning a bare Python-3 view/iterator (was a list in "
+                    "Python 2); callers that index it break - wrap in list()",
+                )
+            )
+
+        elif (
+            isinstance(node, ast.Yield)
+            and node.value is not None
+            and _bare_py3_view(node.value)
+        ):
+            findings.append(
+                Finding(
+                    path,
+                    node.lineno,
+                    "PY3-VIEW",
+                    "yielding a bare Python-3 view/iterator; wrap in list()",
+                )
+            )
+
+        elif (
+            isinstance(node, ast.Assign)
+            and _bare_py3_view(node.value)
+            and any(isinstance(t, ast.Attribute) for t in node.targets)
+        ):
+            findings.append(
+                Finding(
+                    path,
+                    node.lineno,
+                    "PY3-VIEW",
+                    "storing a bare Python-3 view/iterator to an attribute "
+                    "(escapes to object state, later use unknown); wrap in "
+                    "list()",
                 )
             )
 

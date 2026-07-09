@@ -1259,7 +1259,9 @@ class SelectFromList(TemplateUserInputWindow):
             elif self.sort_groups == "natural":
                 sorted_groups = sorted(self._context.keys(), key=self._natural_sort_key)
             else:
-                sorted_groups = self._context.keys()  # No sorting
+                # list() so downstream .index()/binding works (dict.keys()
+                # is a non-indexable view on Python 3)
+                sorted_groups = list(self._context.keys())  # No sorting
 
             self._update_ctx_groups(sorted_groups)
 
@@ -2201,9 +2203,9 @@ class SearchPrompt(WPFWindow):
     @property
     def search_matches(self):
         """List of matches for the given search term."""
-        # remove duplicates while keeping order
-        # results = list(set(self._search_results))
-        return OrderedDict.fromkeys(self._search_results).keys()
+        # remove duplicates while keeping order; list() so callers can index
+        # it (dict.keys() is a non-subscriptable view on Python 3)
+        return list(OrderedDict.fromkeys(self._search_results))
 
     def update_results_display(self, fill_match=False):
         """Update search prompt results based on current input text."""
