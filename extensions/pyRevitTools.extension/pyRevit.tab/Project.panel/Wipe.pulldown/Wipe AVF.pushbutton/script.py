@@ -10,6 +10,8 @@ def get_views_with_sfm():
     v_sfm_dict = {}
     for v in query.get_all_views():
         try:
+            if not v.AllowsAnalysisDisplay():
+                continue
             sfm = DB.Analysis.SpatialFieldManager.GetSpatialFieldManager(v)
             if sfm is None:
                 continue
@@ -46,17 +48,12 @@ def main():
     with revit.Transaction("Purge AVF"):
         for v in selection:
             sfm = v_sfm_dict.get(v)
-            if not sfm:
-                skipped += 1
-                continue
             try:
                 sfm.Clear()
                 purged += 1
-                print(u"Purged AVF: {}".format(v.Name))
+                print("Purged AVF: {}".format(v.Name))
             except Exception as ex:
-                logger.exception(
-                    u"Failed purging AVF on view {}".format(v.Name)
-                )
+                logger.exception("Failed purging AVF on view {}: {}".format(v.Name, ex))
                 skipped += 1
 
     revit.uidoc.RefreshActiveView()
