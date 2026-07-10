@@ -40,10 +40,10 @@ Checks:
                 to an attribute; these are non-indexable lazy views in
                 Python 3 but were lists in Python 2 (wrap in list())
 
-A use of a PY2-NAME builtin is not flagged when it is guarded by an engine
-check the codebase already uses: an ``if`` test, an enclosing function's
-decorator, or a module-level conditional that references PY2/PY3/IRONPY*,
-or a try/except NameError fallback definition.
+A finding is not flagged when it is guarded by a compat pattern the codebase
+already uses: an ``if`` test, an enclosing function's decorator, or a
+module-level conditional that references PY2/PY3/IRONPY*, or a try/except
+NameError/ImportError fallback (the name-shim and import-fallback patterns).
 """
 
 import argparse
@@ -148,12 +148,27 @@ def _names_in(node):
             yield child.attr
 
 
+def _receiver_name(node):
+    """Final name of an immediate receiver: `clr` and `framework.clr` -> 'clr'.
+
+    Returns None for a subscript/call/other receiver, so `foo[clr].Reference`
+    or `obj[itertools].imap()` do not false-match a whole-subtree name search.
+    """
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute):
+        return node.attr
+    return None
+
+
 def _is_engine_guarded(node, parents):
     """Return True if node sits under an engine-version guard.
 
     Recognized guards: an ``if`` whose test references an engine flag, a
-    function whose decorators reference one (e.g. skipUnless(PY2, ...)), or
-    a try/except NameError (the shim-definition pattern).
+    function whose decorators reference one (e.g. skipUnless(PY2, ...)), or a
+    try/except NameError/ImportError (the shim-definition and import-fallback
+    patterns, e.g. `try: from StringIO import StringIO / except ImportError:
+    from io import StringIO`).
     """
     current = node
     while current in parents:
@@ -167,8 +182,8 @@ def _is_engine_guarded(node, parents):
                     return True
         elif isinstance(parent, ast.Try):
             for handler in parent.handlers:
-                if handler.type is not None and "NameError" in set(
-                    _names_in(handler.type)
+                if handler.type is not None and (
+                    {"NameError", "ImportError"} & set(_names_in(handler.type))
                 ):
                     return True
         current = parent
@@ -291,7 +306,7 @@ def check_file(path):
                 )
             elif (
                 node.attr in PY2_ONLY_ITERTOOLS
-                and "itertools" in set(_names_in(node.value))
+                and _receiver_name(node.value) == "itertools"
             ):
                 findings.append(
                     Finding(
@@ -322,7 +337,7 @@ def check_file(path):
                 )
             elif (
                 node.attr == "Reference"
-                and "clr" in set(_names_in(node.value))
+                and _receiver_name(node.value) == "clr"
                 and not clr_ref_exempt
             ):
                 findings.append(
