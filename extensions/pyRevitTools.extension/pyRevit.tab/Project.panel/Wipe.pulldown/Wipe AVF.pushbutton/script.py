@@ -15,7 +15,7 @@ def get_views_with_sfm():
                 continue
             v_sfm_dict[v] = sfm
         except Exception as ex:
-            logger.debug("Skipped view " + str(getattr(v, "Id", v)) + " : " + str(ex))
+            logger.debug("Skipped view {}: {}".format(getattr(v, "Id", v), ex))
     return v_sfm_dict
 
 
@@ -52,10 +52,10 @@ def main():
             try:
                 sfm.Clear()
                 purged += 1
-                print("Purged AVF: " + v.Name)
+                print(u"Purged AVF: {}".format(v.Name))
             except Exception as ex:
                 logger.exception(
-                    "Failed purging AVF on view " + v.Name + " : " + str(ex)
+                    u"Failed purging AVF on view {}".format(v.Name)
                 )
                 skipped += 1
 

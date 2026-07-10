@@ -13,7 +13,7 @@ tooltip:
     from views in the model, such as leftover spatial field  data from
     energy, structural, or MEP analysis displays (often  left behind by
     plugins or old analysis runs). Run the tool and  select the view(s)
-    you'd like to clear. Then hit "Purge Selected  Views" and the process
+    you'd like to clear. Then hit "Purge Selected Views" and the process
     will clear the AVF data for each one.  This can help resolve crashes or
     bloat caused by orphaned  analysis results.
   ko: >-
