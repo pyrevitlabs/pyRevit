@@ -15,8 +15,7 @@ Supports two API surfaces:
 
 import os.path as op
 from pyrevit import PyRevitException
-from pyrevit import framework
-from pyrevit.framework import Process, System
+from pyrevit.framework import Process, System, add_reference_to_file
 
 from pyrevit import HOST_APP
 
