@@ -85,10 +85,10 @@ IPY_CLR_EXEMPT = [
 
 # Files hosting the sanctioned engine dispatch for clr.Reference out-param
 # marshaling; everywhere else should call their wrappers
-# (query.intersect_curves, create.load_family) instead
+# (geom.intersect_curves, create.load_family) instead
 CLR_REF_EXEMPT = [
     "pyrevitlib/pyrevit/revit/db/create.py",
-    "pyrevitlib/pyrevit/revit/db/query.py",
+    "pyrevitlib/pyrevit/revit/geom.py",
 ]
 
 PY2_ONLY_ITER_METHODS = {"iteritems", "iterkeys", "itervalues"}
@@ -346,7 +346,7 @@ def check_file(path):
                         node.lineno,
                         "CLR-REF",
                         "IronPython-only out-param marshaling; use "
-                        "query.intersect_curves / create.load_family or an "
+                        "geom.intersect_curves / create.load_family or an "
                         "engine-dispatched wrapper",
                     )
                 )

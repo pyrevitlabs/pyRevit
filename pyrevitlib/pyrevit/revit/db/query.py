@@ -8,10 +8,11 @@ from pyrevit import coreutils
 from pyrevit.coreutils import logger
 from pyrevit import HOST_APP, DOCS, PyRevitException
 from pyrevit import framework
-from pyrevit.compat import IRONPY, PY3, safe_strtype, get_elementid_value_func
+from pyrevit.compat import PY3, safe_strtype, get_elementid_value_func
 from pyrevit import DB
 from pyrevit.revit import db
 from pyrevit.revit import features
+from pyrevit.revit import geom
 
 from Autodesk.Revit.DB import Element  # pylint: disable=E0401
 
@@ -1990,30 +1991,6 @@ def get_all_grids(group_by_direction=False, include_linked_models=False, doc=Non
     return all_grids
 
 
-def intersect_curves(curve1, curve2):
-    """
-    Intersects two curves on any engine.
-
-    Wraps Curve.Intersect's out-param, which needs engine-specific
-    marshaling: an explicit clr.Reference under IronPython, a return tuple
-    under CPython/pythonnet.
-
-    Args:
-        curve1 (DB.Curve): first curve
-        curve2 (DB.Curve): second curve
-
-    Returns:
-        (tuple[DB.SetComparisonResult, DB.IntersectionResultArray]):
-            comparison result, and the intersection results (None when the
-            curves do not intersect).
-    """
-    if IRONPY:
-        results = framework.clr.Reference[DB.IntersectionResultArray]()
-        intres = curve1.Intersect(curve2, results)
-        return intres, results.Value
-    return curve1.Intersect(curve2, None)
-
-
 def get_gridpoints(grids=None, include_linked_models=False, doc=None):
     """
     Retrieves the intersection points of grid lines in a Revit document.
@@ -2033,7 +2010,7 @@ def get_gridpoints(grids=None, include_linked_models=False, doc=None):
     gints = {}
     for grid1 in source_grids:
         for grid2 in source_grids:
-            intres, results = intersect_curves(grid1.Curve, grid2.Curve)
+            intres, results = geom.intersect_curves(grid1.Curve, grid2.Curve)
             if intres == DB.SetComparisonResult.Overlap:
                 gints[db.XYZPoint(results.get_Item(0).XYZPoint)] = [grid1, grid2]
     return [GridPoint(point=k, grids=v) for k, v in gints.items()]

@@ -1,5 +1,5 @@
 from pyrevit import DB
-from pyrevit.revit import query
+from pyrevit.revit import geom
 
 
 def get_all_levels(doc, include_linked=False):
@@ -167,7 +167,7 @@ def find_next_grid_in_direction(start_point, direction_vector, grids, tolerance)
         )
 
         # Try intersection
-        intersection_result, result = query.intersect_curves(grid_line, ray)
+        intersection_result, result = geom.intersect_curves(grid_line, ray)
 
         if intersection_result != DB.SetComparisonResult.Overlap:
             continue
