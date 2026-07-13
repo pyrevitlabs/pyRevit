@@ -1,7 +1,7 @@
 """Print the full path to the central model (workshared) or the local model path.
 
 Shift+Click:
-    Open model file in Explorer, or open ACC Docs project page for cloud models.
+    Open model file in Explorer, or open BIM360/ACC/Forma Docs project page for cloud models.
 """
 #pylint: disable=E0401,invalid-name
 from pyrevit import revit, DB, HOST_APP, EXEC_PARAMS
@@ -21,18 +21,18 @@ def _get_acc_url(model_path):
     else:
         is_emea = model_path.Region == DB.ModelPathUtils.CloudRegionEMEA
     domain = "eu" if is_emea else "com"
-    project_id = str(model_path.GetProjectGUID()).lower()
+    project_id = revit.doc.GetProjectId()
+    if project_id.startswith("b."):
+        project_id = project_id[2:]
     return "https://acc.autodesk.{}/docs/files/projects/{}".format(domain, project_id)
 
 
-doc = revit.doc
-
-if doc.IsWorkshared:
-    model_path = doc.GetWorksharingCentralModelPath()
+if revit.doc.IsWorkshared:
+    model_path = revit.doc.GetWorksharingCentralModelPath()
     path_str = DB.ModelPathUtils.ConvertModelPathToUserVisiblePath(model_path)
 else:
     model_path = None
-    path_str = doc.PathName
+    path_str = revit.doc.PathName
 
 if not path_str:
     forms.alert("Project has not been saved.", warn_icon=True)

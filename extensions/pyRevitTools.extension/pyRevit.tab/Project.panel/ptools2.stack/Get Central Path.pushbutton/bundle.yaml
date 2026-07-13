@@ -1,12 +1,12 @@
 title:
-  en_us: Get Central Path
-  ko: 중앙 경로 가져오기
-  fr_fr: Obtenir le chemin du Central
-  ru: Получить путь к ФХ
-  chinese_s: 获取中心文件路径
-  es_es: Obtener ruta central
-  de_de: Pfad von Zentraldatei abrufen
-  pt_br: Obter Caminho do Central
+  en_us: Get Central Path ●
+  ko: 중앙 경로 가져오기 ●
+  fr_fr: Obtenir le chemin du Central ●
+  ru: Получить путь к ФХ ●
+  chinese_s: 获取中心文件路径 ●
+  es_es: Obtener ruta central ●
+  de_de: Pfad von Zentraldatei abrufen ●
+  pt_br: Obter Caminho do Central ●
 tooltip:
   en_us: >-
     Print the full path to the central model (workshared) or the local model path.
