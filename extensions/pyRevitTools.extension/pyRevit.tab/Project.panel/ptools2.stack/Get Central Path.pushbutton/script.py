@@ -21,9 +21,12 @@ def _get_acc_url(model_path):
     else:
         is_emea = model_path.Region == DB.ModelPathUtils.CloudRegionEMEA
     domain = "eu" if is_emea else "com"
-    project_id = revit.doc.GetProjectId()
-    if project_id.startswith("b."):
-        project_id = project_id[2:]
+    if HOST_APP.is_newer_than(2021):
+        project_id = revit.doc.GetProjectId()
+        if project_id.startswith("b."):
+            project_id = project_id[2:]
+    else:
+        project_id = str(model_path.GetProjectGUID()).lower()
     return "https://acc.autodesk.{}/docs/files/projects/{}".format(domain, project_id)
 
 
