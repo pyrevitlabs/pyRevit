@@ -327,7 +327,7 @@ def update_avf_values(
     view,
     schema_name="pyRevitAVF",
     schema_desc="AVF values from pyRevit",
-    unit="",
+    unit="Value",
     visible=True,
 ):
     """Update values on primitives previously created by ``display_avf_values``.
@@ -421,9 +421,7 @@ def get_or_create_marker_display_style(doc, style_name, show_legend=False):
         DB.Analysis.AnalysisDisplayStyle: The existing or newly created
             style.
     """
-    existing = query.get_elements_by_class(
-        DB.Analysis.AnalysisDisplayStyle, doc=doc
-    )
+    existing = query.get_elements_by_class(DB.Analysis.AnalysisDisplayStyle, doc=doc)
     for style in existing:
         if style.Name == style_name:
             return style
@@ -480,9 +478,7 @@ def get_or_create_colored_surface_display_style(
         DB.Analysis.AnalysisDisplayStyle: The existing or newly created
             style.
     """
-    existing = query.get_elements_by_class(
-        DB.Analysis.AnalysisDisplayStyle, doc=doc
-    )
+    existing = query.get_elements_by_class(DB.Analysis.AnalysisDisplayStyle, doc=doc)
     for style in existing:
         if style.Name == style_name:
             return style
@@ -512,7 +508,7 @@ def display_avf_values_at_points(
     view,
     schema_name="pyRevitAVF",
     schema_desc="AVF values from pyRevit",
-    unit="",
+    unit="Value",
     visible=True,
     max_points_per_primitive=500,
 ):
@@ -549,7 +545,7 @@ def display_avf_values_at_points(
         )
 
         for start in range(0, len(point_value_pairs), max_points_per_primitive):
-            chunk = point_value_pairs[start:start + max_points_per_primitive]
+            chunk = point_value_pairs[start : start + max_points_per_primitive]
 
             xyz_list = List[DB.XYZ]()
             val_list = List[DB.Analysis.ValueAtPoint]()
