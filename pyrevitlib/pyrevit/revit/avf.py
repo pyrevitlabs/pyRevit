@@ -177,17 +177,32 @@ def _get_or_create_schema(sfm, schema_name, schema_desc, units, visible=True):
         if existing_schema.Name == schema_name:
             return sid
 
-    if isinstance(units, basestring):
+    try:
+        text_types = (basestring,)  # noqa: F821
+    except NameError:  # Python 3
+        text_types = (str,)
+
+    if isinstance(units, text_types):
         unit_pairs = [(units, 1)]
     else:
         unit_pairs = list(units)
+
+    if not unit_pairs:
+        raise PyRevitException(
+            "Units must be a non-empty string or a non-empty list of (unit_name, multiplier) pairs."
+        )
+
+    unit_names = [unit_name for unit_name, _ in unit_pairs]
+    if any(not name for name in unit_names) or len(set(unit_names)) != len(unit_names):
+        raise PyRevitException(
+            "Unit names must be non-empty and unique. Got: {}".format(unit_names)
+        )
 
     unit_name_list = List[System.String]()
     unit_multiplier_list = List[System.Double]()
     for unit_name, multiplier in unit_pairs:
         unit_name_list.Add(unit_name)
         unit_multiplier_list.Add(System.Double(multiplier))
-
     schema = DB.Analysis.AnalysisResultSchema(schema_name, schema_desc)
     schema.SetUnits(unit_name_list, unit_multiplier_list)
     schema.IsVisible = visible
@@ -536,10 +551,10 @@ def display_avf_values_at_points(
     Returns:
         list[int]: The primitive ids created (one per chunk).
     """
-    sfp_ids = []
+    if max_points_per_primitive <= 0:
+        raise PyRevitException("max_points_per_primitive must be > 0")
 
     with Transaction("Display AVF Point Values"):
-        sfm = _get_or_create_sfm(view)
         schema_id = _get_or_create_schema(
             sfm, schema_name, schema_desc, unit, visible=visible
         )
