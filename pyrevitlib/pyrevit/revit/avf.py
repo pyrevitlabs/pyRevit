@@ -185,6 +185,11 @@ def _get_or_create_schema(sfm, schema_name, schema_desc, units, visible=True):
     unit_name_list = List[System.String]()
     unit_multiplier_list = List[System.Double]()
     for unit_name, multiplier in unit_pairs:
+        # AnalysisResultSchema.SetUnits raises ArgumentsInconsistentException
+        # if any unit name is empty, so fall back to a safe display label
+        # for dimensionless/unlabeled values.
+        if not unit_name:
+            unit_name = "Value"
         unit_name_list.Add(unit_name)
         unit_multiplier_list.Add(System.Double(multiplier))
 
