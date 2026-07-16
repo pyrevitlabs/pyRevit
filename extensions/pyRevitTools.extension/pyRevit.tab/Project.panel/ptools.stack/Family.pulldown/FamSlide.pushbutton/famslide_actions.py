@@ -48,6 +48,8 @@ def delete_unused_parameters(doc, family_manager, rows):
                 continue
             if row.in_use or row.has_formula or row.used_in_formula:
                 continue
+            if row.is_associated:
+                continue
             try:
                 family_manager.RemoveParameter(row.param)
             except Exception:
