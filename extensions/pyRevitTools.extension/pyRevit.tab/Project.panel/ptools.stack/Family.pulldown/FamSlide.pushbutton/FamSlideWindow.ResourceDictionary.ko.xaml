@@ -1,0 +1,35 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="BtnRefresh">⟲ 문서 새로고침</system:String>
+    <system:String x:Key="TooltipRefresh">활성 패밀리 문서를 다시 스캔하여 추가되거나 제거된 매개변수를 확인합니다. 다른 열린 패밀리로 전환한 후에도 유용합니다.</system:String>
+    <system:String x:Key="TooltipShuffle">매개변수 값을 섞습니다. 편집 가능한 모든 매개변수를 현재 슬라이더 범위 내에서 무작위 값으로 설정합니다. 주의해서 사용하세요 - FamSlide에서는 취소할 수 없습니다.</system:String>
+    <system:String x:Key="TooltipDeleteUnused">사용하지 않는 매개변수를 모두 삭제합니다. 치수를 구동하지 않고 수식에 포함되지 않으며 내장 매개변수가 아닌 패밀리 매개변수를 제거합니다. 주의해서 사용하세요.</system:String>
+    <system:String x:Key="TooltipToggleEditable">편집 가능한 매개변수 표시/숨김. 슬라이더나 체크박스를 직접 변경할 수 있는 매개변수의 표시 여부를 전환합니다.</system:String>
+    <system:String x:Key="TooltipToggleLabels">레이블 표시/숨김. 각 매개변수 이름 아래에 표시되는 작은 태그를 전환합니다.</system:String>
+    <system:String x:Key="BtnClose">닫기</system:String>
+    <system:String x:Key="TooltipClose">FamSlide 닫기</system:String>
+    <system:String x:Key="GroupTitleValue">값 매개변수</system:String>
+    <system:String x:Key="GroupTitleBuiltin">내장 매개변수</system:String>
+    <system:String x:Key="GroupTitleYesNo">예/아니오 매개변수</system:String>
+    <system:String x:Key="TagInUse">사용 중</system:String>
+    <system:String x:Key="TagUsedInFormula">uF</system:String>
+    <system:String x:Key="TagHasFormula">dF</system:String>
+    <system:String x:Key="TagBuiltIn">내장</system:String>
+    <system:String x:Key="TagInstance">인스턴스</system:String>
+    <system:String x:Key="TagType">타입</system:String>
+    <system:String x:Key="TagAssociated">연결됨</system:String>
+    <system:String x:Key="NoFamilyLoaded">(패밀리가 로드되지 않음)</system:String>
+    <system:String x:Key="NoFamilyDocument">활성화된 패밀리 문서가 없습니다</system:String>
+    <system:String x:Key="ValueYes">예</system:String>
+    <system:String x:Key="ValueNo">아니오</system:String>
+    <system:String x:Key="ConfirmShuffleMessage">편집 가능한 모든 매개변수를 현재 슬라이더 범위 내에서 무작위 값으로 섮으시겠습니까?
+
+FamSlide에서는 취소할 수 없습니다 - 필요하면 Revit 자체의 실행 취소를 사용하세요.</system:String>
+    <system:String x:Key="ConfirmDeleteUnusedMessage">치수를 구동하지 않고 수식의 일부가 아니며 내장 매개변수가 아닌 모든 패밀리 매개변수를 삭제하시겠습니까?
+
+FamSlide에서는 취소할 수 없습니다 - 필요하면 Revit 자체의 실행 취소를 사용하세요.</system:String>
+    <system:String x:Key="AlertNoActiveDocument">활성 Revit 문서가 없습니다.</system:String>
+    <system:String x:Key="AlertFamilyEditorOnly">FamSlide는 패밀리 편집기 내에서만 작동합니다.
+편집할 패밀리를 열고 이 도구를 다시 실행하세요.</system:String>
+</ResourceDictionary>

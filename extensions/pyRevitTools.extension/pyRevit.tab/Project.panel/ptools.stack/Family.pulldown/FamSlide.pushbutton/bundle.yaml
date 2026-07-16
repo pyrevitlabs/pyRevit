@@ -1,0 +1,43 @@
+title:
+  en_us: FamSlide
+  ko: FamSlide
+  fr_fr: FamSlide
+  ru: FamSlide
+  chinese_s: FamSlide
+  es_es: FamSlide
+  de_de: FamSlide
+  pt_br: FamSlide
+tooltip:
+  en_us: |
+    Live parameter sliders for the Family Editor - preview shape changes and
+    catch constraint errors without the Family Types dialog.
+  ko: |
+    패밀리 편집기용 실시간 매개변수 슬라이더 - Family Types 대화상자 없이
+    형태 변화와 제약 조건 오류를 미리 확인하세요.
+  fr_fr: |
+    Curseurs de paramètres en direct pour l'éditeur de famille - visualisez
+    les changements de forme et les erreurs de contrainte sans passer par la
+    boîte de dialogue Types de famille.
+  ru: |
+    Ползунки параметров в реальном времени для редактора семейств -
+    отслеживайте изменения формы и ошибки ограничений без диалога
+    Типоразмеры семейства.
+  chinese_s: |
+    族编辑器的实时参数滑块 - 无需打开"族类型"对话框即可预览形状变化并
+    发现约束错误。
+  es_es: |
+    Controles deslizantes de parámetros en vivo para el Editor de familias -
+    visualice cambios de forma y errores de restricción sin pasar por el
+    cuadro de diálogo Tipos de familia.
+  de_de: |
+    Live-Parameter-Schieberegler für den Familieneditor - Formänderungen und
+    Beschränkungsfehler ohne den Dialog "Familientypen" prüfen.
+  pt_br: |
+    Controles deslizantes de parâmetros em tempo real para o Editor de
+    Famílias - veja mudanças de forma e erros de restrição sem abrir a
+    caixa de diálogo Tipos de Família.
+authors: wurschdhaud
+context: doc-family
+min_revit_version: 2022
+engine:
+  persistent: true

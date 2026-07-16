@@ -1,0 +1,35 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="BtnRefresh">⟲ Atualizar documento</system:String>
+    <system:String x:Key="TooltipRefresh">Verifica novamente o documento de família ativo em busca de parâmetros novos ou removidos. Também útil após alternar para outra família aberta.</system:String>
+    <system:String x:Key="TooltipShuffle">Embaralhar valores de parâmetros. Atribui um valor aleatório a cada parâmetro editável dentro do intervalo atual do controle deslizante. Use com cautela - isso não pode ser desfeito pelo FamSlide.</system:String>
+    <system:String x:Key="TooltipDeleteUnused">Excluir todos os parâmetros não utilizados. Remove parâmetros de família que não controlam nenhuma cota, não fazem parte de nenhuma fórmula e não são integrados. Use com cautela.</system:String>
+    <system:String x:Key="TooltipToggleEditable">Mostrar/ocultar parâmetros editáveis. Alterna a visibilidade dos parâmetros cujo controle deslizante ou caixa de seleção pode ser alterado diretamente.</system:String>
+    <system:String x:Key="TooltipToggleLabels">Mostrar/ocultar rótulos. Alterna as pequenas etiquetas exibidas abaixo do nome de cada parâmetro.</system:String>
+    <system:String x:Key="BtnClose">Fechar</system:String>
+    <system:String x:Key="TooltipClose">Fechar FamSlide</system:String>
+    <system:String x:Key="GroupTitleValue">Parâmetros de valor</system:String>
+    <system:String x:Key="GroupTitleBuiltin">Parâmetros integrados</system:String>
+    <system:String x:Key="GroupTitleYesNo">Parâmetros Sim/Não</system:String>
+    <system:String x:Key="TagInUse">em uso</system:String>
+    <system:String x:Key="TagUsedInFormula">uF</system:String>
+    <system:String x:Key="TagHasFormula">dF</system:String>
+    <system:String x:Key="TagBuiltIn">integrado</system:String>
+    <system:String x:Key="TagInstance">instância</system:String>
+    <system:String x:Key="TagType">tipo</system:String>
+    <system:String x:Key="TagAssociated">associado</system:String>
+    <system:String x:Key="NoFamilyLoaded">(nenhuma família carregada)</system:String>
+    <system:String x:Key="NoFamilyDocument">Nenhum documento de família ativo</system:String>
+    <system:String x:Key="ValueYes">Sim</system:String>
+    <system:String x:Key="ValueNo">Não</system:String>
+    <system:String x:Key="ConfirmShuffleMessage">Embaralhar todos os parâmetros editáveis com um valor aleatório dentro do intervalo atual do controle deslizante?
+
+Isso não pode ser desfeito pelo FamSlide - use o Desfazer do próprio Revit, se necessário.</system:String>
+    <system:String x:Key="ConfirmDeleteUnusedMessage">Excluir todos os parâmetros de família que não controlam nenhuma cota, não fazem parte de nenhuma fórmula e não são integrados?
+
+Isso não pode ser desfeito pelo FamSlide - use o Desfazer do próprio Revit, se necessário.</system:String>
+    <system:String x:Key="AlertNoActiveDocument">Nenhum documento do Revit ativo.</system:String>
+    <system:String x:Key="AlertFamilyEditorOnly">O FamSlide funciona apenas dentro do Editor de Famílias.
+Abra uma família para edição e execute esta ferramenta novamente.</system:String>
+</ResourceDictionary>

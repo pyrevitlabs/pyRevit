@@ -1,0 +1,114 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="FamSlide" Height="760" Width="420"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="CanResizeWithGrip"
+        Background="#FFF3F3F3">
+
+    <Window.Resources>
+
+        <Style x:Key="PillTag" TargetType="Border">
+            <Setter Property="CornerRadius" Value="9"/>
+            <Setter Property="Padding" Value="6,1"/>
+            <Setter Property="Margin" Value="3,0,0,0"/>
+            <Setter Property="Background" Value="#FFB48A00"/>
+        </Style>
+
+        <Style x:Key="PillTagText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="10"/>
+        </Style>
+
+        <Style x:Key="NameCapsule" TargetType="Border">
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Padding" Value="10,4"/>
+        </Style>
+
+        <Style x:Key="ValueBox" TargetType="Border">
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Width" Value="72"/>
+        </Style>
+
+        <Style x:Key="ToolbarButton" TargetType="Button">
+            <Setter Property="Width" Value="34"/>
+            <Setter Property="Height" Value="30"/>
+            <Setter Property="Margin" Value="2,0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+
+        <Style x:Key="ToggledToolbarButton" TargetType="Button" BasedOn="{StaticResource ToolbarButton}">
+            <Setter Property="BorderBrush" Value="#FF8A8A8A"/>
+        </Style>
+
+    </Window.Resources>
+
+    <Grid Margin="0,0,0,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Grid Grid.Row="0" Margin="16,14,16,6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="FamSlide" FontSize="18" FontWeight="Bold"
+                           HorizontalAlignment="Center"/>
+                <TextBlock x:Name="FamilyNameLabel" Text="(no family loaded)"
+                           FontSize="11" Foreground="#FF666666"
+                           HorizontalAlignment="Center" Margin="0,2,0,0"/>
+            </StackPanel>
+            <Button x:Name="RefreshButton" Grid.Column="1"
+                    Content="&#8635; Refresh Document"
+                    ToolTip="Re-scan the active family document for new or removed parameters. Also useful after switching to a different open family."
+                    Padding="8,4" VerticalAlignment="Top"/>
+        </Grid>
+
+        <!-- Scrollable groups -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                      Margin="12,4,12,4">
+            <StackPanel x:Name="GroupsHost"/>
+        </ScrollViewer>
+
+        <!-- Bottom toolbar -->
+        <Border Grid.Row="2" Background="#FFE9E9E9" BorderBrush="#FFD0D0D0"
+                BorderThickness="0,1,0,0">
+            <Grid Margin="10,8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Orientation="Horizontal" Grid.Column="0">
+                    <Button x:Name="ShuffleButton" Style="{StaticResource ToolbarButton}"
+                            Content="&#8646;"
+                            ToolTip="Shuffle parameter values. Randomizes every editable parameter within its current slider range. Use with caution - this cannot be undone from FamSlide itself."/>
+                    <Button x:Name="DeleteUnusedButton" Style="{StaticResource ToolbarButton}"
+                            Content="&#128465;"
+                            ToolTip="Delete all unused parameters. Removes family parameters that are not driving a dimension, not involved in a formula, and are not built-in. Use with caution."/>
+                    <Button x:Name="ToggleEditableButton" Style="{StaticResource ToolbarButton}"
+                            Content="&#128065;"
+                            ToolTip="Show/hide editable parameters. Toggles visibility of parameters whose slider or checkbox can be changed directly."/>
+                    <Button x:Name="ToggleLabelsButton" Style="{StaticResource ToolbarButton}"
+                            Content="&#127991;"
+                            ToolTip="Show/hide labels. Toggles the small tag pills shown under each parameter name."/>
+                </StackPanel>
+
+                <Button x:Name="CloseButton" Grid.Column="2" Content="Close"
+                        ToolTip="Close FamSlide"
+                        Padding="16,4" VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+    </Grid>
+</Window>
