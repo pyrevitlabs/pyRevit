@@ -342,13 +342,17 @@ class FamSlideWindow(forms.WPFWindow):
         events.execute_in_revit_context(self._commit_numeric, row, new_value)
 
     def on_value_box_key_down(self, sender, args):
+        row = sender.Tag
+        if not row.is_editable:
+            return
         if args.Key == Input.Key.Enter:
-            row = sender.Tag
             text = sender.Text
             events.execute_in_revit_context(self._commit_text, row, text)
 
     def on_value_box_lost_focus(self, sender, args):
         row = sender.Tag
+        if not row.is_editable:
+            return
         text = sender.Text
         events.execute_in_revit_context(self._commit_text, row, text)
 
@@ -378,6 +382,8 @@ class FamSlideWindow(forms.WPFWindow):
     # ------------------------------------------------------------------
     def _commit_numeric(self, row, value):
         doc = revit.doc
+        if doc is None or not doc.IsFamilyDocument or not row.is_editable:
+            return
         fm = doc.FamilyManager
         with revit.Transaction("FamSlide: Set {}".format(row.name), doc=doc):
             if row.group == "yesno" or row.storage_type == DB.StorageType.Integer:
@@ -387,19 +393,20 @@ class FamSlideWindow(forms.WPFWindow):
 
     def _commit_text(self, row, text):
         doc = revit.doc
+        if doc is None or not doc.IsFamilyDocument or not row.is_editable:
+            return
         fm = doc.FamilyManager
         with revit.Transaction("FamSlide: Set {}".format(row.name), doc=doc):
             fm.SetValueString(row.param, text)
-
     def _do_shuffle(self):
         doc = revit.doc
-        if not doc.IsFamilyDocument:
+        if doc is None or not doc.IsFamilyDocument:
             return
         famslide_actions.shuffle_parameter_values(doc, doc.FamilyManager, self._rows)
 
     def _do_delete_unused(self):
         doc = revit.doc
-        if not doc.IsFamilyDocument:
+        if doc is None or not doc.IsFamilyDocument:
             return
         famslide_actions.delete_unused_parameters(doc, doc.FamilyManager, self._rows)
 
