@@ -1,0 +1,139 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Automatic Dimensions"
+        Width="520" SizeToContent="Height"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterScreen">
+
+    <Window.Resources>
+        <Style TargetType="TextBlock" x:Key="RowLabel">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,0,12,0"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+        <Style TargetType="RadioButton">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,0,18,0"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+        <Style TargetType="TextBlock" x:Key="Hint">
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="Foreground" Value="#888888"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin" Value="0,2,0,0"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="16">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="120"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- what to dimension -->
+        <TextBlock Grid.Row="0" Grid.Column="0" Text="Dimension:"
+                   Style="{StaticResource RowLabel}"/>
+        <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal">
+            <RadioButton x:Name="mode_ext_rb" GroupName="Mode"
+                         Content="Exterior" Checked="mode_changed"/>
+            <RadioButton x:Name="mode_int_rb" GroupName="Mode"
+                         Content="Interior" Checked="mode_changed"/>
+        </StackPanel>
+
+        <TextBlock x:Name="mode_hint_tb" Grid.Row="1" Grid.Column="1"
+                   Style="{StaticResource Hint}" Margin="0,2,0,10"/>
+
+        <!-- measure to -->
+        <TextBlock Grid.Row="2" Grid.Column="0" Text="Measure walls to:"
+                   Style="{StaticResource RowLabel}"/>
+        <StackPanel Grid.Row="2" Grid.Column="1" Orientation="Horizontal">
+            <RadioButton x:Name="face_finish_rb" GroupName="Face"
+                         Content="Face of finish"/>
+            <RadioButton x:Name="face_core_rb" GroupName="Face"
+                         Content="Face of core (stud)"/>
+        </StackPanel>
+        <TextBlock Grid.Row="3" Grid.Column="1"
+                   Text="Core faces are calibrated per wall at placement; any wall that cannot be calibrated falls back to its finish face and is named in the notes."
+                   Style="{StaticResource Hint}" Margin="0,2,0,10"/>
+
+        <!-- openings -->
+        <TextBlock Grid.Row="4" Grid.Column="0" Text="Openings:"
+                   Style="{StaticResource RowLabel}"/>
+        <StackPanel Grid.Row="4" Grid.Column="1" Orientation="Horizontal">
+            <RadioButton x:Name="open_cl_rb" GroupName="Openings"
+                         Content="Centreline"/>
+            <RadioButton x:Name="open_ro_rb" GroupName="Openings"
+                         Content="Rough opening (jambs)"/>
+        </StackPanel>
+        <TextBlock Grid.Row="5" Grid.Column="1"
+                   Text="Applies to both exterior and interior strings."
+                   Style="{StaticResource Hint}" Margin="0,2,0,10"/>
+
+        <!-- exterior offsets -->
+        <TextBlock Grid.Row="6" Grid.Column="0" Text="Exterior strings:"
+                   Style="{StaticResource RowLabel}"/>
+        <StackPanel Grid.Row="6" Grid.Column="1" Orientation="Horizontal">
+            <TextBlock Text="First offset" Style="{StaticResource RowLabel}"
+                       Margin="0,0,6,0"/>
+            <ComboBox x:Name="first_offset_cb" IsEditable="True"
+                      Width="140" FontSize="12" VerticalAlignment="Center"/>
+            <TextBlock Text="Spacing" Style="{StaticResource RowLabel}"
+                       Margin="14,0,6,0"/>
+            <ComboBox x:Name="spacing_cb" IsEditable="True"
+                      Width="70" FontSize="12" VerticalAlignment="Center"/>
+        </StackPanel>
+        <TextBlock Grid.Row="7" Grid.Column="1"
+                   Text="Paper distances, multiplied by the view scale. Auto picks a per-scale preset (1/2&quot; at 1/8&quot; scale, 3/4&quot; at 1/4&quot; scale). Exterior strings only."
+                   Style="{StaticResource Hint}" Margin="0,2,0,10"/>
+
+        <!-- side splitting -->
+        <TextBlock Grid.Row="8" Grid.Column="0" Text="Split sides:"
+                   Style="{StaticResource RowLabel}"/>
+        <StackPanel Grid.Row="8" Grid.Column="1" Orientation="Horizontal">
+            <TextBox x:Name="split_tb" Width="60" FontSize="12"
+                     VerticalAlignment="Center"/>
+            <TextBlock Text="ft  (0 = automatic, by wall-crossing rule)"
+                       Style="{StaticResource RowLabel}" Margin="8,0,0,0"/>
+        </StackPanel>
+        <TextBlock Grid.Row="9" Grid.Column="1"
+                   Text="A wall joins a farther string only when its witness lines would not cross another selected wall. Enter a distance in feet to also split anything dragged farther than that."
+                   Style="{StaticResource Hint}" Margin="0,2,0,10"/>
+
+        <!-- dry run -->
+        <TextBlock Grid.Row="10" Grid.Column="0" Text="Run as:"
+                   Style="{StaticResource RowLabel}"/>
+        <StackPanel Grid.Row="10" Grid.Column="1">
+            <CheckBox x:Name="dry_cb" Content="Dry run - report only, no model changes"
+                      FontSize="12" VerticalAlignment="Center"/>
+            <CheckBox x:Name="audit_cb" Content="Report which wall face each dimension picked"
+                      FontSize="12" Margin="0,6,0,0"/>
+        </StackPanel>
+
+        <!-- footer -->
+        <Grid Grid.Row="11" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,18,0,0">
+            <TextBlock x:Name="status_tb" VerticalAlignment="Center"
+                       FontSize="11" Foreground="#666666" FontStyle="Italic"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Cancel" Width="86" Height="28" Margin="0,0,8,0"
+                        IsCancel="True" Click="cancel_clicked"/>
+                <Button Content="Dimension" Width="96" Height="28"
+                        IsDefault="True" Click="dimension_clicked"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

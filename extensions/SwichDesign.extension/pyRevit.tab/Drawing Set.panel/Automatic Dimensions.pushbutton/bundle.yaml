@@ -1,0 +1,163 @@
+title:
+  en_us: |-
+    Automatic
+    Dimensions
+  ko: |-
+    자동
+    치수
+  fr_fr: |-
+    Cotation
+    automatique
+  ru: |-
+    Авторазмеры
+  chinese_s: 自动标注
+  es_es: |-
+    Acotación
+    automática
+  de_de: |-
+    Automatische
+    Bemaßung
+  pt_br: |-
+    Cotagem
+    automática
+tooltip:
+  en_us: |-
+    Places dimension strings automatically on the active floor plan.
+
+    Exterior:
+    Select the perimeter walls first. Places one 3-tier string per facing
+    direction: wall jogs + openings, then jogs only, then the overall side.
+
+    Interior:
+    Needs placed Rooms, and ignores your selection. Per room it places the
+    room lengths (a quarter of the room depth off a parallel wall), one
+    string per wall that hosts openings, and a dimension from the centre of
+    each plumbing fixture, casework item and column to the nearest wall.
+    Every string is bounded by the room, so it never measures through a wall.
+
+    Walls can be measured to their finish face or their core (stud) face,
+    and openings to their centreline or their rough opening. Both choices
+    are remembered between runs.
+
+    Run a Dry run first: it reports every dimension it would place, and
+    changes nothing in the model.
+  ko: |-
+    활성 평면도에 치수를 자동으로 배치합니다.
+
+    외부: 외벽을 먼저 선택하세요. 방향별로 3단 치수(벽 꺾임 + 개구부 / 꺾임 / 전체)를 배치합니다.
+
+    내부: 배치된 방(Room)이 필요하며 선택은 무시됩니다. 방마다 방 크기, 개구부가 있는 벽마다 치수, 위생기구·붙박이장·기둥 중심에서 가장 가까운 벽까지의 치수를 배치합니다. 모든 치수는 방 경계 안에 있으므로 벽을 관통하지 않습니다.
+
+    벽은 마감면 또는 코어(스터드)면으로, 개구부는 중심선 또는 러프 오프닝으로 측정할 수 있으며, 선택한 설정은 다음 실행에도 유지됩니다.
+
+    먼저 시험 실행(Dry run)을 사용하세요. 모델을 변경하지 않고 배치될 치수만 보고합니다.
+  fr_fr: |-
+    Place automatiquement les cotes sur le plan actif.
+
+    Extérieur :
+    Sélectionnez d'abord les murs périmétriques. Place une chaîne de cotes à
+    3 niveaux par direction : décrochements + ouvertures, décrochements
+    seuls, puis la cote totale.
+
+    Intérieur :
+    Nécessite des pièces placées et ignore la sélection. Pour chaque pièce :
+    les dimensions de la pièce (placées au quart de la profondeur depuis un
+    mur parallèle), une chaîne par mur comportant des ouvertures, et une cote
+    du centre de chaque appareil sanitaire, meuble et poteau au mur le plus
+    proche. Chaque chaîne est limitée à la pièce et ne traverse jamais un mur.
+
+    Les murs peuvent être cotés au nu de finition ou au nu de l'ossature, et
+    les ouvertures à l'axe ou au tableau. Ces choix sont mémorisés.
+
+    Lancez d'abord un test (Dry run) : il rapporte les cotes sans rien
+    modifier dans le modèle.
+  ru: |-
+    Автоматически расставляет размеры на активном плане.
+
+    Снаружи:
+    Сначала выберите наружные стены. Для каждого направления создаётся
+    трёхуровневая цепочка: уступы стен и проёмы, только уступы, общий размер.
+
+    Внутри:
+    Требуются размещённые помещения; выделение игнорируется. Для каждого
+    помещения: его габариты (на расстоянии четверти глубины от параллельной
+    стены), цепочка для каждой стены с проёмами и размер от центра каждого
+    сантехприбора, элемента мебели и колонны до ближайшей стены. Каждая
+    цепочка ограничена помещением и никогда не проходит сквозь стену.
+
+    Стены можно обмерять по чистовой отделке или по несущему слою, а проёмы —
+    по оси или по проёму в стене. Выбор сохраняется между запусками.
+
+    Сначала выполните пробный запуск (Dry run): он покажет результат, ничего
+    не меняя в модели.
+  chinese_s: |-
+    在当前平面视图中自动放置尺寸标注。
+
+    外部：请先选择外墙。按每个朝向放置三层标注：墙体转折与洞口、仅转折、总长。
+
+    内部：需要已放置的房间，并忽略当前选择。每个房间将放置房间净尺寸（距平行墙约四分之一进深处）、每面含洞口墙体的标注，以及每个卫浴设备、固定家具和柱子中心到最近墙体的标注。所有标注均限定在房间内，绝不会穿墙。
+
+    墙体可标注至面层或核心层（龙骨）面，洞口可标注至中心线或粗洞口。所选设置会在下次运行时保留。
+
+    建议先执行试运行（Dry run）：仅报告将要放置的标注，不修改模型。
+  es_es: |-
+    Coloca automáticamente las cotas en la planta activa.
+
+    Exterior:
+    Seleccione primero los muros perimetrales. Coloca una cadena de 3 niveles
+    por orientación: quiebres y huecos, solo quiebres, y la cota total.
+
+    Interior:
+    Requiere habitaciones colocadas e ignora la selección. Por habitación
+    coloca sus dimensiones (a un cuarto de la profundidad desde un muro
+    paralelo), una cadena por cada muro con huecos, y una cota desde el centro
+    de cada aparato sanitario, mobiliario y pilar al muro más cercano. Cada
+    cadena queda dentro de la habitación, por lo que nunca mide a través de
+    un muro.
+
+    Los muros pueden medirse a la cara de acabado o a la del núcleo, y los
+    huecos al eje o al hueco en bruto. Ambas opciones se recuerdan.
+
+    Ejecute primero una prueba (Dry run): informa de las cotas sin modificar
+    el modelo.
+  de_de: |-
+    Setzt Bemaßungen automatisch im aktiven Grundriss.
+
+    Außen:
+    Wählen Sie zuerst die Außenwände. Pro Richtung wird eine dreistufige
+    Maßkette gesetzt: Wandversprünge und Öffnungen, nur Versprünge, Gesamtmaß.
+
+    Innen:
+    Benötigt platzierte Räume und ignoriert die Auswahl. Je Raum werden die
+    Raummaße (im Abstand eines Viertels der Raumtiefe von einer parallelen
+    Wand), eine Maßkette je Wand mit Öffnungen sowie ein Maß von der Mitte
+    jedes Sanitärobjekts, Einbaumöbels und jeder Stütze zur nächsten Wand
+    gesetzt. Jede Maßkette bleibt im Raum und misst nie durch eine Wand.
+
+    Wände können auf die Oberfläche oder auf die Tragschicht (Ständer) bemaßt
+    werden, Öffnungen auf Achse oder Rohbaumaß. Beide Einstellungen bleiben
+    erhalten.
+
+    Führen Sie zuerst einen Testlauf (Dry run) aus: Er meldet alle Maße, ohne
+    das Modell zu ändern.
+  pt_br: |-
+    Posiciona cotas automaticamente na planta ativa.
+
+    Exterior:
+    Selecione primeiro as paredes do perímetro. Posiciona uma cadeia de 3
+    níveis por orientação: recortes e aberturas, apenas recortes, e a cota
+    total.
+
+    Interior:
+    Requer ambientes posicionados e ignora a seleção. Por ambiente posiciona
+    as dimensões do ambiente (a um quarto da profundidade a partir de uma
+    parede paralela), uma cadeia por parede com aberturas e uma cota do centro
+    de cada louça sanitária, marcenaria e pilar até a parede mais próxima.
+    Cada cadeia fica dentro do ambiente e nunca mede através de uma parede.
+
+    As paredes podem ser medidas na face de acabamento ou na face do núcleo, e
+    as aberturas no eixo ou no vão bruto. As duas escolhas são lembradas.
+
+    Faça primeiro uma simulação (Dry run): ela relata as cotas sem alterar o
+    modelo.
+author: Roi Hason @ Swich Design
