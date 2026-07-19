@@ -5,7 +5,7 @@ SOURCES: values taken from the user-supplied reference document
 ("United States CAD and Architectural Dimensioning Standards"), which
 summarizes NCS/ANSI conventions. They have NOT been verified against a
 licensed primary NCS copy (paywalled). Treat as project defaults, not
-certified standard values. See PROJECT_BRIEF.md section 1.
+certified standard values.
 
 UNITS: Revit's internal length unit is always decimal FEET - every
 constant here is feet.
