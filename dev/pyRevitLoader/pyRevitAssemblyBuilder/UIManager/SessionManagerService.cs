@@ -107,6 +107,11 @@ namespace pyRevitAssemblyBuilder.SessionManager
             stepStopwatch.Restart();
             _extensionManager?.ClearParserCaches();
             _logger.Debug($"[PERF] ClearParserCaches: {stepStopwatch.ElapsedMilliseconds}ms");
+
+            // Clear the cached theme so icon selection reflects the active theme at reload time.
+            // Without this, switching between Dark and Light mode requires a full Revit restart
+            // because the first-load theme detection result is retained for the process lifetime.
+            RevitThemeDetector.ClearCache();
             
             // Initialize the ScriptExecutor before executing any scripts
             stepStopwatch.Restart();
