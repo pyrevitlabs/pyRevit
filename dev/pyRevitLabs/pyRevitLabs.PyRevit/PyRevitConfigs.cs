@@ -59,7 +59,7 @@ namespace pyRevitLabs.PyRevit
             {
                 if (CommonUtils.VerifyFile(adminConfig))
                 {
-                    bool isWritable;
+                    bool isWritable = true;
                     try
                     {
 // Probe write access to detect ACL-protected files that are not marked with the ReadOnly attribute.
