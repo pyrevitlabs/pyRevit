@@ -62,9 +62,8 @@ namespace pyRevitLabs.PyRevit
                     bool isWritable;
                     try
                     {
-                        // Probe write access to detect ACL-protected files that are not marked with the ReadOnly attribute.
-                        using (var fs = new FileStream(adminConfig, FileMode.Open, FileAccess.Write)) { }
-                        isWritable = true;
+// Probe write access to detect ACL-protected files that are not marked with the ReadOnly attribute.
+using (var fs = new FileStream(adminConfig, FileMode.Open, FileAccess.Write, FileShare.ReadWrite)) { }
                     }
                     catch (UnauthorizedAccessException)
                     {
