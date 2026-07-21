@@ -59,7 +59,24 @@ namespace pyRevitLabs.PyRevit
             {
                 if (CommonUtils.VerifyFile(adminConfig))
                 {
-                    if (new FileInfo(adminConfig).IsReadOnly)
+                    bool isWritable;
+                    try
+                    {
+// Probe write access to detect ACL-protected files that are not marked with the ReadOnly attribute.
+using (var fs = new FileStream(adminConfig, FileMode.Open, FileAccess.Write, FileShare.ReadWrite)) { }
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        logger.Debug("Admin config is not writable due to access restrictions: \"{0}\"", adminConfig);
+                        isWritable = false;
+                    }
+                    catch (IOException ioEx)
+                    {
+                        logger.Debug(ioEx, "Admin config write-access probe failed for \"{0}\"", adminConfig);
+                        isWritable = false;
+                    }
+
+                    if (!isWritable)
                         return new PyRevitConfig(adminConfig, adminMode: true);
                     else
                         SetupConfig(adminConfig);

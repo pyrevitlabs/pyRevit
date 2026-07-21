@@ -901,7 +901,7 @@ def verify_configs(config_file_path=None):
     Returns:
         (pyrevit.userconfig.PyRevitConfig): pyRevit config file handler
     """
-    if config_file_path:
+    if config_file_path and not op.exists(config_file_path):
         mlogger.debug('Creating default config file at: %s', config_file_path)
         coreutils.touch(config_file_path)
 
