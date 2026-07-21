@@ -59,7 +59,22 @@ namespace pyRevitLabs.PyRevit
             {
                 if (CommonUtils.VerifyFile(adminConfig))
                 {
-                    if (new FileInfo(adminConfig).IsReadOnly)
+                    bool isWritable;
+                    try
+                    {
+                        using (var fs = new FileStream(adminConfig, FileMode.Open, FileAccess.Write)) { }
+                        isWritable = true;
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        isWritable = false;
+                    }
+                    catch (IOException)
+                    {
+                        isWritable = false;
+                    }
+
+                    if (!isWritable)
                         return new PyRevitConfig(adminConfig, adminMode: true);
                     else
                         SetupConfig(adminConfig);
