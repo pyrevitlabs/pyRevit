@@ -188,17 +188,19 @@ def create_revision(description=None, by=None, to=None, date=None,
     return new_rev
 
 
-def copy_elements(element_ids, src_doc, dest_doc):
+def copy_elements(element_ids, src_doc, dest_doc, return_ids=False):
     cp_options = DB.CopyPasteOptions()
     cp_options.SetDuplicateTypeNamesHandler(CopyUseDestination())
 
     if element_ids:
-        DB.ElementTransformUtils.CopyElements(
+        copied_ids = DB.ElementTransformUtils.CopyElements(
             src_doc,
             framework.List[DB.ElementId](element_ids),
             dest_doc, None, cp_options
             )
 
+    if return_ids:
+        return copied_ids
     return True
 
 
