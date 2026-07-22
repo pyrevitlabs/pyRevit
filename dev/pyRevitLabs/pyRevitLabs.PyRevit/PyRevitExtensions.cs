@@ -381,7 +381,6 @@ namespace pyRevitLabs.PyRevit {
                     var normSrc = src.NormalizeAsPath();
                     logger.Debug("Extension lookup source \"{0}\"", normSrc);
                     normSources.Add(normSrc);
-                    SaveExtensionLookupSources(normSources);
                 }
             }
             return normSources;
