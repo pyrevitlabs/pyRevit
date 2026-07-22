@@ -111,6 +111,7 @@ namespace pyRevitLabs.UnitTests.RevitCaches {
         public void GetCustomBIM360CacheDirectory_ExpandsEnvironmentVariables() {
             var cacheDir = Path.Combine(_tempRoot, "envcache");
             Directory.CreateDirectory(cacheDir);
+            var previousValue = Environment.GetEnvironmentVariable("PYREVIT_TEST_BIM360_CACHE");
             Environment.SetEnvironmentVariable("PYREVIT_TEST_BIM360_CACHE", cacheDir);
             try {
                 var iniPath = WriteIni("[CloudModelCache]\nCacheLocation=%PYREVIT_TEST_BIM360_CACHE%\n");
@@ -118,7 +119,7 @@ namespace pyRevitLabs.UnitTests.RevitCaches {
                 Assert.AreEqual(Path.GetFullPath(cacheDir), custom);
             }
             finally {
-                Environment.SetEnvironmentVariable("PYREVIT_TEST_BIM360_CACHE", null);
+                Environment.SetEnvironmentVariable("PYREVIT_TEST_BIM360_CACHE", previousValue);
             }
         }
 
