@@ -780,7 +780,7 @@ namespace pyRevitCLI
                     else if (all("file")) {
                         var destPath = TryGetValue("<dest_path>");
                         if (destPath is null)
-                            Console.WriteLine(string.Format("Telemetry File Path: {0}", PyRevitConfigs.GetAppTelemetryFlags()));
+                            Console.WriteLine(string.Format("Telemetry File Path: {0}", PyRevitConfigs.GetTelemetryFilePath()));
                         else
                             PyRevitConfigs.EnableTelemetry(telemetryFileDir: destPath);
                     }
@@ -788,7 +788,7 @@ namespace pyRevitCLI
                     else if (all("server")) {
                         var serverUrl = TryGetValue("<dest_path>");
                         if (serverUrl is null)
-                            Console.WriteLine(string.Format("Telemetry Server Url: {0}", PyRevitConfigs.GetAppTelemetryFlags()));
+                            Console.WriteLine(string.Format("Telemetry Server Url: {0}", PyRevitConfigs.GetTelemetryServerUrl()));
                         else
                             PyRevitConfigs.EnableTelemetry(telemetryServerUrl: serverUrl);
 
