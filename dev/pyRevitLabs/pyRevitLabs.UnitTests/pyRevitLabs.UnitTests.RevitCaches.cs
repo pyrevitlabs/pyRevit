@@ -28,8 +28,8 @@ namespace pyRevitLabs.UnitTests.RevitCaches {
         }
 
         [TestMethod()]
-        public void GetDefaultBIM360CacheDirectory_UsesLocalAppData() {
-            var path = pyRevitLabs.TargetApps.Revit.RevitCaches.GetDefaultBIM360CacheDirectory(2025);
+        public void GetBIM360CacheDirectory_UsesLocalAppDataDefault() {
+            var path = pyRevitLabs.TargetApps.Revit.RevitCaches.GetBIM360CacheDirectory(2025);
             var expectedBase = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
 
             Assert.IsTrue(path.StartsWith(expectedBase, StringComparison.OrdinalIgnoreCase),
@@ -41,8 +41,8 @@ namespace pyRevitLabs.UnitTests.RevitCaches {
         }
 
         [TestMethod()]
-        public void GetRevitIniPath_UsesAppData() {
-            var path = pyRevitLabs.TargetApps.Revit.RevitCaches.GetRevitIniPath(2024);
+        public void GetRevitIniFile_UsesAppData() {
+            var path = pyRevitLabs.TargetApps.Revit.RevitCaches.GetRevitIniFile(2024);
             var expectedBase = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 
             Assert.IsTrue(path.StartsWith(expectedBase, StringComparison.OrdinalIgnoreCase),
@@ -99,13 +99,12 @@ namespace pyRevitLabs.UnitTests.RevitCaches {
         }
 
         [TestMethod()]
-        public void GetCustomBIM360CacheDirectory_UsesExistingPathFor2024Plus() {
-            var cacheDir = Path.Combine(_tempRoot, "cache2025");
-            Directory.CreateDirectory(cacheDir);
-            var iniPath = WriteIni($"[CloudModelCache]\nCacheLocation={cacheDir}\n");
+        public void GetCustomBIM360CacheDirectory_ReturnsConfiguredPathEvenIfMissing() {
+            var missingDir = Path.Combine(_tempRoot, "does-not-exist");
+            var iniPath = WriteIni($"[CloudModelCache]\nCacheLocation={missingDir}\n");
 
-            var custom = pyRevitLabs.TargetApps.Revit.RevitCaches.GetCustomBIM360CacheDirectory(2025, iniPath);
-            Assert.AreEqual(Path.GetFullPath(cacheDir), custom);
+            var custom = pyRevitLabs.TargetApps.Revit.RevitCaches.GetCustomBIM360CacheDirectory(2024, iniPath);
+            Assert.AreEqual(Path.GetFullPath(missingDir), custom);
         }
 
         [TestMethod()]
@@ -124,21 +123,34 @@ namespace pyRevitLabs.UnitTests.RevitCaches {
         }
 
         [TestMethod()]
-        public void GetCustomBIM360CacheDirectory_MissingDirectory_ReturnsNull() {
-            var missingDir = Path.Combine(_tempRoot, "does-not-exist");
-            var iniPath = WriteIni($"[CloudModelCache]\nCacheLocation={missingDir}\n");
+        public void GetActiveBIM360CacheDirectory_UsesExistingCustomPath() {
+            var cacheDir = Path.Combine(_tempRoot, "cache2025");
+            Directory.CreateDirectory(cacheDir);
+            var iniPath = WriteIni($"[CloudModelCache]\nCacheLocation={cacheDir}\n");
 
-            var custom = pyRevitLabs.TargetApps.Revit.RevitCaches.GetCustomBIM360CacheDirectory(2024, iniPath);
-            Assert.IsNull(custom, "Configured path must exist before it is used");
+            var active = pyRevitLabs.TargetApps.Revit.RevitCaches.GetActiveBIM360CacheDirectory(2025, iniPath);
+            Assert.AreEqual(Path.GetFullPath(cacheDir), active);
         }
 
         [TestMethod()]
-        public void GetBIM360CacheDirectory_FallsBackToDefaultWithoutCustomIni() {
-            // Without a custom ini override, resolution uses the real Revit.ini path.
-            // If that machine has no custom config (typical in CI), expect the default.
-            var resolved = pyRevitLabs.TargetApps.Revit.RevitCaches.GetBIM360CacheDirectory(2022);
-            var expected = pyRevitLabs.TargetApps.Revit.RevitCaches.GetDefaultBIM360CacheDirectory(2022);
-            Assert.AreEqual(expected, resolved);
+        public void GetActiveBIM360CacheDirectory_FallsBackWhenCustomMissing() {
+            var missingDir = Path.Combine(_tempRoot, "does-not-exist");
+            var iniPath = WriteIni($"[CloudModelCache]\nCacheLocation={missingDir}\n");
+
+            var active = pyRevitLabs.TargetApps.Revit.RevitCaches.GetActiveBIM360CacheDirectory(2024, iniPath);
+            var expected = pyRevitLabs.TargetApps.Revit.RevitCaches.GetBIM360CacheDirectory(2024);
+            Assert.AreEqual(expected, active);
+        }
+
+        [TestMethod()]
+        public void GetActiveBIM360CacheDirectory_Pre2024_UsesDefault() {
+            var cacheDir = Path.Combine(_tempRoot, "cache2023");
+            Directory.CreateDirectory(cacheDir);
+            var iniPath = WriteIni($"[CloudModelCache]\nCacheLocation={cacheDir}\n");
+
+            var active = pyRevitLabs.TargetApps.Revit.RevitCaches.GetActiveBIM360CacheDirectory(2023, iniPath);
+            var expected = pyRevitLabs.TargetApps.Revit.RevitCaches.GetBIM360CacheDirectory(2023);
+            Assert.AreEqual(expected, active);
         }
 
         private string WriteIni(string contents, string fileName = "Revit.ini") {
