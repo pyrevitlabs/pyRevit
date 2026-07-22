@@ -442,7 +442,6 @@ if isinstance(revit.active_view, ALLOWED_VIEW_CLASSES):
             width=400
         )
 
-
     if selected_option_name:
         dupe_mode = DUPE_MODE_SWEEP   # normal click → original behaviour
         if EXEC_PARAMS.config_mode:
@@ -474,7 +473,7 @@ if isinstance(revit.active_view, ALLOWED_VIEW_CLASSES):
             if starting_number:
                 try:
                     _start_int = int(starting_number)
-                    _is_int = True
+                    _is_int = _start_int > 0
                 except (ValueError, TypeError):
                     _is_int = False
 
