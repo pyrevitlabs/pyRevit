@@ -85,6 +85,7 @@ namespace pyRevitExtensionParser
             ".pushbutton",
             ".smartbutton",
             ".linkbutton",
+            ".nobutton",
             ".panelbutton",
             ".content",
             ".combobox"
@@ -254,6 +255,7 @@ namespace pyRevitExtensionParser
             CommandComponentType.PushButton,
             CommandComponentType.PanelButton,
             CommandComponentType.SmartButton,
+            CommandComponentType.NoButton,
             CommandComponentType.UrlButton,
             CommandComponentType.InvokeButton,
             CommandComponentType.ContentButton
