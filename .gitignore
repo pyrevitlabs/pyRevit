@@ -18,7 +18,7 @@ bin/
 **/.vs
 **/.suo
 **/obj
-**/packages
+dev/**/packages
 **/dev/**/bin
 **/dev/pyRevitLabs/TestResults/
 

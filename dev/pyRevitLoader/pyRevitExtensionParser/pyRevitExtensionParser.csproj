@@ -19,6 +19,7 @@
 
     <ItemGroup>
       <PackageReference Include="YamlDotNet" Version="16.3.0" />
+      <ProjectReference Include="..\..\pyRevitLabs\pyRevitLabs.Common\pyRevitLabs.Common.csproj" />
       <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.Json.dll" Private="false" />
       <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.NLog.dll" Private="false" />
     </ItemGroup>
@@ -41,6 +42,7 @@
       <Compile Include="PyRevitConfig.cs" />
       <Compile Include="ExtensionParser.cs" />
       <Compile Include="PythonListParser.cs" />
+      <Compile Include="ExtensionRegistryAuth.cs" />
     </ItemGroup>
 
 </Project>

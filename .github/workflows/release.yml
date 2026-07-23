@@ -5,6 +5,19 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      notify_only:
+        description: Run notify job only (skip release pipeline)
+        type: boolean
+        default: false
+      release_url:
+        description: Published release URL (required for notify-only runs)
+        type: string
+        required: false
+      tag_ref:
+        description: Release tag to notify for (e.g. v6.5.0.26173+1406)
+        type: string
+        required: false
 
 concurrency:
   group: pyrevit-release-${{ github.ref }}
@@ -12,16 +25,18 @@ concurrency:
 
 jobs:
   release:
-    if: github.repository == 'pyrevitlabs/pyRevit' && github.ref_type == 'tag'
+    if: github.repository == 'pyrevitlabs/pyRevit' && github.ref_type == 'tag' && github.event_name == 'push'
     runs-on: windows-2025
     permissions:
       contents: write
       actions: write
     environment: production
+    outputs:
+      release_url: ${{ steps.capture_url.outputs.release_url }}
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
 
@@ -53,7 +68,7 @@ jobs:
           exit 1
 
       - name: Download unsigned bin artifact
-        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: unsigned-bin-${{ github.sha }}
           run-id: ${{ steps.wait_ci.outputs.run_id }}
@@ -69,7 +84,7 @@ jobs:
           path: .
 
       - name: Cache NuGet packages
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/Directory.Build.props', 'build/Build.csproj') }}
@@ -92,6 +107,14 @@ jobs:
           Publish__ChocoToken: ${{ secrets.CHOCO_TOKEN }}
           Publish__WingetToken: ${{ secrets.WINGET_GITHUB_TOKEN }}
         run: dotnet run -c Release -- release pack sign publish
+
+      - name: Capture release URL
+        id: capture_url
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL=$(tr -d '\r\n' < dist/github-release-url.txt)
+          echo "release_url=$URL" >> "$GITHUB_OUTPUT"
 
       - name: Delete temporary CI artifacts
         shell: pwsh
@@ -123,7 +146,13 @@ jobs:
 
   notify:
     needs: release
-    if: github.repository == 'pyrevitlabs/pyRevit' && github.ref_type == 'tag'
+    if: |
+      always() &&
+      !cancelled() &&
+      github.repository == 'pyrevitlabs/pyRevit' && (
+        (github.event_name == 'push' && github.ref_type == 'tag' && needs.release.result == 'success') ||
+        (github.event_name == 'workflow_dispatch' && inputs.notify_only == true)
+      )
     runs-on: windows-2025
     permissions:
       contents: read
@@ -132,27 +161,17 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
-          ref: ${{ github.sha }}
-
-      - name: Resolve release URL
-        id: release_url
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          TAG="${GITHUB_REF_NAME}"
-          URL=$(gh release view "$TAG" --json url --jq .url -R "$GITHUB_REPOSITORY")
-          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_ref || github.ref }}
 
       - name: Notify linked issues
         continue-on-error: true
         working-directory: build
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
           Build__Channel: release
-          Build__NotifyUrl: ${{ steps.release_url.outputs.url }}
+          Build__NotifyUrl: ${{ github.event_name == 'workflow_dispatch' && inputs.release_url || needs.release.outputs.release_url }}
         run: dotnet run -c Release -- notify

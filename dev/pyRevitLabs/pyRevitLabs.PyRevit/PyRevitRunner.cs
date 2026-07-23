@@ -36,7 +36,7 @@ namespace pyRevitLabs.PyRevit {
             // generate unique id for this execution
             ExecutionId = Guid.NewGuid().ToString();
             // setup working dir
-            WorkingDirectory = Path.Combine(Environment.GetEnvironmentVariable("TEMP"), ExecutionId);
+            WorkingDirectory = Path.Combine(CommonUtils.GetUserTempDirectory(), ExecutionId);
             CommonUtils.EnsurePath(WorkingDirectory);
         }
 

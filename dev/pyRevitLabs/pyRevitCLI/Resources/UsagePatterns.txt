@@ -102,6 +102,7 @@ Usage:
 	pyrevit configs apptelemetry server [<server_path>] [<revit_year>] [--log=<log_file>]
 	pyrevit configs outputcss [<css_path>] [<revit_year>] [--log=<log_file>]
 	pyrevit configs seed [--lock] [--log=<log_file>]
+	pyrevit configs seedshippeddefaults [--log=<log_file>]
 	pyrevit configs <option_path> [(enable | disable)] [<revit_year>] [--log=<log_file>]
 	pyrevit configs <option_path> [<option_value>] [<revit_year>] [--log=<log_file>]
     pyrevit doctor (-h | --help)

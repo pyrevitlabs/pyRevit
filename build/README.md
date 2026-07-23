@@ -111,11 +111,11 @@ dotnet test tests/Build.Tests.csproj -c Release
 
 | Args | Purpose |
 |------|---------|
-| `ci` (default) | Stamp versions, build products, verify LibGit2, stage release metadata |
+| `ci` (default) | Stamp versions, build products, verify LibGit2, stage release metadata (tag builds preserve the committed version; branch builds re-stamp) |
 | `pack` | Restore CI-stamped metadata (if present), build Inno/MSI installers and Chocolatey package (requires `bin/`) |
 | `sign` | Sign binaries, installers, and `.nupkg` via `sign code trusted-signing` |
 | `publish` | Generate release notes, create draft GitHub release, push Chocolatey |
-| `winget` | Submit WinGet manifest PRs (after GitHub release is published) |
+| `winget` | Generate WinGet manifests (machine-scope installers only), strip `elevationProhibited` if present, submit PRs to winget-pkgs |
 | `notify` | Comment on linked GitHub issues |
 
 Combine modes as needed, e.g. WIP pack+sign:
@@ -143,6 +143,7 @@ Non-secret defaults live in [`appsettings.json`](appsettings.json). Override via
 | `Signing__TenantId`, `Signing__ClientId`, `Signing__ClientSecret`, `Signing__Endpoint`, `Signing__SigningAccountName`, `Signing__CertificateProfileName` | Azure Trusted Signing |
 | `Publish__ChocoToken` | Chocolatey push token |
 | `Publish__WingetToken` | WinGet manifest submit token |
+| `Publish__WingetReplaceVersion` | Optional previous catalog version for `wingetcreate submit -r` when replacing an older entry (must differ from the version being submitted) |
 | `GITHUB_TOKEN` | GitHub API access for releases/notify |
 | `GITHUBTOKEN` | Optional: pyRevit CLI fallback to Actions artifacts for private forks (`actions:read`) |
 

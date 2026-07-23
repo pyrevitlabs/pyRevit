@@ -53,6 +53,63 @@ namespace pyRevitLabs.PyRevit
         public static void ReloadConfig() => PyRevitConfigService.Reload();
 
         /// <summary>
+        /// Writes the disabled flag for shipped extensions whose definition sets
+        /// default_enabled=false, so freshly installed clones honor the shipped
+        /// default. An existing entry is never overwritten, preserving any explicit
+        /// user choice.
+        /// </summary>
+        public static void SeedShippedExtensionDefaults(string clonePath = null)
+        {
+            string extensionsRoot = null;
+            if (!string.IsNullOrWhiteSpace(clonePath))
+            {
+                extensionsRoot = Path.Combine(clonePath, PyRevitConsts.ExtensionsDirName);
+            }
+            else
+            {
+                foreach (var clone in PyRevitClones.GetRegisteredClones())
+                {
+                    if (CommonUtils.VerifyPath(clone.ExtensionsPath))
+                    {
+                        extensionsRoot = clone.ExtensionsPath;
+                        break;
+                    }
+                }
+            }
+
+            if (!CommonUtils.VerifyPath(extensionsRoot))
+            {
+                _logger.Debug("No shipped extensions directory found for seeding defaults.");
+                return;
+            }
+
+            var cfg = GetConfigFile();
+            string configName = ConfigurationService.DefaultConfigurationName;
+            foreach (var postfix in new[] { PyRevitConsts.ExtensionUIPostfix, PyRevitConsts.ExtensionLibraryPostfix })
+            {
+                foreach (var extDir in Directory.GetDirectories(extensionsRoot, "*" + postfix))
+                {
+                    try
+                    {
+                        var ext = new PyRevitExtension(extDir);
+                        if (ext.Definition != null && !ext.Definition.DefaultEnabled)
+                        {
+                            string existing = cfg.GetSectionKeyValueOrDefault<string>(
+                                configName, ext.ConfigName, PyRevitConsts.ExtensionDisabledKey, null);
+                            if (existing is null)
+                                cfg.SetSectionKeyValue(
+                                    configName, ext.ConfigName, PyRevitConsts.ExtensionDisabledKey, true);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Debug("Skipping shipped extension seed for \"{0}\" | {1}", extDir, ex.Message);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// Removes user config file.
         /// </summary>
         /// <exception cref="PyRevitException"></exception>

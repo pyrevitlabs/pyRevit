@@ -5,6 +5,8 @@ using pyRevitLabs.Configurations.Abstractions;
 using pyRevitLabs.Configurations.Ini;
 using pyRevitLabs.Json;
 
+using pyRevitLabs.Common;
+
 namespace pyRevitExtensionParser
 {
     /// <summary>
@@ -235,6 +237,15 @@ namespace pyRevitExtensionParser
         {
             get { return PythonListParser.Parse(ReadRaw("core", "userextensions")); }
             set { Write("core", "userextensions", PythonListParser.ToPythonListString(value)); }
+        }
+
+        /// <summary>
+        /// Gets or sets the extension lookup sources as a parsed list of paths.
+        /// </summary>
+        public List<string> ExtensionLookupSources
+        {
+            get { return PythonListParser.Parse(ReadRaw("environment", "sources")); }
+            set { Write("environment", "sources", PythonListParser.ToPythonListString(value)); }
         }
 
         // ── telemetry ─────────────────────────────────────────────────────────────
