@@ -272,7 +272,7 @@ class ConvertLineStylesWindow(forms.WPFWindow):
                     )
             try:
                 pattern_id = to_cat.GetLinePatternId(style_type)
-                if pattern_id and pattern_id != DB.ElementId.InvalidElementId:
+                if pattern_id is not None:
                     from_cat.SetLinePatternId(pattern_id, style_type)
             except Exception as ex:
                 logger.debug(
