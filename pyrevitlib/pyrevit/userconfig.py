@@ -46,6 +46,7 @@ from pyrevit.compat import winreg as wr
 from pyrevit.coreutils.configparser import ConfigSections
 
 from pyrevit.labs import PyRevit
+from pyrevit.labs import Common
 from pyrevit.labs import ConfigurationService
 
 from pyrevit import coreutils
@@ -722,6 +723,14 @@ def find_config_file(target_path):
 
 
 user_config = None
+
+# Pin install-scope detection to the running clone so the config store resolves
+# the same scope the loader was launched from (rather than the executing
+# assembly's location).
+try:
+    Common.PyRevitInstallScope.SetRuntimeInstallRoot(HOME_DIR)
+except Exception as install_root_ex:
+    mlogger.debug('Could not set runtime install root: %s', install_root_ex)
 
 # location for default pyRevit config files (skip when in doc/no-doc mode if present)
 if not getattr(EXEC_PARAMS, 'doc_mode', False):

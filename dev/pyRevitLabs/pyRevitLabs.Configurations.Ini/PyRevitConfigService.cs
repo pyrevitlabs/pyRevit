@@ -1,3 +1,4 @@
+using pyRevitLabs.Common;
 using pyRevitLabs.Configurations.Abstractions;
 using pyRevitLabs.Configurations.Ini.Extensions;
 
@@ -40,29 +41,96 @@ public static class PyRevitConfigService
             PyRevitConfigStore.SetFactory(BuildConfigService);
     }
 
+    /// <summary>
+    /// The configuration tier selected for the current install.
+    /// </summary>
+    public enum ConfigSelection
+    {
+        /// <summary>A config file inside the running clone (developer override).</summary>
+        Local,
+        /// <summary>Machine-wide install: the writable %ProgramData% config is authoritative.</summary>
+        AdminInstall,
+        /// <summary>A read-only admin config: used directly, user changes are not saved.</summary>
+        AdminLockdown,
+        /// <summary>A writable admin config with no user config yet: copy it to the user, then use the copy.</summary>
+        Seed,
+        /// <summary>An existing per-user config.</summary>
+        User,
+        /// <summary>Nothing found: create a fresh per-user config.</summary>
+        New,
+    }
+
+    /// <summary>
+    /// Pure selection of the config tier from the observed facts, so the ladder is
+    /// unit-testable without touching real machine directories. Order mirrors the
+    /// documented Python precedence: Local, all-users install, admin seed/lockdown,
+    /// user, new.
+    /// </summary>
+    public static ConfigSelection SelectConfig(
+        bool localExists, bool isAllUsers, bool adminExists, bool adminWritable, bool userExists)
+    {
+        if (localExists)
+            return ConfigSelection.Local;
+
+        if (isAllUsers)
+            return adminExists && !adminWritable ? ConfigSelection.AdminLockdown : ConfigSelection.AdminInstall;
+
+        if (adminExists && adminWritable && !userExists)
+            return ConfigSelection.Seed;
+
+        if (adminExists && !adminWritable)
+            return ConfigSelection.AdminLockdown;
+
+        return userExists ? ConfigSelection.User : ConfigSelection.New;
+    }
+
     private static IConfigurationService BuildConfigService(string configurationName)
     {
-        // The per-user (%APPDATA%) config is the writable target and takes
-        // priority. The all-users (%ProgramData%) config is used only when no
-        // per-user config exists, and is opened read-only when this process
-        // cannot write it.
+        string localConfig = PyRevitInstallScope.GetLocalConfigFilePath();
         string userConfig = PyRevitConfigPaths.UserConfigFilePath;
         string adminConfig = PyRevitConfigPaths.AdminConfigFilePath;
 
-        if (!File.Exists(userConfig) && File.Exists(adminConfig))
+        bool adminExists = File.Exists(adminConfig);
+        bool adminWritable = adminExists
+            && !new FileInfo(adminConfig).IsReadOnly
+            && IsFileWritable(adminConfig);
+
+        var selection = SelectConfig(
+            localExists: !string.IsNullOrEmpty(localConfig) && File.Exists(localConfig),
+            isAllUsers: PyRevitInstallScope.IsAllUsersInstall(),
+            adminExists: adminExists,
+            adminWritable: adminWritable,
+            userExists: File.Exists(userConfig));
+
+        switch (selection)
         {
-            if (new FileInfo(adminConfig).IsReadOnly || !IsFileWritable(adminConfig))
-            {
+            case ConfigSelection.Local:
+                return BuildWritable(localConfig, configurationName);
+
+            case ConfigSelection.AdminInstall:
+                // Machine-wide install: the %ProgramData% config is authoritative
+                // and writable. Resolve through the shared scope helper so the CLI
+                // and loader target the same file. No per-user seed in this mode.
+                return BuildWritable(PyRevitInstallScope.GetActiveConfigFilePath(), configurationName);
+
+            case ConfigSelection.AdminLockdown:
                 ConfigurationDiagnostics.ReportInfo(
                     "Using read-only admin config " + adminConfig + "; user changes will not be saved.");
                 return CreateConfiguration(adminConfig, true, configurationName);
-            }
 
-            SeedToUserConfig(adminConfig, userConfig);
+            case ConfigSelection.Seed:
+                SeedToUserConfig(adminConfig, userConfig);
+                break;
         }
 
-        var service = CreateConfiguration(userConfig, false, configurationName);
-        RunMigration(service, userConfig);
+        // Seed, User, and New all resolve to the writable per-user config.
+        return BuildWritable(userConfig, configurationName);
+    }
+
+    private static IConfigurationService BuildWritable(string configPath, string configurationName)
+    {
+        var service = CreateConfiguration(configPath, false, configurationName);
+        RunMigration(service, configPath);
         return service;
     }
 
