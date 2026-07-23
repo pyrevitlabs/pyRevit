@@ -397,9 +397,12 @@ namespace pyRevitLabs.PyRevit {
                 var normSrc = src.NormalizeAsPath();
                 _logger.Debug("Extension lookup source \"{@ExtensionSource}\"", normSrc);
                 normSources.Add(normSrc);
-                SaveExtensionLookupSources(normSources);
             }
-            
+
+            // Persist the normalized paths once; the stored values may be un-normalized.
+            if (normSources.Count > 0)
+                SaveExtensionLookupSources(normSources);
+
             return normSources;
         }
 
