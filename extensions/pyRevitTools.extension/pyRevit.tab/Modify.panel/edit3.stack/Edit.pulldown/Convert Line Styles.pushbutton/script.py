@@ -405,7 +405,7 @@ class ConvertLineStylesWindow(forms.WPFWindow):
                 for eline in editable_lines:
                     style_convert.convert_style(eline)
 
-            if self.deleteFromStyle.IsChecked:
+            if self.retireFromStyle.IsChecked:
                 self._remap_remaining_curve_styles(self.line_converts)
                 self._remap_mep_hidden_line_styles(self.line_converts)
                 self.retire_linecats(self.line_converts)

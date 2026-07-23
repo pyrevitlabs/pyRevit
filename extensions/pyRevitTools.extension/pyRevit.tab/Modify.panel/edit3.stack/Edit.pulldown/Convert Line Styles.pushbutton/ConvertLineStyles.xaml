@@ -72,7 +72,7 @@
                     <CheckBox x:Name="convertSketchLines" Margin="0,5,0,0" IsChecked="False" Content="{DynamicResource ConvertFilledRegionLines}" />
                     <!--<CheckBox x:Name="shakeFilledRegions" Margin="0,5,0,0" IsChecked="False" Content="Shake Filled Regions (Could take a long time)" IsEnabled="{Binding ElementName=convertSketchLines, Path=IsChecked}"/>-->
                     <CheckBox x:Name="convertGroupedLines" Margin="0,5,0,0" IsChecked="False" IsEnabled="False" Content="{DynamicResource ConvertGroupedLines}" />
-                    <CheckBox x:Name="deleteFromStyle" Margin="0,5,0,0" IsChecked="False" Content="{DynamicResource RetireConvertedStyles}" />
+                    <CheckBox x:Name="retireFromStyle" Margin="0,5,0,0" IsChecked="False" Content="{DynamicResource RetireConvertedStyles}" />
                 </StackPanel>
             </GroupBox>
             <!--<StackPanel DockPanel.Dock="Right" Width="30" Margin="10,0,0,0">
