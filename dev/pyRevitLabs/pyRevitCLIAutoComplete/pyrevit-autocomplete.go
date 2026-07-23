@@ -185,11 +185,13 @@ func main() {
 					"ui": complete.Command{
 						Sub: complete.Commands{},
 						Flags: complete.Flags{
-							"--dest":                complete.PredictNothing,
-							"--log":                 complete.PredictNothing,
-							"--password":            complete.PredictNothing,
-							"--token":               complete.PredictNothing,
-							"--persist-credentials": complete.PredictNothing,
+						"--branch":              complete.PredictNothing,
+						"--dest":                complete.PredictNothing,
+						"--log":                 complete.PredictNothing,
+						"--username":            complete.PredictNothing,
+						"--password":            complete.PredictNothing,
+						"--token":               complete.PredictNothing,
+						"--persist-credentials": complete.PredictNothing,
 						},
 					},
 					"lib": complete.Command{
