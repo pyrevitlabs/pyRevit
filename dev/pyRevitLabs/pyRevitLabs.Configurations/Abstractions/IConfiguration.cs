@@ -13,8 +13,8 @@ public interface IConfiguration
     T GetValue<T>(string sectionName, string keyName);
     T? GetValueOrDefault<T>(string sectionName, string keyName, T? defaultValue = default);
 
-    internal object GetValue(Type typeObject, string sectionName, string keyName);
-    internal object? GetValueOrDefault(Type typeObject, string sectionName, string keyName, object? defaultValue = default);
+    object GetValue(Type typeObject, string sectionName, string keyName);
+    object? GetValueOrDefault(Type typeObject, string sectionName, string keyName, object? defaultValue = default);
 
     // Raw access to the stored value text (canonical JSON). Lets a caller that
     // does its own (de)serialization round-trip a value with a single encode.

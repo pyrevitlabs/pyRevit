@@ -1,14 +1,8 @@
 """Perform upgrades between version, e.g. adding a new config parameter."""
-#pylint: disable=W0611
 import os
 import os.path as op
 
 from pyrevit.coreutils import appdata
-from pyrevit.coreutils.logger import get_logger
-
-
-mlogger = get_logger(__name__)
-
 
 def remove_leftover_temp_files():
     """4.8.5 had a bug that would create temp files with extension ..bak.

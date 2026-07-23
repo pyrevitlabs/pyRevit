@@ -108,7 +108,7 @@ public abstract class ConfigurationBase : IConfiguration
             throw new ConfigurationSectionNotFoundException(sectionName);
 
         if (!HasSectionKey(sectionName, keyName))
-            throw new ConfigurationSectionKeyNotFoundException(sectionName, keyName);
+            throw new ConfigurationSectionKeyNotFoundException(keyName, sectionName);
 
         return (T) GetValueImpl(typeof(T), sectionName, keyName);
     }
@@ -180,7 +180,7 @@ public abstract class ConfigurationBase : IConfiguration
             throw new ConfigurationSectionNotFoundException(sectionName);
 
         if (!HasSectionKey(sectionName, keyName))
-            throw new ConfigurationSectionKeyNotFoundException(sectionName, keyName);
+            throw new ConfigurationSectionKeyNotFoundException(keyName, sectionName);
 
         return GetValueImpl(typeObject, sectionName, keyName);
     }

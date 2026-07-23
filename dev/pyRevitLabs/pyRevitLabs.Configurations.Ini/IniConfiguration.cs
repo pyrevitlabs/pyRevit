@@ -124,13 +124,13 @@ public sealed class IniConfiguration : ConfigurationBase
         // JSON does not allow hex literals (e.g. "0x0"); legacy INI may store ints as hex
         if ((targetType == typeof(int) || targetType == typeof(long)) && HexIntegerRegex.IsMatch(valueToParse))
         {
-            int hexValue = Convert.ToInt32(valueToParse.Trim(), 16);
+            long hexValue = Convert.ToInt64(valueToParse.Trim(), 16);
             if (typeObject == typeof(int))
-                return hexValue;
+                return checked((int)hexValue);
             if (typeObject == typeof(int?))
-                return (int?)hexValue;
+                return (int?)checked((int)hexValue);
             if (typeObject == typeof(long))
-                return (long)hexValue;
+                return hexValue;
             if (typeObject == typeof(long?))
                 return (long?)hexValue;
         }
