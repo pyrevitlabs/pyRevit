@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "73e550b08849c926f67025b06f469484e3a38e2d65615bc17e0df46e0972bfff"
+            "sha256": "4dfb90ffa580c5d7adccf1738b390d596041a705b36e7687b9ae971b42e90ab5"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -263,11 +263,12 @@
         },
         "gitpython": {
             "hashes": [
-                "sha256:024b0422d7f84d15cd794844e029ffebd4c5d42a7eb9b936b458697ef550a02c",
-                "sha256:42f9399c9eb33fc581014bedd76049dfbaf6375aa2a5754575966387280315e1"
+                "sha256:79a36ee1f83523214a3f72d56cf1c4e490d577dc61af77e43dfe5862bd9da01a",
+                "sha256:de0a8ad86274c6e75ae8b37dd055ba68f19818c813108642263227b20775b48e"
             ],
+            "index": "pypi",
             "markers": "python_version >= '3.7'",
-            "version": "==3.1.49"
+            "version": "==3.1.52"
         },
         "griffelib": {
             "hashes": [
@@ -774,12 +775,12 @@
         },
         "setuptools": {
             "hashes": [
-                "sha256:7d872682c5d01cfde07da7bccc7b65469d3dca203318515ada1de5eda35efbf9",
-                "sha256:a59e362652f08dcd477c78bb6e7bd9d80a7995bc73ce773050228a348ce2e5bb"
+                "sha256:025bccbbf0fa05b6192bc64ae1e7b16e001fd6d6d4d5de03c97b1c1ade523bef",
+                "sha256:29b23c360f22f414dc7336bb39178cc7bcbf6021ed2733cde173f09dba19abb3"
             ],
             "index": "pypi",
-            "markers": "python_version >= '3.9'",
-            "version": "==82.0.1"
+            "markers": "python_version >= '3.10'",
+            "version": "==83.0.0"
         },
         "six": {
             "hashes": [
