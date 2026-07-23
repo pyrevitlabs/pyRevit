@@ -101,6 +101,7 @@ namespace pyRevitCLI {
                     catch (Exception ex) {
                         logger.Warn(ex, "Failed to save credentials to the pyRevit config file. Extension was installed but credentials were not persisted.");
                     }
+                }
             }
         }
 
