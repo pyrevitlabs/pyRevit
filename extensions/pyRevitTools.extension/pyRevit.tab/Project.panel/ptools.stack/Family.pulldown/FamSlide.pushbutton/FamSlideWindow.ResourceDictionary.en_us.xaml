@@ -32,4 +32,18 @@ This cannot be undone from FamSlide - use Revit's own Undo if needed.</system:St
     <system:String x:Key="AlertNoActiveDocument">No active Revit document.</system:String>
     <system:String x:Key="AlertFamilyEditorOnly">FamSlide only works inside the Family Editor.
 Open a family for editing and run this tool again.</system:String>
+    <system:String x:Key="MenuRename">Rename…</system:String>
+    <system:String x:Key="MenuMakeInstance">Make Instance Parameter</system:String>
+    <system:String x:Key="MenuMakeType">Make Type Parameter</system:String>
+    <system:String x:Key="DialogRenameTitle">Rename Parameter</system:String>
+    <system:String x:Key="PromptRenameParameter">Enter a new name for this parameter:</system:String>
+    <system:String x:Key="AlertRenameFailed">Could not rename parameter '{}'. It may be built-in, or the new name may already be in use.</system:String>
+    <system:String x:Key="AlertToggleInstanceTypeFailed">Could not toggle Instance/Type for parameter '{}'. It may be driven by a formula or otherwise restricted by Revit.</system:String>
+    <system:String x:Key="TooltipSavePreset">Save preset. Stores the current values of every editable parameter for this family, so you can quickly return to them later.</system:String>
+    <system:String x:Key="TooltipRestorePreset">Restore preset. Re-applies the values last saved with Save Preset for this family. Does nothing if no preset has been saved yet.</system:String>
+    <system:String x:Key="AlertNoPresetSaved">No preset has been saved yet for this family. Use Save Preset first.</system:String>
+    <system:String x:Key="ConfirmRestorePresetMessage">Restore all editable parameters to the values saved with Save Preset?
+
+This cannot be undone from FamSlide - use Revit's own Undo if needed.</system:String>
+    <system:String x:Key="AlertPresetSaved">Preset saved for {} parameter(s).</system:String>
 </ResourceDictionary>

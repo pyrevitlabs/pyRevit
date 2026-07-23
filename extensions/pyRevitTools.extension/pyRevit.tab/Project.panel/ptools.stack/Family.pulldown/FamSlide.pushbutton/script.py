@@ -77,6 +77,10 @@ class FamSlideWindow(forms.WPFWindow):
         self._show_editable_only = False
         self._show_labels = True
         self._expanded_state = {"value": True, "builtin": True, "yesno": True}
+        # doc.Title -> {param_elementid: raw_value}. Keyed per family
+        # document (not globally) so switching between open families
+        # can't accidentally apply one family's preset to another.
+        self._presets = {}
 
         self._apply_locale()
 
@@ -85,6 +89,8 @@ class FamSlideWindow(forms.WPFWindow):
         self.DeleteUnusedButton.Click += self.on_delete_unused_click
         self.ToggleEditableButton.Click += self.on_toggle_editable_click
         self.ToggleLabelsButton.Click += self.on_toggle_labels_click
+        self.SavePresetButton.Click += self.on_save_preset_click
+        self.RestorePresetButton.Click += self.on_restore_preset_click
         self.CloseButton.Click += self.on_close_click
         self.Closed += self.on_closed
 
@@ -106,6 +112,8 @@ class FamSlideWindow(forms.WPFWindow):
         self.DeleteUnusedButton.ToolTip = _t("TooltipDeleteUnused")
         self.ToggleEditableButton.ToolTip = _t("TooltipToggleEditable")
         self.ToggleLabelsButton.ToolTip = _t("TooltipToggleLabels")
+        self.SavePresetButton.ToolTip = _t("TooltipSavePreset")
+        self.RestorePresetButton.ToolTip = _t("TooltipRestorePreset")
         self.CloseButton.Content = _t("BtnClose")
         self.CloseButton.ToolTip = _t("TooltipClose")
         self.FamilyNameLabel.Text = _t("NoFamilyLoaded")
@@ -169,6 +177,12 @@ class FamSlideWindow(forms.WPFWindow):
         outer.Background = Media.Brushes.White
         outer.Margin = Windows.Thickness(0, 3, 0, 3)
         outer.Padding = Windows.Thickness(10, 6, 10, 6)
+
+        # Built-in parameters can't be renamed or converted between
+        # Instance/Type via the API, so there's nothing useful to put
+        # in a context menu for them.
+        if not row.is_builtin:
+            outer.ContextMenu = self._build_context_menu(row)
 
         grid = Controls.Grid()
         col_name = Controls.ColumnDefinition()
@@ -289,6 +303,32 @@ class FamSlideWindow(forms.WPFWindow):
         pill.Child = text
         return pill
 
+    def _build_context_menu(self, row):
+        """ContextMenu: right-click actions for a single parameter row.
+
+        Only offered for non-built-in parameters (see _build_row).
+        """
+        menu = Controls.ContextMenu()
+
+        rename_item = Controls.MenuItem()
+        rename_item.Header = _t("MenuRename")
+        rename_item.Tag = row
+        rename_item.Click += self.on_rename_click
+        menu.Items.Add(rename_item)
+
+        # Formula-driven parameters are forced to be Type parameters by
+        # Revit itself, so offering to flip them to Instance would only
+        # fail - disable the item instead of letting the user hit an
+        # avoidable error.
+        toggle_item = Controls.MenuItem()
+        toggle_item.Header = _t("MenuMakeType") if row.is_instance else _t("MenuMakeInstance")
+        toggle_item.Tag = row
+        toggle_item.IsEnabled = not row.has_formula
+        toggle_item.Click += self.on_toggle_instance_type_click
+        menu.Items.Add(toggle_item)
+
+        return menu
+
     # ------------------------------------------------------------------
     # UI-thread-only handlers (no Revit API access here directly)
     # ------------------------------------------------------------------
@@ -317,6 +357,37 @@ class FamSlideWindow(forms.WPFWindow):
         ui = None
 
     # --- controls that must hand off to Revit --------------------------------
+    def on_rename_click(self, sender, args):
+        row = sender.Tag
+        new_name = forms.ask_for_string(
+            default=row.name,
+            prompt=_t("PromptRenameParameter"),
+            title=_t("DialogRenameTitle"),
+        )
+        if not new_name or new_name == row.name:
+            return
+        events.execute_in_revit_context(self._commit_rename, row, new_name)
+
+    def on_toggle_instance_type_click(self, sender, args):
+        row = sender.Tag
+        events.execute_in_revit_context(self._commit_toggle_instance_type, row)
+
+    def on_save_preset_click(self, sender, args):
+        events.execute_in_revit_context(self._do_save_preset)
+
+    def on_restore_preset_click(self, sender, args):
+        doc = revit.doc
+        if doc is None or not doc.IsFamilyDocument or doc.Title not in self._presets:
+            forms.alert(_t("AlertNoPresetSaved"))
+            return
+        if not forms.alert(
+            _t("ConfirmRestorePresetMessage"),
+            yes=True,
+            no=True,
+        ):
+            return
+        events.execute_in_revit_context(self._do_restore_preset)
+
     def on_slider_mouse_up(self, sender, args):
         row = sender.Tag
         value = sender.Value
@@ -398,6 +469,7 @@ class FamSlideWindow(forms.WPFWindow):
         fm = doc.FamilyManager
         with revit.Transaction("FamSlide: Set {}".format(row.name), doc=doc):
             fm.SetValueString(row.param, text)
+
     def _do_shuffle(self):
         doc = revit.doc
         if doc is None or not doc.IsFamilyDocument:
@@ -409,6 +481,97 @@ class FamSlideWindow(forms.WPFWindow):
         if doc is None or not doc.IsFamilyDocument:
             return
         famslide_actions.delete_unused_parameters(doc, doc.FamilyManager, self._rows)
+
+    def _commit_rename(self, row, new_name):
+        doc = revit.doc
+        if doc is None or not doc.IsFamilyDocument or row.is_builtin:
+            return
+        fm = doc.FamilyManager
+        with revit.Transaction("FamSlide: Rename {}".format(row.name), doc=doc):
+            try:
+                fm.RenameParameter(row.param, new_name)
+            except Exception:
+                # most likely a duplicate name - nothing was changed,
+                # so just let the transaction commit as a no-op.
+                logger.exception(
+                    "FamSlide: could not rename parameter '{}'".format(row.name)
+                )
+                forms.alert(_t("AlertRenameFailed").format(row.name))
+
+    def _commit_toggle_instance_type(self, row):
+        doc = revit.doc
+        if doc is None or not doc.IsFamilyDocument or row.is_builtin:
+            return
+        fm = doc.FamilyManager
+        with revit.Transaction(
+            "FamSlide: Toggle Instance/Type {}".format(row.name), doc=doc
+        ):
+            try:
+                if row.is_instance:
+                    fm.MakeType(row.param)
+                else:
+                    fm.MakeInstance(row.param)
+            except Exception:
+                # e.g. formula-driven parameters must stay Type - the
+                # menu item is disabled for those, but guard here too
+                # in case classification is stale after a quick edit.
+                logger.exception(
+                    "FamSlide: could not toggle instance/type for '{}'".format(
+                        row.name
+                    )
+                )
+                forms.alert(_t("AlertToggleInstanceTypeFailed").format(row.name))
+
+    def _do_save_preset(self):
+        doc = revit.doc
+        if doc is None or not doc.IsFamilyDocument:
+            return
+        fm = doc.FamilyManager
+        preset = {}
+        for row in self._rows:
+            if not row.is_editable:
+                continue
+            param_id = famslide_paramutils.get_elementid_value(row.param.Id)
+            if row.group == "yesno" or row.storage_type == DB.StorageType.Integer:
+                preset[param_id] = fm.CurrentType.AsInteger(row.param)
+            elif row.storage_type == DB.StorageType.Double:
+                preset[param_id] = fm.CurrentType.AsDouble(row.param)
+            else:
+                preset[param_id] = fm.CurrentType.AsValueString(row.param)
+        self._presets[doc.Title] = preset
+        forms.alert(_t("AlertPresetSaved").format(len(preset)))
+
+    def _do_restore_preset(self):
+        doc = revit.doc
+        if doc is None or not doc.IsFamilyDocument:
+            return
+        preset = self._presets.get(doc.Title)
+        if not preset:
+            return
+        fm = doc.FamilyManager
+        with revit.Transaction("FamSlide: Restore Preset", doc=doc):
+            for row in self._rows:
+                if not row.is_editable:
+                    continue
+                param_id = famslide_paramutils.get_elementid_value(row.param.Id)
+                if param_id not in preset:
+                    continue
+                value = preset[param_id]
+                try:
+                    if row.group == "yesno" or row.storage_type == DB.StorageType.Integer:
+                        fm.Set(row.param, int(value))
+                    elif row.storage_type == DB.StorageType.Double:
+                        fm.Set(row.param, float(value))
+                    else:
+                        fm.SetValueString(row.param, value)
+                except Exception:
+                    logger.exception(
+                        "FamSlide: could not restore preset value for '{}'".format(
+                            row.name
+                        )
+                    )
+                    continue
+        revit.uidoc.RefreshActiveView()
 
 
 # ---------------------------------------------------------------------

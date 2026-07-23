@@ -32,4 +32,18 @@ FamSlide에서는 취소할 수 없습니다 - 필요하면 Revit 자체의 실�
     <system:String x:Key="AlertNoActiveDocument">활성 Revit 문서가 없습니다.</system:String>
     <system:String x:Key="AlertFamilyEditorOnly">FamSlide는 패밀리 편집기 내에서만 작동합니다.
 편집할 패밀리를 열고 이 도구를 다시 실행하세요.</system:String>
+    <system:String x:Key="MenuRename">이름 바꾸기…</system:String>
+    <system:String x:Key="MenuMakeInstance">인스턴스 매개변수로 변경</system:String>
+    <system:String x:Key="MenuMakeType">타입 매개변수로 변경</system:String>
+    <system:String x:Key="DialogRenameTitle">매개변수 이름 바꾸기</system:String>
+    <system:String x:Key="PromptRenameParameter">이 매개변수의 새 이름을 입력하세요:</system:String>
+    <system:String x:Key="AlertRenameFailed">매개변수 '{}'의 이름을 바꿀 수 없습니다. 내장 매개변수이거나 새 이름이 이미 사용 중일 수 있습니다.</system:String>
+    <system:String x:Key="AlertToggleInstanceTypeFailed">매개변수 '{}'의 인스턴스/타입을 전환할 수 없습니다. 수식에 의해 제어되거나 Revit에서 다른 방식으로 제한되었을 수 있습니다.</system:String>
+    <system:String x:Key="TooltipSavePreset">프리셋 저장. 이 패밀리의 모든 편집 가능한 매개변수의 현재 값을 저장하여 나중에 빠르게 되돌릴 수 있습니다.</system:String>
+    <system:String x:Key="TooltipRestorePreset">프리셋 복원. 이 패밀리에 대해 '프리셋 저장'으로 마지막에 저장한 값을 다시 적용합니다. 아직 저장된 프리셋이 없으면 아무 작업도 하지 않습니다.</system:String>
+    <system:String x:Key="AlertNoPresetSaved">이 패밀리에 대해 아직 저장된 프리셋이 없습니다. 먼저 '프리셋 저장'을 사용하세요.</system:String>
+    <system:String x:Key="ConfirmRestorePresetMessage">모든 편집 가능한 매개변수를 '프리셋 저장'으로 저장된 값으로 복원하시겠습니까?
+
+FamSlide에서는 취소할 수 없습니다 - 필요하면 Revit 자체의 실행 취소를 사용하세요.</system:String>
+    <system:String x:Key="AlertPresetSaved">매개변수 {}개에 대한 프리셋이 저장되었습니다.</system:String>
 </ResourceDictionary>

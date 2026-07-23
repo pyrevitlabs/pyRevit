@@ -32,4 +32,18 @@ Isso não pode ser desfeito pelo FamSlide - use o Desfazer do próprio Revit, se
     <system:String x:Key="AlertNoActiveDocument">Nenhum documento do Revit ativo.</system:String>
     <system:String x:Key="AlertFamilyEditorOnly">O FamSlide funciona apenas dentro do Editor de Famílias.
 Abra uma família para edição e execute esta ferramenta novamente.</system:String>
+    <system:String x:Key="MenuRename">Renomear…</system:String>
+    <system:String x:Key="MenuMakeInstance">Converter em parâmetro de instância</system:String>
+    <system:String x:Key="MenuMakeType">Converter em parâmetro de tipo</system:String>
+    <system:String x:Key="DialogRenameTitle">Renomear parâmetro</system:String>
+    <system:String x:Key="PromptRenameParameter">Digite um novo nome para este parâmetro:</system:String>
+    <system:String x:Key="AlertRenameFailed">Não foi possível renomear o parâmetro '{}'. Ele pode ser integrado, ou o novo nome já está em uso.</system:String>
+    <system:String x:Key="AlertToggleInstanceTypeFailed">Não foi possível alternar Instância/Tipo para o parâmetro '{}'. Ele pode ser controlado por uma fórmula ou restrito de outra forma pelo Revit.</system:String>
+    <system:String x:Key="TooltipSavePreset">Salvar predefinição. Armazena os valores atuais de todos os parâmetros editáveis desta família, para que você possa retornar a eles rapidamente depois.</system:String>
+    <system:String x:Key="TooltipRestorePreset">Restaurar predefinição. Reaplica os valores salvos com 'Salvar predefinição' para esta família. Não faz nada se nenhuma predefinição tiver sido salva ainda.</system:String>
+    <system:String x:Key="AlertNoPresetSaved">Ainda não há predefinição salva para esta família. Use 'Salvar predefinição' primeiro.</system:String>
+    <system:String x:Key="ConfirmRestorePresetMessage">Restaurar todos os parâmetros editáveis para os valores salvos com 'Salvar predefinição'?
+
+Isso não pode ser desfeito pelo FamSlide - use o Desfazer do próprio Revit, se necessário.</system:String>
+    <system:String x:Key="AlertPresetSaved">Predefinição salva para {} parâmetro(s).</system:String>
 </ResourceDictionary>

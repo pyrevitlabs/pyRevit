@@ -32,4 +32,18 @@
     <system:String x:Key="AlertNoActiveDocument">没有活动的 Revit 文档。</system:String>
     <system:String x:Key="AlertFamilyEditorOnly">FamSlide 仅在族编辑器中可用。
 请打开一个族进行编辑，然后重新运行此工具。</system:String>
+    <system:String x:Key="MenuRename">重命名…</system:String>
+    <system:String x:Key="MenuMakeInstance">转换为实例参数</system:String>
+    <system:String x:Key="MenuMakeType">转换为类型参数</system:String>
+    <system:String x:Key="DialogRenameTitle">重命名参数</system:String>
+    <system:String x:Key="PromptRenameParameter">请输入该参数的新名称：</system:String>
+    <system:String x:Key="AlertRenameFailed">无法重命名参数 "{}"。它可能是内置参数，或新名称已被使用。</system:String>
+    <system:String x:Key="AlertToggleInstanceTypeFailed">无法切换参数 "{}" 的实例/类型。它可能由公式驱动，或受到 Revit 的其他限制。</system:String>
+    <system:String x:Key="TooltipSavePreset">保存预设。存储此族中所有可编辑参数的当前值，以便稍后快速恢复。</system:String>
+    <system:String x:Key="TooltipRestorePreset">恢复预设。重新应用此族上次通过"保存预设"保存的值。如果尚未保存任何预设，则不执行任何操作。</system:String>
+    <system:String x:Key="AlertNoPresetSaved">此族尚未保存任何预设。请先使用"保存预设"。</system:String>
+    <system:String x:Key="ConfirmRestorePresetMessage">是否将所有可编辑参数恢复为通过"保存预设"保存的值？
+
+此操作无法在 FamSlide 中撤销 - 如需撤销请使用 Revit 自带的撤销功能。</system:String>
+    <system:String x:Key="AlertPresetSaved">已为 {} 个参数保存预设。</system:String>
 </ResourceDictionary>

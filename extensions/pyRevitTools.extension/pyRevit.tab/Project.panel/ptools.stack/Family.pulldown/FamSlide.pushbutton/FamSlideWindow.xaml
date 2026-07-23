@@ -102,6 +102,12 @@
                     <Button x:Name="ToggleLabelsButton" Style="{StaticResource ToolbarButton}"
                             Content="&#127991;"
                             ToolTip="Show/hide labels. Toggles the small tag pills shown under each parameter name."/>
+                    <Button x:Name="SavePresetButton" Style="{StaticResource ToolbarButton}"
+                            Content="&#128190;"
+                            ToolTip="Save preset. Stores the current values of every editable parameter for this family, so you can quickly return to them later."/>
+                    <Button x:Name="RestorePresetButton" Style="{StaticResource ToolbarButton}"
+                            Content="&#8617;"
+                            ToolTip="Restore preset. Re-applies the values last saved with Save Preset for this family. Does nothing if no preset has been saved yet."/>
                 </StackPanel>
 
                 <Button x:Name="CloseButton" Grid.Column="2" Content="Close"

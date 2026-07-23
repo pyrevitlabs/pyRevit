@@ -32,4 +32,18 @@ Esto no se puede deshacer desde FamSlide - use la función Deshacer de Revit si 
     <system:String x:Key="AlertNoActiveDocument">No hay ningún documento de Revit activo.</system:String>
     <system:String x:Key="AlertFamilyEditorOnly">FamSlide solo funciona dentro del Editor de familias.
 Abra una familia para editarla y ejecute esta herramienta de nuevo.</system:String>
+    <system:String x:Key="MenuRename">Cambiar nombre…</system:String>
+    <system:String x:Key="MenuMakeInstance">Convertir en parámetro de instancia</system:String>
+    <system:String x:Key="MenuMakeType">Convertir en parámetro de tipo</system:String>
+    <system:String x:Key="DialogRenameTitle">Cambiar nombre del parámetro</system:String>
+    <system:String x:Key="PromptRenameParameter">Introduzca un nuevo nombre para este parámetro:</system:String>
+    <system:String x:Key="AlertRenameFailed">No se pudo cambiar el nombre del parámetro '{}'. Puede ser un parámetro integrado o el nuevo nombre ya está en uso.</system:String>
+    <system:String x:Key="AlertToggleInstanceTypeFailed">No se pudo alternar Instancia/Tipo para el parámetro '{}'. Puede estar controlado por una fórmula o restringido de otro modo por Revit.</system:String>
+    <system:String x:Key="TooltipSavePreset">Guardar ajuste preestablecido. Almacena los valores actuales de todos los parámetros editables de esta familia, para poder volver a ellos rápidamente más tarde.</system:String>
+    <system:String x:Key="TooltipRestorePreset">Restaurar ajuste preestablecido. Vuelve a aplicar los valores guardados con 'Guardar ajuste preestablecido' para esta familia. No hace nada si aún no se ha guardado ningún ajuste preestablecido.</system:String>
+    <system:String x:Key="AlertNoPresetSaved">Aún no se ha guardado ningún ajuste preestablecido para esta familia. Use primero 'Guardar ajuste preestablecido'.</system:String>
+    <system:String x:Key="ConfirmRestorePresetMessage">¿Restaurar todos los parámetros editables a los valores guardados con 'Guardar ajuste preestablecido'?
+
+Esto no se puede deshacer desde FamSlide - use la función Deshacer de Revit si es necesario.</system:String>
+    <system:String x:Key="AlertPresetSaved">Ajuste preestablecido guardado para {} parámetro(s).</system:String>
 </ResourceDictionary>

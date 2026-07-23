@@ -32,4 +32,18 @@ Dies kann in FamSlide nicht rückgängig gemacht werden - verwenden Sie bei Beda
     <system:String x:Key="AlertNoActiveDocument">Kein aktives Revit-Dokument.</system:String>
     <system:String x:Key="AlertFamilyEditorOnly">FamSlide funktioniert nur innerhalb des Familieneditors.
 Öffnen Sie eine Familie zur Bearbeitung und starten Sie dieses Werkzeug erneut.</system:String>
+    <system:String x:Key="MenuRename">Umbenennen…</system:String>
+    <system:String x:Key="MenuMakeInstance">Als Instanzparameter festlegen</system:String>
+    <system:String x:Key="MenuMakeType">Als Typparameter festlegen</system:String>
+    <system:String x:Key="DialogRenameTitle">Parameter umbenennen</system:String>
+    <system:String x:Key="PromptRenameParameter">Geben Sie einen neuen Namen für diesen Parameter ein:</system:String>
+    <system:String x:Key="AlertRenameFailed">Parameter '{}' konnte nicht umbenannt werden. Er ist möglicherweise integriert, oder der neue Name wird bereits verwendet.</system:String>
+    <system:String x:Key="AlertToggleInstanceTypeFailed">Instanz/Typ für Parameter '{}' konnte nicht umgeschaltet werden. Er wird möglicherweise durch eine Formel gesteuert oder anderweitig von Revit eingeschränkt.</system:String>
+    <system:String x:Key="TooltipSavePreset">Voreinstellung speichern. Speichert die aktuellen Werte aller editierbaren Parameter dieser Familie, damit Sie später schnell dorthin zurückkehren können.</system:String>
+    <system:String x:Key="TooltipRestorePreset">Voreinstellung wiederherstellen. Wendet die zuletzt mit 'Voreinstellung speichern' gesicherten Werte für diese Familie erneut an. Ohne gespeicherte Voreinstellung passiert nichts.</system:String>
+    <system:String x:Key="AlertNoPresetSaved">Für diese Familie wurde noch keine Voreinstellung gespeichert. Verwenden Sie zuerst 'Voreinstellung speichern'.</system:String>
+    <system:String x:Key="ConfirmRestorePresetMessage">Alle editierbaren Parameter auf die mit 'Voreinstellung speichern' gesicherten Werte zurücksetzen?
+
+Dies kann in FamSlide nicht rückgängig gemacht werden - verwenden Sie bei Bedarf die Rückgängig-Funktion von Revit.</system:String>
+    <system:String x:Key="AlertPresetSaved">Voreinstellung für {} Parameter gespeichert.</system:String>
 </ResourceDictionary>

@@ -32,4 +32,18 @@ Ceci ne peut pas être annulé depuis FamSlide - utilisez si besoin la fonction 
     <system:String x:Key="AlertNoActiveDocument">Aucun document Revit actif.</system:String>
     <system:String x:Key="AlertFamilyEditorOnly">FamSlide fonctionne uniquement dans l'éditeur de famille.
 Ouvrez une famille en édition et relancez cet outil.</system:String>
+    <system:String x:Key="MenuRename">Renommer…</system:String>
+    <system:String x:Key="MenuMakeInstance">Convertir en paramètre d'instance</system:String>
+    <system:String x:Key="MenuMakeType">Convertir en paramètre de type</system:String>
+    <system:String x:Key="DialogRenameTitle">Renommer le paramètre</system:String>
+    <system:String x:Key="PromptRenameParameter">Entrez un nouveau nom pour ce paramètre :</system:String>
+    <system:String x:Key="AlertRenameFailed">Impossible de renommer le paramètre « {} ». Il est peut-être intégré, ou le nouveau nom est déjà utilisé.</system:String>
+    <system:String x:Key="AlertToggleInstanceTypeFailed">Impossible de basculer Instance/Type pour le paramètre « {} ». Il est peut-être piloté par une formule ou restreint par Revit.</system:String>
+    <system:String x:Key="TooltipSavePreset">Enregistrer un préréglage. Mémorise les valeurs actuelles de tous les paramètres modifiables de cette famille, pour pouvoir y revenir rapidement plus tard.</system:String>
+    <system:String x:Key="TooltipRestorePreset">Restaurer le préréglage. Réapplique les valeurs enregistrées avec « Enregistrer un préréglage » pour cette famille. Ne fait rien si aucun préréglage n'a encore été enregistré.</system:String>
+    <system:String x:Key="AlertNoPresetSaved">Aucun préréglage n'a encore été enregistré pour cette famille. Utilisez d'abord « Enregistrer un préréglage ».</system:String>
+    <system:String x:Key="ConfirmRestorePresetMessage">Restaurer tous les paramètres modifiables aux valeurs enregistrées avec « Enregistrer un préréglage » ?
+
+Ceci ne peut pas être annulé depuis FamSlide - utilisez si besoin la fonction Annuler de Revit.</system:String>
+    <system:String x:Key="AlertPresetSaved">Préréglage enregistré pour {} paramètre(s).</system:String>
 </ResourceDictionary>

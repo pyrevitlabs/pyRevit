@@ -32,4 +32,18 @@
     <system:String x:Key="AlertNoActiveDocument">Нет активного документа Revit.</system:String>
     <system:String x:Key="AlertFamilyEditorOnly">FamSlide работает только в редакторе семейств.
 Откройте семейство для редактирования и запустите инструмент снова.</system:String>
+    <system:String x:Key="MenuRename">Переименовать…</system:String>
+    <system:String x:Key="MenuMakeInstance">Сделать параметром экземпляра</system:String>
+    <system:String x:Key="MenuMakeType">Сделать параметром типа</system:String>
+    <system:String x:Key="DialogRenameTitle">Переименовать параметр</system:String>
+    <system:String x:Key="PromptRenameParameter">Введите новое имя для этого параметра:</system:String>
+    <system:String x:Key="AlertRenameFailed">Не удалось переименовать параметр «{}». Возможно, он встроенный, или новое имя уже используется.</system:String>
+    <system:String x:Key="AlertToggleInstanceTypeFailed">Не удалось переключить Экземпляр/Тип для параметра «{}». Возможно, он управляется формулой или ограничен Revit иным образом.</system:String>
+    <system:String x:Key="TooltipSavePreset">Сохранить пресет. Запоминает текущие значения всех редактируемых параметров этого семейства, чтобы можно было быстро вернуться к ним позже.</system:String>
+    <system:String x:Key="TooltipRestorePreset">Восстановить пресет. Повторно применяет значения, сохранённые с помощью 'Сохранить пресет' для этого семейства. Ничего не делает, если пресет ещё не был сохранён.</system:String>
+    <system:String x:Key="AlertNoPresetSaved">Для этого семейства ещё не сохранён пресет. Сначала используйте 'Сохранить пресет'.</system:String>
+    <system:String x:Key="ConfirmRestorePresetMessage">Восстановить все редактируемые параметры до значений, сохранённых с помощью 'Сохранить пресет'?
+
+Это действие нельзя отменить из FamSlide - при необходимости используйте отмену Revit.</system:String>
+    <system:String x:Key="AlertPresetSaved">Пресет сохранён для {} параметр(ов).</system:String>
 </ResourceDictionary>
