@@ -25,6 +25,7 @@ public sealed class IniConfiguration : ConfigurationBase
         : base(configurationPath, readOnly)
     {
         _parser = new FileIniDataParser();
+        _parser.Parser.Configuration.CaseInsensitive = true;
         _iniFile = !File.Exists(configurationPath)
             ? new IniData()
             : _parser.ReadFile(_configurationPath, DefaultFileEncoding);
@@ -133,6 +134,19 @@ public sealed class IniConfiguration : ConfigurationBase
                 return hexValue;
             if (typeObject == typeof(long?))
                 return (long?)hexValue;
+        }
+
+        // Tolerate legacy bare (unquoted) string values. (legacy support)
+        if (targetType == typeof(string))
+        {
+            try
+            {
+                return JsonConvert.DeserializeObject(raw, typeObject) ?? raw;
+            }
+            catch (JsonException)
+            {
+                return raw;
+            }
         }
 
         return JsonConvert.DeserializeObject(raw, typeObject)

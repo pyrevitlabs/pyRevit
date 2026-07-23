@@ -86,6 +86,9 @@ class _SectionCompatWrapper(object):
             json.dumps(value, separators=(',', ':'), ensure_ascii=False)
         )
 
+    def remove_option(self, key):
+        return self._config.RemoveOption(self._section_name, key)
+
     def __getattr__(self, name):
         return getattr(self._csharp, name)
 
@@ -361,7 +364,13 @@ class PyRevitConfig(object):
 
     @output_stylesheet.setter
     def output_stylesheet(self, stylesheet_filepath):
-        self.core.OutputStyleSheet = stylesheet_filepath
+        if stylesheet_filepath:
+            self.core.OutputStyleSheet = stylesheet_filepath
+        else:
+            # A null property is left untouched on save, so remove the key
+            # explicitly to actually clear a previously stored stylesheet.
+            self.core.OutputStyleSheet = None
+            self.core.remove_option("outputstylesheet")
 
     @property
     def routes_host(self):

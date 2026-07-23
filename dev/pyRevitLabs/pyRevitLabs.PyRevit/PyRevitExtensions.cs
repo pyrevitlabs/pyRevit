@@ -288,7 +288,7 @@ namespace pyRevitLabs.PyRevit {
         private static void ToggleExtension(string revitVersion, PyRevitExtension ext, bool state) {
             _logger.Debug("{@State} extension \"{@ExtensionName}\"", state ? "Enabling" : "Disabling", ext.Name);
             
-            IConfigurationService cfg = PyRevitConfigs.GetConfigFile();
+            IConfigurationService cfg = PyRevitConfigs.GetConfigFile(revitVersion);
             cfg.SetSectionKeyValue(revitVersion, ext.ConfigName, PyRevitConsts.ExtensionDisabledKey, !state);
         }
 

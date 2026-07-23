@@ -49,14 +49,19 @@ class ConfigSection(object):
 
     def get_option(self, op_name, default_value=None):
         value = self.__configuration.GetRawValueOrDefault(self.__section_name, op_name, None)
-        if not value:
+        # Only a missing key is "unset"; an explicitly stored empty string is a
+        # real value and must not fall back to the default.
+        if value is None:
             return default_value
         try:
             return json.loads(value)
         except (ValueError, TypeError):
-            # Non-JSON values (bare Windows paths, single-quoted strings,
-            # Python bools) are returned as-is rather than parsed.
-            return value
+            try:
+                # Legacy configs stored Python-style single-quoted strings/lists.
+                return json.loads(value.replace("'", '"'))
+            except (ValueError, TypeError):
+                # Bare values (Windows paths, Python bools) are returned as-is.
+                return value
 
     def set_option(self, op_name, value):
         self.__configuration.SetRawValue(

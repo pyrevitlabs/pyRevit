@@ -197,7 +197,7 @@ public class GoldenFileFidelityTests
                 ConfigurationService.DefaultConfigurationName).Build();
 
         Assert.True(service.Core.RocketMode);          // [DefaultValue(true)]
-        Assert.Equal("en_us", service.Core.UserLocale); // [DefaultValue("en_us")]
+        Assert.Null(service.Core.UserLocale);           // no default: unset means auto-detect from Revit UI language
         Assert.Equal(10, service.Core.StartupLogTimeout); // [DefaultValue(10)]
         Assert.Equal(48884, service.Routes.Port);       // [DefaultValue(48884)]
         Assert.NotNull(service.Environment.Clones);     // empty-collection default

@@ -57,7 +57,6 @@ public sealed record CoreSection
     public bool? RocketMode { get; set; }
 
     [KeyName("user_locale")]
-    [DefaultValue("en_us")]
     public string? UserLocale { get; set; }
 
     [KeyName("debug")]

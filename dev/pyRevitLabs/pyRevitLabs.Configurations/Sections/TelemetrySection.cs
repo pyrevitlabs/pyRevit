@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using pyRevitLabs.Configurations.Attributes;
 
 namespace pyRevitLabs.Configurations.Sections;
@@ -9,6 +10,7 @@ public record TelemetrySection
     public bool? TelemetryStatus { get; set; }
 
     [KeyName("utc_timestamps")]
+    [DefaultValue(true)]
     public bool? TelemetryUseUtcTimeStamps { get; set; }
 
     [KeyName("telemetry_file_dir")]

@@ -311,7 +311,8 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Enabling telemetry...");
 
-            if (!Directory.Exists(telemetryFileDir))
+            // Only validate a caller-supplied path
+            if (!string.IsNullOrEmpty(telemetryFileDir) && !Directory.Exists(telemetryFileDir))
             {
                 _logger.Warn("Directory \"{@TelemetryFileDir}\" does not exist", telemetryFileDir);
                 telemetryFileDir = default;
@@ -637,7 +638,7 @@ namespace pyRevitLabs.PyRevit
         public static string GetUserLocale()
         {
             IConfigurationService cfg = GetConfigFile();
-            return cfg.Core.UserLocale ?? "en_us";
+            return cfg.Core.UserLocale ?? "";
         }
 
         public static void SetUserLocale(string localCode,
