@@ -71,7 +71,7 @@ def _preload_wcf_for_public_api():
             full = op.join(sdk_path, dll)
             if op.exists(full):
                 try:
-                    framework.add_reference_to_file(full)
+                    add_reference_to_file(full)
                     loaded += 1
                 except Exception:
                     pass
@@ -86,7 +86,7 @@ def _preload_wcf_for_public_api():
         nnp = op.join(revit_dir, "System.ServiceModel.NetNamedPipe.dll")
         if op.exists(nnp):
             try:
-                framework.add_reference_to_file(nnp)
+                add_reference_to_file(nnp)
                 loaded += 1
             except Exception:
                 pass
@@ -145,7 +145,7 @@ def _preload_wcf_for_public_api():
     # Load the private implementation first (facade forwards to it)
     if spm_dll:
         try:
-            framework.add_reference_to_file(spm_dll)
+            add_reference_to_file(spm_dll)
             loaded += 1
         except Exception:
             pass
@@ -195,7 +195,7 @@ def _preload_wcf_for_public_api():
     contracts = op.join(ADC_ROOT, "Autodesk.DesktopConnector.API.Contracts.dll")
     if op.exists(contracts):
         try:
-            framework.add_reference_to_file(contracts)
+            add_reference_to_file(contracts)
             loaded += 1
         except Exception:
             pass
@@ -218,7 +218,7 @@ def _try_load_public_api():
     try:
         # Pre-load WCF + contracts BEFORE the Public API import
         _preload_wcf_for_public_api()
-        framework.add_reference_to_file(dll)
+        add_reference_to_file(dll)
         import Autodesk.DesktopConnector.API.Public as _pub
 
         if hasattr(_pub, "DesktopConnectorApiClient"):
@@ -243,7 +243,7 @@ def _try_load_legacy_api():
         if not op.exists(dll):
             continue
         try:
-            framework.add_reference_to_file(dll)
+            add_reference_to_file(dll)
             import Autodesk.DesktopConnector.API as _api
 
             # Verify service can instantiate (catches WCF failures early)
