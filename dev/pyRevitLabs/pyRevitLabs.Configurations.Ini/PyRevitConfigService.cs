@@ -86,6 +86,10 @@ public static class PyRevitConfigService
 
     private static IConfigurationService BuildConfigService(string configurationName)
     {
+        // Repair a machine install whose settings were split across %APPDATA% and
+        // %ProgramData% before the config store honored install scope.
+        MigrateSplitAdminConfigIfNeeded();
+
         string localConfig = PyRevitInstallScope.GetLocalConfigFilePath();
         string userConfig = PyRevitConfigPaths.UserConfigFilePath;
         string adminConfig = PyRevitConfigPaths.AdminConfigFilePath;
@@ -132,6 +136,101 @@ public static class PyRevitConfigService
         var service = CreateConfiguration(configPath, false, configurationName);
         RunMigration(service, configPath);
         return service;
+    }
+
+    private const string EnvironmentSectionName = "environment";
+    private const string ClonesKeyName = "clones";
+    private const string ExtensionSectionSuffix = ".extension";
+    private const string LibrarySectionSuffix = ".lib";
+
+    /// <summary>
+    /// One-time repair for machine installs whose clone registry and per-extension
+    /// settings were written to %APPDATA% (per-user) before the config store
+    /// honored install scope. On an all-users install it promotes a lone per-user
+    /// config to %ProgramData%, or merges the clone registry and any missing
+    /// extension sections into an existing %ProgramData% config. No-op otherwise.
+    /// </summary>
+    internal static void MigrateSplitAdminConfigIfNeeded()
+    {
+        if (!PyRevitInstallScope.IsAllUsersInstall())
+            return;
+
+        string appDataConfig = PyRevitConfigPaths.UserConfigFilePath;
+        if (!File.Exists(appDataConfig))
+            return;
+
+        string programDataConfig = PyRevitConfigPaths.AdminConfigFilePath;
+
+        if (!File.Exists(programDataConfig))
+        {
+            try
+            {
+                string? dir = Path.GetDirectoryName(programDataConfig);
+                if (!string.IsNullOrEmpty(dir))
+                    Directory.CreateDirectory(dir);
+                File.Copy(appDataConfig, programDataConfig);
+            }
+            catch (Exception ex)
+            {
+                ConfigurationDiagnostics.ReportWarning(
+                    "Could not promote per-user config to the machine config: " + ex.Message);
+            }
+            return;
+        }
+
+        MergeAdminConfigFiles(appDataConfig, programDataConfig);
+    }
+
+    // Copies the clone registry (when absent) and any per-extension sections the
+    // machine config is missing from the split per-user config.
+    internal static void MergeAdminConfigFiles(string sourcePath, string targetPath)
+    {
+        try
+        {
+            var source = IniConfiguration.Create(sourcePath);
+            var target = IniConfiguration.Create(targetPath);
+            bool changed = false;
+
+            if (!target.HasSectionKey(EnvironmentSectionName, ClonesKeyName))
+            {
+                string? clones = source.GetRawValueOrDefault(EnvironmentSectionName, ClonesKeyName, null);
+                if (clones != null && clones.Length > 0)
+                {
+                    target.SetRawValue(EnvironmentSectionName, ClonesKeyName, clones);
+                    changed = true;
+                }
+            }
+
+            foreach (string section in source.GetSectionNames())
+            {
+                if (!IsExtensionConfigSection(section) || target.HasSection(section))
+                    continue;
+
+                foreach (string key in source.GetSectionOptionNames(section))
+                {
+                    string? raw = source.GetRawValueOrDefault(section, key, null);
+                    if (raw != null)
+                    {
+                        target.SetRawValue(section, key, raw);
+                        changed = true;
+                    }
+                }
+            }
+
+            if (changed)
+                target.SaveConfiguration();
+        }
+        catch (Exception ex)
+        {
+            ConfigurationDiagnostics.ReportWarning(
+                "Could not merge split machine config: " + ex.Message);
+        }
+    }
+
+    private static bool IsExtensionConfigSection(string sectionName)
+    {
+        return sectionName.EndsWith(ExtensionSectionSuffix, StringComparison.OrdinalIgnoreCase)
+            || sectionName.EndsWith(LibrarySectionSuffix, StringComparison.OrdinalIgnoreCase);
     }
 
     private static void RunMigration(IConfigurationService service, string configPath)

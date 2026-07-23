@@ -8,6 +8,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <InternalsVisibleTo Include="pyRevitLabs.Configurations.Ini.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
         <PackageReference Include="ini-parser-netstandard" Version="2.5.2" />
         <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.Json.dll" Private="false"/>
     </ItemGroup>
