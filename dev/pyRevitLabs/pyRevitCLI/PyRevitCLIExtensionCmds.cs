@@ -80,7 +80,7 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        Extend(bool ui, bool lib, string extName, string destPath, string repoUrl, string branchName, GitInstallerCredentials credentials) {
+        Extend(bool ui, bool lib, string extName, string destPath, string repoUrl, string branchName, GitInstallerCredentials credentials, bool persistCredentials = false) {
             PyRevitExtensionTypes extType = PyRevitExtensionTypes.Unknown;
             if (ui)
                 extType = PyRevitExtensionTypes.UIExtension;
@@ -88,6 +88,16 @@ namespace pyRevitCLI {
                 extType = PyRevitExtensionTypes.LibraryExtension;
 
             PyRevitExtensions.InstallExtension(extName, extType, repoUrl, destPath, branchName, credentials);
+
+            if (persistCredentials) {
+                if (credentials is null)
+                    logger.Warn("No credentials provided. Skipping saving credentials to config file.");
+                else {
+                    PyRevitExtensions.SaveExtensionCredentials(extName, extType, credentials);
+                    logger.Warn("Credentials are stored as plain-text in the pyRevit config file. " +
+                                "Anyone with access to this file can read them.");
+                }
+            }
         }
 
         internal static void
