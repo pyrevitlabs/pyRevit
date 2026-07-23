@@ -36,7 +36,7 @@ tooltip:
     Controles deslizantes de parâmetros em tempo real para o Editor de
     Famílias - veja mudanças de forma e erros de restrição sem abrir a
     caixa de diálogo Tipos de Família.
-authors: wurschdhaud
+authors: Archilizer Ltd / dnenov (original concept), wurschdhaud (migration)
 context: doc-family
 min_revit_version: 2022
 engine:
