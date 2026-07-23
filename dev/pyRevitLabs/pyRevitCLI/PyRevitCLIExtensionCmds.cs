@@ -93,10 +93,14 @@ namespace pyRevitCLI {
                 if (credentials is null)
                     logger.Warn("No credentials provided. Skipping saving credentials to config file.");
                 else {
-                    PyRevitExtensions.SaveExtensionCredentials(extName, extType, credentials);
-                    logger.Warn("Credentials are stored as plain-text in the pyRevit config file. " +
-                                "Anyone with access to this file can read them.");
-                }
+                    try {
+                        PyRevitExtensions.SaveExtensionCredentials(extName, extType, credentials);
+                        logger.Warn("Credentials are stored as plain-text in the pyRevit config file. " +
+                                    "Anyone with access to this file can read them.");
+                    }
+                    catch (Exception ex) {
+                        logger.Warn(ex, "Failed to save credentials to the pyRevit config file. Extension was installed but credentials were not persisted.");
+                    }
             }
         }
 
