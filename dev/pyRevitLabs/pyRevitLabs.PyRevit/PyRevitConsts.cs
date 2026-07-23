@@ -64,7 +64,7 @@ namespace pyRevitLabs.PyRevit {
         public const string ConfigsTrueString = "true";
         public const string ConfigsFalseString = "false";
         public const string DefaultConfigsFileName = @"pyRevit_config.ini";
-        public const string ConfigsFileRegexPattern = @".*[pyrevit|config].*\.ini";
+        public const string ConfigsFileRegexPattern = @".*(pyrevit|config).*\.ini";
 
         public const string ConfigsCoreSection = "core";
         public const string ConfigsBinaryCacheKey = "bincache";

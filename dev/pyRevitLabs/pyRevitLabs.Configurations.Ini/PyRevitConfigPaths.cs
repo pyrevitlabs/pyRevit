@@ -12,7 +12,7 @@ public static class PyRevitConfigPaths
 {
     public const string AppdataDirName = "pyRevit";
     public const string DefaultConfigsFileName = "pyRevit_config.ini";
-    public const string ConfigsFileRegexPattern = @".*[pyrevit|config].*\.ini";
+    public const string ConfigsFileRegexPattern = @".*(pyrevit|config).*\.ini";
 
     // The all-users installer drops this marker under %ProgramData%\pyRevit.
     public const string InstallAllUsersMarkerFileName = "install_all_users";
