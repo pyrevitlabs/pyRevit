@@ -340,6 +340,10 @@ class ConvertLineStylesWindow(forms.WPFWindow):
             .ToElements()
 
         for curve in curves:
+            # keep grouped curves unchanged (consistent with primary conversion pass)
+            if curve.GroupId is not None \
+                    and curve.GroupId != DB.ElementId.InvalidElementId:
+                continue
             try:
                 style_name = curve.LineStyle.Name
             except Exception:
