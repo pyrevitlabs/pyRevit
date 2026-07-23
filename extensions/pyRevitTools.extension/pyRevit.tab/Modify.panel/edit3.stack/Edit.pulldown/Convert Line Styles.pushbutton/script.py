@@ -129,6 +129,8 @@ class ConvertLineStylesWindow(forms.WPFWindow):
         forms.WPFWindow.__init__(self, xaml_file_name)
         self.Closing += self.Close_Click
         self._setup_styles()
+        self.deleteFromStyle.IsEnabled = False
+        self.deleteFromStyle.IsChecked = False
 
 
     def Close_Click(self, sender, args):
@@ -264,7 +266,10 @@ class ConvertLineStylesWindow(forms.WPFWindow):
                     style_convert.convert_style(eline)
 
             if self.deleteFromStyle.IsChecked:
-                self.delete_linecats(self.line_converts)
+                logger.warning(
+                    'Skipping style deletion to avoid leaving stale '
+                    'Linework overrides in the active view.'
+                    )
 
 
 if __name__ == '__main__':
