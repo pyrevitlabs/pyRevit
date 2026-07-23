@@ -11,5 +11,5 @@
     <system:String x:Key="ConvertModelLines">转换模型线</system:String>
     <system:String x:Key="ConvertFilledRegionLines">转换填充区域线（填充区域需要摇动）</system:String>
     <system:String x:Key="ConvertGroupedLines">转换成组线（无 API 支持）</system:String>
-    <system:String x:Key="DeleteConvertedStyles">完成后删除已转换的样式</system:String>
+    <system:String x:Key="RetireConvertedStyles">完成后合并并停用源样式</system:String>
 </ResourceDictionary>
