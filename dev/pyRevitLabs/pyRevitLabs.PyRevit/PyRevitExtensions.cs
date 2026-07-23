@@ -225,7 +225,12 @@ namespace pyRevitLabs.PyRevit {
         public static void SaveExtensionCredentials(string extensionName,
                                                     PyRevitExtensionTypes extensionType,
                                                     GitInstallerCredentials credentials) {
-            if (credentials is null || !credentials.IsValid())
+            if (credentials is null
+                || !credentials.IsValid()
+                || (credentials is GitInstallerUsernamePasswordCredentials upCreds
+                    && (string.IsNullOrWhiteSpace(upCreds.Username) || string.IsNullOrWhiteSpace(upCreds.Password)))
+                || (credentials is GitInstallerAccessTokenCredentials tokCreds
+                    && string.IsNullOrWhiteSpace(tokCreds.AccessToken)))
                 throw new PyRevitException("Can not save invalid or empty credentials.");
 
             var cfg = PyRevitConfigs.GetConfigFile();
