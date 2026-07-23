@@ -245,6 +245,10 @@ namespace pyRevitExtensionParser
             _readScriptMetadataCache = null;
             BundleParser.BundleYamlParser.ClearCache();
             ExtensionRegistryAuth.ClearCache();
+            // Reset locale tracking too, so the next parse does not read this as a
+            // locale change and re-enter ClearAllCaches mid-parse.
+            _localeInitialized = false;
+            _cachedLocale = null;
         }
 
         internal static List<string> GetExtensionRootsForAuthLookup()

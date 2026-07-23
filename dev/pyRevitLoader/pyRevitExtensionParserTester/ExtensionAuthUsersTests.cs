@@ -116,7 +116,8 @@ namespace pyRevitExtensionParserTester
                 "[environment]\n" +
                 "sources = [\"" + lookupPath.Replace("\\", "\\\\") + "\"]\n");
 
-            ClearAllCaches();
+            // UseTestPyRevitConfig already clears the parser caches before injecting
+            // the test config; clearing again here would drop that injected config.
             var extension = ParseInstalledExtensions(extPath).Single();
 
             Assert.That(extension.AuthorizedUsers, Is.EquivalentTo(new[] { "LookupUser" }));
