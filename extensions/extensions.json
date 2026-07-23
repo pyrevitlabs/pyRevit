@@ -336,11 +336,11 @@
             "type": "extension",
             "rocket_mode_compatible": "False",
             "name": "WWPTools",
-            "description": "WWPTools is a comprehensive Revit productivity toolbar (Setup, Context, Manage, Sheets, Cleanup panels) developed by WWP Architects + Planners.",
+            "description": "Comprehensive Revit productivity toolbar (Setup, Context, Manage, Sheets, Cleanup panels).",
             "author": "Jason Tian",
             "author_profile": "https://github.com/jason-svn",
-            "url": "https://github.com/WWP-Architects-Planners/WWP_Revit_WWPTools.git",
-            "website": "https://github.com/WWP-Architects-Planners/WWP_Revit_WWPTools",
+            "url": "https://github.com/jason-svn/WWPTools_Publicly_Shared.git",
+            "website": "https://github.com/jason-svn/WWPTools_Publicly_Shared",
             "image": "",
             "dependencies": []
         }
