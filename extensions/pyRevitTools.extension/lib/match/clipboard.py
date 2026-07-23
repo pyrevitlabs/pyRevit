@@ -239,14 +239,23 @@ class ClipboardContent(Controls.UserControl):
         Deduplication: only the first occurrence of each parameter name
         is checked; later duplicates are forced unchecked.
         """
-        seen = set()
-        source = self.paramListView.ItemsSource or []
-        for item in source:
-            if item.Name not in seen:
-                seen.add(item.Name)
+        visible = self.paramListView.ItemsSource or []
+        if state is True:
+            # build set of already-selected names from ALL items
+            seen = set()
+            for item in self._items:
+                if item.IsSelected:
+                    seen.add(item.Name)
+            for item in visible:
+                if item.Name in seen and not item.IsSelected:
+                    item.IsSelected = False
+                else:
+                    item.IsSelected = (not item.IsSelected) if flip else state
+                    if item.IsSelected:
+                        seen.add(item.Name)
+        else:
+            for item in visible:
                 item.IsSelected = (not item.IsSelected) if flip else state
-            else:
-                item.IsSelected = False
         self._update_ui_state()
 
     def _update_ui_state(self):
