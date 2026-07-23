@@ -97,20 +97,6 @@ namespace pyRevitExtensionParser
         // ── core ────────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Gets or sets the user extensions configuration as a raw list string.
-        /// Use <see cref="UserExtensionsList"/> for parsed list access.
-        /// </summary>
-        public string UserExtensions
-        {
-            get
-            {
-                var value = ReadRaw("core", "userextensions");
-                return string.IsNullOrEmpty(value) ? null : value.Trim();
-            }
-            set { Write("core", "userextensions", value); }
-        }
-
-        /// <summary>
         /// Gets or sets the user's locale preference (e.g. "en_us").
         /// </summary>
         public string UserLocale

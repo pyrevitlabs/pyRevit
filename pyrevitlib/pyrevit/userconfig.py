@@ -726,11 +726,6 @@ class PyRevitConfig(object):
         self.config_sections.remove_section(section_name)
 
 
-def find_config_file(target_path):
-    """Find config file in target path."""
-    return PyRevit.PyRevitConsts.FindConfigFileInDirectory(target_path)
-
-
 user_config = None
 
 # Pin install-scope detection to the running clone so the config store resolves
