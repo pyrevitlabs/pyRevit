@@ -256,6 +256,14 @@ class ClipboardContent(Controls.UserControl):
         else:
             for item in visible:
                 item.IsSelected = (not item.IsSelected) if flip else state
+        # Enforce deduplication across all items (e.g. after toggle_all while searching)
+        seen = set()
+        for item in self._items:
+            if item.IsSelected:
+                if item.Name in seen:
+                    item.IsSelected = False
+                else:
+                    seen.add(item.Name)
         self._update_ui_state()
 
     def _update_ui_state(self):
