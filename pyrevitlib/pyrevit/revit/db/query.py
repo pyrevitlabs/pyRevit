@@ -456,7 +456,7 @@ def get_elements_by_parameter(param_name, param_value, doc=None, partial=False, 
 
     Args:
         param_name (str): The name of the parameter to search for.
-        param_value (str or other): The value of the parameter to match.
+        param_value (object): Value to match. When partial is True, this must be a string.
         doc (Document, optional): The Revit document to search in. If None, the current document is used.
         partial (bool, optional): If True, performs a partial match on string parameter values. Defaults to False.
         view_id (DB.ElementId, optional): Restrict the search to elements visible in the specified view. If None, searches the entire document.
@@ -464,11 +464,12 @@ def get_elements_by_parameter(param_name, param_value, doc=None, partial=False, 
     Returns:
         list: A list of elements that match the specified parameter name and value.
     """
+    doc = doc or DOCS.doc
     elements = (
-        DB.FilteredElementCollector(doc, view_id).ToElements() 
+        DB.FilteredElementCollector(doc, view_id).ToElements()
         if view_id
         else get_all_elements(doc)
-    )  
+    )
 
     found_els = []
     for element in elements:
