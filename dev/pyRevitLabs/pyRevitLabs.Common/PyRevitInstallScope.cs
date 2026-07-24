@@ -89,7 +89,7 @@ namespace pyRevitLabs.Common {
 
         /// <summary>
         /// Active pyRevit configuration file for the current install scope.
-        /// Creates an empty default file when missing so callers can persist settings.
+        /// Best-effort: creates an empty default file when missing so callers can persist settings.
         /// </summary>
         public static string GetActiveConfigFilePath(bool createIfMissing = true) {
             return GetActiveConfig(createIfMissing).ConfigPath;
