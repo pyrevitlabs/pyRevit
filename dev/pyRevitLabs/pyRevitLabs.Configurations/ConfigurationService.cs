@@ -24,9 +24,6 @@ public sealed class ConfigurationService : IConfigurationService
         _configurations = configurations;
 
         ReadOnly = readOnly;
-
-        // TODO: Change behavior
-        ReloadLoadConfigurations();
     }
 
     internal static IConfigurationService Create(bool readOnly, List<ConfigurationName> names,
@@ -57,17 +54,56 @@ public sealed class ConfigurationService : IConfigurationService
         }
     }
 
-    public CoreSection Core { get; private set; } = new();
-    public RoutesSection Routes { get; private set; } = new();
-    public TelemetrySection Telemetry { get; private set; } = new();
-    public EnvironmentSection Environment { get; private set; } = new();
+    private readonly object _snapshotLock = new();
+    private long _snapshotRevision = -1;
+    private CoreSection _core = new();
+    private RoutesSection _routes = new();
+    private TelemetrySection _telemetry = new();
+    private EnvironmentSection _environment = new();
 
+    public CoreSection Core { get { EnsureSnapshots(); return _core; } }
+    public RoutesSection Routes { get { EnsureSnapshots(); return _routes; } }
+    public TelemetrySection Telemetry { get { EnsureSnapshots(); return _telemetry; } }
+    public EnvironmentSection Environment { get { EnsureSnapshots(); return _environment; } }
+
+    /// <summary>
+    /// Forces the typed section snapshots to be rebuilt on next access. Writes
+    /// made through this service or its configurations are picked up on their
+    /// own, so this is only needed when a configuration is replaced wholesale.
+    /// </summary>
     public void ReloadLoadConfigurations()
     {
-        Core = GetSection<CoreSection>();
-        Routes = GetSection<RoutesSection>();
-        Telemetry = GetSection<TelemetrySection>();
-        Environment = GetSection<EnvironmentSection>();
+        lock (_snapshotLock)
+            _snapshotRevision = -1;
+    }
+
+    // Sum of per-configuration revisions: each only ever increases, so any write
+    // to any backing configuration changes the total.
+    private long CurrentRevision()
+    {
+        long total = 0;
+        foreach (IConfiguration configuration in Configurations)
+            total += configuration.Revision;
+
+        return total;
+    }
+
+    // Rebuilds the typed snapshots when the backing store has moved on, so a
+    // reader never observes state older than the last write.
+    private void EnsureSnapshots()
+    {
+        lock (_snapshotLock)
+        {
+            long revision = CurrentRevision();
+            if (revision == _snapshotRevision)
+                return;
+
+            _core = GetSection<CoreSection>();
+            _routes = GetSection<RoutesSection>();
+            _telemetry = GetSection<TelemetrySection>();
+            _environment = GetSection<EnvironmentSection>();
+            _snapshotRevision = revision;
+        }
     }
 
     public T GetSection<T>()
@@ -110,10 +146,6 @@ public sealed class ConfigurationService : IConfigurationService
 
         configuration.SetValue(sectionName, keyName, keyValue);
         configuration.SaveConfiguration();
-
-        // Keep the typed section snapshots in sync with what was just written,
-        // matching the property-based SaveSection path.
-        ReloadLoadConfigurations();
     }
 
     public T? GetSectionKeyValueOrDefault<T>(
@@ -164,12 +196,6 @@ public sealed class ConfigurationService : IConfigurationService
         }
 
         configuration.SaveConfiguration();
-
-        // Rebuild the typed section snapshots so readers of this (now cached and
-        // shared) service observe the values just written. Callers that save
-        // several sections in sequence must capture each section object before the
-        // first save, since this swaps the live snapshot instances.
-        ReloadLoadConfigurations();
     }
 
     private static object CreateSection(Type configurationType, params IConfiguration[] configurations)

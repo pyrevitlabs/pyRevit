@@ -4,6 +4,12 @@ public interface IConfiguration
 {
     string ConfigurationPath { get; }
 
+    /// <summary>
+    /// Advances on every mutation, so a holder of derived state can tell whether
+    /// the store changed under it without comparing values.
+    /// </summary>
+    long Revision { get; }
+
     bool HasSection(string sectionName);
     bool HasSectionKey(string sectionName, string keyName);
 
@@ -21,6 +27,7 @@ public interface IConfiguration
     string? GetRawValueOrDefault(string sectionName, string keyName, string? defaultValue = null);
     void SetRawValue(string sectionName, string keyName, string rawValue);
 
+    bool AddSection(string sectionName);
     bool RemoveSection(string sectionName);
     bool RemoveOption(string sectionName, string keyName);
 

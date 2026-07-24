@@ -192,7 +192,9 @@ class ConfigSections(object):
         Returns:
             (ConfigSection): the added section
         """
-        return ConfigSection(section_name, self.__get_default_config())
+        configuration = self.__get_default_config()
+        configuration.AddSection(section_name)
+        return ConfigSection(section_name, configuration)
 
     def get_section(self, section_name):
         """Get the named config section.
@@ -202,8 +204,15 @@ class ConfigSections(object):
 
         Returns:
             (ConfigSection): the requested section
+
+        Raises:
+            AttributeError: if the section does not exist
         """
-        return ConfigSection(section_name, self.__get_default_config())
+        configuration = self.__get_default_config()
+        if not configuration.HasSection(section_name):
+            raise AttributeError(
+                'Section "{}" does not exist in config file.'.format(section_name))
+        return ConfigSection(section_name, configuration)
 
     def remove_section(self, section_name):
         """Remove the named section from the config.

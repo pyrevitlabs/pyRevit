@@ -16,6 +16,13 @@ public abstract class ConfigurationBase : IConfiguration
     public bool ReadOnly { get; }
     public string ConfigurationPath => _configurationPath;
 
+    private long _revision;
+
+    /// <inheritdoc />
+    public long Revision => Interlocked.Read(ref _revision);
+
+    private void MarkChanged() => Interlocked.Increment(ref _revision);
+
     public void SaveConfiguration()
     {
         if (ReadOnly)
@@ -67,6 +74,19 @@ public abstract class ConfigurationBase : IConfiguration
         return GetSectionOptionNamesImpl(sectionName);
     }
 
+    /// <inheritdoc />
+    public bool AddSection(string sectionName)
+    {
+        if (string.IsNullOrWhiteSpace(sectionName))
+            throw new ArgumentException("Value cannot be null or whitespace.", nameof(sectionName));
+
+        if (HasSection(sectionName) || !AddSectionImpl(sectionName))
+            return false;
+
+        MarkChanged();
+        return true;
+    }
+
     public bool RemoveSection(string sectionName)
     {
         if (string.IsNullOrWhiteSpace(sectionName))
@@ -75,6 +95,9 @@ public abstract class ConfigurationBase : IConfiguration
 
         bool result = HasSection(sectionName)
                       && RemoveSectionImpl(sectionName);
+
+        if (result)
+            MarkChanged();
 
         return result;
     }
@@ -91,6 +114,9 @@ public abstract class ConfigurationBase : IConfiguration
         bool result = HasSection(sectionName)
                       && HasSectionKey(sectionName, keyName)
                       && RemoveOptionImpl(sectionName, keyName);
+
+        if (result)
+            MarkChanged();
 
         return result;
     }
@@ -198,6 +224,7 @@ public abstract class ConfigurationBase : IConfiguration
             throw new ArgumentException("Value cannot be null or whitespace.", nameof(keyName));
 
         SetValueImpl<T>(sectionName, keyName, value);
+        MarkChanged();
     }
 
     /// <inheritdoc />
@@ -228,6 +255,7 @@ public abstract class ConfigurationBase : IConfiguration
             throw new ArgumentException("Value cannot be null or whitespace.", nameof(keyName));
 
         SetRawValueImpl(sectionName, keyName, rawValue);
+        MarkChanged();
     }
 
     protected abstract void SaveConfigurationImpl();
@@ -239,6 +267,7 @@ public abstract class ConfigurationBase : IConfiguration
     protected abstract IEnumerable<string> GetSectionNamesImpl();
     protected abstract IEnumerable<string> GetSectionOptionNamesImpl(string sectionName);
 
+    protected abstract bool AddSectionImpl(string sectionName);
     protected abstract bool RemoveSectionImpl(string sectionName);
     protected abstract bool RemoveOptionImpl(string sectionName, string keyName);
 

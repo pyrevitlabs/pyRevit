@@ -15,7 +15,8 @@ namespace pyRevitExtensionParser
     {
         /// <summary>
         /// Parses a list string into a C# List&lt;string&gt;.
-        /// Accepts JSON arrays and preserves Unicode values.
+        /// Accepts JSON arrays and legacy Python single-quoted literals, and
+        /// preserves Unicode values.
         /// </summary>
         /// <param name="pythonListString">
         /// The list string to parse. Expected format: ["value1", "value2", "value3"]
@@ -42,13 +43,9 @@ namespace pyRevitExtensionParser
             if (list != null)
                 return list;
 
-            var normalized = NormalizeSingleQuotedList(trimmed);
-            if (!string.Equals(normalized, trimmed, StringComparison.Ordinal))
-            {
-                list = TryParseJsonList(normalized);
-                if (list != null)
-                    return list;
-            }
+            list = TryParseSingleQuotedList(trimmed);
+            if (list != null)
+                return list;
 
             return new List<string>();
         }
@@ -96,59 +93,79 @@ namespace pyRevitExtensionParser
             }
         }
 
-        private static string NormalizeSingleQuotedList(string value)
+        /// <summary>
+        /// Reads a legacy Python-style single-quoted list directly, without routing
+        /// it through a JSON parser. Backslashes are taken literally so that
+        /// unescaped Windows paths survive; only the two escapes Python itself can
+        /// emit inside a single-quoted literal are decoded. Returns null when the
+        /// value is not a single-quoted list, so the caller can fall through.
+        /// </summary>
+        private static List<string> TryParseSingleQuotedList(string value)
         {
-            if (string.IsNullOrEmpty(value))
-                return value;
             if (!value.StartsWith("[") || !value.EndsWith("]"))
-                return value;
+                return null;
+            // A double quote means this was meant to be JSON; the JSON reader
+            // already had its turn and rejected it.
             if (value.IndexOf('"') >= 0)
-                return value;
+                return null;
 
-            // Replace only single quotes that act as string delimiters, not embedded apostrophes.
-            // Delimiters are: after [ or , (opening) and before ] or , (closing).
-            var sb = new StringBuilder(value.Length);
+            var items = new List<string>();
+            var item = new StringBuilder();
+            int end = value.Length - 1;
             bool inString = false;
-            for (int i = 0; i < value.Length; i++)
+
+            for (int i = 1; i < end; i++)
             {
                 char c = value[i];
-                if (c == '\'' && !inString)
+
+                if (!inString)
                 {
-                    sb.Append('"');
-                    inString = true;
-                }
-                else if (c == '\'' && inString)
-                {
-                    // Check if this quote is a closing delimiter:
-                    // next non-whitespace should be , or ]
-                    bool isClosing = false;
-                    for (int j = i + 1; j < value.Length; j++)
+                    if (c == '\'')
                     {
-                        if (char.IsWhiteSpace(value[j]))
-                            continue;
-                        if (value[j] == ',' || value[j] == ']')
-                            isClosing = true;
-                        break;
+                        inString = true;
+                        item.Length = 0;
+                    }
+                    else if (c != ',' && !char.IsWhiteSpace(c))
+                    {
+                        // Unquoted content between items: not a list of strings.
+                        return null;
                     }
 
-                    if (isClosing)
-                    {
-                        sb.Append('"');
-                        inString = false;
-                    }
-                    else
-                    {
-                        // Embedded apostrophe — escape it for JSON
-                        sb.Append('\'');
-                    }
+                    continue;
+                }
+
+                if (c == '\\' && i + 1 < end && (value[i + 1] == '\\' || value[i + 1] == '\''))
+                {
+                    item.Append(value[i + 1]);
+                    i++;
+                }
+                else if (c == '\'' && IsClosingDelimiter(value, i, end))
+                {
+                    inString = false;
+                    items.Add(item.ToString());
                 }
                 else
                 {
-                    sb.Append(c);
+                    item.Append(c);
                 }
             }
 
-            return sb.ToString();
+            return inString ? null : items;
+        }
+
+        // An apostrophe inside a hand-edited value is only a delimiter when the
+        // next meaningful character ends the item.
+        private static bool IsClosingDelimiter(string value, int index, int end)
+        {
+            for (int i = index + 1; i < end; i++)
+            {
+                if (char.IsWhiteSpace(value[i]))
+                    continue;
+
+                return value[i] == ',';
+            }
+
+            return true;
         }
     }
 }

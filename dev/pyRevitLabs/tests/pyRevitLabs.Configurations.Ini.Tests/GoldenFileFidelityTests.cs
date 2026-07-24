@@ -79,6 +79,94 @@ public class GoldenFileFidelityTests
         Assert.NotNull(cfg.GetValueOrDefault<string>("core", "outputstylesheet", ""));
     }
 
+    [Fact] // Python-style "True"/"False" predate the JSON encoding and must still read.
+    public void LegacyCapitalizedBool_ReadsCorrectly()
+    {
+        var cfg = Load("legacy_values.ini");
+        Assert.True(cfg.GetValue<bool>("core", "rocketmode"));
+        Assert.False(cfg.GetValue<bool>("core", "checkupdates"));
+    }
+
+    [Fact] // Windows paths in a legacy list carry backslashes that are not JSON escapes.
+    public void LegacyUnescapedPathList_ReadsCorrectly()
+    {
+        var cfg = Load("legacy_values.ini");
+        var exts = cfg.GetValue<List<string>>("core", "userextensions");
+
+        Assert.Equal(
+            new List<string> { @"C:\Tools\ext1", @"D:\Program Files\ext2", @"C:\temp\new" },
+            exts);
+    }
+
+    [Fact] // \t and \n are valid JSON escapes; in a path they must stay literal.
+    public void LegacyUnescapedPathList_DoesNotInterpretEscapeSequences()
+    {
+        var cfg = Load("legacy_values.ini");
+        var exts = cfg.GetValue<List<string>>("core", "userextensions");
+
+        Assert.DoesNotContain(exts, item => item.Contains('\t') || item.Contains('\n'));
+    }
+
+    [Fact] // The clone registry is a map with the same unescaped-path problem.
+    public void LegacyUnescapedPathMap_ReadsCorrectly()
+    {
+        var cfg = Load("legacy_values.ini");
+        var clones = cfg.GetValue<Dictionary<string, string>>("environment", "clones");
+
+        Assert.Equal(@"C:\Users\u\pyRevit-Master", clones["master"]);
+    }
+
+    [Fact] // Readable legacy containers must survive migration, not be reset.
+    public void Migration_KeepsLegacyUnescapedPathList()
+    {
+        var path = TempCopy("legacy_values.ini");
+        try
+        {
+            var service = new ConfigurationBuilder(false)
+                .AddIniConfiguration(path, ConfigurationService.DefaultConfigurationName)
+                .Build();
+
+            var result = ConfigurationMigrator.Migrate(service);
+            Assert.DoesNotContain("core.userextensions", result.ResetKeys);
+            Assert.DoesNotContain("environment.clones", result.ResetKeys);
+
+            var reread = IniConfiguration.Create(path);
+            Assert.True(reread.HasSectionKey("core", "userextensions"));
+            Assert.Equal(
+                new List<string> { @"C:\Tools\ext1", @"D:\Program Files\ext2", @"C:\temp\new" },
+                reread.GetValue<List<string>>("core", "userextensions"));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact] // A capitalized bool is a readable value, so migration must not drop it.
+    public void Migration_KeepsLegacyCapitalizedBool()
+    {
+        var path = TempCopy("legacy_values.ini");
+        try
+        {
+            var service = new ConfigurationBuilder(false)
+                .AddIniConfiguration(path, ConfigurationService.DefaultConfigurationName)
+                .Build();
+
+            var result = ConfigurationMigrator.Migrate(service);
+            Assert.DoesNotContain("core.rocketmode", result.ResetKeys);
+            Assert.DoesNotContain("core.checkupdates", result.ResetKeys);
+
+            var reread = IniConfiguration.Create(path);
+            Assert.True(reread.HasSectionKey("core", "rocketmode"));
+            Assert.True(reread.GetValue<bool>("core", "rocketmode"));
+            Assert.False(reread.GetValue<bool>("core", "checkupdates"));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     [Fact]
     public void MissingKey_OrDefault_ReturnsDefault()
     {

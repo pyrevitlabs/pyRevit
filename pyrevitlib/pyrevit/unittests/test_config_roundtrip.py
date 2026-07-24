@@ -30,11 +30,13 @@ class _FakeConfiguration(object):
 
     def __init__(self):
         self._store = {}
+        self._sections = []
 
     def GetRawValueOrDefault(self, section, key, default=None):
         return self._store.get((section, key), default)
 
     def SetRawValue(self, section, key, raw):
+        self.AddSection(section)
         self._store[(section, key)] = raw
 
     def RemoveOption(self, section, key):
@@ -47,20 +49,25 @@ class _FakeConfiguration(object):
         return (section, key) in self._store
 
     def HasSection(self, section):
-        return any(sec == section for (sec, _) in self._store)
+        return section in self._sections
+
+    def AddSection(self, section):
+        if section in self._sections:
+            return False
+        self._sections.append(section)
+        return True
 
     def RemoveSection(self, section):
         removed = [k for k in self._store if k[0] == section]
         for key in removed:
             del self._store[key]
-        return bool(removed)
+        if section in self._sections:
+            self._sections.remove(section)
+            return True
+        return False
 
     def GetSectionNames(self):
-        seen = []
-        for sec, _ in self._store:
-            if sec not in seen:
-                seen.append(sec)
-        return seen
+        return list(self._sections)
 
     def GetSectionOptionNames(self, section):
         return [key for (sec, key) in self._store if sec == section]
@@ -207,23 +214,38 @@ class ConfigSectionsTests(unittest.TestCase):
         self.sections = ConfigSections(self.service)
 
     def test_get_section_round_trips_a_value(self):
-        section = self.sections.get_section("mytool")
+        section = self.sections.add_section("mytool")
         section.set_option("enabled", True)
         self.assertIs(True, self.sections.get_section("mytool").get_option("enabled"))
 
     def test_has_section_reflects_stored_keys(self):
-        self.sections.get_section("mytool").set_option("enabled", True)
+        self.sections.add_section("mytool").set_option("enabled", True)
         self.assertTrue(self.sections.has_section("mytool"))
         self.assertFalse(self.sections.has_section("other"))
 
+    def test_added_section_is_visible_before_any_option_is_set(self):
+        self.sections.add_section("mytool")
+        self.assertTrue(self.sections.has_section("mytool"))
+        self.assertEqual("mytool", self.sections.get_section("mytool").header)
+
     def test_remove_section_clears_all_its_keys(self):
-        section = self.sections.get_section("mytool")
+        section = self.sections.add_section("mytool")
         section.set_option("a", 1)
         section.set_option("b", 2)
         self.sections.remove_section("mytool")
         self.assertFalse(self.sections.has_section("mytool"))
 
-    def test_attribute_access_returns_a_section(self):
-        # ConfigSections.__getattr__ resolves an arbitrary name to a section.
-        self.sections.mytool.set_option("x", "y")
+    def test_get_missing_section_raises(self):
+        # A missing section must not resolve to an empty section object, so
+        # callers can tell "absent" from "present but empty".
+        self.assertRaises(AttributeError, self.sections.get_section, "absent")
+
+    def test_attribute_access_returns_an_existing_section(self):
+        self.sections.add_section("mytool").set_option("x", "y")
         self.assertEqual("y", self.sections.mytool.get_option("x"))
+
+    def test_attribute_access_to_missing_section_raises(self):
+        # getattr-with-default and hasattr rely on __getattr__ raising.
+        self.assertRaises(AttributeError, getattr, self.sections, "absent")
+        self.assertEqual("fallback", getattr(self.sections, "absent", "fallback"))
+        self.assertFalse(hasattr(self.sections, "absent"))

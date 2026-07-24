@@ -266,8 +266,8 @@ class ExtensionPackage:
             return user_config.get_section(self.config_section_name)
         except Exception:
             cfg_section = user_config.add_section(self.config_section_name)
-            self.config.disabled = not self.default_enabled
-            self.config.private_repo = self.builtin
+            cfg_section.disabled = not self.default_enabled
+            cfg_section.private_repo = self.builtin
             user_config.save_changes()
             return cfg_section
 

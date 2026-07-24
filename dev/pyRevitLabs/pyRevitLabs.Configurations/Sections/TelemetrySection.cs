@@ -7,6 +7,7 @@ namespace pyRevitLabs.Configurations.Sections;
 public record TelemetrySection
 {
     [KeyName("active")]
+    [DefaultValue(false)]
     public bool? TelemetryStatus { get; set; }
 
     [KeyName("utc_timestamps")]
@@ -20,9 +21,11 @@ public record TelemetrySection
     public string? TelemetryServerUrl { get; set; }
 
     [KeyName("include_hooks")]
+    [DefaultValue(false)]
     public bool? TelemetryIncludeHooks { get; set; }
 
     [KeyName("active_app")]
+    [DefaultValue(false)]
     public bool? AppTelemetryStatus { get; set; }
 
     [KeyName("apptelemetry_server_url")]

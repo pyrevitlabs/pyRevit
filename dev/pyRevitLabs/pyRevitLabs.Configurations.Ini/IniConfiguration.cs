@@ -82,6 +82,12 @@ public sealed class IniConfiguration : ConfigurationBase
     }
 
     /// <inheritdoc />
+    protected override bool AddSectionImpl(string sectionName)
+    {
+        return _iniFile.Sections.AddSection(sectionName);
+    }
+
+    /// <inheritdoc />
     protected override bool RemoveSectionImpl(string sectionName)
     {
         return _iniFile.Sections.RemoveSection(sectionName);
@@ -136,6 +142,10 @@ public sealed class IniConfiguration : ConfigurationBase
                 return (long?)hexValue;
         }
 
+        // JSON booleans are lowercase; legacy INI stored Python-style "True"/"False".
+        if (targetType == typeof(bool) && bool.TryParse(valueToParse, out bool boolValue))
+            return boolValue;
+
         // Tolerate legacy bare (unquoted) string values. (legacy support)
         if (targetType == typeof(string))
         {
@@ -149,9 +159,31 @@ public sealed class IniConfiguration : ConfigurationBase
             }
         }
 
-        return JsonConvert.DeserializeObject(raw, typeObject)
-               ?? throw new ConfigurationException("Cannot deserialize value using the specified key.");
+        try
+        {
+            return JsonConvert.DeserializeObject(raw, typeObject)
+                   ?? throw new ConfigurationException("Cannot deserialize value using the specified key.");
+        }
+        catch (JsonException) when (IsContainerLiteral(valueToParse))
+        {
+            // Legacy configs stored lists and maps as Python literals, whose
+            // Windows paths carry unescaped backslashes that JSON rejects as bad
+            // escape sequences.
+            return JsonConvert.DeserializeObject(EscapeBackslashes(raw), typeObject)
+                   ?? throw new ConfigurationException("Cannot deserialize value using the specified key.");
+        }
     }
+
+    private static bool IsContainerLiteral(string value)
+    {
+        string trimmed = value.TrimStart();
+        return trimmed.StartsWith("[", StringComparison.Ordinal)
+               || trimmed.StartsWith("{", StringComparison.Ordinal);
+    }
+
+    // Reached only after a strict parse has already failed, so no well-formed
+    // escape can be doubled here.
+    private static string EscapeBackslashes(string value) => value.Replace("\\", "\\\\");
 
     /// <inheritdoc />
     protected override string GetRawValueImpl(string sectionName, string keyName)

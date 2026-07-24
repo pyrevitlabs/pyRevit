@@ -16,6 +16,11 @@ namespace pyRevitLabs.Common {
         private const string PyRevitfileName = "pyRevitfile";
         private const string ConfigIniRegexPattern = @".*(pyrevit|config).*\.ini";
 
+        // Configs suffixed with a number (pyRevit_config.2025.ini) belong to a
+        // specific Revit version and are resolved by their own lookup, never by
+        // the generic name match below.
+        private const string VersionedConfigIniRegexPattern = @"\.\d+\.ini$";
+
         private static bool? _isInstallAllUsers;
         private static string _runtimeInstallRoot;
 
@@ -90,14 +95,25 @@ namespace pyRevitLabs.Common {
             return FindConfigIniInDirectory(ResolveInstallRoot());
         }
 
+        /// <summary>
+        /// Returns the main config file in <paramref name="directory"/>, or null when
+        /// none is present. The canonically named file wins outright; the name match
+        /// is only a fallback for configs carrying a custom name.
+        /// </summary>
         public static string FindConfigIniInDirectory(string directory) {
             if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory))
                 return null;
 
             try {
+                var defaultPath = Path.Combine(directory, PyRevitLabsConsts.DefaultConfigsFileName);
+                if (File.Exists(defaultPath))
+                    return defaultPath;
+
                 var configMatcher = new Regex(ConfigIniRegexPattern, RegexOptions.IgnoreCase);
+                var versionedMatcher = new Regex(VersionedConfigIniRegexPattern, RegexOptions.IgnoreCase);
                 foreach (var fullPath in Directory.GetFiles(directory, "*.ini", SearchOption.TopDirectoryOnly)) {
-                    if (configMatcher.IsMatch(Path.GetFileName(fullPath)))
+                    var fileName = Path.GetFileName(fullPath);
+                    if (configMatcher.IsMatch(fileName) && !versionedMatcher.IsMatch(fileName))
                         return fullPath;
                 }
             }

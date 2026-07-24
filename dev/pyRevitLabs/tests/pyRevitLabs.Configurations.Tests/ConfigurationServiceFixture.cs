@@ -21,6 +21,8 @@ namespace pyRevitLabs.Configurations.Tests
         {
             public string ConfigurationPath { get; }
 
+            public long Revision => 0;
+
             public bool HasSection(string sectionName)
             {
                 throw new NotImplementedException();
@@ -57,6 +59,11 @@ namespace pyRevitLabs.Configurations.Tests
             }
 
             public object? GetValueOrDefault(Type typeObject, string sectionName, string keyName, object? defaultValue = default)
+            {
+                throw new NotImplementedException();
+            }
+
+            public bool AddSection(string sectionName)
             {
                 throw new NotImplementedException();
             }
