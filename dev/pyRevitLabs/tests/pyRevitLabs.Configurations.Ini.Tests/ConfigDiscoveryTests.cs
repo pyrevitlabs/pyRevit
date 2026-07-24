@@ -58,6 +58,16 @@ public class ConfigDiscoveryTests : IDisposable
         Assert.Equal(expected, PyRevitConfigPaths.FindConfigFileInDirectory(_dir));
     }
 
+    [Theory] // Non-canonical names still matching the config pattern are discovered.
+    [InlineData("config.ini")]
+    [InlineData("pyrevit.ini")]
+    public void ConfigNamePattern_MatchesNonCanonicalNames(string fileName)
+    {
+        var expected = Write(fileName);
+
+        Assert.Equal(expected, PyRevitConfigPaths.FindConfigFileInDirectory(_dir));
+    }
+
     [Fact]
     public void CustomNamedConfig_LosesToCanonicalConfig()
     {
