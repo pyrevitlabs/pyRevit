@@ -109,6 +109,11 @@ public sealed class ConfigurationService : IConfigurationService
             throw new ArgumentException($"Configuration with name {configurationName} not found");
 
         configuration.SetValue(sectionName, keyName, keyValue);
+        configuration.SaveConfiguration();
+
+        // Keep the typed section snapshots in sync with what was just written,
+        // matching the property-based SaveSection path.
+        ReloadLoadConfigurations();
     }
 
     public T? GetSectionKeyValueOrDefault<T>(
@@ -140,7 +145,7 @@ public sealed class ConfigurationService : IConfigurationService
         foreach (var propertyInfo in GetProperties(configurationType))
         {
             string keyName = GetCustomAttribute<KeyNameAttribute>(propertyInfo)?.KeyName ?? propertyInfo.Name;
-            object? defaultValue = GetKeyValue(Configurations, propertyInfo, sectionName, keyName);
+            object? storedValue = GetKeyValue(Configurations, propertyInfo, sectionName, keyName);
 
             object? keyValue = propertyInfo.GetValue(sectionValue);
             // A null property is treated as "not set by this caller": its
@@ -148,7 +153,13 @@ public sealed class ConfigurationService : IConfigurationService
             // are written.
             if (keyValue is null)
                 continue;
-            if (!keyValue.Equals(defaultValue))
+            // Don't materialize a section's declared default that isn't already
+            // stored: it resolves from the default on read, and writing it would
+            // pin the user to today's default. Fully-defaulted snapshots (e.g.
+            // the Python save path) would otherwise persist every default key.
+            if (storedValue is null && keyValue.Equals(GetPropertyDefault(propertyInfo)))
+                continue;
+            if (!keyValue.Equals(storedValue))
                 configuration.SetValue(sectionName, keyName, keyValue);
         }
 

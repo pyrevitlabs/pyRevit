@@ -328,10 +328,10 @@ namespace pyRevitLabs.PyRevit {
             var cfg = PyRevitConfigs.GetConfigFile();
            
             var searchPaths = cfg.GetSectionKeyValueOrDefault<string[]>(
-                ConfigurationService.DefaultConfigurationName, 
-                PyRevitConsts.ConfigsCoreSection, 
+                ConfigurationService.DefaultConfigurationName,
+                PyRevitConsts.ConfigsCoreSection,
                 PyRevitConsts.ConfigsUserExtensionsKey);
-            
+
             if (searchPaths != null) {
                 // make sure paths exist
                 foreach (var path in searchPaths) {
@@ -342,9 +342,12 @@ namespace pyRevitLabs.PyRevit {
                     }
                 }
 
-                // rewrite verified list
-                cfg.SaveSection(
-                    ConfigurationService.DefaultConfigurationName, new CoreSection() {UserExtensions = validatedPaths});
+                // Only rewrite when pruning/normalization changed the stored list,
+                // so a plain read does not rewrite the config file.
+                if (!validatedPaths.SequenceEqual(searchPaths))
+                    cfg.SaveSection(
+                        ConfigurationService.DefaultConfigurationName,
+                        new CoreSection() {UserExtensions = validatedPaths});
             }
             return validatedPaths;
         }
@@ -391,16 +394,18 @@ namespace pyRevitLabs.PyRevit {
         // @handled @logs
         public static List<string> GetRegisteredExtensionLookupSources() {
             var cfg = PyRevitConfigs.GetConfigFile();
-            
+
+            var storedSources = cfg.Environment.Sources ?? new List<string>();
             var normSources = new List<string>();
-            foreach (var src in cfg.Environment.Sources) {
+            foreach (var src in storedSources) {
                 var normSrc = src.NormalizeAsPath();
                 _logger.Debug("Extension lookup source \"{@ExtensionSource}\"", normSrc);
                 normSources.Add(normSrc);
             }
 
-            // Persist the normalized paths once; the stored values may be un-normalized.
-            if (normSources.Count > 0)
+            // Persist only when normalization changed the stored values, so a
+            // plain read does not rewrite the config file.
+            if (!normSources.SequenceEqual(storedSources))
                 SaveExtensionLookupSources(normSources);
 
             return normSources;

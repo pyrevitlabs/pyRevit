@@ -296,13 +296,13 @@ namespace pyRevitLabs.PyRevit
         public static string GetTelemetryFilePath()
         {
             IConfigurationService cfg = GetConfigFile();
-            return cfg.Telemetry.TelemetryFileDir;
+            return cfg.Telemetry.TelemetryFileDir ?? string.Empty;
         }
 
         public static string GetTelemetryServerUrl()
         {
             IConfigurationService cfg = GetConfigFile();
-            return cfg.Telemetry.TelemetryServerUrl;
+            return cfg.Telemetry.TelemetryServerUrl ?? string.Empty;
         }
 
         public static void EnableTelemetry(string telemetryFileDir = null,
@@ -501,7 +501,8 @@ namespace pyRevitLabs.PyRevit
             }
             else if (level == PyRevitLogLevels.Debug)
             {
-                cfg.SaveSection(revitVersion, new CoreSection() {Debug = true, Verbose = false});
+                // Debug implies verbose, matching the Python log_level setter.
+                cfg.SaveSection(revitVersion, new CoreSection() {Debug = true, Verbose = true});
             }
         }
 
