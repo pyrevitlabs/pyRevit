@@ -917,9 +917,10 @@ namespace pyRevitExtensionParser
                     try
                     {
                         var perUserConfig = new PyRevitConfig(perUserConfigPath);
+                        var existingPaths = new HashSet<string>(userExtensions, StringComparer.OrdinalIgnoreCase);
                         foreach (var path in perUserConfig.UserExtensionsList)
                         {
-                            if (!userExtensions.Contains(path, StringComparer.OrdinalIgnoreCase))
+                            if (existingPaths.Add(path))
                                 userExtensions.Add(path);
                         }
                     }
