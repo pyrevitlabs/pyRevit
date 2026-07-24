@@ -150,8 +150,8 @@ namespace pyRevitLabs.Common {
                 }
             }
 
-            bool isReadOnly = File.Exists(userConfig) && !IsFileWritable(userConfig);
-            return new ActiveConfigInfo(userConfig, isReadOnly, isMachineConfig: false);
+bool isReadOnly = !File.Exists(userConfig) || !IsFileWritable(userConfig);
+return new ActiveConfigInfo(userConfig, isReadOnly, isMachineConfig: false);
         }
 
         /// <summary>True when the file carries the DOS ReadOnly attribute (deliberate admin lock).</summary>
