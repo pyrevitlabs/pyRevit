@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using pyRevitLabs.Common;
 using pyRevitLabs.Json.Linq;
 using pyRevitLabs.NLog;
 
@@ -899,6 +900,36 @@ namespace pyRevitExtensionParser
             }
 
             var userExtensions = GetConfig().UserExtensionsList;
+
+            // For all-users installs, the active config is in ProgramData. Individual users may
+            // also have their own extension paths stored in their per-user config (AppData). Merge
+            // both lists so that paths added via the Settings UI or CLI at user scope are honoured.
+            if (PyRevitInstallScope.IsAllUsersInstall())
+            {
+                var perUserConfigRoot = PyRevitLabsConsts.PyRevitPath;
+                var perUserConfigPath = PyRevitInstallScope.FindConfigIniInDirectory(perUserConfigRoot)
+                    ?? Path.Combine(perUserConfigRoot, PyRevitLabsConsts.DefaultConfigsFileName);
+
+                var activeConfigPath = GetConfig().ConfigPath ?? string.Empty;
+                if (File.Exists(perUserConfigPath) &&
+                    !string.Equals(perUserConfigPath, activeConfigPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        var perUserConfig = new PyRevitConfig(perUserConfigPath);
+                        foreach (var path in perUserConfig.UserExtensionsList)
+                        {
+                            if (!userExtensions.Contains(path, StringComparer.OrdinalIgnoreCase))
+                                userExtensions.Add(path);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Debug("Could not read per-user extension paths from '{0}': {1}", perUserConfigPath, ex.Message);
+                    }
+                }
+            }
+
             var userExtensionsCount = 0;
             var userExtensionsAdded = 0;
             foreach (var extPath in userExtensions)
