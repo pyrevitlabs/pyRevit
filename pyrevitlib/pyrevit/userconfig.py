@@ -31,7 +31,6 @@ Examples:
 """
 #pylint: disable=C0103,C0413,W0703
 import json
-import os
 import os.path as op
 
 from pyrevit import EXEC_PARAMS, HOME_DIR, HOST_APP
