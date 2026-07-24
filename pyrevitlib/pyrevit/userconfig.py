@@ -18,11 +18,7 @@ Examples:
 
 
 The user_config object is also the destination for reading and writing
-configuration by pyRevit scripts through :func:`get_config` of
-:mod:`pyrevit.script` module. Here is the function source:
-
-.. literalinclude:: ../../pyrevitlib/pyrevit/script.py
-    :pyobject: get_config
+configuration by pyRevit scripts through `pyrevit.script.get_config`.
 
 Examples:
     ```python
@@ -185,7 +181,7 @@ class PyRevitConfig(object):
 
     @property
     def bin_cache(self):
-        """"Whether to use the cache for extensions."""
+        """Whether to use the cache for extensions."""
         return self.core.BinCache
 
     @bin_cache.setter
@@ -446,7 +442,7 @@ class PyRevitConfig(object):
 
     @property
     def apptelemetry_status(self):
-        """Telemetry status."""
+        """App telemetry status."""
         return self.telemetry.AppTelemetryStatus
 
     @apptelemetry_status.setter
@@ -464,7 +460,7 @@ class PyRevitConfig(object):
 
     @property
     def apptelemetry_event_flags(self):
-        """Telemetry event flags."""
+        """App telemetry event flags."""
         return self.telemetry.AppTelemetryEventFlags or ""
 
     @apptelemetry_event_flags.setter
@@ -714,15 +710,44 @@ class PyRevitConfig(object):
         return self.config_sections.__getattr__(section_name)
 
     def has_section(self, section_name):
+        """Check if the config contains the given section.
+
+        Args:
+            section_name (str): name of the section
+
+        Returns:
+            (bool): whether the section exists
+        """
         return self.config_sections.has_section(section_name)
 
     def add_section(self, section_name):
+        """Add a new section to the config.
+
+        Args:
+            section_name (str): name of the section
+
+        Returns:
+            (ConfigSection): the added section
+        """
         return self.config_sections.add_section(section_name)
 
     def get_section(self, section_name):
+        """Get the named config section.
+
+        Args:
+            section_name (str): name of the section
+
+        Returns:
+            (ConfigSection): the requested section
+        """
         return self.config_sections.get_section(section_name)
 
     def remove_section(self, section_name):
+        """Remove the named section from the config.
+
+        Args:
+            section_name (str): name of the section
+        """
         self.config_sections.remove_section(section_name)
 
 
