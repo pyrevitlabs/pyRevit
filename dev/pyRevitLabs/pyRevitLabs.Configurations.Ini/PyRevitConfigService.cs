@@ -14,8 +14,6 @@ namespace pyRevitLabs.Configurations.Ini;
 /// </summary>
 public static class PyRevitConfigService
 {
-    private static int _registered;
-
     /// <summary>
     /// Returns the shared service for the given configuration name, building it on
     /// first request and caching it for the process.
@@ -32,12 +30,16 @@ public static class PyRevitConfigService
     public static void Reload() => PyRevitConfigStore.Reload();
 
     /// <summary>
-    /// Registers the INI-backed build factory with the store exactly once, so the
-    /// first caller (loader or CLI) establishes the shared discovery.
+    /// Ensures the INI-backed build factory is registered with the store so the
+    /// first caller (loader or CLI) establishes the shared discovery. Gated on the
+    /// store's live factory state rather than a one-shot flag, so a
+    /// <see cref="PyRevitConfigStore.Reset"/> (e.g. test isolation) is recoverable:
+    /// the next access re-installs the factory instead of leaving the store empty.
+    /// An already-installed factory is never replaced.
     /// </summary>
     public static void EnsureRegistered()
     {
-        if (Interlocked.Exchange(ref _registered, 1) == 0)
+        if (!PyRevitConfigStore.HasFactory)
             PyRevitConfigStore.SetFactory(BuildConfigService);
     }
 

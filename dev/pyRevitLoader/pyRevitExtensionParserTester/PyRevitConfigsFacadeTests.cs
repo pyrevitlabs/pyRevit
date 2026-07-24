@@ -27,15 +27,6 @@ namespace pyRevitExtensionParserTester
     {
         private string _path;
 
-        [OneTimeSetUp]
-        public void OneTimeSetUp()
-        {
-            // Flip the service's one-shot registration guard before any facade call,
-            // so the facade's own EnsureRegistered is a no-op and cannot replace the
-            // temp factory installed per test with the real machine-discovery one.
-            PyRevitConfigService.EnsureRegistered();
-        }
-
         [SetUp]
         public void SetUp()
         {

@@ -7,8 +7,6 @@ using pyRevitLabs.Json;
 
 using pyRevitLabs.Common;
 
-using pyRevitLabs.Common;
-
 namespace pyRevitExtensionParser
 {
     /// <summary>
