@@ -1,4 +1,4 @@
-"""Perform upgrades between version, e.g. adding a new config parameter."""
+"""Perform a ONE TIME version-to-version deployment cleanup at session load for 4.8.5."""
 import os
 import os.path as op
 
