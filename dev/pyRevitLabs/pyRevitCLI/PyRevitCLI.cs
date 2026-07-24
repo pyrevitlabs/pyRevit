@@ -680,11 +680,12 @@ namespace pyRevitCLI
                 }
 
                 else if (all("startuptimeout")) {
-                    if (arguments["<timeout>"] is null)
+                    var timeout = TryGetValue("<timeout>");
+                    if (timeout is null)
                         Console.WriteLine(string.Format("Startup log timeout is set to: {0}",
                                                         PyRevitConfigs.GetStartupLogTimeout()));
                     else
-                        PyRevitConfigs.SetStartupLogTimeout(int.Parse(TryGetValue("<timeout>")), revitVersion);
+                        PyRevitConfigs.SetStartupLogTimeout(int.Parse(timeout), revitVersion);
                 }
 
                 else if (all("loadbeta")) {
@@ -696,11 +697,12 @@ namespace pyRevitCLI
                 }
 
                 else if (all("cpyversion")) {
-                    if (arguments["<cpy_version>"] is null)
+                    var cpyVersion = TryGetValue("<cpy_version>");
+                    if (cpyVersion is null)
                         Console.WriteLine(string.Format("CPython version is set to: {0}",
                                                         PyRevitConfigs.GetCpythonEngineVersion()));
                     else
-                        PyRevitConfigs.SetCpythonEngineVersion(int.Parse(TryGetValue("<cpy_version>")), revitVersion);
+                        PyRevitConfigs.SetCpythonEngineVersion(int.Parse(cpyVersion), revitVersion);
                 }
 
                 else if (all("usercanupdate")) {
@@ -856,11 +858,12 @@ namespace pyRevitCLI
                 }
 
                 else if (all("outputcss")) {
-                    if (arguments["<css_path>"] is null)
+                    var cssPath = TryGetValue("<css_path>");
+                    if (cssPath is null)
                         Console.WriteLine(string.Format("Output Style Sheet is set to: {0}",
                                                         PyRevitConfigs.GetOutputStyleSheet()));
                     else
-                        PyRevitConfigs.SetOutputStyleSheet(TryGetValue("<css_path>"), revitVersion);
+                        PyRevitConfigs.SetOutputStyleSheet(cssPath, revitVersion);
                 }
 
                 else if (all("seed"))
