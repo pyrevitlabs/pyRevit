@@ -59,6 +59,40 @@ public class SnapshotFreshnessTests : IDisposable
             reread.GetValue<List<string>>("core", "userextensions"));
     }
 
+    // Reproduces the Settings dialog Save: typed edits are written through with
+    // ApplySection (no flush), then an unrelated dynamic-section write (e.g.
+    // tabcoloring) bumps the store's revision and rebuilds the typed snapshots
+    // mid-save. A single flush at the end must still persist every typed edit,
+    // across all three typed sections — the snapshot-mutation path used to drop
+    // them here.
+    [Fact]
+    public void ApplySectionAcrossSections_SurvivesInterveningDynamicWrite_OnSingleFlush()
+    {
+        var service = Service("[core]\nrocketmode = true\n");
+        var cfg = service[ConfigurationService.DefaultConfigurationName];
+
+        // Values chosen to contradict the section defaults so a silent revert
+        // to the default is detectable.
+        service.ApplySection(ConfigurationService.DefaultConfigurationName,
+            new CoreSection { RocketMode = false });
+        service.ApplySection(ConfigurationService.DefaultConfigurationName,
+            new RoutesSection { Port = 1234 });
+        service.ApplySection(ConfigurationService.DefaultConfigurationName,
+            new TelemetrySection { TelemetryServerUrl = "http://example/" });
+
+        // Dynamic-section write advances the revision, invalidating the snapshots.
+        cfg.SetRawValue("tabcoloring", "sort_colorize_docs", "true");
+        // Force a rebuild, as the dialog does when it reads a typed value after.
+        _ = service.Core.RocketMode;
+
+        cfg.SaveConfiguration();
+
+        var reread = IniConfiguration.Create(_path);
+        Assert.False(reread.GetValue<bool>("core", "rocketmode"));
+        Assert.Equal(1234, reread.GetValue<int>("routes", "port"));
+        Assert.Equal("http://example/", reread.GetValue<string>("telemetry", "telemetry_server_url"));
+    }
+
     [Fact]
     public void RawWrite_IsVisibleOnTypedSection_WithoutExplicitReload()
     {

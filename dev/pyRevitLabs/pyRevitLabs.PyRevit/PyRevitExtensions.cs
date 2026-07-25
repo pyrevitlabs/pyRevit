@@ -320,36 +320,52 @@ namespace pyRevitLabs.PyRevit {
             ToggleExtension(revitVersion, ext, false);
         }
 
+        // Resolve the user-registered extension search paths for use: expand
+        // environment variables, normalize, keep only paths that exist, and dedup
+        // while preserving order. Does not modify stored configuration. Shared by
+        // the CLI search-path handling and the Python loader so both resolve the
+        // same paths from the same stored list.
+        // @handled @logs
+        public static List<string> ResolveUserExtensionPaths() {
+            var resolvedPaths = new List<string>();
+
+            var searchPaths = PyRevitConfigs.GetConfigFile().GetSectionKeyValueOrDefault<string[]>(
+                ConfigurationService.DefaultConfigurationName,
+                PyRevitConsts.ConfigsCoreSection,
+                PyRevitConsts.ConfigsUserExtensionsKey);
+            if (searchPaths is null)
+                return resolvedPaths;
+
+            foreach (var path in searchPaths) {
+                var expandedPath = Environment.ExpandEnvironmentVariables(path);
+                var normPath = expandedPath.NormalizeAsPath();
+                if (CommonUtils.VerifyPath(expandedPath) && !resolvedPaths.Contains(normPath)) {
+                    _logger.Debug("Verified extension search path \"{@ExtensionsSource}\"", normPath);
+                    resolvedPaths.Add(normPath);
+                }
+            }
+            return resolvedPaths;
+        }
+
         // get list of registered extension search paths
         // @handled @logs
         public static List<string> GetRegisteredExtensionSearchPaths() {
             // TODO: Make apply config to revit version
-            var validatedPaths = new List<string>();
+            var resolvedPaths = ResolveUserExtensionPaths();
+
+            // Self-heal the stored list to the resolved form, but only when it
+            // changed, so a plain read does not rewrite the config file.
             var cfg = PyRevitConfigs.GetConfigFile();
-           
             var searchPaths = cfg.GetSectionKeyValueOrDefault<string[]>(
                 ConfigurationService.DefaultConfigurationName,
                 PyRevitConsts.ConfigsCoreSection,
                 PyRevitConsts.ConfigsUserExtensionsKey);
+            if (searchPaths != null && !resolvedPaths.SequenceEqual(searchPaths))
+                cfg.SaveSection(
+                    ConfigurationService.DefaultConfigurationName,
+                    new CoreSection() {UserExtensions = resolvedPaths});
 
-            if (searchPaths != null) {
-                // make sure paths exist
-                foreach (var path in searchPaths) {
-                    var normPath = path.NormalizeAsPath();
-                    if (CommonUtils.VerifyPath(path) && !validatedPaths.Contains(normPath)) {
-                        _logger.Debug("Verified extension search path \"{@ExtensionsSource}\"", normPath);
-                        validatedPaths.Add(normPath);
-                    }
-                }
-
-                // Only rewrite when pruning/normalization changed the stored list,
-                // so a plain read does not rewrite the config file.
-                if (!validatedPaths.SequenceEqual(searchPaths))
-                    cfg.SaveSection(
-                        ConfigurationService.DefaultConfigurationName,
-                        new CoreSection() {UserExtensions = validatedPaths});
-            }
-            return validatedPaths;
+            return resolvedPaths;
         }
 
         // add extension search path

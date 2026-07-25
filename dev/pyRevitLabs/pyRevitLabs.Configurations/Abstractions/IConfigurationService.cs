@@ -28,6 +28,15 @@ public interface IConfigurationService
     T GetSection<T>();
     void SaveSection<T>(string configurationName, T sectionValue);
 
+    /// <summary>
+    /// Writes a section's non-null properties into the backing store using the
+    /// same key-mapping and default-skip rules as <see cref="SaveSection{T}"/>,
+    /// but does not flush to disk. Lets an in-process caller batch many edits
+    /// behind a single <see cref="IConfiguration.SaveConfiguration()"/>. CLI-style
+    /// callers that must persist per command should keep using SaveSection.
+    /// </summary>
+    void ApplySection<T>(string configurationName, T sectionValue);
+
     void SetSectionKeyValue<T>(string configurationName, string sectionName, string keyName, T keyValue);
     T? GetSectionKeyValueOrDefault<T>(string configurationName, string sectionName, string keyName, T? defaultValue = default);
 }

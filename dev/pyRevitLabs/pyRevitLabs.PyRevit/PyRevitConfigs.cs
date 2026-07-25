@@ -472,17 +472,30 @@ namespace pyRevitLabs.PyRevit
         }
 
         // logging level config
+
+        // Pure mapping between the stored debug/verbose flags and the log level.
+        // Shared by this facade and the Python config facade so both agree on the
+        // representation without either re-deriving it.
+        public static PyRevitLogLevels ToLoggingLevel(bool? debug, bool? verbose)
+        {
+            if (verbose == true && debug != true)
+                return PyRevitLogLevels.Verbose;
+            if (debug == true)
+                return PyRevitLogLevels.Debug;
+            return PyRevitLogLevels.Quiet;
+        }
+
+        // Debug implies verbose, so the two flags are always written together.
+        public static bool LoggingLevelDebugFlag(PyRevitLogLevels level)
+            => level == PyRevitLogLevels.Debug;
+
+        public static bool LoggingLevelVerboseFlag(PyRevitLogLevels level)
+            => level == PyRevitLogLevels.Debug || level == PyRevitLogLevels.Verbose;
+
         public static PyRevitLogLevels GetLoggingLevel()
         {
             IConfigurationService cfg = GetConfigFile();
-
-            if (cfg.Core.Verbose == true
-                && cfg.Core.Debug != true)
-                return PyRevitLogLevels.Verbose;
-            else if (cfg.Core.Debug == true)
-                return PyRevitLogLevels.Debug;
-
-            return PyRevitLogLevels.Quiet;
+            return ToLoggingLevel(cfg.Core.Debug, cfg.Core.Verbose);
         }
 
         public static void SetLoggingLevel(PyRevitLogLevels level,
@@ -491,19 +504,11 @@ namespace pyRevitLabs.PyRevit
             _logger.Debug("Setting logging level to {@LogLevel}...", level);
 
             IConfigurationService cfg = GetConfigFile(revitVersion);
-            if (level == PyRevitLogLevels.Quiet)
+            cfg.SaveSection(revitVersion, new CoreSection()
             {
-                cfg.SaveSection(revitVersion, new CoreSection() {Debug = false, Verbose = false});
-            }
-            else if (level == PyRevitLogLevels.Verbose)
-            {
-                cfg.SaveSection(revitVersion, new CoreSection() {Debug = false, Verbose = true});
-            }
-            else if (level == PyRevitLogLevels.Debug)
-            {
-                // Debug implies verbose, matching the Python log_level setter.
-                cfg.SaveSection(revitVersion, new CoreSection() {Debug = true, Verbose = true});
-            }
+                Debug = LoggingLevelDebugFlag(level),
+                Verbose = LoggingLevelVerboseFlag(level),
+            });
         }
 
         // file logging config
@@ -598,25 +603,34 @@ namespace pyRevitLabs.PyRevit
             cfg.SaveSection(revitVersion, new CoreSection() {CloseOtherOutputs = state});
         }
 
-        public static OutputCloseMode GetCloseOutputMode()
+        // Pure mapping between the stored close-output-mode value and the enum.
+        // Tolerates quoting/casing and falls back to the default. Shared by this
+        // facade and the Python config facade.
+        public static OutputCloseMode ToCloseOutputMode(string rawValue)
         {
-            IConfigurationService cfg = GetConfigFile();
-            var raw = cfg.Core.CloseOutputMode;
-            var s = (raw ?? PyRevitConsts.ConfigsCloseOutputModeDefault).Trim().Trim('"', '\'');
+            var s = (rawValue ?? PyRevitConsts.ConfigsCloseOutputModeDefault).Trim().Trim('"', '\'');
             if (s.Equals(PyRevitConsts.ConfigsCloseOutputModeCloseAll, StringComparison.InvariantCultureIgnoreCase))
                 return OutputCloseMode.CloseAll;
             return OutputCloseMode.CurrentCommand;
         }
 
-        public static void SetCloseOutputMode(OutputCloseMode mode,
-            string revitVersion = ConfigurationService.DefaultConfigurationName)
-        {
-            var value = (mode == OutputCloseMode.CloseAll)
+        public static string CloseOutputModeConfigValue(OutputCloseMode mode)
+            => (mode == OutputCloseMode.CloseAll)
                 ? PyRevitConsts.ConfigsCloseOutputModeCloseAll
                 : PyRevitConsts.ConfigsCloseOutputModeCurrentCommand;
 
+        public static OutputCloseMode GetCloseOutputMode()
+        {
+            IConfigurationService cfg = GetConfigFile();
+            return ToCloseOutputMode(cfg.Core.CloseOutputMode);
+        }
+
+        public static void SetCloseOutputMode(OutputCloseMode mode,
+            string revitVersion = ConfigurationService.DefaultConfigurationName)
+        {
             IConfigurationService cfg = GetConfigFile(revitVersion);
-            cfg.SaveSection(revitVersion, new CoreSection() {CloseOutputMode = value});
+            cfg.SaveSection(revitVersion,
+                new CoreSection() {CloseOutputMode = CloseOutputModeConfigValue(mode)});
         }
 
         // cpythonengine
@@ -663,7 +677,13 @@ namespace pyRevitLabs.PyRevit
             _logger.Debug("Setting output style sheet to {@OutputCssFilePath}...", outputCssFilePath);
 
             IConfigurationService cfg = GetConfigFile(revitVersion);
-            if (File.Exists(outputCssFilePath))
+            if (string.IsNullOrEmpty(outputCssFilePath))
+            {
+                // Clearing the key reverts consumers to their built-in default stylesheet.
+                cfg[revitVersion].RemoveOption("core", "outputstylesheet");
+                cfg[revitVersion].SaveConfiguration();
+            }
+            else if (File.Exists(outputCssFilePath))
                 cfg.SaveSection(revitVersion, new CoreSection() {OutputStyleSheet = outputCssFilePath});
         }
 

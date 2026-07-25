@@ -28,6 +28,23 @@ Examples:
     cfg.get_option('property', default_value)
     script.save_config()
     ```
+
+
+Typed section access is the preferred way to reach the built-in settings.
+The `core`, `routes`, and `telemetry` properties expose the strongly-typed
+sections backed by the shared configuration service, so a setting can be read
+or written by its section and name directly:
+
+Examples:
+    ```python
+    user_config.core.RocketMode = True
+    value = user_config.core.RocketMode
+    ```
+
+The flat snake_case accessors (e.g. `user_config.rocket_mode`) are convenience
+aliases over these sections and are considered legacy: prefer the typed
+`section.name` form in new code. The aliases are expected to be deprecated in a
+future release once callers have migrated, so avoid adding new ones.
 """
 #pylint: disable=C0103,C0413,W0703
 import json
@@ -54,15 +71,34 @@ DEFAULT_CSV_SEPARATOR = ','
 mlogger = logger.get_logger(__name__)
 
 
+# Re-exported for extensions that do `from pyrevit.userconfig import CONSTS`.
 CONSTS = PyRevit.PyRevitConsts
 
 
 class _SectionCompatWrapper(object):
-    """Wraps C# Core/Routes/Telemetry section so .get_option()/.set_option() work for extensions."""
-    def __init__(self, section_name, csharp_section, configuration):
+    """Read/write access to a typed C# section (Core/Routes/Telemetry).
+
+    Reads come from the section snapshot. Writes are persisted through the
+    shared configuration service so an edit lands in the backing store
+    immediately, rather than mutating the snapshot: the service rebuilds those
+    snapshots on any store change, so a snapshot-only edit is silently dropped
+    the moment an unrelated write (another section, the multi-section save
+    itself) advances the store.
+
+    Also exposes .get_option()/.set_option() for extensions.
+    """
+    _INTERNAL_ATTRS = (
+        '_section_name', '_csharp', '_config',
+        '_config_service', '_config_name',
+    )
+
+    def __init__(self, section_name, csharp_section, configuration,
+                 config_service, config_name):
         self._section_name = section_name
         self._csharp = csharp_section
         self._config = configuration
+        self._config_service = config_service
+        self._config_name = config_name
 
     def get_option(self, key, default=None):
         value = self._config.GetValueOrDefault(self._section_name, key, "")
@@ -88,8 +124,19 @@ class _SectionCompatWrapper(object):
         return getattr(self._csharp, name)
 
     def __setattr__(self, name, value):
-        if name in ('_section_name', '_csharp', '_config'):
+        if name in self._INTERNAL_ATTRS:
             object.__setattr__(self, name, value)
+            return
+        # A typed section property is written through to the shared store now
+        # (in memory, no disk flush) so the edit survives the snapshot rebuild
+        # that any later write triggers; save_changes flushes once at the end.
+        # A None here means "leave as stored" (matching the service's
+        # null-property = not-set contract); callers clear via remove_option.
+        if value is not None \
+                and self._csharp.GetType().GetProperty(name) is not None:
+            pending = type(self._csharp)()
+            setattr(pending, name, value)
+            self._config_service.ApplySection(self._config_name, pending)
         else:
             setattr(self._csharp, name, value)
 
@@ -161,21 +208,24 @@ class PyRevitConfig(object):
     def core(self):
         """Core section (supports .get_option/.set_option for extension compat)."""
         return _SectionCompatWrapper(
-            "core", self.config_service.Core, self._get_default_config()
+            "core", self.config_service.Core, self._get_default_config(),
+            self.config_service, ConfigurationService.DefaultConfigurationName
         )
 
     @property
     def routes(self):
         """Routes section (supports .get_option/.set_option for extension compat)."""
         return _SectionCompatWrapper(
-            "routes", self.config_service.Routes, self._get_default_config()
+            "routes", self.config_service.Routes, self._get_default_config(),
+            self.config_service, ConfigurationService.DefaultConfigurationName
         )
 
     @property
     def telemetry(self):
         """Telemetry section (supports .get_option/.set_option for extension compat)."""
         return _SectionCompatWrapper(
-            "telemetry", self.config_service.Telemetry, self._get_default_config()
+            "telemetry", self.config_service.Telemetry, self._get_default_config(),
+            self.config_service, ConfigurationService.DefaultConfigurationName
         )
 
     @property
@@ -217,23 +267,13 @@ class PyRevitConfig(object):
     @property
     def log_level(self):
         """Logging level."""
-        if self.core.Debug:
-            return PyRevit.PyRevitLogLevels.Debug
-        elif self.core.Verbose:
-            return PyRevit.PyRevitLogLevels.Verbose
-        return PyRevit.PyRevitLogLevels.Quiet
+        return PyRevit.PyRevitConfigs.ToLoggingLevel(
+            self.core.Debug, self.core.Verbose)
 
     @log_level.setter
     def log_level(self, state):
-        if state == PyRevit.PyRevitLogLevels.Debug:
-            self.core.Debug = True
-            self.core.Verbose = True
-        elif state == PyRevit.PyRevitLogLevels.Verbose:
-            self.core.Debug = False
-            self.core.Verbose = True
-        else:
-            self.core.Debug = False
-            self.core.Verbose = False
+        self.core.Debug = PyRevit.PyRevitConfigs.LoggingLevelDebugFlag(state)
+        self.core.Verbose = PyRevit.PyRevitConfigs.LoggingLevelVerboseFlag(state)
 
     @property
     def file_logging(self):
@@ -256,7 +296,10 @@ class PyRevitConfig(object):
     @property
     def required_host_build(self):
         """Host build required to run the commands."""
-        return self.core.RequiredHostBuild
+        # Coerce the unset (None) case to "", matching the C# facade's
+        # GetRequiredHostBuild (?? string.Empty), so the Settings dialog does not
+        # round-trip the literal "None" back into the config.
+        return self.core.RequiredHostBuild or ""
 
     @required_host_build.setter
     def required_host_build(self, buildnumber):
@@ -265,7 +308,9 @@ class PyRevitConfig(object):
     @property
     def min_host_drivefreespace(self):
         """Minimum free space for running the commands."""
-        return self.core.MinHostDriveFreeSpace
+        # Coerce the unset (None) case to 0, matching the C# facade's
+        # GetMinHostDriveFreeSpace (?? 0), so numeric consumers never see None.
+        return self.core.MinHostDriveFreeSpace or 0
 
     @min_host_drivefreespace.setter
     def min_host_drivefreespace(self, freespace):
@@ -315,24 +360,12 @@ class PyRevitConfig(object):
     @property
     def output_close_mode_enum(self):
         """Output window closing mode as enum (CurrentCommand | CloseAll)."""
-        value = self.core.CloseOutputMode
-        if not value:
-            value = CONSTS.ConfigsCloseOutputModeDefault
-
-        value_lc = str(value).lower()
-
-        if value_lc == str(CONSTS.ConfigsCloseOutputModeCloseAll).lower():
-            return PyRevit.OutputCloseMode.CloseAll
-        else:
-            return PyRevit.OutputCloseMode.CurrentCommand
+        return PyRevit.PyRevitConfigs.ToCloseOutputMode(self.core.CloseOutputMode)
 
     @output_close_mode_enum.setter
     def output_close_mode_enum(self, mode):
-        """Store string in INI, mapped from enum."""
-        if mode == PyRevit.OutputCloseMode.CloseAll:
-            self.core.CloseOutputMode = CONSTS.ConfigsCloseOutputModeCloseAll
-        else:
-            self.core.CloseOutputMode = CONSTS.ConfigsCloseOutputModeCurrentCommand
+        self.core.CloseOutputMode = \
+            PyRevit.PyRevitConfigs.CloseOutputModeConfigValue(mode)
 
     @property
     def cpython_engine_version(self):
@@ -520,15 +553,6 @@ class PyRevitConfig(object):
     def routes_server(self, state):
         self.routes.Status = state
 
-    @property
-    def respect_language_direction(self):
-        """Whether the system respects the language direction."""
-        return False
-
-    @respect_language_direction.setter
-    def respect_language_direction(self, state):
-        pass
-
     def get_thirdparty_ext_root_dirs(self, include_default=True):
         """Return a list of external extension directories set by the user.
 
@@ -536,7 +560,8 @@ class PyRevitConfig(object):
             (list[str]): External user extension directories.
         """
         # Deterministic ordering: default path first, then config-file order,
-        # with duplicate paths removed.
+        # with duplicate paths removed. User paths are resolved by the shared C#
+        # core so the loader and CLI agree on normalization and existence.
         seen = set()
         dir_list = []
         if include_default:
@@ -545,11 +570,10 @@ class PyRevitConfig(object):
                 seen.add(norm)
                 dir_list.append(norm)
         try:
-            for x in (self.core.UserExtensions or []):
-                norm = op.expandvars(op.normpath(x))
-                if norm not in seen:
-                    seen.add(norm)
-                    dir_list.append(norm)
+            for x in PyRevit.PyRevitExtensions.ResolveUserExtensionPaths():
+                if x not in seen:
+                    seen.add(x)
+                    dir_list.append(x)
         except Exception as read_err:
             mlogger.error('Error reading list of user extension folders. | %s',
                           read_err)
@@ -661,15 +685,8 @@ class PyRevitConfig(object):
     def save_changes(self):
         """Save user config into associated config file."""
         if not self._admin:
-            # Pass C# section objects so SaveSection gets correct Type and writes INI
-            self.config_service.SaveSection(
-                ConfigurationService.DefaultConfigurationName, self.config_service.Core)
-            self.config_service.SaveSection(
-                ConfigurationService.DefaultConfigurationName, self.config_service.Routes)
-            self.config_service.SaveSection(
-                ConfigurationService.DefaultConfigurationName, self.config_service.Telemetry)
-
-            # save all sections (need to dynamic section on python)
+            # Typed and dynamic section edits have already been written through
+            # to the in-memory store; flush the whole default config to disk once.
             self.config_service[ConfigurationService.DefaultConfigurationName].SaveConfiguration()
 
             # adjust environment per user configurations

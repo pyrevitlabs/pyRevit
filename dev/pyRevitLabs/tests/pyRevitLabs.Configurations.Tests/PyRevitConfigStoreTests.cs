@@ -108,6 +108,7 @@ public class PyRevitConfigStoreTests : IDisposable
         public void ReloadLoadConfigurations() { }
         public T GetSection<T>() => throw new NotImplementedException();
         public void SaveSection<T>(string configurationName, T sectionValue) => throw new NotImplementedException();
+        public void ApplySection<T>(string configurationName, T sectionValue) => throw new NotImplementedException();
         public void SetSectionKeyValue<T>(string configurationName, string sectionName, string keyName, T keyValue)
             => throw new NotImplementedException();
         public T? GetSectionKeyValueOrDefault<T>(string configurationName, string sectionName, string keyName, T? defaultValue = default)

@@ -134,6 +134,19 @@ public sealed class ConfigurationService : IConfigurationService
 
     public void SaveSection<T>(string configurationName, T sectionValue)
     {
+        IConfiguration configuration = ResolveConfigurationForWrite(configurationName, sectionValue);
+        ApplySection(typeof(T), sectionValue!, configuration);
+        configuration.SaveConfiguration();
+    }
+
+    public void ApplySection<T>(string configurationName, T sectionValue)
+    {
+        IConfiguration configuration = ResolveConfigurationForWrite(configurationName, sectionValue);
+        ApplySection(typeof(T), sectionValue!, configuration);
+    }
+
+    private IConfiguration ResolveConfigurationForWrite(string configurationName, object? sectionValue)
+    {
         if (sectionValue is null)
             throw new ArgumentNullException(nameof(sectionValue));
 
@@ -143,8 +156,7 @@ public sealed class ConfigurationService : IConfigurationService
         if (!_configurations.TryGetValue(configurationName, out IConfiguration? configuration))
             throw new ArgumentException($"Configuration with name {configurationName} not found");
 
-        Type configurationType = typeof(T);
-        SaveSection(configurationType, sectionValue, configuration);
+        return configuration;
     }
 
     public void SetSectionKeyValue<T>(string configurationName, string sectionName, string keyName, T keyValue)
@@ -189,7 +201,10 @@ public sealed class ConfigurationService : IConfigurationService
         return configuration.GetValueOrDefault<T>(sectionName, keyName, defaultValue);
     }
 
-    private void SaveSection(Type configurationType, object sectionValue, IConfiguration configuration)
+    // Writes changed, non-default properties into the store without flushing.
+    // The public SaveSection adds the SaveConfiguration() call; ApplySection
+    // omits it so an in-process caller can batch edits behind one flush.
+    private void ApplySection(Type configurationType, object sectionValue, IConfiguration configuration)
     {
         string sectionName =
             GetCustomAttribute<SectionNameAttribute>(configurationType)?.SectionName ?? configurationType.Name;
@@ -214,8 +229,6 @@ public sealed class ConfigurationService : IConfigurationService
             if (!keyValue.Equals(storedValue))
                 configuration.SetValue(sectionName, keyName, keyValue);
         }
-
-        configuration.SaveConfiguration();
     }
 
     private static object CreateSection(

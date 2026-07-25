@@ -4,13 +4,6 @@ using pyRevitLabs.Configurations.Attributes;
 
 namespace pyRevitLabs.Configurations.Sections;
 
-public enum LogLevels
-{
-    Quiet,
-    Verbose,
-    Debug
-}
-
 [SectionName("core")]
 public sealed record CoreSection
 {

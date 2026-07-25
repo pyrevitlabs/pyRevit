@@ -21,7 +21,6 @@ from pyrevit.coreutils import assmutils
 from pyrevit.coreutils import envvars
 from pyrevit.coreutils import appdata
 from pyrevit.coreutils import logger
-from pyrevit.coreutils import applocales
 from pyrevit.loader import sessioninfo
 from pyrevit.loader import asmmaker
 from pyrevit.loader import uimaker
@@ -252,12 +251,7 @@ def _new_session():
     # cleanup existing UI. This is primarily for cleanups after reloading
     uimaker.cleanup_pyrevit_ui()
 
-    # reflow the ui if requested, depending on the language direction
-    if user_config.respect_language_direction:
-        current_applocale = applocales.get_current_applocale()
-        uimaker.reflow_pyrevit_ui(direction=current_applocale.lang_dir)
-    else:
-        uimaker.reflow_pyrevit_ui()
+    uimaker.reflow_pyrevit_ui()
 
 
 def _new_session_csharp():
