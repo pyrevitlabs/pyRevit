@@ -299,15 +299,6 @@ tooltip: Bundle Tooltip
             Assert.AreEqual("https://apptelm.example.com", cfg1.AppTelemetryServerUrl);
             Assert.AreEqual("255", cfg1.AppTelemetryEventFlags);
 
-            // Write-then-read round-trip
-            var configPath2 = Path.Combine(TestTempDir, "pyRevit_config_telem_rw.ini");
-            File.WriteAllText(configPath2, "");
-            var cfgRw = PyRevitConfig.Load(configPath2);
-            cfgRw.TelemetryState = true;
-            cfgRw.TelemetryServerUrl = "https://rw.example.com";
-            Assert.IsTrue(PyRevitConfig.Load(configPath2).TelemetryState);
-            Assert.AreEqual("https://rw.example.com", PyRevitConfig.Load(configPath2).TelemetryServerUrl);
-
             Assert.Pass("Telemetry config parsing validated successfully.");
         }
 
@@ -329,13 +320,6 @@ tooltip: Bundle Tooltip
             Assert.IsTrue(cfg1.FileLogging);
             Assert.IsTrue(cfg1.AutoUpdate);
             Assert.AreEqual("C:\\style.css", cfg1.OutputStyleSheet);
-
-            // Write-then-read round-trip for OutputStyleSheet
-            var configPath2 = Path.Combine(TestTempDir, "pyRevit_config_misc_rw.ini");
-            File.WriteAllText(configPath2, "");
-            var cfgRw = PyRevitConfig.Load(configPath2);
-            cfgRw.OutputStyleSheet = "C:\\custom.css";
-            Assert.AreEqual("C:\\custom.css", PyRevitConfig.Load(configPath2).OutputStyleSheet);
 
             Assert.Pass("FileLogging / AutoUpdate / OutputStyleSheet config parsing validated successfully.");
         }
@@ -369,15 +353,10 @@ tooltip: Bundle Tooltip
             var config5 = PyRevitConfig.Load(configPath);
             Assert.IsTrue(config5.LoadBeta, "LoadBeta should read legacy load_beta when loadbeta is absent");
 
-            // Setter writes canonical key and removes legacy duplicate
+            // Canonical loadbeta wins when both keys exist
             File.WriteAllText(configPath, "[core]\nload_beta = true\nloadbeta = false");
             var config6 = PyRevitConfig.Load(configPath);
             Assert.IsFalse(config6.LoadBeta, "Canonical loadbeta should win when both keys exist");
-            config6.LoadBeta = true;
-            var iniText = File.ReadAllText(configPath);
-            StringAssert.DoesNotContain("load_beta", iniText);
-            StringAssert.Contains("loadbeta", iniText);
-            Assert.IsTrue(PyRevitConfig.Load(configPath).LoadBeta, "After setter, only loadbeta should remain and read as true");
 
             File.WriteAllText(configPath, "[core]\nloadbeta = 1");
             Assert.IsTrue(PyRevitConfig.Load(configPath).LoadBeta, "LoadBeta should accept numeric 1");

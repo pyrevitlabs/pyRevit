@@ -159,6 +159,13 @@ public sealed class IniConfiguration : ConfigurationBase
             }
         }
 
+        // List<string> spans several historical encodings (canonical JSON, JSON
+        // whose legacy Windows paths carry unescaped backslashes, and the older
+        // Python single-quoted literal); decode them uniformly so every reader
+        // agrees on the parsed paths.
+        if (targetType == typeof(List<string>))
+            return DecodeStringList(raw, sectionName, keyName);
+
         try
         {
             return JsonConvert.DeserializeObject(raw, typeObject)
@@ -184,6 +191,65 @@ public sealed class IniConfiguration : ConfigurationBase
     // Reached only after a strict parse has already failed, so no well-formed
     // escape can be doubled here.
     private static string EscapeBackslashes(string value) => value.Replace("\\", "\\\\");
+
+    // Decodes a stored List<string> across every list encoding pyRevit has
+    // written. A bare (unbracketed) value is taken as a one-element list, matching
+    // how userextensions and environment.sources were historically read.
+    private static List<string> DecodeStringList(string raw, string sectionName, string keyName)
+    {
+        if (string.IsNullOrEmpty(raw))
+            return new List<string>();
+
+        string trimmed = raw.Trim();
+        if (!trimmed.StartsWith("[", StringComparison.Ordinal))
+            return new List<string> { trimmed };
+
+        if (TryJsonStringList(raw, out List<string>? jsonList))
+            return jsonList!;
+
+        if (LegacyListFormat.TryParseSingleQuoted(trimmed, out List<string>? legacyList))
+        {
+            // A read-only config never reaches the migrator's canonicalization, so
+            // surface the legacy read to flag configs still carrying the old form.
+            ConfigurationDiagnostics.ReportInfo(
+                "Config value [" + sectionName + "] " + keyName + " was read using a legacy list format.");
+            return legacyList!;
+        }
+
+        return new List<string>();
+    }
+
+    private static bool TryJsonStringList(string raw, out List<string>? list)
+    {
+        list = null;
+
+        // A literal without double quotes is a Python single-quoted list, not JSON.
+        if (raw.IndexOf('"') < 0)
+            return false;
+
+        try
+        {
+            list = JsonConvert.DeserializeObject<List<string>>(raw);
+            return list != null;
+        }
+        catch (JsonException)
+        {
+        }
+
+        try
+        {
+            // Legacy Windows paths store unescaped backslashes that JSON rejects.
+            list = JsonConvert.DeserializeObject<List<string>>(EscapeBackslashes(raw));
+            return list != null;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
+    // The Python single-quoted list form is decoded by LegacyListFormat (shared
+    // with the migrator) so both interpret it identically.
 
     /// <inheritdoc />
     protected override string GetRawValueImpl(string sectionName, string keyName)

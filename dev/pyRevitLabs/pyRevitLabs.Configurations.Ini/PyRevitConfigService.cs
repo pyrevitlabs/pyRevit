@@ -243,14 +243,25 @@ public static class PyRevitConfigService
             ConfigurationDiagnostics.ReportWarning(
                 "Skipped config migration for " + configPath +
                 ": could not create a backup; will retry on a later load.");
+            return;
         }
-        else if (migration.ResetKeys.Count > 0)
+
+        if (migration.ResetKeys.Count > 0)
         {
             ConfigurationDiagnostics.ReportInfo(
                 "Repaired config " + configPath + ": reset " + migration.ResetKeys.Count +
                 " invalid value(s); backup: " + migration.BackupPath);
             foreach (string key in migration.ResetKeys)
                 ConfigurationDiagnostics.ReportWarning("Reset invalid config value: " + key);
+        }
+
+        if (migration.ConvertedKeys.Count > 0)
+        {
+            ConfigurationDiagnostics.ReportInfo(
+                "Canonicalized " + migration.ConvertedKeys.Count + " legacy list value(s) in " +
+                configPath + "; backup: " + migration.BackupPath);
+            foreach (string key in migration.ConvertedKeys)
+                ConfigurationDiagnostics.ReportInfo("Converted legacy list value: " + key);
         }
     }
 

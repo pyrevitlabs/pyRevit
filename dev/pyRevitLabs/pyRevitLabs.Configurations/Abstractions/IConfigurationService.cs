@@ -15,6 +15,14 @@ public interface IConfigurationService
     TelemetrySection Telemetry { get; }
     EnvironmentSection Environment { get; }
 
+    /// <summary>
+    /// Reads the settings for a single extension from its dynamic
+    /// "{name}.extension" or "{name}.lib" section, or null when neither section is
+    /// present. Section names are resolved without the type suffix (e.g. pass
+    /// "pyRevitCore", not "pyRevitCore.extension").
+    /// </summary>
+    ExtensionSection? GetExtensionSection(string extensionName);
+
     void ReloadLoadConfigurations();
 
     T GetSection<T>();

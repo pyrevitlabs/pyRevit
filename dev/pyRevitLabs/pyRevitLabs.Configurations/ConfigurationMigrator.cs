@@ -18,15 +18,19 @@ public sealed class ConfigurationMigrationResult
     public string? BackupPath { get; }
     public IReadOnlyList<string> ResetKeys { get; }
 
+    /// <summary>Keys rewritten from a legacy encoding to the canonical form.</summary>
+    public IReadOnlyList<string> ConvertedKeys { get; }
+
     internal ConfigurationMigrationResult(
         bool migrated, bool backupFailed, int fromVersion,
-        string? backupPath, IReadOnlyList<string> resetKeys)
+        string? backupPath, IReadOnlyList<string> resetKeys, IReadOnlyList<string> convertedKeys)
     {
         Migrated = migrated;
         BackupFailed = backupFailed;
         FromVersion = fromVersion;
         BackupPath = backupPath;
         ResetKeys = resetKeys;
+        ConvertedKeys = convertedKeys;
     }
 }
 
@@ -46,7 +50,7 @@ public static class ConfigurationMigrator
     private const int MaxFieldLength = 8192;
 
     private static readonly ConfigurationMigrationResult NotMigrated =
-        new(false, false, 0, null, Array.Empty<string>());
+        new(false, false, 0, null, Array.Empty<string>(), Array.Empty<string>());
 
     private static readonly Type[] KnownSections =
     {
@@ -75,8 +79,9 @@ public static class ConfigurationMigrator
 
         // Scan without mutating, so a config with nothing to repair never writes.
         var badKeys = FindUnreadableKeys(config);
+        var legacyLists = FindLegacyListKeys(config);
         bool needsVersionStamp = version < CurrentVersion;
-        if (badKeys.Count == 0 && !needsVersionStamp)
+        if (badKeys.Count == 0 && legacyLists.Count == 0 && !needsVersionStamp)
             return NotMigrated;
 
         // Back up before mutating. If the file exists but cannot be backed up,
@@ -86,7 +91,8 @@ public static class ConfigurationMigrator
                        && File.Exists(config.ConfigurationPath);
         string? backupPath = TryBackup(config.ConfigurationPath);
         if (hasFile && backupPath is null)
-            return new ConfigurationMigrationResult(false, true, version, null, Array.Empty<string>());
+            return new ConfigurationMigrationResult(
+                false, true, version, null, Array.Empty<string>(), Array.Empty<string>());
 
         var resetKeys = new List<string>();
         foreach ((string section, string key) in badKeys)
@@ -95,11 +101,21 @@ public static class ConfigurationMigrator
             resetKeys.Add(section + "." + key);
         }
 
+        // Rewrite legacy single-quoted lists to canonical JSON so the file stops
+        // carrying the old form. Writing double-quoted JSON keeps this idempotent:
+        // a canonicalized value is no longer detected as legacy on a later load.
+        var convertedKeys = new List<string>();
+        foreach ((string section, string key, List<string> value) in legacyLists)
+        {
+            config.SetValue(section, key, value);
+            convertedKeys.Add(section + "." + key);
+        }
+
         if (needsVersionStamp)
             config.SetValue(VersionSection, VersionKey, CurrentVersion);
 
         config.SaveConfiguration();
-        return new ConfigurationMigrationResult(true, false, version, backupPath, resetKeys);
+        return new ConfigurationMigrationResult(true, false, version, backupPath, resetKeys, convertedKeys);
     }
 
     /// <summary>
@@ -139,6 +155,37 @@ public static class ConfigurationMigrator
         }
 
         return bad;
+    }
+
+    /// <summary>
+    /// Finds List&lt;string&gt; keys stored in the legacy Python single-quoted form,
+    /// returning the parsed value so migration can rewrite them as canonical JSON.
+    /// Reads raw (never decoded), so this scan alone does not report a legacy read.
+    /// </summary>
+    private static List<(string Section, string Key, List<string> Value)> FindLegacyListKeys(IConfiguration config)
+    {
+        var legacy = new List<(string, string, List<string>)>();
+
+        foreach (Type sectionType in KnownSections)
+        {
+            string section = SectionName(sectionType);
+            foreach (PropertyInfo property in GetProperties(sectionType))
+            {
+                if (property.PropertyType != typeof(List<string>))
+                    continue;
+
+                string key = KeyName(property);
+                string? raw = config.GetRawValueOrDefault(section, key);
+                if (raw != null
+                    && LegacyListFormat.TryParseSingleQuoted(raw.Trim(), out List<string>? value)
+                    && value != null)
+                {
+                    legacy.Add((section, key, value));
+                }
+            }
+        }
+
+        return legacy;
     }
 
     private static int ReadVersion(IConfiguration config)

@@ -41,7 +41,6 @@
       <Compile Include="ParserLogger.cs" />
       <Compile Include="PyRevitConfig.cs" />
       <Compile Include="ExtensionParser.cs" />
-      <Compile Include="PythonListParser.cs" />
       <Compile Include="ExtensionRegistryAuth.cs" />
     </ItemGroup>
 

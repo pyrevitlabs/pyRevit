@@ -109,7 +109,27 @@ public sealed class ConfigurationService : IConfigurationService
     public T GetSection<T>()
     {
         Type configurationType = typeof(T);
-        return (T) CreateSection(configurationType, Configurations.Reverse().ToArray());
+        return (T) CreateSection(configurationType, null, Configurations.Reverse().ToArray());
+    }
+
+    // Extension settings live in a per-extension section named for the extension
+    // plus its type suffix; the .extension form takes precedence over .lib.
+    private static readonly string[] ExtensionSectionSuffixes = { ".extension", ".lib" };
+
+    public ExtensionSection? GetExtensionSection(string extensionName)
+    {
+        if (string.IsNullOrWhiteSpace(extensionName))
+            throw new ArgumentException("Value cannot be null or whitespace.", nameof(extensionName));
+
+        foreach (string suffix in ExtensionSectionSuffixes)
+        {
+            string sectionName = extensionName + suffix;
+            if (Configurations.Any(configuration => configuration.HasSection(sectionName)))
+                return (ExtensionSection) CreateSection(
+                    typeof(ExtensionSection), sectionName, Configurations.Reverse().ToArray());
+        }
+
+        return null;
     }
 
     public void SaveSection<T>(string configurationName, T sectionValue)
@@ -198,10 +218,12 @@ public sealed class ConfigurationService : IConfigurationService
         configuration.SaveConfiguration();
     }
 
-    private static object CreateSection(Type configurationType, params IConfiguration[] configurations)
+    private static object CreateSection(
+        Type configurationType, string? sectionNameOverride, params IConfiguration[] configurations)
     {
-        string sectionName =
-            GetCustomAttribute<SectionNameAttribute>(configurationType)?.SectionName ?? configurationType.Name;
+        string sectionName = sectionNameOverride
+            ?? GetCustomAttribute<SectionNameAttribute>(configurationType)?.SectionName
+            ?? configurationType.Name;
 
         var sectionConfiguration = Activator.CreateInstance(configurationType);
 

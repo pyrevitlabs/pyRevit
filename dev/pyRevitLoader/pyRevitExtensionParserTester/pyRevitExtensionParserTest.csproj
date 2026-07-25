@@ -67,7 +67,6 @@
     <Compile Include="HelpFileTests.cs" />
     <Compile Include="ScriptMetadataParsingTest.cs" />
     <Compile Include="ConfigParityTests.cs" />
-    <Compile Include="PythonListParserTests.cs" />
     <Compile Include="PyRevitConfigsFacadeTests.cs" />
     <Compile Include="VersionFilteringTests.cs" />
     <Compile Include="PyRevitRootResolutionTests.cs" />

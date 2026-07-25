@@ -3,22 +3,27 @@ using System.Collections.Generic;
 using pyRevitLabs.Configurations;
 using pyRevitLabs.Configurations.Abstractions;
 using pyRevitLabs.Configurations.Ini;
-using pyRevitLabs.Json;
 
 using pyRevitLabs.Common;
 
 namespace pyRevitExtensionParser
 {
     /// <summary>
-    /// Adapter over the shared pyRevit configuration service, exposing the typed
-    /// core/telemetry settings and per-extension sections the loader reads.
+    /// Read-only facade over the shared pyRevit configuration service, exposing the
+    /// typed core/telemetry settings and per-extension sections the loader reads.
     /// Backed by one process-wide instance so the loader, CLI, and Python engines
-    /// agree on the same file. Stored values are decoded tolerantly: a
-    /// JSON-encoded value is unescaped, a bare legacy value is returned as-is.
+    /// agree on the same file. Core and telemetry values decode through the service
+    /// so every reader interprets them identically; only the legacy Python-list and
+    /// <c>load_beta</c> forms are still parsed here, pending the service learning them.
     /// </summary>
     public class PyRevitConfig
     {
         private readonly IConfiguration _config;
+
+        // Per-extension settings are read through the shared configuration service
+        // so the loader decodes them identically to the CLI and Python engines,
+        // rather than maintaining a second decode path here.
+        private IConfigurationService _service;
 
         /// <summary>
         /// Cached default instance over the shared service. Cleared via
@@ -48,100 +53,42 @@ namespace pyRevitExtensionParser
             return _config.GetRawValueOrDefault(section, key, null);
         }
 
-        // Decodes a stored string the way Python user_config does: a JSON-encoded
-        // value is unescaped, a bare legacy value is returned unchanged.
-        private string ReadString(string section, string key)
-        {
-            var raw = ReadRaw(section, key);
-            if (string.IsNullOrEmpty(raw))
-                return raw;
-            try
-            {
-                return JsonConvert.DeserializeObject<string>(raw) ?? raw;
-            }
-            catch
-            {
-                return raw;
-            }
-        }
-
-        private bool ReadBool(string section, string key, bool defaultValue)
-        {
-            return bool.TryParse(ReadRaw(section, key), out var result) ? result : defaultValue;
-        }
-
-        private int ReadInt(string section, string key, int defaultValue)
-        {
-            var raw = ReadRaw(section, key);
-            if (string.IsNullOrEmpty(raw))
-                return defaultValue;
-            return int.TryParse(raw.Trim().Trim('"'), out var result) ? result : defaultValue;
-        }
-
-        private void Write(string section, string key, string jsonValue)
-        {
-            _config.SetRawValue(section, key, jsonValue);
-            _config.SaveConfiguration();
-        }
-
-        private static string JsonString(string value)
-        {
-            return JsonConvert.SerializeObject(value ?? string.Empty);
-        }
-
-        private static string JsonBool(bool value)
-        {
-            return value ? "true" : "false";
-        }
-
         // ── core ────────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Gets or sets the user's locale preference (e.g. "en_us").
+        /// Gets the user's locale preference (e.g. "en_us"), normalized to a
+        /// supported locale key or null.
         /// </summary>
         public string UserLocale
         {
             get
             {
-                var value = ReadString("core", "user_locale");
+                var value = AsService().Core.UserLocale;
                 if (string.IsNullOrEmpty(value))
                     return null;
 
                 var normalized = NormalizeLocaleValue(value);
                 return string.IsNullOrEmpty(normalized) ? null : normalized;
             }
-            set { Write("core", "user_locale", JsonString(value)); }
         }
 
         /// <summary>
-        /// Gets or sets whether the new loader architecture is enabled (default true).
+        /// Gets whether the new loader architecture is enabled (default true).
         /// </summary>
-        public bool NewLoader
-        {
-            get { return ReadBool("core", "new_loader", true); }
-            set { Write("core", "new_loader", JsonBool(value)); }
-        }
+        public bool NewLoader => AsService().Core.NewLoader ?? true;
 
         /// <summary>
-        /// Gets or sets whether Rocket Mode is enabled (default false).
+        /// Gets whether Rocket Mode is enabled (default true).
         /// </summary>
-        public bool RocketMode
-        {
-            get { return ReadBool("core", "rocketmode", false); }
-            set { Write("core", "rocketmode", JsonBool(value)); }
-        }
+        public bool RocketMode => AsService().Core.RocketMode ?? true;
 
         /// <summary>
-        /// Gets or sets whether to read script-level metadata dunders (default true).
+        /// Gets whether to read script-level metadata dunders (default true).
         /// </summary>
-        public bool ReadScriptMetadata
-        {
-            get { return ReadBool("core", "read_script_metadata", true); }
-            set { Write("core", "read_script_metadata", JsonBool(value)); }
-        }
+        public bool ReadScriptMetadata => AsService().Core.ReadScriptMetadata ?? true;
 
         /// <summary>
-        /// Gets or sets whether to load beta/experimental commands (default false).
+        /// Gets whether to load beta/experimental commands (default false).
         /// Reads <c>loadbeta</c> first, falling back to legacy <c>load_beta</c>.
         /// </summary>
         public bool LoadBeta
@@ -153,13 +100,6 @@ namespace pyRevitExtensionParser
                     value = ReadRaw("core", "load_beta");
                 return TryParseConfigBool(value, out var result) && result;
             }
-            set
-            {
-                _config.SetRawValue("core", "loadbeta", JsonBool(value));
-                // Drop the legacy key so the file does not carry two competing entries.
-                _config.RemoveOption("core", "load_beta");
-                _config.SaveConfiguration();
-            }
         }
 
         /// <summary>
@@ -170,158 +110,120 @@ namespace pyRevitExtensionParser
         {
             get
             {
-                if (ReadBool("core", "debug", false)) return 2;
-                if (ReadBool("core", "verbose", false)) return 1;
+                var core = AsService().Core;
+                if (core.Debug ?? false) return 2;
+                if (core.Verbose ?? false) return 1;
                 return 0;
             }
         }
 
         /// <summary>
-        /// Gets or sets whether to write log output to a file.
+        /// Gets whether to write log output to a file.
         /// </summary>
-        public bool FileLogging
-        {
-            get { return ReadBool("core", "filelogging", false); }
-            set { Write("core", "filelogging", JsonBool(value)); }
-        }
+        public bool FileLogging => AsService().Core.FileLogging ?? false;
 
         /// <summary>
-        /// Gets or sets whether pyRevit should auto-update on startup.
+        /// Gets whether pyRevit should auto-update on startup.
         /// </summary>
-        public bool AutoUpdate
-        {
-            get { return ReadBool("core", "autoupdate", false); }
-            set { Write("core", "autoupdate", JsonBool(value)); }
-        }
+        public bool AutoUpdate => AsService().Core.AutoUpdate ?? false;
 
         /// <summary>
-        /// Gets or sets the path to a custom CSS stylesheet for output windows.
+        /// Gets the path to a custom CSS stylesheet for output windows.
         /// </summary>
         public string OutputStyleSheet
         {
             get
             {
-                var value = ReadString("core", "outputstylesheet");
+                var value = AsService().Core.OutputStyleSheet;
                 return string.IsNullOrEmpty(value) ? string.Empty : value.Trim();
             }
-            set { Write("core", "outputstylesheet", JsonString(value)); }
         }
 
         /// <summary>
-        /// Gets or sets the timeout (seconds) for displaying startup log messages (default 10).
+        /// Gets the timeout (seconds) for displaying startup log messages (default 10).
         /// </summary>
-        public int StartupLogTimeout
-        {
-            get { return ReadInt("core", "startuplogtimeout", 10); }
-            set { Write("core", "startuplogtimeout", value.ToString()); }
-        }
+        public int StartupLogTimeout => AsService().Core.StartupLogTimeout ?? 10;
 
         /// <summary>
-        /// Gets or sets the user extensions as a parsed list of paths.
+        /// Gets the user extensions as a parsed list of paths.
         /// </summary>
-        public List<string> UserExtensionsList
-        {
-            get { return PythonListParser.Parse(ReadRaw("core", "userextensions")); }
-            set { Write("core", "userextensions", PythonListParser.ToPythonListString(value)); }
-        }
+        public List<string> UserExtensionsList =>
+            AsService().Core.UserExtensions ?? new List<string>();
 
         /// <summary>
-        /// Gets or sets the extension lookup sources as a parsed list of paths.
+        /// Gets the extension lookup sources as a parsed list of paths.
         /// </summary>
-        public List<string> ExtensionLookupSources
-        {
-            get { return PythonListParser.Parse(ReadRaw("environment", "sources")); }
-            set { Write("environment", "sources", PythonListParser.ToPythonListString(value)); }
-        }
+        public List<string> ExtensionLookupSources =>
+            AsService().Environment.Sources ?? new List<string>();
 
         // ── telemetry ─────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Gets or sets whether script-execution telemetry is enabled.
+        /// Gets whether script-execution telemetry is enabled.
         /// </summary>
-        public bool TelemetryState
-        {
-            get { return ReadBool("telemetry", "active", false); }
-            set { Write("telemetry", "active", JsonBool(value)); }
-        }
+        public bool TelemetryState => AsService().Telemetry.TelemetryStatus ?? false;
 
         /// <summary>
-        /// Gets or sets whether telemetry timestamps are recorded in UTC (default true).
+        /// Gets whether telemetry timestamps are recorded in UTC (default true).
         /// </summary>
-        public bool TelemetryUTCTimeStamps
-        {
-            get { return ReadBool("telemetry", "utc_timestamps", true); }
-            set { Write("telemetry", "utc_timestamps", JsonBool(value)); }
-        }
+        public bool TelemetryUTCTimeStamps => AsService().Telemetry.TelemetryUseUtcTimeStamps ?? true;
 
         /// <summary>
-        /// Gets or sets the directory path for telemetry log files.
+        /// Gets the directory path for telemetry log files.
         /// </summary>
         public string TelemetryFilePath
         {
             get
             {
-                var value = ReadString("telemetry", "telemetry_file_dir");
+                var value = AsService().Telemetry.TelemetryFileDir;
                 return string.IsNullOrEmpty(value) ? string.Empty : value.Trim();
             }
-            set { Write("telemetry", "telemetry_file_dir", JsonString(value)); }
         }
 
         /// <summary>
-        /// Gets or sets the URL of the telemetry server.
+        /// Gets the URL of the telemetry server.
         /// </summary>
         public string TelemetryServerUrl
         {
             get
             {
-                var value = ReadString("telemetry", "telemetry_server_url");
+                var value = AsService().Telemetry.TelemetryServerUrl;
                 return string.IsNullOrEmpty(value) ? string.Empty : value.Trim();
             }
-            set { Write("telemetry", "telemetry_server_url", JsonString(value)); }
         }
 
         /// <summary>
-        /// Gets or sets whether hook script executions are included in telemetry.
+        /// Gets whether hook script executions are included in telemetry.
         /// </summary>
-        public bool TelemetryIncludeHooks
-        {
-            get { return ReadBool("telemetry", "include_hooks", false); }
-            set { Write("telemetry", "include_hooks", JsonBool(value)); }
-        }
+        public bool TelemetryIncludeHooks => AsService().Telemetry.TelemetryIncludeHooks ?? false;
 
         /// <summary>
-        /// Gets or sets whether application-event telemetry is enabled.
+        /// Gets whether application-event telemetry is enabled.
         /// </summary>
-        public bool AppTelemetryState
-        {
-            get { return ReadBool("telemetry", "active_app", false); }
-            set { Write("telemetry", "active_app", JsonBool(value)); }
-        }
+        public bool AppTelemetryState => AsService().Telemetry.AppTelemetryStatus ?? false;
 
         /// <summary>
-        /// Gets or sets the URL of the application-event telemetry server.
+        /// Gets the URL of the application-event telemetry server.
         /// </summary>
         public string AppTelemetryServerUrl
         {
             get
             {
-                var value = ReadString("telemetry", "apptelemetry_server_url");
+                var value = AsService().Telemetry.AppTelemetryServerUrl;
                 return string.IsNullOrEmpty(value) ? string.Empty : value.Trim();
             }
-            set { Write("telemetry", "apptelemetry_server_url", JsonString(value)); }
         }
 
         /// <summary>
-        /// Gets or sets the event-flags bitmask for application telemetry.
+        /// Gets the event-flags bitmask for application telemetry.
         /// </summary>
         public string AppTelemetryEventFlags
         {
             get
             {
-                var value = ReadString("telemetry", "apptelemetry_event_flags");
+                var value = AsService().Telemetry.AppTelemetryEventFlags;
                 return string.IsNullOrEmpty(value) ? string.Empty : value.Trim();
             }
-            set { Write("telemetry", "apptelemetry_event_flags", JsonString(value)); }
         }
 
         // ── loading & per-extension config ────────────────────────────────────────
@@ -371,28 +273,28 @@ namespace pyRevitExtensionParser
         /// </summary>
         public ExtensionConfig ParseExtensionByName(string extensionName)
         {
-            var possibleSections = new[]
+            var section = AsService().GetExtensionSection(extensionName);
+            if (section is null)
+                return null;
+
+            return new ExtensionConfig
             {
-                $"{extensionName}.extension",
-                $"{extensionName}.lib"
+                Name = extensionName,
+                Disabled = section.Disabled ?? false,
+                PrivateRepo = section.PrivateRepo ?? false,
+                Username = section.Username,
+                Password = section.Password
             };
+        }
 
-            foreach (var section in possibleSections)
-            {
-                if (!_config.HasSection(section))
-                    continue;
-
-                return new ExtensionConfig
-                {
-                    Name = extensionName,
-                    Disabled = ReadBool(section, "disabled", false),
-                    PrivateRepo = ReadBool(section, "private_repo", false),
-                    Username = ReadString(section, "username"),
-                    Password = ReadString(section, "password")
-                };
-            }
-
-            return null;
+        // Exposes the backing configuration through the service surface so the
+        // typed section readers are available. The same IConfiguration underlies
+        // both, so a custom-path instance and the shared default read alike.
+        private IConfigurationService AsService()
+        {
+            return _service ?? (_service = new ConfigurationBuilder(false)
+                .AddConfigurationSource(ConfigurationService.DefaultConfigurationName, _config)
+                .Build());
         }
 
         private static string NormalizeLocaleValue(string rawValue)
