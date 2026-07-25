@@ -8,12 +8,15 @@ namespace pyRevitLabs.Configurations.Sections;
 public sealed record CoreSection
 {
     [KeyName("bincache")]
+    [DefaultValue(false)]
     public bool? BinCache { get; set; }
 
     [KeyName("loadbeta")]
+    [DefaultValue(false)]
     public bool? LoadBeta { get; set; }
 
     [KeyName("closeotheroutputs")]
+    [DefaultValue(false)]
     public bool? CloseOtherOutputs { get; set; }
 
     [KeyName("closeoutputmode")]
@@ -28,9 +31,11 @@ public sealed record CoreSection
     public bool? ReadScriptMetadata { get; set; }
 
     [KeyName("autoupdate")]
+    [DefaultValue(false)]
     public bool? AutoUpdate { get; set; }
 
     [KeyName("checkupdates")]
+    [DefaultValue(false)]
     public bool? CheckUpdates { get; set; }
 
     [KeyName("usercanupdate")]
@@ -59,6 +64,7 @@ public sealed record CoreSection
     public bool? Verbose { get; set; }
 
     [KeyName("filelogging")]
+    [DefaultValue(false)]
     public bool? FileLogging { get; set; }
 
     [KeyName("startuplogtimeout")]
@@ -66,21 +72,27 @@ public sealed record CoreSection
     public int? StartupLogTimeout { get; set; }
 
     [KeyName("cpyengine")]
+    [DefaultValue(0)]
     public int? CpythonEngineVersion { get; set; }
 
     [KeyName("requiredhostbuild")]
+    [DefaultValue("")]
     public string? RequiredHostBuild { get; set; }
 
     [KeyName("minhostdrivefreespace")]
+    [DefaultValue(0L)]
     public long? MinHostDriveFreeSpace { get; set; }
 
     [KeyName("colorize_docs")]
+    [DefaultValue(false)]
     public bool? ColorizeDocs { get; set; }
 
     [KeyName("tooltip_debug_info")]
+    [DefaultValue(false)]
     public bool? TooltipDebugInfo { get; set; }
 
     [KeyName("outputstylesheet")]
+    [DefaultValue("")]
     public string? OutputStyleSheet { get; set; }
 
     // No initializer: an unset value stays null so a sparse-section save does not

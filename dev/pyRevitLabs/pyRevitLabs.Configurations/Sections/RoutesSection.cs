@@ -7,6 +7,7 @@ namespace pyRevitLabs.Configurations.Sections;
 public sealed record RoutesSection
 {
     [KeyName("enabled")]
+    [DefaultValue(false)]
     public bool? Status { get; set; }
 
     [KeyName("host")]
@@ -17,5 +18,6 @@ public sealed record RoutesSection
     public int? Port { get; set; }
 
     [KeyName("core_api")]
+    [DefaultValue(false)]
     public bool? LoadCoreApi { get; set; }
 }

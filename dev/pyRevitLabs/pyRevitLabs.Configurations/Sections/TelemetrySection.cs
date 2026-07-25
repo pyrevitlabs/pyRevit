@@ -15,9 +15,11 @@ public record TelemetrySection
     public bool? TelemetryUseUtcTimeStamps { get; set; }
 
     [KeyName("telemetry_file_dir")]
+    [DefaultValue("")]
     public string? TelemetryFileDir { get; set; }
 
     [KeyName("telemetry_server_url")]
+    [DefaultValue("")]
     public string? TelemetryServerUrl { get; set; }
 
     [KeyName("include_hooks")]
@@ -32,5 +34,6 @@ public record TelemetrySection
     public string? AppTelemetryServerUrl { get; set; }
 
     [KeyName("apptelemetry_event_flags")]
+    [DefaultValue("")]
     public string? AppTelemetryEventFlags { get; set; }
 }

@@ -296,10 +296,7 @@ class PyRevitConfig(object):
     @property
     def required_host_build(self):
         """Host build required to run the commands."""
-        # Coerce the unset (None) case to "", matching the C# facade's
-        # GetRequiredHostBuild (?? string.Empty), so the Settings dialog does not
-        # round-trip the literal "None" back into the config.
-        return self.core.RequiredHostBuild or ""
+        return self.core.RequiredHostBuild
 
     @required_host_build.setter
     def required_host_build(self, buildnumber):
@@ -308,9 +305,7 @@ class PyRevitConfig(object):
     @property
     def min_host_drivefreespace(self):
         """Minimum free space for running the commands."""
-        # Coerce the unset (None) case to 0, matching the C# facade's
-        # GetMinHostDriveFreeSpace (?? 0), so numeric consumers never see None.
-        return self.core.MinHostDriveFreeSpace or 0
+        return self.core.MinHostDriveFreeSpace
 
     @min_host_drivefreespace.setter
     def min_host_drivefreespace(self, freespace):
@@ -493,7 +488,7 @@ class PyRevitConfig(object):
     @property
     def apptelemetry_event_flags(self):
         """App telemetry event flags."""
-        return self.telemetry.AppTelemetryEventFlags or ""
+        return self.telemetry.AppTelemetryEventFlags
 
     @apptelemetry_event_flags.setter
     def apptelemetry_event_flags(self, flags):
