@@ -379,7 +379,12 @@ namespace pyRevitLabs.PyRevit
             _logger.Debug("Enabling app telemetry...");
 
             IConfigurationService cfg = GetConfigFile(revitVersion);
-            cfg.SaveSection(revitVersion, new TelemetrySection() {AppTelemetryServerUrl = apptelemetryServerUrl});
+            cfg.SaveSection(revitVersion,
+                new TelemetrySection()
+                {
+                    AppTelemetryStatus = true,
+                    AppTelemetryServerUrl = apptelemetryServerUrl
+                });
         }
 
         public static void DisableAppTelemetry(string revitVersion = ConfigurationService.DefaultConfigurationName)

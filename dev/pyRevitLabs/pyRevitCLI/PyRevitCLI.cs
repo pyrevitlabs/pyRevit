@@ -843,7 +843,7 @@ namespace pyRevitCLI
                     }
 
                     else if (all("enable"))
-                        PyRevitConfigs.EnableAppTelemetry(revitVersion);
+                        PyRevitConfigs.EnableAppTelemetry(revitVersion: revitVersion);
 
                     else if (all("disable"))
                         PyRevitConfigs.DisableAppTelemetry(revitVersion);

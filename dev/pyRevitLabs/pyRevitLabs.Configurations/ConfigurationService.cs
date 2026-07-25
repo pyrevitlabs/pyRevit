@@ -212,18 +212,12 @@ public sealed class ConfigurationService : IConfigurationService
         foreach (var propertyInfo in GetProperties(configurationType))
         {
             string keyName = GetCustomAttribute<KeyNameAttribute>(propertyInfo)?.KeyName ?? propertyInfo.Name;
-            object? storedValue = GetKeyValue(Configurations, propertyInfo, sectionName, keyName);
+
+            object? storedValue = GetKeyValue(new[] {configuration}, propertyInfo, sectionName, keyName);
 
             object? keyValue = propertyInfo.GetValue(sectionValue);
-            // A null property is treated as "not set by this caller": its
-            // existing stored value is left untouched. Only non-null properties
-            // are written.
             if (keyValue is null)
                 continue;
-            // Don't materialize a section's declared default that isn't already
-            // stored: it resolves from the default on read, and writing it would
-            // pin the user to today's default. Fully-defaulted snapshots (e.g.
-            // the Python save path) would otherwise persist every default key.
             if (storedValue is null && keyValue.Equals(GetPropertyDefault(propertyInfo)))
                 continue;
             if (!keyValue.Equals(storedValue))
@@ -245,9 +239,7 @@ public sealed class ConfigurationService : IConfigurationService
             string keyName = GetCustomAttribute<KeyNameAttribute>(propertyInfo)?.KeyName ?? propertyInfo.Name;
 
             object? keyValue = GetKeyValue(configurations, propertyInfo, sectionName, keyName);
-            // Apply the declared default for keys absent from every config, so a
-            // section's defaults live on the read path rather than as field
-            // initializers (which would otherwise be written back on a sparse save).
+
             propertyInfo.SetValue(sectionConfiguration,
                 keyValue ?? GetPropertyDefault(propertyInfo) ?? propertyInfo.GetValue(sectionConfiguration));
         }

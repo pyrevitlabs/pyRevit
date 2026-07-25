@@ -100,25 +100,26 @@ class _SectionCompatWrapper(object):
         self._config_service = config_service
         self._config_name = config_name
 
-    def get_option(self, key, default=None):
-        value = self._config.GetValueOrDefault(self._section_name, key, "")
-        if not value:
-            return default
+    def get_option(self, op_name, default_value=None):
+        value = self._config.GetRawValueOrDefault(self._section_name, op_name, None)
+        if value is None:
+            return default_value
         try:
             return json.loads(value)
         except (ValueError, TypeError):
-            # Non-JSON values (bare Windows paths, single-quoted strings,
-            # Python bools) are returned as-is rather than parsed.
-            return value
+            try:
+                return json.loads(value.replace("'", '"'))
+            except (ValueError, TypeError):
+                return value
 
-    def set_option(self, key, value):
+    def set_option(self, op_name, value):
         self._config.SetRawValue(
-            self._section_name, key,
+            self._section_name, op_name,
             json.dumps(value, separators=(',', ':'), ensure_ascii=False)
         )
 
-    def remove_option(self, key):
-        return self._config.RemoveOption(self._section_name, key)
+    def remove_option(self, option_name):
+        return self._config.RemoveOption(self._section_name, option_name)
 
     def __getattr__(self, name):
         return getattr(self._csharp, name)
@@ -127,11 +128,8 @@ class _SectionCompatWrapper(object):
         if name in self._INTERNAL_ATTRS:
             object.__setattr__(self, name, value)
             return
-        # A typed section property is written through to the shared store now
-        # (in memory, no disk flush) so the edit survives the snapshot rebuild
-        # that any later write triggers; save_changes flushes once at the end.
-        # A None here means "leave as stored" (matching the service's
-        # null-property = not-set contract); callers clear via remove_option.
+        # A typed section property is written through to the shared store 
+        # save_changes flushes once at the end.
         if value is not None \
                 and self._csharp.GetType().GetProperty(name) is not None:
             pending = type(self._csharp)()

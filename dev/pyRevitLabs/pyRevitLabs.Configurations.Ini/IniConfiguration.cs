@@ -55,6 +55,10 @@ public sealed class IniConfiguration : ConfigurationBase
     /// <inheritdoc />
     protected override void SaveConfigurationImpl(string configurationPath)
     {
+        string? directory = Path.GetDirectoryName(configurationPath);
+        if (!string.IsNullOrEmpty(directory))
+            Directory.CreateDirectory(directory);
+
         _parser.WriteFile(configurationPath, _iniFile, DefaultFileEncoding);
     }
 

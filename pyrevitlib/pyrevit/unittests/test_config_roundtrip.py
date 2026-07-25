@@ -3,7 +3,9 @@
 
 Exercises the encode/decode logic in :mod:`pyrevit.coreutils.configparser`
 (``ConfigSection`` / ``ConfigSections``), which every script touches through
-``script.get_config()``. The C# store already has parity/encoding coverage; the
+``script.get_config()``, and the matching surface on
+``userconfig._SectionCompatWrapper``, which extensions reach through
+``user_config.core``. The C# store already has parity/encoding coverage; the
 untested risk lives in the Python side: the JSON round-trip, the legacy
 single-quote fallback, and the missing-key-vs-stored-empty-string distinction.
 
@@ -18,6 +20,7 @@ Run from Revit via the pyRevit DevTools "Config Module Tests" button.
 import unittest
 
 from pyrevit.coreutils.configparser import ConfigSection, ConfigSections
+from pyrevit.userconfig import _SectionCompatWrapper
 
 
 class _FakeConfiguration(object):
@@ -249,3 +252,68 @@ class ConfigSectionsTests(unittest.TestCase):
         self.assertRaises(AttributeError, getattr, self.sections, "absent")
         self.assertEqual("fallback", getattr(self.sections, "absent", "fallback"))
         self.assertFalse(hasattr(self.sections, "absent"))
+
+
+class ConfigSubsectionTests(unittest.TestCase):
+    """A subsection is discoverable as soon as it is added."""
+
+    def setUp(self):
+        self.config = _FakeConfiguration()
+        self.section = ConfigSection("core", self.config)
+
+    def test_added_subsection_is_visible_before_any_option_is_set(self):
+        self.section.add_subsection("sub")
+        self.assertTrue(self.section.has_subsection("sub"))
+        self.assertEqual(
+            ["core.sub"], [str(s) for s in self.section.get_subsections()]
+        )
+
+    def test_added_subsection_round_trips_a_value(self):
+        self.section.add_subsection("sub").set_option("enabled", True)
+        self.assertIs(
+            True, self.section.get_subsection("sub").get_option("enabled")
+        )
+
+
+class SectionCompatWrapperTests(unittest.TestCase):
+    """The typed-section wrapper decodes like ConfigSection does.
+
+    Extensions hold whichever of the two a given entry point handed them, so a
+    value stored through one must read back identically through the other.
+    """
+
+    def setUp(self):
+        self.config = _FakeConfiguration()
+        self.wrapper = _SectionCompatWrapper(
+            "core", object(), self.config, None, "Default"
+        )
+        self.section = ConfigSection("core", self.config)
+
+    def test_bool_round_trips_as_bool(self):
+        self.wrapper.set_option("key", False)
+        self.assertIs(False, self.wrapper.get_option("key"))
+
+    def test_legacy_python_bool_is_returned_as_is(self):
+        # Matches the ConfigSection ladder: a bare, non-JSON value is passed
+        # through rather than guessed at.
+        self.config.SetRawValue("core", "key", "False")
+        self.assertEqual("False", self.wrapper.get_option("key"))
+
+    def test_list_round_trips(self):
+        self.wrapper.set_option("key", ["a", "b"])
+        self.assertEqual(["a", "b"], self.wrapper.get_option("key"))
+
+    def test_missing_key_returns_default_value(self):
+        self.assertEqual(
+            "fallback", self.wrapper.get_option("absent", default_value="fallback")
+        )
+
+    def test_stored_empty_string_is_not_the_default(self):
+        self.wrapper.set_option("key", "")
+        self.assertEqual("", self.wrapper.get_option("key", default_value="fallback"))
+
+    def test_matches_config_section_decoding(self):
+        self.section.set_option("key", False)
+        self.assertIs(
+            self.section.get_option("key"), self.wrapper.get_option("key")
+        )

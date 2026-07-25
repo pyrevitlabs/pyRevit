@@ -329,10 +329,7 @@ namespace pyRevitLabs.PyRevit {
         public static List<string> ResolveUserExtensionPaths() {
             var resolvedPaths = new List<string>();
 
-            var searchPaths = PyRevitConfigs.GetConfigFile().GetSectionKeyValueOrDefault<string[]>(
-                ConfigurationService.DefaultConfigurationName,
-                PyRevitConsts.ConfigsCoreSection,
-                PyRevitConsts.ConfigsUserExtensionsKey);
+            var searchPaths = PyRevitConfigs.GetConfigFile().Core.UserExtensions;
             if (searchPaths is null)
                 return resolvedPaths;
 
@@ -356,10 +353,7 @@ namespace pyRevitLabs.PyRevit {
             // Self-heal the stored list to the resolved form, but only when it
             // changed, so a plain read does not rewrite the config file.
             var cfg = PyRevitConfigs.GetConfigFile();
-            var searchPaths = cfg.GetSectionKeyValueOrDefault<string[]>(
-                ConfigurationService.DefaultConfigurationName,
-                PyRevitConsts.ConfigsCoreSection,
-                PyRevitConsts.ConfigsUserExtensionsKey);
+            var searchPaths = cfg.Core.UserExtensions;
             if (searchPaths != null && !resolvedPaths.SequenceEqual(searchPaths))
                 cfg.SaveSection(
                     ConfigurationService.DefaultConfigurationName,

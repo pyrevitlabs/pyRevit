@@ -122,10 +122,10 @@ class ConfigSection(object):
 
     def add_subsection(self, section_name):
         """Add subsection to section."""
-        return ConfigSection(
-            coreutils.make_canonical_name(self.__section_name, section_name),
-            self.__configuration
-        )
+        canonical_name = coreutils.make_canonical_name(
+            self.__section_name, section_name)
+        self.__configuration.AddSection(canonical_name)
+        return ConfigSection(canonical_name, self.__configuration)
 
     def get_subsections(self):
         """Return all subsections nested under this section.

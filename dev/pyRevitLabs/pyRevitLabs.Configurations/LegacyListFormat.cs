@@ -29,6 +29,12 @@ public static class LegacyListFormat
         if (value.IndexOf('"') >= 0)
             return false;
 
+        // "[]" is also the canonical encoding of an empty list. Claiming it as
+        // legacy would make the migrator rewrite (and back up) a canonical config
+        // on every load, since the rewrite reproduces the same text.
+        if (value.Equals("[]", StringComparison.Ordinal))
+            return false;
+
         var result = new List<string>();
         var item = new StringBuilder();
         int end = value.Length - 1;

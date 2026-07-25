@@ -70,4 +70,36 @@ public class MigrationCanonicalizationTests
             File.Delete(path);
         }
     }
+
+    /// <summary>
+    /// The canonical empty list is also the shortest legacy-looking literal.
+    /// Treating it as legacy would rewrite and re-back-up the config on every
+    /// load, since the rewrite reproduces the same text.
+    /// </summary>
+    [Fact]
+    public void Migration_CanonicalEmptyList_IsNotDetectedAsLegacy()
+    {
+        string path = WriteTemp("[core]\nuserextensions = []\n\n[environment]\nsources = []\n");
+        try
+        {
+            // The first pass still runs to stamp the schema version, but must not
+            // claim either empty list as a converted legacy value.
+            var first = ConfigurationMigrator.Migrate(Build(path));
+            Assert.Empty(first.ConvertedKeys);
+
+            var second = ConfigurationMigrator.Migrate(Build(path));
+            Assert.False(second.Migrated);
+            Assert.Empty(second.ConvertedKeys);
+            Assert.Null(second.BackupPath);
+        }
+        finally
+        {
+            File.Delete(path);
+            foreach (string backup in Directory.GetFiles(
+                         Path.GetDirectoryName(path)!, Path.GetFileName(path) + "*.bak"))
+            {
+                File.Delete(backup);
+            }
+        }
+    }
 }
