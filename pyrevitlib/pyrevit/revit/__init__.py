@@ -50,7 +50,10 @@ from pyrevit.revit import features
 _perfmark("pyrevit.revit:after features")
 from pyrevit.revit import bim360
 from pyrevit.revit import dc3dserver
-_perfmark("pyrevit.revit:after bim360/dc3dserver (exit)")
+from pyrevit.revit import tmpgfx
+_perfmark("pyrevit.revit:after bim360/dc3dserver/tmpgfx (exit)")
+from pyrevit.revit import avf
+_perfmark("pyrevit.revit:after bim360/dc3dserver/avf (exit)")
 
 
 #pylint: disable=W0703,C0302,C0103
