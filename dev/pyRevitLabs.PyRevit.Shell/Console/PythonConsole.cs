@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2010 Joe Moorhouse
+// Copyright (c) 2010 Joe Moorhouse
 
 using System;
 using System.Collections.Generic;
@@ -86,7 +86,7 @@ namespace PythonConsoleControl
         volatile bool executing = false;
 
         // This is the thread upon which all commands execute unless the dipatcher is overridden.
-        Thread dispatcherThread;        
+        Thread dispatcherThread;
         public Dispatcher dispatcher;
 
         string scriptText = String.Empty;
@@ -146,12 +146,12 @@ namespace PythonConsoleControl
                 this.textEditor.textArea.CommandBindings.Add(new CommandBinding(ApplicationCommands.Undo, OnUndo, CanUndo));
                 this.textEditor.textArea.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, PythonEditingCommandHandler.OnDelete(ApplicationCommands.NotACommand), CanDeleteCommand));
 
-            }));            
+            }));
             // Set dispatcher to run on a UI thread independent of both the Control UI thread and thread running the REPL.
             WhenConsoleInitialized(delegate
             {
                 SetCommandDispatcher(DispatchCommand);
-            });                       
+            });
         }
 
         public Action<Action> GetCommandDispatcher()
@@ -346,7 +346,7 @@ namespace PythonConsoleControl
             if (target != textEditor.textArea) return;
             if (textEditor.SelectionLength == 0 && executing)
             {
-                // Send the 'Ctrl-C' abort 
+                // Send the 'Ctrl-C' abort
                 //if (!IsInReadOnlyRegion)
                 //{
                 MoveToHomePosition();
@@ -367,7 +367,7 @@ namespace PythonConsoleControl
         #endregion
 
         /// <summary>
-        /// Run externally provided statements in the Console Engine. 
+        /// Run externally provided statements in the Console Engine.
         /// </summary>
         /// <param name="statements"></param>
         public void RunStatements(string statements)
@@ -381,7 +381,7 @@ namespace PythonConsoleControl
         }
 
         /// <summary>
-        /// Run on the statement execution thread. 
+        /// Run on the statement execution thread.
         /// </summary>
         void ExecuteStatements()
         {

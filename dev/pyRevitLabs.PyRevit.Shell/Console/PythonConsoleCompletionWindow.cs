@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2010 Joe Moorhouse
+// Copyright (c) 2010 Joe Moorhouse
 
 using System;
 using System.Windows;
@@ -16,7 +16,7 @@ using System.Reflection;
 namespace PythonConsoleControl
 {
     public delegate void DescriptionUpdateDelegate(string description);
-    
+
     /// <summary>
     /// The code completion window.
     /// </summary>

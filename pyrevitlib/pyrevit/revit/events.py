@@ -1,4 +1,4 @@
-﻿"""Revit events handler management."""
+"""Revit events handler management."""
 #pylint: disable=unused-argument
 from collections import deque
 from pyrevit import HOST_APP
@@ -114,8 +114,24 @@ def unregister_exec_handlers(handler_group_id):
 def delayed_unregister_exec_handlers(handler_group_id):
     HANDLER_UNREGISTERER.handler_group_id = handler_group_id
     ext_event = _get_unregisterer_extevent()
-    if ext_event is not None:
-        ext_event.Raise()
+    if ext_event is None:
+        mlogger.error(
+            "Could not create ExternalEvent; event handlers remain registered"
+        )
+        return
+    try:
+        response = ext_event.Raise()
+        if response in (
+                UI.ExternalEventRequest.Denied,
+                UI.ExternalEventRequest.TimedOut):
+            mlogger.error(
+                "Could not unregister event handlers; "
+                "ExternalEvent request was {}".format(response)
+            )
+    except Exception as ex:
+        mlogger.error(
+            "Could not unregister event handlers: {}".format(ex)
+        )
 
 
 def _get_unregisterer_extevent():
@@ -181,6 +197,13 @@ class _GenericExternalEventHandler(UI.IExternalEventHandler):
 
     def schedule(self, func):
         self._queue.append(func)
+
+    def discard(self, func):
+        try:
+            self._queue.remove(func)
+            return True
+        except ValueError:
+            return False
 
 
 if compat.IRONPY:
@@ -276,7 +299,26 @@ def execute_in_revit_context(func, *args, **kwargs):
                 else:
                     g[k] = old
 
-    _HANDLER.schedule(_wrapper)
     _ext_event = _get_execute_extevent()
-    if _ext_event is not None:
-        _ext_event.Raise()
+    if _ext_event is None:
+        mlogger.error(
+            "Could not create ExternalEvent; scheduled callback will not run"
+        )
+        return
+
+    _HANDLER.schedule(_wrapper)
+    try:
+        response = _ext_event.Raise()
+        if response in (
+                UI.ExternalEventRequest.Denied,
+                UI.ExternalEventRequest.TimedOut):
+            _HANDLER.discard(_wrapper)
+            mlogger.error(
+                "Could not schedule callback; "
+                "ExternalEvent request was {}".format(response)
+            )
+    except Exception as ex:
+        _HANDLER.discard(_wrapper)
+        mlogger.error(
+            "Could not schedule callback through ExternalEvent: {}".format(ex)
+        )

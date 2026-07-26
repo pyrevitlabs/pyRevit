@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2010 Joe Moorhouse
+// Copyright (c) 2010 Joe Moorhouse
 
 using System;
 using System.Collections.Generic;
@@ -68,7 +68,7 @@ namespace PythonConsoleControl
 
         public ICollection<CommandBinding> CommandBindings
         {
-            get { return (this.textArea.ActiveInputHandler as TextAreaDefaultInputHandler).CommandBindings; } 
+            get { return (this.textArea.ActiveInputHandler as TextAreaDefaultInputHandler).CommandBindings; }
         }
 
         public void Write(string text)
@@ -211,7 +211,7 @@ namespace PythonConsoleControl
             //int currentLine = textArea.Caret.Line - 1;
             int currentLine = textArea.Document.LineCount - 1;
             int startOffset = textArea.Document.Lines[currentLine].Offset;
-            textArea.Document.Replace(startOffset + index, length, text); 
+            textArea.Document.Replace(startOffset + index, length, text);
         }
 
         public event TextCompositionEventHandler TextEntering
@@ -337,7 +337,7 @@ namespace PythonConsoleControl
                 itemForCompletion = textArea.Document.GetText(line.Offset, textArea.Caret.Column - 1);
             }));
 
-            
+
             completionDispatcher.Invoke(new Action(delegate()
             {
                 try

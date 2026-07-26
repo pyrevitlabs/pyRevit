@@ -48,7 +48,7 @@ namespace PythonConsoleControl
                 useDarkTheme ? DarkHighlightingResource : LightHighlightingResource,
                 useDarkTheme ? DarkHighlightingName : LightHighlightingName);
             ApplyHighlighting(highlightingDefinition);
-            
+
             // Force redraw of the text view
             _pad.Control.TextArea.TextView.Redraw();
         }

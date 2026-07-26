@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Threading;
 using Autodesk.Revit.UI;
@@ -45,9 +46,8 @@ namespace PyRevitLabs.PyRevit.Shell {
 
             // Modal: run typed code on this (the command's) thread. ShowDialog keeps pumping it,
             // so every statement executes in the live API context the shell was opened from.
-            var mainDispatcher = Dispatcher.FromThread(Thread.CurrentThread);
-            var dispatcher = mainDispatcher;
-            AttachAndDispatch(gui, uiapp, searchPaths, mainDispatcher, command => RunOnDispatcher(dispatcher, command));
+            var mainDispatcher = GetCurrentDispatcher();
+            AttachAndDispatch(gui, uiapp, searchPaths, mainDispatcher, command => RunOnDispatcher(mainDispatcher, command));
 
             gui.SetRevitAsWindowOwner();
             gui.ShowDialog();
@@ -60,15 +60,16 @@ namespace PyRevitLabs.PyRevit.Shell {
 
             // Modeless: marshal each statement into a valid API context via an ExternalEvent so
             // Revit stays interactive while the shell is open.
-            var mainDispatcher = Dispatcher.FromThread(Thread.CurrentThread);
-            var commandCompleted = new AutoResetEvent(false);
-            var handler = new ShellExternalEventDispatcher(gui.ConsoleControl, commandCompleted);
+            var mainDispatcher = GetCurrentDispatcher();
+            var handler = new ShellExternalEventDispatcher(gui.ConsoleControl);
             var externalEvent = ExternalEvent.Create(handler);
-            AttachAndDispatch(gui, uiapp, searchPaths, mainDispatcher, command => {
-                handler.Enqueue(command);
-                externalEvent.Raise();
-                commandCompleted.WaitOne();
-            });
+            AttachAndDispatch(
+                gui,
+                uiapp,
+                searchPaths,
+                mainDispatcher,
+                command => DispatchExternalEvent(handler, externalEvent, command)
+            );
 
             gui.Title += " (modeless)";
             gui.SetRevitAsWindowOwner();
@@ -84,7 +85,7 @@ namespace PyRevitLabs.PyRevit.Shell {
         public static UserControl CreateConfiguredConsole(UIApplication uiapp, IList<string> searchPaths) {
             var control = new IronPythonConsoleControl();
             control.ApplyTheme(RevitThemeDetector.IsDarkTheme(uiapp));
-            ConfigureControl(control, uiapp, searchPaths, control, Dispatcher.FromThread(Thread.CurrentThread));
+            ConfigureControl(control, uiapp, searchPaths, control, GetCurrentDispatcher());
             return control;
         }
 
@@ -98,25 +99,21 @@ namespace PyRevitLabs.PyRevit.Shell {
         public static EditorView CreateConfiguredEditor(UIApplication uiapp, IList<string> searchPaths) {
             var editor = new EditorView();
             editor.ApplyTheme(RevitThemeDetector.IsDarkTheme(uiapp));
-            ConfigureControl(editor.ConsoleControl, uiapp, searchPaths, editor, Dispatcher.FromThread(Thread.CurrentThread));
+            ConfigureControl(editor.ConsoleControl, uiapp, searchPaths, editor, GetCurrentDispatcher());
             return editor;
         }
 
         // Shared by the window-based and dockable shells: configure the engine and wire the
         // modeless dispatch (ExternalEvent) onto an already-created console control.
         static void ConfigureControl(IronPythonConsoleControl consoleControl, UIApplication uiapp, IList<string> searchPaths, object window, Dispatcher mainDispatcher) {
-            var commandCompleted = new AutoResetEvent(false);
-            var handler = new ShellExternalEventDispatcher(consoleControl, commandCompleted);
+            var handler = new ShellExternalEventDispatcher(consoleControl);
             var externalEvent = ExternalEvent.Create(handler);
 
             consoleControl.WithConsoleHost(host => {
                 // Wire dispatch first so statements run in a valid Revit API context even if the
                 // environment setup below throws.
-                Action<Action> dispatch = command => {
-                    handler.Enqueue(command);
-                    externalEvent.Raise();
-                    commandCompleted.WaitOne();
-                };
+                Action<Action> dispatch =
+                    command => DispatchExternalEvent(handler, externalEvent, command);
                 host.Console.SetCommandDispatcher(dispatch);
                 host.Editor.SetCompletionDispatcher(dispatch);
 
@@ -124,6 +121,40 @@ namespace PyRevitLabs.PyRevit.Shell {
                 host.Console.ScriptScope.SetVariable("__window__", window);
                 EnsureInteractiveBuiltins(host.Engine, host.Console.ScriptScope);
             });
+        }
+
+        static Dispatcher GetCurrentDispatcher() {
+            var dispatcher = Dispatcher.FromThread(Thread.CurrentThread);
+            if (dispatcher == null)
+                throw new InvalidOperationException(
+                    "The pyRevit shell must be launched from a thread with a WPF dispatcher.");
+            return dispatcher;
+        }
+
+        static void DispatchExternalEvent(
+            ShellExternalEventDispatcher handler,
+            ExternalEvent externalEvent,
+            Action command
+        ) {
+            var request = handler.Enqueue(command);
+            ExternalEventRequest response;
+            try {
+                response = externalEvent.Raise();
+            }
+            catch {
+                if (!handler.Cancel(request))
+                    request.Wait();
+                throw;
+            }
+
+            if (response == ExternalEventRequest.Denied
+                || response == ExternalEventRequest.TimedOut) {
+                if (handler.Cancel(request))
+                    throw new InvalidOperationException(
+                        "Revit rejected the pyRevit shell ExternalEvent request: " + response);
+            }
+
+            request.Wait();
         }
 
         // Give the console's engine the full pyRevit environment, then wire its REPL dispatcher.
@@ -236,6 +267,8 @@ namespace PyRevitLabs.PyRevit.Shell {
         static void RunOnDispatcher(Dispatcher dispatcher, Action command) {
             if (command == null)
                 return;
+            if (dispatcher == null)
+                throw new ArgumentNullException(nameof(dispatcher));
             var operation = dispatcher.BeginInvoke(DispatcherPriority.Normal, command);
             while (operation.Status != DispatcherOperationStatus.Completed)
                 operation.Wait(TimeSpan.FromSeconds(1));
@@ -246,25 +279,67 @@ namespace PyRevitLabs.PyRevit.Shell {
     /// Runs queued REPL statements inside Revit's API context for the modeless and dockable
     /// shells. Reports failures back into the owning console control.
     /// </summary>
-    public class ShellExternalEventDispatcher : IExternalEventHandler {
-        readonly IronPythonConsoleControl _consoleControl;
-        readonly Queue<Action> _commands = new Queue<Action>();
-        readonly AutoResetEvent _commandCompleted;
+    internal sealed class ShellExternalEventRequest {
+        readonly TaskCompletionSource<bool> _completed =
+            new TaskCompletionSource<bool>(
+                TaskCreationOptions.RunContinuationsAsynchronously);
 
-        public ShellExternalEventDispatcher(IronPythonConsoleControl consoleControl, AutoResetEvent commandCompleted) {
-            _consoleControl = consoleControl;
-            _commandCompleted = commandCompleted;
+        public ShellExternalEventRequest(Action command) {
+            Command = command ?? throw new ArgumentNullException(nameof(command));
         }
 
-        public void Enqueue(Action command) {
-            _commands.Enqueue(command);
+        public Action Command { get; }
+
+        public void Complete() {
+            _completed.TrySetResult(true);
+        }
+
+        public void Wait() {
+            _completed.Task.GetAwaiter().GetResult();
+        }
+    }
+
+    internal sealed class ShellExternalEventDispatcher : IExternalEventHandler {
+        readonly IronPythonConsoleControl _consoleControl;
+        readonly object _requestsLock = new object();
+        readonly List<ShellExternalEventRequest> _requests =
+            new List<ShellExternalEventRequest>();
+
+        public ShellExternalEventDispatcher(IronPythonConsoleControl consoleControl) {
+            _consoleControl = consoleControl;
+        }
+
+        public ShellExternalEventRequest Enqueue(Action command) {
+            var request = new ShellExternalEventRequest(command);
+            lock (_requestsLock) {
+                _requests.Add(request);
+            }
+            return request;
+        }
+
+        public bool Cancel(ShellExternalEventRequest request) {
+            lock (_requestsLock) {
+                return _requests.Remove(request);
+            }
+        }
+
+        bool TryDequeue(out ShellExternalEventRequest request) {
+            lock (_requestsLock) {
+                if (_requests.Count == 0) {
+                    request = null;
+                    return false;
+                }
+                request = _requests[0];
+                _requests.RemoveAt(0);
+                return true;
+            }
         }
 
         public void Execute(UIApplication app) {
-            while (_commands.Count > 0) {
-                var command = _commands.Dequeue();
+            ShellExternalEventRequest request;
+            while (TryDequeue(out request)) {
                 try {
-                    command();
+                    request.Command();
                 }
                 catch (Exception ex) {
                     _consoleControl.WithConsoleHost(host => {
@@ -273,7 +348,7 @@ namespace PyRevitLabs.PyRevit.Shell {
                     });
                 }
                 finally {
-                    _commandCompleted.Set();
+                    request.Complete();
                 }
             }
         }

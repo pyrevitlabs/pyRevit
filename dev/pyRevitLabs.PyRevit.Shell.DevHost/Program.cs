@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -30,11 +30,17 @@ internal static class Program
 
         if (!File.Exists(Path.Combine(engineDir, "pyRevitLabs.PyRevit.Shell.dll")))
         {
-            Console.Error.WriteLine(
+            var message =
                 "The shell is not built yet. Build it first, e.g.:" + Environment.NewLine +
                 "  cd build && dotnet run -c Release -- ci" + Environment.NewLine +
                 "or just the shell:" + Environment.NewLine +
-                "  dotnet build dev/pyRevitLabs.PyRevit.Shell/pyRevitLabs.PyRevit.Shell.csproj -c \"Release IPY2712PR\"");
+                "  dotnet build dev/pyRevitLabs.PyRevit.Shell/pyRevitLabs.PyRevit.Shell.csproj -c \"Release IPY2712PR\"";
+            Console.Error.WriteLine(message);
+            MessageBox.Show(
+                message,
+                "pyRevit Shell Dev Host",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
             return 1;
         }
 
@@ -160,4 +166,3 @@ internal static class Program
 "try: __eventsender__\nexcept NameError: __eventsender__ = None\n" +
 "try: __eventargs__\nexcept NameError: __eventargs__ = None\n";
 }
-

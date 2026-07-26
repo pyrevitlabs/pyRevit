@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2010 Joe Moorhouse
+// Copyright (c) 2010 Joe Moorhouse
 
 using System;
 using System.Text;
@@ -12,7 +12,7 @@ using Microsoft.Scripting.Hosting.Shell;
 namespace PythonConsoleControl
 {
     public delegate void ConsoleCreatedEventHandler(object sender, EventArgs e);
-    
+
 
     /// <summary>
     /// Hosts the python console.
@@ -21,7 +21,7 @@ namespace PythonConsoleControl
     {
         Thread thread;
         PythonTextEditor textEditor;
-        PythonConsole pythonConsole;       
+        PythonConsole pythonConsole;
 
         public event ConsoleCreatedEventHandler ConsoleCreated;
 
@@ -94,7 +94,7 @@ namespace PythonConsoleControl
         }
 
         public void WhenConsoleCreated(Action<PythonConsoleHost> action)
-        {            
+        {
             if (pythonConsole != null)
             {
                 pythonConsole.WhenConsoleInitialized(() => action(this));

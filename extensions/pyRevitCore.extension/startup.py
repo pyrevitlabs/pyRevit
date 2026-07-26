@@ -1,4 +1,4 @@
-﻿"""pyRevit core startup script"""
+"""pyRevit core startup script"""
 #pylint: disable=import-error,unused-import,invalid-name
 from pyrevit._perf import mark as _perfmark
 _perfmark("startup.pyRevitCore:entry")
@@ -142,6 +142,7 @@ try:
                 if is_dark
                 else Media.SolidColorBrush(Media.Colors.White)
             )
+
         def _attach_console(self):
             if self._console is not None:
                 return

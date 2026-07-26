@@ -1,4 +1,4 @@
-﻿# pyRevit Shell — Dev Host (NOT shipped)
+# pyRevit Shell — Dev Host (NOT shipped)
 
 `pyRevitShellDevHost` is a **development-only** executable that launches the interactive Python
 Shell (REPL + AvalonEdit editor) **outside of Revit**, so you can iterate on the shell UI/REPL
@@ -89,4 +89,3 @@ dev\pyRevitLabs.PyRevit.Shell.DevHost\bin\Debug\net8.0-windows\pyRevitShellDevHo
   needs `__revit__` / the pyRevit runtime will not work here (by design).
 - Close Revit before rebuilding the shell (engine DLLs in `bin/netfx|netcore/engines/` are
   locked while Revit runs — same constraint as the normal product build).
-

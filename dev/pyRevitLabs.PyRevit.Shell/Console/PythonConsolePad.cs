@@ -1,11 +1,11 @@
-﻿// Copyright (c) 2010 Joe Moorhouse
+// Copyright (c) 2010 Joe Moorhouse
 
 using ICSharpCode.AvalonEdit;
 using System.Windows.Media;
 
 namespace PythonConsoleControl
-{   
-    public class PythonConsolePad 
+{
+    public class PythonConsolePad
     {
         PythonTextEditor pythonTextEditor;
         TextEditor textEditor;

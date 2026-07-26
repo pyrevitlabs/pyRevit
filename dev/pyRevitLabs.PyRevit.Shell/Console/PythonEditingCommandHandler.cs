@@ -1,4 +1,4 @@
-﻿// Copyright (c) 2010 Joe Moorhouse
+// Copyright (c) 2010 Joe Moorhouse
 
 using System;
 using System.IO;
@@ -21,7 +21,7 @@ namespace PythonConsoleControl
     {
         PythonTextEditor textEditor;
         TextArea textArea;
-        
+
         public PythonEditingCommandHandler(PythonTextEditor textEditor)
         {
             this.textEditor = textEditor;
@@ -153,9 +153,9 @@ namespace PythonConsoleControl
                             bool hasSomethingDeletable = false;
                             foreach (ISegment s in textArea.Selection.Segments)
                             {
-                                method = textAreaType.GetMethod("GetDeletableSegments", BindingFlags.Instance | BindingFlags.NonPublic); 
+                                method = textAreaType.GetMethod("GetDeletableSegments", BindingFlags.Instance | BindingFlags.NonPublic);
                                 //textArea.GetDeletableSegments(s).Length > 0)
-                                if ((int)method.Invoke(textArea, new Object[]{s}) > 0) 
+                                if ((int)method.Invoke(textArea, new Object[]{s}) > 0)
                                 {
                                     hasSomethingDeletable = true;
                                     break;
@@ -195,15 +195,15 @@ namespace PythonConsoleControl
         struct VerySimpleSegment : ISegment
 	    {
 		    public readonly int Offset, Length;
-		
+
 		    int ISegment.Offset {
 			    get { return Offset; }
 		    }
-		
+
 		    int ISegment.Length {
 			    get { return Length; }
 		    }
-		
+
 		    public int EndOffset {
 			    get {
 				    return Offset + Length;

@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """Choose how the pyRevit Python Shell opens: modal, modeless, docked, or with
 a built-in code editor panel (editor variants include a dockable editor pane)."""
 from pyrevit import script, forms

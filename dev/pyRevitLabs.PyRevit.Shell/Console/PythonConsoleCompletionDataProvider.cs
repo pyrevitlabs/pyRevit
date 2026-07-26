@@ -74,7 +74,7 @@ namespace PythonConsoleControl
 
                 Type type = TryGetType(objectName);
 
-                // Use Reflection for everything except in-built Python types and COM pbjects. 
+                // Use Reflection for everything except in-built Python types and COM pbjects.
                 if (type != null && type.Namespace != "IronPython.Runtime" && !type.FullName.Contains("IronPython.NewTypes") && (type.Name != "__ComObject"))
                 {
                     PopulateFromCLRType(items, type, objectName);
@@ -260,7 +260,7 @@ namespace PythonConsoleControl
             for (int i = (lastDelimitingIndex + 1); i < text.Length; i++)
             {
                 char c = text[i];
-                
+
                 // NOTE: rudimentary string detection (doesn't handle escaped quotes or triple quotes!)
                 if (c == '"' && !insideSingleQuotedString)
                 {
@@ -303,7 +303,7 @@ namespace PythonConsoleControl
             for (int i = 0; i < text.Length; i++)
             {
                 char c = text[i];
-                
+
                 // NOTE: rudimentary string detection (doesn't handle escaped quotes or triple quotes!)
                 if (c == '"' && !insideSingleQuotedString)
                 {
