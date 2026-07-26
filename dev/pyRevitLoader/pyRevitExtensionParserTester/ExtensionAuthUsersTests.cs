@@ -3,6 +3,8 @@ using System.Linq;
 using System.Reflection;
 using pyRevitAssemblyBuilder.SessionManager;
 using pyRevitExtensionParser;
+using pyRevitLabs.Configurations;
+using pyRevitLabs.Configurations.Ini.Extensions;
 using pyRevitExtensionParserTest.TestHelpers;
 using NUnit.Framework;
 using static pyRevitExtensionParser.ExtensionParser;
@@ -15,21 +17,24 @@ namespace pyRevitExtensionParserTester
         [TearDown]
         public void ResetParserConfig()
         {
+            PyRevitConfigStore.Reset();
             PyRevitConfig.ClearCache();
             ClearAllCaches();
         }
 
+        // Points the process-wide store at a temp config, so every reader resolves
+        // it the way it resolves the real file and no machine config is touched.
         private void UseTestPyRevitConfig(string iniContent)
         {
             var configPath = Path.Combine(TestTempDir, "pyRevit_config.ini");
             File.WriteAllText(configPath, iniContent);
-            var cfg = PyRevitConfig.Load(configPath);
+
+            PyRevitConfigStore.SetFactory(_ =>
+                new ConfigurationBuilder(false)
+                    .AddIniConfiguration(configPath, ConfigurationService.DefaultConfigurationName)
+                    .Build());
+
             ClearAllCaches();
-            var field = typeof(PyRevitConfig).GetField(
-                "_defaultInstance",
-                BindingFlags.Static | BindingFlags.NonPublic);
-            Assert.That(field, Is.Not.Null);
-            field!.SetValue(null, cfg);
         }
 
         [Test]

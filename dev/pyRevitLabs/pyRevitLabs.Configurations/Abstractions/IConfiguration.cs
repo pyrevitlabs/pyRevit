@@ -5,6 +5,12 @@ public interface IConfiguration
     string ConfigurationPath { get; }
 
     /// <summary>
+    /// True when the backing file is not writable, so <see cref="SaveConfiguration()"/>
+    /// discards any pending change instead of persisting it.
+    /// </summary>
+    bool ReadOnly { get; }
+
+    /// <summary>
     /// Advances on every mutation, so a holder of derived state can tell whether
     /// the store changed under it without comparing values.
     /// </summary>

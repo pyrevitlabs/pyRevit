@@ -156,7 +156,19 @@ public sealed class ConfigurationService : IConfigurationService
         if (!_configurations.TryGetValue(configurationName, out IConfiguration? configuration))
             throw new ArgumentException($"Configuration with name {configurationName} not found");
 
+        EnsureWritable(configurationName, configuration);
         return configuration;
+    }
+
+    // A read-only configuration silently discards its flush, so refuse the write
+    // before anything is mutated: an accepted-then-dropped edit leaves the caller
+    // reporting success and the in-memory state disagreeing with the file.
+    private void EnsureWritable(string configurationName, IConfiguration configuration)
+    {
+        if (ReadOnly || configuration.ReadOnly)
+            throw new ConfigurationException(
+                $"Configuration {configurationName} is read-only ({configuration.ConfigurationPath}); "
+                + "changes cannot be saved.");
     }
 
     public void SetSectionKeyValue<T>(string configurationName, string sectionName, string keyName, T keyValue)
@@ -175,6 +187,8 @@ public sealed class ConfigurationService : IConfigurationService
 
         if (!_configurations.TryGetValue(configurationName, out IConfiguration? configuration))
             throw new ArgumentException($"Configuration with name {configurationName} not found");
+
+        EnsureWritable(configurationName, configuration);
 
         configuration.SetValue(sectionName, keyName, keyValue);
         configuration.SaveConfiguration();

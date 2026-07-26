@@ -14,7 +14,7 @@ namespace pyRevitLabs.Configurations;
 /// </summary>
 public static class PyRevitConfigStore
 {
-    private static readonly ConcurrentDictionary<string, IConfigurationService> _cache = new();
+    private static readonly ConcurrentDictionary<string, Lazy<IConfigurationService>> _cache = new();
     private static volatile Func<string, IConfigurationService>? _factory;
     private static readonly object _factoryLock = new();
 
@@ -42,7 +42,9 @@ public static class PyRevitConfigStore
     /// Returns the shared service for the given configuration name, building it on
     /// first request. Names that identify the default configuration collapse to a
     /// single shared instance, so a getter and a setter that pass the default name
-    /// differently still observe the same object.
+    /// differently still observe the same object. A name is built exactly once even
+    /// under concurrent first access, since building it seeds, migrates, and backs
+    /// up files that two threads must not touch at the same time.
     /// </summary>
     public static IConfigurationService GetShared(string? configurationName = null)
     {
@@ -52,7 +54,22 @@ public static class PyRevitConfigStore
                 "PyRevitConfigStore has no factory registered; call SetFactory before GetShared.");
 
         string key = NormalizeKey(configurationName);
-        return _cache.GetOrAdd(key, factory);
+        Lazy<IConfigurationService> pending = _cache.GetOrAdd(key,
+            name => new Lazy<IConfigurationService>(
+                () => factory(name), LazyThreadSafetyMode.ExecutionAndPublication));
+
+        try
+        {
+            return pending.Value;
+        }
+        catch
+        {
+            // A failed build is replayed forever by the cached instance, so drop it
+            // and let a later call retry once the cause (disk, ACLs) is resolved.
+            ((ICollection<KeyValuePair<string, Lazy<IConfigurationService>>>) _cache)
+                .Remove(new KeyValuePair<string, Lazy<IConfigurationService>>(key, pending));
+            throw;
+        }
     }
 
     /// <summary>

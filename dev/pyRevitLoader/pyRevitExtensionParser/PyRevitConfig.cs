@@ -26,9 +26,11 @@ namespace pyRevitExtensionParser
         private IConfigurationService _service;
 
         /// <summary>
-        /// Cached default instance over the shared service. Cleared via
-        /// <see cref="ClearCache"/> at the start of each session load so config
-        /// changes made between reloads are picked up. Custom-path calls bypass it.
+        /// Cached default instance over the shared service. Held only while it still
+        /// wraps the configuration the shared store currently hands out, so a reload
+        /// requested by any host (session load, the CLI, or a Python
+        /// <c>user_config.reload()</c>) is picked up here too. Custom-path calls
+        /// bypass it.
         /// </summary>
         private static volatile PyRevitConfig _defaultInstance;
         private static readonly object _cacheLock = new object();
@@ -231,7 +233,8 @@ namespace pyRevitExtensionParser
         /// <summary>
         /// Loads the shared pyRevit configuration, or a one-off configuration from
         /// <paramref name="customPath"/> (used by tests). The default instance is
-        /// cached for the session; call <see cref="ClearCache"/> to force a re-read.
+        /// reused only while the shared store still hands out the same configuration,
+        /// so any reload — from here or from another host — is observed.
         /// </summary>
         public static PyRevitConfig Load(string customPath = null)
         {
@@ -239,22 +242,23 @@ namespace pyRevitExtensionParser
             if (!string.IsNullOrEmpty(customPath))
                 return new PyRevitConfig(IniConfiguration.Create(customPath));
 
-            if (_defaultInstance != null)
-                return _defaultInstance;
+            var shared = PyRevitConfigService.GetShared()[ConfigurationService.DefaultConfigurationName];
+
+            var cached = _defaultInstance;
+            if (cached != null && ReferenceEquals(cached._config, shared))
+                return cached;
 
             lock (_cacheLock)
             {
-                if (_defaultInstance != null)
-                    return _defaultInstance;
+                if (_defaultInstance == null || !ReferenceEquals(_defaultInstance._config, shared))
+                    _defaultInstance = new PyRevitConfig(shared);
 
-                _defaultInstance = new PyRevitConfig(
-                    PyRevitConfigService.GetShared()[ConfigurationService.DefaultConfigurationName]);
                 return _defaultInstance;
             }
         }
 
         /// <summary>
-        /// Clears the cached default instance and the shared service cache so the
+        /// Drops the cached default instance and the shared service cache so the
         /// next <see cref="Load()"/> re-reads from disk. Called at session reload
         /// via <see cref="ExtensionParser.ClearAllCaches"/>.
         /// </summary>

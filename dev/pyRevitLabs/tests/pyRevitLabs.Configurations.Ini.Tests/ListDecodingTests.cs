@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using pyRevitLabs.Configurations.Abstractions;
+using pyRevitLabs.Configurations.Exceptions;
 
 namespace pyRevitLabs.Configurations.Ini.Tests;
 
@@ -15,12 +16,15 @@ public class ListDecodingTests
 {
     // Injects the stored text directly, so the decode is exercised without the
     // INI file writer/parser round-trip in between.
-    private static List<string> Decode(string stored)
+    private static List<string> Decode(string stored) =>
+        Store(stored).GetValue<List<string>>("core", "userextensions");
+
+    private static IConfiguration Store(string stored)
     {
         IConfiguration config = IniConfiguration.Create(
             Path.Combine(Path.GetTempPath(), $"list_{Guid.NewGuid():N}.ini"));
         config.SetRawValue("core", "userextensions", stored);
-        return config.GetValue<List<string>>("core", "userextensions");
+        return config;
     }
 
     [Fact]
@@ -71,7 +75,30 @@ public class ListDecodingTests
     public void NonListValue_ParsesToSingleItem() =>
         Assert.Equal(new List<string> { @"C:\Tools\ext" }, Decode(@"C:\Tools\ext"));
 
+    [Fact] // An undecodable value must not pass for "no extensions configured".
+    public void UndecodableList_Throws() =>
+        Assert.Throws<ConfigurationException>(() => Decode(@"['C:\Users\ext"));
+
     [Fact]
-    public void UnterminatedList_ParsesToEmpty() =>
-        Assert.Empty(Decode(@"['C:\Users\ext"));
+    public void UndecodableList_TolerantRead_FallsBackToDefault() =>
+        Assert.Empty(Store(@"['C:\Users\ext")
+            .GetValueOrDefault("core", "userextensions", new List<string>())!);
+
+    [Fact] // The migrator finds it through the same failure, and can then repair it.
+    public void UndecodableList_IsReportedAsUnreadable()
+    {
+        var warnings = new List<string>();
+        Action<string>? previous = ConfigurationDiagnostics.Warn;
+        ConfigurationDiagnostics.Warn = warnings.Add;
+        try
+        {
+            Store(@"['C:\Users\ext").GetValueOrDefault<List<string>>("core", "userextensions");
+        }
+        finally
+        {
+            ConfigurationDiagnostics.Warn = previous;
+        }
+
+        Assert.Contains(warnings, message => message.Contains("userextensions"));
+    }
 }

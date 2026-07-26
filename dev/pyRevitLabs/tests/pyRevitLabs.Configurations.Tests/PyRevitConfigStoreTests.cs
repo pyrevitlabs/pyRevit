@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using pyRevitLabs.Configurations.Abstractions;
 using pyRevitLabs.Configurations.Sections;
@@ -84,6 +85,58 @@ public class PyRevitConfigStoreTests : IDisposable
     public void SetFactory_Null_Throws()
     {
         Assert.Throws<ArgumentNullException>(() => PyRevitConfigStore.SetFactory(null!));
+    }
+
+    [Fact] // Building seeds, migrates and backs up files; two threads must not both do it.
+    public void GetShared_ConcurrentFirstAccess_BuildsOnce()
+    {
+        int builds = 0;
+        using var start = new ManualResetEventSlim();
+        PyRevitConfigStore.SetFactory(_ =>
+        {
+            Interlocked.Increment(ref builds);
+            // Widen the window a racing caller could slip through.
+            Thread.Sleep(50);
+            return new StubService();
+        });
+
+        var results = new IConfigurationService[8];
+        var threads = new Thread[results.Length];
+        for (int i = 0; i < threads.Length; i++)
+        {
+            int index = i;
+            threads[i] = new Thread(() =>
+            {
+                start.Wait();
+                results[index] = PyRevitConfigStore.GetShared();
+            });
+            threads[i].Start();
+        }
+
+        start.Set();
+        foreach (Thread thread in threads)
+            thread.Join();
+
+        Assert.Equal(1, builds);
+        Assert.All(results, item => Assert.Same(results[0], item));
+    }
+
+    [Fact] // A failed build must not be replayed to every later caller.
+    public void GetShared_FailedBuild_IsNotCached()
+    {
+        int attempts = 0;
+        PyRevitConfigStore.SetFactory(_ =>
+        {
+            if (Interlocked.Increment(ref attempts) == 1)
+                throw new IOException("config file locked");
+
+            return new StubService();
+        });
+
+        Assert.Throws<IOException>(() => PyRevitConfigStore.GetShared());
+
+        Assert.NotNull(PyRevitConfigStore.GetShared());
+        Assert.Equal(2, attempts);
     }
 
     private static IConfigurationService CountingService(ref int builds)

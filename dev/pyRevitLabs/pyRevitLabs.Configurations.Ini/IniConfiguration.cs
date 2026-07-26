@@ -16,6 +16,10 @@ public sealed class IniConfiguration : ConfigurationBase
     private readonly IniData _iniFile;
     private readonly FileIniDataParser _parser;
 
+    // pyRevit configs are also written and hand-edited as Python configparser
+    // files, which treat both '#' and ';' as comment markers.
+    private static readonly Regex CommentPrefixRegex = new(@"^\s*[#;](.*)", RegexOptions.Compiled);
+
     /// <summary>
     /// Create ini configuration instance.
     /// </summary>
@@ -25,10 +29,26 @@ public sealed class IniConfiguration : ConfigurationBase
         : base(configurationPath, readOnly)
     {
         _parser = new FileIniDataParser();
-        _parser.Parser.Configuration.CaseInsensitive = true;
+        ConfigureTolerantParsing(_parser);
         _iniFile = !File.Exists(configurationPath)
             ? new IniData()
             : _parser.ReadFile(_configurationPath, DefaultFileEncoding);
+    }
+
+    // A config file in the wild is user- and history-shaped: it may carry '#'
+    // comments, a stray line, or a repeated key or section. Refusing to parse it
+    // would take down every reader of the file (loader, CLI, script engines) at
+    // construction, before the migrator ever gets a chance to repair it, so a
+    // malformed entry is dropped and the last value of a repeated key wins.
+    private static void ConfigureTolerantParsing(FileIniDataParser parser)
+    {
+        var configuration = parser.Parser.Configuration;
+        configuration.CaseInsensitive = true;
+        configuration.CommentRegex = CommentPrefixRegex;
+        configuration.SkipInvalidLines = true;
+        configuration.AllowDuplicateSections = true;
+        configuration.AllowDuplicateKeys = true;
+        configuration.OverrideDuplicateKeys = true;
     }
 
     /// <summary>
@@ -198,7 +218,10 @@ public sealed class IniConfiguration : ConfigurationBase
 
     // Decodes a stored List<string> across every list encoding pyRevit has
     // written. A bare (unbracketed) value is taken as a one-element list, matching
-    // how userextensions and environment.sources were historically read.
+    // how userextensions and environment.sources were historically read. A value
+    // no encoding accounts for throws like any other undecodable value, so the
+    // tolerant readers log it and fall back and the migrator can repair the key;
+    // silently yielding an empty list would drop every configured extension.
     private static List<string> DecodeStringList(string raw, string sectionName, string keyName)
     {
         if (string.IsNullOrEmpty(raw))
@@ -207,6 +230,11 @@ public sealed class IniConfiguration : ConfigurationBase
         string trimmed = raw.Trim();
         if (!trimmed.StartsWith("[", StringComparison.Ordinal))
             return new List<string> { trimmed };
+
+        // An empty literal carries no quotes for either reader to key off, and both
+        // encodings spell it the same way.
+        if (IsEmptyListLiteral(trimmed))
+            return new List<string>();
 
         if (TryJsonStringList(raw, out List<string>? jsonList))
             return jsonList!;
@@ -220,8 +248,14 @@ public sealed class IniConfiguration : ConfigurationBase
             return legacyList!;
         }
 
-        return new List<string>();
+        throw new ConfigurationException(
+            "Config value [" + sectionName + "] " + keyName + " is not a readable list value.");
     }
+
+    private static bool IsEmptyListLiteral(string trimmed) =>
+        trimmed.Length >= 2
+        && trimmed.EndsWith("]", StringComparison.Ordinal)
+        && trimmed.Substring(1, trimmed.Length - 2).Trim().Length == 0;
 
     private static bool TryJsonStringList(string raw, out List<string>? list)
     {
