@@ -9,8 +9,7 @@ namespace pyRevitLabs.Configurations.Ini.Tests;
 /// <summary>
 /// Covers the list encodings that reach userextensions and environment.sources:
 /// canonical JSON, JSON whose legacy Windows paths carry unescaped backslashes,
-/// and the legacy Python single-quoted literal. Ported from the loader's
-/// PythonListParser tests when that decode path moved into the Ini backend.
+/// and the legacy Python single-quoted literal.
 /// </summary>
 public class ListDecodingTests
 {

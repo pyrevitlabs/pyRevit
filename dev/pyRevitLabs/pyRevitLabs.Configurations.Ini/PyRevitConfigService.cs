@@ -32,10 +32,10 @@ public static class PyRevitConfigService
     /// <summary>
     /// Ensures the INI-backed build factory is registered with the store so the
     /// first caller (loader or CLI) establishes the shared discovery. Gated on the
-    /// store's live factory state rather than a one-shot flag, so a
-    /// <see cref="PyRevitConfigStore.Reset"/> (e.g. test isolation) is recoverable:
-    /// the next access re-installs the factory instead of leaving the store empty.
-    /// An already-installed factory is never replaced.
+    /// store's live factory state, so a <see cref="PyRevitConfigStore.Reset"/>
+    /// (e.g. test isolation) is recoverable: the next access re-installs the
+    /// factory instead of leaving the store empty. An already-installed factory
+    /// is never replaced.
     /// </summary>
     public static void EnsureRegistered()
     {
@@ -88,8 +88,8 @@ public static class PyRevitConfigService
 
     private static IConfigurationService BuildConfigService(string configurationName)
     {
-        // Repair a machine install whose settings were split across %APPDATA% and
-        // %ProgramData% before the config store honored install scope.
+        // Repair a machine install whose settings are split across %APPDATA% and
+        // %ProgramData%.
         MigrateSplitAdminConfigIfNeeded();
 
         string localConfig = PyRevitInstallScope.GetLocalConfigFilePath();
@@ -147,8 +147,8 @@ public static class PyRevitConfigService
 
     /// <summary>
     /// One-time repair for machine installs whose clone registry and per-extension
-    /// settings were written to %APPDATA% (per-user) before the config store
-    /// honored install scope. On an all-users install it promotes a lone per-user
+    /// settings live in the %APPDATA% (per-user) config rather than the machine
+    /// config. On an all-users install it promotes a lone per-user
     /// config to %ProgramData%, or merges the clone registry and any missing
     /// extension sections into an existing %ProgramData% config. No-op otherwise.
     /// </summary>

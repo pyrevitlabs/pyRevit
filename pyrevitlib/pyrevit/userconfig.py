@@ -128,8 +128,8 @@ class _SectionCompatWrapper(object):
         if name in self._INTERNAL_ATTRS:
             object.__setattr__(self, name, value)
             return
-        # A typed section property is written through to the shared store 
-        # save_changes flushes once at the end.
+        # A typed section property is written through to the shared store;
+        # save_changes flushes it to disk once at the end.
         if value is not None \
                 and self._csharp.GetType().GetProperty(name) is not None:
             pending = type(self._csharp)()
@@ -768,6 +768,6 @@ try:
 except Exception as install_root_ex:
     mlogger.debug('Could not set runtime install root: %s', install_root_ex)
 
-# location for default pyRevit config files (skip when in doc/no-doc mode if present)
+# Skipped in doc mode, where no configuration backend is available.
 if not getattr(EXEC_PARAMS, 'doc_mode', False):
     user_config = PyRevitConfig(PyRevit.PyRevitConfigs.GetConfigFile())

@@ -9,11 +9,10 @@ using pyRevitLabs.Configurations.Ini.Extensions;
 namespace pyRevitExtensionParserTester
 {
     /// <summary>
-    /// Get-after-set coverage for the CLI configuration facade (PyRevitConfigs),
-    /// the largest untested surface of the config-store rewrite. Each setter must
-    /// write the intended section/key and the matching getter must read it back;
-    /// a fresh read of the file proves the value reached disk, not just the live
-    /// snapshot.
+    /// Get-after-set coverage for the CLI configuration facade (PyRevitConfigs).
+    /// Each setter must write the intended section/key and the matching getter
+    /// must read it back; a fresh read of the file proves the value reached
+    /// disk, not just the live snapshot.
     ///
     /// The facade resolves its service through the process-wide store. These tests
     /// take that global over with a temp-file factory (the same SetFactory seam the

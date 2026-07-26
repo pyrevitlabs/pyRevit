@@ -80,8 +80,6 @@ class ConfigSection(object):
             the decoded option value, or ``default_value`` when unset
         """
         value = self.__configuration.GetRawValueOrDefault(self.__section_name, op_name, None)
-        # Only a missing key is "unset"; an explicitly stored empty string is a
-        # real value and must not fall back to the default.
         if value is None:
             return default_value
         try:

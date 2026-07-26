@@ -5,11 +5,11 @@ using pyRevitLabs.Configurations.Ini;
 namespace pyRevitLabs.Configurations.Ini.Tests;
 
 /// <summary>
-/// Covers the #3441 split-config repair: on a machine install whose clone
-/// registry and per-extension settings were written to the per-user config,
-/// merge the clone registry and any missing extension sections into the
-/// machine config. Operates on explicit temp files, so it needs no install-scope
-/// state and is safe to run in parallel.
+/// Covers the split-config repair: on a machine install whose clone registry
+/// and per-extension settings live in the per-user config, merge the clone
+/// registry and any missing extension sections into the machine config.
+/// Operates on explicit temp files, so it needs no install-scope state and is
+/// safe to run in parallel.
 /// </summary>
 public class PyRevitConfigServiceMigrationTests
 {

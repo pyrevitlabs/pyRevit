@@ -291,7 +291,7 @@ public class GoldenFileFidelityTests
         Assert.NotNull(service.Environment.Clones);     // empty-collection default
         Assert.Empty(service.Environment.Clones!);
 
-        // no-default primitives now resolve to their off/empty/zero defaults on read
+        // no-default primitives resolve to their off/empty/zero defaults on read
         Assert.False(service.Core.BinCache);            // [DefaultValue(false)]
         Assert.False(service.Core.CheckUpdates);        // [DefaultValue(false)]
         Assert.Equal(0, service.Core.CpythonEngineVersion); // [DefaultValue(0)]

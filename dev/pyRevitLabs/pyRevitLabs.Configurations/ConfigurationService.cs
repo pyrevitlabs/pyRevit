@@ -9,11 +9,21 @@ using pyRevitLabs.Configurations.Sections;
 
 namespace pyRevitLabs.Configurations;
 
+/// <summary>
+/// Default <see cref="IConfigurationService"/>: layers the registered
+/// configurations, materializes typed section records from them by reflecting
+/// over the section attributes, and caches those records until a write advances
+/// the backing store. Build one with <see cref="ConfigurationBuilder"/>.
+/// </summary>
 public sealed class ConfigurationService : IConfigurationService
 {
     private readonly List<ConfigurationName> _names;
     private readonly IDictionary<string, IConfiguration> _configurations;
 
+    /// <summary>
+    /// Name of the configuration every reader falls back to. An override
+    /// registered under another name (typically a Revit version) layers over it.
+    /// </summary>
     public const string DefaultConfigurationName = "Default";
 
     internal ConfigurationService(bool readOnly,
@@ -32,14 +42,18 @@ public sealed class ConfigurationService : IConfigurationService
         return new ConfigurationService(readOnly, names, configurations);
     }
 
+    /// <inheritdoc />
     public bool ReadOnly { get; }
 
+    /// <inheritdoc />
     public IEnumerable<string> ConfigurationNames => _configurations.Keys;
 
+    /// <inheritdoc />
     public IEnumerable<IConfiguration> Configurations => _names
         .Select(item => _configurations[item.Name!])
         .ToArray();
 
+    /// <inheritdoc />
     public IConfiguration this[string configurationName]
     {
         get
@@ -61,16 +75,19 @@ public sealed class ConfigurationService : IConfigurationService
     private TelemetrySection _telemetry = new();
     private EnvironmentSection _environment = new();
 
+    /// <inheritdoc />
     public CoreSection Core { get { EnsureSnapshots(); return _core; } }
+
+    /// <inheritdoc />
     public RoutesSection Routes { get { EnsureSnapshots(); return _routes; } }
+
+    /// <inheritdoc />
     public TelemetrySection Telemetry { get { EnsureSnapshots(); return _telemetry; } }
+
+    /// <inheritdoc />
     public EnvironmentSection Environment { get { EnsureSnapshots(); return _environment; } }
 
-    /// <summary>
-    /// Forces the typed section snapshots to be rebuilt on next access. Writes
-    /// made through this service or its configurations are picked up on their
-    /// own, so this is only needed when a configuration is replaced wholesale.
-    /// </summary>
+    /// <inheritdoc />
     public void ReloadLoadConfigurations()
     {
         lock (_snapshotLock)
@@ -106,6 +123,7 @@ public sealed class ConfigurationService : IConfigurationService
         }
     }
 
+    /// <inheritdoc />
     public T GetSection<T>()
     {
         Type configurationType = typeof(T);
@@ -116,6 +134,7 @@ public sealed class ConfigurationService : IConfigurationService
     // plus its type suffix; the .extension form takes precedence over .lib.
     private static readonly string[] ExtensionSectionSuffixes = { ".extension", ".lib" };
 
+    /// <inheritdoc />
     public ExtensionSection? GetExtensionSection(string extensionName)
     {
         if (string.IsNullOrWhiteSpace(extensionName))
@@ -132,6 +151,7 @@ public sealed class ConfigurationService : IConfigurationService
         return null;
     }
 
+    /// <inheritdoc />
     public void SaveSection<T>(string configurationName, T sectionValue)
     {
         IConfiguration configuration = ResolveConfigurationForWrite(configurationName, sectionValue);
@@ -139,6 +159,7 @@ public sealed class ConfigurationService : IConfigurationService
         configuration.SaveConfiguration();
     }
 
+    /// <inheritdoc />
     public void ApplySection<T>(string configurationName, T sectionValue)
     {
         IConfiguration configuration = ResolveConfigurationForWrite(configurationName, sectionValue);
@@ -171,6 +192,7 @@ public sealed class ConfigurationService : IConfigurationService
                 + "changes cannot be saved.");
     }
 
+    /// <inheritdoc />
     public void SetSectionKeyValue<T>(string configurationName, string sectionName, string keyName, T keyValue)
     {
         if (keyValue == null)
@@ -194,6 +216,7 @@ public sealed class ConfigurationService : IConfigurationService
         configuration.SaveConfiguration();
     }
 
+    /// <inheritdoc />
     public T? GetSectionKeyValueOrDefault<T>(
         string configurationName,
         string sectionName,

@@ -12,10 +12,31 @@ namespace pyRevitLabs.Configurations;
 /// </summary>
 public sealed class ConfigurationMigrationResult
 {
+    /// <summary>True when the configuration was changed and written.</summary>
     public bool Migrated { get; }
+
+    /// <summary>
+    /// True when a repair was needed but skipped because the existing file could
+    /// not be backed up. Nothing was changed; the repair retries on a later load.
+    /// </summary>
     public bool BackupFailed { get; }
+
+    /// <summary>
+    /// Schema version found before the repair. Zero for a configuration that
+    /// carries no version stamp.
+    /// </summary>
     public int FromVersion { get; }
+
+    /// <summary>
+    /// Path of the backup taken before mutating, or null when there was no
+    /// existing file to back up.
+    /// </summary>
     public string? BackupPath { get; }
+
+    /// <summary>
+    /// Keys removed because their stored value could not be read. The affected
+    /// settings revert to their defaults, so a caller should surface these.
+    /// </summary>
     public IReadOnlyList<string> ResetKeys { get; }
 
     /// <summary>Keys rewritten from a legacy encoding to the canonical form.</summary>
@@ -43,6 +64,10 @@ public sealed class ConfigurationMigrationResult
 /// </summary>
 public static class ConfigurationMigrator
 {
+    /// <summary>
+    /// Schema version this build writes. A configuration stamped with it is not
+    /// rescanned for version reasons, though corruption is still repaired.
+    /// </summary>
     public const int CurrentVersion = 1;
 
     private const string VersionSection = "core";
@@ -69,6 +94,7 @@ public static class ConfigurationMigrator
     /// Repairs the service's default configuration and stamps the schema version
     /// when needed. A clean, already-stamped config performs no write.
     /// </summary>
+    /// <exception cref="ArgumentNullException"><paramref name="service"/> is null.</exception>
     public static ConfigurationMigrationResult Migrate(IConfigurationService service)
     {
         if (service is null)

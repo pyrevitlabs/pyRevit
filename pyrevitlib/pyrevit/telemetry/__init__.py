@@ -265,8 +265,7 @@ def setup_telemetry(session_id=None):
     # default file path and name for telemetry
     telemetry_file_dir = user_config.telemetry_file_dir
     # persist=False: this is a startup-time push from user_config to env,
-    # not a value change. Avoids redundant round-trip writes that
-    # previously fed the escape-doubling bug.
+    # not a value change, so it must not write back to the config.
     set_telemetry_file_dir(telemetry_file_dir, persist=False)
 
     # check file telemetry config and setup destination

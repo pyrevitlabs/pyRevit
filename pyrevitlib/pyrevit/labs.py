@@ -39,7 +39,6 @@ clr.AddReference('pyRevitLabs.TargetApps.Revit')
 clr.AddReference('pyRevitLabs.PyRevit')
 clr.AddReference('PythonStubsBuilder')
 
-# configurations
 clr.AddReference('pyRevitLabs.Configurations')
 _perfmark("pyrevit.labs:after clr.AddReference block (14 pyRevitLabs DLLs)")
 import Nett

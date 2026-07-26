@@ -8,9 +8,22 @@ using pyRevitLabs.Json;
 
 namespace pyRevitLabs.Configurations.Ini;
 
+/// <summary>
+/// INI-backed <see cref="IConfiguration"/>. Values are stored as canonical JSON
+/// text, and reads tolerate the older encodings pyRevit configs carry in the
+/// wild: Python-style booleans, hex integers, bare unquoted strings, and
+/// single-quoted Python list literals. Parsing is deliberately forgiving —
+/// see <see cref="Create"/>.
+/// </summary>
 public sealed class IniConfiguration : ConfigurationBase
 {
+    /// <summary>File extension used for pyRevit configuration files.</summary>
     public static readonly string DefaultFileExtension = ".ini";
+
+    /// <summary>
+    /// Encoding used to read and write configuration files: UTF-8 without a
+    /// byte-order mark, so Python's configparser can read the same file.
+    /// </summary>
     public static readonly Encoding DefaultFileEncoding = new UTF8Encoding(false);
 
     private readonly IniData _iniFile;
@@ -21,10 +34,11 @@ public sealed class IniConfiguration : ConfigurationBase
     private static readonly Regex CommentPrefixRegex = new(@"^\s*[#;](.*)", RegexOptions.Compiled);
 
     /// <summary>
-    /// Create ini configuration instance.
+    /// Reads the file at <paramref name="configurationPath"/>, or starts empty
+    /// when it does not exist.
     /// </summary>
-    /// <param name="configurationPath">Configuration path.</param>
-    /// <param name="readOnly">Admin configurations </param>
+    /// <param name="configurationPath">Path to the INI file.</param>
+    /// <param name="readOnly">True to discard writes instead of persisting them.</param>
     private IniConfiguration(string configurationPath, bool readOnly)
         : base(configurationPath, readOnly)
     {
@@ -52,12 +66,20 @@ public sealed class IniConfiguration : ConfigurationBase
     }
 
     /// <summary>
-    /// Creates IniConfiguration.
+    /// Opens an INI-backed configuration, reading the file if it exists and
+    /// starting empty if it does not — so a fresh install can save settings
+    /// before any file is on disk.
+    /// <para>
+    /// Parsing never fails on a malformed file: unparseable lines are dropped
+    /// and the last value of a repeated key wins. A config that refused to load
+    /// would take down the loader, CLI, and script engines at once, and would
+    /// never reach the migrator that repairs it.
+    /// </para>
     /// </summary>
-    /// <param name="configurationPath">Configuration file path.</param>
-    /// <param name="readOnly">Mark file is readonly.</param>
-    /// <returns>Return new IniConfiguration.</returns>
-    /// <exception cref="ArgumentNullException">When configurationPath is null.</exception>
+    /// <param name="configurationPath">Path to the INI file. It need not exist.</param>
+    /// <param name="readOnly">True to discard writes instead of persisting them.</param>
+    /// <returns>A configuration over that file.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="configurationPath"/> is null.</exception>
     public static IConfiguration Create(string configurationPath, bool readOnly = default)
     {
         if (configurationPath is null)
@@ -95,11 +117,13 @@ public sealed class IniConfiguration : ConfigurationBase
                && _iniFile.Sections[sectionName].ContainsKey(keyName);
     }
 
+    /// <inheritdoc />
     protected override IEnumerable<string> GetSectionNamesImpl()
     {
         return _iniFile.Sections.Select(item => item.SectionName);
     }
 
+    /// <inheritdoc />
     protected override IEnumerable<string> GetSectionOptionNamesImpl(string sectionName)
     {
         return _iniFile.Sections[sectionName].Select(item => item.KeyName);
@@ -147,7 +171,8 @@ public sealed class IniConfiguration : ConfigurationBase
         string raw = _iniFile[sectionName][keyName];
         Type targetType = Nullable.GetUnderlyingType(typeObject) ?? typeObject;
 
-        // Unwrap JSON string quote so "0x0" becomes 0x0 for hex check
+        // Unwrap the JSON string quotes so the legacy-form checks below see the
+        // bare value (e.g. "0x0" as 0x0).
         string valueToParse = raw;
         if (valueToParse.Length >= 2 && valueToParse.StartsWith("\"", StringComparison.Ordinal) && valueToParse.EndsWith("\"", StringComparison.Ordinal))
             valueToParse = valueToParse.Substring(1, valueToParse.Length - 2);
@@ -170,7 +195,7 @@ public sealed class IniConfiguration : ConfigurationBase
         if (targetType == typeof(bool) && bool.TryParse(valueToParse, out bool boolValue))
             return boolValue;
 
-        // Tolerate legacy bare (unquoted) string values. (legacy support)
+        // Tolerate legacy bare (unquoted) string values.
         if (targetType == typeof(string))
         {
             try
@@ -217,8 +242,8 @@ public sealed class IniConfiguration : ConfigurationBase
     private static string EscapeBackslashes(string value) => value.Replace("\\", "\\\\");
 
     // Decodes a stored List<string> across every list encoding pyRevit has
-    // written. A bare (unbracketed) value is taken as a one-element list, matching
-    // how userextensions and environment.sources were historically read. A value
+    // written. A bare (unbracketed) value is taken as a one-element list, which is
+    // how userextensions and environment.sources spell a single path. A value
     // no encoding accounts for throws like any other undecodable value, so the
     // tolerant readers log it and fall back and the migrator can repair the key;
     // silently yielding an empty list would drop every configured extension.

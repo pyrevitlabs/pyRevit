@@ -63,8 +63,7 @@ public class SnapshotFreshnessTests : IDisposable
     // ApplySection (no flush), then an unrelated dynamic-section write (e.g.
     // tabcoloring) bumps the store's revision and rebuilds the typed snapshots
     // mid-save. A single flush at the end must still persist every typed edit,
-    // across all three typed sections — the snapshot-mutation path used to drop
-    // them here.
+    // across all three typed sections.
     [Fact]
     public void ApplySectionAcrossSections_SurvivesInterveningDynamicWrite_OnSingleFlush()
     {

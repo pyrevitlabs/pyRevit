@@ -5,9 +5,9 @@ Exercises the encode/decode logic in :mod:`pyrevit.coreutils.configparser`
 (``ConfigSection`` / ``ConfigSections``), which every script touches through
 ``script.get_config()``, and the matching surface on
 ``userconfig._SectionCompatWrapper``, which extensions reach through
-``user_config.core``. The C# store already has parity/encoding coverage; the
-untested risk lives in the Python side: the JSON round-trip, the legacy
-single-quote fallback, and the missing-key-vs-stored-empty-string distinction.
+``user_config.core``. Covers the Python side of the bridge: the JSON
+round-trip, the legacy single-quote fallback, and the
+missing-key-vs-stored-empty-string distinction.
 
 A dict-backed fake ``IConfiguration`` models the C# contract (raw strings in,
 ``None`` only for a missing key) so the tests are hermetic: they never touch the

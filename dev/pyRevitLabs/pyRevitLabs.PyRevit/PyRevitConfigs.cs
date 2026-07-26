@@ -42,7 +42,6 @@ namespace pyRevitLabs.PyRevit
         /// cached for the process. Call <see cref="ReloadConfig"/> after a settings
         /// change to force the next access to re-read from disk.
         /// </summary>
-        /// <returns>Returns admin config if admin config exists and readonly and user config not found.</returns>
         public static IConfigurationService GetConfigFile(string overrideName = default)
             => PyRevitConfigService.GetShared(overrideName);
 
@@ -110,9 +109,11 @@ namespace pyRevitLabs.PyRevit
         }
 
         /// <summary>
-        /// Removes user config file.
+        /// Deletes the user config file and drops the cached service, so the
+        /// next access rebuilds from a fresh config. Does nothing when no file
+        /// is present.
         /// </summary>
-        /// <exception cref="PyRevitException"></exception>
+        /// <exception cref="PyRevitException">The file exists but could not be deleted.</exception>
         public static void DeleteConfig()
         {
             PyRevitConfigService.Reload();

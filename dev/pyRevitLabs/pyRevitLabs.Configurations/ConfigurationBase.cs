@@ -3,17 +3,36 @@ using pyRevitLabs.Configurations.Exceptions;
 
 namespace pyRevitLabs.Configurations;
 
+/// <summary>
+/// Format-independent half of <see cref="IConfiguration"/>: argument validation,
+/// read-only enforcement, revision tracking, and the tolerant-read fallback. A
+/// backend derives from this and implements the <c>*Impl</c> members against its
+/// own file format, and can rely on every <c>*Impl</c> call having been
+/// validated first.
+/// </summary>
 public abstract class ConfigurationBase : IConfiguration
 {
+    /// <summary>Path to the backing file, as supplied to the constructor.</summary>
     protected readonly string _configurationPath;
 
+    /// <summary>
+    /// Initializes the shared state for a backend.
+    /// </summary>
+    /// <param name="configurationPath">Path to the backing file. It need not exist yet.</param>
+    /// <param name="readOnly">
+    /// True to make <see cref="SaveConfiguration()"/> discard changes instead of
+    /// writing them, used for an admin-locked configuration.
+    /// </param>
     protected ConfigurationBase(string configurationPath, bool readOnly)
     {
         _configurationPath = configurationPath;
         ReadOnly = readOnly;
     }
 
+    /// <inheritdoc />
     public bool ReadOnly { get; }
+
+    /// <inheritdoc />
     public string ConfigurationPath => _configurationPath;
 
     private long _revision;
@@ -23,6 +42,7 @@ public abstract class ConfigurationBase : IConfiguration
 
     private void MarkChanged() => Interlocked.Increment(ref _revision);
 
+    /// <inheritdoc />
     public void SaveConfiguration()
     {
         if (ReadOnly)
@@ -33,6 +53,7 @@ public abstract class ConfigurationBase : IConfiguration
         SaveConfigurationImpl();
     }
 
+    /// <inheritdoc />
     public void SaveConfiguration(string configurationPath)
     {
         if (configurationPath == null)
@@ -59,11 +80,13 @@ public abstract class ConfigurationBase : IConfiguration
         return HasSectionKeyImpl(sectionName, keyName);
     }
 
+    /// <inheritdoc />
     public IEnumerable<string> GetSectionNames()
     {
         return GetSectionNamesImpl();
     }
 
+    /// <inheritdoc />
     public IEnumerable<string> GetSectionOptionNames(string sectionName)
     {
         if (!HasSection(sectionName))
@@ -87,6 +110,7 @@ public abstract class ConfigurationBase : IConfiguration
         return true;
     }
 
+    /// <inheritdoc />
     public bool RemoveSection(string sectionName)
     {
         if (string.IsNullOrWhiteSpace(sectionName))
@@ -167,6 +191,7 @@ public abstract class ConfigurationBase : IConfiguration
         }
     }
 
+    /// <inheritdoc />
     public object? GetValueOrDefault(Type typeObject, string sectionName, string keyName, object? defaultValue = default)
     {
         if (string.IsNullOrWhiteSpace(sectionName))
@@ -258,22 +283,49 @@ public abstract class ConfigurationBase : IConfiguration
         MarkChanged();
     }
 
+    /// <summary>Writes the current state to <see cref="ConfigurationPath"/>. Called only when writable.</summary>
     protected abstract void SaveConfigurationImpl();
+
+    /// <summary>Writes the current state to an explicit path, creating the directory if needed.</summary>
     protected abstract void SaveConfigurationImpl(string configurationPath);
 
+    /// <summary>Whether the section exists in the backing store.</summary>
     protected abstract bool HasSectionImpl(string sectionName);
+
+    /// <summary>Whether the key exists in the section. Called without a prior section-existence check.</summary>
     protected abstract bool HasSectionKeyImpl(string sectionName, string keyName);
 
+    /// <summary>Every section name in the backing store.</summary>
     protected abstract IEnumerable<string> GetSectionNamesImpl();
+
+    /// <summary>Key names in a section that is known to exist.</summary>
     protected abstract IEnumerable<string> GetSectionOptionNamesImpl(string sectionName);
 
+    /// <summary>Adds a section that is known not to exist. Returns false when the backend declines.</summary>
     protected abstract bool AddSectionImpl(string sectionName);
+
+    /// <summary>Removes a section that is known to exist. Returns false when the backend declines.</summary>
     protected abstract bool RemoveSectionImpl(string sectionName);
+
+    /// <summary>Removes a key that is known to exist. Returns false when the backend declines.</summary>
     protected abstract bool RemoveOptionImpl(string sectionName, string keyName);
 
+    /// <summary>
+    /// Encodes and stores a non-null value, creating the section and key as
+    /// needed. The encoding must round-trip through <see cref="GetValueImpl"/>.
+    /// </summary>
     protected abstract void SetValueImpl<T>(string sectionName, string keyName, T value);
+
+    /// <summary>
+    /// Decodes a stored value that is known to be present, to the requested
+    /// type. Throws when the value cannot be decoded; the caller turns that into
+    /// either a thrown exception or a default, depending on the entry point.
+    /// </summary>
     protected abstract object GetValueImpl(Type typeObject, string sectionName, string keyName);
 
+    /// <summary>Returns the stored value text for a key that is known to be present, undecoded.</summary>
     protected abstract string GetRawValueImpl(string sectionName, string keyName);
+
+    /// <summary>Stores value text verbatim, creating the section and key as needed.</summary>
     protected abstract void SetRawValueImpl(string sectionName, string keyName, string rawValue);
 }

@@ -11,10 +11,13 @@ namespace pyRevitLabs.Configurations.Ini;
 /// </summary>
 public static class PyRevitConfigPaths
 {
+    /// <summary>File name used when creating a configuration that does not exist yet.</summary>
     public static string DefaultConfigsFileName => PyRevitLabsConsts.DefaultConfigsFileName;
 
+    /// <summary>Per-user pyRevit directory under %APPDATA%.</summary>
     public static string PyRevitAppDataPath => PyRevitLabsConsts.PyRevitPath;
 
+    /// <summary>All-users pyRevit directory under %ProgramData%.</summary>
     public static string PyRevitProgramDataPath => PyRevitLabsConsts.PyRevitProgramDataPath;
 
     /// <summary>
