@@ -11,14 +11,25 @@ class ConfigSection(object):
     Options can be accessed either as attributes (``section.option``) or
     through the explicit ``get_option``/``set_option`` methods. Values are
     stored as JSON and decoded tolerantly on read.
+
+    Args:
+        section_name (str): canonical name of the section
+        configuration: the backing ``IConfiguration``, or a zero-argument
+            callable returning it. A callable keeps a section usable after the
+            backing store is replaced, so a section handed to a script does not
+            become an orphan that silently discards its edits.
     """
 
     def __init__(self, section_name, configuration):
         self.__section_name = section_name
-        self.__configuration = configuration
+        self.__configuration_source = configuration
+
+    def __config(self):
+        source = self.__configuration_source
+        return source() if callable(source) else source
 
     def __iter__(self):
-        for option_name in self.__configuration.GetSectionOptionNames(self.__section_name):
+        for option_name in self.__config().GetSectionOptionNames(self.__section_name):
             yield option_name
 
     def __str__(self):
@@ -37,8 +48,9 @@ class ConfigSection(object):
         return self.get_option(param_name)
 
     def __setattr__(self, param_name, value):
-        # Skip internal storage so __init__ can set __section_name and __configuration
-        if param_name in ('_ConfigSection__section_name', '_ConfigSection__configuration'):
+        # Skip internal storage so __init__ can set its own attributes
+        if param_name in ('_ConfigSection__section_name',
+                          '_ConfigSection__configuration_source'):
             object.__setattr__(self, param_name, value)
         else:
             return self.set_option(param_name, value)
@@ -62,7 +74,7 @@ class ConfigSection(object):
         Returns:
             (bool): whether the option exists
         """
-        return self.__configuration.HasSectionKey(self.__section_name, option_name)
+        return self.__config().HasSectionKey(self.__section_name, option_name)
 
     def get_option(self, op_name, default_value=None):
         """Get the value of an option, decoding it tolerantly.
@@ -79,7 +91,7 @@ class ConfigSection(object):
         Returns:
             the decoded option value, or ``default_value`` when unset
         """
-        value = self.__configuration.GetRawValueOrDefault(self.__section_name, op_name, None)
+        value = self.__config().GetRawValueOrDefault(self.__section_name, op_name, None)
         if value is None:
             return default_value
         try:
@@ -99,7 +111,7 @@ class ConfigSection(object):
             op_name (str): name of the option
             value: value to store
         """
-        self.__configuration.SetRawValue(
+        self.__config().SetRawValue(
             self.__section_name, op_name,
             json.dumps(value, separators=(',', ':'), ensure_ascii=False))
 
@@ -112,7 +124,7 @@ class ConfigSection(object):
         Returns:
             (bool): whether an option was removed
         """
-        return self.__configuration.RemoveOption(self.__section_name, option_name)
+        return self.__config().RemoveOption(self.__section_name, option_name)
 
     def has_subsection(self, section_name):
         """Check if section has any subsections."""
@@ -122,8 +134,8 @@ class ConfigSection(object):
         """Add subsection to section."""
         canonical_name = coreutils.make_canonical_name(
             self.__section_name, section_name)
-        self.__configuration.AddSection(canonical_name)
-        return ConfigSection(canonical_name, self.__configuration)
+        self.__config().AddSection(canonical_name)
+        return ConfigSection(canonical_name, self.__configuration_source)
 
     def get_subsections(self):
         """Return all subsections nested under this section.
@@ -132,9 +144,9 @@ class ConfigSection(object):
             (list[ConfigSection]): the nested subsections
         """
         subsections = []
-        for section_name in self.__configuration.GetSectionNames():
+        for section_name in self.__config().GetSectionNames():
             if section_name.startswith(self.__section_name + '.'):
-                subsec = ConfigSection(section_name, self.__configuration)
+                subsec = ConfigSection(section_name, self.__configuration_source)
                 subsections.append(subsec)
         return subsections
 
@@ -158,10 +170,16 @@ class ConfigSections(object):
 
     Sections can be reached either as attributes (``sections.core``) or
     through the explicit section methods. Iterating yields section names.
+
+    Args:
+        configuration_service: the backing ``IConfigurationService``, or a
+            zero-argument callable returning it. A callable lets the container
+            and every section it has already handed out follow a reload that
+            replaces the service.
     """
 
     def __init__(self, configuration_service):
-        self.__configuration_service = configuration_service
+        self.__service_source = configuration_service
 
     def __iter__(self):
         for section_name in self.__get_default_config().GetSectionNames():
@@ -190,9 +208,8 @@ class ConfigSections(object):
         Returns:
             (ConfigSection): the added section
         """
-        configuration = self.__get_default_config()
-        configuration.AddSection(section_name)
-        return ConfigSection(section_name, configuration)
+        self.__get_default_config().AddSection(section_name)
+        return ConfigSection(section_name, self.__get_default_config)
 
     def get_section(self, section_name):
         """Get the named config section.
@@ -206,11 +223,10 @@ class ConfigSections(object):
         Raises:
             AttributeError: if the section does not exist
         """
-        configuration = self.__get_default_config()
-        if not configuration.HasSection(section_name):
+        if not self.__get_default_config().HasSection(section_name):
             raise AttributeError(
                 'Section "{}" does not exist in config file.'.format(section_name))
-        return ConfigSection(section_name, configuration)
+        return ConfigSection(section_name, self.__get_default_config)
 
     def remove_section(self, section_name):
         """Remove the named section from the config.
@@ -221,4 +237,6 @@ class ConfigSections(object):
         self.__get_default_config().RemoveSection(section_name)
 
     def __get_default_config(self):
-        return self.__configuration_service[ConfigurationService.DefaultConfigurationName]
+        source = self.__service_source
+        service = source() if callable(source) else source
+        return service[ConfigurationService.DefaultConfigurationName]

@@ -285,6 +285,7 @@ public class GoldenFileFidelityTests
                 ConfigurationService.DefaultConfigurationName).Build();
 
         Assert.True(service.Core.RocketMode);          // [DefaultValue(true)]
+        Assert.True(service.Core.BinCache);            // [DefaultValue(true)], matches PyRevitConsts.ConfigsBinaryCacheDefault
         Assert.Null(service.Core.UserLocale);           // no default: unset means auto-detect from Revit UI language
         Assert.Equal(10, service.Core.StartupLogTimeout); // [DefaultValue(10)]
         Assert.Equal(48884, service.Routes.Port);       // [DefaultValue(48884)]
@@ -292,7 +293,6 @@ public class GoldenFileFidelityTests
         Assert.Empty(service.Environment.Clones!);
 
         // no-default primitives resolve to their off/empty/zero defaults on read
-        Assert.False(service.Core.BinCache);            // [DefaultValue(false)]
         Assert.False(service.Core.CheckUpdates);        // [DefaultValue(false)]
         Assert.Equal(0, service.Core.CpythonEngineVersion); // [DefaultValue(0)]
         Assert.Equal(0L, service.Core.MinHostDriveFreeSpace); // [DefaultValue(0L)] (long)

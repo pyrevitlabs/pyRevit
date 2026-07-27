@@ -254,6 +254,55 @@ class ConfigSectionsTests(unittest.TestCase):
         self.assertFalse(hasattr(self.sections, "absent"))
 
 
+class ConfigSectionReloadTests(unittest.TestCase):
+    """A section keeps writing to the live store after a reload swaps it.
+
+    ``script.get_config()`` hands a section to a script, which may hold it
+    across an unrelated ``user_config.reload()``. If the section stayed bound
+    to the replaced store, its edits would be flushed from the wrong object
+    and silently lost.
+    """
+
+    def setUp(self):
+        self.config = _FakeConfiguration()
+        self.service = _FakeConfigurationService(self.config)
+        self.sections = ConfigSections(lambda: self.service)
+
+    def _reload(self):
+        """Swap in a fresh store the way PyRevitConfig.reload does."""
+        self.config = _FakeConfiguration()
+        self.service = _FakeConfigurationService(self.config)
+
+    def test_section_writes_reach_the_store_that_replaced_the_original(self):
+        section = self.sections.add_section("mytool")
+        self._reload()
+        section.set_option("enabled", True)
+        self.assertEqual("true", self.config.GetRawValueOrDefault("mytool", "enabled"))
+
+    def test_section_reads_see_the_replacing_store(self):
+        section = self.sections.add_section("mytool")
+        section.set_option("enabled", True)
+        self._reload()
+        self.config.SetRawValue("mytool", "enabled", "false")
+        self.assertIs(False, section.get_option("enabled"))
+
+    def test_subsection_also_follows_the_reload(self):
+        subsection = self.sections.add_section("mytool").add_subsection("sub")
+        self._reload()
+        subsection.set_option("enabled", True)
+        self.assertEqual(
+            "true", self.config.GetRawValueOrDefault("mytool.sub", "enabled")
+        )
+
+    def test_direct_configuration_still_supported(self):
+        # ConfigSection must still accept a plain configuration object, which is
+        # what the C# service hands it outside the reload-aware path.
+        config = _FakeConfiguration()
+        section = ConfigSection("core", config)
+        section.set_option("key", "value")
+        self.assertEqual("value", section.get_option("key"))
+
+
 class ConfigSubsectionTests(unittest.TestCase):
     """A subsection is discoverable as soon as it is added."""
 

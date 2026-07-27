@@ -16,9 +16,9 @@ namespace pyRevitLabs.Configurations.Sections;
 [SectionName("core")]
 public sealed record CoreSection
 {
-    /// <summary>Whether extension metadata is cached in binary form between sessions. Default false.</summary>
+    /// <summary>Whether extension metadata is cached in binary form between sessions. Default true.</summary>
     [KeyName("bincache")]
-    [DefaultValue(false)]
+    [DefaultValue(true)]
     public bool? BinCache { get; set; }
 
     /// <summary>Whether commands marked beta are loaded into the UI. Default false.</summary>

@@ -159,12 +159,18 @@ class PyRevitConfig(object):
         # set log mode on the logger module based on
         # user settings (overriding the defaults)
         self.config_service = config_service
-        self.config_sections = ConfigSections(self.config_service)
+        # Hand the container an accessor rather than the service itself, so
+        # sections already handed to scripts follow a reload instead of holding
+        # a replaced service whose edits are never flushed.
+        self.config_sections = ConfigSections(self._current_config_service)
 
         self._update_env()
 
         self._admin = self.config_service.ReadOnly
         self.config_type = "Admin" if self.config_service.ReadOnly else "User"
+
+    def _current_config_service(self):
+        return self.config_service
 
     def _update_env(self):
         # update the debug level based on user config
@@ -676,11 +682,25 @@ class PyRevitConfig(object):
         return self._admin
 
     def save_changes(self):
-        """Save user config into associated config file."""
+        """Save user config into associated config file.
+
+        A failed write is logged rather than raised: settings are not worth
+        aborting a session load or a settings dialog over.
+        """
         if not self._admin:
             # Typed and dynamic section edits have already been written through
             # to the in-memory store; flush the whole default config to disk once.
-            self.config_service[ConfigurationService.DefaultConfigurationName].SaveConfiguration()
+            try:
+                self.config_service[
+                    ConfigurationService.DefaultConfigurationName
+                ].SaveConfiguration()
+            except Exception as save_err:
+                # Report the resolved path directly; the config_file property
+                # falls back to a path helper that creates files on disk, which
+                # must not run from an error handler.
+                mlogger.error(
+                    'Can not save user config to: %s | %s',
+                    self._get_default_config().ConfigurationPath, save_err)
 
             # adjust environment per user configurations
             self._update_env()
@@ -693,7 +713,6 @@ class PyRevitConfig(object):
         # across every consumer, not just this object.
         PyRevit.PyRevitConfigs.ReloadConfig()
         self.config_service = PyRevit.PyRevitConfigs.GetConfigFile()
-        self.config_sections = ConfigSections(self.config_service)
 
     @staticmethod
     def get_list_separator():

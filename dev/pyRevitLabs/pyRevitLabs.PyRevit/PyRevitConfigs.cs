@@ -417,7 +417,7 @@ namespace pyRevitLabs.PyRevit
         public static bool GetBinaryCaches()
         {
             IConfigurationService cfg = GetConfigFile();
-            return cfg.Core.BinCache ?? false;
+            return cfg.Core.BinCache ?? PyRevitConsts.ConfigsBinaryCacheDefault;
         }
 
         public static void SetBinaryCaches(bool state,
