@@ -193,12 +193,12 @@ public static class PyRevitConfigService
             var target = IniConfiguration.Create(targetPath);
             bool changed = false;
 
-            if (!target.HasSectionKey(EnvironmentSectionName, ClonesKeyName))
+            if (CountRegisteredClones(target) == 0 && CountRegisteredClones(source) > 0)
             {
                 string? clones = source.GetRawValueOrDefault(EnvironmentSectionName, ClonesKeyName, null);
-                if (clones != null && clones.Length > 0)
+                if (!string.IsNullOrEmpty(clones))
                 {
-                    target.SetRawValue(EnvironmentSectionName, ClonesKeyName, clones);
+                    target.SetRawValue(EnvironmentSectionName, ClonesKeyName, clones!);
                     changed = true;
                 }
             }
@@ -226,6 +226,29 @@ public static class PyRevitConfigService
         {
             ConfigurationDiagnostics.ReportWarning(
                 "Could not merge split machine config: " + ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Number of clones the config records, or -1 when the value is present but
+    /// will not decode. Unregistering the last clone leaves an empty map behind,
+    /// so the key alone does not prove the registry survived; the -1 case keeps
+    /// unreadable user data from being mistaken for an empty registry.
+    /// </summary>
+    private static int CountRegisteredClones(IConfiguration config)
+    {
+        if (!config.HasSectionKey(EnvironmentSectionName, ClonesKeyName))
+            return 0;
+
+        try
+        {
+            var clones = config.GetValue<Dictionary<string, string>>(
+                EnvironmentSectionName, ClonesKeyName);
+            return clones?.Count ?? 0;
+        }
+        catch
+        {
+            return -1;
         }
     }
 
