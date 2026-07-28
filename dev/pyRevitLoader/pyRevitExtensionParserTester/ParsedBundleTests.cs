@@ -682,6 +682,37 @@ is_beta: true
             }
         }
 
+        [Test]
+        public void TestNoButtonCommandsAreEmittedIntoGeneratedAssemblyCode()
+        {
+            var extensionDir = Path.Combine(Path.GetTempPath(), $"NoButton_{System.Guid.NewGuid():N}.extension");
+            var bundleDir = Path.Combine(extensionDir, "Test.tab", "Tools.panel", "Hidden Command.nobutton");
+            Directory.CreateDirectory(bundleDir);
+
+            try
+            {
+                File.WriteAllText(Path.Combine(bundleDir, "script.py"), "print('ok')\n");
+
+                var parsedExtension = ParseInstalledExtensions(new[] { extensionDir }).First();
+                var noButtonCommand = parsedExtension.CollectCommandComponents().SingleOrDefault(c => c.Type == CommandComponentType.NoButton);
+                var codeGenerator = new pyRevitAssemblyBuilder.AssemblyMaker.RoslynCommandTypeGenerator(_mockLogger);
+                var generatedCode = codeGenerator.GenerateExtensionCode(parsedExtension, "2024");
+                var expectedClassName = noButtonCommand != null ? SanitizeClassName(noButtonCommand.UniqueId) : string.Empty;
+
+                Assert.That(noButtonCommand, Is.Not.Null, "NoButton commands should be collected for assembly generation.");
+                Assert.That(noButtonCommand!.DisplayName, Is.EqualTo("Hidden Command"));
+                Assert.That(generatedCode, Does.Contain($"public class {expectedClassName} : ScriptCommand"),
+                    "Generated assembly code should include a command class for NoButton bundles.");
+                Assert.That(generatedCode, Does.Contain("@\"" + Path.Combine(bundleDir, "script.py").Replace("\"", "\"\"") + "\""),
+                    "Generated assembly code should keep the NoButton script path.");
+            }
+            finally
+            {
+                if (Directory.Exists(extensionDir))
+                    Directory.Delete(extensionDir, true);
+            }
+        }
+
         private static IEnumerable<ParsedComponent> GetAllComponentsFlat(ParsedComponent component)
         {
             yield return component;

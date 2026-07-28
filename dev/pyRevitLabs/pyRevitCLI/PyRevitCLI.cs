@@ -395,7 +395,8 @@ namespace pyRevitCLI
                         destPath: TryGetValue("--dest"),
                         repoUrl: TryGetValue("<repo_url>"),
                         branchName: TryGetValue("--branch"),
-                        credentials: TryGetCredentials()
+                        credentials: TryGetCredentials(),
+                        persistCredentials: arguments["--persist-credentials"].IsTrue
                     );
 
                 else
