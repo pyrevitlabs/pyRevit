@@ -157,35 +157,76 @@ public static class PyRevitConfigService
         if (!PyRevitInstallScope.IsAllUsersInstall())
             return;
 
-        string appDataConfig = PyRevitConfigPaths.UserConfigFilePath;
-        if (!File.Exists(appDataConfig))
+        RepairSplitAdminConfig(
+            PyRevitConfigPaths.UserConfigFilePath, PyRevitConfigPaths.AdminConfigFilePath);
+    }
+
+    /// <summary>
+    /// The repair itself, over explicit paths so it can be exercised without
+    /// install-scope state. Retires the per-user config once its contents are in
+    /// the machine config, which is what makes the repair run once rather than on
+    /// every load.
+    /// </summary>
+    internal static void RepairSplitAdminConfig(string userConfigPath, string machineConfigPath)
+    {
+        if (!File.Exists(userConfigPath))
             return;
 
-        string programDataConfig = PyRevitConfigPaths.AdminConfigFilePath;
-
-        if (!File.Exists(programDataConfig))
+        if (!File.Exists(machineConfigPath))
         {
             try
             {
-                string? dir = Path.GetDirectoryName(programDataConfig);
+                string? dir = Path.GetDirectoryName(machineConfigPath);
                 if (!string.IsNullOrEmpty(dir))
                     Directory.CreateDirectory(dir);
-                File.Copy(appDataConfig, programDataConfig);
+                File.Copy(userConfigPath, machineConfigPath);
             }
             catch (Exception ex)
             {
                 ConfigurationDiagnostics.ReportWarning(
                     "Could not promote per-user config to the machine config: " + ex.Message);
+                return;
             }
+
+            RetireSplitUserConfig(userConfigPath);
             return;
         }
 
-        MergeAdminConfigFiles(appDataConfig, programDataConfig);
+        if (MergeAdminConfigFiles(userConfigPath, machineConfigPath))
+            RetireSplitUserConfig(userConfigPath);
+    }
+
+    // Renames the per-user config aside once the machine config carries its
+    // settings. Without this the merge re-runs on every load, and a section
+    // deliberately removed from the machine config is restored from this file
+    // the next time pyRevit starts. A rename that fails leaves the file in place
+    // and the repair retries on a later load.
+    private static void RetireSplitUserConfig(string userConfigPath)
+    {
+        string retiredPath = userConfigPath
+            + ".split-admin." + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".bak";
+
+        try
+        {
+            File.Move(userConfigPath, retiredPath);
+        }
+        catch (Exception ex)
+        {
+            ConfigurationDiagnostics.ReportWarning(
+                "Merged the per-user config into the machine config but could not retire "
+                + userConfigPath + ": " + ex.Message + ". The merge will run again on a later load.");
+            return;
+        }
+
+        ConfigurationDiagnostics.ReportInfo(
+            "Merged per-user config into the machine config; the original was kept at "
+            + retiredPath + ".");
     }
 
     // Copies the clone registry (when absent) and any per-extension sections the
-    // machine config is missing from the split per-user config.
-    internal static void MergeAdminConfigFiles(string sourcePath, string targetPath)
+    // machine config is missing from the split per-user config. Returns whether the
+    // merge completed; a merge with nothing left to copy still counts as complete.
+    internal static bool MergeAdminConfigFiles(string sourcePath, string targetPath)
     {
         try
         {
@@ -221,11 +262,14 @@ public static class PyRevitConfigService
 
             if (changed)
                 target.SaveConfiguration();
+
+            return true;
         }
         catch (Exception ex)
         {
             ConfigurationDiagnostics.ReportWarning(
                 "Could not merge split machine config: " + ex.Message);
+            return false;
         }
     }
 

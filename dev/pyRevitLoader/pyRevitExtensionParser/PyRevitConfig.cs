@@ -316,7 +316,9 @@ namespace pyRevitExtensionParser
         }
 
         /// <summary>
-        /// Parses booleans from config values (json-style plus common variants).
+        /// Parses a stored boolean, ignoring surrounding whitespace and the JSON or
+        /// Python-literal quotes a value may carry. Accepts the same spellings as the
+        /// shared configuration service, so the two agree on every value.
         /// </summary>
         private static bool TryParseConfigBool(string raw, out bool result)
         {
@@ -332,26 +334,7 @@ namespace pyRevitExtensionParser
                 v = v.Substring(1, v.Length - 2).Trim();
             }
 
-            if (bool.TryParse(v, out result))
-                return true;
-
-            if (v.Equals("1", StringComparison.Ordinal) ||
-                v.Equals("yes", StringComparison.OrdinalIgnoreCase) ||
-                v.Equals("on", StringComparison.OrdinalIgnoreCase))
-            {
-                result = true;
-                return true;
-            }
-
-            if (v.Equals("0", StringComparison.Ordinal) ||
-                v.Equals("no", StringComparison.OrdinalIgnoreCase) ||
-                v.Equals("off", StringComparison.OrdinalIgnoreCase))
-            {
-                result = false;
-                return true;
-            }
-
-            return false;
+            return bool.TryParse(v, out result);
         }
     }
 

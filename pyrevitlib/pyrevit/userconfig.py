@@ -121,22 +121,55 @@ class _SectionCompatWrapper(object):
     def remove_option(self, option_name):
         return self._config.RemoveOption(self._section_name, option_name)
 
+    def has_option(self, option_name):
+        """Check if this section contains the given option.
+
+        Args:
+            option_name (str): name of the option
+
+        Returns:
+            (bool): whether the option exists
+        """
+        return self._config.HasSectionKey(self._section_name, option_name)
+
     def __getattr__(self, name):
-        return getattr(self._csharp, name)
+        # Internal attributes are assigned in __init__ and resolve without
+        # __getattr__; reaching here for one means the object is half-built, and
+        # consulting the config would recurse.
+        if name.startswith('_'):
+            raise AttributeError(name)
+
+        try:
+            return getattr(self._csharp, name)
+        except AttributeError:
+            pass
+
+        # A name the typed section does not declare is looked up as a raw
+        # option, so a key this schema does not model is still reachable.
+        if self.has_option(name):
+            return self.get_option(name)
+
+        raise AttributeError(
+            'Parameter does not exist in config file: {}'.format(name))
 
     def __setattr__(self, name, value):
         if name in self._INTERNAL_ATTRS:
             object.__setattr__(self, name, value)
             return
-        # A typed section property is written through to the shared store;
-        # save_changes flushes it to disk once at the end.
-        if value is not None \
-                and self._csharp.GetType().GetProperty(name) is not None:
-            pending = type(self._csharp)()
-            setattr(pending, name, value)
-            self._config_service.ApplySection(self._config_name, pending)
+
+        if self._csharp.GetType().GetProperty(name) is not None:
+            # A typed section property is written through to the shared store;
+            # save_changes flushes it to disk once at the end.
+            if value is not None:
+                pending = type(self._csharp)()
+                setattr(pending, name, value)
+                self._config_service.ApplySection(self._config_name, pending)
+            else:
+                setattr(self._csharp, name, value)
         else:
-            setattr(self._csharp, name, value)
+            # Mirrors __getattr__: a name outside the typed schema is stored as
+            # a raw option rather than rejected.
+            self.set_option(name, value)
 
 
 class PyRevitConfig(object):

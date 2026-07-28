@@ -7,6 +7,10 @@
 
         <IsPackable>false</IsPackable>
         <IsTestProject>true</IsTestProject>
+
+        <!-- Keep test assemblies out of the product bin, which is signed and
+             shipped wholesale by the installer. -->
+        <PermitDeploy>true</PermitDeploy>
     </PropertyGroup>
 
     <ItemGroup>
