@@ -320,17 +320,27 @@ class RevitActionHandler(UI.IExternalEventHandler):
     def __init__(self):
         self._queue = []
 
-    def queue(self, action, callback=None, window=None):
-        """Add an action (and optional WPF-thread callback) to the queue."""
-        self._queue.append((action, callback, window))
+    def queue(self, action, callback=None, window=None,
+              callback_on_error=True):
+        """Add an action (and optional WPF-thread callback) to the queue.
+
+        callback_on_error=False skips the callback when the action raises.
+        Use it whenever the callback would report success or discard state
+        (e.g. clearing a pending-changes flag, closing the window) — running
+        it after a failed action would silently claim work that never
+        happened.
+        """
+        self._queue.append((action, callback, window, callback_on_error))
 
     def Execute(self, app):
         """Called by Revit on the main thread when the event fires."""
         while self._queue:
-            action, callback, window = self._queue.pop(0)
+            action, callback, window, callback_on_error = self._queue.pop(0)
+            succeeded = True
             try:
                 action()
             except Exception as ex:
+                succeeded = False
                 logger.error("RevitActionHandler | %s" % ex)
                 try:
                     if window and window.IsLoaded:
@@ -339,7 +349,7 @@ class RevitActionHandler(UI.IExternalEventHandler):
                         )
                 except Exception as disp_ex:
                     logger.debug("Failed to display error in window | %s" % disp_ex)
-            if callback:
+            if callback and (succeeded or callback_on_error):
                 try:
                     if window and window.IsLoaded:
                         window.Dispatcher.Invoke(System.Action(ui_guard(callback)))
@@ -905,12 +915,15 @@ class KeynoteManagerWindow(forms.WPFWindow):
         except Exception:
             return False
 
-    def _revit_run(self, action, callback=None):
+    def _revit_run(self, action, callback=None, callback_on_error=True):
         """Queue an action to execute on Revit's main thread.
         Optional callback runs on the WPF thread after the action.
 
         The action is refused if the user switched to a different document
-        — otherwise transactions would silently modify the wrong model."""
+        — otherwise transactions would silently modify the wrong model.
+
+        Pass callback_on_error=False when the callback reports success or
+        discards state, so a failed action cannot masquerade as a good one."""
 
         def _doc_affine_action():
             if not self._is_owned_doc_active():
@@ -925,12 +938,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
             # are still inside the command's API context — run the action
             # directly.  (This holds for transactions; it does NOT hold for
             # PostCommand — see place_keynote.)
+            _succeeded = True
             try:
                 _doc_affine_action()
             except Exception as ex:
+                _succeeded = False
                 logger.error("KeynoteManager | action failed | %s", ex)
                 forms.alert(str(ex))
-            if callback:
+            if callback and (_succeeded or callback_on_error):
                 # Marshal the callback instead of calling it inline: when the
                 # caller is window_closing, an inline callback would re-enter
                 # Close() from inside the Closing handler, which WPF rejects
@@ -950,7 +965,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
             logger.debug("KeynoteManager | ExternalEvent unavailable; "
                          "action not queued")
             return
-        self._ext_handler.queue(_doc_affine_action, callback, self)
+        self._ext_handler.queue(_doc_affine_action, callback, self,
+                                callback_on_error=callback_on_error)
         self._ext_event.Raise()
 
     # =========================================================================
@@ -2511,6 +2527,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
         postcmd = self.postable_keynote_command
 
         def _do():
+            # clear first — a stale value from a previous click would
+            # otherwise be reported if this attempt fails early
+            self._place_result = None
             keynotes_cat = revit.query.get_category(
                 DB.BuiltInCategory.OST_KeynoteTags)
             if not keynotes_cat:
@@ -2554,7 +2573,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
             except Exception:
                 pass
 
-        self._revit_run(_do, callback=_on_placed)
+        # callback_on_error=False: don't refresh/report as if a placement
+        # happened when the PostCommand setup itself failed
+        self._revit_run(_do, callback=_on_placed, callback_on_error=False)
 
     # =========================================================================
     # FILE OPERATIONS
@@ -2641,7 +2662,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 self._needs_update = False
                 forms.alert("Revit model updated successfully.", title="Success")
 
-            self._revit_run(_do_update, callback=_on_update_complete)
+            # callback_on_error=False: never clear _needs_update or claim
+            # success if the update transaction failed
+            self._revit_run(_do_update, callback=_on_update_complete,
+                            callback_on_error=False)
         else:
             forms.alert("The Revit model is already up to date.", title="Up to Date")
 
@@ -2668,12 +2692,17 @@ class KeynoteManagerWindow(forms.WPFWindow):
                         revit.update.update_linked_keynotes(doc=revit.doc)
 
                 def _sync_done():
-                    # Reset the guard even if the sync failed, so a second
-                    # close attempt is never silently swallowed.
+                    # Only reached when the sync actually succeeded
+                    # (callback_on_error=False).  On failure the handler has
+                    # already alerted, _needs_update stays True and
+                    # _close_pending stays False, so the window remains open
+                    # and the next close attempt prompts again instead of
+                    # discarding an unsynced change.
                     self._close_pending = True
                     self._finalize_close()
 
-                self._revit_run(_do_update, callback=_sync_done)
+                self._revit_run(_do_update, callback=_sync_done,
+                                callback_on_error=False)
                 return
 
         # Proceed with cleanup
