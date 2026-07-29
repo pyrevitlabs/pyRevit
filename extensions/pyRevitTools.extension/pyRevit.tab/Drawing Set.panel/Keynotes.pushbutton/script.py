@@ -21,9 +21,11 @@ import os.path as op
 import shutil
 import math
 import uuid
+import json
 from collections import defaultdict, OrderedDict
 from natsort import natsorted
 
+from pyrevit import EXEC_PARAMS
 from pyrevit import HOST_APP
 from pyrevit import framework
 from pyrevit import coreutils
@@ -44,18 +46,92 @@ from pyrevit.interop import adc
 
 import keynotesdb as kdb
 
-# CRITICAL — DO NOT REMOVE.
-# This window is MODELESS: its WPF event handlers keep running long after
-# the pyRevit command returns.  Without a persistent engine, pyRevit wipes
-# every module-level global right after execution (IronPythonEngine.Execute
-# finally-block), and the next handler that touches a global raises
-# NameError straight into Revit's message pump = fatal Revit crash
-# (issue #3517).  bundle.yaml `engine: persistent: true` alone is NOT
-# honored by every loader/version, so the script constant must stay here.
-__persistentengine__ = True
+# =============================================================================
+# PERSISTENT ENGINE REQUIREMENT
+# =============================================================================
+# This window is MODELESS: its WPF event handlers keep running long after the
+# pyRevit command returns.  On a NON-persistent engine, pyRevit wipes every
+# module-level global as soon as the command returns (IronPythonEngine.Execute
+# finally-block), so the next handler that touches a global raises NameError
+# into Revit's message pump = fatal crash (issue #3517).
+#
+# The persistent engine is declared in bundle.yaml (`engine: persistent: true`)
+# — NOT with a `__persistentengine__` constant here.  bundle.yaml is the
+# authoritative route: it is honored unconditionally by both the legacy and the
+# C# loader, whereas inline script metadata is gated by the
+# `core.read_script_metadata` setting, is ignored by the legacy loader whenever
+# bundle.yaml yields metadata (genericcomps.py: `if not self.meta`), and is
+# deprecated for removal in pyRevit 7.x.  (A bundle.yaml that fails to PARSE
+# falls back to script constants on the legacy loader — one more reason the
+# runtime probe below is the real safety net rather than either declaration.)
+#
+# Declaring it is still not a guarantee at RUNTIME (a stale cached command
+# assembly, a bundle.yaml parse failure, or a future loader change can all
+# yield a non-persistent engine), so this script does not trust the
+# declaration — it reads the engine config the loader actually baked into this
+# command and degrades to a safe modal window if persistence is missing.
+# See _persistent_engine_state() and the entry point at the bottom.
 
 logger = script.get_logger()
 output = script.get_output()
+
+
+def _persistent_engine_state():
+    """Return the RESOLVED persistent-engine flag for this command.
+
+    Returns True (persistent), False (not persistent), or None (undetermined).
+    Reads the engineCfgs JSON the loader compiled into this command's wrapper,
+    so it reflects reality regardless of which metadata channel supplied it.
+    """
+    cfgs = None
+    # The engineCfgs JSON lives on ScriptRuntimeConfigs.EngineConfigs.  Try
+    # that first: EXEC_PARAMS.engine_cfgs reads ScriptRuntime.EngineConfigs,
+    # which does not exist on every build (it raises on 6.5.3), so it is only
+    # a secondary probe here.
+    try:
+        rt_cfgs = EXEC_PARAMS.script_runtime_cfgs
+        cfgs = rt_cfgs.EngineConfigs if rt_cfgs else None
+    except Exception:
+        cfgs = None
+    if not cfgs:
+        try:
+            cfgs = EXEC_PARAMS.engine_cfgs
+        except Exception:
+            cfgs = None
+    if not cfgs:
+        logger.debug("KeynoteManager | engine cfgs unavailable — "
+                     "persistent state undetermined")
+        return None
+
+    # tolerate a typed configs object instead of a JSON string
+    for _attr in ("persistent", "Persistent", "PersistentEngine"):
+        _val = getattr(cfgs, _attr, None)
+        if isinstance(_val, bool):
+            return _val
+
+    # materialize the text ONCE — str() on a CLR proxy can itself raise
+    try:
+        raw = str(cfgs)
+    except Exception:
+        return None
+    if not raw:
+        return None
+    try:
+        # NOTE: a missing "persistent" key must read as False, matching the
+        # runtime — IronPythonEngineConfigs.persistent defaults to false, so
+        # anything the runtime cannot read is treated as non-persistent and
+        # the scope IS wiped.  Failing closed here keeps us in step with it.
+        return bool(json.loads(raw).get("persistent", False))
+    except Exception:
+        pass
+    # tolerate any JSON shape change — probe the raw text
+    probe = raw.replace(" ", "").lower()
+    if '"persistent":true' in probe:
+        return True
+    if '"persistent":false' in probe:
+        return False
+    logger.debug("KeynoteManager | unrecognized engine cfgs: %s", raw)
+    return None
 
 
 # =============================================================================
@@ -616,8 +692,15 @@ class EditRecordWindow(forms.WPFWindow):
 class KeynoteManagerWindow(forms.WPFWindow):
     """Keynote manager with unified tree and hierarchy controls."""
 
-    def __init__(self, xaml_file_name, reset_config=False):
+    def __init__(self, xaml_file_name, reset_config=False, safe_mode=False):
         forms.WPFWindow.__init__(self, xaml_file_name)
+
+        # SAFE MODE = this command did not get a persistent engine, so the
+        # window must run MODAL (see the entry point).  While a modal dialog
+        # blocks, Revit does not pump ExternalEvents — but the command frame
+        # is still on the stack, so the Revit API is directly usable and
+        # queued actions can simply run inline instead.
+        self._modal_mode = safe_mode
 
         # Set Revit as the owner window — critical for modeless stability.
         # Without this, WPF's message pump collides with Revit's on focus
@@ -629,7 +712,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
             logger.debug("WindowInteropHelper failed | %s" % ex)
 
         # Modeless focus management — keep window always on top of Revit.
-        self.Topmost = True
+        # Pointless (and visually intrusive) for a modal safe-mode window.
+        self.Topmost = not self._modal_mode
 
         self._kfile = None
         self._kfile_handler = None
@@ -642,9 +726,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         # ExternalEvent is instance-owned: module-level creation would leak
         # one Revit-registered event per button click (fresh scope per run).
-        # Created here because ExternalEvent.Create requires an API context.
+        # It is created at the very END of __init__ (see below) so that no
+        # setup failure can leak a Revit-registered event: if __init__ aborts,
+        # the entry-point handler never receives the instance and therefore
+        # could never dispose it.
         self._ext_handler = RevitActionHandler()
-        self._ext_event = UI.ExternalEvent.Create(self._ext_handler)
+        self._ext_event = None
 
         self._determine_kfile()
         self._connect_kfile()
@@ -692,6 +779,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._update_full_tree()
         self._update_status_bar()
         self.search_tb.Focus()
+
+        # LAST step — everything that could abort __init__ has now succeeded,
+        # so this Revit-registered event cannot be orphaned.  Nothing above
+        # uses _revit_run, and the Loaded handler only fires after __init__.
+        # ExternalEvent.Create requires a valid API context, which holds here
+        # inside the command's execution frame.
+        self._ext_event = UI.ExternalEvent.Create(self._ext_handler)
 
     # =========================================================================
     # PROPERTIES
@@ -774,14 +868,16 @@ class KeynoteManagerWindow(forms.WPFWindow):
     # =========================================================================
 
     def _update_status_bar(self):
+        safe = " \u2014 SAFE MODE (no persistent engine)" \
+            if self._modal_mode else ""
         if self._kfile:
             fname = op.basename(self._kfile)
             handler = " ( ACC / FORMA )" if self._kfile_handler == "adc" else ""
-            self.statusLeft.Text = "{}{} \u2014 {}".format(
-                fname, handler, op.dirname(self._kfile)
+            self.statusLeft.Text = "{}{} \u2014 {}{}".format(
+                fname, handler, op.dirname(self._kfile), safe
             )
         else:
-            self.statusLeft.Text = "No keynote file loaded"
+            self.statusLeft.Text = "No keynote file loaded" + safe
 
         try:
             cats = self.all_categories if self._conn else []
@@ -824,6 +920,36 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     "the Keynote Manager.")
             action()
 
+        if self._modal_mode:
+            # Modal: ExternalEvents would never fire while we block, but we
+            # are still inside the command's API context — run the action
+            # directly.  (This holds for transactions; it does NOT hold for
+            # PostCommand — see place_keynote.)
+            try:
+                _doc_affine_action()
+            except Exception as ex:
+                logger.error("KeynoteManager | action failed | %s", ex)
+                forms.alert(str(ex))
+            if callback:
+                # Marshal the callback instead of calling it inline: when the
+                # caller is window_closing, an inline callback would re-enter
+                # Close() from inside the Closing handler, which WPF rejects
+                # ("Cannot ... call Close while a Window is closing") — the
+                # window would silently stay open.  BeginInvoke matches the
+                # modeless ordering; ShowDialog keeps this Dispatcher pumping.
+                try:
+                    self.Dispatcher.BeginInvoke(
+                        System.Action(ui_guard(callback)),
+                        Windows.Threading.DispatcherPriority.Background)
+                except Exception as cbex:
+                    logger.debug("Callback dispatch failed | %s", cbex)
+            return
+
+        if self._ext_event is None:
+            # window still initializing, or setup aborted — nothing to raise
+            logger.debug("KeynoteManager | ExternalEvent unavailable; "
+                         "action not queued")
+            return
         self._ext_handler.queue(_doc_affine_action, callback, self)
         self._ext_event.Raise()
 
@@ -1542,7 +1668,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self.rekeyBtn.IsEnabled = True
         self.removeBtn.IsEnabled = True
         self.findBtn.IsEnabled = is_kn
-        self.placeBtn.IsEnabled = is_kn
+        # placement is unavailable in safe (modal) mode — see place_keynote
+        self.placeBtn.IsEnabled = is_kn and not self._modal_mode
         self.caseBtn.IsEnabled = True
 
         # Hierarchy buttons
@@ -2359,6 +2486,24 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._revit_run(_do, callback=_update_status)
 
     def place_keynote(self, sender, args):
+        # NOT AVAILABLE IN SAFE (MODAL) MODE — and this is a hard block, not
+        # just a UX nicety.  PostCommandAndUpdateNewElementProperties both
+        # (a) PostCommands an interactive tool that cannot run while a modal
+        # dialog owns the UI and the command frame has not returned, and
+        # (b) arms pyRevit's CancelAllDialogs DialogBoxShowing hook, which is
+        # only ever unsubscribed from an Idling handler — and Idling never
+        # fires while a modal dialog blocks.  Left armed, it silently
+        # auto-confirms EVERY later TaskDialog, including the delete-keynote
+        # prompts = silent deletions from the shared keynote file.
+        if self._modal_mode:
+            forms.alert(
+                "Placing keynotes needs the modeless window, which requires "
+                "a persistent engine (see SAFE MODE in the status bar).\n\n"
+                "Close the Keynote Manager, then place the tag — or reload "
+                "pyRevit so the tool gets a persistent engine.",
+                title="Not available in Safe Mode")
+            return
+
         sel = self.selected_keynote
         if not sel:
             return
@@ -2404,7 +2549,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self._update_status_bar()
             # Re-assert visibility — Revit steals focus on PostCommand
             try:
-                self.Topmost = True
+                self.Topmost = not self._modal_mode
                 self.Activate()
             except Exception:
                 pass
@@ -2522,8 +2667,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     with revit.Transaction("Update Keynotes"):
                         revit.update.update_linked_keynotes(doc=revit.doc)
 
-                self._close_pending = True
-                self._revit_run(_do_update, callback=self._finalize_close)
+                def _sync_done():
+                    # Reset the guard even if the sync failed, so a second
+                    # close attempt is never silently swallowed.
+                    self._close_pending = True
+                    self._finalize_close()
+
+                self._revit_run(_do_update, callback=_sync_done)
                 return
 
         # Proceed with cleanup
@@ -2553,14 +2703,20 @@ class KeynoteManagerWindow(forms.WPFWindow):
             except Exception:
                 pass
             self._conn = None
-        try:
-            self._ext_event.Dispose()
-        except Exception:
-            pass
-        try:
-            envvars.set_pyrevit_env_var(KEYNOTEMGR_WINDOW_ENVVAR, None)
-        except Exception:
-            pass
+        if self._ext_event is not None:
+            try:
+                self._ext_event.Dispose()
+            except Exception:
+                pass
+            self._ext_event = None
+        # Only the modeless window owns the singleton handle — a safe-mode
+        # (modal) window never registers one, so it must not clear a live
+        # modeless window's handle either.
+        if not self._modal_mode:
+            try:
+                envvars.set_pyrevit_env_var(KEYNOTEMGR_WINDOW_ENVVAR, None)
+            except Exception:
+                pass
 
 
 # =============================================================================
@@ -2616,9 +2772,27 @@ for _cls, _names in _GUARDED_ENTRY_POINTS:
 # =============================================================================
 
 try:
+    # Is this command ACTUALLY running on a persistent engine?  Do not trust
+    # the declaration — read what the loader resolved (see the note at the
+    # top of this file).  True -> modeless (best UX).  False -> modal, which
+    # keeps the command frame alive for the window's whole lifetime and is
+    # therefore safe without a persistent engine.  None (undetermined) ->
+    # modeless, with ui_guard as the backstop.
+    _persistent = _persistent_engine_state()
+    _safe_mode = _persistent is False
+    if _safe_mode:
+        logger.warning(
+            "KeynoteManager | no persistent engine resolved for this "
+            "command — opening in safe (modal) mode.  Check that "
+            "bundle.yaml declares `engine: persistent: true` and reload "
+            "pyRevit; a stale cached command assembly can also cause this.")
+
     # Singleton: if already open, bring to front.  The handle lives in
     # pyRevit env-vars because module globals do not survive across
     # executions (fresh scope per click even on a persistent engine).
+    # The LOOKUP runs in both modes: a live modeless window from an earlier
+    # run must be reused (never orphaned) even if this run lands in safe
+    # mode.  Only the REGISTRATION is modeless-only.
     _existing = envvars.get_pyrevit_env_var(KEYNOTEMGR_WINDOW_ENVVAR)
     _needs_new = True
     if _existing:
@@ -2632,13 +2806,21 @@ try:
             pass
 
     if _needs_new:
-        envvars.set_pyrevit_env_var(KEYNOTEMGR_WINDOW_ENVVAR, None)
+        if not _safe_mode:
+            envvars.set_pyrevit_env_var(KEYNOTEMGR_WINDOW_ENVVAR, None)
         _new_window = KeynoteManagerWindow(
             xaml_file_name="KeynoteManagerWindow.xaml",
             reset_config=__shiftclick__,  # pylint: disable=undefined-variable
+            safe_mode=_safe_mode,
         )
-        envvars.set_pyrevit_env_var(KEYNOTEMGR_WINDOW_ENVVAR, _new_window)
-        _new_window.show(modal=False)
+        if _safe_mode:
+            _new_window.Title += "  [Safe Mode]"
+            # modal: blocks here until the user closes the window
+            _new_window.show(modal=True)
+        else:
+            envvars.set_pyrevit_env_var(
+                KEYNOTEMGR_WINDOW_ENVVAR, _new_window)
+            _new_window.show(modal=False)
 except KeynoteSetupError as kser:
     # Expected setup failures (no keynote file, ADC offline, locked file)
     envvars.set_pyrevit_env_var(KEYNOTEMGR_WINDOW_ENVVAR, None)

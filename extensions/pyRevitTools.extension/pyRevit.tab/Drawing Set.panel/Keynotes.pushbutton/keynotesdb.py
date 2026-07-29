@@ -404,7 +404,9 @@ def get_categories(conn):
                 key=x[CATEGORY_KEY_FIELD],
                 text=x[CATEGORY_TITLE_FIELD] or "",
                 parent_key="",
-                locked=x[CATEGORY_KEY_FIELD] in locked_records.keys(),
+                # direct dict membership: .keys() would materialize a new
+                # list per record on IronPython 2.7 (O(n^2) over the table)
+                locked=x[CATEGORY_KEY_FIELD] in locked_records,
                 owner=locked_records.get(x[CATEGORY_KEY_FIELD], ""),
                 children=[],
             )
@@ -427,7 +429,8 @@ def get_keynotes(conn):
                 key=x[KEYNOTES_KEY_FIELD],
                 text=x[KEYNOTES_TEXT_FIELD] or "",
                 parent_key=x[KEYNOTES_PARENTKEY_FIELD],
-                locked=x[KEYNOTES_KEY_FIELD] in locked_records.keys(),
+                # direct dict membership — see note in get_categories()
+                locked=x[KEYNOTES_KEY_FIELD] in locked_records,
                 owner=locked_records.get(x[KEYNOTES_KEY_FIELD], ""),
                 children=[],
             )
