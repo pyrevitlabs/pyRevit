@@ -342,11 +342,16 @@ class RevitActionHandler(UI.IExternalEventHandler):
             except Exception as ex:
                 succeeded = False
                 logger.error("RevitActionHandler | %s" % ex)
+                # ALWAYS surface the failure — the callback_on_error=False
+                # call sites rely on the user being told why nothing
+                # happened, so this must not be conditional on IsLoaded.
                 try:
                     if window and window.IsLoaded:
                         window.Dispatcher.Invoke(
                             System.Action(lambda e=str(ex): forms.alert(e))
                         )
+                    else:
+                        forms.alert(str(ex))
                 except Exception as disp_ex:
                     logger.debug("Failed to display error in window | %s" % disp_ex)
             if callback and (succeeded or callback_on_error):
@@ -369,6 +374,10 @@ class RevitActionHandler(UI.IExternalEventHandler):
 # pyRevit's cross-scope environment variables instead.
 KEYNOTEMGR_WINDOW_ENVVAR = "KEYNOTEMGR_ACTIVE_WINDOW"
 
+# How many times the user may retry picking a keynote file during setup
+# before _connect_kfile gives up (bounds the "Select Other" retry loop).
+MAX_KFILE_ATTEMPTS = 5
+
 
 # =============================================================================
 # HELPERS
@@ -385,6 +394,28 @@ def get_keynote_pcommands():
             ]
         )
     )
+
+
+def _is_enum(value, expected_name, enum_type=None):
+    """True if a .NET enum value matches expected_name.
+
+    Compares against the real enum member when the type is available and
+    falls back to the name string, so this keeps working if an enum moves
+    or is unavailable on a given Revit version.
+    """
+    if value is None:
+        return False
+    if enum_type is not None:
+        member = getattr(enum_type, expected_name, None)
+        if member is not None:
+            try:
+                return value == member
+            except Exception:
+                pass
+    try:
+        return str(value) == expected_name
+    except Exception:
+        return False
 
 
 def _find_siblings(flat_keynotes, target_parent_key):
@@ -944,7 +975,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
             except Exception as ex:
                 _succeeded = False
                 logger.error("KeynoteManager | action failed | %s", ex)
-                forms.alert(str(ex))
+                # wrapped so an alert failure cannot bypass the gate below
+                try:
+                    forms.alert(str(ex))
+                except Exception as disp_ex:
+                    logger.debug("Failed to display error | %s", disp_ex)
             if callback and (_succeeded or callback_on_error):
                 # Marshal the callback instead of calling it inline: when the
                 # caller is window_closing, an inline callback would re-enter
@@ -961,9 +996,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
             return
 
         if self._ext_event is None:
-            # window still initializing, or setup aborted — nothing to raise
-            logger.debug("KeynoteManager | ExternalEvent unavailable; "
+            # window still initializing, or setup aborted.  Be loud: a
+            # silent return here would leave e.g. a cancelled close with no
+            # work done and no explanation.
+            logger.error("KeynoteManager | ExternalEvent unavailable; "
                          "action not queued")
+            forms.alert("Keynote Manager cannot reach Revit right now.\n"
+                        "Please try again.")
             return
         self._ext_handler.queue(_doc_affine_action, callback, self,
                                 callback_on_error=callback_on_error)
@@ -1282,14 +1321,15 @@ class KeynoteManagerWindow(forms.WPFWindow):
              - Graceful degradation for lock/sync on Public API
           3. Alert user if ADC not available
         """
-        self._kfile = revit.query.get_local_keynote_file(doc=revit.doc)
+        # resolve against the OWNING document, never whatever is active now
+        self._kfile = revit.query.get_local_keynote_file(doc=self._doc)
         self._kfile_handler = None
         self._kfile_ext = None
 
         if self._kfile:
             return
 
-        self._kfile_ext = revit.query.get_external_keynote_file(doc=revit.doc)
+        self._kfile_ext = revit.query.get_external_keynote_file(doc=self._doc)
         self._kfile_handler = "unknown"
 
         if not self._kfile_ext:
@@ -1347,82 +1387,114 @@ class KeynoteManagerWindow(forms.WPFWindow):
         kfile = forms.pick_file("txt")
         if kfile:
             try:
-                with revit.Transaction("Set Keynote File"):
-                    revit.update.set_keynote_file(kfile, doc=revit.doc)
+                with revit.Transaction("Set Keynote File", doc=self._doc):
+                    revit.update.set_keynote_file(kfile, doc=self._doc)
             except Exception as ex:
                 forms.alert(str(ex))
 
     def _connect_kfile(self):
-        if not self._kfile or not op.exists(self._kfile):
-            self._kfile = None
-            forms.alert("Keynote file not found. Select a valid file.")
-            self._change_kfile()
-            self._determine_kfile()
-        if not self._kfile:
-            raise KeynoteSetupError("No keynote file set for this project.")
-        if not os.access(self._kfile, os.W_OK):
-            raise KeynoteSetupError(
-                "Keynote file is read-only:\n" + self._kfile)
+        """Resolve and connect the keynote file, with bounded user retries.
 
-        # Release any previous connection (reconnect via Change File)
-        if self._conn:
-            try:
-                self._conn.Dispose()
-            except Exception:
-                pass
-            self._conn = None
-
-        # Pre-flight: DeffrelDB creates/deletes '<kfile>.lock' sidecar files
-        # in INFINITE retry loops with no timeout (DataStore.CreateLock/
-        # DeleteLock).  If the folder refuses file create/delete — offline
-        # cloud folder, sync client holding handles — Revit would hang at
-        # 100%% CPU forever.  Prove the folder allows it before connecting.
-        probe = self._kfile + ".probe_{}".format(uuid.uuid4().hex[:6])
-        try:
-            with open(probe, "w"):
-                pass
-            os.remove(probe)
-        except Exception as probex:
-            raise KeynoteSetupError(
-                "The keynote file's folder does not allow creating lock "
-                "files (offline or locked by a sync client?):\n{}\n\n{}"
-                .format(op.dirname(self._kfile), probex))
-
-        try:
-            self._conn = kdb.connect(self._kfile)
-        except System.TimeoutException as toutex:
-            raise KeynoteSetupError(toutex.Message)
-        except Exception as ex:
-            logger.debug("Connection failed | %s" % ex)
-            res = forms.alert(
-                "Cannot connect to keynote file.\n"
-                "It may need conversion to the new format.",
-                options=["Convert", "Select Other", "Help"],
-            )
-            if res == "Convert":
-                try:
-                    self._convert_existing()
-                    if not self._conn:
-                        raise KeynoteSetupError(
-                            "Converted — please reopen Keynote Manager.")
-                except KeynoteSetupError:
-                    raise
-                except Exception as convex:
-                    raise KeynoteSetupError("Conversion failed: %s" % convex)
-            elif res == "Select Other":
+        Retries are an explicit LOOP, not recursion: "Select Other" used to
+        call this method again, so a user who kept picking invalid or
+        unconvertible files added a stack frame per attempt and could
+        exhaust the stack during error recovery.
+        """
+        for attempt in range(MAX_KFILE_ATTEMPTS):
+            if not self._kfile or not op.exists(self._kfile):
+                self._kfile = None
+                forms.alert("Keynote file not found. Select a valid file.")
                 self._change_kfile()
                 self._determine_kfile()
-                self._connect_kfile()
-            elif res == "Help":
-                script.open_url(
-                    "https://www.notion.so/pyrevitlabs/"
-                    "Manage-Keynotes-6f083d6f66fe43d68dc5d5407c8e19da"
-                )
+            # Existence must be re-checked: get_local_keynote_file returns the
+            # path stored in the document WITHOUT testing it, so cancelling
+            # the picker hands back the same missing path.  Without this, a
+            # missing file would fall through to the read-only check below and
+            # be misreported as a permissions problem.
+            if not self._kfile or not op.exists(self._kfile):
                 raise KeynoteSetupError(
-                    "See the help page for converting the keynote file, "
-                    "then reopen Keynote Manager.")
-            else:
-                raise KeynoteSetupError("No valid keynote file.")
+                    "No valid keynote file set for this project.")
+            if not os.access(self._kfile, os.W_OK):
+                raise KeynoteSetupError(
+                    "Keynote file is read-only:\n" + self._kfile)
+
+            # Release any previous connection (reconnect via Change File)
+            if self._conn:
+                try:
+                    self._conn.Dispose()
+                except Exception:
+                    pass
+                self._conn = None
+
+            # Pre-flight: DeffrelDB creates/deletes '<kfile>.lock' sidecar
+            # files in INFINITE retry loops with no timeout
+            # (DataStore.CreateLock/DeleteLock).  If the folder refuses file
+            # create/delete — offline cloud folder, sync client holding
+            # handles — Revit would hang at 100% CPU forever.  Prove the
+            # folder allows it before connecting.
+            probe = self._kfile + ".probe_{}".format(uuid.uuid4().hex[:6])
+            try:
+                with open(probe, "w"):
+                    pass
+                os.remove(probe)
+            except Exception as probex:
+                raise KeynoteSetupError(
+                    "The keynote file's folder does not allow creating lock "
+                    "files (offline or locked by a sync client?):\n{}\n\n{}"
+                    .format(op.dirname(self._kfile), probex))
+
+            try:
+                self._conn = kdb.connect(self._kfile)
+            except System.TimeoutException as toutex:
+                raise KeynoteSetupError(toutex.Message)
+            except Exception as ex:
+                logger.debug("Connection failed | %s" % ex)
+                res = forms.alert(
+                    "Cannot connect to keynote file.\n"
+                    "It may need conversion to the new format.",
+                    options=["Convert", "Select Other", "Help"],
+                )
+                if res == "Convert":
+                    try:
+                        self._convert_existing()
+                        if not self._conn:
+                            raise KeynoteSetupError(
+                                "Converted — please reopen Keynote Manager.")
+                    except KeynoteSetupError:
+                        raise
+                    except Exception as convex:
+                        raise KeynoteSetupError(
+                            "Conversion failed: %s" % convex)
+                elif res == "Select Other":
+                    # Don't prompt on the final pass: _change_kfile COMMITS
+                    # set_keynote_file, so picking a file the loop is about
+                    # to discard would repoint the document at a keynote file
+                    # that was never actually tried.
+                    if attempt >= MAX_KFILE_ATTEMPTS - 1:
+                        raise KeynoteSetupError(
+                            "Could not connect to a valid keynote file after "
+                            "{} attempts.\n\nPlease reopen Keynote Manager "
+                            "to try again.".format(MAX_KFILE_ATTEMPTS))
+                    self._change_kfile()
+                    self._determine_kfile()
+                    continue  # retry in THIS frame — never recurse
+                elif res == "Help":
+                    script.open_url(
+                        "https://www.notion.so/pyrevitlabs/"
+                        "Manage-Keynotes-6f083d6f66fe43d68dc5d5407c8e19da"
+                    )
+                    raise KeynoteSetupError(
+                        "See the help page for converting the keynote file, "
+                        "then reopen Keynote Manager.")
+                else:
+                    raise KeynoteSetupError("No valid keynote file.")
+
+            # connected (or converted) — stop retrying
+            break
+        else:
+            raise KeynoteSetupError(
+                "Could not connect to a valid keynote file after {} "
+                "attempts.".format(MAX_KFILE_ATTEMPTS))
 
         # Session shadow backup — DeffrelDB rewrites the whole file on
         # every commit with no atomic-rename step; if a cloud-sync race
@@ -2499,7 +2571,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 "Keynote '{}' — {} placements shown in output".format(key, len(kids))
             )
 
-        self._revit_run(_do, callback=_update_status)
+        # callback_on_error=False: don't claim "N placements shown" when the
+        # report failed part-way (or was refused by the doc-affinity guard)
+        self._revit_run(_do, callback=_update_status, callback_on_error=False)
 
     def place_keynote(self, sender, args):
         # NOT AVAILABLE IN SAFE (MODAL) MODE — and this is a hard block, not
@@ -2591,6 +2665,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 revit.update.set_keynote_file(kfile, doc=revit.doc)
 
         def _reload():
+            if not self._is_owned_doc_active():
+                # never re-resolve against a foreign document
+                forms.alert(
+                    "Keynote Manager was opened for a different document.\n"
+                    "Switch back to that document, or close and reopen "
+                    "the Keynote Manager.")
+                return
             try:
                 self._determine_kfile()
                 self._connect_kfile()
@@ -2610,7 +2691,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self._update_full_tree()
             self._update_status_bar()
 
-        self._revit_run(_set_file, callback=_reload)
+        # callback_on_error=False: _reload tears down and rebuilds the DB
+        # connection and sets _needs_update.  If _set_file failed, the
+        # document still points at the OLD file, so there is nothing to
+        # reload — and the likeliest failure is the doc-affinity guard, in
+        # which case reloading would rebind this window to a different
+        # document's keynote file.
+        self._revit_run(_set_file, callback=_reload, callback_on_error=False)
 
     def show_keynote_file(self, sender, args):
         coreutils.show_entry_in_explorer(self._kfile)
@@ -2655,8 +2742,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if self._needs_update:
 
             def _do_update():
-                with revit.Transaction("Update Keynotes"):
-                    revit.update.update_linked_keynotes(doc=revit.doc)
+                # verified sync — raises if Revit did not actually reload
+                self._sync_model_keynotes()
 
             def _on_update_complete():
                 self._needs_update = False
@@ -2668,6 +2755,61 @@ class KeynoteManagerWindow(forms.WPFWindow):
                             callback_on_error=False)
         else:
             forms.alert("The Revit model is already up to date.", title="Up to Date")
+
+    def _sync_model_keynotes(self):
+        """Reload the model's keynote table and VERIFY that it happened.
+
+        Neither pyRevit helper reports failure: revit.Transaction swallows
+        commit errors and discards Commit()'s TransactionStatus
+        (revit/db/transaction.py), and revit.update.update_linked_keynotes
+        throws away the ExternalResourceLoadStatus that
+        KeynoteTable.Reload() returns (revit/db/update.py).  A failed sync
+        would therefore return normally and be reported as success.  This
+        RAISES instead, so the callback_on_error gate actually engages.
+        """
+        doc = self._doc
+        if doc is None or not doc.IsValidObject:
+            raise Exception("The document this window was opened for is no "
+                            "longer available.")
+
+        ktable = DB.KeynoteTable.GetKeynoteTable(doc)
+
+        def _reload_checked():
+            status = ktable.Reload(None)
+            if not _is_enum(status, "Success",
+                            getattr(DB, "ExternalResourceLoadStatus", None)):
+                raise Exception(
+                    "Revit could not reload the keynote table "
+                    "(status: {}).\n\nThe keynote file may be locked, "
+                    "missing, or still syncing.".format(status))
+
+        if doc.IsModifiable:
+            # already inside a transaction — just do the checked reload
+            _reload_checked()
+            return
+
+        txn = DB.Transaction(doc, "Update Keynotes")
+        txn.Start()
+        resolved = False
+        try:
+            _reload_checked()
+            tstatus = txn.Commit()
+            resolved = True
+            if not _is_enum(tstatus, "Committed",
+                            getattr(DB, "TransactionStatus", None)):
+                raise Exception(
+                    "Revit rolled back the keynote update "
+                    "(status: {}).".format(tstatus))
+        finally:
+            if not resolved:
+                try:
+                    txn.RollBack()
+                except Exception:
+                    pass
+            try:
+                txn.Dispose()
+            except Exception:
+                pass
 
     def _finalize_close(self):
         """Called on WPF thread after Revit update completes."""
@@ -2688,8 +2830,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 args.Cancel = True
 
                 def _do_update():
-                    with revit.Transaction("Update Keynotes"):
-                        revit.update.update_linked_keynotes(doc=revit.doc)
+                    # verified sync — raises if Revit did not actually
+                    # reload, so the gate below keeps the window open
+                    self._sync_model_keynotes()
 
                 def _sync_done():
                     # Only reached when the sync actually succeeded
