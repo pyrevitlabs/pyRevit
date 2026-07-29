@@ -20,6 +20,8 @@ literals. Keep both.
 """
 from __future__ import division
 
+from pyrevit import DB, DOCS, HOST_APP
+
 INCH = 1.0 / 12.0
 
 # Gap between the object and the start of the extension line.
@@ -31,10 +33,9 @@ TIER_SPACING_FT = (3.0 / 8.0) * INCH               # 3/8"
 
 # --- exterior first-string offset (user-configurable, paper inches) ---
 #
-# Drafting convention (secondary sources; NCS primary text is paywalled,
-# see PROJECT_BRIEF section 1): the FIRST dimension line sits ~1/2" off
-# the object, SUBSEQUENT tiers 3/8" apart. The old code used 3/8" for
-# both, which put the first string too close to the wall (live report).
+# Drafting convention (secondary sources; NCS primary text is paywalled):
+# the FIRST dimension line sits ~1/2" off the object, SUBSEQUENT tiers
+# 3/8" apart. A uniform 3/8" puts the first string too close to the wall.
 # Both values are PAPER inches; multiply by View.Scale for model feet.
 
 TIER_SPACING_DEFAULT_IN = 0.375     # 3/8" between stacked tiers
@@ -128,11 +129,11 @@ OPENING_MODE_CENTER = "center"
 OPENING_MODE_RO = "ro"
 
 
-def format_ft_in(value_ft):
+def _format_ft_in(value_ft):
     """Decimal feet -> readable feet-inches string.
 
     Normalizes the inches component so 34.9967 ft renders as 35'-0.0",
-    never 34'-12.0" (live-observed rounding bug).
+    never 34'-12.0".
     """
     sign = "-" if value_ft < 0 else ""
     total_in = abs(value_ft) * 12.0
@@ -142,3 +143,31 @@ def format_ft_in(value_ft):
         feet += 1
         inches = 0.0
     return "{0}{1}'-{2:.1f}\"".format(sign, feet, inches)
+
+
+def format_length(value_ft, doc=None):
+    """Report-only length string in the DOCUMENT's display units.
+
+    Used for the dry-run report and run notes; the dimensions Revit
+    places carry their own text and never go through here. Reading the
+    document's units means a metric project gets a metric report.
+
+    The spec argument changed type in Revit 2021 (UnitType enum ->
+    ForgeTypeId), so the call is version-branched the same way
+    pyrevit.revit.units does it. Falls back to US feet-inches if the
+    document or the API is unavailable.
+    """
+    try:
+        doc = doc or DOCS.doc
+        if HOST_APP.is_newer_than(2021):
+            return DB.UnitFormatUtils.Format(units=doc.GetUnits(),
+                                             specTypeId=DB.SpecTypeId.Length,
+                                             value=value_ft,
+                                             forEditing=False)
+        return DB.UnitFormatUtils.Format(units=doc.GetUnits(),
+                                         unitType=DB.UnitType.UT_Length,
+                                         value=value_ft,
+                                         maxAccuracy=False,
+                                         forEditing=False)
+    except Exception:
+        return _format_ft_in(value_ft)

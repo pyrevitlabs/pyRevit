@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 """Automatic dimension strings - exterior and interior.
 
-FLOW: optionally select walls (plus fixtures/casework for interior mode),
-click the button, choose Exterior or Interior in one dialog (with Dry-run
-and R.O. toggles), done. Nothing selected = auto-detect all exterior
-walls and dimension the whole building perimeter.
+FLOW: click the button and choose Exterior or Interior in one dialog
+(with Dry-run and R.O. toggles).
+
+EXTERIOR dimensions the walls you selected before running, so select the
+perimeter walls first. INTERIOR is driven by placed Rooms and ignores the
+selection entirely.
 
 EXTERIOR (3 tiers per straight side, outside auto-detected from
 Wall.Orientation):
@@ -23,7 +25,9 @@ cross one:
      room, measured to the wall's cut faces (jambs) so it can be laid
      out on site
   3: fixtures, casework and columns - to the object's CENTRE, to the
-     nearest bounding wall (columns get both axes)
+     nearest bounding wall (columns get both axes). Recognition is by
+     category and does not yet cover every fixture family; anything it
+     cannot resolve is listed in the run notes rather than dimensioned.
 
 ANGLED BUILDINGS: nothing here works in world X/Y. Walls are clustered by
 direction (modulo 90 deg, length-weighted) into FRAMES, and every point is
@@ -34,17 +38,15 @@ against a world axis returns the cosine-shortened projection - a wrong
 NUMBER, not merely a badly placed one. An orthogonal building yields one
 frame at 0 deg, which is the exact identity transform.
 
-ENGINE: IronPython (pyRevit default - NO python3 shebang; CPython engine
-is broken in this environment, PROJECT_BRIEF.md sections 13-16).
+ENGINE: runs on pyRevit's default IronPython engine (no python3 shebang).
 """
-import json
 import os
 
 from pyrevit import revit, forms, script
 from Autodesk.Revit.DB import Wall, FamilyInstance
 
-from autodimswichdesign import geometry, standards, revit_io
-from autodimswichdesign.standards import format_ft_in
+from autodim import geometry, standards, revit_io
+from autodim.standards import format_length
 
 doc = revit.doc
 
@@ -55,105 +57,16 @@ AUTO_OFFSET_LABEL = "Auto (by view scale)"
 
 XAML = os.path.join(os.path.dirname(__file__), "AutoDimWindow.xaml")
 
-# ------------------------------------------------------ tool settings
-#
-# Our OWN settings file, deliberately NOT pyRevit's script.get_config()/
-# save_config(). Those store into pyRevit_config.ini, whose location is
-# decided by WHERE pyRevit is installed (a Program Files install forces
-# the shared ProgramData file, no per-user fallback) - and when that ini
-# is corrupt or read-only, pyRevit falls back to an in-memory config and
-# every save is SILENTLY skipped (live-diagnosed on the user's Revit
-# machine: null-byte ini -> "menu does not save previous selection";
-# traced in pyRevit 6.5.3 userconfig.py, PROJECT_BRIEF session 42).
-# One json file per user under %APPDATA% is immune to all of it.
-
-SETTINGS_DIR = os.path.join(
-    os.getenv("APPDATA") or os.path.expanduser("~"), "SwichDesign")
-SETTINGS_FILE = os.path.join(SETTINGS_DIR, "autodim_settings.json")
-
-SETTING_KEYS = ("mode", "measure_core", "openings_ro", "dry_run",
-                "face_audit", "first_offset_text", "tier_spacing_text",
-                "max_drag_text")
-
-
-class ToolSettings(object):
-    """Per-user settings in autodim_settings.json. Same get_option/
-    set_option interface the dialog used with pyRevit's config.
-    Self-healing: a missing or unparseable file simply means defaults -
-    it can never disable saving the way a corrupt pyRevit ini does."""
-
-    def __init__(self):
-        self.values = {}
-        try:
-            with open(SETTINGS_FILE, "r") as f:
-                data = json.load(f)
-            if isinstance(data, dict):
-                self.values = data
-        except Exception:
-            self.values = {}
-        if not self.values:
-            self._migrate_from_pyrevit()
-
-    def _migrate_from_pyrevit(self):
-        """One-time pickup of settings saved by older versions through
-        script.get_config(), so nobody loses their choices. Best-effort:
-        a broken pyRevit config just yields defaults."""
-        try:
-            cfg = script.get_config()
-            for key in SETTING_KEYS:
-                val = cfg.get_option(key, None)
-                if val is not None:
-                    self.values[key] = val
-        except Exception:
-            pass
-
-    def get_option(self, key, default=None):
-        return self.values.get(key, default)
-
-    def set_option(self, key, value):
-        self.values[key] = value
-
-    def save(self):
-        """Write the file; returns an error string instead of raising
-        (a failed settings save must never kill a dimension run). The
-        write goes to a temp file first so an interrupted write cannot
-        leave a half-written settings file - which is exactly how the
-        user's pyRevit ini most likely got corrupted."""
-        try:
-            if not os.path.isdir(SETTINGS_DIR):
-                os.makedirs(SETTINGS_DIR)
-            tmp = SETTINGS_FILE + ".tmp"
-            with open(tmp, "w") as f:
-                json.dump(self.values, f, indent=1, sort_keys=True)
-            if os.path.exists(SETTINGS_FILE):
-                os.remove(SETTINGS_FILE)
-            os.rename(tmp, SETTINGS_FILE)
-            return None
-        except Exception as ex:
-            return str(ex)
-
-
-def pyrevit_config_broken():
-    """True when pyRevit itself is running on an in-memory config (its
-    ini is corrupt/unreadable) - OUR settings still save fine, but the
-    user's pyRevit-wide settings will not, and they should know."""
-    try:
-        from pyrevit.userconfig import user_config
-        return not user_config.config_file
-    except Exception:
-        return False
-
 
 class AutoDimWindow(forms.WPFWindow):
     """The Automatic Dimensions dialog. Every choice is remembered
-    between runs via the tool's OWN settings file (ToolSettings), so a
-    broken/relocated pyRevit config cannot make the menu forget."""
+    between runs in the tool's own pyRevit config section."""
 
     def __init__(self, wall_count, fixture_count):
         forms.WPFWindow.__init__(self, XAML)
         self.result = None
         self.wall_count = wall_count
-        self.config = ToolSettings()
+        self.config = script.get_config()
 
         mode = self.config.get_option("mode", MODE_INT)
         self.mode_ext_rb.IsChecked = (mode == MODE_EXT)
@@ -186,14 +99,8 @@ class AutoDimWindow(forms.WPFWindow):
         self.split_tb.Text = str(self.config.get_option(
             "max_drag_text", "0"))
 
-        status = "{0} wall(s), {1} element(s) selected.".format(
+        self.status_tb.Text = "{0} wall(s), {1} element(s) selected.".format(
             wall_count, fixture_count)
-        if pyrevit_config_broken():
-            status += ("  NOTE: pyRevit's own config file is unreadable "
-                       "on this machine - this tool saves its settings "
-                       "separately and is unaffected, but pyRevit-wide "
-                       "settings will not persist until it is repaired.")
-        self.status_tb.Text = status
         self._update_hint()
 
     def _update_hint(self):
@@ -255,8 +162,9 @@ class AutoDimWindow(forms.WPFWindow):
         self.config.set_option("first_offset_text", first_text)
         self.config.set_option("tier_spacing_text", spacing_text)
         self.config.set_option("max_drag_text", split_text)
-        save_err = self.config.save()
-        if save_err:
+        try:
+            script.save_config()
+        except Exception as save_err:
             # settings failing to save must never block dimensioning -
             # main() surfaces this in the run notes
             self.result["settings_warning"] = (
@@ -490,7 +398,7 @@ def resolve_entries(entries, axis, axis_faces, run, notes,
                         "{0} wall {1} @ {2} | {3} side | {4:.3f} ft from "
                         "target".format(
                             "-->" if chosen else "   ",
-                            c["wall_id"], format_ft_in(c["origin"][idx]),
+                            c["wall_id"], format_length(c["origin"][idx]),
                             "outer" if c["exterior"] else "inner",
                             c["plane_d"]))
                 notes.append(
@@ -595,15 +503,15 @@ def group_exterior_runs(runs, frame, segments_local, max_drag_ft=0.0):
     string sets - ONE per CLUSTER of runs whose witness lines can reach
     a shared line without crossing a selected wall.
 
-    Single mass: one cluster per direction = the v3.4 image-confirmed
-    convention (the west string carries main-wall corners AND
+    Single mass: one cluster per direction, the usual CD convention
+    (the west string carries main-wall corners AND
     bump-attachment jogs; a bump's width reads in the north/south
     string with long witness lines). Large plan with several masses:
     a far run whose witness lines would have to pass THROUGH another
     selected wall gets its own cluster, placed at its own extreme on
-    its own correct side (live report: one global string per direction
-    dragged witness lines across the plan into "a mess of crossed
-    lines"). segments_local are this frame's SELECTED wall segments in
+    its own correct side - one global string per direction would instead
+    drag witness lines across the whole plan and cross each other.
+    segments_local are this frame's SELECTED wall segments in
     frame coordinates - only selected walls can block a merge.
     max_drag_ft > 0 adds the optional distance rule: a run farther than
     this behind a cluster's base splits off even without a crossing."""
@@ -655,8 +563,7 @@ def run_side_and_base(run, fixtures_assigned, frame):
 
 def _drop_duplicate_tiers(plan):
     """Remove tiers whose values duplicate an earlier tier - a jog-free
-    run otherwise stacks identical strings (live-observed: doubled
-    overall dimension)."""
+    run otherwise stacks an identical overall dimension twice."""
     kept = []
     seen = []
     for label, entries in plan:
@@ -788,12 +695,12 @@ def edge_face_entry(room, edge, axis, value, inward, view_faces, notes):
             notes.append(
                 "{0}: boundary wall {1} exposed no face at {2} - used the "
                 "coincident face instead".format(
-                    room["name"], wall_id, format_ft_in(value)))
+                    room["name"], wall_id, format_length(value)))
     if rec is None:
         notes.append(
             "{0}: no view-visible wall face at {1} ({2} axis) - that end "
             "of the string is missing (room-separation line?)".format(
-                room["name"], format_ft_in(value), axis.upper()))
+                room["name"], format_length(value), axis.upper()))
         return None
     return (rec["origin"][0 if axis == "x" else 1], "face", rec)
 
@@ -1149,8 +1056,8 @@ def show_interior_dry_run(items, notes):
             "### {0} — measures {1}, placed at {2}={3}{4}".format(
                 item["label"], item["axis"].upper(),
                 "Y" if item["axis"] == "x" else "X",
-                format_ft_in(item["pos"]), turned))
-        parts = ["{0} ({1})".format(format_ft_in(v), KIND_LABEL[k])
+                format_length(item["pos"]), turned))
+        parts = ["{0} ({1})".format(format_length(v), KIND_LABEL[k])
                  for v, k, _ in item["entries"]]
         output.print_md("- " + " | ".join(parts))
     if notes:
@@ -1188,7 +1095,7 @@ def run_interior(view, fixtures, ro_mode, dry, measure_core, notes):
     # VIEW-AWARE faces per (axis, frame): Options.View makes these
     # references visible in the plan by construction. Model-geometry
     # references produced dimensions that existed but rendered in no view
-    # at all (sessions 9e-9f) - every interior reference goes through these.
+    # at all, so every interior reference goes through these.
     # Cached per frame because a face's local origin/normal differ per frame.
     face_cache = {}
 
@@ -1311,8 +1218,8 @@ def run_interior(view, fixtures, ro_mode, dry, measure_core, notes):
                 notes.append("{0} failed: {1}".format(item["label"], ex))
 
     # Revit's commit-time failure resolution can DELETE dimensions it
-    # considers invalid WITHOUT any exception (live-observed: 16 created,
-    # 0 failures, opening strings absent). Verify survival explicitly.
+    # considers invalid WITHOUT raising, so a run can report full success
+    # and leave nothing behind. Verify survival explicitly.
     vanished = [label for label, dim_id in created
                 if doc.GetElement(dim_id) is None]
     if vanished:
@@ -1324,11 +1231,11 @@ def run_interior(view, fixtures, ro_mode, dry, measure_core, notes):
                                       ", ".join(vanished[:9]))))
 
     # A dimension can survive commit and still render in NO view, if its
-    # references are not visible geometry (live-diagnosed, sessions 9e-9f:
-    # the dim exists, owner view is right, and Revit draws nothing). Every
-    # reference here is view-aware, but the fixture CENTRE references are
-    # the one unproven species - so check every dim and name the invisible
-    # ones instead of letting them fail silently.
+    # references are not visible geometry - the element exists, the owner
+    # view is right, and Revit draws nothing. Every reference here is
+    # view-aware, but fixture CENTRE references are the least certain
+    # kind, so check every dim and name the invisible ones instead of
+    # letting them fail silently.
     invisible = []
     for label, dim_id in created:
         dim = doc.GetElement(dim_id)
@@ -1394,7 +1301,7 @@ def show_dry_run(runs, plans, mode, notes):
                             len(runs[n]["walls"]),
                             len(runs[n]["openings"])))
         for label, entries in plans[n]:
-            parts = ["{0} ({1})".format(format_ft_in(v), KIND_LABEL[k])
+            parts = ["{0} ({1})".format(format_length(v), KIND_LABEL[k])
                      for v, k, _ in entries]
             output.print_md("- {0}: {1}".format(label, " | ".join(parts)))
     if notes:
@@ -1408,6 +1315,7 @@ def show_dry_run(runs, plans, mode, notes):
 def main():
     view = doc.ActiveView
     notes = []
+    revit_io.reset_opening_cache()
 
     walls, fixtures, skipped_sel = gather_selection(view)
     if skipped_sel:
@@ -1491,8 +1399,8 @@ def main():
 
     # Reference faces come from ALL walls in the view regardless of the
     # selection - with a partial selection, corner planes belong to
-    # UNSELECTED neighbor walls, and missing them made each run end
-    # land on a different random layer (live-observed: 109" vs 116").
+    # UNSELECTED neighbor walls, and missing them lets each run end land
+    # on a different wall layer, so equal spans report unequal lengths.
     all_walls = revit_io.get_basic_walls(doc, view)
 
     # a work item per frame: (frame, runs, plans)

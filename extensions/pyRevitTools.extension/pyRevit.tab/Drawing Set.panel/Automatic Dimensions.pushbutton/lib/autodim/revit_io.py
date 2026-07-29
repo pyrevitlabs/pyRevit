@@ -13,7 +13,7 @@ Reference strategy for dimension anchoring, in priority order:
      Options.IncludeNonVisibleObjects) - covers joined/mitered wall
      ends that expose no clean axis-facing face.
 """
-from autodimswichdesign import geometry
+from autodim import geometry
 
 from Autodesk.Revit.DB import (
     UV,
@@ -345,24 +345,45 @@ def get_wall_endpoints(wall):
     return (p0.X, p0.Y), (p1.X, p1.Y)
 
 
-def get_hosted_openings(wall, doc, doors_only=False):
-    """Door/window FamilyInstances hosted by this wall."""
+# Openings are looked up one wall at a time, but the document-wide scan
+# behind that lookup happens ONCE per run and is indexed by host. Doing
+# it inside the per-wall loop rescanned every door and window in the
+# model for every wall.
+_OPENING_INDEX = {}
+
+
+def reset_opening_cache():
+    """Drop the opening index. Callers must do this at the start of every
+    run: pyRevit reuses its engine between runs, so an index built from a
+    previous state of the model would otherwise survive into the next."""
+    _OPENING_INDEX.clear()
+
+
+def _opening_index(doc, doors_only):
+    """Host ElementId -> list of door/window FamilyInstances it hosts."""
+    cached = _OPENING_INDEX.get(doors_only)
+    if cached is not None:
+        return cached
     if doors_only:
         categories = (BuiltInCategory.OST_Doors,)
     else:
         categories = (BuiltInCategory.OST_Doors,
                       BuiltInCategory.OST_Windows)
-    found = []
+    index = {}
     for bic in categories:
         collector = (FilteredElementCollector(doc)
                      .OfCategory(bic)
                      .WhereElementIsNotElementType())
         for inst in collector:
-            if (isinstance(inst, FamilyInstance)
-                    and inst.Host is not None
-                    and inst.Host.Id == wall.Id):
-                found.append(inst)
-    return found
+            if isinstance(inst, FamilyInstance) and inst.Host is not None:
+                index.setdefault(inst.Host.Id, []).append(inst)
+    _OPENING_INDEX[doors_only] = index
+    return index
+
+
+def get_hosted_openings(wall, doc, doors_only=False):
+    """Door/window FamilyInstances hosted by this wall."""
+    return _opening_index(doc, doors_only).get(wall.Id, [])
 
 
 def get_opening_point(instance):

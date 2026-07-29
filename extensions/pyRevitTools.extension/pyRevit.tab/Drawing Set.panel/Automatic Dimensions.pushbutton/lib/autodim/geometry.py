@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 """Pure geometry logic for the Automatic Dimensions rules.
 
-Zero Revit dependency - unit-tested anywhere (tests/test_geometry.py).
-Dual-engine: IronPython 2.7 (pyRevit) and CPython 3.x (tests). No
-f-strings, no annotations, explicit float division only.
+Zero Revit dependency, so this module can be exercised outside Revit.
+Kept source-compatible with both IronPython 2.7 (pyRevit's default
+engine) and CPython 3.x: no f-strings, no annotations, explicit float
+division only.
 
 Points are (x, y) tuples in decimal feet. Segments are (point, point).
 
@@ -12,8 +13,8 @@ Pipeline:
                     Two phases: exact endpoint chaining, then gap
                     bridging - real models have split walls, offset
                     bumps and unjoined corners whose location lines
-                    do not touch (live-observed: one house perimeter
-                    fragmented into 25 "sides" without bridging).
+                    do not touch. Without bridging a single house
+                    perimeter can fragment into dozens of "sides".
   split_runs()      one chain -> maximal SINGLE-AXIS runs. Since the
                     script groups runs per facing direction afterwards,
                     splitting no longer tries to preserve whole "sides"
@@ -720,12 +721,11 @@ def snap_base_outward(base, side, face_perps, max_shift_ft=2.0):
 
 # ----------------------------- exterior direction-group clustering
 #
-# One string set per facing direction (v3.4, image-confirmed) is right
-# for a single building mass - and wrong for a large plan with several
-# masses/wings, where it drags witness lines clean across the plan into
-# one far-away string (live report: "a mess of crossed lines"). The rule
-# that separates the two cases is the user's own phrasing: a dimension's
-# witness lines must not CROSS a wall. A run only joins a farther
+# One string set per facing direction is right for a single building
+# mass - and wrong for a large plan with several masses/wings, where it
+# drags witness lines clean across the plan into one far-away string.
+# The rule that separates the two cases: a dimension's witness lines
+# must not CROSS a wall. A run only joins a farther
 # cluster when every witness line it would extend to that cluster's
 # base travels through open space.
 
@@ -784,7 +784,7 @@ def cluster_exterior_runs(records, segments, axis, side, max_drag_ft=0.0):
     its first member and membership can never invalidate retroactively.
     Returns a list of clusters, each a list of record indices, in
     outermost-first creation order. With one mass and no crossings this
-    returns a single cluster = exact v3.4 behavior."""
+    returns a single cluster, i.e. one string set per direction."""
     order = sorted(range(len(records)),
                    key=lambda i: -side * records[i][0])
     clusters = []  # [{"base": float, "members": [record index]}]
