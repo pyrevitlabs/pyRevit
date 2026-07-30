@@ -255,10 +255,11 @@ namespace pyRevitLabs.UnitTests {
         }
 
         [TestMethod]
-        public void GetActiveConfig_AllUsers_UnwritableMachineConfig_FallsBackToSeededUserConfig() {
+        public void GetActiveConfig_AllUsers_UnwritableMachineConfig_NonElevated_FallsBackToSeededUserConfig() {
             if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
                     System.Runtime.InteropServices.OSPlatform.Windows))
                 Assert.Inconclusive("File sharing violations are only enforced on Windows.");
+            AssertRequiresNonElevatedWindowsProcess();
 
             Environment.SetEnvironmentVariable(
                 PyRevitInstallScope.ConfigScopeEnvVar,
@@ -283,6 +284,33 @@ namespace pyRevitLabs.UnitTests {
                 Assert.IsFalse(active.IsReadOnly);
                 Assert.IsTrue(File.Exists(expectedUserConfig));
                 Assert.AreEqual(seedContent, File.ReadAllText(expectedUserConfig));
+            }
+        }
+
+        [TestMethod]
+        public void GetActiveConfig_AllUsers_UnwritableMachineConfig_Elevated_UsesMachineConfig() {
+            if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(
+                    System.Runtime.InteropServices.OSPlatform.Windows))
+                Assert.Inconclusive("File sharing violations are only enforced on Windows.");
+            if (!UserEnv.IsRunAsElevated())
+                Assert.Inconclusive("Test requires an elevated Windows process.");
+
+            Environment.SetEnvironmentVariable(
+                PyRevitInstallScope.ConfigScopeEnvVar,
+                PyRevitInstallScope.ConfigScopeAllUsers);
+            PyRevitInstallScope.ClearCachedInstallScope();
+
+            string machineConfig = Path.Combine(
+                PyRevitLabsConsts.PyRevitProgramDataPath, PyRevitLabsConsts.DefaultConfigsFileName);
+            Directory.CreateDirectory(PyRevitLabsConsts.PyRevitProgramDataPath);
+            File.WriteAllText(machineConfig, "[core]\r\n");
+
+            using (File.Open(machineConfig, FileMode.Open, FileAccess.Read, FileShare.Read)) {
+                var active = PyRevitInstallScope.GetActiveConfig();
+
+                Assert.AreEqual(machineConfig, active.ConfigPath);
+                Assert.IsTrue(active.IsMachineConfig);
+                Assert.IsTrue(active.IsReadOnly);
             }
         }
 

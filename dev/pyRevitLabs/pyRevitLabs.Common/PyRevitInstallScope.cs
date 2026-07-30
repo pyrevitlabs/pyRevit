@@ -99,12 +99,11 @@ namespace pyRevitLabs.Common {
         /// <summary>
         /// Resolves the configuration file the current process should use.
         /// A machine-wide config marked with the ReadOnly attribute is a deliberate
-        /// admin lock and is used as-is in read-only mode. For all-users installs
-        /// the machine-wide config is writable only from an elevated process
-        /// (installer or admin CLI); standard users always get a per-user config
-        /// under AppData, seeded from the machine-wide file when one exists.
-        /// Per-user installs always resolve to AppData unless the admin lock above
-        /// applies.
+        /// admin lock and is used as-is in read-only mode. For all-users installs,
+        /// elevated processes (installer / admin CLI) always target ProgramData;
+        /// standard users always get a per-user config under AppData, seeded from
+        /// the machine-wide file when one exists. Per-user installs always resolve
+        /// to AppData unless the admin lock above applies.
         /// </summary>
         public static ActiveConfigInfo GetActiveConfig(bool createIfMissing = true) {
             var machineRoot = PyRevitLabsConsts.PyRevitProgramDataPath;
@@ -118,10 +117,11 @@ namespace pyRevitLabs.Common {
 
             if (IsAllUsersInstall() && IsElevatedProcess()) {
                 if (machineConfigExists) {
-                    if (IsFileWritable(machineConfig))
-                        return new ActiveConfigInfo(machineConfig, isReadOnly: false, isMachineConfig: true);
+                    bool writable = IsFileWritable(machineConfig);
+                    return new ActiveConfigInfo(
+                        machineConfig, isReadOnly: !writable, isMachineConfig: true);
                 }
-                else if (!createIfMissing || TryCreateFile(machineConfig)) {
+                if (!createIfMissing || TryCreateFile(machineConfig)) {
                     return new ActiveConfigInfo(machineConfig, isReadOnly: false, isMachineConfig: true);
                 }
             }
