@@ -145,24 +145,34 @@ namespace pyRevitLabs.Common {
             var userConfig = FindConfigIniInDirectory(userRoot)
                 ?? Path.Combine(userRoot, PyRevitLabsConsts.DefaultConfigsFileName);
 
-            if (createIfMissing && !File.Exists(userConfig)) {
-                try {
-                    var directory = Path.GetDirectoryName(userConfig);
-                    if (!string.IsNullOrEmpty(directory))
-                        Directory.CreateDirectory(directory);
-                    if (seedConfig != null)
-                        File.Copy(seedConfig, userConfig, overwrite: false);
-                    else
-                        File.Create(userConfig).Dispose();
-                }
-                catch {
-                    // fall through; callers get a read-only view when the file exists,
-                    // or handle the missing file themselves
-                }
-            }
+            if (createIfMissing && !File.Exists(userConfig))
+                EnsureUserConfigFile(userConfig, seedConfig);
 
             bool isReadOnly = !File.Exists(userConfig) || !IsFileWritable(userConfig);
             return new ActiveConfigInfo(userConfig, isReadOnly, isMachineConfig: false);
+        }
+
+        private static void EnsureUserConfigFile(string userConfig, string seedConfig) {
+            try {
+                var directory = Path.GetDirectoryName(userConfig);
+                if (!string.IsNullOrEmpty(directory))
+                    Directory.CreateDirectory(directory);
+            }
+            catch {
+                // fall through; TryCreateFile reports failure when the path is unusable
+            }
+
+            if (seedConfig != null) {
+                try {
+                    File.Copy(seedConfig, userConfig, overwrite: false);
+                    return;
+                }
+                catch {
+                    // seed unreadable or copy blocked: still give the user a writable ini
+                }
+            }
+
+            TryCreateFile(userConfig);
         }
 
         /// <summary>True when the file carries the DOS ReadOnly attribute (deliberate admin lock).</summary>
