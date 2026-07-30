@@ -76,6 +76,34 @@ logger = script.get_logger()
 output = script.get_output()
 
 
+def _coerce_persistent_flag(value):
+    """Interpret an engineCfgs "persistent" value, failing CLOSED.
+
+    bool() alone is NOT safe here: bool("false") is True, so a value
+    serialized as a string would treat a NON-persistent engine as
+    persistent and skip safe mode — reintroducing the crash this guard
+    exists to prevent.  Anything not recognized as affirmative therefore
+    reads as False, which matches the runtime (an engineCfgs value it
+    cannot read leaves persistent=false and the scope IS wiped).
+    """
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return False
+    # string-ish (str / unicode on IronPython 2.7) — avoid basestring so
+    # this stays valid if the module is ever loaded under CPython
+    if hasattr(value, "strip"):
+        try:
+            return value.strip().lower() in ("true", "1", "yes")
+        except Exception:
+            return False
+    # numeric (int / long / .NET numeric): 0 is false, anything else true
+    try:
+        return int(value) != 0
+    except Exception:
+        return False
+
+
 def _persistent_engine_state():
     """Return the RESOLVED persistent-engine flag for this command.
 
@@ -117,18 +145,25 @@ def _persistent_engine_state():
     if not raw:
         return None
     try:
+        cfg = json.loads(raw)
+    except Exception:
+        cfg = None
+    if isinstance(cfg, dict):
         # NOTE: a missing "persistent" key must read as False, matching the
         # runtime — IronPythonEngineConfigs.persistent defaults to false, so
         # anything the runtime cannot read is treated as non-persistent and
         # the scope IS wiped.  Failing closed here keeps us in step with it.
-        return bool(json.loads(raw).get("persistent", False))
-    except Exception:
-        pass
-    # tolerate any JSON shape change — probe the raw text
-    probe = raw.replace(" ", "").lower()
-    if '"persistent":true' in probe:
+        if "persistent" not in cfg:
+            return False
+        return _coerce_persistent_flag(cfg.get("persistent"))
+
+    # tolerate any JSON shape change — probe the raw text.  Quotes are
+    # stripped so a stringified value ("persistent":"false") reads the same
+    # as a real boolean ("persistent":false).
+    probe = raw.replace(" ", "").replace('"', "").replace("'", "").lower()
+    if "persistent:true" in probe:
         return True
-    if '"persistent":false' in probe:
+    if "persistent:false" in probe:
         return False
     logger.debug("KeynoteManager | unrecognized engine cfgs: %s", raw)
     return None
@@ -377,6 +412,17 @@ KEYNOTEMGR_WINDOW_ENVVAR = "KEYNOTEMGR_ACTIVE_WINDOW"
 # How many times the user may retry picking a keynote file during setup
 # before _connect_kfile gives up (bounds the "Select Other" retry loop).
 MAX_KFILE_ATTEMPTS = 5
+
+# Usage data comes from a collector over OST_KeynoteTags in the CURRENT
+# document, so "not in use" is advisory even when the query fully succeeded:
+# it cannot see other projects sharing this keynote file, linked models, or
+# element/material keynote parameters with no tag placed.  Destructive
+# commands say so rather than implying the check was authoritative.
+USAGE_SCOPE_NOTE = (
+    "Usage is checked against keynote tags in THIS project only — other "
+    "projects sharing this keynote file, linked models and un-tagged "
+    "element/material keynotes are not visible to this check."
+)
 
 
 # =============================================================================
@@ -787,11 +833,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._used_keysdict = defaultdict(list)
         self._used_typesdict = defaultdict(set)
         self._used_viewsdict = defaultdict(list)
-        try:
-            self._used_keysdict, self._used_typesdict, self._used_viewsdict = \
-                self.get_used_keynote_elements()
-        except Exception:
-            pass
+        # True until a COMPLETE usage snapshot has been collected: the
+        # delete / re-key guards must not read "unused" out of a map that
+        # never got filled.
+        self._usage_stale = True
+        self._refresh_used_keynotes()
 
         # drag state
         self._drag_start_point = None
@@ -923,9 +969,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
         try:
             cats = self.all_categories if self._conn else []
             knotes = self.all_keynotes if self._conn else []
-            used = len(self._used_keysdict)
+            # Never print "0 in use" off a map that failed to collect \u2014 the
+            # count is the only place the user sees that usage is unknown.
+            used = ("usage unverified (F5)" if self._usage_stale
+                    else "{} in use".format(len(self._used_keysdict)))
             self.statusRight.Text = (
-                "{} groups \u00b7 {} keynotes \u00b7 {} in use".format(
+                "{} groups \u00b7 {} keynotes \u00b7 {}".format(
                     len(cats), len(knotes), used
                 )
             )
@@ -1212,8 +1261,19 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         Runs Revit API queries — call ONLY from a valid API context
         (command execution, DocumentChanged handler, ExternalEvent).
-        Returns (used_ids, used_types, used_views) as plain dicts so the
+        Returns (used_ids, used_types, used_views, ok) as plain dicts so the
         WPF thread never needs to touch the Revit API afterwards.
+
+        `ok` is False when the key map may be INCOMPLETE: the query could not
+        run, or it raised part-way and the dicts hold only the tags seen
+        before the failure.  A False `ok` must NEVER be read as "these keys
+        are unused" — that is what makes the delete/re-key guards fail open.
+        See _refresh_used_keynotes and _usage_stale.
+
+        Failures of the per-tag enrichment lookups (source param, owner view)
+        deliberately do NOT clear `ok`: they only degrade tooltips and type
+        filters, and cannot drop a key from `used`.  Flagging them would cry
+        stale on every delete and train users to click through the warning.
         """
         used = defaultdict(list)
         used_types = defaultdict(set)
@@ -1221,10 +1281,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
         try:
             doc = self._doc
             if doc is None or not doc.IsValidObject:
-                return used, used_types, used_views
+                # nothing can be verified against a closed/invalid document
+                return used, used_types, used_views, False
             keynotes = revit.query.get_used_keynotes(doc=doc)
             if not keynotes:
-                return used, used_types, used_views
+                # no keynote tags at all — an empty map IS the answer here
+                return used, used_types, used_views, True
             for kn in keynotes:
                 if kn is None:
                     continue
@@ -1253,9 +1315,82 @@ class KeynoteManagerWindow(forms.WPFWindow):
                         used_views[key].append(revit.query.get_name(vel))
                 except Exception:
                     pass
-        except Exception:
-            pass
-        return used, used_types, used_views
+        except Exception as ex:
+            # The loop stopped early, so keynotes that ARE placed may be
+            # missing from `used`.  Report the failure instead of handing
+            # back a partial map that reads as "unused".
+            logger.debug("Collect used keynotes failed | %s" % ex)
+            return used, used_types, used_views, False
+        return used, used_types, used_views, True
+
+    def _refresh_used_keynotes(self):
+        """Re-collect usage data, keeping the last good snapshot on failure.
+
+        Runs Revit API queries — API context only.  Maintains _usage_stale so
+        the destructive commands can tell "verified unused" apart from "could
+        not check".  Returns True when the snapshot was refreshed.
+
+        On failure the PREVIOUS snapshot is kept: an older complete map is
+        better than a partial one, and F5 can still recover.
+        """
+        try:
+            used, used_types, used_views, ok = \
+                self.get_used_keynote_elements()
+        except Exception as ex:
+            logger.debug("Refresh used keys failed | %s" % ex)
+            self._usage_stale = True
+            return False
+        if not ok:
+            self._usage_stale = True
+            return False
+        self._used_keysdict = used
+        self._used_typesdict = used_types
+        self._used_viewsdict = used_views
+        self._usage_stale = False
+        return True
+
+    def _usage_unknown_note(self, key):
+        """Warning text for a destructive action on an unverified usage map.
+
+        Returns None when the usage snapshot is trustworthy.
+        """
+        if not self._usage_stale:
+            return None
+        return (
+            "Cannot verify whether '%s' is placed in the model — reading "
+            "keynote usage from the document failed, so this tool does NOT "
+            "know whether any tag references it.\n\n"
+            "Press F5 to refresh first." % key)
+
+    def _collect_used_ids(self, keys, operation):
+        """Fresh tag ids for `keys`, collected in the current API context.
+
+        Callers run right after the shared keynote FILE has already been
+        rewritten, so silently skipping tags would leave them pointing at a
+        key that no longer exists.  Query the model directly rather than
+        trusting the cached snapshot; fall back to the snapshot only when it
+        is known complete, and otherwise raise — _revit_run surfaces the
+        message to the user instead of failing quietly.
+        """
+        try:
+            used, _types, _views, ok = self.get_used_keynote_elements()
+        except Exception as ex:
+            logger.debug("%s: usage re-query failed | %s" % (operation, ex))
+            used, ok = None, False
+        if not ok:
+            if self._usage_stale:
+                raise Exception(
+                    "%s: could not read keynote tags from the model, so no "
+                    "tag was updated.\nThe keynote file has already been "
+                    "changed — press F5 and check the affected tags."
+                    % operation)
+            # Fresh read failed, but the cached snapshot is a complete one:
+            # use it, and flag usage as unverified from here on so the next
+            # delete / re-key warns rather than trusting a map the model just
+            # refused to confirm.
+            used = self._used_keysdict
+            self._usage_stale = True
+        return dict((k, list(used.get(k, []))) for k in keys)
 
     # =========================================================================
     # CONFIG
@@ -1931,21 +2066,27 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     def _swap_keynote_refs(self, key_a, key_b):
         """Swap Revit element references between two keynote keys."""
+        # Collect BEFORE opening the transaction, and from the model rather
+        # than the cached snapshot: the keys have already been swapped in the
+        # keynote file, so a stale map would leave tags on the wrong text.
+        ids = self._collect_used_ids([key_a, key_b], "Reorder")
+        a_ids = ids.get(key_a, [])
+        b_ids = ids.get(key_b, [])
         temp = "__ref_{}__".format(uuid.uuid4().hex[:8])
         with revit.Transaction("Reorder Keynotes"):
-            for kid in self._used_keysdict.get(key_a, []):
+            for kid in a_ids:
                 kel = revit.doc.GetElement(kid)
                 if kel:
                     p = kel.Parameter[DB.BuiltInParameter.KEY_VALUE]
                     if p:
                         p.Set(temp)
-            for kid in self._used_keysdict.get(key_b, []):
+            for kid in b_ids:
                 kel = revit.doc.GetElement(kid)
                 if kel:
                     p = kel.Parameter[DB.BuiltInParameter.KEY_VALUE]
                     if p:
                         p.Set(key_a)
-            for kid in self._used_keysdict.get(key_a, []):
+            for kid in a_ids:
                 kel = revit.doc.GetElement(kid)
                 if kel:
                     p = kel.Parameter[DB.BuiltInParameter.KEY_VALUE]
@@ -2040,9 +2181,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         # Collect data on the Revit thread (we have API access here)
         try:
-            new_used, new_types, new_views = self.get_used_keynote_elements()
+            new_used, new_types, new_views, ok = \
+                self.get_used_keynote_elements()
         except Exception:
             self._refresh_pending = False
+            self._usage_stale = True
             return
 
         # Dispatch UI update to WPF thread
@@ -2050,9 +2193,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
             try:
                 if self._closed:
                     return
-                self._used_keysdict = new_used
-                self._used_typesdict = new_types
-                self._used_viewsdict = new_views
+                if ok:
+                    self._used_keysdict = new_used
+                    self._used_typesdict = new_types
+                    self._used_viewsdict = new_views
+                    self._usage_stale = False
+                else:
+                    # partial map — keep the last good snapshot and flag it
+                    self._usage_stale = True
                 self._update_full_tree()
                 self._update_status_bar()
             except Exception:
@@ -2304,12 +2452,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if self._conn:
 
             def _query_used():
-                try:
-                    (self._used_keysdict,
-                     self._used_typesdict,
-                     self._used_viewsdict) = self.get_used_keynote_elements()
-                except Exception:
-                    pass
+                self._refresh_used_keynotes()
 
             def _on_done():
                 self._update_full_tree()
@@ -2445,7 +2588,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             if sel.used:
                 forms.alert("Group '%s' is in use." % sel.key)
                 return
-            if forms.alert("Delete group '%s'?" % sel.key, yes=True, no=True):
+            if self._confirm_delete("group", sel.key):
                 try:
                     kdb.remove_category(self._conn, sel.key)
                     self._needs_update = True
@@ -2459,7 +2602,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             if sel.used:
                 forms.alert("Keynote '%s' is in use." % sel.key)
                 return
-            if forms.alert("Delete keynote '%s'?" % sel.key, yes=True, no=True):
+            if self._confirm_delete("keynote", sel.key):
                 try:
                     kdb.remove_keynote(self._conn, sel.key)
                     self._needs_update = True
@@ -2468,6 +2611,26 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         self._update_full_tree()
         self._update_status_bar()
+
+    def _confirm_delete(self, kind, key):
+        """Confirm a delete, stating plainly how well usage was verified.
+
+        The `sel.used` guard above is only as good as the usage map behind it
+        — an unverified map reports every keynote as unused, so the guard
+        passes vacuously.  Deleting then drops the row (and its text) from the
+        SHARED keynote file while tags keep KEY_VALUE pointing at a key that
+        no longer exists.  Never let that happen without saying so.
+        """
+        unknown = self._usage_unknown_note(key)
+        if unknown:
+            return forms.alert(
+                "%s\n\nDelete %s '%s' anyway?  Any tag still pointing at "
+                "'%s' would keep that key with no matching row in the "
+                "keynote file." % (unknown, kind, key, key),
+                yes=True, no=True)
+        return forms.alert(
+            "Delete %s '%s'?\n\n%s" % (kind, key, USAGE_SCOPE_NOTE),
+            yes=True, no=True)
 
     def rekey_keynote(self, sender, args):
         sel = self.selected_keynote
@@ -2495,7 +2658,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
         try:
             from_key = sel.key
             to_key = self._pick_new_key()
-            if to_key and to_key != from_key:
+            if (to_key and to_key != from_key
+                    and self._confirm_rekey(from_key, to_key)):
                 # single atomic commit with rollback on failure
                 kdb.rekey_with_children(
                     self._conn, from_key, to_key, category=sel.is_category)
@@ -2509,9 +2673,36 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._update_full_tree()
         self._update_status_bar()
 
+    def _confirm_rekey(self, from_key, to_key):
+        """Confirm a re-key, stating whether placed tags can be re-pointed.
+
+        Re-keying renames the row in the shared keynote file and only then
+        re-points the tags it can find.  Tags it cannot find keep the OLD key
+        and end up referencing a row that no longer exists, so an unverified
+        usage map has to be surfaced BEFORE the file is rewritten.
+        """
+        unknown = self._usage_unknown_note(from_key)
+        if unknown:
+            return forms.alert(
+                "%s\n\nRe-key '%s' to '%s' anyway?  Placed tags may NOT be "
+                "updated, leaving them pointing at the old key."
+                % (unknown, from_key, to_key),
+                yes=True, no=True)
+        return forms.alert(
+            "Re-key '%s' to '%s'?\n\nKeynote tags in this project will be "
+            "re-pointed to the new key (%d found in the last usage check).\n\n"
+            "%s" % (from_key, to_key,
+                    len(self._used_keysdict.get(from_key, [])),
+                    USAGE_SCOPE_NOTE),
+            yes=True, no=True)
+
     def _rekey_refs(self, from_key, to_key):
+        # Re-query rather than trusting the cached snapshot: the keynote file
+        # has already been rewritten at this point, so a stale map here would
+        # silently leave tags pointing at a key that no longer exists.
+        ids = self._collect_used_ids([from_key], "Re-key")
         with revit.Transaction("Re-Key {}".format(from_key)):
-            for kid in self._used_keysdict.get(from_key, []):
+            for kid in ids.get(from_key, []):
                 kel = revit.doc.GetElement(kid)
                 if kel:
                     p = kel.Parameter[DB.BuiltInParameter.KEY_VALUE]
@@ -2574,7 +2765,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
         used_snapshot = dict(self._used_keysdict)
         kids = used_snapshot.get(key, [])
         if not kids:
-            self.statusLeft.Text = "Keynote '{}' — not placed in model".format(key)
+            # an unverified map reports everything as unplaced — don't claim it
+            self.statusLeft.Text = (
+                "Keynote '{}' — usage unverified, press F5".format(key)
+                if self._usage_stale
+                else "Keynote '{}' — not placed in model".format(key))
             return
 
         def _do():
@@ -2663,12 +2858,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     "before placing keynotes.",
                     title="Keynote Tag Missing")
                 return
-            try:
-                (self._used_keysdict,
-                 self._used_typesdict,
-                 self._used_viewsdict) = self.get_used_keynote_elements()
-            except Exception:
-                pass
+            self._refresh_used_keynotes()
             self._update_full_tree()
             self._update_status_bar()
             # Re-assert visibility — Revit steals focus on PostCommand
@@ -2713,12 +2903,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 self._update_status_bar()
                 return
             self._needs_update = True
-            try:
-                (self._used_keysdict,
-                 self._used_typesdict,
-                 self._used_viewsdict) = self.get_used_keynote_elements()
-            except Exception as ex:
-                logger.debug("Refresh used keys failed | %s" % ex)
+            self._refresh_used_keynotes()
             self._update_full_tree()
             self._update_status_bar()
 
