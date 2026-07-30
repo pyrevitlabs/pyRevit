@@ -46,6 +46,7 @@ tooltips:
     como linhas de: amostra de cor, nome do filtro, parâmetro, valor.
     Filtros que não são regras simples de "igual a" exibem N/A.
 
+context: doc-project
 author: wurschdhaud
 min_revit_version: 2022
 
