@@ -2412,13 +2412,30 @@ class KeynoteManagerWindow(forms.WPFWindow):
         sel = self.selected_keynote
         if not sel:
             return
+        if not self._conn:
+            forms.alert("No keynote file is connected.")
+            return
 
-        # IMPORTANT: check the UNFILTERED children (sel._children) — with an
-        # active search, sel.children returns only the filtered subset, and
-        # deleting a parent whose children are filtered out would orphan
-        # them invisibly in the shared keynote file.
-        has_any_children = bool(sel._children) or any(
-            k.parent_key == sel.key for k in self._snapshot_keynotes)
+        # Ask the DATABASE, not the in-memory tree.  The tree is not a
+        # reliable source for this check, for three separate reasons:
+        #   - an active search filter hides children (sel.children returns
+        #     only the FILTERED subset);
+        #   - _build_full_tree truncates below max_depth, so a node at that
+        #     boundary looks childless while the file still has descendants
+        #     under it;
+        #   - the cycle guard skips already-visited nodes, which likewise
+        #     omits them from the snapshots.
+        # Deleting on a stale "no children" answer orphans those rows
+        # invisibly in the shared keynote file, so a read failure must ABORT
+        # rather than fall through to "no children".
+        try:
+            db_keynotes = kdb.get_keynotes(self._conn)
+        except Exception as ex:
+            forms.alert(
+                "Keynote file is busy — nothing was deleted.\n%s\n\n"
+                "Please try again." % ex)
+            return
+        has_any_children = any(k.parent_key == sel.key for k in db_keynotes)
 
         if sel.is_category:
             # Removing a category
@@ -2456,9 +2473,23 @@ class KeynoteManagerWindow(forms.WPFWindow):
         sel = self.selected_keynote
         if not sel:
             return
-        # unfiltered children — a locked child hidden by the active search
-        # filter must still block the re-key
-        if any(x.locked for x in sel._children):
+        if not self._conn:
+            # _conn is legitimately None while the window is alive: the
+            # keynote file may have vanished, or a Change-File reconnect
+            # may have failed.
+            forms.alert("No keynote file is connected.")
+            return
+        # Locked-children check against the DATABASE for the same reason as
+        # remove_keynote: filtering, depth truncation and the cycle guard can
+        # all hide a locked child from the in-memory tree.  Abort on a read
+        # failure rather than proceeding on incomplete information.
+        try:
+            db_keynotes = kdb.get_keynotes(self._conn)
+        except Exception as ex:
+            forms.alert("Keynote file is busy — re-key not applied.\n%s\n\n"
+                        "Please try again." % ex)
+            return
+        if any(k.locked for k in db_keynotes if k.parent_key == sel.key):
             forms.alert("Some children are locked — cannot re-key.")
             return
         try:
