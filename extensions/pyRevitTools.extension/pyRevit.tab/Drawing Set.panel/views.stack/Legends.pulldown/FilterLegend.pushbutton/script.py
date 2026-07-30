@@ -129,10 +129,6 @@ text_type = text_type_by_name.get(
     selected_text_type_name, text_type_by_name[text_type_names[0]]
 )
 
-selected_text_type_name = cfg.get_option("text_type", text_type_names[0])
-text_type = text_type_by_name.get(
-    selected_text_type_name, text_type_by_name[text_type_names[0]]
-)
 
 # Length settings are stored/entered in whatever unit this project uses
 display_unit, is_metric = get_length_unit(doc)

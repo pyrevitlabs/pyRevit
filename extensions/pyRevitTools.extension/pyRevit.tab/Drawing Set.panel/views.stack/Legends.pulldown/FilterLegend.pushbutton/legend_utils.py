@@ -71,7 +71,7 @@ def create_swatch_region(doc, view, x, y, width, height):
     frt_id = (
         DB.FilteredElementCollector(doc).OfClass(DB.FilledRegionType).FirstElementId()
     )
-    if frt_id is None:
+    if frt_id is None or frt_id == DB.ElementId.InvalidElementId:
         raise ValueError("No FilledRegionType found in the project.")
 
     p1 = DB.XYZ(x, y, 0.0)

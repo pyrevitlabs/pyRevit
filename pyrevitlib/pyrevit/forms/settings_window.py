@@ -57,6 +57,7 @@ class SettingsWindow(forms.WPFWindow):
         if not custom_config:
             self.config = script.get_config(section)
         else:
+            section = section or "DEFAULT"
             CONFIG_FILE = appdata.get_universal_data_file(file_id=custom_config, file_ext='ini')
             if not op.exists(CONFIG_FILE):
                 open(CONFIG_FILE, "w").close()
