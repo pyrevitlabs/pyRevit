@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
 namespace pyRevitLabs.Common {
@@ -99,10 +100,11 @@ namespace pyRevitLabs.Common {
         /// Resolves the configuration file the current process should use.
         /// A machine-wide config marked with the ReadOnly attribute is a deliberate
         /// admin lock and is used as-is in read-only mode. For all-users installs
-        /// the machine-wide config is used directly only when the process can
-        /// actually write to it (e.g. an elevated installer or CLI); otherwise the
-        /// per-user config is used, seeded from the machine-wide config on first
-        /// run, so standard users can still save their own settings.
+        /// the machine-wide config is writable only from an elevated process
+        /// (installer or admin CLI); standard users always get a per-user config
+        /// under AppData, seeded from the machine-wide file when one exists.
+        /// Per-user installs always resolve to AppData unless the admin lock above
+        /// applies.
         /// </summary>
         public static ActiveConfigInfo GetActiveConfig(bool createIfMissing = true) {
             var machineRoot = PyRevitLabsConsts.PyRevitProgramDataPath;
@@ -114,12 +116,10 @@ namespace pyRevitLabs.Common {
             if (machineConfigExists && HasReadOnlyAttribute(machineConfig))
                 return new ActiveConfigInfo(machineConfig, isReadOnly: true, isMachineConfig: true);
 
-            if (IsAllUsersInstall()) {
+            if (IsAllUsersInstall() && IsElevatedProcess()) {
                 if (machineConfigExists) {
                     if (IsFileWritable(machineConfig))
                         return new ActiveConfigInfo(machineConfig, isReadOnly: false, isMachineConfig: true);
-                    // ACL-restricted machine config (e.g. created by the elevated
-                    // installer): fall through to a per-user config seeded from it
                 }
                 else if (!createIfMissing || TryCreateFile(machineConfig)) {
                     return new ActiveConfigInfo(machineConfig, isReadOnly: false, isMachineConfig: true);
@@ -127,6 +127,17 @@ namespace pyRevitLabs.Common {
             }
 
             return GetUserConfig(machineConfigExists ? machineConfig : null, createIfMissing);
+        }
+
+        /// <summary>
+        /// True when the current Windows process is elevated (installer / admin CLI).
+        /// Always false on non-Windows hosts so CI and cross-platform tooling
+        /// resolve to the per-user config path.
+        /// </summary>
+        private static bool IsElevatedProcess() {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return false;
+            return UserEnv.IsRunAsElevated();
         }
 
         private static ActiveConfigInfo GetUserConfig(string seedConfig, bool createIfMissing) {
@@ -150,8 +161,8 @@ namespace pyRevitLabs.Common {
                 }
             }
 
-bool isReadOnly = !File.Exists(userConfig) || !IsFileWritable(userConfig);
-return new ActiveConfigInfo(userConfig, isReadOnly, isMachineConfig: false);
+            bool isReadOnly = !File.Exists(userConfig) || !IsFileWritable(userConfig);
+            return new ActiveConfigInfo(userConfig, isReadOnly, isMachineConfig: false);
         }
 
         /// <summary>True when the file carries the DOS ReadOnly attribute (deliberate admin lock).</summary>
