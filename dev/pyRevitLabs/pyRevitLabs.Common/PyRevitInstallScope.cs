@@ -172,6 +172,9 @@ namespace pyRevitLabs.Common {
                 }
             }
 
+            if (File.Exists(userConfig))
+                return;
+
             TryCreateFile(userConfig);
         }
 
