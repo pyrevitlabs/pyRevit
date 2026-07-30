@@ -18,7 +18,7 @@ Button's config-click action to adjust text type, row/column sizing,
 sort order, and auto-open behavior -- see config.py.
 """
 
-from pyrevit import revit, forms, script
+from pyrevit import revit, forms, script, op
 from pyrevit import DB
 from pyrevit.coreutils.configparser import PyRevitConfigParser
 from pyrevit.coreutils import appdata
@@ -187,12 +187,7 @@ with revit.TransactionGroup("Create Filter Legend(s)"):
                 legend_view.Name = legend_name
                 existing_view_names.add(legend_name)
 
-                filter_ids = list(src_view.GetFilters())
-                filter_elems = []
-                for fid in filter_ids:
-                    f = doc.GetElement(fid)
-                    if f:
-                        filter_elems.append(f)
+                filter_elems = revit.query.get_view_filters(src_view)
 
                 if sort_alpha:
                     filter_elems.sort(key=lambda f: f.Name)

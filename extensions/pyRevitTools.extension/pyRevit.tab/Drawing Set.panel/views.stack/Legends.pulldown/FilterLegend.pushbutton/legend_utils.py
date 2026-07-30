@@ -1,11 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Shared drawing helpers for the Filter Legend tool.
-
-Kept in a sibling module (rather than inline in script.py) so the drawing
-logic can be unit-exercised / reused independently of the WPF / settings
-plumbing in script.py.
-"""
-
+"""Shared drawing helpers for the Filter Legend tool."""
 from pyrevit import DB
 from pyrevit.framework import List
 

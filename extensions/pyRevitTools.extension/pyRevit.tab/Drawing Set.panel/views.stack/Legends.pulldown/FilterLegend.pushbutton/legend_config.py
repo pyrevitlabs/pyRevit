@@ -77,7 +77,7 @@ def display_defaults(doc):
     return converted
 
 
-# Nominal base path -- this file need not exist. applocales derives the
+# Nominal base path -- this file does not need to exist. applocales derives the
 # sibling resource-dictionary filenames from it:
 #   resources.ResourceDictionary.<locale>.xaml
 _RESX_BASE = script.get_bundle_file("resources.xaml")

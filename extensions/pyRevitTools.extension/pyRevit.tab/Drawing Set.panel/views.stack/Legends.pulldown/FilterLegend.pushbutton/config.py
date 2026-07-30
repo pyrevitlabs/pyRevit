@@ -16,13 +16,10 @@ if not text_type_names:
     )
 
 schema = build_settings_schema(doc, text_type_names)
-try:
-    settings_window.show_settings(
-        schema,
-        section=doc.Title,
-        title=resx("Settings_Title", "Filter Legend Settings"),
-        custom_config=INI,
-    )
-except Exception as e:
-    from pyrevit.coreutils.logger import get_logger
-    get_logger(__name__).exception(e)
+
+settings_window.show_settings(
+    schema,
+    section=doc.Title,
+    title=resx("Settings_Title", "Filter Legend Settings"),
+    custom_config=INI,
+)
