@@ -29,8 +29,10 @@ Usage:
         print("Settings saved!")
 """
 
-from pyrevit import script, forms
+from pyrevit import script, forms, op
 from pyrevit.framework import Color, SolidColorBrush
+from pyrevit.coreutils.configparser import PyRevitConfigParser
+from pyrevit.coreutils import appdata
 
 # Setting types that are purely visual and carry no config value.
 _DISPLAY_ONLY_TYPES = ("section", "separator")
@@ -40,7 +42,7 @@ class SettingsWindow(forms.WPFWindow):
     """Dynamic settings window that generates UI from schema."""
 
     def __init__(
-        self, settings_schema, section=None, title="Settings", width=450,
+        self, settings_schema, section=None, title="Settings", width=450, custom_config=None
     ):
         """Initialize the settings window.
 
@@ -49,8 +51,20 @@ class SettingsWindow(forms.WPFWindow):
             section: Config section name
             title: Window title
             width: Window width in pixels
+            custom_config: Will generate a new ini with the given name. Uses default if not provided.
         """
-        self.config = script.get_config(section)
+        self.configparser = None
+        if not custom_config:
+            self.config = script.get_config(section)
+        else:
+            CONFIG_FILE = appdata.get_universal_data_file(file_id=custom_config, file_ext='ini')
+            if not op.exists(CONFIG_FILE):
+                open(CONFIG_FILE, "w").close()
+            self.configparser = PyRevitConfigParser(cfg_file_path=CONFIG_FILE)
+            try:
+                self.config = self.configparser.get_section(section)
+            except AttributeError:
+                self.config = self.configparser.add_section(section)
         self.settings_schema = settings_schema
         self.window_title = title
         self.window_width = width
@@ -615,7 +629,10 @@ class SettingsWindow(forms.WPFWindow):
             if name in validated_values:
                 self.config.set_option(name, validated_values[name])
 
-        script.save_config()
+        if not self.configparser:
+            script.save_config()
+        else:
+            self.configparser.save()
         self.result = True
         self.Close()
 
@@ -632,7 +649,11 @@ class SettingsWindow(forms.WPFWindow):
             yes=True,
             no=True,
         ):
-            script.reset_config(self.config_section)
+            if not self.configparser:
+                script.reset_config(self.config_section)
+            else:
+                self.configparser.remove_section(self.config_section)
+                self.configparser.save()
             self.result = False
             self.Close()
 
@@ -641,7 +662,7 @@ class SettingsWindow(forms.WPFWindow):
 # Public API
 # ---------------------------------------------------------------------------
 
-def show_settings(settings_schema, section=None, title="Settings", width=450):
+def show_settings(settings_schema, section=None, title="Settings", width=450, custom_config=None):
     """Show settings window and return True if saved.
 
     Args:
@@ -673,6 +694,7 @@ def show_settings(settings_schema, section=None, title="Settings", width=450):
         section (str): Config section name (default: None)
         title (str):   Window title (default: "Settings")
         width (int):   Window width in pixels (default: 450)
+        custom_config (str): Use a custom ini file (default: None)
 
     Returns:
         bool: True if settings were saved, False if canceled/reset.
@@ -700,6 +722,6 @@ def show_settings(settings_schema, section=None, title="Settings", width=450):
         if show_settings(settings_schema, section="MyToolSection", title="My Tool Settings"):
             print("Settings saved!")
     """
-    window = SettingsWindow(settings_schema, section, title, width)
+    window = SettingsWindow(settings_schema, section, title, width, custom_config)
     window.ShowDialog()
     return window.result
