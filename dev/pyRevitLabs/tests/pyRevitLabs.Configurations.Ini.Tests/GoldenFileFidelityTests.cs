@@ -277,29 +277,33 @@ public class GoldenFileFidelityTests
         }
     }
 
-    [Fact] // Section defaults still apply on read for keys absent from the file.
-    public void Defaults_AppliedOnRead_WhenKeyAbsent()
+    /// <summary>
+    /// Section defaults still apply on read for keys absent from the file. One
+    /// case per CLR type the materializer handles, plus one per section
+    /// </summary>
+    [Fact]
+    public void Defaults_MaterializePerTypeAndSection_WhenKeyAbsent()
     {
         var service = new ConfigurationBuilder(false)
             .AddIniConfiguration(Path.Combine(FixtureDir, "empty.ini"),
                 ConfigurationService.DefaultConfigurationName).Build();
 
-        Assert.True(service.Core.RocketMode);          // [DefaultValue(true)]
-        Assert.True(service.Core.BinCache);            // [DefaultValue(true)], matches PyRevitConsts.ConfigsBinaryCacheDefault
-        Assert.Null(service.Core.UserLocale);           // no default: unset means auto-detect from Revit UI language
-        Assert.Equal(10, service.Core.StartupLogTimeout); // [DefaultValue(10)]
-        Assert.Equal(48884, service.Routes.Port);       // [DefaultValue(48884)]
-        Assert.NotNull(service.Environment.Clones);     // empty-collection default
-        Assert.Empty(service.Environment.Clones!);
+        // one per type path
+        Assert.True(service.Core.RocketMode);                       // bool, default true
+        Assert.False(service.Core.CheckUpdates);                    // bool, default false
+        Assert.Equal(10, service.Core.StartupLogTimeout);           // int
+        Assert.Equal(0L, service.Core.MinHostDriveFreeSpace);       // long
+        Assert.Equal(string.Empty, service.Core.RequiredHostBuild); // string
 
-        // no-default primitives resolve to their off/empty/zero defaults on read
-        Assert.False(service.Core.CheckUpdates);        // [DefaultValue(false)]
-        Assert.Equal(0, service.Core.CpythonEngineVersion); // [DefaultValue(0)]
-        Assert.Equal(0L, service.Core.MinHostDriveFreeSpace); // [DefaultValue(0L)] (long)
-        Assert.Equal(string.Empty, service.Core.RequiredHostBuild); // [DefaultValue("")]
-        Assert.Equal(string.Empty, service.Core.OutputStyleSheet);  // [DefaultValue("")]
-        Assert.False(service.Routes.Status);            // [DefaultValue(false)]
-        Assert.Equal(string.Empty, service.Telemetry.TelemetryFileDir); // [DefaultValue("")]
+        // no declared default: unset means auto-detect from the Revit UI language,
+        // so this must stay null rather than collapse to string.Empty
+        Assert.Null(service.Core.UserLocale);
+
+        // one per section, so materialization is not proven on CoreSection alone
+        Assert.Equal(48884, service.Routes.Port);
+        Assert.Equal(string.Empty, service.Telemetry.TelemetryFileDir);
+        Assert.NotNull(service.Environment.Clones);                 // empty-collection default
+        Assert.Empty(service.Environment.Clones!);
     }
 
     // ---- migration ----

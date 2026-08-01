@@ -10,17 +10,41 @@ round-trip, the legacy single-quote fallback, and the
 missing-key-vs-stored-empty-string distinction.
 
 A dict-backed fake ``IConfiguration`` models the C# contract (raw strings in,
-``None`` only for a missing key) so the tests are hermetic: they never touch the
-user's real config file, disk, or install-scope detection, and run identically
-under IronPython 2/3 and CPython.
+``None`` only for a missing key) so most of these tests are hermetic: they never
+touch the user's real config file, disk, or install-scope detection, and run
+identically under IronPython 2/3 and CPython.
+
+``RealBackendContractTests`` is the exception. It runs the same assertions
+against the real INI backend over a temp file, so the fake cannot drift from the
+contract it claims to model without something failing. It skips when the labs
+assemblies are not loadable.
 
 Run from Revit via the pyRevit DevTools "Config Module Tests" button.
 """
 
+import os
+import tempfile
 import unittest
 
 from pyrevit.coreutils.configparser import ConfigSection, ConfigSections
 from pyrevit.userconfig import _SectionCompatWrapper
+
+
+def _load_ini_backend():
+    """Return the real IniConfiguration type, or None when it cannot be loaded."""
+    try:
+        from pyrevit.framework import clr
+
+        clr.AddReference("pyRevitLabs.Configurations.Ini")
+        from pyRevitLabs.Configurations.Ini import IniConfiguration
+
+        return IniConfiguration
+    except Exception:
+        # An unavailable backend must skip the contract tests, not error the module.
+        return None
+
+
+_INI_BACKEND = _load_ini_backend()
 
 
 class _FakeConfiguration(object):
@@ -366,3 +390,66 @@ class SectionCompatWrapperTests(unittest.TestCase):
         self.assertIs(
             self.section.get_option("key"), self.wrapper.get_option("key")
         )
+
+
+class RealBackendContractTests(unittest.TestCase):
+    """Pins the IConfiguration behaviors that _FakeConfiguration models.
+
+    The fake is hand-written, so nothing otherwise stops it from drifting from
+    the real backend while every test above keeps passing. Each case here
+    corresponds to a branch the Python decode ladder depends on.
+    """
+
+    def setUp(self):
+        if _INI_BACKEND is None:
+            self.skipTest("pyRevitLabs.Configurations.Ini is not loadable")
+        handle, self.path = tempfile.mkstemp(suffix=".ini")
+        os.close(handle)
+        self.config = _INI_BACKEND.Create(self.path)
+
+    def tearDown(self):
+        try:
+            os.remove(self.path)
+        except OSError:
+            pass
+
+    def test_missing_key_returns_the_supplied_default(self):
+        self.assertEqual(
+            "fallback", self.config.GetRawValueOrDefault("core", "absent", "fallback")
+        )
+
+    def test_stored_empty_value_is_not_the_default(self):
+        self.config.SetRawValue("core", "key", "")
+        self.assertEqual(
+            "", self.config.GetRawValueOrDefault("core", "key", "fallback")
+        )
+
+    def test_raw_value_round_trips_verbatim(self):
+        # Python owns its own encoding, so the backend must store the text as
+        # handed over rather than re-encoding it.
+        raw = '["C:\\\\Tools\\\\ext1"]'
+        self.config.SetRawValue("core", "key", raw)
+        self.assertEqual(raw, self.config.GetRawValueOrDefault("core", "key"))
+
+    def test_set_raw_value_creates_the_section(self):
+        self.assertFalse(self.config.HasSection("mytool"))
+        self.config.SetRawValue("mytool", "key", "1")
+        self.assertTrue(self.config.HasSection("mytool"))
+
+    def test_remove_missing_option_returns_false(self):
+        self.assertFalse(self.config.RemoveOption("core", "absent"))
+
+    def test_config_section_round_trips_against_the_real_backend(self):
+        section = ConfigSection("core", self.config)
+        for value in (10, "hello", ["a", "b"], {"k": "v"}):
+            section.set_option("key", value)
+            self.assertEqual(value, section.get_option("key"))
+
+    def test_bools_stay_bools_against_the_real_backend(self):
+        # assertIs rather than assertEqual: True == 1, so an equality check
+        # would accept a decode that handed back an int.
+        section = ConfigSection("core", self.config)
+        section.set_option("key", True)
+        self.assertIs(True, section.get_option("key"))
+        section.set_option("key", False)
+        self.assertIs(False, section.get_option("key"))

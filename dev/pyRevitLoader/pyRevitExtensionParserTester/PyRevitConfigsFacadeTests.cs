@@ -94,15 +94,15 @@ namespace pyRevitExtensionParserTester
             Assert.AreEqual(true, ReadFromDisk().Core.FileLogging);
         }
 
-        [Test]
-        public void LoggingLevel_Debug_MapsToDebugAndClearsVerbose()
+        [Test] // Debug implies verbose, so both flags are written; the pair reads back as Debug.
+        public void LoggingLevel_Debug_SetsBothFlags()
         {
             PyRevitConfigs.SetLoggingLevel(PyRevitLogLevels.Debug);
 
             Assert.AreEqual(PyRevitLogLevels.Debug, PyRevitConfigs.GetLoggingLevel());
             var disk = ReadFromDisk();
             Assert.AreEqual(true, disk.Core.Debug);
-            Assert.AreEqual(false, disk.Core.Verbose);
+            Assert.AreEqual(true, disk.Core.Verbose);
         }
 
         [Test]
