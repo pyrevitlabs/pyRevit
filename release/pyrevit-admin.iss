@@ -123,8 +123,6 @@ begin
       'Run the following from an elevated command prompt in the install bin folder:' + #13#10 +
       '  pyrevit attach master default --installed --allusers',
       mbError, MB_OK);
-  if not RunPyRevitCommand('configs seedshippeddefaults', False) then
-    Log('pyrevit configs seedshippeddefaults failed or was skipped');
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
