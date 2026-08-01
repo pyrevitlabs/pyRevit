@@ -90,11 +90,11 @@ def get_name(element, title_on_sheet=False):
                 return element.Name
             else:
                 return element.ViewName
-    if isinstance(element, DB.Workset):
-        return element.Name
     if PY3:
         return element.Name
-    else:
+    try:
+        return element.Name
+    except AttributeError:
         return Element.Name.GetValue(element)
 
 
