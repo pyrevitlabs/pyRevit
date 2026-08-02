@@ -34,14 +34,21 @@ def _load_upgrade_module():
     previous = {name: sys.modules.get(name) for name in module_names}
 
     try:
+        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        pyrevit_root = os.path.join(repo_root, 'pyrevit')
+        coreutils_root = os.path.join(pyrevit_root, 'coreutils')
+
         appdata_module = types.ModuleType('pyrevit.coreutils.appdata')
         logger_module = types.ModuleType('pyrevit.coreutils.logger')
         logger_module.get_logger = lambda name: _DummyLogger()
 
         coreutils_module = types.ModuleType('pyrevit.coreutils')
+        coreutils_module.__path__ = [coreutils_root]
         coreutils_module.appdata = appdata_module
+        coreutils_module.logger = logger_module
 
         pyrevit_module = types.ModuleType('pyrevit')
+        pyrevit_module.__path__ = [pyrevit_root]
         pyrevit_module.coreutils = coreutils_module
 
         sys.modules['pyrevit'] = pyrevit_module
@@ -49,8 +56,7 @@ def _load_upgrade_module():
         sys.modules['pyrevit.coreutils.appdata'] = appdata_module
         sys.modules['pyrevit.coreutils.logger'] = logger_module
 
-        repo_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-        module_path = os.path.join(repo_root, 'pyrevit', 'versionmgr', 'upgrade.py')
+        module_path = os.path.join(pyrevit_root, 'versionmgr', 'upgrade.py')
         spec = importlib.util.spec_from_file_location(
             'pyrevit_upgrade_test', module_path)
         module = importlib.util.module_from_spec(spec)
