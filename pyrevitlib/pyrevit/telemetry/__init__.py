@@ -290,10 +290,10 @@ def setup_telemetry(session_id=None):
                               'is not accessible. | %s', write_err)
                 disable_telemetry_to_file()
         else:
-            # if not, show error and disable telemetry
-            mlogger.error('Provided telemetry data folder path does not exist '
-                          'or is not a directory. Local file telemetry '
-                          'disabled.')
+            # if not, show error and disable file telemetry
+            mlogger.error('Provided telemetry address "%s" does not exits or '
+                          'is not a directory. File telemetry disabled.',
+                          telemetry_file_dir)
             disable_telemetry_to_file()
 
     # read or setup default values for server telemetry
