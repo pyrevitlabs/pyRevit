@@ -148,11 +148,28 @@ class HealBloatedTelemetryFieldsTests(unittest.TestCase):
         )
 
     def test_preserves_valid_below_threshold_values(self):
+        import json
+
         values = {
-            'telemetry_file_dir': 'C:\\logs',
-            'telemetry_server_url': 'https://telem.example.com',
-            'apptelemetry_server_url': 'https://apptelm.example.com',
+            'telemetry_file_dir': json.dumps('C:\\logs', separators=(',', ':'), ensure_ascii=False),
+            'telemetry_server_url': json.dumps('https://telem.example.com', separators=(',', ':'), ensure_ascii=False),
+            'apptelemetry_server_url': json.dumps('https://apptelm.example.com', separators=(',', ':'), ensure_ascii=False),
         }
+        user_config, tempdir = self._make_config(values)
+
+        healed = upgrade.heal_bloated_telemetry_fields(user_config)
+
+        self.assertEqual([], healed)
+        self.assertEqual(json.dumps('C:\\logs', separators=(',', ':'), ensure_ascii=False), values['telemetry_file_dir'])
+        self.assertEqual(json.dumps('https://telem.example.com', separators=(',', ':'), ensure_ascii=False), values['telemetry_server_url'])
+        self.assertEqual(
+            json.dumps('https://apptelm.example.com', separators=(',', ':'), ensure_ascii=False),
+            values['apptelemetry_server_url'],
+        )
+        self.assertEqual(
+            [],
+            glob.glob(os.path.join(tempdir, 'pyrevit_config.ini.bloated.*.bak')),
+        )
         user_config, tempdir = self._make_config(values)
 
         healed = upgrade.heal_bloated_telemetry_fields(user_config)
