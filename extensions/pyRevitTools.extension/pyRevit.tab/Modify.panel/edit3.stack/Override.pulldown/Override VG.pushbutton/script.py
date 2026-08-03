@@ -38,7 +38,7 @@ def colorvg(r, g, b, projline_only=False, xacn_name=None):
                     ogs.SetProjectionFillColor(color)
                     ogs.SetCutFillColor(color)
 
-                solid_fpattern = revit.query.get_solid_fillpattern()
+                solid_fpattern = revit.query.get_solid_fillpattern_element()
                 if solid_fpattern:
                     if HOST_APP.is_newer_than(2018):
                         ogs.SetCutForegroundPatternId(solid_fpattern.Id)

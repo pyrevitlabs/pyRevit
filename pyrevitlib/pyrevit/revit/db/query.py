@@ -2360,9 +2360,9 @@ def get_all_fillpattern_elements(fillpattern_target, doc=None):
     ]
 
 
-def get_solid_fillpattern(doc=None):
+def get_solid_fillpattern_element(doc=None):
     """
-    Returns the solid-fill drafting fill pattern.
+    Returns the solid-fill drafting fill pattern element.
 
     Args:
         doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
