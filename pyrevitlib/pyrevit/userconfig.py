@@ -847,7 +847,7 @@ class PyRevitConfig(object):
         return self.config_sections.get_section(section_name)
 
     def remove_section(self, section_name):
-        """Remove the named section from the config.
+        """Remove the named section, and its subsections, from the config.
 
         Args:
             section_name (str): name of the section

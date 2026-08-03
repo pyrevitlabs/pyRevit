@@ -286,6 +286,27 @@ class ConfigSectionsTests(unittest.TestCase):
         self.sections.remove_section("mytool")
         self.assertFalse(self.sections.has_section("mytool"))
 
+    def test_remove_section_also_removes_its_subsections(self):
+        # A left-behind subsection is inherited by the next install of a tool
+        # that believes it is starting from a clean config.
+        section = self.sections.add_section("mytool")
+        section.add_subsection("sub").set_option("enabled", True)
+        self.sections.remove_section("mytool")
+        self.assertFalse(self.sections.has_section("mytool.sub"))
+
+    def test_remove_section_keeps_similarly_named_siblings(self):
+        self.sections.add_section("mytool").set_option("a", 1)
+        self.sections.add_section("mytoolbox").set_option("b", 2)
+        self.sections.remove_section("mytool")
+        self.assertTrue(self.sections.has_section("mytoolbox"))
+
+    def test_remove_section_removes_orphaned_subsections(self):
+        # has_section is false for a parent that only exists as a dotted prefix,
+        # so the cleanup cannot depend on the parent being there.
+        self.sections.add_section("mytool.sub").set_option("enabled", True)
+        self.sections.remove_section("mytool")
+        self.assertFalse(self.sections.has_section("mytool.sub"))
+
     def test_get_missing_section_raises(self):
         # A missing section must not resolve to an empty section object, so
         # callers can tell "absent" from "present but empty".

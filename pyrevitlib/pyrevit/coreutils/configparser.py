@@ -229,12 +229,21 @@ class ConfigSections(object):
         return ConfigSection(section_name, self.__get_default_config)
 
     def remove_section(self, section_name):
-        """Remove the named section from the config.
+        """Remove the named section, and its subsections, from the config.
 
         Args:
             section_name (str): name of the section
         """
-        self.__get_default_config().RemoveSection(section_name)
+        config = self.__get_default_config()
+        # Subsections are stored as sibling sections under a dotted name, so
+        # dropping the parent alone would leave them behind for a reinstall to
+        # silently inherit.
+        subsection_prefix = section_name + '.'
+        for existing_name in list(config.GetSectionNames()):
+            if existing_name.startswith(subsection_prefix):
+                config.RemoveSection(existing_name)
+
+        config.RemoveSection(section_name)
 
     def __get_default_config(self):
         source = self.__service_source
