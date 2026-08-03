@@ -31,7 +31,7 @@ Usage:
 
 from pyrevit import script, forms, op
 from pyrevit.framework import Color, SolidColorBrush
-from pyrevit.coreutils.configparser import PyRevitConfigParser
+from pyrevit.coreutils.configparser import open_config_file
 from pyrevit.coreutils import appdata
 
 # Setting types that are purely visual and carry no config value.
@@ -61,7 +61,7 @@ class SettingsWindow(forms.WPFWindow):
             CONFIG_FILE = appdata.get_universal_data_file(file_id=custom_config, file_ext='ini')
             if not op.exists(CONFIG_FILE):
                 open(CONFIG_FILE, "w").close()
-            self.configparser = PyRevitConfigParser(cfg_file_path=CONFIG_FILE)
+            self.configparser = open_config_file(CONFIG_FILE)
             try:
                 self.config = self.configparser.get_section(section)
             except AttributeError:

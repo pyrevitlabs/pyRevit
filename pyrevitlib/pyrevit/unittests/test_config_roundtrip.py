@@ -551,3 +551,54 @@ class RealBackendContractTests(unittest.TestCase):
         self.assertIs(True, section.get_option("key"))
         section.set_option("key", False)
         self.assertIs(False, section.get_option("key"))
+
+
+class StandaloneConfigFileTests(unittest.TestCase):
+    """Covers open_config_file, the entry point for a tool's own ini file.
+
+    Exercises the full chain (labs assemblies, builder, ConfigSections) rather
+    than a fake, because the point of the helper is that it hands back sections
+    backed by a real file that survives being closed and reopened.
+    """
+
+    def setUp(self):
+        if _INI_BACKEND is None:
+            self.skipTest("pyRevitLabs.Configurations.Ini is not loadable")
+        handle, self.path = tempfile.mkstemp(suffix=".ini")
+        os.close(handle)
+
+    def tearDown(self):
+        try:
+            os.remove(self.path)
+        except OSError:
+            pass
+
+    def test_written_options_survive_a_reopen(self):
+        from pyrevit.coreutils.configparser import open_config_file
+
+        sections = open_config_file(self.path)
+        section = sections.add_section("mytool")
+        section.set_option("count", 3)
+        section.set_option("name", "legend")
+        sections.save()
+
+        reopened = open_config_file(self.path)
+        self.assertTrue(reopened.has_section("mytool"))
+        restored = reopened.get_section("mytool")
+        self.assertEqual(3, restored.get_option("count"))
+        self.assertEqual("legend", restored.get_option("name"))
+
+    def test_missing_section_raises_attribute_error(self):
+        from pyrevit.coreutils.configparser import open_config_file
+
+        sections = open_config_file(self.path)
+        with self.assertRaises(AttributeError):
+            sections.get_section("absent")
+
+    def test_unsaved_edits_do_not_reach_the_file(self):
+        from pyrevit.coreutils.configparser import open_config_file
+
+        sections = open_config_file(self.path)
+        sections.add_section("mytool").set_option("count", 3)
+
+        self.assertFalse(open_config_file(self.path).has_section("mytool"))

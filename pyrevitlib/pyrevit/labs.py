@@ -40,7 +40,8 @@ clr.AddReference('pyRevitLabs.PyRevit')
 clr.AddReference('PythonStubsBuilder')
 
 clr.AddReference('pyRevitLabs.Configurations')
-_perfmark("pyrevit.labs:after clr.AddReference block (14 pyRevitLabs DLLs)")
+clr.AddReference('pyRevitLabs.Configurations.Ini')
+_perfmark("pyrevit.labs:after clr.AddReference block (15 pyRevitLabs DLLs)")
 import Nett
 import OpenMcdf
 import YamlDotNet as libyaml
@@ -58,6 +59,8 @@ from PythonStubs import PythonStubsBuilder
 
 from pyRevitLabs import Configurations
 from pyRevitLabs.Configurations import ConfigurationService
+from pyRevitLabs.Configurations import ConfigurationBuilder
+from pyRevitLabs.Configurations.Ini import IniConfiguration
 _perfmark("pyrevit.labs:after `from pyRevitLabs import` block")
 
 from pyrevit import coreutils

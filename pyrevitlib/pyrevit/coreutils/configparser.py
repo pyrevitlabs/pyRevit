@@ -268,7 +268,40 @@ class ConfigSections(object):
 
         config.RemoveSection(section_name)
 
+    def save(self):
+        """Write pending changes to the backing file.
+
+        Option writes land in the in-memory store only, so a caller that edits
+        a config must call this for the change to survive the session.
+        """
+        self.__get_default_config().SaveConfiguration()
+
     def __get_default_config(self):
         source = self.__service_source
         service = source() if callable(source) else source
         return service.Configuration
+
+
+def open_config_file(cfg_file_path, read_only=False):
+    """Open an ini file of your own, separate from the pyRevit user config.
+
+    For tool settings that belong in their own file rather than in the shared
+    pyRevit config. To read or write the shared config, use
+    :obj:`pyrevit.userconfig.user_config` instead.
+
+    Args:
+        cfg_file_path (str): path to the ini file; it need not exist yet
+        read_only (bool): open without allowing writes
+
+    Returns:
+        (ConfigSections): the sections of the given file
+    """
+    # Imported here because pyrevit.labs imports this package; a module-level
+    # import would close the cycle.
+    from pyrevit.labs import ConfigurationBuilder, IniConfiguration
+
+    configuration = IniConfiguration.Create(cfg_file_path, read_only)
+    return ConfigSections(
+        ConfigurationBuilder(read_only)
+        .AddConfigurationSource(configuration)
+        .Build())
