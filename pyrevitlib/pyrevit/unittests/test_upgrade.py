@@ -1,13 +1,17 @@
 """Tests for config upgrade helpers."""
 
 import glob
-import importlib.util
 import json
 import os
 import sys
 import tempfile
 import types
 import unittest
+
+try:
+    import importlib.util as importlib_util
+except ImportError:  # IronPython 2 / Python 2.7
+    importlib_util = None
 
 
 class _DummyLogger(object):
