@@ -5,6 +5,38 @@ from pyrevit import coreutils
 from pyrevit.labs import ConfigurationService
 
 
+def decode_option_value(raw_value):
+    """Decode a stored option value across every encoding pyRevit has written.
+
+    Args:
+        raw_value (str): stored value text
+
+    Returns:
+        the decoded value, or the raw text when no encoding accounts for it
+    """
+    try:
+        return json.loads(raw_value)
+    except (ValueError, TypeError):
+        pass
+
+    try:
+        # Legacy configs stored Python-style single-quoted strings and lists.
+        return json.loads(raw_value.replace("'", '"'))
+    except (ValueError, TypeError):
+        pass
+
+    # Legacy configs stored bools unquoted and capitalized. The C# readers parse
+    # those spellings as bools, so a bare token has to decode the same way here
+    # or the two readers disagree about the same file. A string that merely
+    # spells "True" is stored quoted and has already decoded above.
+    token = raw_value.strip()
+    if token.lower() in ('true', 'false'):
+        return token.lower() == 'true'
+
+    # Bare values (e.g. Windows paths) are returned as-is.
+    return raw_value
+
+
 class ConfigSection(object):
     """Read/write access to the options of a single config section.
 
@@ -81,8 +113,8 @@ class ConfigSection(object):
 
         A missing key returns ``default_value``; an explicitly stored empty
         string is treated as a real value. Values that are not valid JSON
-        (legacy single-quoted strings, bare paths, Python bools) are returned
-        as-is rather than raising.
+        (legacy single-quoted strings, Python bools, bare paths) are decoded
+        tolerantly rather than raising.
 
         Args:
             op_name (str): name of the option
@@ -94,15 +126,7 @@ class ConfigSection(object):
         value = self.__config().GetRawValueOrDefault(self.__section_name, op_name, None)
         if value is None:
             return default_value
-        try:
-            return json.loads(value)
-        except (ValueError, TypeError):
-            try:
-                # Legacy configs stored Python-style single-quoted strings/lists.
-                return json.loads(value.replace("'", '"'))
-            except (ValueError, TypeError):
-                # Bare values (Windows paths, Python bools) are returned as-is.
-                return value
+        return decode_option_value(value)
 
     def set_option(self, op_name, value):
         """Set the value of an option, encoding it as JSON.

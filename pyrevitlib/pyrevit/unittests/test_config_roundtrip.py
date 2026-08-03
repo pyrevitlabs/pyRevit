@@ -203,10 +203,23 @@ class ConfigSectionToleranceTests(unittest.TestCase):
         self.config.SetRawValue("core", "key", raw)
         self.assertEqual(raw, self.section.get_option("key"))
 
-    def test_bare_python_bool_token_returned_as_string(self):
-        # A non-JSON "True" is tolerated as the raw string rather than crashing;
-        # it is intentionally not coerced to a Python bool.
+    def test_bare_python_bool_token_decodes_to_a_bool(self):
+        # The C# readers parse these spellings as bools. Returning the raw string
+        # would make "False" truthy, so a legacy disabled=False would read as
+        # disabled by one reader and enabled by the other.
         self.config.SetRawValue("core", "key", "True")
+        self.assertIs(True, self.section.get_option("key"))
+        self.config.SetRawValue("core", "key", "False")
+        self.assertIs(False, self.section.get_option("key"))
+
+    def test_bare_bool_token_decodes_regardless_of_case(self):
+        self.config.SetRawValue("core", "key", "FALSE")
+        self.assertIs(False, self.section.get_option("key"))
+
+    def test_quoted_bool_word_stays_a_string(self):
+        # A string that merely spells "True" is stored quoted, which is what
+        # keeps the bare-token rule from swallowing real string values.
+        self.section.set_option("key", "True")
         self.assertEqual("True", self.section.get_option("key"))
 
 
@@ -412,11 +425,11 @@ class SectionCompatWrapperTests(unittest.TestCase):
         self.wrapper.set_option("key", False)
         self.assertIs(False, self.wrapper.get_option("key"))
 
-    def test_legacy_python_bool_is_returned_as_is(self):
-        # Matches the ConfigSection ladder: a bare, non-JSON value is passed
-        # through rather than guessed at.
+    def test_legacy_python_bool_decodes_to_a_bool(self):
+        # Both bridges share one decoder, so neither can drift into reporting a
+        # legacy False as a truthy string.
         self.config.SetRawValue("core", "key", "False")
-        self.assertEqual("False", self.wrapper.get_option("key"))
+        self.assertIs(False, self.wrapper.get_option("key"))
 
     def test_list_round_trips(self):
         self.wrapper.set_option("key", ["a", "b"])

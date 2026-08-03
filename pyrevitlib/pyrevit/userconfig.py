@@ -55,7 +55,7 @@ from pyrevit import PyRevitException
 from pyrevit import EXTENSIONS_DEFAULT_DIR, THIRDPARTY_EXTENSIONS_DEFAULT_DIR
 from pyrevit import framework
 from pyrevit.compat import winreg as wr
-from pyrevit.coreutils.configparser import ConfigSections
+from pyrevit.coreutils.configparser import ConfigSections, decode_option_value
 
 from pyrevit.labs import PyRevit
 from pyrevit.labs import Common
@@ -108,13 +108,7 @@ class _SectionCompatWrapper(object):
         value = self._config.GetRawValueOrDefault(self._section_name, op_name, None)
         if value is None:
             return default_value
-        try:
-            return json.loads(value)
-        except (ValueError, TypeError):
-            try:
-                return json.loads(value.replace("'", '"'))
-            except (ValueError, TypeError):
-                return value
+        return decode_option_value(value)
 
     def set_option(self, op_name, value):
         if self._is_readonly():
