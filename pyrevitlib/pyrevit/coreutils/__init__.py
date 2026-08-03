@@ -1508,3 +1508,23 @@ def get_integer_length(number):
 def get_my_ip():
     """Return local ip address of this machine."""
     return socket.gethostbyname(socket.gethostname())
+
+
+def unique_name(base_name, existing_names):
+    """Return a name that does not collide with any existing name.
+
+    Appends " (2)", " (3)", ... until unique..
+
+    Args:
+        base_name: preferred name
+        existing_names: pre-fetched set of existing  names
+
+    Returns:
+        str: a unique view name
+    """
+    name = base_name
+    counter = 2
+    while name in existing_names:
+        name = "{0} ({1})".format(base_name, counter)
+        counter += 1
+    return name

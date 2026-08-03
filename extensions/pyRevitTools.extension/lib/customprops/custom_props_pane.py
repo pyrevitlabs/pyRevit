@@ -15,7 +15,7 @@ from pyrevit.revit.events import execute_in_revit_context
 from pyrevit.revit.db import create as revit_create
 from pyrevit.userconfig import user_config
 from pyrevit.compat import get_elementid_value_func
-from pyrevit.coreutils import applocales
+from pyrevit.coreutils import applocales, unique_name
 from pyrevit.framework import SolidColorBrush, Color, Media
 
 from match.match_utils import PropKeyValue
@@ -1282,19 +1282,6 @@ class CustomPropertiesPanel(forms.WPFPanel):
             pass
         return None
 
-    @staticmethod
-    def _unique_filter_name(doc, base_name):
-        """Return base_name, or base_name (2), (3), … if the name is already taken."""
-        existing = set(f.Name for f in query.get_rule_filters(doc))
-        if base_name not in existing:
-            return base_name
-        counter = 2
-        while True:
-            candidate = "{} ({})".format(base_name, counter)
-            if candidate not in existing:
-                return candidate
-            counter += 1
-
     def _apply_one_filter(self, doc, view, pkv, revit_color, solid_fill_id, elements):
         """Create or reuse a ParameterFilterElement and apply colour override to view."""
         existing = self._find_matching_filter(doc, pkv)
@@ -1319,7 +1306,8 @@ class CustomPropertiesPanel(forms.WPFPanel):
             base_name = "{} == {}".format(pkv.name, pkv.display_value)
             if len(base_name) > 100:
                 base_name = base_name[:97] + "..."
-            filter_name = self._unique_filter_name(doc, base_name)
+            existing = set(f.Name for f in query.get_rule_filters(doc))
+            filter_name = unique_name(base_name, existing)
 
             # Convert value to the type create_param_value_filter expects
             if pkv.datatype == DB.StorageType.ElementId:
