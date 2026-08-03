@@ -907,7 +907,9 @@ namespace pyRevitCLI
                             else
                             {
                                 var existingVal = cfg.GetSectionKeyValueOrDefault<string>(revitVersion, configSection, configOption);
-                                if (!string.IsNullOrEmpty(existingVal))
+                                // Null means absent; a key stored empty is a value
+                                // the reader must be able to tell apart from unset.
+                                if (existingVal is not null)
                                     Console.WriteLine($"{configOption} = {existingVal}");
                                 else
                                     Console.WriteLine($"Configuration key \"{configOption}\" is not set");
