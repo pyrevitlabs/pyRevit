@@ -186,6 +186,10 @@ namespace pyRevitLabs.PyRevit
 
             try
             {
+                string targetDir = Path.GetDirectoryName(targetFile);
+                if (!string.IsNullOrEmpty(targetDir))
+                    CommonUtils.EnsurePath(targetDir);
+
                 File.WriteAllText(targetFile, File.ReadAllText(sourceFile));
             }
             catch (Exception ex)

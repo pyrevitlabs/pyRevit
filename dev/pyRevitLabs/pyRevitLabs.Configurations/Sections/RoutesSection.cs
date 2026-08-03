@@ -17,10 +17,12 @@ public sealed record RoutesSection
     public bool? Status { get; set; }
 
     /// <summary>
-    /// Address the server binds to. No default: unset binds to the server's own
-    /// default interface.
+    /// Address the server binds to. Default empty, which binds every available
+    /// interface. Callers pass this straight to a socket bind, which rejects a
+    /// null host.
     /// </summary>
     [KeyName("host")]
+    [DefaultValue("")]
     public string? Host { get; set; }
 
     /// <summary>
