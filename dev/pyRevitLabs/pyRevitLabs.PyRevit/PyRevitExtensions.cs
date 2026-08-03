@@ -220,6 +220,41 @@ namespace pyRevitLabs.PyRevit {
 
         }
 
+        // save extension credentials to config file so the extension can be updated later,
+        // by the in-Revit extension manager or the cli, without asking for credentials again.
+        // this writes the same config section and keys as the in-Revit extension manager
+        // @handled @logs
+        public static void SaveExtensionCredentials(string extensionName,
+                                                    PyRevitExtensionTypes extensionType,
+                                                    GitInstallerCredentials credentials) {
+            if (credentials is null
+                || !credentials.IsValid()
+                || (credentials is GitInstallerUsernamePasswordCredentials upCreds
+                    && (string.IsNullOrWhiteSpace(upCreds.Username) || string.IsNullOrWhiteSpace(upCreds.Password)))
+                || (credentials is GitInstallerAccessTokenCredentials tokCreds
+                    && string.IsNullOrWhiteSpace(tokCreds.AccessToken)))
+                throw new PyRevitException("Can not save invalid or empty credentials.");
+
+            var cfg = PyRevitConfigs.GetConfigFile();
+            string extSection = PyRevitExtension.MakeConfigName(extensionName, extensionType);
+
+            _logger.Debug("Saving credentials for extension \"{0}\" to config section \"{1}\"",
+                          extensionName, extSection);
+
+            cfg.SetSectionKeyValue(extSection, PyRevitConsts.ExtensionPrivateRepoKey, true);
+            if (credentials is GitInstallerUsernamePasswordCredentials userpassCreds) {
+                cfg.SetSectionKeyValue(extSection, PyRevitConsts.ExtensionUsernameKey, userpassCreds.Username);
+                cfg.SetSectionKeyValue(extSection, PyRevitConsts.ExtensionPasswordKey, userpassCreds.Password);
+            }
+            else if (credentials is GitInstallerAccessTokenCredentials tokenCreds) {
+                cfg.SetSectionKeyValue(extSection, PyRevitConsts.ExtensionTokenKey, tokenCreds.AccessToken);
+                // the in-Revit updater authenticates with the username/password pair
+                // so store the token in that format as well
+                cfg.SetSectionKeyValue(extSection, PyRevitConsts.ExtensionUsernameKey, PyRevitConsts.ExtensionTokenDefaultUsername);
+                cfg.SetSectionKeyValue(extSection, PyRevitConsts.ExtensionPasswordKey, tokenCreds.AccessToken);
+            }
+        }
+
         // installs extension
         // @handled @logs
         public static void InstallExtension(PyRevitExtensionDefinition extDef,

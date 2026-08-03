@@ -6,6 +6,8 @@ using System.Linq;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
+using pyRevitLabs.Configurations.Abstractions;
+using pyRevitLabs.Configurations.Ini;
 using pyRevitLabs.Configurations.Sections;
 using pyRevitLabs.NLog;
 
@@ -116,7 +118,7 @@ namespace pyRevitLabs.PyRevit
         {
             // safely get clone list
             var cfg = PyRevitConfigs.GetConfigFile();
-            var clonesDict = cfg.Environment.Clones;
+            var clonesDict = MergeMachineRegisteredClones(cfg, cfg.Environment.Clones);
 
             var validatedClones = new List<PyRevitClone>();
             if (clonesDict is null)
@@ -155,9 +157,74 @@ namespace pyRevitLabs.PyRevit
             if (listChanged)
             {
                 // rewrite the verified clones list back to config file
-                SaveRegisteredClones(validatedClones);
+                try
+                {
+                    SaveRegisteredClones(validatedClones);
+                }
+                catch (Exception saveEx)
+                {
+                    // pruning is cache hygiene; a read must not fail because
+                    // the active config can not be written (e.g. admin-locked)
+                    logger.Debug("Could not prune registered clones list | {0}", saveEx.Message);
+                }
             }
             return validatedClones;
+        }
+
+        // overlay the machine-wide clone registry of an all-users install on top of
+        // the per-user config so seeded copies can not go stale when an admin
+        // re-registers or moves clones
+        private static Dictionary<string, string> MergeMachineRegisteredClones(
+            IConfigurationService activeConfig,
+            Dictionary<string, string> clonesDict)
+        {
+            if (!PyRevitInstallScope.IsAllUsersInstall())
+                return clonesDict;
+
+            var machineConfigPath = PyRevitConsts.AdminConfigFilePath;
+            if (!CommonUtils.VerifyFile(machineConfigPath))
+                return clonesDict;
+
+            // active config already is the machine config; nothing to merge
+            var activeConfigPath = activeConfig.Configuration.ConfigurationPath;
+            if (activeConfigPath != null
+                    && machineConfigPath.NormalizeAsPath().Equals(
+                        activeConfigPath.NormalizeAsPath(),
+                        StringComparison.OrdinalIgnoreCase))
+                return clonesDict;
+
+            Dictionary<string, string> machineClones = null;
+            try
+            {
+                var machineConfig = IniConfiguration.Create(machineConfigPath, readOnly: true);
+                if (machineConfig.HasSectionKey(
+                        PyRevitConsts.EnvConfigsSectionName,
+                        PyRevitConsts.EnvConfigsInstalledClonesKey))
+                    machineClones = machineConfig.GetValue<Dictionary<string, string>>(
+                        PyRevitConsts.EnvConfigsSectionName,
+                        PyRevitConsts.EnvConfigsInstalledClonesKey);
+            }
+            catch (Exception readEx)
+            {
+                logger.Debug("Could not read machine-wide clone registry | {0}", readEx.Message);
+            }
+
+            if (machineClones is null || machineClones.Count == 0)
+                return clonesDict;
+
+            var merged = clonesDict != null
+                ? new Dictionary<string, string>(clonesDict, StringComparer.OrdinalIgnoreCase)
+                : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var machineClone in machineClones)
+            {
+                // machine entries fill gaps and replace per-user entries that no
+                // longer point to a valid location; a valid per-user override wins
+                string userClonePath;
+                if (!merged.TryGetValue(machineClone.Key, out userClonePath)
+                        || !CommonUtils.VerifyPath(userClonePath.NormalizeAsPath()))
+                    merged[machineClone.Key] = machineClone.Value;
+            }
+            return merged;
         }
 
         // return requested registered clone

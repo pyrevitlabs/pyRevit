@@ -1,9 +1,35 @@
 using System;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
 namespace pyRevitLabs.Common {
+    /// <summary>
+    /// Describes the configuration file resolved for the current process:
+    /// where it lives, whether the process is allowed to persist changes to it,
+    /// and whether it is the machine-wide (ProgramData) config of an admin install.
+    /// </summary>
+    public sealed class ActiveConfigInfo {
+        internal ActiveConfigInfo(string configPath, bool isReadOnly, bool isMachineConfig) {
+            ConfigPath = configPath;
+            IsReadOnly = isReadOnly;
+            IsMachineConfig = isMachineConfig;
+        }
+
+        /// <summary>Full path of the active configuration file.</summary>
+        public string ConfigPath { get; private set; }
+
+        /// <summary>
+        /// True when the config must be treated as read-only
+        /// (admin-locked seed, or a file the process can not write to).
+        /// </summary>
+        public bool IsReadOnly { get; private set; }
+
+        /// <summary>True when the active config is the machine-wide (ProgramData) config.</summary>
+        public bool IsMachineConfig { get; private set; }
+    }
+
     /// <summary>
     /// Resolves pyRevit install scope (per-user vs machine-wide admin install) and
     /// the active configuration file path shared by CLI, Revit Python, and the C# loader.
@@ -69,21 +95,133 @@ namespace pyRevitLabs.Common {
 
         /// <summary>
         /// Active pyRevit configuration file for the current install scope.
-        /// Creates an empty default file when missing so callers can persist settings.
+        /// Best-effort: creates an empty default file when missing so callers can persist settings.
         /// </summary>
         public static string GetActiveConfigFilePath(bool createIfMissing = true) {
-            var configRoot = GetConfigDirectory();
-            var discovered = FindConfigIniInDirectory(configRoot);
-            var finalPath = discovered ?? Path.Combine(configRoot, PyRevitLabsConsts.DefaultConfigsFileName);
+            return GetActiveConfig(createIfMissing).ConfigPath;
+        }
 
-            if (createIfMissing && !File.Exists(finalPath)) {
-                var directory = Path.GetDirectoryName(finalPath);
-                if (!string.IsNullOrEmpty(directory))
-                    Directory.CreateDirectory(directory);
-                File.Create(finalPath).Dispose();
+        /// <summary>
+        /// Resolves the configuration file the current process should use.
+        /// A machine-wide config marked with the ReadOnly attribute is a deliberate
+        /// admin lock and is used as-is in read-only mode. For all-users installs,
+        /// elevated processes (installer / admin CLI) always target ProgramData;
+        /// standard users always get a per-user config under AppData, seeded from
+        /// the machine-wide file when one exists. Per-user installs always resolve
+        /// to AppData unless the admin lock above applies.
+        /// </summary>
+        public static ActiveConfigInfo GetActiveConfig(bool createIfMissing = true) {
+            var machineRoot = PyRevitLabsConsts.PyRevitProgramDataPath;
+            var machineConfig = FindConfigIniInDirectory(machineRoot)
+                ?? Path.Combine(machineRoot, PyRevitLabsConsts.DefaultConfigsFileName);
+            bool machineConfigExists = File.Exists(machineConfig);
+
+            // admin-locked seed applies to every install scope
+            if (machineConfigExists && HasReadOnlyAttribute(machineConfig))
+                return new ActiveConfigInfo(machineConfig, isReadOnly: true, isMachineConfig: true);
+
+            if (IsAllUsersInstall() && IsElevatedProcess()) {
+                if (machineConfigExists) {
+                    bool writable = IsFileWritable(machineConfig);
+                    return new ActiveConfigInfo(
+                        machineConfig, isReadOnly: !writable, isMachineConfig: true);
+                }
+                if (!createIfMissing || TryCreateFile(machineConfig)) {
+                    return new ActiveConfigInfo(machineConfig, isReadOnly: false, isMachineConfig: true);
+                }
             }
 
-            return finalPath;
+            return GetUserConfig(machineConfigExists ? machineConfig : null, createIfMissing);
+        }
+
+        /// <summary>
+        /// True when the current Windows process is elevated (installer / admin CLI).
+        /// Always false on non-Windows hosts so CI and cross-platform tooling
+        /// resolve to the per-user config path.
+        /// </summary>
+        private static bool IsElevatedProcess() {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return false;
+            return UserEnv.IsRunAsElevated();
+        }
+
+        private static ActiveConfigInfo GetUserConfig(string seedConfig, bool createIfMissing) {
+            var userRoot = PyRevitLabsConsts.PyRevitPath;
+            var userConfig = FindConfigIniInDirectory(userRoot)
+                ?? Path.Combine(userRoot, PyRevitLabsConsts.DefaultConfigsFileName);
+
+            if (createIfMissing && !File.Exists(userConfig))
+                EnsureUserConfigFile(userConfig, seedConfig);
+
+            bool isReadOnly = !File.Exists(userConfig) || !IsFileWritable(userConfig);
+            return new ActiveConfigInfo(userConfig, isReadOnly, isMachineConfig: false);
+        }
+
+        private static void EnsureUserConfigFile(string userConfig, string seedConfig) {
+            try {
+                var directory = Path.GetDirectoryName(userConfig);
+                if (!string.IsNullOrEmpty(directory))
+                    Directory.CreateDirectory(directory);
+            }
+            catch {
+                // fall through; TryCreateFile reports failure when the path is unusable
+            }
+
+            if (seedConfig != null) {
+                try {
+                    File.Copy(seedConfig, userConfig, overwrite: false);
+                    return;
+                }
+                catch {
+                    // seed unreadable or copy blocked: still give the user a writable ini
+                }
+            }
+
+            if (File.Exists(userConfig))
+                return;
+
+            TryCreateFile(userConfig);
+        }
+
+        /// <summary>True when the file carries the DOS ReadOnly attribute (deliberate admin lock).</summary>
+        public static bool HasReadOnlyAttribute(string filePath) {
+            try {
+                return File.Exists(filePath)
+                    && (File.GetAttributes(filePath) & FileAttributes.ReadOnly) == FileAttributes.ReadOnly;
+            }
+            catch {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// True when the current process can write to the existing file.
+        /// Probes with a real open-for-write so NTFS ACL restrictions are
+        /// detected as well as the ReadOnly attribute.
+        /// </summary>
+        public static bool IsFileWritable(string filePath) {
+            if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
+                return false;
+            try {
+                using (File.Open(filePath, FileMode.Open, FileAccess.Write, FileShare.ReadWrite)) { }
+                return true;
+            }
+            catch {
+                return false;
+            }
+        }
+
+        private static bool TryCreateFile(string filePath) {
+            try {
+                var directory = Path.GetDirectoryName(filePath);
+                if (!string.IsNullOrEmpty(directory))
+                    Directory.CreateDirectory(directory);
+                File.Create(filePath).Dispose();
+                return true;
+            }
+            catch {
+                return false;
+            }
         }
 
         /// <summary>
