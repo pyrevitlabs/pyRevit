@@ -120,20 +120,15 @@ class _FakeTypedSection(object):
 
 
 class _FakeConfigurationService(object):
-    """Minimal service that hands every configuration name the same config."""
-
-    DefaultConfigurationName = "Default"
+    """Minimal service over a single backing configuration."""
 
     def __init__(self, configuration, read_only=False):
-        self._configuration = configuration
+        self.Configuration = configuration
         self.ReadOnly = read_only
         self.applied = []
 
-    def __getitem__(self, _configuration_name):
-        return self._configuration
-
-    def ApplySection(self, configuration_name, section_value):
-        self.applied.append((configuration_name, section_value))
+    def ApplySection(self, section_value):
+        self.applied.append(section_value)
 
 
 class ConfigSectionRoundTripTests(unittest.TestCase):
@@ -417,7 +412,7 @@ class SectionCompatWrapperTests(unittest.TestCase):
         self.config = _FakeConfiguration()
         self.service = _FakeConfigurationService(self.config)
         self.wrapper = _SectionCompatWrapper(
-            "core", _FakeTypedSection(), self.config, self.service, "Default"
+            "core", _FakeTypedSection(), self.config, self.service
         )
         self.section = ConfigSection("core", self.config)
 
@@ -453,7 +448,7 @@ class SectionCompatWrapperTests(unittest.TestCase):
     def test_typed_property_is_written_through_the_service(self):
         self.wrapper.RocketMode = True
         self.assertEqual(1, len(self.service.applied))
-        _config_name, pending = self.service.applied[0]
+        pending = self.service.applied[0]
         self.assertIs(True, pending.RocketMode)
 
     def test_typed_property_assigned_none_is_ignored(self):
@@ -474,7 +469,7 @@ class SectionCompatWrapperReadOnlyTests(unittest.TestCase):
         self.config = _FakeConfiguration()
         self.service = _FakeConfigurationService(self.config, read_only=True)
         self.wrapper = _SectionCompatWrapper(
-            "core", _FakeTypedSection(), self.config, self.service, "Default"
+            "core", _FakeTypedSection(), self.config, self.service
         )
 
     def test_typed_property_assignment_is_skipped(self):

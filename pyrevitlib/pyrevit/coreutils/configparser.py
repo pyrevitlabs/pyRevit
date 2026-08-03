@@ -2,7 +2,6 @@
 import json
 
 from pyrevit import coreutils
-from pyrevit.labs import ConfigurationService
 
 
 def decode_option_value(raw_value):
@@ -272,4 +271,4 @@ class ConfigSections(object):
     def __get_default_config(self):
         source = self.__service_source
         service = source() if callable(source) else source
-        return service[ConfigurationService.DefaultConfigurationName]
+        return service.Configuration

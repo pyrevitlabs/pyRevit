@@ -171,7 +171,7 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        ToggleExtension(string revitVersion, bool enable, string cloneName, string extName) {
+        ToggleExtension(bool enable, string cloneName, string extName) {
             if (extName != null) {
                 PyRevitClone clone = null;
                 if (cloneName != null)
@@ -179,15 +179,15 @@ namespace pyRevitCLI {
 
                 if (enable) {
                     if (clone != null)
-                        PyRevitExtensions.EnableShippedExtension(revitVersion, clone, extName);
+                        PyRevitExtensions.EnableShippedExtension(clone, extName);
                     else
-                        PyRevitExtensions.EnableInstalledExtension(revitVersion, extName);
+                        PyRevitExtensions.EnableInstalledExtension(extName);
                 }
                 else {
                     if (clone != null)
-                        PyRevitExtensions.DisableShippedExtension(revitVersion, clone, extName);
+                        PyRevitExtensions.DisableShippedExtension(clone, extName);
                     else
-                        PyRevitExtensions.DisableInstalledExtension(revitVersion, extName);
+                        PyRevitExtensions.DisableInstalledExtension(extName);
                 }
             }
         }

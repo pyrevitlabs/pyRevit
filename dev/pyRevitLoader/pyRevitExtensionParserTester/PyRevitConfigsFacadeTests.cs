@@ -33,9 +33,9 @@ namespace pyRevitExtensionParserTester
             _path = Path.Combine(Path.GetTempPath(), $"facade_{Guid.NewGuid():N}.ini");
             File.WriteAllText(_path, "[core]\n");
 
-            PyRevitConfigStore.SetFactory(_ =>
+            PyRevitConfigStore.SetFactory(() =>
                 new ConfigurationBuilder(false)
-                    .AddIniConfiguration(_path, ConfigurationService.DefaultConfigurationName)
+                    .AddIniConfiguration(_path)
                     .Build());
             PyRevitConfigStore.Reload();
         }
@@ -54,7 +54,7 @@ namespace pyRevitExtensionParserTester
         /// <summary>A fresh service over the temp file, to prove a write hit disk.</summary>
         private IConfigurationService ReadFromDisk() =>
             new ConfigurationBuilder(false)
-                .AddIniConfiguration(_path, ConfigurationService.DefaultConfigurationName)
+                .AddIniConfiguration(_path)
                 .Build();
 
         // ---- core ----
@@ -190,9 +190,9 @@ namespace pyRevitExtensionParserTester
                 "[core]\nuserextensions = [\"C:\\\\does\\\\not\\\\exist\"]\n"
                 + "[environment]\nsources = [\"C:\\\\also\\\\gone\\\\exts.json\"]\n");
 
-            PyRevitConfigStore.SetFactory(_ =>
+            PyRevitConfigStore.SetFactory(() =>
                 new ConfigurationBuilder(true)
-                    .AddIniConfiguration(_path, ConfigurationService.DefaultConfigurationName, true)
+                    .AddIniConfiguration(_path, true)
                     .Build());
             PyRevitConfigStore.Reload();
 

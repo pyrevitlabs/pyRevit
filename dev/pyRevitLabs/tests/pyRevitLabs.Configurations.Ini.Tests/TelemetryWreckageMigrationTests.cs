@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using pyRevitLabs.Configurations;
 using pyRevitLabs.Configurations.Abstractions;
 using pyRevitLabs.Configurations.Ini.Extensions;
 
@@ -28,7 +27,7 @@ public class TelemetryWreckageMigrationTests : IDisposable
 
     private static IConfigurationService Build(string path) =>
         new ConfigurationBuilder(false)
-            .AddIniConfiguration(path, ConfigurationService.DefaultConfigurationName)
+            .AddIniConfiguration(path)
             .Build();
 
     /// <summary>The three field shapes as they appear in an affected config.</summary>

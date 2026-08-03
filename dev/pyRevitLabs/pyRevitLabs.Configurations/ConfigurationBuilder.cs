@@ -1,25 +1,22 @@
-using System.Collections.Specialized;
 using pyRevitLabs.Configurations.Abstractions;
 
 namespace pyRevitLabs.Configurations;
 
 /// <summary>
-/// Assembles an <see cref="IConfigurationService"/> from one or more named
-/// configurations. Sources are layered in the order they are added, so add the
-/// default configuration first and any override after it.
+/// Assembles an <see cref="IConfigurationService"/> over a single configuration
+/// source.
 /// </summary>
 public sealed class ConfigurationBuilder
 {
     private readonly bool _readOnly;
-    private readonly List<ConfigurationName> _names = [];
-    private readonly Dictionary<string, IConfiguration> _configurations = [];
+    private IConfiguration? _configuration;
 
     /// <summary>
     /// Starts a new builder.
     /// </summary>
     /// <param name="readOnly">
     /// True to make the built service refuse every write, regardless of whether
-    /// the individual configurations are themselves writable.
+    /// the configuration is itself writable.
     /// </param>
     public ConfigurationBuilder(bool readOnly)
     {
@@ -27,32 +24,34 @@ public sealed class ConfigurationBuilder
     }
 
     /// <summary>
-    /// Registers a configuration under a name and returns this builder for
+    /// Registers the configuration to serve and returns this builder for
     /// chaining.
     /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="configuration"/> is null.</exception>
-    /// <exception cref="ArgumentException"><paramref name="configurationName"/> is null or whitespace.</exception>
-    /// <exception cref="ArgumentException">A configuration is already registered under that name.</exception>
-    public ConfigurationBuilder AddConfigurationSource(string configurationName, IConfiguration configuration)
+    /// <exception cref="InvalidOperationException">A configuration is already registered.</exception>
+    public ConfigurationBuilder AddConfigurationSource(IConfiguration configuration)
     {
         if (configuration == null)
             throw new ArgumentNullException(nameof(configuration));
 
-        if (string.IsNullOrWhiteSpace(configurationName))
-            throw new ArgumentException("Value cannot be null or empty.", nameof(configurationName));
+        if (_configuration is not null)
+            throw new InvalidOperationException("A configuration source is already registered.");
 
-        _names.Add(new ConfigurationName() {Index = _configurations.Count, Name = configurationName});
-        _configurations.Add(configurationName, configuration);
+        _configuration = configuration;
 
         return this;
     }
 
     /// <summary>
-    /// Creates the service over the registered configurations. The builder can
-    /// be reused, but the returned service does not observe later additions.
+    /// Creates the service over the registered configuration.
     /// </summary>
+    /// <exception cref="InvalidOperationException">No configuration was registered.</exception>
     public IConfigurationService Build()
     {
-        return ConfigurationService.Create(_readOnly, _names, _configurations);
+        if (_configuration is null)
+            throw new InvalidOperationException(
+                "No configuration source was registered; call AddConfigurationSource before Build.");
+
+        return ConfigurationService.Create(_readOnly, _configuration);
     }
 }

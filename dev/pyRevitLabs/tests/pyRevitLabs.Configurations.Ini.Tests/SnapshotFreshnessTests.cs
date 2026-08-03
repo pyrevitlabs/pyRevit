@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using pyRevitLabs.Configurations;
 using pyRevitLabs.Configurations.Abstractions;
 using pyRevitLabs.Configurations.Ini.Extensions;
 using pyRevitLabs.Configurations.Sections;
@@ -33,7 +32,7 @@ public class SnapshotFreshnessTests : IDisposable
     {
         File.WriteAllText(_path, content);
         return new ConfigurationBuilder(false)
-            .AddIniConfiguration(_path, ConfigurationService.DefaultConfigurationName)
+            .AddIniConfiguration(_path)
             .Build();
     }
 
@@ -43,14 +42,14 @@ public class SnapshotFreshnessTests : IDisposable
     public void RawWriteThenSaveSection_DoesNotRevertTheWrite()
     {
         var service = Service("[core]\nuserextensions = " + @"[""C:\\A""]" + "\n");
-        var cfg = service[ConfigurationService.DefaultConfigurationName];
+        var cfg = service.Configuration;
 
         // snapshot is built here, before the raw write
         Assert.Equal(new List<string> { @"C:\A" }, service.Core.UserExtensions);
 
         cfg.SetRawValue("core", "userextensions", @"[""C:\\A"",""C:\\B""]");
 
-        service.SaveSection(ConfigurationService.DefaultConfigurationName, service.Core);
+        service.SaveSection(service.Core);
         cfg.SaveConfiguration();
 
         var reread = IniConfiguration.Create(_path);
@@ -68,15 +67,15 @@ public class SnapshotFreshnessTests : IDisposable
     public void ApplySectionAcrossSections_SurvivesInterveningDynamicWrite_OnSingleFlush()
     {
         var service = Service("[core]\nrocketmode = true\n");
-        var cfg = service[ConfigurationService.DefaultConfigurationName];
+        var cfg = service.Configuration;
 
         // Values chosen to contradict the section defaults so a silent revert
         // to the default is detectable.
-        service.ApplySection(ConfigurationService.DefaultConfigurationName,
+        service.ApplySection(
             new CoreSection { RocketMode = false });
-        service.ApplySection(ConfigurationService.DefaultConfigurationName,
+        service.ApplySection(
             new RoutesSection { Port = 1234 });
-        service.ApplySection(ConfigurationService.DefaultConfigurationName,
+        service.ApplySection(
             new TelemetrySection { TelemetryServerUrl = "http://example/" });
 
         // Dynamic-section write advances the revision, invalidating the snapshots.
@@ -98,7 +97,7 @@ public class SnapshotFreshnessTests : IDisposable
         var service = Service("[core]\nrocketmode = true\n");
         Assert.True(service.Core.RocketMode);
 
-        service[ConfigurationService.DefaultConfigurationName]
+        service.Configuration
             .SetRawValue("core", "rocketmode", "false");
 
         Assert.False(service.Core.RocketMode);
@@ -110,7 +109,7 @@ public class SnapshotFreshnessTests : IDisposable
         var service = Service("[core]\nstartuplogtimeout = 99\n");
         Assert.Equal(99, service.Core.StartupLogTimeout);
 
-        service[ConfigurationService.DefaultConfigurationName].RemoveOption("core", "startuplogtimeout");
+        service.Configuration.RemoveOption("core", "startuplogtimeout");
 
         Assert.Equal(10, service.Core.StartupLogTimeout); // [DefaultValue(10)]
     }
@@ -127,7 +126,7 @@ public class SnapshotFreshnessTests : IDisposable
     public void Revision_AdvancesOnEachMutationKind()
     {
         var service = Service("[core]\nrocketmode = true\n");
-        var cfg = service[ConfigurationService.DefaultConfigurationName];
+        var cfg = service.Configuration;
 
         long start = cfg.Revision;
 
@@ -155,7 +154,7 @@ public class SnapshotFreshnessTests : IDisposable
     public void Revision_DoesNotAdvanceOnNoOpMutation()
     {
         var service = Service("[core]\nrocketmode = true\n");
-        var cfg = service[ConfigurationService.DefaultConfigurationName];
+        var cfg = service.Configuration;
 
         long start = cfg.Revision;
 

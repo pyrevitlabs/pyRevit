@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using pyRevitLabs.Configurations;
 using pyRevitLabs.Configurations.Abstractions;
 using pyRevitLabs.Configurations.Ini.Extensions;
 using pyRevitLabs.Configurations.Sections;
@@ -123,7 +122,7 @@ public class GoldenFileFidelityTests
         try
         {
             var service = new ConfigurationBuilder(false)
-                .AddIniConfiguration(path, ConfigurationService.DefaultConfigurationName)
+                .AddIniConfiguration(path)
                 .Build();
 
             var result = ConfigurationMigrator.Migrate(service);
@@ -149,7 +148,7 @@ public class GoldenFileFidelityTests
         try
         {
             var service = new ConfigurationBuilder(false)
-                .AddIniConfiguration(path, ConfigurationService.DefaultConfigurationName)
+                .AddIniConfiguration(path)
                 .Build();
 
             var result = ConfigurationMigrator.Migrate(service);
@@ -216,10 +215,10 @@ public class GoldenFileFidelityTests
         try
         {
             var service = new ConfigurationBuilder(false)
-                .AddIniConfiguration(path, ConfigurationService.DefaultConfigurationName).Build();
+                .AddIniConfiguration(path).Build();
 
             Assert.NotEqual(99, service.Core.StartupLogTimeout);
-            service.SaveSection(ConfigurationService.DefaultConfigurationName,
+            service.SaveSection(
                 new CoreSection { StartupLogTimeout = 99 });
 
             // Without rebuilding the service, the snapshot must show the saved value.
@@ -238,9 +237,9 @@ public class GoldenFileFidelityTests
         try
         {
             var service = new ConfigurationBuilder(false)
-                .AddIniConfiguration(path, ConfigurationService.DefaultConfigurationName).Build();
+                .AddIniConfiguration(path).Build();
 
-            service.SaveSection(ConfigurationService.DefaultConfigurationName,
+            service.SaveSection(
                 new CoreSection { StartupLogTimeout = 99 });
 
             var reread = IniConfiguration.Create(path);
@@ -263,9 +262,9 @@ public class GoldenFileFidelityTests
         try
         {
             var service = new ConfigurationBuilder(false)
-                .AddIniConfiguration(path, ConfigurationService.DefaultConfigurationName).Build();
+                .AddIniConfiguration(path).Build();
 
-            service.SaveSection(ConfigurationService.DefaultConfigurationName,
+            service.SaveSection(
                 new CoreSection { RocketMode = true });
 
             var reread = IniConfiguration.Create(path);
@@ -285,8 +284,7 @@ public class GoldenFileFidelityTests
     public void Defaults_MaterializePerTypeAndSection_WhenKeyAbsent()
     {
         var service = new ConfigurationBuilder(false)
-            .AddIniConfiguration(Path.Combine(FixtureDir, "empty.ini"),
-                ConfigurationService.DefaultConfigurationName).Build();
+            .AddIniConfiguration(Path.Combine(FixtureDir, "empty.ini")).Build();
 
         // one per type path
         Assert.True(service.Core.RocketMode);                       // bool, default true
@@ -315,7 +313,7 @@ public class GoldenFileFidelityTests
         try
         {
             var service = new ConfigurationBuilder(false)
-                .AddIniConfiguration(path, ConfigurationService.DefaultConfigurationName)
+                .AddIniConfiguration(path)
                 .Build();
 
             var result = ConfigurationMigrator.Migrate(service);
@@ -340,11 +338,11 @@ public class GoldenFileFidelityTests
         try
         {
             var first = new ConfigurationBuilder(false)
-                .AddIniConfiguration(path, ConfigurationService.DefaultConfigurationName).Build();
+                .AddIniConfiguration(path).Build();
             Assert.True(ConfigurationMigrator.Migrate(first).Migrated);
 
             var second = new ConfigurationBuilder(false)
-                .AddIniConfiguration(path, ConfigurationService.DefaultConfigurationName).Build();
+                .AddIniConfiguration(path).Build();
             Assert.False(ConfigurationMigrator.Migrate(second).Migrated);
         }
         finally
@@ -362,7 +360,7 @@ public class GoldenFileFidelityTests
         try
         {
             var service = new ConfigurationBuilder(false)
-                .AddIniConfiguration(path, ConfigurationService.DefaultConfigurationName).Build();
+                .AddIniConfiguration(path).Build();
 
             var result = ConfigurationMigrator.Migrate(service);
             Assert.True(result.Migrated);

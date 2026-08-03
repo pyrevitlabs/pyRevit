@@ -62,7 +62,7 @@ namespace pyRevitExtensionParserTester
         {
             var loader = PyRevitConfig.Load(_path);
             IConfigurationService service = new ConfigurationBuilder(false)
-                .AddIniConfiguration(_path, ConfigurationService.DefaultConfigurationName)
+                .AddIniConfiguration(_path)
                 .Build();
 
             // core

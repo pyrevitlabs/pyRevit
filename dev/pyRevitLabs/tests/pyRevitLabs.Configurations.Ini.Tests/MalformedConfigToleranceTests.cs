@@ -110,37 +110,33 @@ public class ReadOnlyWriteGuardTests : IDisposable
 
     private IConfigurationService ReadOnlyService() =>
         new ConfigurationBuilder(true)
-            .AddConfigurationSource(
-                ConfigurationService.DefaultConfigurationName,
-                IniConfiguration.Create(_path, true))
+            .AddConfigurationSource(IniConfiguration.Create(_path, true))
             .Build();
 
     [Fact]
     public void SaveSection_OnReadOnlyConfig_Throws()
     {
-        Assert.Throws<ConfigurationException>(() => ReadOnlyService().SaveSection(
-            ConfigurationService.DefaultConfigurationName, new CoreSection {RocketMode = false}));
+        Assert.Throws<ConfigurationException>(() => ReadOnlyService().SaveSection(new CoreSection {RocketMode = false}));
     }
 
     [Fact]
     public void SetSectionKeyValue_OnReadOnlyConfig_Throws()
     {
         Assert.Throws<ConfigurationException>(() => ReadOnlyService().SetSectionKeyValue(
-            ConfigurationService.DefaultConfigurationName, "core", "rocketmode", false));
+            "core", "rocketmode", false));
     }
 
     [Fact] // The write-through path behind user_config.core.X = value in Python.
     public void ApplySection_OnReadOnlyConfig_Throws()
     {
-        Assert.Throws<ConfigurationException>(() => ReadOnlyService().ApplySection(
-            ConfigurationService.DefaultConfigurationName, new CoreSection {RocketMode = false}));
+        Assert.Throws<ConfigurationException>(() => ReadOnlyService().ApplySection(new CoreSection {RocketMode = false}));
     }
 
     [Fact] // The raw path accepts the write; the guarantee is that it stays off disk.
     public void RawWrite_OnReadOnlyConfig_NeverReachesFile()
     {
         IConfigurationService service = ReadOnlyService();
-        IConfiguration configuration = service[ConfigurationService.DefaultConfigurationName];
+        IConfiguration configuration = service.Configuration;
 
         configuration.SetRawValue("core", "rocketmode", "false");
         configuration.SaveConfiguration();
@@ -154,7 +150,7 @@ public class ReadOnlyWriteGuardTests : IDisposable
         IConfigurationService service = ReadOnlyService();
 
         Assert.Throws<ConfigurationException>(() => service.SetSectionKeyValue(
-            ConfigurationService.DefaultConfigurationName, "core", "rocketmode", false));
+            "core", "rocketmode", false));
 
         Assert.True(service.Core.RocketMode);
         Assert.Contains("rocketmode = true", File.ReadAllText(_path));

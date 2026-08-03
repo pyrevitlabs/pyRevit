@@ -15,17 +15,17 @@ namespace pyRevitLabs.Configurations.Ini;
 public static class PyRevitConfigService
 {
     /// <summary>
-    /// Returns the shared service for the given configuration name, building it on
-    /// first request and caching it for the process.
+    /// Returns the shared service, building it on first request and caching it
+    /// for the process.
     /// </summary>
-    public static IConfigurationService GetShared(string? configurationName = null)
+    public static IConfigurationService GetShared()
     {
         EnsureRegistered();
-        return PyRevitConfigStore.GetShared(configurationName);
+        return PyRevitConfigStore.GetShared();
     }
 
     /// <summary>
-    /// Drops the cached service(s) so the next access re-reads from disk.
+    /// Drops the cached service so the next access re-reads from disk.
     /// </summary>
     public static void Reload() => PyRevitConfigStore.Reload();
 
@@ -86,7 +86,7 @@ public static class PyRevitConfigService
         return userExists ? ConfigSelection.User : ConfigSelection.New;
     }
 
-    private static IConfigurationService BuildConfigService(string configurationName)
+    private static IConfigurationService BuildConfigService()
     {
         // Repair a machine install whose settings are split across %APPDATA% and
         // %ProgramData%.
@@ -111,18 +111,18 @@ public static class PyRevitConfigService
         switch (selection)
         {
             case ConfigSelection.Local:
-                return BuildWritable(localConfig, configurationName);
+                return BuildWritable(localConfig);
 
             case ConfigSelection.AdminInstall:
                 // Machine-wide install: the %ProgramData% config is authoritative
                 // and writable. Resolve through the shared scope helper so the CLI
                 // and loader target the same file. No per-user seed in this mode.
-                return BuildWritable(PyRevitInstallScope.GetActiveConfigFilePath(), configurationName);
+                return BuildWritable(PyRevitInstallScope.GetActiveConfigFilePath());
 
             case ConfigSelection.AdminLockdown:
                 ConfigurationDiagnostics.ReportInfo(
                     "Using read-only admin config " + adminConfig + "; user changes will not be saved.");
-                return CreateConfiguration(adminConfig, true, configurationName);
+                return CreateConfiguration(adminConfig, true);
 
             case ConfigSelection.Seed:
                 SeedToUserConfig(adminConfig, userConfig);
@@ -130,12 +130,12 @@ public static class PyRevitConfigService
         }
 
         // Seed, User, and New all resolve to the writable per-user config.
-        return BuildWritable(userConfig, configurationName);
+        return BuildWritable(userConfig);
     }
 
-    private static IConfigurationService BuildWritable(string configPath, string configurationName)
+    private static IConfigurationService BuildWritable(string configPath)
     {
-        var service = CreateConfiguration(configPath, false, configurationName);
+        var service = CreateConfiguration(configPath, false);
         RunMigration(service, configPath);
         return service;
     }
@@ -363,19 +363,10 @@ public static class PyRevitConfigService
         }
     }
 
-    private static IConfigurationService CreateConfiguration(string configPath, bool readOnly, string configurationName)
+    private static IConfigurationService CreateConfiguration(string configPath, bool readOnly)
     {
-        var builder = new ConfigurationBuilder(readOnly)
-            .AddIniConfiguration(configPath, ConfigurationService.DefaultConfigurationName, readOnly);
-
-        if (!string.IsNullOrEmpty(configurationName)
-            && !string.Equals(configurationName, ConfigurationService.DefaultConfigurationName, StringComparison.Ordinal))
-        {
-            builder.AddIniConfiguration(
-                Path.ChangeExtension(configPath, configurationName + IniConfiguration.DefaultFileExtension),
-                configurationName, readOnly);
-        }
-
-        return builder.Build();
+        return new ConfigurationBuilder(readOnly)
+            .AddIniConfiguration(configPath, readOnly)
+            .Build();
     }
 }

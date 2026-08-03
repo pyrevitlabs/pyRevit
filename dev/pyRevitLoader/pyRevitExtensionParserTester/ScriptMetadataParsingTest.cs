@@ -44,9 +44,9 @@ namespace pyRevitExtensionParserTester
             var configPath = Path.Combine(TestTempDir, "pyRevit_config.ini");
             File.WriteAllText(configPath, iniContent);
 
-            PyRevitConfigStore.SetFactory(_ =>
+            PyRevitConfigStore.SetFactory(() =>
                 new ConfigurationBuilder(false)
-                    .AddIniConfiguration(configPath, ConfigurationService.DefaultConfigurationName)
+                    .AddIniConfiguration(configPath)
                     .Build());
 
             ClearAllCaches();

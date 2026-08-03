@@ -59,7 +59,6 @@ from pyrevit.coreutils.configparser import ConfigSections, decode_option_value
 
 from pyrevit.labs import PyRevit
 from pyrevit.labs import Common
-from pyrevit.labs import ConfigurationService
 
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
@@ -92,17 +91,15 @@ class _SectionCompatWrapper(object):
     Also exposes .get_option()/.set_option() for extensions.
     """
     _INTERNAL_ATTRS = (
-        '_section_name', '_csharp', '_config',
-        '_config_service', '_config_name',
+        '_section_name', '_csharp', '_config', '_config_service',
     )
 
     def __init__(self, section_name, csharp_section, configuration,
-                 config_service, config_name):
+                 config_service):
         self._section_name = section_name
         self._csharp = csharp_section
         self._config = configuration
         self._config_service = config_service
-        self._config_name = config_name
 
     def get_option(self, op_name, default_value=None):
         value = self._config.GetRawValueOrDefault(self._section_name, op_name, None)
@@ -189,7 +186,7 @@ class _SectionCompatWrapper(object):
         # save_changes flushes it to disk once at the end.
         pending = type(self._csharp)()
         setattr(pending, name, value)
-        self._config_service.ApplySection(self._config_name, pending)
+        self._config_service.ApplySection(pending)
 
 
 class PyRevitConfig(object):
@@ -275,14 +272,14 @@ class PyRevitConfig(object):
         return self.config_service.Environment
 
     def _get_default_config(self):
-        return self.config_service[ConfigurationService.DefaultConfigurationName]
+        return self.config_service.Configuration
 
     @property
     def core(self):
         """Core section (supports .get_option/.set_option for extension compat)."""
         return _SectionCompatWrapper(
             "core", self.config_service.Core, self._get_default_config(),
-            self.config_service, ConfigurationService.DefaultConfigurationName
+            self.config_service
         )
 
     @property
@@ -290,7 +287,7 @@ class PyRevitConfig(object):
         """Routes section (supports .get_option/.set_option for extension compat)."""
         return _SectionCompatWrapper(
             "routes", self.config_service.Routes, self._get_default_config(),
-            self.config_service, ConfigurationService.DefaultConfigurationName
+            self.config_service
         )
 
     @property
@@ -298,7 +295,7 @@ class PyRevitConfig(object):
         """Telemetry section (supports .get_option/.set_option for extension compat)."""
         return _SectionCompatWrapper(
             "telemetry", self.config_service.Telemetry, self._get_default_config(),
-            self.config_service, ConfigurationService.DefaultConfigurationName
+            self.config_service
         )
 
     @property
@@ -764,9 +761,7 @@ class PyRevitConfig(object):
             # Typed and dynamic section edits have already been written through
             # to the in-memory store; flush the whole default config to disk once.
             try:
-                self.config_service[
-                    ConfigurationService.DefaultConfigurationName
-                ].SaveConfiguration()
+                self.config_service.Configuration.SaveConfiguration()
             except Exception as save_err:
                 # Report the resolved path directly; the config_file property
                 # falls back to a path helper that creates files on disk, which

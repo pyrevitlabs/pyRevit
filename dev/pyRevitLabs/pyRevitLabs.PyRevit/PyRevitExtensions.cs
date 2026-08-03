@@ -9,7 +9,6 @@ using System.Text.RegularExpressions;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
-using pyRevitLabs.Configurations;
 using pyRevitLabs.Configurations.Abstractions;
 using pyRevitLabs.Configurations.Sections;
 using pyRevitLabs.Json.Linq;
@@ -285,39 +284,39 @@ namespace pyRevitLabs.PyRevit {
 
         // enable extension in config
         // @handled @logs
-        private static void ToggleExtension(string revitVersion, PyRevitExtension ext, bool state) {
+        private static void ToggleExtension(PyRevitExtension ext, bool state) {
             _logger.Debug("{@State} extension \"{@ExtensionName}\"", state ? "Enabling" : "Disabling", ext.Name);
             
-            IConfigurationService cfg = PyRevitConfigs.GetConfigFile(revitVersion);
-            cfg.SetSectionKeyValue(revitVersion, ext.ConfigName, PyRevitConsts.ExtensionDisabledKey, !state);
+            IConfigurationService cfg = PyRevitConfigs.GetConfigFile();
+            cfg.SetSectionKeyValue(ext.ConfigName, PyRevitConsts.ExtensionDisabledKey, !state);
         }
 
         // disable installed extension in config
         // @handled @logs
-        public static void EnableInstalledExtension(string revitVersion, string searchPattern) {
+        public static void EnableInstalledExtension(string searchPattern) {
             var ext = GetInstalledExtension(searchPattern);
-            ToggleExtension(revitVersion, ext, true);
+            ToggleExtension(ext, true);
         }
 
         // disable installed extension in config
         // @handled @logs
-        public static void DisableInstalledExtension(string revitVersion, string searchPattern) {
+        public static void DisableInstalledExtension(string searchPattern) {
             var ext = GetInstalledExtension(searchPattern);
-            ToggleExtension(revitVersion, ext, false);
+            ToggleExtension(ext, false);
         }
 
         // disable shipped extension in config
         // @handled @logs
-        public static void EnableShippedExtension(string revitVersion, PyRevitClone clone, string searchPattern) {
+        public static void EnableShippedExtension(PyRevitClone clone, string searchPattern) {
             var ext = GetShippedExtension(clone, searchPattern);
-            ToggleExtension(revitVersion, ext, true);
+            ToggleExtension(ext, true);
         }
 
         // disable shipped extension in config
         // @handled @logs
-        public static void DisableShippedExtension(string revitVersion, PyRevitClone clone, string searchPattern) {
+        public static void DisableShippedExtension(PyRevitClone clone, string searchPattern) {
             var ext = GetShippedExtension(clone, searchPattern);
-            ToggleExtension(revitVersion, ext, false);
+            ToggleExtension(ext, false);
         }
 
         // Resolve the user-registered extension search paths for use: expand
@@ -412,7 +411,6 @@ namespace pyRevitLabs.PyRevit {
 
         private static void SaveExtensionSearchPaths(List<string> searchPaths) {
             PyRevitConfigs.GetConfigFile().SaveSection(
-                ConfigurationService.DefaultConfigurationName,
                 new CoreSection() {UserExtensions = searchPaths});
         }
 
@@ -563,7 +561,6 @@ namespace pyRevitLabs.PyRevit {
         private static void SaveExtensionLookupSources(IEnumerable<string> sources) {
             var cfg = PyRevitConfigs.GetConfigFile();
             cfg.SaveSection(
-                ConfigurationService.DefaultConfigurationName,
                 new EnvironmentSection() {Sources = sources.ToList()});
         }
     }

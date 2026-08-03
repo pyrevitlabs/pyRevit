@@ -106,7 +106,7 @@ public static class ConfigurationMigrator
         if (service is null)
             throw new ArgumentNullException(nameof(service));
 
-        IConfiguration config = service[ConfigurationService.DefaultConfigurationName];
+        IConfiguration config = service.Configuration;
         int version = ReadVersion(config);
 
         // Scan without mutating, so a config with nothing to repair never writes.

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using pyRevitLabs.Configurations;
 using pyRevitLabs.Configurations.Abstractions;
 using pyRevitLabs.Configurations.Ini.Extensions;
 
@@ -23,7 +22,7 @@ public class MigrationCanonicalizationTests
 
     private static IConfigurationService Build(string path) =>
         new ConfigurationBuilder(false)
-            .AddIniConfiguration(path, ConfigurationService.DefaultConfigurationName)
+            .AddIniConfiguration(path)
             .Build();
 
     [Fact]

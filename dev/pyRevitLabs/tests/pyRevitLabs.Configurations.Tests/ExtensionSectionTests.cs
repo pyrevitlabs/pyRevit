@@ -17,7 +17,7 @@ public class ExtensionSectionTests
         var configuration = new InMemoryConfiguration();
         seed(configuration);
         return new ConfigurationBuilder(false)
-            .AddConfigurationSource(ConfigurationService.DefaultConfigurationName, configuration)
+            .AddConfigurationSource(configuration)
             .Build();
     }
 

@@ -242,7 +242,7 @@ namespace pyRevitExtensionParser
             if (!string.IsNullOrEmpty(customPath))
                 return new PyRevitConfig(IniConfiguration.Create(customPath));
 
-            var shared = PyRevitConfigService.GetShared()[ConfigurationService.DefaultConfigurationName];
+            var shared = PyRevitConfigService.GetShared().Configuration;
 
             var cached = _defaultInstance;
             if (cached != null && ReferenceEquals(cached._config, shared))
@@ -297,7 +297,7 @@ namespace pyRevitExtensionParser
         private IConfigurationService AsService()
         {
             return _service ?? (_service = new ConfigurationBuilder(false)
-                .AddConfigurationSource(ConfigurationService.DefaultConfigurationName, _config)
+                .AddConfigurationSource(_config)
                 .Build());
         }
 
