@@ -83,11 +83,17 @@ public static class ConfigurationMigrator
         typeof(TelemetrySection), typeof(EnvironmentSection),
     };
 
-    private static readonly (string Section, string Key)[] BloatFields =
+    /// <summary>
+    /// Telemetry fields that escape-doubling degraded, paired with whether a
+    /// forward slash counts as an artifact in that field rather than content.
+    /// It does for the URLs, whose wreckage retains the separator slashes; in a
+    /// directory path a slash is part of the value.
+    /// </summary>
+    private static readonly (string Section, string Key, bool SlashIsArtifact)[] BloatFields =
     {
-        ("telemetry", "telemetry_file_dir"),
-        ("telemetry", "telemetry_server_url"),
-        ("telemetry", "apptelemetry_server_url"),
+        ("telemetry", "telemetry_file_dir", false),
+        ("telemetry", "telemetry_server_url", true),
+        ("telemetry", "apptelemetry_server_url", true),
     };
 
     /// <summary>
@@ -147,7 +153,7 @@ public static class ConfigurationMigrator
     /// <summary>
     /// Finds present keys whose stored value cannot be read: typed-section
     /// values that fail to parse to their declared type, and telemetry fields
-    /// whose length indicates an escape-doubling blow-up.
+    /// left as escape-doubling wreckage.
     /// </summary>
     private static List<(string Section, string Key)> FindUnreadableKeys(IConfiguration config)
     {
@@ -173,15 +179,43 @@ public static class ConfigurationMigrator
             }
         }
 
-        foreach ((string section, string key) in BloatFields)
+        foreach ((string section, string key, bool slashIsArtifact) in BloatFields)
         {
             string? raw = config.GetRawValueOrDefault(section, key);
-            if (raw != null && raw.Length > MaxFieldLength)
+            if (raw != null && IsTelemetryWreckage(raw, slashIsArtifact))
                 bad.Add((section, key));
         }
 
         return bad;
     }
+
+    /// <summary>
+    /// Whether a stored telemetry value is escape-doubling wreckage rather than a
+    /// setting. Extreme length is one shape of it. The other is a value made up
+    /// entirely of quote and escape artifacts, which is what an empty field
+    /// degrades into after repeated re-encoding: it stays far below any length
+    /// threshold and carries nothing recoverable.
+    /// </summary>
+    private static bool IsTelemetryWreckage(string raw, bool slashIsArtifact)
+    {
+        if (raw.Length > MaxFieldLength)
+            return true;
+
+        string compact = new(raw.Where(c => !char.IsWhiteSpace(c)).ToArray());
+
+        // An absent value, or one already stored as the canonical empty string.
+        if (compact.Length == 0 || compact == "\"\"")
+            return false;
+
+        // No quote anywhere means a legacy bare path or URL, stored unencoded.
+        if (compact.IndexOf('"') < 0 && compact.IndexOf('\'') < 0)
+            return false;
+
+        return compact.All(c => IsArtifact(c, slashIsArtifact));
+    }
+
+    private static bool IsArtifact(char value, bool slashIsArtifact) =>
+        value is '"' or '\'' or '\\' || (slashIsArtifact && value == '/');
 
     /// <summary>
     /// Finds List&lt;string&gt; keys stored in the legacy Python single-quoted form,
