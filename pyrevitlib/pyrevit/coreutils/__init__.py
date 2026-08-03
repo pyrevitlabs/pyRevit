@@ -1513,7 +1513,7 @@ def get_my_ip():
 def unique_name(base_name, existing_names):
     """Return a name that does not collide with any existing name.
 
-    Appends " (2)", " (3)", ... until unique..
+    Appends " (2)", " (3)", ... until unique.
 
     Args:
         base_name: preferred name

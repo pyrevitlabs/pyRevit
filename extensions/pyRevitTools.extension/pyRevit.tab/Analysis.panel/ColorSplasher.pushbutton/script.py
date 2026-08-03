@@ -507,9 +507,8 @@ class CreateLegend(UI.IExternalEventHandler):
                     list_text_heights.append(height)
                     y_pos = prev_bbox.Min.Y - (height + spacing)
                 ini_x = max(list_max_x) + spacing
-                solid_fill_id = (
-                    solid_fill_id = revit.query.get_solid_fillpattern(new_doc).Id if apply_foreground_pattern_color else None
-                )
+                solid_fill_id = revit.query.get_solid_fillpattern(new_doc).Id if apply_foreground_pattern_color else None
+
                 for indx, y in enumerate(list_y):
                     try:
                         vw_item = wndw.list_box2.Items[indx]
