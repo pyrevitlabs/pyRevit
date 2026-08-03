@@ -2368,7 +2368,7 @@ def get_solid_fillpattern(doc=None):
         doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
-        DB.FillPattern or None: The FillPattern of the solid drafting fill
+        DB.FillPatternElement or None: The FillPatternElement of the solid drafting fill
         pattern if found; otherwise ``None``.
     """
     doc = doc or DOCS.doc

@@ -1181,7 +1181,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
 
         def _do_filters():
             try:
-                solid_fill_id = revit.query.get_solid_fillpattern(doc).Id
+                solid_fill_id = getattr(revit.query.get_solid_fillpattern(doc), "Id", None)
                 with revit.Transaction("Custom Properties Pane - Filters", doc=doc):
                     for pkv, revit_color in work_items:
                         self._apply_one_filter(

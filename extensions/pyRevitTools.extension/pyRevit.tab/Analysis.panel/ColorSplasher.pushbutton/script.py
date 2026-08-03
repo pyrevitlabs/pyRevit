@@ -133,7 +133,7 @@ class ApplyColors(UI.IExternalEventHandler):
                 and not apply_background_pattern_color
             ):
                 apply_foreground_pattern_color = True
-            solid_fill_id = revit.query.get_solid_fillpattern(new_doc).Id
+            solid_fill_id = getattr(revit.query.get_solid_fillpattern(new_doc), "Id", None)
 
             if wndw._categories.SelectedItem is None:
                 return
