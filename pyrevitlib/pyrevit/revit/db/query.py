@@ -2391,6 +2391,26 @@ def get_all_fillpattern_elements(fillpattern_target, doc=None):
     ]
 
 
+def get_solid_fillpattern(doc=None):
+    """
+    Returns the solid-fill drafting fill pattern.
+
+    Args:
+        doc (DB.Document, optional): The Revit document to search within. If not provided, defaults to DOCS.doc.
+
+    Returns:
+        DB.FillPattern or None: The FillPattern of the solid drafting fill
+        pattern if found; otherwise ``None``.
+    """
+    doc = doc or DOCS.doc
+    patterns = get_all_fillpattern_elements(
+        DB.FillPatternTarget.Drafting, doc=doc
+    )
+    for fp in patterns:
+        if fp.GetFillPattern().IsSolidFill:
+            return fp
+
+
 def get_fillpattern_from_element(element, background=True, doc=None):
     """
     Retrieves the fill pattern from a given Revit element.

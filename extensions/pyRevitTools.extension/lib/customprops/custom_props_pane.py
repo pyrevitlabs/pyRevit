@@ -1181,7 +1181,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
 
         def _do_filters():
             try:
-                solid_fill_id = self._get_solid_fill_pattern_id(doc)
+                solid_fill_id = revit.query.get_solid_fillpattern(doc).Id
                 with revit.Transaction("Custom Properties Pane - Filters", doc=doc):
                     for pkv, revit_color in work_items:
                         self._apply_one_filter(
@@ -1344,20 +1344,6 @@ class CustomPropertiesPanel(forms.WPFPanel):
         view.SetFilterOverrides(filter_id, ogs)
         view.SetFilterVisibility(filter_id, True)
         view.SetIsFilterEnabled(filter_id, True)
-
-    @staticmethod
-    def _get_solid_fill_pattern_id(doc):
-        """Return the ElementId of the solid-fill drafting FillPatternElement."""
-        try:
-            patterns = query.get_all_fillpattern_elements(
-                DB.FillPatternTarget.Drafting, doc=doc
-            )
-            for fp in patterns:
-                if fp.GetFillPattern().IsSolidFill:
-                    return fp.Id
-        except Exception:
-            pass
-        return None
 
     # ── Apply ─────────────────────────────────────────────────────────────────
 

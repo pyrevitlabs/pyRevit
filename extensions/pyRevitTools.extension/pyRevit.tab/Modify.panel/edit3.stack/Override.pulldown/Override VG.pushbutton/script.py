@@ -15,16 +15,6 @@ selection = revit.get_selection()
 selection.expand_groups()
 
 
-def find_solid_fillpat():
-    existing_pats = DB.FilteredElementCollector(revit.doc)\
-                      .OfClass(DB.FillPatternElement)\
-                      .ToElements()
-    for pat in existing_pats:
-        fpat = pat.GetFillPattern()
-        if fpat.IsSolidFill and fpat.Target == DB.FillPatternTarget.Drafting:
-            return pat
-
-
 def colorvg(r, g, b, projline_only=False, xacn_name=None):
     color = DB.Color(r, g, b)
     wireframe_color = DB.Color(
@@ -49,6 +39,7 @@ def colorvg(r, g, b, projline_only=False, xacn_name=None):
                     ogs.SetCutFillColor(color)
 
                 solid_fpattern = find_solid_fillpat()
+                solid_fpattern = revit.query.get_solid_fillpattern()
                 if solid_fpattern:
                     if HOST_APP.is_newer_than(2018):
                         ogs.SetCutForegroundPatternId(solid_fpattern.Id)

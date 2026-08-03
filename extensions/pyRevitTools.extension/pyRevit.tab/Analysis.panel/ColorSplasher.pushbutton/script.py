@@ -133,7 +133,7 @@ class ApplyColors(UI.IExternalEventHandler):
                 and not apply_background_pattern_color
             ):
                 apply_foreground_pattern_color = True
-            solid_fill_id = solid_fill_pattern_id()
+            solid_fill_id = revit.query.get_solid_fillpattern(new_doc).Id
 
             if wndw._categories.SelectedItem is None:
                 return
@@ -508,7 +508,7 @@ class CreateLegend(UI.IExternalEventHandler):
                     y_pos = prev_bbox.Min.Y - (height + spacing)
                 ini_x = max(list_max_x) + spacing
                 solid_fill_id = (
-                    solid_fill_pattern_id() if apply_foreground_pattern_color else None
+                    solid_fill_id = revit.query.get_solid_fillpattern(new_doc).Id if apply_foreground_pattern_color else None
                 )
                 for indx, y in enumerate(list_y):
                     try:
@@ -655,7 +655,7 @@ class CreateFilters(UI.IExternalEventHandler):
                     param_storage_type = sel_par.rl_par.StorageType
                     categories = List[DB.ElementId]()
                     categories.Add(sel_cat.cat.Id)
-                    solid_fill_id = solid_fill_pattern_id()
+                    solid_fill_id = revit.query.get_solid_fillpattern(new_doc).Id
                     version = int(HOST_APP.version)
                     items_listbox = wndw.list_box2.Items
                     for i in range(items_listbox.Count):
@@ -2133,17 +2133,6 @@ def get_used_categories_parameters(cat_exc, acti_view, doc_param=None):
         list_cat.append(CategoryInfo(ele.Category, list_parameters))
     list_cat = sorted(list_cat, key=lambda x: x.name)
     return list_cat
-
-
-def solid_fill_pattern_id():
-    doc_param = revit.DOCS.doc
-    solid_fill_id = None
-    fillpatterns = DB.FilteredElementCollector(doc_param).OfClass(DB.FillPatternElement)
-    for pat in fillpatterns:
-        if pat.GetFillPattern().IsSolidFill:
-            solid_fill_id = pat.Id
-            break
-    return solid_fill_id
 
 
 def external_event_trace():
