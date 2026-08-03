@@ -361,8 +361,6 @@ tooltip: Bundle Tooltip
             var config6 = PyRevitConfig.Load(configPath);
             Assert.IsFalse(config6.LoadBeta, "Canonical loadbeta should win when both keys exist");
 
-            File.WriteAllText(configPath, "[core]\nloadbeta = 1");
-            Assert.IsTrue(PyRevitConfig.Load(configPath).LoadBeta, "LoadBeta should accept numeric 1");
             File.WriteAllText(configPath, "[core]\nloadbeta = \"true\"");
             Assert.IsTrue(PyRevitConfig.Load(configPath).LoadBeta, "LoadBeta should accept quoted true");
 

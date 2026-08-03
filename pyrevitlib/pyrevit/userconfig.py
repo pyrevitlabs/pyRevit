@@ -176,7 +176,9 @@ class PyRevitConfig(object):
     """Provide read/write access to pyRevit configuration.
 
     Args:
-        config_service (IConfigurationService): configuration service.
+        config_service (IConfigurationService): configuration service to start
+            from. Access resolves against the shared service the store hands
+            out, falling back to this one while the store is unreachable.
 
     Examples:
         ```python
@@ -191,7 +193,7 @@ class PyRevitConfig(object):
     def __init__(self, config_service):
         # set log mode on the logger module based on
         # user settings (overriding the defaults)
-        self.config_service = config_service
+        self._config_service = config_service
         # Hand the container an accessor rather than the service itself, so
         # sections already handed to scripts follow a reload instead of holding
         # a replaced service whose edits are never flushed.
@@ -199,11 +201,25 @@ class PyRevitConfig(object):
 
         self._update_env()
 
-        self._admin = self.config_service.ReadOnly
-        self.config_type = "Admin" if self.config_service.ReadOnly else "User"
+    @property
+    def config_service(self):
+        """IConfigurationService: shared service backing this configuration."""
+        return self._current_config_service()
 
     def _current_config_service(self):
-        return self.config_service
+        # The store hands out a new service whenever it is reloaded, which the
+        # loader does on every session load. A service captured at import would
+        # keep serving state the rest of the process has already replaced, and
+        # flushing it would write that state back over the file, dropping
+        # whatever the labs side registered in the meantime.
+        try:
+            self._config_service = PyRevit.PyRevitConfigs.GetConfigFile()
+        except Exception as service_err:
+            # Keep serving the last known service: a config read failing outright
+            # would take down the session load that is asking for it.
+            mlogger.debug('Can not reach the shared config service. | %s',
+                          service_err)
+        return self._config_service
 
     def _update_env(self):
         # update the debug level based on user config
@@ -712,7 +728,12 @@ class PyRevitConfig(object):
     @property
     def is_readonly(self):
         """bool: whether the config is read only."""
-        return self._admin
+        return self.config_service.ReadOnly
+
+    @property
+    def config_type(self):
+        """str: "Admin" for a read-only admin config, "User" otherwise."""
+        return "Admin" if self.is_readonly else "User"
 
     def save_changes(self):
         """Save user config into associated config file.
@@ -720,7 +741,7 @@ class PyRevitConfig(object):
         A failed write is logged rather than raised: settings are not worth
         aborting a session load or a settings dialog over.
         """
-        if not self._admin:
+        if not self.is_readonly:
             # Typed and dynamic section edits have already been written through
             # to the in-memory store; flush the whole default config to disk once.
             try:
@@ -745,7 +766,6 @@ class PyRevitConfig(object):
         # Drop the cached shared service so the next access re-reads from disk
         # across every consumer, not just this object.
         PyRevit.PyRevitConfigs.ReloadConfig()
-        self.config_service = PyRevit.PyRevitConfigs.GetConfigFile()
 
     @staticmethod
     def get_list_separator():
