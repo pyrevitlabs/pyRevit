@@ -61,9 +61,11 @@ def _load_upgrade_module():
         sys.modules['pyrevit.coreutils.logger'] = logger_module
 
         module_path = os.path.join(pyrevit_root, 'versionmgr', 'upgrade.py')
-        spec = importlib.util.spec_from_file_location(
+        if importlib_util is None:
+            raise unittest.SkipTest('importlib.util is required to load upgrade.py')
+        spec = importlib_util.spec_from_file_location(
             'pyrevit_upgrade_test', module_path)
-        module = importlib.util.module_from_spec(spec)
+        module = importlib_util.module_from_spec(spec)
         spec.loader.exec_module(module)
         return module
     finally:
