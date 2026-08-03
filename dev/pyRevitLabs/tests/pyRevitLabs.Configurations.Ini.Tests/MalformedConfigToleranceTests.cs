@@ -96,7 +96,10 @@ public class MalformedConfigToleranceTests : IDisposable
 
 /// <summary>
 /// A read-only (admin lockdown) config must refuse writes rather than accept
-/// them into memory and drop them at flush time.
+/// them into memory and drop them at flush time. The service-level entry points
+/// enforce that by throwing; the configuration-level raw write does not, so
+/// nothing it stores ever reaches the file and a caller that must not report a
+/// false success tests <see cref="IConfigurationService.ReadOnly"/> itself.
 /// </summary>
 public class ReadOnlyWriteGuardTests : IDisposable
 {
@@ -136,6 +139,25 @@ public class ReadOnlyWriteGuardTests : IDisposable
     {
         Assert.Throws<ConfigurationException>(() => ReadOnlyService().SetSectionKeyValue(
             ConfigurationService.DefaultConfigurationName, "core", "rocketmode", false));
+    }
+
+    [Fact] // The write-through path behind user_config.core.X = value in Python.
+    public void ApplySection_OnReadOnlyConfig_Throws()
+    {
+        Assert.Throws<ConfigurationException>(() => ReadOnlyService().ApplySection(
+            ConfigurationService.DefaultConfigurationName, new CoreSection {RocketMode = false}));
+    }
+
+    [Fact] // The raw path accepts the write; the guarantee is that it stays off disk.
+    public void RawWrite_OnReadOnlyConfig_NeverReachesFile()
+    {
+        IConfigurationService service = ReadOnlyService();
+        IConfiguration configuration = service[ConfigurationService.DefaultConfigurationName];
+
+        configuration.SetRawValue("core", "rocketmode", "false");
+        configuration.SaveConfiguration();
+
+        Assert.Contains("rocketmode = true", File.ReadAllText(_path));
     }
 
     [Fact] // A refused write must leave neither the file nor the in-memory view changed.

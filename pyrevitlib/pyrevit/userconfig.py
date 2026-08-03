@@ -85,6 +85,10 @@ class _SectionCompatWrapper(object):
     the moment an unrelated write (another section, the multi-section save
     itself) advances the store.
 
+    Every write path is skipped on a read-only (admin-locked) config, matching
+    what save_changes does with the flush, so no caller is handed a success it
+    will not get.
+
     Also exposes .get_option()/.set_option() for extensions.
     """
     _INTERNAL_ATTRS = (
@@ -113,13 +117,28 @@ class _SectionCompatWrapper(object):
                 return value
 
     def set_option(self, op_name, value):
+        if self._is_readonly():
+            return
+
         self._config.SetRawValue(
             self._section_name, op_name,
             json.dumps(value, separators=(',', ':'), ensure_ascii=False)
         )
 
     def remove_option(self, option_name):
+        if self._is_readonly():
+            return False
+
         return self._config.RemoveOption(self._section_name, option_name)
+
+    def _is_readonly(self):
+        """Whether the backing config discards writes instead of saving them."""
+        if not self._config_service.ReadOnly:
+            return False
+
+        mlogger.debug('Config is in admin mode. Skipping write to section: %s',
+                      self._section_name)
+        return True
 
     def has_option(self, option_name):
         """Check if this section contains the given option.
@@ -157,19 +176,26 @@ class _SectionCompatWrapper(object):
             object.__setattr__(self, name, value)
             return
 
-        if self._csharp.GetType().GetProperty(name) is not None:
-            # A typed section property is written through to the shared store;
-            # save_changes flushes it to disk once at the end.
-            if value is not None:
-                pending = type(self._csharp)()
-                setattr(pending, name, value)
-                self._config_service.ApplySection(self._config_name, pending)
-            else:
-                setattr(self._csharp, name, value)
-        else:
+        if self._csharp.GetType().GetProperty(name) is None:
             # Mirrors __getattr__: a name outside the typed schema is stored as
             # a raw option rather than rejected.
             self.set_option(name, value)
+            return
+
+        if self._is_readonly():
+            return
+
+        # None is not a storable value, and the snapshot it would otherwise land
+        # on is shared by every reader in the process. Clearing a stored key is
+        # remove_option's job.
+        if value is None:
+            return
+
+        # A typed section property is written through to the shared store;
+        # save_changes flushes it to disk once at the end.
+        pending = type(self._csharp)()
+        setattr(pending, name, value)
+        self._config_service.ApplySection(self._config_name, pending)
 
 
 class PyRevitConfig(object):
@@ -443,9 +469,8 @@ class PyRevitConfig(object):
         if stylesheet_filepath:
             self.core.OutputStyleSheet = stylesheet_filepath
         else:
-            # A null property is left untouched on save, so remove the key
-            # explicitly to actually clear a previously stored stylesheet.
-            self.core.OutputStyleSheet = None
+            # Clearing the stylesheet means removing the key: a typed property
+            # carries no value that spells "unset".
             self.core.remove_option("outputstylesheet")
 
     @property
