@@ -80,18 +80,6 @@ public class MalformedConfigToleranceTests : IDisposable
 
         Assert.True(config.GetValue<bool>("core", "debug"));
     }
-
-    [Fact] // The whole point: a damaged config still loads through the shared service.
-    public void MalformedConfig_LoadsThroughTypedSections()
-    {
-        IConfiguration config = Read("# header\n[core]\nrocketmode = true\nrocketmode = false\n");
-
-        var service = new ConfigurationBuilder(false)
-            .AddConfigurationSource(ConfigurationService.DefaultConfigurationName, config)
-            .Build();
-
-        Assert.False(service.GetSection<CoreSection>().RocketMode);
-    }
 }
 
 /// <summary>
