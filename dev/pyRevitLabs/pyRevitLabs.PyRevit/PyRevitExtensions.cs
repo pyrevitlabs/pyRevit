@@ -329,11 +329,7 @@ namespace pyRevitLabs.PyRevit {
         public static List<string> ResolveUserExtensionPaths() {
             var resolvedPaths = new List<string>();
 
-            var searchPaths = PyRevitConfigs.GetConfigFile().Core.UserExtensions;
-            if (searchPaths is null)
-                return resolvedPaths;
-
-            foreach (var path in searchPaths) {
+            foreach (var path in GetStoredExtensionSearchPaths()) {
                 var expandedPath = Environment.ExpandEnvironmentVariables(path);
                 var normPath = expandedPath.NormalizeAsPath();
                 if (CommonUtils.VerifyPath(expandedPath) && !resolvedPaths.Contains(normPath)) {
@@ -344,53 +340,80 @@ namespace pyRevitLabs.PyRevit {
             return resolvedPaths;
         }
 
+        // The stored entries, verbatim and detached from the cached section
+        // snapshot. Registration edits this list rather than the resolved one, so
+        // an entry written as an environment variable keeps its portable form and
+        // an entry that is only temporarily unreachable is not dropped from the
+        // config.
+        // @handled @logs
+        public static List<string> GetStoredExtensionSearchPaths() {
+            var stored = PyRevitConfigs.GetConfigFile().Core.UserExtensions;
+            return stored is null ? new List<string>() : new List<string>(stored);
+        }
+
         // get list of registered extension search paths
         // @handled @logs
         public static List<string> GetRegisteredExtensionSearchPaths() {
             // TODO: Make apply config to revit version
-            var resolvedPaths = ResolveUserExtensionPaths();
-
-            // Self-heal the stored list to the resolved form, but only when it
-            // changed, so a plain read does not rewrite the config file.
-            var cfg = PyRevitConfigs.GetConfigFile();
-            var searchPaths = cfg.Core.UserExtensions;
-            if (searchPaths != null && !resolvedPaths.SequenceEqual(searchPaths))
-                cfg.SaveSection(
-                    ConfigurationService.DefaultConfigurationName,
-                    new CoreSection() {UserExtensions = resolvedPaths});
-
-            return resolvedPaths;
+            return ResolveUserExtensionPaths();
         }
 
         // add extension search path
         // @handled @logs
         public static void RegisterExtensionSearchPath(string searchPath) {
             // TODO: Make apply config to revit version
-            var cfg = PyRevitConfigs.GetConfigFile();
-            if (CommonUtils.VerifyPath(searchPath)) {
-                _logger.Debug("Adding extension search path \"{@ExtensionSource}\"", searchPath);
-                var searchPaths = GetRegisteredExtensionSearchPaths();
-                searchPaths.Add(searchPath.NormalizeAsPath());
-                cfg.SaveSection(
-                    ConfigurationService.DefaultConfigurationName, new CoreSection() {UserExtensions = searchPaths});
-            }
-            else
+            var expandedPath = Environment.ExpandEnvironmentVariables(searchPath);
+            if (!CommonUtils.VerifyPath(expandedPath))
                 throw new pyRevitResourceMissingException(searchPath);
+
+            // Keep the caller's text when it carries an environment variable so
+            // the entry stays portable; store the normalized path otherwise.
+            var storedForm = expandedPath == searchPath ? searchPath.NormalizeAsPath() : searchPath;
+            var normPath = expandedPath.NormalizeAsPath();
+
+            var storedPaths = GetStoredExtensionSearchPaths();
+            if (storedPaths.Any(entry => ResolvesTo(entry, normPath))) {
+                _logger.Debug("Extension search path already registered \"{@ExtensionSource}\"", storedForm);
+                return;
+            }
+
+            _logger.Debug("Adding extension search path \"{@ExtensionSource}\"", storedForm);
+            storedPaths.Add(storedForm);
+            SaveExtensionSearchPaths(storedPaths);
         }
 
         // remove extension search path
         // @handled @logs
         public static void UnregisterExtensionSearchPath(string searchPath) {
-            var cfg = PyRevitConfigs.GetConfigFile();
             var normPath = searchPath.NormalizeAsPath();
             _logger.Debug("Removing extension search path \"{@ExtensionSource}\"", normPath);
-            var searchPaths = GetRegisteredExtensionSearchPaths();
-            searchPaths.Remove(normPath);
-            cfg.SetSectionKeyValue(
+
+            // Match on the resolved form so an entry stored as an environment
+            // variable can still be removed by the path it expands to.
+            var storedPaths = GetStoredExtensionSearchPaths();
+            if (storedPaths.RemoveAll(entry => ResolvesTo(entry, normPath)) > 0)
+                SaveExtensionSearchPaths(storedPaths);
+        }
+
+        // Whether a stored entry points at the given normalized path once expanded.
+        // A malformed stored entry cannot match anything, and must not take down
+        // the caller.
+        private static bool ResolvesTo(string storedPath, string normalizedPath) {
+            try {
+                return string.Equals(
+                    Environment.ExpandEnvironmentVariables(storedPath).NormalizeAsPath(),
+                    normalizedPath,
+                    StringComparison.OrdinalIgnoreCase);
+            }
+            catch {
+                return false;
+            }
+        }
+
+        private static void SaveExtensionSearchPaths(List<string> searchPaths) {
+            PyRevitConfigs.GetConfigFile().SaveSection(
                 ConfigurationService.DefaultConfigurationName,
-                PyRevitConsts.ConfigsCoreSection,
-                PyRevitConsts.ConfigsUserExtensionsKey,
-                searchPaths);
+                new CoreSection() {UserExtensions = searchPaths});
         }
 
         // managing extension sources ================================================================================
@@ -405,18 +428,12 @@ namespace pyRevitLabs.PyRevit {
         public static List<string> GetRegisteredExtensionLookupSources() {
             var cfg = PyRevitConfigs.GetConfigFile();
 
-            var storedSources = cfg.Environment.Sources ?? new List<string>();
             var normSources = new List<string>();
-            foreach (var src in storedSources) {
+            foreach (var src in cfg.Environment.Sources ?? new List<string>()) {
                 var normSrc = src.NormalizeAsPath();
                 _logger.Debug("Extension lookup source \"{@ExtensionSource}\"", normSrc);
                 normSources.Add(normSrc);
             }
-
-            // Persist only when normalization changed the stored values, so a
-            // plain read does not rewrite the config file.
-            if (!normSources.SequenceEqual(storedSources))
-                SaveExtensionLookupSources(normSources);
 
             return normSources;
         }

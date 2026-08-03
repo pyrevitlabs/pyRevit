@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using pyRevitLabs.Common.Extensions;
 using pyRevitLabs.PyRevit;
 using pyRevitLabs.Configurations;
 using pyRevitLabs.Configurations.Abstractions;
@@ -178,6 +179,67 @@ namespace pyRevitExtensionParserTester
 
             Assert.IsTrue(PyRevitConfigs.GetRocketMode());
             Assert.AreEqual(7, PyRevitConfigs.GetStartupLogTimeout());
+        }
+
+        // ---- extension search paths ----
+
+        [Test] // An admin-locked config refuses writes, so a read must not attempt one.
+        public void ExtensionReads_DoNotWriteToAReadOnlyConfig()
+        {
+            File.WriteAllText(_path,
+                "[core]\nuserextensions = [\"C:\\\\does\\\\not\\\\exist\"]\n"
+                + "[environment]\nsources = [\"C:\\\\also\\\\gone\\\\exts.json\"]\n");
+
+            PyRevitConfigStore.SetFactory(_ =>
+                new ConfigurationBuilder(true)
+                    .AddIniConfiguration(_path, ConfigurationService.DefaultConfigurationName, true)
+                    .Build());
+            PyRevitConfigStore.Reload();
+
+            var before = File.ReadAllText(_path);
+            Assert.DoesNotThrow(() => PyRevitExtensions.GetRegisteredExtensionSearchPaths());
+            Assert.DoesNotThrow(() => PyRevitExtensions.GetRegisteredExtensionLookupSources());
+            Assert.AreEqual(before, File.ReadAllText(_path));
+        }
+
+        [Test] // A stored %VAR% entry stays portable instead of being expanded in place.
+        public void ExtensionSearchPaths_PreserveAnEnvironmentVariableEntry()
+        {
+            File.WriteAllText(_path, "[core]\nuserextensions = [\"%TEMP%\"]\n");
+            PyRevitConfigStore.Reload();
+
+            var expandedTemp = Environment.ExpandEnvironmentVariables("%TEMP%");
+
+            // Resolution expands for use...
+            CollectionAssert.Contains(
+                PyRevitExtensions.GetRegisteredExtensionSearchPaths(), expandedTemp.NormalizeAsPath());
+
+            // ...but the stored form is untouched, here and after a registration.
+            PyRevitExtensions.RegisterExtensionSearchPath(expandedTemp);
+            CollectionAssert.Contains(PyRevitExtensions.GetStoredExtensionSearchPaths(), "%TEMP%");
+        }
+
+        [Test] // Unregistering by the expanded path removes the variable entry it came from.
+        public void ExtensionSearchPaths_UnregisterMatchesTheResolvedForm()
+        {
+            File.WriteAllText(_path, "[core]\nuserextensions = [\"%TEMP%\"]\n");
+            PyRevitConfigStore.Reload();
+
+            PyRevitExtensions.UnregisterExtensionSearchPath(
+                Environment.ExpandEnvironmentVariables("%TEMP%"));
+
+            CollectionAssert.IsEmpty(PyRevitExtensions.GetStoredExtensionSearchPaths());
+        }
+
+        [Test] // A read must not prune an entry that is merely unreachable right now.
+        public void ExtensionSearchPaths_ReadKeepsUnreachableEntriesStored()
+        {
+            File.WriteAllText(_path, "[core]\nuserextensions = [\"X:\\\\offline\\\\share\"]\n");
+            PyRevitConfigStore.Reload();
+
+            CollectionAssert.IsEmpty(PyRevitExtensions.GetRegisteredExtensionSearchPaths());
+            CollectionAssert.Contains(
+                PyRevitExtensions.GetStoredExtensionSearchPaths(), "X:\\offline\\share");
         }
     }
 }
