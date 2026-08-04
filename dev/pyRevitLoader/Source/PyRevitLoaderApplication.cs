@@ -1,5 +1,6 @@
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.UI;
+using Autodesk.Revit.UI.Events;
 using pyRevitAssemblyBuilder.AssemblyMaker;
 using pyRevitAssemblyBuilder.SessionManager;
 using pyRevitExtensionParser;
@@ -22,6 +23,10 @@ namespace PyRevitLoader
 	{
 		public static string LoaderPath => Path.GetDirectoryName(typeof(PyRevitLoaderApplication).Assembly.Location);
 		private static UIControlledApplication _uiControlledApplication;
+		private static UIApplication _uiApplication;
+		private static RevitThemeChangeMonitor _themeChangeMonitor;
+		private static bool _themeReloadPending;
+
 		private static UIApplication GetUIApplication(UIControlledApplication application)
 		{
 			var versionNumber = application.ControlledApplication.VersionNumber;
@@ -52,11 +57,27 @@ namespace PyRevitLoader
 			try
 			{
 				var uiApplication = GetUIApplication(application);
+				_uiApplication = uiApplication;
+				_themeChangeMonitor = new RevitThemeChangeMonitor(
+					uiApplication,
+					ServiceFactory.CreateLogger(),
+					OnRevitThemeChanged);
+				_themeChangeMonitor.Start();
+
 				var result = ExecuteStartupScript(application);
+				if (result == Result.Succeeded)
+				{
+					_themeChangeMonitor.SetSessionReady();
+				}
+				else
+				{
+					DisposeThemeChangeMonitor();
+				}
 				return result;
 			}
 			catch (Exception ex)
 			{
+				DisposeThemeChangeMonitor();
 				TaskDialog.Show("Error Loading Startup Script", ex.ToString());
 				return Result.Failed;
 			}
@@ -137,6 +158,52 @@ namespace PyRevitLoader
 				return Result.Failed;
 			}
 		}
+
+		private static void OnRevitThemeChanged(string themeName)
+		{
+			if (_themeReloadPending)
+				return;
+
+			var dialog = new TaskDialog("pyRevit Theme Changed")
+			{
+				MainInstruction = $"Revit is now using the {themeName} theme.",
+				MainContent = "Reload pyRevit to update its ribbon icons.",
+				CommonButtons = TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.No,
+				DefaultButton = TaskDialogResult.Yes
+			};
+
+			if (dialog.Show() != TaskDialogResult.Yes || _uiApplication == null)
+				return;
+
+			_themeReloadPending = true;
+			_uiApplication.Idling -= ReloadOnIdling;
+			_uiApplication.Idling += ReloadOnIdling;
+		}
+
+		private static void ReloadOnIdling(object sender, IdlingEventArgs eventArgs)
+		{
+			if (_uiApplication != null)
+			{
+				_uiApplication.Idling -= ReloadOnIdling;
+			}
+
+			_themeReloadPending = false;
+			LoadSession();
+		}
+
+		private static void DisposeThemeChangeMonitor()
+		{
+			if (_uiApplication != null)
+			{
+				_uiApplication.Idling -= ReloadOnIdling;
+			}
+
+			_themeReloadPending = false;
+			_themeChangeMonitor?.Dispose();
+			_themeChangeMonitor = null;
+			_uiApplication = null;
+		}
+
 		private static string GetStartupScriptPath()
 		{
 			var assemblyLocation = Assembly.GetExecutingAssembly().Location;
@@ -157,6 +224,7 @@ namespace PyRevitLoader
 		}
 		Result IExternalApplication.OnShutdown(UIControlledApplication application)
 		{
+			DisposeThemeChangeMonitor();
 			// FIXME: deallocate the python shell...
 			return Result.Succeeded;
 		}
