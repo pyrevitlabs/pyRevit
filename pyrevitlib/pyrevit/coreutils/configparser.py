@@ -4,6 +4,29 @@ import json
 from pyrevit import coreutils
 
 
+def _json_candidates(raw_value):
+    """Yield the spellings a stored value may take, canonical form first.
+
+    Mirrors the C# reader's fallbacks so both readers resolve the same file to
+    the same values.
+    """
+    yield raw_value
+
+    if not isinstance(raw_value, str):
+        return
+
+    # Legacy configs stored Python-style single-quoted strings and lists.
+    single_quoted = raw_value.replace("'", '"')
+    yield single_quoted
+
+    # Legacy configs stored Windows paths with unescaped backslashes, which JSON
+    # rejects as bad escape sequences. Only reached once a strict parse of the
+    # same text has failed, so no well-formed escape can be doubled here.
+    if '\\' in raw_value:
+        yield raw_value.replace('\\', '\\\\')
+        yield single_quoted.replace('\\', '\\\\')
+
+
 def decode_option_value(raw_value):
     """Decode a stored option value across every encoding pyRevit has written.
 
@@ -13,16 +36,11 @@ def decode_option_value(raw_value):
     Returns:
         the decoded value, or the raw text when no encoding accounts for it
     """
-    try:
-        return json.loads(raw_value)
-    except (ValueError, TypeError):
-        pass
-
-    try:
-        # Legacy configs stored Python-style single-quoted strings and lists.
-        return json.loads(raw_value.replace("'", '"'))
-    except (ValueError, TypeError):
-        pass
+    for candidate in _json_candidates(raw_value):
+        try:
+            return json.loads(candidate)
+        except (ValueError, TypeError):
+            pass
 
     # Legacy configs stored bools unquoted and capitalized. The C# readers parse
     # those spellings as bools, so a bare token has to decode the same way here
