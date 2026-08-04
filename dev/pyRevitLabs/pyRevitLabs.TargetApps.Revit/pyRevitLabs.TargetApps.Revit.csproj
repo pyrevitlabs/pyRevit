@@ -14,6 +14,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="MadMilkman.Ini" Version="1.0.6" />
+    <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'" Include="MadMilkman.Ini.Unofficial" Version="1.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\pyRevitLabs.Common\pyRevitLabs.Common.csproj" />
   </ItemGroup>
 </Project>
