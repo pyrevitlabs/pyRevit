@@ -32,28 +32,34 @@ Pipeline:
 Gap-bridged connector segments carry seg-index None - callers mapping
 seg indices back to walls must skip None.
 """
+
 from __future__ import division
 
 import math
 
-TOLERANCE_FT = 0.01        # exact endpoint-matching tolerance
-GAP_TOL_FT = 2.0           # bridge splits/bumps/unjoined ends up to this
-COLLINEAR_OFFSET_FT = 0.2  # same-line tolerance for unlimited-length
-                           # collinear bridging (string runs across a
-                           # storefront/opening break like a drafter's)
-ANGLE_TOL_DEG = 1.0        # direction-change threshold
-RECT_MIN_SEG_FT = 1.0      # segments shorter than this are exempt from
-                           # the rectilinearity check and get their axis
-                           # from their neighbors (micro-connectors)
-TIER_MERGE_TOL_FT = 0.15   # tier values closer than ~2" merge into one
-                           # witness line (bridged connectors can create
-                           # near-coincident jog points)
-FRAME_TOL_DEG = 2.0        # walls within this of a frame's angle belong
-                           # to it (models are never perfectly on-angle)
-FRAME_MIN_LEN_FT = 1.0     # stubs are too short to vote on a direction
-WITNESS_END_TOL_FT = 1.0   # a wall this close to either end of a witness
-                           # line does not count as "crossed" (absorbs the
-                           # location-line vs finish-face offset)
+TOLERANCE_FT = 0.01  # exact endpoint-matching tolerance
+GAP_TOL_FT = 2.0  # bridge splits/bumps/unjoined ends up to this
+COLLINEAR_OFFSET_FT = 0.2
+# same-line tolerance for unlimited-length
+# collinear bridging (string runs across a
+# storefront/opening break like a drafter's)
+ANGLE_TOL_DEG = 1.0  # direction-change threshold
+RECT_MIN_SEG_FT = 1.0
+# segments shorter than this are exempt from
+# the rectilinearity check and get their axis
+# from their neighbors (micro-connectors)
+TIER_MERGE_TOL_FT = 0.15
+# tier values closer than ~2" merge into one
+# witness line (bridged connectors can create
+# near-coincident jog points)
+FRAME_TOL_DEG = 2.0
+# walls within this of a frame's angle belong
+# to it (models are never perfectly on-angle)
+FRAME_MIN_LEN_FT = 1.0  # stubs are too short to vote on a direction
+WITNESS_END_TOL_FT = 1.0
+# a wall this close to either end of a witness
+# line does not count as "crossed" (absorbs the
+# location-line vs finish-face offset)
 
 QUARTER_TURN = math.pi / 2.0
 
@@ -121,8 +127,7 @@ def segment_angle(p, q):
     return math.atan2(q[1] - p[1], q[0] - p[0]) % QUARTER_TURN
 
 
-def direction_frames(segments, tol_deg=FRAME_TOL_DEG,
-                     min_len=FRAME_MIN_LEN_FT):
+def direction_frames(segments, tol_deg=FRAME_TOL_DEG, min_len=FRAME_MIN_LEN_FT):
     """The building's directions, as Frames, most important first.
 
     Wall directions are folded modulo 90 deg and clustered, each wall
@@ -211,6 +216,7 @@ def _is_turn(p_prev, p, p_next, angle_tol_deg):
 
 # ------------------------------------------------------------- chaining
 
+
 def _exact_chains(segments, tol):
     """Phase 1: chain segments whose endpoints coincide within tol."""
     chains = []
@@ -243,9 +249,7 @@ def _exact_chains(segments, tol):
                         break
 
         walk(lambda: pts[-1], pts.append, idxs.append)
-        walk(lambda: pts[0],
-             lambda p: pts.insert(0, p),
-             lambda i: idxs.insert(0, i))
+        walk(lambda: pts[0], lambda p: pts.insert(0, p), lambda i: idxs.insert(0, i))
 
         closed = len(pts) > 3 and _dist(pts[0], pts[-1]) <= tol
         if closed:
@@ -304,21 +308,23 @@ def _merge_chains(chains, gap_tol, collinear_offset):
                         pi = _end_point(open_chains[i][0], end_i)
                         pj = _end_point(open_chains[j][0], end_j)
                         gap = _dist(pi, pj)
-                        ok = (gap <= gap_tol
-                              or _collinear_bridge_ok(
-                                  open_chains[i][0], end_i,
-                                  open_chains[j][0], end_j,
-                                  collinear_offset))
+                        ok = gap <= gap_tol or _collinear_bridge_ok(
+                            open_chains[i][0],
+                            end_i,
+                            open_chains[j][0],
+                            end_j,
+                            collinear_offset,
+                        )
                         if ok and (best is None or gap < best[0]):
                             best = (gap, i, j, end_i, end_j)
         if best is not None:
             _, i, j, end_i, end_j = best
             pts_i, idxs_i = open_chains[i]
             pts_j, idxs_j = open_chains[j]
-            if end_i == 0:   # connect at i's head -> flip i tail-first
+            if end_i == 0:  # connect at i's head -> flip i tail-first
                 pts_i = pts_i[::-1]
                 idxs_i = idxs_i[::-1]
-            if end_j == 1:   # connect at j's tail -> flip j head-first
+            if end_j == 1:  # connect at j's tail -> flip j head-first
                 pts_j = pts_j[::-1]
                 idxs_j = idxs_j[::-1]
             open_chains[i] = [pts_i + pts_j, idxs_i + [None] + idxs_j]
@@ -334,9 +340,9 @@ def _merge_chains(chains, gap_tol, collinear_offset):
     return result
 
 
-def order_segments(segments, tol=TOLERANCE_FT,
-                   gap_tol=GAP_TOL_FT,
-                   collinear_offset=COLLINEAR_OFFSET_FT):
+def order_segments(
+    segments, tol=TOLERANCE_FT, gap_tol=GAP_TOL_FT, collinear_offset=COLLINEAR_OFFSET_FT
+):
     """Unordered segments -> connected chains, bridging real-model gaps.
 
     Returns list of (points, seg_indices, closed); seg_indices[k] is the
@@ -345,11 +351,11 @@ def order_segments(segments, tol=TOLERANCE_FT,
     """
     if not segments:
         return []
-    return _merge_chains(_exact_chains(segments, tol),
-                         gap_tol, collinear_offset)
+    return _merge_chains(_exact_chains(segments, tol), gap_tol, collinear_offset)
 
 
 # ------------------------------------------------------------ splitting
+
 
 def _segment_axes(pts, idxs, closed):
     """Axis per segment: 'x', 'y', or 'micro' for short segments whose
@@ -409,7 +415,8 @@ def split_runs(pts, idxs, closed):
                 break
         if start is None:
             raise GeometryError(
-                "Exterior loop runs in a single direction - invalid loop")
+                "Exterior loop runs in a single direction - invalid loop"
+            )
         pts_open = pts[start:] + pts[:start] + [pts[start]]
         idxs_open = idxs[start:] + idxs[:start]
         return split_runs(pts_open, idxs_open, False)
@@ -425,12 +432,13 @@ def split_runs(pts, idxs, closed):
                     has_real_wall = True
                     break
             if has_real_wall:
-                runs.append((pts[k0:k + 1], run_idxs))
+                runs.append((pts[k0: k + 1], run_idxs))
             k0 = k
     return runs
 
 
 # ----------------------------------------------------------- tier math
+
 
 def dominant_axis(polyline):
     xs = [p[0] for p in polyline]
@@ -438,8 +446,7 @@ def dominant_axis(polyline):
     return "x" if (max(xs) - min(xs)) >= (max(ys) - min(ys)) else "y"
 
 
-def is_rectilinear(polyline, angle_tol_deg=ANGLE_TOL_DEG,
-                   min_seg_ft=RECT_MIN_SEG_FT):
+def is_rectilinear(polyline, angle_tol_deg=ANGLE_TOL_DEG, min_seg_ft=RECT_MIN_SEG_FT):
     """True if every segment >= min_seg_ft is axis-aligned within
     angle_tol_deg (short gap-bridge connectors may be diagonal)."""
     for i in range(len(polyline) - 1):
@@ -461,8 +468,7 @@ def find_jog_points(polyline, angle_tol_deg=ANGLE_TOL_DEG):
         return [polyline[0], polyline[1]]
     jogs = [polyline[0]]
     for v in range(1, len(polyline) - 1):
-        if _is_turn(polyline[v - 1], polyline[v], polyline[v + 1],
-                    angle_tol_deg):
+        if _is_turn(polyline[v - 1], polyline[v], polyline[v + 1], angle_tol_deg):
             jogs.append(polyline[v])
     jogs.append(polyline[-1])
     return jogs
@@ -518,9 +524,9 @@ def project_onto_axis(points, axis, tol=TOLERANCE_FT):
     return out
 
 
-def build_tiers(polyline, opening_points,
-                angle_tol_deg=ANGLE_TOL_DEG,
-                tol=TIER_MERGE_TOL_FT):
+def build_tiers(
+    polyline, opening_points, angle_tol_deg=ANGLE_TOL_DEG, tol=TIER_MERGE_TOL_FT
+):
     """The exterior_wall_dimension_string rule for ONE single-axis run.
 
     Returns {'axis', 'tier1', 'tier2', 'tier3'}:
@@ -535,7 +541,8 @@ def build_tiers(polyline, opening_points,
     if not is_rectilinear(polyline, angle_tol_deg):
         raise NotRectilinearError(
             "Run contains an angled or curved segment - out of scope "
-            "for v1, dimension manually")
+            "for v1, dimension manually"
+        )
 
     axis = dominant_axis(polyline)
     jogs = find_jog_points(polyline, angle_tol_deg)
@@ -730,9 +737,15 @@ def snap_base_outward(base, side, face_perps, max_shift_ft=2.0):
 # base travels through open space.
 
 
-def witness_crosses(value, perp_from, perp_to, axis, segments,
-                    end_tol=WITNESS_END_TOL_FT,
-                    val_tol=TIER_MERGE_TOL_FT):
+def witness_crosses(
+    value,
+    perp_from,
+    perp_to,
+    axis,
+    segments,
+    end_tol=WITNESS_END_TOL_FT,
+    val_tol=TIER_MERGE_TOL_FT,
+):
     """True when the witness line at `value` (a coordinate ALONG `axis`),
     extended perpendicular from perp_from to perp_to, transversely
     crosses any of the wall segments.
@@ -785,8 +798,7 @@ def cluster_exterior_runs(records, segments, axis, side, max_drag_ft=0.0):
     Returns a list of clusters, each a list of record indices, in
     outermost-first creation order. With one mass and no crossings this
     returns a single cluster, i.e. one string set per direction."""
-    order = sorted(range(len(records)),
-                   key=lambda i: -side * records[i][0])
+    order = sorted(range(len(records)), key=lambda i: -side * records[i][0])
     clusters = []  # [{"base": float, "members": [record index]}]
     for i in order:
         perp_extreme, witness_values = records[i]
@@ -798,8 +810,7 @@ def cluster_exterior_runs(records, segments, axis, side, max_drag_ft=0.0):
                     continue
             blocked = False
             for v in witness_values:
-                if witness_crosses(v, perp_extreme, cluster["base"],
-                                   axis, segments):
+                if witness_crosses(v, perp_extreme, cluster["base"], axis, segments):
                     blocked = True
                     break
             if not blocked:

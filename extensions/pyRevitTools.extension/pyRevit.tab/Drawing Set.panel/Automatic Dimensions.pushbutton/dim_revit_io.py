@@ -13,7 +13,8 @@ Reference strategy for dimension anchoring, in priority order:
      Options.IncludeNonVisibleObjects) - covers joined/mitered wall
      ends that expose no clean axis-facing face.
 """
-from autodim import geometry
+
+import dim_geometry
 
 from Autodesk.Revit.DB import (
     UV,
@@ -35,14 +36,15 @@ from Autodesk.Revit.DB import (
     WallKind,
 )
 
-FACE_NORMAL_MIN = 0.9      # rejects mitered (~0.707) corner faces
-FACE_PLANE_MAX_FT = 1.5    # max plan distance target-to-face-plane
+FACE_NORMAL_MIN = 0.9  # rejects mitered (~0.707) corner faces
+FACE_PLANE_MAX_FT = 1.5  # max plan distance target-to-face-plane
 ENDPOINT_MATCH_FT = 0.1
 
 
-BELOW_LEVEL_TOL_FT = 3.0   # a wall based more than this below the
-                           # view's level belongs to the level below,
-                           # even when it rises through the cut plane
+BELOW_LEVEL_TOL_FT = 3.0
+# a wall based more than this below the
+# view's level belongs to the level below,
+# even when it rises through the cut plane
 
 
 def view_cut_elevation(doc, view):
@@ -50,12 +52,10 @@ def view_cut_elevation(doc, view):
     unavailable (non-plan view, odd view range)."""
     try:
         view_range = view.GetViewRange()
-        level = doc.GetElement(
-            view_range.GetLevelId(PlanViewPlane.CutPlane))
+        level = doc.GetElement(view_range.GetLevelId(PlanViewPlane.CutPlane))
         if level is None:
             return None
-        return (level.ProjectElevation
-                + view_range.GetOffset(PlanViewPlane.CutPlane))
+        return level.ProjectElevation + view_range.GetOffset(PlanViewPlane.CutPlane)
     except Exception:
         return None
 
@@ -86,8 +86,7 @@ def make_view_wall_filter(doc, view):
         bbox = wall.get_BoundingBox(None)
         if bbox is None:
             return False
-        if cut_z is not None and not (
-                bbox.Min.Z - 0.1 <= cut_z <= bbox.Max.Z + 0.1):
+        if cut_z is not None and not (bbox.Min.Z - 0.1 <= cut_z <= bbox.Max.Z + 0.1):
             return False
         if base_min is not None and bbox.Min.Z < base_min:
             return False
@@ -105,9 +104,11 @@ def get_basic_walls(doc, view):
     exterior mode relies on the user's manual selection instead."""
     belongs = make_view_wall_filter(doc, view)
     walls = []
-    collector = (FilteredElementCollector(doc, view.Id)
-                 .OfCategory(BuiltInCategory.OST_Walls)
-                 .WhereElementIsNotElementType())
+    collector = (
+        FilteredElementCollector(doc, view.Id)
+        .OfCategory(BuiltInCategory.OST_Walls)
+        .WhereElementIsNotElementType()
+    )
     for wall in collector:
         if not isinstance(wall, Wall):
             continue
@@ -150,8 +151,7 @@ def get_room_polygon(room):
     rectilinear); wall_ids[k] may be None for room-separation lines, which
     the caller reports rather than silently dimensioning to nothing."""
     options = SpatialElementBoundaryOptions()
-    options.SpatialElementBoundaryLocation = (
-        SpatialElementBoundaryLocation.Finish)
+    options.SpatialElementBoundaryLocation = SpatialElementBoundaryLocation.Finish
     try:
         loops = room.GetBoundarySegments(options)
     except Exception:
@@ -218,9 +218,11 @@ def get_rooms(doc, view):
     boundary polygon: [{'room', 'name', 'poly', 'wall_ids'}]. Rooms whose
     boundary cannot be read are skipped (reported by the caller)."""
     rooms = []
-    collector = (FilteredElementCollector(doc, view.Id)
-                 .OfCategory(BuiltInCategory.OST_Rooms)
-                 .WhereElementIsNotElementType())
+    collector = (
+        FilteredElementCollector(doc, view.Id)
+        .OfCategory(BuiltInCategory.OST_Rooms)
+        .WhereElementIsNotElementType()
+    )
     for room in collector:
         try:
             if room.Area <= 0:
@@ -231,9 +233,14 @@ def get_rooms(doc, view):
         if boundary is None:
             continue
         name = get_room_name(room)
-        rooms.append({"room": room, "name": name,
-                      "poly": boundary["poly"],
-                      "wall_ids": boundary["wall_ids"]})
+        rooms.append(
+            {
+                "room": room,
+                "name": name,
+                "poly": boundary["poly"],
+                "wall_ids": boundary["wall_ids"],
+            }
+        )
     return rooms
 
 
@@ -258,23 +265,24 @@ def get_room_objects(doc, view):
             bic = getattr(BuiltInCategory, name, None)
             if bic is None:
                 continue
-            collector = (FilteredElementCollector(doc, view.Id)
-                         .OfCategory(bic)
-                         .WhereElementIsNotElementType())
+            collector = (
+                FilteredElementCollector(doc, view.Id)
+                .OfCategory(bic)
+                .WhereElementIsNotElementType()
+            )
             for inst in collector:
                 if not isinstance(inst, FamilyInstance):
                     continue
                 point = getattr(inst.Location, "Point", None)
                 if point is None:
                     continue
-                found.append({"inst": inst,
-                              "pt": (point.X, point.Y),
-                              "is_column": is_column})
+                found.append(
+                    {"inst": inst, "pt": (point.X, point.Y), "is_column": is_column}
+                )
     return found
 
 
-def face_at(faces, axis, value, inward, wall_id=None,
-            max_ft=FACE_PLANE_MAX_FT):
+def face_at(faces, axis, value, inward, wall_id=None, max_ft=FACE_PLANE_MAX_FT):
     """The view-visible wall face that a room's boundary crossing sits on.
 
     faces:  records from collect_axis_faces(walls, axis, view)
@@ -316,9 +324,11 @@ def get_wall_stats(doc, view):
     visible = 0
     basic = 0
     this_level = 0
-    collector = (FilteredElementCollector(doc, view.Id)
-                 .OfCategory(BuiltInCategory.OST_Walls)
-                 .WhereElementIsNotElementType())
+    collector = (
+        FilteredElementCollector(doc, view.Id)
+        .OfCategory(BuiltInCategory.OST_Walls)
+        .WhereElementIsNotElementType()
+    )
     for wall in collector:
         if not isinstance(wall, Wall):
             continue
@@ -329,8 +339,7 @@ def get_wall_stats(doc, view):
         basic += 1
         if belongs(wall):
             this_level += 1
-    return {"visible": visible, "basic": basic,
-            "this_level": this_level}
+    return {"visible": visible, "basic": basic, "this_level": this_level}
 
 
 def get_wall_endpoints(wall):
@@ -338,8 +347,8 @@ def get_wall_endpoints(wall):
     curve = getattr(wall.Location, "Curve", None)
     if curve is None or not isinstance(curve, Line):
         raise ValueError(
-            "Wall {0} is curved or has no straight location line"
-            .format(wall.Id))
+            "Wall {0} is curved or has no straight location line".format(wall.Id)
+        )
     p0 = curve.GetEndPoint(0)
     p1 = curve.GetEndPoint(1)
     return (p0.X, p0.Y), (p1.X, p1.Y)
@@ -367,13 +376,12 @@ def _opening_index(doc, doors_only):
     if doors_only:
         categories = (BuiltInCategory.OST_Doors,)
     else:
-        categories = (BuiltInCategory.OST_Doors,
-                      BuiltInCategory.OST_Windows)
+        categories = (BuiltInCategory.OST_Doors, BuiltInCategory.OST_Windows)
     index = {}
     for bic in categories:
-        collector = (FilteredElementCollector(doc)
-                     .OfCategory(bic)
-                     .WhereElementIsNotElementType())
+        collector = (
+            FilteredElementCollector(doc).OfCategory(bic).WhereElementIsNotElementType()
+        )
         for inst in collector:
             if isinstance(inst, FamilyInstance) and inst.Host is not None:
                 index.setdefault(inst.Host.Id, []).append(inst)
@@ -390,22 +398,23 @@ def get_opening_point(instance):
     """(x, y) of a door/window, for projection math only."""
     point = getattr(instance.Location, "Point", None)
     if point is None:
-        raise ValueError(
-            "Opening {0} has no location point".format(instance.Id))
+        raise ValueError("Opening {0} has no location point".format(instance.Id))
     return (point.X, point.Y)
 
 
 def get_opening_centerline_reference(instance):
     """Centerline Reference of a door/window, or ValueError naming the
     element if its family exposes no centerline reference."""
-    for ref_type in (FamilyInstanceReferenceType.CenterLeftRight,
-                     FamilyInstanceReferenceType.CenterFrontBack):
+    for ref_type in (
+        FamilyInstanceReferenceType.CenterLeftRight,
+        FamilyInstanceReferenceType.CenterFrontBack,
+    ):
         refs = list(instance.GetReferences(ref_type))
         if refs:
             return refs[0]
     raise ValueError(
-        "Door/window {0} exposes no centerline reference - skipped"
-        .format(instance.Id))
+        "Door/window {0} exposes no centerline reference - skipped".format(instance.Id)
+    )
 
 
 def get_opening_side_references(instance):
@@ -429,10 +438,12 @@ def get_opening_width(instance):
     verified against RevitAPI.dll offline - a missing member silently
     degrades to the next candidate instead of crashing."""
     holders = (instance, instance.Symbol)
-    for bip_name in ("FAMILY_ROUGH_WIDTH_PARAM",
-                     "DOOR_WIDTH",
-                     "WINDOW_WIDTH",
-                     "FAMILY_WIDTH_PARAM"):
+    for bip_name in (
+        "FAMILY_ROUGH_WIDTH_PARAM",
+        "DOOR_WIDTH",
+        "WINDOW_WIDTH",
+        "FAMILY_WIDTH_PARAM",
+    ):
         bip = getattr(BuiltInParameter, bip_name, None)
         if bip is None:
             continue
@@ -468,8 +479,9 @@ def get_wall_centerline_reference(wall):
         g0 = geom_obj.GetEndPoint(0)
         g1 = geom_obj.GetEndPoint(1)
         # match against the location curve (either direction)
-        same = ((g0.DistanceTo(c0) < 0.5 and g1.DistanceTo(c1) < 0.5)
-                or (g0.DistanceTo(c1) < 0.5 and g1.DistanceTo(c0) < 0.5))
+        same = (g0.DistanceTo(c0) < 0.5 and g1.DistanceTo(c1) < 0.5) or (
+            g0.DistanceTo(c1) < 0.5 and g1.DistanceTo(c0) < 0.5
+        )
         if same:
             return geom_obj.Reference
     return None
@@ -483,7 +495,7 @@ def get_instance_center_reference(instance, axis, frame=None):
     coordinates, so a fixture in an angled wing picks the same reference
     its orthogonal twin would."""
     if frame is None:
-        frame = geometry.Frame(0.0)
+        frame = dim_geometry.Frame(0.0)
     hand = getattr(instance, "HandOrientation", None)
     prefer_lr = True
     if hand is not None:
@@ -491,11 +503,15 @@ def get_instance_center_reference(instance, axis, frame=None):
         along = abs(local[0]) if axis == "x" else abs(local[1])
         prefer_lr = along > 0.7
     if prefer_lr:
-        order = (FamilyInstanceReferenceType.CenterLeftRight,
-                 FamilyInstanceReferenceType.CenterFrontBack)
+        order = (
+            FamilyInstanceReferenceType.CenterLeftRight,
+            FamilyInstanceReferenceType.CenterFrontBack,
+        )
     else:
-        order = (FamilyInstanceReferenceType.CenterFrontBack,
-                 FamilyInstanceReferenceType.CenterLeftRight)
+        order = (
+            FamilyInstanceReferenceType.CenterFrontBack,
+            FamilyInstanceReferenceType.CenterLeftRight,
+        )
     for ref_type in order:
         refs = list(instance.GetReferences(ref_type))
         if refs:
@@ -528,7 +544,7 @@ def collect_axis_faces(walls, axis, view=None, frame=None):
     is why angled buildings lost their anchors entirely.
     """
     if frame is None:
-        frame = geometry.Frame(0.0)
+        frame = dim_geometry.Frame(0.0)
     options = Options()
     options.ComputeReferences = True
     if view is not None:
@@ -543,8 +559,9 @@ def collect_axis_faces(walls, axis, view=None, frame=None):
                 continue
             for face in solid_faces:
                 bbox = face.GetBoundingBox()
-                mid = UV((bbox.Min.U + bbox.Max.U) / 2.0,
-                         (bbox.Min.V + bbox.Max.V) / 2.0)
+                mid = UV(
+                    (bbox.Min.U + bbox.Max.U) / 2.0, (bbox.Min.V + bbox.Max.V) / 2.0
+                )
                 normal = face.ComputeNormal(mid)
                 if abs(normal.Z) > 0.1:
                     continue  # top/bottom faces
@@ -555,16 +572,19 @@ def collect_axis_faces(walls, axis, view=None, frame=None):
                 if face.Reference is None:
                     continue
                 center = face.Evaluate(mid)
-                is_ext = (orientation is not None
-                          and (normal.X * orientation.X
-                               + normal.Y * orientation.Y) > 0.5)
-                faces.append({
-                    "ref": face.Reference,
-                    "wall": wall,
-                    "origin": frame.to_local((center.X, center.Y)),
-                    "normal": local_n,
-                    "exterior": is_ext,
-                })
+                is_ext = (
+                    orientation is not None
+                    and (normal.X * orientation.X + normal.Y * orientation.Y) > 0.5
+                )
+                faces.append(
+                    {
+                        "ref": face.Reference,
+                        "wall": wall,
+                        "origin": frame.to_local((center.X, center.Y)),
+                        "normal": local_n,
+                        "exterior": is_ext,
+                    }
+                )
     return faces
 
 
@@ -638,9 +658,8 @@ def outermost_same_face(axis_faces, face_info, axis, window_ft=0.5):
     # the decision itself is pure and unit-tested (geometry.outermost_index,
     # exercised against the real face-audit numbers from the live model)
     faces = [face_info] + [f for f in axis_faces if f is not face_info]
-    items = [(str(f["wall"].Id), f["origin"][idx], f["normal"][idx])
-             for f in faces]
-    return faces[geometry.outermost_index(items, 0, window_ft)]
+    items = [(str(f["wall"].Id), f["origin"][idx], f["normal"][idx]) for f in faces]
+    return faces[dim_geometry.outermost_index(items, 0, window_ft)]
 
 
 def face_candidates(axis_faces, pt_xy, max_ft=FACE_PLANE_MAX_FT):
@@ -660,11 +679,15 @@ def face_candidates(axis_faces, pt_xy, max_ft=FACE_PLANE_MAX_FT):
         plane_d = abs(nx * (pt_xy[0] - ox) + ny * (pt_xy[1] - oy))
         if plane_d > max_ft:
             continue
-        out.append({"wall_id": f["wall"].Id,
-                    "origin": f["origin"],
-                    "normal": f["normal"],
-                    "exterior": f["exterior"],
-                    "plane_d": plane_d})
+        out.append(
+            {
+                "wall_id": f["wall"].Id,
+                "origin": f["origin"],
+                "normal": f["normal"],
+                "exterior": f["exterior"],
+                "plane_d": plane_d,
+            }
+        )
     out.sort(key=lambda c: c["plane_d"])
     return out
 
@@ -754,7 +777,7 @@ def calibrate_core_indices(wall, view, doc, frame=None):
     ext_shell, int_shell, total = shells
 
     if frame is None:
-        frame = geometry.Frame(0.0)
+        frame = dim_geometry.Frame(0.0)
     orientation = getattr(wall, "Orientation", None)
     if orientation is None:
         return None
@@ -823,12 +846,11 @@ def core_face_reference(face_info, view, doc, cache, notes, frame=None):
             cache[key] = calibrate_core_indices(wall, view, doc, frame)
         except Exception as ex:
             cache[key] = None
-            notes.append("Wall {0}: core calibration raised {1}".format(
-                wall.Id, ex))
+            notes.append("Wall {0}: core calibration raised {1}".format(wall.Id, ex))
         if cache[key] is None:
             notes.append(
-                "Wall {0}: no core reference found - finish face used"
-                .format(wall.Id))
+                "Wall {0}: no core reference found - finish face used".format(wall.Id)
+            )
     calibration = cache[key]
     if not calibration:
         return None
@@ -860,9 +882,16 @@ def get_centerline_end_reference(wall, pt_xy):
     return None
 
 
-def create_dimension_tier(doc, view, references, axis,
-                          value_range, perpendicular_position,
-                          base_z=0.0, frame=None):
+def create_dimension_tier(
+    doc,
+    view,
+    references,
+    axis,
+    value_range,
+    perpendicular_position,
+    base_z=0.0,
+    frame=None,
+):
     """One dimension string via Document.Create.NewDimension.
     Caller manages the Transaction. Duplicate references (same stable
     representation - e.g. a wall-end face that is also an opening jamb)
@@ -875,7 +904,7 @@ def create_dimension_tier(doc, view, references, axis,
     would return the cosine-shortened projection of the wall - the wrong
     number. Frame(0) is the exact identity."""
     if frame is None:
-        frame = geometry.Frame(0.0)
+        frame = dim_geometry.Frame(0.0)
     ref_array = ReferenceArray()
     seen = []
     for ref in references:
@@ -903,5 +932,4 @@ def create_dimension_tier(doc, view, references, axis,
     p0 = XYZ(w0[0], w0[1], base_z)
     p1 = XYZ(w1[0], w1[1], base_z)
 
-    return doc.Create.NewDimension(
-        view, Line.CreateBound(p0, p1), ref_array)
+    return doc.Create.NewDimension(view, Line.CreateBound(p0, p1), ref_array)

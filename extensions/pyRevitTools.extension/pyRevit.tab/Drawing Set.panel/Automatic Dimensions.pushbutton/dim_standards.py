@@ -20,8 +20,6 @@ literals. Keep both.
 """
 from __future__ import division
 
-from pyrevit import DB, DOCS, HOST_APP
-
 INCH = 1.0 / 12.0
 
 # Gap between the object and the start of the extension line.
@@ -104,6 +102,7 @@ def parse_paper_inches(text):
                 return None
     return total if seen else None
 
+
 # Minimum overall extension line length.
 MIN_EXTENSION_LINE_FT = (9.0 / 16.0) * INCH        # 9/16"
 
@@ -127,47 +126,3 @@ TERMINATOR = "tick"
 #            depends on how the family's width references were built)
 OPENING_MODE_CENTER = "center"
 OPENING_MODE_RO = "ro"
-
-
-def _format_ft_in(value_ft):
-    """Decimal feet -> readable feet-inches string.
-
-    Normalizes the inches component so 34.9967 ft renders as 35'-0.0",
-    never 34'-12.0".
-    """
-    sign = "-" if value_ft < 0 else ""
-    total_in = abs(value_ft) * 12.0
-    feet = int(total_in // 12)
-    inches = total_in - feet * 12
-    if inches >= 11.95:
-        feet += 1
-        inches = 0.0
-    return "{0}{1}'-{2:.1f}\"".format(sign, feet, inches)
-
-
-def format_length(value_ft, doc=None):
-    """Report-only length string in the DOCUMENT's display units.
-
-    Used for the dry-run report and run notes; the dimensions Revit
-    places carry their own text and never go through here. Reading the
-    document's units means a metric project gets a metric report.
-
-    The spec argument changed type in Revit 2021 (UnitType enum ->
-    ForgeTypeId), so the call is version-branched the same way
-    pyrevit.revit.units does it. Falls back to US feet-inches if the
-    document or the API is unavailable.
-    """
-    try:
-        doc = doc or DOCS.doc
-        if HOST_APP.is_newer_than(2021):
-            return DB.UnitFormatUtils.Format(units=doc.GetUnits(),
-                                             specTypeId=DB.SpecTypeId.Length,
-                                             value=value_ft,
-                                             forEditing=False)
-        return DB.UnitFormatUtils.Format(units=doc.GetUnits(),
-                                         unitType=DB.UnitType.UT_Length,
-                                         value=value_ft,
-                                         maxAccuracy=False,
-                                         forEditing=False)
-    except Exception:
-        return _format_ft_in(value_ft)

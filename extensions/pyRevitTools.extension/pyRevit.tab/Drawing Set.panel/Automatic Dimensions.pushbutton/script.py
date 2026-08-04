@@ -40,13 +40,13 @@ frame at 0 deg, which is the exact identity transform.
 
 ENGINE: runs on pyRevit's default IronPython engine (no python3 shebang).
 """
-import os
-
 from pyrevit import revit, forms, script
-from Autodesk.Revit.DB import Wall, FamilyInstance
+from pyrevit import DB
+from pyrevit.revit.units import format_length
 
-from autodim import geometry, standards, revit_io
-from autodim.standards import format_length
+import dim_geometry
+import dim_standards
+import dim_revit_io
 
 doc = revit.doc
 
@@ -55,7 +55,7 @@ MODE_INT = "interior"
 
 AUTO_OFFSET_LABEL = "Auto (by view scale)"
 
-XAML = os.path.join(os.path.dirname(__file__), "AutoDimWindow.xaml")
+XAML = "AutoDimWindow.xaml"
 
 
 class AutoDimWindow(forms.WPFWindow):
@@ -131,12 +131,12 @@ class AutoDimWindow(forms.WPFWindow):
         spacing_text = self.spacing_cb.Text
         split_text = self.split_tb.Text
 
-        first_in = standards.parse_paper_inches(first_text)
+        first_in = dim_standards.parse_paper_inches(first_text)
         if first_in is not None and first_in < 0.25:
             first_in = 0.25
-        spacing_in = standards.parse_paper_inches(spacing_text)
+        spacing_in = dim_standards.parse_paper_inches(spacing_text)
         if spacing_in is None:
-            spacing_in = standards.TIER_SPACING_DEFAULT_IN
+            spacing_in = dim_standards.TIER_SPACING_DEFAULT_IN
         elif spacing_in < 0.25:
             spacing_in = 0.25
         try:
@@ -193,19 +193,19 @@ def gather_selection(view):
     wall Function data cannot be trusted - same types get used both
     ways, or nobody sets it). Exterior mode = manual selection;
     interior mode = catch-all from the view's Rooms and walls."""
-    belongs = revit_io.make_view_wall_filter(doc, view)
+    belongs = dim_revit_io.make_view_wall_filter(doc, view)
     walls = []
     skipped = 0
     fixtures = []
     for el in revit.get_selection().elements:
-        if isinstance(el, Wall):
+        if isinstance(el, DB.Wall):
             if belongs(el):
                 walls.append(el)
             else:
                 skipped += 1
-        elif isinstance(el, FamilyInstance):
+        elif isinstance(el, DB.FamilyInstance):
             host = getattr(el, "Host", None)
-            if host is None or not isinstance(host, Wall):
+            if host is None or not isinstance(host, DB.Wall):
                 if getattr(el.Location, "Point", None) is not None:
                     fixtures.append(el)
     return walls, fixtures, skipped
@@ -214,7 +214,7 @@ def gather_selection(view):
 def build_runs(walls, notes, frame):
     """Walls -> list of run dicts, in FRAME-LOCAL coordinates.
 
-    Every point that enters the geometry pipeline is rotated into the
+    Every point that enters the dim_geometry pipeline is rotated into the
     frame here, at the boundary. Inside the pipeline an angled wing looks
     exactly like an orthogonal building, so build_tiers/split_runs need no
     changes at all - and with Frame(0) an orthogonal model is untouched."""
@@ -223,26 +223,26 @@ def build_runs(walls, notes, frame):
     openings_by_wall = {}
     for wall in walls:
         try:
-            p0, p1 = revit_io.get_wall_endpoints(wall)
+            p0, p1 = dim_revit_io.get_wall_endpoints(wall)
         except ValueError as ex:
             notes.append("Skipped: {0}".format(ex))
             continue
         segments.append((frame.to_local(p0), frame.to_local(p1)))
         seg_walls.append(wall)
         pairs = []
-        for inst in revit_io.get_hosted_openings(wall, doc):
+        for inst in dim_revit_io.get_hosted_openings(wall, doc):
             try:
                 pairs.append(
-                    (frame.to_local(revit_io.get_opening_point(inst)), inst))
+                    (frame.to_local(dim_revit_io.get_opening_point(inst)), inst))
             except ValueError as ex:
                 notes.append("Skipped opening: {0}".format(ex))
         openings_by_wall[wall.Id] = pairs
 
     runs = []
-    for pts, idxs, closed in geometry.order_segments(segments):
+    for pts, idxs, closed in dim_geometry.order_segments(segments):
         try:
-            parts = geometry.split_runs(pts, idxs, closed)
-        except geometry.GeometryError as ex:
+            parts = dim_geometry.split_runs(pts, idxs, closed)
+        except dim_geometry.GeometryError as ex:
             notes.append("Skipped a wall group: {0}".format(ex))
             continue
         for run_pts, run_idxs in parts:
@@ -256,9 +256,9 @@ def build_runs(walls, notes, frame):
             for w in run_walls:
                 run_openings.extend(openings_by_wall.get(w.Id, []))
             try:
-                tiers = geometry.build_tiers(
+                tiers = dim_geometry.build_tiers(
                     run_pts, [pt for pt, _ in run_openings])
-            except geometry.GeometryError as ex:
+            except dim_geometry.GeometryError as ex:
                 notes.append("Skipped one side: {0}".format(ex))
                 continue
             runs.append({"pts": run_pts, "walls": run_walls,
@@ -287,15 +287,15 @@ def opening_entries(run, ro_mode, notes, frame):
     for pt, inst in run["openings"]:
         center = pt[idx]
         if ro_mode:
-            width = revit_io.get_opening_width(inst)
-            jambs = revit_io.get_jamb_faces(inst, axis, center, width, frame)
+            width = dim_revit_io.get_opening_width(inst)
+            jambs = dim_revit_io.get_jamb_faces(inst, axis, center, width, frame)
             if jambs is not None:
                 entries.append(
                     (jambs[0]["origin"][idx], "jamb", jambs[0]))
                 entries.append(
                     (jambs[1]["origin"][idx], "jamb", jambs[1]))
                 continue
-            sides = revit_io.get_opening_side_references(inst)
+            sides = dim_revit_io.get_opening_side_references(inst)
             if sides is not None:
                 half = (width / 2.0) if width else 0.5
                 entries.append((center - half, "open_side", sides[0]))
@@ -315,7 +315,7 @@ def wallpoint_entries(run, values):
     entries = []
     for v in values:
         for p in run["pts"]:
-            if abs(p[idx] - v) <= geometry.TIER_MERGE_TOL_FT:
+            if abs(p[idx] - v) <= dim_geometry.TIER_MERGE_TOL_FT:
                 entries.append((v, "wallpt", p))
                 break
     return entries
@@ -327,7 +327,7 @@ def dedupe_entries(entries):
     survivors by value."""
     kept = []
     for e in entries:
-        if all(abs(e[0] - o[0]) > geometry.TIER_MERGE_TOL_FT for o in kept):
+        if all(abs(e[0] - o[0]) > dim_geometry.TIER_MERGE_TOL_FT for o in kept):
             kept.append(e)
     return sorted(kept, key=lambda x: x[0])
 
@@ -352,7 +352,7 @@ def resolve_entries(entries, axis, axis_faces, run, notes,
             # scan-line entries carry their face record directly
             ref = payload["ref"]
             if measure_core and view is not None:
-                core_ref = revit_io.core_face_reference(
+                core_ref = dim_revit_io.core_face_reference(
                     payload, view, doc,
                     core_cache if core_cache is not None else {}, notes, frame)
                 if core_ref is not None:
@@ -361,23 +361,23 @@ def resolve_entries(entries, axis, axis_faces, run, notes,
             ref = payload
         elif kind == "open_c":
             try:
-                ref = revit_io.get_opening_centerline_reference(payload)
+                ref = dim_revit_io.get_opening_centerline_reference(payload)
             except ValueError as ex:
                 notes.append(str(ex))
         elif kind == "cross":
-            ref = revit_io.get_wall_centerline_reference(payload)
+            ref = dim_revit_io.get_wall_centerline_reference(payload)
             if ref is None:
                 notes.append(
                     "Partition {0}: no centerline reference - skipped"
                     .format(payload.Id))
         elif kind == "fixture":
-            ref = revit_io.get_instance_center_reference(payload, axis, frame)
+            ref = dim_revit_io.get_instance_center_reference(payload, axis, frame)
             if ref is None:
                 notes.append(
                     "Fixture {0}: no center reference - skipped"
                     .format(payload.Id))
         elif kind == "wallpt":
-            face_info = revit_io.find_face_reference(
+            face_info = dim_revit_io.find_face_reference(
                 axis_faces, payload, prefer_exterior)
             if face_info is not None:
                 # snap out to the wall's true finish face: the solid can
@@ -385,12 +385,12 @@ def resolve_entries(entries, axis, axis_faces, run, notes,
                 # and scoring by distance-to-target lands on the inner one
                 # (live audit: 0.3" inside the finish). Same wall, same
                 # side - this only ever moves the anchor outward.
-                face_info = revit_io.outermost_same_face(
+                face_info = dim_revit_io.outermost_same_face(
                     axis_faces, face_info, axis)
             if face_audit:
                 idx = 0 if axis == "x" else 1
                 lines = []
-                for c in revit_io.face_candidates(axis_faces, payload):
+                for c in dim_revit_io.face_candidates(axis_faces, payload):
                     chosen = (face_info is not None
                               and c["origin"] == face_info["origin"]
                               and c["wall_id"] == face_info["wall"].Id)
@@ -408,7 +408,7 @@ def resolve_entries(entries, axis, axis_faces, run, notes,
             if face_info is not None:
                 ref = face_info["ref"]
                 if measure_core and view is not None:
-                    core_ref = revit_io.core_face_reference(
+                    core_ref = dim_revit_io.core_face_reference(
                         face_info, view, doc,
                         core_cache if core_cache is not None else {},
                         notes, frame)
@@ -416,7 +416,7 @@ def resolve_entries(entries, axis, axis_faces, run, notes,
                         ref = core_ref
             if ref is None and run is not None:
                 for w in run["walls"]:
-                    ref = revit_io.get_centerline_end_reference(w, payload)
+                    ref = dim_revit_io.get_centerline_end_reference(w, payload)
                     if ref is not None:
                         notes.append(
                             "No face at ({0:.1f}, {1:.1f}) - used wall "
@@ -457,7 +457,7 @@ def group_label(axis, side):
 def _merge_vals(values):
     out = []
     for v in sorted(values):
-        if not out or abs(v - out[-1]) > geometry.TIER_MERGE_TOL_FT:
+        if not out or abs(v - out[-1]) > dim_geometry.TIER_MERGE_TOL_FT:
             out.append(v)
     return out
 
@@ -530,7 +530,7 @@ def group_exterior_runs(runs, frame, segments_local, max_drag_ft=0.0):
             perp_vals = [p[pidx] for p in r["pts"]]
             extreme = max(perp_vals) if side > 0 else min(perp_vals)
             records.append((extreme, r["tiers"]["tier1"]))
-        clusters = geometry.cluster_exterior_runs(
+        clusters = dim_geometry.cluster_exterior_runs(
             records, segments_local, axis, side, max_drag_ft)
         for c_no in range(len(clusters)):
             c_runs = [group[i] for i in clusters[c_no]]
@@ -592,10 +592,10 @@ def place_run(view, run, plan, all_walls, face_cache, fixtures, notes,
               measure_core=False, core_cache=None, face_audit=False,
               frame=None, first_offset_in=None, spacing_in=None):
     if frame is None:
-        frame = geometry.Frame(0.0)
+        frame = dim_geometry.Frame(0.0)
     axis = run["tiers"]["axis"]
     if axis not in face_cache:
-        face_cache[axis] = revit_io.collect_axis_faces(
+        face_cache[axis] = dim_revit_io.collect_axis_faces(
             all_walls, axis, None, frame)
     axis_faces = face_cache[axis]
 
@@ -606,9 +606,9 @@ def place_run(view, run, plan, all_walls, face_cache, fixtures, notes,
     # Location Line setting), which ate most of the small first-tier
     # offset. Snap outward to the measured face - never inward.
     raw_base = base
-    base = geometry.snap_base_outward(
+    base = dim_geometry.snap_base_outward(
         base, side,
-        revit_io.exterior_face_perps(run["walls"], axis, frame))
+        dim_revit_io.exterior_face_perps(run["walls"], axis, frame))
     if abs(base - raw_base) > 0.01:
         notes.append(
             "{0}: base snapped {1:.2f} ft outward, location line -> "
@@ -618,12 +618,12 @@ def place_run(view, run, plan, all_walls, face_cache, fixtures, notes,
     # paper inches -> model feet. None = the per-scale Auto preset, so
     # one saved setting works across sheets at different scales.
     if first_offset_in is None:
-        first_offset_in = standards.first_offset_for_scale(view.Scale)
+        first_offset_in = dim_standards.first_offset_for_scale(view.Scale)
     if spacing_in is None:
-        spacing_in = standards.TIER_SPACING_DEFAULT_IN
-    first = first_offset_in * standards.INCH * view.Scale
-    step = spacing_in * standards.INCH * view.Scale
-    positions = geometry.tier_positions(base, side, first, step, len(plan))
+        spacing_in = dim_standards.TIER_SPACING_DEFAULT_IN
+    first = first_offset_in * dim_standards.INCH * view.Scale
+    step = spacing_in * dim_standards.INCH * view.Scale
+    positions = dim_geometry.tier_positions(base, side, first, step, len(plan))
 
     origin = getattr(view, "Origin", None)
     base_z = origin.Z if origin is not None else 0.0
@@ -641,7 +641,7 @@ def place_run(view, run, plan, all_walls, face_cache, fixtures, notes,
             notes.append("Tier '{0}': fewer than 2 references - skipped"
                          .format(label))
             continue
-        revit_io.create_dimension_tier(
+        dim_revit_io.create_dimension_tier(
             doc, view, refs, axis, (kept[0], kept[-1]),
             positions[tier_no - 1], base_z, frame)
         placed += 1
@@ -651,7 +651,7 @@ def place_run(view, run, plan, all_walls, face_cache, fixtures, notes,
 # ---------------------------------------- interior: per-room strings
 
 # Every interior string is bounded by the room's own boundary polygon
-# (revit_io.get_room_polygon -> geometry.polygon_span_at). A string can
+# (dim_revit_io.get_room_polygon -> dim_geometry.polygon_span_at). A string can
 # only ever reference the two walls the room's boundary actually crosses
 # at that line, so "never go through a wall" is structural, not a
 # heuristic. The previous build let strings continue past walls and pick
@@ -671,7 +671,7 @@ def room_inward(poly, edge_mid, axis_perp_idx, edge_perp):
     for sign in (1.0, -1.0):
         probe = list(edge_mid)
         probe[axis_perp_idx] = edge_perp + sign * 0.25
-        if geometry.point_in_polygon((probe[0], probe[1]), poly):
+        if dim_geometry.point_in_polygon((probe[0], probe[1]), poly):
             return sign
     return 1.0
 
@@ -688,9 +688,9 @@ def edge_face_entry(room, edge, axis, value, inward, view_faces, notes):
     faces = view_faces[axis]
     rec = None
     if wall_id is not None:
-        rec = revit_io.face_at(faces, axis, value, inward, wall_id)
+        rec = dim_revit_io.face_at(faces, axis, value, inward, wall_id)
     if rec is None:
-        rec = revit_io.face_at(faces, axis, value, inward)
+        rec = dim_revit_io.face_at(faces, axis, value, inward)
         if rec is not None and wall_id is not None:
             notes.append(
                 "{0}: boundary wall {1} exposed no face at {2} - used the "
@@ -798,8 +798,8 @@ def room_length_items(room, view_faces, objects, occupied, notes):
     items = []
     for axis in ("x", "y"):
         best = None
-        for perp in geometry.quarter_lines(poly, axis):
-            span = geometry.polygon_span_at(poly, axis, perp)
+        for perp in dim_geometry.quarter_lines(poly, axis):
+            span = dim_geometry.polygon_span_at(poly, axis, perp)
             if span is None:
                 continue  # quarter line misses the room (L-shaped leg)
             if (span[1][0] - span[0][0]) < MIN_ROOM_FT:
@@ -838,7 +838,7 @@ def room_opening_items(room, view, view_faces, occupied, ro_mode, notes,
       R.O.  -> the host wall's own view-visible cut faces, i.e. the jambs
       false -> the opening's centreline reference"""
     poly = room["poly"]
-    step = standards.TIER_SPACING_FT * view.Scale
+    step = dim_standards.TIER_SPACING_FT * view.Scale
     items = []
     n = len(poly)
 
@@ -855,7 +855,7 @@ def room_opening_items(room, view, view_faces, occupied, ro_mode, notes,
         if wall_id is None:
             continue
         wall = doc.GetElement(wall_id)
-        if not isinstance(wall, Wall):
+        if not isinstance(wall, DB.Wall):
             continue
         a = poly[edge]
         b = poly[(edge + 1) % n]
@@ -875,7 +875,7 @@ def room_opening_items(room, view, view_faces, occupied, ro_mode, notes,
         wall = rec["wall"]
         axis = rec["axis"]
         edge = rec["edge"]
-        opens = revit_io.get_hosted_openings(wall, doc)
+        opens = dim_revit_io.get_hosted_openings(wall, doc)
         if not opens:
             continue
 
@@ -890,14 +890,14 @@ def room_opening_items(room, view, view_faces, occupied, ro_mode, notes,
         # scan just inside the wall to find the room's two PERPENDICULAR
         # boundary walls - those are the string's end anchors, and they
         # are what keeps it inside this room
-        span = geometry.polygon_span_at(
+        span = dim_geometry.polygon_span_at(
             poly, axis, edge_perp + inward * 0.5)
         if span is None:
             continue
         entries = span_entries(room, span, axis, view_faces, notes)
         lo_val, hi_val = span[0][0], span[1][0]
 
-        host_faces = revit_io.collect_axis_faces(
+        host_faces = dim_revit_io.collect_axis_faces(
             [wall], axis, view, frame)
         if not host_faces:
             notes.append("{0}: wall {1} has no view-visible axis faces - "
@@ -910,7 +910,7 @@ def room_opening_items(room, view, view_faces, occupied, ro_mode, notes,
         for inst in opens:
             try:
                 center = frame.to_local(
-                    revit_io.get_opening_point(inst))[idx]
+                    dim_revit_io.get_opening_point(inst))[idx]
             except ValueError as ex:
                 notes.append("Skipped opening: {0}".format(ex))
                 continue
@@ -923,8 +923,8 @@ def room_opening_items(room, view, view_faces, occupied, ro_mode, notes,
             found += 1
             jambs = None
             if ro_mode:
-                width = revit_io.get_opening_width(inst)
-                jambs = revit_io.jamb_faces_from(
+                width = dim_revit_io.get_opening_width(inst)
+                jambs = dim_revit_io.jamb_faces_from(
                     host_faces, center, idx, width)
                 if jambs is None:
                     notes.append(
@@ -950,7 +950,7 @@ def room_opening_items(room, view, view_faces, occupied, ro_mode, notes,
         # hug the wall (half its thickness clears the poche), on the ROOM
         # side, and never nudge back out through it
         half_thk = getattr(wall, "Width", 0.5) / 2.0
-        perp_span = geometry.polygon_span_at(
+        perp_span = dim_geometry.polygon_span_at(
             poly, "y" if axis == "x" else "x", (lo_val + hi_val) / 2.0)
         bounds = ((perp_span[0][0], perp_span[1][0])
                   if perp_span is not None else None)
@@ -978,7 +978,7 @@ def object_items(room, obj, view_faces, occupied, step, notes, frame):
     reach = {}
     for axis in ("x", "y"):
         idx = 0 if axis == "x" else 1
-        span = geometry.polygon_span_at(poly, axis, obj["pt"][1 - idx])
+        span = dim_geometry.polygon_span_at(poly, axis, obj["pt"][1 - idx])
         if span is None:
             continue
         value = obj["pt"][idx]
@@ -1004,7 +1004,7 @@ def object_items(room, obj, view_faces, occupied, step, notes, frame):
                                      view_faces, notes)
         if wall_entry is None:
             continue
-        center_ref = revit_io.get_instance_center_reference(
+        center_ref = dim_revit_io.get_instance_center_reference(
             inst, axis, frame)
         if center_ref is None:
             notes.append(
@@ -1024,7 +1024,7 @@ def object_items(room, obj, view_faces, occupied, step, notes, frame):
         # axis (not `inward`, which points along the measured axis), toward
         # the middle of the room, and never past the room's walls.
         perp_axis = "y" if axis == "x" else "x"
-        perp_span = geometry.polygon_span_at(poly, perp_axis, obj["pt"][idx])
+        perp_span = dim_geometry.polygon_span_at(poly, perp_axis, obj["pt"][idx])
         obj_perp = obj["pt"][1 - idx]
         if perp_span is None:
             away, bounds = 1.0, None
@@ -1067,7 +1067,7 @@ def show_interior_dry_run(items, notes):
 
 
 def run_interior(view, fixtures, ro_mode, dry, measure_core, notes):
-    rooms = revit_io.get_rooms(doc, view)
+    rooms = dim_revit_io.get_rooms(doc, view)
     if not rooms:
         forms.alert(
             "Interior mode is driven by Rooms, and this view has no "
@@ -1076,7 +1076,7 @@ def run_interior(view, fixtures, ro_mode, dry, measure_core, notes):
             title="Dimension Strings — interior")
         return
 
-    all_walls = revit_io.get_basic_walls(doc, view)
+    all_walls = dim_revit_io.get_basic_walls(doc, view)
 
     # Each ROOM is dimensioned in the frame of its OWN walls, so an angled
     # wing needs no special case: its rooms simply carry a different frame.
@@ -1085,7 +1085,7 @@ def run_interior(view, fixtures, ro_mode, dry, measure_core, notes):
     for room in rooms:
         edges = [(room["poly"][k], room["poly"][(k + 1) % len(room["poly"])])
                  for k in range(len(room["poly"]))]
-        room["frame"] = geometry.direction_frames(edges)[0]
+        room["frame"] = dim_geometry.direction_frames(edges)[0]
         room["poly"] = [room["frame"].to_local(p) for p in room["poly"]]
 
     angles = sorted(set(round(r["frame"].degrees(), 1) for r in rooms))
@@ -1093,7 +1093,7 @@ def run_interior(view, fixtures, ro_mode, dry, measure_core, notes):
         ", ".join("{0} deg".format(a) for a in angles)))
 
     # VIEW-AWARE faces per (axis, frame): Options.View makes these
-    # references visible in the plan by construction. Model-geometry
+    # references visible in the plan by construction. Model-dim_geometry
     # references produced dimensions that existed but rendered in no view
     # at all, so every interior reference goes through these.
     # Cached per frame because a face's local origin/normal differ per frame.
@@ -1104,12 +1104,12 @@ def run_interior(view, fixtures, ro_mode, dry, measure_core, notes):
         if key not in face_cache:
             face_cache[key] = {}
             for axis in ("x", "y"):
-                face_cache[key][axis] = revit_io.collect_axis_faces(
+                face_cache[key][axis] = dim_revit_io.collect_axis_faces(
                     all_walls, axis, view, frame)
         return face_cache[key]
 
-    objects = revit_io.get_room_objects(doc, view)
-    step = standards.TIER_SPACING_FT * view.Scale
+    objects = dim_revit_io.get_room_objects(doc, view)
+    step = dim_standards.TIER_SPACING_FT * view.Scale
 
     items = []
     counts = {"length": 0, "openings": 0, "objects": 0}
@@ -1125,7 +1125,7 @@ def run_interior(view, fixtures, ro_mode, dry, measure_core, notes):
         for obj in objects:
             local = dict(obj)
             local["pt"] = frame.to_local(obj["pt"])
-            if geometry.point_in_polygon(local["pt"], room["poly"]):
+            if dim_geometry.point_in_polygon(local["pt"], room["poly"]):
                 mine.append(local)
 
         # Openings first: they have a hard constraint (hug their own wall).
@@ -1162,7 +1162,7 @@ def run_interior(view, fixtures, ro_mode, dry, measure_core, notes):
     in_rooms = 0
     for obj in objects:
         for r in rooms:
-            if geometry.point_in_polygon(
+            if dim_geometry.point_in_polygon(
                     r["frame"].to_local(obj["pt"]), r["poly"]):
                 in_rooms += 1
                 break
@@ -1208,7 +1208,7 @@ def run_interior(view, fixtures, ro_mode, dry, measure_core, notes):
                     notes.append("{0}: fewer than 2 references - "
                                  "skipped".format(item["label"]))
                     continue
-                dim = revit_io.create_dimension_tier(
+                dim = dim_revit_io.create_dimension_tier(
                     doc, view, refs, item["axis"], (kept[0], kept[-1]),
                     item["pos"], base_z, item["frame"])
                 created.append((item["label"], dim.Id))
@@ -1231,7 +1231,7 @@ def run_interior(view, fixtures, ro_mode, dry, measure_core, notes):
                                       ", ".join(vanished[:9]))))
 
     # A dimension can survive commit and still render in NO view, if its
-    # references are not visible geometry - the element exists, the owner
+    # references are not visible dim_geometry - the element exists, the owner
     # view is right, and Revit draws nothing. Every reference here is
     # view-aware, but fixture CENTRE references are the least certain
     # kind, so check every dim and name the invisible ones instead of
@@ -1251,7 +1251,7 @@ def run_interior(view, fixtures, ro_mode, dry, measure_core, notes):
     if invisible:
         notes.insert(0, (
             "{0} dimension(s) were created but render in NO view - their "
-            "references are not visible geometry in this plan: {1}".format(
+            "references are not visible dim_geometry in this plan: {1}".format(
                 len(invisible), ", ".join(invisible[:9]))))
 
     if measure_core and core_cache:
@@ -1315,7 +1315,7 @@ def show_dry_run(runs, plans, mode, notes):
 def main():
     view = doc.ActiveView
     notes = []
-    revit_io.reset_opening_cache()
+    dim_revit_io.reset_opening_cache()
 
     walls, fixtures, skipped_sel = gather_selection(view)
     if skipped_sel:
@@ -1342,7 +1342,7 @@ def main():
     if mode == MODE_INT:
         # interior is Room-driven scan lines + per-wall opening strings
         # - selection only supplies fixtures/casework
-        stats = revit_io.get_wall_stats(doc, view)
+        stats = dim_revit_io.get_wall_stats(doc, view)
         notes.append(
             "Collection: {0} wall(s) visible, {1} basic, {2} on this "
             "level (below-level/underlay walls excluded).".format(
@@ -1372,11 +1372,11 @@ def main():
     seg_walls = []
     for wall in walls:
         try:
-            segments.append(revit_io.get_wall_endpoints(wall))
+            segments.append(dim_revit_io.get_wall_endpoints(wall))
             seg_walls.append(wall)
         except ValueError:
             continue
-    frames = geometry.direction_frames(segments)
+    frames = dim_geometry.direction_frames(segments)
     notes.append("Building direction(s): {0}".format(
         ", ".join("{0:.1f} deg".format(f.degrees()) for f in frames)))
 
@@ -1384,7 +1384,7 @@ def main():
     frame_segments = {}
     skewed = 0
     for i in range(len(seg_walls)):
-        idx = geometry.frame_of(segments[i], frames)
+        idx = dim_geometry.frame_of(segments[i], frames)
         if idx is None:
             skewed += 1
             continue
@@ -1401,7 +1401,7 @@ def main():
     # selection - with a partial selection, corner planes belong to
     # UNSELECTED neighbor walls, and missing them lets each run end land
     # on a different wall layer, so equal spans report unequal lengths.
-    all_walls = revit_io.get_basic_walls(doc, view)
+    all_walls = dim_revit_io.get_basic_walls(doc, view)
 
     # a work item per frame: (frame, runs, plans)
     work = []
@@ -1435,14 +1435,14 @@ def main():
     # say what the offset settings resolve to for THIS view, so the
     # dry run is checkable before anything is placed
     resolved_first = (first_offset_in if first_offset_in is not None
-                      else standards.first_offset_for_scale(view.Scale))
+                      else dim_standards.first_offset_for_scale(view.Scale))
     notes.append(
         'Exterior offsets at 1:{0}: first string {1}" paper = {2:.2f} ft '
         '({3}), tier spacing {4}" paper = {5:.2f} ft.'.format(
             view.Scale, resolved_first,
-            resolved_first * standards.INCH * view.Scale,
+            resolved_first * dim_standards.INCH * view.Scale,
             "auto preset" if first_offset_in is None else "manual",
-            spacing_in, spacing_in * standards.INCH * view.Scale))
+            spacing_in, spacing_in * dim_standards.INCH * view.Scale))
     if max_drag_ft > 0.0:
         notes.append(
             "Side splitting: crossing rule plus manual distance cap of "
@@ -1464,7 +1464,7 @@ def main():
                 axis = run["tiers"]["axis"]
                 key = (axis, round(frame.angle, 6))
                 if key not in audit_faces:
-                    audit_faces[key] = revit_io.collect_axis_faces(
+                    audit_faces[key] = dim_revit_io.collect_axis_faces(
                         all_walls, axis, None, frame)
                 for _, entries in plan:
                     resolve_entries(entries, axis, audit_faces[key],
