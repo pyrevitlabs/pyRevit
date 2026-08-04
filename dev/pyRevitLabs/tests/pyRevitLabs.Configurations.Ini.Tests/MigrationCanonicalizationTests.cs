@@ -70,19 +70,94 @@ public class MigrationCanonicalizationTests
         }
     }
 
+    [Fact]
+    public void Migration_CanonicalizesLegacySingleQuotedCloneRegistry()
+    {
+        string path = WriteTemp(
+            "[environment]\nclones = {'dev': 'C:\\pyRevit', 'main': 'D:\\clones\\main'}\n");
+        try
+        {
+            var result = ConfigurationMigrator.Migrate(Build(path));
+
+            Assert.True(result.Migrated);
+            Assert.Contains("environment.clones", result.ConvertedKeys);
+            Assert.DoesNotContain("environment.clones", result.ResetKeys);
+
+            string text = File.ReadAllText(path);
+            Assert.DoesNotContain("'dev'", text);
+
+            Assert.Equal(
+                new Dictionary<string, string> { ["dev"] = @"C:\pyRevit", ["main"] = @"D:\clones\main" },
+                IniConfiguration.Create(path).GetValue<Dictionary<string, string>>("environment", "clones"));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
+    public void Migration_LegacyCloneRegistryCanonicalization_IsIdempotent()
+    {
+        string path = WriteTemp("[environment]\nclones = {'dev': 'C:\\pyRevit'}\n");
+        try
+        {
+            Assert.Contains("environment.clones", ConfigurationMigrator.Migrate(Build(path)).ConvertedKeys);
+
+            var second = ConfigurationMigrator.Migrate(Build(path));
+            Assert.False(second.Migrated);
+            Assert.Empty(second.ConvertedKeys);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     /// <summary>
-    /// The canonical empty list is also the shortest legacy-looking literal.
-    /// Treating it as legacy would rewrite and re-back-up the config on every
-    /// load, since the rewrite reproduces the same text.
+    /// A clone path containing an apostrophe is spelled with double quotes even in
+    /// the legacy form, so it is left alone rather than being rewritten. Detecting
+    /// it as legacy would risk re-converting a canonical value on every load.
     /// </summary>
     [Fact]
-    public void Migration_CanonicalEmptyList_IsNotDetectedAsLegacy()
+    public void Migration_CloneRegistryWithApostrophe_IsLeftAlone()
     {
-        string path = WriteTemp("[core]\nuserextensions = []\n\n[environment]\nsources = []\n");
+        string path = WriteTemp("[environment]\nclones = {\"dev\": \"C:\\\\Bob's Clone\"}\n");
+        try
+        {
+            var result = ConfigurationMigrator.Migrate(Build(path));
+
+            Assert.Empty(result.ConvertedKeys);
+            Assert.DoesNotContain("environment.clones", result.ResetKeys);
+            Assert.Equal(
+                @"C:\Bob's Clone",
+                IniConfiguration.Create(path).GetValue<Dictionary<string, string>>("environment", "clones")["dev"]);
+        }
+        finally
+        {
+            File.Delete(path);
+            foreach (string backup in Directory.GetFiles(
+                         Path.GetDirectoryName(path)!, Path.GetFileName(path) + "*.bak"))
+            {
+                File.Delete(backup);
+            }
+        }
+    }
+
+    /// <summary>
+    /// The canonical empty list and dict are also the shortest legacy-looking
+    /// literals. Treating either as legacy would rewrite and re-back-up the config
+    /// on every load, since the rewrite reproduces the same text.
+    /// </summary>
+    [Fact]
+    public void Migration_CanonicalEmptyContainers_AreNotDetectedAsLegacy()
+    {
+        string path = WriteTemp(
+            "[core]\nuserextensions = []\n\n[environment]\nsources = []\nclones = {}\n");
         try
         {
             // The first pass still runs to stamp the schema version, but must not
-            // claim either empty list as a converted legacy value.
+            // claim any empty container as a converted legacy value.
             var first = ConfigurationMigrator.Migrate(Build(path));
             Assert.Empty(first.ConvertedKeys);
 

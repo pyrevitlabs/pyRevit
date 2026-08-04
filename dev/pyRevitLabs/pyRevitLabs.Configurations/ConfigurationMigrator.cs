@@ -112,8 +112,9 @@ public static class ConfigurationMigrator
         // Scan without mutating, so a config with nothing to repair never writes.
         var badKeys = FindUnreadableKeys(config);
         var legacyLists = FindLegacyListKeys(config);
+        var legacyDicts = FindLegacyDictKeys(config);
         bool needsVersionStamp = version < CurrentVersion;
-        if (badKeys.Count == 0 && legacyLists.Count == 0 && !needsVersionStamp)
+        if (badKeys.Count == 0 && legacyLists.Count == 0 && legacyDicts.Count == 0 && !needsVersionStamp)
             return NotMigrated;
 
         // Back up before mutating. If the file exists but cannot be backed up,
@@ -133,11 +134,18 @@ public static class ConfigurationMigrator
             resetKeys.Add(section + "." + key);
         }
 
-        // Rewrite legacy single-quoted lists to canonical JSON so the file stops
-        // carrying the old form. Writing double-quoted JSON keeps this idempotent:
-        // a canonicalized value is no longer detected as legacy on a later load.
+        // Rewrite legacy single-quoted containers to canonical JSON so the file
+        // stops carrying the old form. Writing double-quoted JSON keeps this
+        // idempotent: a canonicalized value is no longer detected as legacy on a
+        // later load.
         var convertedKeys = new List<string>();
         foreach ((string section, string key, List<string> value) in legacyLists)
+        {
+            config.SetValue(section, key, value);
+            convertedKeys.Add(section + "." + key);
+        }
+
+        foreach ((string section, string key, Dictionary<string, string> value) in legacyDicts)
         {
             config.SetValue(section, key, value);
             convertedKeys.Add(section + "." + key);
@@ -238,6 +246,39 @@ public static class ConfigurationMigrator
                 string? raw = config.GetRawValueOrDefault(section, key);
                 if (raw != null
                     && LegacyListFormat.TryParseSingleQuoted(raw.Trim(), out List<string>? value)
+                    && value != null)
+                {
+                    legacy.Add((section, key, value));
+                }
+            }
+        }
+
+        return legacy;
+    }
+
+    /// <summary>
+    /// Finds Dictionary&lt;string,string&gt; keys stored in the legacy Python
+    /// single-quoted form, returning the parsed value so migration can rewrite
+    /// them as canonical JSON. Reads raw (never decoded), so this scan alone does
+    /// not report a legacy read.
+    /// </summary>
+    private static List<(string Section, string Key, Dictionary<string, string> Value)> FindLegacyDictKeys(
+        IConfiguration config)
+    {
+        var legacy = new List<(string, string, Dictionary<string, string>)>();
+
+        foreach (Type sectionType in KnownSections)
+        {
+            string section = SectionName(sectionType);
+            foreach (PropertyInfo property in GetProperties(sectionType))
+            {
+                if (property.PropertyType != typeof(Dictionary<string, string>))
+                    continue;
+
+                string key = KeyName(property);
+                string? raw = config.GetRawValueOrDefault(section, key);
+                if (raw != null
+                    && LegacyDictFormat.TryParseSingleQuoted(raw.Trim(), out Dictionary<string, string>? value)
                     && value != null)
                 {
                     legacy.Add((section, key, value));
