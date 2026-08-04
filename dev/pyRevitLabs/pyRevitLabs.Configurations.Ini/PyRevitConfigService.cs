@@ -50,11 +50,11 @@ public static class PyRevitConfigService
     {
         /// <summary>A config file inside the running clone (developer override).</summary>
         Local,
-        /// <summary>Machine-wide install: the writable %ProgramData% config is authoritative.</summary>
+        /// <summary>Elevated process on a machine-wide install: the %ProgramData% config is authoritative.</summary>
         AdminInstall,
-        /// <summary>A read-only admin config: used directly, user changes are not saved.</summary>
+        /// <summary>An admin-locked config: used directly, user changes are not saved.</summary>
         AdminLockdown,
-        /// <summary>A writable admin config with no user config yet: copy it to the user, then use the copy.</summary>
+        /// <summary>An admin config with no user config yet: copy it to the user, then use the copy.</summary>
         Seed,
         /// <summary>An existing per-user config.</summary>
         User,
@@ -65,23 +65,35 @@ public static class PyRevitConfigService
     /// <summary>
     /// Pure selection of the config tier from the observed facts, so the ladder is
     /// unit-testable without touching real machine directories. Order mirrors the
-    /// documented Python precedence: Local, all-users install, admin seed/lockdown,
-    /// user, new.
+    /// documented Python precedence: Local, admin lock, elevated all-users install,
+    /// seed, user, new.
+    /// <para>
+    /// <paramref name="adminLocked"/> is the DOS ReadOnly attribute on the machine
+    /// config and nothing else. Whether the process happens to be able to write that
+    /// file is deliberately not an input: an admin install seeds a config a standard
+    /// user cannot write, and treating that as a lockdown would hand every such user
+    /// a config that silently discards their settings.
+    /// </para>
     /// </summary>
     public static ConfigSelection SelectConfig(
-        bool localExists, bool isAllUsers, bool adminExists, bool adminWritable, bool userExists)
+        bool localExists, bool isAllUsers, bool isElevated,
+        bool adminExists, bool adminLocked, bool userExists)
     {
         if (localExists)
             return ConfigSelection.Local;
 
-        if (isAllUsers)
-            return adminExists && !adminWritable ? ConfigSelection.AdminLockdown : ConfigSelection.AdminInstall;
-
-        if (adminExists && adminWritable && !userExists)
-            return ConfigSelection.Seed;
-
-        if (adminExists && !adminWritable)
+        // A deliberate admin lock binds every install scope and every process.
+        if (adminExists && adminLocked)
             return ConfigSelection.AdminLockdown;
+
+        // Only an elevated process (installer / admin CLI) treats %ProgramData% as
+        // its writable target. A standard user recreating a deleted machine config
+        // would own it and lock out everyone else sharing the machine.
+        if (isAllUsers && isElevated)
+            return ConfigSelection.AdminInstall;
+
+        if (adminExists && !userExists)
+            return ConfigSelection.Seed;
 
         return userExists ? ConfigSelection.User : ConfigSelection.New;
     }
@@ -97,15 +109,13 @@ public static class PyRevitConfigService
         string adminConfig = PyRevitConfigPaths.AdminConfigFilePath;
 
         bool adminExists = File.Exists(adminConfig);
-        bool adminWritable = adminExists
-            && !new FileInfo(adminConfig).IsReadOnly
-            && IsFileWritable(adminConfig);
 
         var selection = SelectConfig(
             localExists: !string.IsNullOrEmpty(localConfig) && File.Exists(localConfig),
             isAllUsers: PyRevitInstallScope.IsAllUsersInstall(),
+            isElevated: PyRevitInstallScope.IsElevatedProcess(),
             adminExists: adminExists,
-            adminWritable: adminWritable,
+            adminLocked: adminExists && PyRevitInstallScope.HasReadOnlyAttribute(adminConfig),
             userExists: File.Exists(userConfig));
 
         switch (selection)
@@ -114,10 +124,10 @@ public static class PyRevitConfigService
                 return BuildWritable(localConfig);
 
             case ConfigSelection.AdminInstall:
-                // Machine-wide install: the %ProgramData% config is authoritative
-                // and writable. Resolve through the shared scope helper so the CLI
-                // and loader target the same file. No per-user seed in this mode.
-                return BuildWritable(PyRevitInstallScope.GetActiveConfigFilePath());
+                // Reached only from an elevated process, so the %ProgramData%
+                // config is both authoritative and writable here. No per-user
+                // seed in this mode.
+                return BuildWritable(adminConfig);
 
             case ConfigSelection.AdminLockdown:
                 ConfigurationDiagnostics.ReportInfo(
@@ -151,10 +161,16 @@ public static class PyRevitConfigService
     /// config. On an all-users install it promotes a lone per-user
     /// config to %ProgramData%, or merges the clone registry and any missing
     /// extension sections into an existing %ProgramData% config. No-op otherwise.
+    /// <para>
+    /// Restricted to elevated processes, which are the only ones that own the
+    /// machine config. For everyone else the %APPDATA% config this repair consumes
+    /// is their own active config, and moving it aside would discard the settings
+    /// they are running on.
+    /// </para>
     /// </summary>
     internal static void MigrateSplitAdminConfigIfNeeded()
     {
-        if (!PyRevitInstallScope.IsAllUsersInstall())
+        if (!PyRevitInstallScope.IsAllUsersInstall() || !PyRevitInstallScope.IsElevatedProcess())
             return;
 
         RepairSplitAdminConfig(
@@ -163,9 +179,9 @@ public static class PyRevitConfigService
 
     /// <summary>
     /// The repair itself, over explicit paths so it can be exercised without
-    /// install-scope state. Retires the per-user config once its contents are in
-    /// the machine config, which is what makes the repair run once rather than on
-    /// every load.
+    /// install-scope state. Retires the per-user config only once settings have
+    /// actually moved out of it, which is what makes the repair run once rather
+    /// than on every load. A config with nothing left to contribute is left alone.
     /// </summary>
     internal static void RepairSplitAdminConfig(string userConfigPath, string machineConfigPath)
     {
@@ -224,8 +240,11 @@ public static class PyRevitConfigService
     }
 
     // Copies the clone registry (when absent) and any per-extension sections the
-    // machine config is missing from the split per-user config. Returns whether the
-    // merge completed; a merge with nothing left to copy still counts as complete.
+    // machine config is missing from the split per-user config. Returns whether any
+    // setting was actually moved: only the source of a real copy has been superseded
+    // and may be retired. The merge carries the clone registry and extension
+    // sections alone, so a source that contributed nothing still holds the only copy
+    // of its other sections.
     internal static bool MergeAdminConfigFiles(string sourcePath, string targetPath)
     {
         try
@@ -263,7 +282,7 @@ public static class PyRevitConfigService
             if (changed)
                 target.SaveConfiguration();
 
-            return true;
+            return changed;
         }
         catch (Exception ex)
         {
@@ -329,21 +348,6 @@ public static class PyRevitConfigService
                 configPath + "; backup: " + migration.BackupPath);
             foreach (string key in migration.ConvertedKeys)
                 ConfigurationDiagnostics.ReportInfo("Converted legacy list value: " + key);
-        }
-    }
-
-    // Reports whether the current process can write the file by opening it for
-    // read/write; the read-only attribute alone does not reflect ACL denials.
-    private static bool IsFileWritable(string filePath)
-    {
-        try
-        {
-            using (new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
-                return true;
-        }
-        catch
-        {
-            return false;
         }
     }
 

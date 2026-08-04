@@ -139,7 +139,7 @@ namespace pyRevitLabs.Common {
         /// Always false on non-Windows hosts so CI and cross-platform tooling
         /// resolve to the per-user config path.
         /// </summary>
-        private static bool IsElevatedProcess() {
+        public static bool IsElevatedProcess() {
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 return false;
             return UserEnv.IsRunAsElevated();
