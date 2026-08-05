@@ -873,7 +873,7 @@ namespace pyRevitExtensionParser
             }
         }
 
-        private static List<string> GetExtensionRoots()
+        internal static List<string> GetExtensionRoots()
         {
             var roots = new List<string>();
 
@@ -901,24 +901,46 @@ namespace pyRevitExtensionParser
 
             var userExtensions = GetConfig().UserExtensionsList;
 
-            // For all-users installs, the active config is in ProgramData. Individual users may
-            // also have their own extension paths stored in their per-user config (AppData). Merge
-            // both lists so that paths added via the Settings UI or CLI at user scope are honoured.
-            if (PyRevitInstallScope.IsAllUsersInstall())
+            // A ReadOnly machine config is a deliberate admin lock and the only config the
+            // loader should consult; honouring user-writable extension paths here would defeat
+            // it. In every other case, also pick up extension paths from the "other" config:
+            // for an active ProgramData config that's the per-user AppData config, and for the
+            // AppData fallback that standard users hit on an admin install it is the machine
+            // ProgramData config (whose userextensions may have been added after seeding).
+            var activeConfig = PyRevitInstallScope.GetActiveConfig(createIfMissing: false);
+            if (!activeConfig.IsReadOnly)
             {
-                var perUserConfigRoot = PyRevitLabsConsts.PyRevitPath;
-                var perUserConfigPath = PyRevitInstallScope.FindConfigIniInDirectory(perUserConfigRoot)
-                    ?? Path.Combine(perUserConfigRoot, PyRevitLabsConsts.DefaultConfigsFileName);
+                string otherConfigPath = null;
+                if (activeConfig.IsMachineConfig)
+                {
+                    var perUserRoot = PyRevitLabsConsts.PyRevitPath;
+                    var perUserPath = PyRevitInstallScope.FindConfigIniInDirectory(perUserRoot)
+                        ?? Path.Combine(perUserRoot, PyRevitLabsConsts.DefaultConfigsFileName);
+                    if (File.Exists(perUserPath) &&
+                        !string.Equals(perUserPath, activeConfig.ConfigPath, StringComparison.OrdinalIgnoreCase))
+                    {
+                        otherConfigPath = perUserPath;
+                    }
+                }
+                else
+                {
+                    var machineRoot = PyRevitLabsConsts.PyRevitProgramDataPath;
+                    var machinePath = PyRevitInstallScope.FindConfigIniInDirectory(machineRoot)
+                        ?? Path.Combine(machineRoot, PyRevitLabsConsts.DefaultConfigsFileName);
+                    if (File.Exists(machinePath) &&
+                        !string.Equals(machinePath, activeConfig.ConfigPath, StringComparison.OrdinalIgnoreCase))
+                    {
+                        otherConfigPath = machinePath;
+                    }
+                }
 
-                var activeConfigPath = GetConfig().ConfigPath ?? string.Empty;
-                if (File.Exists(perUserConfigPath) &&
-                    !string.Equals(perUserConfigPath, activeConfigPath, StringComparison.OrdinalIgnoreCase))
+                if (otherConfigPath != null)
                 {
                     try
                     {
-                        var perUserConfig = new PyRevitConfig(perUserConfigPath);
+                        var otherConfig = new PyRevitConfig(otherConfigPath);
                         var existingPaths = new HashSet<string>(userExtensions, StringComparer.OrdinalIgnoreCase);
-                        foreach (var path in perUserConfig.UserExtensionsList)
+                        foreach (var path in otherConfig.UserExtensionsList)
                         {
                             if (existingPaths.Add(path))
                                 userExtensions.Add(path);
@@ -926,7 +948,7 @@ namespace pyRevitExtensionParser
                     }
                     catch (Exception ex)
                     {
-                        logger.Debug("Could not read per-user extension paths from '{0}': {1}", perUserConfigPath, ex.Message);
+                        logger.Debug("Could not read extension paths from '{0}': {1}", otherConfigPath, ex.Message);
                     }
                 }
             }
