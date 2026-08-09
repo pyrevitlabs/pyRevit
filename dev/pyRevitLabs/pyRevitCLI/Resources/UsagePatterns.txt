@@ -33,7 +33,7 @@ Usage:
 	pyrevit detach (--all | <revit_year>) [--log=<log_file>]
 	pyrevit extend (-h | --help)
 	pyrevit extend <extension_name> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>]
-	pyrevit extend (ui | lib) <extension_name> <repo_url> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>] [(--username=<username> --password=<password> | --token=<auth_token>)]
+	pyrevit extend (ui | lib) <extension_name> <repo_url> [--dest=<dest_path>] [--branch=<branch_name>] [--log=<log_file>] [(--username=<username> --password=<password> | --token=<auth_token>)] [--persist-credentials]
 	pyrevit extensions [(-h | --help)]
 	pyrevit extensions search <search_pattern>
 	pyrevit extensions (info | help ) <extension_name>
@@ -102,6 +102,7 @@ Usage:
 	pyrevit configs apptelemetry server [<server_path>] [--log=<log_file>]
 	pyrevit configs outputcss [<css_path>] [--log=<log_file>]
 	pyrevit configs seed [--lock] [--log=<log_file>]
+	pyrevit configs seedshippeddefaults [--log=<log_file>]
 	pyrevit configs <option_path> [(enable | disable)] [--log=<log_file>]
 	pyrevit configs <option_path> [<option_value>] [--log=<log_file>]
     pyrevit doctor (-h | --help)

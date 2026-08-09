@@ -35,7 +35,6 @@ Examples:
     ```
 """
 #pylint: disable=C0103,C0413,W0703
-import os
 import os.path as op
 
 from pyrevit._perf import mark as _perfmark, time_block as _perfblock
@@ -44,10 +43,10 @@ _perfmark("pyrevit.userconfig:entry")
 from pyrevit import EXEC_PARAMS, HOME_DIR, HOST_APP
 from pyrevit import PyRevitException
 from pyrevit import EXTENSIONS_DEFAULT_DIR, THIRDPARTY_EXTENSIONS_DEFAULT_DIR
-from pyrevit import PYREVIT_ALLUSER_APP_DIR, PYREVIT_APP_DIR
 from pyrevit.compat import winreg as wr
 
 from pyrevit.labs import PyRevit
+from pyrevit.labs import Common
 
 from pyrevit import coreutils
 from pyrevit.coreutils import appdata
@@ -885,7 +884,7 @@ def verify_configs(config_file_path=None):
     Returns:
         (pyrevit.userconfig.PyRevitConfig): pyRevit config file handler
     """
-    if config_file_path:
+    if config_file_path and not op.exists(config_file_path):
         mlogger.debug('Creating default config file at: %s', config_file_path)
         coreutils.touch(config_file_path)
 
@@ -903,11 +902,18 @@ def verify_configs(config_file_path=None):
 LOCAL_CONFIG_FILE = ADMIN_CONFIG_FILE = USER_CONFIG_FILE = CONFIG_FILE = ''
 user_config = None
 
+try:
+    Common.PyRevitInstallScope.SetRuntimeInstallRoot(HOME_DIR)
+except Exception as installRootEx:
+    mlogger.debug('Could not set runtime install root: %s', installRootEx)
+
 # location for default pyRevit config files
+_PROGRAM_DATA_CONFIG_DIR = Common.PyRevitLabsConsts.PyRevitProgramDataPath
+_USER_CONFIG_DIR = Common.PyRevitLabsConsts.PyRevitPath
 with _perfblock("pyrevit.userconfig:find_config_file x3 (HOME / ALLUSER / USER)"):
     LOCAL_CONFIG_FILE = find_config_file(HOME_DIR)
-    ADMIN_CONFIG_FILE = find_config_file(PYREVIT_ALLUSER_APP_DIR)
-    USER_CONFIG_FILE = find_config_file(PYREVIT_APP_DIR)
+    ADMIN_CONFIG_FILE = find_config_file(_PROGRAM_DATA_CONFIG_DIR)
+    USER_CONFIG_FILE = find_config_file(_USER_CONFIG_DIR)
 
 # decide which config file to use
 # check if a config file is inside the repo. for developers config override
@@ -915,47 +921,28 @@ if LOCAL_CONFIG_FILE:
     CONFIG_TYPE = 'Local'
     CONFIG_FILE = LOCAL_CONFIG_FILE
 
-# check to see if there is any config file provided by admin
-elif ADMIN_CONFIG_FILE \
-        and os.access(ADMIN_CONFIG_FILE, os.W_OK) \
-        and not USER_CONFIG_FILE:
-    # if yes, copy that and use as default
-    # if admin config file is writable it means it is provided
-    # to bootstrap the first pyRevit run
+# otherwise ask the shared install-scope resolver so the CLI, the C# loader,
+# and the python runtime all agree on the active config file. it handles
+# admin-locked seeds, all-users installs, and first-run seeding of the
+# per-user config from the machine-wide config, and returns a per-user
+# config when the process can not write to the machine-wide config
+else:
     try:
-        CONFIG_TYPE = 'Seed'
-        # make a local copy if one does not exist
-        PyRevit.PyRevitConfigs.SetupConfig(ADMIN_CONFIG_FILE)
-        CONFIG_FILE = find_config_file(PYREVIT_APP_DIR)
-    except Exception as adminEx:
-        # if init operation failed, make a new config file
+        _active_config = Common.PyRevitInstallScope.GetActiveConfig()
+        CONFIG_FILE = _active_config.ConfigPath
+        if _active_config.IsReadOnly:
+            # settings are managed by the admin and can not be changed
+            CONFIG_TYPE = 'Admin'
+        elif _active_config.IsMachineConfig:
+            CONFIG_TYPE = 'AdminInstall'
+        else:
+            CONFIG_TYPE = 'User'
+    except Exception as scope_err:
+        mlogger.debug('Error resolving active config file. | %s', scope_err)
         CONFIG_TYPE = 'New'
         # setup config file name and path
         CONFIG_FILE = appdata.get_universal_data_file(file_id='config',
-                                                        file_ext='ini')
-        mlogger.warning(
-            'Failed to initialize config from seed file at %s\n'
-            'Using default config file',
-            ADMIN_CONFIG_FILE
-        )
-
-# unless it's locked. then read that config file and set admin-mode
-elif ADMIN_CONFIG_FILE \
-        and not os.access(ADMIN_CONFIG_FILE, os.W_OK):
-    CONFIG_TYPE = 'Admin'
-    CONFIG_FILE = ADMIN_CONFIG_FILE
-
-# if a config file is available for user use that
-elif USER_CONFIG_FILE:
-    CONFIG_TYPE = 'User'
-    CONFIG_FILE = USER_CONFIG_FILE
-
-# if nothing can be found, make a new one
-else:
-    CONFIG_TYPE = 'New'
-    # setup config file name and path
-    CONFIG_FILE = appdata.get_universal_data_file(file_id='config',
-                                                    file_ext='ini')
+                                                      file_ext='ini')
 
 mlogger.debug('Using %s config file: %s', CONFIG_TYPE, CONFIG_FILE)
 

@@ -184,7 +184,9 @@ namespace pyRevitCLI
                             { "--dest=<dest_path>",     "Extension destination directory" },
                             { "--branch=<branch_name>", "Branch to clone from" },
                             { "--username=<username>",  "Username to access private repo. Must be specified with --password" },
-                            { "--password=<password>",  "Password to access private repo. Must be specified with --username" }
+                            { "--password=<password>",  "Password to access private repo. Must be specified with --username" },
+                            { "--token=<auth_token>",   "Access token to access private repo" },
+                            { "--persist-credentials",  "Save credentials to the pyRevit config file (as plain-text) so the extension can be updated later e.g. by the in-Revit extension manager" }
                         }
                     );
                     break;
@@ -329,6 +331,7 @@ namespace pyRevitCLI
                         header: "Manage pyRevit configurations",
                         mgmtCommands: new Dictionary<string, string>() {
                             { "seed",                   "Seed existing configuration file to %PROGRAMDATA%" },
+                            { "seedshippeddefaults",    "Write disabled flags for shipped extensions with default_enabled=False" },
                             { "routes",                 "Routes configurations" },
                             { "telemetry",              "Script Telemetry configurations" },
                             { "apptelemetry",           "Application Telemetry configurations" },

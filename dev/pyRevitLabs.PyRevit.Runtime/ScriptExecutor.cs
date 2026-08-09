@@ -176,6 +176,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (scriptExecConfigs.SendTelemetry)
                 ScriptTelemetry.LogScriptTelemetryRecord(ref runtime);
 
+            // Drain any output still buffered by the engine (trailing prints,
+            // logger records, uncaught tracebacks) to the live window before the
+            // runtime and its window references are torn down below.
+            try {
+                runtime.OutputStream.Flush();
+            }
+            catch {
+                // output rendering must never break command teardown
+            }
+
             // GC cleanups
             var re = runtime.ExecutionResult;
             runtime.Dispose();

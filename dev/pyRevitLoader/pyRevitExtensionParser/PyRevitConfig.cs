@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 
+using pyRevitLabs.Common;
+
 namespace pyRevitExtensionParser
 {
     /// <summary>
@@ -405,6 +407,22 @@ namespace pyRevitExtensionParser
                 _ini.IniWriteValue("core", "userextensions", PythonListParser.ToPythonListString(value));
             }
         }
+
+        /// <summary>
+        /// Gets additional extension definition source files configured under [environment] sources.
+        /// Matches Python userconfig.get_ext_sources().
+        /// </summary>
+        public List<string> ExtensionLookupSources
+        {
+            get
+            {
+                return _ini.GetPythonList("environment", "sources");
+            }
+            set
+            {
+                _ini.IniWriteValue("environment", "sources", PythonListParser.ToPythonListString(value));
+            }
+        }
         /// <summary>
         /// Initializes a new instance of the <see cref="PyRevitConfig"/> class with the specified configuration file path.
         /// </summary>
@@ -435,8 +453,8 @@ namespace pyRevitExtensionParser
         /// <param name="customPath">
         /// Optional custom path to the configuration file. 
         /// If null, uses the same discovery as pyRevitLabs/Python: first <c>*.ini</c> under
-        /// <c>%APPDATA%\pyRevit\</c> matching the labs config filename pattern, else
-        /// <c>%APPDATA%\pyRevit\pyRevit_config.ini</c>.
+        /// the active install-scope config directory (AppData or ProgramData) matching
+        /// the labs config filename pattern, else <c>pyRevit_config.ini</c> in that directory.
         /// </param>
         /// <returns>A new <see cref="PyRevitConfig"/> instance for the specified configuration file.</returns>
         /// <remarks>
@@ -474,19 +492,7 @@ namespace pyRevitExtensionParser
                 if (_defaultInstance != null)
                     return _defaultInstance;
 
-                var appDataPyRevit = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                    "pyRevit");
-                var discovered = TryFindConfigIniInDirectory(appDataPyRevit);
-                var fallback = Path.Combine(appDataPyRevit, "pyRevit_config.ini");
-                var finalPath = discovered ?? fallback;
-
-                // Ensure the file exists so Python's configparser can write to it
-                if (!File.Exists(finalPath))
-                {
-                    Directory.CreateDirectory(Path.GetDirectoryName(finalPath));
-                    File.Create(finalPath).Dispose();
-                }
+                var finalPath = PyRevitInstallScope.GetActiveConfigFilePath();
 
                 _defaultInstance = new PyRevitConfig(finalPath);
                 return _defaultInstance;
@@ -507,28 +513,10 @@ namespace pyRevitExtensionParser
         }
 
         /// <summary>
-        /// Matches pyRevitLabs <c>ConfigsFileRegexPattern</c> (first match wins).
+        /// Matches pyRevitLabs config INI discovery (delegates to install scope helper).
         /// </summary>
-        private static string TryFindConfigIniInDirectory(string directory)
-        {
-            if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory))
-                return null;
-
-            try
-            {
-                var configMatcher = new Regex(@".*[pyrevit|config].*\.ini", RegexOptions.IgnoreCase);
-                foreach (var fullPath in Directory.GetFiles(directory, "*.ini", SearchOption.TopDirectoryOnly))
-                {
-                    if (configMatcher.IsMatch(Path.GetFileName(fullPath)))
-                        return fullPath;
-                }
-            }
-            catch
-            {
-                // ignore
-            }
-
-            return null;
+        private static string TryFindConfigIniInDirectory(string directory) {
+            return PyRevitInstallScope.FindConfigIniInDirectory(directory);
         }
 
         /// <summary>
@@ -588,8 +576,8 @@ namespace pyRevitExtensionParser
                     return new ExtensionConfig
                     {
                         Name = extensionName,
-                        Disabled = bool.TryParse(disabledValue, out var disabled) && disabled,
-                        PrivateRepo = bool.TryParse(privateRepoValue, out var privateRepo) && privateRepo,
+                        Disabled = TryParseConfigBool(disabledValue, out var disabled) && disabled,
+                        PrivateRepo = TryParseConfigBool(privateRepoValue, out var privateRepo) && privateRepo,
                         Username = usernameValue,
                         Password = passwordValue
                     };

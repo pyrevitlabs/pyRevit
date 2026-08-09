@@ -40,6 +40,16 @@ namespace pyRevitLabs.PyRevit {
                     );
             }
             else {
+                var manifestClone = Clone;
+                if (manifestClone != null) {
+                    return string.Format(
+                        "{0} (unregistered) | Product: \"{1}\" | Path: \"{2}\" {3}",
+                        manifestClone.Name,
+                        Product.Name,
+                        manifestClone.ClonePath,
+                        AllUsers ? "| AllUsers" : ""
+                        );
+                }
                 return string.Format(
                     "Unknown | Product: \"{0}\" | Manifest: \"{1}\"",
                     Product.Name,

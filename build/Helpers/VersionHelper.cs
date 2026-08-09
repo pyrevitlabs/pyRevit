@@ -76,6 +76,35 @@ public static partial class VersionHelper
         return buildVersion;
     }
 
+    public static bool IsVersionTagBuild()
+    {
+        if (string.Equals(
+                Environment.GetEnvironmentVariable("GITHUB_REF_TYPE"),
+                "tag",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        var gitRef = Environment.GetEnvironmentVariable("GITHUB_REF");
+        return gitRef?.StartsWith("refs/tags/v", StringComparison.OrdinalIgnoreCase) == true;
+    }
+
+    public static string ResolveBuildVersion(string baseVersion, string channel, bool isVersionTagBuild)
+    {
+        string buildVersion;
+        if (string.Equals(channel, "release", StringComparison.OrdinalIgnoreCase) && isVersionTagBuild)
+        {
+            buildVersion = baseVersion;
+        }
+        else
+        {
+            buildVersion = UpdateBuildNumber(baseVersion.Split('+')[0].Split('-')[0]);
+        }
+
+        return ApplyChannel(buildVersion, channel);
+    }
+
     public static void ReplaceVersionInFiles(IEnumerable<string> files, string newVersion)
     {
         foreach (var file in files)

@@ -16,7 +16,9 @@ using System.Net;
 namespace Build.Modules;
 
 [SkipIfNoGitHubToken]
-public sealed class NotifyIssuesModule(IOptions<BuildOptions> buildOptions) : Module
+public sealed class NotifyIssuesModule(
+    IOptions<BuildOptions> buildOptions,
+    IOptions<PublishOptions> publishOptions) : Module
 {
     private static readonly TimeSpan CommentDelay = TimeSpan.FromSeconds(2);
 
@@ -24,6 +26,11 @@ public sealed class NotifyIssuesModule(IOptions<BuildOptions> buildOptions) : Mo
     {
         var versionInfo = VersionHelper.CreateVersionInfo(VersionHelper.ReadBuildVersion());
         var notifyUrl = buildOptions.Value.NotifyUrl;
+        if (string.IsNullOrWhiteSpace(notifyUrl))
+        {
+            notifyUrl = ReadPublishedReleaseUrl();
+        }
+
         if (string.IsNullOrWhiteSpace(notifyUrl))
         {
             context.Summary.Warning("NotifyUrl is not set; skipping issue notifications.");
@@ -41,6 +48,11 @@ public sealed class NotifyIssuesModule(IOptions<BuildOptions> buildOptions) : Mo
 
         var changes = await CollectChangesAsync(context, previousTag, cancellationToken);
         var repositoryInfo = context.GitHub().RepositoryInfo;
+        var (owner, repositoryName) = GitHubRepositoryHelper.Resolve(
+            buildOptions,
+            publishOptions,
+            repositoryInfo.Owner,
+            repositoryInfo.RepositoryName);
         var tickets = changes
             .Select(change => change.Ticket)
             .Where(ticket => ticket is not null)
@@ -63,8 +75,8 @@ public sealed class NotifyIssuesModule(IOptions<BuildOptions> buildOptions) : Mo
             try
             {
                 await context.GitHub().Client.Issue.Comment.Create(
-                    repositoryInfo.Owner,
-                    repositoryInfo.RepositoryName,
+                    owner,
+                    repositoryName,
                     int.Parse(ticket!, System.Globalization.CultureInfo.InvariantCulture),
                     comment);
                 posted++;
@@ -116,6 +128,17 @@ public sealed class NotifyIssuesModule(IOptions<BuildOptions> buildOptions) : Mo
                     posted,
                     tickets.Count));
         }
+    }
+
+    internal static string? ReadPublishedReleaseUrl()
+    {
+        if (!File.Exists(PyRevitPaths.GitHubReleaseUrlFile))
+        {
+            return null;
+        }
+
+        var url = File.ReadAllText(PyRevitPaths.GitHubReleaseUrlFile).Trim();
+        return string.IsNullOrWhiteSpace(url) ? null : url;
     }
 
     private static async Task<string> FindLatestTagAsync(IModuleContext context, CancellationToken cancellationToken)

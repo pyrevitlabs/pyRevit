@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 
 namespace pyRevitLabs.Common {
     public class PyRevitLabsConsts {
+        public const string PyRevitPathOverrideEnvVar = "PYREVIT_PATH_OVERRIDE";
+        public const string PyRevitProgramDataPathOverrideEnvVar = "PYREVIT_PROGRAMDATA_PATH_OVERRIDE";
         // product
         public const string ProductName = "pyRevit";
 
@@ -50,13 +52,31 @@ namespace pyRevitLabs.Common {
         public const string AppdataCacheDirName = "Cache";
         public const string AppdataLogsDirName = "Logs";
 
+        // install scope marker (all-users installer creates this under %ProgramData%\pyRevit\)
+        public const string InstallAllUsersMarkerFileName = "install_all_users";
+        public const string DefaultConfigsFileName = "pyRevit_config.ini";
+
         // pyRevit %appdata% path
         // @reviewed
-        public static string PyRevitPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), AppdataDirName);
+        public static string PyRevitPath {
+            get {
+                string pathOverride = Environment.GetEnvironmentVariable(PyRevitPathOverrideEnvVar);
+                if (!string.IsNullOrWhiteSpace(pathOverride))
+                    return pathOverride;
+                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), AppdataDirName);
+            }
+        }
 
         // pyRevit %programdata% path
         // @reviewed
-        public static string PyRevitProgramDataPath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), AppdataDirName);
+        public static string PyRevitProgramDataPath {
+            get {
+                string pathOverride = Environment.GetEnvironmentVariable(PyRevitProgramDataPathOverrideEnvVar);
+                if (!string.IsNullOrWhiteSpace(pathOverride))
+                    return pathOverride;
+                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), AppdataDirName);
+            }
+        }
 
         // pyrevit general cache folder 
         public static string CacheDirectory => Path.Combine(PyRevitPath, AppdataCacheDirName);
