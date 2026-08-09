@@ -188,8 +188,8 @@ def autofit_column_widths(doc, view, notes_by_column, base_offsets, min_gap=0.0)
         if abs(delta) < 1e-9:
             continue
         translation = DB.XYZ(delta, 0.0, 0.0)
-        for note in notes:
-            DB.ElementTransformUtils.MoveElement(doc, note.Id, translation)
+        ids = List[DB.ElementId]([note.Id for note in notes])
+        DB.ElementTransformUtils.MoveElements(doc, ids, translation)
 
     return new_offsets
 
