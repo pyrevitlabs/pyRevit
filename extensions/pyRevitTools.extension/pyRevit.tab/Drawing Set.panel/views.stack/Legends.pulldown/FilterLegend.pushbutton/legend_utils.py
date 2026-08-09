@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Shared drawing helpers for the Filter Legend tool."""
+
 from pyrevit import DB
 from pyrevit.framework import List
 
@@ -113,6 +114,84 @@ def text_note_vertical_extent(note, view):
     top_y = max(bbox.Min.Y, bbox.Max.Y)
     bottom_y = min(bbox.Min.Y, bbox.Max.Y)
     return top_y, bottom_y, top_y - bottom_y
+
+
+def text_note_horizontal_extent(note, view):
+    """Measure a TextNote's actual, as-rendered horizontal footprint.
+
+    Mirrors text_note_vertical_extent, but for width. Character widths
+    depend on the TextNoteType's font/size, which varies per project,
+    so the real bounding box is measured rather than assumed.
+
+    Args:
+        note: a just-created TextNote (must belong to `view`)
+        view: the view the note was created in
+
+    Returns:
+        tuple: (left_x, right_x, width) in feet, or None if Revit can't
+            report a bounding box for this note/view.
+    """
+    bbox = note.get_BoundingBox(view)
+    if bbox is None:
+        return None
+    left_x = min(bbox.Min.X, bbox.Max.X)
+    right_x = max(bbox.Min.X, bbox.Max.X)
+    return left_x, right_x, right_x - left_x
+
+
+def autofit_column_widths(doc, view, notes_by_column, base_offsets, min_gap=0.0):
+    """Widen any column whose rendered text overflows its configured
+    width, shifting every column after it right to compensate.
+
+    Must be called after *every* row (header + data) has been created --
+    only then is the widest note in each column known. Moves notes in
+    place via ElementTransformUtils rather than deleting/recreating
+    them, so per-instance state (overrides etc.) is preserved.
+
+    Args:
+        doc: Document
+        view: the Legend view the notes live in
+        notes_by_column: list of lists of TextNote, one inner list per
+            column, left to right, e.g. [name_notes, param_notes,
+            value_notes]. Each inner list holds every note placed in
+            that column across all rows.
+        base_offsets: list of the X offsets (feet) each column was
+            originally created at -- same length/order as
+            notes_by_column.
+        min_gap: minimum horizontal gap (feet) to leave after the
+            widest note in a column before the next column starts.
+            Only applied when that column actually overflows its
+            configured width.
+
+    Returns:
+        list: the new X offsets actually applied, same length as
+            base_offsets (offsets[0] is always unchanged -- nothing to
+            the left of the first column to push into).
+    """
+    col_widths = []
+    for notes in notes_by_column:
+        widest = 0.0
+        for note in notes:
+            extent = text_note_horizontal_extent(note, view)
+            if extent is not None:
+                widest = max(widest, extent[2])
+        col_widths.append(widest)
+
+    new_offsets = [base_offsets[0]]
+    for i in range(len(base_offsets) - 1):
+        configured_width = base_offsets[i + 1] - base_offsets[i]
+        needed_width = max(configured_width, col_widths[i] + min_gap)
+        new_offsets.append(new_offsets[i] + needed_width)
+
+    for i, notes in enumerate(notes_by_column):
+        delta = new_offsets[i] - base_offsets[i]
+        if abs(delta) < 1e-9:
+            continue
+        translation = DB.XYZ(delta, 0.0, 0.0)
+        for note in notes:
+            DB.ElementTransformUtils.MoveElement(doc, note.Id, translation)
+
+    return new_offsets
 
 
 def create_legend_row(
