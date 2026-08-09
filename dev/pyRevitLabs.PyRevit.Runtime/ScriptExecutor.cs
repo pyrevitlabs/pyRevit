@@ -108,6 +108,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return ScriptExecutorResultCodes.ExecutorNotInitialized;
         }
 
+        /// <summary>
+        /// Executes a script from a Revit API callback that is already authorized to run synchronously.
+        /// </summary>
+        internal static int ExecuteScriptInApiContext(ScriptData scriptData, ScriptRuntimeConfigs scriptRuntimeCfg, ScriptExecutorConfigs scriptExecConfigs = null) {
+            scriptExecConfigs = scriptExecConfigs ?? new ScriptExecutorConfigs();
+            return ExecuteScriptNow(scriptData, scriptRuntimeCfg, scriptExecConfigs);
+        }
+
         private static int ExecuteScriptNow(ScriptData scriptData, ScriptRuntimeConfigs scriptRuntimeCfg, ScriptExecutorConfigs scriptExecConfigs) {
             // create runtime
             var runtime = new ScriptRuntime(scriptData, scriptRuntimeCfg);
