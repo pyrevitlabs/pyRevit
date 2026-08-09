@@ -86,6 +86,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
         ///    - Executes startup scripts if present
         ///    - Creates the UI
         /// </remarks>
+        /// <param name="firstLoad">True during initial Revit startup; false during reload.
+        /// Controls work that should only run once per Revit process, such as stale appdata cleanup.</param>
         public void LoadSession(bool firstLoad)
         {
             var totalStopwatch = Stopwatch.StartNew();
@@ -286,9 +288,12 @@ namespace pyRevitAssemblyBuilder.SessionManager
             CleanupStaleAssemblyFiles();
             _logger.Debug($"[PERF] CleanupStaleAssemblyFiles: {stepStopwatch.ElapsedMilliseconds}ms");
 
-            stepStopwatch.Restart();
-            CleanupAppDataFolder(firstLoad);
-            _logger.Debug($"[PERF] CleanupAppDataFolder: {stepStopwatch.ElapsedMilliseconds}ms");
+            if (firstLoad)
+            {
+                stepStopwatch.Restart();
+                CleanupAppDataFolder();
+                _logger.Debug($"[PERF] CleanupAppDataFolder: {stepStopwatch.ElapsedMilliseconds}ms");
+            }
 
             // Finalize via the residual Python post-load services (hook activation,
             // doc colorizer, routes server, output teardown).
@@ -377,15 +382,11 @@ namespace pyRevitAssemblyBuilder.SessionManager
             new Regex(@"^pyRevit_(?<version>\d{4})_(?<pid>\d+)_(?<fname>.+)", RegexOptions.Compiled);
 
         /// <summary>
-        /// On the initial session load, removes pid-stamped appdata files left behind by Revit
-        /// instances that are no longer running. Skipped on reload, matching the first-load guard
-        /// of the former Python appdata.cleanup_appdata_folder().
+        /// Removes pid-stamped appdata files left behind by Revit instances that are no longer
+        /// running. This is only called during initial session load to preserve active reload data.
         /// </summary>
-        private void CleanupAppDataFolder(bool firstLoad)
+        private void CleanupAppDataFolder()
         {
-            if (!firstLoad)
-                return;
-
             try
             {
                 var version = _uiApp.Application.VersionNumber;

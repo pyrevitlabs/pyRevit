@@ -37,7 +37,7 @@ Whether you want to create tools, troubleshoot issues, or contribute code, under
 
     - Revit reads the `.addin` manifest in the Addins folders
     - The `.addin` manifest points to `pyRevitLoader.dll`
-    - `pyRevitLoader.dll` calls the C# session manager directly to build the UI and the button commands
+    - `pyRevitLoader.dll` calls the C# session manager to build the UI and the button commands
     - The C# session manager runs `session_preload.py` / `session_postload.py` to drive the Python services that have not yet been ported to C#
 
 ### .addin Manifest
@@ -53,7 +53,7 @@ Whether you want to create tools, troubleshoot issues, or contribute code, under
 The `pyRevitLoader.dll` file is a small C# program that:
 
 - Ensures required .NET assemblies are loaded.
-- Calls the C# session manager directly to load the session (no IronPython bootstrap).
+- Calls the C# session manager to load the session.
 
 ???+ info
 
