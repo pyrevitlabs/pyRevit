@@ -296,35 +296,60 @@ using (var fs = new FileStream(adminConfig, FileMode.Open, FileAccess.Write, Fil
 
             logger.Debug("Seeding config file \"{0}\" to \"{1}\"", sourceFile, targetFile);
 
+            // in all-users scope the active config already lives in ProgramData,
+            // so source and target can resolve to the same file; copying onto
+            // itself would fail with a misleading file-in-use error
+            bool samePath = NormalizePath(sourceFile).Equals(
+                NormalizePath(targetFile), StringComparison.OrdinalIgnoreCase);
+
             try
             {
+                if (samePath)
+                {
+                    logger.Debug(
+                        "Skipping config seeding; source and target resolve to the same file \"{0}\"",
+                        targetFile);
+
+                    if (lockSeedConfig && File.Exists(targetFile))
+                        ApplySeedConfigLock(targetFile);
+
+                    return;
+                }
+
                 if (File.Exists(sourceFile))
                 {
                     File.Copy(sourceFile, targetFile, true);
 
                     if (lockSeedConfig)
-                    {
-                        var currentUser = WindowsIdentity.GetCurrent();
-                        try
-                        {
-                            File.SetAttributes(targetFile, FileAttributes.ReadOnly);
-                        }
-                        catch (InvalidOperationException ex)
-                        {
-                            logger.Error(
-                                string.Format(
-                                    "You cannot assign ownership to user \"{0}\"." +
-                                    "Either you don't have TakeOwnership permissions, " +
-                                    "or it is not your user account. | {1}", currentUser.Name, ex.Message
-                                    )
-                            );
-                        }
-                    }
+                        ApplySeedConfigLock(targetFile);
                 }
             }
             catch (Exception ex)
             {
                 throw new PyRevitException(string.Format("Failed seeding config file. | {0}", ex.Message));
+            }
+        }
+
+        private static string NormalizePath(string path) =>
+            Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+        // mark the seed config as read-only to preserve it against user edits
+        private static void ApplySeedConfigLock(string targetFile)
+        {
+            var currentUser = WindowsIdentity.GetCurrent();
+            try
+            {
+                File.SetAttributes(targetFile, FileAttributes.ReadOnly);
+            }
+            catch (InvalidOperationException ex)
+            {
+                logger.Error(
+                    string.Format(
+                        "You cannot assign ownership to user \"{0}\"." +
+                        "Either you don't have TakeOwnership permissions, " +
+                        "or it is not your user account. | {1}", currentUser.Name, ex.Message
+                        )
+                );
             }
         }
 
