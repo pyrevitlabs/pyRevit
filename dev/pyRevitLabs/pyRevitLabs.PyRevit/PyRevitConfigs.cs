@@ -289,22 +289,29 @@ namespace pyRevitLabs.PyRevit
 
             logger.Debug("Seeding config file \"{0}\" to \"{1}\"", sourceFile, targetFile);
 
-            // in all-users scope the active config already lives in ProgramData,
-            // so source and target can resolve to the same file; copying onto
-            // itself would fail with a misleading file-in-use error
-            bool samePath = NormalizePath(sourceFile).Equals(
-                NormalizePath(targetFile), StringComparison.OrdinalIgnoreCase);
-
             try
             {
+                // in all-users scope the active config already lives in ProgramData,
+                // so source and target can resolve to the same file; copying onto
+                // itself would fail with a misleading file-in-use error
+                bool samePath = NormalizePath(sourceFile).Equals(
+                    NormalizePath(targetFile), StringComparison.OrdinalIgnoreCase);
+
                 if (samePath)
                 {
                     logger.Debug(
                         "Skipping config seeding; source and target resolve to the same file \"{0}\"",
                         targetFile);
 
-                    if (lockSeedConfig && File.Exists(targetFile))
-                        ApplySeedConfigLock(targetFile);
+                    if (lockSeedConfig)
+                    {
+                        if (File.Exists(targetFile))
+                            ApplySeedConfigLock(targetFile);
+                        else
+                            logger.Debug(
+                                "Seed config lock not applied; config file \"{0}\" does not exist",
+                                targetFile);
+                    }
 
                     return;
                 }

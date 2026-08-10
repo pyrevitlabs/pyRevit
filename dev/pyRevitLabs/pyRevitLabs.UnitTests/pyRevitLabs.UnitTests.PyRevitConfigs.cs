@@ -57,33 +57,44 @@ namespace pyRevitLabs.UnitTests {
             PyRevitInstallScope.ClearCachedInstallScope();
         }
 
+        // an admin-locked (read-only) machine config makes the active config
+        // resolve to the ProgramData file for any process, elevated or not,
+        // reproducing the all-users same-path seeding scenario deterministically
+        private string CreateLockedMachineConfig(string content) {
+            string machineConfig = Path.Combine(
+                PyRevitLabsConsts.PyRevitProgramDataPath,
+                PyRevitLabsConsts.DefaultConfigsFileName);
+            Directory.CreateDirectory(Path.GetDirectoryName(machineConfig));
+            File.WriteAllText(machineConfig, content);
+            File.SetAttributes(machineConfig, FileAttributes.ReadOnly);
+            return machineConfig;
+        }
+
         [TestMethod]
         public void SeedConfig_SamePath_DoesNotThrow() {
-            // in all-users scope the active config and the admin seed config
-            // resolve to the same ProgramData file
             SetScope(PyRevitInstallScope.ConfigScopeAllUsers);
+            string machineConfig = CreateLockedMachineConfig("[core]\r\n");
 
-            string configFile = PyRevitConsts.ConfigFilePath;
-            File.WriteAllText(configFile, "[core]\r\n");
             Assert.AreEqual(
-                Path.GetFullPath(configFile),
+                Path.GetFullPath(machineConfig),
+                Path.GetFullPath(PyRevitConsts.ConfigFilePath));
+            Assert.AreEqual(
+                Path.GetFullPath(machineConfig),
                 Path.GetFullPath(PyRevitConsts.AdminConfigFilePath));
 
             PyRevitConfigs.SeedConfig();
 
-            Assert.AreEqual("[core]\r\n", File.ReadAllText(configFile));
+            Assert.AreEqual("[core]\r\n", File.ReadAllText(machineConfig));
         }
 
         [TestMethod]
         public void SeedConfig_SamePath_WithLock_SetsReadOnly() {
             SetScope(PyRevitInstallScope.ConfigScopeAllUsers);
-
-            string configFile = PyRevitConsts.ConfigFilePath;
-            File.WriteAllText(configFile, "[core]\r\n");
+            string machineConfig = CreateLockedMachineConfig("[core]\r\n");
 
             PyRevitConfigs.SeedConfig(lockSeedConfig: true);
 
-            Assert.IsTrue(File.GetAttributes(configFile).HasFlag(FileAttributes.ReadOnly));
+            Assert.IsTrue(File.GetAttributes(machineConfig).HasFlag(FileAttributes.ReadOnly));
         }
 
         [TestMethod]
