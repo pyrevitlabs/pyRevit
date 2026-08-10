@@ -51,42 +51,13 @@ namespace pyRevitLabs.PyRevit
         {
             MigrateSplitAdminConfigIfNeeded();
 
-            // make sure the file exists and if not create an empty one
-            string userConfig = PyRevitConsts.ConfigFilePath;
-            string adminConfig = PyRevitConsts.AdminConfigFilePath;
+            // the shared resolver handles install scope, admin-locked seeds, and
+            // first-run seeding of the per-user config from the machine-wide config
+            var activeConfig = PyRevitInstallScope.GetActiveConfig();
+            if (!CommonUtils.VerifyFile(activeConfig.ConfigPath))
+                CommonUtils.EnsureFile(activeConfig.ConfigPath);
 
-            if (!CommonUtils.VerifyFile(userConfig))
-            {
-                if (CommonUtils.VerifyFile(adminConfig))
-                {
-                    bool isWritable = false;
-                    try
-                    {
-// Probe write access to detect ACL-protected files that are not marked with the ReadOnly attribute.
-using (var fs = new FileStream(adminConfig, FileMode.Open, FileAccess.Write, FileShare.ReadWrite)) { }
-                        isWritable = true;
-                    }
-                    catch (UnauthorizedAccessException)
-                    {
-                        logger.Debug("Admin config is not writable due to access restrictions: \"{0}\"", adminConfig);
-                        isWritable = false;
-                    }
-                    catch (IOException ioEx)
-                    {
-                        logger.Debug(ioEx, "Admin config write-access probe failed for \"{0}\"", adminConfig);
-                        isWritable = false;
-                    }
-
-                    if (!isWritable)
-                        return new PyRevitConfig(adminConfig, adminMode: true);
-                    else
-                        SetupConfig(adminConfig);
-                }
-                else
-                    SetupConfig();
-            }
-
-            return new PyRevitConfig(userConfig);
+            return new PyRevitConfig(activeConfig.ConfigPath, adminMode: activeConfig.IsReadOnly);
         }
 
         private static void MigrateSplitAdminConfigIfNeeded()
@@ -94,6 +65,20 @@ using (var fs = new FileStream(adminConfig, FileMode.Open, FileAccess.Write, Fil
             if (!PyRevitInstallScope.IsAllUsersInstall())
                 return;
 
+            try
+            {
+                MigrateSplitAdminConfig();
+            }
+            catch (Exception ex)
+            {
+                // migration is a best-effort repair; standard users may not be able
+                // to write the machine-wide config and must not be blocked by it
+                logger.Debug("Skipped split admin config migration | {0}", ex.Message);
+            }
+        }
+
+        private static void MigrateSplitAdminConfig()
+        {
             string appDataConfig = Path.Combine(
                 PyRevitLabsConsts.PyRevitPath,
                 PyRevitConsts.DefaultConfigsFileName);
@@ -118,6 +103,14 @@ using (var fs = new FileStream(adminConfig, FileMode.Open, FileAccess.Write, Fil
                     "Migrating admin install config from \"{0}\" to ProgramData",
                     appDataConfig);
                 SetupConfig(appDataConfig);
+                return;
+            }
+
+            if (!PyRevitInstallScope.IsFileWritable(programDataConfig))
+            {
+                logger.Debug(
+                    "Machine config \"{0}\" is not writable; skipping split-config migration",
+                    programDataConfig);
                 return;
             }
 

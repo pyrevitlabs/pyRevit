@@ -90,11 +90,11 @@ def get_name(element, title_on_sheet=False):
                 return element.Name
             else:
                 return element.ViewName
-    if isinstance(element, DB.Workset):
-        return element.Name
     if PY3:
         return element.Name
-    else:
+    try:
+        return element.Name
+    except AttributeError:
         return Element.Name.GetValue(element)
 
 
@@ -444,21 +444,35 @@ def get_value_range(param_name, doc=None, elements=None):
     return values
 
 
-def get_elements_by_parameter(param_name, param_value, doc=None, partial=False):
+def get_elements_by_parameter(param_name, param_value, doc=None, partial=False, view_id=None):
     """
-    Retrieves elements from the Revit document that match a given parameter name and value.
+    Finds elements by inspecting each element individually and comparing
+    the value of a named parameter.
+
+    This method performs a manual Python-side search and supports partial
+    string matching. It is more flexible than get_elements_by_param_value()
+    but can be significantly slower on large models because every element
+    is evaluated.
 
     Args:
         param_name (str): The name of the parameter to search for.
-        param_value (str or other): The value of the parameter to match.
+        param_value (object): Value to match. When partial is True, this must be a string.
         doc (Document, optional): The Revit document to search in. If None, the current document is used.
         partial (bool, optional): If True, performs a partial match on string parameter values. Defaults to False.
+        view_id (DB.ElementId, optional): Restrict the search to elements visible in the specified view. If None, searches the entire document.
 
     Returns:
         list: A list of elements that match the specified parameter name and value.
     """
+    doc = doc or DOCS.doc
+    elements = (
+        DB.FilteredElementCollector(doc, view_id).ToElements()
+        if view_id
+        else get_all_elements(doc)
+    )
+
     found_els = []
-    for element in get_all_elements(doc):
+    for element in elements:
         targetparam = element.LookupParameter(param_name)
         if targetparam:
             value = get_param_value(targetparam)
@@ -476,7 +490,12 @@ def get_elements_by_parameter(param_name, param_value, doc=None, partial=False):
 
 def get_elements_by_param_value(param_name, param_value, inverse=False, doc=None, view_id=None):
     """
-    Retrieves elements from the Revit document based on a parameter name and value.
+    Finds elements using a native Revit ElementParameterFilter.
+
+    This method is typically much faster than get_elements_by_parameter()
+    because filtering is performed by the Revit API. It supports exact
+    string matching only and requires the parameter to be resolvable to
+    a project parameter ElementId.
 
     Args:
         param_name (str): The name of the parameter to filter by.
