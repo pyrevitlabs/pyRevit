@@ -236,9 +236,9 @@ If needed, add new `_OR_GREATER` constants in `dev/Directory.Build.targets`:
 
 ### 8.1 Build the products
 
-```shell
-pipenv run pyrevit build labs Debug
-pipenv run pyrevit build products Debug
+```powershell
+cd build
+dotnet run -c Debug -- ci
 ```
 
 ### 8.2 Attach and test

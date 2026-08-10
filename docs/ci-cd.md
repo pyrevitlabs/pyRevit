@@ -2,7 +2,7 @@
 
 This guide explains how GitHub Actions and the C# ModularPipelines project in [`build/`](../build/) work together: integrating work on **`develop`** (WIP builds), shipping from **`master`** via signed Git tags (releases), how versions are bumped, and the manual maintainer ritual that drives a release.
 
-The legacy Python CLI (`pipenv run pyrevit ...`) in [`dev/pyrevit.py`](../dev/pyrevit.py) remains available for local/manual workflows; CI/CD is driven by `dotnet run` in [`build/`](../build/README.md).
+CI/CD and local product builds are driven by `dotnet run` in [`build/`](../build/README.md).
 
 ## Branches and roles
 
@@ -53,7 +53,7 @@ Doc-only or other out-of-scope changes skip CI entirely.
 
 ### Official repository vs forks
 
-The stamping steps (`set year`, `set build wip|release`, `set products`) only run when `Build__Channel` is `wip` or `release` **and** `GITHUB_REPOSITORY` is the main repo (`pyrevitlabs/pyRevit`). The downstream `wip.yml` and `release.yml` jobs are similarly gated on the main repo so secrets are never exposed to forks. Forks still get checkout and an **unsigned** product build via `ci.yml` (useful for PR validation). Unsigned builds (`Channel=none`) still seed `bin/pyrevit-products.json` from `release/` before the labs build so fork PR validation succeeds.
+The version, year, and product-data stamping modules only run when `Build__Channel` is `wip` or `release` **and** `GITHUB_REPOSITORY` is the main repo (`pyrevitlabs/pyRevit`). The downstream `wip.yml` and `release.yml` jobs are similarly gated on the main repo so secrets are never exposed to forks. Forks still get checkout and an **unsigned** product build via `ci.yml` (useful for PR validation). Unsigned builds (`Channel=none`) still seed `bin/pyrevit-products.json` from `release/` before the labs build so fork PR validation succeeds.
 
 ## Prebuilt binaries for clone
 
@@ -124,13 +124,17 @@ Releases are no longer auto-triggered by merging into `master`. A maintainer run
 
 ### Cut a release
 
-1. From a clean local clone on **`develop`**, stamp the build as a release:
+1. From a clean local clone on **`develop`**, run the supported release-channel build to stamp the version, copyright, and product metadata:
 
-    ```bash
-    pipenv run pyrevit set build release
+    ```powershell
+    cd build
+    $env:Build__Channel = 'release'
+    $env:DOTNET_ENVIRONMENT = 'Production'
+    dotnet run -c Release -- ci
+    cd ..
     ```
 
-    This updates `pyrevitlib/pyrevit/version` and related build info files.
+    This updates `pyrevitlib/pyrevit/version` and the related tracked release metadata. Review those changes before committing them.
 
 2. Commit the version changes and merge them into **`master`** via your normal PR flow (or push directly if your branch protection allows it):
 
@@ -162,13 +166,17 @@ Releases are no longer auto-triggered by merging into `master`. A maintainer run
 
 ### Post-release
 
-Bump **`develop`** to the next development version so subsequent WIP builds carry the right number:
+Bump **`develop`** to the next development version so subsequent WIP builds carry the right number. Increment the patch component in both version files and commit them together:
+
+```text
+pyrevitlib/pyrevit/version
+release/version
+```
 
 ```bash
 git checkout develop
 git pull --rebase origin develop
-pipenv run pyrevit set next-version
-git add -A
+git add pyrevitlib/pyrevit/version release/version
 git commit -m "chore: bump next version"
 git push origin develop
 ```
@@ -188,15 +196,15 @@ When you bump a submodule under `dev/modules/` (MahApps.Metro, NLog, Newtonsoft.
 # targets netcoreapp3.1; it's EOL but still publicly available)
 winget install Microsoft.DotNet.SDK.3_1
 
-# refresh dev/libs/{netfx,netcore} from the submodule sources
-pipenv run pyrevit build deps
+# publish the changed dependency project directly into the appropriate vendored folder
+dotnet publish <dependency.csproj> -c Release -f <target-framework> -o dev/libs/<netfx-or-netcore>
 
 # review and commit the diff
 git add dev/libs
 git commit -m "chore(libs): refresh vendored deps for <submodule> bump"
 ```
 
-This keeps the CI hot path on the SDKs preinstalled on `windows-2025` (.NET 4.8 + .NET 8 + .NET 10) and avoids depending on the EOL 3.1 archives in a hosted runner. If a submodule ever ships only via NuGet (e.g. modern MahApps.Metro), retire the local build from `_labs.build_deps` and switch the `.csproj` to a `PackageReference` instead of `HintPath`.
+Use the target framework already referenced by the consuming pyRevit project, and inspect the output before committing because `dotnet publish` can include transitive assemblies. This keeps the CI hot path on the SDKs preinstalled on `windows-2025` (.NET 4.8 + .NET 8 + .NET 10) and avoids depending on the EOL 3.1 archives in a hosted runner. If a submodule ships only via NuGet, switch the consuming `.csproj` to a `PackageReference` instead of a vendored `HintPath`.
 
 ## Version files and commands
 
@@ -205,24 +213,15 @@ This keeps the CI hot path on the SDKs preinstalled on `windows-2025` (.NET 4.8 
 | `pyrevitlib/pyrevit/version` | Full **build** version string used across the product (drives the `v*` tag name). |
 | `release/version` | **Install** / marketing version used for installers and the release title. |
 
-CI invokes the ModularPipelines project from [`build/`](../build/) via `dotnet run`; the legacy `pyrevit` CLI commands remain for local use:
+CI and local product builds invoke the ModularPipelines project from [`build/`](../build/) via `dotnet run`:
 
 | Command | When / purpose |
 |---------|----------------|
-| `dotnet run -- ci` (in `build/`) | CI build path (replaces `pyrevit check`, `set year`, `set build`, `set products`, `build products`) |
+| `dotnet run -- ci` (in `build/`) | Validate the environment, stamp configured metadata, build products, and stage CI outputs. |
 | `dotnet test tests/Build.Tests.csproj` | Build-project unit tests (also run in CI) |
 | `dotnet run -- pack sign` | WIP/release pack path after artifact restore |
 | `dotnet run -- publish` | Draft GitHub release + Chocolatey push |
 | `dotnet run -- notify` | Post WIP/release URL to linked issues |
-| `pipenv run pyrevit set year` | Updates copyright year (local/manual) |
-| `pipenv run pyrevit set build wip` | After push to **`develop`** (CI runs this automatically). |
-| `pipenv run pyrevit set build release` | Release build on **`master`** (CI runs this on `master` / `v*` pushes; maintainer runs it locally before tagging). |
-| `pipenv run pyrevit set products` | Refreshes product metadata before `build products`. |
-| `pipenv run pyrevit set version <ver>` | Manual bump, e.g. `4.8.0`; tooling adds build/time segments (and WIP suffix when used in that mode). |
-| `pipenv run pyrevit set next-version` | **Patch** bump on **`develop`** after a release (run manually by the maintainer). |
-| `pipenv run pyrevit build commit` | Available but **not** used by CI any more; commits metadata, tags `v<build-version>` / `cli-v<build-version>`, and pushes. Kept for local convenience. |
-| `pipenv run pyrevit report releasenotes` | Generates the release notes used by the draft GitHub Release. |
-| `pipenv run pyrevit notify wip <url>` / `notify release <url>` | Posts the WIP run URL or release URL back to linked issue threads. |
 
 ## Quick reference
 
@@ -232,7 +231,7 @@ CI invokes the ModularPipelines project from [`build/`](../build/) via `dotnet r
 | WIP installers + issue ping | Merge PR → **`develop`** (push triggers `ci.yml` → `wip.yml`). |
 | Ship a release | Stamp release on `develop`, merge to `master`, tag `v<version>` on `master`, push the tag. |
 | Publish the release | Open the **draft** release on GitHub and publish when ready. |
-| Next dev version after release | `pipenv run pyrevit set next-version` on `develop` and push. |
+| Next dev version after release | Increment both version files on `develop`, commit, and push. |
 
 ## Troubleshooting
 

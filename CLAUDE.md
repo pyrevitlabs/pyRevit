@@ -23,32 +23,20 @@ pyRevit is a Rapid Application Development (RAD) environment for Autodesk Revit.
 - **Python**: IronPython 2.7.12 (default), CPython 3.12.3, IronPython 3.4.0
 - **C#**: .NET Framework 4.8 (Revit 2017-2024), .NET 8.0 (Revit 2025+)
 - **Go**: pyRevit autocomplete application (`dev/pyRevitLabs/pyRevitCLIAutoComplete`)
-- **Build Tools**: Visual Studio 2022, pipenv, MSBuild, Inno Setup
+- **Build Tools**: .NET 10, ModularPipelines, Visual Studio 2022, MSBuild, Inno Setup
 
 ## Build Commands
 
-All build commands use pipenv. Run from the repository root:
+Run the ModularPipelines build from the repository root:
 
-```bash
-# Setup environment
-pipenv install
-pipenv run pyrevit check              # Verify build environment
-
-# Build commands
-pipenv run pyrevit build products     # Build all C# DLLs (Release mode)
-pipenv run pyrevit build products Debug  # Build in Debug mode
-pipenv run pyrevit build labs         # Build main project only
-pipenv run pyrevit build engines      # Build Python engines
-pipenv run pyrevit build installers   # Create Inno Setup installers
-
-# Cleaning
-pipenv run pyrevit clean labs         # Clean build artifacts
-
-# Version management
-pipenv run pyrevit set version <ver>  # Set version number
-pipenv run pyrevit set build wip      # Set as work-in-progress
-pipenv run pyrevit set build release  # Set as release build
+```powershell
+cd build
+dotnet run -c Release -- ci            # Build all products
+dotnet run -c Debug -- ci              # Debug build
+dotnet test tests/Build.Tests.csproj -c Release
 ```
+
+See [`build/README.md`](build/README.md) for packaging, signing, publishing, and configuration.
 
 ## Documentation
 
@@ -74,7 +62,7 @@ pyrevit attach dev default --installed
 2. Checkout `develop` branch (active development)
 3. Initialize submodules: `git submodule update --init --recursive`
 4. Install dependencies: `pipenv install`
-5. Build: `pipenv run pyrevit build products Debug`
+5. Build: `cd build && dotnet run -c Debug -- ci`
 6. Test in Revit by attaching the clone
 
 For debugging C# code:
