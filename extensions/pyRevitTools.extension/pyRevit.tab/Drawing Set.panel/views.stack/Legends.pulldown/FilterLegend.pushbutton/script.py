@@ -30,6 +30,7 @@ from match.filter_utils import (
 
 from legend_utils import (
     create_legend_row,
+    autofit_column_widths,
 )
 from legend_config import (
     INI,
@@ -114,7 +115,7 @@ if not text_type_names:
 # READ SETTINGS (configured separately via config.py -- see its
 # "Configure" bundle action; sensible defaults apply if never run)
 # ---------------------------------------------------------------------------
-CONFIG_FILE = appdata.get_universal_data_file(file_id=INI, file_ext='ini')
+CONFIG_FILE = appdata.get_universal_data_file(file_id=INI, file_ext="ini")
 if not op.exists(CONFIG_FILE):
     open(CONFIG_FILE, "w").close()
 configparser = PyRevitConfigParser(cfg_file_path=CONFIG_FILE)
@@ -187,6 +188,7 @@ with revit.TransactionGroup("Create Filter Legend(s)"):
                     filter_elems.sort(key=lambda f: f.Name)
 
                 y = 0.0
+                name_notes, param_notes, value_notes = [], [], []
 
                 # -- header row --
                 # Row height/next-row offset is measured from the actual
@@ -194,7 +196,7 @@ with revit.TransactionGroup("Create Filter Legend(s)"):
                 # not assumed equal to the configured row_height -- that's
                 # what keeps rows from overlapping/misaligning regardless
                 # of which TextNoteType/font size a given project uses.
-                _, _, header_height = create_legend_row(
+                header_notes, _, header_height = create_legend_row(
                     doc,
                     legend_view,
                     y,
@@ -206,6 +208,9 @@ with revit.TransactionGroup("Create Filter Legend(s)"):
                     ],
                     min_row_height=row_height,
                 )
+                name_notes.append(header_notes[0])
+                param_notes.append(header_notes[1])
+                value_notes.append(header_notes[2])
                 y -= header_height + row_spacing
 
                 # -- data rows --
@@ -227,7 +232,7 @@ with revit.TransactionGroup("Create Filter Legend(s)"):
                             param_name = NA_TEXT
                             value_text = NA_TEXT
 
-                        _, region, row_advance = create_legend_row(
+                        row_notes, region, row_advance = create_legend_row(
                             doc,
                             legend_view,
                             y,
@@ -241,6 +246,9 @@ with revit.TransactionGroup("Create Filter Legend(s)"):
                             swatch_height=row_height,
                             min_row_height=row_height,
                         )
+                        name_notes.append(row_notes[0])
+                        param_notes.append(row_notes[1])
+                        value_notes.append(row_notes[2])
                         if ogs and region and ogs_has_overrides(ogs):
                             legend_view.SetElementOverrides(region.Id, ogs)
 
@@ -253,6 +261,15 @@ with revit.TransactionGroup("Create Filter Legend(s)"):
                         row_advance = row_height
 
                     y -= row_advance + row_spacing
+
+                # -- auto-fit column widths to actual rendered text --
+                autofit_column_widths(
+                    doc,
+                    legend_view,
+                    notes_by_column=[name_notes, param_notes, value_notes],
+                    base_offsets=[COL_NAME_X, COL_PARAM_X, COL_VALUE_X],
+                    min_gap=col_width * 0.05,
+                )
 
                 created_legends.append(legend_view)
 
