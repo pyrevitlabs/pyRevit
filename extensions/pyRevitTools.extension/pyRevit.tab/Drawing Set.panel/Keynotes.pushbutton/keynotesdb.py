@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Module for managing keynotes using DeffrelDB."""
 
 # pylint: disable=E0401,W0613
@@ -9,6 +10,7 @@ from pyrevit import HOST_APP, DOCS
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
 from pyrevit import framework
+from pyrevit.framework import System
 from pyrevit import revit
 
 from pyrevit.labs import DeffrelDB as dfdb
@@ -244,9 +246,26 @@ class RKeynote(object):
 
         return self_pass or self._filtered_children
 
-    def update_used(self, used_keysdict, used_typesdict=None, doc=None):
-        doc = doc or DOCS.doc
+    def update_used(self, used_keysdict, used_typesdict=None,
+                    view_names=None, doc=None):
+        """Refresh usage state from pre-collected model data.
+
+        Prefer passing `view_names` ({key: [view name, ...]}) collected in
+        a valid Revit API context — then this method touches no Revit API
+        at all and is safe to call from WPF event handlers.  The `doc`
+        fallback path queries the model directly and must only run inside
+        an API context.
+        """
         used_typesdict = used_typesdict or {}
+        # reset first — cached nodes get refreshed repeatedly and the
+        # tooltip/usage state must not accumulate across refreshes
+        self.used = False
+        self.used_count = 0
+        self.used_types = set()
+        self.has_element_type = False
+        self.has_material_type = False
+        self.has_user_type = False
+        self.tooltip = "Referenced on views:"
         # update count, tooltip, and usage types
         if self.key in used_keysdict:
             self.used = True
@@ -255,16 +274,23 @@ class RKeynote(object):
             self.has_element_type = "Element" in self.used_types
             self.has_material_type = "Material" in self.used_types
             self.has_user_type = "User" in self.used_types
-            for keyid in used_keysdict[self.key]:
-                kel = doc.GetElement(keyid)
-                if not kel:
-                    continue
-                owner_view = doc.GetElement(kel.OwnerViewId)
-                view_name = revit.query.get_name(owner_view)
-                self.tooltip += "\n" + view_name
+            if view_names is not None:
+                for view_name in view_names.get(self.key, []):
+                    self.tooltip += "\n" + view_name
+            else:
+                # legacy fallback — requires a valid Revit API context
+                doc = doc or DOCS.doc
+                for keyid in used_keysdict[self.key]:
+                    kel = doc.GetElement(keyid)
+                    if not kel:
+                        continue
+                    owner_view = doc.GetElement(kel.OwnerViewId)
+                    view_name = revit.query.get_name(owner_view)
+                    self.tooltip += "\n" + view_name
 
         for crkey in self._children:
-            crkey.update_used(used_keysdict, used_typesdict)
+            crkey.update_used(used_keysdict, used_typesdict,
+                              view_names=view_names, doc=doc)
 
     def collect_keys(self):
         keys = {self.key, self.parent_key}
@@ -274,9 +300,14 @@ class RKeynote(object):
 
 
 def _verify_keynotesdb_def(conn):
+    # NOTE: a lock TimeoutException means another user holds the file —
+    # it must NOT be misread as "schema missing" (the create call would
+    # also block, and the Convert offer downstream truncates live data).
     # verify db
     try:
         conn.ReadDB(KEYNOTES_DB)
+    except System.TimeoutException:
+        raise
     except Exception as dbex:
         mlogger.debug("Keynotes db read failed | %s", dbex)
         dbdef = dfdb.DatabaseDefinition()
@@ -286,6 +317,8 @@ def _verify_keynotesdb_def(conn):
     # verify root categories table
     try:
         conn.ReadTable(KEYNOTES_DB, CATEGORIES_TABLE)
+    except System.TimeoutException:
+        raise
     except Exception as cattex:
         mlogger.debug("Category table read failed | %s", cattex)
         cat_key = dfdb.TextField(CATEGORY_KEY_FIELD)
@@ -302,6 +335,8 @@ def _verify_keynotesdb_def(conn):
     # verify keynote table
     try:
         conn.ReadTable(KEYNOTES_DB, KEYNOTES_TABLE)
+    except System.TimeoutException:
+        raise
     except Exception as ktex:
         mlogger.debug("keynote table read failed | %s", ktex)
         keynote_key = dfdb.TextField(KEYNOTES_KEY_FIELD)
@@ -369,11 +404,14 @@ def get_categories(conn):
                 key=x[CATEGORY_KEY_FIELD],
                 text=x[CATEGORY_TITLE_FIELD] or "",
                 parent_key="",
-                locked=x[CATEGORY_KEY_FIELD] in locked_records.keys(),
+                # direct dict membership: .keys() would materialize a new
+                # list per record on IronPython 2.7 (O(n^2) over the table)
+                locked=x[CATEGORY_KEY_FIELD] in locked_records,
                 owner=locked_records.get(x[CATEGORY_KEY_FIELD], ""),
                 children=[],
             )
             for x in cats_records
+            if x[CATEGORY_KEY_FIELD]  # skip malformed/blank records
         ],
         key=lambda x: x.key,
     )
@@ -391,11 +429,13 @@ def get_keynotes(conn):
                 key=x[KEYNOTES_KEY_FIELD],
                 text=x[KEYNOTES_TEXT_FIELD] or "",
                 parent_key=x[KEYNOTES_PARENTKEY_FIELD],
-                locked=x[KEYNOTES_KEY_FIELD] in locked_records.keys(),
+                # direct dict membership — see note in get_categories()
+                locked=x[KEYNOTES_KEY_FIELD] in locked_records,
                 owner=locked_records.get(x[KEYNOTES_KEY_FIELD], ""),
                 children=[],
             )
             for x in keynote_records
+            if x[KEYNOTES_KEY_FIELD]  # skip malformed/blank records
         ],
         key=lambda x: x.key,
     )
@@ -506,6 +546,77 @@ def move_keynote(conn, key, new_parent):
     conn.UpdateRecord(
         KEYNOTES_DB, KEYNOTES_TABLE, key, {KEYNOTES_PARENTKEY_FIELD: new_parent}
     )
+
+
+# compound atomic operations ---------------------------------------------------
+# DeffrelDB buffers all changes between BEGIN and END in memory and commits
+# them to the file in a single write on END.  BulkAction.__exit__ always
+# calls END, so a mid-sequence failure would otherwise commit a PARTIAL
+# state (e.g. leave "__swap_*__" temp keys in the shared keynote file).
+# These helpers revert completed steps in memory before re-raising, so the
+# commit then writes back the original state — a harmless no-op.
+
+
+def _run_with_compensation(conn, steps):
+    """Run (do, undo) steps inside one BulkAction; undo on failure."""
+    done_undos = []
+    with BulkAction(conn):
+        try:
+            for do_step, undo_step in steps:
+                do_step()
+                done_undos.append(undo_step)
+        except Exception:
+            for undo_step in reversed(done_undos):
+                try:
+                    undo_step()
+                except Exception:
+                    mlogger.warning(
+                        "Keynote operation rollback step failed — "
+                        "check the keynote file for consistency.")
+            raise
+
+
+def swap_keys(conn, key_a, key_b, temp_key, category=False):
+    """Atomically swap two record keys and re-parent their children."""
+    upd = update_category_key if category else update_keynote_key
+    children = get_keynotes(conn)
+
+    steps = [
+        (lambda: upd(conn, key_a, temp_key),
+         lambda: upd(conn, temp_key, key_a)),
+        (lambda: upd(conn, key_b, key_a),
+         lambda: upd(conn, key_a, key_b)),
+        (lambda: upd(conn, temp_key, key_b),
+         lambda: upd(conn, key_b, temp_key)),
+    ]
+    # children follow their original parent record to its new key
+    for child in children:
+        if child.parent_key == key_a:
+            steps.append(
+                (lambda k=child.key: move_keynote(conn, k, key_b),
+                 lambda k=child.key: move_keynote(conn, k, key_a)))
+        elif child.parent_key == key_b:
+            steps.append(
+                (lambda k=child.key: move_keynote(conn, k, key_a),
+                 lambda k=child.key: move_keynote(conn, k, key_b)))
+    _run_with_compensation(conn, steps)
+
+
+def rekey_with_children(conn, key, new_key, category=False):
+    """Atomically re-key a record and move its children with it."""
+    upd = update_category_key if category else update_keynote_key
+    children = get_keynotes(conn)
+
+    steps = [
+        (lambda: upd(conn, key, new_key),
+         lambda: upd(conn, new_key, key)),
+    ]
+    for child in children:
+        if child.parent_key == key:
+            steps.append(
+                (lambda k=child.key: move_keynote(conn, k, new_key),
+                 lambda k=child.key: move_keynote(conn, k, key)))
+    _run_with_compensation(conn, steps)
 
 
 # import export ---------------------------------------------------------------

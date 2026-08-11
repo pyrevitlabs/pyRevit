@@ -17,6 +17,38 @@ TELEMETRY_BLOAT_FIELDS = (
     'telemetry_server_url',
     'apptelemetry_server_url',
 )
+TELEMETRY_URL_FIELDS = (
+    'telemetry_server_url',
+    'apptelemetry_server_url',
+)
+
+
+def _strip_telemetry_corruption_markers(field_name, value):
+    """Strip quote and escape artifacts left by the escape-doubling bug."""
+    if not value:
+        return ''
+
+    normalized = ''.join(value.split())
+    for marker in ('"', "'", '\\'):
+        normalized = normalized.replace(marker, '')
+    if field_name in TELEMETRY_URL_FIELDS:
+        normalized = normalized.replace('/', '')
+    return normalized
+
+
+def _is_bloated_telemetry_value(field_name, raw_value):
+    """Return True when a telemetry config value matches known corruption."""
+    if len(raw_value) > TELEMETRY_FIELD_MAX_LEN:
+        return True
+
+    compact_value = ''.join(raw_value.split())
+    if not compact_value or compact_value == '""':
+        return False
+
+    if '"' not in compact_value and "'" not in compact_value:
+        return False
+
+    return not _strip_telemetry_corruption_markers(field_name, compact_value)
 
 
 def heal_bloated_telemetry_fields(user_config):
@@ -43,7 +75,7 @@ def heal_bloated_telemetry_fields(user_config):
                 'Could not read telemetry field %r for bloat check | %s',
                 field_name, read_err)
             continue
-        if len(raw_value) > TELEMETRY_FIELD_MAX_LEN:
+        if _is_bloated_telemetry_value(field_name, raw_value):
             bloated.append((field_name, len(raw_value)))
 
     if not bloated:
