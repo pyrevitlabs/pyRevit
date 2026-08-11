@@ -260,36 +260,3 @@ def create_legend_row(
         row_height = max(row_height, swatch_h)
 
     return notes, swatch, row_height
-
-
-def unique_view_name(doc, base_name, existing_names=None):
-    """Return a view name that does not collide with any existing view.
-
-    Appends " (2)", " (3)", ... until unique, instead of EF-Tools' habit
-    of stacking "*" characters onto the name.
-
-    Args:
-        doc: Document
-        base_name: preferred name
-        existing_names: optional pre-fetched set of existing view names
-            (pass this in when calling in a loop to avoid re-querying
-            the document every time)
-
-    Returns:
-        str: a unique view name
-    """
-    if existing_names is None:
-        existing_names = set(
-            v.Name
-            for v in DB.FilteredElementCollector(doc)
-            .OfCategory(DB.BuiltInCategory.OST_Views)
-            .WhereElementIsNotElementType()
-            .ToElements()
-        )
-
-    name = base_name
-    counter = 2
-    while name in existing_names:
-        name = "{0} ({1})".format(base_name, counter)
-        counter += 1
-    return name
