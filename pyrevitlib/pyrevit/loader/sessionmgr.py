@@ -89,7 +89,7 @@ def _setup_output():
     runtime_info = sessioninfo.get_runtime_info()
     out_window.AppVersion = "{}:{}:{}".format(
         runtime_info.pyrevit_version,
-        int(runtime_info.engine_version),
+        runtime_info.engine_version,
         runtime_info.host_version,
     )
 
