@@ -70,6 +70,7 @@
     <Compile Include="PyRevitRootResolutionTests.cs" />
     <Compile Include="ScriptLoggerServiceTests.cs" />
     <Compile Include="RevitThemeChangeMonitorTests.cs" />
+    <Compile Include="RibbonIconRegistryTests.cs" />
   </ItemGroup>
 
   <ItemGroup>

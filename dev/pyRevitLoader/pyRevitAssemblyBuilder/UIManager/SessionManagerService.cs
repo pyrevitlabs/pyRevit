@@ -7,6 +7,7 @@ using System.Reflection;
 using Autodesk.Revit.UI;
 using pyRevitAssemblyBuilder.AssemblyMaker;
 using pyRevitAssemblyBuilder.UIManager;
+using pyRevitAssemblyBuilder.UIManager.Icons;
 using pyRevitExtensionParser;
 
 namespace pyRevitAssemblyBuilder.SessionManager
@@ -89,6 +90,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
         {
             var totalStopwatch = Stopwatch.StartNew();
             var stepStopwatch = new Stopwatch();
+
+            RibbonIconRegistry.Clear();
             
             // STEP 1: Reset panel backgrounds before creating new UI
             // This matches Python's reset_backgrounds() behavior

@@ -3,6 +3,7 @@ using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Events;
 using pyRevitAssemblyBuilder.AssemblyMaker;
 using pyRevitAssemblyBuilder.SessionManager;
+using pyRevitAssemblyBuilder.UIManager.Icons;
 using pyRevitExtensionParser;
 using System;
 using System.Diagnostics;
@@ -25,7 +26,8 @@ namespace PyRevitLoader
 		private static UIControlledApplication _uiControlledApplication;
 		private static UIApplication _uiApplication;
 		private static RevitThemeChangeMonitor _themeChangeMonitor;
-		private static bool _themeReloadPending;
+		private static bool _themeRefreshPending;
+		private static bool _pendingDarkTheme;
 
 		private static UIApplication GetUIApplication(UIControlledApplication application)
 		{
@@ -161,44 +163,38 @@ namespace PyRevitLoader
 
 		private static void OnRevitThemeChanged(string themeName)
 		{
-			if (_themeReloadPending)
+			if (_uiApplication == null)
 				return;
 
-			var dialog = new TaskDialog("pyRevit Theme Changed")
-			{
-				MainInstruction = $"Revit is now using the {themeName} theme.",
-				MainContent = "Reload pyRevit to update its ribbon icons.",
-				CommonButtons = TaskDialogCommonButtons.Yes | TaskDialogCommonButtons.No,
-				DefaultButton = TaskDialogResult.Yes
-			};
-
-			if (dialog.Show() != TaskDialogResult.Yes || _uiApplication == null)
+			_pendingDarkTheme = string.Equals(themeName, "Dark", StringComparison.OrdinalIgnoreCase);
+			if (_themeRefreshPending)
 				return;
 
-			_themeReloadPending = true;
-			_uiApplication.Idling -= ReloadOnIdling;
-			_uiApplication.Idling += ReloadOnIdling;
+			_themeRefreshPending = true;
+			_uiApplication.Idling -= RefreshIconsOnIdling;
+			_uiApplication.Idling += RefreshIconsOnIdling;
 		}
 
-		private static void ReloadOnIdling(object sender, IdlingEventArgs eventArgs)
+		private static void RefreshIconsOnIdling(object sender, IdlingEventArgs eventArgs)
 		{
 			if (_uiApplication != null)
 			{
-				_uiApplication.Idling -= ReloadOnIdling;
+				_uiApplication.Idling -= RefreshIconsOnIdling;
 			}
 
-			_themeReloadPending = false;
-			LoadSession();
+			_themeRefreshPending = false;
+			RibbonIconRegistry.RefreshAll(_pendingDarkTheme);
 		}
 
 		private static void DisposeThemeChangeMonitor()
 		{
 			if (_uiApplication != null)
 			{
-				_uiApplication.Idling -= ReloadOnIdling;
+				_uiApplication.Idling -= RefreshIconsOnIdling;
 			}
 
-			_themeReloadPending = false;
+			_themeRefreshPending = false;
+			RibbonIconRegistry.Clear();
 			_themeChangeMonitor?.Dispose();
 			_themeChangeMonitor = null;
 			_uiApplication = null;
