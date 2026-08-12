@@ -23,9 +23,9 @@
     <system:String x:Key="NoFamilyDocument">Aucun document de famille actif</system:String>
     <system:String x:Key="ValueYes">Oui</system:String>
     <system:String x:Key="ValueNo">Non</system:String>
-    <system:String x:Key="ConfirmShuffleMessage">Mélanger tous les paramètres modifiables avec une valeur aléatoire dans leur plage de curseur actuelle ?
+    <system:String x:Key="ConfirmShuffleMessage">Randomiser tous les paramètres modifiables dans leur plage actuelle du curseur ?
 
-Ceci ne peut pas être annulé depuis FamSlide - utilisez si besoin la fonction Annuler de Revit.</system:String>
+Utilisez ensuite "Restaurer le préréglage" pour annuler.</system:String>
     <system:String x:Key="ConfirmDeleteUnusedMessage">Supprimer tous les paramètres de famille qui ne pilotent aucune cote, ne sont impliqués dans aucune formule et ne sont pas intégrés ?
 
 Ceci ne peut pas être annulé depuis FamSlide - utilisez si besoin la fonction Annuler de Revit.</system:String>

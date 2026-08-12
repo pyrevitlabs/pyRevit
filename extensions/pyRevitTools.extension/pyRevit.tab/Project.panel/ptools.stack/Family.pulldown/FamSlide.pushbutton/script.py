@@ -474,6 +474,8 @@ class FamSlideWindow(forms.WPFWindow):
         doc = revit.doc
         if doc is None or not doc.IsFamilyDocument:
             return
+        if doc.Title not in self._presets:
+            self._presets[doc.Title] = self._capture_preset(doc)
         famslide_actions.shuffle_parameter_values(doc, doc.FamilyManager, self._rows)
 
     def _do_delete_unused(self):
@@ -522,10 +524,7 @@ class FamSlideWindow(forms.WPFWindow):
                 )
                 forms.alert(_t("AlertToggleInstanceTypeFailed").format(row.name))
 
-    def _do_save_preset(self):
-        doc = revit.doc
-        if doc is None or not doc.IsFamilyDocument:
-            return
+    def _capture_preset(self, doc):
         fm = doc.FamilyManager
         preset = {}
         for row in self._rows:
@@ -538,6 +537,13 @@ class FamSlideWindow(forms.WPFWindow):
                 preset[param_id] = fm.CurrentType.AsDouble(row.param)
             else:
                 preset[param_id] = fm.CurrentType.AsValueString(row.param)
+        return preset
+
+    def _do_save_preset(self):
+        doc = revit.doc
+        if doc is None or not doc.IsFamilyDocument:
+            return
+        preset = self._capture_preset(doc)
         self._presets[doc.Title] = preset
         forms.alert(_t("AlertPresetSaved").format(len(preset)))
 

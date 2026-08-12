@@ -23,9 +23,9 @@
     <system:String x:Key="NoFamilyDocument">Нет активного документа семейства</system:String>
     <system:String x:Key="ValueYes">Да</system:String>
     <system:String x:Key="ValueNo">Нет</system:String>
-    <system:String x:Key="ConfirmShuffleMessage">Перемешать все редактируемые параметры, присвоив им случайные значения в пределах текущего диапазона ползунка?
+    <system:String x:Key="ConfirmShuffleMessage">Случайным образом изменить все редактируемые параметры в пределах текущего диапазона ползунка?
 
-Это действие нельзя отменить из FamSlide - при необходимости используйте отмену Revit.</system:String>
+Используйте "Восстановить пресет" после этого, чтобы отменить.</system:String>
     <system:String x:Key="ConfirmDeleteUnusedMessage">Удалить все параметры семейства, которые не управляют размерами, не участвуют в формулах и не являются встроенными?
 
 Это действие нельзя отменить из FamSlide - при необходимости используйте отмену Revit.</system:String>

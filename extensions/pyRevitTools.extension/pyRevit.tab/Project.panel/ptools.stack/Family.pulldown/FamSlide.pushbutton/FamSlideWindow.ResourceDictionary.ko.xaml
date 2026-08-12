@@ -23,9 +23,9 @@
     <system:String x:Key="NoFamilyDocument">활성화된 패밀리 문서가 없습니다</system:String>
     <system:String x:Key="ValueYes">예</system:String>
     <system:String x:Key="ValueNo">아니오</system:String>
-    <system:String x:Key="ConfirmShuffleMessage">편집 가능한 모든 매개변수를 현재 슬라이더 범위 내에서 무작위 값으로 섞으시겠습니까?
+    <system:String x:Key="ConfirmShuffleMessage">편집 가능한 모든 매개변수를 현재 슬라이더 범위 내의 임의 값으로 섞으시겠습니까?
 
-FamSlide에서는 취소할 수 없습니다 - 필요하면 Revit 자체의 실행 취소를 사용하세요.</system:String>
+이후 "프리셋 복원"을 사용하여 되돌릴 수 있습니다.</system:String>
     <system:String x:Key="ConfirmDeleteUnusedMessage">치수를 구동하지 않고 수식의 일부가 아니며 내장 매개변수가 아닌 모든 패밀리 매개변수를 삭제하시겠습니까?
 
 FamSlide에서는 취소할 수 없습니다 - 필요하면 Revit 자체의 실행 취소를 사용하세요.</system:String>

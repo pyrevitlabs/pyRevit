@@ -23,9 +23,9 @@
     <system:String x:Key="NoFamilyDocument">当前没有活动的族文档</system:String>
     <system:String x:Key="ValueYes">是</system:String>
     <system:String x:Key="ValueNo">否</system:String>
-    <system:String x:Key="ConfirmShuffleMessage">是否将所有可编辑参数在当前滑块范围内随机打乱？
+    <system:String x:Key="ConfirmShuffleMessage">将所有可编辑参数随机调整为其当前滑块范围内的值？
 
-此操作无法在 FamSlide 中撤销 - 如需撤销请使用 Revit 自带的撤销功能。</system:String>
+之后可使用"恢复预设"撤销此操作。</system:String>
     <system:String x:Key="ConfirmDeleteUnusedMessage">是否删除所有未驱动标注、未用于公式且非内置的族参数？
 
 此操作无法在 FamSlide 中撤销 - 如需撤销请使用 Revit 自带的撤销功能。</system:String>
