@@ -265,7 +265,20 @@ class FamSlideWindow(forms.WPFWindow):
             spacer = Controls.TextBlock()
             Controls.Grid.SetColumn(spacer, 1)
             grid.Children.Add(spacer)
-            value_display = fm.CurrentType.AsValueString(row.param)
+            # AsValueString does not work for familyparameters
+            # see https://jeremytammik.github.io/tbc/a/0245_family_param_value.htm
+            value_display = None
+            if row.storage_type == DB.StorageType.String:
+                value_display = fm.CurrentType.AsString(row.param)
+            elif row.storage_type == DB.StorageType.ElementId:
+                try:
+                    doc = revit.doc
+                    value_elid = fm.CurrentType.AsElementId(row.param)
+                    value_el = doc.GetElement(value_elid)
+                    if value_el:
+                        value_display = value_el.Name
+                except Exception:
+                    pass
 
         # --- value textbox ------------------------------------------------------
         value_border = Controls.Border()
@@ -472,7 +485,10 @@ class FamSlideWindow(forms.WPFWindow):
             return
         fm = doc.FamilyManager
         with revit.Transaction("FamSlide: Set {}".format(row.name), doc=doc):
-            fm.SetValueString(row.param, text)
+            if row.storage_type in (DB.StorageType.Double, DB.StorageType.Integer):
+                fm.SetValueString(row.param, text)
+            elif row.storage_type == DB.StorageType.String:
+                fm.Set(row.param, str(text))
 
     def _do_shuffle(self):
         doc = revit.doc
