@@ -50,6 +50,7 @@ TAG_COLORS = {
     "instance": "#FF2E86C1",
     "type": "#FF1E8449",
     "associated": "#FF6C757D",
+    "locked": "#FF566573",
 }
 TAG_LABEL_KEYS = {
     "in_use": "TagInUse",
@@ -59,6 +60,7 @@ TAG_LABEL_KEYS = {
     "instance": "TagInstance",
     "type": "TagType",
     "associated": "TagAssociated",
+    "locked": "TagLocked"
 }
 
 # module-level handle to the single live FamSlide window, so the

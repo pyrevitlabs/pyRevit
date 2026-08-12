@@ -19,6 +19,7 @@
     <system:String x:Key="TagInstance">instance</system:String>
     <system:String x:Key="TagType">type</system:String>
     <system:String x:Key="TagAssociated">associated</system:String>
+    <system:String x:Key="TagLocked">locked</system:String>
     <system:String x:Key="NoFamilyLoaded">(no family loaded)</system:String>
     <system:String x:Key="NoFamilyDocument">No family document is active</system:String>
     <system:String x:Key="ValueYes">Yes</system:String>

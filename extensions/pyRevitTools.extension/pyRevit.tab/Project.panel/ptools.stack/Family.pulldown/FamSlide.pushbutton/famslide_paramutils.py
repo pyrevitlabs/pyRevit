@@ -67,6 +67,8 @@ class ParamRow(object):
             tags.append("type")
         if self.is_associated:
             tags.append("associated")
+        if self.locked:
+            tags.append("locked")
         return tags
 
 
