@@ -135,6 +135,8 @@ class FamSlideWindow(forms.WPFWindow):
         fm = doc.FamilyManager
         self._rows = famslide_paramutils.classify_parameters(doc, fm)
         self._build_ui(fm)
+        if doc.Title not in self._presets:
+            self._presets[doc.Title] = self._capture_preset(doc)
 
     def _build_ui(self, fm):
         self.GroupsHost.Children.Clear()
@@ -474,8 +476,6 @@ class FamSlideWindow(forms.WPFWindow):
         doc = revit.doc
         if doc is None or not doc.IsFamilyDocument:
             return
-        if doc.Title not in self._presets:
-            self._presets[doc.Title] = self._capture_preset(doc)
         famslide_actions.shuffle_parameter_values(doc, doc.FamilyManager, self._rows)
 
     def _do_delete_unused(self):
