@@ -260,13 +260,58 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
 
 
 class ThreadedHttpServer(ThreadingMixIn, HTTPServer):
-    """Threaded HTTP server."""
+    """Threaded HTTP server.
+
+    Requests are served on threads that are never STA, while pyRevit directs
+    stdout and stderr to its script output console, a WPF window that can only
+    be created on Revit's STA UI thread. An exception escaping one of these
+    threads is printed there and terminates the Revit process, so nothing here
+    may write to stderr and no exception may leave a thread.
+    """
 
     allow_reuse_address = True
 
     def shutdown(self):
         self.socket.close()
         HTTPServer.shutdown(self)
+
+    def handle_error(self, request, client_address):
+        """Report a failed request without writing to stderr.
+
+        See the class docstring for why stderr is unsafe here.
+
+        Args:
+            request: The request being processed.
+            client_address (tuple): Client address the request came from.
+        """
+        mlogger.debug(
+            "Routes request error | %s | %s", client_address, traceback.format_exc()
+        )
+
+    def process_request_thread(self, request, client_address):
+        """Serve a request, letting no exception escape the thread.
+
+        Stopping the server closes sockets while requests are still in flight,
+        so the per-request cleanup can raise. The inherited implementation
+        leaves that path unguarded, and an exception escaping here terminates
+        Revit for the reason given in the class docstring.
+
+        Args:
+            request: The request to process.
+            client_address (tuple): Client address the request came from.
+        """
+        try:
+            self.finish_request(request, client_address)
+        except Exception:
+            try:
+                self.handle_error(request, client_address)
+            except Exception:
+                pass
+        finally:
+            try:
+                self.shutdown_request(request)
+            except Exception:
+                pass
 
 
 class RoutesServer(object):
