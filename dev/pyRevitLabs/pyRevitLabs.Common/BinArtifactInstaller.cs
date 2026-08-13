@@ -137,8 +137,7 @@ namespace pyRevitLabs.Common {
             }
 
             // Published v* releases attach a durable signed bin zip; try it when SHA assets are absent.
-            if (!BinArtifactSupport.IsSupportedCiBinBranch(branchName)
-                && !string.IsNullOrWhiteSpace(branchName)
+            if (BinArtifactSupport.IsVersionTagRef(branchName)
                 && TryDownloadVersionTagBin(repoId, branchName, destPath)) {
                 return true;
             }

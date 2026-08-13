@@ -568,8 +568,12 @@ namespace pyRevitLabs.PyRevit
 
                 logger.Info("Package deployed and registered.");
             }
-            catch (pyRevitBinArtifactNotFoundException)
+            catch (pyRevitBinArtifactNotFoundException ex)
             {
+                logger.Warn(
+                    "Image clone deployed but CI binaries could not be installed at \"{0}\" | {1}",
+                    destPath,
+                    ex.Message);
                 throw;
             }
             catch (PyRevitException ex)
