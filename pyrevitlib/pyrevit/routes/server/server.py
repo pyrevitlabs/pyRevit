@@ -340,7 +340,24 @@ class RoutesServer(object):
         return "<RoutesServer @ http://%s:%s>" % (self.host or "0.0.0.0", self.port)
 
     def start(self):
-        self.server_thread = threading.Thread(target=self.server.serve_forever)
+        """Start the accept loop, at most once, on a guarded thread.
+
+        Activation starts each server more than once, which left a second
+        accept loop running against the same socket that nothing tracked and
+        shutdown never joined. The thread is guarded because an exception
+        escaping it terminates Revit; see the ``ThreadedHttpServer`` docstring.
+        """
+        existing = getattr(self, "server_thread", None)
+        if existing is not None and existing.is_alive():
+            return
+
+        def serve_forever_guarded():
+            try:
+                self.server.serve_forever()
+            except Exception:
+                mlogger.debug("Routes server loop exited | %s", traceback.format_exc())
+
+        self.server_thread = threading.Thread(target=serve_forever_guarded)
         self.server_thread.daemon = True
         self.server_thread.start()
 
