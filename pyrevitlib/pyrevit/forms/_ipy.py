@@ -3292,7 +3292,8 @@ def alert(
         no (bool, optional): show NO button, defaults to False
         retry (bool, optional): show Retry button, defaults to False
         warn_icon (bool, optional): show "warning" icon. Ignored if `icon` is used. Defaults to True
-        icon (str, optional): icon to show, from one of "warning", "shield", "information", "error". Overrides `warn_icon` if used alongside
+        icon (str, optional): icon to show, from one of "warning", "shield", "information", "error".
+            When provided (non-empty), this takes full precedence over `warn_icon` and `warn_icon` is ignored.
         options (list[str], optional): list of command link titles in order
         exitscript (bool, optional): exit if cancel or no, defaults to False
 
@@ -3360,10 +3361,15 @@ def alert(
     }
 
     if icon:
-        # `icon` will take precedence if provided
-        tdlg.MainIcon = icon_map.get(
-            icon.lower() if icon else "", UI.TaskDialogIcon.TaskDialogIconNone
-        )
+        # `icon` take precedence if provided
+        key = icon.lower()
+        if key not in icon_map:
+            mlogger.warning(
+                "Unknown icon %r; falling back to no icon. " "Valid icons: %s",
+                icon,
+                ", ".join(sorted(icon_map)),
+            )
+        tdlg.MainIcon = icon_map.get(key, UI.TaskDialogIcon.TaskDialogIconNone)
     else:
         # else fall back to legacy `warn_icon` behavior to prevent breaking of existing scripts
         tdlg.MainIcon = (
