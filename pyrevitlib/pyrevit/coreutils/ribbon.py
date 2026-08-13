@@ -435,11 +435,9 @@ class GenericPyRevitUIContainer(object):
             raise PyRevitUIError("Can not deactivate: {}".format(self))
 
     def get_updated_items(self):
-        # FIXME: reduntant, this is a use case and should be on uimaker side?
         return self.get_flagged_children()
 
     def get_unchanged_items(self):
-        # FIXME: reduntant, this is a use case and should be on uimaker side?
         return self.get_flagged_children(state=False)
 
     def reorder_before(self, item_name, ritem_name):
