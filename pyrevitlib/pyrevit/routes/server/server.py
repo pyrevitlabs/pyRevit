@@ -45,6 +45,20 @@ EVENT_HNDLR = UI.ExternalEvent.Create(REQUEST_HNDLR)
 class HttpRequestHandler(BaseHTTPRequestHandler):
     """HTTP Requests Handler."""
 
+    def log_message(self, fmt, *args):
+        """Record a request without writing to stderr.
+
+        pyRevit directs stderr to its script output console, a WPF window that
+        can only be created on Revit's STA UI thread. Requests are served on
+        threads that are never STA, so a write here can terminate the Revit
+        process. Request logging must never reach stderr.
+
+        Args:
+            fmt (str): printf-style format string.
+            *args: Values interpolated into ``fmt``.
+        """
+        mlogger.debug(fmt, *args)
+
     def _parse_api_path(self):
         url_parts = urlparse(self.path)
         if url_parts:
