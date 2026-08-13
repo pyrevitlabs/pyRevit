@@ -25,5 +25,22 @@ namespace pyRevitLabs.UnitTests.Common {
             var name = GithubReleaseBinAPI.BuildBranchLatestAssetName("develop");
             Assert.AreEqual("unsigned-bin-develop-latest.zip", name);
         }
+
+        [TestMethod]
+        public void BuildVersionTagBinAssetName_Test() {
+            var name = GithubReleaseBinAPI.BuildVersionTagBinAssetName("v6.5.3.26176+2017");
+            Assert.AreEqual("bin-v6.5.3.26176+2017.zip", name);
+        }
+
+        [TestMethod]
+        public void BuildReleaseAssetUrl_VersionTagEncodesPlus_Test() {
+            var url = GithubReleaseBinAPI.BuildReleaseAssetUrl(
+                "pyrevitlabs/pyRevit",
+                "bin-v6.5.3.26176+2017.zip",
+                "v6.5.3.26176+2017");
+            Assert.AreEqual(
+                "https://github.com/pyrevitlabs/pyRevit/releases/download/v6.5.3.26176%2B2017/bin-v6.5.3.26176%2B2017.zip",
+                url);
+        }
     }
 }

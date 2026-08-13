@@ -288,7 +288,8 @@ namespace pyRevitLabs.PyRevit
                                           string branchName = null,
                                           string repoUrl = null,
                                           string destPath = null,
-                                          GitInstallerCredentials credentials = null)
+                                          GitInstallerCredentials credentials = null,
+                                          bool installBinaries = true)
         {
             if (destPath != null)
                 destPath = CommonUtils.ExpandEnvironmentPath(destPath);
@@ -339,7 +340,12 @@ namespace pyRevitLabs.PyRevit
                 try
                 {
                     PyRevitClone.VerifyCloneValidity(clonedPath);
-                    InstallBinariesForRepoClone(clonedPath, repoSourcePath, BinArtifactInstallMode.Clone);
+                    if (installBinaries)
+                        InstallBinariesForRepoClone(
+                            clonedPath,
+                            repoSourcePath,
+                            BinArtifactInstallMode.Clone,
+                            repoBranch);
                     logger.Debug("Clone successful \"{0}\"", clonedPath);
                     RegisterClone(cloneName, clonedPath, forceUpdate: true);
                 }
@@ -562,12 +568,18 @@ namespace pyRevitLabs.PyRevit
 
                 logger.Info("Package deployed and registered.");
             }
+            catch (pyRevitBinArtifactNotFoundException)
+            {
+                throw;
+            }
             catch (PyRevitException ex)
             {
                 var errMsg = ex.Message;
                 if (errMsg != null && errMsg.IndexOf('%') >= 0)
                     errMsg += " Path may contain unexpanded environment variables; ensure TEMP and --dest resolve to absolute paths.";
-                logger.Error("Can not find a valid clone inside extracted package. | {0}", errMsg);
+                throw new PyRevitException(
+                    string.Format("Can not find a valid clone inside extracted package. | {0}", errMsg),
+                    ex);
             }
         }
 
@@ -767,9 +779,10 @@ namespace pyRevitLabs.PyRevit
         private static void InstallBinariesForRepoClone(
             string clonePath,
             string repoUrl,
-            BinArtifactInstallMode mode) {
+            BinArtifactInstallMode mode,
+            string branchName = null) {
             try {
-                BinArtifactInstaller.InstallForRepoClone(clonePath, repoUrl, mode);
+                BinArtifactInstaller.InstallForRepoClone(clonePath, repoUrl, mode, branchName);
             }
             catch (pyRevitMissingGithubTokenException) {
                 throw;

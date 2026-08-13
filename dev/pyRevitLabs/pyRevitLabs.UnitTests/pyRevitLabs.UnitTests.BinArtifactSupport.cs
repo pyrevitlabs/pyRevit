@@ -33,6 +33,7 @@ namespace pyRevitLabs.UnitTests.Common {
         [TestMethod]
         public void IsSupportedCiBinBranch_OtherBranches_Test() {
             Assert.IsFalse(BinArtifactSupport.IsSupportedCiBinBranch("feature/foo"));
+            Assert.IsFalse(BinArtifactSupport.IsSupportedCiBinBranch("v6.5.3.26176+2017"));
             Assert.IsFalse(BinArtifactSupport.IsSupportedCiBinBranch(null));
             Assert.IsFalse(BinArtifactSupport.IsSupportedCiBinBranch(string.Empty));
         }
