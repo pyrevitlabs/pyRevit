@@ -3361,7 +3361,7 @@ def alert(
     }
 
     if icon:
-        # `icon` take precedence if provided
+        # `icon` takes precedence if provided
         key = icon.lower()
         if key not in icon_map:
             mlogger.warning(
