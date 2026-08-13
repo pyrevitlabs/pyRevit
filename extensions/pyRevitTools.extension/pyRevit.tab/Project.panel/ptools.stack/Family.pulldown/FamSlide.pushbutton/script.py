@@ -553,8 +553,8 @@ class FamSlideWindow(forms.WPFWindow):
                 preset[param_id] = fm.CurrentType.AsInteger(row.param)
             elif row.storage_type == DB.StorageType.Double:
                 preset[param_id] = fm.CurrentType.AsDouble(row.param)
-            else:
-                preset[param_id] = fm.CurrentType.AsValueString(row.param)
+            elif row.storage_type == DB.StorageType.String:
+                preset[param_id] = fm.CurrentType.AsString(row.param)
         return preset
 
     def _do_save_preset(self):
@@ -586,8 +586,8 @@ class FamSlideWindow(forms.WPFWindow):
                         fm.Set(row.param, int(value))
                     elif row.storage_type == DB.StorageType.Double:
                         fm.Set(row.param, float(value))
-                    else:
-                        fm.SetValueString(row.param, value)
+                    elif row.storage_type == DB.StorageType.String:
+                        fm.Set(row.param, value)
                 except Exception:
                     logger.exception(
                         "FamSlide: could not restore preset value for '{}'".format(

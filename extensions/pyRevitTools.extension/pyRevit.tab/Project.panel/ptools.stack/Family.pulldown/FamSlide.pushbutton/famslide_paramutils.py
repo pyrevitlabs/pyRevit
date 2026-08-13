@@ -25,7 +25,7 @@ class ParamRow(object):
         self.is_builtin = get_elementid_value(family_parameter.Id) < 0
         self.has_formula = bool(getattr(family_parameter, "Formula", None))
         # self.has_formula = family_parameter.IsDeterminedByFormula # whats the difference?
-        self.is_readonly = family_parameter.IsReadOnly
+        self.is_readonly = family_parameter.IsReadOnly or self.storage_type == DB.StorageType.ElementId
         self.locked = False  # filled in by classify_parameters
         self.used_in_formula = False  # filled in by classify_parameters
         self.in_use = False  # filled in by classify_parameters
