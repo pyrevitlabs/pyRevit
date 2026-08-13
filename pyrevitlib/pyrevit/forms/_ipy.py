@@ -3261,6 +3261,7 @@ def alert(
     no=False,
     retry=False,
     warn_icon=True,
+    icon="",
     options=None,
     exitscript=False,
 ):
@@ -3277,7 +3278,8 @@ def alert(
         yes (bool, optional): show Yes button, defaults to False
         no (bool, optional): show NO button, defaults to False
         retry (bool, optional): show Retry button, defaults to False
-        warn_icon (bool, optional): show warning icon
+        warn_icon (bool, optional): show "warning" icon. Ignored if `icon` is used. Defaults to True
+        icon (str, optional): icon to show, from one of "warning", "shield", "information", "error". Overrides `warn_icon` if used alongside
         options (list[str], optional): list of command link titles in order
         exitscript (bool, optional): exit if cancel or no, defaults to False
 
@@ -3337,12 +3339,27 @@ def alert(
     tdlg.TitleAutoPrefix = False
 
     # set icon
-    tdlg.MainIcon = (
-        UI.TaskDialogIcon.TaskDialogIconWarning
-        if warn_icon
-        else UI.TaskDialogIcon.TaskDialogIconNone
-    )
+    icon_map = {
+        "warning": UI.TaskDialogIcon.TaskDialogIconWarning,
+        "shield": UI.TaskDialogIcon.TaskDialogIconShield,
+        "information": UI.TaskDialogIcon.TaskDialogIconInformation,
+        "error": UI.TaskDialogIcon.TaskDialogIconError
+        }
 
+    if icon:
+        # `icon` will take precedence if provided
+        tdlg.MainIcon = icon_map.get(
+            icon.lower() if icon else "", 
+            UI.TaskDialogIcon.TaskDialogIconNone
+            )
+    else:
+    	# else fall back to legacy `warn_icon` behavior to prevent breaking of existing scripts
+        tdlg.MainIcon = (
+            UI.TaskDialogIcon.TaskDialogIconWarning 
+            if warn_icon 
+            else UI.TaskDialogIcon.TaskDialogIconNone
+            )
+    
     # tdlg.VerificationText = 'verif'
 
     # SHOW DIALOG
