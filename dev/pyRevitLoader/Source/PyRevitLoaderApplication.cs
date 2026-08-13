@@ -17,8 +17,10 @@
 
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.UI;
+using Autodesk.Revit.UI.Events;
 using pyRevitAssemblyBuilder.AssemblyMaker;
 using pyRevitAssemblyBuilder.SessionManager;
+using pyRevitAssemblyBuilder.UIManager.Icons;
 using pyRevitExtensionParser;
 using System;
 using System.Diagnostics;
@@ -39,6 +41,11 @@ namespace PyRevitLoader
 	{
 		public static string LoaderPath => Path.GetDirectoryName(typeof(PyRevitLoaderApplication).Assembly.Location);
 		private static UIControlledApplication _uiControlledApplication;
+		private static UIApplication _uiApplication;
+		private static RevitThemeChangeMonitor _themeChangeMonitor;
+		private static bool _themeRefreshPending;
+		private static bool _pendingDarkTheme;
+
 		private static UIApplication GetUIApplication(UIControlledApplication application)
 		{
 			var versionNumber = application.ControlledApplication.VersionNumber;
@@ -66,10 +73,36 @@ namespace PyRevitLoader
 			var commonFolder = Path.GetDirectoryName(Path.GetDirectoryName(LoaderPath));
 			LoadAssembliesInFolder(commonFolder);
 
-			// Load the session directly through the C# session manager. The Python
-			// pre/post-load services are driven from within LoadSession, so Revit
-			// startup no longer bootstraps an IronPython engine to reach the loader.
-			return LoadSessionInternal(firstLoad: true);
+			try
+			{
+				var uiApplication = GetUIApplication(application);
+				_uiApplication = uiApplication;
+				_themeChangeMonitor = new RevitThemeChangeMonitor(
+					uiApplication,
+					ServiceFactory.CreateLogger(),
+					OnRevitThemeChanged);
+				_themeChangeMonitor.Start();
+
+				// Load the session directly through the C# session manager. The Python
+				// pre/post-load services are driven from within LoadSession, so Revit
+				// startup no longer bootstraps an IronPython engine to reach the loader.
+				var result = LoadSessionInternal(firstLoad: true);
+				if (result == Result.Succeeded)
+				{
+					_themeChangeMonitor.SetSessionReady();
+				}
+				else
+				{
+					DisposeThemeChangeMonitor();
+				}
+				return result;
+			}
+			catch (Exception ex)
+			{
+				DisposeThemeChangeMonitor();
+				TaskDialog.Show("Error Loading pyRevit Session", ex.ToString());
+				return Result.Failed;
+			}
 		}
 
 		private static void LoadAssembliesInFolder(string folder)
@@ -128,8 +161,48 @@ namespace PyRevitLoader
 			}
 		}
 
+		private static void OnRevitThemeChanged(string themeName)
+		{
+			if (_uiApplication == null)
+				return;
+
+			_pendingDarkTheme = string.Equals(themeName, "Dark", StringComparison.OrdinalIgnoreCase);
+			if (_themeRefreshPending)
+				return;
+
+			_themeRefreshPending = true;
+			_uiApplication.Idling -= RefreshIconsOnIdling;
+			_uiApplication.Idling += RefreshIconsOnIdling;
+		}
+
+		private static void RefreshIconsOnIdling(object sender, IdlingEventArgs eventArgs)
+		{
+			if (_uiApplication != null)
+			{
+				_uiApplication.Idling -= RefreshIconsOnIdling;
+			}
+
+			_themeRefreshPending = false;
+			RibbonIconRegistry.RefreshAll(_pendingDarkTheme);
+		}
+
+		private static void DisposeThemeChangeMonitor()
+		{
+			if (_uiApplication != null)
+			{
+				_uiApplication.Idling -= RefreshIconsOnIdling;
+			}
+
+			_themeRefreshPending = false;
+			RibbonIconRegistry.Clear();
+			_themeChangeMonitor?.Dispose();
+			_themeChangeMonitor = null;
+			_uiApplication = null;
+		}
+
 		Result IExternalApplication.OnShutdown(UIControlledApplication application)
 		{
+			DisposeThemeChangeMonitor();
 			// FIXME: deallocate the python shell...
 			return Result.Succeeded;
 		}
