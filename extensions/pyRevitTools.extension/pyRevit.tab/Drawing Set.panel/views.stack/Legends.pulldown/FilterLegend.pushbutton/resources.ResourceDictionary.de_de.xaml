@@ -1,0 +1,33 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <system:String x:Key="Msg_NoViewsWithFilters">Es gibt keine Ansichten oder Ansichtsvorlagen mit zugewiesenen Filtern.
+Bitte weisen Sie einer Ansicht einen Filter zu und versuchen Sie es erneut.</system:String>
+    <system:String x:Key="Label_Template">Vorlage</system:String>
+
+    <system:String x:Key="SelectViews_Title">Ansichten / Vorlagen auswählen</system:String>
+    <system:String x:Key="SelectViews_Button">Weiter</system:String>
+
+    <system:String x:Key="Msg_NoTextTypes">Im Projekt wurden keine Textnotiztypen gefunden.</system:String>
+
+    <system:String x:Key="Settings_Title">Filterlegende – Einstellungen</system:String>
+    <system:String x:Key="Settings_Section_Layout">Text &amp; Layout</system:String>
+    <system:String x:Key="Settings_TextType">Textnotiztyp</system:String>
+    <system:String x:Key="Settings_RowHeight">Zeilenhöhe ({0})</system:String>
+    <system:String x:Key="Settings_RowSpacing">Zeilenabstand ({0})</system:String>
+    <system:String x:Key="Settings_SwatchWidth">Musterbreite ({0})</system:String>
+    <system:String x:Key="Settings_ColumnWidth">Textspaltenbreite ({0})</system:String>
+    <system:String x:Key="Settings_Section_Behavior">Verhalten</system:String>
+    <system:String x:Key="Settings_SortAlpha">Filter alphabetisch sortieren</system:String>
+    <system:String x:Key="Settings_OpenLegend">Zuletzt erstellte Legende öffnen</system:String>
+
+    <system:String x:Key="Header_FilterName">Filtername</system:String>
+    <system:String x:Key="Header_Parameter">Parameter</system:String>
+    <system:String x:Key="Header_Value">Wert</system:String>
+    <system:String x:Key="Value_NA">N/V</system:String>
+
+    <system:String x:Key="Msg_Done">{0} Legendenansicht(en) erstellt.</system:String>
+    <system:String x:Key="Msg_Failed">Es konnten keine Legendenansichten erstellt werden. Details siehe Protokoll.</system:String>
+
+</ResourceDictionary>

@@ -276,7 +276,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // Executing the script and logging the results
             // Get script executor and Execute the script
             var env = new EnvDictionary();
-            int result = ScriptExecutor.ExecuteScript(
+            int result = ScriptExecutor.ExecuteScriptInApiContext(
                 ScriptData,
                 ScriptRuntimeConfigs,
                 new ScriptExecutorConfigs {
