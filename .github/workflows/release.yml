@@ -75,6 +75,27 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: bin/
 
+      # Clone-of-master must not depend on the master push event (it can be dropped).
+      - name: Refresh ci-binaries master assets
+        shell: pwsh
+        working-directory: ${{ github.workspace }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $sha = $env:COMMIT_SHA
+          $shaZip = "unsigned-bin-$sha.zip"
+          $branchZip = "unsigned-bin-master-latest.zip"
+          Compress-Archive -Path bin -DestinationPath $shaZip -Force
+          Copy-Item $shaZip $branchZip -Force
+          gh release view ci-binaries 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create ci-binaries --prerelease --title "CI Binaries" --notes "Pre-built bin/ from CI (anonymous download for pyrevit clone)."
+          }
+          gh release upload ci-binaries $shaZip --clobber
+          gh release upload ci-binaries $branchZip --clobber
+
       - name: Download stamped release metadata
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
