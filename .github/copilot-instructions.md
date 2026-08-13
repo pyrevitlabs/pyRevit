@@ -53,7 +53,7 @@ The installer places a `.addin` manifest file in the Revit Addins folder, instru
 
 ### pyRevitLoader.dll
 The loader dll is the C# entry point for pyRevit inside Revit. There are multiple versions to support:
-- Different Revit versions: one for Revit 2025 and newer, another for older versions.
+- Different Revit versions: one for Revit 2025 and newer, another for Revit 2021-2024.
 - Different IronPython versions: 2.7.12 (default) and 3.4.0 (available but not fully tested).
 
 > Since only one IronPython engine can be active at a time, pyRevit updates the `.addin` manifest to point to the correct loader when the user switches engines. If installation issues arise, running `pyrevit attach` usually resolves them by regenerating the manifest correctly.
