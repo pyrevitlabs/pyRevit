@@ -34,14 +34,14 @@ namespace pyRevitAssemblyBuilder.UIManager
         public const string TOOLTIP_IMAGE_FORMAT = ".png";
 
         /// <summary>
-        /// Default video format for older Revit versions (before 2019).
-        /// Matches pyrevit.coreutils.ribbon.DEFAULT_TOOLTIP_VIDEO_FORMAT for older versions.
+        /// Legacy tooltip video format retained for existing extension metadata.
+        /// Matches pyrevit.coreutils.ribbon.DEFAULT_TOOLTIP_VIDEO_FORMAT.
         /// </summary>
         public const string TOOLTIP_VIDEO_FORMAT_SWF = ".swf";
 
         /// <summary>
-        /// Video format for Revit 2019 and newer.
-        /// Matches pyrevit.coreutils.ribbon.DEFAULT_TOOLTIP_VIDEO_FORMAT for newer versions.
+        /// Supported tooltip video format for current Revit versions.
+        /// Matches pyrevit.coreutils.ribbon.DEFAULT_TOOLTIP_VIDEO_FORMAT.
         /// </summary>
         public const string TOOLTIP_VIDEO_FORMAT_MP4 = ".mp4";
         #endregion
