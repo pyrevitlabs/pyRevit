@@ -99,7 +99,7 @@ pyrevit attach dev default --installed
 pyrevit clones update dev --skip-bin
 ```
 
-CI publishes `unsigned-bin-<sha>.zip` to the **`ci-binaries`** release and mirrors **`PyRevit.UnsignedBin`** on GitHub Packages (CLI fallback when `GITHUBTOKEN` is set). Release assets are pruned to the last **3 SHAs per branch** (`develop`, `master`), including the SHA of the run that is still in progress; NuGet package versions are pruned to the last **2 SHAs per branch**. Tag CI and `release.yml` also refresh **`unsigned-bin-master-latest.zip`**. See [CI/CD](../docs/ci-cd.md#prebuilt-binaries-for-clone).
+CI publishes `unsigned-bin-<sha>.zip` to the **`ci-binaries`** release and mirrors **`PyRevit.UnsignedBin`** on GitHub Packages (CLI fallback when `GITHUBTOKEN` is set). Release assets are pruned to the last **3 SHAs per branch** (`develop`, `master`), including the SHA of the run that is still in progress and the last **3 `v*` tag SHAs**; NuGet package versions are pruned to the last **2 SHAs per branch** plus the last 2 `v*` tag SHAs. Tag CI and `release.yml` also refresh **`unsigned-bin-master-latest.zip`**. See [CI/CD](../docs/ci-cd.md#prebuilt-binaries-for-clone).
 
 Run unit tests:
 

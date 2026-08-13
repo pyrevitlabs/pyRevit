@@ -76,7 +76,9 @@ jobs:
           path: bin/
 
       # Clone-of-master must not depend on the master push event (it can be dropped).
+      # Best-effort: tag CI already uploaded these zips; do not block pack/sign/publish.
       - name: Refresh ci-binaries master assets
+        continue-on-error: true
         shell: pwsh
         working-directory: ${{ github.workspace }}
         env:

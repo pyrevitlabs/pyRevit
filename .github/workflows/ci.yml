@@ -125,6 +125,7 @@ jobs:
           (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
           (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
         shell: pwsh
+        working-directory: ${{ github.workspace }}
         env:
           GH_TOKEN: ${{ github.token }}
           COMMIT_SHA: ${{ github.sha }}
@@ -140,6 +141,16 @@ jobs:
               --jq '.workflow_runs[] | select(.conclusion=="success") | .head_sha'
             $runs | Select-Object -First 3 | ForEach-Object { [void]$keep.Add($_) }
           }
+          # Tag CI reports head_branch as the tag name, so those runs never appear
+          # in the develop/master queries. Keep recent v* tag SHAs so a tagged
+          # release's per-commit zip survives the next develop prune when master
+          # CI never ran.
+          git tag -l "v*" --sort=-creatordate |
+            Select-Object -First 3 |
+            ForEach-Object {
+              $tagSha = git rev-list -n 1 $_
+              if ($tagSha) { [void]$keep.Add($tagSha.Trim()) }
+            }
           $assets = gh release view ci-binaries --json assets --jq '.assets[].name'
           foreach ($asset in $assets) {
             if ($asset -match '^unsigned-bin-.+-latest\.zip$') { continue }
@@ -200,6 +211,7 @@ jobs:
           (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
           (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
         shell: pwsh
+        working-directory: ${{ github.workspace }}
         env:
           GH_TOKEN: ${{ github.token }}
           COMMIT_SHA: ${{ github.sha }}
@@ -215,6 +227,13 @@ jobs:
               --jq '.workflow_runs[] | select(.conclusion=="success") | .head_sha'
             $runs | Select-Object -First 2 | ForEach-Object { [void]$keep.Add($_) }
           }
+          # Same as release-asset prune: tag runs are invisible to branch= queries.
+          git tag -l "v*" --sort=-creatordate |
+            Select-Object -First 2 |
+            ForEach-Object {
+              $tagSha = git rev-list -n 1 $_
+              if ($tagSha) { [void]$keep.Add($tagSha.Trim()) }
+            }
           $versions = gh api --paginate "orgs/pyrevitlabs/packages/nuget/pyrevit.unsignedbin/versions" | ConvertFrom-Json
           foreach ($version in $versions) {
             if ($version.name -notmatch '^1\.0\.0-ci-([a-f0-9]{7})$') { continue }

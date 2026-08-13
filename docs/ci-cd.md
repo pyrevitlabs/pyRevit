@@ -73,10 +73,10 @@ After each successful CI push to **`develop`** or **`master`** on the main repo 
 1. CI zips `bin/` → `unsigned-bin-{fullSha}.zip`
 2. Uploads to Release tag **`ci-binaries`** (pre-release), plus rolling **`unsigned-bin-{branch}-latest.zip`**. Tag runs publish as **`unsigned-bin-master-latest.zip`** so clone-of-master does not depend on the master push event.
 3. Pushes **`PyRevit.UnsignedBin`** NuGet package to GitHub Packages (token-authenticated CLI mirror)
-4. Prunes per-SHA release assets older than the **last 3 successful CI builds** per branch (`develop`, `master`), **including the in-progress run's SHA** (the Actions API `status=completed` filter would otherwise omit it and the just-uploaded zip would be deleted). Branch-latest zips are always kept.
-5. Prunes **`PyRevit.UnsignedBin`** NuGet versions older than the **last 2 successful CI builds** per branch (`develop`, `master`), also keeping the in-progress run's SHA.
+4. Prunes per-SHA release assets older than the **last 3 successful CI builds** per branch (`develop`, `master`), **including the in-progress run's SHA** (the Actions API `status=completed` filter would otherwise omit it and the just-uploaded zip would be deleted) **and the SHAs of the last 3 `v*` tags** (tag CI reports `head_branch` as the tag name, so those runs never appear in the `branch=develop` / `branch=master` queries). Branch-latest zips are always kept.
+5. Prunes **`PyRevit.UnsignedBin`** NuGet versions older than the **last 2 successful CI builds** per branch (`develop`, `master`), also keeping the in-progress run's SHA and the last 2 `v*` tag SHAs.
 
-`release.yml` then re-uploads the same unsigned payload as `unsigned-bin-{sha}.zip` and `unsigned-bin-master-latest.zip` after it downloads the CI artifact — a second path so a dropped master push cannot leave clone-of-master on a previous release's binaries.
+`release.yml` then re-uploads the same unsigned payload as `unsigned-bin-{sha}.zip` and `unsigned-bin-master-latest.zip` after it downloads the CI artifact — a second, **best-effort** path so a dropped master push cannot leave clone-of-master on a previous release's binaries. A failure there does not block pack/sign/publish.
 
 Anonymous download URL pattern:
 
