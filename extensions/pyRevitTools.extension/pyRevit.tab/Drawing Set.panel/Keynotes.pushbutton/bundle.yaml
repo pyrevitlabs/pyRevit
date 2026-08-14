@@ -32,7 +32,6 @@ author: >-
   Ehsan Iran-Nejad (Original Author)
 
   Tay Othman (Maintainer + UI)
-min_revit_version: 2014
 tooltip:
   de_de: >-
     Bauelementschlüssel vom Projekt verwalten.
