@@ -206,7 +206,7 @@ class _HostApplication(object):
     Examples:
             ```python
             hostapp = _HostApplication()
-            hostapp.is_newer_than(2017)
+            hostapp.is_newer_than(2022)
             ```
     """
 
@@ -275,10 +275,7 @@ class _HostApplication(object):
     @property
     def subversion(self):
         """str: Return subversion number (e.g. '2018.3')."""
-        if hasattr(self.app, 'SubVersionNumber'):
-            return self.app.SubVersionNumber
-        else:
-            return '{}.0'.format(self.version)
+        return self.app.SubVersionNumber
 
     @property
     def version_name(self):
@@ -288,11 +285,9 @@ class _HostApplication(object):
     @property
     def build(self):
         """str: Return build number (e.g. '20170927_1515(x64)')."""
-        if int(self.version) >= 2021:
-            # uses labs module that is imported later in this code
-            return labs.extract_build_from_exe(self.proc_path)
-        else:
-            return self.app.VersionBuild
+        # Revit 2021+ VersionBuild reports the same value as VersionNumber.
+        # uses labs module that is imported later in this code
+        return labs.extract_build_from_exe(self.proc_path)
 
     @property
     def serial_no(self):
@@ -309,9 +304,7 @@ class _HostApplication(object):
         Returns:
             (str): Pretty name of the host
         """
-        host_name = self.version_name
-        if self.is_newer_than(2017):
-            host_name = host_name.replace(self.version, self.subversion)
+        host_name = self.version_name.replace(self.version, self.subversion)
         return "%s build: %s" % (host_name, self.build)
 
     @property
@@ -356,10 +349,7 @@ class _HostApplication(object):
     @property
     def proc_window(self):
         """``intptr``: Return handle to current process window."""
-        if self.is_newer_than(2019, or_equal=True):
-            return self.uiapp.MainWindowHandle
-        else:
-            return AdWindows.ComponentManager.ApplicationWindow
+        return self.uiapp.MainWindowHandle
 
     @property
     def proc_screen(self):
