@@ -306,12 +306,20 @@ class ThreadedHttpServer(ThreadingMixIn, HTTPServer):
             try:
                 self.handle_error(request, client_address)
             except Exception:
-                pass
+                mlogger.debug(
+                    "Routes handle_error failed | %s | %s",
+                    client_address,
+                    traceback.format_exc(),
+                )
         finally:
             try:
                 self.shutdown_request(request)
             except Exception:
-                pass
+                mlogger.debug(
+                    "Routes request cleanup error | %s | %s",
+                    client_address,
+                    traceback.format_exc(),
+                )
 
 
 class RoutesServer(object):
