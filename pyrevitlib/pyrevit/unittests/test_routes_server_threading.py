@@ -9,6 +9,9 @@ there and terminates the Revit process.
 ``ThreadedHttpServer.process_request_thread`` must therefore contain every
 failure on the request path, including the per-request cleanup that runs on
 an already closed socket after the server has been stopped.
+
+Access logging runs on those same threads, so ``HttpRequestHandler`` must
+report every request through ``mlogger`` and never reach stderr either.
 """
 
 import socket
@@ -83,6 +86,21 @@ class _InheritedCleanupServer(server.ThreadedHttpServer):
 
     def finish_request(self, request, client_address):
         self.finish_calls.append((request, client_address))
+
+
+class _FakeRequestHandler(server.HttpRequestHandler):
+    """HttpRequestHandler stub that serves no request.
+
+    ``BaseHTTPRequestHandler.__init__`` reads and answers a request from a
+    live socket, so it is deliberately bypassed; only the logging entry points
+    are exercised. The attributes the inherited loggers read are set, so the
+    stderr assertions below still hold if the override is ever dropped.
+    """
+
+    def __init__(self):
+        # pylint: disable=super-init-not-called
+        self.client_address = ("127.0.0.1", 5000)
+        self.requestline = "GET /pyrevit-core/status HTTP/1.1"
 
 
 class _LoggerPatchedTestCase(unittest.TestCase):
@@ -288,3 +306,44 @@ class HandleErrorTests(_LoggerPatchedTestCase):
             sys.stderr = original_stderr
 
         self.assertEqual([], recorder.writes)
+
+
+class LogMessageTests(_LoggerPatchedTestCase):
+    """Tests for HttpRequestHandler.log_message."""
+
+    def test_records_the_message_through_the_logger(self):
+        """Request logging is recorded through mlogger, not printed."""
+        request_handler = _FakeRequestHandler()
+
+        request_handler.log_message('"%s" %s', "GET /status HTTP/1.1", 200)
+
+        self.assertEqual(['"GET /status HTTP/1.1" 200'], self.logger.messages)
+
+    def test_does_not_write_to_stderr(self):
+        """log_message must not reach the script output console."""
+        request_handler = _FakeRequestHandler()
+        recorder = _RecordingStream()
+        original_stderr = sys.stderr
+        sys.stderr = recorder
+        try:
+            request_handler.log_message('"%s" %s', "GET /status HTTP/1.1", 200)
+        finally:
+            sys.stderr = original_stderr
+
+        self.assertEqual([], recorder.writes)
+
+    def test_served_and_rejected_requests_both_stay_off_stderr(self):
+        """Every inherited logging entry point goes through the override."""
+        request_handler = _FakeRequestHandler()
+        recorder = _RecordingStream()
+        original_stderr = sys.stderr
+        sys.stderr = recorder
+        try:
+            request_handler.log_request(200, 15)
+            request_handler.log_error("code %d, message %s", 400, "Bad request")
+        finally:
+            sys.stderr = original_stderr
+
+        self.assertEqual([], recorder.writes)
+        self.assertEqual(2, len(self.logger.messages))
+        self.assertIn("GET /pyrevit-core/status HTTP/1.1", self.logger.messages[0])
