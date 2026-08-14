@@ -145,8 +145,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
         /// <summary>
         /// Builds search paths for hook script execution.
-        /// Matches Python hooks.register_hooks() which passes extension.module_paths.
-        /// module_paths = [extension.lib/, extension.bin/] + library extension lib/ paths.
+        /// Matches Python hooks.register_hooks() which passes extension.module_paths:
+        /// own lib/ and bin/, each library-extension root (and nested lib/ if present),
+        /// then pyrevitlib and site-packages.
         /// </summary>
         internal string[] BuildHookSearchPaths(
             ParsedExtension extension,
@@ -165,11 +166,14 @@ namespace pyRevitAssemblyBuilder.SessionManager
             if (Directory.Exists(extBin))
                 paths.Add(extBin);
 
-            // Library extensions' lib/ directories
+            // Library packages live at the .lib root; nested lib/ when present.
             if (libraryExtensions != null)
             {
                 foreach (var libExt in libraryExtensions)
                 {
+                    if (string.IsNullOrEmpty(libExt.Directory))
+                        continue;
+                    paths.Add(libExt.Directory);
                     var libExtLib = Path.Combine(libExt.Directory, "lib");
                     if (Directory.Exists(libExtLib))
                         paths.Add(libExtLib);

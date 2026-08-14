@@ -39,8 +39,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
         private Dictionary<string, bool> _directoryExistsCache = new Dictionary<string, bool>();
 
         /// <summary>
-        /// Pre-materialized library extension lib paths to avoid repeated Directory.Exists checks
-        /// per extension. Populated once in LoadSession() after libraryExtensions are retrieved.
+        /// Pre-materialized library-extension search paths (root plus nested lib/
+        /// when present) so startup scripts can import packages that live at the
+        /// .lib root. Populated once in LoadSession().
         /// </summary>
         private List<string> _precomputedLibraryLibPaths = new List<string>();
 
@@ -152,16 +153,17 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 _logger.Debug($"[PERF]   parse '{name}': {elapsedMs}ms");
             }
 
-            // Pre-compute library extension lib paths once to avoid N*lib_count Directory.Exists checks
-            // in BuildSearchPaths() for each UI extension. Optimization for #3268.
+            // Library packages live at the .lib root (Foo.lib/Pkg), not only
+            // under a nested lib/. Include nested lib/ when a bundle uses one.
             _precomputedLibraryLibPaths.Clear();
             foreach (var libExt in libraryExtensions)
             {
-                var libLibPath = System.IO.Path.Combine(libExt.Directory, "lib");
-                if (System.IO.Directory.Exists(libLibPath))
-                {
-                    _precomputedLibraryLibPaths.Add(libLibPath);
-                }
+                if (string.IsNullOrEmpty(libExt.Directory))
+                    continue;
+                _precomputedLibraryLibPaths.Add(libExt.Directory);
+                var nestedLib = System.IO.Path.Combine(libExt.Directory, "lib");
+                if (System.IO.Directory.Exists(nestedLib))
+                    _precomputedLibraryLibPaths.Add(nestedLib);
             }
             _logger.Debug($"Pre-computed {_precomputedLibraryLibPaths.Count} library lib paths");
             
