@@ -1,0 +1,91 @@
+name: pyRevit 6.5.4 One-Time WIP
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - '.github/workflows/wip-6.5.4-once.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: pyrevit-wip-6.5.4-once
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.repository == 'pyrevitlabs/pyRevit'
+    runs-on: windows-2025
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      target_sha: ${{ steps.target.outputs.sha }}
+      install_version: ${{ steps.versionmeta.outputs.install_version }}
+
+    steps:
+      - name: Checkout 6.5.4 release branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          ref: release/6.5.4
+          submodules: recursive
+          token: ${{ secrets.SUBMODULES_TOKEN || github.token }}
+
+      - name: Capture target commit
+        id: target
+        shell: bash
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache NuGet packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/Directory.Build.props', 'build/Build.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Run 6.5.4 CI pipeline
+        working-directory: build
+        env:
+          DOTNET_ENVIRONMENT: Production
+          Build__Channel: wip
+        run: dotnet run -c Release -- ci
+
+      - name: Run build unit tests
+        working-directory: build
+        run: dotnet test tests/Build.Tests.csproj -c Release
+
+      - name: Capture build versions
+        id: versionmeta
+        shell: bash
+        run: |
+          echo "build_version=$(tr -d '\r\n' < pyrevitlib/pyrevit/version)" >> "$GITHUB_OUTPUT"
+          echo "install_version=$(tr -d '\r\n' < release/version)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload unsigned bin artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: unsigned-bin-${{ steps.target.outputs.sha }}
+          path: bin/**
+
+      - name: Upload stamped release metadata
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: stamped-release-metadata-${{ steps.target.outputs.sha }}
+          path: ci-stamped/**
+
+  sign-wip:
+    needs: build
+    permissions:
+      contents: read
+      actions: write
+    uses: ./.github/workflows/wip.yml
+    with:
+      head_sha: ${{ needs.build.outputs.target_sha }}
+      ci_run_id: ${{ github.run_id }}
+      install_version: ${{ needs.build.outputs.install_version }}
+    secrets: inherit
