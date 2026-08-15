@@ -379,9 +379,48 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
+        private static string _bundledStyleSheet;
+
+        /// <summary>
+        /// Stylesheet shipped with pyRevit, or empty when it cannot be located.
+        /// </summary>
+        private static string BundledStyleSheet {
+            get {
+                if (_bundledStyleSheet != null)
+                    return _bundledStyleSheet;
+
+                _bundledStyleSheet = string.Empty;
+                try {
+                    // This assembly is deployed to <root>\bin\{net}\engines\{engine}\.
+                    var engineDir = Path.GetDirectoryName(
+                        System.Reflection.Assembly.GetExecutingAssembly().Location);
+                    if (!string.IsNullOrEmpty(engineDir)) {
+                        var bundled = Path.GetFullPath(
+                            Path.Combine(engineDir, "..", "..", "..", "..",
+                                         "pyrevitlib", "pyrevit", "output", "outputstyles.css"));
+                        if (File.Exists(bundled))
+                            _bundledStyleSheet = bundled;
+                    }
+                }
+                catch {
+                    // A window with no stylesheet still renders; leave it unstyled.
+                }
+
+                return _bundledStyleSheet;
+            }
+        }
+
         private string GetStyleSheetFile() {
             var env = new EnvDictionary();
-            return env.ActiveStyleSheet;
+            var active = env.ActiveStyleSheet;
+
+            // A window builds its document head once, at construction, and that can
+            // happen before any host has published the configured stylesheet. Without
+            // this fallback such a window stays unstyled for the rest of the session.
+            if (!string.IsNullOrEmpty(active) && File.Exists(active))
+                return active;
+
+            return BundledStyleSheet;
         }
 
         public string GetFullHtml() {
