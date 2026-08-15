@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "8f6229f71225d6eb2396e651bfd782b38ed993d368a4b5c61f02faae26972c40"
+            "sha256": "4498926c884bd8ce9e6c39db54291383516a7d1b9b7532b9efba90702430b544"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -192,13 +192,6 @@
             ],
             "markers": "python_version >= '2.7' and python_version not in '3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6'",
             "version": "==0.4.6"
-        },
-        "docopt": {
-            "hashes": [
-                "sha256:49b3a825280bd66b3aa83585ef59c4a8c82f2c8a522dbe754a8bc8d08c85c491"
-            ],
-            "index": "pypi",
-            "version": "==0.6.2"
         },
         "ghp-import": {
             "hashes": [
@@ -648,7 +641,6 @@
                 "sha256:2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0",
                 "sha256:f288924cae4e29463698d6d60bc6a4da69c89185ad1e0bcc4104f584e960b9ed"
             ],
-            "index": "pypi",
             "markers": "python_version >= '3.10'",
             "version": "==2.34.2"
         },
