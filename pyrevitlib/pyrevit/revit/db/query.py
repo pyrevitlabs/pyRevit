@@ -347,8 +347,7 @@ def get_all_elements(doc=None):
     in the provided document, including both element types and instances.
 
     Args:
-        doc (Document, optional): The Revit document to collect elements from.
-                                  If not provided, the default document (DOCS.doc) is used.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         List[Element]: A list of all elements in the document.
@@ -421,7 +420,7 @@ def get_value_range(param_name, doc=None, elements=None):
 
     Args:
         param_name (str): The name of the parameter to retrieve values for.
-        doc (Document, optional): The Revit document to search within. If None, the current document is used.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
         elements (iterable, optional): Specific elements to process. If provided, these elements are processed instead of calling get_all_elements(doc).
 
     Returns:
@@ -457,7 +456,7 @@ def get_elements_by_parameter(param_name, param_value, doc=None, partial=False, 
     Args:
         param_name (str): The name of the parameter to search for.
         param_value (object): Value to match. When partial is True, this must be a string.
-        doc (Document, optional): The Revit document to search in. If None, the current document is used.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
         partial (bool, optional): If True, performs a partial match on string parameter values. Defaults to False.
         view_id (DB.ElementId, optional): Restrict the search to elements visible in the specified view. If None, searches the entire document.
 
@@ -501,7 +500,7 @@ def get_elements_by_param_value(param_name, param_value, inverse=False, doc=None
         param_name (str): The name of the parameter to filter by.
         param_value (str): The value of the parameter to filter by.
         inverse (bool, optional): If True, inverts the filter to exclude elements with the specified parameter value. Defaults to False.
-        doc (Document, optional): The Revit document to search in. If None, uses the default document.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
         view_id (DB.ElementId, optional): The ID of the view to restrict the search to. Defaults to None.
 
     Returns:
@@ -547,8 +546,7 @@ def get_elements_by_categories(categories, elements=None, doc=None, view_id=None
             in-memory instead of using a FilteredElementCollector.
 
         doc (DB.Document, optional):
-            The Revit document to collect elements from.
-            Defaults to the active document.
+            The Revit document to query. If not provided, defaults to DOCS.doc.
 
         view_id (DB.ElementId, optional):
             The ID of the view to restrict the search to.
@@ -619,7 +617,7 @@ def get_types_by_class(type_class, types=None, doc=None):
     Args:
         type_class (type): The class type to filter elements by.
         types (list, optional): A list of elements to filter. If not provided, elements will be collected from the Revit document.
-        doc (Document, optional): The Revit document to collect elements from if 'types' is not provided. Defaults to the active document.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         list: A list of elements that are instances of the specified class type.
@@ -635,7 +633,7 @@ def get_family(family_name, doc=None):
 
     Args:
         family_name (str): The name of the family to search for.
-        doc (DB.Document, optional): The Revit document to search in. If not provided, the current document is used.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         list[DB.Element]: A list of family elements that match the given family name.
@@ -660,7 +658,7 @@ def get_family_symbol(family_name, symbol_name, doc=None):
     Args:
         family_name (str): The name of the family to search for.
         symbol_name (str): The name of the symbol within the family to search for.
-        doc (DB.Document, optional): The Revit document to search in. If not provided, the default document is used.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         list[DB.Element]: A list of family symbols that match the specified family name and symbol name.
@@ -686,8 +684,7 @@ def get_families(doc=None, only_editable=True):
     Retrieves a list of families from the given Revit document.
 
     Args:
-        doc (Document, optional): The Revit document to retrieve families from.
-                                  If not provided, defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
         only_editable (bool, optional): If True, only returns families that are editable.
                                         Defaults to True.
 
@@ -707,8 +704,7 @@ def get_noteblock_families(doc=None):
     Retrieves a list of noteblock families from the given Revit document.
 
     Args:
-        doc (Document, optional): The Revit document to query. If not provided,
-                                  the default document (DOCS.doc) will be used.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         list: A list of noteblock family elements in the document.
@@ -725,8 +721,7 @@ def get_elements_by_family(family_name, doc=None):
 
     Args:
         family_name (str): The name of the family to filter elements by.
-        doc (DB.Document, optional): The Revit document to search within. If not provided,
-                                     the default document (DOCS.doc) will be used.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         list[DB.Element]: A list of elements that belong to the specified family.
@@ -778,7 +773,7 @@ def find_workset(workset_name_or_list, doc=None, partial=True):
 
     Args:
         workset_name_or_list (str or list): The name of the workset to find or a list of workset names.
-        doc (Document, optional): The Revit document to search in. If None, the default document is used.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
         partial (bool, optional): If True, allows partial matching of workset names. Defaults to True.
 
     Returns:
@@ -809,7 +804,7 @@ def model_has_family(family_name, doc=None):
 
     Args:
         family_name (str): The name of the family to search for.
-        doc (Document, optional): The Revit document to search in. If None, the current document is used.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         bool: True if the family is found in the model, False otherwise.
@@ -825,7 +820,7 @@ def model_has_workset(workset_name, partial=False, doc=None):
     Args:
         workset_name (str): The name of the workset to search for.
         partial (bool, optional): If True, allows partial matching of the workset name. Defaults to False.
-        doc (Document, optional): The Revit document to search within. If None, the current document is used. Defaults to None.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         bool: True if the workset is found, False otherwise.
@@ -841,7 +836,7 @@ def get_worksets_names(doc=None):
 
 
     Args:
-        document (Document): A Revit document. de
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
 
     Returns:
@@ -923,8 +918,7 @@ def iter_project_parameters(doc=None):
     Generator that yields project parameters from the given Revit document one at a time.
 
     Args:
-        doc (Document, optional): The Revit document from which to retrieve the project parameters.
-                                  If not provided, defaults to `DOCS.doc`.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Yields:
         ProjectParameter: Individual ProjectParameter objects representing the project parameters in the document.
@@ -963,8 +957,7 @@ def get_project_parameters(doc=None):
     Retrieves the project parameters from the given Revit document.
 
     Args:
-        doc (Document, optional): The Revit document from which to retrieve the project parameters.
-                                  If not provided, defaults to `DOCS.doc`.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         list: A list of ProjectParameter objects representing the project parameters in the document.
@@ -978,8 +971,7 @@ def get_project_parameter_id(param_name, doc=None):
 
     Args:
         param_name (str): The name of the project parameter to find.
-        doc (Document, optional): The Revit document to search in. If not provided,
-                                  the default document (DOCS.doc) will be used.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         ElementId: The ID of the project parameter.
@@ -1000,7 +992,7 @@ def get_project_parameter(param_id_or_name, doc=None):
 
     Args:
         param_id_or_name (str or int): The ID or name of the project parameter to retrieve.
-        doc (Document, optional): The Revit document to search in. If not provided, the default document is used.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         ProjectParameter: The matching project parameter if found, otherwise None.
@@ -1017,7 +1009,7 @@ def model_has_parameter(param_id_or_name, doc=None):
 
     Args:
         param_id_or_name (str or int): The parameter ID or name to check for.
-        doc (Document, optional): The Revit document to search in. If None, the current document is used.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         bool: True if the parameter exists in the model, False otherwise.
@@ -1030,8 +1022,7 @@ def get_global_parameters(doc=None):
     Retrieves all global parameters from the given Revit document.
 
     Args:
-        doc (Document, optional): The Revit document from which to retrieve global parameters.
-                                  If not provided, defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         list: A list of global parameter elements in the document.
@@ -1049,7 +1040,7 @@ def get_global_parameter(param_name, doc=None):
 
     Args:
         param_name (str): The name of the global parameter to retrieve.
-        doc (DB.Document, optional): The Revit document to search in. If not provided, defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         DB.GlobalParameter: The global parameter element if found, otherwise None.
@@ -1066,8 +1057,7 @@ def get_project_info(doc=None):
     Retrieves the project information from the given Revit document.
 
     Args:
-        doc (Document, optional): The Revit document from which to retrieve the project information.
-                                  If not provided, the default document (DOCS.doc) will be used.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         ProjectInfo: The project information of the specified or default Revit document.
@@ -1098,8 +1088,7 @@ def get_revisions(doc=None):
     Retrieves a list of revision elements from the given Revit document.
 
     Args:
-        doc (Document, optional): The Revit document to retrieve revisions from.
-                                  If not provided, the default document (DOCS.doc) is used.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         list: A list of revision elements in the specified Revit document.
@@ -1146,7 +1135,7 @@ def get_sheets(include_placeholders=True, include_noappear=True, doc=None):
     Args:
         include_placeholders (bool, optional): If True, includes placeholder sheets in the result. Defaults to True.
         include_noappear (bool, optional): If True, includes sheets that do not appear in the project browser. Defaults to True.
-        doc (Document, optional): The Revit document to retrieve sheets from. If None, uses the current document. Defaults to None.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         list: A list of sheets from the specified Revit document.
@@ -1174,8 +1163,7 @@ def get_document_clean_name(doc=None):
     extension.
 
     Args:
-        doc (DB.Document, optional): The Revit document to retrieve links from. If None, the default document
-            (DOCS.doc) is used. Defaults to None.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         str: The name of the given document without the file path or file
@@ -1200,8 +1188,7 @@ def get_links(linktype=None, doc=None):
     Args:
         linktype (DB.ExternalFileReferenceType, optional): The type of external file reference to filter by.
             If None, all external file references are returned. Defaults to None.
-        doc (DB.Document, optional): The Revit document to retrieve links from. If None, the default document
-            (DOCS.doc) is used. Defaults to None.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         list: A list of db.ExternalRef objects representing the external file references in the document.
@@ -1240,8 +1227,7 @@ def get_linked_models(doc=None, loaded_only=False):
     Retrieves the linked Revit models in the given document.
 
     Args:
-        doc (Document, optional): The Revit document to search for linked models.
-                                  If None, defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
         loaded_only (bool, optional): If True, only returns the linked models that are currently loaded.
                                       Defaults to False.
 
@@ -1312,7 +1298,7 @@ def get_rvt_link_status(doc=None):
     Retrieves the status of linked Revit models in the given document.
 
     Args:
-        doc (Document, optional): The Revit document to query. If None, the current document is used.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         list: A list of statuses for each linked Revit model type.
@@ -1354,8 +1340,7 @@ def find_first_legend(doc=None):
     Finds the first legend view in the given Revit document.
 
     Args:
-        doc (Document, optional): The Revit document to search in. If not provided,
-                                  it defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         View: The first legend view found in the document, or None if no legend view is found.
@@ -1394,7 +1379,7 @@ def get_all_views(doc=None, view_types=None, include_nongraphical=False):
     Retrieves all views from the given Revit document, with optional filtering by view types and graphical views.
 
     Args:
-        doc (Document, optional): The Revit document to retrieve views from. If None, defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
         view_types (list, optional): A list of view types to filter the views. If None, no filtering is applied.
         include_nongraphical (bool, optional): If True, includes non-graphical views in the result. Defaults to False.
 
@@ -1427,8 +1412,7 @@ def get_all_view_templates(doc=None, view_types=None):
     Retrieves all view templates from the given Revit document.
 
     Args:
-        doc (Document, optional): The Revit document to search for view templates.
-                                  If None, the active document will be used.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
         view_types (list, optional): A list of view types to filter the views.
                                      If None, all view types will be considered.
 
@@ -1450,8 +1434,7 @@ def get_sheet_by_number(sheet_num, doc=None):
 
     Args:
         sheet_num (str): The sheet number to search for.
-        doc (Document, optional): The Revit document to search within.
-                                  If not provided, defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         Element: The sheet element with the specified sheet number,
@@ -1468,7 +1451,7 @@ def get_viewport_by_number(sheet_num, detail_num, doc=None):
     Args:
         sheet_num (str): The number of the sheet containing the viewport.
         detail_num (str): The detail number of the viewport to retrieve.
-        doc (Document, optional): The Revit document to search in. If not provided, defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         Element: The viewport element if found, otherwise None.
@@ -1492,7 +1475,7 @@ def get_view_by_sheetref(sheet_num, detail_num, doc=None):
     Args:
         sheet_num (int): The sheet number to search for.
         detail_num (int): The detail number to search for.
-        doc (Document, optional): The Revit document to search within. If not provided, defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         ElementId: The ID of the view associated with the specified sheet and detail numbers, or None if not found.
@@ -1531,8 +1514,7 @@ def get_all_schedules(doc=None):
     Retrieves all schedule views from the given Revit document.
 
     Args:
-        doc (Document, optional): The Revit document to retrieve schedules from.
-                                  If not provided, defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         filter: A filter object containing all schedule views in the document.
@@ -1554,7 +1536,7 @@ def get_view_by_name(view_name, view_types=None, doc=None):
     Args:
         view_name (str): The name of the view to retrieve.
         view_types (list, optional): A list of view types to filter the search. Defaults to None.
-        doc (Document, optional): The Revit document to search within. Defaults to the active document.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         View: The Revit view that matches the given name, or None if no match is found.
@@ -1573,8 +1555,7 @@ def get_all_referencing_elements(doc=None):
     set of view-related built-in categories.
 
     Args:
-        doc (DB.Document, optional): The Revit document to search for referencing elements.
-                                     If not provided, defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         list[DB.ElementId]: A list of element IDs that reference views in the document.
@@ -1624,7 +1605,7 @@ def get_schedules_on_sheet(viewsheet, doc=None):
 
     Args:
         viewsheet (DB.ViewSheet): The Revit view sheet from which to retrieve schedule instances.
-        doc (DB.Document, optional): The Revit document. If not provided, defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         list: A list of schedule instances (DB.ScheduleSheetInstance) that are placed on the given view sheet,
@@ -1647,8 +1628,7 @@ def get_schedules_instances(doc=None):
     Retrieves all schedule instances placed on sheets.
 
     Args:
-        doc (Document, optional): The Revit document to search within. If not provided,
-                                  the default document (DOCS.doc) will be used.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         List[ScheduleSheetInstance]: A list of ScheduleSheetInstance elements.
@@ -1682,8 +1662,7 @@ def get_doc_categories(doc=None, include_subcats=True):
     Retrieves all categories from the given Revit document, optionally including subcategories.
 
     Args:
-        doc (Document, optional): The Revit document from which to retrieve categories.
-                                  If not provided, defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
         include_subcats (bool, optional): Whether to include subcategories in the result.
                                           Defaults to True.
 
@@ -1705,8 +1684,7 @@ def get_schedule_categories(doc=None):
     Retrieves the categories that are valid for schedules in the given Revit document.
 
     Args:
-        doc (Document, optional): The Revit document to retrieve the schedule categories from.
-                                  If not provided, it defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         list: A list of categories that are valid for schedules in the given Revit document.
@@ -1726,8 +1704,7 @@ def get_key_schedule_categories(doc=None):
     Retrieves the categories that are valid for key schedules in the given Revit document.
 
     Args:
-        doc (Document, optional): The Revit document to retrieve categories from.
-                                  If not provided, defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         list: A list of categories that are valid for key schedules.
@@ -1747,8 +1724,7 @@ def get_takeoff_categories(doc=None):
     Retrieves the categories that are valid for material takeoff schedules in a given Revit document.
 
     Args:
-        doc (Document, optional): The Revit document to retrieve categories from. If not provided,
-                                  the default document (DOCS.doc) will be used.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         list: A list of categories that are valid for material takeoff schedules.
@@ -1831,8 +1807,7 @@ def get_subcategories(doc=None, purgable=False, filterfunc=None):
     Retrieves subcategories from the given Revit document.
 
     Args:
-        doc (Document, optional): The Revit document to retrieve subcategories from.
-                                  If None, defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
         purgable (bool, optional): If True, only includes subcategories that are purgable
                                    (element ID value greater than 1). Defaults to False.
         filterfunc (function, optional): A function to filter the subcategories.
@@ -1865,7 +1840,7 @@ def get_subcategory(cat_name_or_builtin, subcategory_name, doc=None):
     Args:
         cat_name_or_builtin (str or BuiltInCategory): The name of the category or a built-in category.
         subcategory_name (str): The name of the subcategory to retrieve.
-        doc (Document, optional): The Revit document to search in. Defaults to the active document.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         Category: The subcategory if found, otherwise None.
@@ -1885,7 +1860,7 @@ def get_builtinparameter(element, param_name, doc=None):
     Args:
         element (Element): The Revit element from which to retrieve the parameter.
         param_name (str): The name of the parameter to look up.
-        doc (Document, optional): The Revit document. If not provided, defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         BuiltInParameter: The built-in parameter corresponding to the given element and parameter name.
@@ -1924,8 +1899,7 @@ def get_project_location_transform(doc=None):
     Retrieves the transformation matrix of the active project location in the given Revit document.
 
     Args:
-        doc (Document, optional): The Revit document from which to get the project location transform.
-                                  If not provided, it defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         Transform: The transformation matrix of the active project location.
@@ -1939,8 +1913,7 @@ def get_all_linkedmodels(doc=None):
     Retrieves all linked Revit models in the given document.
 
     Args:
-        doc (Document, optional): The Revit document to search for linked models.
-                                  If not provided, defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         List[Element]: A list of RevitLinkType elements representing the linked models.
@@ -1954,8 +1927,7 @@ def get_all_linkeddocs(doc=None):
     Retrieves all linked documents in the given Revit document.
 
     Args:
-        doc (Document, optional): The Revit document to search for linked documents.
-                                  If None, it defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         list: A list of linked Revit documents.
@@ -1975,7 +1947,7 @@ def get_all_grids(group_by_direction=False, include_linked_models=False, doc=Non
     Args:
         group_by_direction (bool): If True, groups the grids by their direction.
         include_linked_models (bool): If True, includes grids from linked models.
-        doc (Document, optional): The Revit document to retrieve grids from. If None, uses the current document.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         list or dict: A list of all grid elements if group_by_direction is False.
@@ -2016,7 +1988,7 @@ def get_gridpoints(grids=None, include_linked_models=False, doc=None):
     Args:
         grids (list, optional): A list of grid elements to consider. If None, all grids in the document are considered.
         include_linked_models (bool, optional): If True, includes grids from linked models. Defaults to False.
-        doc (Document, optional): The Revit document to operate on. If None, uses the current active document.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         list: A list of GridPoint objects representing the intersection points of the grid lines.
@@ -2066,7 +2038,7 @@ def get_category_set(category_list, doc=None):
 
     Args:
         category_list (list): A list of built-in categories to include in the CategorySet.
-        doc (Document, optional): The Revit document to use. If not provided, defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         CategorySet: A set of categories created from the provided list.
@@ -2085,7 +2057,7 @@ def get_all_category_set(bindable=True, doc=None):
 
     Args:
         bindable (bool, optional): If True, only includes categories that allow bound parameters. Defaults to True.
-        doc (Document, optional): The Revit document to retrieve categories from. If None, uses the default document.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         CategorySet: A set of categories from the specified Revit document.
@@ -2106,8 +2078,7 @@ def get_rule_filters(doc=None):
     Retrieves a list of rule-based filters from the given Revit document.
 
     Args:
-        doc (DB.Document, optional): The Revit document to retrieve the filters from.
-                                     If not provided, defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         list: A list of ParameterFilterElement instances from the document.
@@ -2178,7 +2149,7 @@ def get_category_schedules(category_or_catname, doc=None):
 
     Args:
         category_or_catname (str or Category): The category or category name to filter schedules.
-        doc (Document, optional): The Revit document to search in. Defaults to None, in which case the default document is used.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         list: A list of schedules that belong to the specified category.
@@ -2255,8 +2226,7 @@ def get_sheet_sets(doc=None):
     Retrieves all sheet sets from the given Revit document.
 
     Args:
-        doc (Document, optional): The Revit document to retrieve sheet sets from.
-                                  If not provided, defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         list: A list of ViewSheetSet elements from the document.
@@ -2300,8 +2270,7 @@ def get_pointclouds(doc=None):
     Retrieves all point cloud elements from the given Revit document.
 
     Args:
-        doc (Document, optional): The Revit document to search for point cloud elements.
-                                  If not provided, defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         list: A list of point cloud elements found in the specified document.
@@ -2349,7 +2318,7 @@ def get_fillpattern_element(fillpattern_name, fillpattern_target, doc=None):
     Args:
         fillpattern_name (str): The name of the fill pattern to search for.
         fillpattern_target (DB.FillPatternTarget): The target type of the fill pattern (e.g., Drafting or Model).
-        doc (DB.Document, optional): The Revit document to search in. If not provided, defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         DB.FillPatternElement: The FillPatternElement that matches the given name and target, or None if not found.
@@ -2374,7 +2343,7 @@ def get_all_fillpattern_elements(fillpattern_target, doc=None):
 
     Args:
         fillpattern_target (DB.FillPatternTarget): The target fill pattern to match.
-        doc (DB.Document, optional): The Revit document to search within. If not provided, defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         list: A list of fill pattern elements that match the specified fill pattern target.
@@ -2391,6 +2360,26 @@ def get_all_fillpattern_elements(fillpattern_target, doc=None):
     ]
 
 
+def get_solid_fillpattern_element(doc=None):
+    """
+    Returns the solid-fill drafting fill pattern element.
+
+    Args:
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
+
+    Returns:
+        DB.FillPatternElement or None: The FillPatternElement of the solid drafting fill
+        pattern if found; otherwise ``None``.
+    """
+    doc = doc or DOCS.doc
+    patterns = get_all_fillpattern_elements(
+        DB.FillPatternTarget.Drafting, doc=doc
+    )
+    for fp in patterns:
+        if fp.GetFillPattern().IsSolidFill:
+            return fp
+
+
 def get_fillpattern_from_element(element, background=True, doc=None):
     """
     Retrieves the fill pattern from a given Revit element.
@@ -2400,7 +2389,7 @@ def get_fillpattern_from_element(element, background=True, doc=None):
         background (bool, optional): If True, retrieves the background fill pattern;
                                      otherwise, retrieves the foreground fill pattern.
                                      Defaults to True.
-        doc (DB.Document, optional): The Revit document. If not provided, defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         DB.FillPattern: The fill pattern of the specified element, or None if not found.
@@ -2430,7 +2419,7 @@ def get_local_keynote_file(doc=None):
     Retrieves the path to the local keynote file for the given Revit document.
 
     Args:
-        doc (DB.Document, optional): The Revit document. If not provided, the default document (DOCS.doc) is used.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         str: The user-visible path to the local keynote file if it is an external file reference, otherwise None.
@@ -2473,8 +2462,7 @@ def get_keynote_file(doc=None):
     Otherwise, it returns the external keynote file path.
 
     Args:
-        doc (Document, optional): The Revit document. If not provided,
-                                  the default document (DOCS.doc) is used.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         str: The path to the keynote file.
@@ -2491,8 +2479,7 @@ def get_used_keynotes(doc=None):
     Retrieves all keynote tags used in the given Revit document.
 
     Args:
-        doc (Document, optional): The Revit document to search for keynote tags.
-                                  If not provided, defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         List[Element]: A list of keynote tag elements found in the document.
@@ -2546,8 +2533,7 @@ def get_available_keynotes_tree(doc=None):
     Retrieves the available keynotes in a hierarchical tree structure.
 
     Args:
-        doc (Document, optional): The Revit document to retrieve keynotes from.
-                                  If not provided, defaults to the current document.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         dict: A dictionary representing the hierarchical structure of keynotes.
@@ -2586,7 +2572,7 @@ def get_central_path(doc=None):
     Returns the central model path of a Revit document if it is workshared.
 
     Args:
-        doc (Document, optional): The Revit document. If not provided, defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         str: The user-visible path to the central model if the document is workshared.
@@ -2602,8 +2588,7 @@ def is_metric(doc=None):
     Determines if the given Revit document uses the metric unit system.
 
     Args:
-        doc (Document, optional): The Revit document to check. If not provided,
-                                  the default document (DOCS.doc) will be used.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         bool: True if the document uses the metric unit system, False otherwise.
@@ -2617,8 +2602,7 @@ def is_imperial(doc=None):
     Checks if the given Revit document uses the imperial unit system.
 
     Args:
-        doc (Document, optional): The Revit document to check. If not provided,
-                                  the default document (DOCS.doc) will be used.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         bool: True if the document uses the imperial unit system, False otherwise.
@@ -2678,7 +2662,7 @@ def get_all_sheeted_views(doc=None, sheets=None):
     Retrieves all view IDs that are placed on sheets in the given Revit document.
 
     Args:
-        doc (Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
         sheets (list, optional): A list of sheet elements to query. If not provided, defaults to all sheets in the document.
 
     Returns:
@@ -2770,7 +2754,7 @@ def yield_referenced_views(doc=None, all_views=None):
     Yields the IDs of views that have referring views.
 
     Args:
-        doc (Document, optional): The Revit document to query. Defaults to None, in which case the global DOCS.doc is used.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
         all_views (list, optional): A list of all views in the document. Defaults to None, in which case all views are retrieved using get_all_views(doc).
     Yields:
         ElementId: The ID of a view that has referring views.
@@ -2788,8 +2772,7 @@ def yield_unreferenced_views(doc=None, all_views=None):
     Yields the IDs of views in a Revit document that have no referring views.
 
     Args:
-        doc (Document, optional): The Revit document to search for unreferenced views.
-                                  If not provided, defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
         all_views (list, optional): A list of all views in the document.
                                     If not provided, it will be retrieved using get_all_views(doc).
     Yields:
@@ -2808,8 +2791,7 @@ def get_line_categories(doc=None):
     Retrieves the line categories from the given Revit document.
 
     Args:
-        doc (Document, optional): The Revit document to retrieve the line categories from.
-                                  If not provided, it defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         SubCategories: The subcategories of the line category in the Revit document.
@@ -2824,8 +2806,7 @@ def get_line_styles(doc=None):
     Retrieves the line styles from the given Revit document.
 
     Args:
-        doc (Document, optional): The Revit document to retrieve line styles from.
-                                  If None, the current document will be used.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         list: A list of GraphicsStyle objects representing the line styles in the document.
@@ -3087,8 +3068,7 @@ def get_all_print_settings(doc=None):
     Retrieves all print settings from the given Revit document.
 
     Args:
-        doc (Document, optional): The Revit document from which to retrieve print settings.
-                                  If not provided, defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         list: A list of print settings elements from the document.
@@ -3102,7 +3082,7 @@ def get_used_paper_sizes(doc=None):
     Retrieves a list of used paper sizes from the print settings in the given Revit document.
 
     Args:
-        doc (Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         list: A list of paper sizes used in the print settings of the document.
@@ -3117,8 +3097,7 @@ def find_paper_size_by_name(paper_size_name, doc=None):
 
     Args:
         paper_size_name (str): The name of the paper size to find.
-        doc (Document, optional): The Revit document to search in. If not provided,
-                                  the default document (DOCS.doc) will be used.
+        doc (DB.Document, optional): The Revit document to query. If not provided, defaults to DOCS.doc.
 
     Returns:
         PaperSize: The paper size object that matches the given name, or None if not found.

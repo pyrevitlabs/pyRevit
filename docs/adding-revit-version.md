@@ -8,7 +8,7 @@ Before starting, gather the following information:
 
 1. **Revit Version Year** (e.g., 2028)
 2. **Target .NET Framework**:
-   - Revit 2024 and earlier: `net48`
+   - Revit 2021-2024: `net48`
    - Revit 2025-2026: `net8.0-windows`
    - Revit 2027+: `net10.0-windows`
 3. **Check if a new .NET version is required** - If the new Revit uses a different .NET version than previous releases, additional steps are needed (see sections 4 and 5)
@@ -78,7 +78,7 @@ If the new Revit uses a new .NET version, add a mapping in the `NetFolder` secti
 
 ```xml
 <PropertyGroup>
-    <RevitVersion Condition="'$(RevitVersion)' == '' and '$(TargetFramework)' == 'net48'">2017</RevitVersion>
+    <RevitVersion Condition="'$(RevitVersion)' == '' and '$(TargetFramework)' == 'net48'">2021</RevitVersion>
     <RevitVersion Condition="'$(RevitVersion)' == '' and '$(TargetFramework)' == 'net8.0-windows'">2025</RevitVersion>
     <RevitVersion Condition="'$(RevitVersion)' == '' and '$(TargetFramework)' == 'net10.0-windows'">2027</RevitVersion>
     <!-- Add new default here if needed -->
@@ -96,7 +96,7 @@ mkdir dev/libs/Revit/2028
 cp dev/libs/Revit/2027/Xceed.Wpf.AvalonDock.dll dev/libs/Revit/2028/
 ```
 
-This DLL is required for the dockable console functionality in Revit 2018+.
+This DLL is required for the dockable console functionality in supported Revit versions.
 
 ---
 
@@ -236,10 +236,15 @@ If needed, add new `_OR_GREATER` constants in `dev/Directory.Build.targets`:
 
 ### 8.1 Build the products
 
-```powershell
+The build is driven by the C# ModularPipelines project under `build/`. Run from `build/`:
+
+```shell
 cd build
 dotnet run -c Debug -- ci
+cd ..
 ```
+
+For Release stamping on the new Revit version, run with `Build__Channel=release` (or `wip`) instead of the default `none`. See [`build/README.md`](../build/README.md) for full options.
 
 ### 8.2 Attach and test
 
