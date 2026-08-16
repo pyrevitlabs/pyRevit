@@ -53,6 +53,18 @@ namespace PyRevitLabs.PyRevit.Shell {
             ShellAssemblyResolver.Install();
             return ShellLauncher.CreateConfiguredEditor(uiapp, searchPaths);
         }
+
+        /// <summary>
+        /// Registers the dockable shell without loading pyRevit's Python UI modules.
+        /// </summary>
+        public static bool RegisterDockablePane(
+            UIApplication uiapp,
+            IList<string> searchPaths,
+            bool useEditor
+        ) {
+            ShellAssemblyResolver.Install();
+            return ShellDockablePaneRegistration.Register(uiapp, searchPaths, useEditor);
+        }
     }
 
     /// <summary>
