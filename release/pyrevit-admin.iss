@@ -1,6 +1,6 @@
 #define MyAppName "pyRevit"
 #define MyAppUUID "f2a3da53-6f34-41d5-abbd-389ffa7f4d5f"
-#define MyAppVersion "6.5.3.26176"
+#define MyAppVersion "6.5.4.26228"
 #define MyAppPublisher "pyRevitLabs"
 #define MyAppURL "pyrevitlabs.io"
 #include "CodeDependencies.iss"
@@ -123,8 +123,6 @@ begin
       'Run the following from an elevated command prompt in the install bin folder:' + #13#10 +
       '  pyrevit attach master default --installed --allusers',
       mbError, MB_OK);
-  if not RunPyRevitCommand('configs seedshippeddefaults', False) then
-    Log('pyrevit configs seedshippeddefaults failed or was skipped');
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);

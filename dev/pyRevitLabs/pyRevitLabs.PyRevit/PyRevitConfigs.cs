@@ -51,24 +51,13 @@ namespace pyRevitLabs.PyRevit
         {
             MigrateSplitAdminConfigIfNeeded();
 
-            // make sure the file exists and if not create an empty one
-            string userConfig = PyRevitConsts.ConfigFilePath;
-            string adminConfig = PyRevitConsts.AdminConfigFilePath;
+            // the shared resolver handles install scope, admin-locked seeds, and
+            // first-run seeding of the per-user config from the machine-wide config
+            var activeConfig = PyRevitInstallScope.GetActiveConfig();
+            if (!CommonUtils.VerifyFile(activeConfig.ConfigPath))
+                CommonUtils.EnsureFile(activeConfig.ConfigPath);
 
-            if (!CommonUtils.VerifyFile(userConfig))
-            {
-                if (CommonUtils.VerifyFile(adminConfig))
-                {
-                    if (new FileInfo(adminConfig).IsReadOnly)
-                        return new PyRevitConfig(adminConfig, adminMode: true);
-                    else
-                        SetupConfig(adminConfig);
-                }
-                else
-                    SetupConfig();
-            }
-
-            return new PyRevitConfig(userConfig);
+            return new PyRevitConfig(activeConfig.ConfigPath, adminMode: activeConfig.IsReadOnly);
         }
 
         private static void MigrateSplitAdminConfigIfNeeded()
@@ -76,6 +65,20 @@ namespace pyRevitLabs.PyRevit
             if (!PyRevitInstallScope.IsAllUsersInstall())
                 return;
 
+            try
+            {
+                MigrateSplitAdminConfig();
+            }
+            catch (Exception ex)
+            {
+                // migration is a best-effort repair; standard users may not be able
+                // to write the machine-wide config and must not be blocked by it
+                logger.Debug("Skipped split admin config migration | {0}", ex.Message);
+            }
+        }
+
+        private static void MigrateSplitAdminConfig()
+        {
             string appDataConfig = Path.Combine(
                 PyRevitLabsConsts.PyRevitPath,
                 PyRevitConsts.DefaultConfigsFileName);
@@ -100,6 +103,14 @@ namespace pyRevitLabs.PyRevit
                     "Migrating admin install config from \"{0}\" to ProgramData",
                     appDataConfig);
                 SetupConfig(appDataConfig);
+                return;
+            }
+
+            if (!PyRevitInstallScope.IsFileWritable(programDataConfig))
+            {
+                logger.Debug(
+                    "Machine config \"{0}\" is not writable; skipping split-config migration",
+                    programDataConfig);
                 return;
             }
 

@@ -11,5 +11,5 @@
     <system:String x:Key="ConvertModelLines">Преобразовать модели линии</system:String>
     <system:String x:Key="ConvertFilledRegionLines">Преобразовать линии заполненных областей (Заполненные области требуют встряхивания)</system:String>
     <system:String x:Key="ConvertGroupedLines">Преобразовать сгруппированные линии (Нет поддержки API)</system:String>
-    <system:String x:Key="DeleteConvertedStyles">Удалить преобразованные стили после завершения</system:String>
+    <system:String x:Key="RetireConvertedStyles">Объединить и вывести исходные стили по завершении</system:String>
 </ResourceDictionary>
