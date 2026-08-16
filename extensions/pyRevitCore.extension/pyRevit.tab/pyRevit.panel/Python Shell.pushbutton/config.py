@@ -17,7 +17,10 @@ modes = [
 selected = forms.ask_for_one_item(
     modes,
     default=current_mode,
-    prompt="How should the Python Shell open?",
+    prompt=(
+        "How should the Python Shell open?\n\n"
+        "Docked modes require an open Revit project."
+    ),
     title="Python Shell Mode",
 )
 

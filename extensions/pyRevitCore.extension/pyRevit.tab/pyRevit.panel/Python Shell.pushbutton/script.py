@@ -68,7 +68,25 @@ def _load_shell():
 
 
 if shell_mode in ("Docked", "Docked Editor"):
-    forms.open_dockable_panel(DOCKABLE_PANEL_ID)
+    if __revit__.ActiveUIDocument is None:
+        forms.alert(
+            "Docked Python Shell requires an open Revit project.\n\n"
+            "To use Python Shell without a project, Shift+Click this button "
+            "and select Modeless or Modeless Editor.",
+            title="Python Shell",
+            exitscript=True,
+        )
+    try:
+        forms.open_dockable_panel(DOCKABLE_PANEL_ID)
+    except Exception:
+        mlogger.exception("Failed to open dockable Python Shell pane")
+        forms.alert(
+            "The docked Python Shell pane is not registered for this session.\n\n"
+            "Reload pyRevit, or Shift+Click this button and select Modeless "
+            "or Modeless Editor.",
+            title="Python Shell",
+            exitscript=True,
+        )
 else:
     shell, paths = _load_shell()
     if shell_mode == "Modal":
