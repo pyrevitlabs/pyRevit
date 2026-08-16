@@ -19,7 +19,7 @@ namespace PyRevitLabs.PyRevit.Shell {
 
         /// <summary>
         /// Apply the editor + console theme and match the window background to it, so the editor
-        /// blends with the active Revit UI theme instead of always rendering dark.
+        /// blends with the active Revit UI theme.
         /// </summary>
         public void ApplyTheme(bool useDarkTheme) {
             ShellTheme.Apply(this, useDarkTheme);

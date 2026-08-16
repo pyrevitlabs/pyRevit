@@ -9,16 +9,7 @@ using PythonConsoleControl;
 
 namespace PyRevitLabs.PyRevit.Shell {
     /// <summary>
-    /// Public launch entry points for the interactive shell, called from the launcher script.
-    ///
-    /// These are deliberately thin and free of IronPython/AvalonEdit references in their
-    /// parameter lists so the assembly resolver is installed *before* the JIT has to load those
-    /// dependencies (which live next to this DLL in its engine folder, not on Revit's probing
-    /// path). The heavy work happens in <see cref="ShellLauncher"/>, whose methods are only
-    /// JIT-compiled once these run.
-    ///
-    /// <paramref name="searchPaths"/> is the launcher's sys.path, forwarded to the REPL engine so
-    /// <c>from pyrevit import ...</c> resolves exactly as in a normal script.
+    /// Public entry points for the interactive shell.
     /// </summary>
     public static class Shell {
         public static void Modal(UIApplication uiapp, IList<string> searchPaths) {
@@ -32,9 +23,7 @@ namespace PyRevitLabs.PyRevit.Shell {
         }
 
         /// <summary>
-        /// Open the interactive shell with a code editor panel (AvalonEdit) above the REPL, in a
-        /// modal window. Same engine environment and dispatch as <see cref="Modal"/>; the editor's
-        /// Run sends the selection (or whole file) to the REPL.
+        /// Opens the interactive shell with a code editor in a modal window.
         /// </summary>
         public static void ModalEditor(UIApplication uiapp, IList<string> searchPaths) {
             ShellAssemblyResolver.Install();
@@ -42,8 +31,7 @@ namespace PyRevitLabs.PyRevit.Shell {
         }
 
         /// <summary>
-        /// Open the interactive shell with a code editor panel above the REPL, in a modeless
-        /// window that keeps Revit interactive (statements run through an ExternalEvent).
+        /// Opens the interactive shell with a code editor in a modeless window.
         /// </summary>
         public static void ModelessEditor(UIApplication uiapp, IList<string> searchPaths) {
             ShellAssemblyResolver.Install();
@@ -51,21 +39,15 @@ namespace PyRevitLabs.PyRevit.Shell {
         }
 
         /// <summary>
-        /// Build a fully-wired interactive console control for hosting inside a Revit dockable
-        /// pane (pyRevit registers the pane itself through <c>forms.register_dockable_panel</c>
-        /// and places this control as the pane's framework element). The engine is configured with
-        /// the full pyRevit environment and each statement is marshaled through an ExternalEvent so
-        /// Revit stays interactive while the pane is open.
+        /// Creates an interactive console for a Revit dockable pane.
         /// </summary>
         public static UserControl CreateDockableConsole(UIApplication uiapp, IList<string> searchPaths) {
             ShellAssemblyResolver.Install();
             return ShellLauncher.CreateConfiguredConsole(uiapp, searchPaths);
         }
+
         /// <summary>
-        /// Build a fully-wired Python editor (AvalonEdit + console) for hosting inside a Revit
-        /// dockable pane, mirroring <see cref="CreateDockableConsole"/> but with the code editor
-        /// surface on top. The editor's Run executes through the same ExternalEvent-driven dispatch
-        /// so Revit stays interactive while the pane is open.
+        /// Creates an interactive editor and console for a Revit dockable pane.
         /// </summary>
         public static UserControl CreateDockableEditor(UIApplication uiapp, IList<string> searchPaths) {
             ShellAssemblyResolver.Install();
@@ -74,8 +56,7 @@ namespace PyRevitLabs.PyRevit.Shell {
     }
 
     /// <summary>
-    /// Resolves the shell's private dependencies (AvalonEdit, and the forked IronPython/DLR) from
-    /// the engine folder this assembly was loaded from, which Revit does not probe.
+    /// Resolves private dependencies from the shell assembly directory, which Revit does not probe.
     /// </summary>
     internal static class ShellAssemblyResolver {
         static int _installed;

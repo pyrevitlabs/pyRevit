@@ -30,8 +30,6 @@
         <Reference Include="Microsoft.Dynamic" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\$(IronPythonPrefix)Microsoft.Dynamic.dll" />
         <Reference Include="Microsoft.Scripting" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\$(IronPythonPrefix)Microsoft.Scripting.dll" />
 
-        <!-- Interactive editor surface (the one genuinely new third-party dependency).
-             NuGet package id is "AvalonEdit"; the assembly/namespace is ICSharpCode.AvalonEdit -->
         <PackageReference Include="AvalonEdit" Version="6.3.0.90" />
     </ItemGroup>
 

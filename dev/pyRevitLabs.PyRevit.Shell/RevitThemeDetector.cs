@@ -3,10 +3,8 @@ using Autodesk.Revit.UI;
 
 namespace PyRevitLabs.PyRevit.Shell {
     /// <summary>
-    /// Resolves the active Revit UI theme so the shell can match it instead of always
-    /// rendering dark. <c>UIThemeManager</c> only exists in Revit 2024 and newer, and this
-    /// assembly is referenced against older Revit API versions too, so the type is reached by
-    /// reflection. Revit releases that predate the dark theme fall back to light.
+    /// Resolves the active Revit UI theme so the shell can match it.
+    /// Uses reflection to support Revit versions without dark theme.
     /// </summary>
     internal static class RevitThemeDetector {
         public static bool IsDarkTheme(UIApplication uiapp) {
@@ -23,11 +21,10 @@ namespace PyRevitLabs.PyRevit.Shell {
                 if (theme == null)
                     return false;
 
-                // UITheme is an enum; compare by name to stay decoupled from the API version.
                 return string.Equals(theme.ToString(), "Dark", StringComparison.Ordinal);
             }
             catch {
-                // Any reflection/API mismatch means the running Revit has no dark theme support.
+                // The running Revit has no dark theme support.
                 return false;
             }
         }

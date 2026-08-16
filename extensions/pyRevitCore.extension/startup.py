@@ -1,6 +1,6 @@
 """pyRevit core startup script"""
 #pylint: disable=import-error,unused-import,invalid-name
-from pyrevit._perf import mark as _perfmark
+from pyrevit._perf import mark as _perfmark, time_block as _perfblock
 _perfmark("startup.pyRevitCore:entry")
 
 import os.path as op
@@ -85,10 +85,11 @@ def _get_shell_mode():
 
 
 try:
-    from pyrevit import forms
-    from pyrevit.framework import System, Media
-    from pyrevit.revit import ui as rvt_ui
-    from Autodesk.Revit.UI.Events import IdlingEventArgs
+    with _perfblock("startup.pyRevitCore:shell imports"):
+        from pyrevit import forms
+        from pyrevit.framework import System, Media
+        from pyrevit.revit import ui as rvt_ui
+        from Autodesk.Revit.UI.Events import IdlingEventArgs
 
     class PythonShellDockablePanel(forms.WPFPanel):
         panel_title = "pyRevit Python Shell"
@@ -193,7 +194,8 @@ try:
             mlogger.debug("Could not hide dockable Python shell pane at startup")
 
     if not forms.is_registered_dockable_panel(PythonShellDockablePanel):
-        forms.register_dockable_panel(PythonShellDockablePanel, default_visible=False)
+        with _perfblock("startup.pyRevitCore:shell pane registration"):
+            forms.register_dockable_panel(PythonShellDockablePanel, default_visible=False)
         if _SHELL_UIAPP is not None:
             _hide_idling_handler = System.EventHandler[IdlingEventArgs](
                 _ensure_shell_pane_hidden
@@ -201,6 +203,5 @@ try:
             _SHELL_UIAPP.Idling += _hide_idling_handler
 except Exception:
     mlogger.exception("Failed to register dockable Python shell panel")
-
 
 _perfmark("startup.pyRevitCore:exit")
