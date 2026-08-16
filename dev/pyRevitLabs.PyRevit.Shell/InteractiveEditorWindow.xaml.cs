@@ -6,9 +6,7 @@ using PythonConsoleControl;
 
 namespace PyRevitLabs.PyRevit.Shell {
     /// <summary>
-    /// Modeless/modal host window for the interactive Python editor + REPL. Mirrors
-    /// <see cref="InteractiveShellWindow"/> but embeds <see cref="EditorView"/> instead of the
-    /// bare console control.
+    /// Host window for the interactive editor and console.
     /// </summary>
     public partial class InteractiveEditorWindow : Window, IShellWindow {
         public InteractiveEditorWindow() {
@@ -18,8 +16,7 @@ namespace PyRevitLabs.PyRevit.Shell {
         public IronPythonConsoleControl ConsoleControl => editorView.ConsoleControl;
 
         /// <summary>
-        /// Apply the editor + console theme and match the window background to it, so the editor
-        /// blends with the active Revit UI theme.
+        /// Applies the active Revit theme to the editor, console, and window.
         /// </summary>
         public void ApplyTheme(bool useDarkTheme) {
             ShellTheme.Apply(this, useDarkTheme);
@@ -31,7 +28,6 @@ namespace PyRevitLabs.PyRevit.Shell {
 
         /// <summary>
         /// Keep the editor floating above the Revit window without blocking it.
-        /// Uses the process main window handle so it stays version-agnostic.
         /// </summary>
         public void SetRevitAsWindowOwner() {
             var revitHandle = Process.GetCurrentProcess().MainWindowHandle;

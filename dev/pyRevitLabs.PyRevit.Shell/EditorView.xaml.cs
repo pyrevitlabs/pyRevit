@@ -13,13 +13,9 @@ using PythonConsoleControl;
 
 namespace PyRevitLabs.PyRevit.Shell {
     /// <summary>
-    /// Code editor (AvalonEdit) paired with the interactive IronPython console. The editor's
-    /// "Run" sends the current selection, or the whole document, to the console, which already
-    /// executes every statement in a valid Revit API context (set up by the shell launcher).
+    /// Code editor paired with the interactive console.
     /// </summary>
     public partial class EditorView : UserControl {
-        // The highlighting themes ship as embedded resources from the ported console control;
-        // the editor registers its own copies so it never clashes with the console's registrations.
         const string LightHighlightingResource = "PythonConsoleControl.Resources.Python.xshd";
         const string DarkHighlightingResource = "PythonConsoleControl.Resources.Python-Dark.xshd";
         const string LightHighlightingName = "Python Editor Highlighting";
@@ -33,10 +29,10 @@ namespace PyRevitLabs.PyRevit.Shell {
             textEditor.Text = "# Write Python here and press F5 (or click Run) to execute in the console below.";
         }
 
-        /// <summary>Console control, exposed so the launcher can wire the engine and dispatch.</summary>
+        /// <summary>Gets the interactive console.</summary>
         public IronPythonConsoleControl ConsoleControl => consoleControl;
 
-        /// <summary>AvalonEdit text editor, exposed for advanced hosting scenarios.</summary>
+        /// <summary>Gets the code editor.</summary>
         public TextEditor TextEditor => textEditor;
 
         /// <summary>Current file path, or null when the buffer has never been saved.</summary>
@@ -117,8 +113,7 @@ namespace PyRevitLabs.PyRevit.Shell {
             }
         }
 
-        // Drop the startup hint the first time the editor gains focus, so the user starts from a
-        // clean buffer without having to manually delete it.
+        // Remove the startup hint before the user begins editing.
         void TextEditor_GotFocus(object sender, RoutedEventArgs e) {
             if (_isFirstFocus && string.IsNullOrEmpty(_currentFileName)) {
                 textEditor.Text = string.Empty;
@@ -127,8 +122,7 @@ namespace PyRevitLabs.PyRevit.Shell {
         }
 
         /// <summary>
-        /// Theme the editor surface and the console together so they match the active Revit UI
-        /// theme. Reuses the syntax-highlighting definitions already embedded in this assembly.
+        /// Applies one theme to the editor and console.
         /// </summary>
         public void ApplyTheme(bool useDarkTheme) {
             ShellTheme.Apply(this, useDarkTheme);
@@ -136,8 +130,7 @@ namespace PyRevitLabs.PyRevit.Shell {
             consoleControl.ApplyTheme(useDarkTheme);
         }
 
-        // The stock ToolBar template reserves space for an overflow dropdown that renders as a
-        // system-colored spot on the themed bar; the shell never overflows, so remove it.
+        // The unused overflow control otherwise exposes an unthemed system color.
         void ToolBar_Loaded(object sender, RoutedEventArgs e) {
             var toolBar = (ToolBar)sender;
             if (toolBar.Template.FindName("OverflowGrid", toolBar) is FrameworkElement overflowGrid)

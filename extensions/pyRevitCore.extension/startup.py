@@ -21,30 +21,22 @@ if user_config.load_core_api:
 
 
 # dockable interactive python shell ==========================================
-# Registered through pyRevit's own forms.register_dockable_panel so it follows the same lifecycle
-# as every other pyRevit dockable pane. The pane is registered here during startup but hidden by
-# default; the heavy console is only built the first time the pane is shown (see on_loaded). The
-# console control itself is built by the pyRevitLabs.PyRevit.Shell assembly that ships in the
-# active engine folder; it configures the full pyRevit environment and marshals each statement
-# through an ExternalEvent so Revit stays interactive while the pane is open.
+# Register the pane at startup but defer its console until first display.
 
 PYTHON_SHELL_DOCKABLE_PANEL_ID = "8e2a1f4b-3c57-4d9a-b6e8-7f1a2c3d4e5b"
 
-# Capture the live UIApplication now, while this startup script is executing and the handle is
-# valid. The console is built lazily (deferred to when the pane is first shown), and by then the
-# __revit__ builtin is no longer reliably resolvable from this module, so resolving it late fails.
+# Deferred construction cannot rely on the command-scoped __revit__ builtin.
 _SHELL_UIAPP = HOST_APP.uiapp
 
 
 def _build_dockable_shell_console():
-    """Return a configured Python shell control (console, or editor when configured) for the dockable pane."""
+    """Create the configured dockable shell surface."""
     import clr
     from System import AppDomain
     from System.IO import Path, File
     from System.Collections.Generic import List
 
-    # The shell DLL lives in the active engine folder next to pyRevitLoader; loading it from
-    # there makes the shell use the engine pyRevit is configured to run.
+    # Loading beside pyRevitLoader preserves the active engine fork.
     engine_dir = None
     for asm in AppDomain.CurrentDomain.GetAssemblies():
         if asm.GetName().Name == "pyRevitLoader":
@@ -58,23 +50,17 @@ def _build_dockable_shell_console():
     clr.AddReferenceToFileAndPath(shell_dll)
     from PyRevitLabs.PyRevit.Shell import Shell
 
-    # Forward this engine's sys.path so `from pyrevit import ...` resolves in the shell exactly
-    # as in a normal script.
+    # Preserve the launching engine's module search paths.
     search_paths = List[str]()
     for path in sys.path:
         search_paths.Add(path)
 
-    # The dockable pane is shared; pick the editor surface when the user configured a "Docked"
-    # Editor" mode (same "mode" option the Python Shell pushbutton writes). Falls back to the
-    # console-only pane for every other mode.
     if _get_shell_mode() == "Docked Editor":
         return Shell.CreateDockableEditor(_SHELL_UIAPP, search_paths)
     return Shell.CreateDockableConsole(_SHELL_UIAPP, search_paths)
 
 
 def _get_shell_mode():
-    # Mirrors the pushbutton config section ("Python Shell_config") so the dockable pane honors the
-    # same preference the Python Shell button writes.
     try:
         section = user_config.get_section("Python Shell_config")
         if section is None:
@@ -97,30 +83,25 @@ try:
         panel_source = op.join(op.dirname(__file__), "PythonShellDockablePanel.xaml")
 
         def __init__(self):
-            # Mark not-built before loading XAML, in case Loaded fires during LoadComponent.
+            # Loaded may fire during WPFPanel initialization.
             self._console = None
             self._pane_shown = False
             self._build_idling_handler = None
             forms.WPFPanel.__init__(self)
-            # Match the pane background to the active Revit UI theme so the shell does not flash
-            # dark on a light-themed Revit; the console control is themed by the shell assembly.
+            # Avoid a mismatched background before deferred content is created.
             self._apply_panel_theme()
-            # Subscribing to Idling must happen in a valid API context; __init__ runs during
-            # register_dockable_panel (called from this startup script), which is one. The handler
-            # builds the console only after the pane is shown, so nothing heavy loads at startup.
+            # Event subscription requires the startup API context.
             if _SHELL_UIAPP is not None:
                 self._build_idling_handler = \
                     System.EventHandler[IdlingEventArgs](self._build_on_idling)
                 _SHELL_UIAPP.Idling += self._build_idling_handler
 
         def on_loaded(self, sender, args):
-            # Record visibility only. The console build needs a Revit API context, which this WPF
-            # callback is not, so the actual build runs from the Idling handler above.
+            # WPF loading is not a valid Revit API context for console construction.
             self._pane_shown = True
 
         def _build_on_idling(self, sender, args):
-            # Idling runs in a valid API context, which the shell build requires (it creates an
-            # ExternalEvent). Build once the pane has been shown, then stop listening.
+            # Idling provides the API context required by deferred construction.
             if self._console is not None or not self._pane_shown:
                 return
             if self._build_idling_handler is not None:
@@ -132,8 +113,7 @@ try:
             self._attach_console()
 
         def _apply_panel_theme(self):
-            # UIThemeManager only exists in Revit 2024+; older releases have no dark theme and
-            # stay light, so any failure to resolve the theme falls back to light.
+            # Older Revit versions have no dark theme and remain light.
             try:
                 is_dark = rvt_ui.get_current_theme() == rvt_ui.UITheme.Dark
             except Exception:
@@ -160,8 +140,7 @@ try:
                 self._show_error(traceback.format_exc() or str(build_error))
 
         def _show_error(self, message):
-            # Surface build failures directly in the pane; otherwise the pane just renders empty
-            # and the only trace is in the pyRevit log.
+            # Do not leave the pane blank when deferred construction fails.
             try:
                 from pyrevit.framework import Controls
                 block = Controls.TextBlock()
@@ -176,9 +155,7 @@ try:
     _hide_idling_handler = None
 
     def _ensure_shell_pane_hidden(sender, args):
-        # Revit persists pane visibility across sessions, so a pane that was shown before reopens
-        # on startup even though it now registers hidden. Hiding needs a valid API context, which
-        # this Idling tick provides; run once, then stop listening.
+        # Revit persists pane visibility, so enforce the hidden startup state in API context.
         global _hide_idling_handler
         if _hide_idling_handler is not None:
             try:

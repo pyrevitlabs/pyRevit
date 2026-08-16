@@ -21,8 +21,7 @@ mlogger = script.get_logger()
 
 
 def _load_shell():
-    # The shell DLL ships into the active engine folder (the IronPython fork pyRevit runs),
-    # alongside the loaded pyRevitLoader; loading it from there makes the shell use that engine.
+    # Loading beside pyRevitLoader preserves the active engine fork.
     engine_dir = None
     for asm in AppDomain.CurrentDomain.GetAssemblies():
         if asm.GetName().Name == "pyRevitLoader":
@@ -61,7 +60,7 @@ def _load_shell():
         )
     from PyRevitLabs.PyRevit.Shell import Shell
 
-    # Forward this engine's sys.path so `from pyrevit import ...` resolves in the shell as here.
+    # Preserve the launching engine's module search paths.
     search_paths = List[str]()
     for path in sys.path:
         search_paths.Add(path)

@@ -7,10 +7,7 @@ using ModularPipelines.Modules;
 
 namespace Build.Modules;
 
-// The interactive shell ships into the active engine folder (next to the loader/DLR it runs
-// against), so it must build after the loaders/runtime have deployed the IronPython/DLR there.
-// Building the per-fork configurations also runs the csproj DeployShell target, which copies
-// pyRevitLabs.PyRevit.Shell.dll + ICSharpCode.AvalonEdit.dll into each engine folder.
+// Engine assemblies must be deployed before the shell can bind to the selected Python fork.
 [DependsOn<BuildRuntimeModule>]
 public sealed class BuildShellModule(IOptions<BuildOptions> buildOptions) : Module
 {

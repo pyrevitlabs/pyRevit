@@ -45,7 +45,6 @@ namespace PythonConsoleControl
 
             string name = line.Substring(lastDelimiterIndex + 1);
 
-            // A very simple test of callables!
             bool isCallable = name.Contains(')');
 
             if (excludeCallables && isCallable) return null;
@@ -54,11 +53,6 @@ namespace PythonConsoleControl
             try
             {
                 AutocompletionInProgress = true;
-                // Another possibility:
-                //commandLine.ScriptScope.Engine.Runtime.IO.SetOutput(new System.IO.MemoryStream(), Encoding.UTF8);
-                //object value = commandLine.ScriptScope.Engine.CreateScriptSourceFromString(name, SourceCodeKind.Expression).Execute(commandLine.ScriptScope);
-                //IList<string> members = commandLine.ScriptScope.Engine.Operations.GetMemberNames(value);
-
                 var lastWord = GetLastWord(name);
                 var beforeLastWord = name.Substring(0, name.Length - lastWord.Length);
                 if (beforeLastWord.EndsWith("."))
@@ -74,7 +68,7 @@ namespace PythonConsoleControl
 
                 Type type = TryGetType(objectName);
 
-                // Use Reflection for everything except in-built Python types and COM pbjects.
+                // Reflection is unsafe for built-in Python and COM values.
                 if (type != null && type.Namespace != "IronPython.Runtime" && !type.FullName.Contains("IronPython.NewTypes") && (type.Name != "__ComObject"))
                 {
                     PopulateFromCLRType(items, type, objectName);
@@ -91,7 +85,6 @@ namespace PythonConsoleControl
             }
             catch
             {
-                // Do nothing.
             }
             commandLine.ScriptScope.Engine.Runtime.IO.SetOutput(stream, Encoding.UTF8);
             AutocompletionInProgress = false;
@@ -112,7 +105,6 @@ namespace PythonConsoleControl
             }
             catch
             {
-                // Do nothing.
             }
             return type as Type;
         }
@@ -154,11 +146,9 @@ namespace PythonConsoleControl
 
         protected void PopulateFromPythonType(List<PythonCompletionData> items, string name)
         {
-            //string dirCommand = "dir(" + objectName + ")";
             string dirCommand = "sorted([m for m in dir(" + name + ") if not m.startswith('__')], key = str.lower) + sorted([m for m in dir(" + name + ") if m.startswith('__')])";
             object value = commandLine.ScriptScope.Engine.CreateScriptSourceFromString(dirCommand, SourceCodeKind.Expression).Execute(commandLine.ScriptScope);
-            // dir() returns a Python list whose concrete type differs between IronPython forks
-            // (PythonList on IPY3, List on IPY2); iterate it through the fork-agnostic interface.
+            // The concrete dir() result differs between IronPython forks.
             foreach (object member in (value as System.Collections.IEnumerable))
             {
                 bool isInstance = false;
@@ -186,10 +176,6 @@ namespace PythonConsoleControl
                 try
                 {
                     AutocompletionInProgress = true;
-                    // Another possibility:
-                    //commandLine.ScriptScope.Engine.Runtime.IO.SetOutput(new System.IO.MemoryStream(), Encoding.UTF8);
-                    //object value = commandLine.ScriptScope.Engine.CreateScriptSourceFromString(item, SourceCodeKind.Expression).Execute(commandLine.ScriptScope);
-                    //description = commandLine.ScriptScope.Engine.Operations.GetDocumentation(value);
                     string docCommand = "";
 
                     if (isInstance)
@@ -227,7 +213,6 @@ namespace PythonConsoleControl
                 catch
                 {
                     AutocompletionInProgress = false;
-                    // Do nothing.
                 }
                 commandLine.ScriptScope.Engine.Runtime.IO.SetOutput(stream, Encoding.UTF8);
                 updateDescription(description);

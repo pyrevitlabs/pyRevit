@@ -5,9 +5,7 @@ using System.Windows.Input;
 
 namespace PyRevitLabs.PyRevit.Shell {
     /// <summary>
-    /// Custom title bar for the borderless shell windows: draggable, double-click to
-    /// maximize/restore, with minimize/maximize/close buttons and the pyRevit icon. Colors come
-    /// from the ShellTheme brushes so it follows the active Revit UI theme.
+    /// Title bar for borderless shell windows.
     /// </summary>
     public partial class ShellTitleBar : UserControl {
         Window _window;

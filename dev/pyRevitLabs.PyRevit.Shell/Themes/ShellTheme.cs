@@ -3,9 +3,7 @@ using System.Windows.Media;
 
 namespace PyRevitLabs.PyRevit.Shell {
     /// <summary>
-    /// Swaps the shared shell brushes declared in ShellTheme.xaml between the light and dark
-    /// palettes. Values set on the given root shadow the merged-dictionary defaults, so every
-    /// DynamicResource reference below that root follows the active Revit UI theme.
+    /// Applies the light or dark shell palette below a visual root.
     /// </summary>
     internal static class ShellTheme {
         public static void Apply(FrameworkElement root, bool useDarkTheme) {

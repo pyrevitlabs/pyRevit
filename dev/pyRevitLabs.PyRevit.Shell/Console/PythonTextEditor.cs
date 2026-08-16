@@ -16,7 +16,7 @@ using System.Diagnostics;
 namespace PythonConsoleControl
 {
     /// <summary>
-    /// Interface console to AvalonEdit and handle autocompletion.
+    /// Adapts AvalonEdit for console input, output, and completion.
     /// </summary>
     public class PythonTextEditor
     {
@@ -32,7 +32,7 @@ namespace PythonConsoleControl
         AutoResetEvent descriptionRequestedEvent = new AutoResetEvent(false);
         Thread completionThread;
         PythonConsoleCompletionDataProvider completionProvider = null;
-        Action<Action> completionDispatcher = new Action<Action>((command) => command()); // dummy completion dispatcher
+        Action<Action> completionDispatcher = new Action<Action>((command) => command());
 
         public PythonTextEditor(TextEditor textEditor)
         {
@@ -41,7 +41,6 @@ namespace PythonConsoleControl
             completionWaitHandles = new WaitHandle[] { completionRequestedEvent, descriptionRequestedEvent };
             completionThread = new Thread(new ThreadStart(Completion));
             completionThread.Priority = ThreadPriority.Lowest;
-            //completionThread.SetApartmentState(ApartmentState.STA);
             completionThread.IsBackground = true;
             completionThread.Start();
         }
@@ -80,9 +79,9 @@ namespace PythonConsoleControl
 
         public void Write(string text, bool allowSynchronous, bool moveToEnd)
         {
-            text = text.Replace("\r\r\n", "\r\n"); // Normalize Windows-style newlines
-            text = text.Replace("\r\n", "\n"); // Or "\r" if needed
-            text = text.Replace("\0", ""); // Remove NUL characters
+            text = text.Replace("\r\r\n", "\r\n");
+            text = text.Replace("\r\n", "\n");
+            text = text.Replace("\0", "");
 
             if (allowSynchronous)
             {
@@ -117,7 +116,6 @@ namespace PythonConsoleControl
                 {
                     toWrite = writeBuffer.ToString();
                     writeBuffer.Remove(0, writeBuffer.Length);
-                    //writeBuffer.Clear();
                 }
                 if (moveToEnd)
                 {
@@ -129,9 +127,7 @@ namespace PythonConsoleControl
 
             while (true)
             {
-                // Clear writeBuffer and write out.
                 textArea.Dispatcher.BeginInvoke(action, DispatcherPriority.Normal);
-                // Check if writeBuffer has refilled in the meantime; if so clear and write out again.
                 writeCompletedEvent.WaitOne();
                 lock (writeBuffer)
                 {
@@ -208,7 +204,6 @@ namespace PythonConsoleControl
         /// </summary>
         public void Replace(int index, int length, string text)
         {
-            //int currentLine = textArea.Caret.Line - 1;
             int currentLine = textArea.Document.LineCount - 1;
             int startOffset = textArea.Document.Lines[currentLine].Offset;
             textArea.Document.Replace(startOffset + index, length, text);
@@ -289,7 +284,6 @@ namespace PythonConsoleControl
         {
             if (completionProvider.AutocompletionInProgress)
             {
-                // send Ctrl-C abort
                 completionThread.Abort(new Microsoft.Scripting.KeyboardInterruptException(""));
                 return true;
             }
@@ -329,7 +323,6 @@ namespace PythonConsoleControl
         /// </summary>
         internal void BackgroundShowCompletionWindow() //ICompletionItemProvider
         {
-            // provide AvalonEdit with the data:
             string itemForCompletion = "";
             textArea.Dispatcher.Invoke(new Action(delegate()
             {
@@ -397,7 +390,6 @@ namespace PythonConsoleControl
         public void RequestCompletioninsertion(TextCompositionEventArgs e)
         {
             if (completionWindow != null) completionWindow.CompletionList.RequestInsertion(e);
-            // if autocompletion still in progress, terminate
             StopCompletion();
         }
 

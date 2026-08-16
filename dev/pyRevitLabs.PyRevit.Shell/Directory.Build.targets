@@ -1,11 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-    <!-- Inherit dev-level baseline RevitVersion, REVIT#### constants and UseRevit->Nice3point packages -->
     <Import Project="../Directory.Build.targets" />
 
-    <!-- Build once per IronPython fork, mirroring the runtime, so the console binds the same DLR
-         identity as the engine pyRevit is configured to run (prefixed for IPY2712PR, unprefixed
-         for IPY342). The launcher loads the matching-fork build from the active engine folder. -->
+    <!-- The shell must bind to the same DLR identity as the active engine fork. -->
     <PropertyGroup>
         <Configurations>Debug IPY2712PR;Debug IPY342</Configurations>
         <Configurations>$(Configurations);Release IPY2712PR;Release IPY342</Configurations>
@@ -24,7 +21,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <!-- Forked DLR/IronPython for the selected fork, taken from pyRevit's engine folder -->
         <Reference Include="IronPython" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\$(IronPythonPrefix)IronPython.dll" />
         <Reference Include="IronPython.Modules" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\$(IronPythonPrefix)IronPython.Modules.dll" />
         <Reference Include="Microsoft.Dynamic" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\$(IronPythonPrefix)Microsoft.Dynamic.dll" />
@@ -34,12 +30,11 @@
     </ItemGroup>
 
     <ItemGroup>
-        <!-- Required by the C# 'dynamic' used to drive sys.meta_path on .NET Framework -->
+        <!-- Dynamic runtime support is not implicit on .NET Framework. -->
         <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="Microsoft.CSharp" />
     </ItemGroup>
 
-    <!-- Deploy the shell + AvalonEdit into the matching fork's engine folder. The runtime/loader
-         already ship the IronPython/DLR copies there, so only the new assemblies are copied. -->
+    <!-- Install alongside the engine assemblies the shell binds at runtime. -->
     <Target Name="DeployShell" AfterTargets="AfterBuild">
         <ItemGroup>
             <ShellDeployFiles Include="$(TargetPath)" />

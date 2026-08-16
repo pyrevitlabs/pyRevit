@@ -51,7 +51,6 @@ namespace PythonConsoleControl
         {
             textEditor.Foreground = foreground;
             textEditor.TextArea.Foreground = foreground;
-            // Force the TextView to use the new foreground
             textEditor.TextArea.TextView.LinkTextForegroundBrush = foreground;
         }
 

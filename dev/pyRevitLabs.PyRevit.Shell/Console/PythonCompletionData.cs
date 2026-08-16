@@ -9,7 +9,7 @@ using System;
 namespace PythonConsoleControl
 {
     /// <summary>
-    /// Implements AvalonEdit ICompletionData interface to provide the entries in the completion drop down.
+    /// Represents an item in the completion list.
     /// </summary>
     public class PythonCompletionData : ICompletionData
     {
@@ -34,7 +34,6 @@ namespace PythonConsoleControl
 
         public bool IsInstance { get; private set; }
 
-        // Use this property if you want to show a fancy UIElement in the drop down list.
         public object Content
         {
             get { return this.Text; }
@@ -44,7 +43,6 @@ namespace PythonConsoleControl
         {
             get
             {
-                // Do nothing: description now updated externally and asynchronously.
                 return "Not available";
             }
         }

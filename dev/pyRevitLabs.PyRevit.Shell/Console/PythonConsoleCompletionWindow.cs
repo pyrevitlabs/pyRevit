@@ -43,7 +43,6 @@ namespace PythonConsoleControl
         public PythonConsoleCompletionWindow(TextArea textArea, PythonTextEditor textEditor)
             : base(textArea)
         {
-            // keep height automatic
             this.completionDataProvider = textEditor.CompletionProvider;
             this.textEditor = textEditor;
             this.CloseAutomatically = true;
@@ -51,7 +50,6 @@ namespace PythonConsoleControl
             this.MaxHeight = 300;
             this.Width = 175;
             this.Content = completionList;
-            // prevent user from resizing window to 0x0
             this.MinHeight = 15;
             this.MinWidth = 30;
 
@@ -73,8 +71,7 @@ namespace PythonConsoleControl
         }
 
         /// <summary>
-        /// Recolor the completion list and its description tooltip to match the host theme. Light
-        /// is the default WPF styling, so only the dark theme needs explicit brushes.
+        /// Applies dark-theme colors to the completion list and description tooltip.
         /// </summary>
         public void ApplyTheme(bool useDarkTheme)
         {
@@ -125,9 +122,7 @@ namespace PythonConsoleControl
         #region ToolTip handling
         void toolTip_Closed(object sender, RoutedEventArgs e)
         {
-            // Clear content after tooltip is closed.
-            // We cannot clear is immediately when setting IsOpen=false
-            // because the tooltip uses an animation for closing.
+            // Clearing earlier interrupts the tooltip's close animation.
             if (toolTip != null)
                 toolTip.Content = null;
         }
@@ -176,7 +171,6 @@ namespace PythonConsoleControl
                 item = data.Text;
                 isInstance = data.IsInstance;
             }));
-            // Send to the completion thread to generate the description, providing callback.
             completionDataProvider.GenerateDescription(stub, item, completionList_WriteDescription, isInstance);
         }
 
@@ -203,8 +197,7 @@ namespace PythonConsoleControl
         void completionList_InsertionRequested(object sender, EventArgs e)
         {
             Close();
-            // The window must close before Complete() is called.
-            // If the Complete callback pushes stacked input handlers, we don't want to pop those when the CC window closes.
+            // Close first so completion-installed input handlers remain on the stack.
             var item = completionList.SelectedItem;
             if (item != null)
                 item.Complete(this.TextArea, new AnchorSegment(this.TextArea.Document, this.StartOffset, this.EndOffset - this.StartOffset), e);

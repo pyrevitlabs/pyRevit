@@ -13,9 +13,7 @@ using PythonConsoleControl;
 
 namespace PyRevitLabs.PyRevit.Shell {
     /// <summary>
-    /// Common surface the launcher needs from any shell window (console-only or editor): the
-    /// console control to wire the engine onto, plus theme/owner helpers. Lets the modal/modeless
-    /// paths be generic over the concrete window type.
+    /// Common host behavior for shell windows.
     /// </summary>
     internal interface IShellWindow {
         IronPythonConsoleControl ConsoleControl { get; }
@@ -24,8 +22,7 @@ namespace PyRevitLabs.PyRevit.Shell {
     }
 
     /// <summary>
-    /// Builds and shows the interactive shell window and wires its REPL to a valid Revit API
-    /// context. Reached through <see cref="Shell"/> so the assembly resolver is installed first.
+    /// Creates shell windows with a valid Revit execution context.
     /// </summary>
     internal static class ShellLauncher {
         public static InteractiveShellWindow ShowModal(UIApplication uiapp, IList<string> searchPaths)
@@ -44,8 +41,7 @@ namespace PyRevitLabs.PyRevit.Shell {
             var gui = new T();
             gui.ApplyTheme(RevitThemeDetector.IsDarkTheme(uiapp));
 
-            // Modal: run typed code on this (the command's) thread. ShowDialog keeps pumping it,
-            // so every statement executes in the live API context the shell was opened from.
+            // A modal shell can reuse the command's live API context.
             var mainDispatcher = GetCurrentDispatcher();
             AttachAndDispatch(gui, uiapp, searchPaths, mainDispatcher, command => RunOnDispatcher(mainDispatcher, command));
 
@@ -58,8 +54,7 @@ namespace PyRevitLabs.PyRevit.Shell {
             var gui = new T();
             gui.ApplyTheme(RevitThemeDetector.IsDarkTheme(uiapp));
 
-            // Modeless: marshal each statement into a valid API context via an ExternalEvent so
-            // Revit stays interactive while the shell is open.
+            // A modeless shell needs an ExternalEvent to enter a valid API context.
             var mainDispatcher = GetCurrentDispatcher();
             var handler = new ShellExternalEventDispatcher(gui.ConsoleControl);
             var externalEvent = ExternalEvent.Create(handler);
@@ -78,9 +73,7 @@ namespace PyRevitLabs.PyRevit.Shell {
         }
 
         /// <summary>
-        /// Create a configured console control for a dockable pane. Same environment and modeless
-        /// dispatch as <see cref="ShowModelessWindow"/>, but returns the bare control so pyRevit can host
-        /// it inside its own <c>WPFPanel</c>-based dockable pane.
+        /// Creates a configured console for a dockable pane.
         /// </summary>
         public static UserControl CreateConfiguredConsole(UIApplication uiapp, IList<string> searchPaths) {
             var control = new IronPythonConsoleControl();
@@ -90,11 +83,7 @@ namespace PyRevitLabs.PyRevit.Shell {
         }
 
         /// <summary>
-        /// Create a configured editor (AvalonEdit + console) for a dockable pane. Same environment
-        /// and modeless dispatch as <see cref="ShowModelessWindow"/>, but returns the bare
-        /// <see cref="EditorView"/> so pyRevit can host it inside its own <c>WPFPanel</c>-based
-        /// dockable pane. The editor's Run sends its buffer to the same REPL, so statements run in
-        /// a valid Revit API context through the ExternalEvent below.
+        /// Creates a configured editor and console for a dockable pane.
         /// </summary>
         public static EditorView CreateConfiguredEditor(UIApplication uiapp, IList<string> searchPaths) {
             var editor = new EditorView();
@@ -103,15 +92,12 @@ namespace PyRevitLabs.PyRevit.Shell {
             return editor;
         }
 
-        // Shared by the window-based and dockable shells: configure the engine and wire the
-        // modeless dispatch (ExternalEvent) onto an already-created console control.
         static void ConfigureControl(IronPythonConsoleControl consoleControl, UIApplication uiapp, IList<string> searchPaths, object window, Dispatcher mainDispatcher) {
             var handler = new ShellExternalEventDispatcher(consoleControl);
             var externalEvent = ExternalEvent.Create(handler);
 
             consoleControl.WithConsoleHost(host => {
-                // Wire dispatch first so statements run in a valid Revit API context even if the
-                // environment setup below throws.
+                // Install dispatch first so failed setup cannot leave an unsafe execution path.
                 Action<Action> dispatch =
                     command => DispatchExternalEvent(handler, externalEvent, command);
                 host.Console.SetCommandDispatcher(dispatch);
@@ -157,11 +143,7 @@ namespace PyRevitLabs.PyRevit.Shell {
             request.Wait();
         }
 
-        // Give the console's engine the full pyRevit environment, then wire its REPL dispatcher.
-        // Dispatch is installed *before* ConfigureEngineViaRuntime so the REPL always lands in a
-        // valid API context. The environment setup runs on Revit's main UI thread (see
-        // RunEngineSetupOnMainThread) because InjectBuiltins touches the Ribbon, which only the
-        // main thread may access.
+        // Environment setup reads Revit-owned UI state and must run on its dispatcher.
         static void AttachAndDispatch(IShellWindow gui, UIApplication uiapp, IList<string> searchPaths, Dispatcher mainDispatcher, Action<Action> dispatch) {
             gui.ConsoleControl.WithConsoleHost(host => {
                 host.Console.SetCommandDispatcher(dispatch);
@@ -173,12 +155,7 @@ namespace PyRevitLabs.PyRevit.Shell {
             });
         }
 
-        // ConfigureEngineViaRuntime calls InjectBuiltins, which reads ScriptRuntime.UIControl ->
-        // ComponentManager.Ribbon -> RibbonControl.Tabs. The Ribbon is a WPF object owned by Revit's
-        // main UI thread, so calling it from the REPL's background thread throws
-        // InvalidOperationException ("calling thread cannot access this object"). Marshal the setup
-        // onto the main thread (captured at shell launch) so InjectBuiltins completes normally and
-        // the reserved builtins get their real values. Any failure is reported to the console.
+        // Revit UI state can only be read from the main dispatcher.
         static void RunEngineSetupOnMainThread(PythonConsoleHost host, UIApplication uiapp, IList<string> searchPaths, Dispatcher mainDispatcher) {
             Exception setupError = null;
             if (mainDispatcher != null && !mainDispatcher.CheckAccess()) {
@@ -188,7 +165,6 @@ namespace PyRevitLabs.PyRevit.Shell {
                 }));
             }
             else {
-                // Already on the main thread (or no dispatcher captured): run inline.
                 try { ConfigureEngineViaRuntime(host.Engine, uiapp, searchPaths); }
                 catch (Exception ex) { setupError = ex; }
             }
@@ -207,10 +183,7 @@ namespace PyRevitLabs.PyRevit.Shell {
                 + Environment.NewLine + real.StackTrace;
         }
 
-        // InjectBuiltins can still abort before the reserved pyrevit builtins (e.g. __shiftclick__)
-        // are set if setup runs off-thread or fails; provide safe defaults for any that are missing
-        // so user scripts that rely on them work in the interactive shell. Existing values (set by
-        // InjectBuiltins on the main thread) are left untouched.
+        // Preserve shell usability when environment setup cannot populate reserved builtins.
         static void EnsureInteractiveBuiltins(ScriptEngine engine, ScriptScope scope) {
             const string snippet =
 "try: __execid__\nexcept NameError: __execid__ = ''\n" +
@@ -238,15 +211,11 @@ namespace PyRevitLabs.PyRevit.Shell {
                 engine.Execute(snippet, scope);
             }
             catch {
-                // Best effort: the REPL still works without these defaults; user scripts that
-                // reference a missing reserved builtin will surface the NameError as before.
+                // Missing values surface through normal console errors.
             }
         }
 
-        // The full builtins live in the loaded per-version pyRevit runtime. This Revit-agnostic
-        // shell can't reference a specific runtime version at compile time, so reach
-        // InteractiveEngine by reflection; the engine object is the same DLR-fork identity as the
-        // loaded runtime, so the call binds cleanly. Shared by the window-based and dockable shells.
+        // Resolve configuration dynamically to stay compatible with the loaded runtime version.
         internal static void ConfigureEngineViaRuntime(ScriptEngine engine, UIApplication uiapp, IList<string> searchPaths) {
             var runtimeAsm = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => {
                 var name = a.GetName().Name;
@@ -276,8 +245,7 @@ namespace PyRevitLabs.PyRevit.Shell {
     }
 
     /// <summary>
-    /// Runs queued REPL statements inside Revit's API context for the modeless and dockable
-    /// shells. Reports failures back into the owning console control.
+    /// Tracks a shell command until Revit has executed it.
     /// </summary>
     internal sealed class ShellExternalEventRequest {
         readonly TaskCompletionSource<bool> _completed =

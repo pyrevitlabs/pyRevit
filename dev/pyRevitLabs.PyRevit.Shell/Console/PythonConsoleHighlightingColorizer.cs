@@ -9,8 +9,7 @@ using ICSharpCode.AvalonEdit.Rendering;
 namespace PythonConsoleControl
 {
     /// <summary>
-    /// Custom colorizer for the Python console that handles both input lines (with syntax highlighting)
-    /// and output lines (with a configurable foreground color).
+    /// Colors Python input and console output independently.
     /// </summary>
     public class PythonConsoleHighlightingColorizer : HighlightingColorizer
     {
@@ -45,13 +44,11 @@ namespace PythonConsoleControl
 
             string lineString = _document.GetText(line);
 
-            // Check if this is an input line (starts with >>> or ...)
             bool isInputLine = lineString.Length >= 3 &&
                 (lineString.StartsWith(">>>") || lineString.StartsWith("..."));
 
             if (isInputLine)
             {
-                // Apply syntax highlighting to input lines
                 IHighlighter highlighter = CurrentContext.TextView.Services.GetService(typeof(IHighlighter)) as IHighlighter;
                 if (highlighter != null)
                 {
@@ -65,7 +62,6 @@ namespace PythonConsoleControl
             }
             else
             {
-                // Apply foreground color to output lines (errors, results, banner text, etc.)
                 if (_outputForeground != null)
                 {
                     ChangeLinePart(line.Offset, line.EndOffset,

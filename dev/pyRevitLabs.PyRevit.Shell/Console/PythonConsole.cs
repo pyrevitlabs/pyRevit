@@ -20,8 +20,7 @@ namespace PythonConsoleControl
     public delegate void ConsoleInitializedEventHandler(object sender, EventArgs e);
 
     /// <summary>
-    /// Custom IronPython console. The command dispacher runs on a separate UI thread from the REPL
-    /// and also from the WPF control.
+    /// Interactive Python console with command history and completion.
     /// </summary>
     public class PythonConsole : IConsole, IDisposable
     {
@@ -41,7 +40,7 @@ namespace PythonConsoleControl
                 catch (Exception ex)
                 {
                     Debug.WriteLine("Failed to get dispatcher: " + ex.Message);
-                    commandDispatcher = action => action(); // fallback dispatcher
+                    commandDispatcher = action => action();
                 }
             }
             return commandDispatcher;
@@ -73,7 +72,7 @@ namespace PythonConsoleControl
         }
 
         PythonTextEditor textEditor;
-        int lineReceivedEventIndex = 0; // The index into the waitHandles array where the lineReceivedEvent is stored.
+        int lineReceivedEventIndex = 0;
         ManualResetEvent lineReceivedEvent = new ManualResetEvent(false);
         ManualResetEvent disposedEvent = new ManualResetEvent(false);
         AutoResetEvent statementsExecutionRequestedEvent = new AutoResetEvent(false);
@@ -85,7 +84,7 @@ namespace PythonConsoleControl
 
         volatile bool executing = false;
 
-        // This is the thread upon which all commands execute unless the dipatcher is overridden.
+        // The dedicated dispatcher allows commands to be interrupted without blocking the REPL or control.
         Thread dispatcherThread;
         public Dispatcher dispatcher;
 
@@ -114,10 +113,8 @@ namespace PythonConsoleControl
             dispatcherThread.IsBackground = true;
             dispatcherThread.Start();
 
-            // Only required when running outside REP loop.
             prompt = ">>> ";
 
-            // Set commands:
             this.textEditor.textArea.Dispatcher.Invoke(new Action(delegate()
             {
                 CommandBinding pasteBinding = null;
@@ -133,8 +130,7 @@ namespace PythonConsoleControl
                     if (commandBinding.Command == ApplicationCommands.Undo) undoBinding = commandBinding;
                     if (commandBinding.Command == ApplicationCommands.Delete) deleteBinding = commandBinding;
                 }
-                // Remove current bindings completely from control. These are static so modifying them will cause other
-                // controls' behaviour to change too.
+                // Replace bindings per control without changing shared command behavior.
                 if (pasteBinding != null) this.textEditor.textArea.CommandBindings.Remove(pasteBinding);
                 if (copyBinding != null) this.textEditor.textArea.CommandBindings.Remove(copyBinding);
                 if (cutBinding != null) this.textEditor.textArea.CommandBindings.Remove(cutBinding);
@@ -147,7 +143,6 @@ namespace PythonConsoleControl
                 this.textEditor.textArea.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, PythonEditingCommandHandler.OnDelete(ApplicationCommands.NotACommand), CanDeleteCommand));
 
             }));
-            // Set dispatcher to run on a UI thread independent of both the Control UI thread and thread running the REPL.
             WhenConsoleInitialized(delegate
             {
                 SetCommandDispatcher(DispatchCommand);
@@ -174,7 +169,7 @@ namespace PythonConsoleControl
         {
             if (command != null)
             {
-                // Slightly involved form to enable keyboard interrupt to work.
+                // Polling leaves the calling thread able to deliver a keyboard interrupt.
                 executing = true;
                 var operation = dispatcher.BeginInvoke(DispatcherPriority.Normal, command);
                 while (executing)
@@ -290,7 +285,6 @@ namespace PythonConsoleControl
             {
                 Debug.WriteLine(Clipboard.GetText(TextDataFormat.Html));
 
-                // convert text back to correct newlines for this document
                 string newLine = TextUtilities.GetNewLineFromDocument(textArea.Document, textArea.Caret.Line);
                 string text = TextUtilities.NormalizeNewLines(Clipboard.GetText(), newLine);
                 string[] commands = text.Split(new String[] { newLine }, StringSplitOptions.None);
@@ -346,20 +340,15 @@ namespace PythonConsoleControl
             if (target != textEditor.textArea) return;
             if (textEditor.SelectionLength == 0 && executing)
             {
-                // Send the 'Ctrl-C' abort
-                //if (!IsInReadOnlyRegion)
-                //{
                 MoveToHomePosition();
-                //textEditor.Column = GetLastTextEditorLine().Length + 1;
-                //textEditor.Write(Environment.NewLine);
-                //}
                 dispatcherThread.Abort(new Microsoft.Scripting.KeyboardInterruptException(""));
                 args.Handled = true;
             }
             else PythonEditingCommandHandler.OnCopy(target, args);
         }
 
-        const string LineSelectedType = "MSDEVLineSelect";  // This is the type VS 2003 and 2005 use for flagging a whole line copy
+        // Clipboard format used by Visual Studio to identify whole-line copies.
+        const string LineSelectedType = "MSDEVLineSelect";
 
         protected void OnUndo(object target, ExecutedRoutedEventArgs args)
         {
@@ -367,7 +356,7 @@ namespace PythonConsoleControl
         #endregion
 
         /// <summary>
-        /// Run externally provided statements in the Console Engine.
+        /// Executes externally supplied statements.
         /// </summary>
         /// <param name="statements"></param>
         public void RunStatements(string statements)
@@ -381,7 +370,7 @@ namespace PythonConsoleControl
         }
 
         /// <summary>
-        /// Run on the statement execution thread.
+        /// Executes pending statements on the statement dispatcher.
         /// </summary>
         void ExecuteStatements()
         {
@@ -397,7 +386,6 @@ namespace PythonConsoleControl
                     var command = scriptSource.Compile(errors);
                     if (command == null)
                     {
-                        // compilation failed
                         error = "Syntax Error: " + string.Join("\nSyntax Error: ", errors.Errors) + "\n";
                     }
                     else
@@ -604,10 +592,8 @@ namespace PythonConsoleControl
         {
             if (e.Text.Length > 0)
             {
-                if (!char.IsLetterOrDigit(e.Text[0]) || e.Text[0] == '_') // Underscore is a fairly common character in Revit API names.
+                if (!char.IsLetterOrDigit(e.Text[0]) || e.Text[0] == '_')
                 {
-                    // Whenever a non-letter is typed while the completion window is open,
-                    // insert the currently selected element.
                     textEditor.RequestCompletioninsertion(e);
                 }
             }
@@ -645,10 +631,8 @@ namespace PythonConsoleControl
             if (textEditor.WriteInProgress) return;
             lock (previousLines)
             {
-                // Move cursor to the end of the line.
                 textEditor.Column = GetLastTextEditorLine().Length + 1;
 
-                // Append line.
                 string currentLine = GetCurrentLine();
                 previousLines.Add(currentLine);
                 commandLineHistory.Add(currentLine);
@@ -760,7 +744,6 @@ namespace PythonConsoleControl
             string currentLine = GetCurrentLine();
             textEditor.Replace(promptLength, currentLine.Length, text);
 
-            // Put cursor at end.
             textEditor.Column = promptLength + text.Length + 1;
         }
     }

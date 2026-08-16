@@ -1,7 +1,6 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- Light-theme defaults; ShellTheme.Apply swaps these brushes for the dark palette. -->
     <SolidColorBrush x:Key="ShellBarBackground" Color="#F0F0F0" />
     <SolidColorBrush x:Key="ShellBarForeground" Color="#1E1E1E" />
     <SolidColorBrush x:Key="ShellSplitterBackground" Color="#E0E0E0" />

@@ -11,14 +11,7 @@ using PythonConsoleControl;
 namespace PyRevitLabs.PyRevit.Shell.DevHost;
 
 /// <summary>
-/// Development-only launcher that hosts the interactive Python Shell window outside of Revit, so
-/// the REPL/editor can be iterated on without starting Revit. It is not built by the product
-/// pipeline and is never shipped to end users.
-///
-/// It mirrors <c>ShellLauncher</c>'s modal path but drops the Revit-specific pieces
-/// (UIApplication, ExternalEvent dispatch, runtime-builtin injection): statements run on the UI
-/// dispatcher and the engine gets a plain IronPython environment with pyRevit's library paths on
-/// sys.path.
+/// Hosts the interactive shell outside Revit for development.
 /// </summary>
 internal static class Program
 {
@@ -70,8 +63,7 @@ internal static class Program
 
         consoleControl.WithConsoleHost(host =>
         {
-            // Statements run on the UI dispatcher, matching the in-Revit modal dispatch so this
-            // host behaves like the real shell rather than the console's native background thread.
+            // Match modal shell execution semantics outside Revit.
             host.Console.SetCommandDispatcher(command => RunOnDispatcher(mainDispatcher, command));
             host.Editor.SetCompletionDispatcher(command => RunOnDispatcher(mainDispatcher, command));
 
@@ -107,15 +99,14 @@ internal static class Program
     {
         engine.SetSearchPaths(searchPaths);
 
-        // Safe defaults for the reserved pyrevit builtins the interactive shell expects, so user
-        // snippets that read them don't NameError in the no-Revit host.
+        // Keep snippets that inspect reserved pyRevit values usable without Revit.
         try
         {
             engine.Execute(StubBuiltinsSnippet, scope);
         }
         catch
         {
-            // Best effort: the REPL still works without these defaults.
+            // The standalone REPL remains usable if defaults cannot be installed.
         }
     }
 

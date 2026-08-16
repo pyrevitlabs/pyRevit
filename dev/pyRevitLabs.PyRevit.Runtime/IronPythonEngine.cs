@@ -212,9 +212,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             InjectBuiltins(Engine, runtime, RecoveredFromCache, TypeId);
         }
 
-        // Inject the standard pyRevit builtins onto an engine's builtin module. Shared with the
-        // interactive shell so a REPL gets the same environment (incl. __scriptruntime__) as a
-        // normal script run.
+        // Keep reserved builtins consistent across command and interactive engines.
         internal static void InjectBuiltins(Microsoft.Scripting.Hosting.ScriptEngine engine, ScriptRuntime runtime, bool recoveredFromCache, string typeId) {
             // BUILTINS -----------------------------------------------------------------------------------------------
             // Get builtin to add custom variables

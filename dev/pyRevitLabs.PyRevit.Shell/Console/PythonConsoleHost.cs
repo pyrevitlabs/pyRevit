@@ -80,10 +80,7 @@ namespace PythonConsoleControl
         }
 
         /// <remarks>
-        /// After the engine is created the standard output is replaced with our custom Stream class so we
-        /// can redirect the stdout to the text editor window.
-        /// This can be done in this method since the Runtime object will have been created before this method
-        /// is called.
+        /// Replaces standard output only after the runtime is available.
         /// </remarks>
         protected override IConsole CreateConsole(ScriptEngine engine, CommandLine commandLine, ConsoleOptions options)
         {

@@ -135,10 +135,7 @@ def delayed_unregister_exec_handlers(handler_group_id):
 
 
 def _get_unregisterer_extevent():
-    # The unregisterer external event must be created in a valid Revit API context. It is
-    # normally created at module import (below), but if this module is first imported outside
-    # an API context (e.g. from the interactive pyRevit shell, whose REPL runs statements on a
-    # non-command thread), creation is deferred and retried here on first use.
+    # External events require API context, so retry creation on first use.
     global HANDLER_UNREGISTERER_EXTEVENT
     if HANDLER_UNREGISTERER_EXTEVENT is None:
         try:
@@ -151,9 +148,7 @@ def _get_unregisterer_extevent():
 REGISTERED_HANDLERS = {}
 HANDLER_UNREGISTERER = \
     FuncAsEventHandler(unregister_exec_handlers, purge=False)
-# ExternalEvent.Create requires a standard Revit API context. Importing this module outside
-# such a context (e.g. from the interactive shell) used to crash here, so tolerate the failure
-# and create the event lazily on first use (see _get_unregisterer_extevent) instead.
+# Import can occur outside API context, so event creation may be deferred.
 try:
     HANDLER_UNREGISTERER_EXTEVENT = \
         UI.ExternalEvent.Create(HANDLER_UNREGISTERER)
@@ -208,9 +203,7 @@ class _GenericExternalEventHandler(UI.IExternalEventHandler):
 
 if compat.IRONPY:
     _HANDLER = _GenericExternalEventHandler()
-    # See HANDLER_UNREGISTERER_EXTEVENT above: ExternalEvent.Create needs a standard API
-    # context, so tolerate failure at import (e.g. when imported from the interactive shell)
-    # and create lazily on first use via _get_execute_extevent().
+    # Import can occur outside API context, so event creation may be deferred.
     try:
         _EXTERNAL_EVENT = UI.ExternalEvent.Create(_HANDLER)
     except Exception:

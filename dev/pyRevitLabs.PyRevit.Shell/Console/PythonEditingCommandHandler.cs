@@ -15,7 +15,7 @@ using ICSharpCode.AvalonEdit.Editing;
 namespace PythonConsoleControl
 {
     /// <summary>
-    /// Commands that only involve the text editor are outsourced to here.
+    /// Handles commands that do not require the Python engine.
     /// </summary>
     class PythonEditingCommandHandler
     {
@@ -30,7 +30,6 @@ namespace PythonConsoleControl
 
         internal static void CanCutOrCopy(object target, CanExecuteRoutedEventArgs args)
         {
-            // HasSomethingSelected for copy and cut commands
             TextArea textArea = GetTextArea(target);
             if (textArea != null && textArea.Document != null)
             {
@@ -93,26 +92,21 @@ namespace PythonConsoleControl
             }
             catch (ExternalException)
             {
-                // Apparently this exception sometimes happens randomly.
-                // The MS controls just ignore it, so we'll do the same.
+                // Clipboard ownership can change between the availability check and the write.
                 return;
             }
 
             string text = textArea.Selection.GetText();
             text = TextUtilities.NormalizeNewLines(text, Environment.NewLine);
-            //textArea.OnTextCopied(new TextEventArgs(text));
         }
 
         internal static void CopyWholeLine(TextArea textArea, DocumentLine line)
         {
             ISegment wholeLine = new VerySimpleSegment(line.Offset, line.TotalLength);
             string text = textArea.Document.GetText(wholeLine);
-            // Ensure we use the appropriate newline sequence for the OS
             text = TextUtilities.NormalizeNewLines(text, Environment.NewLine);
             DataObject data = new DataObject(text);
 
-            // Also copy text in HTML format to clipboard - good for pasting text into Word
-            // or to the SharpDevelop forums.
             IHighlighter highlighter = textArea.GetService(typeof(IHighlighter)) as IHighlighter;
             HtmlClipboard.SetHtml(data, HtmlClipboard.CreateHtmlFragment(textArea.Document, highlighter, wholeLine, new HtmlOptions(textArea.Options)));
 
@@ -126,11 +120,9 @@ namespace PythonConsoleControl
             }
             catch (ExternalException)
             {
-                // Apparently this exception sometimes happens randomly.
-                // The MS controls just ignore it, so we'll do the same.
+                // Clipboard ownership can change between the availability check and the write.
                 return;
             }
-            //textArea.OnTextCopied(new TextEventArgs(text));
         }
 
         internal static ExecutedRoutedEventHandler OnDelete(RoutedUICommand selectingCommand)
@@ -140,8 +132,7 @@ namespace PythonConsoleControl
                 TextArea textArea = GetTextArea(target);
                 if (textArea != null && textArea.Document != null)
                 {
-                    // call BeginUpdate before running the 'selectingCommand'
-                    // so that undoing the delete does not select the deleted character
+                    // Keep selection and deletion in one undo transaction.
                     using (textArea.Document.RunUpdate())
                     {
                         Type textAreaType = textArea.GetType();
@@ -154,7 +145,6 @@ namespace PythonConsoleControl
                             foreach (ISegment s in textArea.Selection.Segments)
                             {
                                 method = textAreaType.GetMethod("GetDeletableSegments", BindingFlags.Instance | BindingFlags.NonPublic);
-                                //textArea.GetDeletableSegments(s).Length > 0)
                                 if ((int)method.Invoke(textArea, new Object[]{s}) > 0)
                                 {
                                     hasSomethingDeletable = true;
@@ -163,15 +153,12 @@ namespace PythonConsoleControl
                             }
                             if (!hasSomethingDeletable)
                             {
-                                // If nothing in the selection is deletable; then reset caret+selection
-                                // to the previous value. This prevents the caret from moving through read-only sections.
+                                // Preserve the caret at read-only boundaries.
                                 textArea.Caret.Position = oldCaretPosition;
-                                //textArea.Selection = Selection.Empty;
                             }
                         }
                         method = textAreaType.GetMethod("RemoveSelectedText", BindingFlags.Instance | BindingFlags.NonPublic);
                         method.Invoke(textArea, new Object[]{});
-                        //textArea.RemoveSelectedText();
                     }
                     textArea.Caret.BringCaretToView();
                     args.Handled = true;
@@ -181,7 +168,6 @@ namespace PythonConsoleControl
 
         internal static void CanDelete(object target, CanExecuteRoutedEventArgs args)
         {
-            // HasSomethingSelected for delete command
             TextArea textArea = GetTextArea(target);
             if (textArea != null && textArea.Document != null)
             {

@@ -20,7 +20,6 @@
             <RowDefinition Height="2*" />
         </Grid.RowDefinitions>
 
-        <!-- Command panel -->
         <ToolBarTray Grid.Row="0" IsLocked="True" Background="{DynamicResource ShellBarBackground}">
             <ToolBar Loaded="ToolBar_Loaded">
                 <Button Style="{StaticResource ToolButton}" ToolTip="New file (Ctrl+N)" Click="NewFileClick">
@@ -89,7 +88,6 @@
             </ToolBar>
         </ToolBarTray>
 
-        <!-- Code editor -->
         <avalonEdit:TextEditor x:Name="textEditor"
                                Grid.Row="1"
                                FontFamily="Consolas"
@@ -106,7 +104,6 @@
                       Background="{DynamicResource ShellSplitterBackground}"
                       ResizeBehavior="PreviousAndNext" ResizeDirection="Rows" />
 
-        <!-- Interactive console -->
         <console:IronPythonConsoleControl x:Name="consoleControl" Grid.Row="3" />
     </Grid>
 </UserControl>
