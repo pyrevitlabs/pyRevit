@@ -19,9 +19,9 @@ pyRevit's pipeline is split across workflows in [`.github/workflows/`](https://g
 
 | Workflow | File | What it does |
 |----------|------|--------------|
-| **`pyRevit CI`** | [`ci.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/ci.yml) | Runs `dotnet run -- ci` to build unsigned DLLs, runs `dotnet test` on the build project, uploads `unsigned-bin-<sha>` (Actions artifact for WIP/release), and publishes the same zip to the public **`ci-binaries`** GitHub Release (for `pyrevit clone`). Runs on every push to `develop` / `master` / `v*` tag (with a path filter), on PRs to those branches, and on manual dispatch. |
+| **`pyRevit CI`** | [`ci.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/ci.yml) | Runs `dotnet run -- ci` to build unsigned DLLs, runs `dotnet test` on the build project, uploads `unsigned-bin-<sha>` (Actions artifact for WIP/release), and publishes the same zip to the public **`ci-binaries`** GitHub Release (for `pyrevit clone`). Runs on every push to `develop` / `master` / `v*` tag (with a path filter), on PRs to those branches, and on manual dispatch. Tag pushes also refresh `unsigned-bin-master-latest.zip`. |
 | **`pyRevit WIP`** | [`wip.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/wip.yml) | Downloads CI artifacts, runs `dotnet run -- pack sign` under the **`production`** environment, and uploads signed WIP installers. |
-| **`pyRevit Release`** | [`release.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/release.yml) | On `v*` tag pushes, waits for CI, runs `dotnet run -- release pack sign publish` under **`production`**, then notifies linked issues. |
+| **`pyRevit Release`** | [`release.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/release.yml) | On `v*` tag pushes, waits for CI, runs `dotnet run -- release pack sign publish` under **`production`**, attaches signed `bin-v{version}.zip` to the draft GitHub Release, then notifies linked issues. |
 | **`Update Winget manifests`** | [`winget.yml`](https://github.com/pyrevitlabs/pyRevit/blob/develop/.github/workflows/winget.yml) | After a GitHub release is **published**, runs `dotnet run -- winget` to submit WinGet manifest PRs. Strips `ElevationRequirement: elevationProhibited` from generated user-scope installers before submit (see Troubleshooting). |
 
 The CI **`notify`** job (develop pushes only) runs `dotnet run -- notify` inline in `ci.yml` with `issues: write` and does **not** use the `production` environment.
@@ -59,37 +59,44 @@ The version, year, and product-data stamping modules only run when `Build__Chann
 
 **User workflows** (full commands for run-only vs C# contributor): [Developer Guide — Clone workflows](dev-guide.md#clone-workflows).
 
-End users and contributors who only need to **run** pyRevit (not build C#) get `bin/` via `pyrevit clone` or `pyrevit clones update` on **`develop`** or **`master`** — **no GitHub token** on the public repo when Release assets are available. C# contributors use `git clone`, local `dotnet run -- ci`, and `pyrevit clones update --skip-bin` instead — see Profile 2 in the dev guide.
+End users and contributors who only need to **run** pyRevit (not build C#) get `bin/` via `pyrevit clone` or `pyrevit clones update` on **`develop`**, **`master`**, or a **published `v*` release tag** — **no GitHub token** on the public repo when Release assets are available. C# contributors use `git clone`, local `dotnet run -- ci`, and `pyrevit clones update --skip-bin` instead — see Profile 2 in the dev guide.
 
 | Consumer | Source | Auth |
 |----------|--------|------|
-| `pyrevit clone` / `clones update` | GitHub Release **`ci-binaries`** assets (fork → upstream SHA fallback) | None (anonymous HTTPS) |
+| `pyrevit clone` / `clones update` (`develop` / `master`) | GitHub Release **`ci-binaries`** assets (fork → upstream SHA fallback) | None (anonymous HTTPS) |
+| `pyrevit clone --branch=v*` | GitHub Release **`bin-v{version}.zip`** on the published version tag (signed `bin/`) | None (anonymous HTTPS) |
 | `pyrevit clone` / `clones update` (token fallback) | GitHub Packages **`PyRevit.UnsignedBin`** NuGet mirror | `GITHUBTOKEN` (`read:packages`) |
 | `pyrevit clone` / `clones update` (token fallback) | Actions artifact `unsigned-bin-<sha>` | `GITHUBTOKEN` (`actions:read`) |
 | WIP / release pack pipelines | Actions artifact `unsigned-bin-<sha>` | `GITHUB_TOKEN` in CI |
 
-After each successful CI push to **`develop`** or **`master`** on the main repo:
+After each successful CI push to **`develop`** or **`master`** on the main repo (and after each **`v*`** tag CI run):
 
 1. CI zips `bin/` → `unsigned-bin-{fullSha}.zip`
-2. Uploads to Release tag **`ci-binaries`** (pre-release), plus rolling **`unsigned-bin-{branch}-latest.zip`**
+2. Uploads to Release tag **`ci-binaries`** (pre-release), plus rolling **`unsigned-bin-{branch}-latest.zip`**. Tag runs publish as **`unsigned-bin-master-latest.zip`** so clone-of-master does not depend on the master push event.
 3. Pushes **`PyRevit.UnsignedBin`** NuGet package to GitHub Packages (token-authenticated CLI mirror)
-4. Prunes per-SHA release assets older than the **last 3 successful CI builds** per branch (`develop`, `master`); branch-latest zips are always kept
-5. Prunes **`PyRevit.UnsignedBin`** NuGet versions older than the **last 2 successful CI builds** per branch (`develop`, `master`)
+4. Prunes per-SHA release assets older than the **last 3 successful CI builds** per branch (`develop`, `master`), **including the in-progress run's SHA** (the Actions API `status=completed` filter would otherwise omit it and the just-uploaded zip would be deleted) **and the SHAs of the last 3 `v*` tags** (tag CI reports `head_branch` as the tag name, so those runs never appear in the `branch=develop` / `branch=master` queries). Branch-latest zips are always kept.
+5. Prunes **`PyRevit.UnsignedBin`** NuGet versions older than the **last 2 successful CI builds** per branch (`develop`, `master`), also keeping the in-progress run's SHA and the last 2 `v*` tag SHAs.
+
+`release.yml` then re-uploads the same unsigned payload as `unsigned-bin-{sha}.zip` and `unsigned-bin-master-latest.zip` after it downloads the CI artifact — a second, **best-effort** path so a dropped master push cannot leave clone-of-master on a previous release's binaries. A failure there does not block pack/sign/publish.
 
 Anonymous download URL pattern:
 
 ```text
 https://github.com/pyrevitlabs/pyRevit/releases/download/ci-binaries/unsigned-bin-{sha}.zip
 https://github.com/pyrevitlabs/pyRevit/releases/download/ci-binaries/unsigned-bin-develop-latest.zip
+https://github.com/pyrevitlabs/pyRevit/releases/download/v{version}/bin-v{version}.zip
 ```
+
+`+` in a version tag is URL-encoded as `%2B` (for example `v6.5.3.26176%2B2017`). Tag clones work after the GitHub Release is **published**; draft assets are not anonymous.
 
 CLI download order:
 
-1. Release asset for clone remote + commit SHA
+1. Release asset for clone remote + commit SHA (`ci-binaries`)
 2. Release asset for upstream (`pyrevitlabs/pyRevit`) + same SHA (synced forks)
-3. Release branch-latest on clone remote, then upstream
-4. NuGet `PyRevit.UnsignedBin` (when `GITHUBTOKEN` is set)
-5. Actions artifacts (when `GITHUBTOKEN` is set)
+3. Signed `bin-v{version}.zip` on the version GitHub Release when `--branch` is not `develop`/`master`
+4. Release branch-latest on clone remote, then upstream (`develop` / `master` only)
+5. NuGet `PyRevit.UnsignedBin` (when `GITHUBTOKEN` is set)
+6. Actions artifacts (when `GITHUBTOKEN` is set)
 
 See also [`build/README.md`](../build/README.md) and the [developer guide](dev-guide.md).
 
@@ -156,7 +163,7 @@ Releases are no longer auto-triggered by merging into `master`. A maintainer run
 4. Pushing the tag triggers two workflows in parallel:
 
     - **`ci.yml`** rebuilds DLLs on the tagged commit and uploads `unsigned-bin-<sha>` (DLLs only; installers are no longer built in CI).
-    - **`release.yml`** starts immediately and polls for the matching CI run (via `gh run watch`). The **`release`** job downloads CI artifacts, runs `dotnet run -- release pack sign publish` under **`production`** (sign via `sign code trusted-signing`, draft GitHub Release, Chocolatey push). **`notify`** then posts to linked issues. After you publish the draft release, **`winget.yml`** submits WinGet manifest PRs.
+    - **`release.yml`** starts immediately and polls for the matching CI run (via `gh run watch`). The **`release`** job downloads CI artifacts, runs `dotnet run -- release pack sign publish` under **`production`** (sign via `sign code trusted-signing`, draft GitHub Release including signed `bin-v{version}.zip` for `pyrevit clone --branch=v*`, Chocolatey push). **`notify`** then posts to linked issues. After you publish the draft release, **`winget.yml`** submits WinGet manifest PRs.
 
 5. Open the draft release on GitHub, review the auto-generated notes, then publish it.
 
@@ -238,6 +245,7 @@ CI and local product builds invoke the ModularPipelines project from [`build/`](
 - **Release fails on `Validate tag matches version`**: the tag (e.g. `v4.8.16`) doesn't match `pyrevitlib/pyrevit/version`. Delete and recreate the tag with the right name, or update the version file and re-tag. If the tag and checkout match but the error shows different `+HHMM` suffixes (e.g. tag `+1406` vs file `+1212`), CI re-stamped the build number on a tag push — tag CI must preserve the committed version; move the tag to a commit that includes that fix and re-run.
 - **Release fails on `Wait for CI to complete on tagged commit`**: CI either failed or didn't start within 10 minutes of the tag push. Investigate the CI run for the tagged SHA; once it is green, re-run `release.yml`.
 - **Release fails on `Download unsigned bin artifact`**: the CI run exists but the expected `unsigned-bin-<sha>` artifact is missing (most often because CI failed before the upload step). Fix CI and re-run `release.yml`.
+- **`unsigned-bin-master-latest.zip` is older than the current `master` HEAD / tagged release**: the master push event may have been dropped, or prune previously deleted the per-SHA zip. Run **`workflow_dispatch`** of `ci.yml` on **`master`** to rebuild and refresh `ci-binaries`. Tag CI and `release.yml` also refresh `unsigned-bin-master-latest.zip` so clone-of-master does not depend on that push.
 - **Release fails on `Build Installers`**: Inno Setup (`ISCC.exe`), MSBuild, or the legacy WiX v3.x CLI MSI project failed. `windows-2025` preinstalls Inno Setup 6 and WiX Toolset v3.x; MSBuild is resolved from `PATH` or Visual Studio's `vswhere.exe`. Local installer builds need the same tools installed.
 - **Release fails on `Build Choco Package`**: `choco pack` failed, or the upstream signed installer was missing when the SHA was computed. Confirm `Sign installers` produced the expected `dist/*.exe`/`.msi` outputs before this step ran.
 - **Release fails on `Sign Choco Package`**: this step uses the `dotnet sign` CLI (installed via `dotnet tool install --global sign --prerelease`) and authenticates to Azure Trusted Signing via the `AZURE_TENANT_ID` / `AZURE_CLIENT_ID` / `AZURE_CLIENT_SECRET` env vars (DefaultAzureCredential chain). Common causes: (a) the certificate profile lacks the `1.3.6.1.5.5.7.3.3` Code Signing EKU required for NuGet author signing; (b) the App Registration is missing the `Trusted Signing Certificate Profile Signer` role on the Signing Account; (c) the `--prerelease` flag was removed and `sign` is no longer marked prerelease (drop `--prerelease` once the tool has a stable GA release). The previous attempt used `Azure/artifact-signing-action`, but its v2.0.0 PowerShell module routes `.nupkg` to `signtool.exe`, which doesn't recognize the format. Don't switch back without verifying upstream support for NuGet via that action.
@@ -248,6 +256,7 @@ CI and local product builds invoke the ModularPipelines project from [`build/`](
 - **Notify failed on empty `release_url`**: the **`release`** job did not write `dist/github-release-url.txt` during publish (check **`Run release pipeline`** logs for `Deployment GitHub`). Re-run **`release`**, then re-run **`notify`**. The notify job receives the URL from the release job output; it no longer looks up releases by tag (tags containing `+` break `gh release view`).
 - **Draft release exists but `notify` did not run**: the **`release`** job must finish successfully (including Choco push) before **`notify`** starts. Fix or re-run **`release`**, then re-run **`notify`** if the draft release URL is already available.
 - **WinGet validation fails with `0x8A150056` / `elevationProhibited`**: WinGet's validation VM uses an administrator-capable account. Inno user installers built with `PrivilegesRequired=lowest` still block installation there even after removing `ElevationRequirement: elevationProhibited` from the manifest (WinGet reads the restriction from the installer). The `winget` pipeline publishes **machine-scope admin installers only** and strips `elevationProhibited` if `wingetcreate` adds it. Per-user installers remain on GitHub Releases. Pushing a manifest update to the winget-pkgs PR re-triggers validation automatically (`@wingetbot run` requires Moderator).
+- **`pyrevit clone --branch=v*` fails to find binaries**: the GitHub Release for that tag must be **published** (draft assets are not anonymous). Confirm `bin-v{version}.zip` is listed on the release, then retry. Use `--skip-bin` only when you will sideload `bin/` yourself.
 
 ## Related reading
 

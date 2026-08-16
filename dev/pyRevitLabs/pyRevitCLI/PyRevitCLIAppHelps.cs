@@ -85,7 +85,8 @@ namespace pyRevitCLI
                             { "--source=<image_url>",   "Clone source image url or path" },
                             { "--source=<repo_url>",    "Clone source git repo url" },
                             { "--image=<image_path>",   "Clone from a custom image (.zip archive)" },
-                            { "--branch=<branch_name>", "Branch to clone from" },
+                            { "--branch=<branch_name>", "Branch or release tag to clone from" },
+                            { "--skip-bin",             "Skip downloading pre-built binaries" },
                         });
                     break;
 

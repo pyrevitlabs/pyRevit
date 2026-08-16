@@ -54,20 +54,26 @@ Make sure to uncheck the "Copy the master branch only" option, since we mostly u
 
 ### Clone workflows
 
-`bin/` is **not in git**. Choose one workflow below. Only **`develop`** and **`master`** support CI binary download. Details on CI assets and fallbacks: [CI/CD — Prebuilt binaries for clone](ci-cd.md#prebuilt-binaries-for-clone).
+`bin/` is **not in git**. Choose one workflow below. **`develop`**, **`master`**, and published **`v*`** release tags support binary download. Details on CI assets and fallbacks: [CI/CD — Prebuilt binaries for clone](ci-cd.md#prebuilt-binaries-for-clone).
 
 | Profile | You want to… | Get source via | Get `bin/` via |
 |---------|----------------|----------------|----------------|
-| **1 — Run in Revit** | Use pyRevit without building C# | `pyrevit clone` | Public Release `ci-binaries` (no token on upstream when assets exist) |
+| **1 — Run in Revit** | Use pyRevit without building C# | `pyrevit clone` | Public Release `ci-binaries` (`develop`/`master`) or signed `bin-v{version}.zip` on a published `v*` tag |
 | **2 — C# contributor** | Change DLLs and debug in Visual Studio | `git clone` | `dotnet run -- ci` in [`build/`](../build/) |
 
 #### Profile 1 — Run in Revit (CI binaries)
 
-Uses the pyRevit CLI to clone git source **and** download pre-built `bin/` from the [`ci-binaries`](https://github.com/pyrevitlabs/pyRevit/releases/tag/ci-binaries) release. Normal path on `pyrevitlabs/pyRevit` needs no `GITHUBTOKEN`. Synced forks use upstream Release assets for the same commit SHA.
+Uses the pyRevit CLI to clone git source **and** download pre-built `bin/` from the [`ci-binaries`](https://github.com/pyrevitlabs/pyRevit/releases/tag/ci-binaries) release (or the matching GitHub Release when `--branch` is a `v*` tag). Normal path on `pyrevitlabs/pyRevit` needs no `GITHUBTOKEN`. Synced forks use upstream Release assets for the same commit SHA.
 
 ```shell
 pyrevit clone dev --source <repo-url> --dest <parent-directory> --branch develop
 pyrevit attach dev default --installed
+```
+
+Pin a published release (after the GitHub Release is published, not while it is still a draft):
+
+```shell
+pyrevit clone fleet base --branch=v6.5.3.26176+2017 --dest <parent-directory>
 ```
 
 Refresh source and binaries later:
