@@ -75,3 +75,6 @@ ci-bin-manifest.json
 
 # local-only build overrides (never shipped)
 build/appsettings.Development.json
+
+# Python virtualenv created by pipenv (PIPENV_VENV_IN_PROJECT)
+.venv/

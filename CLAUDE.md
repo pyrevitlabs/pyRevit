@@ -23,7 +23,7 @@ pyRevit is a Rapid Application Development (RAD) environment for Autodesk Revit.
 - **Python**: IronPython 2.7.12 (default), CPython 3.12.3, IronPython 3.4.0
 - **C#**: .NET Framework 4.8 (Revit 2017-2024), .NET 8.0 (Revit 2025+)
 - **Go**: pyRevit autocomplete application (`dev/pyRevitLabs/pyRevitCLIAutoComplete`)
-- **Build Tools**: Visual Studio 2022, pipenv, MSBuild, Inno Setup
+- **Build Tools**: .NET 10, ModularPipelines, Visual Studio 2022, MSBuild, Inno Setup
 
 ## Build Commands
 
@@ -47,8 +47,6 @@ dotnet run -c Release -- ci
 ```
 
 Other pipeline modes: `pack`, `sign`, `publish`, `winget`, `notify`. See [`build/README.md`](build/README.md) for the full list, `Build__Channel` semantics, and CI gating.
-
-The legacy Python CLI (`pipenv run pyrevit build products`, `set build`, `set products`, …) still works for local/manual workflows and is documented in [`docs/ci-cd.md`](docs/ci-cd.md); CI no longer invokes it.
 
 ## Documentation
 

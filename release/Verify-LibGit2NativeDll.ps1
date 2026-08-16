@@ -1,5 +1,5 @@
 # Verifies repo bin\ contains exactly one LibGit2Sharp native DLL (git2-*.dll).
-# Run after `pipenv run pyrevit build products` or a full dotnet build that populates bin\.
+# Run after the ModularPipelines build populates bin\.
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $binDir = Join-Path $repoRoot 'bin'
