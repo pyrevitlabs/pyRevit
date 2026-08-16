@@ -71,7 +71,7 @@ On a **clean checkout** (no tracked `bin/`), `ci` builds in this order:
 
 This mirrors the legacy `pipenv run pyrevit build deps` + `build engines` + `build runtime` sequence.
 
-The `bin/` directory is **not tracked in git**. It is produced locally by `dotnet run -- ci` or downloaded by `pyrevit clone` / `pyrevit clones update` from **public GitHub Release assets** on the `ci-binaries` tag (`unsigned-bin-{sha}.zip`). Only **`develop`** and **`master`** are supported for CI binary download. Static assets are staged from [`release/bin-assets/`](../release/bin-assets/) and [`release/cengines/`](../release/cengines/); host/product JSON templates live under [`release/`](../release/). **Contributors edit** [`release/pyrevit-hosts.json`](../release/pyrevit-hosts.json), not files under `bin/`.
+The `bin/` directory is **not tracked in git**. It is produced locally by `dotnet run -- ci` or downloaded by `pyrevit clone` / `pyrevit clones update` from **public GitHub Release assets**: `ci-binaries` (`unsigned-bin-{sha}.zip`) for **`develop`** / **`master`**, and `bin-v{version}.zip` on published **`v*`** tags. Static assets are staged from [`release/bin-assets/`](../release/bin-assets/) and [`release/cengines/`](../release/cengines/); host/product JSON templates live under [`release/`](../release/). **Contributors edit** [`release/pyrevit-hosts.json`](../release/pyrevit-hosts.json), not files under `bin/`.
 
 ### Clone workflows (getting `bin/`)
 
@@ -99,7 +99,7 @@ pyrevit attach dev default --installed
 pyrevit clones update dev --skip-bin
 ```
 
-CI publishes `unsigned-bin-<sha>.zip` to the **`ci-binaries`** release and mirrors **`PyRevit.UnsignedBin`** on GitHub Packages (CLI fallback when `GITHUBTOKEN` is set). Release assets are pruned to the last **3 SHAs per branch** (`develop`, `master`), including the SHA of the run that is still in progress and the last **3 `v*` tag SHAs**; NuGet package versions are pruned to the last **2 SHAs per branch** plus the last 2 `v*` tag SHAs. Tag CI and `release.yml` also refresh **`unsigned-bin-master-latest.zip`**. See [CI/CD](../docs/ci-cd.md#prebuilt-binaries-for-clone).
+CI publishes `unsigned-bin-<sha>.zip` to the **`ci-binaries`** release and mirrors **`PyRevit.UnsignedBin`** on GitHub Packages (CLI fallback when `GITHUBTOKEN` is set). Release assets are pruned to the last **3 SHAs per branch** (`develop`, `master`); NuGet package versions are pruned to the last **2 SHAs per branch**. Published `v*` GitHub Releases also attach signed `bin-v{version}.zip` for tag clones. See [CI/CD](../docs/ci-cd.md#prebuilt-binaries-for-clone).
 
 Run unit tests:
 
