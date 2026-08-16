@@ -8,16 +8,12 @@ mypy = "*"
 pylint = "==4.0.6"
 
 [packages]
-docopt = "*"
-requests = "*"
-pygount = "*"
 pyyaml = ">=5.4"
 black = "*"
 setuptools = "==83.0.0"
 mkdocs = "*"
 mkdocstrings = "*"
 mkdocstrings-python = "*"
-colorama = "*"
 mkdocs-gen-files = "*"
 mkdocs-literate-nav = "*"
 mkdocs-exclude = "*"
@@ -32,6 +28,5 @@ python_version = "3.14"
 allow_prereleases = false
 
 [scripts]
-pyrevit = "python ./dev/pyrevit.py"
 docs = "mkdocs build"
 check-docstrings = "ruff check --fix pyrevitlib/pyrevit"

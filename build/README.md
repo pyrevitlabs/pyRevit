@@ -1,6 +1,6 @@
 # pyRevit ModularPipelines build
 
-C# ModularPipelines project that replaces the YAML-heavy CI steps previously driven by `pipenv run pyrevit ...`.
+C# ModularPipelines project for local product builds and GitHub Actions CI/CD.
 
 ## Prerequisites
 
@@ -31,7 +31,7 @@ dotnet run -c Release -- ci
 
 ### Build DLLs from the command line
 
-The `ci` pipeline mode replaces `pipenv run pyrevit build products` (and the old CI stamping steps on the main repo). It builds all product DLLs, tools, and engines into `bin/`:
+The `ci` pipeline mode builds all product DLLs, tools, and engines into `bin/`:
 
 ```powershell
 cd build
@@ -49,7 +49,7 @@ $env:DOTNET_ENVIRONMENT = 'Production'
 dotnet run -c Release -- ci
 ```
 
-Debug configuration (legacy `pipenv run pyrevit build products Debug`):
+Debug configuration:
 
 ```powershell
 dotnet run -c Debug -- ci
@@ -69,7 +69,7 @@ On a **clean checkout** (no tracked `bin/`), `ci` builds in this order:
 5. Runners (`pyRevitRunner.*`)
 6. Static assets from `release/`
 
-This mirrors the legacy `pipenv run pyrevit build deps` + `build engines` + `build runtime` sequence.
+The pipeline owns this complete dependency, engine, and runtime build sequence.
 
 The `bin/` directory is **not tracked in git**. It is produced locally by `dotnet run -- ci` or downloaded by `pyrevit clone` / `pyrevit clones update` from **public GitHub Release assets**: `ci-binaries` (`unsigned-bin-{sha}.zip`) for **`develop`** / **`master`**, and `bin-v{version}.zip` on published **`v*`** tags. Static assets are staged from [`release/bin-assets/`](../release/bin-assets/) and [`release/cengines/`](../release/cengines/); host/product JSON templates live under [`release/`](../release/). **Contributors edit** [`release/pyrevit-hosts.json`](../release/pyrevit-hosts.json), not files under `bin/`.
 
@@ -157,5 +157,3 @@ On GitHub Actions, version stamping on the main repo is gated by `Build__Channel
 - [`wip.yml`](../.github/workflows/wip.yml) — `dotnet run -- pack sign`
 - [`release.yml`](../.github/workflows/release.yml) — `dotnet run -- release pack sign publish`
 - [`winget.yml`](../.github/workflows/winget.yml) — `dotnet run -- winget` (on release published)
-
-The legacy Python CLI in [`dev/pyrevit.py`](../dev/pyrevit.py) remains available for local/manual workflows during transition.
