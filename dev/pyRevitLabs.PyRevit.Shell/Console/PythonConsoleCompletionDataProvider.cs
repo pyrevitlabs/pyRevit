@@ -24,7 +24,7 @@ namespace PythonConsoleControl
         bool excludeCallables;
         public bool ExcludeCallables { get { return excludeCallables; } set { excludeCallables = value; } }
 
-        public PythonConsoleCompletionDataProvider(CommandLine commandLine)//IMemberProvider memberProvider)
+        public PythonConsoleCompletionDataProvider(CommandLine commandLine)
         {
             this.commandLine = commandLine;
         }
@@ -36,7 +36,7 @@ namespace PythonConsoleControl
         /// </summary>
         public Tuple<ICompletionData[], string, string> GenerateCompletionData(string line)
         {
-            List<PythonCompletionData> items = new List<PythonCompletionData>(); //DefaultCompletionData
+            List<PythonCompletionData> items = new List<PythonCompletionData>();
 
             string objectName = string.Empty;
             string memberName = string.Empty;
@@ -153,7 +153,7 @@ namespace PythonConsoleControl
             {
                 bool isInstance = false;
 
-                if (name == string.Empty) // Special case for globals
+                if (name == string.Empty)
                 {
                     isInstance = TryGetType((string)member) != null;
                 }

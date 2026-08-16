@@ -16,13 +16,13 @@ namespace PyRevitLabs.PyRevit.Shell {
         public IronPythonConsoleControl ConsoleControl => editorView.ConsoleControl;
 
         /// <summary>
-        /// Applies the active Revit theme to the editor, console, and window.
+        /// Blends the editor and console with the active Revit UI theme.
         /// </summary>
         public void ApplyTheme(bool useDarkTheme) {
             ShellTheme.Apply(this, useDarkTheme);
             editorView.ApplyTheme(useDarkTheme);
             Background = useDarkTheme
-                ? new SolidColorBrush(Color.FromRgb(0x1F, 0x2D, 0x3D)) // Revit dark blue-gray
+                ? new SolidColorBrush(Color.FromRgb(0x1F, 0x2D, 0x3D))
                 : new SolidColorBrush(Colors.White);
         }
 

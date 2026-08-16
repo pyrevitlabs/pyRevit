@@ -321,7 +321,7 @@ namespace PythonConsoleControl
         /// <summary>
         /// Obtain completions (this runs in its own thread)
         /// </summary>
-        internal void BackgroundShowCompletionWindow() //ICompletionItemProvider
+        internal void BackgroundShowCompletionWindow()
         {
             string itemForCompletion = "";
             textArea.Dispatcher.Invoke(new Action(delegate()

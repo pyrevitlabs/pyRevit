@@ -29,11 +29,6 @@
         <PackageReference Include="AvalonEdit" Version="6.3.0.90" />
     </ItemGroup>
 
-    <ItemGroup>
-        <!-- Dynamic runtime support is not implicit on .NET Framework. -->
-        <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="Microsoft.CSharp" />
-    </ItemGroup>
-
     <!-- Install alongside the engine assemblies the shell binds at runtime. -->
     <Target Name="DeployShell" AfterTargets="AfterBuild">
         <ItemGroup>

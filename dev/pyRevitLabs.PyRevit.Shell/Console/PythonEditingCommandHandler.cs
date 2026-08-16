@@ -176,7 +176,8 @@ namespace PythonConsoleControl
             }
         }
 
-        const string LineSelectedType = "MSDEVLineSelect";  // This is the type VS 2003 and 2005 use for flagging a whole line copy
+        // Clipboard format used by Visual Studio to identify whole-line copies.
+        const string LineSelectedType = "MSDEVLineSelect";
 
         struct VerySimpleSegment : ISegment
 	    {

@@ -141,7 +141,7 @@ namespace PyRevitLabs.PyRevit.Shell {
 
         void ThemeEditor(bool useDarkTheme) {
             textEditor.Background = useDarkTheme
-                ? new SolidColorBrush(Color.FromRgb(0x1F, 0x2D, 0x3D)) // Revit dark blue-gray
+                ? new SolidColorBrush(Color.FromRgb(0x1F, 0x2D, 0x3D))
                 : new SolidColorBrush(Colors.White);
             textEditor.Foreground = useDarkTheme
                 ? new SolidColorBrush(Color.FromRgb(0xD4, 0xD4, 0xD4))
