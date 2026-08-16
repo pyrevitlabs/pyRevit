@@ -1,7 +1,7 @@
 namespace Build.Helpers;
 
 /// <summary>
-/// Repository paths and constants ported from dev/scripts/configs.py.
+/// Repository paths and constants used by the build pipeline.
 /// </summary>
 public static class PyRevitPaths
 {

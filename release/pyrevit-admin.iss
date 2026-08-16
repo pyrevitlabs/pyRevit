@@ -29,7 +29,7 @@ UsePreviousAppDir=yes
 PrivilegesRequired=admin
 ; Build info
 OutputDir=..\dist
-; See dev/scripts/config.py INSTALLER_EXES
+; Keep this list aligned with the installer assets staged by build/.
 OutputBaseFilename=pyRevit_{#MyAppVersion}_admin_signed
 SetupIconFile=..\bin\pyrevit.ico
 Compression=lzma
@@ -123,8 +123,6 @@ begin
       'Run the following from an elevated command prompt in the install bin folder:' + #13#10 +
       '  pyrevit attach master default --installed --allusers',
       mbError, MB_OK);
-  if not RunPyRevitCommand('configs seedshippeddefaults', False) then
-    Log('pyrevit configs seedshippeddefaults failed or was skipped');
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);

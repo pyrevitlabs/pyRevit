@@ -81,7 +81,8 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 _buildStrategy.ToString(),
                 $"rocket:{rocketMode}",
                 $"rocket_compat:{extension.RocketModeCompatible}",
-                $"builder:{GetAssemblyBuildFingerprint()}");
+                $"builder:{GetAssemblyBuildFingerprint()}",
+                $"runtime:{GetRuntimeBuildFingerprint()}");
             string hash = GetStableHash(extension.GetHash(strategySeed) + _revitVersion).Substring(0, 16);
             string fileName = $"pyRevit_{_revitVersion}_{hash}_{extension.Name}.dll";
 
@@ -404,6 +405,19 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         private static readonly string _assemblyBuildFingerprint = ComputeAssemblyBuildFingerprint();
 
         private static string GetAssemblyBuildFingerprint() => _assemblyBuildFingerprint;
+
+        private string GetRuntimeBuildFingerprint()
+        {
+            try
+            {
+                var runtimePath = Path.Combine(_baseDir, $"pyRevitLabs.PyRevit.Runtime.{_revitVersion}.dll");
+                return AssemblyName.GetAssemblyName(runtimePath).Version?.ToString() ?? "0";
+            }
+            catch
+            {
+                return "0";
+            }
+        }
 
         private static string ComputeAssemblyBuildFingerprint()
         {
