@@ -343,6 +343,32 @@
             "website": "https://github.com/jason-svn/WWPTools_Publicly_Shared",
             "image": "",
             "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "type": "extension",
+            "rocket_mode_compatible": "True",
+            "name": "Sendit",
+            "description": "Drawing-production tools for Revit. Sheet Manager gives you an editable sheet grid with bulk renumber and rename, find and replace, batch create from CSV, a revision manager, sheet sets, and PDF/CSV export with filename templating. Issue Manager exports issued sheets as PDFs into a dated folder with matching DWGs, maintains a running issue register CSV, and creates a Drawing Issue Register schedule in Revit. Also includes Sun Eye Views for solar analysis and Sync Sprint, a shortcut-practice game that runs while you synchronise. Themed to Revit's dark and light UI (Revit 2024+). Free, MIT-licensed.",
+            "author": "lewismconte",
+            "author_profile": "https://github.com/lewismconte",
+            "url": "https://github.com/lewismconte/sendit.git",
+            "website": "https://github.com/lewismconte/sendit",
+            "image": "",
+            "dependencies": []
+        },
+        {
+            "builtin": "False",
+            "type": "extension",
+            "rocket_mode_compatible": "True",
+            "name": "Groundit",
+            "description": "Import real-world site context into Revit. Draw a box on a map in your browser and get it back as a linked site model: a toposolid from real elevation data, building masses at OpenStreetMap heights with courtyards as openings, and roads as surfaces at real carriageway width draped on the terrain. Update Site re-downloads a linked site and reloads it in place, keeping its position and view overrides. No API keys, no accounts and no GIS software - elevation comes from the AWS Terrain Tiles open dataset and vectors from OpenStreetMap. Free, MIT-licensed.",
+            "author": "lewismconte",
+            "author_profile": "https://github.com/lewismconte",
+            "url": "https://github.com/lewismconte/groundit.git",
+            "website": "https://github.com/lewismconte/groundit",
+            "image": "",
+            "dependencies": []
         }
     ]
 }
