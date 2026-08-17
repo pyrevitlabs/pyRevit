@@ -502,10 +502,14 @@ class _ExecutorParams(object):
 
     @property  # read-only
     def first_load(self):
-        """bool: Check whether pyrevit is not running in pyrevit command."""
-        # if no output window is set by the executor, it means that pyRevit
-        # is loading at Revit startup (not reloading)
-        return True if self.window_handle is None else False
+        """bool: Check whether pyrevit is loading at Revit startup."""
+        # the session loader states this outright for its own entry scripts;
+        # anything else falls back to inferring it from the output window,
+        # which the executor only leaves unset outside a command
+        try:
+            return __sessionfirstload__
+        except NameError:
+            return True if self.window_handle is None else False
 
     @property   # read-only
     def script_runtime(self):
