@@ -19,6 +19,7 @@ Usage::
 
 import traceback
 
+from pyrevit import HOST_APP
 from pyrevit import DB, UI
 from pyrevit.api import ExternalService as es
 from pyrevit.framework import Guid
@@ -28,10 +29,12 @@ get_elementid_value = get_elementid_value_func()
 
 
 # Internal helpers
-
-_BUILTIN_SERVICE = (
-    es.ExternalServices.BuiltInExternalServices.TemporaryGraphicsHandlerService
-)
+if HOST_APP.is_newer_than(2021):
+    _BUILTIN_SERVICE = (
+        es.ExternalServices.BuiltInExternalServices.TemporaryGraphicsHandlerService
+    )
+else:
+    _BUILTIN_SERVICE = None
 
 
 def _get_service():
