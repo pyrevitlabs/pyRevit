@@ -12,6 +12,7 @@ from pyrevit.compat import PY3, safe_strtype, get_elementid_value_func
 from pyrevit import DB
 from pyrevit.revit import db
 from pyrevit.revit import features
+from pyrevit.revit import geom
 
 from Autodesk.Revit.DB import Element  # pylint: disable=E0401
 
@@ -242,7 +243,7 @@ def get_param(element, param_identifier, default=None):
         return default
 
     try:
-        if isinstance(param_identifier, (str, unicode)):
+        if isinstance(param_identifier, str):
             return _param_or_default(
                 element.LookupParameter(param_identifier), default
             )
@@ -1526,7 +1527,7 @@ def get_all_schedules(doc=None):
         .WhereElementIsNotElementType()
         .ToElements()
     )
-    return filter(is_schedule, all_scheds)
+    return list(filter(is_schedule, all_scheds))
 
 
 def get_view_by_name(view_name, view_types=None, doc=None):
@@ -1770,7 +1771,7 @@ def get_category(cat_input, doc=None):
     if isinstance(cat_input, DB.BuiltInCategory):
         return doc.Settings.Categories.get_Item(cat_input)
 
-    if isinstance(cat_input, (str, unicode)):
+    if isinstance(cat_input, str):
         for cat in get_doc_categories(doc):
             if cat.Name == cat_input:
                 return cat
@@ -2000,8 +2001,7 @@ def get_gridpoints(grids=None, include_linked_models=False, doc=None):
     gints = {}
     for grid1 in source_grids:
         for grid2 in source_grids:
-            results = framework.clr.Reference[DB.IntersectionResultArray]()
-            intres = grid1.Curve.Intersect(grid2.Curve, results)
+            intres, results = geom.intersect_curves(grid1.Curve, grid2.Curve)
             if intres == DB.SetComparisonResult.Overlap:
                 gints[db.XYZPoint(results.get_Item(0).XYZPoint)] = [grid1, grid2]
     return [GridPoint(point=k, grids=v) for k, v in gints.items()]
