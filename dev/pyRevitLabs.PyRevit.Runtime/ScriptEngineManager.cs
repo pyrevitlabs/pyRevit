@@ -38,10 +38,61 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
+        // Engines that are mid-execution somewhere up the call stack, counted by
+        // engine type id so nested executions unwind in order. Shutting one of
+        // these down clears the builtins and disposes the output stream that the
+        // suspended script resumes into, so they must survive a session reload
+        // requested from inside a running command.
+        public static Dictionary<string, int> ActiveEngineDict {
+            get {
+                Dictionary<string, int> activeDict;
+                var exstDict = AppDomain.CurrentDomain.GetData(DomainStorageKeys.ActiveEnginesDictKey);
+                if (exstDict == null) {
+                    activeDict = new Dictionary<string, int>();
+                    AppDomain.CurrentDomain.SetData(DomainStorageKeys.ActiveEnginesDictKey, activeDict);
+                }
+                else
+                    activeDict = (Dictionary<string, int>)exstDict;
+                return activeDict;
+            }
+        }
+
+        public static bool IsEngineActive(string engineTypeId) {
+            int depth;
+            return engineTypeId != null
+                && ActiveEngineDict.TryGetValue(engineTypeId, out depth)
+                && depth > 0;
+        }
+
+        public static void EnterEngine(string engineTypeId) {
+            if (engineTypeId == null)
+                return;
+
+            var activeDict = ActiveEngineDict;
+            int depth;
+            activeDict.TryGetValue(engineTypeId, out depth);
+            activeDict[engineTypeId] = depth + 1;
+        }
+
+        public static void ExitEngine(string engineTypeId) {
+            if (engineTypeId == null)
+                return;
+
+            var activeDict = ActiveEngineDict;
+            int depth;
+            if (!activeDict.TryGetValue(engineTypeId, out depth))
+                return;
+
+            if (depth > 1)
+                activeDict[engineTypeId] = depth - 1;
+            else
+                activeDict.Remove(engineTypeId);
+        }
+
         public static Dictionary<string, object> ClearEngines(string excludeEngine = null) {
             // shutdown all existing engines
             foreach (KeyValuePair<string, object> engineRecord in EngineDict) {
-                if (engineRecord.Key == excludeEngine)
+                if (engineRecord.Key == excludeEngine || IsEngineActive(engineRecord.Key))
                     continue;
                 else
                     engineRecord.Value.GetType().GetMethod("Shutdown").Invoke(engineRecord.Value, new object[] { });
@@ -67,7 +118,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private static void SetCachedEngine<T>(string engineTypeId, T engine) where T : ScriptEngine, new() {
             var cachedEngine = GetCachedEngine<T>(engine.TypeId);
-            if (cachedEngine != null)
+            if (cachedEngine != null && !IsEngineActive(engine.TypeId))
                 cachedEngine.Shutdown();
             EngineDict[engineTypeId] = engine;
         }

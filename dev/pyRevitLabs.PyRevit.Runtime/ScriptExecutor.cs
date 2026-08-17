@@ -235,15 +235,23 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // and ask for an engine (EngineManager return either new engine or an already active one)
             T engine = ScriptEngineManager.GetEngine<T>(ref runtime);
 
-            // init the engine
-            engine.Start(ref runtime);
-            // execute
-            var result = engine.Execute(ref runtime);
-            // stop and cleanup the engine
-            engine.Stop(ref runtime);
+            // a script may load a new pyRevit session, which discards cached engines;
+            // flag this one so the engine the script resumes into is left alone
+            ScriptEngineManager.EnterEngine(engine.TypeId);
+            try {
+                // init the engine
+                engine.Start(ref runtime);
+                // execute
+                var result = engine.Execute(ref runtime);
+                // stop and cleanup the engine
+                engine.Stop(ref runtime);
 
-            // set result
-            runtime.ExecutionResult = result;
+                // set result
+                runtime.ExecutionResult = result;
+            }
+            finally {
+                ScriptEngineManager.ExitEngine(engine.TypeId);
+            }
         }
     }
 }
