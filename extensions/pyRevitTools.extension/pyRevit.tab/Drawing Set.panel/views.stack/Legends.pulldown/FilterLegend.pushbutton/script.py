@@ -21,7 +21,7 @@ sort order, and auto-open behavior -- see config.py.
 from pyrevit import revit, forms, script, op
 from pyrevit import DB
 from pyrevit.coreutils.configparser import PyRevitConfigParser
-from pyrevit.coreutils import appdata
+from pyrevit.coreutils import appdata, unique_name
 
 from match.filter_utils import (
     dissect_parameter_filter,
@@ -30,7 +30,6 @@ from match.filter_utils import (
 
 from legend_utils import (
     create_legend_row,
-    unique_view_name,
     autofit_column_widths,
 )
 from legend_config import (
@@ -176,10 +175,9 @@ with revit.TransactionGroup("Create Filter Legend(s)"):
                 )
                 legend_view.Scale = 1
 
-                legend_name = unique_view_name(
-                    doc,
+                legend_name = unique_name(
                     "Legend_Filters_{0}".format(src_view.Name),
-                    existing_names=existing_view_names,
+                    existing_view_names,
                 )
                 legend_view.Name = legend_name
                 existing_view_names.add(legend_name)

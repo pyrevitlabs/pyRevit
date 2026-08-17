@@ -23,32 +23,30 @@ pyRevit is a Rapid Application Development (RAD) environment for Autodesk Revit.
 - **Python**: IronPython 2.7.12 (default), CPython 3.12.3, IronPython 3.4.0
 - **C#**: .NET Framework 4.8 (Revit 2017-2024), .NET 8.0 (Revit 2025+)
 - **Go**: pyRevit autocomplete application (`dev/pyRevitLabs/pyRevitCLIAutoComplete`)
-- **Build Tools**: Visual Studio 2022, pipenv, MSBuild, Inno Setup
+- **Build Tools**: .NET 10, ModularPipelines, Visual Studio 2022, MSBuild, Inno Setup
 
 ## Build Commands
 
-All build commands use pipenv. Run from the repository root:
+The build is driven by the C# ModularPipelines project under [`build/`](build/). Run from `build/`:
 
-```bash
-# Setup environment
-pipenv install
-pipenv run pyrevit check              # Verify build environment
+```powershell
+# Default unsigned local build (Channel=none)
+dotnet run -c Release -- ci
 
-# Build commands
-pipenv run pyrevit build products     # Build all C# DLLs (Release mode)
-pipenv run pyrevit build products Debug  # Build in Debug mode
-pipenv run pyrevit build labs         # Build main project only
-pipenv run pyrevit build engines      # Build Python engines
-pipenv run pyrevit build installers   # Create Inno Setup installers
+# Debug build (attach the Visual Studio debugger to revit.exe)
+dotnet run -c Debug -- ci
 
-# Cleaning
-pipenv run pyrevit clean labs         # Clean build artifacts
+# WIP-style stamping + product build (mirrors develop push on the main repo)
+$env:Build__Channel = 'wip'
+dotnet run -c Release -- ci
 
-# Version management
-pipenv run pyrevit set version <ver>  # Set version number
-pipenv run pyrevit set build wip      # Set as work-in-progress
-pipenv run pyrevit set build release  # Set as release build
+# Release-style stamping + product build (mirrors master / tag CI on the main repo)
+$env:Build__Channel = 'release'
+$env:DOTNET_ENVIRONMENT = 'Production'
+dotnet run -c Release -- ci
 ```
+
+Other pipeline modes: `pack`, `sign`, `publish`, `winget`, `notify`. See [`build/README.md`](build/README.md) for the full list, `Build__Channel` semantics, and CI gating.
 
 ## Documentation
 
@@ -74,7 +72,7 @@ pyrevit attach dev default --installed
 2. Checkout `develop` branch (active development)
 3. Initialize submodules: `git submodule update --init --recursive`
 4. Install dependencies: `pipenv install`
-5. Build: `pipenv run pyrevit build products Debug`
+5. Build: `cd build && dotnet run -c Debug -- ci && cd ..`
 6. Test in Revit by attaching the clone
 
 For debugging C# code:
@@ -87,9 +85,11 @@ For debugging C# code:
 ### Loading Sequence
 1. Revit reads `.addin` manifest from Addins folder
 2. Manifest points to `pyRevitLoader.dll` (C#)
-3. Loader launches `pyrevitloader.py` in IronPython
-4. Python script calls `pyrevit.loader.sessionmgr.load_session()`
-5. Extensions are discovered and UI is built
+3. `PyRevitLoaderApplication.OnStartup` calls the C# session manager directly (no IronPython bootstrap)
+4. `SessionManagerService.LoadSession` runs `session_preload.py`, builds extension assemblies and UI in C#, then runs `session_postload.py`
+5. The preload/postload scripts drive the residual Python session services (telemetry, routes, output window, hooks framework) through the runtime engine
+
+Reload re-enters the same C# orchestrator via `PyRevitLoaderApplication.LoadSession`. The legacy pure-Python loader has been removed; the C# loader requires Revit 2021+.
 
 ### Key Components
 - **pyRevitLoader** (`dev/pyRevitLoader/`): Revit add-in entry point
