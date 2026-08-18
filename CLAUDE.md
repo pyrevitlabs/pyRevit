@@ -133,38 +133,11 @@ Supported bundle types: pushbutton, smartbutton, pulldown, splitbutton, panelbut
 - Python: Google docstring convention, formatted with black, linted with ruff
 - C#: Standard .NET conventions
 
+ 
+   
+## Commenting and documentation rules
 
- 
-## Commenting guidelines
- 
-When writing or suggesting code comments, document **what** the code does and **why**, never **how**.
- 
-Implementation details are already visible in the code itself. Restating them in a comment adds noise and creates drift: when the implementation changes, comments that describe it become misleading if not updated at the same time.
- 
-**Avoid comments that:**
-- Restate what the next line of code literally does (`# increment counter`, `# call the loader`, `# return the list`).
-- Name specific internal functions, classes, or modules that the code depends on.
-- Describe the sequence of steps the implementation follows.
-- Reference implementation choices that could change (e.g. which engine, which data structure, which library).
-**Prefer comments that:**
-- Explain the purpose or intent of a block (`# ensure the session is clean before loading extensions`).
-- Capture non-obvious **why** reasoning that cannot be inferred from the code (`# Revit does not allow re-entrant API calls during this event`).
-- Warn about known constraints or side effects that a future editor needs to be aware of.
-- Describe what a function or class is responsible for, not how it achieves it.
-**Example — what to avoid:**
-```python
-# Call get_ext_root_dirs to retrieve the list of extension paths from user config,
-# then pass each path to extensionmgr to scan for UI extension manifests.
-extensions = get_all_extensions()
-```
- 
-**Example — what to write instead:**
-```python
-# Collect all installed extensions visible to the current user before building the UI.
-extensions = get_all_extensions()
-```
- 
-The same rule applies to docstrings, inline comments, and any documentation generated alongside code.
+See [`.github/copilot-instructions.md`](.github/copilot-instructions.md) for the inline-comment allow-list and the docstring / XML-doc requirements. These apply to all changes in this codebase, including both Python and C# files.
 
 ## Supported Revit Versions
 

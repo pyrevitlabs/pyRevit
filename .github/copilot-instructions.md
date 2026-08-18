@@ -75,21 +75,26 @@ The appropriate script engine is selected automatically based on the script type
 
 # Commenting guidelines
 
-When writing or suggesting code comments, document **what** the code does and **why**, never **how**.
+Code, names, types, and docstrings carry meaning. Inline comments are the exception, not the rule. When in doubt, delete the comment and see if the code still reads correctly.
 
-Implementation details are already visible in the code itself. Restating them in a comment adds noise and creates drift: when the implementation changes, comments that describe it become misleading if not updated at the same time.
+The default for inline comments is: do not add them. The contract below is exhaustive — every inline comment must fall into exactly one of the listed special cases; if it does not, delete it.
 
-**Avoid comments that:**
+## Inline comments
+
+Allowed only in the following cases. Anything else is removed.
+
+- Non-obvious **why** that cannot live in a docstring (Revit API quirk, threading constraint, perf tradeoff, historical reason).
+- Warnings about side effects, ordering, or invariants a future editor must preserve.
+- Pragmas required by tooling or the language: `# noqa`, `# type: ignore`, `# pylint: disable=…`, `# coding: utf-8`, shebang lines, encoding markers, license headers.
+- `TODO` / `FIXME` / `XXX` with an owner and ticket reference.
+
+Do not write inline comments that:
+
 - Restate what the next line of code literally does (`# increment counter`, `# call the loader`, `# return the list`).
 - Name specific internal functions, classes, or modules that the code depends on.
 - Describe the sequence of steps the implementation follows.
 - Reference implementation choices that could change (e.g. which engine, which data structure, which library).
-
-**Prefer comments that:**
-- Explain the purpose or intent of a block (`# ensure the session is clean before loading extensions`).
-- Capture non-obvious **why** reasoning that cannot be inferred from the code (`# Revit does not allow re-entrant API calls during this event`).
-- Warn about known constraints or side effects that a future editor needs to be aware of.
-- Describe what a function or class is responsible for, not how it achieves it.
+- Act as section banners or decorative headers (`# ----- helpers -----`).
 
 **Example — what to avoid:**
 ```python
@@ -104,4 +109,57 @@ extensions = get_all_extensions()
 extensions = get_all_extensions()
 ```
 
-The same rule applies to docstrings, inline comments, and any documentation generated alongside code.
+## Documentation requirements
+
+**Principle:** document information that is expensive to rediscover from code. Do not document information that is obvious from the name, types, or one line of code. Sparse, high-value docstrings beat padded ones — duplicated information goes stale and misleads the next refactor.
+
+Code tells the agent **how**. Docstrings tell it **what, why, and what must remain true**.
+
+### Scope hierarchy
+
+Information lives in the narrowest scope that carries it:
+
+| Scope | Carries |
+|---|---|
+| `AGENTS.md` / `CLAUDE.md` | Architecture, conventions, commands every agent needs |
+| Module docstring | Why this subsystem exists; its boundaries |
+| Class docstring | Responsibilities, lifecycle, invariants |
+| Function / method docstring | Contract, side effects, exceptions, non-obvious constraints |
+| Inline comment | Why this particular implementation is unusual |
+
+### What belongs in docstrings
+
+When applicable, capture:
+
+- **Purpose** — what abstraction or business operation this represents.
+- **Contract** — inputs, outputs, important guarantees.
+- **Side effects** — DB writes, network calls, filesystem changes, emitted events.
+- **Exceptions** — especially domain-specific ones and what they mean here.
+- **Invariants** — conditions that must remain true after refactoring.
+- **Non-obvious constraints** — ordering, idempotency, thread safety, transaction boundaries, compatibility requirements.
+- **Why something unusual exists** — historical or architectural reason.
+- **Architectural role** — how this symbol relates to the rest of the system (e.g. "Payment providers must not modify subscriptions directly").
+
+Mark dangerous-to-break constraints explicitly with Google-style sections: `Important:`, `Note:`, `Warning:`, `Invariant:`. Treat them as red lines for the next editor.
+
+### What does not belong
+
+- Restating the signature, name, or types.
+- Narrating the implementation (`"""Loop through items and add item.price to total."""`).
+- Padding trivial functions — if behaviour is obvious from the code, omit the docstring entirely.
+- Implementation details an agent can inspect (`"""Uses Redis sorted set keyed by timestamp."""` when the call is right there).
+
+### Language rules
+
+- **Python**: Google-style docstrings on **public** symbols (non-underscored). Match `pyproject.toml` (`select = ["D"]`, `convention = "google"`), enforced by `pipenv run check-docstrings`.
+- **C#**: XML `///` doc comments on **public** classes and methods. `<summary>` carries purpose; `<param>` / `<returns>` / `<exception>` cover non-obvious details only.
+- Private (underscored Python, `private` / `internal` C#) members are exempt — same carve-out as `D107` and `D105`.
+
+When behaviour changes, update the docstring / XML doc in the same change.
+
+## Self-check before finalising
+
+Before finishing a task, audit the diff:
+
+1. Scan for inline comments. For each one, name the special case it falls under. If you cannot, delete it.
+2. Scan for new or changed public symbols. Confirm each one has a docstring (Python) or XML `///` doc (C#) only if it carries information that cannot be read off the code — purpose, contract, side effects, invariants. Strip anything that just restates the signature or narrates the implementation.
