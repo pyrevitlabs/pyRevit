@@ -82,6 +82,22 @@ namespace pyRevitExtensionParserTester
         }
 
         [Test]
+        public void CacheSeed_SameLibrariesDifferentOrder_AreEqual()
+        {
+            var libA = CreateSubDirectory("A.lib");
+            var libB = CreateSubDirectory("Z.lib");
+            Directory.CreateDirectory(Path.Combine(libB, "lib"));
+
+            var a = new ParsedExtension { Directory = libA };
+            var b = new ParsedExtension { Directory = libB };
+
+            var forward = LibraryExtensionSearchPaths.CacheSeed(new[] { a, b });
+            var reverse = LibraryExtensionSearchPaths.CacheSeed(new[] { b, a });
+
+            Assert.AreEqual(forward, reverse);
+        }
+
+        [Test]
         public void Collect_NullLibraryExtensions_ReturnsEmpty()
         {
             CollectionAssert.IsEmpty(LibraryExtensionSearchPaths.Collect(null!));

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using pyRevitExtensionParser;
@@ -36,11 +37,14 @@ namespace pyRevitAssemblyBuilder.SessionManager
         }
 
         /// <summary>
-        /// Stable fragment for the command-assembly cache seed.
+        /// Order-stable fragment for the command-assembly cache seed.
+        /// Sorted so enumeration order of library extensions cannot miss the cache.
         /// </summary>
         public static string CacheSeed(IEnumerable<ParsedExtension> libraryExtensions)
         {
-            return string.Join(";", Collect(libraryExtensions));
+            var paths = Collect(libraryExtensions);
+            paths.Sort(StringComparer.OrdinalIgnoreCase);
+            return string.Join(";", paths);
         }
     }
 }

@@ -43,7 +43,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// when present) so startup scripts can import packages that live at the
         /// .lib root. Populated once in LoadSession().
         /// </summary>
-        private List<string> _precomputedLibraryLibPaths = new List<string>();
+        private List<string> _precomputedLibrarySearchPaths = new List<string>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SessionManagerService"/> class.
@@ -153,8 +153,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 _logger.Debug($"[PERF]   parse '{name}': {elapsedMs}ms");
             }
 
-            _precomputedLibraryLibPaths = LibraryExtensionSearchPaths.Collect(libraryExtensions);
-            _logger.Debug($"Pre-computed {_precomputedLibraryLibPaths.Count} library lib paths");
+            _precomputedLibrarySearchPaths = LibraryExtensionSearchPaths.Collect(libraryExtensions);
+            _logger.Debug($"Pre-computed {_precomputedLibrarySearchPaths.Count} library search paths");
             
             // Get UI extensions
             stepStopwatch.Restart();
@@ -678,9 +678,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 searchPaths.Insert(0, extLibPath);
             }
             
-            // Use pre-computed library extension lib paths (avoids N*lib_count Directory.Exists calls)
+            // Use pre-computed library-extension search paths (avoids N*lib_count Directory.Exists calls)
             // This is an optimization for #3268 - previously this loop was inside the foreach for each UI extension
-            searchPaths.AddRange(_precomputedLibraryLibPaths);
+            searchPaths.AddRange(_precomputedLibrarySearchPaths);
             
             // Add core pyRevit paths (pyrevitlib + site-packages) by discovering repo root
             // Cache the root lookup - it's the same for all extensions
