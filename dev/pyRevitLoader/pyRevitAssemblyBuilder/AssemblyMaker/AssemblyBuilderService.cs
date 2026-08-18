@@ -76,13 +76,15 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             LoadExtensionModules(extension);
 
             // Include generation-time inputs that affect emitted command types, so cache invalidates
-            // when runtime behavior changes (e.g. rocket mode toggles or loader binary updates).
+            // when runtime behavior changes (rocket mode, generator schema, or library-extension
+            // search paths — those paths are compiled into each command).
             string strategySeed = string.Join("|",
                 _buildStrategy.ToString(),
                 $"rocket:{rocketMode}",
                 $"rocket_compat:{extension.RocketModeCompatible}",
                 $"builder:{GetAssemblyBuildFingerprint()}",
-                $"runtime:{GetRuntimeBuildFingerprint()}");
+                $"runtime:{GetRuntimeBuildFingerprint()}",
+                $"libs:{LibraryExtensionSearchPaths.CacheSeed(libraryExtensions)}");
             string hash = GetStableHash(extension.GetHash(strategySeed) + _revitVersion).Substring(0, 16);
             string fileName = $"pyRevit_{_revitVersion}_{hash}_{extension.Name}.dll";
 
@@ -390,18 +392,14 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             return BitConverter.ToString(hash).Replace("-", string.Empty).ToLowerInvariant();
         }
 
-        // Cache invalidation must trigger when the loader's command-type generation can
-        // change between pyRevit versions, but not on every rebuild/redeploy. Key it on the
-        // loader's semantic version only: previously this also mixed in the DLL file write
-        // time, which changed on every loader rebuild/update and forced every extension to
-        // recompile on each load. Computed once per session.
-        //
-        // Developer caveat: if you change code-generation logic without bumping the
-        // assembly version, the cache will serve the previously built DLLs. To force
-        // a rebuild during generator development, delete
-        // %APPDATA%/pyRevit/{revitVersion}/pyRevit_*.dll (the existing
-        // cleanup_assembly_files also clears unloaded ones on the next single-instance
-        // shutdown).
+        // Cache invalidation must trigger when emitted command types change, but not on
+        // every local rebuild. Do not mix in the DLL file write time: that forced every
+        // extension to recompile on each loader rebuild.
+        // Bump CommandTypeGeneratorSchema when generation logic changes without a
+        // pyRevit version bump. Library-extension directories are hashed separately
+        // in strategySeed so adding/removing a .lib or nested lib/ also invalidates.
+        private const string CommandTypeGeneratorSchema = "lib-root-1";
+
         private static readonly string _assemblyBuildFingerprint = ComputeAssemblyBuildFingerprint();
 
         private static string GetAssemblyBuildFingerprint() => _assemblyBuildFingerprint;
@@ -423,11 +421,12 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         {
             try
             {
-                return Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0";
+                var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0";
+                return version + "|" + CommandTypeGeneratorSchema;
             }
             catch
             {
-                return "0";
+                return "0|" + CommandTypeGeneratorSchema;
             }
         }
 

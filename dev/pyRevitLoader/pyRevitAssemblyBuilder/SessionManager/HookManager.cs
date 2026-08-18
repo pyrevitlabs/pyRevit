@@ -166,19 +166,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             if (Directory.Exists(extBin))
                 paths.Add(extBin);
 
-            // Library packages live at the .lib root; nested lib/ when present.
-            if (libraryExtensions != null)
-            {
-                foreach (var libExt in libraryExtensions)
-                {
-                    if (string.IsNullOrEmpty(libExt.Directory))
-                        continue;
-                    paths.Add(libExt.Directory);
-                    var libExtLib = Path.Combine(libExt.Directory, "lib");
-                    if (Directory.Exists(libExtLib))
-                        paths.Add(libExtLib);
-                }
-            }
+            paths.AddRange(LibraryExtensionSearchPaths.Collect(libraryExtensions));
 
             // Core pyRevit paths (pyrevitlib + site-packages)
             if (!string.IsNullOrEmpty(pyRevitRoot))

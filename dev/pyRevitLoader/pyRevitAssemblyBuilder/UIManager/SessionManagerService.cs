@@ -153,18 +153,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 _logger.Debug($"[PERF]   parse '{name}': {elapsedMs}ms");
             }
 
-            // Library packages live at the .lib root (Foo.lib/Pkg), not only
-            // under a nested lib/. Include nested lib/ when a bundle uses one.
-            _precomputedLibraryLibPaths.Clear();
-            foreach (var libExt in libraryExtensions)
-            {
-                if (string.IsNullOrEmpty(libExt.Directory))
-                    continue;
-                _precomputedLibraryLibPaths.Add(libExt.Directory);
-                var nestedLib = System.IO.Path.Combine(libExt.Directory, "lib");
-                if (System.IO.Directory.Exists(nestedLib))
-                    _precomputedLibraryLibPaths.Add(nestedLib);
-            }
+            _precomputedLibraryLibPaths = LibraryExtensionSearchPaths.Collect(libraryExtensions);
             _logger.Debug($"Pre-computed {_precomputedLibraryLibPaths.Count} library lib paths");
             
             // Get UI extensions
