@@ -38,9 +38,9 @@ This section explains how pyRevit fits together so new contributors (human or AI
 ### Key components
 
 - **pyRevitLoader** (`dev/pyRevitLoader/`) — Revit add-in entry point.
-- **PyRevit.Runtime** (`dev/pyRevitLabs/pyRevitLabs.PyRevit.Runtime/`) — Command execution.
+- **PyRevit.Runtime** (`dev/pyRevitLabs.PyRevit.Runtime/`) — Command execution.
 - **pyrevitlib** (`pyrevitlib/pyrevit/`) — Python API for scripts.
-- **CLI** (`dev/pyRevitLabs/pyRevitLabs.PyRevit/`) — Command-line management.
+- **CLI** (`dev/pyRevitLabs/pyRevitCLI/`) — Command-line management.
 
 ### Loading sequence
 
@@ -65,7 +65,7 @@ The loader dll is the C# entry point for pyRevit inside Revit. Multiple versions
 
 ### Script engines
 
-Located in `dev/pyRevitLabs/pyRevitLabs.PyRevit.Runtime/`:
+Located in `dev/pyRevitLabs.PyRevit.Runtime/`:
 
 - `IronPythonEngine.cs` — Default Python engine.
 - `CPythonEngine.cs` — Modern Python (3.12).
@@ -88,7 +88,7 @@ The appropriate script engine is selected automatically based on the script type
 
 ## Languages and technologies
 
-- **Python**: IronPython 2.7.12 (default), CPython 3.12.3, IronPython 3.4.0.
+- **Python**: IronPython 2.7.12 (default), CPython 3.12.3, IronPython 3.4.2.
 - **C#**: .NET Framework 4.8 (Revit 2021–2024), .NET 8.0 (Revit 2025–2026), .NET 10.0 (Revit 2027+).
 - **Go**: pyRevit autocomplete application (`dev/pyRevitLabs/pyRevitCLIAutoComplete`).
 - **Build tools**: .NET 10, ModularPipelines, Visual Studio 2022, MSBuild, Inno Setup.
@@ -168,7 +168,7 @@ Supported bundle types: `pushbutton`, `smartbutton`, `pulldown`, `splitbutton`, 
 
 ## Key configuration files
 
-- `Pipfile` — Python dependencies (requires Python 3.10).
+- `Pipfile` — Python dependencies (requires Python 3.14).
 - `pyRevitfile` — Engine definitions and deployment profiles.
 - `pyproject.toml` — Ruff linting config (Google docstring convention).
 - `mkdocs.yml` — Documentation generation.
