@@ -2,8 +2,6 @@
 
 Agent rules for the pyRevit repository.
 
-The vendor-specific files (`.github/copilot-instructions.md`, `CLAUDE.md`) are thin pointers to this file; they exist only so each tool discovers the rules at its expected filename.
-
 ---
 
 ## Project overview
@@ -12,16 +10,7 @@ pyRevit is a Rapid Application Development (RAD) environment for Autodesk Revit.
 
 ## Repository organization
 
-- **bin** — Generated product binaries (DLLs, engines, CLI). Built locally via `dotnet run -- ci` or downloaded anonymously from public CI Release assets by `pyrevit clone`. Not tracked in git. Static sources: `release/bin-assets/`, `release/cengines/`, `release/pyrevit-hosts.json`. The CPython DLLs and core packages also live here.
-- **dev** — C# source code, build scripts, and solution files.
-- **docs** — Documentation source for the website (mkdocs).
-- **extensions** — pyRevit extensions (tools visible in the Revit ribbon). `pyRevitCore.extension` builds the pyRevit ribbon tab; the rest are enabled via the Extensions button. `pyRevitDevTools` is handy for running tests and checking that pyRevit (and your changes) is working.
-- **extras** — Extra files that come in handy (icons, dark-mode generator).
-- **licenses** — Licenses of the included third-party projects.
-- **pyrevitlib** — pyRevit and related Python libraries; imported by user scripts to ease Revit API development.
-- **release** — Static assets needed to build the final product (pyRevit and pyRevit CLI installers) plus build artifacts and installer configurations.
-- **site-packages** — Third-party Python packages made available by pyRevit to the user. Given that the main Python engine is IronPython 2.7.12, packages here must be compatible with it.
-- **static** — Assets for the website and YouTube channels. You can ignore it.
+See [`docs/repo-organization.md`](docs/repo-organization.md).
 
 ## Architecture overview
 
@@ -119,7 +108,7 @@ Other pipeline modes: `pack`, `sign`, `publish`, `winget`, `notify`. See `build/
 ## Documentation
 
 - Main website: https://pyrevitlabs.io/
-- Technical docs: https://docs.pyrevitlabs.io/ (mkdocs, built from `docs/` folder)
+- Technical docs: [`docs/`](docs) (mkdocs). Reference API is generated from source docstrings.
 
 ```bash
 pipenv run docs                       # Build documentation (mkdocs)
@@ -176,7 +165,7 @@ Supported bundle types: `pushbutton`, `smartbutton`, `pulldown`, `splitbutton`, 
 
 ## Code style
 
-- Python: Google docstring convention, formatted with black, linted with ruff.
+- Python: Google docstring convention. Run `pipenv run black <path>` to format and `pipenv run ruff check --fix <path>` to lint — these are not enforced by pre-commit hooks, so you must run them before finishing.
 - C#: Standard .NET conventions.
 
 ## Commenting guidelines
@@ -205,16 +194,14 @@ Do not write inline comments that:
 **Example — what to avoid:**
 
 ```python
-# Call get_ext_root_dirs to retrieve the list of extension paths from user config,
-# then pass each path to extensionmgr to scan for UI extension manifests.
-extensions = get_all_extensions()
+# Recursively delete the directory; on Windows, clear read-only flags first so shutil.rmtree doesn't fail on read-only files.
+fully_remove_dir(target_dir)
 ```
 
 **Example — what to write instead:**
 
 ```python
-# Collect all installed extensions visible to the current user before building the UI.
-extensions = get_all_extensions()
+fully_remove_dir(target_dir)
 ```
 
 ## Documentation requirements
