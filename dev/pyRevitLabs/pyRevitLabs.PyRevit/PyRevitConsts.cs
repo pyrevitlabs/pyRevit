@@ -187,8 +187,6 @@ namespace pyRevitLabs.PyRevit {
         public const string BundleScriptRevitFamilyPostfix = ".rfa";
 
         // loader settings
-        public const string ConfigsNewLoaderKey = "new_loader";
-        public const bool ConfigsNewLoaderDefault = true;
         public const string ConfigsReadScriptMetadataKey = "read_script_metadata";
         public const bool ConfigsReadScriptMetadataDefault = true;
 

@@ -2029,7 +2029,8 @@ the pyRevit dll paths have changed with pyrevit 5 (current WIP version), so you 
 If you don't have it already, you can build the CLI from sources and run it with
 
 ```md-code__content
-pipenv run pyrevit build labs
+cd build
+dotnet run -c Release -- ci
 copy .\release\.pyrevitargs .
 .\bin\pyrevit.exe attach dev default --installed
 
@@ -2042,7 +2043,8 @@ Currently, you cannot use Visual Studio's "Run" button to debug pyRevit because 
 1. **Build the Project**: Open a command prompt or PowerShell, navigate to your git directory, and build the project in Debug mode:
 
 ```md-code__content
-pipenv run pyrevit build products Debug
+cd build
+dotnet run -c Debug -- ci
 
 ```
 

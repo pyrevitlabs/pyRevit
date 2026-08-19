@@ -222,7 +222,8 @@ namespace pyRevitCLI
                         repoUrl: TryGetValue("--source"),
                         imagePath: TryGetValue("--image"),
                         destPath: TryGetValue("--dest"),
-                        credentials: TryGetCredentials()
+                        credentials: TryGetCredentials(),
+                        skipBin: arguments["--skip-bin"].IsTrue
                     );
             }
 

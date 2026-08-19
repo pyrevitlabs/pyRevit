@@ -1,6 +1,7 @@
 """Unit tests facility."""
 import time
 from unittest import TestResult, TestLoader
+from xml.sax.saxutils import escape
 
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.output import get_output
@@ -97,6 +98,7 @@ class PyRevitTestResult(TestResult):
         mlogger.debug(DEBUG_FAIL_RESULT)
         self.writer.write(RESULT_DIV_ERROR
                           .format(test=self.getDescription(test)))
+        self._write_exception(test, err)
 
     def addFailure(self, test, err):
         """Adds a test failure.
@@ -109,6 +111,16 @@ class PyRevitTestResult(TestResult):
         mlogger.debug(DEBUG_FAIL_RESULT)
         self.writer.write(RESULT_DIV_FAIL
                           .format(test=self.getDescription(test)))
+        self._write_exception(test, err)
+
+    def _write_exception(self, test, err):
+        """Prints the failing test's traceback to the output window."""
+        try:
+            details = self._exc_info_to_string(err, test)
+        except Exception:
+            details = repr(err)
+        mlogger.debug(details)
+        self.writer.write('<pre>{}</pre>'.format(escape(details)))
 
     # def addSkip(self, test, reason):
     #     super(PyRevitTestResult, self).addSkip(test, reason)

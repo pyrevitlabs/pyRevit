@@ -11,10 +11,11 @@ This module:
 import os.path as op
 import json
 import codecs
-from pyrevit import clr, BIN_DIR, DB
+from pyrevit import BIN_DIR, DB
+from pyrevit import framework
 from pyrevit.coreutils.logger import get_logger
 
-clr.AddReferenceToFileAndPath(op.join(BIN_DIR, "Ifc.Net"))
+framework.add_reference_to_file(op.join(BIN_DIR, "Ifc.Net"))
 
 import Ifc4
 
