@@ -12,6 +12,22 @@ pyRevit is a Rapid Application Development (RAD) environment for Autodesk Revit.
 
 See [`docs/repo-organization.md`](docs/repo-organization.md).
 
+## Extension bundle structure
+
+Extensions follow this hierarchy:
+
+```text
+MyExtension.extension/
+  MyTab.tab/
+    MyPanel.panel/
+      MyButton.pushbutton/
+        bundle.yaml      # Button configuration
+        script.py        # Python script
+        icon.png         # Button icon
+```
+
+Supported bundle types: `pushbutton`, `smartbutton`, `pulldown`, `splitbutton`, `panelbutton`.
+
 ## Architecture overview
 
 This section explains how pyRevit fits together so new contributors (human or AI) understand the moving parts.
@@ -78,13 +94,13 @@ The appropriate script engine is selected automatically based on the script type
 ## Languages and technologies
 
 - **Python**: IronPython 2.7.12 (default), CPython 3.12.3, IronPython 3.4.2.
-- **C#**: .NET Framework 4.8 (Revit 2021–2024), .NET 8.0 (Revit 2025–2026), .NET 10.0 (Revit 2027+).
+- **C#**: .NET Framework 4.8, .NET 8.0, or .NET 10.0, depending on Revit version — see [Supported Revit versions](#supported-revit-versions).
 - **Go**: pyRevit autocomplete application (`dev/pyRevitLabs/pyRevitCLIAutoComplete`).
 - **Build tools**: .NET 10, ModularPipelines, Visual Studio 2022, MSBuild, Inno Setup.
 
 ## Build commands
 
-The build is driven by the C# ModularPipelines project under `build/`. Run from `build/`:
+The build is driven by the C# ModularPipelines project under `build/`. To verify a change builds, run from `build/`:
 
 ```powershell
 # Default unsigned local build (Channel=none)
@@ -92,26 +108,19 @@ dotnet run -c Release -- ci
 
 # Debug build (attach the Visual Studio debugger to revit.exe)
 dotnet run -c Debug -- ci
-
-# WIP-style stamping + product build (mirrors develop push on the main repo)
-$env:Build__Channel = 'wip'
-dotnet run -c Release -- ci
-
-# Release-style stamping + product build (mirrors master / tag CI on the main repo)
-$env:Build__Channel = 'release'
-$env:DOTNET_ENVIRONMENT = 'Production'
-dotnet run -c Release -- ci
 ```
 
-Other pipeline modes: `pack`, `sign`, `publish`, `winget`, `notify`. See `build/README.md` for the full list, `Build__Channel` semantics, and CI gating.
+The `wip`/`release` channel stamping (`Build__Channel` env var) and the other pipeline modes (`pack`, `sign`, `publish`, `winget`, `notify`) are CI-owned — don't invoke them locally. See `build/README.md` for details.
 
 ## Documentation
 
 - Main website: https://pyrevitlabs.io/
-- Technical docs: [`docs/`](docs) (mkdocs). Reference API is generated from source docstrings.
+- Technical docs source: [`docs/`](docs) (mkdocs). Reference API is generated from source docstrings.
+
+Build and validate before finishing doc changes:
 
 ```bash
-pipenv run docs                       # Build documentation (mkdocs)
+mkdocs build --strict                 # Build docs, fail on warnings
 pipenv run check-docstrings           # Lint docstrings with ruff
 ```
 
@@ -126,42 +135,16 @@ pyrevit attach dev default --installed
 
 ## Development workflow
 
-1. Fork and clone the repository.
-2. Checkout `develop` (active development).
-3. Initialize submodules: `git submodule update --init --recursive`.
-4. Install dependencies: `pipenv install`.
-5. Build: `cd build && dotnet run -c Debug -- ci && cd ..`.
-6. Test in Revit by attaching the clone.
-
-For debugging C# code:
-
-1. Build in Debug mode.
-2. Open the appropriate `.sln` file in Visual Studio.
-3. Attach the debugger to `revit.exe`.
-
-## Extension bundle structure
-
-Extensions follow this hierarchy:
-
-```
-MyExtension.extension/
-  MyTab.tab/
-    MyPanel.panel/
-      MyButton.pushbutton/
-        bundle.yaml      # Button configuration
-        script.py        # Python script
-        icon.png         # Button icon
-```
-
-Supported bundle types: `pushbutton`, `smartbutton`, `pulldown`, `splitbutton`, `panelbutton`.
+1. Branch from `develop` — see [Git workflow](#git-workflow).
+2. Initialize submodules: `git submodule update --init --recursive`.
+3. Install dependencies: `pipenv install`.
+4. Build: `cd build && dotnet run -c Debug -- ci && cd ..`.
+5. Test in Revit by attaching the clone — see [Testing](#testing).
 
 ## Key configuration files
 
 - `Pipfile` — Python dependencies (requires Python 3.14).
 - `pyRevitfile` — Engine definitions and deployment profiles.
-- `pyproject.toml` — Ruff linting config (Google docstring convention).
-- `mkdocs.yml` — Documentation generation.
-- `.gitmodules` — Git submodules for dependencies.
 
 ## Code style
 
@@ -170,39 +153,12 @@ Supported bundle types: `pushbutton`, `smartbutton`, `pulldown`, `splitbutton`, 
 
 ## Commenting guidelines
 
-Code, names, types, and docstrings carry meaning. Inline comments are the exception, not the rule. When in doubt, delete the comment and see if the code still reads correctly.
+Don't write inline comments. Ever. Code must be self-explanatory — if it isn't, improve names or extract a well-named function instead of explaining it in a comment. Keep pre-existing comments made by a human unless they're clearly outdated.
 
-The default for inline comments is: do not add them. The contract below is exhaustive — every inline comment must fall into exactly one of the listed special cases; if it does not, delete it.
+Exceptions:
 
-### Inline comments
-
-Allowed only in the following cases. Anything else is removed.
-
-- Non-obvious **why** that cannot live in a docstring (Revit API quirk, threading constraint, perf tradeoff, historical reason).
-- Warnings about side effects, ordering, or invariants a future editor must preserve.
 - Pragmas required by tooling or the language: `# noqa`, `# type: ignore`, `# pylint: disable=…`, `# coding: utf-8`, shebang lines, encoding markers, license headers.
 - `TODO` / `FIXME` / `XXX` with an owner and ticket reference.
-
-Do not write inline comments that:
-
-- Restate what the next line of code literally does (`# increment counter`, `# call the loader`, `# return the list`).
-- Name specific internal functions, classes, or modules that the code depends on.
-- Describe the sequence of steps the implementation follows.
-- Reference implementation choices that could change (e.g. which engine, which data structure, which library).
-- Act as section banners or decorative headers (`# ----- helpers -----`).
-
-**Example — what to avoid:**
-
-```python
-# Recursively delete the directory; on Windows, clear read-only flags first so shutil.rmtree doesn't fail on read-only files.
-fully_remove_dir(target_dir)
-```
-
-**Example — what to write instead:**
-
-```python
-fully_remove_dir(target_dir)
-```
 
 ## Documentation requirements
 
@@ -220,7 +176,7 @@ Information lives in the narrowest scope that carries it:
 | Module docstring | Why this subsystem exists; its boundaries |
 | Class docstring | Responsibilities, lifecycle, invariants |
 | Function / method docstring | Contract, side effects, exceptions, non-obvious constraints |
-| Inline comment | Why this particular implementation is unusual |
+| Inline comment | Pragmas and `TODO`/`FIXME`/`XXX` only — see [Commenting guidelines](#commenting-guidelines) |
 
 ### What belongs in docstrings
 
@@ -232,7 +188,6 @@ When applicable, capture:
 - **Exceptions** — especially domain-specific ones and what they mean here.
 - **Invariants** — conditions that must remain true after refactoring.
 - **Non-obvious constraints** — ordering, idempotency, thread safety, transaction boundaries, compatibility requirements.
-- **Why something unusual exists** — historical or architectural reason.
 - **Architectural role** — how this symbol relates to the rest of the system (e.g. "Payment providers must not modify subscriptions directly").
 
 Mark dangerous-to-break constraints explicitly with Google-style sections: `Important:`, `Note:`, `Warning:`, `Invariant:`. Treat them as red lines for the next editor.
@@ -242,7 +197,6 @@ Mark dangerous-to-break constraints explicitly with Google-style sections: `Impo
 - Restating the signature, name, or types.
 - Narrating the implementation (`"""Loop through items and add item.price to total."""`).
 - Padding trivial functions — if behaviour is obvious from the code, omit the docstring entirely.
-- Implementation details an agent can inspect (`"""Uses Redis sorted set keyed by timestamp."""` when the call is right there).
 
 ### Language rules
 
@@ -254,10 +208,7 @@ When behaviour changes, update the docstring / XML doc in the same change.
 
 ## Self-check before finalising
 
-Before finishing a task, audit the diff:
-
-1. Scan for inline comments. For each one, name the special case it falls under. If you cannot, delete it.
-2. Scan for new or changed public symbols. Confirm each one has a docstring (Python) or XML `///` doc (C#) only if it carries information that cannot be read off the code — purpose, contract, side effects, invariants. Strip anything that just restates the signature or narrates the implementation.
+Before finishing, audit the diff: remove any inline comment that isn't a pragma or `TODO`/`FIXME`/`XXX`, and strip any docstring that just restates the signature or narrates the implementation.
 
 ## Supported Revit versions
 
@@ -269,8 +220,7 @@ Before finishing a task, audit the diff:
 
 ## Git workflow
 
-- `develop` branch: Active development (always start here).
-- `master` branch: Release material only.
-- `docs` branch: Documentation website.
-- Feature branches from `develop`, PRs back to `develop`.
+- `develop` branch: active development — branch from here, PR back into it.
+- `master` branch: release material only.
+- `docs` branch: documentation website, published by CI — don't push to it directly.
 - Run `git submodule update` after switching branches.
