@@ -261,7 +261,7 @@ Mark dangerous-to-break constraints explicitly with Google-style sections: `Impo
 
 - **Python**: Google-style docstrings on **public** symbols (non-underscored). Match `pyproject.toml` (`select = ["D"]`, `convention = "google"`), enforced by `pipenv run check-docstrings`.
 - **C#**: XML `///` doc comments on **public** classes and methods. `<summary>` carries purpose; `<param>` / `<returns>` / `<exception>` cover non-obvious details only.
-- Private (underscored Python, `private` / `internal` C#) members are exempt — same carve-out as `D107` and `D105`.
+- Private (underscored Python, `private` / `internal` C#) members are exempt.
 
 When behaviour changes, update the docstring / XML doc in the same change.
 
