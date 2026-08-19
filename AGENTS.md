@@ -4,13 +4,13 @@ Agent rules for the pyRevit repository.
 
 ---
 
-## Project overview
-
-pyRevit is a Rapid Application Development (RAD) environment for Autodesk Revit. It lets users write automation tools in Python (IronPython 2.7.12 default, CPython 3.12.3, or IronPython 3.4.0), C#, or VB.NET. The project also ships a CLI utility for deployment and a telemetry server for usage tracking.
-
 ## Repository organization
 
 See [`docs/repo-organization.md`](docs/repo-organization.md).
+
+## Project overview
+
+pyRevit is a Rapid Application Development (RAD) environment for Autodesk Revit. It lets users write automation tools in Python (IronPython 2.7.12 default, CPython 3.12.3, or IronPython 3.4.0), C#, or VB.NET. The project also ships a CLI utility for deployment and a telemetry server for usage tracking.
 
 ## Extension bundle structure
 
@@ -30,7 +30,7 @@ Supported bundle types: `pushbutton`, `smartbutton`, `pulldown`, `splitbutton`, 
 
 ## Architecture overview
 
-This section explains how pyRevit fits together so new contributors (human or AI) understand the moving parts.
+See [`docs/architecture.md`](docs/architecture.md)
 
 ### Components
 
@@ -91,6 +91,14 @@ Each ribbon button is backed by a command that:
 
 The appropriate script engine is selected automatically based on the script type.
 
+## Supported Revit versions
+
+2021–2027, with separate builds per version. The C# loader requires Revit 2021+; the legacy pure-Python loader (which supported older versions) has been removed.
+
+- Revit 2021–2024: .NET Framework 4.8.
+- Revit 2025–2026: .NET 8.0 (Windows).
+- Revit 2027+: .NET 10.0 (Windows).
+
 ## Languages and technologies
 
 - **Python**: IronPython 2.7.12 (default), CPython 3.12.3, IronPython 3.4.2.
@@ -114,7 +122,7 @@ The `wip`/`release` channel stamping (`Build__Channel` env var) and the other pi
 
 ## Documentation
 
-- Main website: https://pyrevitlabs.io/
+- [Developer Docs (Notion)](https://pyrevitlabs.notion.site/Developer-Docs-2c88f3ecccde422d9504e20b6b9e04f8)
 - Technical docs source: [`docs/`](docs) (mkdocs). Reference API is generated from source docstrings.
 
 Build and validate before finishing doc changes:
@@ -135,8 +143,12 @@ pyrevit attach dev default --installed
 
 ## Development workflow
 
-1. Branch from `develop` — see [Git workflow](#git-workflow).
-2. Initialize submodules: `git submodule update --init --recursive`.
+- `develop` branch: active development — branch from here, PR back into it.
+- `master` branch: release material only.
+- `docs` branch: documentation website, published by CI — don't push to it directly.
+
+1. Branch from `develop`.
+2. Initialize submodules: `git submodule update --init --recursive` (also after switching branches).
 3. Install dependencies: `pipenv install`.
 4. Build: `cd build && dotnet run -c Debug -- ci && cd ..`.
 5. Test in Revit by attaching the clone — see [Testing](#testing).
@@ -153,7 +165,7 @@ pyrevit attach dev default --installed
 
 ## Commenting guidelines
 
-Don't write inline comments. Ever. Code must be self-explanatory — if it isn't, improve names or extract a well-named function instead of explaining it in a comment. Keep pre-existing comments made by a human unless they're clearly outdated.
+Don't write inline comments. Ever. Code must be self-explanatory — if it isn't, improve names or extract a well-named function instead of explaining it in a comment. Keep pre-existing comments unless they're clearly outdated.
 
 Exceptions:
 
@@ -205,22 +217,3 @@ Mark dangerous-to-break constraints explicitly with Google-style sections: `Impo
 - Private (underscored Python, `private` / `internal` C#) members are exempt.
 
 When behaviour changes, update the docstring / XML doc in the same change.
-
-## Self-check before finalising
-
-Before finishing, audit the diff: remove any inline comment that isn't a pragma or `TODO`/`FIXME`/`XXX`, and strip any docstring that just restates the signature or narrates the implementation.
-
-## Supported Revit versions
-
-2021–2027, with separate builds per version. The C# loader requires Revit 2021+; the legacy pure-Python loader (which supported older versions) has been removed.
-
-- Revit 2021–2024: .NET Framework 4.8.
-- Revit 2025–2026: .NET 8.0 (Windows).
-- Revit 2027+: .NET 10.0 (Windows).
-
-## Git workflow
-
-- `develop` branch: active development — branch from here, PR back into it.
-- `master` branch: release material only.
-- `docs` branch: documentation website, published by CI — don't push to it directly.
-- Run `git submodule update` after switching branches.
