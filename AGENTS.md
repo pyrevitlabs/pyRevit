@@ -1,6 +1,6 @@
 # Agent Instructions
 
-Unified agent rules for the pyRevit repository. Every AI assistant touching this repo (GitHub Copilot, Claude Code, opencode, Cursor, Aider, etc.) must follow this file.
+Agent rules for the pyRevit repository.
 
 The vendor-specific files (`.github/copilot-instructions.md`, `CLAUDE.md`) are thin pointers to this file; they exist only so each tool discovers the rules at its expected filename.
 
