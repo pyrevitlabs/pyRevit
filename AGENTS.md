@@ -229,7 +229,7 @@ Information lives in the narrowest scope that carries it:
 
 | Scope | Carries |
 |---|---|
-| `AGENTS.md` | Architecture, conventions, commands every agent needs |
+| `AGENTS.md` | Conventions, commands every agent needs |
 | Module docstring | Why this subsystem exists; its boundaries |
 | Class docstring | Responsibilities, lifecycle, invariants |
 | Function / method docstring | Contract, side effects, exceptions, non-obvious constraints |
