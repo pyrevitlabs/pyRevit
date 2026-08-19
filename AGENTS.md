@@ -89,7 +89,7 @@ The appropriate script engine is selected automatically based on the script type
 ## Languages and technologies
 
 - **Python**: IronPython 2.7.12 (default), CPython 3.12.3, IronPython 3.4.0.
-- **C#**: .NET Framework 4.8 (Revit 2017–2024), .NET 8.0 (Revit 2025+).
+- **C#**: .NET Framework 4.8 (Revit 2021–2024), .NET 8.0 (Revit 2025–2026), .NET 10.0 (Revit 2027+).
 - **Go**: pyRevit autocomplete application (`dev/pyRevitLabs/pyRevitCLIAutoComplete`).
 - **Build tools**: .NET 10, ModularPipelines, Visual Studio 2022, MSBuild, Inno Setup.
 
@@ -274,11 +274,11 @@ Before finishing a task, audit the diff:
 
 ## Supported Revit versions
 
-2017–2027, with separate builds per version:
+2021–2027, with separate builds per version. The C# loader requires Revit 2021+; the legacy pure-Python loader (which supported older versions) has been removed.
 
-- Revit 2017–2024: .NET Framework 4.7.2 / 4.8.
-- Revit 2025–2026: .NET 8.0.
-- Revit 2027+: .NET 10.0.
+- Revit 2021–2024: .NET Framework 4.8.
+- Revit 2025–2026: .NET 8.0 (Windows).
+- Revit 2027+: .NET 10.0 (Windows).
 
 ## Git workflow
 
