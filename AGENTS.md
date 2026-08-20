@@ -72,19 +72,22 @@ pyrevit attach dev default --installed
 
 1. Branch from `develop`.
 2. Initialize submodules: `git submodule update --init --recursive` (also after switching branches).
-3. Install dependencies: `pipenv install`.
-4. Build: `cd build && dotnet run -c Debug -- ci && cd ..`.
-5. Test in Revit by attaching the clone — see [Testing](#testing).
+3. Install dependencies: `pipenv install --dev`.
+4. Install the pre-commit hooks: `pipenv run pre-commit install` (or `pipenv run install-hooks`).
+5. Build: `cd build && dotnet run -c Debug -- ci && cd ..`.
+6. Test in Revit by attaching the clone — see [Testing](#testing).
 
 ## Key configuration files
 
 - `Pipfile` — Python dependencies (requires Python 3.14).
 - `pyRevitfile` — Engine definitions and deployment profiles.
+- `.pre-commit-config.yaml` — commit-time `ruff format` (Python) and `dotnet format` (C#) hooks; see [Code style](#code-style).
+- `.editorconfig` — the C# formatting conventions `dotnet format` enforces.
 
 ## Code style
 
-- Python: Google docstring convention. Run `pipenv run black <path>` to format and `pipenv run ruff check --fix <path>` to lint — these are not enforced by pre-commit hooks, so you must run them before finishing.
-- C#: Standard .NET conventions.
+- Python: Google docstring convention. `ruff format` runs automatically on commit via a pre-commit hook (any commit touching `pyrevitlib/` except vendored `rpw/`) and will reformat and fail the commit for review if it changes anything — install it once with `pipenv run pre-commit install`. Also run `pipenv run ruff check --fix <path>` to lint before finishing; that part isn't hook-enforced.
+- C#: matches each area's existing brace convention (see `.editorconfig`: same-line/K&R everywhere except the `pyRevitAssemblyBuilder`/`pyRevitExtensionParser`/`pyRevitExtensionParserTester` trio under `dev/pyRevitLoader/`, which use Allman). `dotnet format` runs automatically on commit via the same pre-commit hook for any staged `.cs` file (vendored `dev/modules/` excluded) and will reformat and fail the commit for review if it changes anything.
 
 ## Commenting guidelines
 
