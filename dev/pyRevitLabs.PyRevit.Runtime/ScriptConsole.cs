@@ -383,6 +383,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         /// <summary>
         /// Stylesheet shipped with pyRevit, or empty when it cannot be located.
+        /// Located relative to this assembly's deploy path
+        /// (<c>&lt;root&gt;\bin\{net}\engines\{engine}\</c>); any failure to resolve it
+        /// is swallowed since a window with no stylesheet still renders, just unstyled.
         /// </summary>
         private static string BundledStyleSheet {
             get {
@@ -391,7 +394,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
                 _bundledStyleSheet = string.Empty;
                 try {
-                    // This assembly is deployed to <root>\bin\{net}\engines\{engine}\.
                     var engineDir = Path.GetDirectoryName(
                         System.Reflection.Assembly.GetExecutingAssembly().Location);
                     if (!string.IsNullOrEmpty(engineDir)) {
@@ -403,20 +405,23 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     }
                 }
                 catch {
-                    // A window with no stylesheet still renders; leave it unstyled.
                 }
 
                 return _bundledStyleSheet;
             }
         }
 
+        /// <summary>
+        /// Resolves the stylesheet to use, falling back to <see cref="BundledStyleSheet"/>
+        /// when the configured one is unset or missing. A window builds its document
+        /// head once, at construction, and that can happen before any host has
+        /// published the configured stylesheet; without this fallback such a window
+        /// would stay unstyled for the rest of the session.
+        /// </summary>
         private string GetStyleSheetFile() {
             var env = new EnvDictionary();
             var active = env.ActiveStyleSheet;
 
-            // A window builds its document head once, at construction, and that can
-            // happen before any host has published the configured stylesheet. Without
-            // this fallback such a window stays unstyled for the rest of the session.
             if (!string.IsNullOrEmpty(active) && File.Exists(active))
                 return active;
 

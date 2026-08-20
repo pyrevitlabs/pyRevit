@@ -354,11 +354,13 @@ namespace pyRevitLabs.PyRevit {
             ToggleExtension(ext, false);
         }
 
-        // Resolve the user-registered extension search paths for use: expand
-        // environment variables, normalize, keep only paths that exist, and dedup
-        // while preserving order. Does not modify stored configuration. Shared by
-        // the CLI search-path handling and the Python loader so both resolve the
-        // same paths from the same stored list.
+        /// <summary>
+        /// Resolves the stored extension search paths for use: expands environment
+        /// variables, normalizes, keeps only paths that exist, and dedups while
+        /// preserving order. Does not modify stored configuration. Shared by the
+        /// CLI search-path handling and the Python loader so both resolve the same
+        /// paths from the same stored list.
+        /// </summary>
         // @handled @logs
         public static List<string> ResolveUserExtensionPaths() {
             var resolvedPaths = new List<string>();
@@ -374,25 +376,30 @@ namespace pyRevitLabs.PyRevit {
             return resolvedPaths;
         }
 
-        // The stored entries, verbatim and detached from the cached section
-        // snapshot. Registration edits this list rather than the resolved one, so
-        // an entry written as an environment variable keeps its portable form and
-        // an entry that is only temporarily unreachable is not dropped from the
-        // config.
+        /// <summary>
+        /// Returns the stored extension search path entries verbatim, detached from
+        /// the cached section snapshot. Registration edits this list rather than the
+        /// resolved one, so an entry written as an environment variable keeps its
+        /// portable form and an entry that is only temporarily unreachable is not
+        /// dropped from the config.
+        /// </summary>
         // @handled @logs
         public static List<string> GetStoredExtensionSearchPaths() {
             var stored = PyRevitConfigs.GetConfigFile().Core.UserExtensions;
             return stored is null ? new List<string>() : new List<string>(stored);
         }
 
-        // get list of registered extension search paths
         // @handled @logs
         public static List<string> GetRegisteredExtensionSearchPaths() {
             // TODO: Make apply config to revit version
             return ResolveUserExtensionPaths();
         }
 
-        // add extension search path
+        /// <summary>
+        /// Registers an extension search path. An entry that carries an environment
+        /// variable is stored as the caller's original text so it stays portable;
+        /// otherwise the normalized path is stored.
+        /// </summary>
         // @handled @logs
         public static void RegisterExtensionSearchPath(string searchPath) {
             // TODO: Make apply config to revit version
@@ -400,8 +407,6 @@ namespace pyRevitLabs.PyRevit {
             if (!CommonUtils.VerifyPath(expandedPath))
                 throw new pyRevitResourceMissingException(searchPath);
 
-            // Keep the caller's text when it carries an environment variable so
-            // the entry stays portable; store the normalized path otherwise.
             var storedForm = expandedPath == searchPath ? searchPath.NormalizeAsPath() : searchPath;
             var normPath = expandedPath.NormalizeAsPath();
 
@@ -416,22 +421,26 @@ namespace pyRevitLabs.PyRevit {
             SaveExtensionSearchPaths(storedPaths);
         }
 
-        // remove extension search path
+        /// <summary>
+        /// Unregisters an extension search path, matching on the resolved form so an
+        /// entry stored as an environment variable can still be removed by the path
+        /// it expands to.
+        /// </summary>
         // @handled @logs
         public static void UnregisterExtensionSearchPath(string searchPath) {
             var normPath = searchPath.NormalizeAsPath();
             _logger.Debug("Removing extension search path \"{@ExtensionSource}\"", normPath);
 
-            // Match on the resolved form so an entry stored as an environment
-            // variable can still be removed by the path it expands to.
             var storedPaths = GetStoredExtensionSearchPaths();
             if (storedPaths.RemoveAll(entry => ResolvesTo(entry, normPath)) > 0)
                 SaveExtensionSearchPaths(storedPaths);
         }
 
-        // Whether a stored entry points at the given normalized path once expanded.
-        // A malformed stored entry cannot match anything, and must not take down
-        // the caller.
+        /// <summary>
+        /// Whether a stored entry points at the given normalized path once expanded.
+        /// A malformed stored entry cannot match anything, and must not take down
+        /// the caller.
+        /// </summary>
         private static bool ResolvesTo(string storedPath, string normalizedPath) {
             try {
                 return string.Equals(

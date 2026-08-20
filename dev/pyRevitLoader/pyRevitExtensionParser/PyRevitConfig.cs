@@ -19,9 +19,11 @@ namespace pyRevitExtensionParser
     {
         private readonly IConfiguration _config;
 
-        // Per-extension settings are read through the shared configuration service
-        // so the loader decodes them identically to the CLI and Python engines,
-        // rather than maintaining a second decode path here.
+        /// <summary>
+        /// Reads per-extension settings through the shared configuration service so
+        /// the loader decodes them identically to the CLI and Python engines, rather
+        /// than maintaining a second decode path here.
+        /// </summary>
         private IConfigurationService _service;
 
         /// <summary>
@@ -46,8 +48,6 @@ namespace pyRevitExtensionParser
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
         }
-
-        // ── core ────────────────────────────────────────────────────────────────
 
         /// <summary>
         /// Gets the user's locale preference (e.g. "en_us"), normalized to a
@@ -135,8 +135,6 @@ namespace pyRevitExtensionParser
         public List<string> ExtensionLookupSources =>
             AsService().Environment.Sources ?? new List<string>();
 
-        // ── telemetry ─────────────────────────────────────────────────────────────
-
         /// <summary>
         /// Gets whether script-execution telemetry is enabled.
         /// </summary>
@@ -205,17 +203,15 @@ namespace pyRevitExtensionParser
             }
         }
 
-        // ── loading & per-extension config ────────────────────────────────────────
-
         /// <summary>
         /// Loads the shared pyRevit configuration, or a one-off configuration from
         /// <paramref name="customPath"/> (used by tests). The default instance is
         /// reused only while the shared store still hands out the same configuration,
-        /// so any reload — from here or from another host — is observed.
+        /// so any reload — from here or from another host — is observed. Custom-path
+        /// calls are never cached and never touch the shared service.
         /// </summary>
         public static PyRevitConfig Load(string customPath = null)
         {
-            // Custom-path calls are never cached and never touch the shared service.
             if (!string.IsNullOrEmpty(customPath))
                 return new PyRevitConfig(IniConfiguration.Create(customPath));
 
@@ -268,9 +264,12 @@ namespace pyRevitExtensionParser
             };
         }
 
-        // Exposes the backing configuration through the service surface so the
-        // typed section readers are available. The same IConfiguration underlies
-        // both, so a custom-path instance and the shared default read alike.
+        /// <summary>
+        /// Exposes the backing configuration through the service surface so the
+        /// typed section readers are available. The same <see cref="IConfiguration"/>
+        /// underlies both, so a custom-path instance and the shared default read
+        /// alike.
+        /// </summary>
         private IConfigurationService AsService()
         {
             return _service ?? (_service = new ConfigurationBuilder(false)

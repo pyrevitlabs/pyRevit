@@ -232,7 +232,9 @@ namespace pyRevitExtensionParser
         /// <summary>
         /// Clears all static caches to force re-parsing of extensions.
         /// This should be called before reloading pyRevit to ensure newly installed
-        /// or enabled extensions are discovered.
+        /// or enabled extensions are discovered. Also resets locale tracking, so the
+        /// next parse does not read this as a locale change and re-enter this method
+        /// mid-parse.
         /// </summary>
         public static void ClearAllCaches()
         {
@@ -245,8 +247,6 @@ namespace pyRevitExtensionParser
             _readScriptMetadataCache = null;
             BundleParser.BundleYamlParser.ClearCache();
             ExtensionRegistryAuth.ClearCache();
-            // Reset locale tracking too, so the next parse does not read this as a
-            // locale change and re-enter ClearAllCaches mid-parse.
             _localeInitialized = false;
             _cachedLocale = null;
         }

@@ -29,10 +29,12 @@ namespace pyRevitLabs.PyRevit
     {
         private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
+        /// <summary>
+        /// Routes the Configurations-layer diagnostics (discovery, migration,
+        /// tolerant-read fallbacks) to the pyRevit log.
+        /// </summary>
         static PyRevitConfigs()
         {
-            // Route the Configurations-layer diagnostics (discovery, migration,
-            // tolerant-read fallbacks) to the pyRevit log.
             ConfigurationDiagnostics.Warn = message => _logger.Warn(message);
             ConfigurationDiagnostics.Info = message => _logger.Info(message);
         }
@@ -308,7 +310,6 @@ namespace pyRevitLabs.PyRevit
         {
             _logger.Debug("Enabling telemetry...");
 
-            // Only validate a caller-supplied path
             if (!string.IsNullOrEmpty(telemetryFileDir) && !Directory.Exists(telemetryFileDir))
             {
                 _logger.Warn("Directory \"{@TelemetryFileDir}\" does not exist", telemetryFileDir);
@@ -467,9 +468,11 @@ namespace pyRevitLabs.PyRevit
 
         // logging level config
 
-        // Pure mapping between the stored debug/verbose flags and the log level.
-        // Shared by this facade and the Python config facade so both agree on the
-        // representation without either re-deriving it.
+        /// <summary>
+        /// Maps the stored debug/verbose flags to a log level. Shared by this facade
+        /// and the Python config facade so both agree on the representation without
+        /// either re-deriving it.
+        /// </summary>
         public static PyRevitLogLevels ToLoggingLevel(bool? debug, bool? verbose)
         {
             if (verbose == true && debug != true)
@@ -479,7 +482,7 @@ namespace pyRevitLabs.PyRevit
             return PyRevitLogLevels.Quiet;
         }
 
-        // Debug implies verbose, so the two flags are always written together.
+        /// <summary>Debug implies verbose, so the two flags are always written together.</summary>
         public static bool LoggingLevelDebugFlag(PyRevitLogLevels level)
             => level == PyRevitLogLevels.Debug;
 
@@ -590,9 +593,11 @@ namespace pyRevitLabs.PyRevit
             cfg.SaveSection(new CoreSection() {CloseOtherOutputs = state});
         }
 
-        // Pure mapping between the stored close-output-mode value and the enum.
-        // Tolerates quoting/casing and falls back to the default. Shared by this
-        // facade and the Python config facade.
+        /// <summary>
+        /// Maps the stored close-output-mode value to the enum, tolerating
+        /// quoting/casing and falling back to the default. Shared by this facade
+        /// and the Python config facade.
+        /// </summary>
         public static OutputCloseMode ToCloseOutputMode(string rawValue)
         {
             var s = (rawValue ?? PyRevitConsts.ConfigsCloseOutputModeDefault).Trim().Trim('"', '\'');
@@ -655,6 +660,11 @@ namespace pyRevitLabs.PyRevit
             return cfg.Core.OutputStyleSheet ?? string.Empty;
         }
 
+        /// <summary>
+        /// Sets the output stylesheet path, or clears the key when
+        /// <paramref name="outputCssFilePath"/> is empty so consumers revert to
+        /// their built-in default stylesheet.
+        /// </summary>
         public static void SetOutputStyleSheet(string outputCssFilePath)
         {
             _logger.Debug("Setting output style sheet to {@OutputCssFilePath}...", outputCssFilePath);
@@ -662,7 +672,6 @@ namespace pyRevitLabs.PyRevit
             IConfigurationService cfg = GetConfigFile();
             if (string.IsNullOrEmpty(outputCssFilePath))
             {
-                // Clearing the key reverts consumers to their built-in default stylesheet.
                 cfg.Configuration.RemoveOption("core", "outputstylesheet");
                 cfg.Configuration.SaveConfiguration();
             }

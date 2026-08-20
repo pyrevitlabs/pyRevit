@@ -90,6 +90,11 @@ namespace pyRevitCLI
         }
 
         // cli entry point:
+        /// <summary>
+        /// A <see cref="ConfigurationReadOnlyException"/> raised while processing arguments
+        /// (e.g. writing to an admin-locked config) is logged as a warning rather than treated
+        /// as a failure, matching pre-refactor CLI behavior.
+        /// </summary>
         static void Main(string[] args) {
             AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
             {
@@ -167,9 +172,6 @@ namespace pyRevitCLI
                     ProcessArguments();
                 }
                 catch (ConfigurationReadOnlyException ex) {
-                    // Matches the pre-refactor CLI behavior: an admin-locked config
-                    // rejects the write, but that is not a tool failure worth a
-                    // nonzero exit code.
                     logger.Warn(ex.Message);
                 }
                 catch (Exception ex) {
@@ -911,8 +913,6 @@ namespace pyRevitCLI
                             else
                             {
                                 var existingVal = cfg.GetSectionKeyValueOrDefault<string>(configSection, configOption);
-                                // Null means absent; a key stored empty is a value
-                                // the reader must be able to tell apart from unset.
                                 if (existingVal is not null)
                                     Console.WriteLine($"{configOption} = {existingVal}");
                                 else

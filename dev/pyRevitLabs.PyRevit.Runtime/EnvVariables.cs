@@ -83,11 +83,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public bool TelemetryUTCTimeStamps;
 
 
+        /// <summary>
+        /// A config option that is not set reaches this dictionary as a null, so
+        /// every field read below goes through a type-matched <c>GetXxx</c> helper
+        /// rather than an unboxing cast, which would throw and take down session
+        /// load over a single absent option.
+        /// </summary>
         public EnvDictionary()
         {
-            // A config option that is not set reaches this dictionary as a null,
-            // so every read below is type-matched: an unboxing cast of null throws,
-            // which would take down session load over a single absent option.
             _envData = AppDomain.CurrentDomain.GetData(DomainStorageKeys.EnvVarsDictKey) as PythonDictionary;
             if (_envData is null) {
                 _envData = new PythonDictionary();

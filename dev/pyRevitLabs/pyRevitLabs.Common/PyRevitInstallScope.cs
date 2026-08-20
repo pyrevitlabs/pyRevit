@@ -42,9 +42,11 @@ namespace pyRevitLabs.Common {
         private const string PyRevitfileName = "pyRevitfile";
         private const string ConfigIniRegexPattern = @".*(pyrevit|config).*\.ini";
 
-        // Configs suffixed with a number (pyRevit_config.2025.ini) belong to a
-        // specific Revit version and are resolved by their own lookup, never by
-        // the generic name match below.
+        /// <summary>
+        /// Matches configs suffixed with a number (e.g. pyRevit_config.2025.ini),
+        /// which belong to a specific Revit version and are resolved by their own
+        /// lookup, never by the generic name match below.
+        /// </summary>
         private const string VersionedConfigIniRegexPattern = @"\.\d+\.ini$";
 
         private static bool? _isInstallAllUsers;

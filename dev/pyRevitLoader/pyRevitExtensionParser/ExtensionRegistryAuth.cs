@@ -57,14 +57,18 @@ namespace pyRevitExtensionParser
             }
         }
 
+        /// <summary>
+        /// Builds the registry auth cache into a local map and publishes it to
+        /// <see cref="_registryAuthByName"/> only once fully populated. Collecting
+        /// the source paths reads config, which can clear this cache re-entrantly
+        /// (e.g. a locale change during parsing), and that must not leave the field
+        /// null.
+        /// </summary>
         private static void EnsureRegistryCache(string extDir)
         {
             if (_registryAuthByName != null)
                 return;
 
-            // Populate a local map and publish it last: collecting the source paths
-            // reads config, which can clear this cache re-entrantly (e.g. a locale
-            // change during parsing), and that must not leave the field null.
             var cache = new Dictionary<string, RegistryAuthEntry>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var sourcePath in CollectDefinitionSourcePaths(extDir))
