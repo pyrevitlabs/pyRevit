@@ -130,7 +130,7 @@ In turn, the code in `ScriptExecutor.cs` calls the appropriate script engine bas
 
 ???+ info
 
-    You can find the code of the engines in the files that end `Engine.cs`, in `dev/pyRevitLabs.PyRevit.Runtime/`:
+    You can find the code of the engines in the files that end with `Engine.cs`, in `dev/pyRevitLabs.PyRevit.Runtime/`:
 
     - `IronPythonEngine.cs` — default Python engine.
     - `CPythonEngine.cs` — modern Python (3.12).
