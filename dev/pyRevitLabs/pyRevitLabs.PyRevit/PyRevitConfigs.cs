@@ -365,7 +365,7 @@ namespace pyRevitLabs.PyRevit
         public static string GetAppTelemetryServerUrl()
         {
             IConfigurationService cfg = GetConfigFile();
-            return cfg.Telemetry.AppTelemetryServerUrl;
+            return cfg.Telemetry.AppTelemetryServerUrl ?? string.Empty;
         }
 
         public static void EnableAppTelemetry(string apptelemetryServerUrl = null)
