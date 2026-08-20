@@ -375,7 +375,7 @@
             "type": "extension",
             "rocket_mode_compatible": "False",
             "name": "TramTools",
-            "description": "Free Revit productivity tools for Revit 2022-2027. No account required; anonymous usage telemetry is publicly documented.",
+            "description": "Free Revit productivity tools for Revit 2022-2027. No account, subscription, usage limit, or usage data collection.",
             "author": "Nguyen Duc Tram",
             "author_profile": "https://www.linkedin.com/in/tramnguyenduc/",
             "url": "https://github.com/ndtramk19bk-tech/TramTools.git",
