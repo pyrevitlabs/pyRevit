@@ -76,8 +76,7 @@ The legacy pure-Python loader (which supported pre-2021 Revit versions) has been
 
 !!! note
 
-    Since we cannot have multiple IronPython engines running at the same time, if the user switches the engine in the configuration, pyRevit will change the `.addin` manifest mentioned above to point to the correct dll path.
-    It may be that sometimes the addin is not created correctly or points to the wrong path, and this is why most of the times the `pyrevit attach` command solves the installation issues.
+    Only one IronPython runtime engine can be attached at a time; switching it (Settings UI or `pyrevit attach`) rewrites the `.addin` manifest to the matching `pyRevitLoader.dll` build. CPython selection is separate and doesn't touch the manifest. Manifests can also go stale from clone switches or mixed attachments — `pyrevit attach`/`switch` fixes them by recreating the manifest.
 
 ### Session loading
 

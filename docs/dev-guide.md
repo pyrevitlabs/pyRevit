@@ -19,6 +19,7 @@ Install Visual Studio 2022 and select:
 - under **workloads**, enable **.NET desktop development**
 - under ¨**Individual components** make sure the following are selected:
     - .NET 8.0 Runtime (Long Term Support)
+    - .NET 10.0 Runtime
     - .NET Framework 4.7.2 Targeting Pack
     - .NET Framework 4.8 SDK
     - .NET Framework 4.8 Targeting Pack
