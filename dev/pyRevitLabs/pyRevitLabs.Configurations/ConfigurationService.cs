@@ -223,6 +223,12 @@ public sealed class ConfigurationService : IConfigurationService
 
             object? keyValue = GetKeyValue(configuration, propertyInfo, sectionName, keyName);
 
+            // A property renamed from an older key still reads that key, so every
+            // reader (loader, CLI, Python) agrees on the value regardless of which
+            // key name a given config file carries.
+            if (keyValue is null && GetCustomAttribute<LegacyKeyNameAttribute>(propertyInfo) is { } legacyKeyName)
+                keyValue = GetKeyValue(configuration, propertyInfo, sectionName, legacyKeyName.KeyName);
+
             propertyInfo.SetValue(sectionConfiguration,
                 keyValue ?? GetPropertyDefault(propertyInfo) ?? propertyInfo.GetValue(sectionConfiguration));
         }

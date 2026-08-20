@@ -13,8 +13,7 @@ namespace pyRevitExtensionParser
     /// typed core/telemetry settings and per-extension sections the loader reads.
     /// Backed by one process-wide instance so the loader, CLI, and Python engines
     /// agree on the same file. Core and telemetry values decode through the service
-    /// so every reader interprets them identically; only the legacy Python-list and
-    /// <c>load_beta</c> forms are still parsed here, pending the service learning them.
+    /// so every reader interprets them identically.
     /// </summary>
     public class PyRevitConfig
     {
@@ -46,13 +45,6 @@ namespace pyRevitExtensionParser
         public PyRevitConfig(IConfiguration config)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
-        }
-
-        // ── value access ──────────────────────────────────────────────────────────
-
-        private string ReadRaw(string section, string key)
-        {
-            return _config.GetRawValueOrDefault(section, key, null);
         }
 
         // ── core ────────────────────────────────────────────────────────────────
@@ -91,18 +83,8 @@ namespace pyRevitExtensionParser
 
         /// <summary>
         /// Gets whether to load beta/experimental commands (default false).
-        /// Reads <c>loadbeta</c> first, falling back to legacy <c>load_beta</c>.
         /// </summary>
-        public bool LoadBeta
-        {
-            get
-            {
-                var value = ReadRaw("core", "loadbeta");
-                if (string.IsNullOrWhiteSpace(value))
-                    value = ReadRaw("core", "load_beta");
-                return TryParseConfigBool(value, out var result) && result;
-            }
-        }
+        public bool LoadBeta => AsService().Core.LoadBeta ?? false;
 
         /// <summary>
         /// Gets the logging verbosity level (0 = Quiet, 1 = Verbose, 2 = Debug),
@@ -315,27 +297,6 @@ namespace pyRevitExtensionParser
             return LocaleSupport.NormalizeLocaleKey(value);
         }
 
-        /// <summary>
-        /// Parses a stored boolean, ignoring surrounding whitespace and the JSON or
-        /// Python-literal quotes a value may carry. Accepts the same spellings as the
-        /// shared configuration service, so the two agree on every value.
-        /// </summary>
-        private static bool TryParseConfigBool(string raw, out bool result)
-        {
-            result = false;
-            if (string.IsNullOrWhiteSpace(raw))
-                return false;
-
-            var v = raw.Trim();
-            if (v.Length >= 2 &&
-                ((v[0] == '"' && v[v.Length - 1] == '"') ||
-                 (v[0] == '\'' && v[v.Length - 1] == '\'')))
-            {
-                v = v.Substring(1, v.Length - 2).Trim();
-            }
-
-            return bool.TryParse(v, out result);
-        }
     }
 
     /// <summary>

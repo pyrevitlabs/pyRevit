@@ -23,6 +23,7 @@ public sealed record CoreSection
 
     /// <summary>Whether commands marked beta are loaded into the UI. Default false.</summary>
     [KeyName("loadbeta")]
+    [LegacyKeyName("load_beta")]
     [DefaultValue(false)]
     public bool? LoadBeta { get; set; }
 
