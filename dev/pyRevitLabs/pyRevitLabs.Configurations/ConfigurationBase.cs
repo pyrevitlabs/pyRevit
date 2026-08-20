@@ -184,8 +184,6 @@ public abstract class ConfigurationBase : IConfiguration
         }
         catch (Exception error)
         {
-            // Return the default when the stored value cannot be deserialized,
-            // so a single malformed value does not fail the whole section load.
             ConfigurationDiagnostics.ReportFallback(sectionName, keyName, error);
             return defaultValue;
         }
@@ -212,7 +210,6 @@ public abstract class ConfigurationBase : IConfiguration
         }
         catch (Exception error)
         {
-            // Return the default when the stored value cannot be deserialized.
             ConfigurationDiagnostics.ReportFallback(sectionName, keyName, error);
             return defaultValue;
         }

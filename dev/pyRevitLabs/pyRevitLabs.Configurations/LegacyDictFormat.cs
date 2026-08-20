@@ -16,7 +16,14 @@ public static class LegacyDictFormat
     /// JSON parser, so unescaped Windows-path backslashes survive; only the two
     /// escapes Python emits inside a single-quoted literal are decoded. Returns
     /// false when the value is not a single-quoted dict, so the caller can fall
-    /// through. Later duplicate keys win, matching how a dict literal evaluates.
+    /// through — including when the caller already tried JSON and failed (a
+    /// double quote means the value was meant to be JSON), and when the value is
+    /// <c>"{}"</c>, which is also the canonical encoding of an empty dict and so
+    /// must not be claimed as legacy, or the migrator would rewrite and back up
+    /// an already-canonical config on every load — and when parsing yields no
+    /// entries, since a literal that parses to nothing is malformed rather than
+    /// empty (the empty case is <c>"{}"</c>, already declined above). Later
+    /// duplicate keys win, matching how a dict literal evaluates.
     /// </summary>
     public static bool TryParseSingleQuoted(string value, out Dictionary<string, string>? items)
     {
@@ -26,13 +33,9 @@ public static class LegacyDictFormat
         if (!value.StartsWith("{", StringComparison.Ordinal) || !value.EndsWith("}", StringComparison.Ordinal))
             return false;
 
-        // A double quote means this was meant to be JSON; the JSON reader already declined it.
         if (value.IndexOf('"') >= 0)
             return false;
 
-        // "{}" is also the canonical encoding of an empty dict. Claiming it as
-        // legacy would make the migrator rewrite (and back up) a canonical config
-        // on every load, since the rewrite reproduces the same text.
         if (value.Equals("{}", StringComparison.Ordinal))
             return false;
 
@@ -73,8 +76,6 @@ public static class LegacyDictFormat
             index++;
         }
 
-        // A literal that parsed but yielded nothing is malformed rather than empty;
-        // the empty case is the "{}" already declined above.
         if (result.Count == 0)
             return false;
 
@@ -120,8 +121,11 @@ public static class LegacyDictFormat
         return false;
     }
 
-    // An apostrophe inside a value is a delimiter only when the next meaningful
-    // character is the one that ends this position in the literal.
+    /// <summary>
+    /// Whether the apostrophe at <paramref name="index"/> closes the current
+    /// string. An apostrophe inside a value is a delimiter only when the next
+    /// meaningful character is the one that ends this position in the literal.
+    /// </summary>
     private static bool IsClosingDelimiter(
         string value, int index, int end, char terminator, bool endTerminates)
     {

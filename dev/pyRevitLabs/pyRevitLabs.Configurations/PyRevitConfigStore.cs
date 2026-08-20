@@ -40,7 +40,9 @@ public static class PyRevitConfigStore
     /// Returns the shared service, building it on first request. It is built
     /// exactly once even under concurrent first access, since building it seeds,
     /// migrates, and backs up files that two threads must not touch at the same
-    /// time.
+    /// time. A failed build is not cached: a <see cref="Lazy{T}"/> would replay
+    /// the same failure forever, so a failed attempt is dropped and a later call
+    /// retries once the cause (disk, ACLs) is resolved.
     /// </summary>
     public static IConfigurationService GetShared()
     {
@@ -63,8 +65,6 @@ public static class PyRevitConfigStore
         }
         catch
         {
-            // A failed build is replayed forever by the cached instance, so drop it
-            // and let a later call retry once the cause (disk, ACLs) is resolved.
             lock (_lock)
             {
                 if (ReferenceEquals(_cached, pending))

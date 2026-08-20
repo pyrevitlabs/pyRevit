@@ -29,8 +29,10 @@ public sealed class IniConfiguration : ConfigurationBase
     private readonly IniData _iniFile;
     private readonly FileIniDataParser _parser;
 
-    // pyRevit configs are also written and hand-edited as Python configparser
-    // files, which treat both '#' and ';' as comment markers.
+    /// <summary>
+    /// Matches the comment prefix pyRevit configs use when hand-edited as Python
+    /// configparser files, which treat both '#' and ';' as comment markers.
+    /// </summary>
     private static readonly Regex CommentPrefixRegex = new(@"^\s*[#;](.*)", RegexOptions.Compiled);
 
     /// <summary>
@@ -49,11 +51,6 @@ public sealed class IniConfiguration : ConfigurationBase
             : _parser.ReadFile(_configurationPath, DefaultFileEncoding);
     }
 
-    // A config file in the wild is user- and history-shaped: it may carry '#'
-    // comments, a stray line, or a repeated key or section. Refusing to parse it
-    // would take down every reader of the file (loader, CLI, script engines) at
-    // construction, before the migrator ever gets a chance to repair it, so a
-    // malformed entry is dropped and the last value of a repeated key wins.
     private static void ConfigureTolerantParsing(FileIniDataParser parser)
     {
         var configuration = parser.Parser.Configuration;
@@ -166,18 +163,22 @@ public sealed class IniConfiguration : ConfigurationBase
     private static readonly Regex HexIntegerRegex = new(@"^\s*0[xX][0-9a-fA-F]+\s*$", RegexOptions.Compiled);
 
     /// <inheritdoc />
+    /// <remarks>
+    /// Unwraps JSON string quotes before matching the legacy-form checks below,
+    /// so they see the bare value (e.g. <c>"0x0"</c> as <c>0x0</c>). A container
+    /// value that fails strict JSON parsing falls back to a backslash-escaped
+    /// re-parse, since a legacy Python literal's Windows paths carry unescaped
+    /// backslashes that JSON treats as bad escape sequences.
+    /// </remarks>
     protected override object GetValueImpl(Type typeObject, string sectionName, string keyName)
     {
         string raw = _iniFile[sectionName][keyName];
         Type targetType = Nullable.GetUnderlyingType(typeObject) ?? typeObject;
 
-        // Unwrap the JSON string quotes so the legacy-form checks below see the
-        // bare value (e.g. "0x0" as 0x0).
         string valueToParse = raw;
         if (valueToParse.Length >= 2 && valueToParse.StartsWith("\"", StringComparison.Ordinal) && valueToParse.EndsWith("\"", StringComparison.Ordinal))
             valueToParse = valueToParse.Substring(1, valueToParse.Length - 2);
 
-        // JSON does not allow hex literals (e.g. "0x0"); legacy INI may store ints as hex
         if ((targetType == typeof(int) || targetType == typeof(long)) && HexIntegerRegex.IsMatch(valueToParse))
         {
             long hexValue = Convert.ToInt64(valueToParse.Trim(), 16);
@@ -191,11 +192,9 @@ public sealed class IniConfiguration : ConfigurationBase
                 return (long?)hexValue;
         }
 
-        // JSON booleans are lowercase; legacy INI stored Python-style "True"/"False".
         if (targetType == typeof(bool) && bool.TryParse(valueToParse, out bool boolValue))
             return boolValue;
 
-        // Tolerate legacy bare (unquoted) string values.
         if (targetType == typeof(string))
         {
             try
@@ -208,10 +207,6 @@ public sealed class IniConfiguration : ConfigurationBase
             }
         }
 
-        // List<string> spans several historical encodings (canonical JSON, JSON
-        // whose legacy Windows paths carry unescaped backslashes, and the older
-        // Python single-quoted literal); decode them uniformly so every reader
-        // agrees on the parsed paths.
         if (targetType == typeof(List<string>))
             return DecodeStringList(raw, sectionName, keyName);
 
@@ -222,9 +217,6 @@ public sealed class IniConfiguration : ConfigurationBase
         }
         catch (JsonException) when (IsContainerLiteral(valueToParse))
         {
-            // Legacy configs stored lists and maps as Python literals, whose
-            // Windows paths carry unescaped backslashes that JSON rejects as bad
-            // escape sequences.
             return JsonConvert.DeserializeObject(EscapeBackslashes(raw), typeObject)
                    ?? throw new ConfigurationException("Cannot deserialize value using the specified key.");
         }
@@ -239,12 +231,15 @@ public sealed class IniConfiguration : ConfigurationBase
 
     private static readonly char[] SimpleJsonEscapeChars = { '"', '\\', '/', 'b', 'f', 'n', 'r', 't' };
 
-    // Reached only after a strict parse of the whole value has already failed.
-    // Doubles a backslash only when it is not already the start of a valid JSON
-    // escape sequence, so an already-correct escape elsewhere in the same value
-    // (e.g. one list entry among several) is left untouched. \u is only accepted
-    // when followed by 4 hex digits, so a legacy path like "...\u\..." (a literal
-    // "u" directory name, not a unicode escape) still gets doubled.
+    /// <summary>
+    /// Doubles a backslash only when it is not already the start of a valid JSON
+    /// escape sequence, so an already-correct escape elsewhere in the same value
+    /// (e.g. one list entry among several) is left untouched. <c>\u</c> is only
+    /// accepted when followed by 4 hex digits, so a legacy path like
+    /// <c>"...\u\..."</c> (a literal "u" directory name, not a unicode escape)
+    /// still gets doubled. Called only after a strict parse of the whole value
+    /// has already failed.
+    /// </summary>
     private static string EscapeBackslashes(string value)
     {
         var builder = new StringBuilder(value.Length);
@@ -281,12 +276,20 @@ public sealed class IniConfiguration : ConfigurationBase
     private static bool IsHexDigit(char c) =>
         (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
 
-    // Decodes a stored List<string> across every list encoding pyRevit has
-    // written. A bare (unbracketed) value is taken as a one-element list, which is
-    // how userextensions and environment.sources spell a single path. A value
-    // no encoding accounts for throws like any other undecodable value, so the
-    // tolerant readers log it and fall back and the migrator can repair the key;
-    // silently yielding an empty list would drop every configured extension.
+    /// <summary>
+    /// Decodes a stored <c>List&lt;string&gt;</c> across every list encoding
+    /// pyRevit has written: canonical JSON, JSON with unescaped legacy
+    /// Windows-path backslashes, the older Python single-quoted literal (whose
+    /// use is reported through <see cref="ConfigurationDiagnostics"/>, since a
+    /// read-only config never reaches the migrator that would otherwise
+    /// canonicalize it), and a bare unbracketed value taken as a one-element
+    /// list — how userextensions and environment.sources spell a single path.
+    /// An empty bracket literal is decoded directly, since neither encoding
+    /// carries a quote to distinguish it. A value no encoding accounts for
+    /// throws like any other undecodable value, so the tolerant readers log it
+    /// and fall back and the migrator can repair the key; silently yielding an
+    /// empty list would drop every configured extension.
+    /// </summary>
     private static List<string> DecodeStringList(string raw, string sectionName, string keyName)
     {
         if (string.IsNullOrEmpty(raw))
@@ -296,8 +299,6 @@ public sealed class IniConfiguration : ConfigurationBase
         if (!trimmed.StartsWith("[", StringComparison.Ordinal))
             return new List<string> { trimmed };
 
-        // An empty literal carries no quotes for either reader to key off, and both
-        // encodings spell it the same way.
         if (IsEmptyListLiteral(trimmed))
             return new List<string>();
 
@@ -306,8 +307,6 @@ public sealed class IniConfiguration : ConfigurationBase
 
         if (LegacyListFormat.TryParseSingleQuoted(trimmed, out List<string>? legacyList))
         {
-            // A read-only config never reaches the migrator's canonicalization, so
-            // surface the legacy read to flag configs still carrying the old form.
             ConfigurationDiagnostics.ReportInfo(
                 "Config value [" + sectionName + "] " + keyName + " was read using a legacy list format.");
             return legacyList!;
@@ -322,11 +321,17 @@ public sealed class IniConfiguration : ConfigurationBase
         && trimmed.EndsWith("]", StringComparison.Ordinal)
         && trimmed.Substring(1, trimmed.Length - 2).Trim().Length == 0;
 
+    /// <summary>
+    /// Parses a JSON list literal, retrying with backslash-escaping when the
+    /// first attempt fails, since a legacy Windows path stored unescaped carries
+    /// backslashes JSON treats as bad escapes. Returns false for a value with no
+    /// double quote at all, since that is the Python single-quoted form rather
+    /// than JSON.
+    /// </summary>
     private static bool TryJsonStringList(string raw, out List<string>? list)
     {
         list = null;
 
-        // A literal without double quotes is a Python single-quoted list, not JSON.
         if (raw.IndexOf('"') < 0)
             return false;
 
@@ -341,7 +346,6 @@ public sealed class IniConfiguration : ConfigurationBase
 
         try
         {
-            // Legacy Windows paths store unescaped backslashes that JSON rejects.
             list = JsonConvert.DeserializeObject<List<string>>(EscapeBackslashes(raw));
             return list != null;
         }
@@ -350,9 +354,6 @@ public sealed class IniConfiguration : ConfigurationBase
             return false;
         }
     }
-
-    // The Python single-quoted list form is decoded by LegacyListFormat (shared
-    // with the migrator) so both interpret it identically.
 
     /// <inheritdoc />
     protected override string GetRawValueImpl(string sectionName, string keyName)

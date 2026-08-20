@@ -167,12 +167,10 @@ public sealed record CoreSection
     [DefaultValue("")]
     public string? OutputStyleSheet { get; set; }
 
-    // No initializer: an unset value stays null so a sparse-section save does not
-    // rewrite (and clobber) this key. CreateSection supplies an empty list on read.
-
     /// <summary>
-    /// Directories searched for user extensions, in order. Read back as an empty
-    /// list when unset.
+    /// Directories searched for user extensions, in order. Left uninitialized so
+    /// an unset value stays null rather than clobbering the key on a
+    /// sparse-section save; read back as an empty list when unset.
     /// </summary>
     [KeyName("userextensions")]
     public List<string>? UserExtensions { get; set; }

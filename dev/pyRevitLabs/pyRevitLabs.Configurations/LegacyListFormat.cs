@@ -15,7 +15,12 @@ public static class LegacyListFormat
     /// Parses a Python single-quoted list literal without routing it through a JSON
     /// parser, so unescaped Windows-path backslashes survive; only the two escapes
     /// Python emits inside a single-quoted literal are decoded. Returns false when
-    /// the value is not a single-quoted list, so the caller can fall through.
+    /// the value is not a single-quoted list, so the caller can fall through —
+    /// including when the caller already tried JSON and failed (a double quote
+    /// means the value was meant to be JSON), and when the value is <c>"[]"</c>,
+    /// which is also the canonical encoding of an empty list and so must not be
+    /// claimed as legacy, or the migrator would rewrite and back up an
+    /// already-canonical config on every load.
     /// </summary>
     public static bool TryParseSingleQuoted(string value, out List<string>? items)
     {
@@ -25,13 +30,9 @@ public static class LegacyListFormat
         if (!value.StartsWith("[", StringComparison.Ordinal) || !value.EndsWith("]", StringComparison.Ordinal))
             return false;
 
-        // A double quote means this was meant to be JSON; the JSON reader already declined it.
         if (value.IndexOf('"') >= 0)
             return false;
 
-        // "[]" is also the canonical encoding of an empty list. Claiming it as
-        // legacy would make the migrator rewrite (and back up) a canonical config
-        // on every load, since the rewrite reproduces the same text.
         if (value.Equals("[]", StringComparison.Ordinal))
             return false;
 
@@ -53,7 +54,6 @@ public static class LegacyListFormat
                 }
                 else if (c != ',' && !char.IsWhiteSpace(c))
                 {
-                    // Unquoted content between items: not a list of strings.
                     return false;
                 }
 
@@ -83,8 +83,11 @@ public static class LegacyListFormat
         return true;
     }
 
-    // An apostrophe inside a value is a delimiter only when the next meaningful
-    // character ends the item.
+    /// <summary>
+    /// Whether the apostrophe at <paramref name="index"/> closes the current
+    /// item. An apostrophe inside a value is a delimiter only when the next
+    /// meaningful character ends the item.
+    /// </summary>
     private static bool IsClosingDelimiter(string value, int index, int end)
     {
         for (int i = index + 1; i < end; i++)

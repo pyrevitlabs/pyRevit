@@ -98,7 +98,10 @@ public static class ConfigurationMigrator
 
     /// <summary>
     /// Repairs the service's default configuration and stamps the schema version
-    /// when needed. A clean, already-stamped config performs no write.
+    /// when needed. A clean, already-stamped config performs no write. Legacy
+    /// single-quoted containers are rewritten as canonical JSON, which keeps the
+    /// rewrite idempotent since the canonical form is no longer detected as
+    /// legacy on a later load.
     /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="service"/> is null.</exception>
     public static ConfigurationMigrationResult Migrate(IConfigurationService service)
@@ -109,7 +112,6 @@ public static class ConfigurationMigrator
         IConfiguration config = service.Configuration;
         int version = ReadVersion(config);
 
-        // Scan without mutating, so a config with nothing to repair never writes.
         var badKeys = FindUnreadableKeys(config);
         var legacyLists = FindLegacyListKeys(config);
         var legacyDicts = FindLegacyDictKeys(config);
@@ -117,9 +119,6 @@ public static class ConfigurationMigrator
         if (badKeys.Count == 0 && legacyLists.Count == 0 && legacyDicts.Count == 0 && !needsVersionStamp)
             return NotMigrated;
 
-        // Back up before mutating. If the file exists but cannot be backed up,
-        // skip this run so a recoverable copy is preserved; the repair retries
-        // on a later load once the cause (disk, ACLs) is resolved.
         bool hasFile = !string.IsNullOrEmpty(config.ConfigurationPath)
                        && File.Exists(config.ConfigurationPath);
         string? backupPath = TryBackup(config.ConfigurationPath);
@@ -134,10 +133,6 @@ public static class ConfigurationMigrator
             resetKeys.Add(section + "." + key);
         }
 
-        // Rewrite legacy single-quoted containers to canonical JSON so the file
-        // stops carrying the old form. Writing double-quoted JSON keeps this
-        // idempotent: a canonicalized value is no longer detected as legacy on a
-        // later load.
         var convertedKeys = new List<string>();
         foreach ((string section, string key, List<string> value) in legacyLists)
         {
@@ -202,7 +197,9 @@ public static class ConfigurationMigrator
     /// setting. Extreme length is one shape of it. The other is a value made up
     /// entirely of quote and escape artifacts, which is what an empty field
     /// degrades into after repeated re-encoding: it stays far below any length
-    /// threshold and carries nothing recoverable.
+    /// threshold and carries nothing recoverable. An absent or canonical-empty
+    /// value is never wreckage, and neither is a value with no quote at all,
+    /// which is a legacy bare path or URL stored unencoded.
     /// </summary>
     private static bool IsTelemetryWreckage(string raw, bool slashIsArtifact)
     {
@@ -211,11 +208,9 @@ public static class ConfigurationMigrator
 
         string compact = new(raw.Where(c => !char.IsWhiteSpace(c)).ToArray());
 
-        // An absent value, or one already stored as the canonical empty string.
         if (compact.Length == 0 || compact == "\"\"")
             return false;
 
-        // No quote anywhere means a legacy bare path or URL, stored unencoded.
         if (compact.IndexOf('"') < 0 && compact.IndexOf('\'') < 0)
             return false;
 

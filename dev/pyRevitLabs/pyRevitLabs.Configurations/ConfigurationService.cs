@@ -37,8 +37,10 @@ public sealed class ConfigurationService : IConfigurationService
     /// <inheritdoc />
     public IConfiguration Configuration => _configuration;
 
-    // Guards every read (snapshot rebuild) and write against the backing
-    // IConfiguration, which is not itself thread-safe.
+    /// <summary>
+    /// Guards every read (snapshot rebuild) and write against the backing
+    /// <see cref="IConfiguration"/>, which is not itself thread-safe.
+    /// </summary>
     private readonly object _syncLock = new();
     private long _snapshotRevision = -1;
     private CoreSection _core = new();
@@ -65,9 +67,11 @@ public sealed class ConfigurationService : IConfigurationService
             _snapshotRevision = -1;
     }
 
-    // Rebuilds the typed snapshots when the backing store has moved on, so a
-    // reader never observes state older than the last write. The revision only
-    // ever increases, so any write changes it.
+    /// <summary>
+    /// Rebuilds the typed snapshots when the backing store has moved on, so a
+    /// reader never observes state older than the last write. The revision only
+    /// ever increases, so any write changes it.
+    /// </summary>
     private void EnsureSnapshots()
     {
         lock (_syncLock)
@@ -91,8 +95,10 @@ public sealed class ConfigurationService : IConfigurationService
         return (T) CreateSection(configurationType, null, _configuration);
     }
 
-    // Extension settings live in a per-extension section named for the extension
-    // plus its type suffix; the .extension form takes precedence over .lib.
+    /// <summary>
+    /// Suffixes of the per-extension section an extension's settings may live
+    /// in, in precedence order: the .extension form wins over .lib.
+    /// </summary>
     private static readonly string[] ExtensionSectionSuffixes = { ".extension", ".lib" };
 
     /// <inheritdoc />
@@ -138,9 +144,12 @@ public sealed class ConfigurationService : IConfigurationService
         EnsureWritable();
     }
 
-    // A read-only configuration silently discards its flush, so refuse the write
-    // before anything is mutated: an accepted-then-dropped edit leaves the caller
-    // reporting success and the in-memory state disagreeing with the file.
+    /// <summary>
+    /// Refuses a write before anything is mutated. A read-only configuration
+    /// silently discards its flush, so allowing the mutation through would leave
+    /// the caller reporting success while the in-memory state disagrees with the
+    /// file.
+    /// </summary>
     private void EnsureWritable()
     {
         if (ReadOnly || _configuration.ReadOnly)
@@ -184,9 +193,12 @@ public sealed class ConfigurationService : IConfigurationService
         return _configuration.GetValueOrDefault<T>(sectionName, keyName, defaultValue);
     }
 
-    // Writes changed, non-default properties into the store without flushing.
-    // The public SaveSection adds the SaveConfiguration() call; ApplySection
-    // omits it so an in-process caller can batch edits behind one flush.
+    /// <summary>
+    /// Writes changed, non-default properties into the store without flushing.
+    /// The public <see cref="SaveSection{T}"/> adds the
+    /// <see cref="IConfiguration.SaveConfiguration()"/> call; <see cref="ApplySection{T}"/>
+    /// omits it so an in-process caller can batch edits behind one flush.
+    /// </summary>
     private static void ApplySection(Type configurationType, object sectionValue, IConfiguration configuration)
     {
         string sectionName =
@@ -208,11 +220,15 @@ public sealed class ConfigurationService : IConfigurationService
         }
     }
 
-    // object.Equals is reference equality for List<string>/Dictionary<string,string>
-    // section properties, so a byte-identical container value would always look
-    // "changed" and always be written. Compare dictionaries by key/value content
-    // (order-independent) and other enumerables by element sequence; everything
-    // else falls back to ordinary equality.
+    /// <summary>
+    /// Compares two section-property values for the purpose of skipping an
+    /// unchanged write. <see cref="object.Equals(object, object)"/> is reference
+    /// equality for <c>List&lt;string&gt;</c>/<c>Dictionary&lt;string,string&gt;</c>
+    /// section properties, so a byte-identical container value would otherwise
+    /// always look "changed" and always be written: dictionaries are compared by
+    /// key/value content (order-independent), other enumerables by element
+    /// sequence, and everything else falls back to ordinary equality.
+    /// </summary>
     private static bool ValuesEqual(object? left, object? right)
     {
         if (left is IDictionary leftDict && right is IDictionary rightDict)
@@ -254,9 +270,6 @@ public sealed class ConfigurationService : IConfigurationService
 
             object? keyValue = GetKeyValue(configuration, propertyInfo, sectionName, keyName);
 
-            // A property renamed from an older key still reads that key, so every
-            // reader (loader, CLI, Python) agrees on the value regardless of which
-            // key name a given config file carries.
             if (keyValue is null && GetCustomAttribute<LegacyKeyNameAttribute>(propertyInfo) is { } legacyKeyName)
                 keyValue = GetKeyValue(configuration, propertyInfo, sectionName, legacyKeyName.KeyName);
 

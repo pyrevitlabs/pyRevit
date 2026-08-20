@@ -7,15 +7,13 @@ namespace pyRevitLabs.Configurations.Sections;
 /// rather than user preferences. Written by the CLI and the installer; editing
 /// it by hand can desynchronize it from what is actually on disk. Null means
 /// "not set in the file"; see <see cref="CoreSection"/> for how nulls resolve on
-/// read.
+/// read. The collection properties below are left uninitialized so an unset
+/// value stays null rather than clobbering the sibling key on a
+/// sparse-section save.
 /// </summary>
 [SectionName("environment")]
 public record EnvironmentSection
 {
-    // No initializers: unset values stay null so a sparse-section save does not
-    // rewrite (and clobber) the sibling key. CreateSection supplies empty
-    // collections on read.
-
     /// <summary>
     /// URLs of the extension definition files searched when looking up
     /// installable extensions. Read back as an empty list when unset.

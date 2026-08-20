@@ -50,7 +50,11 @@ public static class PyRevitConfigService
     {
         /// <summary>A config file inside the running clone (developer override).</summary>
         Local,
-        /// <summary>Elevated process on a machine-wide install: the %ProgramData% config is authoritative.</summary>
+        /// <summary>
+        /// Elevated process on a machine-wide install: the %ProgramData% config is
+        /// authoritative, used directly and writable, with no per-user seed in
+        /// this mode.
+        /// </summary>
         AdminInstall,
         /// <summary>An admin-locked config: used directly, user changes are not saved.</summary>
         AdminLockdown,
@@ -74,6 +78,13 @@ public static class PyRevitConfigService
     /// user cannot write, and treating that as a lockdown would hand every such user
     /// a config that silently discards their settings.
     /// </para>
+    /// <para>
+    /// A deliberate admin lock binds every install scope and every process, and
+    /// is checked first. Only an elevated process (installer / admin CLI) is
+    /// treated as owning %ProgramData%; a standard user recreating a deleted
+    /// machine config would otherwise own it and lock out everyone else sharing
+    /// the machine.
+    /// </para>
     /// </summary>
     public static ConfigSelection SelectConfig(
         bool localExists, bool isAllUsers, bool isElevated,
@@ -82,13 +93,9 @@ public static class PyRevitConfigService
         if (localExists)
             return ConfigSelection.Local;
 
-        // A deliberate admin lock binds every install scope and every process.
         if (adminExists && adminLocked)
             return ConfigSelection.AdminLockdown;
 
-        // Only an elevated process (installer / admin CLI) treats %ProgramData% as
-        // its writable target. A standard user recreating a deleted machine config
-        // would own it and lock out everyone else sharing the machine.
         if (isAllUsers && isElevated)
             return ConfigSelection.AdminInstall;
 
@@ -98,10 +105,14 @@ public static class PyRevitConfigService
         return userExists ? ConfigSelection.User : ConfigSelection.New;
     }
 
+    /// <summary>
+    /// Builds the process's shared configuration service: repairs a split admin
+    /// install, then selects and returns the appropriate config tier. The Seed,
+    /// User, and New tiers all resolve to the same writable per-user config,
+    /// after any seeding the Seed tier needs.
+    /// </summary>
     private static IConfigurationService BuildConfigService()
     {
-        // Repair a machine install whose settings are split across %APPDATA% and
-        // %ProgramData%.
         MigrateSplitAdminConfigIfNeeded();
 
         string localConfig = PyRevitInstallScope.GetLocalConfigFilePath();
@@ -124,9 +135,6 @@ public static class PyRevitConfigService
                 return BuildWritable(localConfig);
 
             case ConfigSelection.AdminInstall:
-                // Reached only from an elevated process, so the %ProgramData%
-                // config is both authoritative and writable here. No per-user
-                // seed in this mode.
                 return BuildWritable(adminConfig);
 
             case ConfigSelection.AdminLockdown:
@@ -139,7 +147,6 @@ public static class PyRevitConfigService
                 break;
         }
 
-        // Seed, User, and New all resolve to the writable per-user config.
         return BuildWritable(userConfig);
     }
 
@@ -212,11 +219,13 @@ public static class PyRevitConfigService
             RetireSplitUserConfig(userConfigPath);
     }
 
-    // Renames the per-user config aside once the machine config carries its
-    // settings. Without this the merge re-runs on every load, and a section
-    // deliberately removed from the machine config is restored from this file
-    // the next time pyRevit starts. A rename that fails leaves the file in place
-    // and the repair retries on a later load.
+    /// <summary>
+    /// Renames the per-user config aside once the machine config carries its
+    /// settings. Without this the merge re-runs on every load, and a section
+    /// deliberately removed from the machine config is restored from this file
+    /// the next time pyRevit starts. A rename that fails leaves the file in place
+    /// and the repair retries on a later load.
+    /// </summary>
     private static void RetireSplitUserConfig(string userConfigPath)
     {
         string retiredPath = userConfigPath
@@ -239,12 +248,14 @@ public static class PyRevitConfigService
             + retiredPath + ".");
     }
 
-    // Copies the clone registry (when absent) and any per-extension sections the
-    // machine config is missing from the split per-user config. Returns whether any
-    // setting was actually moved: only the source of a real copy has been superseded
-    // and may be retired. The merge carries the clone registry and extension
-    // sections alone, so a source that contributed nothing still holds the only copy
-    // of its other sections.
+    /// <summary>
+    /// Copies the clone registry (when absent) and any per-extension sections the
+    /// machine config is missing from the split per-user config. Returns whether any
+    /// setting was actually moved: only the source of a real copy has been superseded
+    /// and may be retired. The merge carries the clone registry and extension
+    /// sections alone, so a source that contributed nothing still holds the only copy
+    /// of its other sections.
+    /// </summary>
     internal static bool MergeAdminConfigFiles(string sourcePath, string targetPath)
     {
         try
