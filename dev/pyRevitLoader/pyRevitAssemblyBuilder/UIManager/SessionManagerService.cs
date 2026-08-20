@@ -538,6 +538,14 @@ namespace pyRevitAssemblyBuilder.SessionManager
             return null;
         }
 
+        /// <summary>
+        /// Runs an extension's startup script. Shares the session engine (see
+        /// <see cref="CreateScriptRuntimeConfigs"/>) when the extension is Rocket Mode compatible
+        /// and Rocket Mode is on - the same author-declared, user-gated trust signal that already
+        /// lets an extension's own commands share a cached engine across repeated invocations
+        /// (see <see cref="AssemblyMaker.CommandTypeGenerator.BuildEngineConfigs"/>), extended here
+        /// to sharing across different startup scripts within one session load.
+        /// </summary>
         private void ExecuteExtensionStartupScript(ParsedExtension extension, List<ParsedExtension> libraryExtensions)
         {
             if (string.IsNullOrEmpty(extension.StartupScript))
@@ -553,12 +561,12 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 
                 // Build search paths for the startup script
                 var searchPaths = BuildSearchPaths(extension);
-                
+
                 // Create ScriptData
                 var scriptData = CreateScriptData(extension);
-                
-                // Create ScriptRuntimeConfigs
-                var scriptRuntimeConfigs = CreateScriptRuntimeConfigs(searchPaths);
+
+                var sharedSessionEngine = (_uiManager?.RocketMode ?? false) && extension.RocketModeCompatible;
+                var scriptRuntimeConfigs = CreateScriptRuntimeConfigs(searchPaths, sharedSessionEngine);
                 
                 // Execute the script using cached method
                 if (scriptData == null || scriptRuntimeConfigs == null || _executeScriptMethod == null)
@@ -600,6 +608,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// Runs a pyRevit session entry script (preload/postload) through the runtime
         /// ScriptExecutor. These scripts drive the residual Python session services that
         /// have not yet been ported to C#. Failures are logged but never abort the load.
+        /// Always shares the session engine: Preload and Postload are pyRevit's own trusted code,
+        /// and always the same two scripts, once each per load.
         /// </summary>
         /// <param name="scriptFileName">Entry script file name located in the engines directory.</param>
         /// <param name="commandName">Display name reported for the script run.</param>
@@ -640,7 +650,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             {
                 var searchPaths = BuildCoreSearchPaths();
                 var scriptData = CreateEntryScriptData(scriptPath, commandName);
-                var scriptRuntimeConfigs = CreateScriptRuntimeConfigs(searchPaths);
+                var scriptRuntimeConfigs = CreateScriptRuntimeConfigs(searchPaths, sharedSessionEngine: true);
 
                 var result = _executeScriptMethod.Invoke(null, new[] { scriptData, scriptRuntimeConfigs, null });
                 if (result != null && (int)result != 0)
@@ -772,8 +782,15 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// Creates a ScriptRuntimeConfigs object for executing a startup script.
         /// </summary>
         /// <param name="searchPaths">The search paths to include in the configuration.</param>
+        /// <param name="sharedSessionEngine">
+        /// When false (default), "clean" forces a brand-new engine (interpreter + stdlib load) for
+        /// this call. When true, requests a shared, engine-reused IronPython engine scoped to this
+        /// session load instead, so its already-imported <c>sys.modules</c> carries over. See
+        /// <see cref="ExecuteEntryScript"/>/<see cref="ExecuteExtensionStartupScript"/> for which
+        /// callers opt in and why.
+        /// </param>
         /// <returns>The created ScriptRuntimeConfigs object.</returns>
-        private object CreateScriptRuntimeConfigs(List<string> searchPaths)
+        private object CreateScriptRuntimeConfigs(List<string> searchPaths, bool sharedSessionEngine = false)
         {
             // Create temporary ExternalCommandData
 #if NETFRAMEWORK
@@ -808,10 +825,12 @@ namespace pyRevitAssemblyBuilder.SessionManager
             var argumentsList = Activator.CreateInstance(listType, new object[] { new string[0] });
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "Arguments", argumentsList);
             
-            // Set engine configs for persistent, clean, full-frame IronPython engine (JSON string)
-            var engineConfigsJson = "{\"clean\": true, \"full_frame\": true, \"persistent\": true}";
+            var engineConfigsJson = sharedSessionEngine
+                ? "{\"clean\": false, \"full_frame\": true, \"persistent\": true}"
+                : "{\"clean\": true, \"full_frame\": true, \"persistent\": true}";
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "EngineConfigs", engineConfigsJson);
-            
+            SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "SharedSessionEngine", sharedSessionEngine);
+
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "RefreshEngine", false);
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "ConfigMode", false);
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "DebugMode", false);
