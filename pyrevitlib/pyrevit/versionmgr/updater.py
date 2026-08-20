@@ -2,8 +2,6 @@
 
 import pyrevit.coreutils.git as libgit
 from pyrevit.compat import safe_strtype
-from pyrevit import coreutils
-from pyrevit import HOME_DIR
 from pyrevit.coreutils import envvars
 from pyrevit.coreutils.logger import get_logger
 from pyrevit import versionmgr

@@ -21,6 +21,17 @@ namespace pyRevitExtensionParser
         private readonly string _path;
 
         /// <summary>
+        /// Lazily-built cache of the whole file's parsed key/value entries and section names,
+        /// so repeated property reads (each <see cref="PyRevitConfig"/> getter call re-enters
+        /// here) don't re-read and re-scan the file line by line every time. Invalidated on any
+        /// write through this instance; the instance itself is invalidated on session reload via
+        /// <see cref="PyRevitConfig.ClearCache"/>, which drops the cached <c>PyRevitConfig</c>
+        /// (and with it, this <see cref="IniFile"/>) so the next read re-parses from disk.
+        /// </summary>
+        private Dictionary<(string Section, string Key), string> _valueCache;
+        private HashSet<string> _sectionCache;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="IniFile"/> class.
         /// </summary>
         /// <param name="iniPath">The full path to the INI file.</param>
@@ -96,6 +107,7 @@ namespace pyRevitExtensionParser
         public void IniWriteValue(string section, string key, string value)
         {
             WritePrivateProfileString(section, key, value, _path);
+            InvalidateCache();
         }
 
         /// <summary>
@@ -104,6 +116,13 @@ namespace pyRevitExtensionParser
         public void IniRemoveKey(string section, string key)
         {
             WritePrivateProfileString(section, key, null, _path);
+            InvalidateCache();
+        }
+
+        private void InvalidateCache()
+        {
+            _valueCache = null;
+            _sectionCache = null;
         }
 
         /// <summary>
@@ -128,25 +147,57 @@ namespace pyRevitExtensionParser
             if (string.IsNullOrEmpty(section) || string.IsNullOrEmpty(key))
                 return false;
 
+            if (!EnsureCacheLoaded())
+                return false;
+
+            return _valueCache.TryGetValue((section, key), out value);
+        }
+
+        private bool TryReadSectionsManaged(out IEnumerable<string> sections)
+        {
+            sections = Array.Empty<string>();
+            if (!EnsureCacheLoaded())
+                return false;
+
+            sections = _sectionCache;
+            return true;
+        }
+
+        /// <summary>
+        /// Parses the whole file once into <see cref="_valueCache"/>/<see cref="_sectionCache"/>
+        /// if not already cached. Returns false (leaving any prior cache untouched) if the file
+        /// can't be read, so callers fall back to the Win32 API path.
+        /// </summary>
+        private bool EnsureCacheLoaded()
+        {
+            if (_valueCache != null)
+                return true;
+
             if (!CanReadManaged())
                 return false;
 
             try
             {
+                var values = new Dictionary<(string, string), string>(
+                    new SectionKeyComparer());
+                var sections = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
                 foreach (var entry in EnumerateIniEntries())
                 {
-                    if (!entry.IsKeyValue)
+                    if (entry.IsSection)
+                    {
+                        if (!string.IsNullOrEmpty(entry.Section))
+                            sections.Add(entry.Section);
                         continue;
-                    if (!string.Equals(entry.Section, section, StringComparison.OrdinalIgnoreCase))
-                        continue;
-                    if (!string.Equals(entry.Key, key, StringComparison.OrdinalIgnoreCase))
-                        continue;
+                    }
 
-                    value = entry.Value ?? string.Empty;
-                    return true;
+                    if (entry.IsKeyValue)
+                        values[(entry.Section, entry.Key)] = entry.Value ?? string.Empty;
                 }
 
-                return false;
+                _valueCache = values;
+                _sectionCache = sections;
+                return true;
             }
             catch (IOException)
             {
@@ -162,35 +213,23 @@ namespace pyRevitExtensionParser
             }
         }
 
-        private bool TryReadSectionsManaged(out IEnumerable<string> sections)
+        private sealed class SectionKeyComparer : IEqualityComparer<(string Section, string Key)>
         {
-            sections = Array.Empty<string>();
-            if (!CanReadManaged())
-                return false;
+            public bool Equals((string Section, string Key) x, (string Section, string Key) y)
+            {
+                return string.Equals(x.Section, y.Section, StringComparison.OrdinalIgnoreCase)
+                    && string.Equals(x.Key, y.Key, StringComparison.OrdinalIgnoreCase);
+            }
 
-            try
+            public int GetHashCode((string Section, string Key) obj)
             {
-                var sectionNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                foreach (var entry in EnumerateIniEntries()
-                    .Where(e => e.IsSection && !string.IsNullOrEmpty(e.Section)))
-                {
-                    sectionNames.Add(entry.Section);
-                }
-
-                sections = sectionNames;
-                return true;
-            }
-            catch (IOException)
-            {
-                return false;
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return false;
-            }
-            catch (ArgumentException)
-            {
-                return false;
+                var sectionHash = obj.Section == null
+                    ? 0
+                    : StringComparer.OrdinalIgnoreCase.GetHashCode(obj.Section);
+                var keyHash = obj.Key == null
+                    ? 0
+                    : StringComparer.OrdinalIgnoreCase.GetHashCode(obj.Key);
+                return sectionHash * 397 ^ keyHash;
             }
         }
 
