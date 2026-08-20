@@ -30,74 +30,13 @@ Supported bundle types: `pushbutton`, `smartbutton`, `pulldown`, `splitbutton`, 
 
 ## Architecture overview
 
-See [`docs/architecture.md`](docs/architecture.md)
-
-### Components
-
-1. **pyRevit Add-In (pyRevitLoader)** — A small C# plugin that starts pyRevit inside Revit when Revit itself starts.
-2. **pyRevit Python Libraries (pyrevitlib)** — Python packages that simplify working with the Revit API; abstractions for creating ribbon buttons, running scripts, and interacting with Revit data.
-3. **Extensions** — The tools and features users see inside Revit. Mostly Python, but also C#/VB.NET scripts, Dynamo projects, etc. Bundled extensions appear in the "pyRevit" tab; users can add more by enabling listed extensions via the Extensions button or by adding custom extension paths to the configuration.
-4. **pyRevit Command-Line Interface (CLI)** — Tool for managing configurations, running scripts in bulk, and troubleshooting. Useful for corporate setups and advanced users.
-5. **Telemetry Server** — Small server that tracks usage data of pyRevit tools and stores it for business-intelligence purposes.
-
-### Key components
-
-- **pyRevitLoader** (`dev/pyRevitLoader/`) — Revit add-in entry point.
-- **PyRevit.Runtime** (`dev/pyRevitLabs.PyRevit.Runtime/`) — Command execution.
-- **pyrevitlib** (`pyrevitlib/pyrevit/`) — Python API for scripts.
-- **CLI** (`dev/pyRevitLabs/pyRevitCLI/`) — Command-line management.
-
-### Loading sequence
-
-1. Revit reads the `.addin` manifest from the Addins folder.
-2. The manifest points to `pyRevitLoader.dll` (C#).
-3. `PyRevitLoaderApplication.OnStartup` calls the C# session manager directly (no IronPython bootstrap).
-4. `SessionManagerService.LoadSession` runs `session_preload.py`, builds extension assemblies and UI in C#, then runs `session_postload.py`.
-5. The preload/postload scripts drive the residual Python session services (telemetry, routes, output window, hooks framework) through the runtime engine.
-
-Reload re-enters the same C# orchestrator via `PyRevitLoaderApplication.LoadSession`. The legacy pure-Python loader has been removed; the C# loader requires Revit 2021+.
-
-### .addin manifest
-
-The installer places a `.addin` manifest file in the Revit Addins folder, instructing Revit to load pyRevit on startup. Depending on the installation type:
-
-- `C:\ProgramData\Autodesk\Revit\Addins` (all users)
-- `%APPDATA%\Autodesk\Revit\Addins` (current user only)
-
-### pyRevitLoader.dll
-
-The loader dll is the C# entry point for pyRevit inside Revit. Multiple versions support different Revit versions (one for Revit 2025+, another for Revit 2021–2024) and different IronPython versions (2.7.12 default, 3.4.0 available but not fully tested). Since only one IronPython engine can be active at a time, pyRevit updates the `.addin` manifest to point to the correct loader when the user switches engines. If installation issues arise, running `pyrevit attach` usually resolves them by regenerating the manifest correctly.
-
-### Script engines
-
-Located in `dev/pyRevitLabs.PyRevit.Runtime/`:
-
-- `IronPythonEngine.cs` — Default Python engine.
-- `CPythonEngine.cs` — Modern Python (3.12).
-- `CLREngine.cs` — C#/VB.NET execution.
-- `DynamoBIMEngine.cs` — Dynamo graphs.
-- `GrasshopperEngine.cs` — Grasshopper definitions.
-
-### Extension discovery
-
-pyRevit scans known paths and user-defined folders to find installed extensions. For each extension it generates the UI elements (ribbon tabs, panels, buttons).
-
-### How pyRevit commands run
-
-Each ribbon button is backed by a command that:
-
-- Detects any modifier keys held at click time and adjusts behavior accordingly.
-- Runs the appropriate script (Python, C#, Dynamo, etc.) based on the button's configuration.
-
-The appropriate script engine is selected automatically based on the script type.
+See [`docs/architecture.md`](docs/architecture.md).
 
 ## Supported Revit versions
 
-2021–2027, with separate builds per version. The C# loader requires Revit 2021+; the legacy pure-Python loader (which supported older versions) has been removed.
-
 - Revit 2021–2024: .NET Framework 4.8.
-- Revit 2025–2026: .NET 8.0 (Windows).
-- Revit 2027+: .NET 10.0 (Windows).
+- Revit 2025–2026: .NET 8.0 /.NET 10
+- Revit 2027+: .NET 10.0
 
 ## Languages and technologies
 
