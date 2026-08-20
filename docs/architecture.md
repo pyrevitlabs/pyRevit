@@ -14,7 +14,7 @@ Whether you want to create tools, troubleshoot issues, or contribute code, under
     - Python packages that simplify working with the .NET Revit API.
     - Provide tools to create ribbon buttons, run scripts, and more.
 
-3. **Extensions**
+3. **Extensions** — see [Extensions](extensions.md) for bundle structure, `bundle.yaml`, script engines, and hooks.
     - These are the tools and features users see inside Revit.
     - They are mostly written in python, but can also be C#/VB.NET scripts, dynamo projects, and so on
     - Bundled extensions appear in the "pyRevit" tab, offering many tools.

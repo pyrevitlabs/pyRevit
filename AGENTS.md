@@ -12,25 +12,9 @@ See [`docs/repo-organization.md`](docs/repo-organization.md).
 
 pyRevit is a Rapid Application Development (RAD) environment for Autodesk Revit. It lets users write automation tools in Python (IronPython 2.7.12 default, CPython 3.12.3, or IronPython 3.4.0), C#, or VB.NET. The project also ships a CLI utility for deployment and a telemetry server for usage tracking.
 
-## Extension bundle structure
-
-Extensions follow this hierarchy:
-
-```text
-MyExtension.extension/
-  MyTab.tab/
-    MyPanel.panel/
-      MyButton.pushbutton/
-        bundle.yaml      # Button configuration
-        script.py        # Python script
-        icon.png         # Button icon
-```
-
-Supported bundle types: `pushbutton`, `smartbutton`, `pulldown`, `splitbutton`, `panelbutton`.
-
 ## Architecture overview
 
-See [`docs/architecture.md`](docs/architecture.md).
+See [`docs/architecture.md`](docs/architecture.md) (also links to [`docs/extensions.md`](docs/extensions.md)).
 
 ## Supported Revit versions
 
