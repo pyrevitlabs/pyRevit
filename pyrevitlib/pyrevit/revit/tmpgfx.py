@@ -19,7 +19,7 @@ Usage::
 
 import traceback
 
-from pyrevit import DB, UI
+from pyrevit import DB, UI, HOST_APP, PyRevitException
 from pyrevit.api import ExternalService as es
 from pyrevit.framework import Guid
 from pyrevit.compat import get_elementid_value_func
@@ -29,13 +29,22 @@ get_elementid_value = get_elementid_value_func()
 
 # Internal helpers
 
+# TemporaryGraphicsHandlerService is a Revit 2022+ API member; older hosts
+# don't have it, so importing this module must not fail before any of its
+# classes are actually used.
 _BUILTIN_SERVICE = (
     es.ExternalServices.BuiltInExternalServices.TemporaryGraphicsHandlerService
+    if HOST_APP.is_newer_than(2021)
+    else None
 )
 
 
 def _get_service():
     """Return the TemporaryGraphicsHandlerService instance."""
+    if _BUILTIN_SERVICE is None:
+        raise PyRevitException(
+            "In-canvas controls (pyrevit.revit.tmpgfx) require Revit 2022 or newer."
+        )
     return es.ExternalServiceRegistry.GetService(_BUILTIN_SERVICE)
 
 
