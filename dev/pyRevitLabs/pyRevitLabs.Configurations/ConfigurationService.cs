@@ -92,7 +92,7 @@ public sealed class ConfigurationService : IConfigurationService
     public T GetSection<T>()
     {
         Type configurationType = typeof(T);
-        return (T) CreateSection(configurationType, null, _configuration);
+        return (T)CreateSection(configurationType, null, _configuration);
     }
 
     /// <summary>
@@ -111,7 +111,7 @@ public sealed class ConfigurationService : IConfigurationService
         {
             string sectionName = extensionName + suffix;
             if (_configuration.HasSection(sectionName))
-                return (ExtensionSection) CreateSection(typeof(ExtensionSection), sectionName, _configuration);
+                return (ExtensionSection)CreateSection(typeof(ExtensionSection), sectionName, _configuration);
         }
 
         return null;

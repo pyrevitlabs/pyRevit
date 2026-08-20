@@ -16,8 +16,10 @@ using pyRevitLabs.CommonWPF.Controls;
 using pyRevitLabs.Emojis;
 using pyRevitLabs.PyRevit;
 
-namespace PyRevitLabs.PyRevit.Runtime {
-    public struct ScriptConsoleDebugger {
+namespace PyRevitLabs.PyRevit.Runtime
+{
+    public struct ScriptConsoleDebugger
+    {
         public string Name;
         public Regex PromptFinder;
         public string DebugContinueKey;
@@ -28,7 +30,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public List<Tuple<Regex, string>> StopFinders;
     }
 
-    public static class ScriptConsoleConfigs {
+    public static class ScriptConsoleConfigs
+    {
         public static string DOCTYPE = "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
         public static string DOCHead = "<head>" +
                                        "<meta http-equiv=\"X-UA-Compatible\" content=\"IE=Edge\" />" +
@@ -62,23 +65,28 @@ namespace PyRevitLabs.PyRevit.Runtime {
             "\u2807 Preparing results..."
         };
 
-        public static string ToCustomHtmlTags(string source) {
+        public static string ToCustomHtmlTags(string source)
+        {
             return source.Replace("<", "&clt;").Replace(">", "&cgt;");
         }
 
-        public static string FromCustomHtmlTags(string source) {
+        public static string FromCustomHtmlTags(string source)
+        {
             return source.Replace("&clt;", "<").Replace("&cgt;", ">");
         }
 
-        public static string EscapeForHtml(string source) {
+        public static string EscapeForHtml(string source)
+        {
             return source.Replace("<", "&lt;").Replace(">", "&gt;");
         }
 
-        public static string UnscapeFromHtml(string source) {
+        public static string UnscapeFromHtml(string source)
+        {
             return source.Replace("&lt;", "<").Replace("&gt;", ">");
         }
 
-        public static string EscapeForOutput(string source) {
+        public static string EscapeForOutput(string source)
+        {
             // remove end new line
             if (source.EndsWith("\n"))
                 source = source.Remove(source.Length - 1);
@@ -86,14 +94,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
     }
 
-    public partial class ScriptConsoleTemplate : pyRevitLabs.CommonWPF.Windows.AppWindow {
-        public ScriptConsoleTemplate() {
+    public partial class ScriptConsoleTemplate : pyRevitLabs.CommonWPF.Windows.AppWindow
+    {
+        public ScriptConsoleTemplate()
+        {
             // setup window styles
             SetupDynamicResources();
             EnablePyRevitTemplateWindowStyle();
         }
 
-        public void EnablePyRevitTemplateWindowStyle() {
+        public void EnablePyRevitTemplateWindowStyle()
+        {
             SizeChanged += ScriptOutput_SizeChanged;
 
             // setup template styles
@@ -114,16 +125,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
             SaveWindowPosition = false;
         }
 
-        private void SetupDynamicResources() {
-            Resources.MergedDictionaries.Add(new ResourceDictionary() {
+        private void SetupDynamicResources()
+        {
+            Resources.MergedDictionaries.Add(new ResourceDictionary()
+            {
                 Source = new Uri("pack://application:,,,/pyRevitLabs.MahAppsMetro;component/Styles/Controls.xaml")
             });
 
-            Resources.MergedDictionaries.Add(new ResourceDictionary() {
+            Resources.MergedDictionaries.Add(new ResourceDictionary()
+            {
                 Source = new Uri("pack://application:,,,/pyRevitLabs.MahAppsMetro;component/Styles/Fonts.xaml")
             });
 
-            Resources.MergedDictionaries.Add(new ResourceDictionary() {
+            Resources.MergedDictionaries.Add(new ResourceDictionary()
+            {
                 Source = new Uri("pack://application:,,,/pyRevitLabs.MahAppsMetro;component/Styles/Themes/Light.Blue.xaml")
             });
 
@@ -144,7 +159,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             accentResDict["MahApps.Colors.ProgressIndeterminate4"] = pyrevitHighlightColor;
         }
 
-        private void ScriptOutput_SizeChanged(object sender, SizeChangedEventArgs e) {
+        private void ScriptOutput_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
             Visibility isVisible = Visibility.Visible;
             if (ActualWidth < 400)
                 isVisible = Visibility.Collapsed;
@@ -154,7 +170,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             this.TitleForeground = isVisible == Visibility.Visible ? Brushes.White : new SolidColorBrush() { Color = Color.FromArgb(0xFF, 0x2c, 0x3e, 0x50) };
         }
 
-        public void ResetIcon() {
+        public void ResetIcon()
+        {
             var iconPath = Path.Combine(
                 Path.GetDirectoryName(typeof(ActivityBar).Assembly.Location),
                 "pyrevit_outputwindow.png"
@@ -163,7 +180,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
     }
 
-    public partial class ScriptConsole : ScriptConsoleTemplate, IComponentConnector, IDisposable {
+    public partial class ScriptConsole : ScriptConsoleTemplate, IComponentConnector, IDisposable
+    {
         private bool _contentLoaded;
         private bool _debugMode;
         private bool _frozen = false;
@@ -232,7 +250,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public ActivityBar activityBar;
         public InputBar stdinBar;
 
-        public ScriptConsole(bool debugMode = false, UIApplication uiApp = null) : base() {
+        public ScriptConsole(bool debugMode = false, UIApplication uiApp = null) : base()
+        {
             _debugMode = debugMode;
             _uiApp = uiApp;
 
@@ -244,8 +263,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         [System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [System.CodeDom.Compiler.GeneratedCodeAttribute("PresentationBuildTasks", "4.0.0.0")]
-        public void InitializeComponent() {
-            if (_contentLoaded) {
+        public void InitializeComponent()
+        {
+            if (_contentLoaded)
+            {
                 return;
             }
             _contentLoaded = true;
@@ -273,7 +294,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             Grid baseGrid = new Grid();
             baseGrid.Margin = new Thickness(0, 0, 0, 0);
-            
+
             // activiy bar
             var activityBarRow = new RowDefinition();
             activityBarRow.Height = GridLength.Auto;
@@ -367,14 +388,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
         [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Design", "CA1033:InterfaceMethodsShouldBeCallableByChildTypes")]
         [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Maintainability", "CA1502:AvoidExcessiveComplexity")]
         [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
-        void System.Windows.Markup.IComponentConnector.Connect(int connectionId, object target) {
+        void System.Windows.Markup.IComponentConnector.Connect(int connectionId, object target)
+        {
             this._contentLoaded = true;
         }
 
         public System.Windows.Forms.HtmlDocument ActiveDocument { get { return renderer.Document; } }
 
-        public Version RendererVersion {
-            get {
+        public Version RendererVersion
+        {
+            get
+            {
                 return renderer.Version;
             }
         }
@@ -387,16 +411,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// (<c>&lt;root&gt;\bin\{net}\engines\{engine}\</c>); any failure to resolve it
         /// is swallowed since a window with no stylesheet still renders, just unstyled.
         /// </summary>
-        private static string BundledStyleSheet {
-            get {
+        private static string BundledStyleSheet
+        {
+            get
+            {
                 if (_bundledStyleSheet != null)
                     return _bundledStyleSheet;
 
                 _bundledStyleSheet = string.Empty;
-                try {
+                try
+                {
                     var engineDir = Path.GetDirectoryName(
                         System.Reflection.Assembly.GetExecutingAssembly().Location);
-                    if (!string.IsNullOrEmpty(engineDir)) {
+                    if (!string.IsNullOrEmpty(engineDir))
+                    {
                         var bundled = Path.GetFullPath(
                             Path.Combine(engineDir, "..", "..", "..", "..",
                                          "pyrevitlib", "pyrevit", "output", "outputstyles.css"));
@@ -404,7 +432,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                             _bundledStyleSheet = bundled;
                     }
                 }
-                catch {
+                catch
+                {
                 }
 
                 return _bundledStyleSheet;
@@ -418,7 +447,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// published the configured stylesheet; without this fallback such a window
         /// would stay unstyled for the rest of the session.
         /// </summary>
-        private string GetStyleSheetFile() {
+        private string GetStyleSheetFile()
+        {
             var env = new EnvDictionary();
             var active = env.ActiveStyleSheet;
 
@@ -428,7 +458,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return BundledStyleSheet;
         }
 
-        public string GetFullHtml() {
+        public string GetFullHtml()
+        {
             var head = ActiveDocument.GetElementsByTagName("head")[0];
             return ScriptConsoleConfigs.DOCTYPE + head.OuterHtml + ActiveDocument.Body.OuterHtml;
         }
@@ -445,16 +476,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        public void CloseOtherOutputs(bool filterByCommandId = true) {
-            try {
+        public void CloseOtherOutputs(bool filterByCommandId = true)
+        {
+            try
+            {
                 var filterId = filterByCommandId ? this.OutputId : null;
                 ScriptConsoleManager.CloseActiveOutputWindows(excludeOutputWindow: this, filterOutputWindowId: filterId);
             }
-            catch {
+            catch
+            {
             }
         }
 
-        private void SetupDefaultPage(string styleSheetFilePath = null) {
+        private void SetupDefaultPage(string styleSheetFilePath = null)
+        {
             string cssFilePath;
             if (styleSheetFilePath != null)
                 cssFilePath = styleSheetFilePath;
@@ -475,32 +510,40 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 System.Windows.Forms.Application.DoEvents();
         }
 
-        public void WaitReadyBrowser() {
+        public void WaitReadyBrowser()
+        {
             System.Windows.Forms.Application.DoEvents();
         }
 
-        internal void WaitReadyBrowserLite() {
+        internal void WaitReadyBrowserLite()
+        {
             System.Windows.Forms.Application.DoEvents();
         }
 
-        public string OutputTitle {
-            get {
+        public string OutputTitle
+        {
+            get
+            {
                 return Title;
             }
-            set {
+            set
+            {
                 Title = value;
             }
         }
 
-        public void LockSize() {
+        public void LockSize()
+        {
             this.ResizeMode = ResizeMode.NoResize;
         }
 
-        public void UnlockSize() {
+        public void UnlockSize()
+        {
             this.ResizeMode = ResizeMode.CanResizeWithGrip;
         }
 
-        public void Freeze() {
+        public void Freeze()
+        {
             WaitReadyBrowser();
             _lastDocumentBody = ActiveDocument.CreateElement("<body>");
             _lastDocumentBody.InnerHtml = ActiveDocument.Body.InnerHtml;
@@ -508,8 +551,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             UpdateInlineWaitAnimation();
         }
 
-        public void Unfreeze() {
-            if (_frozen) {
+        public void Unfreeze()
+        {
+            if (_frozen)
+            {
                 WaitReadyBrowser();
                 ActiveDocument.Body.InnerHtml = _lastDocumentBody.InnerHtml;
                 _frozen = false;
@@ -518,16 +563,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        public void ScrollToBottom() {
-            if (ActiveDocument != null) {
+        public void ScrollToBottom()
+        {
+            if (ActiveDocument != null)
+            {
                 ActiveDocument.Window.ScrollTo(0, ActiveDocument.Body.ScrollRectangle.Height);
             }
         }
 
-        private bool IsScrolledNearBottom() {
+        private bool IsScrolledNearBottom()
+        {
             if (ActiveDocument == null || ActiveDocument.Body == null)
                 return true;
-            try {
+            try
+            {
                 var body = ActiveDocument.Body;
                 var docHeight = body.ScrollRectangle.Height;
                 var view = ActiveDocument.Window;
@@ -535,34 +584,42 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     return true;
                 return (body.ScrollTop + view.Size.Height) >= (docHeight - 50);
             }
-            catch {
+            catch
+            {
                 return true;
             }
         }
 
-        internal void ForceRenderFrame() {
+        internal void ForceRenderFrame()
+        {
             if (_renderingFrame)
                 return;
             _renderingFrame = true;
-            try {
+            try
+            {
                 if (Dispatcher != null
                         && !Dispatcher.HasShutdownStarted
-                        && !Dispatcher.HasShutdownFinished) {
+                        && !Dispatcher.HasShutdownFinished)
+                {
                     Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
                 }
             }
-            catch {
+            catch
+            {
             }
-            finally {
+            finally
+            {
                 _renderingFrame = false;
             }
         }
 
-        public void FocusOutput() {
+        public void FocusOutput()
+        {
             renderer.Focus();
         }
 
-        public System.Windows.Forms.HtmlElement ComposeEntry(string contents, string HtmlElementType) {
+        public System.Windows.Forms.HtmlElement ComposeEntry(string contents, string HtmlElementType)
+        {
             WaitReadyBrowser();
 
             // order is important
@@ -580,18 +637,22 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return htmlElement;
         }
 
-        public void AppendText(string OutputText, string HtmlElementType, bool record = true) {
+        public void AppendText(string OutputText, string HtmlElementType, bool record = true)
+        {
             if (record)
                 _lastLine = OutputText;
 
-            if (!_frozen) {
-                if (ActiveDocument != null) {
+            if (!_frozen)
+            {
+                if (ActiveDocument != null)
+                {
                     ActiveDocument.Body.AppendChild(ComposeEntry(OutputText, HtmlElementType));
                     if (IsScrolledNearBottom())
                         ScrollToBottom();
                 }
             }
-            else if (_lastDocumentBody != null) {
+            else if (_lastDocumentBody != null)
+            {
                 _lastDocumentBody.AppendChild(ComposeEntry(OutputText, HtmlElementType));
             }
         }
@@ -600,7 +661,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// Append one buffered stream payload as a single output entry,
         /// keeping multi-line html constructs intact.
         /// </summary>
-        public void AppendHtmlFragment(string OutputText, string HtmlElementType) {
+        public void AppendHtmlFragment(string OutputText, string HtmlElementType)
+        {
             if (string.IsNullOrEmpty(OutputText))
                 return;
 
@@ -614,10 +676,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
             _lastLine = OutputText.Substring(OutputText.LastIndexOf('\n') + 1).TrimEnd('\r');
         }
 
-        public void AppendError(string OutputText, ScriptEngineType engineType) {
+        public void AppendError(string OutputText, ScriptEngineType engineType)
+        {
             Unfreeze();
             string errorHeader = string.Empty;
-            switch (engineType) {
+            switch (engineType)
+            {
                 case ScriptEngineType.IronPython:
                     errorHeader = ScriptConsoleConfigs.ToCustomHtmlTags(ScriptConsoleConfigs.IPYErrorHeader);
                     break;
@@ -648,9 +712,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // if this is a know debugger stop error
             // make a nice report
-            foreach (var dbgr in _supportedDebuggers) {
-                foreach(var stopFinder in dbgr.StopFinders) {
-                    if (stopFinder.Item1.IsMatch(OutputText)) {
+            foreach (var dbgr in _supportedDebuggers)
+            {
+                foreach (var stopFinder in dbgr.StopFinders)
+                {
+                    if (stopFinder.Item1.IsMatch(OutputText))
+                    {
                         AppendText(
                             errorHeader + stopFinder.Item2,
                             ScriptConsoleConfigs.ErrorBlock
@@ -667,17 +734,21 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 );
         }
 
-        public string GetLastLine() {
+        public string GetLastLine()
+        {
             return _lastLine;
         }
 
-        public string GetInput() {
+        public string GetInput()
+        {
             // checkout the last line and configure the input control
             string lastLine = GetLastLine().ToLower();
             // determine debugger
             bool dbgMode = false;
-            foreach (var dbgr in _supportedDebuggers) {
-                if (dbgr.PromptFinder.IsMatch(lastLine)) {
+            foreach (var dbgr in _supportedDebuggers)
+            {
+                if (dbgr.PromptFinder.IsMatch(lastLine))
+                {
                     stdinBar.EnableDebug(
                         dbgCont: dbgr.DebugContinueKey,
                         dbgStepOver: dbgr.DebugStepOverKey,
@@ -708,19 +779,24 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return inputText;
         }
 
-        private void renderer_Navigating(object sender, System.Windows.Forms.WebBrowserNavigatingEventArgs e) {
-            if (!(e.Url.ToString().Equals("about:blank", StringComparison.InvariantCultureIgnoreCase))) {
+        private void renderer_Navigating(object sender, System.Windows.Forms.WebBrowserNavigatingEventArgs e)
+        {
+            if (!(e.Url.ToString().Equals("about:blank", StringComparison.InvariantCultureIgnoreCase)))
+            {
                 var inputUrl = e.Url.ToString();
 
-                if (inputUrl.StartsWith("http") && !inputUrl.StartsWith("http://localhost")) {
+                if (inputUrl.StartsWith("http") && !inputUrl.StartsWith("http://localhost"))
+                {
                     System.Diagnostics.Process.Start(inputUrl);
                 }
-                else if (inputUrl.StartsWith("revit")) {
+                else if (inputUrl.StartsWith("revit"))
+                {
                     e.Cancel = true;
                     ScriptConsoleUtils.ProcessUrl(_uiApp, inputUrl, this);
                     return;
                 }
-                else if (inputUrl.StartsWith("file")) {
+                else if (inputUrl.StartsWith("file"))
+                {
                     e.Cancel = false;
                     return;
                 }
@@ -729,12 +805,15 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        public void SetElementVisibility(bool visibility, string elementId) {
+        public void SetElementVisibility(bool visibility, string elementId)
+        {
             WaitReadyBrowser();
-            if (ActiveDocument != null) {
+            if (ActiveDocument != null)
+            {
                 var cssdisplay = visibility ? "" : "display: none;";
                 var element = ActiveDocument.GetElementById(elementId);
-                if (element.Style != null) {
+                if (element.Style != null)
+                {
                     if (element.Style.Contains("display:"))
                         element.Style = Regex.Replace(element.Style, "display:.+?;", cssdisplay, RegexOptions.IgnoreCase);
                     else
@@ -745,16 +824,19 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        public void SetProgressBarVisibility(bool visibility) {
+        public void SetProgressBarVisibility(bool visibility)
+        {
             if (this.TaskbarItemInfo != null)
                 // taskbar progress object
                 this.TaskbarItemInfo.ProgressState = visibility ? System.Windows.Shell.TaskbarItemProgressState.Normal : System.Windows.Shell.TaskbarItemProgressState.None;
 
             WaitReadyBrowser();
-            if (ActiveDocument != null) {
+            if (ActiveDocument != null)
+            {
                 var cssdisplay = visibility ? "" : "display: none;";
                 var pbarcontainer = ActiveDocument.GetElementById(ScriptConsoleConfigs.ProgressBlockId);
-                if (pbarcontainer.Style != null) {
+                if (pbarcontainer.Style != null)
+                {
                     if (pbarcontainer.Style.Contains("display:"))
                         pbarcontainer.Style = Regex.Replace(pbarcontainer.Style, "display:.+?;",
                                                             cssdisplay,
@@ -767,12 +849,15 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        public void SetActivityBarVisibility(bool visibility) {
+        public void SetActivityBarVisibility(bool visibility)
+        {
             activityBar.Visibility = visibility ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        public void UpdateTaskBarProgress(float curValue, float maxValue) {
-            if (this.TaskbarItemInfo == null) {
+        public void UpdateTaskBarProgress(float curValue, float maxValue)
+        {
+            if (this.TaskbarItemInfo == null)
+            {
                 // taskbar progress object
                 var taskbarinfo = new System.Windows.Shell.TaskbarItemInfo();
                 taskbarinfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.Normal;
@@ -782,8 +867,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             this.TaskbarItemInfo.ProgressValue = curValue / maxValue;
         }
 
-        public void UpdateTaskBarProgress(bool indeterminate) {
-            if (this.TaskbarItemInfo == null) {
+        public void UpdateTaskBarProgress(bool indeterminate)
+        {
+            if (this.TaskbarItemInfo == null)
+            {
                 // taskbar progress object
                 var taskbarinfo = new System.Windows.Shell.TaskbarItemInfo();
                 taskbarinfo.ProgressState = System.Windows.Shell.TaskbarItemProgressState.Indeterminate;
@@ -791,8 +878,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        public void UpdateActivityBar(float curValue, float maxValue) {
-            if (this.ClosedByUser) {
+        public void UpdateActivityBar(float curValue, float maxValue)
+        {
+            if (this.ClosedByUser)
+            {
                 return;
             }
 
@@ -801,8 +890,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             SetActivityBarVisibility(true);
         }
 
-        public void UpdateActivityBar(bool indeterminate) {
-            if (this.ClosedByUser) {
+        public void UpdateActivityBar(bool indeterminate)
+        {
+            if (this.ClosedByUser)
+            {
                 return;
             }
 
@@ -811,28 +902,36 @@ namespace PyRevitLabs.PyRevit.Runtime {
             SetActivityBarVisibility(indeterminate);
         }
 
-        public void UpdateProgressBar(float curValue, float maxValue) {
-            if (this.ClosedByUser) {
+        public void UpdateProgressBar(float curValue, float maxValue)
+        {
+            if (this.ClosedByUser)
+            {
                 return;
             }
 
             UpdateTaskBarProgress(curValue, maxValue);
 
             WaitReadyBrowser();
-            if (ActiveDocument != null) {
-                if (!this.IsVisible) {
-                    try {
+            if (ActiveDocument != null)
+            {
+                if (!this.IsVisible)
+                {
+                    try
+                    {
                         this.Show();
                         this.Focus();
                     }
-                    catch {
+                    catch
+                    {
                         return;
                     }
                 }
 
                 var pbargraph = ActiveDocument.GetElementById(ScriptConsoleConfigs.ProgressBarId);
-                if (pbargraph == null) {
-                    if (ActiveDocument != null) {
+                if (pbargraph == null)
+                {
+                    if (ActiveDocument != null)
+                    {
                         var pbar = ActiveDocument.CreateElement(ScriptConsoleConfigs.ProgressBlock);
                         var newpbargraph = ActiveDocument.CreateElement(ScriptConsoleConfigs.ProgressBar);
                         pbar.AppendChild(newpbargraph);
@@ -852,41 +951,53 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        public void UpdateInlineWaitAnimation(bool state = true) {
-            if (state) {
+        public void UpdateInlineWaitAnimation(bool state = true)
+        {
+            if (state)
+            {
                 _animationTimer = new DispatcherTimer();
-                _animationTimer.Tick += (sender, e) => {
+                _animationTimer.Tick += (sender, e) =>
+                {
                     UpdateInlineWait();
                 };
                 _animationTimer.Interval = new TimeSpan(0, 0, 0, 0, 100);
                 _animationTimer.Start();
             }
-            else if (_animationTimer != null) {
+            else if (_animationTimer != null)
+            {
                 _animationTimer.Stop();
                 _animationTimer = null;
             }
         }
 
-        public void UpdateInlineWait() {
-            if (this.ClosedByUser) {
+        public void UpdateInlineWait()
+        {
+            if (this.ClosedByUser)
+            {
                 return;
             }
 
             WaitReadyBrowser();
-            if (ActiveDocument != null) {
-                if (!this.IsVisible) {
-                    try {
+            if (ActiveDocument != null)
+            {
+                if (!this.IsVisible)
+                {
+                    try
+                    {
                         this.Show();
                         this.Focus();
                     }
-                    catch {
+                    catch
+                    {
                         return;
                     }
                 }
 
                 var inlinewait = ActiveDocument.GetElementById(ScriptConsoleConfigs.InlineWaitBlockId);
-                if (inlinewait == null) {
-                    if (ActiveDocument != null) {
+                if (inlinewait == null)
+                {
+                    if (ActiveDocument != null)
+                    {
                         inlinewait = ActiveDocument.CreateElement(ScriptConsoleConfigs.InlineWaitBlock);
                         ActiveDocument.Body.AppendChild(inlinewait);
                     }
@@ -904,9 +1015,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        public void SelfDestructTimer(int seconds) {
+        public void SelfDestructTimer(int seconds)
+        {
             var dispatcherTimer = new DispatcherTimer();
-            dispatcherTimer.Tick += (sender, e) => {
+            dispatcherTimer.Tick += (sender, e) =>
+            {
                 var dt = (DispatcherTimer)sender;
                 dt.Stop();
                 Close();
@@ -915,7 +1028,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             dispatcherTimer.Start();
         }
 
-        private void Window_Loaded(object sender, System.EventArgs e) {
+        private void Window_Loaded(object sender, System.EventArgs e)
+        {
             var outputWindow = (ScriptConsole)sender;
             // Install low-level keyboard hook for Ctrl+C/Ctrl+A support.
             // Installed here (not in constructor) so Window_Closing can always dispose it.
@@ -925,7 +1039,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             ApplyCloseOthersConfig();
         }
 
-        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
             var outputWindow = (ScriptConsole)sender;
             outputWindow._keyHook?.Dispose();
 
@@ -937,7 +1052,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             outputWindow._navigateHandler = null;
         }
 
-        private void Window_Closed(object sender, System.EventArgs e) {
+        private void Window_Closed(object sender, System.EventArgs e)
+        {
             var outputWindow = (ScriptConsole)sender;
 
             var grid = (Grid)outputWindow.Content;
@@ -953,7 +1069,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             outputWindow.ClosedByUser = true;
         }
 
-        private System.Windows.Shapes.Path MakeButtonPath(string geom, int size = 14) {
+        private System.Windows.Shapes.Path MakeButtonPath(string geom, int size = 14)
+        {
             var path = new System.Windows.Shapes.Path();
             path.Stretch = Stretch.Uniform;
             path.Height = size;
@@ -962,14 +1079,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return path;
         }
 
-        private System.Windows.Shapes.Path GetPinIcon(bool pinned) {
+        private System.Windows.Shapes.Path GetPinIcon(bool pinned)
+        {
             if (pinned)
                 return MakeButtonPath("M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z");
             else
                 return MakeButtonPath("M2,5.27L3.28,4L20,20.72L18.73,22L12.8,16.07V22H11.2V16H6V14L8,12V11.27L2,5.27M16,12L18,14V16H17.82L8,6.18V4H7V2H17V4H16V12Z");
         }
 
-        private System.Windows.Shapes.Path GetAutoCollapseIcon(bool active) {
+        private System.Windows.Shapes.Path GetAutoCollapseIcon(bool active)
+        {
             if (active)
                 return MakeButtonPath("M4.08,11.92L12,4L19.92,11.92L18.5,13.33L13,7.83V22H11V7.83L5.5,13.33L4.08,11.92M12,4H22V2H2V4H12Z");
             else
@@ -1004,21 +1123,27 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
 
-        private void PinButton_Click(object sender, RoutedEventArgs e) {
+        private void PinButton_Click(object sender, RoutedEventArgs e)
+        {
             var button = e.Source as Button;
-            if (Topmost) {
-                if (IsAutoCollapseActive) {
+            if (Topmost)
+            {
+                if (IsAutoCollapseActive)
+                {
                     Topmost = false;
                     IsAutoCollapseActive = false;
                     button.Content = GetPinIcon(false);
                     button.ToolTip = "Keep On Top";
-                } else {
+                }
+                else
+                {
                     IsAutoCollapseActive = true;
                     button.Content = GetAutoCollapseIcon(true);
                     button.ToolTip = "Release";
                 }
             }
-            else {
+            else
+            {
                 if (IsAutoCollapseActive)
                     IsAutoCollapseActive = false;
                 Topmost = true;
@@ -1028,23 +1153,27 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        private System.Windows.Shapes.Path GetExpandToggleIcon(bool expanded) {
+        private System.Windows.Shapes.Path GetExpandToggleIcon(bool expanded)
+        {
             if (expanded)
                 return MakeButtonPath("M19,6.41L17.59,5L7,15.59V9H5V19H15V17H8.41L19,6.41Z", size: 12);
             else
                 return MakeButtonPath("M5,17.59L15.59,7H9V5H19V15H17V8.41L6.41,19L5,17.59Z", size: 12);
         }
 
-        private void ExpandToggleButton_Click(object sender, RoutedEventArgs e) {
+        private void ExpandToggleButton_Click(object sender, RoutedEventArgs e)
+        {
             var button = e.Source as Button;
 
-            if (IsExpanded) {
+            if (IsExpanded)
+            {
                 Width = Width / 2;
                 IsExpanded = false;
                 button.Content = GetExpandToggleIcon(IsExpanded);
                 button.ToolTip = "Expand";
             }
-            else {
+            else
+            {
                 Width = Width * 2;
                 IsExpanded = true;
                 button.Content = GetExpandToggleIcon(IsExpanded);
@@ -1052,7 +1181,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        private string SaveContentsToTemp() {
+        private string SaveContentsToTemp()
+        {
             string tempHtml = Path.Combine(UserEnv.UserTemp, string.Format("{0}.html", OutputTitle));
             var f = File.CreateText(tempHtml);
             f.Write(GetFullHtml());
@@ -1078,11 +1208,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        private void PrintButton_Click(object sender, RoutedEventArgs e) {
+        private void PrintButton_Click(object sender, RoutedEventArgs e)
+        {
             renderer.ShowPrintPreviewDialog();
         }
 
-        private void CopyButton_Click(object sender, RoutedEventArgs e) {
+        private void CopyButton_Click(object sender, RoutedEventArgs e)
+        {
             Clipboard.SetText(ActiveDocument.Body.InnerText);
             var notif = new ToolTip() { Content = "Copied to Clipboard" };
             notif.StaysOpen = false;
@@ -1098,7 +1230,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// at the OS level before any of this processing occurs.
         /// Fix for https://github.com/pyrevitlabs/pyRevit/issues/1729
         /// </summary>
-        private class ScriptConsoleLowLevelKeyHook : IDisposable {
+        private class ScriptConsoleLowLevelKeyHook : IDisposable
+        {
             private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
 
             [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
@@ -1122,7 +1255,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             private readonly ScriptConsole _console;
             private readonly LowLevelKeyboardProc _proc;
 
-            public ScriptConsoleLowLevelKeyHook(ScriptConsole console) {
+            public ScriptConsoleLowLevelKeyHook(ScriptConsole console)
+            {
                 _console = console;
                 _proc = HookCallback;
                 _hookId = SetWindowsHookEx(WH_KEYBOARD_LL, _proc,
@@ -1131,21 +1265,27 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     System.Diagnostics.Debug.WriteLine("[ScriptConsoleLowLevelKeyHook] SetWindowsHookEx failed to install keyboard hook.");
             }
 
-            private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam) {
-                if (nCode >= 0 && wParam == (IntPtr)WM_KEYDOWN) {
+            private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
+            {
+                if (nCode >= 0 && wParam == (IntPtr)WM_KEYDOWN)
+                {
                     int vkCode = System.Runtime.InteropServices.Marshal.ReadInt32(lParam);
                     bool ctrl = (System.Windows.Forms.Control.ModifierKeys & System.Windows.Forms.Keys.Control) != 0;
 
                     if (ctrl && (vkCode == VK_C || vkCode == VK_A) &&
                         _console.IsActive && _console.renderer != null &&
                         _console.renderer.ContainsFocus &&
-                        _console.ActiveDocument != null) {
-                        try {
+                        _console.ActiveDocument != null)
+                    {
+                        try
+                        {
                             if (vkCode == VK_C)
                                 _console.ActiveDocument.ExecCommand("Copy", false, null);
                             else
                                 _console.ActiveDocument.ExecCommand("SelectAll", false, null);
-                        } catch (Exception ex) {
+                        }
+                        catch (Exception ex)
+                        {
                             System.Diagnostics.Debug.WriteLine($"[ScriptConsoleLowLevelKeyHook] ExecCommand failed: {ex.Message}");
                         }
                         return (IntPtr)1;
@@ -1154,38 +1294,45 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return CallNextHookEx(_hookId, nCode, wParam, lParam);
             }
 
-            public void Dispose() {
-                if (_hookId != IntPtr.Zero) {
+            public void Dispose()
+            {
+                if (_hookId != IntPtr.Zero)
+                {
                     UnhookWindowsHookEx(_hookId);
                     _hookId = IntPtr.Zero;
                 }
             }
         }
 
-        private void CollapseWindow() {
+        private void CollapseWindow()
+        {
             prevHeight = Height;
             Height = TitleBarHeight;
             //ResizeBorderThickness = new Thickness(0);
             IsCollapsed = true;
         }
 
-        private void UnCollapseWindow() {
+        private void UnCollapseWindow()
+        {
             Height = prevHeight;
             //ResizeBorderThickness = new Thickness(10);
             IsCollapsed = false;
         }
 
-        private void ScriptOutput_GotFocus(object sender, EventArgs e) {
+        private void ScriptOutput_GotFocus(object sender, EventArgs e)
+        {
             if (IsAutoCollapseActive && IsCollapsed)
                 UnCollapseWindow();
         }
 
-        private void ScriptOutput_LostFocus(object sender, EventArgs e) {
+        private void ScriptOutput_LostFocus(object sender, EventArgs e)
+        {
             if (IsAutoCollapseActive && !IsCollapsed)
                 CollapseWindow();
         }
 
-        public void Dispose() {
+        public void Dispose()
+        {
         }
     }
 }

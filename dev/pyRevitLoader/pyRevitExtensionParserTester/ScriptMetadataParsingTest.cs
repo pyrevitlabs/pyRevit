@@ -22,7 +22,7 @@ namespace pyRevitExtensionParserTester
         {
             base.BaseSetUp();
             _extensionPath = TestConfiguration.TestExtensionPath;
-            
+
             if (!Directory.Exists(_extensionPath))
             {
                 Assert.Fail($"Extension path not found: {_extensionPath}");
@@ -71,13 +71,13 @@ namespace pyRevitExtensionParserTester
 
             // Parse the extension
             var extensions = ParseInstalledExtensions(extensionDir).ToList();
-            
+
             Assert.AreEqual(1, extensions.Count);
             var extension = extensions.First();
-            
+
             // Find the component
             var button = FindComponentRecursively(extension, "TestButton");
-            
+
             if (button == null)
             {
                 TestContext.Out.WriteLine("Available components:");
@@ -85,15 +85,15 @@ namespace pyRevitExtensionParserTester
                 Assert.Inconclusive("TestButton not found in extension.");
                 return;
             }
-            
+
             TestContext.Out.WriteLine($"Found button: {button.Name}");
             TestContext.Out.WriteLine($"MinRevitVersion: {button.MinRevitVersion}");
             TestContext.Out.WriteLine($"MaxRevitVersion: {button.MaxRevitVersion}");
-            
+
             // Verify version constraints were parsed from script
             Assert.AreEqual("2021", button.MinRevitVersion, "MinRevitVersion should be 2021");
             Assert.AreEqual("2024", button.MaxRevitVersion, "MaxRevitVersion should be 2024");
-            
+
             Assert.Pass("Min/max Revit version parsing from script validated successfully.");
         }
 
@@ -113,13 +113,13 @@ namespace pyRevitExtensionParserTester
 
             // Parse the extension
             var extensions = ParseInstalledExtensions(extensionDir).ToList();
-            
+
             Assert.AreEqual(1, extensions.Count);
             var extension = extensions.First();
-            
+
             // Find the component
             var button = FindComponentRecursively(extension, "BetaButton");
-            
+
             if (button == null)
             {
                 TestContext.Out.WriteLine("Available components:");
@@ -127,13 +127,13 @@ namespace pyRevitExtensionParserTester
                 Assert.Inconclusive("BetaButton not found in extension.");
                 return;
             }
-            
+
             TestContext.Out.WriteLine($"Found button: {button.Name}");
             TestContext.Out.WriteLine($"IsBeta: {button.IsBeta}");
-            
+
             // Verify beta status was parsed from script
             Assert.IsTrue(button.IsBeta, "IsBeta should be true");
-            
+
             Assert.Pass("Beta status parsing from script validated successfully.");
         }
 
@@ -155,13 +155,13 @@ namespace pyRevitExtensionParserTester
 
             // Parse the extension
             var extensions = ParseInstalledExtensions(extensionDir).ToList();
-            
+
             Assert.AreEqual(1, extensions.Count);
             var extension = extensions.First();
-            
+
             // Find the component
             var button = FindComponentRecursively(extension, "EngineButton");
-            
+
             if (button == null)
             {
                 TestContext.Out.WriteLine("Available components:");
@@ -169,18 +169,18 @@ namespace pyRevitExtensionParserTester
                 Assert.Inconclusive("EngineButton not found in extension.");
                 return;
             }
-            
+
             TestContext.Out.WriteLine($"Found button: {button.Name}");
             TestContext.Out.WriteLine($"Engine.Clean: {button.Engine?.Clean}");
             TestContext.Out.WriteLine($"Engine.FullFrame: {button.Engine?.FullFrame}");
             TestContext.Out.WriteLine($"Engine.Persistent: {button.Engine?.Persistent}");
-            
+
             // Verify engine configs were parsed from script
             Assert.IsNotNull(button.Engine, "Engine should not be null");
             Assert.IsTrue(button.Engine.Clean, "Engine.Clean should be true");
             Assert.IsTrue(button.Engine.FullFrame, "Engine.FullFrame should be true");
             Assert.IsTrue(button.Engine.Persistent, "Engine.Persistent should be true");
-            
+
             Assert.Pass("Engine configuration parsing from script validated successfully.");
         }
 
@@ -211,13 +211,13 @@ tooltip: Bundle Tooltip
 
             // Parse the extension
             var extensions = ParseInstalledExtensions(extensionDir).ToList();
-            
+
             Assert.AreEqual(1, extensions.Count);
             var extension = extensions.First();
-            
+
             // Find the component
             var button = FindComponentRecursively(extension, "OverrideButton");
-            
+
             if (button == null)
             {
                 TestContext.Out.WriteLine("Available components:");
@@ -225,18 +225,18 @@ tooltip: Bundle Tooltip
                 Assert.Inconclusive("OverrideButton not found in extension.");
                 return;
             }
-            
+
             TestContext.Out.WriteLine($"Found button: {button.Name}");
             TestContext.Out.WriteLine($"MinRevitVersion: {button.MinRevitVersion} (script had 2020, bundle should override)");
             TestContext.Out.WriteLine($"IsBeta: {button.IsBeta} (script had False, bundle should override)");
-            
+
             // Verify bundle overrides script values
             Assert.AreEqual("2022", button.MinRevitVersion, "Bundle min_revit_version should override script");
             Assert.IsTrue(button.IsBeta, "Bundle beta should override script");
-            
+
             // Title should come from bundle
             Assert.AreEqual("Bundle Title", button.Title, "Bundle title should override script title");
-            
+
             Assert.Pass("Bundle override of script metadata validated successfully.");
         }
 
@@ -334,21 +334,21 @@ tooltip: Bundle Tooltip
         {
             // Create a temporary config file
             var configPath = Path.Combine(TestTempDir, "pyRevit_config.ini");
-            
+
             // Test default value (false when not set)
             File.WriteAllText(configPath, "");
             var config1 = PyRevitConfig.Load(configPath);
             Assert.IsFalse(config1.LoadBeta, "Default LoadBeta should be false when not set");
-            
+
             // Canonical key matches pyRevitLabs / Python user_config (loadbeta, no underscore)
             File.WriteAllText(configPath, "[core]\nloadbeta = true");
             var config2 = PyRevitConfig.Load(configPath);
             Assert.IsTrue(config2.LoadBeta, "LoadBeta should be true when loadbeta is set");
-            
+
             File.WriteAllText(configPath, "[core]\nloadbeta = false");
             var config3 = PyRevitConfig.Load(configPath);
             Assert.IsFalse(config3.LoadBeta, "LoadBeta should be false when loadbeta is false");
-            
+
             File.WriteAllText(configPath, "[core]\nloadbeta = TRUE");
             var config4 = PyRevitConfig.Load(configPath);
             Assert.IsTrue(config4.LoadBeta, "LoadBeta should be case-insensitive for loadbeta");
@@ -404,7 +404,7 @@ tooltip: Bundle Tooltip
                 Assert.AreEqual(1, extensions.Count, $"{tc.Name}: Expected 1 extension");
                 var extension = extensions.First();
 
-                Assert.AreEqual(tc.Compatible, extension.RocketModeCompatible, 
+                Assert.AreEqual(tc.Compatible, extension.RocketModeCompatible,
                     $"{tc.Name}: RocketModeCompatible should be {tc.Compatible}");
 
                 var button = FindComponentRecursively(extension, "TestButton");
@@ -600,11 +600,11 @@ tooltip: Bundle Tooltip
         {
             if (component == null)
                 return null;
-                
+
             if (string.Equals(component.Name, targetName, StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(component.DisplayName, targetName, StringComparison.OrdinalIgnoreCase))
                 return component;
-                
+
             if (component.Children != null)
             {
                 foreach (var child in component.Children)
@@ -614,18 +614,18 @@ tooltip: Bundle Tooltip
                         return found;
                 }
             }
-            
+
             return null;
         }
-        
+
         private void PrintAllComponents(ParsedComponent? component, int indent)
         {
             if (component == null)
                 return;
-                
+
             var prefix = new string(' ', indent * 2);
             TestContext.Out.WriteLine($"{prefix}{component.Type}: {component.Name} ({component.DisplayName})");
-            
+
             if (component.Children != null)
             {
                 foreach (var child in component.Children)

@@ -489,10 +489,12 @@ namespace pyRevitLabs.PyRevit
                 if (Directory.GetFiles(stagedImage).Length == 0)
                 {
                     var subDirs = Directory.GetDirectories(stagedImage);
-                    if (subDirs.Length > 1) { 
+                    if (subDirs.Length > 1)
+                    {
                         logger.Debug("Found multiple subdirectories in extracted archive: {0}", string.Join(", ", subDirs));
                     }
-                    if (subDirs.Length == 1) {
+                    if (subDirs.Length == 1)
+                    {
                         logger.Debug("Found single subdirectory, using it as clone root: \"{0}\"", subDirs[0]);
                         stagedImage = subDirs[0];
                     }
@@ -562,7 +564,8 @@ namespace pyRevitLabs.PyRevit
                 }
 
                 // register the clone
-                if (installBinaries) {
+                if (installBinaries)
+                {
                     InstallBinariesForImageClone(
                         destPath,
                         GithubRepoHelper.ParseRepoId(imageSource),
@@ -789,17 +792,22 @@ namespace pyRevitLabs.PyRevit
             string clonePath,
             string repoUrl,
             BinArtifactInstallMode mode,
-            string branchName = null) {
-            try {
+            string branchName = null)
+        {
+            try
+            {
                 BinArtifactInstaller.InstallForRepoClone(clonePath, repoUrl, mode, branchName);
             }
-            catch (pyRevitMissingGithubTokenException) {
+            catch (pyRevitMissingGithubTokenException)
+            {
                 throw;
             }
-            catch (pyRevitBinArtifactNotFoundException) {
+            catch (pyRevitBinArtifactNotFoundException)
+            {
                 throw;
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 throw new PyRevitException(
                     string.Format("Error installing CI binaries for clone \"{0}\" | {1}", clonePath, ex.Message),
                     ex);
@@ -810,17 +818,22 @@ namespace pyRevitLabs.PyRevit
             string clonePath,
             string repoId,
             string branchName,
-            BinArtifactInstallMode mode) {
-            try {
+            BinArtifactInstallMode mode)
+        {
+            try
+            {
                 BinArtifactInstaller.InstallForImageClone(clonePath, repoId, branchName, mode);
             }
-            catch (pyRevitMissingGithubTokenException) {
+            catch (pyRevitMissingGithubTokenException)
+            {
                 throw;
             }
-            catch (pyRevitBinArtifactNotFoundException) {
+            catch (pyRevitBinArtifactNotFoundException)
+            {
                 throw;
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 throw new PyRevitException(
                     string.Format("Error installing CI binaries for clone \"{0}\" | {1}", clonePath, ex.Message),
                     ex);
@@ -845,7 +858,8 @@ namespace pyRevitLabs.PyRevit
             }
         }
 
-        private static void WarnIfBinEnginesMissing(string clonePath) {
+        private static void WarnIfBinEnginesMissing(string clonePath)
+        {
             var netfxEngines = Path.Combine(clonePath, "bin", "netfx", "engines");
             var netcoreEngines = Path.Combine(clonePath, "bin", "netcore", "engines");
             if (CommonUtils.VerifyPath(netfxEngines) || CommonUtils.VerifyPath(netcoreEngines))
@@ -864,7 +878,7 @@ namespace pyRevitLabs.PyRevit
             var cfg = PyRevitConfigs.GetConfigFile();
             cfg.SaveSection(
                 new EnvironmentSection()
-                    {Clones = clonesList.ToDictionary(item => item.Name, item => item.ClonePath)});
+                { Clones = clonesList.ToDictionary(item => item.Name, item => item.ClonePath) });
             PyRevitAttachments.ClearAttachmentCache();
         }
     }

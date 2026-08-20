@@ -119,7 +119,7 @@ public class ReadOnlyWriteGuardTests : IDisposable
     [Fact]
     public void SaveSection_OnReadOnlyConfig_Throws()
     {
-        Assert.Throws<ConfigurationReadOnlyException>(() => ReadOnlyService().SaveSection(new CoreSection {RocketMode = false}));
+        Assert.Throws<ConfigurationReadOnlyException>(() => ReadOnlyService().SaveSection(new CoreSection { RocketMode = false }));
     }
 
     [Fact]
@@ -135,7 +135,7 @@ public class ReadOnlyWriteGuardTests : IDisposable
     [Fact]
     public void ApplySection_OnReadOnlyConfig_Throws()
     {
-        Assert.Throws<ConfigurationReadOnlyException>(() => ReadOnlyService().ApplySection(new CoreSection {RocketMode = false}));
+        Assert.Throws<ConfigurationReadOnlyException>(() => ReadOnlyService().ApplySection(new CoreSection { RocketMode = false }));
     }
 
     [Fact]
