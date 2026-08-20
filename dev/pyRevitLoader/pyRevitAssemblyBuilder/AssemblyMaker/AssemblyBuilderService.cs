@@ -147,6 +147,11 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         /// </remarks>
         private List<string> _loadedPyRevitAssemblyNames;
 
+        // BuildExtensionAssembly() runs concurrently across extensions when the session
+        // manager parallelizes the build pass, and this cache-fill/read is the only
+        // mutable state that method touches on the shared AssemblyBuilderService instance.
+        private readonly object _loadedAssemblyNamesLock = new object();
+
         private void EnsureLoadedAssemblyNamesCached()
         {
             if (_loadedPyRevitAssemblyNames != null)
@@ -178,19 +183,22 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         /// <returns>True if an assembly for this extension is already loaded.</returns>
         private bool IsAnyExtensionAssemblyLoaded(ParsedExtension extension)
         {
-            EnsureLoadedAssemblyNamesCached();
-
-            // Assembly names follow: pyRevit_{revitVersion}_{hash}_{extensionName}
-            foreach (var name in _loadedPyRevitAssemblyNames)
+            lock (_loadedAssemblyNamesLock)
             {
-                if (name.EndsWith(extension.Name, StringComparison.OrdinalIgnoreCase))
-                {
-                    _logger.Debug($"Found loaded extension assembly: {name}");
-                    return true;
-                }
-            }
+                EnsureLoadedAssemblyNamesCached();
 
-            return false;
+                // Assembly names follow: pyRevit_{revitVersion}_{hash}_{extensionName}
+                foreach (var name in _loadedPyRevitAssemblyNames)
+                {
+                    if (name.EndsWith(extension.Name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        _logger.Debug($"Found loaded extension assembly: {name}");
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
 
         /// <summary>
@@ -244,6 +252,10 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         /// Updates the AppDomain's environment dictionary with referenced assemblies.
         /// Mimics pythonic loader's sessioninfo.update_loaded_pyrevit_referenced_modules()
         /// </summary>
+        // Guards the shared AppDomain environment dictionary, which BuildExtensionAssembly()
+        // may write to concurrently when extensions are built in parallel.
+        private readonly object _envDictLock = new object();
+
         private void UpdateReferencedAssemblies(HashSet<string> newModulePaths)
         {
             try
@@ -252,31 +264,34 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 const string envDictKey = SessionManager.Constants.ENV_DICT_KEY;
                 const string refedAssmsKey = SessionManager.Constants.REFED_ASSMS_KEY;
 
-                var envDict = AppDomain.CurrentDomain.GetData(envDictKey) as IDictionary<object, object>;
-                if (envDict == null)
-                    return;
-
-                // Get existing referenced assemblies
-                var existingAssemblies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                if (envDict.ContainsKey(refedAssmsKey))
+                lock (_envDictLock)
                 {
-                    var existingValue = envDict[refedAssmsKey] as string;
-                    if (!string.IsNullOrEmpty(existingValue))
+                    var envDict = AppDomain.CurrentDomain.GetData(envDictKey) as IDictionary<object, object>;
+                    if (envDict == null)
+                        return;
+
+                    // Get existing referenced assemblies
+                    var existingAssemblies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    if (envDict.ContainsKey(refedAssmsKey))
                     {
-                        foreach (var path in existingValue.Split(Path.PathSeparator))
+                        var existingValue = envDict[refedAssmsKey] as string;
+                        if (!string.IsNullOrEmpty(existingValue))
                         {
-                            if (!string.IsNullOrWhiteSpace(path))
-                                existingAssemblies.Add(path);
+                            foreach (var path in existingValue.Split(Path.PathSeparator))
+                            {
+                                if (!string.IsNullOrWhiteSpace(path))
+                                    existingAssemblies.Add(path);
+                            }
                         }
                     }
+
+                    // Add new module paths
+                    existingAssemblies.UnionWith(newModulePaths);
+
+                    // Update the environment dictionary
+                    var updatedValue = string.Join(Path.PathSeparator.ToString(), existingAssemblies);
+                    envDict[refedAssmsKey] = updatedValue;
                 }
-
-                // Add new module paths
-                existingAssemblies.UnionWith(newModulePaths);
-
-                // Update the environment dictionary
-                var updatedValue = string.Join(Path.PathSeparator.ToString(), existingAssemblies);
-                envDict[refedAssmsKey] = updatedValue;
             }
             catch (Exception ex)
             {

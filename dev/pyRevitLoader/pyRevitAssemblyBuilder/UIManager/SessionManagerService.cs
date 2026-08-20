@@ -168,38 +168,54 @@ namespace pyRevitAssemblyBuilder.SessionManager
             }
 
             // ── PASS 1: Build and load ALL assemblies ──────────────────────────
-            // Fix for #3108: Legacy _new_session() uses separate loops to guarantee
-            // all assemblies exist in the AppDomain before any startup script runs.
-            // Cross-extension imports in startup scripts fail without this.
-            var assembledExtensions = new List<(ParsedExtension ext, ExtensionAssemblyInfo assmInfo)>();
-
-            foreach (var ext in uiExtensions)
+            // All extension assemblies must be loaded into the AppDomain before any
+            // startup script runs (fix for #3108) - cross-extension imports in
+            // startup scripts fail otherwise.
+            //
+            // Built in parallel: on a cache hit (the common case) each build is just a
+            // File.Exists check, but on a cache miss (fresh install, upgrade, or an edited
+            // extension) each miss pays full Roslyn compilation, which is CPU-bound and
+            // independent per extension. Results are collected into an array slot per
+            // extension so downstream passes see the same ordering as uiExtensions,
+            // preserving ribbon tab/panel layout order.
+            stepStopwatch.Restart();
+            var buildResults = new (ParsedExtension ext, ExtensionAssemblyInfo assmInfo)?[uiExtensions.Count];
+            System.Threading.Tasks.Parallel.For(0, uiExtensions.Count, i =>
             {
-                if (ext == null) { _logger.Warning("Skipping null extension."); continue; }
+                var ext = uiExtensions[i];
+                if (ext == null) { _logger.Warning("Skipping null extension."); return; }
                 try
                 {
-                    stepStopwatch.Restart();
+                    var buildSw = Stopwatch.StartNew();
                     var rocketMode = _uiManager?.RocketMode ?? false;
                     var assmInfo = _assemblyBuilder?.BuildExtensionAssembly(ext, libraryExtensions, rocketMode);
-                    var buildTime = stepStopwatch.ElapsedMilliseconds;
+                    var buildTime = buildSw.ElapsedMilliseconds;
 
                     if (assmInfo == null)
                     {
                         _logger.Error($"Failed to build assembly for extension '{ext.Name}'.");
-                        continue;
+                        return;
                     }
 
                     _logger.Info($"Extension assembly created: {ext.Name}");
-                    stepStopwatch.Restart();
+                    var loadSw = Stopwatch.StartNew();
                     _assemblyBuilder?.LoadAssembly(assmInfo);
-                    _logger.Debug($"[PERF] {ext.Name} - Build: {buildTime}ms, Load: {stepStopwatch.ElapsedMilliseconds}ms");
+                    _logger.Debug($"[PERF] {ext.Name} - Build: {buildTime}ms, Load: {loadSw.ElapsedMilliseconds}ms");
 
-                    assembledExtensions.Add((ext, assmInfo));
+                    buildResults[i] = (ext, assmInfo);
                 }
                 catch (Exception ex)
                 {
                     _logger.Error($"Error building/loading extension '{ext?.Name ?? "unknown"}': {ex}");
                 }
+            });
+            _logger.Debug($"[PERF] BuildAndLoadAllAssemblies: {stepStopwatch.ElapsedMilliseconds}ms");
+
+            var assembledExtensions = new List<(ParsedExtension ext, ExtensionAssemblyInfo assmInfo)>();
+            foreach (var result in buildResults)
+            {
+                if (result.HasValue)
+                    assembledExtensions.Add(result.Value);
             }
 
             // ── PASS 2: Run ALL startup scripts ────────────────────────────────
@@ -223,9 +239,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
             }
 
             // ── PASS 2.5: Register ALL hooks ──────────────────────────────────
-            // Replaces the Python-side extensionmgr.get_installed_ui_extensions() +
-            // hooks.register_hooks() loop in _new_session_csharp(), which triggered
-            // a redundant full extension re-parse costing ~2-5s.
+            // Hooks are registered here directly against the already-parsed extensions,
+            // avoiding a redundant full extension re-parse (previously ~2-5s).
             // See: pyrevitlib/pyrevit/loader/hooks.py register_hooks()
             stepStopwatch.Restart();
             foreach (var (ext, _) in assembledExtensions)
@@ -281,15 +296,17 @@ namespace pyRevitAssemblyBuilder.SessionManager
             _ribbonScanner.CleanupOrphanedElements();
             _logger.Debug($"[PERF] CleanupOrphanedElements: {stepStopwatch.ElapsedMilliseconds}ms");
 
-            stepStopwatch.Restart();
-            CleanupStaleAssemblyFiles();
-            _logger.Debug($"[PERF] CleanupStaleAssemblyFiles: {stepStopwatch.ElapsedMilliseconds}ms");
+            // Neither cleanup is on anyone's critical path - they only delete orphaned
+            // files nothing downstream reads - so they're queued on a background thread
+            // instead of blocking the ribbon from appearing. The Revit version is read
+            // here, on the main thread, since ExternalApplication objects are not safe
+            // to touch off it.
+            var revitVersionForCleanup = _uiApp.Application.VersionNumber;
+            System.Threading.Tasks.Task.Run(() => CleanupStaleAssemblyFiles(revitVersionForCleanup));
 
             if (firstLoad)
             {
-                stepStopwatch.Restart();
-                CleanupAppDataFolder();
-                _logger.Debug($"[PERF] CleanupAppDataFolder: {stepStopwatch.ElapsedMilliseconds}ms");
+                System.Threading.Tasks.Task.Run(() => CleanupAppDataFolder(revitVersionForCleanup));
             }
 
             // Finalize via the residual Python post-load services (hook activation,
@@ -308,7 +325,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// open, since they may have those assemblies loaded, and never removes an assembly that
         /// is currently loaded in this AppDomain.
         /// </summary>
-        private void CleanupStaleAssemblyFiles()
+        private void CleanupStaleAssemblyFiles(string version)
         {
             try
             {
@@ -316,7 +333,6 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 if (Process.GetProcessesByName(processName).Length != 1)
                     return;
 
-                var version = _uiApp.Application.VersionNumber;
                 var appDataDir = System.IO.Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                     "pyRevit",
@@ -382,11 +398,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// Removes pid-stamped appdata files left behind by Revit instances that are no longer
         /// running. This is only called during initial session load to preserve active reload data.
         /// </summary>
-        private void CleanupAppDataFolder()
+        private void CleanupAppDataFolder(string version)
         {
             try
             {
-                var version = _uiApp.Application.VersionNumber;
                 var appDataDir = System.IO.Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
                     "pyRevit",

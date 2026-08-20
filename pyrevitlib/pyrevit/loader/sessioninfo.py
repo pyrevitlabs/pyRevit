@@ -83,7 +83,6 @@ def get_runtime_info():
         sessioninfo.get_runtime_info()
         ```
     """
-    # FIXME: add example output
     return RuntimeInfo(
         pyrevit_version=envvars.get_pyrevit_env_var(envvars.VERSION_ENVVAR),
         engine_version=envvars.get_pyrevit_env_var(envvars.IPYVERSION_ENVVAR),
@@ -126,7 +125,6 @@ def get_loaded_pyrevit_assemblies():
     Returns:
         (list[str]): list of loaded assemblies
     """
-    # FIXME: verify and document return type
     loaded_assms_str = envvars.get_pyrevit_env_var(envvars.LOADEDASSMS_ENVVAR)
     if loaded_assms_str:
         return loaded_assms_str.split(coreutils.DEFAULT_SEPARATOR)
