@@ -3,7 +3,7 @@ repos:
     rev: v0.14.14
     hooks:
       - id: ruff-format
-        files: ^pyrevitlib/(?!rpw/)
+        exclude: ^(site-packages/|pyrevitlib/rpw/|dev/modules/)
   - repo: local
     hooks:
       - id: dotnet-format
