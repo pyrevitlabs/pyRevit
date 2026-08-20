@@ -10,7 +10,7 @@ See [`docs/repo-organization.md`](docs/repo-organization.md).
 
 ## Project overview
 
-pyRevit is a Rapid Application Development (RAD) environment for Autodesk Revit. It lets users write automation tools in Python (IronPython 2.7.12 default, CPython 3.12.3, or IronPython 3.4.0), C#, or VB.NET. The project also ships a CLI utility for deployment and a telemetry server for usage tracking.
+pyRevit is a Rapid Application Development (RAD) environment for Autodesk Revit. It lets users write automation tools in Python (IronPython 2.7.12 default, CPython 3.12.3, or IronPython 3.4.2), C#, or VB.NET. The project also ships a CLI utility for deployment and a telemetry server for usage tracking.
 
 ## Architecture overview
 
