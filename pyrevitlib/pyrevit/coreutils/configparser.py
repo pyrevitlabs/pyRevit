@@ -33,7 +33,7 @@ def decode_option_value(raw_value):
     """Decode a stored option value across every encoding pyRevit has written.
 
     Falls through, in order: the JSON candidates in :func:`_json_candidates`;
-    a bare unquoted Python bool (``True``/``False``, case-insensitive — a
+    a bare unquoted Python bool (``True``/``False``, case-insensitive - a
     string that merely spells "True" is stored quoted and already decoded by
     the JSON pass); a bare hex integer (e.g. ``0x0``, which JSON's number
     grammar rejects). Matching the C# reader's fallback order here is what
@@ -289,7 +289,7 @@ class ConfigSections(object):
 
         Subsections are stored as sibling sections under a dotted name rather
         than nested inside their parent, so they must be found and removed
-        explicitly here — dropping the parent alone would leave them behind
+        explicitly here - dropping the parent alone would leave them behind
         for a reinstall to silently inherit.
 
         Args:
