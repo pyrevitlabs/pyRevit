@@ -25,8 +25,10 @@ namespace pyRevitExtensionParserTester
     [TestFixture]
     public class ConfigParityTests
     {
-        // Every value contradicts its section default, so an assertion cannot pass
-        // on a property that never reaches the store and returns its fallback.
+        /// <summary>
+        /// Every value contradicts its section default, so an assertion cannot pass
+        /// on a property that never reaches the store and returns its fallback.
+        /// </summary>
         private const string CanonicalIni =
             "[core]\n" +
             "rocketmode = false\n" +
@@ -65,14 +67,12 @@ namespace pyRevitExtensionParserTester
                 .AddIniConfiguration(_path)
                 .Build();
 
-            // core
             Assert.AreEqual(service.Core.RocketMode, loader.RocketMode, "rocketmode");
             Assert.AreEqual(service.Core.StartupLogTimeout, loader.StartupLogTimeout, "startuplogtimeout");
             Assert.AreEqual(service.Core.UserLocale, loader.UserLocale, "user_locale");
             Assert.AreEqual(service.Core.OutputStyleSheet, loader.OutputStyleSheet, "outputstylesheet");
             CollectionAssert.AreEqual(service.Core.UserExtensions!, loader.UserExtensionsList, "userextensions");
 
-            // telemetry
             Assert.AreEqual(service.Telemetry.TelemetryStatus, loader.TelemetryState, "active");
             Assert.AreEqual(service.Telemetry.TelemetryUseUtcTimeStamps, loader.TelemetryUTCTimeStamps, "utc_timestamps");
             Assert.AreEqual(service.Telemetry.TelemetryServerUrl, loader.TelemetryServerUrl, "telemetry_server_url");

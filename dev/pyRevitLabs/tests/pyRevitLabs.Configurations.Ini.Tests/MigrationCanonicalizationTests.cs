@@ -37,7 +37,6 @@ public class MigrationCanonicalizationTests
             Assert.Contains("core.userextensions", result.ConvertedKeys);
             Assert.DoesNotContain("core.userextensions", result.ResetKeys);
 
-            // The stored form is now canonical JSON, and the values survive.
             string text = File.ReadAllText(path);
             Assert.Contains("\"", text);
             Assert.DoesNotContain("'C:", text);
@@ -147,7 +146,9 @@ public class MigrationCanonicalizationTests
     /// <summary>
     /// The canonical empty list and dict are also the shortest legacy-looking
     /// literals. Treating either as legacy would rewrite and re-back-up the config
-    /// on every load, since the rewrite reproduces the same text.
+    /// on every load, since the rewrite reproduces the same text. The first pass
+    /// still stamps the schema version even though nothing here counts as a
+    /// converted legacy value.
     /// </summary>
     [Fact]
     public void Migration_CanonicalEmptyContainers_AreNotDetectedAsLegacy()
@@ -156,8 +157,6 @@ public class MigrationCanonicalizationTests
             "[core]\nuserextensions = []\n\n[environment]\nsources = []\nclones = {}\n");
         try
         {
-            // The first pass still runs to stamp the schema version, but must not
-            // claim any empty container as a converted legacy value.
             var first = ConfigurationMigrator.Migrate(Build(path));
             Assert.Empty(first.ConvertedKeys);
 

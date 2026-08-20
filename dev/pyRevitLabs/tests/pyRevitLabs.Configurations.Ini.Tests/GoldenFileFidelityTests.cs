@@ -27,8 +27,6 @@ public class GoldenFileFidelityTests
         return dst;
     }
 
-    // ---- read fidelity, tolerance, and defaults ----
-
     [Fact]
     public void Bool_ReadsCorrectly()
     {
@@ -74,11 +72,13 @@ public class GoldenFileFidelityTests
     public void LegacyValues_DoNotThrowOnLoadOrDefaultRead()
     {
         var cfg = Load("legacy_values.ini");
-        // bare/non-JSON string read back as raw (tolerated, not crashing)
         Assert.NotNull(cfg.GetValueOrDefault<string>("core", "outputstylesheet", ""));
     }
 
-    [Fact] // Python-style "True"/"False" predate the JSON encoding and must still read.
+    /// <summary>
+    /// Python-style "True"/"False" predate the JSON encoding and must still read.
+    /// </summary>
+    [Fact]
     public void LegacyCapitalizedBool_ReadsCorrectly()
     {
         var cfg = Load("legacy_values.ini");
@@ -86,7 +86,10 @@ public class GoldenFileFidelityTests
         Assert.False(cfg.GetValue<bool>("core", "checkupdates"));
     }
 
-    [Fact] // Windows paths in a legacy list carry backslashes that are not JSON escapes.
+    /// <summary>
+    /// Windows paths in a legacy list carry backslashes that are not JSON escapes.
+    /// </summary>
+    [Fact]
     public void LegacyUnescapedPathList_ReadsCorrectly()
     {
         var cfg = Load("legacy_values.ini");
@@ -97,7 +100,10 @@ public class GoldenFileFidelityTests
             exts);
     }
 
-    [Fact] // \t and \n are valid JSON escapes; in a path they must stay literal.
+    /// <summary>
+    /// \t and \n are valid JSON escapes; in a path they must stay literal.
+    /// </summary>
+    [Fact]
     public void LegacyUnescapedPathList_DoesNotInterpretEscapeSequences()
     {
         var cfg = Load("legacy_values.ini");
@@ -106,7 +112,10 @@ public class GoldenFileFidelityTests
         Assert.DoesNotContain(exts, item => item.Contains('\t') || item.Contains('\n'));
     }
 
-    [Fact] // The clone registry is a map with the same unescaped-path problem.
+    /// <summary>
+    /// The clone registry is a map with the same unescaped-path problem as the list case.
+    /// </summary>
+    [Fact]
     public void LegacyUnescapedPathMap_ReadsCorrectly()
     {
         var cfg = Load("legacy_values.ini");
@@ -115,7 +124,10 @@ public class GoldenFileFidelityTests
         Assert.Equal(@"C:\Users\u\pyRevit-Master", clones["master"]);
     }
 
-    [Fact] // Readable legacy containers must survive migration, not be reset.
+    /// <summary>
+    /// Readable legacy containers must survive migration, not be reset.
+    /// </summary>
+    [Fact]
     public void Migration_KeepsLegacyUnescapedPathList()
     {
         var path = TempCopy("legacy_values.ini");
@@ -141,7 +153,10 @@ public class GoldenFileFidelityTests
         }
     }
 
-    [Fact] // A capitalized bool is a readable value, so migration must not drop it.
+    /// <summary>
+    /// A capitalized bool is a readable value, so migration must not drop it.
+    /// </summary>
+    [Fact]
     public void Migration_KeepsLegacyCapitalizedBool()
     {
         var path = TempCopy("legacy_values.ini");
@@ -173,23 +188,27 @@ public class GoldenFileFidelityTests
         Assert.Equal("fallback", cfg.GetValueOrDefault<string>("core", "user_locale", "fallback"));
     }
 
-    [Fact] // Large hex telemetry flags round-trip as a string (no 32-bit overflow).
+    /// <summary>
+    /// Large hex telemetry flags round-trip as a string (no 32-bit overflow).
+    /// </summary>
+    [Fact]
     public void TelemetryEventFlags_LargeHex_ReadsAsString()
     {
         var cfg = Load("populated.ini");
         Assert.Equal("0x4000400004003", cfg.GetValue<string>("telemetry", "apptelemetry_event_flags"));
     }
 
-    // ---- string-encoding contract ----
-
-    [Fact] // GetValue<string> returns the decoded value, not the JSON-quoted raw string.
+    [Fact]
     public void Acceptance_GetString_ReturnsDecoded()
     {
         var cfg = Load("populated.ini");
         Assert.Equal("en_us", cfg.GetValue<string>("core", "user_locale"));
     }
 
-    [Fact] // Writing then re-reading a string yields the same value, with no quote/escape accumulation.
+    /// <summary>
+    /// Writing then re-reading a string yields the same value, with no quote/escape accumulation.
+    /// </summary>
+    [Fact]
     public void Acceptance_StringRoundTrip_IsIdempotent()
     {
         var path = TempCopy("populated.ini");
@@ -208,7 +227,11 @@ public class GoldenFileFidelityTests
         }
     }
 
-    [Fact] // After SaveSection, the same service instance's typed snapshot reflects the write (shared-cache freshness).
+    /// <summary>
+    /// After SaveSection, the same service instance's typed snapshot must reflect the
+    /// write without rebuilding the service (shared-cache freshness).
+    /// </summary>
+    [Fact]
     public void SaveSection_RefreshesTypedSnapshot_OnSameInstance()
     {
         var path = TempCopy("populated.ini");
@@ -221,7 +244,6 @@ public class GoldenFileFidelityTests
             service.SaveSection(
                 new CoreSection { StartupLogTimeout = 99 });
 
-            // Without rebuilding the service, the snapshot must show the saved value.
             Assert.Equal(99, service.Core.StartupLogTimeout);
         }
         finally
@@ -230,7 +252,7 @@ public class GoldenFileFidelityTests
         }
     }
 
-    [Fact] // Saving one property via a sparse section POCO must not clobber sibling keys.
+    [Fact]
     public void SaveSection_SingleProperty_DoesNotClobberSiblings()
     {
         var path = TempCopy("populated.ini");
@@ -244,8 +266,8 @@ public class GoldenFileFidelityTests
 
             var reread = IniConfiguration.Create(path);
             var exts = reread.GetValue<List<string>>("core", "userextensions");
-            Assert.Equal(2, exts.Count);                          // sibling list preserved
-            Assert.Equal(99, reread.GetValue<int>("core", "startuplogtimeout")); // intended write applied
+            Assert.Equal(2, exts.Count);
+            Assert.Equal(99, reread.GetValue<int>("core", "startuplogtimeout"));
         }
         finally
         {
@@ -253,10 +275,14 @@ public class GoldenFileFidelityTests
         }
     }
 
-    [Fact] // Explicitly setting a property to its own default value still persists (not skipped as "unset").
+    /// <summary>
+    /// Explicitly setting a property to its own default value must still persist, not
+    /// be skipped as "unset". Starts from a file with rocketmode = false — the section
+    /// default is true — so the write is only provably applied if the value changes.
+    /// </summary>
+    [Fact]
     public void SaveSection_SetToDefaultValue_StillWrites()
     {
-        // rocketmode default is true; start from a file that has it false.
         var path = Path.Combine(Path.GetTempPath(), $"settodefault_{Guid.NewGuid():N}.ini");
         File.WriteAllText(path, "[core]\nrocketmode = false\n");
         try
@@ -277,8 +303,11 @@ public class GoldenFileFidelityTests
     }
 
     /// <summary>
-    /// Section defaults still apply on read for keys absent from the file. One
-    /// case per CLR type the materializer handles, plus one per section
+    /// Section defaults still apply on read for keys absent from the file: one case per
+    /// CLR type the materializer handles, plus one per section so materialization is not
+    /// proven on CoreSection alone. UserLocale has no declared default — unset means
+    /// auto-detect from the Revit UI language, so it must stay null rather than collapse
+    /// to string.Empty.
     /// </summary>
     [Fact]
     public void Defaults_MaterializePerTypeAndSection_WhenKeyAbsent()
@@ -286,27 +315,25 @@ public class GoldenFileFidelityTests
         var service = new ConfigurationBuilder(false)
             .AddIniConfiguration(Path.Combine(FixtureDir, "empty.ini")).Build();
 
-        // one per type path
-        Assert.True(service.Core.RocketMode);                       // bool, default true
-        Assert.False(service.Core.CheckUpdates);                    // bool, default false
-        Assert.Equal(10, service.Core.StartupLogTimeout);           // int
-        Assert.Equal(0L, service.Core.MinHostDriveFreeSpace);       // long
-        Assert.Equal(string.Empty, service.Core.RequiredHostBuild); // string
+        Assert.True(service.Core.RocketMode);
+        Assert.False(service.Core.CheckUpdates);
+        Assert.Equal(10, service.Core.StartupLogTimeout);
+        Assert.Equal(0L, service.Core.MinHostDriveFreeSpace);
+        Assert.Equal(string.Empty, service.Core.RequiredHostBuild);
 
-        // no declared default: unset means auto-detect from the Revit UI language,
-        // so this must stay null rather than collapse to string.Empty
         Assert.Null(service.Core.UserLocale);
 
-        // one per section, so materialization is not proven on CoreSection alone
         Assert.Equal(48884, service.Routes.Port);
         Assert.Equal(string.Empty, service.Telemetry.TelemetryFileDir);
-        Assert.NotNull(service.Environment.Clones);                 // empty-collection default
+        Assert.NotNull(service.Environment.Clones);
         Assert.Empty(service.Environment.Clones!);
     }
 
-    // ---- migration ----
-
-    [Fact] // A value that no longer parses to its declared type is dropped, and the schema version is stamped.
+    /// <summary>
+    /// A value that no longer parses to its declared type is dropped, and the schema
+    /// version is stamped.
+    /// </summary>
+    [Fact]
     public void Migration_RepairsCorruptValue_AndStampsVersion()
     {
         var path = TempCopy("corrupted_clones.ini");
@@ -331,7 +358,7 @@ public class GoldenFileFidelityTests
         }
     }
 
-    [Fact] // Re-running migration on an already-stamped config does nothing.
+    [Fact]
     public void Migration_IsIdempotent()
     {
         var path = TempCopy("populated.ini");
@@ -351,7 +378,7 @@ public class GoldenFileFidelityTests
         }
     }
 
-    [Fact] // A corrupt value is repaired even when the config is already at the current version.
+    [Fact]
     public void Migration_SelfHeals_WhenAlreadyStamped()
     {
         var path = Path.Combine(Path.GetTempPath(), $"selfheal_{Guid.NewGuid():N}.ini");

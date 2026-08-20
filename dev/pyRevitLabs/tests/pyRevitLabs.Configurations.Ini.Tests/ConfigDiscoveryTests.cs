@@ -22,7 +22,7 @@ public class ConfigDiscoveryTests : IDisposable
     public void Dispose()
     {
         try { Directory.Delete(_dir, true); }
-        catch { /* best effort */ }
+        catch { }
     }
 
     private string Write(string name)
@@ -42,7 +42,10 @@ public class ConfigDiscoveryTests : IDisposable
         Assert.Equal(expected, PyRevitConfigPaths.FindConfigFileInDirectory(_dir));
     }
 
-    [Fact] // A version config alone is not the main config; its own lookup owns it.
+    /// <summary>
+    /// A version-suffixed config is not the main config; its own lookup owns it.
+    /// </summary>
+    [Fact]
     public void VersionSuffixedConfig_IsNotDiscoveredAsMainConfig()
     {
         Write("pyRevit_config.2025.ini");
@@ -50,7 +53,7 @@ public class ConfigDiscoveryTests : IDisposable
         Assert.Null(PyRevitConfigPaths.FindConfigFileInDirectory(_dir));
     }
 
-    [Fact] // The name match still covers configs that carry a custom name.
+    [Fact]
     public void CustomNamedConfig_IsStillDiscovered()
     {
         var expected = Write("pyrevit_admin_config.ini");
@@ -58,7 +61,7 @@ public class ConfigDiscoveryTests : IDisposable
         Assert.Equal(expected, PyRevitConfigPaths.FindConfigFileInDirectory(_dir));
     }
 
-    [Theory] // Non-canonical names still matching the config pattern are discovered.
+    [Theory]
     [InlineData("config.ini")]
     [InlineData("pyrevit.ini")]
     public void ConfigNamePattern_MatchesNonCanonicalNames(string fileName)
@@ -90,7 +93,7 @@ public class ConfigDiscoveryTests : IDisposable
             Path.Combine(_dir, "does-not-exist")));
     }
 
-    [Fact] // Unrelated .ini files must never be mistaken for a config.
+    [Fact]
     public void UnrelatedIni_IsNotDiscovered()
     {
         Write("desktop.ini");

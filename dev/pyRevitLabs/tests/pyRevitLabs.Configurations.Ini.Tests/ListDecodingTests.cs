@@ -13,8 +13,10 @@ namespace pyRevitLabs.Configurations.Ini.Tests;
 /// </summary>
 public class ListDecodingTests
 {
-    // Injects the stored text directly, so the decode is exercised without the
-    // INI file writer/parser round-trip in between.
+    /// <summary>
+    /// Injects the stored text directly, so the decode is exercised without the
+    /// INI file writer/parser round-trip in between.
+    /// </summary>
     private static List<string> Decode(string stored) =>
         Store(stored).GetValue<List<string>>("core", "userextensions");
 
@@ -31,7 +33,10 @@ public class ListDecodingTests
         Assert.Equal(new List<string> { @"C:\Users\ext", @"D:\ext2" },
             Decode(@"[""C:\\Users\\ext"",""D:\\ext2""]"));
 
-    [Fact] // JSON form a legacy config left with unescaped Windows-path backslashes.
+    /// <summary>
+    /// JSON form a legacy config left with unescaped Windows-path backslashes.
+    /// </summary>
+    [Fact]
     public void UnescapedJsonList_LegacyWindowsPaths_Parses() =>
         Assert.Equal(new List<string> { @"C:\Users\ext", @"D:\ext2" },
             Decode(@"[""C:\Users\ext"",""D:\ext2""]"));
@@ -41,12 +46,18 @@ public class ListDecodingTests
         Assert.Equal(new List<string> { @"C:\Users\ext", @"D:\Program Files\x" },
             Decode(@"['C:\Users\ext','D:\Program Files\x']"));
 
-    [Fact] // \t must stay two characters, not become a tab.
+    /// <summary>
+    /// \t must stay two characters, not become a tab.
+    /// </summary>
+    [Fact]
     public void SingleQuotedList_PathStartingWithEscapeLikeChar_IsNotInterpreted() =>
         Assert.Equal(new List<string> { @"C:\temp\new\ext" },
             Decode(@"['C:\temp\new\ext']"));
 
-    [Fact] // Output of Python str() on a list of paths.
+    /// <summary>
+    /// Output of Python str() on a list of paths.
+    /// </summary>
+    [Fact]
     public void SingleQuotedList_DoubledBackslashes_Parses() =>
         Assert.Equal(new List<string> { @"C:\Users\ext" },
             Decode(@"['C:\\Users\\ext']"));
@@ -74,7 +85,10 @@ public class ListDecodingTests
     public void NonListValue_ParsesToSingleItem() =>
         Assert.Equal(new List<string> { @"C:\Tools\ext" }, Decode(@"C:\Tools\ext"));
 
-    [Fact] // An undecodable value must not pass for "no extensions configured".
+    /// <summary>
+    /// An undecodable value must not pass for "no extensions configured".
+    /// </summary>
+    [Fact]
     public void UndecodableList_Throws() =>
         Assert.Throws<ConfigurationException>(() => Decode(@"['C:\Users\ext"));
 
@@ -83,7 +97,10 @@ public class ListDecodingTests
         Assert.Empty(Store(@"['C:\Users\ext")
             .GetValueOrDefault("core", "userextensions", new List<string>())!);
 
-    [Fact] // The migrator finds it through the same failure, and can then repair it.
+    /// <summary>
+    /// The migrator finds it through the same failure, and can then repair it.
+    /// </summary>
+    [Fact]
     public void UndecodableList_IsReportedAsUnreadable()
     {
         var warnings = new List<string>();

@@ -76,11 +76,13 @@ public class ExtensionSectionTests
         Assert.Null(service.GetExtensionSection("Missing"));
     }
 
+    /// <summary>
+    /// Section present but the flag keys are not stored: the declared defaults
+    /// apply on read, matching the loader adapter's ReadBool(..., false).
+    /// </summary>
     [Fact]
     public void GetExtensionSection_AppliesDeclaredDefaults_ForAbsentKeys()
     {
-        // Section present but the flag keys are not stored: the declared defaults
-        // apply on read, matching the loader adapter's ReadBool(..., false).
         var service = BuildService(config =>
             config.SetValue("Sparse.extension", "username", "someone"));
 

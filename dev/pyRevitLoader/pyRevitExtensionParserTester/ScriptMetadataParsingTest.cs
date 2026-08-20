@@ -37,8 +37,10 @@ namespace pyRevitExtensionParserTester
             ClearAllCaches();
         }
 
-        // Points the process-wide store at a temp config, so every reader resolves
-        // it the way it resolves the real file and no machine config is touched.
+        /// <summary>
+        /// Points the process-wide store at a temp config, so every reader resolves
+        /// it the way it resolves the real file and no machine config is touched.
+        /// </summary>
         private void UseTestPyRevitConfig(string iniContent)
         {
             var configPath = Path.Combine(TestTempDir, "pyRevit_config.ini");
@@ -356,7 +358,6 @@ tooltip: Bundle Tooltip
             var config5 = PyRevitConfig.Load(configPath);
             Assert.IsTrue(config5.LoadBeta, "LoadBeta should read legacy load_beta when loadbeta is absent");
 
-            // Canonical loadbeta wins when both keys exist
             File.WriteAllText(configPath, "[core]\nload_beta = true\nloadbeta = false");
             var config6 = PyRevitConfig.Load(configPath);
             Assert.IsFalse(config6.LoadBeta, "Canonical loadbeta should win when both keys exist");

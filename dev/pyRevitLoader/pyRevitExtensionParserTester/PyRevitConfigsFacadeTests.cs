@@ -57,8 +57,6 @@ namespace pyRevitExtensionParserTester
                 .AddIniConfiguration(_path)
                 .Build();
 
-        // ---- core ----
-
         [Test]
         public void RocketMode_SetTrue_GetReturnsTrue_AndPersists()
         {
@@ -95,7 +93,11 @@ namespace pyRevitExtensionParserTester
             Assert.AreEqual(true, ReadFromDisk().Core.FileLogging);
         }
 
-        [Test] // Debug implies verbose, so both flags are written; the pair reads back as Debug.
+        /// <summary>
+        /// Debug implies verbose, so both flags are written; the pair reads back as
+        /// Debug.
+        /// </summary>
+        [Test]
         public void LoggingLevel_Debug_SetsBothFlags()
         {
             PyRevitConfigs.SetLoggingLevel(PyRevitLogLevels.Debug);
@@ -116,8 +118,6 @@ namespace pyRevitExtensionParserTester
             Assert.AreEqual(false, disk.Core.Debug);
             Assert.AreEqual(true, disk.Core.Verbose);
         }
-
-        // ---- routes ----
 
         [Test]
         public void RoutesServerPort_RoundTrips()
@@ -147,8 +147,6 @@ namespace pyRevitExtensionParserTester
             Assert.IsFalse(PyRevitConfigs.GetRoutesServerStatus());
         }
 
-        // ---- telemetry ----
-
         [Test]
         public void TelemetryStatus_RoundTrips()
         {
@@ -158,7 +156,10 @@ namespace pyRevitExtensionParserTester
             Assert.AreEqual(true, ReadFromDisk().Telemetry.TelemetryStatus);
         }
 
-        [Test] // Large hex flags must persist verbatim as a string (no 32-bit overflow).
+        /// <summary>
+        /// Large hex flags must persist verbatim as a string (no 32-bit overflow).
+        /// </summary>
+        [Test]
         public void AppTelemetryFlags_LargeHex_RoundTripsAsString()
         {
             PyRevitConfigs.SetAppTelemetryFlags("0x4000400004003");
@@ -167,9 +168,10 @@ namespace pyRevitExtensionParserTester
             Assert.AreEqual("0x4000400004003", ReadFromDisk().Telemetry.AppTelemetryEventFlags);
         }
 
-        // ---- durability across a store rebuild ----
-
-        [Test] // After a reload drops the cached service, the value is re-read from disk.
+        /// <summary>
+        /// After a reload drops the cached service, the value is re-read from disk.
+        /// </summary>
+        [Test]
         public void SetValue_SurvivesStoreReload()
         {
             PyRevitConfigs.SetRocketMode(true);
@@ -181,9 +183,10 @@ namespace pyRevitExtensionParserTester
             Assert.AreEqual(7, PyRevitConfigs.GetStartupLogTimeout());
         }
 
-        // ---- extension search paths ----
-
-        [Test] // An admin-locked config refuses writes, so a read must not attempt one.
+        /// <summary>
+        /// An admin-locked config refuses writes, so a read must not attempt one.
+        /// </summary>
+        [Test]
         public void ExtensionReads_DoNotWriteToAReadOnlyConfig()
         {
             File.WriteAllText(_path,
@@ -202,7 +205,12 @@ namespace pyRevitExtensionParserTester
             Assert.AreEqual(before, File.ReadAllText(_path));
         }
 
-        [Test] // A stored %VAR% entry stays portable instead of being expanded in place.
+        /// <summary>
+        /// A stored %VAR% entry stays portable instead of being expanded in place:
+        /// resolution expands it for use, but the stored form is untouched, here and
+        /// after a registration.
+        /// </summary>
+        [Test]
         public void ExtensionSearchPaths_PreserveAnEnvironmentVariableEntry()
         {
             File.WriteAllText(_path, "[core]\nuserextensions = [\"%TEMP%\"]\n");
@@ -210,16 +218,17 @@ namespace pyRevitExtensionParserTester
 
             var expandedTemp = Environment.ExpandEnvironmentVariables("%TEMP%");
 
-            // Resolution expands for use...
             CollectionAssert.Contains(
                 PyRevitExtensions.GetRegisteredExtensionSearchPaths(), expandedTemp.NormalizeAsPath());
 
-            // ...but the stored form is untouched, here and after a registration.
             PyRevitExtensions.RegisterExtensionSearchPath(expandedTemp);
             CollectionAssert.Contains(PyRevitExtensions.GetStoredExtensionSearchPaths(), "%TEMP%");
         }
 
-        [Test] // Unregistering by the expanded path removes the variable entry it came from.
+        /// <summary>
+        /// Unregistering by the expanded path removes the variable entry it came from.
+        /// </summary>
+        [Test]
         public void ExtensionSearchPaths_UnregisterMatchesTheResolvedForm()
         {
             File.WriteAllText(_path, "[core]\nuserextensions = [\"%TEMP%\"]\n");
@@ -231,7 +240,10 @@ namespace pyRevitExtensionParserTester
             CollectionAssert.IsEmpty(PyRevitExtensions.GetStoredExtensionSearchPaths());
         }
 
-        [Test] // A read must not prune an entry that is merely unreachable right now.
+        /// <summary>
+        /// A read must not prune an entry that is merely unreachable right now.
+        /// </summary>
+        [Test]
         public void ExtensionSearchPaths_ReadKeepsUnreachableEntriesStored()
         {
             File.WriteAllText(_path, "[core]\nuserextensions = [\"X:\\\\offline\\\\share\"]\n");

@@ -20,6 +20,11 @@ public class PyRevitConfigServiceMigrationTests
         return dir;
     }
 
+    /// <summary>
+    /// Source is a per-user (split) config holding the clone registry and one
+    /// extension section; target is the machine config with a different extension
+    /// and no clones.
+    /// </summary>
     [Fact]
     public void MergeAdminConfigFiles_BringsClonesAndMissingExtensionSectionsIntoTarget()
     {
@@ -29,11 +34,9 @@ public class PyRevitConfigServiceMigrationTests
             var source = Path.Combine(dir, "source.ini");
             var target = Path.Combine(dir, "target.ini");
 
-            // Per-user (split) config: has the clone registry and one extension.
             File.WriteAllText(source,
                 "[environment]\r\nclones = {\"master\":\"C:\\\\TestClone\"}\r\n" +
                 "[pyRevitTags.extension]\r\ndisabled = true\r\n");
-            // Machine config: has a different extension, no clones.
             File.WriteAllText(target,
                 "[pyRevitTemplates.extension]\r\ndisabled = true\r\n");
 
@@ -42,8 +45,8 @@ public class PyRevitConfigServiceMigrationTests
             var merged = File.ReadAllText(target);
             Assert.Contains("clones", merged);
             Assert.Contains("TestClone", merged);
-            Assert.Contains("pyRevitTags.extension", merged);      // brought over
-            Assert.Contains("pyRevitTemplates.extension", merged); // preserved
+            Assert.Contains("pyRevitTags.extension", merged);
+            Assert.Contains("pyRevitTemplates.extension", merged);
         }
         finally
         {
@@ -51,6 +54,10 @@ public class PyRevitConfigServiceMigrationTests
         }
     }
 
+    /// <summary>
+    /// Target already owns the clone registry and the shared extension with its own
+    /// values, so the merge from source must not overwrite either.
+    /// </summary>
     [Fact]
     public void MergeAdminConfigFiles_DoesNotOverwriteExistingTargetSectionsOrClones()
     {
@@ -63,7 +70,6 @@ public class PyRevitConfigServiceMigrationTests
             File.WriteAllText(source,
                 "[environment]\r\nclones = {\"master\":\"C:\\\\SourceClone\"}\r\n" +
                 "[shared.extension]\r\ndisabled = true\r\n");
-            // Target already owns clones and the shared extension with its own values.
             File.WriteAllText(target,
                 "[environment]\r\nclones = {\"master\":\"C:\\\\TargetClone\"}\r\n" +
                 "[shared.extension]\r\ndisabled = false\r\n");
@@ -71,9 +77,9 @@ public class PyRevitConfigServiceMigrationTests
             Assert.False(PyRevitConfigService.MergeAdminConfigFiles(source, target));
 
             var merged = File.ReadAllText(target);
-            Assert.Contains("TargetClone", merged);   // existing clone registry kept
+            Assert.Contains("TargetClone", merged);
             Assert.DoesNotContain("SourceClone", merged);
-            Assert.DoesNotContain("true", merged);    // existing shared.extension disabled=false kept
+            Assert.DoesNotContain("true", merged);
         }
         finally
         {
@@ -100,8 +106,6 @@ public class PyRevitConfigServiceMigrationTests
             var userConfig = Path.Combine(dir, "user.ini");
             var machineConfig = Path.Combine(dir, "machine.ini");
 
-            // Everything the merge would carry is already in the machine config;
-            // only per-user settings it never carries are left behind.
             File.WriteAllText(userConfig,
                 "[environment]\r\nclones = {\"master\":\"C:\\\\Clone\"}\r\n" +
                 "[core]\r\ncheckupdates = true\r\n");
@@ -148,7 +152,9 @@ public class PyRevitConfigServiceMigrationTests
     /// <summary>
     /// A second pass over an already-repaired install must be inert: the machine
     /// config already owns everything the merge carries, so no further copy is
-    /// retired and the config in use is left alone.
+    /// retired and the config in use is left alone. The user-config file is
+    /// rewritten mid-test to stand in for whatever config the next session would
+    /// resolve to.
     /// </summary>
     [Fact]
     public void RepairSplitAdminConfig_IsInertOnASecondPass()
@@ -165,7 +171,6 @@ public class PyRevitConfigServiceMigrationTests
 
             PyRevitConfigService.RepairSplitAdminConfig(userConfig, machineConfig);
 
-            // Stand in for the config the next session resolves to.
             File.WriteAllText(userConfig, "[core]\r\ncheckupdates = false\r\n");
             PyRevitConfigService.RepairSplitAdminConfig(userConfig, machineConfig);
 

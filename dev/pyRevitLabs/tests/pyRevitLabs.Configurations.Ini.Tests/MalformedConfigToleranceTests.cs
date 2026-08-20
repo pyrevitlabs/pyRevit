@@ -40,7 +40,10 @@ public class MalformedConfigToleranceTests : IDisposable
         return IniConfiguration.Create(path);
     }
 
-    [Fact] // Python's configparser accepts '#', so hand-edited configs carry it.
+    /// <summary>
+    /// Python's configparser accepts '#', so hand-edited configs carry it.
+    /// </summary>
+    [Fact]
     public void HashComment_IsRead()
     {
         IConfiguration config = Read("# pyRevit settings\n[core]\ndebug = true\n");
@@ -126,13 +129,16 @@ public class ReadOnlyWriteGuardTests : IDisposable
             "core", "rocketmode", false));
     }
 
-    [Fact] // The write-through path behind user_config.core.X = value in Python.
+    /// <summary>
+    /// The write-through path behind user_config.core.X = value in Python.
+    /// </summary>
+    [Fact]
     public void ApplySection_OnReadOnlyConfig_Throws()
     {
         Assert.Throws<ConfigurationReadOnlyException>(() => ReadOnlyService().ApplySection(new CoreSection {RocketMode = false}));
     }
 
-    [Fact] // The raw path accepts the write; the guarantee is that it stays off disk.
+    [Fact]
     public void RawWrite_OnReadOnlyConfig_NeverReachesFile()
     {
         IConfigurationService service = ReadOnlyService();
@@ -144,7 +150,7 @@ public class ReadOnlyWriteGuardTests : IDisposable
         Assert.Contains("rocketmode = true", File.ReadAllText(_path));
     }
 
-    [Fact] // A refused write must leave neither the file nor the in-memory view changed.
+    [Fact]
     public void RefusedWrite_LeavesValueUnchanged()
     {
         IConfigurationService service = ReadOnlyService();

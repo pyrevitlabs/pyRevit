@@ -25,7 +25,7 @@ public class SnapshotFreshnessTests : IDisposable
     public void Dispose()
     {
         try { File.Delete(_path); }
-        catch { /* best effort */ }
+        catch { }
     }
 
     private IConfigurationService Service(string content)
@@ -36,15 +36,18 @@ public class SnapshotFreshnessTests : IDisposable
             .Build();
     }
 
-    // Reproduces the Extensions dialog: set_option writes raw, then save_changes
-    // hands the typed snapshot to SaveSection.
+    /// <summary>
+    /// Reproduces the Extensions dialog: set_option writes raw, then save_changes
+    /// hands the typed snapshot to SaveSection. The typed snapshot is read below
+    /// before the raw write, so this proves the later write is not reverted rather
+    /// than never having been overwritten in the first place.
+    /// </summary>
     [Fact]
     public void RawWriteThenSaveSection_DoesNotRevertTheWrite()
     {
         var service = Service("[core]\nuserextensions = " + @"[""C:\\A""]" + "\n");
         var cfg = service.Configuration;
 
-        // snapshot is built here, before the raw write
         Assert.Equal(new List<string> { @"C:\A" }, service.Core.UserExtensions);
 
         cfg.SetRawValue("core", "userextensions", @"[""C:\\A"",""C:\\B""]");
@@ -58,19 +61,22 @@ public class SnapshotFreshnessTests : IDisposable
             reread.GetValue<List<string>>("core", "userextensions"));
     }
 
-    // Reproduces the Settings dialog Save: typed edits are written through with
-    // ApplySection (no flush), then an unrelated dynamic-section write (e.g.
-    // tabcoloring) bumps the store's revision and rebuilds the typed snapshots
-    // mid-save. A single flush at the end must still persist every typed edit,
-    // across all three typed sections.
+    /// <summary>
+    /// Reproduces the Settings dialog Save: typed edits are written through with
+    /// ApplySection (no flush), then an unrelated dynamic-section write (e.g.
+    /// tabcoloring) bumps the store's revision and rebuilds the typed snapshots
+    /// mid-save — the read of <c>service.Core.RocketMode</c> below forces that
+    /// rebuild, as the dialog does when it reads a typed value afterward. A single
+    /// flush at the end must still persist every typed edit, across all three typed
+    /// sections. Values are chosen to contradict the section defaults so a silent
+    /// revert to the default is detectable.
+    /// </summary>
     [Fact]
     public void ApplySectionAcrossSections_SurvivesInterveningDynamicWrite_OnSingleFlush()
     {
         var service = Service("[core]\nrocketmode = true\n");
         var cfg = service.Configuration;
 
-        // Values chosen to contradict the section defaults so a silent revert
-        // to the default is detectable.
         service.ApplySection(
             new CoreSection { RocketMode = false });
         service.ApplySection(
@@ -78,9 +84,7 @@ public class SnapshotFreshnessTests : IDisposable
         service.ApplySection(
             new TelemetrySection { TelemetryServerUrl = "http://example/" });
 
-        // Dynamic-section write advances the revision, invalidating the snapshots.
         cfg.SetRawValue("tabcoloring", "sort_colorize_docs", "true");
-        // Force a rebuild, as the dialog does when it reads a typed value after.
         _ = service.Core.RocketMode;
 
         cfg.SaveConfiguration();
@@ -103,6 +107,9 @@ public class SnapshotFreshnessTests : IDisposable
         Assert.False(service.Core.RocketMode);
     }
 
+    /// <summary>
+    /// 10 is CoreSection.StartupLogTimeout's declared [DefaultValue].
+    /// </summary>
     [Fact]
     public void RemovingAnOption_IsVisibleOnTypedSection()
     {
@@ -111,7 +118,7 @@ public class SnapshotFreshnessTests : IDisposable
 
         service.Configuration.RemoveOption("core", "startuplogtimeout");
 
-        Assert.Equal(10, service.Core.StartupLogTimeout); // [DefaultValue(10)]
+        Assert.Equal(10, service.Core.StartupLogTimeout);
     }
 
     [Fact]
@@ -150,7 +157,10 @@ public class SnapshotFreshnessTests : IDisposable
         Assert.True(cfg.Revision > afterRemoveOption);
     }
 
-    [Fact] // A no-op removal changed nothing, so derived state stays valid.
+    /// <summary>
+    /// A no-op removal changed nothing, so derived state stays valid.
+    /// </summary>
+    [Fact]
     public void Revision_DoesNotAdvanceOnNoOpMutation()
     {
         var service = Service("[core]\nrocketmode = true\n");

@@ -57,7 +57,12 @@ public class PyRevitConfigStoreTests : IDisposable
         Assert.Throws<ArgumentNullException>(() => PyRevitConfigStore.SetFactory(null!));
     }
 
-    [Fact] // Building seeds, migrates and backs up files; two threads must not both do it.
+    /// <summary>
+    /// Building seeds, migrates and backs up files; two threads must not both do it.
+    /// The factory sleeps briefly to widen the window a racing caller could slip
+    /// through.
+    /// </summary>
+    [Fact]
     public void GetShared_ConcurrentFirstAccess_BuildsOnce()
     {
         int builds = 0;
@@ -65,7 +70,6 @@ public class PyRevitConfigStoreTests : IDisposable
         PyRevitConfigStore.SetFactory(() =>
         {
             Interlocked.Increment(ref builds);
-            // Widen the window a racing caller could slip through.
             Thread.Sleep(50);
             return new StubService();
         });
@@ -91,7 +95,10 @@ public class PyRevitConfigStoreTests : IDisposable
         Assert.All(results, item => Assert.Same(results[0], item));
     }
 
-    [Fact] // A failed build must not be replayed to every later caller.
+    /// <summary>
+    /// A failed build must not be replayed to every later caller.
+    /// </summary>
+    [Fact]
     public void GetShared_FailedBuild_IsNotCached()
     {
         int attempts = 0;

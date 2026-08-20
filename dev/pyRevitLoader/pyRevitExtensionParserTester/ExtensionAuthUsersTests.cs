@@ -22,8 +22,10 @@ namespace pyRevitExtensionParserTester
             ClearAllCaches();
         }
 
-        // Points the process-wide store at a temp config, so every reader resolves
-        // it the way it resolves the real file and no machine config is touched.
+        /// <summary>
+        /// Points the process-wide store at a temp config, so every reader resolves
+        /// it the way it resolves the real file and no machine config is touched.
+        /// </summary>
         private void UseTestPyRevitConfig(string iniContent)
         {
             var configPath = Path.Combine(TestTempDir, "pyRevit_config.ini");
@@ -101,6 +103,10 @@ namespace pyRevitExtensionParserTester
                 Is.EquivalentTo(new[] { "ManifestUser", "RegistryUser" }));
         }
 
+        /// <summary>
+        /// UseTestPyRevitConfig already clears the parser caches before injecting the
+        /// test config; clearing again after it would drop that injected config.
+        /// </summary>
         [Test]
         public void ParseExtension_ReadsAuthUsersFromConfiguredLookupSource()
         {
@@ -121,8 +127,6 @@ namespace pyRevitExtensionParserTester
                 "[environment]\n" +
                 "sources = [\"" + lookupPath.Replace("\\", "\\\\") + "\"]\n");
 
-            // UseTestPyRevitConfig already clears the parser caches before injecting
-            // the test config; clearing again here would drop that injected config.
             var extension = ParseInstalledExtensions(extPath).Single();
 
             Assert.That(extension.AuthorizedUsers, Is.EquivalentTo(new[] { "LookupUser" }));
