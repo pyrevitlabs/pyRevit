@@ -201,11 +201,42 @@ public sealed class ConfigurationService : IConfigurationService
             object? keyValue = propertyInfo.GetValue(sectionValue);
             if (keyValue is null)
                 continue;
-            if (storedValue is null && keyValue.Equals(GetPropertyDefault(propertyInfo)))
+            if (storedValue is null && ValuesEqual(keyValue, GetPropertyDefault(propertyInfo)))
                 continue;
-            if (!keyValue.Equals(storedValue))
+            if (!ValuesEqual(keyValue, storedValue))
                 configuration.SetValue(sectionName, keyName, keyValue);
         }
+    }
+
+    // object.Equals is reference equality for List<string>/Dictionary<string,string>
+    // section properties, so a byte-identical container value would always look
+    // "changed" and always be written. Compare dictionaries by key/value content
+    // (order-independent) and other enumerables by element sequence; everything
+    // else falls back to ordinary equality.
+    private static bool ValuesEqual(object? left, object? right)
+    {
+        if (left is IDictionary leftDict && right is IDictionary rightDict)
+            return DictionariesEqual(leftDict, rightDict);
+
+        if (left is IEnumerable leftEnumerable && right is IEnumerable rightEnumerable
+            && left is not string && right is not string)
+            return leftEnumerable.Cast<object>().SequenceEqual(rightEnumerable.Cast<object>());
+
+        return Equals(left, right);
+    }
+
+    private static bool DictionariesEqual(IDictionary left, IDictionary right)
+    {
+        if (left.Count != right.Count)
+            return false;
+
+        foreach (DictionaryEntry entry in left)
+        {
+            if (!right.Contains(entry.Key) || !Equals(right[entry.Key], entry.Value))
+                return false;
+        }
+
+        return true;
     }
 
     private static object CreateSection(
