@@ -228,21 +228,18 @@ public static class ConfigurationMigrator
     /// <summary>
     /// Finds List&lt;string&gt; keys stored in the legacy Python single-quoted form,
     /// returning the parsed value so migration can rewrite them as canonical JSON.
+    /// Scans every section the file has, not just the built-in ones, so a
+    /// custom/extension section carrying the same legacy form is repaired too.
     /// Reads raw (never decoded), so this scan alone does not report a legacy read.
     /// </summary>
     private static List<(string Section, string Key, List<string> Value)> FindLegacyListKeys(IConfiguration config)
     {
         var legacy = new List<(string, string, List<string>)>();
 
-        foreach (Type sectionType in KnownSections)
+        foreach (string section in config.GetSectionNames())
         {
-            string section = SectionName(sectionType);
-            foreach (PropertyInfo property in GetProperties(sectionType))
+            foreach (string key in config.GetSectionOptionNames(section))
             {
-                if (property.PropertyType != typeof(List<string>))
-                    continue;
-
-                string key = KeyName(property);
                 string? raw = config.GetRawValueOrDefault(section, key);
                 if (raw != null
                     && LegacyListFormat.TryParseSingleQuoted(raw.Trim(), out List<string>? value)
@@ -259,23 +256,20 @@ public static class ConfigurationMigrator
     /// <summary>
     /// Finds Dictionary&lt;string,string&gt; keys stored in the legacy Python
     /// single-quoted form, returning the parsed value so migration can rewrite
-    /// them as canonical JSON. Reads raw (never decoded), so this scan alone does
-    /// not report a legacy read.
+    /// them as canonical JSON. Scans every section the file has, not just the
+    /// built-in ones, so a custom/extension section carrying the same legacy form
+    /// is repaired too. Reads raw (never decoded), so this scan alone does not
+    /// report a legacy read.
     /// </summary>
     private static List<(string Section, string Key, Dictionary<string, string> Value)> FindLegacyDictKeys(
         IConfiguration config)
     {
         var legacy = new List<(string, string, Dictionary<string, string>)>();
 
-        foreach (Type sectionType in KnownSections)
+        foreach (string section in config.GetSectionNames())
         {
-            string section = SectionName(sectionType);
-            foreach (PropertyInfo property in GetProperties(sectionType))
+            foreach (string key in config.GetSectionOptionNames(section))
             {
-                if (property.PropertyType != typeof(Dictionary<string, string>))
-                    continue;
-
-                string key = KeyName(property);
                 string? raw = config.GetRawValueOrDefault(section, key);
                 if (raw != null
                     && LegacyDictFormat.TryParseSingleQuoted(raw.Trim(), out Dictionary<string, string>? value)
