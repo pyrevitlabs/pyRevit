@@ -1,18 +1,20 @@
 """Perform a ONE TIME version-to-version deployment cleanup at session load for 4.8.5."""
+
 import os
 import os.path as op
 
 from pyrevit.coreutils import appdata
+
 
 def remove_leftover_temp_files():
     """4.8.5 had a bug that would create temp files with extension ..bak.
 
     This cleans them up.
     """
-    univ_path = op.dirname(appdata.get_universal_data_file("X", 'bak'))
+    univ_path = op.dirname(appdata.get_universal_data_file("X", "bak"))
     if op.exists(univ_path):
         for entry in os.listdir(univ_path):
-            if op.isfile(entry) and entry.lower().endswith('..bak'):
+            if op.isfile(entry) and entry.lower().endswith("..bak"):
                 appdata.garbage_data_file(op.join(univ_path, entry))
 
 

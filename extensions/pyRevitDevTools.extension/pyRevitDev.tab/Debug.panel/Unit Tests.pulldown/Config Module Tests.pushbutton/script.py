@@ -6,10 +6,7 @@ import traceback
 import pyrevit.unittests as tests_pkg
 from pyrevit.unittests.runner import run_module_tests
 
-
-
-
-TEST_MODULE_PREFIX = 'test_config_'
+TEST_MODULE_PREFIX = "test_config_"
 
 
 def _discover_config_modules():
@@ -21,13 +18,13 @@ def _discover_config_modules():
 
 
 def _import_module(qualified_name):
-    return __import__(qualified_name, fromlist=['*'])
+    return __import__(qualified_name, fromlist=["*"])
 
 
 def _format_exception_info(exc_info):
     if isinstance(exc_info, tuple) and len(exc_info) == 3:
         try:
-            return ''.join(
+            return "".join(
                 traceback.format_exception(exc_info[0], exc_info[1], exc_info[2])
             )
         except Exception:
@@ -55,14 +52,14 @@ if not config_test_modules:
         )
     )
 
-print('Discovered config unit test modules:')
+print("Discovered config unit test modules:")
 for module_name in config_test_modules:
-    print(' - {}'.format(module_name))
+    print(" - {}".format(module_name))
 
 failures = []
 for module_name in config_test_modules:
-    qualified_name = '{}.{}'.format(tests_pkg.__name__, module_name)
-    print('\nRunning {}'.format(qualified_name))
+    qualified_name = "{}.{}".format(tests_pkg.__name__, module_name)
+    print("\nRunning {}".format(qualified_name))
     module = _import_module(qualified_name)
     result = run_module_tests(module)
     if not result.wasSuccessful():
@@ -70,8 +67,6 @@ for module_name in config_test_modules:
         failures.append(qualified_name)
 
 if failures:
-    raise AssertionError(
-        'Config unit test failures: {}'.format(', '.join(failures))
-    )
+    raise AssertionError("Config unit test failures: {}".format(", ".join(failures)))
 
-print('\nAll config unit tests passed.')
+print("\nAll config unit tests passed.")

@@ -42,7 +42,12 @@ class SettingsWindow(forms.WPFWindow):
     """Dynamic settings window that generates UI from schema."""
 
     def __init__(
-        self, settings_schema, section=None, title="Settings", width=450, custom_config=None
+        self,
+        settings_schema,
+        section=None,
+        title="Settings",
+        width=450,
+        custom_config=None,
     ):
         """Initialize the settings window.
 
@@ -58,7 +63,9 @@ class SettingsWindow(forms.WPFWindow):
             self.config = script.get_config(section)
         else:
             section = section or "DEFAULT"
-            CONFIG_FILE = appdata.get_universal_data_file(file_id=custom_config, file_ext='ini')
+            CONFIG_FILE = appdata.get_universal_data_file(
+                file_id=custom_config, file_ext="ini"
+            )
             if not op.exists(CONFIG_FILE):
                 open(CONFIG_FILE, "w").close()
             self.configparser = open_config_file(CONFIG_FILE)
@@ -109,7 +116,6 @@ class SettingsWindow(forms.WPFWindow):
 
     def _generate_xaml(self):
         """Generate XAML string based on settings schema."""
-
         xaml_parts = [
             '<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"',
             '        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"',
@@ -177,7 +183,9 @@ class SettingsWindow(forms.WPFWindow):
 
             elif setting_type == "separator":
                 # Bare horizontal rule, no label.
-                xaml_parts.append('<Separator Margin="0,10,0,10" Background="#DDDDDD"/>')
+                xaml_parts.append(
+                    '<Separator Margin="0,10,0,10" Background="#DDDDDD"/>'
+                )
 
             # ---- Interactive types ----------------------------------------------
 
@@ -233,7 +241,9 @@ class SettingsWindow(forms.WPFWindow):
                 xaml_parts.append("    </Grid.ColumnDefinitions>")
                 xaml_parts.append(
                     '    <Border x:Name="{0}_preview" Grid.Column="0"'
-                    ' BorderBrush="Gray" BorderThickness="1" CornerRadius="2">'.format(name)
+                    ' BorderBrush="Gray" BorderThickness="1" CornerRadius="2">'.format(
+                        name
+                    )
                 )
                 xaml_parts.append('        <Rectangle Fill="White" Height="22"/>')
                 xaml_parts.append("    </Border>")
@@ -320,7 +330,11 @@ class SettingsWindow(forms.WPFWindow):
 
             elif setting_type == "slider":
                 try:
-                    val = float(current_value) if current_value is not None else float(setting.get("min", 0))
+                    val = (
+                        float(current_value)
+                        if current_value is not None
+                        else float(setting.get("min", 0))
+                    )
                     # Clamp to declared bounds.
                     min_val = float(setting.get("min", 0))
                     max_val = float(setting.get("max", 100))
@@ -341,7 +355,9 @@ class SettingsWindow(forms.WPFWindow):
 
                 if setting_type == "color":
                     self._update_color_preview(name, control.Text)
-                    control.TextChanged += lambda s, e, n=name: self._on_color_text_changed(n)
+                    control.TextChanged += (
+                        lambda s, e, n=name: self._on_color_text_changed(n)
+                    )
 
                 if setting_type in ["color", "folder", "file"]:
                     button = getattr(self, name + "_button", None)
@@ -663,7 +679,10 @@ class SettingsWindow(forms.WPFWindow):
 # Public API
 # ---------------------------------------------------------------------------
 
-def show_settings(settings_schema, section=None, title="Settings", width=450, custom_config=None):
+
+def show_settings(
+    settings_schema, section=None, title="Settings", width=450, custom_config=None
+):
     """Show settings window and return True if saved.
 
     Args:
