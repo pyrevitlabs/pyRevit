@@ -391,15 +391,6 @@ class PyRevitConfig(object):
         self.core.LoadBeta = state
 
     @property
-    def new_loader(self):
-        """Whether to use new csharp loader."""
-        return self.core.NewLoader
-
-    @new_loader.setter
-    def new_loader(self, state):
-        self.core.NewLoader = state
-
-    @property
     def read_script_metadata(self):
         """Whether to read script metadata (__title__, __author__, etc) from Python scripts.
 

@@ -67,11 +67,6 @@ namespace pyRevitExtensionParser
         }
 
         /// <summary>
-        /// Gets whether the new loader architecture is enabled (default true).
-        /// </summary>
-        public bool NewLoader => AsService().Core.NewLoader ?? true;
-
-        /// <summary>
         /// Gets whether Rocket Mode is enabled (default true).
         /// </summary>
         public bool RocketMode => AsService().Core.RocketMode ?? true;

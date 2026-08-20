@@ -11,23 +11,17 @@ The only public function is `load_session()` that loads a new session.
 Everything else is private.
 """
 import sys
-from collections import namedtuple
 
 from pyrevit import EXEC_PARAMS, HOST_APP
-from pyrevit import MAIN_LIB_DIR, MISC_LIB_DIR
 from pyrevit import framework
 from pyrevit.coreutils import Timer
 from pyrevit.coreutils import assmutils
 from pyrevit.coreutils import envvars
-from pyrevit.coreutils import appdata
 from pyrevit.coreutils import logger
 from pyrevit.loader import sessioninfo
-from pyrevit.loader import asmmaker
-from pyrevit.loader import uimaker
 from pyrevit.loader import hooks
 from pyrevit.labs import PyRevit
 from pyrevit.userconfig import user_config
-from pyrevit.extensions import extensionmgr
 from pyrevit.versionmgr import updater
 from pyrevit.versionmgr import upgrade
 from pyrevit import telemetry
@@ -46,17 +40,12 @@ from pyrevit import DB, UI, revit
 # pylint: disable=W0703,C0302,C0103,no-member
 mlogger = logger.get_logger(__name__)
 
-# Build strategy constant (Roslyn is the only supported strategy)
-BUILD_STRATEGY_ROSLYN = "Roslyn"
-
-# Minimum Revit version that supports the new C# loader.
-# Revit 2019/2020 ship an older .NET Framework and system assemblies
-# (System.Runtime.CompilerServices.Unsafe, System.Collections.Immutable)
-# that are incompatible with the Roslyn version bundled in pyRevit.
-NEW_LOADER_MIN_REVIT_VERSION = 2021
-
-
-AssembledExtension = namedtuple("AssembledExtension", ["ext", "assm"])
+# Session timing and output state shared between perform_preload() and
+# perform_postload(). The C# loader invokes these as two separate steps, so the
+# state is carried on the persistent engine module rather than a call stack.
+_SESSION_TIMER = None
+_SESSION_OUTPUT = None
+_OUTPUT_SETUP_TIME = None
 
 
 def _clear_running_engines():
@@ -88,7 +77,7 @@ def _setup_output():
     runtime_info = sessioninfo.get_runtime_info()
     out_window.AppVersion = "{}:{}:{}".format(
         runtime_info.pyrevit_version,
-        int(runtime_info.engine_version),
+        runtime_info.engine_version,
         runtime_info.host_version,
     )
 
@@ -141,9 +130,6 @@ def _perform_onsessionloadstart_ops():
     # reset the list of assemblies loaded under pyRevit session
     sessioninfo.set_loaded_pyrevit_assemblies([])
 
-    # init executor
-    runtime_types.ScriptExecutor.Initialize()
-
     # init routes
     routes.init()
 
@@ -159,12 +145,6 @@ def _perform_onsessionloadstart_ops():
 
 
 def _perform_onsessionloadcomplete_ops():
-    # cleanup old assembly files.
-    asmmaker.cleanup_assembly_files()
-
-    # clean up temp app files between sessions.
-    appdata.cleanup_appdata_folder()
-
     # activate hooks now
     hooks.activate()
 
@@ -182,150 +162,109 @@ def _perform_onsessionloadcomplete_ops():
             mlogger.error("Routes servers failed activation")
 
 
-def _new_session():
-    """Create an assembly and UI for each installed UI extensions."""
-    assembled_exts = []
-    # get all installed ui extensions
-    for ui_ext in extensionmgr.get_installed_ui_extensions():
-        # configure extension components for metadata
-        # e.g. liquid templates like {{author}}
-        ui_ext.configure()
+def perform_preload():
+    """Run pre-load session setup before the C# loader builds the UI.
 
-        # collect all module references from extensions
-        ui_ext_modules = []
-        # FIXME: currently dlls inside bin/ are not pre-loaded since
-        # this will lock them by Revit. Maybe all dlls should be loaded
-        # from memory (read binary and load assembly)?
-        # ui_ext_modules.extend(ui_ext.get_extension_modules())
-        ui_ext_modules.extend(ui_ext.get_command_modules())
-        # make sure they are all loaded
-        assmutils.load_asm_files(ui_ext_modules)
-        # and update env information
-        sessioninfo.update_loaded_pyrevit_referenced_modules(ui_ext_modules)
+    Invoked by the C# session orchestrator as the first step of a load. Sets up
+    the session environment, output window, and pre-load services, and records
+    the session timer so perform_postload() can report load time.
+    """
+    global _SESSION_TIMER, _SESSION_OUTPUT, _OUTPUT_SETUP_TIME
 
-        # create a dll assembly and get assembly info
-        ext_asm_info = asmmaker.create_assembly(ui_ext)
-        if not ext_asm_info:
-            mlogger.critical("Failed to create assembly for: %s", ui_ext)
-            continue
-        else:
-            mlogger.info("Extension assembly created: %s", ui_ext.name)
+    # must run before setup_runtime_vars(), the first attachment consumer, so a
+    # re-attached clone is picked up on reload
+    PyRevit.PyRevitAttachments.ClearAttachmentCache()
 
-        assembled_exts.append(AssembledExtension(ext=ui_ext, assm=ext_asm_info))
+    sessioninfo.setup_runtime_vars()
 
-    # add names of the created assemblies to the session info
-    sessioninfo.set_loaded_pyrevit_assemblies([x.assm.name for x in assembled_exts])
+    # time from before output setup so the reported load time reflects the full
+    # user wait, including first-load output window construction
+    _SESSION_TIMER = Timer()
 
-    # run startup scripts for this ui extension, if any
-    for assm_ext in assembled_exts:
-        if assm_ext.ext.startup_script:
-            # build syspaths for the startup script
-            sys_paths = [assm_ext.ext.directory]
-            if assm_ext.ext.library_path:
-                sys_paths.insert(0, assm_ext.ext.library_path)
+    if EXEC_PARAMS.first_load:
+        _SESSION_OUTPUT = _setup_output()
+        _OUTPUT_SETUP_TIME = _SESSION_TIMER.get_time()
+    else:
+        from pyrevit import script
 
-            mlogger.info("Running startup tasks for %s", assm_ext.ext.name)
+        _SESSION_OUTPUT = script.get_output()
+        _OUTPUT_SETUP_TIME = None
+
+    _perform_onsessionloadstart_ops()
+
+
+def perform_postload():
+    """Finalize the session after the C# loader has built the UI.
+
+    Invoked by the C# session orchestrator as the last step of a load. Runs
+    post-load services, registers the assemblies the C# loader produced, reports
+    load time, and tears down the startup output stream.
+
+    Returns:
+        (str): session uuid
+    """
+    _perform_onsessionloadcomplete_ops()
+
+    # so find_pyrevitcmd can locate commands the C# loader compiled
+    _register_loaded_pyrevit_assemblies()
+
+    if _SESSION_TIMER is not None:
+        endtime = _SESSION_TIMER.get_time()
+        success_emoji = ":OK_hand:" if endtime < 3.00 else ":thumbs_up:"
+        mlogger.info("Load time: %s seconds %s", endtime, success_emoji)
+        if _OUTPUT_SETUP_TIME is not None:
             mlogger.debug(
-                "Executing startup script for extension: %s", assm_ext.ext.name
+                "Load breakdown: output setup %.3fs | session build %.3fs",
+                _OUTPUT_SETUP_TIME,
+                endtime - _OUTPUT_SETUP_TIME,
             )
 
-            # now run
-            execute_extension_startup_script(
-                assm_ext.ext.startup_script, assm_ext.ext.name, sys_paths=sys_paths
-            )
-
-    # register extension hooks
-    for assm_ext in assembled_exts:
-        hooks.register_hooks(assm_ext.ext)
-
-    # update/create ui (needs the assembly to link button actions
-    # to commands saved in the dll)
-    for assm_ext in assembled_exts:
-        uimaker.update_pyrevit_ui(assm_ext.ext, assm_ext.assm, user_config.load_beta)
-        mlogger.info("UI created for extension: %s", assm_ext.ext.name)
-
-    # re-sort the ui elements
-    for assm_ext in assembled_exts:
-        uimaker.sort_pyrevit_ui(assm_ext.ext)
-
-    # cleanup existing UI. This is primarily for cleanups after reloading
-    uimaker.cleanup_pyrevit_ui()
-
-    uimaker.reflow_pyrevit_ui()
-
-
-def _new_session_csharp():
-    """Create a new session using the C# SessionManagerService."""
+    # if everything went well, self destruct
     try:
-        # Check if the new loader should be used
-        if not user_config.new_loader:
-            mlogger.debug("New loader disabled. Using Python session creation.")
-            _new_session()
-            return
+        timeout = user_config.startuplog_timeout
+        if (
+            timeout > 0
+            and not logger.loggers_have_errors()
+            and _SESSION_OUTPUT is not None
+        ):
+            _SESSION_OUTPUT.self_destruct(timeout)
+    except Exception as imp_err:
+        mlogger.error("Error setting up self_destruct on output window | %s", imp_err)
 
-        # Always use Roslyn build strategy
-        build_strategy = BUILD_STRATEGY_ROSLYN
-        mlogger.info("Using %s build strategy for C# session manager", build_strategy)
+    _cleanup_output()
+    return sessioninfo.get_session_uuid()
 
-        # Find the PyRevitLoaderApplication type from loaded assemblies
-        loaded_assemblies = framework.AppDomain.CurrentDomain.GetAssemblies()
-        loader_app_type = None
 
-        for assembly in loaded_assemblies:
-            try:
-                assembly_name = assembly.GetName().Name
-                if assembly_name.startswith("pyRevitLoader"):
-                    loader_app_type = assembly.GetType(
-                        "PyRevitLoader.PyRevitLoaderApplication"
-                    )
-                    if loader_app_type:
-                        mlogger.debug(
-                            "Found PyRevitLoaderApplication in assembly: %s",
-                            assembly.Location,
-                        )
-                        break
-            except Exception:
-                # Some assemblies might not have accessible location/name
-                continue
+def _invoke_csharp_loadsession():
+    """Invoke the C# session orchestrator and return the new session uuid.
 
-        if not loader_app_type:
-            mlogger.error("PyRevitLoaderApplication not found in loaded assemblies")
-            mlogger.info("Falling back to Python session creation...")
-            _new_session()
-            return
+    The C# entry (PyRevitLoaderApplication.LoadSession) runs the full sequence:
+    perform_preload(), the C# UI build, then perform_postload().
+    """
+    loader_app_type = None
+    for assembly in framework.AppDomain.CurrentDomain.GetAssemblies():
+        try:
+            if assembly.GetName().Name.startswith("pyRevitLoader"):
+                loader_app_type = assembly.GetType(
+                    "PyRevitLoader.PyRevitLoaderApplication"
+                )
+                if loader_app_type:
+                    break
+        except Exception:
+            continue
 
-        # Get the LoadSession method
-        load_session_method = loader_app_type.GetMethod("LoadSession")
-        if not load_session_method:
-            mlogger.error("LoadSession method not found in PyRevitLoaderApplication")
-            mlogger.info("Falling back to Python session creation...")
-            _new_session()
-            return
+    if not loader_app_type:
+        mlogger.error("PyRevitLoaderApplication not found in loaded assemblies")
+        return None
 
-        # Call the LoadSession method with logger and build strategy
-        mlogger.info("Loading session using C# LoadSession method...")
-        result = load_session_method.Invoke(
-            None, framework.Array[object]([build_strategy])
-        )
+    load_session_method = loader_app_type.GetMethod("LoadSession")
+    if not load_session_method:
+        mlogger.error("LoadSession method not found in PyRevitLoaderApplication")
+        return None
 
-        # Check if the result indicates success (Result.Succeeded = 0)
-        if hasattr(result, "value__") and result.value__ == 0:
-            mlogger.info("C# session loading completed successfully")
-            # Register loaded pyRevit assemblies with sessioninfo
-            # so find_pyrevitcmd can locate commands
-            _register_loaded_pyrevit_assemblies()
-            # Hook registration is now handled inside C# LoadSession()
-            # (HookManager.RegisterHooks) — no Python-side re-parse needed.
-            # This eliminates the ~2-5s double extension parsing overhead.
-        else:
-            mlogger.error("C# session loading returned failure result")
-            mlogger.info("Falling back to Python session creation...")
-            _new_session()
-
-    except Exception as cs_ex:
-        mlogger.error("Error in C# session creation: %s", cs_ex)
-        mlogger.info("Falling back to Python session creation...")
-        _new_session()
+    mlogger.info("Loading session using C# LoadSession method...")
+    load_session_method.Invoke(None, None)
+    return sessioninfo.get_session_uuid()
 
 
 def _register_loaded_pyrevit_assemblies():
@@ -356,13 +295,10 @@ def _register_loaded_pyrevit_assemblies():
 def load_session():
     """Handles loading/reloading of the pyRevit addin and extensions.
 
-    To create a proper ui, pyRevit extensions needs to be properly parsed and
-    a dll assembly needs to be created. This function handles these tasks
-    through interactions with .extensions, .loader.asmmaker, and .loader.uimaker.
-
-    Load session now takes a light parameter that will skip the assembly creation
-    and UI creation. This is for the case when pyRevitAssemblyMaker.dll is
-    used to create the assembly and UI
+    Delegates to the C# session orchestrator, which drives the full load:
+    perform_preload(), the C# assembly/UI build, then perform_postload(). This
+    is the entry used for reloads; the initial Revit startup invokes the C#
+    orchestrator directly.
 
     Examples:
         ```python
@@ -371,99 +307,14 @@ def load_session():
         ```
 
     Returns:
-        (str): sesion uuid
+        (str): session uuid
     """
-    # clear the session attachment cache so a re-attached clone is picked up
-    # on reload. must run before setup_runtime_vars() which is the first
-    # attachment consumer
-    PyRevit.PyRevitAttachments.ClearAttachmentCache()
-
-    # setup runtime environment variables
-    sessioninfo.setup_runtime_vars()
-
-    # start timing before output setup so the reported load time reflects the
-    # full user wait, including first-load output window construction
-    timer = Timer()
-
-    # the loader dll addon, does not create an output window
-    # if an output window is not provided, create one
-    if EXEC_PARAMS.first_load:
-        output_window = _setup_output()
-        output_setup_time = timer.get_time()
-    else:
-        from pyrevit import script
-
-        output_window = script.get_output()
-        output_setup_time = None
-
-    # perform pre-load tasks
-    _perform_onsessionloadstart_ops()
-
-    # create a new session
-    if not user_config.new_loader:
-        mlogger.info("Creating new pyRevit session with pyRevitLoader.py...")
-        mlogger.debug(
-            "The legacy Python loader is deprecated and will be removed in "
-            "future releases. Enable the new loader in pyRevit settings."
-        )
-        _new_session()
-    elif HOST_APP.is_older_than(NEW_LOADER_MIN_REVIT_VERSION):
-        mlogger.warning(
-            "The new C# loader is not supported on Revit %s (requires Revit %s+). "
-            "Falling back to the legacy Python loader automatically.",
-            HOST_APP.version,
-            NEW_LOADER_MIN_REVIT_VERSION,
-        )
-        mlogger.warning(
-            "The legacy Python loader is deprecated and will be removed in "
-            "future releases. Upgrade to Revit %s or newer to use the new loader.",
-            NEW_LOADER_MIN_REVIT_VERSION,
-        )
-        _new_session()
-    else:
-        mlogger.info("Creating new Session with pyRevitAssemblyMaker.dll...")
-        _new_session_csharp()
-
-    # perform post-load tasks
-    _perform_onsessionloadcomplete_ops()
-
-    # log load time and thumbs-up :)
-    endtime = timer.get_time()
-    success_emoji = ":OK_hand:" if endtime < 3.00 else ":thumbs_up:"
-    mlogger.info("Load time: %s seconds %s", endtime, success_emoji)
-    if output_setup_time is not None:
-        mlogger.debug(
-            "Load breakdown: output setup %.3fs | session build %.3fs",
-            output_setup_time,
-            endtime - output_setup_time,
-        )
-
-    # if everything went well, self destruct
-    try:
-        timeout = user_config.startuplog_timeout
-        if timeout > 0 and not logger.loggers_have_errors():
-            output_window.self_destruct(timeout)
-    except Exception as imp_err:
-        mlogger.error("Error setting up self_destruct on output window | %s", imp_err)
-
-    _cleanup_output()
-    return sessioninfo.get_session_uuid()
-
-
-def _perform_onsessionreload_ops():
-    pass
-
-
-def _perform_onsessionreloadcomplete_ops():
-    pass
+    return _invoke_csharp_loadsession()
 
 
 def reload_pyrevit():
-    _perform_onsessionreload_ops()
     mlogger.info("Reloading....")
-    session_Id = load_session()
-    _perform_onsessionreloadcomplete_ops()
-    return session_Id
+    return load_session()
 
 
 # -----------------------------------------------------------------------------
@@ -718,46 +569,3 @@ def execute_command(pyrevitcmd_unique_id):
         return None
     else:
         execute_command_cls(cmd_class)
-
-
-def execute_extension_startup_script(script_path, ext_name, sys_paths=None):
-    """Executes a script using pyRevit script executor.
-
-    Args:
-        script_path (str): Address of the script file
-        ext_name (str): Name of the extension
-        sys_paths (list): additional search paths
-    """
-    core_syspaths = [MAIN_LIB_DIR, MISC_LIB_DIR]
-    if sys_paths:
-        sys_paths.extend(core_syspaths)
-    else:
-        sys_paths = core_syspaths
-
-    script_data = runtime.types.ScriptData()
-    script_data.ScriptPath = script_path
-    script_data.ConfigScriptPath = None
-    script_data.CommandUniqueId = ""
-    script_data.CommandName = "Starting {}".format(ext_name)
-    script_data.CommandBundle = ""
-    script_data.CommandExtension = ext_name
-    script_data.HelpSource = ""
-    # route this script's output to the shared session output window
-    script_data.IsStartupScript = True
-
-    script_runtime_cfg = runtime.types.ScriptRuntimeConfigs()
-    script_runtime_cfg.CommandData = create_tmp_commanddata()
-    script_runtime_cfg.SelectedElements = None
-    script_runtime_cfg.SearchPaths = framework.List[str](sys_paths or [])
-    script_runtime_cfg.Arguments = framework.List[str]([])
-    script_runtime_cfg.EngineConfigs = runtime.create_ipyengine_configs(
-        clean=True,
-        full_frame=True,
-        persistent=True,
-    )
-    script_runtime_cfg.RefreshEngine = False
-    script_runtime_cfg.ConfigMode = False
-    script_runtime_cfg.DebugMode = False
-    script_runtime_cfg.ExecutedFromUI = False
-
-    runtime.types.ScriptExecutor.ExecuteScript(script_data, script_runtime_cfg)

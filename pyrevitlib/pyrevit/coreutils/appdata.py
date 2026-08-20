@@ -16,10 +16,8 @@ import os.path as op
 import re
 
 import pyrevit
-from pyrevit import EXEC_PARAMS
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
-from pyrevit.labs import TargetApps
 
 
 #pylint: disable=W0703,C0302
@@ -316,23 +314,3 @@ def garbage_data_file(file_path):
         file_path (str): path to the target file
     """
     _remove_app_file(file_path)
-
-
-def cleanup_appdata_folder():
-    """Cleanup appdata folder of all temporary appdata files."""
-    if EXEC_PARAMS.first_load:
-        hostapp_pids = \
-            [x.ProcessId
-             for x in TargetApps.Revit.RevitController.ListRunningRevits()]
-        for appdata_file in os.listdir(pyrevit.PYREVIT_VERSION_APP_DIR):
-            file_naming_dict = _match_file(appdata_file)
-            if 'pid' in file_naming_dict:
-                try:
-                    pid = int(file_naming_dict['pid'])
-                    if pid not in hostapp_pids:
-                        _remove_app_file(
-                            op.join(pyrevit.PYREVIT_VERSION_APP_DIR,
-                                    appdata_file)
-                            )
-                except Exception:
-                    pass

@@ -43,11 +43,6 @@ public sealed record CoreSection
     [KeyName("closeoutputmode")]
     public string? CloseOutputMode { get; set; }
 
-    /// <summary>Whether the C# loader is used instead of the legacy Python one. Default true.</summary>
-    [KeyName("new_loader")]
-    [DefaultValue(true)]
-    public bool? NewLoader { get; set; }
-
     /// <summary>
     /// Whether script metadata dunders (<c>__title__</c>, <c>__author__</c>, …)
     /// are read from .py files at startup. Disabling speeds up load at the cost

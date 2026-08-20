@@ -76,3 +76,6 @@ build/tests/bin/*
 build/tests/obj/*
 ci-stamped/
 ci-bin-manifest.json
+
+# Python virtualenv created by pipenv (PIPENV_VENV_IN_PROJECT)
+.venv/

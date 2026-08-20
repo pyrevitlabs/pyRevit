@@ -48,7 +48,7 @@ def load_configs():
     fscats = my_config.get_option('fscats', [])
     revit_cats = [revit.query.get_category(x)
                   for x in (fscats or FREQUENTLY_SELECTED_CATEGORIES)]
-    return filter(None, revit_cats)
+    return list(filter(None, revit_cats))
 
 
 def save_configs(categories):

@@ -26,7 +26,7 @@ RuntimeInfo = namedtuple('RuntimeInfo', ['pyrevit_version',
 
 Args:
     pyrevit_version (str): formatted pyRevit version
-    engine_version (int): active IronPython engine version
+    engine_version (str): active IronPython engine version
     host_version (str): Current Revit version
 """
 
