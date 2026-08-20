@@ -4,6 +4,7 @@ import pyrevit.coreutils.git as libgit
 from pyrevit.compat import safe_strtype
 from pyrevit import coreutils
 from pyrevit import HOME_DIR
+from pyrevit.coreutils import envvars
 from pyrevit.coreutils.logger import get_logger
 from pyrevit import versionmgr
 from pyrevit.versionmgr import upgrade
@@ -12,6 +13,7 @@ from pyrevit.userconfig import user_config
 from pyrevit.extensions import extensionmgr
 
 import socket
+import time
 
 #pylint: disable=C0103,W0703
 logger = get_logger(__name__)
@@ -174,8 +176,32 @@ def has_pending_updates(repo_info):
             return True
 
 
+# check_for_updates() fetches every remote on every repo, which is called
+# from the Update smart button's __selfinit__ on every session load/reload.
+# Cache the result for this long so rapid reloads (e.g. while developing)
+# don't re-hit the network each time.
+CHECKUPDATES_TTL_SECONDS = 15 * 60
+
+
 def check_for_updates():
-    """Check whether any available repo has pending updates."""
+    """Check whether any available repo has pending updates.
+
+    Result is cached in-process (see CHECKUPDATES_TTL_SECONDS) since this is
+    called on every session load, not just once.
+    """
+    now = time.time()
+    last_check = envvars.get_pyrevit_env_var(
+        envvars.CHECKUPDATES_TIMESTAMP_ENVVAR)
+    if last_check is not None and (now - last_check) < CHECKUPDATES_TTL_SECONDS:
+        return envvars.get_pyrevit_env_var(envvars.CHECKUPDATES_RESULT_ENVVAR)
+
+    result = _check_for_updates_uncached()
+    envvars.set_pyrevit_env_var(envvars.CHECKUPDATES_TIMESTAMP_ENVVAR, now)
+    envvars.set_pyrevit_env_var(envvars.CHECKUPDATES_RESULT_ENVVAR, result)
+    return result
+
+
+def _check_for_updates_uncached():
     if _check_connection():
         logger.info('Checking for updates...')
 
@@ -185,6 +211,7 @@ def check_for_updates():
                 return True
             else:
                 logger.info('%s is up-to-date...', repo.name)
+        return False
     else:
         logger.warning('No internet access detected. '
                        'Skipping check for updates.')
