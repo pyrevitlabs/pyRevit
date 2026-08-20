@@ -37,7 +37,9 @@ public sealed class ConfigurationService : IConfigurationService
     /// <inheritdoc />
     public IConfiguration Configuration => _configuration;
 
-    private readonly object _snapshotLock = new();
+    // Guards every read (snapshot rebuild) and write against the backing
+    // IConfiguration, which is not itself thread-safe.
+    private readonly object _syncLock = new();
     private long _snapshotRevision = -1;
     private CoreSection _core = new();
     private RoutesSection _routes = new();
@@ -59,7 +61,7 @@ public sealed class ConfigurationService : IConfigurationService
     /// <inheritdoc />
     public void ReloadLoadConfigurations()
     {
-        lock (_snapshotLock)
+        lock (_syncLock)
             _snapshotRevision = -1;
     }
 
@@ -68,7 +70,7 @@ public sealed class ConfigurationService : IConfigurationService
     // ever increases, so any write changes it.
     private void EnsureSnapshots()
     {
-        lock (_snapshotLock)
+        lock (_syncLock)
         {
             long revision = _configuration.Revision;
             if (revision == _snapshotRevision)
@@ -113,15 +115,19 @@ public sealed class ConfigurationService : IConfigurationService
     public void SaveSection<T>(T sectionValue)
     {
         EnsureWritable(sectionValue);
-        ApplySection(typeof(T), sectionValue!, _configuration);
-        _configuration.SaveConfiguration();
+        lock (_syncLock)
+        {
+            ApplySection(typeof(T), sectionValue!, _configuration);
+            _configuration.SaveConfiguration();
+        }
     }
 
     /// <inheritdoc />
     public void ApplySection<T>(T sectionValue)
     {
         EnsureWritable(sectionValue);
-        ApplySection(typeof(T), sectionValue!, _configuration);
+        lock (_syncLock)
+            ApplySection(typeof(T), sectionValue!, _configuration);
     }
 
     private void EnsureWritable(object? sectionValue)
@@ -156,8 +162,11 @@ public sealed class ConfigurationService : IConfigurationService
 
         EnsureWritable();
 
-        _configuration.SetValue(sectionName, keyName, keyValue);
-        _configuration.SaveConfiguration();
+        lock (_syncLock)
+        {
+            _configuration.SetValue(sectionName, keyName, keyValue);
+            _configuration.SaveConfiguration();
+        }
     }
 
     /// <inheritdoc />
