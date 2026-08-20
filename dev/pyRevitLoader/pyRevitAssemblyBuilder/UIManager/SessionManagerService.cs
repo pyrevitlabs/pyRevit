@@ -171,52 +171,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             // All extension assemblies must be loaded into the AppDomain before any
             // startup script runs (fix for #3108) - cross-extension imports in
             // startup scripts fail otherwise.
-            //
-            // Built in parallel: on a cache hit (the common case) each build is just a
-            // File.Exists check, but on a cache miss (fresh install, upgrade, or an edited
-            // extension) each miss pays full Roslyn compilation, which is CPU-bound and
-            // independent per extension. Results are collected into an array slot per
-            // extension so downstream passes see the same ordering as uiExtensions,
-            // preserving ribbon tab/panel layout order.
-            stepStopwatch.Restart();
-            var buildResults = new (ParsedExtension ext, ExtensionAssemblyInfo assmInfo)?[uiExtensions.Count];
-            System.Threading.Tasks.Parallel.For(0, uiExtensions.Count, i =>
-            {
-                var ext = uiExtensions[i];
-                if (ext == null) { _logger.Warning("Skipping null extension."); return; }
-                try
-                {
-                    var buildSw = Stopwatch.StartNew();
-                    var rocketMode = _uiManager?.RocketMode ?? false;
-                    var assmInfo = _assemblyBuilder?.BuildExtensionAssembly(ext, libraryExtensions, rocketMode);
-                    var buildTime = buildSw.ElapsedMilliseconds;
-
-                    if (assmInfo == null)
-                    {
-                        _logger.Error($"Failed to build assembly for extension '{ext.Name}'.");
-                        return;
-                    }
-
-                    _logger.Info($"Extension assembly created: {ext.Name}");
-                    var loadSw = Stopwatch.StartNew();
-                    _assemblyBuilder?.LoadAssembly(assmInfo);
-                    _logger.Debug($"[PERF] {ext.Name} - Build: {buildTime}ms, Load: {loadSw.ElapsedMilliseconds}ms");
-
-                    buildResults[i] = (ext, assmInfo);
-                }
-                catch (Exception ex)
-                {
-                    _logger.Error($"Error building/loading extension '{ext?.Name ?? "unknown"}': {ex}");
-                }
-            });
-            _logger.Debug($"[PERF] BuildAndLoadAllAssemblies: {stepStopwatch.ElapsedMilliseconds}ms");
-
-            var assembledExtensions = new List<(ParsedExtension ext, ExtensionAssemblyInfo assmInfo)>();
-            foreach (var result in buildResults)
-            {
-                if (result.HasValue)
-                    assembledExtensions.Add(result.Value);
-            }
+            var assembledExtensions = BuildAndLoadAllAssemblies(uiExtensions, libraryExtensions);
 
             // ── PASS 2: Run ALL startup scripts ────────────────────────────────
             // All assemblies are now loaded, so cross-extension imports work.
@@ -296,18 +251,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             _ribbonScanner.CleanupOrphanedElements();
             _logger.Debug($"[PERF] CleanupOrphanedElements: {stepStopwatch.ElapsedMilliseconds}ms");
 
-            // Neither cleanup is on anyone's critical path - they only delete orphaned
-            // files nothing downstream reads - so they're queued on a background thread
-            // instead of blocking the ribbon from appearing. The Revit version is read
-            // here, on the main thread, since ExternalApplication objects are not safe
-            // to touch off it.
-            var revitVersionForCleanup = _uiApp.Application.VersionNumber;
-            System.Threading.Tasks.Task.Run(() => CleanupStaleAssemblyFiles(revitVersionForCleanup));
-
-            if (firstLoad)
-            {
-                System.Threading.Tasks.Task.Run(() => CleanupAppDataFolder(revitVersionForCleanup));
-            }
+            QueueBackgroundCleanup(firstLoad);
 
             // Finalize via the residual Python post-load services (hook activation,
             // doc colorizer, routes server, output teardown).
@@ -317,6 +261,85 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
             totalStopwatch.Stop();
             _logger.Info($"Session loaded in {totalStopwatch.ElapsedMilliseconds}ms");
+        }
+
+        /// <summary>
+        /// Builds and loads every extension's assembly in parallel, then returns the ones that
+        /// built successfully in <paramref name="uiExtensions"/>'s original order, so downstream
+        /// passes (startup scripts, hooks, UI build) see the same ribbon tab/panel layout order
+        /// they always have.
+        /// </summary>
+        /// <remarks>
+        /// Parallelized because on a cache hit (the common case) each build is just a
+        /// <c>File.Exists</c> check, but on a cache miss (fresh install, upgrade, or an edited
+        /// extension) each miss pays full Roslyn compilation, which is CPU-bound and independent
+        /// per extension. Results are collected into an index-aligned array rather than a shared
+        /// list so no locking is needed across the parallel workers.
+        /// </remarks>
+        private List<(ParsedExtension ext, ExtensionAssemblyInfo assmInfo)> BuildAndLoadAllAssemblies(
+            List<ParsedExtension> uiExtensions, List<ParsedExtension> libraryExtensions)
+        {
+            var stepStopwatch = Stopwatch.StartNew();
+            var buildResults = new (ParsedExtension ext, ExtensionAssemblyInfo assmInfo)?[uiExtensions.Count];
+            System.Threading.Tasks.Parallel.For(0, uiExtensions.Count, i =>
+            {
+                var ext = uiExtensions[i];
+                if (ext == null) { _logger.Warning("Skipping null extension."); return; }
+                try
+                {
+                    var buildSw = Stopwatch.StartNew();
+                    var rocketMode = _uiManager?.RocketMode ?? false;
+                    var assmInfo = _assemblyBuilder?.BuildExtensionAssembly(ext, libraryExtensions, rocketMode);
+                    var buildTime = buildSw.ElapsedMilliseconds;
+
+                    if (assmInfo == null)
+                    {
+                        _logger.Error($"Failed to build assembly for extension '{ext.Name}'.");
+                        return;
+                    }
+
+                    _logger.Info($"Extension assembly created: {ext.Name}");
+                    var loadSw = Stopwatch.StartNew();
+                    _assemblyBuilder?.LoadAssembly(assmInfo);
+                    _logger.Debug($"[PERF] {ext.Name} - Build: {buildTime}ms, Load: {loadSw.ElapsedMilliseconds}ms");
+
+                    buildResults[i] = (ext, assmInfo);
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error($"Error building/loading extension '{ext?.Name ?? "unknown"}': {ex}");
+                }
+            });
+            _logger.Debug($"[PERF] BuildAndLoadAllAssemblies: {stepStopwatch.ElapsedMilliseconds}ms");
+
+            var assembledExtensions = new List<(ParsedExtension ext, ExtensionAssemblyInfo assmInfo)>();
+            foreach (var result in buildResults)
+            {
+                if (result.HasValue)
+                    assembledExtensions.Add(result.Value);
+            }
+            return assembledExtensions;
+        }
+
+        /// <summary>
+        /// Queues the stale-assembly and (on first load) appdata cleanup passes onto a background
+        /// task. Neither is on anyone's critical path - they only delete orphaned files nothing
+        /// downstream reads - so this keeps them off the path to the ribbon appearing.
+        /// </summary>
+        /// <remarks>
+        /// The Revit version is read up front, before queuing either task, because
+        /// <c>ExternalApplication</c> objects such as <c>_uiApp</c> are not safe to touch off the
+        /// calling (main) thread.
+        /// </remarks>
+        private void QueueBackgroundCleanup(bool firstLoad)
+        {
+            var revitVersionForCleanup = _uiApp.Application.VersionNumber;
+            System.Threading.Tasks.Task.Run(() => CleanupStaleAssemblyFiles(revitVersionForCleanup));
+
+            if (firstLoad)
+            {
+                System.Threading.Tasks.Task.Run(() => CleanupAppDataFolder(revitVersionForCleanup));
+            }
         }
 
         /// <summary>

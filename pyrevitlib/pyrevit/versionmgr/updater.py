@@ -174,18 +174,16 @@ def has_pending_updates(repo_info):
             return True
 
 
-# check_for_updates() fetches every remote on every repo, which is called
-# from the Update smart button's __selfinit__ on every session load/reload.
-# Cache the result for this long so rapid reloads (e.g. while developing)
-# don't re-hit the network each time.
 CHECKUPDATES_TTL_SECONDS = 15 * 60
 
 
 def check_for_updates():
     """Check whether any available repo has pending updates.
 
-    Result is cached in-process (see CHECKUPDATES_TTL_SECONDS) since this is
-    called on every session load, not just once.
+    Fetches every remote on every repo, which the Update smart button's
+    __selfinit__ calls on every session load/reload. Cached in-process for
+    CHECKUPDATES_TTL_SECONDS so rapid reloads (e.g. while developing) don't
+    re-hit the network each time.
     """
     now = time.time()
     last_check = envvars.get_pyrevit_env_var(

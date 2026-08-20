@@ -156,8 +156,11 @@ def _perform_onsessionloadcomplete_ops():
 
 
 def _perform_postload_autoupdate():
-    # deferred until after the ribbon UI is fully built so a slow or offline
-    # update check never blocks the first paint of the UI
+    """Run auto-update, if enabled, once the ribbon UI is fully built.
+
+    Called from perform_postload() rather than the preload path so a slow or
+    offline update check can never delay the ribbon's first paint.
+    """
     if user_config.auto_update and not _check_autoupdate_inprogress():
         mlogger.info("Auto-update is active. Attempting update...")
         _set_autoupdate_inprogress(True)
@@ -234,17 +237,12 @@ def perform_postload():
     except Exception as imp_err:
         mlogger.error("Error setting up self_destruct on output window | %s", imp_err)
 
-    # run after the ribbon UI is built (see _perform_postload_autoupdate) so a
-    # slow or offline update check can't delay the ribbon's first paint
     _perform_postload_autoupdate()
 
     _cleanup_output()
     return sessioninfo.get_session_uuid()
 
 
-# Resolved lazily on first _invoke_csharp_loadsession() call and cached for the
-# lifetime of the process; the loader assembly and its LoadSession method never
-# change once loaded, so re-resolving on every reload is pure waste.
 _LOAD_SESSION_METHOD = None
 
 
@@ -253,6 +251,11 @@ def _invoke_csharp_loadsession():
 
     The C# entry (PyRevitLoaderApplication.LoadSession) runs the full sequence:
     perform_preload(), the C# UI build, then perform_postload().
+
+    _LOAD_SESSION_METHOD is resolved lazily on the first call and cached in that
+    module-level global for the lifetime of the process: the loader assembly and
+    its LoadSession method never change once loaded, so re-resolving on every
+    reload is pure waste.
     """
     global _LOAD_SESSION_METHOD
 

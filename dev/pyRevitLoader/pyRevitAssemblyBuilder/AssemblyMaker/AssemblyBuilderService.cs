@@ -147,9 +147,12 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         /// </remarks>
         private List<string> _loadedPyRevitAssemblyNames;
 
-        // BuildExtensionAssembly() runs concurrently across extensions when the session
-        // manager parallelizes the build pass, and this cache-fill/read is the only
-        // mutable state that method touches on the shared AssemblyBuilderService instance.
+        /// <summary>
+        /// Guards <see cref="_loadedPyRevitAssemblyNames"/>. <see cref="BuildExtensionAssembly"/>
+        /// runs concurrently across extensions when the session manager parallelizes the build
+        /// pass, and this cache-fill/read is the only mutable state that method touches on the
+        /// shared <see cref="AssemblyBuilderService"/> instance.
+        /// </summary>
         private readonly object _loadedAssemblyNamesLock = new object();
 
         private void EnsureLoadedAssemblyNamesCached()
@@ -249,13 +252,15 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         }
 
         /// <summary>
+        /// Guards the shared AppDomain environment dictionary, which <see cref="BuildExtensionAssembly"/>
+        /// may write to concurrently when extensions are built in parallel.
+        /// </summary>
+        private readonly object _envDictLock = new object();
+
+        /// <summary>
         /// Updates the AppDomain's environment dictionary with referenced assemblies.
         /// Mimics pythonic loader's sessioninfo.update_loaded_pyrevit_referenced_modules()
         /// </summary>
-        // Guards the shared AppDomain environment dictionary, which BuildExtensionAssembly()
-        // may write to concurrently when extensions are built in parallel.
-        private readonly object _envDictLock = new object();
-
         private void UpdateReferencedAssemblies(HashSet<string> newModulePaths)
         {
             try

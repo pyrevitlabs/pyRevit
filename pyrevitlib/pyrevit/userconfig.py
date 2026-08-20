@@ -947,34 +947,45 @@ else:
 
 mlogger.debug('Using %s config file: %s', CONFIG_TYPE, CONFIG_FILE)
 
-# read config, or setup default config file if not available
-# this pushes reading settings at first import of this module.
-#
-# Each extension startup script runs in its own "clean" engine, so this
-# module-level block re-executes once per extension, not just once per
-# session. Only create/normalize/save the file on the first engine to import
-# this module in the process (tracked via an AppDomain env var, which - unlike
-# Python globals - survives across clean engines); later engines just parse
-# the file, which the first engine already left in upgraded, on-disk form.
-try:
-    if CONFIG_FILE and not op.exists(CONFIG_FILE):
-        mlogger.debug('Creating default config file at: %s', CONFIG_FILE)
-        coreutils.touch(CONFIG_FILE)
+def _load_user_config():
+    """Read the user config file into a PyRevitConfig, pushing config
+    availability to first import of this module.
 
-    with _perfblock("pyrevit.userconfig:PyRevitConfig(__init__)"):
-        user_config = PyRevitConfig(cfg_file_path=CONFIG_FILE,
-                                    config_type=CONFIG_TYPE)
+    Each extension startup script runs in its own "clean" engine, so this
+    function re-executes once per extension, not just once per session. Only
+    the first engine to import this module in the process creates, upgrades,
+    and saves the file (tracked via an AppDomain env var, which - unlike
+    Python globals - survives across clean engines); later engines just parse
+    the file, which the first engine already left in upgraded, on-disk form.
 
-    if not envvars.get_pyrevit_env_var(envvars.CONFIGUPGRADED_ENVVAR):
-        with _perfblock("pyrevit.userconfig:upgrade.upgrade_user_config"):
-            upgrade.upgrade_user_config(user_config)
-        with _perfblock("pyrevit.userconfig:user_config.save_changes"):
-            user_config.save_changes()
-        envvars.set_pyrevit_env_var(envvars.CONFIGUPGRADED_ENVVAR, True)
-except Exception as cfg_err:
-    mlogger.debug('Can not read confing file at: %s | %s',
-                    CONFIG_FILE, cfg_err)
-    mlogger.debug('Using configs in memory...')
-    user_config = verify_configs()
+    Returns:
+        (pyrevit.userconfig.PyRevitConfig): the loaded config, or an
+            in-memory-only one if the file could not be read.
+    """
+    try:
+        if CONFIG_FILE and not op.exists(CONFIG_FILE):
+            mlogger.debug('Creating default config file at: %s', CONFIG_FILE)
+            coreutils.touch(CONFIG_FILE)
+
+        with _perfblock("pyrevit.userconfig:PyRevitConfig(__init__)"):
+            loaded_config = PyRevitConfig(cfg_file_path=CONFIG_FILE,
+                                          config_type=CONFIG_TYPE)
+
+        if not envvars.get_pyrevit_env_var(envvars.CONFIGUPGRADED_ENVVAR):
+            with _perfblock("pyrevit.userconfig:upgrade.upgrade_user_config"):
+                upgrade.upgrade_user_config(loaded_config)
+            with _perfblock("pyrevit.userconfig:user_config.save_changes"):
+                loaded_config.save_changes()
+            envvars.set_pyrevit_env_var(envvars.CONFIGUPGRADED_ENVVAR, True)
+
+        return loaded_config
+    except Exception as cfg_err:
+        mlogger.debug('Can not read confing file at: %s | %s',
+                        CONFIG_FILE, cfg_err)
+        mlogger.debug('Using configs in memory...')
+        return verify_configs()
+
+
+user_config = _load_user_config()
 
 _perfmark("pyrevit.userconfig:exit (user_config ready)")
