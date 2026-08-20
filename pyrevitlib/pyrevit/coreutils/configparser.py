@@ -1,7 +1,11 @@
 """Base module for pyRevit config parsing."""
 import json
+import re
 
 from pyrevit import coreutils
+
+
+_HEX_INTEGER_REGEX = re.compile(r'^\s*0[xX][0-9a-fA-F]+\s*$')
 
 
 def _json_candidates(raw_value):
@@ -49,6 +53,12 @@ def decode_option_value(raw_value):
     token = raw_value.strip()
     if token.lower() in ('true', 'false'):
         return token.lower() == 'true'
+
+    # JSON does not allow hex literals (e.g. "0x0"); legacy INI may store ints
+    # as hex. The C# reader parses that spelling as an int/long, so a bare hex
+    # token has to decode the same way here or the two readers disagree.
+    if _HEX_INTEGER_REGEX.match(token):
+        return int(token, 16)
 
     # Bare values (e.g. Windows paths) are returned as-is.
     return raw_value
