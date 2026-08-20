@@ -51,6 +51,7 @@ from pyrevit.labs import Common
 from pyrevit import coreutils
 from pyrevit.coreutils import appdata
 from pyrevit.coreutils import configparser
+from pyrevit.coreutils import envvars
 from pyrevit.coreutils import logger
 from pyrevit.versionmgr import upgrade
 _perfmark("pyrevit.userconfig:after imports")
@@ -948,16 +949,28 @@ mlogger.debug('Using %s config file: %s', CONFIG_TYPE, CONFIG_FILE)
 
 # read config, or setup default config file if not available
 # this pushes reading settings at first import of this module.
+#
+# Each extension startup script runs in its own "clean" engine, so this
+# module-level block re-executes once per extension, not just once per
+# session. Only create/normalize/save the file on the first engine to import
+# this module in the process (tracked via an AppDomain env var, which - unlike
+# Python globals - survives across clean engines); later engines just parse
+# the file, which the first engine already left in upgraded, on-disk form.
 try:
-    with _perfblock("pyrevit.userconfig:verify_configs(CONFIG_FILE)"):
-        verify_configs(CONFIG_FILE)
+    if CONFIG_FILE and not op.exists(CONFIG_FILE):
+        mlogger.debug('Creating default config file at: %s', CONFIG_FILE)
+        coreutils.touch(CONFIG_FILE)
+
     with _perfblock("pyrevit.userconfig:PyRevitConfig(__init__)"):
         user_config = PyRevitConfig(cfg_file_path=CONFIG_FILE,
                                     config_type=CONFIG_TYPE)
-    with _perfblock("pyrevit.userconfig:upgrade.upgrade_user_config"):
-        upgrade.upgrade_user_config(user_config)
-    with _perfblock("pyrevit.userconfig:user_config.save_changes"):
-        user_config.save_changes()
+
+    if not envvars.get_pyrevit_env_var(envvars.CONFIGUPGRADED_ENVVAR):
+        with _perfblock("pyrevit.userconfig:upgrade.upgrade_user_config"):
+            upgrade.upgrade_user_config(user_config)
+        with _perfblock("pyrevit.userconfig:user_config.save_changes"):
+            user_config.save_changes()
+        envvars.set_pyrevit_env_var(envvars.CONFIGUPGRADED_ENVVAR, True)
 except Exception as cfg_err:
     mlogger.debug('Can not read confing file at: %s | %s',
                     CONFIG_FILE, cfg_err)
