@@ -46,7 +46,8 @@ aliases over these sections and are considered legacy: prefer the typed
 `section.name` form in new code. The aliases are expected to be deprecated in a
 future release once callers have migrated, so avoid adding new ones.
 """
-#pylint: disable=C0103,C0413,W0703
+
+# pylint: disable=C0103,C0413,W0703
 import json
 import os.path as op
 
@@ -63,15 +64,14 @@ from pyrevit.labs import Common
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
 
-
-DEFAULT_CSV_SEPARATOR = ','
+DEFAULT_CSV_SEPARATOR = ","
 
 
 mlogger = logger.get_logger(__name__)
 
 
-# Re-exported for extensions that do `from pyrevit.userconfig import CONSTS`.
 CONSTS = PyRevit.PyRevitConsts
+"""Re-exported for extensions that do `from pyrevit.userconfig import CONSTS`."""
 
 
 class _SectionCompatWrapper(object):
@@ -90,12 +90,15 @@ class _SectionCompatWrapper(object):
 
     Also exposes .get_option()/.set_option() for extensions.
     """
+
     _INTERNAL_ATTRS = (
-        '_section_name', '_csharp', '_config', '_config_service',
+        "_section_name",
+        "_csharp",
+        "_config",
+        "_config_service",
     )
 
-    def __init__(self, section_name, csharp_section, configuration,
-                 config_service):
+    def __init__(self, section_name, csharp_section, configuration, config_service):
         self._section_name = section_name
         self._csharp = csharp_section
         self._config = configuration
@@ -112,8 +115,9 @@ class _SectionCompatWrapper(object):
             return
 
         self._config.SetRawValue(
-            self._section_name, op_name,
-            json.dumps(value, separators=(',', ':'), ensure_ascii=False)
+            self._section_name,
+            op_name,
+            json.dumps(value, separators=(",", ":"), ensure_ascii=False),
         )
 
     def remove_option(self, option_name):
@@ -127,8 +131,9 @@ class _SectionCompatWrapper(object):
         if not self._config_service.ReadOnly:
             return False
 
-        mlogger.debug('Config is in admin mode. Skipping write to section: %s',
-                      self._section_name)
+        mlogger.debug(
+            "Config is in admin mode. Skipping write to section: %s", self._section_name
+        )
         return True
 
     def has_option(self, option_name):
@@ -143,10 +148,14 @@ class _SectionCompatWrapper(object):
         return self._config.HasSectionKey(self._section_name, option_name)
 
     def __getattr__(self, name):
-        # Internal attributes are assigned in __init__ and resolve without
-        # __getattr__; reaching here for one means the object is half-built, and
-        # consulting the config would recurse.
-        if name.startswith('_'):
+        """Resolve a typed C# property first, then a raw option of the same name.
+
+        A leading underscore always raises rather than consulting the config:
+        internal attributes are assigned in __init__ and resolve without
+        __getattr__, so reaching here for one means the object is still
+        half-built, and consulting the config would recurse.
+        """
+        if name.startswith("_"):
             raise AttributeError(name)
 
         try:
@@ -154,36 +163,35 @@ class _SectionCompatWrapper(object):
         except AttributeError:
             pass
 
-        # A name the typed section does not declare is looked up as a raw
-        # option, so a key this schema does not model is still reachable.
         if self.has_option(name):
             return self.get_option(name)
 
-        raise AttributeError(
-            'Parameter does not exist in config file: {}'.format(name))
+        raise AttributeError("Parameter does not exist in config file: {}".format(name))
 
     def __setattr__(self, name, value):
+        """Write a typed C# property through the service; store anything else as a raw option.
+
+        Assigning None to a typed property is a no-op rather than a delete:
+        None is not a storable value, and the snapshot it would otherwise land
+        on is shared by every reader in the process, so silently clearing the
+        stored key would surprise those readers. Use remove_option to clear a
+        key. A typed-property write reaches the shared store immediately via
+        ApplySection; save_changes flushes it to disk once at the end.
+        """
         if name in self._INTERNAL_ATTRS:
             object.__setattr__(self, name, value)
             return
 
         if self._csharp.GetType().GetProperty(name) is None:
-            # Mirrors __getattr__: a name outside the typed schema is stored as
-            # a raw option rather than rejected.
             self.set_option(name, value)
             return
 
         if self._is_readonly():
             return
 
-        # None is not a storable value, and the snapshot it would otherwise land
-        # on is shared by every reader in the process. Clearing a stored key is
-        # remove_option's job.
         if value is None:
             return
 
-        # A typed section property is written through to the shared store;
-        # save_changes flushes it to disk once at the end.
         pending = type(self._csharp)()
         setattr(pending, name, value)
         self._config_service.ApplySection(pending)
@@ -208,12 +216,13 @@ class PyRevitConfig(object):
     """
 
     def __init__(self, config_service):
-        # set log mode on the logger module based on
-        # user settings (overriding the defaults)
+        """Store an accessor for config_service, not the service itself.
+
+        Sections handed to scripts hold a bound method, so they follow a
+        later reload instead of continuing to read a replaced service whose
+        edits are never flushed.
+        """
         self._config_service = config_service
-        # Hand the container an accessor rather than the service itself, so
-        # sections already handed to scripts follow a reload instead of holding
-        # a replaced service whose edits are never flushed.
         self.config_sections = ConfigSections(self._current_config_service)
 
         self._update_env()
@@ -224,37 +233,39 @@ class PyRevitConfig(object):
         return self._current_config_service()
 
     def _current_config_service(self):
-        # The store hands out a new service whenever it is reloaded, which the
-        # loader does on every session load. A service captured at import would
-        # keep serving state the rest of the process has already replaced, and
-        # flushing it would write that state back over the file, dropping
-        # whatever the labs side registered in the meantime.
+        """Re-resolve the shared service, falling back to the last known one on failure.
+
+        The store hands out a new service whenever it is reloaded, which the
+        loader does on every session load. A service captured once at import
+        would keep serving state the rest of the process has already
+        replaced, and flushing it would write that stale state back over the
+        file, dropping whatever the labs side registered in the meantime. If
+        the store can't be reached, serving the last known service instead of
+        raising avoids taking down the session load that is asking for it.
+        """
         try:
             self._config_service = PyRevit.PyRevitConfigs.GetConfigFile()
         except Exception as service_err:
-            # Keep serving the last known service: a config read failing outright
-            # would take down the session load that is asking for it.
-            mlogger.debug('Can not reach the shared config service. | %s',
-                          service_err)
+            mlogger.debug("Can not reach the shared config service. | %s", service_err)
         return self._config_service
 
     def _update_env(self):
-        # update the debug level based on user config
+        """Sync logger debug/verbose level and file logging with user config."""
         mlogger.reset_level()
 
         try:
-            # first check to see if command is not in forced debug mode
             if not EXEC_PARAMS.debug_mode:
                 if self.core.Debug:
                     mlogger.set_debug_mode()
-                    mlogger.debug('Debug mode is enabled in user settings.')
+                    mlogger.debug("Debug mode is enabled in user settings.")
                 elif self.core.Verbose:
                     mlogger.set_verbose_mode()
 
             logger.set_file_logging(self.core.FileLogging)
         except Exception as env_update_err:
-            mlogger.debug('Error updating env variable per user config. | %s',
-                          env_update_err)
+            mlogger.debug(
+                "Error updating env variable per user config. | %s", env_update_err
+            )
 
     @property
     def config_file(self):
@@ -278,24 +289,30 @@ class PyRevitConfig(object):
     def core(self):
         """Core section (supports .get_option/.set_option for extension compat)."""
         return _SectionCompatWrapper(
-            "core", self.config_service.Core, self._get_default_config(),
-            self.config_service
+            "core",
+            self.config_service.Core,
+            self._get_default_config(),
+            self.config_service,
         )
 
     @property
     def routes(self):
         """Routes section (supports .get_option/.set_option for extension compat)."""
         return _SectionCompatWrapper(
-            "routes", self.config_service.Routes, self._get_default_config(),
-            self.config_service
+            "routes",
+            self.config_service.Routes,
+            self._get_default_config(),
+            self.config_service,
         )
 
     @property
     def telemetry(self):
         """Telemetry section (supports .get_option/.set_option for extension compat)."""
         return _SectionCompatWrapper(
-            "telemetry", self.config_service.Telemetry, self._get_default_config(),
-            self.config_service
+            "telemetry",
+            self.config_service.Telemetry,
+            self._get_default_config(),
+            self.config_service,
         )
 
     @property
@@ -337,8 +354,7 @@ class PyRevitConfig(object):
     @property
     def log_level(self):
         """Logging level."""
-        return PyRevit.PyRevitConfigs.ToLoggingLevel(
-            self.core.Debug, self.core.Verbose)
+        return PyRevit.PyRevitConfigs.ToLoggingLevel(self.core.Debug, self.core.Verbose)
 
     @log_level.setter
     def log_level(self, state):
@@ -420,8 +436,9 @@ class PyRevitConfig(object):
 
     @output_close_mode_enum.setter
     def output_close_mode_enum(self, mode):
-        self.core.CloseOutputMode = \
-            PyRevit.PyRevitConfigs.CloseOutputModeConfigValue(mode)
+        self.core.CloseOutputMode = PyRevit.PyRevitConfigs.CloseOutputModeConfigValue(
+            mode
+        )
 
     @property
     def cpython_engine_version(self):
@@ -448,11 +465,14 @@ class PyRevitConfig(object):
 
     @output_stylesheet.setter
     def output_stylesheet(self, stylesheet_filepath):
+        """Set the stylesheet, or remove the key if cleared.
+
+        A typed property carries no value that spells "unset", so clearing
+        the stylesheet removes the key rather than storing an empty string.
+        """
         if stylesheet_filepath:
             self.core.OutputStyleSheet = stylesheet_filepath
         else:
-            # Clearing the stylesheet means removing the key: a typed property
-            # carries no value that spells "unset".
             self.core.remove_option("outputstylesheet")
 
     @property
@@ -611,12 +631,14 @@ class PyRevitConfig(object):
     def get_thirdparty_ext_root_dirs(self, include_default=True):
         """Return a list of external extension directories set by the user.
 
+        Ordering is deterministic: the default path first, then config-file
+        order, with duplicates removed. User paths are resolved through the
+        shared C# core so the loader and CLI agree on normalization and
+        existence.
+
         Returns:
             (list[str]): External user extension directories.
         """
-        # Deterministic ordering: default path first, then config-file order,
-        # with duplicate paths removed. User paths are resolved by the shared C#
-        # core so the loader and CLI agree on normalization and existence.
         seen = set()
         dir_list = []
         if include_default:
@@ -630,8 +652,9 @@ class PyRevitConfig(object):
                     seen.add(x)
                     dir_list.append(x)
         except Exception as read_err:
-            mlogger.error('Error reading list of user extension folders. | %s',
-                          read_err)
+            mlogger.error(
+                "Error reading list of user extension folders. | %s", read_err
+            )
 
         return [x for x in dir_list if op.exists(x)]
 
@@ -660,15 +683,16 @@ class PyRevitConfig(object):
         """
         for ext_path in path_list:
             if not op.exists(ext_path):
-                raise PyRevitException("Path \"%s\" does not exist." % ext_path)
+                raise PyRevitException('Path "%s" does not exist.' % ext_path)
 
         try:
             self.core.UserExtensions = framework.List[str](
                 [op.normpath(x) for x in path_list]
             )
         except Exception as write_err:
-            mlogger.error('Error setting list of user extension folders. | %s',
-                          write_err)
+            mlogger.error(
+                "Error setting list of user extension folders. | %s", write_err
+            )
 
     def get_current_attachment(self, cached=True):
         """Return current pyRevit attachment.
@@ -686,33 +710,34 @@ class PyRevitConfig(object):
                 return PyRevit.PyRevitAttachments.GetAttachedCached(host_version)
             return PyRevit.PyRevitAttachments.GetAttached(host_version)
         except PyRevitException as ex:
-            mlogger.error('Error getting current attachment. | %s', ex)
+            mlogger.error("Error getting current attachment. | %s", ex)
 
     def get_active_cpython_engine(self):
-        """Return active cpython engine."""
-        # try to find attachment and get engines from the clone
+        """Return the user's configured CPython engine, or the latest available.
+
+        Falls back to a temp clone at HOME_DIR when there's no attachment,
+        and to the highest-versioned engine when the configured version isn't
+        among the clone's available engines.
+        """
         attachment = self.get_current_attachment()
         if attachment and attachment.Clone:
             clone = attachment.Clone
         else:
-            # if can not find attachment, instantiate a temp clone
             try:
                 clone = PyRevit.PyRevitClone(clonePath=HOME_DIR)
             except Exception as cEx:
-                mlogger.debug('Can not create clone from path: %s', str(cEx))
+                mlogger.debug("Can not create clone from path: %s", str(cEx))
                 clone = None
-        # find cpython engines
         engines = clone.GetCPythonEngines() if clone else []
         cpy_engines_dict = {x.Version: x for x in engines}
-        mlogger.debug('cpython engines dict: %s', cpy_engines_dict)
+        mlogger.debug("cpython engines dict: %s", cpy_engines_dict)
 
         if not cpy_engines_dict:
             mlogger.error(
-                'Can not determine cpython engines for current attachment: %s',
-                attachment
+                "Can not determine cpython engines for current attachment: %s",
+                attachment,
             )
             return None
-        # grab cpython engine configured to be used by user
         try:
             cpyengine_ver = int(self.cpython_engine_version)
         except (ValueError, TypeError):
@@ -721,7 +746,6 @@ class PyRevitConfig(object):
         try:
             return cpy_engines_dict[cpyengine_ver]
         except KeyError:
-            # return the latest cpython engine
             return max(cpy_engines_dict.values(), key=lambda x: x.Version.Version)
 
     def set_active_cpython_engine(self, pyrevit_engine):
@@ -743,47 +767,53 @@ class PyRevitConfig(object):
         return "Admin" if self.is_readonly else "User"
 
     def save_changes(self):
-        """Save user config into associated config file.
+        """Flush the in-memory config to disk.
 
-        A failed write is logged rather than raised: settings are not worth
-        aborting a session load or a settings dialog over.
+        Typed and dynamic section edits are already written through to the
+        in-memory store as they happen; this just flushes the whole default
+        config to disk once. A failed write is logged rather than raised:
+        settings are not worth aborting a session load or a settings dialog
+        over. The error is logged against the path from
+        _get_default_config() directly, since the config_file property falls
+        back to a path helper that creates files on disk, which must not run
+        from an error handler.
         """
         if not self.is_readonly:
-            # Typed and dynamic section edits have already been written through
-            # to the in-memory store; flush the whole default config to disk once.
             try:
                 self.config_service.Configuration.SaveConfiguration()
             except Exception as save_err:
-                # Report the resolved path directly; the config_file property
-                # falls back to a path helper that creates files on disk, which
-                # must not run from an error handler.
                 mlogger.error(
-                    'Can not save user config to: %s | %s',
-                    self._get_default_config().ConfigurationPath, save_err)
+                    "Can not save user config to: %s | %s",
+                    self._get_default_config().ConfigurationPath,
+                    save_err,
+                )
 
-            # adjust environment per user configurations
             self._update_env()
         else:
-            mlogger.debug('Config is in admin mode. Skipping save.')
+            mlogger.debug("Config is in admin mode. Skipping save.")
 
     def reload(self):
-        """Reload configuration from disk, discarding unsaved in-memory edits."""
-        # Drop the cached shared service so the next access re-reads from disk
-        # across every consumer, not just this object.
+        """Reload configuration from disk, discarding unsaved in-memory edits.
+
+        Drops the cached shared service so the next access re-reads from
+        disk across every consumer, not just this object.
+        """
         PyRevit.PyRevitConfigs.ReloadConfig()
 
     @staticmethod
     def get_list_separator():
         """Get list separator defined in user os regional settings."""
-        intkey = coreutils.get_reg_key(wr.HKEY_CURRENT_USER,
-                                       r'Control Panel\International')
+        intkey = coreutils.get_reg_key(
+            wr.HKEY_CURRENT_USER, r"Control Panel\International"
+        )
         if intkey:
             try:
-                return wr.QueryValueEx(intkey, 'sList')[0]
+                return wr.QueryValueEx(intkey, "sList")[0]
             except Exception:
                 return DEFAULT_CSV_SEPARATOR
 
     """Default config section code"""
+
     def __iter__(self):
         return self.config_sections.__iter__()
 
@@ -835,19 +865,34 @@ class PyRevitConfig(object):
         self.config_sections.remove_section(section_name)
 
 
-user_config = None
+def _pin_install_scope():
+    """Point install-scope detection at the running clone.
 
-# Pin install-scope detection to the running clone so the config store resolves
-# the same scope the loader was launched from (rather than the executing
-# assembly's location).
-try:
-    Common.PyRevitInstallScope.SetRuntimeInstallRoot(HOME_DIR)
-except Exception as install_root_ex:
-    mlogger.debug('Could not set runtime install root: %s', install_root_ex)
-
-# Skipped in doc mode, where no configuration backend is available.
-if not getattr(EXEC_PARAMS, 'doc_mode', False):
+    Resolves the same scope the loader was launched from, rather than the
+    executing assembly's location.
+    """
     try:
-        user_config = PyRevitConfig(PyRevit.PyRevitConfigs.GetConfigFile())
+        Common.PyRevitInstallScope.SetRuntimeInstallRoot(HOME_DIR)
+    except Exception as install_root_ex:
+        mlogger.debug("Could not set runtime install root: %s", install_root_ex)
+
+
+def _build_user_config():
+    """Build the module-level user_config, or None in doc mode or on failure.
+
+    Doc mode has no configuration backend, so it always yields None. Any
+    other construction failure is caught here too, so a broken config
+    degrades to user_config staying None instead of aborting this module's
+    import for every one of its many importers.
+    """
+    if getattr(EXEC_PARAMS, "doc_mode", False):
+        return None
+    try:
+        return PyRevitConfig(PyRevit.PyRevitConfigs.GetConfigFile())
     except Exception as cfg_err:
-        mlogger.error('Could not initialize user config: %s', cfg_err)
+        mlogger.error("Could not initialize user config: %s", cfg_err)
+        return None
+
+
+_pin_install_scope()
+user_config = _build_user_config()

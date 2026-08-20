@@ -31,7 +31,11 @@ from pyrevit.userconfig import _SectionCompatWrapper
 
 
 def _load_ini_backend():
-    """Return the real IniConfiguration type, or None when it cannot be loaded."""
+    """Return the real IniConfiguration type, or None when it cannot be loaded.
+
+    An unavailable backend must skip the contract tests that need it, not
+    error the whole module on import.
+    """
     try:
         from pyrevit.framework import clr
 
@@ -40,7 +44,6 @@ def _load_ini_backend():
 
         return IniConfiguration
     except Exception:
-        # An unavailable backend must skip the contract tests, not error the module.
         return None
 
 
@@ -163,13 +166,12 @@ class ConfigSectionRoundTripTests(unittest.TestCase):
         self.assertEqual(value, self._roundtrip(value))
 
     def test_unicode_round_trips(self):
-        # ensure_ascii=False must preserve non-ASCII rather than \uXXXX-escaping
-        # or mangling it (guards against the known IPY3 stdout mojibake class).
-        value = u"café"
+        """ensure_ascii=False must preserve non-ASCII, not \\uXXXX-escape or mangle it (guards against the known IPY3 stdout mojibake class)."""
+        value = "café"
         self.assertEqual(value, self._roundtrip(value))
 
     def test_string_is_stored_as_canonical_compact_json(self):
-        # Matches the C# symmetric-JSON encoding: quoted, no incidental spaces.
+        """Matches the C# symmetric-JSON encoding: quoted, no incidental spaces."""
         self.section.set_option("key", "hello")
         self.assertEqual('"hello"', self.config.GetRawValueOrDefault("core", "key"))
 
@@ -199,9 +201,7 @@ class ConfigSectionToleranceTests(unittest.TestCase):
         self.assertEqual(raw, self.section.get_option("key"))
 
     def test_bare_python_bool_token_decodes_to_a_bool(self):
-        # The C# readers parse these spellings as bools. Returning the raw string
-        # would make "False" truthy, so a legacy disabled=False would read as
-        # disabled by one reader and enabled by the other.
+        """The C# readers parse these spellings as bools; returning the raw string would make "False" truthy, so a legacy disabled=False would read as disabled by one reader and enabled by the other."""
         self.config.SetRawValue("core", "key", "True")
         self.assertIs(True, self.section.get_option("key"))
         self.config.SetRawValue("core", "key", "False")
@@ -212,8 +212,7 @@ class ConfigSectionToleranceTests(unittest.TestCase):
         self.assertIs(False, self.section.get_option("key"))
 
     def test_quoted_bool_word_stays_a_string(self):
-        # A string that merely spells "True" is stored quoted, which is what
-        # keeps the bare-token rule from swallowing real string values.
+        """A value that merely spells "True" is stored quoted, keeping the bare-token rule from swallowing real string values."""
         self.section.set_option("key", "True")
         self.assertEqual("True", self.section.get_option("key"))
 
@@ -238,8 +237,7 @@ class ConfigSectionMissingVsEmptyTests(unittest.TestCase):
         self.assertEqual("", self.section.get_option("key", default_value="fallback"))
 
     def test_raw_empty_string_is_not_treated_as_missing(self):
-        # A key present with an empty raw value is a real value; it must not
-        # collapse to the default the way an absent key does.
+        """A key present with an empty raw value is real; it must not collapse to the default the way an absent key does."""
         self.config.SetRawValue("core", "key", "")
         self.assertEqual("", self.section.get_option("key", default_value="fallback"))
 
@@ -295,8 +293,7 @@ class ConfigSectionsTests(unittest.TestCase):
         self.assertFalse(self.sections.has_section("mytool"))
 
     def test_remove_section_also_removes_its_subsections(self):
-        # A left-behind subsection is inherited by the next install of a tool
-        # that believes it is starting from a clean config.
+        """A left-behind subsection would be inherited by the next install of a tool that believes it is starting from a clean config."""
         section = self.sections.add_section("mytool")
         section.add_subsection("sub").set_option("enabled", True)
         self.sections.remove_section("mytool")
@@ -309,15 +306,13 @@ class ConfigSectionsTests(unittest.TestCase):
         self.assertTrue(self.sections.has_section("mytoolbox"))
 
     def test_remove_section_removes_orphaned_subsections(self):
-        # has_section is false for a parent that only exists as a dotted prefix,
-        # so the cleanup cannot depend on the parent being there.
+        """has_section is false for a parent that only exists as a dotted prefix, so the cleanup cannot depend on the parent being there."""
         self.sections.add_section("mytool.sub").set_option("enabled", True)
         self.sections.remove_section("mytool")
         self.assertFalse(self.sections.has_section("mytool.sub"))
 
     def test_get_missing_section_raises(self):
-        # A missing section must not resolve to an empty section object, so
-        # callers can tell "absent" from "present but empty".
+        """A missing section must not resolve to an empty section object, so callers can tell "absent" from "present but empty"."""
         self.assertRaises(AttributeError, self.sections.get_section, "absent")
 
     def test_attribute_access_returns_an_existing_section(self):
@@ -325,7 +320,7 @@ class ConfigSectionsTests(unittest.TestCase):
         self.assertEqual("y", self.sections.mytool.get_option("x"))
 
     def test_attribute_access_to_missing_section_raises(self):
-        # getattr-with-default and hasattr rely on __getattr__ raising.
+        """getattr-with-default and hasattr rely on __getattr__ raising."""
         self.assertRaises(AttributeError, getattr, self.sections, "absent")
         self.assertEqual("fallback", getattr(self.sections, "absent", "fallback"))
         self.assertFalse(hasattr(self.sections, "absent"))
@@ -372,8 +367,7 @@ class ConfigSectionReloadTests(unittest.TestCase):
         )
 
     def test_direct_configuration_still_supported(self):
-        # ConfigSection must still accept a plain configuration object, which is
-        # what the C# service hands it outside the reload-aware path.
+        """ConfigSection must still accept a plain configuration object, which is what the C# service hands it outside the reload-aware path."""
         config = _FakeConfiguration()
         section = ConfigSection("core", config)
         section.set_option("key", "value")
@@ -390,15 +384,11 @@ class ConfigSubsectionTests(unittest.TestCase):
     def test_added_subsection_is_visible_before_any_option_is_set(self):
         self.section.add_subsection("sub")
         self.assertTrue(self.section.has_subsection("sub"))
-        self.assertEqual(
-            ["core.sub"], [str(s) for s in self.section.get_subsections()]
-        )
+        self.assertEqual(["core.sub"], [str(s) for s in self.section.get_subsections()])
 
     def test_added_subsection_round_trips_a_value(self):
         self.section.add_subsection("sub").set_option("enabled", True)
-        self.assertIs(
-            True, self.section.get_subsection("sub").get_option("enabled")
-        )
+        self.assertIs(True, self.section.get_subsection("sub").get_option("enabled"))
 
 
 class SectionCompatWrapperTests(unittest.TestCase):
@@ -421,8 +411,7 @@ class SectionCompatWrapperTests(unittest.TestCase):
         self.assertIs(False, self.wrapper.get_option("key"))
 
     def test_legacy_python_bool_decodes_to_a_bool(self):
-        # Both bridges share one decoder, so neither can drift into reporting a
-        # legacy False as a truthy string.
+        """Both bridges share one decoder, so neither can drift into reporting a legacy False as a truthy string."""
         self.config.SetRawValue("core", "key", "False")
         self.assertIs(False, self.wrapper.get_option("key"))
 
@@ -441,9 +430,7 @@ class SectionCompatWrapperTests(unittest.TestCase):
 
     def test_matches_config_section_decoding(self):
         self.section.set_option("key", False)
-        self.assertIs(
-            self.section.get_option("key"), self.wrapper.get_option("key")
-        )
+        self.assertIs(self.section.get_option("key"), self.wrapper.get_option("key"))
 
     def test_typed_property_is_written_through_the_service(self):
         self.wrapper.RocketMode = True
@@ -452,8 +439,7 @@ class SectionCompatWrapperTests(unittest.TestCase):
         self.assertIs(True, pending.RocketMode)
 
     def test_typed_property_assigned_none_is_ignored(self):
-        # None reaches neither the store nor the snapshot the service caches
-        # process-wide; remove_option is how a stored key gets cleared.
+        """None reaches neither the store nor the snapshot the service caches process-wide; remove_option is how a stored key gets cleared."""
         self.wrapper.RocketMode = None
         self.assertEqual([], self.service.applied)
 
@@ -523,8 +509,7 @@ class RealBackendContractTests(unittest.TestCase):
         )
 
     def test_raw_value_round_trips_verbatim(self):
-        # Python owns its own encoding, so the backend must store the text as
-        # handed over rather than re-encoding it.
+        """Python owns its own encoding, so the backend must store the text as handed over rather than re-encoding it."""
         raw = '["C:\\\\Tools\\\\ext1"]'
         self.config.SetRawValue("core", "key", raw)
         self.assertEqual(raw, self.config.GetRawValueOrDefault("core", "key"))
@@ -544,8 +529,7 @@ class RealBackendContractTests(unittest.TestCase):
             self.assertEqual(value, section.get_option("key"))
 
     def test_bools_stay_bools_against_the_real_backend(self):
-        # assertIs rather than assertEqual: True == 1, so an equality check
-        # would accept a decode that handed back an int.
+        """AssertIs rather than assertEqual: True == 1, so an equality check would accept a decode that handed back an int."""
         section = ConfigSection("core", self.config)
         section.set_option("key", True)
         self.assertIs(True, section.get_option("key"))

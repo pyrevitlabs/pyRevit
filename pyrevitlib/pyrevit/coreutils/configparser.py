@@ -1,38 +1,43 @@
 """Base module for pyRevit config parsing."""
+
 import json
 import re
 
 from pyrevit import coreutils
 
-
-_HEX_INTEGER_REGEX = re.compile(r'^\s*0[xX][0-9a-fA-F]+\s*$')
+_HEX_INTEGER_REGEX = re.compile(r"^\s*0[xX][0-9a-fA-F]+\s*$")
 
 
 def _json_candidates(raw_value):
     """Yield the spellings a stored value may take, canonical form first.
 
     Mirrors the C# reader's fallbacks so both readers resolve the same file to
-    the same values.
+    the same values: canonical JSON, then legacy Python single-quoted strings
+    and lists, then (once both of those have failed to parse) the same two
+    forms with unescaped Windows-path backslashes doubled so JSON accepts them.
     """
     yield raw_value
 
     if not isinstance(raw_value, str):
         return
 
-    # Legacy configs stored Python-style single-quoted strings and lists.
     single_quoted = raw_value.replace("'", '"')
     yield single_quoted
 
-    # Legacy configs stored Windows paths with unescaped backslashes, which JSON
-    # rejects as bad escape sequences. Only reached once a strict parse of the
-    # same text has failed, so no well-formed escape can be doubled here.
-    if '\\' in raw_value:
-        yield raw_value.replace('\\', '\\\\')
-        yield single_quoted.replace('\\', '\\\\')
+    if "\\" in raw_value:
+        yield raw_value.replace("\\", "\\\\")
+        yield single_quoted.replace("\\", "\\\\")
 
 
 def decode_option_value(raw_value):
     """Decode a stored option value across every encoding pyRevit has written.
+
+    Falls through, in order: the JSON candidates in :func:`_json_candidates`;
+    a bare unquoted Python bool (``True``/``False``, case-insensitive — a
+    string that merely spells "True" is stored quoted and already decoded by
+    the JSON pass); a bare hex integer (e.g. ``0x0``, which JSON's number
+    grammar rejects). Matching the C# reader's fallback order here is what
+    keeps the two readers agreeing on the same stored value.
 
     Args:
         raw_value (str): stored value text
@@ -46,21 +51,13 @@ def decode_option_value(raw_value):
         except (ValueError, TypeError):
             pass
 
-    # Legacy configs stored bools unquoted and capitalized. The C# readers parse
-    # those spellings as bools, so a bare token has to decode the same way here
-    # or the two readers disagree about the same file. A string that merely
-    # spells "True" is stored quoted and has already decoded above.
     token = raw_value.strip()
-    if token.lower() in ('true', 'false'):
-        return token.lower() == 'true'
+    if token.lower() in ("true", "false"):
+        return token.lower() == "true"
 
-    # JSON does not allow hex literals (e.g. "0x0"); legacy INI may store ints
-    # as hex. The C# reader parses that spelling as an int/long, so a bare hex
-    # token has to decode the same way here or the two readers disagree.
     if _HEX_INTEGER_REGEX.match(token):
         return int(token, 16)
 
-    # Bare values (e.g. Windows paths) are returned as-is.
     return raw_value
 
 
@@ -95,21 +92,25 @@ class ConfigSection(object):
         return self.__section_name
 
     def __repr__(self):
-        return '<ConfigSection object '                 \
-               'at 0x{0:016x} '                         \
-               'config section \'{1}\'>'                \
-               .format(id(self), self.__section_name)
+        return (
+            "<ConfigSection object "
+            "at 0x{0:016x} "
+            "config section '{1}'>".format(id(self), self.__section_name)
+        )
 
     def __getattr__(self, param_name):
         if not self.has_option(param_name):
             raise AttributeError(
-                'Parameter does not exist in config file: {}'.format(param_name))
+                "Parameter does not exist in config file: {}".format(param_name)
+            )
         return self.get_option(param_name)
 
     def __setattr__(self, param_name, value):
-        # Skip internal storage so __init__ can set its own attributes
-        if param_name in ('_ConfigSection__section_name',
-                          '_ConfigSection__configuration_source'):
+        """Route any name but the two internal (name-mangled) ones to set_option."""
+        if param_name in (
+            "_ConfigSection__section_name",
+            "_ConfigSection__configuration_source",
+        ):
             object.__setattr__(self, param_name, value)
         else:
             return self.set_option(param_name, value)
@@ -163,8 +164,10 @@ class ConfigSection(object):
             value: value to store
         """
         self.__config().SetRawValue(
-            self.__section_name, op_name,
-            json.dumps(value, separators=(',', ':'), ensure_ascii=False))
+            self.__section_name,
+            op_name,
+            json.dumps(value, separators=(",", ":"), ensure_ascii=False),
+        )
 
     def remove_option(self, option_name):
         """Remove an option from this section.
@@ -184,7 +187,8 @@ class ConfigSection(object):
     def add_subsection(self, section_name):
         """Add subsection to section."""
         canonical_name = coreutils.make_canonical_name(
-            self.__section_name, section_name)
+            self.__section_name, section_name
+        )
         self.__config().AddSection(canonical_name)
         return ConfigSection(canonical_name, self.__configuration_source)
 
@@ -196,7 +200,7 @@ class ConfigSection(object):
         """
         subsections = []
         for section_name in self.__config().GetSectionNames():
-            if section_name.startswith(self.__section_name + '.'):
+            if section_name.startswith(self.__section_name + "."):
                 subsec = ConfigSection(section_name, self.__configuration_source)
                 subsections.append(subsec)
         return subsections
@@ -276,20 +280,23 @@ class ConfigSections(object):
         """
         if not self.__get_default_config().HasSection(section_name):
             raise AttributeError(
-                'Section "{}" does not exist in config file.'.format(section_name))
+                'Section "{}" does not exist in config file.'.format(section_name)
+            )
         return ConfigSection(section_name, self.__get_default_config)
 
     def remove_section(self, section_name):
         """Remove the named section, and its subsections, from the config.
 
+        Subsections are stored as sibling sections under a dotted name rather
+        than nested inside their parent, so they must be found and removed
+        explicitly here — dropping the parent alone would leave them behind
+        for a reinstall to silently inherit.
+
         Args:
             section_name (str): name of the section
         """
         config = self.__get_default_config()
-        # Subsections are stored as sibling sections under a dotted name, so
-        # dropping the parent alone would leave them behind for a reinstall to
-        # silently inherit.
-        subsection_prefix = section_name + '.'
+        subsection_prefix = section_name + "."
         for existing_name in list(config.GetSectionNames()):
             if existing_name.startswith(subsection_prefix):
                 config.RemoveSection(existing_name)
@@ -323,13 +330,14 @@ def open_config_file(cfg_file_path, read_only=False):
 
     Returns:
         (ConfigSections): the sections of the given file
+
+    Note:
+        Imports ``pyrevit.labs`` locally: that module imports this one, so a
+        module-level import here would close the cycle.
     """
-    # Imported here because pyrevit.labs imports this package; a module-level
-    # import would close the cycle.
     from pyrevit.labs import ConfigurationBuilder, IniConfiguration
 
     configuration = IniConfiguration.Create(cfg_file_path, read_only)
     return ConfigSections(
-        ConfigurationBuilder(read_only)
-        .AddConfigurationSource(configuration)
-        .Build())
+        ConfigurationBuilder(read_only).AddConfigurationSource(configuration).Build()
+    )
