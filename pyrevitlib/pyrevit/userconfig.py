@@ -856,4 +856,7 @@ except Exception as install_root_ex:
 
 # Skipped in doc mode, where no configuration backend is available.
 if not getattr(EXEC_PARAMS, 'doc_mode', False):
-    user_config = PyRevitConfig(PyRevit.PyRevitConfigs.GetConfigFile())
+    try:
+        user_config = PyRevitConfig(PyRevit.PyRevitConfigs.GetConfigFile())
+    except Exception as cfg_err:
+        mlogger.error('Could not initialize user config: %s', cfg_err)
