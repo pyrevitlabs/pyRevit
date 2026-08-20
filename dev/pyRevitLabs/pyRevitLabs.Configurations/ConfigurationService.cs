@@ -144,7 +144,7 @@ public sealed class ConfigurationService : IConfigurationService
     private void EnsureWritable()
     {
         if (ReadOnly || _configuration.ReadOnly)
-            throw new ConfigurationException(
+            throw new ConfigurationReadOnlyException(
                 $"Configuration {_configuration.ConfigurationPath} is read-only; changes cannot be saved.");
     }
 

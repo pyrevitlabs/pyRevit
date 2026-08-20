@@ -6,6 +6,7 @@ using System.Reflection;
 using DocoptNet;
 using pyRevitCLI.Properties;
 using pyRevitLabs.Common;
+using pyRevitLabs.Configurations.Exceptions;
 using pyRevitLabs.NLog;
 using pyRevitLabs.NLog.Config;
 using pyRevitLabs.NLog.Targets;
@@ -164,6 +165,12 @@ namespace pyRevitCLI
                 try {
                     // now call methods based on inputs
                     ProcessArguments();
+                }
+                catch (ConfigurationReadOnlyException ex) {
+                    // Matches the pre-refactor CLI behavior: an admin-locked config
+                    // rejects the write, but that is not a tool failure worth a
+                    // nonzero exit code.
+                    logger.Warn(ex.Message);
                 }
                 catch (Exception ex) {
                     LogException(ex, logLevel);

@@ -62,7 +62,7 @@ public interface IConfigurationService
     /// declared default is skipped unless the key is already stored.
     /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="sectionValue"/> is null.</exception>
-    /// <exception cref="Exceptions.ConfigurationException">The configuration is read-only.</exception>
+    /// <exception cref="Exceptions.ConfigurationReadOnlyException">The configuration is read-only.</exception>
     void SaveSection<T>(T sectionValue);
 
     /// <summary>
@@ -73,7 +73,7 @@ public interface IConfigurationService
     /// callers that must persist per command should keep using SaveSection.
     /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="sectionValue"/> is null.</exception>
-    /// <exception cref="Exceptions.ConfigurationException">The configuration is read-only.</exception>
+    /// <exception cref="Exceptions.ConfigurationReadOnlyException">The configuration is read-only.</exception>
     void ApplySection<T>(T sectionValue);
 
     /// <summary>
@@ -83,7 +83,7 @@ public interface IConfigurationService
     /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="keyValue"/> is null.</exception>
     /// <exception cref="ArgumentException">A name argument is null or empty.</exception>
-    /// <exception cref="Exceptions.ConfigurationException">The configuration is read-only.</exception>
+    /// <exception cref="Exceptions.ConfigurationReadOnlyException">The configuration is read-only.</exception>
     void SetSectionKeyValue<T>(string sectionName, string keyName, T keyValue);
 
     /// <summary>

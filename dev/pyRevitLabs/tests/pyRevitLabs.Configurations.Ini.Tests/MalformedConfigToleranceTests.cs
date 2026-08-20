@@ -116,20 +116,20 @@ public class ReadOnlyWriteGuardTests : IDisposable
     [Fact]
     public void SaveSection_OnReadOnlyConfig_Throws()
     {
-        Assert.Throws<ConfigurationException>(() => ReadOnlyService().SaveSection(new CoreSection {RocketMode = false}));
+        Assert.Throws<ConfigurationReadOnlyException>(() => ReadOnlyService().SaveSection(new CoreSection {RocketMode = false}));
     }
 
     [Fact]
     public void SetSectionKeyValue_OnReadOnlyConfig_Throws()
     {
-        Assert.Throws<ConfigurationException>(() => ReadOnlyService().SetSectionKeyValue(
+        Assert.Throws<ConfigurationReadOnlyException>(() => ReadOnlyService().SetSectionKeyValue(
             "core", "rocketmode", false));
     }
 
     [Fact] // The write-through path behind user_config.core.X = value in Python.
     public void ApplySection_OnReadOnlyConfig_Throws()
     {
-        Assert.Throws<ConfigurationException>(() => ReadOnlyService().ApplySection(new CoreSection {RocketMode = false}));
+        Assert.Throws<ConfigurationReadOnlyException>(() => ReadOnlyService().ApplySection(new CoreSection {RocketMode = false}));
     }
 
     [Fact] // The raw path accepts the write; the guarantee is that it stays off disk.
@@ -149,7 +149,7 @@ public class ReadOnlyWriteGuardTests : IDisposable
     {
         IConfigurationService service = ReadOnlyService();
 
-        Assert.Throws<ConfigurationException>(() => service.SetSectionKeyValue(
+        Assert.Throws<ConfigurationReadOnlyException>(() => service.SetSectionKeyValue(
             "core", "rocketmode", false));
 
         Assert.True(service.Core.RocketMode);
