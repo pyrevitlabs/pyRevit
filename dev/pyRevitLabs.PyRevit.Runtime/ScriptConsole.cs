@@ -406,10 +406,10 @@ namespace PyRevitLabs.PyRevit.Runtime
         private static string _bundledStyleSheet;
 
         /// <summary>
-        /// Stylesheet shipped with pyRevit, or empty when it cannot be located.
+        /// Stylesheet shipped with pyRevit.
         /// Located relative to this assembly's deploy path
-        /// (<c>&lt;root&gt;\bin\{net}\engines\{engine}\</c>); any failure to resolve it
-        /// is swallowed since a window with no stylesheet still renders, just unstyled.
+        /// (<c>&lt;root&gt;\bin\{net}\engines\{engine}\</c>);
+        /// If not resolved, returns an empty string (no style will be applied).
         /// </summary>
         private static string BundledStyleSheet
         {
