@@ -37,9 +37,8 @@ Icon?
 
 # ignore local config file
 *.ini
-# but not the Configurations.Ini project dir (matched by *.ini on case-insensitive filesystems)
+# but not the configurations project and tests
 !dev/pyRevitLabs/pyRevitLabs.Configurations.Ini/
-# nor the config test fixtures (golden-file corpus)
 !dev/pyRevitLabs/tests/**/Fixtures/*.ini
 
 # Release and installer files
