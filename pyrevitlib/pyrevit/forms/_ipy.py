@@ -261,6 +261,15 @@ class _WPFMixin(object):
     Not intended for direct use — inherit via WPFWindow or WPFPanel.
     """
 
+    # Whether a live theme-change refresh re-applies Background/Foreground
+    # directly. False for WPFWindow: a HUD-style overlay (CommandSwitchWindow,
+    # SearchPrompt, ...) declares its own literal transparent Background in
+    # XAML and must not have it clobbered while already open. WPFPanel
+    # overrides this to True — dockable panes never use that transparent-HUD
+    # pattern, and unlike transient dialogs they stay open for the whole
+    # Revit session, so they need to actually pick up a live theme change.
+    _live_refresh_root_colors = False
+
     # ------------------------------------------------------------------ resources
 
     @staticmethod
@@ -323,7 +332,8 @@ class _WPFMixin(object):
 
         Because window/control chrome binds to these resources with
         DynamicResource, overwriting the values here is enough to repaint
-        an open window without reloading its XAML.
+        an open window without reloading its XAML. Does not touch the root
+        Background/Foreground directly — see _live_refresh_root_colors.
 
         Args:
             wpf_ctrl: any WPF FrameworkElement with a Resources dict.
@@ -335,7 +345,7 @@ class _WPFMixin(object):
 
     def _on_theme_refresh(self):
         """Re-theme resources and, for windows, the native title bar."""
-        _WPFMixin.apply_theme(self)
+        _WPFMixin.setup_resources(self, set_root_colors=self._live_refresh_root_colors)
         self._apply_dark_titlebar()
 
     def _subscribe_theme_changed(self):
@@ -745,6 +755,11 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
     initial_state = None
     editor_interaction = None
     contextual_help = None
+
+    # Dockable panes stay open for the whole Revit session and never use the
+    # transparent-HUD pattern, so a live theme change should always repaint
+    # their Background/Foreground directly (see _WPFMixin._on_theme_refresh).
+    _live_refresh_root_colors = True
 
     def __init__(self):
         """Initialize WPF panel and resources."""
