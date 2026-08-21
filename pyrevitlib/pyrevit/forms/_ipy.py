@@ -44,6 +44,7 @@ from pyrevit.framework import Uri, UriKind, ResourceDictionary
 _perfmark("pyrevit.forms._ipy:after framework re-imports")
 from pyrevit.api import AdWindows
 _perfmark("pyrevit.forms._ipy:after pyrevit.api.AdWindows")
+from pyrevit.labs import Common
 from pyrevit import revit, UI, DB
 _perfmark("pyrevit.forms._ipy:after `from pyrevit import revit, UI, DB`")
 from pyrevit.forms import utils
@@ -78,6 +79,67 @@ WPF_VISIBLE = framework.Windows.Visibility.Visible
 
 
 XAML_FILES_DIR = op.dirname(__file__)
+THEME_XAML_FILE = op.join(XAML_FILES_DIR, "Theme.xaml")
+
+
+# Brand colours: constant across themes, used for HUD-style overlays
+# (CommandSwitchWindow, SearchPrompt, ProgressBar accent) that are
+# intentionally dark regardless of the active theme.
+_BRAND_DARK = (0xFF, 0x2C, 0x3E, 0x50)
+_BRAND_DARKER_DARK = (0xFF, 0x23, 0x30, 0x3D)
+_BRAND_ACCENT = (0xFF, 0xF3, 0x9C, 0x12)
+
+# Semantic palette applied to regular (non-HUD) window/control chrome.
+# Keys mirror the "pyRevit<Name>Brush" resources injected below.
+_PALETTE_LIGHT = {
+    "WindowBackground": (0xFF, 0xFF, 0xFF, 0xFF),
+    "WindowForeground": (0xFF, 0x00, 0x00, 0x00),
+    "ControlBackground": (0xFF, 0xFF, 0xFF, 0xFF),
+    "ControlBorder": (0xFF, 0xCC, 0xCC, 0xCC),
+    "ControlHover": (0xFF, 0xE5, 0xE5, 0xE5),
+    "ControlPressed": (0xFF, 0xD9, 0xD9, 0xD9),
+    "DisabledForeground": (0xFF, 0xA0, 0xA0, 0xA0),
+    "SubtleForeground": (0xFF, 0x69, 0x69, 0x69),
+    "Icon": (0xFF, 0x00, 0x00, 0x00),
+    "SelectionForeground": (0xFF, 0x00, 0x00, 0x00),
+    "ScrollBarThumb": (0xFF, 0xCC, 0xCC, 0xCC),
+    "ScrollBarThumbHover": (0xFF, 0xAA, 0xAA, 0xAA),
+}
+
+_PALETTE_DARK = {
+    "WindowBackground": (0xFF, 0x1B, 0x28, 0x35),
+    "WindowForeground": (0xFF, 0xEC, 0xF0, 0xF1),
+    "ControlBackground": (0xFF, 0x2C, 0x3E, 0x50),
+    "ControlBorder": (0xFF, 0x34, 0x49, 0x5E),
+    "ControlHover": (0xFF, 0x3B, 0x53, 0x6B),
+    "ControlPressed": (0xFF, 0x46, 0x60, 0x7A),
+    "DisabledForeground": (0xFF, 0x7F, 0x8C, 0x8D),
+    "SubtleForeground": (0xFF, 0x95, 0xA5, 0xA6),
+    "Icon": (0xFF, 0xEC, 0xF0, 0xF1),
+    "SelectionForeground": (0xFF, 0xFF, 0xFF, 0xFF),
+    "ScrollBarThumb": (0xFF, 0x34, 0x49, 0x5E),
+    "ScrollBarThumbHover": (0xFF, 0x3B, 0x53, 0x6B),
+}
+
+
+def _colorref(argb):
+    """Convert an (a, r, g, b) byte tuple to a Win32 COLORREF (0x00BBGGRR)."""
+    _, r, g, b = argb
+    return r | (g << 8) | (b << 16)
+
+
+def _is_dark_theme():
+    """Return True if Revit's active UI theme is Dark.
+
+    Always False on Revit <2024, which has no UITheme concept.
+    """
+    try:
+        if HOST_APP.is_newer_than(2024, True):
+            from Autodesk.Revit.UI import UITheme
+            return revit.ui.get_current_theme() == UITheme.Dark
+    except Exception:
+        pass
+    return False
 
 
 def _make_param_def(param, istype, checked=False):
@@ -202,37 +264,103 @@ class _WPFMixin(object):
     # ------------------------------------------------------------------ resources
 
     @staticmethod
-    def setup_resources(wpf_ctrl):
+    def setup_resources(wpf_ctrl, set_root_colors=True):
         """Set pyRevit colour resources on any WPF control.
+
+        Injects the brand palette (constant, used by HUD-style overlays)
+        and the semantic light/dark palette (resolved from Revit's active
+        UI theme) as DynamicResource-able brushes. Safe to call again on
+        an already-loaded control to re-theme it in place.
+
+        Args:
+            wpf_ctrl: any WPF FrameworkElement with a Resources dict.
+            set_root_colors (bool): also force wpf_ctrl.Background/Foreground
+                directly. Only safe before the control's own XAML is parsed:
+                a window that declares its own literal Background (e.g. the
+                transparent HUD-style overlays) must be able to override this
+                afterwards. Live theme-change refreshes pass False so an
+                already-open HUD window is not forced opaque.
+        """
+        res = wpf_ctrl.Resources
+
+        def _set_color(key, argb):
+            res[key + "Color"] = Media.Color.FromArgb(*argb)
+            res[key + "Brush"] = Media.SolidColorBrush(res[key + "Color"])
+
+        _set_color("pyRevitDark", _BRAND_DARK)
+        _set_color("pyRevitDarkerDark", _BRAND_DARKER_DARK)
+        _set_color("pyRevitAccent", _BRAND_ACCENT)
+        res["pyRevitButtonColor"] = Media.Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF)
+        res["pyRevitButtonForgroundBrush"] = Media.SolidColorBrush(
+            res["pyRevitButtonColor"]
+        )
+
+        is_dark = _is_dark_theme()
+        palette = _PALETTE_DARK if is_dark else _PALETTE_LIGHT
+        for name, argb in palette.items():
+            _set_color("pyRevit" + name, argb)
+        res["pyRevitSelectionBackgroundBrush"] = res["pyRevitAccentBrush"]
+        res["pyRevitIsDarkTheme"] = is_dark
+
+        res["pyRevitRecognizesAccessKey"] = DEFAULT_RECOGNIZE_ACCESS_KEY
+
+        if set_root_colors:
+            # Set directly rather than relying on the implicit Window/Page
+            # style: the root element already exists before its Resources
+            # are populated, and its own implicit-style lookup does not
+            # reliably re-run once brushes/Theme.xaml are added afterwards,
+            # even though descendants created later during XAML parsing
+            # pick the styles up correctly. Since this runs before
+            # wpf.LoadComponent, a window/page whose own XAML declares a
+            # literal Background (the transparent HUD-style overlays)
+            # still wins, because that gets parsed afterwards.
+            wpf_ctrl.Background = res["pyRevitWindowBackgroundBrush"]
+            wpf_ctrl.Foreground = res["pyRevitWindowForegroundBrush"]
+
+    @staticmethod
+    def apply_theme(wpf_ctrl):
+        """Re-resolve and re-apply theme resources on an already-loaded control.
+
+        Because window/control chrome binds to these resources with
+        DynamicResource, overwriting the values here is enough to repaint
+        an open window without reloading its XAML.
 
         Args:
             wpf_ctrl: any WPF FrameworkElement with a Resources dict.
         """
-        wpf_ctrl.Resources["pyRevitDarkColor"] = Media.Color.FromArgb(
-            0xFF, 0x2C, 0x3E, 0x50
-        )
-        wpf_ctrl.Resources["pyRevitDarkerDarkColor"] = Media.Color.FromArgb(
-            0xFF, 0x23, 0x30, 0x3D
-        )
-        wpf_ctrl.Resources["pyRevitButtonColor"] = Media.Color.FromArgb(
-            0xFF, 0xFF, 0xFF, 0xFF
-        )
-        wpf_ctrl.Resources["pyRevitAccentColor"] = Media.Color.FromArgb(
-            0xFF, 0xF3, 0x9C, 0x12
-        )
-        wpf_ctrl.Resources["pyRevitDarkBrush"] = Media.SolidColorBrush(
-            wpf_ctrl.Resources["pyRevitDarkColor"]
-        )
-        wpf_ctrl.Resources["pyRevitAccentBrush"] = Media.SolidColorBrush(
-            wpf_ctrl.Resources["pyRevitAccentColor"]
-        )
-        wpf_ctrl.Resources["pyRevitDarkerDarkBrush"] = Media.SolidColorBrush(
-            wpf_ctrl.Resources["pyRevitDarkerDarkColor"]
-        )
-        wpf_ctrl.Resources["pyRevitButtonForgroundBrush"] = Media.SolidColorBrush(
-            wpf_ctrl.Resources["pyRevitButtonColor"]
-        )
-        wpf_ctrl.Resources["pyRevitRecognizesAccessKey"] = DEFAULT_RECOGNIZE_ACCESS_KEY
+        _WPFMixin.setup_resources(wpf_ctrl, set_root_colors=False)
+
+    def _apply_dark_titlebar(self):
+        """No-op by default; overridden by WPFWindow (Page has no title bar)."""
+
+    def _on_theme_refresh(self):
+        """Re-theme resources and, for windows, the native title bar."""
+        _WPFMixin.apply_theme(self)
+        self._apply_dark_titlebar()
+
+    def _subscribe_theme_changed(self):
+        """Subscribe this control to Revit's ThemeChanged event, if available.
+
+        Silently no-ops on Revit versions without a UITheme concept.
+        """
+        try:
+            if not HOST_APP.is_newer_than(2024, True):
+                return
+            self._on_theme_changed = lambda sender, args: self._on_theme_refresh()
+            HOST_APP.uiapp.ThemeChanged += self._on_theme_changed
+        except Exception:
+            self._on_theme_changed = None
+
+    def _unsubscribe_theme_changed(self, sender=None, args=None):  # pylint: disable=unused-argument
+        """Detach the ThemeChanged subscription set up by _subscribe_theme_changed."""
+        handler = getattr(self, "_on_theme_changed", None)
+        if handler is None:
+            return
+        try:
+            HOST_APP.uiapp.ThemeChanged -= handler
+        except Exception:
+            pass
+        self._on_theme_changed = None
 
     def merge_resource_dict(self, xaml_source):
         """Merge a ResourceDictionary xaml file into this control's resources.
@@ -479,6 +607,7 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         self.window_id = coreutils.new_uuid()
 
         _WPFMixin.setup_resources(self)
+        self.merge_resource_dict(THEME_XAML_FILE)
         if not literal_string:
             xaml_path, pending_resource_merge = _resolve_xaml_source(xaml_source)
             # merge before LoadComponent so resources are available during parse
@@ -495,6 +624,9 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         self.setup_icon()
         if handle_esc:
             self.setup_default_handlers()
+        self._apply_dark_titlebar()
+        self._subscribe_theme_changed()
+        self.Closed += self._unsubscribe_theme_changed
 
     def setup_owner(self):
         """Set the window owner."""
@@ -509,6 +641,29 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         """Handle keyboard input and close the window on Escape."""
         if args.Key == Input.Key.Escape:
             self.Close()
+
+    def _apply_dark_titlebar(self):
+        """Re-skin this window's native title bar to match the active theme.
+
+        Keeps the OS chrome (icon, drag, resize, snap, min/max/close) intact;
+        only recolors it, instead of replacing it with custom-drawn chrome.
+        DWMWA_USE_IMMERSIVE_DARK_MODE picks light vs dark glyphs/contrast on
+        any supported Windows version; the exact caption/text colors (so the
+        title bar matches pyRevit's own palette rather than the OS default
+        dark gray) additionally require Windows 11 22000+ and are a no-op
+        elsewhere.
+        """
+        try:
+            wih = Interop.WindowInteropHelper(self)
+            hwnd = wih.EnsureHandle()
+            is_dark = _is_dark_theme()
+            Common.DwmApi.SetImmersiveDarkMode(hwnd, is_dark)
+            palette = _PALETTE_DARK if is_dark else _PALETTE_LIGHT
+            caption_color = _colorref(palette["ControlBackground"])
+            text_color = _colorref(palette["WindowForeground"])
+            Common.DwmApi.SetTitleBarColors(hwnd, caption_color, text_color)
+        except Exception:
+            pass
 
     def set_icon(self, icon_path):
         """Set window icon to given icon path."""
@@ -613,6 +768,7 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
             literal_string (bool): True when xaml_source is raw content.
         """
         _WPFMixin.setup_resources(self)
+        self.merge_resource_dict(THEME_XAML_FILE)
         if not literal_string:
             xaml_path, pending_resource_merge = _resolve_xaml_source(xaml_source)
             # merge before LoadComponent so resources are available during parse
@@ -622,6 +778,7 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
         else:
             wpf.LoadComponent(self, framework.StringReader(xaml_source))
         self.thread_id = framework.get_current_thread_id()
+        self._subscribe_theme_changed()
 
     def _get_panel_output(self):
         """Get current output window and keep its title in sync with panel_title."""
