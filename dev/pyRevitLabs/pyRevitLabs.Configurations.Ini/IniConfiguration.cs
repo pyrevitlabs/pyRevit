@@ -237,8 +237,7 @@ public sealed class IniConfiguration : ConfigurationBase
     /// (e.g. one list entry among several) is left untouched. <c>\u</c> is only
     /// accepted when followed by 4 hex digits, so a legacy path like
     /// <c>"...\u\..."</c> (a literal "u" directory name, not a unicode escape)
-    /// still gets doubled. Called only after a strict parse of the whole value
-    /// has already failed.
+    /// still gets doubled.
     /// </summary>
     private static string EscapeBackslashes(string value)
     {
