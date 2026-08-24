@@ -30,7 +30,7 @@ class BaseWrapper(object):
             pdata.update(data)
 
         datastr = ' '.join(['{0}:{1}'.format(k, v)
-                            for k, v in pdata.iteritems()]) #pylint: disable=E1101
+                            for k, v in pdata.items()])
         return '<pyrevit.revit.db.{class_name} % {wrapping}{datastr}>' \
                .format(class_name=self.__class__.__name__,
                        wrapping=safe_strtype(self._wrapped),

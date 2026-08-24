@@ -54,6 +54,23 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
         /// <inheritdoc/>
         public void ApplyIcon(object item, ParsedComponent component, ParsedComponent parentComponent = null, IconMode iconMode = IconMode.LargeAndSmall)
         {
+            if (item == null || component == null)
+                return;
+
+            RibbonIconRegistry.Register(
+                item,
+                isDarkTheme => ApplyIcon(item, component, parentComponent, iconMode, isDarkTheme));
+
+            ApplyIcon(item, component, parentComponent, iconMode, _themeDetector.IsDarkTheme());
+        }
+
+        private void ApplyIcon(
+            object item,
+            ParsedComponent component,
+            ParsedComponent parentComponent,
+            IconMode iconMode,
+            bool isDarkTheme)
+        {
             // If the component doesn't have icons, try to use the parent's icons when
             // this component allows inheritance.
             var sourceComponent = component;
@@ -72,7 +89,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
 
             try
             {
-                var isDarkTheme = _themeDetector.IsDarkTheme();
                 var smallIcon = GetBestIconForSizeWithTheme(sourceComponent, UIManagerConstants.ICON_SMALL, isDarkTheme);
 
                 switch (iconMode)
