@@ -89,14 +89,7 @@ def _urlencode(params):
         pass
 
 
-    pairs = []
-    for k, v in params.items():
-        pairs.append(
-            "{}={}".format(
-                str(k),
-                str(v)
-            )
-        )
+    pairs = ("{}={}".format(str(k), str(v)) for k, v in params.items())
 
     return "&".join(pairs)
 
