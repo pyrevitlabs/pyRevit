@@ -159,40 +159,41 @@ class Response(object):
         self._text = ""
 
         try:
-            if dotnet_response.Content:
-
-                try:
-                    for h in dotnet_response.Content.Headers:
-                        try:
-                            values = [str(x) for x in h.Value]
-                            self.headers[str(h.Key)] = ",".join(values)
-                        except Exception:
-                            pass
-                except Exception:
-                    pass
+            if not dotnet_response.Content:
+                return
+            try:
+                for h in dotnet_response.Content.Headers:
+                    try:
+                        values = [str(x) for x in h.Value]
+                        self.headers[str(h.Key)] = ",".join(values)
+                    except Exception:
+                        pass
+            except Exception:
+                pass
 
                 # Important:
                 # If this is a streaming response, do NOT read the full content here.
                 # SSE endpoints may never complete, so ReadAsStringAsync().Result
                 # would block forever.
-                if not stream:
-                    try:
-                        self._content = (
-                            dotnet_response.Content
-                            .ReadAsByteArrayAsync()
-                            .Result
-                        )
-                    except Exception:
-                        self._content = b""
+                if stream:
+                    return
+                try:
+                    self._content = (
+                        dotnet_response.Content
+                        .ReadAsByteArrayAsync()
+                        .Result
+                    )
+                except Exception:
+                    self._content = b""
 
-                    try:
-                        self._text = (
-                            dotnet_response.Content
-                            .ReadAsStringAsync()
-                            .Result
-                        )
-                    except Exception:
-                        self._text = ""
+                try:
+                    self._text = (
+                        dotnet_response.Content
+                        .ReadAsStringAsync()
+                        .Result
+                    )
+                except Exception:
+                    self._text = ""
 
         except Exception:
             pass
@@ -255,10 +256,7 @@ class Response(object):
         """
 
         try:
-            if not self._response:
-                return
-
-            if not self._response.Content:
+            if not self._response or not self._response.Content:  
                 return
 
             stream = (
