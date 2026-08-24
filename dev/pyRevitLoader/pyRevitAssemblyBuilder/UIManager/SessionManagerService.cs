@@ -259,8 +259,41 @@ namespace pyRevitAssemblyBuilder.SessionManager
             ExecuteEntryScript(Constants.POSTLOAD_SCRIPT, "pyRevit Postload");
             _logger.Debug($"[PERF] Postload: {stepStopwatch.ElapsedMilliseconds}ms");
 
+            if (ReadAndClearSessionReplacedFlag())
+            {
+                _logger.Debug("Postload triggered a nested reload; skipping this LoadSession's own final stopwatch/log.");
+                return;
+            }
+
             totalStopwatch.Stop();
             _logger.Info($"Session loaded in {totalStopwatch.ElapsedMilliseconds}ms");
+        }
+
+        /// <summary>
+        /// Reads and removes <see cref="Constants.SESSION_REPLACED_KEY"/> from the AppDomain env
+        /// dictionary, returning whether it was set. Same reflection-free access pattern as
+        /// <c>EnvDictionarySeeder.ReadSeededAppVersion()</c> — the dictionary is an IronPython
+        /// <c>PythonDictionary</c>, which this project (no compile-time IronPython reference)
+        /// reads via the <see cref="System.Collections.IDictionary"/> interface it implements.
+        /// Removing the key (rather than just reading it) keeps it from leaking into a later,
+        /// unrelated LoadSession() call.
+        /// </summary>
+        private bool ReadAndClearSessionReplacedFlag()
+        {
+            try
+            {
+                if (AppDomain.CurrentDomain.GetData(Constants.ENV_DICT_KEY) is System.Collections.IDictionary dict
+                        && dict.Contains(Constants.SESSION_REPLACED_KEY))
+                {
+                    dict.Remove(Constants.SESSION_REPLACED_KEY);
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning($"Failed to read session-replaced flag: {ex}");
+            }
+            return false;
         }
 
         /// <summary>

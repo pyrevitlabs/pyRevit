@@ -30,6 +30,7 @@ namespace pyRevitExtensionParser
         /// </summary>
         private Dictionary<(string Section, string Key), string> _valueCache;
         private HashSet<string> _sectionCache;
+        private readonly object _cacheLock = new object();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IniFile"/> class.
@@ -166,50 +167,57 @@ namespace pyRevitExtensionParser
         /// <summary>
         /// Parses the whole file once into <see cref="_valueCache"/>/<see cref="_sectionCache"/>
         /// if not already cached. Returns false (leaving any prior cache untouched) if the file
-        /// can't be read, so callers fall back to the Win32 API path.
+        /// can't be read, so callers fall back to the Win32 API path. Thread-safe: the fill is
+        /// guarded by <see cref="_cacheLock"/> with a double-checked null test.
         /// </summary>
         private bool EnsureCacheLoaded()
         {
             if (_valueCache != null)
                 return true;
 
-            if (!CanReadManaged())
-                return false;
-
-            try
+            lock (_cacheLock)
             {
-                var values = new Dictionary<(string, string), string>(
-                    new SectionKeyComparer());
-                var sections = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                if (_valueCache != null)
+                    return true;
 
-                foreach (var entry in EnumerateIniEntries())
+                if (!CanReadManaged())
+                    return false;
+
+                try
                 {
-                    if (entry.IsSection)
+                    var values = new Dictionary<(string, string), string>(
+                        new SectionKeyComparer());
+                    var sections = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                    foreach (var entry in EnumerateIniEntries())
                     {
-                        if (!string.IsNullOrEmpty(entry.Section))
-                            sections.Add(entry.Section);
-                        continue;
+                        if (entry.IsSection)
+                        {
+                            if (!string.IsNullOrEmpty(entry.Section))
+                                sections.Add(entry.Section);
+                            continue;
+                        }
+
+                        if (entry.IsKeyValue)
+                            values[(entry.Section, entry.Key)] = entry.Value ?? string.Empty;
                     }
 
-                    if (entry.IsKeyValue)
-                        values[(entry.Section, entry.Key)] = entry.Value ?? string.Empty;
+                    _valueCache = values;
+                    _sectionCache = sections;
+                    return true;
                 }
-
-                _valueCache = values;
-                _sectionCache = sections;
-                return true;
-            }
-            catch (IOException)
-            {
-                return false;
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return false;
-            }
-            catch (ArgumentException)
-            {
-                return false;
+                catch (IOException)
+                {
+                    return false;
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    return false;
+                }
+                catch (ArgumentException)
+                {
+                    return false;
+                }
             }
         }
 

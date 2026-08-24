@@ -160,12 +160,20 @@ def _perform_postload_autoupdate():
 
     Called from perform_postload() rather than the preload path so a slow or
     offline update check can never delay the ribbon's first paint.
+
+    If the update triggers a reload, that reload re-enters LoadSession()
+    while this postload call is still on the stack, replacing the current
+    session out from under it. Flags that via SESSION_REPLACED_ENVVAR so the
+    C# orchestrator can skip its own now-stale final stopwatch/log for the
+    outer (replaced) session once this call returns.
     """
     if user_config.auto_update and not _check_autoupdate_inprogress():
         mlogger.info("Auto-update is active. Attempting update...")
         _set_autoupdate_inprogress(True)
-        updater.update_pyrevit()
+        reloaded = updater.update_pyrevit()
         _set_autoupdate_inprogress(False)
+        if reloaded:
+            envvars.set_pyrevit_env_var(envvars.SESSION_REPLACED_ENVVAR, True)
 
 
 def perform_preload():
