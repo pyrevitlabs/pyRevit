@@ -126,27 +126,32 @@ def get_source_properties(src_element, simple=False, preselect=None):
 
     for sparam in selected_params:
         mlogger.debug("Reading %s", sparam.name)
-        target = src_type if sparam.istype else src_element
-        tparam = target.LookupParameter(sparam.name)
-        if tparam:
-            if tparam.StorageType == DB.StorageType.Integer:
-                value = tparam.AsInteger()
-            elif tparam.StorageType == DB.StorageType.Double:
-                value = tparam.AsDouble()
-            elif tparam.StorageType == DB.StorageType.ElementId:
-                value = get_elementid_value(tparam.AsElementId())
-            else:
-                value = tparam.AsString()
+        try:
+            target = src_type if sparam.istype else src_element
+            tparam = target.LookupParameter(sparam.name)
+            if tparam:
+                if tparam.StorageType == DB.StorageType.Integer:
+                    value = tparam.AsInteger()
+                elif tparam.StorageType == DB.StorageType.Double:
+                    value = tparam.AsDouble()
+                elif tparam.StorageType == DB.StorageType.ElementId:
+                    value = get_elementid_value(tparam.AsElementId())
+                else:
+                    value = tparam.AsString()
 
-            props.append(
-                PropKeyValue(
-                    name=sparam.name,
-                    datatype=tparam.StorageType,
-                    value=value,
-                    istype=sparam.istype,
-                    display_value=tparam.AsValueString(),
-                    categories=[src_element.Category] if not simple else [],
+                props.append(
+                    PropKeyValue(
+                        name=sparam.name,
+                        datatype=tparam.StorageType,
+                        value=value,
+                        istype=sparam.istype,
+                        display_value=tparam.AsValueString(),
+                        categories=[src_element.Category] if not simple else [],
+                    )
                 )
+        except Exception as readex:
+            mlogger.warning(
+                "Failed reading parameter %s | %s", sparam.name, readex
             )
 
     return props

@@ -33,9 +33,16 @@ def recall():
 
 
 def remember(src_props):
-    """Save selected matched properties to memory."""
-    with open(MEMFILE, "wb") as mf:
-        pickle.dump(src_props, mf)
+    """Save selected matched properties to memory.
+
+    Failure to persist (e.g. unpicklable values) is logged and ignored;
+    matching must proceed regardless of recall-memory state.
+    """
+    try:
+        with open(MEMFILE, "wb") as mf:
+            pickle.dump(src_props, mf)
+    except Exception as ex:
+        logger.debug("Failed saving matched properties to memory | %s", str(ex))
 
 
 # ── Shift+Click: open modeless recall window ─────────────────────────────────
