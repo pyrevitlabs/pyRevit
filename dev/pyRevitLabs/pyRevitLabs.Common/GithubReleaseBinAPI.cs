@@ -9,13 +9,15 @@ namespace pyRevitLabs.Common {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         public const string CiBinariesReleaseTag = "ci-binaries";
+        public const string VersionTagBinAssetPrefix = "bin-";
 
-        public static string BuildReleaseAssetUrl(string repoId, string assetFileName) {
+        public static string BuildReleaseAssetUrl(string repoId, string assetFileName, string releaseTag = null) {
+            var tag = string.IsNullOrWhiteSpace(releaseTag) ? CiBinariesReleaseTag : releaseTag.Trim();
             return string.Format(
                 "https://github.com/{0}/releases/download/{1}/{2}",
                 repoId,
-                CiBinariesReleaseTag,
-                assetFileName);
+                Uri.EscapeDataString(tag),
+                Uri.EscapeDataString(assetFileName));
         }
 
         public static string BuildShaAssetName(string commitSha) {
@@ -29,11 +31,19 @@ namespace pyRevitLabs.Common {
                 branchName);
         }
 
-        public static bool TryDownloadReleaseAsset(string repoId, string assetFileName, string destPath) {
+        public static string BuildVersionTagBinAssetName(string tagName) {
+            return VersionTagBinAssetPrefix + tagName.Trim() + ".zip";
+        }
+
+        public static bool TryDownloadReleaseAsset(
+            string repoId,
+            string assetFileName,
+            string destPath,
+            string releaseTag = null) {
             if (!CommonUtils.CheckInternetConnection())
                 throw new pyRevitNoInternetConnectionException();
 
-            var url = BuildReleaseAssetUrl(repoId, assetFileName);
+            var url = BuildReleaseAssetUrl(repoId, assetFileName, releaseTag);
             logger.Debug("Trying public release asset \"{0}\"", url);
 
             try {

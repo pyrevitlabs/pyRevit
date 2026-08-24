@@ -240,8 +240,9 @@ class Markdown(object):
                 # eg: extensions=['tables'] and PyTables is installed
                 raise ImportError
         except ImportError:
-            # Preppend `markdown.extensions.` to name
-            module_name = '.'.join(['markdown.extensions', ext_name])
+            # Resolve short names against this vendored copy's extensions
+            # subpackage, not a top-level `markdown` install
+            module_name = '.'.join([__name__, 'extensions', ext_name])
             try:
                 module = importlib.import_module(module_name)
                 logger.debug(
@@ -350,7 +351,12 @@ class Markdown(object):
             return ''  # a blank unicode string
 
         try:
-            source = unicode(source)
+            # decode bytes explicitly: under Python 3, text_type is str and
+            # str(bytes) would silently yield "b'...'" instead of raising
+            if isinstance(source, bytes):
+                source = source.decode('utf-8')
+            else:
+                source = util.text_type(source)
         except UnicodeDecodeError as e:
             # Customise error message while maintaining original trackback
             e.reason += '. -- Note: Markdown only accepts unicode input!'

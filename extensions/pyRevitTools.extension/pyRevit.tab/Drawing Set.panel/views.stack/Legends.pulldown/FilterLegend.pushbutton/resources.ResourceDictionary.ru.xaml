@@ -1,0 +1,33 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <system:String x:Key="Msg_NoViewsWithFilters">Нет видов или шаблонов видов с назначенными фильтрами.
+Добавьте фильтр к виду и повторите попытку.</system:String>
+    <system:String x:Key="Label_Template">Шаблон</system:String>
+
+    <system:String x:Key="SelectViews_Title">Выбор видов / шаблонов</system:String>
+    <system:String x:Key="SelectViews_Button">Продолжить</system:String>
+
+    <system:String x:Key="Msg_NoTextTypes">В проекте не найдено типов текстовых примечаний.</system:String>
+
+    <system:String x:Key="Settings_Title">Настройки легенды фильтров</system:String>
+    <system:String x:Key="Settings_Section_Layout">Текст и оформление</system:String>
+    <system:String x:Key="Settings_TextType">Тип текстового примечания</system:String>
+    <system:String x:Key="Settings_RowHeight">Высота строки ({0})</system:String>
+    <system:String x:Key="Settings_RowSpacing">Промежуток между строками ({0})</system:String>
+    <system:String x:Key="Settings_SwatchWidth">Ширина образца ({0})</system:String>
+    <system:String x:Key="Settings_ColumnWidth">Ширина текстового столбца ({0})</system:String>
+    <system:String x:Key="Settings_Section_Behavior">Поведение</system:String>
+    <system:String x:Key="Settings_SortAlpha">Сортировать фильтры по алфавиту</system:String>
+    <system:String x:Key="Settings_OpenLegend">Открыть последнюю созданную легенду</system:String>
+
+    <system:String x:Key="Header_FilterName">Имя фильтра</system:String>
+    <system:String x:Key="Header_Parameter">Параметр</system:String>
+    <system:String x:Key="Header_Value">Значение</system:String>
+    <system:String x:Key="Value_NA">Н/Д</system:String>
+
+    <system:String x:Key="Msg_Done">Создано видов легенды: {0}.</system:String>
+    <system:String x:Key="Msg_Failed">Не удалось создать ни одного вида легенды. Подробности см. в журнале.</system:String>
+
+</ResourceDictionary>

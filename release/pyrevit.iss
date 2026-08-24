@@ -29,7 +29,7 @@ UsePreviousAppDir=yes
 PrivilegesRequired=lowest
 ; Build info
 OutputDir=..\dist
-; See dev/scripts/config.py INSTALLER_EXES
+; Keep this list aligned with the installer assets staged by build/.
 OutputBaseFilename=pyRevit_{#MyAppVersion}_signed
 SetupIconFile=..\bin\pyrevit.ico
 Compression=lzma

@@ -1,0 +1,33 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <system:String x:Key="Msg_NoViewsWithFilters">필터가 지정된 뷰 또는 뷰 템플릿이 없습니다.
+뷰에 필터를 추가한 후 다시 시도하세요.</system:String>
+    <system:String x:Key="Label_Template">템플릿</system:String>
+
+    <system:String x:Key="SelectViews_Title">뷰 / 템플릿 선택</system:String>
+    <system:String x:Key="SelectViews_Button">계속</system:String>
+
+    <system:String x:Key="Msg_NoTextTypes">프로젝트에서 텍스트 노트 유형을 찾을 수 없습니다.</system:String>
+
+    <system:String x:Key="Settings_Title">필터 범례 설정</system:String>
+    <system:String x:Key="Settings_Section_Layout">텍스트 및 레이아웃</system:String>
+    <system:String x:Key="Settings_TextType">텍스트 노트 유형</system:String>
+    <system:String x:Key="Settings_RowHeight">행 높이 ({0})</system:String>
+    <system:String x:Key="Settings_RowSpacing">행 간격 ({0})</system:String>
+    <system:String x:Key="Settings_SwatchWidth">색상 견본 너비 ({0})</system:String>
+    <system:String x:Key="Settings_ColumnWidth">텍스트 열 너비 ({0})</system:String>
+    <system:String x:Key="Settings_Section_Behavior">동작</system:String>
+    <system:String x:Key="Settings_SortAlpha">필터 알파벳순 정렬</system:String>
+    <system:String x:Key="Settings_OpenLegend">마지막으로 생성된 범례 열기</system:String>
+
+    <system:String x:Key="Header_FilterName">필터 이름</system:String>
+    <system:String x:Key="Header_Parameter">매개변수</system:String>
+    <system:String x:Key="Header_Value">값</system:String>
+    <system:String x:Key="Value_NA">해당 없음</system:String>
+
+    <system:String x:Key="Msg_Done">범례 뷰 {0}개를 생성했습니다.</system:String>
+    <system:String x:Key="Msg_Failed">범례 뷰를 생성하지 못했습니다. 자세한 내용은 로그를 확인하세요.</system:String>
+
+</ResourceDictionary>

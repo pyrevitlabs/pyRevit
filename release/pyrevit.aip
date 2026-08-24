@@ -842,7 +842,8 @@
     <ROW Component="pyRevitLabs.TargetApps.Navisworks.dll" ComponentId="{CFC05BC5-CBED-49ED-B010-5530D5E4F61F}" Directory_="bin_Dir" Attributes="0" KeyPath="pyRevitLabs.TargetApps.Navisworks.dll"/>
     <ROW Component="pyRevitLabs.TargetApps.Revit.dll" ComponentId="{8E1FE5D8-DA3F-4675-ACA4-1CD614EE8A24}" Directory_="bin_Dir" Attributes="256" KeyPath="pyRevitLabs.TargetApps.Revit.dll"/>
     <ROW Component="pyRevitLoader.dll_3" ComponentId="{8D3C5EB1-1C0B-4C6A-A296-274718297CD9}" Directory_="IPY2712PR_Dir" Attributes="0" KeyPath="pyRevitLoader.dll_3"/>
-    <ROW Component="pyRevitLoader.py" ComponentId="{72FB3D5F-50E5-4169-B1F3-CA244D27D1E3}" Directory_="engines_Dir" Attributes="0" KeyPath="pyRevitLoader.py" Type="0"/>
+    <ROW Component="session_preload.py" ComponentId="{D9F2D5A0-DE61-410A-BB8C-13D169938FE2}" Directory_="engines_Dir" Attributes="0" KeyPath="session_preload.py" Type="0"/>
+    <ROW Component="session_postload.py" ComponentId="{F824D7B0-C86E-4A3B-8D08-A2BF7E66F18B}" Directory_="engines_Dir" Attributes="0" KeyPath="session_postload.py" Type="0"/>
     <ROW Component="pyRevitRunner.dll_6" ComponentId="{11CBAC73-50B5-4AB3-9B65-6610F29B2ECD}" Directory_="IPY2712PR_Dir" Attributes="0" KeyPath="pyRevitRunner.dll_6"/>
     <ROW Component="pyrevit.admin" ComponentId="{0BD2A618-34EC-40B8-87EE-5E9F1B5B8A83}" Directory_="bin_Dir" Attributes="0" KeyPath="pyrevit.admin"/>
     <ROW Component="pyrevit.exe" ComponentId="{91082B17-558B-4738-9AE2-D93D18653BEE}" Directory_="bin_Dir" Attributes="256" KeyPath="pyrevit.exe"/>
@@ -910,7 +911,8 @@
     <ROW File="Colorful.Console.dll" Component_="Colorful.Console.dll" FileName="COLORF~1.DLL|Colorful.Console.dll" Attributes="0" SourcePath="..\bin\Colorful.Console.dll" SelfReg="false"/>
     <ROW File="ControlzEx.dll" Component_="ControlzEx.dll" FileName="CONTRO~1.DLL|ControlzEx.dll" Attributes="0" SourcePath="..\bin\ControlzEx.dll" SelfReg="false"/>
     <ROW File="DocoptNet.dll" Component_="DocoptNet.dll" FileName="DOCOPT~1.DLL|DocoptNet.dll" Attributes="0" SourcePath="..\bin\DocoptNet.dll" SelfReg="false"/>
-    <ROW File="pyRevitLoader.py" Component_="pyRevitLoader.py" FileName="PYREVI~1.PY|pyRevitLoader.py" Attributes="0" SourcePath="..\bin\engines\pyRevitLoader.py" SelfReg="false"/>
+    <ROW File="session_preload.py" Component_="session_preload.py" FileName="SESSIO~1.PY|session_preload.py" Attributes="0" SourcePath="..\bin\engines\session_preload.py" SelfReg="false"/>
+    <ROW File="session_postload.py" Component_="session_postload.py" FileName="SESSIO~2.PY|session_postload.py" Attributes="0" SourcePath="..\bin\engines\session_postload.py" SelfReg="false"/>
     <ROW File="LibGit2Sharp.dll" Component_="LibGit2Sharp.dll" FileName="LIBGIT~1.DLL|LibGit2Sharp.dll" Attributes="0" SourcePath="..\bin\LibGit2Sharp.dll" SelfReg="false"/>
     <ROW File="MadMilkman.Ini.dll" Component_="MadMilkman.Ini.dll" FileName="MADMIL~1.DLL|MadMilkman.Ini.dll" Attributes="0" SourcePath="..\bin\MadMilkman.Ini.dll" SelfReg="false"/>
     <ROW File="Nett.dll" Component_="Nett.dll" FileName="Nett.dll" Attributes="0" SourcePath="..\bin\Nett.dll" SelfReg="false"/>
@@ -1069,7 +1071,6 @@
     <ROW File="sessioninfo.py" Component_="asmmaker.py" FileName="SESSIO~1.PY|sessioninfo.py" Attributes="0" SourcePath="..\pyrevitlib\pyrevit\loader\sessioninfo.py" SelfReg="false"/>
     <ROW File="sessionmgr.py" Component_="asmmaker.py" FileName="SESSIO~2.PY|sessionmgr.py" Attributes="0" SourcePath="..\pyrevitlib\pyrevit\loader\sessionmgr.py" SelfReg="false"/>
     <ROW File="systemdiag.py" Component_="asmmaker.py" FileName="SYSTEM~1.PY|systemdiag.py" Attributes="0" SourcePath="..\pyrevitlib\pyrevit\loader\systemdiag.py" SelfReg="false"/>
-    <ROW File="uimaker.py" Component_="asmmaker.py" FileName="uimaker.py" Attributes="0" SourcePath="..\pyrevitlib\pyrevit\loader\uimaker.py" SelfReg="false"/>
     <ROW File="__init__.py_117" Component_="asmmaker.py" FileName="__init__.py" Attributes="0" SourcePath="..\pyrevitlib\pyrevit\loader\__init__.py" SelfReg="false"/>
     <ROW File="linkmaker.py" Component_="linkmaker.py" FileName="LINKMA~1.PY|linkmaker.py" Attributes="0" SourcePath="..\pyrevitlib\pyrevit\output\linkmaker.py" SelfReg="false"/>
     <ROW File="outputstyles.css" Component_="linkmaker.py" FileName="OUTPUT~1.CSS|outputstyles.css" Attributes="0" SourcePath="..\pyrevitlib\pyrevit\output\outputstyles.css" SelfReg="false"/>
@@ -3538,7 +3539,8 @@
     <ROW Feature_="MainFeature" Component_="pyRevitLabs.TargetApps.AutoCAD.dll"/>
     <ROW Feature_="MainFeature" Component_="pyRevitLabs.TargetApps.Navisworks.dll"/>
     <ROW Feature_="MainFeature" Component_="pyRevitLabs.TargetApps.Revit.dll"/>
-    <ROW Feature_="MainFeature" Component_="pyRevitLoader.py"/>
+    <ROW Feature_="MainFeature" Component_="session_preload.py"/>
+    <ROW Feature_="MainFeature" Component_="session_postload.py"/>
     <ROW Feature_="MainFeature" Component_="pyrevit.exe"/>
     <ROW Feature_="MainFeature" Component_="pyrevitargs"/>
     <ROW Feature_="MainFeature" Component_="pyrevitautocomplete.exe"/>

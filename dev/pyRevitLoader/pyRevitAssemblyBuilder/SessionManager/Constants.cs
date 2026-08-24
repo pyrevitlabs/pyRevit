@@ -29,6 +29,16 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// Key for referenced assemblies in environment dictionary.
         /// </summary>
         public const string REFED_ASSMS_KEY = "PYREVIT_REFEDASSMS";
+
+        /// <summary>
+        /// Python entry script that runs pre-load session setup.
+        /// </summary>
+        public const string PRELOAD_SCRIPT = "session_preload.py";
+
+        /// <summary>
+        /// Python entry script that runs post-load session finalization.
+        /// </summary>
+        public const string POSTLOAD_SCRIPT = "session_postload.py";
     }
 
     /// <summary>
