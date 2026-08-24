@@ -8,7 +8,6 @@ import tempfile
 import types
 import unittest
 
-
 LOGGER_PATH = os.path.join(
     os.path.dirname(os.path.dirname(__file__)),
     "pyrevitlib",
@@ -116,8 +115,9 @@ class RuntimeLoggerTests(unittest.TestCase):
         logger.error("Failed: %s", "value")
 
         name, level, message, spawn = self.service.records[-1]
-        self.assertEqual(("sample", logging.ERROR, "Failed: value"),
-                         (name, level, message))
+        self.assertEqual(
+            ("sample", logging.ERROR, "Failed: value"), (name, level, message)
+        )
         self.assertFalse(spawn)
 
     def test_facade_records_never_spawn_output_window(self):
@@ -135,8 +135,7 @@ class RuntimeLoggerTests(unittest.TestCase):
         for record in self.service.records:
             self.assertFalse(
                 record[3],
-                "log record at level %s must not spawn the output window"
-                % record[1],
+                "log record at level %s must not spawn the output window" % record[1],
             )
 
     def test_malformed_format_falls_back_without_raising(self):
@@ -155,11 +154,8 @@ class RuntimeLoggerTests(unittest.TestCase):
 
         self.assertEqual(logging.WARNING, self.service.records[0][1])
         self.assertIn("ValueError: broken", self.service.records[1][2])
-        self.assertEqual(
-            self.module.DEPRECATE_LOG_LEVEL, self.service.records[2][1]
-        )
-        self.assertEqual(self.module.SUCCESS_LOG_LEVEL,
-                         self.service.records[3][1])
+        self.assertEqual(self.module.DEPRECATE_LOG_LEVEL, self.service.records[2][1])
+        self.assertEqual(self.module.SUCCESS_LOG_LEVEL, self.service.records[3][1])
 
     def test_level_controls_delegate_to_service(self):
         logger = self.module.get_logger("sample")
@@ -188,8 +184,9 @@ class RuntimeLoggerTests(unittest.TestCase):
             standard_logger.exception("bridge error")
 
         name, level, message, spawn = self.service.records[0]
-        self.assertEqual(("third.party", logging.INFO, "Hello world"),
-                         (name, level, message))
+        self.assertEqual(
+            ("third.party", logging.INFO, "Hello world"), (name, level, message)
+        )
         self.assertIn("RuntimeError: failure", self.service.records[1][2])
         for record in self.service.records:
             self.assertFalse(record[3])
@@ -199,9 +196,7 @@ class RuntimeLoggerTests(unittest.TestCase):
         second = self.module._install_standard_logging_bridge()
         self.assertIs(first, second)
 
-        self.service.on_log = (
-            lambda: logging.getLogger("recursive").warning("again")
-        )
+        self.service.on_log = lambda: logging.getLogger("recursive").warning("again")
         logging.getLogger("outer").warning("once")
         self.assertEqual(1, len(self.service.records))
 
@@ -225,13 +220,9 @@ class RuntimeLoggerTests(unittest.TestCase):
         previous_types = sys.modules.get("pyrevit.runtime.types")
         sys.modules["pyrevit.runtime"] = runtime_package
         sys.modules["pyrevit.runtime.types"] = runtime_types
-        self.module.EXEC_PARAMS.script_runtime = types.SimpleNamespace(
-            IsDisposed=True
-        )
+        self.module.EXEC_PARAMS.script_runtime = types.SimpleNamespace(IsDisposed=True)
         try:
-            self.assertIs(
-                default_service, self.original_resolve_service()
-            )
+            self.assertIs(default_service, self.original_resolve_service())
         finally:
             self.module.EXEC_PARAMS.script_runtime = None
             if previous_runtime is None:
