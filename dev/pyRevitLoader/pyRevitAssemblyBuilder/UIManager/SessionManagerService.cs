@@ -123,6 +123,11 @@ namespace pyRevitAssemblyBuilder.SessionManager
             InitializeScriptExecutor();
             _logger.Debug($"[PERF] InitializeScriptExecutor: {stepStopwatch.ElapsedMilliseconds}ms");
 
+            // Give this service's logger somewhere to write. The first record written
+            // after this point is swallowed by the runtime logging service; nothing is
+            // logged here that would be worth losing.
+            ConfigureRuntimeLogging();
+
             // Seed the AppDomain environment dictionary.  Must run after InitializeScriptExecutor()
             // (which loads _runtimeAssembly) and before any extension startup script (which may call
             // pyrevit.sessioninfo, pyrevit.telemetry, etc.).
@@ -133,7 +138,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             // Drive the residual Python session services (env/session, telemetry,
             // routes, output window, hooks framework) that are not yet ported to C#.
             stepStopwatch.Restart();
-            ExecuteEntryScript(Constants.PRELOAD_SCRIPT, "pyRevit Preload");
+            ExecuteEntryScript(Constants.PRELOAD_SCRIPT, "pyRevit Preload", firstLoad);
             _logger.Debug($"[PERF] Preload: {stepStopwatch.ElapsedMilliseconds}ms");
 
             // Get all library extensions first - they need to be available to all UI extensions.
@@ -295,7 +300,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             // Finalize via the residual Python post-load services (hook activation,
             // doc colorizer, routes server, output teardown).
             stepStopwatch.Restart();
-            ExecuteEntryScript(Constants.POSTLOAD_SCRIPT, "pyRevit Postload");
+            ExecuteEntryScript(Constants.POSTLOAD_SCRIPT, "pyRevit Postload", firstLoad);
             _logger.Debug($"[PERF] Postload: {stepStopwatch.ElapsedMilliseconds}ms");
 
             totalStopwatch.Stop();
@@ -477,6 +482,36 @@ namespace pyRevitAssemblyBuilder.SessionManager
             _externalCommandDataAppProperty = externalCommandDataType.GetProperty("Application");
         }
 
+        /// <summary>
+        /// Points NLog at the runtime logging service so records from this service and
+        /// the extension parser reach the console and the runtime log file.
+        /// </summary>
+        private void ConfigureRuntimeLogging()
+        {
+            if (_runtimeAssembly == null)
+                return;
+
+            try
+            {
+                var scriptOutputType = _runtimeAssembly.GetType("PyRevitLabs.PyRevit.Runtime.ScriptOutput");
+                var configureMethod = scriptOutputType?.GetMethod(
+                    "ConfigureLogging", BindingFlags.Public | BindingFlags.Static);
+
+                if (configureMethod == null)
+                {
+                    Debug.WriteLine(
+                        "pyRevit: ScriptOutput.ConfigureLogging not found; loader logging is discarded.");
+                    return;
+                }
+
+                configureMethod.Invoke(null, null);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"pyRevit: failed to route loader logging into the runtime: {ex}");
+            }
+        }
+
         private Assembly? FindRuntimeAssembly()
         {
             // Use cached assembly lookup - much faster than scanning AppDomain every time
@@ -565,7 +600,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// </summary>
         /// <param name="scriptFileName">Entry script file name located in the engines directory.</param>
         /// <param name="commandName">Display name reported for the script run.</param>
-        private void ExecuteEntryScript(string scriptFileName, string commandName)
+        /// <param name="firstLoad">True during initial Revit startup; false during reload.</param>
+        private void ExecuteEntryScript(string scriptFileName, string commandName, bool firstLoad)
         {
             if (_scriptDataType == null || _scriptRuntimeConfigsType == null || _executeScriptMethod == null)
             {
@@ -602,7 +638,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             {
                 var searchPaths = BuildCoreSearchPaths();
                 var scriptData = CreateEntryScriptData(scriptPath, commandName);
-                var scriptRuntimeConfigs = CreateScriptRuntimeConfigs(searchPaths);
+                var scriptRuntimeConfigs = CreateScriptRuntimeConfigs(searchPaths, firstLoad);
 
                 var result = _executeScriptMethod.Invoke(null, new[] { scriptData, scriptRuntimeConfigs, null });
                 if (result != null && (int)result != 0)
@@ -734,8 +770,13 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// Creates a ScriptRuntimeConfigs object for executing a startup script.
         /// </summary>
         /// <param name="searchPaths">The search paths to include in the configuration.</param>
+        /// <param name="sessionFirstLoad">
+        /// When set, published to the script as the <c>__sessionfirstload__</c> builtin so a session
+        /// entry script can tell an initial Revit startup from a reload. Left null for every other
+        /// run, which is what keeps the flag scoped to the invocation that was actually told.
+        /// </param>
         /// <returns>The created ScriptRuntimeConfigs object.</returns>
-        private object CreateScriptRuntimeConfigs(List<string> searchPaths)
+        private object CreateScriptRuntimeConfigs(List<string> searchPaths, bool? sessionFirstLoad = null)
         {
             // Create temporary ExternalCommandData
 #if NETFRAMEWORK
@@ -778,7 +819,16 @@ namespace pyRevitAssemblyBuilder.SessionManager
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "ConfigMode", false);
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "DebugMode", false);
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "ExecutedFromUI", false);
-            
+
+            if (sessionFirstLoad.HasValue)
+            {
+                var variables = new Dictionary<string, object>
+                {
+                    ["__sessionfirstload__"] = sessionFirstLoad.Value,
+                };
+                SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "Variables", variables);
+            }
+
             return scriptRuntimeConfigs;
         }
 

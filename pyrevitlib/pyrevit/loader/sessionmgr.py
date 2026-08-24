@@ -11,6 +11,7 @@ The only public function is `load_session()` that loads a new session.
 Everything else is private.
 """
 import sys
+import time
 
 from pyrevit import EXEC_PARAMS, HOST_APP
 from pyrevit import framework
@@ -39,13 +40,6 @@ from pyrevit import DB, UI, revit
 
 # pylint: disable=W0703,C0302,C0103,no-member
 mlogger = logger.get_logger(__name__)
-
-# Session timing and output state shared between perform_preload() and
-# perform_postload(). The C# loader invokes these as two separate steps, so the
-# state is carried on the persistent engine module rather than a call stack.
-_SESSION_TIMER = None
-_SESSION_OUTPUT = None
-_OUTPUT_SETUP_TIME = None
 
 
 def _clear_running_engines():
@@ -87,9 +81,6 @@ def _setup_output():
     outstr = out.output_stream
     sys.stdout = outstr
     # sys.stderr = outstr
-
-    # return the runtime wrapper so self_destruct works on first load too
-    return out
 
 
 def _cleanup_output():
@@ -167,10 +158,8 @@ def perform_preload():
 
     Invoked by the C# session orchestrator as the first step of a load. Sets up
     the session environment, output window, and pre-load services, and records
-    the session timer so perform_postload() can report load time.
+    the session start so perform_postload() can report load time.
     """
-    global _SESSION_TIMER, _SESSION_OUTPUT, _OUTPUT_SETUP_TIME
-
     # must run before setup_runtime_vars(), the first attachment consumer, so a
     # re-attached clone is picked up on reload
     PyRevit.PyRevitAttachments.ClearAttachmentCache()
@@ -179,16 +168,15 @@ def perform_preload():
 
     # time from before output setup so the reported load time reflects the full
     # user wait, including first-load output window construction
-    _SESSION_TIMER = Timer()
+    session_timer = Timer()
+    envvars.set_pyrevit_env_var(envvars.SESSIONSTARTTIME_ENVVAR, session_timer.start)
 
+    # always written, so a reload never reports the previous load's breakdown
+    output_setup_time = None
     if EXEC_PARAMS.first_load:
-        _SESSION_OUTPUT = _setup_output()
-        _OUTPUT_SETUP_TIME = _SESSION_TIMER.get_time()
-    else:
-        from pyrevit import script
-
-        _SESSION_OUTPUT = script.get_output()
-        _OUTPUT_SETUP_TIME = None
+        _setup_output()
+        output_setup_time = session_timer.get_time()
+    envvars.set_pyrevit_env_var(envvars.OUTPUTSETUPTIME_ENVVAR, output_setup_time)
 
     _perform_onsessionloadstart_ops()
 
@@ -208,26 +196,24 @@ def perform_postload():
     # so find_pyrevitcmd can locate commands the C# loader compiled
     _register_loaded_pyrevit_assemblies()
 
-    if _SESSION_TIMER is not None:
-        endtime = _SESSION_TIMER.get_time()
+    starttime = envvars.get_pyrevit_env_var(envvars.SESSIONSTARTTIME_ENVVAR)
+    if starttime is not None:
+        endtime = time.time() - starttime
         success_emoji = ":OK_hand:" if endtime < 3.00 else ":thumbs_up:"
         mlogger.info("Load time: %s seconds %s", endtime, success_emoji)
-        if _OUTPUT_SETUP_TIME is not None:
+        output_setup_time = envvars.get_pyrevit_env_var(envvars.OUTPUTSETUPTIME_ENVVAR)
+        if output_setup_time is not None:
             mlogger.debug(
                 "Load breakdown: output setup %.3fs | session build %.3fs",
-                _OUTPUT_SETUP_TIME,
-                endtime - _OUTPUT_SETUP_TIME,
+                output_setup_time,
+                endtime - output_setup_time,
             )
 
     # if everything went well, self destruct
     try:
         timeout = user_config.startuplog_timeout
-        if (
-            timeout > 0
-            and not logger.loggers_have_errors()
-            and _SESSION_OUTPUT is not None
-        ):
-            _SESSION_OUTPUT.self_destruct(timeout)
+        if timeout > 0 and not logger.loggers_have_errors():
+            runtime_types.ScriptOutput.GetDefault().self_destruct(timeout)
     except Exception as imp_err:
         mlogger.error("Error setting up self_destruct on output window | %s", imp_err)
 
