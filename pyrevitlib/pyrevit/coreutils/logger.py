@@ -91,7 +91,7 @@ class LoggerWrapper(object):
             _format_message(message, args),
             exception_text)
         try:
-            service.Log(self.name, int(level), rendered)
+            service.Log(self.name, int(level), rendered, False)
         except Exception:
             pass
 
@@ -231,7 +231,8 @@ class _RuntimeLoggingHandler(logging.Handler):
 
             service = _resolve_service()
             if service is not None:
-                service.Log(record.name, int(record.levelno), _safe_text(message))
+                service.Log(
+                    record.name, int(record.levelno), _safe_text(message), False)
         except Exception:
             pass
         finally:
