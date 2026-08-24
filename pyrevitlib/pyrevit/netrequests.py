@@ -1,36 +1,35 @@
 # -*- coding: utf-8 -*-
-# netrequests.py
-#
-# Minimal requests-compatible shim for IronPython / pyRevit using .NET HttpClient.
-#
-# Supports:
-# - requests.get(...)
-# - requests.post(...)
-# - requests.put(...)
-# - requests.patch(...)
-# - requests.delete(...)
-# - params={}
-# - json={}
-# - data=
-# - headers={}
-# - timeout=
-# - stream=True
-# - response.status_code
-# - response.ok
-# - response.text
-# - response.content
-# - response.json()
-# - response.iter_lines()
-# - response.close()
-# - requests.RequestException
-# - requests.exceptions.RequestException
+"""Minimal requests-compatible shim for IronPython / pyRevit using .NET HttpClient.
+
+Supports:
+- requests.get(...)
+- requests.post(...)
+- requests.put(...)
+- requests.patch(...)
+- requests.delete(...)
+- params={}
+- json={}
+- data=
+- headers={}
+- timeout=
+- stream=True
+- response.status_code
+- response.ok
+- response.text
+- response.content
+- response.json()
+- response.iter_lines()
+- response.close()
+- requests.RequestException
+- requests.exceptions.RequestException
+"""
 
 import clr
 
 try:
     clr.AddReference("System.Net.Http")
 except Exception as ex:
-    raise Exception(
+    raise ImportError(
         "Failed to load System.Net.Http: {}".format(ex)
     )
 
