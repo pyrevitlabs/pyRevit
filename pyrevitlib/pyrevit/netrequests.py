@@ -255,10 +255,7 @@ class Response(object):
         """
 
         try:
-            if not self._response:
-                return
-
-            if not self._response.Content:
+            if not self._response or not self._response.Content:
                 return
 
             stream = (
