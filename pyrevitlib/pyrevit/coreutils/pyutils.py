@@ -109,10 +109,10 @@ def pairwise(iterable, step=2):
     if step == 1:
         a, b = tee(iterable)
         next(b, None)
-        return zip(a, b)
+        return list(zip(a, b))
     elif step == 2:
         a = iter(iterable)
-        return zip(a, a)
+        return list(zip(a, a))
 
 
 def safe_cast(val, to_type, default=None):

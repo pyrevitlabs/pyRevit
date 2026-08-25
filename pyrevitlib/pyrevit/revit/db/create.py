@@ -9,7 +9,7 @@ from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit import DB
 from pyrevit.revit.db import query
-from pyrevit.compat import get_elementid_value_func
+from pyrevit.compat import IRONPY, get_elementid_value_func
 
 # pylint: disable=W0703,C0302,C0103
 mlogger = get_logger(__name__)
@@ -32,15 +32,25 @@ PARAM_VALUE_EVALUATORS = {
 class FamilyLoaderOptionsHandler(DB.IFamilyLoadOptions):
     """Family loader options handler."""
 
+    # pythonnet requires a namespace to bake .NET interface implementations
+    __namespace__ = "PyRevitLabs.Python"
+
     def __init__(self, overwriteParameterValues=True):
         self._overwriteParameterValues = overwriteParameterValues
 
     def OnFamilyFound(
         self, familyInUse, overwriteParameterValues
     ):  # pylint: disable=W0613
-        """A method called when the family was found in the target document."""
-        overwriteParameterValues.Value = self._overwriteParameterValues
-        return True
+        """A method called when the family was found in the target document.
+
+        The interface declares ref parameters: IronPython passes a
+        StrongBox to mutate; pythonnet expects the updated values returned
+        in a tuple after the return value.
+        """
+        if IRONPY:
+            overwriteParameterValues.Value = self._overwriteParameterValues
+            return True
+        return (True, self._overwriteParameterValues)
 
     def OnSharedFamilyFound(
         self,
@@ -49,9 +59,11 @@ class FamilyLoaderOptionsHandler(DB.IFamilyLoadOptions):
         source,  # pylint: disable=W0613
         overwriteParameterValues,
     ):  # pylint: disable=W0613
-        source.Value = DB.FamilySource.Family
-        overwriteParameterValues.Value = self._overwriteParameterValues
-        return True
+        if IRONPY:
+            source.Value = DB.FamilySource.Family
+            overwriteParameterValues.Value = self._overwriteParameterValues
+            return True
+        return (True, DB.FamilySource.Family, self._overwriteParameterValues)
 
 
 class CopyUseDestination(DB.IDuplicateTypeNamesHandler):
@@ -369,17 +381,22 @@ def load_family(family_file, doc=None):
 
     """
     doc = doc or DOCS.doc
-    ret_ref = clr.Reference[DB.Family]()
     mlogger.debug("Loading family from: %s", family_file)
 
     fam_symbols = []
 
-    res = doc.LoadFamily(family_file, FamilyLoaderOptionsHandler(), ret_ref)
+    # LoadFamily's out-param needs engine-specific marshaling: an explicit
+    # clr.Reference under IronPython, a return tuple under pythonnet
+    if IRONPY:
+        ret_ref = clr.Reference[DB.Family]()
+        res = doc.LoadFamily(family_file, FamilyLoaderOptionsHandler(), ret_ref)
+        fam = ret_ref.Value
+    else:
+        res, fam = doc.LoadFamily(family_file, FamilyLoaderOptionsHandler(), None)
 
     if not res:
-        # Family may already be loaded - check if ret_ref has the family
-        if ret_ref.Value:
-            fam = ret_ref.Value
+        # Family may already be loaded - check if the out-param has it
+        if fam:
             mlogger.debug(
                 "Family already loaded, retrieving symbols from document: %s",
                 family_file,
@@ -402,8 +419,6 @@ def load_family(family_file, doc=None):
                     family_file,
                 )
                 return fam_symbols
-    else:
-        fam = ret_ref.Value
 
     # Collect symbols from the family
     for fam_symbol_id in fam.GetFamilySymbolIds():
