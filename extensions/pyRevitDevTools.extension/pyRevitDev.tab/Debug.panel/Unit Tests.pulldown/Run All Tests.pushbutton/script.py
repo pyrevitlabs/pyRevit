@@ -2,6 +2,7 @@
 
 import pkgutil
 import traceback
+import unittest
 
 import pyrevit.unittests as tests_pkg
 from pyrevit.unittests.runner import run_module_tests
@@ -66,6 +67,8 @@ for module_name in test_modules:
             failures.append((qualified_name, result))
         else:
             _print_result_details(qualified_name, result)
+    except unittest.SkipTest as skip_err:
+        print("{}: SKIPPED ({})".format(qualified_name, skip_err))
     except Exception as exec_err:
         print("\nERROR running {}: {}".format(qualified_name, exec_err))
         failures.append((qualified_name, None))

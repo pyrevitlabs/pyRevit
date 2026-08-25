@@ -15,7 +15,14 @@ class ScriptInfoTests(unittest.TestCase):
     """Command metadata exposed to running scripts."""
 
     def setUp(self):
-        """Resolve the running command info object."""
+        """Resolve the running command info object.
+
+        Command resolution matches bundle directories against the known
+        command subclasses, so the components module must be imported
+        first; in engines that never loaded it, __subclasses__() is empty
+        and get_info() resolves to None.
+        """
+        import pyrevit.extensions.components  # noqa: F401 pylint: disable=unused-import
         from pyrevit import script
 
         self.info = script.get_info()
@@ -67,15 +74,19 @@ class BundleFileTests(unittest.TestCase):
 
         self.script = script
 
-    def test_get_bundle_file_missing_returns_none(self):
-        """Missing resources resolve to None."""
-        self.assertIsNone(
-            self.script.get_bundle_file("definitely_missing_resource.xyz")
-        )
+    def test_get_bundle_file_missing_returns_nonexistent_path(self):
+        """Missing resources resolve to a joined path that does not exist."""
+        filepath = self.script.get_bundle_file("definitely_missing_resource.xyz")
+        self.assertIsInstance(filepath, str)
+        self.assertFalse(os.path.isfile(filepath))
 
-    def test_get_bundle_files_missing_returns_none(self):
-        """Missing sub-paths resolve to a falsy result."""
-        self.assertFalse(self.script.get_bundle_files("definitely_missing_folder/"))
+    def test_get_bundle_files_missing_raises(self):
+        """Missing sub-paths raise an OS error from the directory listing."""
+        self.assertRaises(
+            EnvironmentError,
+            self.script.get_bundle_files,
+            "definitely_missing_folder/",
+        )
 
     def test_get_bundle_file_existing(self):
         """Bundle metadata file resolves to an existing path."""
