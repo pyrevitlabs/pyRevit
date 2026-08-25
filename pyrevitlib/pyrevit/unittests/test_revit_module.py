@@ -58,10 +58,11 @@ class ModuleSurfaceTests(unittest.TestCase):
         self.assertTrue(callable(selection.get_selection))
 
     def test_transaction_classes(self):
-        """Database module exposes Transaction and parameter wrappers."""
+        """Database modules expose Transaction and parameter wrappers."""
         from pyrevit.revit import db
+        from pyrevit.revit.db import transaction
 
-        self.assertTrue(hasattr(db, "Transaction"))
+        self.assertTrue(hasattr(transaction, "Transaction"))
         self.assertTrue(hasattr(db, "ProjectParameter"))
 
     def test_events_module_entry_points(self):
