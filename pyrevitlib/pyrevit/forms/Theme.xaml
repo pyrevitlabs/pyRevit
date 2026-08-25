@@ -161,6 +161,23 @@
                                            Content="{Binding SelectionBoxItem, RelativeSource={RelativeSource TemplatedParent}}"
                                            ContentTemplate="{Binding SelectionBoxItemTemplate, RelativeSource={RelativeSource TemplatedParent}}"
                                            ContentTemplateSelector="{Binding ItemTemplateSelector, RelativeSource={RelativeSource TemplatedParent}}"/>
+                        <TextBox x:Name="PART_EditableTextBox"
+                                 Visibility="Collapsed"
+                                 Margin="{TemplateBinding Padding}"
+                                 VerticalAlignment="Center"
+                                 HorizontalAlignment="Left"
+                                 Background="Transparent"
+                                 Foreground="{TemplateBinding Foreground}"
+                                 CaretBrush="{TemplateBinding Foreground}"
+                                 BorderThickness="0"
+                                 IsReadOnly="{TemplateBinding IsReadOnly}"
+                                 Focusable="True">
+                            <TextBox.Template>
+                                <ControlTemplate TargetType="TextBox">
+                                    <ScrollViewer x:Name="PART_ContentHost"/>
+                                </ControlTemplate>
+                            </TextBox.Template>
+                        </TextBox>
                         <Popup x:Name="PART_Popup" IsOpen="{TemplateBinding IsDropDownOpen}"
                                Placement="Bottom" AllowsTransparency="True" Focusable="False" PopupAnimation="Slide">
                             <Border Background="{DynamicResource pyRevitControlBackgroundBrush}"
@@ -174,6 +191,12 @@
                             </Border>
                         </Popup>
                     </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEditable" Value="True">
+                            <Setter TargetName="content" Property="Visibility" Value="Collapsed"/>
+                            <Setter TargetName="PART_EditableTextBox" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -213,24 +236,17 @@
     </Style>
     <Style TargetType="ListViewItem">
         <Setter Property="Padding" Value="4,2"/>
-        <Setter Property="Template">
-            <Setter.Value>
-                <ControlTemplate TargetType="ListViewItem">
-                    <Border x:Name="border" Background="Transparent" Padding="{TemplateBinding Padding}">
-                        <GridViewRowPresenter/>
-                    </Border>
-                    <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="border" Property="Background" Value="{DynamicResource pyRevitControlHoverBrush}"/>
-                        </Trigger>
-                        <Trigger Property="IsSelected" Value="True">
-                            <Setter TargetName="border" Property="Background" Value="{DynamicResource pyRevitSelectionBackgroundBrush}"/>
-                            <Setter Property="Foreground" Value="{DynamicResource pyRevitSelectionForegroundBrush}"/>
-                        </Trigger>
-                    </ControlTemplate.Triggers>
-                </ControlTemplate>
-            </Setter.Value>
-        </Setter>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
+        <Style.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+                <Setter Property="Background" Value="{DynamicResource pyRevitControlHoverBrush}"/>
+            </Trigger>
+            <Trigger Property="IsSelected" Value="True">
+                <Setter Property="Background" Value="{DynamicResource pyRevitSelectionBackgroundBrush}"/>
+                <Setter Property="Foreground" Value="{DynamicResource pyRevitSelectionForegroundBrush}"/>
+            </Trigger>
+        </Style.Triggers>
     </Style>
     <Style TargetType="GridViewColumnHeader">
         <Setter Property="Background" Value="{DynamicResource pyRevitControlBackgroundBrush}"/>
