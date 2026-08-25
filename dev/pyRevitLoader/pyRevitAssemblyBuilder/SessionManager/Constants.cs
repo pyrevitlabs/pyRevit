@@ -68,18 +68,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
     public static class RevitApiConstants
     {
         /// <summary>
-        /// Revit version where the UIApplication field name changed.
-        /// </summary>
-        public const int NEW_UIAPP_FIELD_VERSION = 2017;
-
-        /// <summary>
-        /// Field name for UIApplication in Revit 2017 and newer.
+        /// Field name for UIApplication on UIControlledApplication.
         /// </summary>
         public const string MODERN_UIAPP_FIELD = "m_uiapplication";
-
-        /// <summary>
-        /// Field name for UIApplication in Revit versions before 2017.
-        /// </summary>
-        public const string LEGACY_UIAPP_FIELD = "m_application";
     }
 }
