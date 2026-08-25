@@ -263,7 +263,7 @@ def _invoke_csharp_loadsession():
         return None
 
     mlogger.info("Loading session using C# LoadSession method...")
-    load_session_method.Invoke(None, None)
+    load_session_method.Invoke(None, framework.Array[object](()))
     return sessioninfo.get_session_uuid()
 
 
