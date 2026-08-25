@@ -5,10 +5,6 @@ using System.Web;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 
-#if (REVIT2013 || REVIT2014)
-using Autodesk.Revit.UI.Selection;
-#endif
-
 namespace PyRevitLabs.PyRevit.Runtime {
     public class ScriptConsoleUtils {
         public static void ProcessUrl(UIApplication uiApp, string inputUrl, ScriptConsole output = null) {
@@ -21,7 +17,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (parsedQuery["command"] == "select" && parsedQuery["element[]"] != null) {
                 var idList = new List<ElementId>();
                 foreach (string strId in parsedQuery["element[]"].Split(',')) {
-#if !(REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020 || REVIT2021 || REVIT2022 || REVIT2023)
+#if !(REVIT2021 || REVIT2022 || REVIT2023)
                     idList.Add(new ElementId(Convert.ToInt64(strId)));
 #else
                     idList.Add(new ElementId(Convert.ToInt32(strId)));
@@ -132,18 +128,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
                 // now select the element(s)
 
-#if (REVIT2013 || REVIT2014)
-                var elementSet = SelElementSet.Create();
-                foreach (ElementId elId in validElementIds) {
-                    var element = doc.GetElement(elId);
-                    if (element != null)
-                        elementSet.Add(element);
-                }
-
-                uidoc.Selection.Elements = elementSet;
-#else
                 uidoc.Selection.SetElementIds(validElementIds);
-#endif
 
             }
 
