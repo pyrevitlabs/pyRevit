@@ -28,7 +28,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
 #endif
                 }
 
-                SelectElements(uiApp, idList, parsedQuery.AllKeys.Contains("show") && parsedQuery["show"] == "true");
+                SelectElements(
+                    uiApp,
+                    idList,
+                    parsedQuery.AllKeys.Contains("show") && parsedQuery["show"] == "true",
+                    parsedQuery.AllKeys.Contains("append") && parsedQuery["append"] == "true"
+                    );
             }
             else if (parsedQuery["command"] == "button" && parsedQuery["controlid"] != null) {
                 ExecuteRibbonButton(parsedQuery["controlid"]);
@@ -47,7 +52,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        public static void SelectElements(UIApplication uiApp, List<ElementId> elementIds, bool show) {
+        public static void SelectElements(UIApplication uiApp, List<ElementId> elementIds, bool show, bool append = false) {
             var uidoc = uiApp.ActiveUIDocument;
 
             if (uidoc != null) {
@@ -131,9 +136,15 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
 
                 // now select the element(s)
+                // when appending, merge with whatever is already selected
+                // instead of replacing the current selection
 
 #if (REVIT2013 || REVIT2014)
                 var elementSet = SelElementSet.Create();
+                if (append) {
+                    foreach (Element existing in uidoc.Selection.Elements)
+                        elementSet.Add(existing);
+                }
                 foreach (ElementId elId in validElementIds) {
                     var element = doc.GetElement(elId);
                     if (element != null)
@@ -142,7 +153,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
                 uidoc.Selection.Elements = elementSet;
 #else
-                uidoc.Selection.SetElementIds(validElementIds);
+                var finalSelectionIds = validElementIds;
+                if (append) {
+                    var combinedIds = new HashSet<ElementId>(uidoc.Selection.GetElementIds());
+                    combinedIds.UnionWith(validElementIds);
+                    finalSelectionIds = combinedIds.ToList();
+                }
+
+                uidoc.Selection.SetElementIds(finalSelectionIds);
 #endif
 
             }
