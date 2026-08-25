@@ -26,7 +26,9 @@
     <system:String x:Key="ConfirmShuffleMessage">Alle bearbeitbaren Parameter auf einen zufälligen Wert innerhalb ihres aktuellen Schieberegler-Bereichs setzen?
 
 Verwenden Sie anschließend "Preset wiederherstellen", um dies rückgängig zu machen.</system:String>
-    <system:String x:Key="ConfirmDeleteUnusedMessage">Alle Familienparameter löschen, die keine Bemaßung steuern, in keiner Formel vorkommen und nicht integriert sind?
+    <system:String x:Key="ConfirmDeleteUnusedMessage">Alle Familienparameter löschen, die keine Bemaßung steuern, in keiner Formel vorkommen, keinem anderen Parameter zugeordnet und nicht integriert sind?
+
+Die Erkennung ist ein Best-Effort-Verfahren - Parameter, die auf für FamSlide unsichtbare Weise verwendet werden (z. B. durch Einschränkungen verschachtelter Familien), können dennoch entfernt werden.
 
 Dies kann in FamSlide nicht rückgängig gemacht werden - verwenden Sie bei Bedarf die Rückgängig-Funktion von Revit.</system:String>
     <system:String x:Key="AlertNoActiveDocument">Kein aktives Revit-Dokument.</system:String>

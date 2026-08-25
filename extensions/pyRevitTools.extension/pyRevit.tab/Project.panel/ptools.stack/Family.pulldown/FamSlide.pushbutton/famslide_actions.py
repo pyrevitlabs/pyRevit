@@ -7,17 +7,25 @@ from pyrevit import revit, script
 from pyrevit.revit import Transaction
 from pyrevit import DB
 
+import famslide_paramutils
+
 logger = script.get_logger()
 
 
 def shuffle_parameter_values(doc, family_manager, rows):
     """Randomize every editable numeric/Yes-No parameter within its
-    current slider range. Intentionally does NOT touch formula-driven
-    or built-in parameters that report as read-only elsewhere.
+    default slider range. Intentionally does NOT touch formula-driven
+    or read-only parameters.
+
+    The range is computed from each parameter's current value at
+    shuffle time (same rule the sliders render with), so rows that are
+    currently hidden by the editable-only filter still get a range
+    consistent with what their slider would show.
 
     Caller is responsible for confirming with the user first - this
     is destructive and cannot be limited to a subset from here.
     """
+    current_type = family_manager.CurrentType
     with Transaction("FamSlide: Shuffle Parameter Values", doc=doc):
         for row in rows:
             if not row.is_editable:
@@ -25,10 +33,14 @@ def shuffle_parameter_values(doc, family_manager, rows):
             if row.group == "yesno":
                 family_manager.Set(row.param, int(random.randint(0, 1)))
             elif row.storage_type == DB.StorageType.Double:
-                lo, hi = row.range if hasattr(row, "range") else (0.0, 10.0)
+                lo, hi = famslide_paramutils.default_range(
+                    row, current_type.AsDouble(row.param)
+                )
                 family_manager.Set(row.param, float(random.uniform(lo, hi)))
             elif row.storage_type == DB.StorageType.Integer:
-                lo, hi = row.range if hasattr(row, "range") else (0, 100)
+                lo, hi = famslide_paramutils.default_range(
+                    row, current_type.AsInteger(row.param)
+                )
                 family_manager.Set(row.param, int(random.randint(int(lo), int(hi))))
     revit.uidoc.RefreshActiveView()
 

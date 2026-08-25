@@ -26,7 +26,9 @@
     <system:String x:Key="ConfirmShuffleMessage">Randomizar todos os parâmetros editáveis dentro do intervalo atual do controle deslizante?
 
 Use "Restaurar predefinição" depois para desfazer.</system:String>
-    <system:String x:Key="ConfirmDeleteUnusedMessage">Excluir todos os parâmetros de família que não controlam nenhuma cota, não fazem parte de nenhuma fórmula e não são integrados?
+    <system:String x:Key="ConfirmDeleteUnusedMessage">Excluir todos os parâmetros de família que não controlam nenhuma cota, não fazem parte de nenhuma fórmula, não estão associados a outros parâmetros e não são integrados?
+
+A detecção é aproximada: parâmetros usados de formas que o FamSlide não consegue ver (por exemplo, restrições de famílias aninhadas) ainda podem ser removidos.
 
 Isso não pode ser desfeito pelo FamSlide - use o Desfazer do próprio Revit, se necessário.</system:String>
     <system:String x:Key="AlertNoActiveDocument">Nenhum documento do Revit ativo.</system:String>

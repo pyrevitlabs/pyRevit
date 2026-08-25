@@ -26,7 +26,9 @@
     <system:String x:Key="ConfirmShuffleMessage">¿Aleatorizar todos los parámetros editables dentro del rango actual de su control deslizante?
 
 Utilice "Restaurar preset" después para deshacerlo.</system:String>
-    <system:String x:Key="ConfirmDeleteUnusedMessage">¿Eliminar todos los parámetros de familia que no controlan ninguna cota, no intervienen en ninguna fórmula y no son integrados?
+    <system:String x:Key="ConfirmDeleteUnusedMessage">¿Eliminar todos los parámetros de familia que no controlan ninguna cota, no intervienen en ninguna fórmula, no están asociados a otros parámetros y no son integrados?
+
+La detección es aproximada: los parámetros usados de formas que FamSlide no puede ver (p. ej., restricciones de familias anidadas) podrían eliminarse igualmente.
 
 Esto no se puede deshacer desde FamSlide - use la función Deshacer de Revit si es necesario.</system:String>
     <system:String x:Key="AlertNoActiveDocument">No hay ningún documento de Revit activo.</system:String>

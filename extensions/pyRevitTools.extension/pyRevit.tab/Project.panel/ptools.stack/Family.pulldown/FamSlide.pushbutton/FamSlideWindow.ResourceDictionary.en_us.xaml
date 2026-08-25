@@ -27,7 +27,9 @@
     <system:String x:Key="ConfirmShuffleMessage">Shuffle every editable parameter to a random value within its current slider range?
 
 Use Restore Preset afterward to undo</system:String>
-    <system:String x:Key="ConfirmDeleteUnusedMessage">Delete every family parameter that is not driving a dimension, not part of a formula, and not built-in?
+    <system:String x:Key="ConfirmDeleteUnusedMessage">Delete every family parameter that is not driving a dimension, not part of a formula, not associated with other parameters, and not built-in?
+
+Detection is best-effort - parameters used in ways FamSlide cannot see (e.g. nested family constraints) may still be removed.
 
 This cannot be undone from FamSlide - use Revit's own Undo if needed.</system:String>
     <system:String x:Key="AlertNoActiveDocument">No active Revit document.</system:String>

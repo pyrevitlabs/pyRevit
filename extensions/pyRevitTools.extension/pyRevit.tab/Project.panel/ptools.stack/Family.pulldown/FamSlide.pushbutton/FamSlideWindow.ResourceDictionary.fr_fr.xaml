@@ -26,7 +26,9 @@
     <system:String x:Key="ConfirmShuffleMessage">Randomiser tous les paramètres modifiables dans leur plage actuelle du curseur ?
 
 Utilisez ensuite "Restaurer le préréglage" pour annuler.</system:String>
-    <system:String x:Key="ConfirmDeleteUnusedMessage">Supprimer tous les paramètres de famille qui ne pilotent aucune cote, ne sont impliqués dans aucune formule et ne sont pas intégrés ?
+    <system:String x:Key="ConfirmDeleteUnusedMessage">Supprimer tous les paramètres de famille qui ne pilotent aucune cote, ne sont impliqués dans aucune formule, ne sont associés à aucun autre paramètre et ne sont pas intégrés ?
+
+La détection est approximative - les paramètres utilisés de manière invisible pour FamSlide (ex. contraintes de familles imbriquées) peuvent quand même être supprimés.
 
 Ceci ne peut pas être annulé depuis FamSlide - utilisez si besoin la fonction Annuler de Revit.</system:String>
     <system:String x:Key="AlertNoActiveDocument">Aucun document Revit actif.</system:String>
