@@ -566,13 +566,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
                                 return false;
                             break;
                         case DocumentType.CloudProject:
-#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018 || (REVIT2019 && !REVIT2019_1) )
                             if (uiApp.ActiveUIDocument.Document.IsFamilyDocument || !uiApp.ActiveUIDocument.Document.IsModelInCloud)
                                 return false;
                             break;
-#else
-                            return false;
-#endif
                         case DocumentType.Family:
                             if (!uiApp.ActiveUIDocument.Document.IsFamilyDocument)
                                 return false;
@@ -613,11 +609,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     // check active views
                     if (_viewTypes.Count > 0) {
                         if (HasDocument(uiApp))
-#if (REVIT2013 || REVIT2014)
-                            return _viewTypes.Contains(uiApp.ActiveUIDocument.ActiveView.ViewType);
-#else
                             return _viewTypes.Contains(uiApp.ActiveUIDocument.ActiveGraphicalView.ViewType);
-#endif
                     }
                     else
                         return true;
@@ -660,7 +652,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     try {
                         foreach (Category category in selectedCategories)
                         {
-#if !(REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020 || REVIT2021 || REVIT2022 || REVIT2023)
+#if !(REVIT2021 || REVIT2022 || REVIT2023)
                             if (category.Id.Value == _categoryId)
 #else
                             if (category.Id.IntegerValue == _categoryId)
@@ -676,7 +668,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             public override bool IsMatch(Category category) {
                 try {
-#if !(REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020 || REVIT2021 || REVIT2022 || REVIT2023)
+#if !(REVIT2021 || REVIT2022 || REVIT2023)
                     return category.Id.Value == _categoryId;
 #else
                     return category.Id.IntegerValue == _categoryId;
