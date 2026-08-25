@@ -2,7 +2,6 @@
 #pylint: disable=E0401,C0111,W0603,C0103
 from collections import namedtuple
 
-from pyrevit import HOST_APP
 from pyrevit import PyRevitException
 from pyrevit.coreutils import pyutils
 from pyrevit.coreutils import logger
@@ -35,17 +34,11 @@ SCOPE_SKIP_CATEGORIES = [
     DB.BuiltInCategory.OST_DSR_CenterlineTickMarkStyleId,
     DB.BuiltInCategory.OST_DSR_CenterlinePatternCatId,
     DB.BuiltInCategory.OST_CenterLines,
-    DB.BuiltInCategory.OST_StairsSketchLandingCenterLines
+    DB.BuiltInCategory.OST_StairsSketchLandingCenterLines,
+    DB.BuiltInCategory.OST_FabricationContainmentCenterLine,
+    DB.BuiltInCategory.OST_FabricationPipeworkCenterLine,
+    DB.BuiltInCategory.OST_FabricationDuctworkCenterLine,
     ]
-
-if HOST_APP.is_newer_than(2016):
-    SCOPE_SKIP_CATEGORIES.extend(
-        [
-            DB.BuiltInCategory.OST_FabricationContainmentCenterLine,
-            DB.BuiltInCategory.OST_FabricationPipeworkCenterLine,
-            DB.BuiltInCategory.OST_FabricationDuctworkCenterLine,
-        ]
-    )
 
 
 ApplyTagsConfig = namedtuple('ApplyTagsConfig', ['append', 'circuits'])

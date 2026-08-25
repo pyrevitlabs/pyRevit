@@ -50,9 +50,7 @@ NPC = u'\u200e'
 INDEX_FORMAT = '{{:0{digits}}}'
 
 
-EXPORT_ENCODING = 'utf_16_le'
-if HOST_APP.is_newer_than(2020):
-    EXPORT_ENCODING = 'utf_8'
+EXPORT_ENCODING = 'utf_8'
 
 IS_REVIT_2022_OR_NEWER = HOST_APP.is_newer_than(2021)
 
