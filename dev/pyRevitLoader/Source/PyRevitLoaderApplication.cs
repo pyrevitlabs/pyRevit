@@ -48,14 +48,17 @@ namespace PyRevitLoader
 
 		private static UIApplication GetUIApplication(UIControlledApplication application)
 		{
-			var fi = application.GetType().GetField(
-				RevitApiConstants.MODERN_UIAPP_FIELD, BindingFlags.NonPublic | BindingFlags.Instance);
+			var versionNumber = application.ControlledApplication.VersionNumber;
+			var fieldName = int.Parse(versionNumber) >= RevitApiConstants.NEW_UIAPP_FIELD_VERSION 
+				? RevitApiConstants.MODERN_UIAPP_FIELD 
+				: RevitApiConstants.LEGACY_UIAPP_FIELD;
+			var fi = application.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
 
 			if (fi == null)
 			{
 				throw new InvalidOperationException(
-					$"Could not find field '{RevitApiConstants.MODERN_UIAPP_FIELD}' on type " +
-					$"'{application.GetType().FullName}'. The Revit API internal implementation may have changed in this version.");
+					$"Could not find field '{fieldName}' on type '{application.GetType().FullName}'. " +
+					"The Revit API internal implementation may have changed in this version.");
 			}
 
 			return (UIApplication)fi.GetValue(application);
