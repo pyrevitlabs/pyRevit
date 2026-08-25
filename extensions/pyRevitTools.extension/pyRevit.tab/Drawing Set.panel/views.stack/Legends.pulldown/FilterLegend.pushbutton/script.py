@@ -20,7 +20,7 @@ sort order, and auto-open behavior -- see config.py.
 
 from pyrevit import revit, forms, script, op
 from pyrevit import DB
-from pyrevit.coreutils.configparser import PyRevitConfigParser
+from pyrevit.coreutils.configparser import open_config_file
 from pyrevit.coreutils import appdata, unique_name
 
 from match.filter_utils import (
@@ -118,7 +118,7 @@ if not text_type_names:
 CONFIG_FILE = appdata.get_universal_data_file(file_id=INI, file_ext="ini")
 if not op.exists(CONFIG_FILE):
     open(CONFIG_FILE, "w").close()
-configparser = PyRevitConfigParser(cfg_file_path=CONFIG_FILE)
+configparser = open_config_file(CONFIG_FILE)
 try:
     cfg = configparser.get_section(doc.Title)
 except AttributeError:

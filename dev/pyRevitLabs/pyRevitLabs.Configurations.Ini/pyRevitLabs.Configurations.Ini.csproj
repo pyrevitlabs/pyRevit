@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <LangVersion>12</LangVersion>
+
+        <!-- Public API of this assembly is reachable from Python extensions via
+             pyrevit.labs, so missing docs (CS1591) are build errors here. -->
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <WarningsAsErrors>$(WarningsAsErrors);CS1591</WarningsAsErrors>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <InternalsVisibleTo Include="pyRevitLabs.Configurations.Ini.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="ini-parser-netstandard" Version="2.5.2" />
+        <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.Json.dll" Private="false"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\pyRevitLabs.Configurations\pyRevitLabs.Configurations.csproj" />
+      <ProjectReference Include="..\pyRevitLabs.Common\pyRevitLabs.Common.csproj" />
+    </ItemGroup>
+
+</Project>

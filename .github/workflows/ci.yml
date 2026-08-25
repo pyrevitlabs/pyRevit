@@ -74,6 +74,17 @@ jobs:
         working-directory: build
         run: dotnet test tests/Build.Tests.csproj -c Release
 
+      - name: Run configuration unit tests
+        run: |
+          dotnet test dev/pyRevitLabs/tests/pyRevitLabs.Configurations.Tests/pyRevitLabs.Configurations.Tests.csproj -c Release
+          dotnet test dev/pyRevitLabs/tests/pyRevitLabs.Configurations.Ini.Tests/pyRevitLabs.Configurations.Ini.Tests.csproj -c Release
+
+      - name: Run config parity tests
+        run: >
+          dotnet test dev/pyRevitLoader/pyRevitExtensionParserTester/pyRevitExtensionParserTest.csproj
+          -c Release --no-build -f net8.0-windows
+          --filter "FullyQualifiedName~ConfigParityTests|FullyQualifiedName~PyRevitConfigsFacadeTests"
+
       - name: Capture build versions
         id: versionmeta
         shell: bash

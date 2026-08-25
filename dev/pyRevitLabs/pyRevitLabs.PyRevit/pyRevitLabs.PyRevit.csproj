@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <UseWpf>true</UseWpf>
     <UseWindowsForms>true</UseWindowsForms>
@@ -17,18 +17,18 @@
   <ItemGroup>
     <PackageReference Include="Nett" Version="0.15.0" />
     <PackageReference Include="LibGit2Sharp" Version="0.31.0" />
-
-    <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="MadMilkman.Ini" Version="1.0.6" />
-    <PackageReference Condition="'$(TargetFrameworkIdentifier)' == '.NetCoreApp'" Include="MadMilkman.Ini.Unofficial" Version="1.0.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\pyRevitLabs.Common\pyRevitLabs.Common.csproj" />
     <ProjectReference Include="..\pyRevitLabs.CommonWPF\pyRevitLabs.CommonWPF.csproj" />
+    <ProjectReference Include="..\pyRevitLabs.Configurations.Ini\pyRevitLabs.Configurations.Ini.csproj" />
+    <ProjectReference Include="..\pyRevitLabs.Configurations\pyRevitLabs.Configurations.csproj" />
     <ProjectReference Include="..\pyRevitLabs.TargetApps.Revit\pyRevitLabs.TargetApps.Revit.csproj" />
   </ItemGroup>
 
   <Target Name="DeployDependencies" AfterTargets="Deploy">
     <Copy SourceFiles="$(OutDir)\Nett.dll" DestinationFolder="$(PyRevitBinDir)" />
+    <Copy SourceFiles="$(OutDir)\INIFileParser.dll" DestinationFolder="$(PyRevitBinDir)" Condition="Exists('$(OutDir)\INIFileParser.dll')" />
   </Target>
 </Project>

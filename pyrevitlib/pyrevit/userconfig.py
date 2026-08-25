@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Handle reading and parsing, writing and saving of all user configurations.
 
 This module handles the reading and writing of the pyRevit configuration files.
@@ -19,11 +18,7 @@ Examples:
 
 
 The user_config object is also the destination for reading and writing
-configuration by pyRevit scripts through :func:`get_config` of
-:mod:`pyrevit.script` module. Here is the function source:
-
-.. literalinclude:: ../../pyrevitlib/pyrevit/script.py
-    :pyobject: get_config
+configuration by pyRevit scripts through `pyrevit.script.get_config`.
 
 Examples:
     ```python
@@ -33,47 +28,186 @@ Examples:
     cfg.get_option('property', default_value)
     script.save_config()
     ```
-"""
-#pylint: disable=C0103,C0413,W0703
-import os.path as op
 
-from pyrevit._perf import mark as _perfmark, time_block as _perfblock
-_perfmark("pyrevit.userconfig:entry")
+
+Typed section access is the preferred way to reach the built-in settings.
+The `core`, `routes`, and `telemetry` properties expose the strongly-typed
+sections backed by the shared configuration service, so a setting can be read
+or written by its section and name directly:
+
+Examples:
+    ```python
+    user_config.core.RocketMode = True
+    value = user_config.core.RocketMode
+    ```
+
+The flat snake_case accessors (e.g. `user_config.rocket_mode`) are convenience
+aliases over these sections and are considered legacy: prefer the typed
+`section.name` form in new code. The aliases are expected to be deprecated in a
+future release once callers have migrated, so avoid adding new ones.
+"""
+
+# pylint: disable=C0103,C0413,W0703
+import json
+import os.path as op
 
 from pyrevit import EXEC_PARAMS, HOME_DIR, HOST_APP
 from pyrevit import PyRevitException
 from pyrevit import EXTENSIONS_DEFAULT_DIR, THIRDPARTY_EXTENSIONS_DEFAULT_DIR
+from pyrevit import framework
 from pyrevit.compat import winreg as wr
+from pyrevit.coreutils.configparser import ConfigSections, decode_option_value
 
 from pyrevit.labs import PyRevit
 from pyrevit.labs import Common
 
 from pyrevit import coreutils
-from pyrevit.coreutils import appdata
-from pyrevit.coreutils import configparser
 from pyrevit.coreutils import logger
-from pyrevit.versionmgr import upgrade
-_perfmark("pyrevit.userconfig:after imports")
-# pylint: disable=C0103,C0413,W0703
-DEFAULT_CSV_SEPARATOR = ','
+
+DEFAULT_CSV_SEPARATOR = ","
 
 
 mlogger = logger.get_logger(__name__)
 
 
 CONSTS = PyRevit.PyRevitConsts
+"""Re-exported for extensions that do `from pyrevit.userconfig import CONSTS`."""
 
 
-class PyRevitConfig(configparser.PyRevitConfigParser):
+class _SectionCompatWrapper(object):
+    """Read/write access to a typed C# section (Core/Routes/Telemetry).
+
+    Reads come from the section snapshot. Writes are persisted through the
+    shared configuration service so an edit lands in the backing store
+    immediately, rather than mutating the snapshot: the service rebuilds those
+    snapshots on any store change, so a snapshot-only edit is silently dropped
+    the moment an unrelated write (another section, the multi-section save
+    itself) advances the store.
+
+    Every write path is skipped on a read-only (admin-locked) config, matching
+    what save_changes does with the flush, so no caller is handed a success it
+    will not get.
+
+    Also exposes .get_option()/.set_option() for extensions.
+    """
+
+    _INTERNAL_ATTRS = (
+        "_section_name",
+        "_csharp",
+        "_config",
+        "_config_service",
+    )
+
+    def __init__(self, section_name, csharp_section, configuration, config_service):
+        self._section_name = section_name
+        self._csharp = csharp_section
+        self._config = configuration
+        self._config_service = config_service
+
+    def get_option(self, op_name, default_value=None):
+        value = self._config.GetRawValueOrDefault(self._section_name, op_name, None)
+        if value is None:
+            return default_value
+        return decode_option_value(value)
+
+    def set_option(self, op_name, value):
+        if self._is_readonly():
+            return
+
+        self._config.SetRawValue(
+            self._section_name,
+            op_name,
+            json.dumps(value, separators=(",", ":"), ensure_ascii=False),
+        )
+
+    def remove_option(self, option_name):
+        if self._is_readonly():
+            return False
+
+        return self._config.RemoveOption(self._section_name, option_name)
+
+    def _is_readonly(self):
+        """Whether the backing config discards writes instead of saving them."""
+        if not self._config_service.ReadOnly:
+            return False
+
+        mlogger.debug(
+            "Config is in admin mode. Skipping write to section: %s", self._section_name
+        )
+        return True
+
+    def has_option(self, option_name):
+        """Check if this section contains the given option.
+
+        Args:
+            option_name (str): name of the option
+
+        Returns:
+            (bool): whether the option exists
+        """
+        return self._config.HasSectionKey(self._section_name, option_name)
+
+    def __getattr__(self, name):
+        """Resolve a typed C# property first, then a raw option of the same name.
+
+        A leading underscore always raises rather than consulting the config:
+        internal attributes are assigned in __init__ and resolve without
+        __getattr__, so reaching here for one means the object is still
+        half-built, and consulting the config would recurse.
+        """
+        if name.startswith("_"):
+            raise AttributeError(name)
+
+        try:
+            return getattr(self._csharp, name)
+        except AttributeError:
+            pass
+
+        if self.has_option(name):
+            return self.get_option(name)
+
+        raise AttributeError("Parameter does not exist in config file: {}".format(name))
+
+    def __setattr__(self, name, value):
+        """Write a typed C# property through the service; store anything else as a raw option.
+
+        Assigning None to a typed property is a no-op rather than a delete:
+        None is not a storable value, and the snapshot it would otherwise land
+        on is shared by every reader in the process, so silently clearing the
+        stored key would surprise those readers. Use remove_option to clear a
+        key. A typed-property write reaches the shared store immediately via
+        ApplySection; save_changes flushes it to disk once at the end.
+        """
+        if name in self._INTERNAL_ATTRS:
+            object.__setattr__(self, name, value)
+            return
+
+        if self._csharp.GetType().GetProperty(name) is None:
+            self.set_option(name, value)
+            return
+
+        if self._is_readonly():
+            return
+
+        if value is None:
+            return
+
+        pending = type(self._csharp)()
+        setattr(pending, name, value)
+        self._config_service.ApplySection(pending)
+
+
+class PyRevitConfig(object):
     """Provide read/write access to pyRevit configuration.
 
     Args:
-        cfg_file_path (str): full path to config file to be used.
-        config_type (str): type of config file
+        config_service (IConfigurationService): configuration service to start
+            from. Access resolves against the shared service the store hands
+            out, falling back to this one while the store is unreachable.
 
     Examples:
         ```python
-        cfg = PyRevitConfig(cfg_file_path)
+        cfg = PyRevitConfig(config_service)
         cfg.add_section('sectionname')
         cfg.sectionname.property = value
         cfg.sectionname.get_option('property', default_value)
@@ -81,650 +215,446 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         ```
     """
 
-    def __init__(self, cfg_file_path=None, config_type='Unknown'):
-        """Load settings from provided config file and setup parser."""
-        # try opening and reading config file in order.
-        super(PyRevitConfig, self).__init__(cfg_file_path=cfg_file_path)
+    def __init__(self, config_service):
+        """Store an accessor for config_service, not the service itself.
 
-        # set log mode on the logger module based on
-        # user settings (overriding the defaults)
+        Sections handed to scripts hold a bound method, so they follow a
+        later reload instead of continuing to read a replaced service whose
+        edits are never flushed.
+        """
+        self._config_service = config_service
+        self.config_sections = ConfigSections(self._current_config_service)
+
         self._update_env()
-        self._admin = config_type == 'Admin'
-        self.config_type = config_type
+
+    @property
+    def config_service(self):
+        """IConfigurationService: shared service backing this configuration."""
+        return self._current_config_service()
+
+    def _current_config_service(self):
+        """Re-resolve the shared service, falling back to the last known one on failure.
+
+        The store hands out a new service whenever it is reloaded, which the
+        loader does on every session load. A service captured once at import
+        would keep serving state the rest of the process has already
+        replaced, and flushing it would write that stale state back over the
+        file, dropping whatever the labs side registered in the meantime. If
+        the store can't be reached, serving the last known service instead of
+        raising avoids taking down the session load that is asking for it.
+        """
+        try:
+            self._config_service = PyRevit.PyRevitConfigs.GetConfigFile()
+        except Exception as service_err:
+            mlogger.debug("Can not reach the shared config service. | %s", service_err)
+        return self._config_service
 
     def _update_env(self):
-        # update the debug level based on user config
+        """Sync logger debug/verbose level and file logging with user config."""
         mlogger.reset_level()
 
         try:
-            # first check to see if command is not in forced debug mode
             if not EXEC_PARAMS.debug_mode:
-                if self.core.debug:
+                if self.core.Debug:
                     mlogger.set_debug_mode()
-                    mlogger.debug('Debug mode is enabled in user settings.')
-                elif self.core.verbose:
+                    mlogger.debug("Debug mode is enabled in user settings.")
+                elif self.core.Verbose:
                     mlogger.set_verbose_mode()
 
-            logger.set_file_logging(self.core.filelogging)
+            logger.set_file_logging(self.core.FileLogging)
         except Exception as env_update_err:
-            mlogger.debug('Error updating env variable per user config. | %s',
-                          env_update_err)
+            mlogger.debug(
+                "Error updating env variable per user config. | %s", env_update_err
+            )
 
     @property
     def config_file(self):
-        """Current config file path."""
-        return self._cfg_file_path
+        """Path of the config file backing this configuration.
+
+        This is the file the service resolved on load, which may be a
+        read-only all-users config.
+        """
+        resolved = self._get_default_config().ConfigurationPath
+        return resolved or PyRevit.PyRevitConsts.ConfigFilePath
 
     @property
     def environment(self):
         """Environment section."""
-        if not self.has_section(CONSTS.EnvConfigsSectionName):
-            self.add_section(CONSTS.EnvConfigsSectionName)
-        return self.get_section(CONSTS.EnvConfigsSectionName)
+        return self.config_service.Environment
+
+    def _get_default_config(self):
+        return self.config_service.Configuration
 
     @property
     def core(self):
-        """Core section."""
-        if not self.has_section(CONSTS.ConfigsCoreSection):
-            self.add_section(CONSTS.ConfigsCoreSection)
-        return self.get_section(CONSTS.ConfigsCoreSection)
+        """Core section (supports .get_option/.set_option for extension compat)."""
+        return _SectionCompatWrapper(
+            "core",
+            self.config_service.Core,
+            self._get_default_config(),
+            self.config_service,
+        )
 
     @property
     def routes(self):
-        """Routes section."""
-        if not self.has_section(CONSTS.ConfigsRoutesSection):
-            self.add_section(CONSTS.ConfigsRoutesSection)
-        return self.get_section(CONSTS.ConfigsRoutesSection)
+        """Routes section (supports .get_option/.set_option for extension compat)."""
+        return _SectionCompatWrapper(
+            "routes",
+            self.config_service.Routes,
+            self._get_default_config(),
+            self.config_service,
+        )
 
     @property
     def telemetry(self):
-        """Telemetry section."""
-        if not self.has_section(CONSTS.ConfigsTelemetrySection):
-            self.add_section(CONSTS.ConfigsTelemetrySection)
-        return self.get_section(CONSTS.ConfigsTelemetrySection)
+        """Telemetry section (supports .get_option/.set_option for extension compat)."""
+        return _SectionCompatWrapper(
+            "telemetry",
+            self.config_service.Telemetry,
+            self._get_default_config(),
+            self.config_service,
+        )
 
     @property
     def bin_cache(self):
-        """"Whether to use the cache for extensions."""
-        return self.core.get_option(
-            CONSTS.ConfigsBinaryCacheKey,
-            default_value=CONSTS.ConfigsBinaryCacheDefault,
-        )
+        """Whether to use the cache for extensions."""
+        return self.core.BinCache
 
     @bin_cache.setter
     def bin_cache(self, state):
-        self.core.set_option(
-            CONSTS.ConfigsBinaryCacheKey,
-            value=state
-        )
+        self.core.BinCache = state
 
     @property
     def check_updates(self):
         """Whether to check for updates."""
-        return self.core.get_option(
-            CONSTS.ConfigsCheckUpdatesKey,
-            default_value=CONSTS.ConfigsCheckUpdatesDefault,
-        )
+        return self.core.CheckUpdates
 
     @check_updates.setter
     def check_updates(self, state):
-        self.core.set_option(
-            CONSTS.ConfigsCheckUpdatesKey,
-            value=state
-        )
+        self.core.CheckUpdates = state
 
     @property
     def auto_update(self):
         """Whether to automatically update pyRevit."""
-        return self.core.get_option(
-            CONSTS.ConfigsAutoUpdateKey,
-            default_value=CONSTS.ConfigsAutoUpdateDefault,
-        )
+        return self.core.AutoUpdate
 
     @auto_update.setter
     def auto_update(self, state):
-        self.core.set_option(
-            CONSTS.ConfigsAutoUpdateKey,
-            value=state
-        )
+        self.core.AutoUpdate = state
 
     @property
     def rocket_mode(self):
         """Whether to enable rocket mode."""
-        return self.core.get_option(
-            CONSTS.ConfigsRocketModeKey,
-            default_value=CONSTS.ConfigsRocketModeDefault,
-        )
+        return self.core.RocketMode
 
     @rocket_mode.setter
     def rocket_mode(self, state):
-        self.core.set_option(
-            CONSTS.ConfigsRocketModeKey,
-            value=state
-        )
+        self.core.RocketMode = state
 
     @property
     def log_level(self):
         """Logging level."""
-        if self.core.get_option(
-                CONSTS.ConfigsDebugKey,
-                default_value=CONSTS.ConfigsDebugDefault,
-            ):
-            return PyRevit.PyRevitLogLevels.Debug
-        elif self.core.get_option(
-                CONSTS.ConfigsVerboseKey,
-                default_value=CONSTS.ConfigsVerboseDefault,
-            ):
-            return PyRevit.PyRevitLogLevels.Verbose
-        return PyRevit.PyRevitLogLevels.Quiet
+        return PyRevit.PyRevitConfigs.ToLoggingLevel(self.core.Debug, self.core.Verbose)
 
     @log_level.setter
     def log_level(self, state):
-        if state == PyRevit.PyRevitLogLevels.Debug:
-            self.core.set_option(CONSTS.ConfigsDebugKey, True)
-            self.core.set_option(CONSTS.ConfigsVerboseKey, True)
-        elif state == PyRevit.PyRevitLogLevels.Verbose:
-            self.core.set_option(CONSTS.ConfigsDebugKey, False)
-            self.core.set_option(CONSTS.ConfigsVerboseKey, True)
-        else:
-            self.core.set_option(CONSTS.ConfigsDebugKey, False)
-            self.core.set_option(CONSTS.ConfigsVerboseKey, False)
+        self.core.Debug = PyRevit.PyRevitConfigs.LoggingLevelDebugFlag(state)
+        self.core.Verbose = PyRevit.PyRevitConfigs.LoggingLevelVerboseFlag(state)
 
     @property
     def file_logging(self):
         """Whether to enable file logging."""
-        return self.core.get_option(
-            CONSTS.ConfigsFileLoggingKey,
-            default_value=CONSTS.ConfigsFileLoggingDefault,
-        )
+        return self.core.FileLogging
 
     @file_logging.setter
     def file_logging(self, state):
-        self.core.set_option(
-            CONSTS.ConfigsFileLoggingKey,
-            value=state
-        )
+        self.core.FileLogging = state
 
     @property
     def startuplog_timeout(self):
         """Timeout for the startup log."""
-        return self.core.get_option(
-            CONSTS.ConfigsStartupLogTimeoutKey,
-            default_value=CONSTS.ConfigsStartupLogTimeoutDefault,
-        )
+        return self.core.StartupLogTimeout
 
     @startuplog_timeout.setter
     def startuplog_timeout(self, timeout):
-        self.core.set_option(
-            CONSTS.ConfigsStartupLogTimeoutKey,
-            value=timeout
-        )
+        self.core.StartupLogTimeout = timeout
 
     @property
     def required_host_build(self):
         """Host build required to run the commands."""
-        return self.core.get_option(
-            CONSTS.ConfigsRequiredHostBuildKey,
-            default_value="",
-        )
+        return self.core.RequiredHostBuild
 
     @required_host_build.setter
     def required_host_build(self, buildnumber):
-        self.core.set_option(
-            CONSTS.ConfigsRequiredHostBuildKey,
-            value=buildnumber
-        )
+        self.core.RequiredHostBuild = buildnumber
 
     @property
     def min_host_drivefreespace(self):
         """Minimum free space for running the commands."""
-        return self.core.get_option(
-            CONSTS.ConfigsMinDriveSpaceKey,
-            default_value=CONSTS.ConfigsMinDriveSpaceDefault,
-        )
+        return self.core.MinHostDriveFreeSpace
 
     @min_host_drivefreespace.setter
     def min_host_drivefreespace(self, freespace):
-        self.core.set_option(
-            CONSTS.ConfigsMinDriveSpaceKey,
-            value=freespace
-        )
+        self.core.MinHostDriveFreeSpace = freespace
 
     @property
     def load_beta(self):
         """Whether to load commands in beta."""
-        return self.core.get_option(
-            CONSTS.ConfigsLoadBetaKey,
-            default_value=CONSTS.ConfigsLoadBetaDefault,
-        )
+        return self.core.LoadBeta
 
     @load_beta.setter
     def load_beta(self, state):
-        self.core.set_option(
-            CONSTS.ConfigsLoadBetaKey,
-            value=state
-        )
+        self.core.LoadBeta = state
+
     @property
     def read_script_metadata(self):
         """Whether to read script metadata (__title__, __author__, etc) from Python scripts.
-        
+
         When False, pyRevit will skip reading metadata from .py script files and will
         only use values from bundle.yaml. This improves startup performance but may
         affect commands that rely on script-level metadata.
         """
-        return self.core.get_option(
-            CONSTS.ConfigsReadScriptMetadataKey,
-            default_value=CONSTS.ConfigsReadScriptMetadataDefault,
-        )
+        return self.core.ReadScriptMetadata
 
     @read_script_metadata.setter
     def read_script_metadata(self, state):
-        self.core.set_option(
-            CONSTS.ConfigsReadScriptMetadataKey,
-            value=state
-        )
-    
+        self.core.ReadScriptMetadata = state
+
     @property
     def output_close_others(self):
         """Whether to close other output windows."""
-        return self.core.get_option(
-            CONSTS.ConfigsCloseOtherOutputsKey,
-            default_value=CONSTS.ConfigsCloseOtherOutputsDefault,
-        )
+        return self.core.CloseOtherOutputs
 
     @output_close_others.setter
     def output_close_others(self, state):
-        self.core.set_option(
-            CONSTS.ConfigsCloseOtherOutputsKey,
-            value=state
-        )
+        self.core.CloseOtherOutputs = state
 
     @property
     def output_close_mode_enum(self):
         """Output window closing mode as enum (CurrentCommand | CloseAll)."""
-        value = self.core.get_option(
-            CONSTS.ConfigsCloseOutputModeKey,
-            default_value=CONSTS.ConfigsCloseOutputModeDefault,
-        )
-        if not value:
-            value = CONSTS.ConfigsCloseOutputModeDefault
-
-        value_lc = str(value).lower()
-
-        if value_lc == str(CONSTS.ConfigsCloseOutputModeCloseAll).lower():
-            return PyRevit.OutputCloseMode.CloseAll
-        else:
-            return PyRevit.OutputCloseMode.CurrentCommand
+        return PyRevit.PyRevitConfigs.ToCloseOutputMode(self.core.CloseOutputMode)
 
     @output_close_mode_enum.setter
     def output_close_mode_enum(self, mode):
-        """Store string in INI, mapped from enum."""
-        if mode == PyRevit.OutputCloseMode.CloseAll:
-            self.core.set_option(
-                CONSTS.ConfigsCloseOutputModeKey,
-                value=CONSTS.ConfigsCloseOutputModeCloseAll
-            )
-        else:
-            self.core.set_option(
-                CONSTS.ConfigsCloseOutputModeKey,
-                value=CONSTS.ConfigsCloseOutputModeCurrentCommand
-            )
+        self.core.CloseOutputMode = PyRevit.PyRevitConfigs.CloseOutputModeConfigValue(
+            mode
+        )
 
     @property
     def cpython_engine_version(self):
         """CPython engine version to use."""
-        return self.core.get_option(
-            CONSTS.ConfigsCPythonEngineKey,
-            default_value=CONSTS.ConfigsCPythonEngineDefault,
-        )
+        return self.core.CpythonEngineVersion
 
     @cpython_engine_version.setter
     def cpython_engine_version(self, version):
-        self.core.set_option(
-            CONSTS.ConfigsCPythonEngineKey,
-            value=int(version)
-        )
+        self.core.CpythonEngineVersion = int(version)
 
     @property
     def user_locale(self):
         """User locale."""
-        return self.core.get_option(
-            CONSTS.ConfigsLocaleKey,
-            default_value="",
-        )
+        return self.core.UserLocale
 
     @user_locale.setter
     def user_locale(self, local_code):
-        self.core.set_option(
-            CONSTS.ConfigsLocaleKey,
-            value=local_code
-        )
+        self.core.UserLocale = local_code
 
     @property
     def output_stylesheet(self):
         """Stylesheet used for output."""
-        return self.core.get_option(
-            CONSTS.ConfigsOutputStyleSheet,
-            default_value="",
-        )
+        return self.core.OutputStyleSheet
 
     @output_stylesheet.setter
     def output_stylesheet(self, stylesheet_filepath):
+        """Set the stylesheet, or remove the key if cleared.
+
+        A typed property carries no value that spells "unset", so clearing
+        the stylesheet removes the key rather than storing an empty string.
+        """
         if stylesheet_filepath:
-            self.core.set_option(
-                CONSTS.ConfigsOutputStyleSheet,
-                value=stylesheet_filepath
-            )
+            self.core.OutputStyleSheet = stylesheet_filepath
         else:
-            self.core.remove_option(CONSTS.ConfigsOutputStyleSheet)
+            self.core.remove_option("outputstylesheet")
 
     @property
     def routes_host(self):
         """Routes API host."""
-        return self.routes.get_option(
-            CONSTS.ConfigsRoutesHostKey,
-            default_value=CONSTS.ConfigsRoutesHostDefault,
-        )
+        return self.routes.Host
 
     @routes_host.setter
     def routes_host(self, routes_host):
-        self.routes.set_option(
-            CONSTS.ConfigsRoutesHostKey,
-            value=routes_host
-        )
+        self.routes.Host = routes_host
 
     @property
     def routes_port(self):
         """API routes port."""
-        return self.routes.get_option(
-            CONSTS.ConfigsRoutesPortKey,
-            default_value=CONSTS.ConfigsRoutesPortDefault,
-        )
+        return self.routes.Port
 
     @routes_port.setter
     def routes_port(self, port):
-        self.routes.set_option(
-            CONSTS.ConfigsRoutesPortKey,
-            value=port
-        )
+        self.routes.Port = port
 
     @property
     def load_core_api(self):
         """Whether to load pyRevit core api."""
-        return self.routes.get_option(
-            CONSTS.ConfigsLoadCoreAPIKey,
-            default_value=CONSTS.ConfigsConfigsLoadCoreAPIDefault,
-        )
+        return self.routes.LoadCoreApi
 
     @load_core_api.setter
     def load_core_api(self, state):
-        self.routes.set_option(
-            CONSTS.ConfigsLoadCoreAPIKey,
-            value=state
-        )
+        self.routes.LoadCoreApi = state
 
     @property
     def telemetry_utc_timestamp(self):
         """Whether to use UTC timestamps in telemetry."""
-        return self.telemetry.get_option(
-            CONSTS.ConfigsTelemetryUTCTimestampsKey,
-            default_value=CONSTS.ConfigsTelemetryUTCTimestampsDefault,
-        )
+        return self.telemetry.TelemetryUseUtcTimeStamps
 
     @telemetry_utc_timestamp.setter
     def telemetry_utc_timestamp(self, state):
-        self.telemetry.set_option(
-            CONSTS.ConfigsTelemetryUTCTimestampsKey,
-            value=state
-        )
+        self.telemetry.TelemetryUseUtcTimeStamps = state
 
     @property
     def telemetry_status(self):
         """Telemetry status."""
-        return self.telemetry.get_option(
-            CONSTS.ConfigsTelemetryStatusKey,
-            default_value=CONSTS.ConfigsTelemetryStatusDefault,
-        )
+        return self.telemetry.TelemetryStatus
 
     @telemetry_status.setter
     def telemetry_status(self, state):
-        self.telemetry.set_option(
-            CONSTS.ConfigsTelemetryStatusKey,
-            value=state
-        )
+        self.telemetry.TelemetryStatus = state
 
     @property
     def telemetry_file_dir(self):
         """Telemetry file directory."""
-        return self.telemetry.get_option(
-            CONSTS.ConfigsTelemetryFileDirKey,
-            default_value="",
-        )
+        return self.telemetry.TelemetryFileDir
 
     @telemetry_file_dir.setter
     def telemetry_file_dir(self, filepath):
-        self.telemetry.set_option(
-            CONSTS.ConfigsTelemetryFileDirKey,
-            value=filepath
-        )
+        self.telemetry.TelemetryFileDir = filepath
 
     @property
     def telemetry_server_url(self):
         """Telemetry server URL."""
-        return self.telemetry.get_option(
-            CONSTS.ConfigsTelemetryServerUrlKey,
-            default_value="",
-        )
+        return self.telemetry.TelemetryServerUrl
 
     @telemetry_server_url.setter
     def telemetry_server_url(self, server_url):
-        self.telemetry.set_option(
-            CONSTS.ConfigsTelemetryServerUrlKey,
-            value=server_url
-        )
+        self.telemetry.TelemetryServerUrl = server_url
 
     @property
     def telemetry_include_hooks(self):
         """Whether to include hooks in telemetry."""
-        return self.telemetry.get_option(
-            CONSTS.ConfigsTelemetryIncludeHooksKey,
-            default_value=CONSTS.ConfigsTelemetryIncludeHooksDefault,
-        )
+        return self.telemetry.TelemetryIncludeHooks
 
     @telemetry_include_hooks.setter
     def telemetry_include_hooks(self, state):
-        self.telemetry.set_option(
-            CONSTS.ConfigsTelemetryIncludeHooksKey,
-            value=state
-        )
+        self.telemetry.TelemetryIncludeHooks = state
 
     @property
     def apptelemetry_status(self):
-        """Telemetry status."""
-        return self.telemetry.get_option(
-            CONSTS.ConfigsAppTelemetryStatusKey,
-            default_value=CONSTS.ConfigsAppTelemetryStatusDefault,
-        )
+        """App telemetry status."""
+        return self.telemetry.AppTelemetryStatus
 
     @apptelemetry_status.setter
     def apptelemetry_status(self, state):
-        self.telemetry.set_option(
-            CONSTS.ConfigsAppTelemetryStatusKey,
-            value=state
-        )
+        self.telemetry.AppTelemetryStatus = state
 
     @property
     def apptelemetry_server_url(self):
         """App telemetry server URL."""
-        return self.telemetry.get_option(
-            CONSTS.ConfigsAppTelemetryServerUrlKey,
-            default_value="",
-        )
+        return self.telemetry.AppTelemetryServerUrl
 
     @apptelemetry_server_url.setter
     def apptelemetry_server_url(self, server_url):
-        self.telemetry.set_option(
-            CONSTS.ConfigsAppTelemetryServerUrlKey,
-            value=server_url
-        )
+        self.telemetry.AppTelemetryServerUrl = server_url
 
     @property
     def apptelemetry_event_flags(self):
-        """Telemetry event flags."""
-        return self.telemetry.get_option(
-            CONSTS.ConfigsAppTelemetryEventFlagsKey,
-            default_value="",
-        )
+        """App telemetry event flags."""
+        return self.telemetry.AppTelemetryEventFlags
 
     @apptelemetry_event_flags.setter
     def apptelemetry_event_flags(self, flags):
-        self.telemetry.set_option(
-            CONSTS.ConfigsAppTelemetryEventFlagsKey,
-            value=flags
-        )
+        self.telemetry.AppTelemetryEventFlags = flags
 
     @property
     def user_can_update(self):
         """Whether the user can update pyRevit repos."""
-        return self.core.get_option(
-            CONSTS.ConfigsUserCanUpdateKey,
-            default_value=CONSTS.ConfigsUserCanUpdateDefault,
-        )
+        return self.core.UserCanUpdate
 
     @user_can_update.setter
     def user_can_update(self, state):
-        self.core.set_option(
-            CONSTS.ConfigsUserCanUpdateKey,
-            value=state
-        )
+        self.core.UserCanUpdate = state
 
     @property
     def user_can_extend(self):
         """Whether the user can manage pyRevit Extensions."""
-        return self.core.get_option(
-            CONSTS.ConfigsUserCanExtendKey,
-            default_value=CONSTS.ConfigsUserCanExtendDefault,
-        )
+        return self.core.UserCanExtend
 
     @user_can_extend.setter
     def user_can_extend(self, state):
-        self.core.set_option(
-            CONSTS.ConfigsUserCanExtendKey,
-            value=state
-        )
+        self.core.UserCanExtend = state
 
     @property
     def user_can_config(self):
         """Whether the user can access the configuration."""
-        return self.core.get_option(
-            CONSTS.ConfigsUserCanConfigKey,
-            default_value=CONSTS.ConfigsUserCanConfigDefault,
-        )
+        return self.core.UserCanConfig
 
     @user_can_config.setter
     def user_can_config(self, state):
-        self.core.set_option(
-            CONSTS.ConfigsUserCanConfigKey,
-            value=state
-        )
+        self.core.UserCanConfig = state
 
     @property
     def colorize_docs(self):
         """Whether to enable the document colorizer."""
-        return self.core.get_option(
-            CONSTS.ConfigsColorizeDocsKey,
-            default_value=CONSTS.ConfigsColorizeDocsDefault,
-        )
+        return self.core.ColorizeDocs
 
     @colorize_docs.setter
     def colorize_docs(self, state):
-        self.core.set_option(
-            CONSTS.ConfigsColorizeDocsKey,
-            value=state
-        )
+        self.core.ColorizeDocs = state
 
     @property
     def tooltip_debug_info(self):
         """Whether to append debug info on tooltips."""
-        return self.core.get_option(
-            CONSTS.ConfigsAppendTooltipExKey,
-            default_value=CONSTS.ConfigsAppendTooltipExDefault,
-        )
+        return self.core.TooltipDebugInfo
 
     @tooltip_debug_info.setter
     def tooltip_debug_info(self, state):
-        self.core.set_option(
-            CONSTS.ConfigsAppendTooltipExKey,
-            value=state
-        )
+        self.core.TooltipDebugInfo = state
 
     @property
     def routes_server(self):
         """Whether the server routes are enabled."""
-        return self.routes.get_option(
-            CONSTS.ConfigsRoutesServerKey,
-            default_value=CONSTS.ConfigsRoutesServerDefault,
-        )
+        return self.routes.Status
 
     @routes_server.setter
     def routes_server(self, state):
-        self.routes.set_option(
-            CONSTS.ConfigsRoutesServerKey,
-            value=state
-        )
-
-    @property
-    def respect_language_direction(self):
-        """Whether the system respects the language direction."""
-        return False
-
-    @respect_language_direction.setter
-    def respect_language_direction(self, state):
-        pass
-
-    def get_config_version(self):
-        """Return version of config file used for change detection.
-
-        Returns:
-            (str): hash of the config file
-        """
-        return self.get_config_file_hash()
+        self.routes.Status = state
 
     def get_thirdparty_ext_root_dirs(self, include_default=True):
         """Return a list of external extension directories set by the user.
 
-        When include_default is True and the pyRevit default extensions
-        directory exists, it is the FIRST entry in the returned list,
-        followed by user-configured directories in their config-file order.
-        Duplicates are removed while preserving order, and only paths that
-        currently exist on disk are returned.
+        Ordering is deterministic: the default path first, then config-file
+        order, with duplicates removed. User paths are resolved through the
+        shared C# core so the loader and CLI agree on normalization and
+        existence.
 
         Returns:
             (list[str]): External user extension directories.
         """
-        # Fix for #3193: Use a list to preserve deterministic ordering.
-        # The default path should always come first when included, so that
-        # [0] is predictable across all call sites.
         seen = set()
         dir_list = []
-
         if include_default:
             norm = op.normpath(THIRDPARTY_EXTENSIONS_DEFAULT_DIR)
             if norm not in seen:
                 seen.add(norm)
                 dir_list.append(norm)
-
         try:
-            for x in self.core.get_option(
-                    CONSTS.ConfigsUserExtensionsKey,
-                    default_value=[]):
-                norm = op.expandvars(op.normpath(x))
-                if norm not in seen:
-                    seen.add(norm)
-                    dir_list.append(norm)
+            for x in PyRevit.PyRevitExtensions.ResolveUserExtensionPaths():
+                if x not in seen:
+                    seen.add(x)
+                    dir_list.append(x)
         except Exception as read_err:
-            mlogger.error('Error reading list of user extension folders. | %s',
-                        read_err)
+            mlogger.error(
+                "Error reading list of user extension folders. | %s", read_err
+            )
 
         return [x for x in dir_list if op.exists(x)]
 
@@ -743,11 +673,7 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
 
     def get_ext_sources(self):
         """Return a list of extension definition source files."""
-        ext_sources = self.environment.get_option(
-            CONSTS.EnvConfigsExtensionLookupSourcesKey,
-            default_value=[],
-        )
-        return list(set(ext_sources))
+        return list(set(self.environment.Sources))
 
     def set_thirdparty_ext_root_dirs(self, path_list):
         """Updates list of external extension directories in config file.
@@ -757,67 +683,61 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         """
         for ext_path in path_list:
             if not op.exists(ext_path):
-                raise PyRevitException("Path \"%s\" does not exist." % ext_path)
+                raise PyRevitException('Path "%s" does not exist.' % ext_path)
 
         try:
-            self.core.userextensions = \
+            self.core.UserExtensions = framework.List[str](
                 [op.normpath(x) for x in path_list]
+            )
         except Exception as write_err:
-            mlogger.error('Error setting list of user extension folders. | %s',
-                          write_err)
+            mlogger.error(
+                "Error setting list of user extension folders. | %s", write_err
+            )
 
     def get_current_attachment(self, cached=True):
         """Return current pyRevit attachment.
 
-        The lookup re-reads the addin manifests and the clones registry from
-        disk, but those inputs cannot change for the running session except
-        through Attach/Detach or clone registry edits (which invalidate the
-        cache). The shared cache lets all script engines (startup scripts,
-        smartbuttons, commands, hooks) reuse a single disk lookup. Cleared on
-        reload by sessionmgr.load_session().
+        The shared C# attachment cache lets all script engines reuse a single
+        disk lookup. Cleared on reload and on Attach/Detach/clone changes.
 
         Args:
             cached (bool): set False to bypass the session cache when the
-                attachment may have changed out of process (e.g. before
-                rewriting it from the settings dialog).
+                attachment may have changed out of process.
         """
         try:
             host_version = int(HOST_APP.version)
             if cached:
-                return PyRevit.PyRevitAttachments.GetAttachedCached(
-                    host_version)
+                return PyRevit.PyRevitAttachments.GetAttachedCached(host_version)
             return PyRevit.PyRevitAttachments.GetAttached(host_version)
         except PyRevitException as ex:
-            mlogger.error('Error getting current attachment. | %s', ex)
+            mlogger.error("Error getting current attachment. | %s", ex)
 
     def get_active_cpython_engine(self):
-        """Return active cpython engine."""
-        # try to find attachment and get engines from the clone
-        with _perfblock("userconfig.get_active_cpython_engine:GetAttached"):
-            attachment = self.get_current_attachment()
+        """Return the user's configured CPython engine, or the latest available.
+
+        Falls back to a temp clone at HOME_DIR when there's no attachment,
+        and to the highest-versioned engine when the configured version isn't
+        among the clone's available engines.
+        """
+        attachment = self.get_current_attachment()
         if attachment and attachment.Clone:
             clone = attachment.Clone
         else:
-            # if can not find attachment, instantiate a temp clone
             try:
-                with _perfblock("userconfig.get_active_cpython_engine:PyRevitClone(HOME_DIR) fallback"):
-                    clone = PyRevit.PyRevitClone(clonePath=HOME_DIR)
+                clone = PyRevit.PyRevitClone(clonePath=HOME_DIR)
             except Exception as cEx:
-                mlogger.debug('Can not create clone from path: %s', str(cEx))
+                mlogger.debug("Can not create clone from path: %s", str(cEx))
                 clone = None
-        # find cpython engines
-        with _perfblock("userconfig.get_active_cpython_engine:clone.GetCPythonEngines"):
-            engines = clone.GetCPythonEngines() if clone else []
+        engines = clone.GetCPythonEngines() if clone else []
         cpy_engines_dict = {x.Version: x for x in engines}
-        mlogger.debug('cpython engines dict: %s', cpy_engines_dict)
+        mlogger.debug("cpython engines dict: %s", cpy_engines_dict)
 
         if not cpy_engines_dict:
             mlogger.error(
-                'Can not determine cpython engines for current attachment: %s',
-                attachment
+                "Can not determine cpython engines for current attachment: %s",
+                attachment,
             )
             return None
-        # grab cpython engine configured to be used by user
         try:
             cpyengine_ver = int(self.cpython_engine_version)
         except (ValueError, TypeError):
@@ -826,7 +746,6 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
         try:
             return cpy_engines_dict[cpyengine_ver]
         except KeyError:
-            # return the latest cpython engine
             return max(cpy_engines_dict.values(), key=lambda x: x.Version.Version)
 
     def set_active_cpython_engine(self, pyrevit_engine):
@@ -840,128 +759,140 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
     @property
     def is_readonly(self):
         """bool: whether the config is read only."""
-        return self._admin
+        return self.config_service.ReadOnly
+
+    @property
+    def config_type(self):
+        """str: "Admin" for a read-only admin config, "User" otherwise."""
+        return "Admin" if self.is_readonly else "User"
 
     def save_changes(self):
-        """Save user config into associated config file."""
-        if not self._admin and self.config_file:
-            try:
-                super(PyRevitConfig, self).save()
-            except Exception as save_err:
-                mlogger.error('Can not save user config to: %s | %s',
-                              self.config_file, save_err)
+        """Flush the in-memory config to disk.
 
-            # adjust environment per user configurations
+        Typed and dynamic section edits are already written through to the
+        in-memory store as they happen; this just flushes the whole default
+        config to disk once. A failed write is logged rather than raised:
+        settings are not worth aborting a session load or a settings dialog
+        over. The error is logged against the path from
+        _get_default_config() directly, since the config_file property falls
+        back to a path helper that creates files on disk, which must not run
+        from an error handler.
+        """
+        if not self.is_readonly:
+            try:
+                self.config_service.Configuration.SaveConfiguration()
+            except Exception as save_err:
+                mlogger.error(
+                    "Can not save user config to: %s | %s",
+                    self._get_default_config().ConfigurationPath,
+                    save_err,
+                )
+
             self._update_env()
         else:
-            mlogger.debug('Config is in admin mode. Skipping save.')
+            mlogger.debug("Config is in admin mode. Skipping save.")
+
+    def reload(self):
+        """Reload configuration from disk, discarding unsaved in-memory edits.
+
+        Drops the cached shared service so the next access re-reads from
+        disk across every consumer, not just this object.
+        """
+        PyRevit.PyRevitConfigs.ReloadConfig()
 
     @staticmethod
     def get_list_separator():
         """Get list separator defined in user os regional settings."""
-        intkey = coreutils.get_reg_key(wr.HKEY_CURRENT_USER,
-                                       r'Control Panel\International')
+        intkey = coreutils.get_reg_key(
+            wr.HKEY_CURRENT_USER, r"Control Panel\International"
+        )
         if intkey:
             try:
-                return wr.QueryValueEx(intkey, 'sList')[0]
+                return wr.QueryValueEx(intkey, "sList")[0]
             except Exception:
                 return DEFAULT_CSV_SEPARATOR
 
+    """Default config section code"""
 
-def find_config_file(target_path):
-    """Find config file in target path."""
-    return PyRevit.PyRevitConsts.FindConfigFileInDirectory(target_path)
+    def __iter__(self):
+        return self.config_sections.__iter__()
+
+    def __getattr__(self, section_name):
+        return self.config_sections.__getattr__(section_name)
+
+    def has_section(self, section_name):
+        """Check if the config contains the given section.
+
+        Args:
+            section_name (str): name of the section
+
+        Returns:
+            (bool): whether the section exists
+        """
+        return self.config_sections.has_section(section_name)
+
+    def add_section(self, section_name):
+        """Add a new section to the config.
+
+        Args:
+            section_name (str): name of the section
+
+        Returns:
+            (ConfigSection): the added section
+        """
+        return self.config_sections.add_section(section_name)
+
+    def get_section(self, section_name):
+        """Get the named config section.
+
+        Args:
+            section_name (str): name of the section
+
+        Returns:
+            (ConfigSection): the requested section
+
+        Raises:
+            AttributeError: if the section does not exist
+        """
+        return self.config_sections.get_section(section_name)
+
+    def remove_section(self, section_name):
+        """Remove the named section, and its subsections, from the config.
+
+        Args:
+            section_name (str): name of the section
+        """
+        self.config_sections.remove_section(section_name)
 
 
-def verify_configs(config_file_path=None):
-    """Create a user settings file.
+def _pin_install_scope():
+    """Point install-scope detection at the running clone.
 
-    if config_file_path is not provided, configs will be in memory only
-
-    Args:
-        config_file_path (str, optional): config file full name and path
-
-    Returns:
-        (pyrevit.userconfig.PyRevitConfig): pyRevit config file handler
+    Resolves the same scope the loader was launched from, rather than the
+    executing assembly's location.
     """
-    if config_file_path and not op.exists(config_file_path):
-        mlogger.debug('Creating default config file at: %s', config_file_path)
-        coreutils.touch(config_file_path)
-
     try:
-        parser = PyRevitConfig(cfg_file_path=config_file_path)
-    except Exception as read_err:
-        # can not create default user config file under appdata folder
-        mlogger.warning('Can not create config file under: %s | %s',
-                        config_file_path, read_err)
-        parser = PyRevitConfig()
-
-    return parser
+        Common.PyRevitInstallScope.SetRuntimeInstallRoot(HOME_DIR)
+    except Exception as install_root_ex:
+        mlogger.debug("Could not set runtime install root: %s", install_root_ex)
 
 
-LOCAL_CONFIG_FILE = ADMIN_CONFIG_FILE = USER_CONFIG_FILE = CONFIG_FILE = ''
-user_config = None
+def _build_user_config():
+    """Build the module-level user_config, or None in doc mode or on failure.
 
-try:
-    Common.PyRevitInstallScope.SetRuntimeInstallRoot(HOME_DIR)
-except Exception as installRootEx:
-    mlogger.debug('Could not set runtime install root: %s', installRootEx)
-
-# location for default pyRevit config files
-_PROGRAM_DATA_CONFIG_DIR = Common.PyRevitLabsConsts.PyRevitProgramDataPath
-_USER_CONFIG_DIR = Common.PyRevitLabsConsts.PyRevitPath
-with _perfblock("pyrevit.userconfig:find_config_file x3 (HOME / ALLUSER / USER)"):
-    LOCAL_CONFIG_FILE = find_config_file(HOME_DIR)
-    ADMIN_CONFIG_FILE = find_config_file(_PROGRAM_DATA_CONFIG_DIR)
-    USER_CONFIG_FILE = find_config_file(_USER_CONFIG_DIR)
-
-# decide which config file to use
-# check if a config file is inside the repo. for developers config override
-if LOCAL_CONFIG_FILE:
-    CONFIG_TYPE = 'Local'
-    CONFIG_FILE = LOCAL_CONFIG_FILE
-
-# otherwise ask the shared install-scope resolver so the CLI, the C# loader,
-# and the python runtime all agree on the active config file. it handles
-# admin-locked seeds, all-users installs, and first-run seeding of the
-# per-user config from the machine-wide config, and returns a per-user
-# config when the process can not write to the machine-wide config
-else:
+    Doc mode has no configuration backend, so it always yields None. Any
+    other construction failure is caught here too, so a broken config
+    degrades to user_config staying None instead of aborting this module's
+    import for every one of its many importers.
+    """
+    if getattr(EXEC_PARAMS, "doc_mode", False):
+        return None
     try:
-        _active_config = Common.PyRevitInstallScope.GetActiveConfig()
-        CONFIG_FILE = _active_config.ConfigPath
-        if _active_config.IsReadOnly:
-            # settings are managed by the admin and can not be changed
-            CONFIG_TYPE = 'Admin'
-        elif _active_config.IsMachineConfig:
-            CONFIG_TYPE = 'AdminInstall'
-        else:
-            CONFIG_TYPE = 'User'
-    except Exception as scope_err:
-        mlogger.debug('Error resolving active config file. | %s', scope_err)
-        CONFIG_TYPE = 'New'
-        # setup config file name and path
-        CONFIG_FILE = appdata.get_universal_data_file(file_id='config',
-                                                      file_ext='ini')
+        return PyRevitConfig(PyRevit.PyRevitConfigs.GetConfigFile())
+    except Exception as cfg_err:
+        mlogger.error("Could not initialize user config: %s", cfg_err)
+        return None
 
-mlogger.debug('Using %s config file: %s', CONFIG_TYPE, CONFIG_FILE)
 
-# read config, or setup default config file if not available
-# this pushes reading settings at first import of this module.
-try:
-    with _perfblock("pyrevit.userconfig:verify_configs(CONFIG_FILE)"):
-        verify_configs(CONFIG_FILE)
-    with _perfblock("pyrevit.userconfig:PyRevitConfig(__init__)"):
-        user_config = PyRevitConfig(cfg_file_path=CONFIG_FILE,
-                                    config_type=CONFIG_TYPE)
-    with _perfblock("pyrevit.userconfig:upgrade.upgrade_user_config"):
-        upgrade.upgrade_user_config(user_config)
-    with _perfblock("pyrevit.userconfig:user_config.save_changes"):
-        user_config.save_changes()
-except Exception as cfg_err:
-    mlogger.debug('Can not read confing file at: %s | %s',
-                    CONFIG_FILE, cfg_err)
-    mlogger.debug('Using configs in memory...')
-    user_config = verify_configs()
-
-_perfmark("pyrevit.userconfig:exit (user_config ready)")
+_pin_install_scope()
+user_config = _build_user_config()

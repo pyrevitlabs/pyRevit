@@ -6,8 +6,10 @@ using System.Windows.Media;
 using pyRevitLabs.NLog;
 using pyRevitLabs.Common;
 
-namespace pyRevitLabs.PyRevit {
-    public static class PyRevitConsts {
+namespace pyRevitLabs.PyRevit
+{
+    public static class PyRevitConsts
+    {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         // repo info
@@ -199,7 +201,8 @@ namespace pyRevitLabs.PyRevit {
         public static bool IsInstallAllUsers() => PyRevitInstallScope.IsAllUsersInstall();
 
         // methods
-        public static string FindConfigFileInDirectory(string sourcePath) {
+        public static string FindConfigFileInDirectory(string sourcePath)
+        {
             return PyRevitInstallScope.FindConfigIniInDirectory(sourcePath);
         }
 
@@ -215,8 +218,10 @@ namespace pyRevitLabs.PyRevit {
 
         // pyRevit config file path
         // @reviewed
-        public static string AdminConfigFilePath {
-            get {
+        public static string AdminConfigFilePath
+        {
+            get
+            {
                 var cfgFile = FindConfigFileInDirectory(PyRevitLabsConsts.PyRevitProgramDataPath);
                 return cfgFile != null ? cfgFile : Path.Combine(PyRevitLabsConsts.PyRevitProgramDataPath, DefaultConfigsFileName);
             }

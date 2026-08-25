@@ -8,6 +8,7 @@ Examples:
     script.exit()
     ```
 """
+
 # pylint: disable=consider-using-f-string
 
 import sys
@@ -42,7 +43,7 @@ warnings.filterwarnings("ignore")
 mlogger = logger.get_logger(__name__)
 
 
-DATAFEXT = 'pym'
+DATAFEXT = "pym"
 
 ICON_SMALL = 16
 ICON_MEDIUM = 24
@@ -128,6 +129,7 @@ def get_results():
             Command results dict
     """
     from pyrevit.telemetry.record import CommandCustomResults
+
     return CommandCustomResults()
 
 
@@ -170,12 +172,13 @@ def get_config(section=None, reload=False):
         reload (bool, optional): forces a reload, in case changes were made.
 
     Returns:
-        (pyrevit.coreutils.configparser.PyRevitConfigSectionParser):
+        (pyrevit.coreutils.configparser.ConfigSection):
             Config section parser object
     """
     from pyrevit.userconfig import user_config
+
     if not section:
-        script_cfg_postfix = '_config'
+        script_cfg_postfix = "_config"
         section = EXEC_PARAMS.command_name + script_cfg_postfix
     if reload:
         user_config.reload()
@@ -193,6 +196,7 @@ def save_config():
     config section object received from script.get_config() method.
     """
     from pyrevit.userconfig import user_config
+
     user_config.save_changes()
 
 
@@ -206,19 +210,22 @@ def reset_config(section=None):
         section (str, optional): config section name
     """
     from pyrevit.userconfig import user_config
+
     if not section:
-        script_cfg_postfix = '_config'
+        script_cfg_postfix = "_config"
         section = EXEC_PARAMS.command_name + script_cfg_postfix
     elif section in [PyRevit.PyRevitConsts.ConfigsCoreSection]:
-        raise PyRevitException('Can not remove internal config section: {}'
-                               .format(section))
+        raise PyRevitException(
+            "Can not remove internal config section: {}".format(section)
+        )
 
     try:
         user_config.remove_section(section)
         user_config.save_changes()
     except Exception:
-        mlogger.debug('Failed resetting config for %s (%s)',
-                      EXEC_PARAMS.command_name, section)
+        mlogger.debug(
+            "Failed resetting config for %s (%s)", EXEC_PARAMS.command_name, section
+        )
 
 
 def get_universal_data_file(file_id, file_ext, add_cmd_name=False):
@@ -249,7 +256,7 @@ def get_universal_data_file(file_id, file_ext, add_cmd_name=False):
         (str): full file path
     """
     if add_cmd_name:
-        script_file_id = '{}_{}'.format(EXEC_PARAMS.command_name, file_id)
+        script_file_id = "{}_{}".format(EXEC_PARAMS.command_name, file_id)
     else:
         script_file_id = file_id
 
@@ -285,7 +292,7 @@ def get_data_file(file_id, file_ext, add_cmd_name=False):
         (str): full file path
     """
     if add_cmd_name:
-        script_file_id = '{}_{}'.format(EXEC_PARAMS.command_name, file_id)
+        script_file_id = "{}_{}".format(EXEC_PARAMS.command_name, file_id)
     else:
         script_file_id = file_id
 
@@ -318,7 +325,7 @@ def get_instance_data_file(file_id, add_cmd_name=False):
         (str): full file path
     """
     if add_cmd_name:
-        script_file_id = '{}_{}'.format(EXEC_PARAMS.command_name, file_id)
+        script_file_id = "{}_{}".format(EXEC_PARAMS.command_name, file_id)
     else:
         script_file_id = file_id
 
@@ -355,14 +362,11 @@ def get_document_data_file(file_id, file_ext, add_cmd_name=False):
     proj_info = revit.query.get_project_info()
 
     if add_cmd_name:
-        script_file_id = '{}_{}_{}'.format(EXEC_PARAMS.command_name,
-                                           file_id,
-                                           proj_info.filename
-                                           or proj_info.name)
+        script_file_id = "{}_{}_{}".format(
+            EXEC_PARAMS.command_name, file_id, proj_info.filename or proj_info.name
+        )
     else:
-        script_file_id = '{}_{}'.format(file_id,
-                                        proj_info.filename
-                                        or proj_info.name)
+        script_file_id = "{}_{}".format(file_id, proj_info.filename or proj_info.name)
 
     return appdata.get_data_file(script_file_id, file_ext)
 
@@ -435,6 +439,7 @@ def get_button():
         (pyrevit.coreutils.ribbon._PyRevitRibbonButton): ui button object
     """
     from pyrevit.coreutils.ribbon import get_current_ui
+
     pyrvt_tabs = get_current_ui().get_pyrevit_tabs()
     for tab in pyrvt_tabs:
         button = tab.find_child(EXEC_PARAMS.command_name)
@@ -455,6 +460,7 @@ def get_all_buttons():
             list of ui button objects
     """
     from pyrevit.coreutils.ribbon import get_current_ui
+
     pyrvt_tabs = get_current_ui().get_pyrevit_tabs()
     buttons = []
     for tab in pyrvt_tabs:
@@ -464,7 +470,9 @@ def get_all_buttons():
     return buttons
 
 
-def toggle_icon(new_state, on_icon_path=None, off_icon_path=None, icon_size=ICON_MEDIUM):
+def toggle_icon(
+    new_state, on_icon_path=None, off_icon_path=None, icon_size=ICON_MEDIUM
+):
     """Set the state of button icon (on or off).
 
     This method expects on.png and off.png in command bundle for on and off
@@ -481,32 +489,35 @@ def toggle_icon(new_state, on_icon_path=None, off_icon_path=None, icon_size=ICON
     # find the ui button
     uibuttons = get_all_buttons()
     if not uibuttons:
-        mlogger.debug('Can not find ui button.')
+        mlogger.debug("Can not find ui button.")
         return
 
     # get icon for on state
     if not on_icon_path:
-        on_icon_path = ui.resolve_icon_file(EXEC_PARAMS.command_path, exts.DEFAULT_ON_ICON_FILE)
+        on_icon_path = ui.resolve_icon_file(
+            EXEC_PARAMS.command_path, exts.DEFAULT_ON_ICON_FILE
+        )
         if not on_icon_path:
-            mlogger.debug('Script does not have icon for on state.')
+            mlogger.debug("Script does not have icon for on state.")
             return
 
     # get icon for off state
     if not off_icon_path:
-        off_icon_path = ui.resolve_icon_file(EXEC_PARAMS.command_path, exts.DEFAULT_OFF_ICON_FILE)
+        off_icon_path = ui.resolve_icon_file(
+            EXEC_PARAMS.command_path, exts.DEFAULT_OFF_ICON_FILE
+        )
         if not off_icon_path:
-            mlogger.debug('Script does not have icon for on state.')
+            mlogger.debug("Script does not have icon for on state.")
             return
 
     icon_path = on_icon_path if new_state else off_icon_path
-    mlogger.debug('Setting icon state to: %s (%s)',
-                  new_state, icon_path)
+    mlogger.debug("Setting icon state to: %s (%s)", new_state, icon_path)
 
     for uibutton in uibuttons:
         uibutton.set_icon(icon_path, icon_size)
 
 
-def exit():     #pylint: disable=W0622
+def exit():  # pylint: disable=W0622
     """Stop the script execution and exit."""
     sys.exit()
 
@@ -524,10 +535,11 @@ def show_folder_in_explorer(folder_path):
 def open_url(url):
     """Open url in a new tab in default webbrowser."""
     import webbrowser
-    if re.match('^https*://', url.lower()):
+
+    if re.match("^https*://", url.lower()):
         webbrowser.open_new_tab(url)
     else:
-        webbrowser.open_new_tab('http://' + url)
+        webbrowser.open_new_tab("http://" + url)
 
 
 def clipboard_copy(string_to_copy):
@@ -535,7 +547,7 @@ def clipboard_copy(string_to_copy):
     framework.Clipboard.SetText(string_to_copy)
 
 
-def load_index(index_file='index.html'):
+def load_index(index_file="index.html"):
     """Load html file into output window.
 
     This method expects index.html file in the current command bundle,
@@ -550,7 +562,7 @@ def load_index(index_file='index.html'):
     outputwindow.open_page(index_file)
 
 
-def load_ui(ui_instance, ui_file='ui.xaml', handle_esc=True, set_owner=True):
+def load_ui(ui_instance, ui_file="ui.xaml", handle_esc=True, set_owner=True):
     """Load xaml file into given window instance.
 
     If window instance defines a method named `setup` it
@@ -565,12 +577,9 @@ def load_ui(ui_instance, ui_file='ui.xaml', handle_esc=True, set_owner=True):
     ui_file = get_bundle_file(ui_file)
     if ui_file:
         ui_instance.load_xaml(
-            ui_file,
-            literal_string=False,
-            handle_esc=handle_esc,
-            set_owner=set_owner
-            )
-        if hasattr(ui_instance, 'setup'):
+            ui_file, literal_string=False, handle_esc=handle_esc, set_owner=set_owner
+        )
+        if hasattr(ui_instance, "setup"):
             ui_instance.setup()
         return ui_instance
 
@@ -630,7 +639,7 @@ def dump_json(data, filepath):
         filepath (str): json file path
     """
     json_repr = json.dumps(data, indent=4, ensure_ascii=False)
-    with codecs.open(filepath, 'w', "utf-8") as json_file:
+    with codecs.open(filepath, "w", "utf-8") as json_file:
         json_file.write(json_repr)
 
 
@@ -643,7 +652,7 @@ def load_json(filepath):
     Returns:
         (object): deserialized data
     """
-    with codecs.open(filepath, 'r', "utf-8") as json_file:
+    with codecs.open(filepath, "r", "utf-8") as json_file:
         return json.load(json_file)
 
 
@@ -654,8 +663,8 @@ def dump_csv(data, filepath):
         data (list[list[str]]): data to be dumped
         filepath (str): csv file path
     """
-    with codecs.open(filepath, 'wb', encoding='utf-8') as csvfile:
-        writer = csv.writer(csvfile, delimiter=',', quotechar='\"')
+    with codecs.open(filepath, "wb", encoding="utf-8") as csvfile:
+        writer = csv.writer(csvfile, delimiter=",", quotechar='"')
         writer.writerows(data)
 
 
@@ -668,8 +677,8 @@ def load_csv(filepath):
     Returns:
         (list[list[str]]): csv data
     """
-    with codecs.open(filepath, 'rb', encoding='utf-8') as csvfile:
-        return list(csv.reader(csvfile, delimiter=',', quotechar='\"'))
+    with codecs.open(filepath, "rb", encoding="utf-8") as csvfile:
+        return list(csv.reader(csvfile, delimiter=",", quotechar='"'))
 
 
 def store_data(slot_name, data, this_project=True):
@@ -715,14 +724,14 @@ def store_data(slot_name, data, this_project=True):
     """
     # for this specific project?
     if this_project:
-        data_file = get_document_data_file(file_id=slot_name,
-                                           file_ext=DATAFEXT,
-                                           add_cmd_name=False)
+        data_file = get_document_data_file(
+            file_id=slot_name, file_ext=DATAFEXT, add_cmd_name=False
+        )
     # for any project file
     else:
-        data_file = get_data_file(file_id=slot_name,
-                                  file_ext=DATAFEXT,
-                                  add_cmd_name=False)
+        data_file = get_data_file(
+            file_id=slot_name, file_ext=DATAFEXT, add_cmd_name=False
+        )
 
     with open(data_file, "wb") as dfile:
         pickle.dump(data, dfile)
@@ -772,16 +781,16 @@ def load_data(slot_name, this_project=True):
     """
     # for this specific project?
     if this_project:
-        data_file = get_document_data_file(file_id=slot_name,
-                                           file_ext=DATAFEXT,
-                                           add_cmd_name=False)
+        data_file = get_document_data_file(
+            file_id=slot_name, file_ext=DATAFEXT, add_cmd_name=False
+        )
     # for any project file
     else:
-        data_file = get_data_file(file_id=slot_name,
-                                  file_ext=DATAFEXT,
-                                  add_cmd_name=False)
+        data_file = get_data_file(
+            file_id=slot_name, file_ext=DATAFEXT, add_cmd_name=False
+        )
 
-    with open(data_file, 'rb') as dfile:
+    with open(data_file, "rb") as dfile:
         return pickle.load(dfile)
 
 
@@ -797,20 +806,19 @@ def data_exists(slot_name, this_project=True):
     """
     # for this specific project?
     if this_project:
-        data_file = get_document_data_file(file_id=slot_name,
-                                           file_ext=DATAFEXT,
-                                           add_cmd_name=False)
+        data_file = get_document_data_file(
+            file_id=slot_name, file_ext=DATAFEXT, add_cmd_name=False
+        )
     # for any project file
     else:
-        data_file = get_data_file(file_id=slot_name,
-                                  file_ext=DATAFEXT,
-                                  add_cmd_name=False)
+        data_file = get_data_file(
+            file_id=slot_name, file_ext=DATAFEXT, add_cmd_name=False
+        )
     return os.path.exists(data_file)
 
 
 def restore_window_position(window, command_name=None):
-    """
-    Restore window position from saved data.
+    """Restore window position from saved data.
 
     Args:
         window (System.Windows.Window): WPF window instance
@@ -856,8 +864,7 @@ def restore_window_position(window, command_name=None):
 
 
 def save_window_position(window, command_name=None):
-    """
-    Save window position to persistent storage.
+    """Save window position to persistent storage.
 
     Args:
         window (System.Windows.Window): WPF window instance
@@ -870,6 +877,6 @@ def save_window_position(window, command_name=None):
         "Left": window.Left,
         "Top": window.Top,
         "Width": window.ActualWidth,
-        "Height": window.ActualHeight
+        "Height": window.ActualHeight,
     }
     store_data(storage_key, position_data, this_project=False)

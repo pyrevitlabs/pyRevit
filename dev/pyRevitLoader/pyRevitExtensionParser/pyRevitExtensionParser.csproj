@@ -25,6 +25,11 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\pyRevitLabs\pyRevitLabs.Configurations\pyRevitLabs.Configurations.csproj" />
+      <ProjectReference Include="..\..\pyRevitLabs\pyRevitLabs.Configurations.Ini\pyRevitLabs.Configurations.Ini.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
       <Compile Include="BundleParser.cs" />
       <Compile Include="ComboBoxMember.cs" />
       <Compile Include="CommandAvailability.cs" />
@@ -37,7 +42,6 @@
       <Compile Include="PyRevitConfig.cs" />
       <Compile Include="ExtensionParser.cs" />
       <Compile Include="ExtensionRegistryAuth.cs" />
-      <Compile Include="IniFile.cs" />
     </ItemGroup>
 
 </Project>

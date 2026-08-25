@@ -1,140 +1,184 @@
 """Base module for pyRevit config parsing."""
-import json
-import codecs
-from pyrevit.compat import configparser
 
-from pyrevit import PyRevitException, PyRevitIOError
+import json
+import re
+
 from pyrevit import coreutils
 
-#pylint: disable=W0703,C0302
-KEY_VALUE_TRUE = "True"
-KEY_VALUE_FALSE = "False"
+_HEX_INTEGER_REGEX = re.compile(r"^\s*0[xX][0-9a-fA-F]+\s*$")
 
 
-class PyRevitConfigSectionParser(object):
-    """Config section parser object. Handle section options."""
-    def __init__(self, config_parser, section_name):
-        self._parser = config_parser
-        self._section_name = section_name
+def _json_candidates(raw_value):
+    """Yield the spellings a stored value may take, canonical form first.
+
+    Mirrors the C# reader's fallbacks so both readers resolve the same file to
+    the same values: canonical JSON, then legacy Python single-quoted strings
+    and lists, then (once both of those have failed to parse) the same two
+    forms with unescaped Windows-path backslashes doubled so JSON accepts them.
+    """
+    yield raw_value
+
+    if not isinstance(raw_value, str):
+        return
+
+    single_quoted = raw_value.replace("'", '"')
+    yield single_quoted
+
+    if "\\" in raw_value:
+        yield raw_value.replace("\\", "\\\\")
+        yield single_quoted.replace("\\", "\\\\")
+
+
+def decode_option_value(raw_value):
+    """Decode a stored option value across every encoding pyRevit has written.
+
+    Falls through, in order: the JSON candidates in :func:`_json_candidates`;
+    a bare unquoted Python bool (``True``/``False``, case-insensitive - a
+    string that merely spells "True" is stored quoted and already decoded by
+    the JSON pass); a bare hex integer (e.g. ``0x0``, which JSON's number
+    grammar rejects). Matching the C# reader's fallback order here is what
+    keeps the two readers agreeing on the same stored value.
+
+    Args:
+        raw_value (str): stored value text
+
+    Returns:
+        the decoded value, or the raw text when no encoding accounts for it
+    """
+    for candidate in _json_candidates(raw_value):
+        try:
+            return json.loads(candidate)
+        except (ValueError, TypeError):
+            pass
+
+    token = raw_value.strip()
+    if token.lower() in ("true", "false"):
+        return token.lower() == "true"
+
+    if _HEX_INTEGER_REGEX.match(token):
+        return int(token, 16)
+
+    return raw_value
+
+
+class ConfigSection(object):
+    """Read/write access to the options of a single config section.
+
+    Options can be accessed either as attributes (``section.option``) or
+    through the explicit ``get_option``/``set_option`` methods. Values are
+    stored as JSON and decoded tolerantly on read.
+
+    Args:
+        section_name (str): canonical name of the section
+        configuration: the backing ``IConfiguration``, or a zero-argument
+            callable returning it. A callable keeps a section usable after the
+            backing store is replaced, so a section handed to a script does not
+            become an orphan that silently discards its edits.
+    """
+
+    def __init__(self, section_name, configuration):
+        self.__section_name = section_name
+        self.__configuration_source = configuration
+
+    def __config(self):
+        source = self.__configuration_source
+        return source() if callable(source) else source
 
     def __iter__(self):
-        return iter(self._parser.options(self._section_name))
+        for option_name in self.__config().GetSectionOptionNames(self.__section_name):
+            yield option_name
 
     def __str__(self):
-        return self._section_name
+        return self.__section_name
 
     def __repr__(self):
-        return '<PyRevitConfigSectionParser object '    \
-               'at 0x{0:016x} '                         \
-               'config section \'{1}\'>'                \
-               .format(id(self), self._section_name)
+        return (
+            "<ConfigSection object "
+            "at 0x{0:016x} "
+            "config section '{1}'>".format(id(self), self.__section_name)
+        )
 
     def __getattr__(self, param_name):
-        try:
-            raw_value = self._parser.get(self._section_name, param_name)
-            value = raw_value
-            try:
-                try:
-                    return json.loads(value)  #pylint: disable=W0123
-                except Exception:
-                    # try fix legacy formats
-                    # cleanup python style true, false values
-                    if value == KEY_VALUE_TRUE:
-                        value = json.dumps(True)
-                    elif value == KEY_VALUE_FALSE:
-                        value = json.dumps(False)
-                    # cleanup string representations
-                    value = value.replace('\'', '"').encode('string-escape')
-                    # try parsing again
-                    try:
-                        return json.loads(value)  #pylint: disable=W0123
-                    except Exception:
-                        # if failed again then the value is a string
-                        # but is not encapsulated in quotes
-                        # e.g. option = C:\Users\Desktop
-                        value = value.strip()
-                        if (not value.startswith('(')
-                                and not value.startswith('[')
-                                and not value.startswith('{')):
-                            value = "\"%s\"" % value
-                        return json.loads(value)  #pylint: disable=W0123
-            except Exception:
-                # All decode attempts failed. The local 'value' has been
-                # mutated by the fallback chain (string-escape encoded,
-                # possibly wrapped in quotes). Returning the mutated form
-                # would cause __setattr__ to re-encode it via json.dumps
-                # and produce progressively-bloated stored values on each
-                # round-trip (escape-doubling bug for telemetry config
-                # fields). Return the original raw bytes instead.
-                return raw_value
-        except (configparser.NoOptionError, configparser.NoSectionError):
-            raise AttributeError('Parameter does not exist in config file: {}'
-                                 .format(param_name))
+        if not self.has_option(param_name):
+            raise AttributeError(
+                "Parameter does not exist in config file: {}".format(param_name)
+            )
+        return self.get_option(param_name)
 
     def __setattr__(self, param_name, value):
-        # check agaist used attribute names
-        if param_name in ['_parser', '_section_name']:
-            super(PyRevitConfigSectionParser, self).__setattr__(param_name,
-                                                                value)
+        """Route any name but the two internal (name-mangled) ones to set_option."""
+        if param_name in (
+            "_ConfigSection__section_name",
+            "_ConfigSection__configuration_source",
+        ):
+            object.__setattr__(self, param_name, value)
         else:
-            # if not used by this object, then set a config section
-            try:
-                new_value = json.dumps(value,
-                                       separators=(',', ':'),
-                                       ensure_ascii=False)
-                # Idempotency check: skip the write when the encoded value
-                # is byte-identical to what's already stored. Prevents
-                # progressive escape-doubling on round-trip cycles when
-                # the read path returns a value that re-encodes longer
-                # than the stored value (escape-doubling bug for
-                # telemetry config fields). Side benefit: eliminates
-                # redundant disk writes when nothing has changed.
-                try:
-                    current_value = self._parser.get(self._section_name,
-                                                     param_name)
-                    if current_value == new_value:
-                        return
-                except (configparser.NoOptionError,
-                        configparser.NoSectionError):
-                    pass
-                return self._parser.set(self._section_name,
-                                        param_name,
-                                        new_value)
-            except Exception as set_err:
-                raise PyRevitException('Error setting parameter value. '
-                                       '| {}'.format(set_err))
+            return self.set_option(param_name, value)
 
     @property
     def header(self):
-        """Section header."""
-        return self._section_name
+        """str: Full canonical name of this section."""
+        return self.__section_name
 
     @property
     def subheader(self):
-        """Section sub-header e.g. Section.SubSection."""
+        """str: Last component of the section's canonical name."""
         return coreutils.get_canonical_parts(self.header)[-1]
 
     def has_option(self, option_name):
-        """Check if section contains given option."""
-        return self._parser.has_option(self._section_name, option_name)
+        """Check if this section contains the given option.
+
+        Args:
+            option_name (str): name of the option
+
+        Returns:
+            (bool): whether the option exists
+        """
+        return self.__config().HasSectionKey(self.__section_name, option_name)
 
     def get_option(self, op_name, default_value=None):
-        """Get option value or return default."""
-        try:
-            return self.__getattr__(op_name)
-        except Exception as opt_get_err:
-            if default_value is not None:
-                return default_value
-            else:
-                raise opt_get_err
+        """Get the value of an option, decoding it tolerantly.
+
+        A missing key returns ``default_value``; an explicitly stored empty
+        string is treated as a real value. Values that are not valid JSON
+        (legacy single-quoted strings, Python bools, bare paths) are decoded
+        tolerantly rather than raising.
+
+        Args:
+            op_name (str): name of the option
+            default_value: value to return when the option is not set
+
+        Returns:
+            the decoded option value, or ``default_value`` when unset
+        """
+        value = self.__config().GetRawValueOrDefault(self.__section_name, op_name, None)
+        if value is None:
+            return default_value
+        return decode_option_value(value)
 
     def set_option(self, op_name, value):
-        """Set value of given option."""
-        self.__setattr__(op_name, value)
+        """Set the value of an option, encoding it as JSON.
+
+        Args:
+            op_name (str): name of the option
+            value: value to store
+        """
+        self.__config().SetRawValue(
+            self.__section_name,
+            op_name,
+            json.dumps(value, separators=(",", ":"), ensure_ascii=False),
+        )
 
     def remove_option(self, option_name):
-        """Remove given option from section."""
-        return self._parser.remove_option(self._section_name, option_name)
+        """Remove an option from this section.
+
+        Args:
+            option_name (str): name of the option
+
+        Returns:
+            (bool): whether an option was removed
+        """
+        return self.__config().RemoveOption(self.__section_name, option_name)
 
     def has_subsection(self, section_name):
         """Check if section has any subsections."""
@@ -142,126 +186,158 @@ class PyRevitConfigSectionParser(object):
 
     def add_subsection(self, section_name):
         """Add subsection to section."""
-        return self._parser.add_section(
-            coreutils.make_canonical_name(self._section_name, section_name)
+        canonical_name = coreutils.make_canonical_name(
+            self.__section_name, section_name
         )
+        self.__config().AddSection(canonical_name)
+        return ConfigSection(canonical_name, self.__configuration_source)
 
     def get_subsections(self):
-        """Get all subsections."""
+        """Return all subsections nested under this section.
+
+        Returns:
+            (list[ConfigSection]): the nested subsections
+        """
         subsections = []
-        for section_name in self._parser.sections():
-            if section_name.startswith(self._section_name + '.'):
-                subsec = PyRevitConfigSectionParser(self._parser, section_name)
+        for section_name in self.__config().GetSectionNames():
+            if section_name.startswith(self.__section_name + "."):
+                subsec = ConfigSection(section_name, self.__configuration_source)
                 subsections.append(subsec)
         return subsections
 
     def get_subsection(self, section_name):
-        """Get subsection with given name."""
+        """Return the named subsection nested under this section.
+
+        Args:
+            section_name (str): short name of the subsection
+
+        Returns:
+            (ConfigSection): the subsection, or None if not found
+        """
         for subsection in self.get_subsections():
             if subsection.subheader == section_name:
                 return subsection
+        return None
 
 
-class PyRevitConfigParser(object):
-    """Config parser object. Handle config sections and io."""
-    def __init__(self, cfg_file_path=None):
-        self._cfg_file_path = cfg_file_path
-        self._parser = configparser.ConfigParser()
-        if self._cfg_file_path:
-            try:
-                with codecs.open(self._cfg_file_path, 'r', 'utf-8') as cfg_file:
-                    try:
-                        self._parser.readfp(cfg_file)
-                    except AttributeError:
-                        self._parser.read_file(cfg_file)
-            except (OSError, IOError):
-                raise PyRevitIOError()
-            except Exception as read_err:
-                raise PyRevitException(read_err)
+class ConfigSections(object):
+    """Access the sections of the default configuration.
+
+    Sections can be reached either as attributes (``sections.core``) or
+    through the explicit section methods. Iterating yields section names.
+
+    Args:
+        configuration_service: the backing ``IConfigurationService``, or a
+            zero-argument callable returning it. A callable lets the container
+            and every section it has already handed out follow a reload that
+            replaces the service.
+    """
+
+    def __init__(self, configuration_service):
+        self.__service_source = configuration_service
 
     def __iter__(self):
-        return iter([self.get_section(x) for x in self._parser.sections()])
+        for section_name in self.__get_default_config().GetSectionNames():
+            yield section_name
 
     def __getattr__(self, section_name):
-        if self._parser.has_section(section_name):
-            # build a section parser object and return
-            return PyRevitConfigSectionParser(self._parser, section_name)
-        else:
-            raise AttributeError(
-                'Section \"{}\" does not exist in config file.'
-                .format(section_name))
-
-    def get_config_file_hash(self):
-        """Get calculated unique hash for this config.
-
-        Returns:
-            (str): hash of the config.
-        """
-        with codecs.open(self._cfg_file_path, 'r', 'utf-8') as cfg_file:
-            cfg_hash = coreutils.get_str_hash(cfg_file.read())
-
-        return cfg_hash
+        return self.get_section(section_name)
 
     def has_section(self, section_name):
-        """Check if config contains given section."""
-        try:
-            self.get_section(section_name)
-            return True
-        except Exception:
-            return False
+        """Check if the config contains the given section.
+
+        Args:
+            section_name (str): name of the section
+
+        Returns:
+            (bool): whether the section exists
+        """
+        return self.__get_default_config().HasSection(section_name)
 
     def add_section(self, section_name):
-        """Add section with given name to config."""
-        self._parser.add_section(section_name)
-        return PyRevitConfigSectionParser(self._parser, section_name)
+        """Add a new section to the config.
+
+        Args:
+            section_name (str): name of the section
+
+        Returns:
+            (ConfigSection): the added section
+        """
+        self.__get_default_config().AddSection(section_name)
+        return ConfigSection(section_name, self.__get_default_config)
 
     def get_section(self, section_name):
-        """Get section with given name.
+        """Get the named config section.
+
+        Args:
+            section_name (str): name of the section
+
+        Returns:
+            (ConfigSection): the requested section
 
         Raises:
-            AttributeError: if section is missing
+            AttributeError: if the section does not exist
         """
-        # check is section with full name is available
-        if self._parser.has_section(section_name):
-            return PyRevitConfigSectionParser(self._parser, section_name)
-
-        # if not try to match with section_name.subsection
-        # if there is a section_name.subsection defined, that should be
-        # the sign that the section exists
-        # section obj then supports getting all subsections
-        for cfg_section_name in self._parser.sections():
-            master_section = coreutils.get_canonical_parts(cfg_section_name)[0]
-            if section_name == master_section:
-                return PyRevitConfigSectionParser(self._parser,
-                                                  master_section)
-
-        # if no match happened then raise exception
-        raise AttributeError('Section does not exist in config file.')
+        if not self.__get_default_config().HasSection(section_name):
+            raise AttributeError(
+                'Section "{}" does not exist in config file.'.format(section_name)
+            )
+        return ConfigSection(section_name, self.__get_default_config)
 
     def remove_section(self, section_name):
-        """Remove section from config."""
-        cfg_section = self.get_section(section_name)
-        for cfg_subsection in cfg_section.get_subsections():
-            self._parser.remove_section(cfg_subsection.header)
-        self._parser.remove_section(cfg_section.header)
+        """Remove the named section, and its subsections, from the config.
 
-    def reload(self, cfg_file_path=None):
-        """Reload config from original or given file."""
-        try:
-            with codecs.open(cfg_file_path \
-                    or self._cfg_file_path, 'r', 'utf-8') as cfg_file:
-                try:
-                    self._parser.readfp(cfg_file)
-                except AttributeError:
-                    self._parser.read_file(cfg_file)
-        except (OSError, IOError):
-            raise PyRevitIOError()
+        Subsections are stored as sibling sections under a dotted name rather
+        than nested inside their parent, so they must be found and removed
+        explicitly here - dropping the parent alone would leave them behind
+        for a reinstall to silently inherit.
 
-    def save(self, cfg_file_path=None):
-        """Save config to original or given file."""
-        try:
-            with codecs.open(cfg_file_path \
-                    or self._cfg_file_path, 'w', 'utf-8') as cfg_file:
-                self._parser.write(cfg_file)
-        except (OSError, IOError):
-            raise PyRevitIOError()
+        Args:
+            section_name (str): name of the section
+        """
+        config = self.__get_default_config()
+        subsection_prefix = section_name + "."
+        for existing_name in list(config.GetSectionNames()):
+            if existing_name.startswith(subsection_prefix):
+                config.RemoveSection(existing_name)
+
+        config.RemoveSection(section_name)
+
+    def save(self):
+        """Write pending changes to the backing file.
+
+        Option writes land in the in-memory store only, so a caller that edits
+        a config must call this for the change to survive the session.
+        """
+        self.__get_default_config().SaveConfiguration()
+
+    def __get_default_config(self):
+        source = self.__service_source
+        service = source() if callable(source) else source
+        return service.Configuration
+
+
+def open_config_file(cfg_file_path, read_only=False):
+    """Open an ini file of your own, separate from the pyRevit user config.
+
+    For tool settings that belong in their own file rather than in the shared
+    pyRevit config. To read or write the shared config, use
+    :obj:`pyrevit.userconfig.user_config` instead.
+
+    Args:
+        cfg_file_path (str): path to the ini file; it need not exist yet
+        read_only (bool): open without allowing writes
+
+    Returns:
+        (ConfigSections): the sections of the given file
+
+    Note:
+        Imports ``pyrevit.labs`` locally: that module imports this one, so a
+        module-level import here would close the cycle.
+    """
+    from pyrevit.labs import ConfigurationBuilder, IniConfiguration
+
+    configuration = IniConfiguration.Create(cfg_file_path, read_only)
+    return ConfigSections(
+        ConfigurationBuilder(read_only).AddConfigurationSource(configuration).Build()
+    )
