@@ -28,7 +28,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 
             try
             {
-#if (REVIT2021 || REVIT2022 || REVIT2023)
+#if (REVIT2019 || REVIT2020 || REVIT2021 || REVIT2022 || REVIT2023)
                 // UIThemeManager not available before Revit 2024
                 _cachedTheme = false;
                 _themeDetected = true;

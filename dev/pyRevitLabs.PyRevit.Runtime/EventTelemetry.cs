@@ -162,9 +162,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     { "hide_cropbounds", printParams.HideCropBoundaries },
                     { "hide_refplanes", printParams.HideReforWorkPlanes },
                     { "hide_scopeboxes", printParams.HideScopeBoxes },
+#if !(REVIT2013)
                     { "hide_unref_viewtags", printParams.HideUnreferencedViewTags },
+#else
+                    { "hide_unref_viewtags", null },
+#endif
                     { "margin_type", printParams.MarginType.ToString() },
+#if !(REVIT2013 || REVIT2014)
                     { "mask_lines", printParams.MaskCoincidentLines },
+#else
+                    { "mask_lines", null },
+#endif
                     { "page_orientation", printParams.PageOrientation.ToString() },
                     { "paper_placement", printParams.PaperPlacement.ToString() },
                     { "paper_size", printParams.PaperSize.Name },
@@ -202,7 +210,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
                 var docProjProps = new Dictionary<string, object>();
                 foreach (Parameter param in pinfo.Parameters)
-#if !(REVIT2021 || REVIT2022 || REVIT2023)
+#if !(REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020 || REVIT2021 || REVIT2022 || REVIT2023)
                     if (param.Id.Value > 0)
 #else
                     if (param.Id.IntegerValue > 0)
@@ -329,6 +337,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }, sender, e);
         }
 
+#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017)
         public void UIApplication_TransferringProjectStandards(object sender, Autodesk.Revit.UI.Events.TransferringProjectStandardsEventArgs e) {
             var extItems = new Dictionary<string, string>();
             foreach (var kvpair in e.GetExternalItems())
@@ -378,6 +387,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
             }, sender, e);
         }
+#endif
 
         public void UIApplication_Idling(object sender, Autodesk.Revit.UI.Events.IdlingEventArgs e) {
             LogEventTelemetryRecord(new EventTelemetryRecord {
@@ -385,9 +395,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }, sender, e);
         }
 
+#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018)
         public void UIApplication_FormulaEditing(object sender, Autodesk.Revit.UI.Events.FormulaEditingEventArgs e) {
             var paramId = e.ParameterId;
-#if !(REVIT2021 || REVIT2022 || REVIT2023)
+#if !(REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020 || REVIT2021 || REVIT2022 || REVIT2023)
             long paramIdInt = 0;
 #else
             int paramIdInt = 0;
@@ -396,7 +407,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             Element param = null;
             if (paramId != null && paramId != ElementId.InvalidElementId) {
                 param = e.CurrentDocument != null ? e.CurrentDocument.GetElement(paramId) : param;
-#if !(REVIT2021 || REVIT2022 || REVIT2023)
+#if !(REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020 || REVIT2021 || REVIT2022 || REVIT2023)
                 paramIdInt = paramId.Value;
 #else
                 paramIdInt = paramId.IntegerValue;
@@ -416,7 +427,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
             }, sender, e);
         }
+#endif
 
+#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016)
             public void UIApplication_FabricationPartBrowserChanged(object sender, Autodesk.Revit.UI.Events.FabricationPartBrowserChangedEventArgs e) {
             // TODO: implement
             //e.GetAllSolutionsPartsTypeCounts
@@ -433,7 +446,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
             }, sender, e);
         }
+#endif
 
+#if !(REVIT2013 || REVIT2014)
         public void UIApplication_DockableFrameVisibilityChanged(object sender, Autodesk.Revit.UI.Events.DockableFrameVisibilityChangedEventArgs e) {
             LogEventTelemetryRecord(new EventTelemetryRecord {
                 type = EventUtils.GetEventName(EventType.UIApplication_DockableFrameVisibilityChanged),
@@ -453,6 +468,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
             }, sender, e);
         }
+#endif
 
         public void UIApplication_DisplayingOptionsDialog(object sender, Autodesk.Revit.UI.Events.DisplayingOptionsDialogEventArgs e) {
             LogEventTelemetryRecord(new EventTelemetryRecord {
@@ -467,7 +483,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
             LogEventTelemetryRecord(new EventTelemetryRecord {
                 type = EventUtils.GetEventName(EventType.UIApplication_DialogBoxShowing),
                 args = new Dictionary<string, object> {
+#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016)
                     { "dialog_id", e.DialogId },
+#else
+                    { "dialog_id", null },
+#endif
                 }
             }, sender, e);
         }
@@ -478,6 +498,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }, sender, e);
         }
 
+#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017)
         public void Application_WorksharedOperationProgressChanged(object sender, WorksharedOperationProgressChangedEventArgs e) {
             LogEventTelemetryRecord(new EventTelemetryRecord {
                 type = EventUtils.GetEventName(EventType.Application_WorksharedOperationProgressChanged),
@@ -485,6 +506,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 status = e.Status.ToString(),
             }, sender, e);
         }
+#endif
 
         public void Application_ViewPrinting(object sender, ViewPrintingEventArgs e) {
             var views = new List<Element>() { e.View };
@@ -498,7 +520,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     { "view", GetViewsData(views) },
                     { "view_index", e.Index },
                     { "total_views", e.TotalViews },
+#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016)
                     { "settings", GetPrintSettings(e.GetSettings().PrintParameters) },
+#else
+                    { "settings", null },
+#endif
                 }
             }, sender, e);
         }
@@ -520,6 +546,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }, sender, e);
         }
 
+#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017)
         public void Application_ViewExporting(object sender, ViewExportingEventArgs e) {
             var views = new List<Element>();
             if (e.Document != null)
@@ -554,6 +581,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
             }, sender, e);
         }
+#endif
 
         public void Application_ProgressChanged(object sender, ProgressChangedEventArgs e) {
             LogEventTelemetryRecord(new EventTelemetryRecord {
@@ -568,6 +596,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }, sender, e);
         }
 
+#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017)
         public void Application_LinkedResourceOpening(object sender, LinkedResourceOpeningEventArgs e) {
             LogEventTelemetryRecord(new EventTelemetryRecord {
                 type = EventUtils.GetEventName(EventType.Application_LinkedResourceOpening),
@@ -592,6 +621,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
             }, sender, e);
         }
+#endif
 
         public void Application_FileImporting(object sender, FileImportingEventArgs e) {
             LogEventTelemetryRecord(new EventTelemetryRecord {
@@ -651,6 +681,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }, sender, e);
         }
 
+#if !(REVIT2013 || REVIT2014)
         public void Application_FamilyLoadingIntoDocument(object sender, FamilyLoadingIntoDocumentEventArgs e) {
             LogEventTelemetryRecord(new EventTelemetryRecord {
                 type = EventUtils.GetEventName(EventType.Application_FamilyLoadingIntoDocument),
@@ -703,6 +734,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
             }, sender, e);
         }
+#endif
 
         public void Application_FailuresProcessing(object sender, FailuresProcessingEventArgs e) {
             Document doc = null;
@@ -757,6 +789,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }, sender, e);
         }
 
+#if !(REVIT2013 || REVIT2014)
         public void Application_ElementTypeDuplicating(object sender, ElementTypeDuplicatingEventArgs e) {
             var doc = e.Document;
             string typeCategory = string.Empty;
@@ -809,7 +842,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     { "category", typeCategory },
                     { "from_typename", origTypeName },
                     { "to_typename", e.NewName },
-#if !(REVIT2021 || REVIT2022 || REVIT2023)
+#if !(REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020 || REVIT2021 || REVIT2022 || REVIT2023)
                     { "to_typeid", e.NewElementTypeId.Value },
 #else
                     { "to_typeid", e.NewElementTypeId.IntegerValue },
@@ -828,6 +861,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 projectname = GetProjectName(doc),
             }, sender, e);
         }
+#endif
 
         public void Application_DocumentSynchronizingWithCentral(object sender, DocumentSynchronizingWithCentralEventArgs e) {
             var syncOpts = e.Options;
@@ -841,15 +875,25 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     { "comments", e.Comments },
                     { "location", e.Location },
                     { "options", new Dictionary<string,object> {
+#if !(REVIT2013)
                         { "comment", syncOpts.Comment },
                         { "compact", syncOpts.Compact },
+#else
+                        { "comment", null },
+                        { "compact", null },
+#endif
                         { "relinquish_borrowed", syncOpts.RelinquishBorrowedElements },
                         { "relinquish_family_worksets", syncOpts.RelinquishFamilyWorksets },
                         { "relinquish_projectstd_worksets", syncOpts.RelinquishProjectStandardWorksets },
                         { "relinquish_user_worksets", syncOpts.RelinquishUserCreatedWorksets },
                         { "relinquish_view_worksets", syncOpts.RelinquishViewWorksets },
+#if !(REVIT2013)
                         { "save_local_after", syncOpts.SaveLocalAfter },
                         { "save_local_before", syncOpts.SaveLocalBefore },
+#else
+                        { "save_local_after", null },
+                        { "save_local_before", null },
+#endif
                     } },
                 }
             }, sender, e);
@@ -876,7 +920,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 projectnum = GetProjectNumber(e.Document),
                 projectname = GetProjectName(e.Document),
                 args = new Dictionary<string, object> {
+#if (REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020 || REVIT2021_0)
+                    { "as_master_file", e.IsSavingAsMasterFile },
+#else
+                    // this change was made in Revit 2021.1
                     { "as_master_file", e.IsSavingAsCentralFile },
+#endif
                     { "path", e.PathName },
                 }
             }, sender, e);
@@ -891,7 +940,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 projectname = GetProjectName(e.Document),
                 status = e.Status.ToString(),
                 args = new Dictionary<string, object> {
+#if (REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020 || REVIT2021_0)
+                    { "as_master_file", e.IsSavingAsMasterFile },
+#else
+                    // this change was made in Revit 2021.1
                     { "as_master_file", e.IsSavingAsCentralFile },
+#endif
                     { "original_path",  e.OriginalPath },
                     { "project_info", GetProjectInfo(e.Document) }
                 }
@@ -931,7 +985,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 projectname = GetProjectName(e.Document),
                 args = new Dictionary<string, object> {
                 { "views", GetViewsData(GetElements(e.Document, e.GetViewElementIds())) },
+#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016)
                 { "settings", GetPrintSettings(e.GetSettings().PrintParameters) },
+#else
+                { "settings", null },
+#endif
                 }
             }, sender, e);
         }
@@ -1038,6 +1096,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }, sender, e);
         }
 
+#if !(REVIT2013)
         public void AddInCommandBinding_BeforeExecuted(object sender, BeforeExecutedEventArgs e) {
             var doc = e.ActiveDocument;
             LogEventTelemetryRecord(new EventTelemetryRecord {
@@ -1051,6 +1110,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
             }, sender, e);
         }
+#endif
 
         public void AddInCommandBinding_CanExecute(object sender, CanExecuteEventArgs e) {
             // do nothing. no interesting telemetry data
