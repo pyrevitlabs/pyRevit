@@ -3,7 +3,6 @@
 import os
 import re
 
-from pyrevit.framework import clr
 from pyrevit import forms, revit, DB, script
 
 logger = script.get_logger()
@@ -77,12 +76,7 @@ class FamilyLoader:
         with revit.ErrorSwallower():
             # DryTransaction will rollback all the changes
             with revit.DryTransaction('Fake load'):
-                ret_ref = clr.Reference[DB.Family]()
-                revit.doc.LoadFamily(self.path, ret_ref)
-                loaded_fam = ret_ref.Value
-                # Get the symbols
-                for symbol_id in loaded_fam.GetFamilySymbolIds():
-                    symbol = revit.doc.GetElement(symbol_id)
+                for symbol in revit.create.load_family(self.path):
                     symbol_name = revit.query.get_name(symbol)
                     sortable_sym = SmartSortableFamilySymbol(symbol_name)
                     logger.debug('Importable Symbol: {}'.format(sortable_sym))

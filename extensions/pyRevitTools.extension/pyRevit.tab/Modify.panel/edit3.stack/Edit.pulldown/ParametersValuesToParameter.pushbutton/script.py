@@ -378,7 +378,9 @@ class Params2ParamWindow(forms.WPFWindow):
         """Populate the category dropdown with available categories."""
         category_list = List[object]()
         # Sort category names alphabetically
-        sorted_categories = sorted(self.category_mapping.items())
+        sorted_categories = sorted(
+            self.category_mapping.items(), key=lambda kv: str(kv[0])
+        )
         for name, built_in_cat in sorted_categories:
             category_item = type(
                 "CategoryItem", (),

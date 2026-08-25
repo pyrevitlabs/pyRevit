@@ -54,6 +54,7 @@
     <Compile Include="ExtensionAuthUsersTests.cs" />
     <Compile Include="AssemblyBuilderServiceTests.cs" />
     <Compile Include="HookManagerTests.cs" />
+    <Compile Include="LibraryExtensionSearchPathTests.cs" />
     <Compile Include="SessionManagerIntegrationTests.cs" />
     <Compile Include="PythonScriptMultiLangTest.cs" />
     <Compile Include="ComboBoxTests.cs" />
