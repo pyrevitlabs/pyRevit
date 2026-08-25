@@ -175,6 +175,19 @@ class FamSlideWindow(forms.WPFWindow):
             expander.Content = body
             self.GroupsHost.Children.Add(expander)
 
+    def _refresh_controls(self):
+        """Re-render the row controls in place, without re-classifying
+        parameters. `_build_row` recomputes each slider's range from the
+        parameter's *current* value every time it runs, so this is what
+        makes the slider track a value that moved outside its previous
+        range - e.g. a text-box edit, a restored preset, or a shuffle.
+        Cheaper than `refresh_from_document`, which also re-scans
+        in-use/formula/locked state.
+        """
+        doc = revit.doc
+        if doc is not None and doc.IsFamilyDocument:
+            self._build_ui(doc.FamilyManager)
+
     def _build_row(self, fm, row):
         outer = Controls.Border()
         outer.CornerRadius = Windows.CornerRadius(16)
@@ -280,7 +293,16 @@ class FamSlideWindow(forms.WPFWindow):
                 except Exception:
                     pass
 
-        # --- value textbox ------------------------------------------------------
+        # --- value cell -----------------------------------------------------
+        # Border doesn't clip its Child to CornerRadius, so a control with
+        # its own opaque background (TextBox) paints square corners right
+        # over the rounded border. For editable rows we still need a real
+        # TextBox to type into, so we make its background transparent and
+        # zero out MinWidth (some base styles set a MinWidth that's wider
+        # than this column, which is what pushed text past the rounded
+        # edge). Read-only rows never need editing, so they get a
+        # TextBlock instead - TextBlock supports real ellipsis trimming,
+        # which a TextBox does not.
         value_border = Controls.Border()
         value_border.CornerRadius = Windows.CornerRadius(14)
         value_border.Background = Media.Brushes.White
@@ -288,16 +310,28 @@ class FamSlideWindow(forms.WPFWindow):
         value_border.BorderThickness = Windows.Thickness(1)
         value_border.VerticalAlignment = Windows.VerticalAlignment.Center
 
-        value_box = Controls.TextBox()
-        value_box.Text = value_display
-        value_box.BorderThickness = Windows.Thickness(0)
-        value_box.Padding = Windows.Thickness(6, 4, 6, 4)
-        value_box.TextAlignment = Windows.TextAlignment.Center
-        value_box.IsReadOnly = not row.is_editable
-        value_box.Tag = row
-        value_box.KeyDown += self.on_value_box_key_down
-        value_box.LostFocus += self.on_value_box_lost_focus
-        value_border.Child = value_box
+        if row.is_editable:
+            value_box = Controls.TextBox()
+            value_box.Text = value_display
+            value_box.Background = Media.Brushes.Transparent
+            value_box.BorderThickness = Windows.Thickness(0)
+            value_box.Padding = Windows.Thickness(6, 4, 6, 4)
+            value_box.TextAlignment = Windows.TextAlignment.Center
+            value_box.MinWidth = 0.0
+            value_box.Tag = row
+            value_box.KeyDown += self.on_value_box_key_down
+            value_box.LostFocus += self.on_value_box_lost_focus
+            value_border.Child = value_box
+        else:
+            value_text = Controls.TextBlock()
+            value_text.Text = value_display
+            value_text.Padding = Windows.Thickness(6, 4, 6, 4)
+            value_text.TextAlignment = Windows.TextAlignment.Center
+            value_text.TextTrimming = Windows.TextTrimming.CharacterEllipsis
+            value_text.VerticalAlignment = Windows.VerticalAlignment.Center
+            if value_display:
+                value_text.ToolTip = value_display
+            value_border.Child = value_text
 
         Controls.Grid.SetColumn(value_border, 2)
         grid.Children.Add(value_border)
@@ -404,6 +438,7 @@ class FamSlideWindow(forms.WPFWindow):
         ):
             return
         events.execute_in_revit_context(self._do_restore_preset)
+        self._refresh_controls()
 
     def on_slider_mouse_up(self, sender, args):
         row = sender.Tag
@@ -436,6 +471,7 @@ class FamSlideWindow(forms.WPFWindow):
         if args.Key == Input.Key.Enter:
             text = sender.Text
             events.execute_in_revit_context(self._commit_text, row, text)
+            self._refresh_controls()
 
     def on_value_box_lost_focus(self, sender, args):
         row = sender.Tag
@@ -443,6 +479,7 @@ class FamSlideWindow(forms.WPFWindow):
             return
         text = sender.Text
         events.execute_in_revit_context(self._commit_text, row, text)
+        self._refresh_controls()
 
     def on_refresh_click(self, sender, args):
         events.execute_in_revit_context(self.refresh_from_document)
@@ -455,6 +492,7 @@ class FamSlideWindow(forms.WPFWindow):
         ):
             return
         events.execute_in_revit_context(self._do_shuffle)
+        self._refresh_controls()
 
     def on_delete_unused_click(self, sender, args):
         if not forms.alert(
