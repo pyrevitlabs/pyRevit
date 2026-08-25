@@ -87,10 +87,7 @@ def get_name(element, title_on_sheet=False):
         if view_name:
             return view_name
         else:
-            if HOST_APP.is_newer_than("2019", or_equal=True):
-                return element.Name
-            else:
-                return element.ViewName
+            return element.Name
     if PY3:
         return element.Name
     try:
@@ -2110,22 +2107,12 @@ def get_connected_circuits(element, spare=False, space=False):
         circuit_types.append(DB.Electrical.CircuitType.Spare)
     if space:
         circuit_types.append(DB.Electrical.CircuitType.Space)
-    if HOST_APP.is_newer_than(
-        2021, or_equal=True
-    ):  # deprecation of ElectricalSystems in 2021
-        if element.MEPModel and element.MEPModel.GetElectricalSystems():
-            return [
-                x
-                for x in element.MEPModel.GetElectricalSystems()
-                if x.CircuitType in circuit_types
-            ]
-    else:
-        if element.MEPModel and element.MEPModel.ElectricalSystems:
-            return [
-                x
-                for x in element.MEPModel.ElectricalSystems
-                if x.CircuitType in circuit_types
-            ]
+    if element.MEPModel and element.MEPModel.GetElectricalSystems():
+        return [
+            x
+            for x in element.MEPModel.GetElectricalSystems()
+            if x.CircuitType in circuit_types
+        ]
 
 
 def get_element_categories(elements):
@@ -2397,14 +2384,7 @@ def get_fillpattern_from_element(element, background=True, doc=None):
     doc = doc or DOCS.doc
 
     def get_fpm_from_frtype(etype):
-        fp_id = None
-        if HOST_APP.is_newer_than(2018):
-            # return requested fill pattern (background or foreground)
-            fp_id = (
-                etype.BackgroundPatternId if background else etype.ForegroundPatternId
-            )
-        else:
-            fp_id = etype.FillPatternId
+        fp_id = etype.BackgroundPatternId if background else etype.ForegroundPatternId
         if fp_id:
             fillpat_element = doc.GetElement(fp_id)
             if fillpat_element:
@@ -3206,17 +3186,8 @@ def get_crop_region(view):
         (list[DB.CurveLoop]): list of curve loops
     """
     crsm = view.GetCropRegionShapeManager()
-    if HOST_APP.is_newer_than(2015):
-        crsm_valid = crsm.CanHaveShape
-    else:
-        crsm_valid = crsm.Valid
-
-    if crsm_valid:
-        if HOST_APP.is_newer_than(2015):
-            curve_loops = list(crsm.GetCropShape())
-        else:
-            curve_loops = [crsm.GetCropRegionShape()]
-
+    if crsm.CanHaveShape:
+        curve_loops = list(crsm.GetCropShape())
         if curve_loops:
             return curve_loops
 
