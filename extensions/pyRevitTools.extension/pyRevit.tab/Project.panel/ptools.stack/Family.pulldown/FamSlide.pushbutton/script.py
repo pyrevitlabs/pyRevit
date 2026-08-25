@@ -602,15 +602,18 @@ class FamSlideWindow(forms.WPFWindow):
                     continue
                 value = preset[param_id]
                 try:
-                    if (
-                        row.group == "yesno"
-                        or row.storage_type == DB.StorageType.Integer
-                    ):
+                    if value is None or value == "":
+                        if row.storage_type == DB.StorageType.String:
+                            fm.Set(row.param, "")
+                        else:
+                            continue
+
+                    elif row.group == "yesno" or row.storage_type == DB.StorageType.Integer:
                         fm.Set(row.param, int(value))
                     elif row.storage_type == DB.StorageType.Double:
                         fm.Set(row.param, float(value))
                     elif row.storage_type == DB.StorageType.String:
-                        fm.Set(row.param, value)
+                        fm.Set(row.param, str(value))
                 except Exception:
                     logger.exception(
                         "FamSlide: could not restore preset value for '{}'".format(
