@@ -1999,8 +1999,8 @@ def get_gridpoints(grids=None, include_linked_models=False, doc=None):
     for grid1 in source_grids:
         for grid2 in source_grids:
             intres, results = geom.intersect_curves(grid1.Curve, grid2.Curve)
-            if intres == DB.SetComparisonResult.Overlap:
-                gints[db.XYZPoint(results.get_Item(0).XYZPoint)] = [grid1, grid2]
+            if intres == DB.SetComparisonResult.Overlap and results:
+                gints[db.XYZPoint(results[0])] = [grid1, grid2]
     return [GridPoint(point=k, grids=v) for k, v in gints.items()]
 
 
