@@ -10,8 +10,16 @@
                 <TextBlock Text="{Binding subtitle}" />
             </StackPanel>
             <StackPanel Grid.Column="1" >
-                <TextBlock Foreground="DarkGray" Text="{Binding author, StringFormat=Author: {0}}" Margin="25,0,0,0" HorizontalAlignment="Right" />
-                <TextBlock Foreground="DarkGray" Text="{Binding extension, StringFormat=Extension: {0}}" Margin="25,0,0,0" HorizontalAlignment="Right" />
+                <TextBlock Foreground="DarkGray" Margin="25,0,0,0" HorizontalAlignment="Right">
+                    <Run Text="{DynamicResource AuthorLabel}"/>
+                    <Run Text=": "/>
+                    <Run Text="{Binding author}"/>
+                </TextBlock>
+                <TextBlock Foreground="DarkGray" Margin="25,0,0,0" HorizontalAlignment="Right">
+                    <Run Text="{DynamicResource ExtensionLabel}"/>
+                    <Run Text=": "/>
+                    <Run Text="{Binding extension}"/>
+                </TextBlock>
             </StackPanel>
         </Grid>
     </StackPanel>

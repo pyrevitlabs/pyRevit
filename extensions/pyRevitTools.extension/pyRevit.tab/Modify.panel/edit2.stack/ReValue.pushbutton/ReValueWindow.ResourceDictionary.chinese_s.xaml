@@ -1,0 +1,14 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">重新赋值</system:String>
+    <system:String x:Key="Parameter">参数：</system:String>
+    <system:String x:Key="Guide">指南</system:String>
+    <system:String x:Key="GuideText">按格式：在第一个框中指定值的现有模式，在第二个框中指定新格式。例如，如果值是"OVERALL 1ST FLOOR"，第一个框可以包含"{type} {lvl}ST {name}"。工具将匹配指定的格式到值，并相应地提取部分。使用第二个框，您可以重新排列这些提取的部分。在此示例中，在第二个框中指定"LEVEL {lvl} - {type} {name} PLAN"将重新赋值为"LEVEL 1 - OVERALL FLOOR PLAN"&#x0a;&#x0a;按正则表达式：如果第一个框不包含格式查找器"{}"，则工具在查找/替换模式下工作，支持正则表达式。</system:String>
+    <system:String x:Key="OriginalPattern">原始模式：</system:String>
+    <system:String x:Key="NewPattern">新模式：</system:String>
+    <system:String x:Key="ApplyNewValues">应用新值</system:String>
+    <system:String x:Key="MarkSelectedAsFinal">将选定项标记为最终</system:String>
+    <system:String x:Key="OldValue">旧值</system:String>
+    <system:String x:Key="NewValue">新值</system:String>
+</ResourceDictionary>

@@ -8,7 +8,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public string CommandBundle { get; set; }
         public string CommandExtension { get; set; }
         public string CommandContext { get; set; }
-
+        public bool IsStartupScript { get; set; }
         public string HelpSource { get; set; }
         public string Tooltip { get; set; }
     }

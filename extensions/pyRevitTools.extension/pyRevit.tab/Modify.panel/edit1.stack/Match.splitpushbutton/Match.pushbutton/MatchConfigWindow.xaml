@@ -1,12 +1,12 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Width="400" MinWidth="400" MaxWidth="400"
+        Width="520" MinWidth="520" MaxWidth="520"
         Height="500" MinHeight="500"
         ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen"
         ScrollViewer.VerticalScrollBarVisibility="Disabled"
         HorizontalContentAlignment="Center"
-        Title="Match Options">
+        Title="{DynamicResource Title}">
     <DockPanel Margin="10" HorizontalAlignment="Stretch">
         <StackPanel DockPanel.Dock="Bottom" Margin="0,10,0,0">
             <Grid>
@@ -14,13 +14,13 @@
                     <ColumnDefinition />
                     <ColumnDefinition />
                 </Grid.ColumnDefinitions>
-                <Button Margin="0,0,5,0" Grid.Column="0" Click="check_all" Content="Check All" Height="24"/>
-                <Button Margin="5,0,0,0" Grid.Column="1" Click="check_none" Content="Check None" Height="24"/>
+                <Button Margin="0,0,5,0" Grid.Column="0" Click="check_all" Content="{DynamicResource CheckAll}" Height="24"/>
+                <Button Margin="5,0,0,0" Grid.Column="1" Click="check_none" Content="{DynamicResource CheckNone}" Height="24"/>
             </Grid>
-            <Button Margin="0,5,0,0" Click="save_options" Content="Save Options" Height="24"/>
+            <Button Margin="0,5,0,0" Click="save_options" Content="{DynamicResource SaveOptions}" Height="24"/>
         </StackPanel>
         <DockPanel>
-            <GroupBox DockPanel.Dock="Bottom" Header="Dimension Overrides:">
+            <GroupBox DockPanel.Dock="Bottom" Header="{DynamicResource DimensionOverrides}">
                 <Grid Margin="10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition />
@@ -32,15 +32,15 @@
                         <RowDefinition />
                         <RowDefinition />
                     </Grid.RowDefinitions>
-                    <CheckBox x:Name="dim_prefix" Grid.Column="0" Grid.Row="1" IsChecked="True">Prefix Value</CheckBox>
-                    <CheckBox x:Name="dim_above" Grid.Column="1" Grid.Row="0" IsChecked="True">Above Value</CheckBox>
-                    <CheckBox x:Name="dim_override" Grid.Column="1" Grid.Row="1" IsChecked="True">Replaced Value</CheckBox>
-                    <CheckBox x:Name="dim_textposition" IsChecked="True" Grid.Column="0" Grid.Row="0" >Text Position</CheckBox>
-                    <CheckBox x:Name="dim_below" Grid.Column="1" Grid.Row="2" IsChecked="True">Below Value</CheckBox>
-                    <CheckBox x:Name="dim_suffix" Grid.Column="2" Grid.Row="1" IsChecked="True">Postfix Value</CheckBox>
+                    <CheckBox x:Name="dim_prefix" Grid.Column="0" Grid.Row="1" IsChecked="True" Content="{DynamicResource PrefixValue}"/>
+                    <CheckBox x:Name="dim_above" Grid.Column="1" Grid.Row="0" IsChecked="True" Content="{DynamicResource AboveValue}"/>
+                    <CheckBox x:Name="dim_override" Grid.Column="1" Grid.Row="1" IsChecked="True" Content="{DynamicResource ReplacedValue}"/>
+                    <CheckBox x:Name="dim_textposition" IsChecked="True" Grid.Column="0" Grid.Row="0" Content="{DynamicResource TextPosition}"/>
+                    <CheckBox x:Name="dim_below" Grid.Column="1" Grid.Row="2" IsChecked="True" Content="{DynamicResource BelowValue}"/>
+                    <CheckBox x:Name="dim_suffix" Grid.Column="2" Grid.Row="1" IsChecked="True" Content="{DynamicResource PostfixValue}"/>
                 </Grid>
             </GroupBox>
-            <GroupBox Header="Element Graphics Overrides:">
+            <GroupBox Header="{DynamicResource ElementGraphicsOverrides}">
                 <Grid Margin="10">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition />
@@ -51,37 +51,37 @@
                         <RowDefinition Height="8*" />
                     </Grid.RowDefinitions>
                     <WrapPanel Grid.Row="0" Grid.ColumnSpan="2" Margin="0,0,0,5">
-                        <CheckBox x:Name="halftone" IsChecked="True">Halftone</CheckBox>
-                        <CheckBox x:Name="transparency" IsChecked="True" Margin="10,0,0,0">Transparency</CheckBox>
+                        <CheckBox x:Name="halftone" IsChecked="True" Content="{DynamicResource Halftone}"/>
+                        <CheckBox x:Name="transparency" IsChecked="True" Margin="10,0,0,0" Content="{DynamicResource Transparency}"/>
                     </WrapPanel>
-                    <GroupBox Header="Surface" Grid.Column="0" Grid.Row="1" Margin="0,0,5,0">
+                    <GroupBox Header="{DynamicResource Surface}" Grid.Column="0" Grid.Row="1" Margin="0,0,5,0">
                         <StackPanel Margin="5">
-                            <CheckBox x:Name="proj_line_color" IsChecked="True">Line Color</CheckBox>
-                            <CheckBox x:Name="proj_line_pattern" IsChecked="True">Line Pattern</CheckBox>
-                            <CheckBox x:Name="proj_line_weight" IsChecked="True">Line Weight</CheckBox>
-                            <Label FontWeight="Bold" Margin="-5,0,0,0">Foreground</Label>
-                            <CheckBox x:Name="proj_fill_color" IsChecked="True">Fill Color</CheckBox>
-                            <CheckBox x:Name="proj_fill_pattern" IsChecked="True">Fill Pattern</CheckBox>
-                            <CheckBox x:Name="proj_fill_pattern_visibility" IsChecked="True">Fill Pattern Visibility</CheckBox>
-                            <Label FontWeight="Bold" Margin="-5,0,0,0">Background</Label>
-                            <CheckBox x:Name="proj_bg_fill_color" IsChecked="True">Fill Color</CheckBox>
-                            <CheckBox x:Name="proj_bg_fill_pattern" IsChecked="True">Fill Pattern</CheckBox>
-                            <CheckBox x:Name="proj_bg_fill_pattern_visibility" IsChecked="True">Fill Pattern Visibility</CheckBox>
+                            <CheckBox x:Name="proj_line_color" IsChecked="True" Content="{DynamicResource LineColor}"/>
+                            <CheckBox x:Name="proj_line_pattern" IsChecked="True" Content="{DynamicResource LinePattern}"/>
+                            <CheckBox x:Name="proj_line_weight" IsChecked="True" Content="{DynamicResource LineWeight}"/>
+                            <Label FontWeight="Bold" Margin="-5,0,0,0" Content="{DynamicResource Foreground}"/>
+                            <CheckBox x:Name="proj_fill_color" IsChecked="True" Content="{DynamicResource FillColor}"/>
+                            <CheckBox x:Name="proj_fill_pattern" IsChecked="True" Content="{DynamicResource FillPattern}"/>
+                            <CheckBox x:Name="proj_fill_pattern_visibility" IsChecked="True" Content="{DynamicResource FillPatternVisibility}"/>
+                            <Label FontWeight="Bold" Margin="-5,0,0,0" Content="{DynamicResource Background}"/>
+                            <CheckBox x:Name="proj_bg_fill_color" IsChecked="True" Content="{DynamicResource FillColor}"/>
+                            <CheckBox x:Name="proj_bg_fill_pattern" IsChecked="True" Content="{DynamicResource FillPattern}"/>
+                            <CheckBox x:Name="proj_bg_fill_pattern_visibility" IsChecked="True" Content="{DynamicResource FillPatternVisibility}"/>
                         </StackPanel>
                     </GroupBox>
-                    <GroupBox Header="Cut" Grid.Column="1" Grid.Row="1" Margin="5,0,0,0">
+                    <GroupBox Header="{DynamicResource Cut}" Grid.Column="1" Grid.Row="1" Margin="5,0,0,0">
                         <StackPanel Margin="5">
-                            <CheckBox x:Name="cut_line_color" IsChecked="True">Line Color</CheckBox>
-                            <CheckBox x:Name="cut_line_pattern" IsChecked="True">Line Pattern</CheckBox>
-                            <CheckBox x:Name="cut_line_weight" IsChecked="True">Line Weight</CheckBox>
-                            <Label FontWeight="Bold" Margin="-5,0,0,0">Foreground</Label>
-                            <CheckBox x:Name="cut_fill_color" IsChecked="True">Fill Color</CheckBox>
-                            <CheckBox x:Name="cut_fill_pattern" IsChecked="True">Fill Pattern</CheckBox>
-                            <CheckBox x:Name="cut_fill_pattern_visibility" IsChecked="True">Fill Pattern Visibility</CheckBox>
-                            <Label FontWeight="Bold" Margin="-5,0,0,0">Background</Label>
-                            <CheckBox x:Name="cut_bg_fill_color" IsChecked="True">Fill Color</CheckBox>
-                            <CheckBox x:Name="cut_bg_fill_pattern" IsChecked="True">Fill Pattern</CheckBox>
-                            <CheckBox x:Name="cut_bg_fill_pattern_visibility" IsChecked="True">Fill Pattern Visibility</CheckBox>
+                            <CheckBox x:Name="cut_line_color" IsChecked="True" Content="{DynamicResource LineColor}"/>
+                            <CheckBox x:Name="cut_line_pattern" IsChecked="True" Content="{DynamicResource LinePattern}"/>
+                            <CheckBox x:Name="cut_line_weight" IsChecked="True" Content="{DynamicResource LineWeight}"/>
+                            <Label FontWeight="Bold" Margin="-5,0,0,0" Content="{DynamicResource Foreground}"/>
+                            <CheckBox x:Name="cut_fill_color" IsChecked="True" Content="{DynamicResource FillColor}"/>
+                            <CheckBox x:Name="cut_fill_pattern" IsChecked="True" Content="{DynamicResource FillPattern}"/>
+                            <CheckBox x:Name="cut_fill_pattern_visibility" IsChecked="True" Content="{DynamicResource FillPatternVisibility}"/>
+                            <Label FontWeight="Bold" Margin="-5,0,0,0" Content="{DynamicResource Background}"/>
+                            <CheckBox x:Name="cut_bg_fill_color" IsChecked="True" Content="{DynamicResource FillColor}"/>
+                            <CheckBox x:Name="cut_bg_fill_pattern" IsChecked="True" Content="{DynamicResource FillPattern}"/>
+                            <CheckBox x:Name="cut_bg_fill_pattern_visibility" IsChecked="True" Content="{DynamicResource FillPatternVisibility}"/>
                         </StackPanel>
                     </GroupBox>
                 </Grid>

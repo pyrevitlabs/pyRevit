@@ -1,0 +1,411 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using Autodesk.Revit.UI;
+using pyRevitAssemblyBuilder.SessionManager;
+using pyRevitExtensionParser;
+
+namespace pyRevitAssemblyBuilder.UIManager.Icons
+{
+    /// <summary>
+    /// Manages icon loading, caching, and application to Revit UI elements.
+    /// Consolidates all icon-related functionality with theme awareness.
+    /// </summary>
+    public class IconManager : IIconManager
+    {
+        private readonly ILogger _logger;
+        private readonly RevitThemeDetector _themeDetector;
+        private readonly BitmapCache _cache;
+
+        // Accumulated time spent decoding cache misses (BitmapImage + EnsureProperDpi),
+        // summed across every LoadBitmapSource call since the last reset.
+        private long _decodeMs;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IconManager"/> class.
+        /// </summary>
+        /// <param name="logger">The logger instance.</param>
+        public IconManager(ILogger logger)
+        {
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _themeDetector = new RevitThemeDetector(logger);
+            _cache = new BitmapCache();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IconManager"/> class with a custom theme detector.
+        /// </summary>
+        /// <param name="logger">The logger instance.</param>
+        /// <param name="themeDetector">The theme detector for dark/light mode awareness.</param>
+        public IconManager(ILogger logger, RevitThemeDetector themeDetector)
+        {
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _themeDetector = themeDetector ?? throw new ArgumentNullException(nameof(themeDetector));
+            _cache = new BitmapCache();
+        }
+
+        /// <inheritdoc/>
+        public void ApplyIcon(object item, ParsedComponent component, ParsedComponent parentComponent = null, IconMode iconMode = IconMode.LargeAndSmall)
+        {
+            if (item == null || component == null)
+                return;
+
+            RibbonIconRegistry.Register(
+                item,
+                isDarkTheme => ApplyIcon(item, component, parentComponent, iconMode, isDarkTheme));
+
+            ApplyIcon(item, component, parentComponent, iconMode, _themeDetector.IsDarkTheme());
+        }
+
+        private void ApplyIcon(
+            object item,
+            ParsedComponent component,
+            ParsedComponent parentComponent,
+            IconMode iconMode,
+            bool isDarkTheme)
+        {
+            // If the component doesn't have icons, try to use the parent's icons when
+            // this component allows inheritance.
+            var sourceComponent = component;
+            if (!component.HasValidIcons)
+            {
+                if (component.InheritIcon && parentComponent != null && parentComponent.HasValidIcons)
+                {
+                    sourceComponent = parentComponent;
+                }
+                else
+                {
+                    ClearIconsOnItem(item);
+                    return;
+                }
+            }
+
+            try
+            {
+                var smallIcon = GetBestIconForSizeWithTheme(sourceComponent, UIManagerConstants.ICON_SMALL, isDarkTheme);
+
+                switch (iconMode)
+                {
+                    case IconMode.LargeAndSmall:
+                        var largeIcon = GetBestIconForSizeWithTheme(sourceComponent, UIManagerConstants.ICON_LARGE, isDarkTheme);
+                        ApplyLargeAndSmallIcons(item, largeIcon, smallIcon, sourceComponent.DisplayName);
+                        break;
+
+                    case IconMode.SmallOnly:
+                        ApplySmallIconOnly(item, smallIcon, sourceComponent.DisplayName);
+                        break;
+
+                    case IconMode.MediumAndSmall:
+                        var mediumIcon = GetBestIconForSizeWithTheme(sourceComponent, UIManagerConstants.ICON_MEDIUM, isDarkTheme);
+                        ApplyMediumAndSmallIcons(item, mediumIcon, smallIcon, sourceComponent.DisplayName);
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug($"Failed to apply icon to '{component.DisplayName}'. Exception: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Applies both large and small icons to the item.
+        /// </summary>
+        private void ApplyLargeAndSmallIcons(object item, ComponentIcon largeIcon, ComponentIcon smallIcon, string displayName)
+        {
+            BitmapSource largeBitmap = null;
+            BitmapSource smallBitmap = null;
+
+            if (largeIcon != null)
+            {
+                largeBitmap = LoadBitmapSource(largeIcon.FilePath, UIManagerConstants.ICON_LARGE);
+            }
+
+            if (smallIcon != null)
+            {
+                smallBitmap = LoadBitmapSource(smallIcon.FilePath, UIManagerConstants.ICON_SMALL);
+            }
+
+            SetIconsOnItem(item, largeBitmap, smallBitmap);
+        }
+
+        /// <summary>
+        /// Applies only the small icon to the item.
+        /// </summary>
+        private void ApplySmallIconOnly(object item, ComponentIcon smallIcon, string displayName)
+        {
+            if (smallIcon == null)
+                return;
+
+            var smallBitmap = LoadBitmapSource(smallIcon.FilePath, UIManagerConstants.ICON_SMALL);
+            SetIconsOnItem(item, null, smallBitmap);
+        }
+
+        /// <summary>
+        /// Applies medium and small icons for compact ribbon contexts.
+        /// </summary>
+        private void ApplyMediumAndSmallIcons(object item, ComponentIcon mediumIcon, ComponentIcon smallIcon, string displayName)
+        {
+            if (mediumIcon == null && smallIcon == null)
+                return;
+
+            BitmapSource mediumBitmap = null;
+            BitmapSource smallBitmap = null;
+
+            if (mediumIcon != null)
+            {
+                mediumBitmap = LoadBitmapSource(mediumIcon.FilePath, UIManagerConstants.ICON_MEDIUM);
+            }
+
+            if (smallIcon != null)
+            {
+                smallBitmap = LoadBitmapSource(smallIcon.FilePath, UIManagerConstants.ICON_SMALL);
+            }
+
+            SetIconsOnItem(item, mediumBitmap, smallBitmap);
+        }
+
+        /// <summary>
+        /// Sets icons on the ribbon item using dynamic dispatch based on item type.
+        /// </summary>
+        private void SetIconsOnItem(object item, BitmapSource largeImage, BitmapSource smallImage)
+        {
+            switch (item)
+            {
+                // SplitButton must come before PulldownButton because SplitButton derives from PulldownButton
+                case SplitButton splitButton:
+                    if (largeImage != null) splitButton.LargeImage = largeImage;
+                    if (smallImage != null) splitButton.Image = smallImage;
+                    break;
+
+                case PulldownButton pulldownButton:
+                    if (largeImage != null) pulldownButton.LargeImage = largeImage;
+                    if (smallImage != null) pulldownButton.Image = smallImage;
+                    break;
+
+                case PushButton pushButton:
+                    if (largeImage != null) pushButton.LargeImage = largeImage;
+                    if (smallImage != null) pushButton.Image = smallImage;
+                    break;
+
+                case ComboBox comboBox:
+                    // ComboBox only has Image property (small icon)
+                    if (smallImage != null) comboBox.Image = smallImage;
+                    break;
+
+                case Autodesk.Revit.UI.ComboBoxMember comboBoxMember:
+                    // ComboBoxMember only has Image property (small icon)
+                    if (smallImage != null) comboBoxMember.Image = smallImage;
+                    break;
+
+                default:
+                    _logger.Debug($"Unknown ribbon item type: {item?.GetType().Name ?? "null"}");
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Clears existing icons when the resolved component icon source is intentionally empty.
+        /// This keeps reloads in sync when parent icon inheritance is disabled or an icon is removed.
+        /// </summary>
+        private void ClearIconsOnItem(object item)
+        {
+            switch (item)
+            {
+                // SplitButton must come before PulldownButton because SplitButton derives from PulldownButton
+                case SplitButton splitButton:
+                    splitButton.LargeImage = null;
+                    splitButton.Image = null;
+                    break;
+
+                case PulldownButton pulldownButton:
+                    pulldownButton.LargeImage = null;
+                    pulldownButton.Image = null;
+                    break;
+
+                case PushButton pushButton:
+                    pushButton.LargeImage = null;
+                    pushButton.Image = null;
+                    break;
+
+                case ComboBox comboBox:
+                    comboBox.Image = null;
+                    break;
+
+                case Autodesk.Revit.UI.ComboBoxMember comboBoxMember:
+                    comboBoxMember.Image = null;
+                    break;
+            }
+        }
+
+        /// <inheritdoc/>
+        public BitmapSource LoadBitmapSource(string imagePath, int targetSize = 0)
+        {
+            if (string.IsNullOrEmpty(imagePath) || !File.Exists(imagePath))
+                return null;
+            if (imagePath.EndsWith(".svg", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.Debug($"Skipping SVG icon ...");
+                return null;
+            }
+
+            if (string.IsNullOrEmpty(imagePath) || !File.Exists(imagePath))
+                return null;
+
+            // Check cache first
+            if (_cache.TryGet(imagePath, targetSize, out var cachedBitmap))
+                return cachedBitmap;
+
+            var sw = Stopwatch.StartNew();
+            try
+            {
+                var bitmap = new BitmapImage();
+                bitmap.BeginInit();
+                bitmap.UriSource = new Uri(imagePath, UriKind.Absolute);
+                bitmap.CacheOption = BitmapCacheOption.OnLoad;
+
+                // If target size is specified, resize the image
+                if (targetSize > 0)
+                {
+                    bitmap.DecodePixelWidth = targetSize;
+                    bitmap.DecodePixelHeight = targetSize;
+                }
+
+                bitmap.EndInit();
+                bitmap.Freeze(); // Make it thread-safe for cross-thread access
+
+                // Ensure proper DPI for Revit (96 DPI is standard)
+                var result = EnsureProperDpi(bitmap, targetSize);
+
+                // Cache the result
+                if (result != null)
+                    _cache.Set(imagePath, targetSize, result);
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug($"Failed to load bitmap source from '{imagePath}'. Exception: {ex.Message}");
+                return null;
+            }
+            finally
+            {
+                Interlocked.Add(ref _decodeMs, sw.ElapsedMilliseconds);
+            }
+        }
+
+        /// <summary>
+        /// Returns the cache hit/miss counts and accumulated decode time since the last call,
+        /// then resets both to zero. Used by per-extension instrumentation to attribute icon
+        /// work to a single <c>BuildUI</c> window.
+        /// </summary>
+        public (int CacheHits, int CacheMisses, long DecodeMs) ResetAndGetStats()
+        {
+            var cache = _cache.ResetAndGetStats();
+            var decode = Interlocked.Exchange(ref _decodeMs, 0);
+            return (cache.Hits, cache.Misses, decode);
+        }
+
+        /// <inheritdoc/>
+        public ComponentIcon GetBestIconForSize(ParsedComponent component, int preferredSize)
+        {
+            var isDarkTheme = _themeDetector.IsDarkTheme();
+            return GetBestIconForSizeWithTheme(component, preferredSize, isDarkTheme);
+        }
+
+        /// <summary>
+        /// Gets the best icon for a specific size with theme preference.
+        /// Only icon.png (Standard) and icon.dark.png (DarkStandard) are supported.
+        /// </summary>
+        private ComponentIcon GetBestIconForSizeWithTheme(ParsedComponent component, int preferredSize, bool isDarkTheme)
+        {
+            if (!component.HasValidIcons)
+                return null;
+
+            // Fix for #3173: SVG files are discovered as valid icons but cannot be rendered
+            // by WPF BitmapImage. Filter to renderable (raster) formats only.
+            bool IsRenderable(ComponentIcon icon) =>
+                icon?.IsValid == true && !IsSvgIcon(icon);
+
+            if (isDarkTheme)
+            {
+                var darkIcon = component.Icons.PrimaryDarkIcon;
+                if (IsRenderable(darkIcon))
+                    return darkIcon;
+            }
+
+            var lightIcon = component.Icons.PrimaryIcon;
+            if (IsRenderable(lightIcon))
+                return lightIcon;
+
+            // Final fallback - use any valid renderable icon
+            return component.Icons.FirstOrDefault(i => IsRenderable(i));
+        }
+
+        private static bool IsSvgIcon(ComponentIcon icon) =>
+            icon != null && string.Equals(icon.Extension, ".svg", StringComparison.OrdinalIgnoreCase);
+
+        /// <inheritdoc/>
+        public void ClearCache()
+        {
+            _cache.Clear();
+        }
+
+        /// <summary>
+        /// Ensures the bitmap has proper DPI and size for Revit UI.
+        /// </summary>
+        private BitmapSource EnsureProperDpi(BitmapSource source, int targetSize)
+        {
+            if (source == null) return null;
+
+            try
+            {
+                const double targetDpi = 96.0;
+
+                // Check if we need to adjust DPI or size
+                bool needsDpiAdjustment = Math.Abs(source.DpiX - targetDpi) > 1.0 || Math.Abs(source.DpiY - targetDpi) > 1.0;
+                bool needsSizeAdjustment = targetSize > 0 && (source.PixelWidth != targetSize || source.PixelHeight != targetSize);
+
+                if (!needsDpiAdjustment && !needsSizeAdjustment)
+                {
+                    return source;
+                }
+
+                // Calculate the target dimensions
+                int width = targetSize > 0 ? targetSize : source.PixelWidth;
+                int height = targetSize > 0 ? targetSize : source.PixelHeight;
+
+                // Create a properly sized and DPI-adjusted bitmap
+                var targetBitmap = new RenderTargetBitmap(
+                    width,
+                    height,
+                    targetDpi,
+                    targetDpi,
+                    PixelFormats.Pbgra32);
+
+                var visual = new DrawingVisual();
+                using (var context = visual.RenderOpen())
+                {
+                    // Draw the source image scaled to fit the target size
+                    context.DrawImage(source, new Rect(0, 0, width, height));
+                }
+
+                targetBitmap.Render(visual);
+                targetBitmap.Freeze();
+
+                return targetBitmap;
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug($"Failed to adjust DPI for bitmap source. Exception: {ex.Message}");
+                return source; // Return original if adjustment fails
+            }
+        }
+    }
+}

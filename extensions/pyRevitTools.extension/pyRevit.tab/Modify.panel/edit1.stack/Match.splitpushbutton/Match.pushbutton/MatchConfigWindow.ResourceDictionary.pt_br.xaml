@@ -1,0 +1,33 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Opções de igualar</system:String>
+    
+    <system:String x:Key="CheckAll">Marcar todos</system:String>
+    <system:String x:Key="CheckNone">Desmarcar todos</system:String>
+    <system:String x:Key="SaveOptions">Salvar opções</system:String>
+    
+    <system:String x:Key="DimensionOverrides">Sobreposições de cota:</system:String>
+    <system:String x:Key="PrefixValue">Valor de prefixo</system:String>
+    <system:String x:Key="AboveValue">Valor acima</system:String>
+    <system:String x:Key="ReplacedValue">Valor substituído</system:String>
+    <system:String x:Key="TextPosition">Posição do texto</system:String>
+    <system:String x:Key="BelowValue">Valor abaixo</system:String>
+    <system:String x:Key="PostfixValue">Valor de sufixo</system:String>
+    
+    <system:String x:Key="ElementGraphicsOverrides">Sobreposições de gráficos de elementos:</system:String>
+    <system:String x:Key="Halftone">Meio-tom</system:String>
+    <system:String x:Key="Transparency">Transparência</system:String>
+    
+    <system:String x:Key="Surface">Superfície</system:String>
+    <system:String x:Key="LineColor">Cor da linha</system:String>
+    <system:String x:Key="LinePattern">Padrão de linha</system:String>
+    <system:String x:Key="LineWeight">Espessura da linha</system:String>
+    <system:String x:Key="Foreground">Primeiro plano</system:String>
+    <system:String x:Key="FillColor">Cor de preenchimento</system:String>
+    <system:String x:Key="FillPattern">Padrão de preenchimento</system:String>
+    <system:String x:Key="FillPatternVisibility">Visibilidade do padrão de preenchimento</system:String>
+    <system:String x:Key="Background">Plano de fundo</system:String>
+    
+    <system:String x:Key="Cut">Corte</system:String>
+</ResourceDictionary>

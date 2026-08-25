@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Éditeur de Plage de Vue</system:String>
+    <system:String x:Key="Plane">Plan</system:String>
+    <system:String x:Key="Elevation">Élévation</system:String>
+    <system:String x:Key="OffsetFromLevel">Décalage depuis le Niveau</system:String>
+    <system:String x:Key="AssociatedLevel">Niveau Associé</system:String>
+    <system:String x:Key="TopPlane">Plan Supérieur</system:String>
+    <system:String x:Key="CutPlane">Plan de Coupe</system:String>
+    <system:String x:Key="BottomPlane">Plan Inférieur</system:String>
+    <system:String x:Key="ViewDepth">Profondeur de Vue</system:String>
+    <system:String x:Key="ApplyChanges">Appliquer les Modifications</system:String>
+    <system:String x:Key="ResetToOriginal">Réinitialiser à l'Original</system:String>
+</ResourceDictionary>

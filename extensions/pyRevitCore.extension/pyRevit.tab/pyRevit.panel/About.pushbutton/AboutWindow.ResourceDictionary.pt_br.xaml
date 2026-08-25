@@ -1,0 +1,20 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <system:String x:Key="pyRevit.Title">pyRevit</system:String>
+    <system:String x:Key="pyRevit.Engine">Rodando em IronPython {} (cpython {})</system:String>
+    <system:String x:Key="pyRevit.RocketMode.Enabled">Modo Foguete habilitado</system:String>
+    <system:String x:Key="pyRevit.RocketMode.Disabled">Modo Foguete desabilitado</system:String>
+
+    <system:String x:Key="Button.Wiki">Wiki</system:String>
+    <system:String x:Key="Button.Twitter">Twitter</system:String>
+    <system:String x:Key="Button.Blog">Blog</system:String>
+    <system:String x:Key="Button.GitHub">GitHub</system:String>
+    <system:String x:Key="Button.YouTube">YouTube</system:String>
+    <system:String x:Key="Button.License">Licença</system:String>
+    <system:String x:Key="Button.Support">Suporte</system:String>
+    <system:String x:Key="Button.Credits">Créditos</system:String>
+    <system:String x:Key="Button.ReleaseNotes">Notas de Versão</system:String>
+</ResourceDictionary>

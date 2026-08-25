@@ -1,0 +1,43 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Blätter drucken</system:String>
+    
+    <system:String x:Key="Model">Modell</system:String>
+    <system:String x:Key="LinkedPrefix">Verknüpft: </system:String>
+    <system:String x:Key="SheetIndex">Blattindex</system:String>
+    
+    <system:String x:Key="SheetOrdering">Blattreihenfolge</system:String>
+    <system:String x:Key="ReversePrintOrder">Druckreihenfolge umkehren</system:String>
+    <system:String x:Key="ShowNonPrintableSheets">Nicht druckbare Blätter anzeigen (Ausgegraut)</system:String>
+    <system:String x:Key="IncludeNonPrintableInIndexing">Nicht druckbare Blätter in die Indizierung einbeziehen</system:String>
+    <system:String x:Key="IndexDigits">Indexziffern</system:String>
+    <system:String x:Key="IndexStart">Indexstart</system:String>
+    <system:String x:Key="Reset">Zurücksetzen</system:String>
+    
+    <system:String x:Key="SheetPrinting">Blattdruck</system:String>
+    <system:String x:Key="CombineIntoOnePDF">In eine PDF kombinieren</system:String>
+    <system:String x:Key="ExportDWG">DWG exportieren</system:String>
+    <system:String x:Key="NamingFormat">Namensformat</system:String>
+    <system:String x:Key="EditFormats">Formate bearbeiten</system:String>
+    <system:String x:Key="Printer">Drucker</system:String>
+    <system:String x:Key="PageSettings">Seiteneinstellungen</system:String>
+    <system:String x:Key="IncompatibleWithPrinter">Nicht kompatibel mit Drucker</system:String>
+    
+    <system:String x:Key="ListOfSheets">Liste der Blätter im ausgewählten Blattindex</system:String>
+    <system:String x:Key="SetPrintSettings">Druckeinstellungen festlegen</system:String>
+    <system:String x:Key="ResetPrintSettings">Druckeinstellungen zurücksetzen</system:String>
+    <system:String x:Key="Guide">Anleitung</system:String>
+    <system:String x:Key="GuideText">Druckeinstellungen können für Titelblocktypen festgelegt werden. Erstellen Sie einen "Print Setting"-Typ-Parameter (vom Typ Text) in einer Titelblockfamilie und setzen Sie den Parameterwert auf den Namen der gewünschten Druckeinstellung. Bei Verwendung von "Variable Paper Size" weist dieses Tool automatisch die richtige Druckeinstellung basierend auf dem Wert dieses Parameters zu</system:String>
+    
+    <system:String x:Key="KudosToRyan">Dank an Ryan McCullough für PrintFromIndex</system:String>
+    
+    <system:String x:Key="CopySheetFileNames">Blattdateiname(n) kopieren</system:String>
+    
+    <system:String x:Key="PrintIndex">Druckindex</system:String>
+    <system:String x:Key="SheetNumber">Blattnummer</system:String>
+    <system:String x:Key="SheetName">Blattname</system:String>
+    <system:String x:Key="SheetRevision">Blattrevision (Nach Datum sortieren)</system:String>
+    <system:String x:Key="PrintSetting">Druckeinstellung</system:String>
+    <system:String x:Key="FileName">Dateiname</system:String>
+</ResourceDictionary>

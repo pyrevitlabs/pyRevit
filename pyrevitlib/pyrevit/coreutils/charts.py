@@ -21,16 +21,44 @@ CHARTS_JS_PATH = \
     "https://cdnjs.cloudflare.com/ajax/libs/Chart.js/{version}/Chart.min.js"
 
 
-SCRIPT_TEMPLATE = \
-    "var ctx = document.getElementById('{canvas_id}').getContext('2d');" \
-    "var chart = new Chart(ctx, {canvas_code});"
+SCRIPT_TEMPLATE = """
+(function() {{
+    var retryCount = 0;
+    var maxRetries = 100;
+
+    function renderChart() {{
+        if (typeof Chart !== 'undefined') {{
+            var canvas = document.getElementById('{canvas_id}');
+            if (!canvas) {{
+                console.error('pyRevit charts: canvas element "{canvas_id}" was not found.');
+                return;
+            }}
+
+            var ctx = canvas.getContext('2d');
+            var chart = new Chart(ctx, {canvas_code});
+        }} else if (retryCount < maxRetries) {{
+            retryCount += 1;
+            setTimeout(renderChart, 50);
+        }} else {{
+            console.error(
+                'pyRevit charts: Chart.js failed to load after ' +
+                maxRetries +
+                ' retries for canvas "{canvas_id}".'
+            );
+        }}
+    }}
+    renderChart();
+}})();
+"""
 
 
 class _ChartsDataSetEncode(JSONEncoder):
     """JSON encoder for chart data sets."""
     def default(self, dataset_obj):  # pylint: disable=E0202, W0221
         data_dict = dataset_obj.__dict__.copy()
-        for key, value in data_dict.items():
+        # iterate over a snapshot; on python 3 .items() is a live view and
+        # popping while iterating raises RuntimeError
+        for key, value in list(data_dict.items()):
             if key.startswith('_') or value == '' or value == []:
                 data_dict.pop(key)
 

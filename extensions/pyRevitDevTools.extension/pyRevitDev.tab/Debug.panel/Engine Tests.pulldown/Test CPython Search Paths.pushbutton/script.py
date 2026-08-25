@@ -1,11 +1,10 @@
 #! python3
-"""Prints the IronPython sys.path paths."""
+"""Prints the CPython sys.path paths."""
 
 import os
 import sys
 
 
-__context__ = 'zero-doc'
 
 
 folder = os.path.dirname(__file__)

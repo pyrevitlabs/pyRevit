@@ -1,9 +1,10 @@
-﻿using OpenMcdf;
+using OpenMcdf;
 using System;
 using System.Text;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
@@ -16,6 +17,16 @@ namespace pyRevitLabs.Common {
         // private static int lastReport;
 
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+
+        private static readonly HttpClient HttpClient;
+        private static readonly HttpClient ConnectivityClient;
+
+        static CommonUtils() {
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            HttpClient = new HttpClient();
+            HttpClient.DefaultRequestHeaders.UserAgent.ParseAdd("pyrevit-cli");
+            ConnectivityClient = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+        }
 
         [DllImport("ole32.dll")]
         private static extern int StgIsStorageFile([MarshalAs(UnmanagedType.LPWStr)] string pwcsName);
@@ -30,6 +41,44 @@ namespace pyRevitLabs.Common {
             if (path != null && path != string.Empty)
                 return Directory.Exists(path);
             return false;
+        }
+
+        /// <summary>
+        /// Expands %VAR% tokens in a user-supplied path (e.g. --dest=%LOCALAPPDATA%\pyRevit).
+        /// Repeats until stable so nested values like TEMP=%LOCALAPPDATA%\Temp resolve fully.
+        /// </summary>
+        public static string ExpandEnvironmentPath(string path) {
+            if (string.IsNullOrWhiteSpace(path))
+                return path;
+            return ExpandEnvironmentPathRecursive(path.Trim());
+        }
+
+        /// <summary>
+        /// User temp directory with environment variables expanded (handles TEMP=%LOCALAPPDATA%\Temp).
+        /// </summary>
+        public static string GetUserTempDirectory() {
+            var temp = Environment.GetEnvironmentVariable("TEMP");
+            var candidate = !string.IsNullOrWhiteSpace(temp)
+                ? ExpandEnvironmentPathRecursive(temp.Trim())
+                : ExpandEnvironmentPathRecursive("%TEMP%");
+            if (IsConcreteExpandedPath(candidate))
+                return candidate;
+            return Path.GetTempPath().TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        }
+
+        private static bool IsConcreteExpandedPath(string path) {
+            return !string.IsNullOrWhiteSpace(path) && path.IndexOf('%') < 0;
+        }
+
+        private static string ExpandEnvironmentPathRecursive(string path) {
+            var expanded = path;
+            for (int pass = 0; pass < 8; pass++) {
+                var next = Environment.ExpandEnvironmentVariables(expanded).Trim();
+                if (string.Equals(next, expanded, StringComparison.OrdinalIgnoreCase))
+                    break;
+                expanded = next;
+            }
+            return expanded;
         }
 
         public static bool VerifyPythonScript(string path) {
@@ -117,46 +166,36 @@ namespace pyRevitLabs.Common {
             return Math.Abs(System.IO.File.GetLastWriteTimeUtc(filepath).GetHashCode()).ToString();
         }
 
-        public static WebClient GetWebClient() {
-            if (CheckInternetConnection()) {
-                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                return new WebClient();
-            }
-            else
+        public static HttpResponseMessage GetHttpResponse(string url) {
+            logger.Debug("Building HTTP request for: \"{0}\"", url);
+            if (!CheckInternetConnection())
                 throw new pyRevitNoInternetConnectionException();
+
+            return HttpClient.GetAsync(url).GetAwaiter().GetResult();
         }
 
-        public static HttpWebRequest GetHttpWebRequest(string url) {
-            logger.Debug("Building HTTP request for: \"{0}\"", url);
-            if (CheckInternetConnection()) {
-                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
-                request.UserAgent = "pyrevit-cli";
-                return request;
-            }
-            else
+        public static HttpResponseMessage SendHttpRequest(HttpRequestMessage request) {
+            if (!CheckInternetConnection())
                 throw new pyRevitNoInternetConnectionException();
+
+            return HttpClient.SendAsync(request).GetAwaiter().GetResult();
+        }
+
+        public static void CopyHttpContentToFile(HttpContent content, string destPath) {
+            using (var stream = content.ReadAsStreamAsync().GetAwaiter().GetResult())
+            using (var fileStream = File.Create(destPath))
+                stream.CopyTo(fileStream);
         }
 
         public static string DownloadFile(string url, string destPath) {
+            if (!CheckInternetConnection())
+                throw new pyRevitNoInternetConnectionException();
+
             try {
-                using (var client = GetWebClient()) {
-                    client.Headers.Add("User-Agent", "pyrevit-cli");
-                    //if (GlobalConfigs.ReportProgress) {
-                    //    logger.Debug("Downloading (async) \"{0}\"", url);
-
-                    //    client.DownloadProgressChanged += Client_DownloadProgressChanged;
-
-                    //    lastReport = 0;
-                    //    client.DownloadFileAsync(new Uri(url), destPath, progressToken);
-
-                    //    // wait until download is complete
-                    //    while (client.IsBusy) ;
-                    //}
-                    //else {
-                    logger.Debug("Downloading \"{0}\"", url);
-                    client.DownloadFile(url, destPath);
-                    //}
+                logger.Debug("Downloading \"{0}\"", url);
+                using (var response = HttpClient.GetAsync(url).GetAwaiter().GetResult()) {
+                    response.EnsureSuccessStatusCode();
+                    CopyHttpContentToFile(response.Content, destPath);
                 }
             }
             catch (Exception dlEx) {
@@ -200,9 +239,9 @@ namespace pyRevitLabs.Common {
 
         public static bool CheckInternetConnection() {
             try {
-                using (var client = new WebClient())
-                using (client.OpenRead("http://clients3.google.com/generate_204")) {
-                    return true;
+                using (var response = ConnectivityClient.GetAsync("http://clients3.google.com/generate_204")
+                    .GetAwaiter().GetResult()) {
+                    return response.IsSuccessStatusCode;
                 }
             }
             catch {
@@ -211,19 +250,39 @@ namespace pyRevitLabs.Common {
         }
 
         public static byte[] GetStructuredStorageStream(string filePath, string streamName) {
-            logger.Debug(string.Format("Attempting to read \"{0}\" stream from structured storage file at \"{1}\"",
-                                       streamName, filePath));
+            logger.Debug("Attempting to read \"{0}\" stream from structured storage file at \"{1}\"",
+                         streamName, filePath);
             int res = StgIsStorageFile(filePath);
 
             if (res == 0) {
-                CompoundFile cf = new CompoundFile(filePath);
-                logger.Debug($"Found CF Root: {cf.RootStorage}");
-                if (cf.RootStorage.TryGetStream(streamName, out var foundStream)) {
-                    byte[] streamData = foundStream.GetData();
-                    cf.Close();
-                    return streamData;
+                using (var root = RootStorage.OpenRead(filePath)) {
+                    logger.Debug("Opened structured storage root at \"{0}\"", filePath);
+                    if (root.TryOpenStream(streamName, out CfbStream foundStream)) {
+                        using (foundStream) {
+                            long len = foundStream.Length;
+                            if (len > int.MaxValue)
+                                throw new NotSupportedException(
+                                    string.Format("Structured storage stream \"{0}\" in \"{1}\" exceeds maximum supported size.",
+                                                  streamName, filePath));
+                            foundStream.Seek(0, SeekOrigin.Begin);
+                            byte[] buffer = new byte[(int)len];
+                            int offset = 0;
+                            int remaining = buffer.Length;
+                            while (remaining > 0) {
+                                int read = foundStream.Read(buffer, offset, remaining);
+                                if (read == 0)
+                                    throw new InvalidDataException(
+                                        string.Format("Structured storage stream \"{0}\" in \"{1}\" ended before declared length.",
+                                                      streamName, filePath));
+                                offset += read;
+                                remaining -= read;
+                            }
+                            return buffer;
+                        }
+                    }
+                    logger.Debug("Stream \"{0}\" not found in structured storage file \"{1}\"", streamName, filePath);
+                    return null;
                 }
-                return null;
             }
             else {
                 throw new NotSupportedException("File is not a structured storage file");
@@ -246,18 +305,18 @@ namespace pyRevitLabs.Common {
         }
 
         public static bool VerifyUrl(string url) {
-            if (CheckInternetConnection()) {
-                HttpWebRequest request = GetHttpWebRequest(url);
-                try {
-                    var response = request.GetResponse();
-                }
-                catch (Exception ex) {
-                    logger.Debug(ex);
-                    return false;
+            if (!CheckInternetConnection())
+                return true;
+
+            try {
+                using (var response = GetHttpResponse(url)) {
+                    return true;
                 }
             }
-
-            return true;
+            catch (Exception ex) {
+                logger.Debug(ex);
+                return false;
+            }
         }
 
         public static void OpenInExplorer(string resourcePath) {

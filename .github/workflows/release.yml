@@ -1,0 +1,200 @@
+name: pyRevit Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      notify_only:
+        description: Run notify job only (skip release pipeline)
+        type: boolean
+        default: false
+      release_url:
+        description: Published release URL (required for notify-only runs)
+        type: string
+        required: false
+      tag_ref:
+        description: Release tag to notify for (e.g. v6.5.0.26173+1406)
+        type: string
+        required: false
+
+concurrency:
+  group: pyrevit-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release:
+    if: github.repository == 'pyrevitlabs/pyRevit' && github.ref_type == 'tag' && github.event_name == 'push'
+    runs-on: windows-2025
+    permissions:
+      contents: write
+      actions: write
+    environment: production
+    outputs:
+      release_url: ${{ steps.capture_url.outputs.release_url }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Wait for CI to complete on tagged commit
+        id: wait_ci
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 30); do
+            RUN_ID=$(gh run list \
+              --workflow ci.yml \
+              --commit "$GITHUB_SHA" \
+              --limit 1 \
+              --json databaseId \
+              --jq '.[0].databaseId' \
+              -R "$GITHUB_REPOSITORY")
+            if [ -n "${RUN_ID:-}" ] && [ "$RUN_ID" != "null" ]; then
+              echo "Found CI run: $RUN_ID"
+              gh run watch "$RUN_ID" --exit-status -R "$GITHUB_REPOSITORY"
+              echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "CI run for $GITHUB_SHA not yet started; retry in 20s ($i/30)"
+            sleep 20
+          done
+          echo "Timed out waiting for CI run on $GITHUB_SHA" >&2
+          exit 1
+
+      - name: Download unsigned bin artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: unsigned-bin-${{ github.sha }}
+          run-id: ${{ steps.wait_ci.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: bin/
+
+      # Clone-of-master must not depend on the master push event (it can be dropped).
+      # Best-effort: tag CI already uploaded these zips; do not block pack/sign/publish.
+      - name: Refresh ci-binaries master assets
+        continue-on-error: true
+        shell: pwsh
+        working-directory: ${{ github.workspace }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $sha = $env:COMMIT_SHA
+          $shaZip = "unsigned-bin-$sha.zip"
+          $branchZip = "unsigned-bin-master-latest.zip"
+          Compress-Archive -Path bin -DestinationPath $shaZip -Force
+          Copy-Item $shaZip $branchZip -Force
+          gh release view ci-binaries 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create ci-binaries --prerelease --title "CI Binaries" --notes "Pre-built bin/ from CI (anonymous download for pyrevit clone)."
+          }
+          gh release upload ci-binaries $shaZip --clobber
+          gh release upload ci-binaries $branchZip --clobber
+
+      - name: Download stamped release metadata
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: stamped-release-metadata-${{ github.sha }}
+          run-id: ${{ steps.wait_ci.outputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: .
+
+      - name: Cache NuGet packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', '**/Directory.Build.props', 'build/Build.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Run release pipeline
+        id: pipeline
+        working-directory: build
+        env:
+          DOTNET_ENVIRONMENT: Production
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          Build__Channel: release
+          Signing__TenantId: ${{ secrets.AZURE_TENANT_ID }}
+          Signing__ClientId: ${{ secrets.AZURE_CLIENT_ID }}
+          Signing__ClientSecret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          Signing__Endpoint: ${{ secrets.AZURE_ENDPOINT }}
+          Signing__SigningAccountName: ${{ secrets.AZURE_CODE_SIGNING_NAME }}
+          Signing__CertificateProfileName: ${{ secrets.AZURE_CERT_PROFILE_NAME }}
+          Publish__ChocoToken: ${{ secrets.CHOCO_TOKEN }}
+          Publish__WingetToken: ${{ secrets.WINGET_GITHUB_TOKEN }}
+        run: dotnet run -c Release -- release pack sign publish
+
+      - name: Capture release URL
+        id: capture_url
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL=$(tr -d '\r\n' < dist/github-release-url.txt)
+          echo "release_url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Delete temporary CI artifacts
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $headers = @{
+            Authorization = "Bearer $env:GITHUB_TOKEN"
+            Accept = "application/vnd.github+json"
+            "X-GitHub-Api-Version" = "2022-11-28"
+          }
+          $artifactNames = @(
+            "unsigned-bin-${{ github.sha }}",
+            "stamped-release-metadata-${{ github.sha }}"
+          )
+          $listUrl = "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ steps.wait_ci.outputs.run_id }}/artifacts?per_page=100"
+          $artifacts = (Invoke-RestMethod -Method Get -Uri $listUrl -Headers $headers).artifacts
+          foreach ($artifactName in $artifactNames) {
+            $artifact = $artifacts | Where-Object { $_.name -eq $artifactName } | Select-Object -First 1
+            if (-not $artifact) {
+              Write-Host "No artifact named '$artifactName' found on run ${{ steps.wait_ci.outputs.run_id }}."
+              continue
+            }
+            $deleteUrl = "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/$($artifact.id)"
+            Invoke-RestMethod -Method Delete -Uri $deleteUrl -Headers $headers | Out-Null
+            Write-Host "Deleted artifact '$artifactName' (id=$($artifact.id))."
+          }
+
+  notify:
+    needs: release
+    if: |
+      always() &&
+      !cancelled() &&
+      github.repository == 'pyrevitlabs/pyRevit' && (
+        (github.event_name == 'push' && github.ref_type == 'tag' && needs.release.result == 'success') ||
+        (github.event_name == 'workflow_dispatch' && inputs.notify_only == true)
+      )
+    runs-on: windows-2025
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_ref || github.ref }}
+
+      - name: Notify linked issues
+        continue-on-error: true
+        working-directory: build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          Build__Channel: release
+          Build__NotifyUrl: ${{ github.event_name == 'workflow_dispatch' && inputs.release_url || needs.release.outputs.release_url }}
+        run: dotnet run -c Release -- notify

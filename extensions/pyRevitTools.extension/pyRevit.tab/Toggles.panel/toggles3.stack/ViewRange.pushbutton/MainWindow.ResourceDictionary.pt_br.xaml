@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Editor de faixa da vista</system:String>
+    <system:String x:Key="Plane">Plano</system:String>
+    <system:String x:Key="Elevation">Elevação</system:String>
+    <system:String x:Key="OffsetFromLevel">Deslocamento do nível</system:String>
+    <system:String x:Key="AssociatedLevel">Nível associado</system:String>
+    <system:String x:Key="TopPlane">Plano superior</system:String>
+    <system:String x:Key="CutPlane">Plano de corte</system:String>
+    <system:String x:Key="BottomPlane">Plano inferior</system:String>
+    <system:String x:Key="ViewDepth">Profundidade da vista</system:String>
+    <system:String x:Key="ApplyChanges">Aplicar alterações</system:String>
+    <system:String x:Key="ResetToOriginal">Redefinir para o original</system:String>
+</ResourceDictionary>

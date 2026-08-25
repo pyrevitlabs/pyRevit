@@ -1,7 +1,5 @@
 """Test standard input in pyRevit console window."""
 # pylint: disable-all
-__context__ = 'zero-doc'
-__fullframeengine__ = True
 
 import sys
 PY2 = sys.version_info[0] == 2

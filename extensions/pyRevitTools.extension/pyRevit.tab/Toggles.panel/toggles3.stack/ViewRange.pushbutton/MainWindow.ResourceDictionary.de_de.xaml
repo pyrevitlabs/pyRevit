@@ -1,0 +1,15 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Sichtbereich-Editor</system:String>
+    <system:String x:Key="Plane">Ebene</system:String>
+    <system:String x:Key="Elevation">Höhe</system:String>
+    <system:String x:Key="OffsetFromLevel">Versatz vom Level</system:String>
+    <system:String x:Key="AssociatedLevel">Zugeordnetes Level</system:String>
+    <system:String x:Key="TopPlane">Obere Ebene</system:String>
+    <system:String x:Key="CutPlane">Schnittebene</system:String>
+    <system:String x:Key="BottomPlane">Untere Ebene</system:String>
+    <system:String x:Key="ViewDepth">Sichttiefe</system:String>
+    <system:String x:Key="ApplyChanges">Änderungen übernehmen</system:String>
+    <system:String x:Key="ResetToOriginal">Auf Original zurücksetzen</system:String>
+</ResourceDictionary>

@@ -8,6 +8,8 @@ using Autodesk.Revit.ApplicationServices;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.PyRevit;
+using pyRevitLabs.Json.Linq;
+using pyRevitLabs.NLog;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public enum ScriptRuntimeType {
@@ -17,6 +19,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
     public class ScriptRuntimeConfigs : IDisposable {
         private object _eventSender = null;
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         public ControlledApplication ControlledApp { get; set; }
         public Application App { get; set; }
@@ -28,6 +31,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public List<string> SearchPaths { get; set; }
         public List<string> Arguments { get; set; }
+        public IDictionary<string, object> Variables { get; set; }
+        public string LogFilePath { get; set; }
+        public bool SuppressOutput { get; set; }
 
         public object EventSender {
             get { return _eventSender; }
@@ -59,19 +65,25 @@ namespace PyRevitLabs.PyRevit.Runtime {
             SelectedElements = null;
             SearchPaths = null;
             Arguments = null;
+            Variables = null;
+            LogFilePath = null;
+            SuppressOutput = false;
             EventSender = null;
             EventArgs = null;
         }
     }
 
     public class ScriptRuntime : IDisposable {
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+
         // app handles
         private UIApplication _uiApp = null;
         private Application _app = null;
 
-        // output window and stream
+        // output stream
         private WeakReference<ScriptConsole> _scriptOutput = new WeakReference<ScriptConsole>(null);
         private WeakReference<ScriptIO> _outputStream = new WeakReference<ScriptIO>(null);
+        private ScriptOutput _outputService;
 
         // dict for command result data
         private Dictionary<string, string> _resultsDict = null;
@@ -115,10 +127,21 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // prepare results
             ExecutionResult = ScriptExecutorResultCodes.Succeeded;
             TraceMessage = string.Empty;
+            _outputService = ScriptOutput.GetForRuntime(this);
         }
 
         public ScriptData ScriptData { get; private set; }
         public ScriptRuntimeConfigs ScriptRuntimeConfigs { get; private set; }
+        public bool IsDisposed { get; private set; }
+        public ScriptLoggerService LoggerService =>
+            ScriptLoggerService.GetForRuntime(this);
+        public ScriptOutput OutputService {
+            get {
+                if (_outputService == null)
+                    _outputService = ScriptOutput.GetForRuntime(this);
+                return _outputService;
+            }
+        }
 
         // target script
         public string ScriptSourceFile {
@@ -148,6 +171,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public ScriptEngineType EngineType {
             get {
                 // determine engine necessary to run this script
+                var engineTypeFromConfig = GetEngineTypeFromConfigs();
+                if (engineTypeFromConfig != null)
+                    return engineTypeFromConfig.Value;
+
 
                 if (PyRevitScript.IsType(ScriptSourceFile, PyRevitScriptTypes.Python)) {
                     string firstLine = "";
@@ -200,6 +227,47 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 // ScriptSourceFile with be "" and runtime can not determine
                 // the engine type
                 return ScriptEngineType.Unknown;
+            }
+        }
+
+        private ScriptEngineType? GetEngineTypeFromConfigs() {
+            // Parse engine configs JSON to extract explicit engine type
+            // Format: {"type":"CPython",...} or {"type":"IronPython",...}
+            try {
+                if (string.IsNullOrEmpty(ScriptRuntimeConfigs?.EngineConfigs))
+                    return null;
+
+                // Parse JSON using pyRevitLabs.Json (Newtonsoft.Json fork)
+                var json = JObject.Parse(ScriptRuntimeConfigs.EngineConfigs);
+                var engineTypeName = json["type"]?.Value<string>();
+
+                if (string.IsNullOrEmpty(engineTypeName))
+                    return null;
+
+                // Only honor Python engine overrides for Python scripts
+                if (!PyRevitScript.IsType(ScriptSourceFile, PyRevitScriptTypes.Python))
+                    return null;
+
+                // Map string to ScriptEngineType enum
+                if (engineTypeName.Equals("CPython", StringComparison.OrdinalIgnoreCase))
+                    return ScriptEngineType.CPython;
+
+                if (engineTypeName.Equals("IronPython", StringComparison.OrdinalIgnoreCase)) {
+                    // Backward-compat: older command generators always injected
+                    // "type":"IronPython" even when user did not explicitly set it.
+                    // In that case, allow runtime shebang detection to pick engine.
+                    var typeExplicit = json["type_explicit"]?.Value<bool?>() ?? false;
+                    if (!typeExplicit)
+                        return null;
+
+                    return ScriptEngineType.IronPython;
+                }
+
+                return null;
+            }
+            catch (Exception ex) {
+                logger.Error(ex, "Failed to parse engine configs JSON: {0}", ScriptRuntimeConfigs.EngineConfigs);
+                return null;
             }
         }
 
@@ -304,32 +372,28 @@ namespace PyRevitLabs.PyRevit.Runtime {
         // output
         public ScriptConsole OutputWindow {
             get {
-                // get ScriptOutput from the weak reference
+                if (ScriptOutput.IsStartupRuntime(this)) {
+                    ScriptOutput.ConfigureForRuntime(this);
+                    return ScriptOutput.GetDefault(UIApp, ScriptRuntimeConfigs.DebugMode).window;
+                }
+
                 ScriptConsole output;
                 var re = _scriptOutput.TryGetTarget(out output);
-                if (re && output != null)
+                if (re && output != null && !output.ClosedByUser)
                     return output;
-                else {
-                    // Stating a new output window
-                    var newOutput = new ScriptConsole(ScriptRuntimeConfigs.DebugMode, UIApp);
 
-                    // Set output window title to command name
-                    newOutput.OutputTitle = ScriptData.CommandName;
+                var newOutput = new ScriptConsole(ScriptRuntimeConfigs.DebugMode, UIApp);
+                newOutput.OutputTitle = ScriptData.CommandName;
+                newOutput.OutputId = ScriptData.CommandUniqueId;
+                newOutput.AppVersion = string.Format(
+                    "{0}:{1}:{2}",
+                    EnvDict.PyRevitVersion,
+                    EngineType == ScriptEngineType.CPython ? EnvDict.PyRevitCPYVersion : EnvDict.PyRevitIPYVersion,
+                    EnvDict.RevitVersion
+                    );
 
-                    // Set window identity to the command unique identifier
-                    newOutput.OutputId = ScriptData.CommandUniqueId;
-
-                    // set window app version header
-                    newOutput.AppVersion = string.Format(
-                        "{0}:{1}:{2}",
-                        EnvDict.PyRevitVersion,
-                        EngineType == ScriptEngineType.CPython ? EnvDict.PyRevitCPYVersion : EnvDict.PyRevitIPYVersion,
-                        EnvDict.RevitVersion
-                        );
-
-                    _scriptOutput = new WeakReference<ScriptConsole>(newOutput);
-                    return newOutput;
-                }
+                _scriptOutput = new WeakReference<ScriptConsole>(newOutput);
+                return newOutput;
             }
         }
 
@@ -367,12 +431,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         // disposal
         public void Dispose() {
+            IsDisposed = true;
             UIControlledApp = null;
             ControlledApp = null;
             _uiApp = null;
             _app = null;
             _scriptOutput = new WeakReference<ScriptConsole>(null);
-            _outputStream = new WeakReference<ScriptIO>(null);;
+            _outputStream = new WeakReference<ScriptIO>(null);
             _resultsDict = null;
         }
     }

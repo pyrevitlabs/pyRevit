@@ -5,19 +5,15 @@ verify_ssl = true
 
 [dev-packages]
 mypy = "*"
-pylint = "==4.0.4"
+pylint = "==4.0.6"
 
 [packages]
-docopt = "*"
-requests = "*"
-pygount = "*"
 pyyaml = ">=5.4"
 black = "*"
-setuptools = "==80.9.0"
+setuptools = "==83.0.0"
 mkdocs = "*"
 mkdocstrings = "*"
 mkdocstrings-python = "*"
-colorama = "*"
 mkdocs-gen-files = "*"
 mkdocs-literate-nav = "*"
 mkdocs-exclude = "*"
@@ -26,12 +22,12 @@ mkdocs-material = "*"
 ruff = "*"
 
 [requires]
-python_version = "3.10"
+python_version = "3.14"
 
 [pipenv]
-allow_prereleases = true
+allow_prereleases = false
 
 [scripts]
-pyrevit = "python ./dev/pyrevit.py"
 docs = "mkdocs build"
 check-docstrings = "ruff check --fix pyrevitlib/pyrevit"
+check-py3 = "python ./dev/scripts/check_py3_compat.py"

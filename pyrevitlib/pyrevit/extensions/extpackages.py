@@ -15,7 +15,6 @@ from pyrevit.userconfig import user_config
 from pyrevit import extensions as exts
 
 
-#pylint: disable=W0703,C0302,C0103
 mlogger = get_logger(__name__)
 
 
@@ -190,6 +189,13 @@ class ExtensionPackage:
         Returns:
             (str): Installed directory path or empty string if not installed.
         """
+        # Package loaded from on-disk extension.json: installed dir is the def file's parent
+        for def_path in self.def_file_path:
+            if op.exists(def_path):
+                parent = op.dirname(def_path)
+                if any(op.basename(parent).endswith(p) for p in EXTENSION_POSTFIXES):
+                    return parent
+        # Fallback: match by ext_dirname (name from manifest + postfix)
         for ext_dir in user_config.get_ext_root_dirs():
             if op.exists(ext_dir):
                 for sub_dir in os.listdir(ext_dir):
@@ -224,6 +230,17 @@ class ExtensionPackage:
         return True if self.url else False
 
     @property
+    def config_section_name(self):
+        """Config section key: use the .extension folder name when installed, else ext_dirname.
+
+        This keeps the same key as install (folder name) so config is not duplicated
+        when extension.json has a different 'name' than the folder.
+        """
+        if self.is_installed:
+            return op.basename(self.is_installed)
+        return self.ext_dirname
+
+    @property
     def version(self):
         """Extension version.
 
@@ -242,18 +259,15 @@ class ExtensionPackage:
         """Returns a valid config manager for this extension.
 
         All config parameters will be saved in user config file.
-
-        Returns:
-            (pyrevit.coreutils.configparser.PyRevitConfigSectionParser):
-                Config section handler
+        Section key is the extension folder name (e.g. extension_test.extension)
+        so it matches the install path and the C# loader.
         """
         try:
-            return user_config.get_section(self.ext_dirname)
+            return user_config.get_section(self.config_section_name)
         except Exception:
-            cfg_section = user_config.add_section(self.ext_dirname)
+            cfg_section = user_config.add_section(self.config_section_name)
             self.config.disabled = not self.default_enabled
             self.config.private_repo = self.builtin
-            self.config.username = self.config.password = ''
             user_config.save_changes()
             return cfg_section
 
@@ -285,7 +299,7 @@ class ExtensionPackage:
 
     def remove_pkg_config(self):
         """Removes the installed extension configuration."""
-        user_config.remove_section(self.ext_dirname)
+        user_config.remove_section(self.config_section_name)
         user_config.save_changes()
 
     def disable_package(self):
@@ -326,7 +340,7 @@ def _update_extpkgs(ext_def_file, loaded_pkgs):
                 matched_pkg = loaded_pkg
                 break
         if matched_pkg:
-            matched_pkg.update_info(extpkg_def)
+            matched_pkg.update_info(extpkg_def, def_file_path=ext_def_file)
         elif extpkg.is_valid():
             loaded_pkgs.append(extpkg)
 
@@ -341,10 +355,15 @@ def _install_extpkg(extpkg, install_dir, install_dependencies=True):
         clone_path = op.join(install_dir, extpkg.ext_dirname)
         mlogger.info('Installing %s to %s', extpkg.name, clone_path)
 
-        if extpkg.config.username and extpkg.config.password:
+        # Only pass username/password when URL has no embedded credentials
+        # (script may inject oauth2:TOKEN@ into URL; double credentials cause
+        # "too many redirects or authentication replays")
+        token = getattr(extpkg.config, 'token', None)
+        url_has_creds = '://' in extpkg.url and '@' in extpkg.url.split('://', 1)[1].split('/')[0]
+        if token and not url_has_creds:
             git.git_clone(extpkg.url, clone_path,
-                          username=extpkg.config.username,
-                          password=extpkg.config.password)
+                          username='oauth2',
+                          password=token)
         else:
             git.git_clone(extpkg.url, clone_path)
         mlogger.info('Extension successfully installed :thumbs_up:')
@@ -358,16 +377,16 @@ def _install_extpkg(extpkg, install_dir, install_dependencies=True):
                 dep_pkg = get_ext_package_by_name(dep_pkg_name)
                 if dep_pkg:
                     _install_extpkg(dep_pkg,
-                                     install_dir,
-                                     install_dependencies=True)
+                                    install_dir,
+                                    install_dependencies=True)
 
 
 def _remove_extpkg(extpkg, remove_dependencies=True):
     if extpkg.is_removable:
         dir_to_remove = extpkg.is_installed
         if dir_to_remove:
-            fully_remove_dir(dir_to_remove)
             extpkg.remove_pkg_config()
+            fully_remove_dir(dir_to_remove)
             mlogger.info('Successfully removed extension from: %s',
                          dir_to_remove)
         else:
@@ -443,6 +462,39 @@ def get_ext_package_by_name(extpkg_name):
     return None
 
 
+def _paths_equal(path1, path2):
+    """Compare two paths for equality (case-insensitive on Windows)."""
+    if not path1 or not path2:
+        return False
+    try:
+        n1 = op.normpath(safe_strtype(path1))
+        n2 = op.normpath(safe_strtype(path2))
+    except Exception:
+        return False
+    if n1 == n2:
+        return True
+    try:
+        return op.normpath(op.abspath(n1)).lower() == op.normpath(op.abspath(n2)).lower()
+    except Exception:
+        return False
+
+
+def get_ext_package_by_installed_path(installed_path):
+    """Return the ExtensionPackage installed at the given path, if any.
+
+    The loader identifies extensions by folder path; package name may come from
+    extension.json, so lookup by name can fail. This finds by path instead.
+    """
+    if not installed_path:
+        return None
+    norm_path = op.normpath(installed_path)
+    for extpkg in get_ext_packages(authorized_only=False):
+        inst = extpkg.is_installed
+        if inst and _paths_equal(inst, norm_path):
+            return extpkg
+    return None
+
+
 def get_dependency_graph():
     return DependencyGraph(get_ext_packages(authorized_only=False))
 
@@ -450,7 +502,7 @@ def get_dependency_graph():
 def install(extpkg, install_dir, install_dependencies=True):
     """Install the extension in the given parent directory.
 
-    This method uses .installed_dir property of extension object 
+    This method uses .installed_dir property of extension object
     as installation directory name for this extension.
     This method also handles installation of extension dependencies.
 
@@ -491,3 +543,4 @@ def remove(extpkg, remove_dependencies=True):
     except PyRevitPluginRemoveException as remove_err:
         mlogger.error('Error removing extension: %s | %s',
                       extpkg.name, remove_err)
+        raise

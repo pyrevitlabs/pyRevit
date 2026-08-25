@@ -1,0 +1,16 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Params2Param - Копирование значений параметров</system:String>
+    <system:String x:Key="SelectCategory">Выберите категорию:</system:String>
+    <system:String x:Key="SourceParameters">Исходные параметры (при необходимости выберите несколько):</system:String>
+    <system:String x:Key="TargetParameter">Целевой параметр (выберите один):</system:String>
+    <system:String x:Key="InsertSeparators">Вставьте разделители между значениями параметров, разделенными пробелами.</system:String>
+    <system:String x:Key="AddSpacesToSeparators">Добавить пробелы к разделителям:</system:String>
+    <system:String x:Key="None">Нет</system:String>
+    <system:String x:Key="Before">Перед</system:String>
+    <system:String x:Key="After">После</system:String>
+    <system:String x:Key="BeforeAndAfter">Перед и после</system:String>
+    <system:String x:Key="Execute">Выполнить</system:String>
+    <system:String x:Key="Cancel">Отмена</system:String>
+</ResourceDictionary>

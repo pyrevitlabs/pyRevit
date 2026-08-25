@@ -12,6 +12,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static string EnvVarsDictKey = keyPrefix + "EnvVarsDict";
         public static string EnginesDictKey = keyPrefix + "CachedEngines";
         public static string IronPythonEngineDefaultOutputStreamCfgKey = keyPrefix + "CachedEngineDefaultOutputStreamCfg";
+        public static string IronPythonEngineDefaultErrorStreamCfgKey = keyPrefix + "CachedEngineDefaultErrorStreamCfg";
         public static string IronPythonEngineDefaultInputStreamCfgKey = keyPrefix + "CachedEngineDefaultInputStreamCfg";
         public static string OutputWindowsDictKey = keyPrefix + "OutputWindowsDict";
     }
@@ -26,9 +27,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static string Clone = string.Format("{0}_CLONE", keyPrefix);
         public static string IPYVersion = string.Format("{0}_IPYVERSION", keyPrefix);
         public static string CPYVersion = string.Format("{0}_CPYVERSION", keyPrefix);
-
-        public static string LoggingLevel = string.Format("{0}_LOGGINGLEVEL", keyPrefix);
-        public static string FileLogging = string.Format("{0}_FILELOGGING", keyPrefix);
 
         public static string LoadedAssms = string.Format("{0}_LOADEDASSMS", keyPrefix);
         public static string RefedAssms = string.Format("{0}_REFEDASSMS", keyPrefix);
@@ -64,9 +62,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public string PyRevitClone;
         public string PyRevitIPYVersion;
         public string PyRevitCPYVersion;
-
-        public int LoggingLevel;
-        public bool FileLogging;
 
         public string[] LoadedAssemblies;
         public string[] ReferencedAssemblies;
@@ -111,12 +106,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             if (_envData.Contains(EnvDictionaryKeys.CPYVersion))
                 PyRevitCPYVersion = (string)_envData[EnvDictionaryKeys.CPYVersion];
-
-            // logging
-            if (_envData.Contains(EnvDictionaryKeys.LoggingLevel))
-                LoggingLevel = (int)_envData[EnvDictionaryKeys.LoggingLevel];
-            if (_envData.Contains(EnvDictionaryKeys.FileLogging))
-                FileLogging = (bool)_envData[EnvDictionaryKeys.FileLogging];
 
             // assemblies
             if (_envData.Contains(EnvDictionaryKeys.LoadedAssms))
@@ -168,6 +157,29 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public void ResetEventHooks() {
             ((Dictionary<string, Dictionary<string, string>>)_envData[EnvDictionaryKeys.Hooks]).Clear();
+        }
+
+        /// <summary>
+        /// Seeds the AppDomain environment dictionary with session values supplied by the C# loader.
+        /// Called via reflection by EnvDictionarySeeder in pyRevitAssemblyBuilder (which has no
+        /// compile-time reference to IronPython), so the PythonDictionary is created here where
+        /// IronPython is already available.
+        /// </summary>
+        /// <param name="values">
+        /// Key/value pairs to store. Keys must match the string values of <see cref="EnvDictionaryKeys"/>.
+        /// Values must be plain CLR primitives (string, bool, int) — IronPython coerces them correctly.
+        /// </param>
+        public static void Seed(Dictionary<string, object> values) {
+            var envData = AppDomain.CurrentDomain.GetData(DomainStorageKeys.EnvVarsDictKey) as PythonDictionary
+                          ?? new PythonDictionary();
+
+            foreach (var kv in values)
+                envData[kv.Key] = kv.Value;
+
+            if (!envData.Contains(EnvDictionaryKeys.Hooks))
+                envData[EnvDictionaryKeys.Hooks] = new Dictionary<string, Dictionary<string, string>>();
+
+            AppDomain.CurrentDomain.SetData(DomainStorageKeys.EnvVarsDictKey, envData);
         }
     }
 }

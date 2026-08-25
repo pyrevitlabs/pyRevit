@@ -1,0 +1,212 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:s="clr-namespace:System;assembly=mscorlib"
+        Title="{DynamicResource ColorSplasher.Title}"
+        Height="550" Width="550" MinWidth="550" MaxWidth="550" MinHeight="550"
+        ShowInTaskbar="True" ResizeMode="CanResize"
+        WindowStartupLocation="CenterScreen" Topmost="True">
+    <Window.Resources>
+        <!-- Style for Set Colors button (blue with white text) -->
+        <Style x:Key="SetColorsButtonStyle" TargetType="{x:Type Button}">
+            <Setter Property="Background" Value="#0066CC"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="10,5"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#1A7AE6"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+    
+    <Grid Margin="12,0,2,12">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="250"/>
+            <ColumnDefinition Width="15"/>
+            <ColumnDefinition Width="250"/>
+            <ColumnDefinition Width="3"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- LEFT COLUMN - Data Selection -->
+        
+        <!-- Category Selection Label -->
+        <TextBlock x:Name="_txt_block2" Grid.Column="0" Grid.Row="0"
+                   Text="{DynamicResource ColorSplasher.Labels.CategorySelection}"
+                   FontWeight="Bold" FontSize="12" Margin="0,15,0,0"
+                   ToolTip="{DynamicResource ColorSplasher.Tooltips.CategorySelection}"/>
+
+        <!-- Manage Schemes Label -->
+        <TextBlock x:Name="_lbl_manage_schemes" Grid.Column="2" Grid.Row="0"
+                   Text="{DynamicResource ColorSplasher.Labels.ManageSchemes}"
+                   FontWeight="Bold" FontSize="12" Margin="0,15,0,0"/>
+
+        <!-- Category Dropdown -->
+        <ComboBox x:Name="_categories" Grid.Column="0" Grid.Row="1"
+                  Height="21" Margin="0,2,0,0" FontSize="12"
+                  DisplayMemberPath="Key"
+                  ToolTip="{DynamicResource ColorSplasher.Tooltips.CategorySelection}"/>
+
+        <!-- Save / Load Color Scheme Button -->
+        <Button x:Name="_button_save_load_scheme" Grid.Column="2" Grid.Row="1"
+                Content="{DynamicResource ColorSplasher.Buttons.SaveLoadScheme}"
+                Height="20" Margin="0,0,0,0"
+                FontSize="12" Click="save_load_color_scheme"
+                ToolTip="{DynamicResource ColorSplasher.Tooltips.SaveLoadScheme}"/>
+
+        <!-- Parameter Selection Label -->
+        <TextBlock x:Name="_txt_block3" Grid.Column="0" Grid.Row="2"
+                   Text="{DynamicResource ColorSplasher.Labels.ParameterSelection}"
+                   FontWeight="Bold" FontSize="12" Margin="0,12,0,0"
+                   ToolTip="{DynamicResource ColorSplasher.Tooltips.ParameterSelection}"/>
+
+        <!-- Generate Colors Label -->
+        <TextBlock x:Name="_lbl_generate_colors" Grid.Column="2" Grid.Row="2"
+                   Text="{DynamicResource ColorSplasher.Labels.GenerateColors}"
+                   FontWeight="Bold" FontSize="12" Margin="0,12,0,0"/>
+
+        <!-- Search TextBox -->
+        <TextBox x:Name="_search_box" Grid.Column="0" Grid.Row="3"
+                 Height="20" Margin="0,0,0,0"
+                 FontSize="11" GotFocus="search_box_enter" LostFocus="search_box_leave"
+                 TextChanged="on_search_text_changed"
+                 VerticalContentAlignment="Center"
+                 ToolTip="{DynamicResource ColorSplasher.Tooltips.SearchParameters}"/>
+
+        <!-- Gradient Colors Button -->
+        <Button x:Name="_button_gradient_colors" Grid.Column="2" Grid.Row="3"
+                Content="{DynamicResource ColorSplasher.Buttons.GradientColors}"
+                Height="20" Margin="0,0,0,0"
+                FontSize="12" Click="button_click_gradient_colors"
+                ToolTip="{DynamicResource ColorSplasher.Tooltips.GradientColors}"/>
+
+        <!-- Parameters Dropdown -->
+        <ComboBox x:Name="_list_box1" Grid.Column="0" Grid.Row="4"
+                  Height="20" Margin="0,4,0,0" FontSize="12"
+                  DisplayMemberPath="Key"
+                  SelectionChanged="check_item"
+                  ToolTip="{DynamicResource ColorSplasher.Tooltips.ParameterSelection}"/>
+
+        <!-- Random Colors Button -->
+        <Button x:Name="_button_random_colors" Grid.Column="2" Grid.Row="4"
+                Content="{DynamicResource ColorSplasher.Buttons.RandomColors}"
+                Height="20" Margin="0,4,0,0"
+                FontSize="12" Click="button_click_random_colors"
+                ToolTip="{DynamicResource ColorSplasher.Tooltips.RandomColors}"/>
+
+        <!-- Values Color Assignment Label -->
+        <TextBlock x:Name="_txt_block4" Grid.Column="0" Grid.Row="5"
+                   Text="{DynamicResource ColorSplasher.Labels.ValuesColorAssignment}"
+                   FontWeight="Bold" FontSize="12" Margin="0,12,0,0"
+                   ToolTip="{DynamicResource ColorSplasher.Tooltips.ValuesColorAssignment}"/>
+
+        <!-- Shift-Click Instruction Text -->
+        <TextBlock x:Name="_txt_shift_click_hint" Grid.Column="0" Grid.Row="5"
+                   Text="{DynamicResource ColorSplasher.Messages.ShiftClickToSelect}"
+                   FontWeight="Normal" FontSize="11" Margin="0,25,0,0"
+                   Foreground="Gray"/>
+
+        <!-- Apply Settings Label -->
+        <TextBlock x:Name="_lbl_apply_settings" Grid.Column="2" Grid.Row="5"
+                   Text="{DynamicResource ColorSplasher.Labels.ApplySettings}"
+                   FontWeight="Bold" FontSize="12" Margin="0,12,0,0" />
+
+        <!-- Values ListBox - Extended to bottom, aligned with Set Colors button bottom -->
+        <Grid Grid.Column="0" Grid.Row="6" Grid.RowSpan="10" Margin="0,2,0,0">
+            <ListBox x:Name="list_box2"
+                     DisplayMemberPath="Key"
+                     FontSize="11"
+                     VerticalAlignment="Stretch"
+                     ToolTip="{DynamicResource ColorSplasher.Tooltips.ValuesColorAssignment}"/>
+            <TextBlock x:Name="_txt_placeholder_values"
+                       Text="{DynamicResource ColorSplasher.Placeholders.SelectCategoryAndParameter}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       FontSize="13"
+                       Foreground="Gray"
+                       TextAlignment="Center"
+                       TextWrapping="Wrap"
+                       MaxWidth="240"
+                       IsHitTestVisible="False"/>
+        </Grid>
+
+        <!-- Checkbox: Line Color -->
+        <CheckBox x:Name="_chk_line_color" Grid.Column="2" Grid.Row="6"
+                  Content="{DynamicResource ColorSplasher.Checkboxes.ApplyLineColor}"
+                  FontSize="11" Margin="0,2,0,0"
+                  Checked="checkbox_changed" Unchecked="checkbox_changed"
+                  ToolTip="{DynamicResource ColorSplasher.Tooltips.ApplyLineColor}"/>
+
+        <!-- Checkbox: Foreground Pattern Color -->
+        <CheckBox x:Name="_chk_foreground_pattern" Grid.Column="2" Grid.Row="7"
+                  Content="{DynamicResource ColorSplasher.Checkboxes.ApplyForegroundPattern}"
+                  FontSize="11" Margin="0,2,0,0"
+                  Checked="checkbox_changed" Unchecked="checkbox_changed"
+                  ToolTip="{DynamicResource ColorSplasher.Tooltips.ApplyForegroundPattern}"/>
+
+        <!-- Checkbox: Background Pattern Color -->
+        <CheckBox x:Name="_chk_background_pattern" Grid.Column="2" Grid.Row="8"
+                  Content="{DynamicResource ColorSplasher.Checkboxes.ApplyBackgroundPattern}"
+                  FontSize="11" Margin="0,2,0,0"
+                  Checked="checkbox_changed" Unchecked="checkbox_changed"
+                  ToolTip="{DynamicResource ColorSplasher.Tooltips.ApplyBackgroundPattern}"/>
+
+        <!-- Create Legend Button -->
+        <Button x:Name="_button_create_legend" Grid.Column="2" Grid.Row="9"
+                Content="{DynamicResource ColorSplasher.Buttons.CreateLegend}"
+                Height="20" Margin="0,10,0,0"
+                FontSize="12" Click="button_click_create_legend"
+                ToolTip="{DynamicResource ColorSplasher.Tooltips.CreateLegend}"/>
+
+        <!-- Create View Filters Button -->
+        <Button x:Name="_button_create_view_filters" Grid.Column="2" Grid.Row="10"
+                Content="{DynamicResource ColorSplasher.Buttons.CreateViewFilters}"
+                Height="20" Margin="0,4,0,0"
+                FontSize="12" Click="button_click_create_view_filters"
+                ToolTip="{DynamicResource ColorSplasher.Tooltips.CreateViewFilters}"/>
+
+        <!-- Warning Message (Hidden by default) -->
+        <TextBlock x:Name="_txt_block5" Grid.Column="0" Grid.ColumnSpan="4" Grid.Row="14"
+                   Text="{DynamicResource ColorSplasher.Messages.SpacesColorScheme}"
+                   FontSize="12" Foreground="Red" TextDecorations="Underline"
+                   Margin="0,5,0,0" Visibility="Collapsed"/>
+
+        <!-- Reset and Set Colors Buttons -->
+        <Grid Grid.Column="2" Grid.Row="15" Margin="0,10,0,0" VerticalAlignment="Bottom">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="0.5*"/>
+                <ColumnDefinition Width="15"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button x:Name="_button_reset_colors" Grid.Column="0"
+                    Content="{DynamicResource ColorSplasher.Buttons.Reset}"
+                    Height="32" FontSize="12" Click="button_click_reset"
+                    ToolTip="{DynamicResource ColorSplasher.Tooltips.Reset}"/>
+            <Button x:Name="_button_set_colors" Grid.Column="2"
+                    Content="{DynamicResource ColorSplasher.Buttons.SetColors}"
+                    Height="32" FontSize="12" Click="button_click_set_colors"
+                    Style="{StaticResource SetColorsButtonStyle}"
+                    ToolTip="{DynamicResource ColorSplasher.Tooltips.SetColors}"/>
+        </Grid>
+    </Grid>
+</Window>

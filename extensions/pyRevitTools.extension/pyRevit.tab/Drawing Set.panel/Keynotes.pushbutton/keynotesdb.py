@@ -1,5 +1,7 @@
+# -*- coding: utf-8 -*-
 """Module for managing keynotes using DeffrelDB."""
-#pylint: disable=E0401,W0613
+
+# pylint: disable=E0401,W0613
 import re
 import codecs
 from collections import defaultdict
@@ -8,38 +10,39 @@ from pyrevit import HOST_APP, DOCS
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
 from pyrevit import framework
+from pyrevit.framework import System
 from pyrevit import revit
 
 from pyrevit.labs import DeffrelDB as dfdb
 
 from natsort import natsorted
 
-#pylint: disable=W0703,C0302
-mlogger = logger.get_logger(__name__)  #pylint: disable=C0103
+# pylint: disable=W0703,C0302
+mlogger = logger.get_logger(__name__)  # pylint: disable=C0103
 
 
-KEYNOTES_DB = 'keynotesdb'
-KEYNOTES_DB_DESC = 'pyRevit Keynotes Manager DB'
+KEYNOTES_DB = "keynotesdb"
+KEYNOTES_DB_DESC = "pyRevit Keynotes Manager DB"
 
-CATEGORIES_TABLE = 'categories'
-CATEGORIES_TABLE_DESC = 'Root Keynotes Table'
-CATEGORY_KEY_FIELD = 'cat_key'
-CATEGORY_TITLE_FIELD = 'cat_title'
+CATEGORIES_TABLE = "categories"
+CATEGORIES_TABLE_DESC = "Root Keynotes Table"
+CATEGORY_KEY_FIELD = "cat_key"
+CATEGORY_TITLE_FIELD = "cat_title"
 
-KEYNOTES_TABLE = 'keynotes'
-KEYNOTES_TABLE_DESC = 'Keynotes Table'
-KEYNOTES_KEY_FIELD = 'keynote_key'
-KEYNOTES_TEXT_FIELD = 'keynote_text'
-KEYNOTES_PARENTKEY_FIELD = 'parent_key'
-
-
-EDIT_MODE_ADD_CATEG = 'add-category'
-EDIT_MODE_EDIT_CATEG = 'edit-category'
-EDIT_MODE_ADD_KEYNOTE = 'add-keynote'
-EDIT_MODE_EDIT_KEYNOTE = 'edit-keynote'
+KEYNOTES_TABLE = "keynotes"
+KEYNOTES_TABLE_DESC = "Keynotes Table"
+KEYNOTES_KEY_FIELD = "keynote_key"
+KEYNOTES_TEXT_FIELD = "keynote_text"
+KEYNOTES_PARENTKEY_FIELD = "parent_key"
 
 
-CSI_REGEX = r' \d{2}(\s|[-_.])\d{2}(\s|[-_.])\d{2}'
+EDIT_MODE_ADD_CATEG = "add-category"
+EDIT_MODE_EDIT_CATEG = "edit-category"
+EDIT_MODE_ADD_KEYNOTE = "add-keynote"
+EDIT_MODE_EDIT_KEYNOTE = "edit-keynote"
+
+
+CSI_REGEX = r" \d{2}(\s|[-_.])\d{2}(\s|[-_.])\d{2}"
 
 
 class RKeynoteFilter(object):
@@ -60,14 +63,11 @@ class RKeynoteFilter(object):
 class RKeynoteRegexFilter(RKeynoteFilter):
     """Keynote smart regular expressions filter."""
 
-    def __init__(self,
-                 name="Regular Expression (Regex)",
-                 regex=None,
-                 negate=False):
+    def __init__(self, name="Regular Expression (Regex)", regex=None, negate=False):
         super(RKeynoteRegexFilter, self).__init__(
             name=(name + "{}").format(" [Exclude]" if negate else ""),
-            code=":notregex:" if negate else ":regex:"
-            )
+            code=":notregex:" if negate else ":regex:",
+        )
         self.regex = regex or ""
 
     def format_term(self, exst_term):
@@ -100,36 +100,38 @@ class RKeynoteFilters(object):
     ViewOnly = RKeynoteViewFilter()
     UseRegex = RKeynoteRegexFilter()
     UseRegexNegate = RKeynoteRegexFilter(negate=True)
-    UseCSI = RKeynoteRegexFilter(
-        name="CSI MasterFormat Division No.",
-        regex=CSI_REGEX
-        )
+    ElementOnly = RKeynoteFilter(name="Element Keynotes Only", code=":element:")
+    MaterialOnly = RKeynoteFilter(name="Material Keynotes Only", code=":material:")
+    UserOnly = RKeynoteFilter(name="User Keynotes Only", code=":user:")
+    UseCSI = RKeynoteRegexFilter(name="CSI MasterFormat Division No.", regex=CSI_REGEX)
     UseCSINegate = RKeynoteRegexFilter(
-        name="CSI MasterFormat Division No.",
-        regex=CSI_REGEX,
-        negate=True
-        )
+        name="CSI MasterFormat Division No.", regex=CSI_REGEX, negate=True
+    )
 
     @classmethod
     def get_available_filters(cls):
         """Get available keynote filters."""
-        return [cls.UsedOnly,
-                cls.UnusedOnly,
-                cls.LockedOnly,
-                cls.UnlockedOnly,
-                cls.ViewOnly,
-                cls.UseRegex,
-                cls.UseRegexNegate,
-                cls.UseCSI,
-                cls.UseCSINegate
-                ]
+        return [
+            cls.UsedOnly,
+            cls.UnusedOnly,
+            cls.LockedOnly,
+            cls.UnlockedOnly,
+            cls.ViewOnly,
+            cls.ElementOnly,
+            cls.MaterialOnly,
+            cls.UserOnly,
+            cls.UseRegex,
+            cls.UseRegexNegate,
+            cls.UseCSI,
+            cls.UseCSINegate,
+        ]
 
     @classmethod
     def remove_filters(cls, source_string):
         """Get available keynote filters."""
         cleaned = source_string
         for code in [x.code for x in cls.get_available_filters()]:
-            cleaned = cleaned.replace(code, '').strip()
+            cleaned = cleaned.replace(code, "").strip()
         return cleaned
 
 
@@ -139,28 +141,35 @@ class RKeynote(object):
     This object also has properties for the status of the keynote e.g.
     locked by another user or being used in the current model.
     """
-    def __init__(self, key, text, parent_key=None,
-                 locked=False, owner=None, children=None):
+
+    def __init__(
+        self, key, text, parent_key=None, locked=False, owner=None, children=None
+    ):
         self.key = key
         self.text = text
-        self.parent_key = parent_key or ''
+        self.parent_key = parent_key or ""
         self.locked = locked
-        self.owner = owner or ''
+        self.owner = owner or ""
         self._children = children or []
         self._filtered_children = []
         self._filter = None
-
+        self.used_types = set()  # {'Element', 'Material', 'User'}
+        self.has_element_type = False
+        self.has_material_type = False
+        self.has_user_type = False
         self.used = False
         self.used_count = 0
-        self.tooltip = 'Referenced on views:'
+        self.tooltip = "Referenced on views:"
 
     def __str__(self):
         return repr(self)
 
     def __repr__(self):
-        return '<%s key:%s childs:%s>' % (self.__class__.__name__,
-                                          self.key,
-                                          len(self.children))
+        return "<%s key:%s childs:%s>" % (
+            self.__class__.__name__,
+            self.key,
+            len(self.children),
+        )
 
     @property
     def children(self):
@@ -199,29 +208,33 @@ class RKeynote(object):
         elif RKeynoteFilters.UnlockedOnly.code in self._filter:
             self_pass = not self.locked
 
+        elif RKeynoteFilters.ElementOnly.code in self._filter:
+            self_pass = "Element" in self.used_types
+        elif RKeynoteFilters.MaterialOnly.code in self._filter:
+            self_pass = "Material" in self.used_types
+        elif RKeynoteFilters.UserOnly.code in self._filter:
+            self_pass = "User" in self.used_types
+
         cleaned_sfilter = RKeynoteFilters.remove_filters(self._filter)
         has_smart_filter = cleaned_sfilter != self._filter
 
         if cleaned_sfilter:
-            sterm = self.key + ' ' + self.text + ' ' + self.owner
+            sterm = self.key + " " + self.text + " " + self.owner
             sterm = sterm.lower()
 
             # here is where matching against the string happens
             if use_regex or use_regex_not:
                 # check if pattern is valid
                 try:
-                    self_pass = re.search(
-                        cleaned_sfilter,
-                        sterm,
-                        re.IGNORECASE
-                        )
+                    self_pass = re.search(cleaned_sfilter, sterm, re.IGNORECASE)
                 except Exception:
                     self_pass = False
                 if use_regex_not:
                     self_pass = not self_pass
             else:
-                self_pass_keyword = \
+                self_pass_keyword = (
                     coreutils.fuzzy_search_ratio(sterm, cleaned_sfilter) > 80
+                )
 
                 if has_smart_filter:
                     self_pass = self_pass_keyword and self_pass
@@ -229,24 +242,55 @@ class RKeynote(object):
                     self_pass = self_pass_keyword
 
         # filter children now
-        self._filtered_children = \
-            [x for x in self._children if x.filter(self._filter)]
+        self._filtered_children = [x for x in self._children if x.filter(self._filter)]
 
         return self_pass or self._filtered_children
 
-    def update_used(self, used_keysdict, doc=None):
-        doc = doc or DOCS.doc
-        # update count, and tooltip
+    def update_used(self, used_keysdict, used_typesdict=None,
+                    view_names=None, doc=None):
+        """Refresh usage state from pre-collected model data.
+
+        Prefer passing `view_names` ({key: [view name, ...]}) collected in
+        a valid Revit API context — then this method touches no Revit API
+        at all and is safe to call from WPF event handlers.  The `doc`
+        fallback path queries the model directly and must only run inside
+        an API context.
+        """
+        used_typesdict = used_typesdict or {}
+        # reset first — cached nodes get refreshed repeatedly and the
+        # tooltip/usage state must not accumulate across refreshes
+        self.used = False
+        self.used_count = 0
+        self.used_types = set()
+        self.has_element_type = False
+        self.has_material_type = False
+        self.has_user_type = False
+        self.tooltip = "Referenced on views:"
+        # update count, tooltip, and usage types
         if self.key in used_keysdict:
             self.used = True
             self.used_count = len(used_keysdict[self.key])
-            for keyid in used_keysdict[self.key]:
-                owner_view = doc.GetElement(doc.GetElement(keyid).OwnerViewId)
-                view_name = revit.query.get_name(owner_view)
-                self.tooltip += '\n' + view_name
+            self.used_types = set(used_typesdict.get(self.key, []))
+            self.has_element_type = "Element" in self.used_types
+            self.has_material_type = "Material" in self.used_types
+            self.has_user_type = "User" in self.used_types
+            if view_names is not None:
+                for view_name in view_names.get(self.key, []):
+                    self.tooltip += "\n" + view_name
+            else:
+                # legacy fallback — requires a valid Revit API context
+                doc = doc or DOCS.doc
+                for keyid in used_keysdict[self.key]:
+                    kel = doc.GetElement(keyid)
+                    if not kel:
+                        continue
+                    owner_view = doc.GetElement(kel.OwnerViewId)
+                    view_name = revit.query.get_name(owner_view)
+                    self.tooltip += "\n" + view_name
 
         for crkey in self._children:
-            crkey.update_used(used_keysdict)
+            crkey.update_used(used_keysdict, used_typesdict,
+                              view_names=view_names, doc=doc)
 
     def collect_keys(self):
         keys = {self.key, self.parent_key}
@@ -256,11 +300,16 @@ class RKeynote(object):
 
 
 def _verify_keynotesdb_def(conn):
+    # NOTE: a lock TimeoutException means another user holds the file —
+    # it must NOT be misread as "schema missing" (the create call would
+    # also block, and the Convert offer downstream truncates live data).
     # verify db
     try:
         conn.ReadDB(KEYNOTES_DB)
+    except System.TimeoutException:
+        raise
     except Exception as dbex:
-        mlogger.debug('Keynotes db read failed | %s', dbex)
+        mlogger.debug("Keynotes db read failed | %s", dbex)
         dbdef = dfdb.DatabaseDefinition()
         dbdef.Description = KEYNOTES_DB_DESC
         conn.CreateDB(KEYNOTES_DB, dbdef)
@@ -268,8 +317,10 @@ def _verify_keynotesdb_def(conn):
     # verify root categories table
     try:
         conn.ReadTable(KEYNOTES_DB, CATEGORIES_TABLE)
+    except System.TimeoutException:
+        raise
     except Exception as cattex:
-        mlogger.debug('Category table read failed | %s', cattex)
+        mlogger.debug("Category table read failed | %s", cattex)
         cat_key = dfdb.TextField(CATEGORY_KEY_FIELD)
         cat_title = dfdb.TextField(CATEGORY_TITLE_FIELD)
         cat_table_def = dfdb.TableDefinition()
@@ -281,12 +332,13 @@ def _verify_keynotesdb_def(conn):
         cat_table_def.Description = CATEGORIES_TABLE_DESC
         conn.CreateTable(KEYNOTES_DB, CATEGORIES_TABLE, cat_table_def)
 
-
     # verify keynote table
     try:
         conn.ReadTable(KEYNOTES_DB, KEYNOTES_TABLE)
+    except System.TimeoutException:
+        raise
     except Exception as ktex:
-        mlogger.debug('keynote table read failed | %s', ktex)
+        mlogger.debug("keynote table read failed | %s", ktex)
         keynote_key = dfdb.TextField(KEYNOTES_KEY_FIELD)
         keynote_text = dfdb.TextField(KEYNOTES_TEXT_FIELD)
         keynote_parent_key = dfdb.TextField(KEYNOTES_PARENTKEY_FIELD)
@@ -295,12 +347,11 @@ def _verify_keynotesdb_def(conn):
         keynotes_table_def.SupportsHistory = False
         keynotes_table_def.EncapsulateValues = False
         keynotes_table_def.SupportsHeaders = False
-        keynotes_table_def.Fields = \
-            [keynote_key, keynote_text, keynote_parent_key]
+        keynotes_table_def.Fields = [keynote_key, keynote_text, keynote_parent_key]
         # wiring the keynotes primary key
         keynotes_table_def.Wires = [
             dfdb.Wire(KEYNOTES_PARENTKEY_FIELD, CATEGORY_KEY_FIELD),
-            dfdb.Wire(KEYNOTES_PARENTKEY_FIELD, KEYNOTES_KEY_FIELD)
+            dfdb.Wire(KEYNOTES_PARENTKEY_FIELD, KEYNOTES_KEY_FIELD),
         ]
         keynotes_table_def.Description = KEYNOTES_TABLE_DESC
         conn.CreateTable(KEYNOTES_DB, KEYNOTES_TABLE, keynotes_table_def)
@@ -311,11 +362,11 @@ def connect(keynotes_file, username=None):
     conn = dfdb.DataBase.Connect(
         keynotes_file,
         username or HOST_APP.username,
-        sourceEncoding=framework.Encoding.GetEncoding('utf-16')
-        )
-    mlogger.debug('verifying db schemas...')
+        sourceEncoding=framework.Encoding.GetEncoding("utf-16"),
+    )
+    mlogger.debug("verifying db schemas...")
     _verify_keynotesdb_def(conn)
-    mlogger.debug('verifying db schemas completed.')
+    mlogger.debug("verifying db schemas completed.")
     return conn
 
 
@@ -326,7 +377,7 @@ class BulkAction(object):
     def __init__(self, conn, target=KEYNOTES_DB):
         self._conn = conn
         self._target = target
-    
+
     def __enter__(self):
         self._conn.BEGIN(self._target)
 
@@ -343,35 +394,51 @@ def get_locks(conn):
 
 def get_categories(conn):
     db_locks = get_locks(conn)
-    locked_records = {x.LockTargetRecordKey: x.LockRequester
-                      for x in db_locks if x.IsRecordLock}
+    locked_records = {
+        x.LockTargetRecordKey: x.LockRequester for x in db_locks if x.IsRecordLock
+    }
     cats_records = conn.ReadAllRecords(KEYNOTES_DB, CATEGORIES_TABLE)
     return natsorted(
-        [RKeynote(
-            key=x[CATEGORY_KEY_FIELD],
-            text=x[CATEGORY_TITLE_FIELD] or '',
-            parent_key='',
-            locked=x[CATEGORY_KEY_FIELD] in locked_records.keys(),
-            owner=locked_records.get(x[CATEGORY_KEY_FIELD], ''),
-            children=[]
+        [
+            RKeynote(
+                key=x[CATEGORY_KEY_FIELD],
+                text=x[CATEGORY_TITLE_FIELD] or "",
+                parent_key="",
+                # direct dict membership: .keys() would materialize a new
+                # list per record on IronPython 2.7 (O(n^2) over the table)
+                locked=x[CATEGORY_KEY_FIELD] in locked_records,
+                owner=locked_records.get(x[CATEGORY_KEY_FIELD], ""),
+                children=[],
             )
-         for x in cats_records], key=lambda x: x.key)
+            for x in cats_records
+            if x[CATEGORY_KEY_FIELD]  # skip malformed/blank records
+        ],
+        key=lambda x: x.key,
+    )
 
 
 def get_keynotes(conn):
     db_locks = get_locks(conn)
-    locked_records = {x.LockTargetRecordKey: x.LockRequester
-                      for x in db_locks if x.IsRecordLock}
+    locked_records = {
+        x.LockTargetRecordKey: x.LockRequester for x in db_locks if x.IsRecordLock
+    }
     keynote_records = conn.ReadAllRecords(KEYNOTES_DB, KEYNOTES_TABLE)
     return natsorted(
-        [RKeynote(
-            key=x[KEYNOTES_KEY_FIELD],
-            text=x[KEYNOTES_TEXT_FIELD] or '',
-            parent_key=x[KEYNOTES_PARENTKEY_FIELD],
-            locked=x[KEYNOTES_KEY_FIELD] in locked_records.keys(),
-            owner=locked_records.get(x[KEYNOTES_KEY_FIELD], ''),
-            children=[])
-         for x in keynote_records], key=lambda x: x.key)
+        [
+            RKeynote(
+                key=x[KEYNOTES_KEY_FIELD],
+                text=x[KEYNOTES_TEXT_FIELD] or "",
+                parent_key=x[KEYNOTES_PARENTKEY_FIELD],
+                # direct dict membership — see note in get_categories()
+                locked=x[KEYNOTES_KEY_FIELD] in locked_records,
+                owner=locked_records.get(x[KEYNOTES_KEY_FIELD], ""),
+                children=[],
+            )
+            for x in keynote_records
+            if x[KEYNOTES_KEY_FIELD]  # skip malformed/blank records
+        ],
+        key=lambda x: x.key,
+    )
 
 
 def get_keynotes_tree(conn):
@@ -387,10 +454,7 @@ def get_keynotes_tree(conn):
     for catroot_rkey in keynote_records:
         if catroot_rkey.key in parents:
             catroot_rkey.children.extend(
-                natsorted(
-                    parents[catroot_rkey.key],
-                    key=lambda x: x.key
-                )
+                natsorted(parents[catroot_rkey.key], key=lambda x: x.key)
             )
 
     return natsorted(cat_roots, key=lambda x: x.key)
@@ -427,21 +491,18 @@ def release_key(conn, key, category=False):
 
 
 def add_category(conn, key, text):
-    conn.InsertRecord(KEYNOTES_DB,
-                      CATEGORIES_TABLE,
-                      key,
-                      {CATEGORY_TITLE_FIELD: text})
+    conn.InsertRecord(KEYNOTES_DB, CATEGORIES_TABLE, key, {CATEGORY_TITLE_FIELD: text})
     return RKeynote(key=key, text=text)
 
 
 def update_category_title(conn, key, new_title):
-    conn.UpdateRecord(KEYNOTES_DB, CATEGORIES_TABLE, key,
-                      {CATEGORY_TITLE_FIELD: new_title})
+    conn.UpdateRecord(
+        KEYNOTES_DB, CATEGORIES_TABLE, key, {CATEGORY_TITLE_FIELD: new_title}
+    )
 
 
 def update_category_key(conn, key, new_key):
-    conn.UpdateRecord(KEYNOTES_DB, CATEGORIES_TABLE, key,
-                      {CATEGORY_KEY_FIELD: new_key})
+    conn.UpdateRecord(KEYNOTES_DB, CATEGORIES_TABLE, key, {CATEGORY_KEY_FIELD: new_key})
 
 
 def mark_category_under_edited(conn, key):
@@ -460,18 +521,13 @@ def add_keynote(conn, key, text, parent_key):
         KEYNOTES_DB,
         KEYNOTES_TABLE,
         key,
-        {KEYNOTES_TEXT_FIELD: text,
-         KEYNOTES_PARENTKEY_FIELD: parent_key}
-        )
+        {KEYNOTES_TEXT_FIELD: text, KEYNOTES_PARENTKEY_FIELD: parent_key},
+    )
     return RKeynote(key=key, text=text, parent_key=parent_key)
 
 
 def remove_keynote(conn, key):
-    conn.DropRecord(
-        KEYNOTES_DB,
-        KEYNOTES_TABLE,
-        key
-        )
+    conn.DropRecord(KEYNOTES_DB, KEYNOTES_TABLE, key)
 
 
 def mark_keynote_under_edited(conn, key):
@@ -479,30 +535,88 @@ def mark_keynote_under_edited(conn, key):
 
 
 def update_keynote_text(conn, key, text):
-    conn.UpdateRecord(
-        KEYNOTES_DB,
-        KEYNOTES_TABLE,
-        key,
-        {KEYNOTES_TEXT_FIELD: text}
-        )
+    conn.UpdateRecord(KEYNOTES_DB, KEYNOTES_TABLE, key, {KEYNOTES_TEXT_FIELD: text})
 
 
 def update_keynote_key(conn, key, new_key):
-    conn.UpdateRecord(
-        KEYNOTES_DB,
-        KEYNOTES_TABLE,
-        key,
-        {KEYNOTES_KEY_FIELD: new_key}
-        )
+    conn.UpdateRecord(KEYNOTES_DB, KEYNOTES_TABLE, key, {KEYNOTES_KEY_FIELD: new_key})
 
 
 def move_keynote(conn, key, new_parent):
     conn.UpdateRecord(
-        KEYNOTES_DB,
-        KEYNOTES_TABLE,
-        key,
-        {KEYNOTES_PARENTKEY_FIELD: new_parent}
-        )
+        KEYNOTES_DB, KEYNOTES_TABLE, key, {KEYNOTES_PARENTKEY_FIELD: new_parent}
+    )
+
+
+# compound atomic operations ---------------------------------------------------
+# DeffrelDB buffers all changes between BEGIN and END in memory and commits
+# them to the file in a single write on END.  BulkAction.__exit__ always
+# calls END, so a mid-sequence failure would otherwise commit a PARTIAL
+# state (e.g. leave "__swap_*__" temp keys in the shared keynote file).
+# These helpers revert completed steps in memory before re-raising, so the
+# commit then writes back the original state — a harmless no-op.
+
+
+def _run_with_compensation(conn, steps):
+    """Run (do, undo) steps inside one BulkAction; undo on failure."""
+    done_undos = []
+    with BulkAction(conn):
+        try:
+            for do_step, undo_step in steps:
+                do_step()
+                done_undos.append(undo_step)
+        except Exception:
+            for undo_step in reversed(done_undos):
+                try:
+                    undo_step()
+                except Exception:
+                    mlogger.warning(
+                        "Keynote operation rollback step failed — "
+                        "check the keynote file for consistency.")
+            raise
+
+
+def swap_keys(conn, key_a, key_b, temp_key, category=False):
+    """Atomically swap two record keys and re-parent their children."""
+    upd = update_category_key if category else update_keynote_key
+    children = get_keynotes(conn)
+
+    steps = [
+        (lambda: upd(conn, key_a, temp_key),
+         lambda: upd(conn, temp_key, key_a)),
+        (lambda: upd(conn, key_b, key_a),
+         lambda: upd(conn, key_a, key_b)),
+        (lambda: upd(conn, temp_key, key_b),
+         lambda: upd(conn, key_b, temp_key)),
+    ]
+    # children follow their original parent record to its new key
+    for child in children:
+        if child.parent_key == key_a:
+            steps.append(
+                (lambda k=child.key: move_keynote(conn, k, key_b),
+                 lambda k=child.key: move_keynote(conn, k, key_a)))
+        elif child.parent_key == key_b:
+            steps.append(
+                (lambda k=child.key: move_keynote(conn, k, key_a),
+                 lambda k=child.key: move_keynote(conn, k, key_b)))
+    _run_with_compensation(conn, steps)
+
+
+def rekey_with_children(conn, key, new_key, category=False):
+    """Atomically re-key a record and move its children with it."""
+    upd = update_category_key if category else update_keynote_key
+    children = get_keynotes(conn)
+
+    steps = [
+        (lambda: upd(conn, key, new_key),
+         lambda: upd(conn, new_key, key)),
+    ]
+    for child in children:
+        if child.parent_key == key:
+            steps.append(
+                (lambda k=child.key: move_keynote(conn, k, new_key),
+                 lambda k=child.key: move_keynote(conn, k, key)))
+    _run_with_compensation(conn, steps)
 
 
 # import export ---------------------------------------------------------------
@@ -511,8 +625,8 @@ def move_keynote(conn, key, new_parent):
 def _import_keynotes_from_lines(conn, lines, skip_dup=False):
     for line in lines:
         clean_line = line.strip()
-        if not clean_line.startswith('#'):
-            fields = clean_line.split('\t')
+        if not clean_line.startswith("#"):
+            fields = clean_line.split("\t")
             if len(fields) == 1:
                 # add category with empty title
                 if fields[0]:
@@ -523,8 +637,7 @@ def _import_keynotes_from_lines(conn, lines, skip_dup=False):
                             pass
                         else:
                             raise cataddex
-            elif len(fields) == 2 \
-                    or (len(fields) == 3 and not fields[2]):
+            elif len(fields) == 2 or (len(fields) == 3 and not fields[2]):
                 # add category
                 if fields[0]:
                     try:
@@ -548,38 +661,40 @@ def _import_keynotes_from_lines(conn, lines, skip_dup=False):
 
 def import_legacy_keynotes(conn, src_legacy_keynotes_file, skip_dup=False):
     # determine encoding
-    encodings = ['Windows-1252', 'ISO-8859-1', 'ascii']
-    if coreutils.check_encoding_bom(src_legacy_keynotes_file,
-                                    bom_bytes=codecs.BOM_UTF16):
-        encodings = ['utf_16_le']
-    elif coreutils.check_encoding_bom(src_legacy_keynotes_file,
-                                      bom_bytes=codecs.BOM_UTF8):
-        encodings = ['utf-8']
+    encodings = ["Windows-1252", "ISO-8859-1", "ascii"]
+    if coreutils.check_encoding_bom(
+        src_legacy_keynotes_file, bom_bytes=codecs.BOM_UTF16
+    ):
+        encodings = ["utf_16_le"]
+    elif coreutils.check_encoding_bom(
+        src_legacy_keynotes_file, bom_bytes=codecs.BOM_UTF8
+    ):
+        encodings = ["utf-8"]
 
     last_encoding_idx = len(encodings) - 1
     for idx, encoding in enumerate(encodings):
         try:
             mlogger.debug(
-                'Attempt to open keynote file with \"%s\" encoding...',
-                encoding
-                )
+                'Attempt to open keynote file with "%s" encoding...', encoding
+            )
             knote_lines = None
-            with codecs.open(src_legacy_keynotes_file, 'r', encoding) \
-                    as legacy_kfile:
+            with codecs.open(src_legacy_keynotes_file, "r", encoding) as legacy_kfile:
                 knote_lines = legacy_kfile.readlines()
                 break
         except Exception:
             if idx == last_encoding_idx:
-                mlogger.debug('Failed opening : %s', src_legacy_keynotes_file)
-                raise Exception('Unknown file encoding. Supported encodings '
-                                'are ASCII, UTF-8, and UTF-16 (UCS-2 LE)')
+                mlogger.debug("Failed opening : %s", src_legacy_keynotes_file)
+                raise Exception(
+                    "Unknown file encoding. Supported encodings "
+                    "are ASCII, UTF-8, and UTF-16 (UCS-2 LE)"
+                )
             else:
                 continue
 
-    if legacy_kfile:
+    if knote_lines:
         conn.BEGIN(KEYNOTES_DB)
         try:
-            mlogger.debug('Importing categories and keynotes...')
+            mlogger.debug("Importing categories and keynotes...")
             _import_keynotes_from_lines(conn, knote_lines, skip_dup=skip_dup)
         finally:
             conn.END()
@@ -591,21 +706,21 @@ def export_legacy_keynotes(conn, dest_legacy_keynotes_file, include_keys=None):
     keynotes = get_keynotes(conn)
 
     if include_keys:
-        with codecs.open(dest_legacy_keynotes_file, 'w', 'utf_16') as lkfile:
+        with codecs.open(dest_legacy_keynotes_file, "w", "utf_16") as lkfile:
             for cat in categories:
                 if cat.key in include_keys:
-                    lkfile.write('{}\t{}\n'.format(cat.key, cat.text))
+                    lkfile.write("{}\t{}\n".format(cat.key, cat.text))
             for knote in keynotes:
                 if knote.key in include_keys:
-                    lkfile.write('{}\t{}\t{}\n'
-                                 .format(knote.key,
-                                         knote.text,
-                                         knote.parent_key))
+                    lkfile.write(
+                        "{}\t{}\t{}\n".format(knote.key, knote.text, knote.parent_key)
+                    )
 
     else:
-        with codecs.open(dest_legacy_keynotes_file, 'w', 'utf_16') as lkfile:
+        with codecs.open(dest_legacy_keynotes_file, "w", "utf_16") as lkfile:
             for cat in categories:
-                lkfile.write('{}\t{}\n'.format(cat.key, cat.text))
+                lkfile.write("{}\t{}\n".format(cat.key, cat.text))
             for knote in keynotes:
-                lkfile.write('{}\t{}\t{}\n'
-                             .format(knote.key, knote.text, knote.parent_key))
+                lkfile.write(
+                    "{}\t{}\t{}\n".format(knote.key, knote.text, knote.parent_key)
+                )

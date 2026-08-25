@@ -6,8 +6,6 @@ logger = script.get_logger()
 
 # panelbutton should discard the __context__
 # they should always be active
-__context__ = 'selection'
-__helpurl__ = "https://www.youtube.com/channel/UC-0THIvKRd6n7T2a5aKYaGg"
 
 
 if __shiftclick__:

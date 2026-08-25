@@ -178,22 +178,7 @@ namespace PyRevitLoader {
 
             // reference RevitAPI and RevitAPIUI
             engine.Runtime.LoadAssembly(typeof(Autodesk.Revit.DB.Document).Assembly);
-            engine.Runtime.LoadAssembly(typeof(Autodesk.Revit.UI.TaskDialog).Assembly);
-
-            // also, allow access to the RPL internals
-            engine.Runtime.LoadAssembly(typeof(PyRevitLoader.ScriptExecutor).Assembly);
-        }
-    }
-
-    public class ErrorReporter : ErrorListener {
-        public List<String> Errors = new List<string>();
-
-        public override void ErrorReported(ScriptSource source, string message, SourceSpan span, int errorCode, Severity severity) {
-            Errors.Add(string.Format("{0} (line {1})", message, span.Start.Line));
-        }
-
-        public int Count {
-            get { return Errors.Count; }
+            engine.Runtime.LoadAssembly(typeof(Autodesk.Revit.UI.UIApplication).Assembly);
         }
     }
 }

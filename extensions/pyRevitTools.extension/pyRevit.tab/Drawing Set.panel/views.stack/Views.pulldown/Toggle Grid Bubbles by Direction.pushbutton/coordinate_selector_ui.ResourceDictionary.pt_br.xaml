@@ -1,0 +1,34 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Configuração de Bolha de Eixo</system:String>
+    <system:String x:Key="HeaderTitle">Configuração de Bolha de Eixo</system:String>
+    <system:String x:Key="Subtitle">Configurar sistema de coordenadas e tolerância de ângulo</system:String>
+    
+    <system:String x:Key="CoordinateSystemHeader">Sistema de Coordenadas</system:String>
+    <system:String x:Key="AllGrids">Todos os eixos</system:String>
+    <system:String x:Key="AllGridsDescription">Alterna todos os eixos na vista ativa</system:String>
+    <system:String x:Key="TrueNorth">Norte Verdadeiro</system:String>
+    <system:String x:Key="TrueNorthDescription">Usa orientação do norte verdadeiro</system:String>
+    <system:String x:Key="ProjectNorth">Norte do Projeto</system:String>
+    <system:String x:Key="ProjectNorthDescription">Usa o sistema de coordenadas do projeto (aplica o 'Ângulo para o Norte Verdadeiro')</system:String>
+    <system:String x:Key="ViewOrientation">Orientação da Vista/Caixa de Escopo</system:String>
+    <system:String x:Key="ViewOrientationDescription">Usa a orientação da vista atual e caixas de escopo</system:String>
+    
+    <system:String x:Key="AngleToleranceHeader">Tolerância de Ângulo</system:String>
+    <system:String x:Key="StrictLabel">1° (Estrito)</system:String>
+    <system:String x:Key="PermissiveLabel">40° (Permissivo)</system:String>
+    <system:String x:Key="HowThisWorks">Como isso funciona</system:String>
+    <system:String x:Key="HowThisWorksDescription">Controla quão alinhados os eixos devem estar com o sistema de coordenadas escolhido. Valores mais baixos = apenas eixos retos. Valores mais altos = inclui eixos angulados.</system:String>
+    
+    <system:String x:Key="AngleDescription1">Muito estrito - apenas eixos perfeitamente alinhados</system:String>
+    <system:String x:Key="AngleDescription5">Justo - bom para layouts de eixos precisos</system:String>
+    <system:String x:Key="AngleDescription10">Moderado - bom para a maioria dos casos</system:String>
+    <system:String x:Key="AngleDescription15">Relaxado - inclui eixos levemente angulados</system:String>
+    <system:String x:Key="AngleDescription25">Permissivo - inclui eixos mais angulados</system:String>
+    <system:String x:Key="AngleDescription35">Muito permissivo - inclui a maioria das orientações</system:String>
+    <system:String x:Key="AngleDescription40">Tolerância máxima - inclui eixos fortemente angulados</system:String>
+    
+    <system:String x:Key="Cancel">Cancelar</system:String>
+    <system:String x:Key="Continue">Continuar</system:String>
+</ResourceDictionary>

@@ -20,12 +20,13 @@ DEFAULT_SOURCE = "pyrevit.routes"
 
 class Request(object):
     """Request wrapper object."""
-    def __init__(self, path='/', method='GET', data=None, params=None):
+    def __init__(self, path='/', method='GET', data=None, params=None, query_params=None):
         self.path = path
         self.method = method
         self.data = data
         self._headers = {}
         self._params = params or []
+        self._query_params = query_params or {}
 
     @property
     def headers(self):
@@ -36,6 +37,11 @@ class Request(object):
     def params(self):
         """Request parameters."""
         return self._params
+
+    @property
+    def query_params(self):
+        """Request query string parameters as a dictionary."""
+        return self._query_params
 
     @property
     def callback_url(self):

@@ -4,18 +4,16 @@ rlcompleter from native library. Modified for Dynamo Compatibility
 
 """
 
-
 __all__ = ["Completer"]
 
 try:
-    import __builtin__
+    import builtins as __builtin__
     import keyword
     builtin_dir = __builtin__.__dict__
 except:
     builtin_dir = {}
     keyword = []
     pass
-
 class Completer:
     def __init__(self, namespace):
         """Create a new completer for the command line.
@@ -33,7 +31,7 @@ class Completer:
         """
 
         if namespace and not isinstance(namespace, dict):
-            raise TypeError,'namespace must be a dictionary'
+            raise TypeError('namespace must be a dictionary')
 
         self.namespace = namespace
 
@@ -129,3 +127,4 @@ def get_class_members(klass):
         for base in klass.__bases__:
             ret = ret + get_class_members(base)
     return ret
+

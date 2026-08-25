@@ -80,15 +80,20 @@ if set_workplane_to_level:
                 revit.doc.ActiveView.ShowActiveWorkPlane()
 
 if set_phase:
-    pc_param = element.get_Parameter(DB.BuiltInParameter.PHASE_CREATED)
-    if pc_param and pc_param.HasValue:
-        phase_created_id = pc_param.AsElementId()
-        phase = revit.doc.GetElement(phase_created_id)
-        if phase:
-            with revit.Transaction("Set View Phase"):
-                revit.doc.ActiveView.get_Parameter(DB.BuiltInParameter.VIEW_PHASE).Set(
-                    phase.Id
-                )
+    view = revit.doc.ActiveView
+    vp_param = view.get_Parameter(DB.BuiltInParameter.VIEW_PHASE)
+
+    if vp_param and not vp_param.IsReadOnly:
+        pc_param = element.get_Parameter(DB.BuiltInParameter.PHASE_CREATED)
+        if pc_param and pc_param.HasValue:
+            phase_created_id = pc_param.AsElementId()
+            phase = revit.doc.GetElement(phase_created_id)
+
+            if phase:
+                with revit.Transaction("Set View Phase"):
+                    vp_param.Set(phase.Id)
+    else:
+        script.get_logger().warning("View phase cannot be modified (likely Temporary View Mode is active).")
 
 # Not yet exposed by API
 # Idea Board: https://forums.autodesk.com/t5/revit-ideas/design-options-api/idi-p/9590221

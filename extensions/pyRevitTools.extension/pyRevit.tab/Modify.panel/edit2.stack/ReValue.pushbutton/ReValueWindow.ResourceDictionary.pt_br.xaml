@@ -1,0 +1,14 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">ReValue</system:String>
+    <system:String x:Key="Parameter">Parâmetro:</system:String>
+    <system:String x:Key="Guide">Guia</system:String>
+    <system:String x:Key="GuideText">Por formato: Especifique o padrão existente dos valores na primeira caixa e um novo formato na segunda caixa. Por exemplo, se o valor for "1º ANDAR GERAL", a primeira caixa pode conter "{tipo} {niv}º {nome}". A ferramenta corresponderá o formato especificado ao valor e extrairá as partes de acordo. Usando a segunda caixa, você pode reorganizar essas partes extraídas. Neste exemplo, especificar "NÍVEL {niv} - PLANTA {tipo} {nome}" dentro da segunda caixa revalorizará para "NÍVEL 1 - PLANTA GERAL" Por Expressão Regular: Se a primeira caixa não contiver um localizador de formato "{}", então a ferramenta funciona no modo Localizar/Substituir com suporte a Expressão Regular.</system:String>
+    <system:String x:Key="OriginalPattern">Padrão original:</system:String>
+    <system:String x:Key="NewPattern">Novo padrão:</system:String>
+    <system:String x:Key="ApplyNewValues">Aplicar novos valores</system:String>
+    <system:String x:Key="MarkSelectedAsFinal">Marcar selecionados como final</system:String>
+    <system:String x:Key="OldValue">Valor antigo</system:String>
+    <system:String x:Key="NewValue">Novo valor</system:String>
+</ResourceDictionary>

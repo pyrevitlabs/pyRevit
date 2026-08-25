@@ -4,7 +4,7 @@
     WindowStyle="None"
     AllowsTransparency="True"
     Background="White"
-    Title="Grid Bubble Setup"
+    Title="{DynamicResource Title}"
     MinHeight="400"
     MinWidth="380"
     SizeToContent="Height"
@@ -28,7 +28,7 @@
 
         <!-- Header -->
         <Grid Grid.Row="0" Background="#FF667EEA">
-            <TextBlock Text="Grid Bubble Setup" FontSize="18" FontWeight="Bold"
+            <TextBlock Text="{DynamicResource HeaderTitle}" FontSize="18" FontWeight="Bold"
                        HorizontalAlignment="Center" Margin="0,15,0,15"
                        Foreground="White" VerticalAlignment="Center"/>
             <Button Content="X" Click="cancel" Background="Transparent" FontSize="14"
@@ -38,38 +38,38 @@
         </Grid>
 
         <!-- Subtitle -->
-        <TextBlock Grid.Row="1" Text="Configure coordinate system and angle tolerance"
+        <TextBlock Grid.Row="1" Text="{DynamicResource Subtitle}"
                    FontSize="12" HorizontalAlignment="Center" Margin="0,10,0,10"
                    Foreground="#FF666666"/>
 
         <!-- Coordinate System Selection -->
-        <GroupBox Grid.Row="2" Header="Coordinate System" Margin="15,5,15,15"
+        <GroupBox Grid.Row="2" Header="{DynamicResource CoordinateSystemHeader}" Margin="15,5,15,15"
                   FontWeight="SemiBold" Foreground="#FF444444">
             <StackPanel Margin="15,5,15,0">
-                <RadioButton x:Name="all_grids" GroupName="CoordSystem" Content="All grids"
+                <RadioButton x:Name="all_grids" GroupName="CoordSystem" Content="{DynamicResource AllGrids}"
                              Margin="0,8,0,5" FontWeight="Normal" FontSize="12"/>
-                <TextBlock Text="Toggles all grids in the active view"
+                <TextBlock Text="{DynamicResource AllGridsDescription}"
                            FontSize="10" Foreground="#FF666666" Margin="20,0,0,8"/>
 
-                <RadioButton x:Name="radio_true_north" GroupName="CoordSystem" Content="True North"
+                <RadioButton x:Name="radio_true_north" GroupName="CoordSystem" Content="{DynamicResource TrueNorth}"
                              Margin="0,5,0,5" FontWeight="Normal" FontSize="12"/>
-                <TextBlock Text="Uses true north orientation"
+                <TextBlock Text="{DynamicResource TrueNorthDescription}"
                            FontSize="10" Foreground="#FF666666" Margin="20,0,0,8"/>
 
-                <RadioButton x:Name="radio_project_north" GroupName="CoordSystem" Content="Project North"
+                <RadioButton x:Name="radio_project_north" GroupName="CoordSystem" Content="{DynamicResource ProjectNorth}"
                              Margin="0,8,0,5" FontWeight="Normal" FontSize="12"/>
-                <TextBlock Text="Uses project coordinate system (applies the 'Angle to True North')"
+                <TextBlock Text="{DynamicResource ProjectNorthDescription}"
                            FontSize="10" Foreground="#FF666666" Margin="20,0,0,8"/>
 
-                <RadioButton x:Name="radio_view_orientation" GroupName="CoordSystem" Content="View/Scope Box Orientation"
+                <RadioButton x:Name="radio_view_orientation" GroupName="CoordSystem" Content="{DynamicResource ViewOrientation}"
                              Margin="0,5,0,5" FontWeight="Normal" FontSize="12"/>
-                <TextBlock Text="Uses current view orientation and scope boxes"
+                <TextBlock Text="{DynamicResource ViewOrientationDescription}"
                            FontSize="10" Foreground="#FF666666" Margin="20,0,0,8"/>
             </StackPanel>
         </GroupBox>
 
         <!-- Angle Tolerance -->
-        <GroupBox Grid.Row="3" Header="Angle Tolerance" Margin="15,5,15,15"
+        <GroupBox Grid.Row="3" Header="{DynamicResource AngleToleranceHeader}" Margin="15,5,15,15"
                   FontWeight="SemiBold" Foreground="#FF444444">
             <StackPanel Margin="15">
                 <Grid>
@@ -92,9 +92,9 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="1° (Strict)" FontSize="10"
+                    <TextBlock Grid.Column="0" Text="{DynamicResource StrictLabel}" FontSize="10"
                                Foreground="#FF888888" HorizontalAlignment="Left"/>
-                    <TextBlock Grid.Column="1" Text="40° (Permissive)" FontSize="10"
+                    <TextBlock Grid.Column="1" Text="{DynamicResource PermissiveLabel}" FontSize="10"
                                Foreground="#FF888888" HorizontalAlignment="Right"/>
                 </Grid>
 
@@ -105,9 +105,9 @@
                 <Border Background="#FFE3F2FD" BorderBrush="#FFBBDEFB" BorderThickness="1"
                         CornerRadius="5" Margin="0,5,0,0" Padding="12">
                     <StackPanel>
-                        <TextBlock Text="How this works" FontSize="12" FontWeight="SemiBold"
+                        <TextBlock Text="{DynamicResource HowThisWorks}" FontSize="12" FontWeight="SemiBold"
                                    Foreground="#FF1976D2" Margin="0,0,0,5"/>
-                        <TextBlock Text="Controls how closely grids must align with the chosen coordinate system. Lower values = only straight grids. Higher values = includes angled grids."
+                        <TextBlock Text="{DynamicResource HowThisWorksDescription}"
                                    FontSize="11" Foreground="#FF1565C0" TextWrapping="Wrap" LineHeight="16"/>
                     </StackPanel>
                 </Border>
@@ -121,12 +121,12 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <Button Grid.Column="0" Content="Cancel" Click="cancel"
+            <Button Grid.Column="0" Content="{DynamicResource Cancel}" Click="cancel"
                     HorizontalAlignment="Stretch" VerticalAlignment="Center"
                     Height="40" Margin="0,0,10,0" Background="#FFF8F9FA"
                     BorderBrush="#FFDEE2E6" Foreground="#FF666666" FontSize="12"/>
 
-            <Button Grid.Column="1" Content="Continue" Click="proceed"
+            <Button Grid.Column="1" Content="{DynamicResource Continue}" Click="proceed"
                     HorizontalAlignment="Stretch" VerticalAlignment="Center"
                     Height="40" Margin="10,0,0,0" Background="#FF667EEA"
                     BorderBrush="#FF667EEA" Foreground="White" FontWeight="SemiBold" FontSize="12"/>

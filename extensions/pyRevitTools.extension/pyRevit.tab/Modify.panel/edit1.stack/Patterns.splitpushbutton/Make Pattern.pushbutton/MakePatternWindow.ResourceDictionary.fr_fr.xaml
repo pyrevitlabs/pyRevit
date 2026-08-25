@@ -1,0 +1,26 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Créer un Motif</system:String>
+    
+    <system:String x:Key="EnterNewPatternName">Entrer le Nom du Nouveau Motif</system:String>
+    <system:String x:Key="SelectPatternToExport">Sélectionner le Motif à Exporter</system:String>
+    
+    <system:String x:Key="ExportPATFile">Exporter le Fichier PAT</system:String>
+    <system:String x:Key="CreatePattern">Créer un Motif</system:String>
+    <system:String x:Key="NoLineworkSelected">Aucun Trait Sélectionné</system:String>
+    <system:String x:Key="IncompatibleViewType">Type de Vue Incompatible</system:String>
+    
+    <system:String x:Key="ResolverOptions">Options de Résolution</system:String>
+    <system:String x:Key="CreateFilledRegion">Créer une Région Remplie</system:String>
+    <system:String x:Key="UseHighestResolution">Utiliser la Résolution la Plus Élevée</system:String>
+    <system:String x:Key="CapturedViewScale">Échelle de Vue Capturée</system:String>
+    <system:String x:Key="ScaleMultiplier">Multiplicateur d'Échelle</system:String>
+    <system:String x:Key="RotationInDegrees">Rotation (en Degrés)</system:String>
+    <system:String x:Key="FlipHorizontally">Retourner Horizontalement</system:String>
+    <system:String x:Key="FlipVertically">Retourner Verticalement</system:String>
+    
+    <system:String x:Key="PatternType">Type de Motif</system:String>
+    <system:String x:Key="DetailPattern">Motif de Détail</system:String>
+    <system:String x:Key="ModelPattern">Motif de Modèle</system:String>
+</ResourceDictionary>

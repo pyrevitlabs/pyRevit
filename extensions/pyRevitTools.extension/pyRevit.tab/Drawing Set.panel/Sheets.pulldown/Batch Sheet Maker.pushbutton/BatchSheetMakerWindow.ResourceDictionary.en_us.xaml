@@ -1,0 +1,20 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Batch Sheet Maker</system:String>
+    
+    <system:String x:Key="InstructionsLine1">Enter list of sheet number and names in this format:</system:String>
+    <system:String x:Key="SheetNumberLabel">sheet-number</system:String>
+    <system:String x:Key="TAB">TAB</system:String>
+    <system:String x:Key="SheetNameLabel">sheet-name</system:String>
+    <system:String x:Key="SheetNameExample">SHEET NAME</system:String>
+    <system:String x:Key="InstructionsLine2">Multiple sheet with indentical names could be listed with sheet number ranges:</system:String>
+    <system:String x:Key="RangeOfSheetNumbers">Range of Sheet Numbers:</system:String>
+    <system:String x:Key="RangeExample">e.g. A103--A106 or A103::A106</system:String>
+    <system:String x:Key="ListOfSheetNumbers">List of Sheet Numbers:</system:String>
+    <system:String x:Key="ListExample">e.g. A104,A105 or A104;A105</system:String>
+    
+    <system:String x:Key="CreateSheets">Create Sheets</system:String>
+    <system:String x:Key="CreatePlaceholders">Create Placeholders</system:String>
+    <system:String x:Key="CreateButton">Create</system:String>
+</ResourceDictionary>

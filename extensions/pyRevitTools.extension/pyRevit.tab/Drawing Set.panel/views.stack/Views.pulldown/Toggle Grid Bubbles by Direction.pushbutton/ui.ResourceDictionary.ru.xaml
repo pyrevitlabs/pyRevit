@@ -1,0 +1,22 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Переключить Пузырьки Сетки</system:String>
+    <system:String x:Key="HeaderTitle">Переключить Пузырьки Сетки</system:String>
+    
+    <system:String x:Key="OperationScopeHeader">Область Операции</system:String>
+    
+    <system:String x:Key="ToggleAllHeader">Переключить все активные сетки</system:String>
+    <system:String x:Key="ShowAll">Показать Все</system:String>
+    <system:String x:Key="HideAll">Скрыть Все</system:String>
+    
+    <system:String x:Key="ToggleByDirectionHeader">Переключить активные сетки по направлению</system:String>
+    <system:String x:Key="Top">Верх</system:String>
+    <system:String x:Key="Left">Слева</system:String>
+    <system:String x:Key="Right">Справа</system:String>
+    <system:String x:Key="Bottom">Низ</system:String>
+    
+    <system:String x:Key="Back">Назад</system:String>
+    <system:String x:Key="Cancel">Отмена</system:String>
+    <system:String x:Key="OK">ОК</system:String>
+</ResourceDictionary>

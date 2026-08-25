@@ -1,0 +1,51 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Schlüsselnotiz bearbeiten</system:String>
+    <system:String x:Key="KeynoteTitle">Schlüsselnotiz-Schlüssel</system:String>
+    <system:String x:Key="ParentTitle">Schlüsselnotiz-Elternelement</system:String>
+    <system:String x:Key="ApplyChanges">Änderungen übernehmen</system:String>
+    <system:String x:Key="UpperInfo">ZU GROSSBUCHSTABEN</system:String>
+    <system:String x:Key="LowerInfo">Zu Kleinbuchstaben</system:String>
+    <system:String x:Key="TitleCaseInfo">Zu Titel-Großschreibung</system:String>
+    <system:String x:Key="SentenceCaseInfo">Zu Satz-Großschreibung</system:String>
+    <system:String x:Key="TranslateInfo">Übersetzen</system:String>
+    <system:String x:Key="TemplatesInfo">Vorlagen</system:String>
+    
+    
+    <system:String x:Key="AddCategoryTitle">Kategorie hinzufügen</system:String>
+    <system:String x:Key="CreateCategoryKey">Kategorie-Schlüssel erstellen</system:String>
+    <system:String x:Key="AddCategoryApply">Kategorie hinzufügen</system:String>
+    
+    <system:String x:Key="EditCategoryTitle">Kategorie bearbeiten</system:String>
+    <system:String x:Key="EditCategoryKey">Kategorie-Schlüssel</system:String>
+    <system:String x:Key="EditCategoryApply">Kategorie aktualisieren</system:String>
+    
+    <system:String x:Key="AddKeynoteTitle">Schlüsselnotiz hinzufügen</system:String>
+    <system:String x:Key="CreateKeynoteKey">Schlüsselnotiz-Schlüssel erstellen</system:String>
+    <system:String x:Key="AddKeynoteApply">Schlüsselnotiz hinzufügen</system:String>
+    
+    <system:String x:Key="EditKeynoteTitle">Schlüsselnotiz bearbeiten</system:String>
+    <system:String x:Key="EditKeynoteKey">Schlüsselnotiz-Schlüssel</system:String>
+    <system:String x:Key="EditKeynoteApply">Schlüsselnotiz aktualisieren</system:String>
+    
+    
+    <system:String x:Key="CategoryKeyValidate">Die Kategorie muss einen eindeutigen Schlüssel haben.</system:String>
+    <system:String x:Key="CategoryTitleValidate">Die Kategorie muss einen Titel haben.</system:String>
+    <system:String x:Key="CategoryTitleRemoved">Der vorhandene Titel wurde entfernt. Die Kategorie muss einen Titel haben.</system:String>
+    
+    <system:String x:Key="KeynoteKeyValidate">Die Schlüsselnotiz muss einen eindeutigen Schlüssel haben.</system:String>
+    <system:String x:Key="KeynoteTextValidate">Die Schlüsselnotiz muss einen Text haben.</system:String>
+    <system:String x:Key="KeynoteParentValidate">Die Schlüsselnotiz muss ein Elternelement haben.</system:String>
+    <system:String x:Key="KeynoteTextRemoved">Der vorhandene Text wurde entfernt. Die Schlüsselnotiz muss einen Text haben.</system:String>
+    
+    <system:String x:Key="EnterUniqueKey">Eindeutigen Schlüssel eingeben</system:String>
+    <system:String x:Key="PickParent">Elternelement auswählen...</system:String>
+    
+    <system:String x:Key="SelectTemplate">Vorlage auswählen</system:String>
+    <system:String x:Key="TemplateReserved">-- für zukünftige Verwendung reserviert --</system:String>
+    <system:String x:Key="TemplateDontUse">!! nicht verwenden !!</system:String>
+    <system:String x:Key="ComingSoon">Noch nicht implementiert. Kommt bald.</system:String>
+    
+    
+</ResourceDictionary>

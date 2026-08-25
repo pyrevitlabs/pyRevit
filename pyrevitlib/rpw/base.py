@@ -51,7 +51,7 @@ class BaseObject(object):
         # TODO: Clean up repr. remove wraps, add brackets to data
         def __repr__(self, data=''):
             if data:
-                data = ' '.join(['{0}:{1}'.format(k, v) for k, v in data.iteritems()])
+                data = ' '.join(['{0}:{1}'.format(k, v) for k, v in data.items()])
             return '<rpw:{class_name} | {data}>'.format(
                                         class_name=self.__class__.__name__,
                                         data=data)
@@ -125,7 +125,7 @@ class BaseObjectWrapper(BaseObject):
         if class_name != revit_class_name:
             class_name = '{} % {}'.format(class_name, revit_class_name)
 
-        data = ''.join([' [{0}:{1}]'.format(k, v) for k, v in data.iteritems()])
+        data = ''.join([' [{0}:{1}]'.format(k, v) for k, v in data.items()])
         return '<rpw:{class_name}{data}>'.format(class_name=class_name,
                                                     data=data
                                                     )

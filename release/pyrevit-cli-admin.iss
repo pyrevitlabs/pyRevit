@@ -15,7 +15,7 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-AppCopyright=Copyright © 2014-2025 pyRevitLabs.io
+AppCopyright=Copyright © 2014-2026 pyRevitLabs.io
 LicenseFile=..\LICENSE.txt
 ; Installer
 DefaultGroupName={#MyAppName}
@@ -30,16 +30,16 @@ UsePreviousAppDir=yes
 PrivilegesRequired=admin
 ; Build info
 OutputDir=..\dist
-; See dev/scripts/config.py INSTALLER_EXES
+; Keep this list aligned with the installer assets staged by build/.
 OutputBaseFilename=pyRevit_CLI_{#MyAppVersion}_admin_signed
-SetupIconFile=..\bin\pyrevit_cli.ico
+SetupIconFile=..\release\bin-assets\pyrevit_cli.ico
 Compression=lzma
 SolidCompression=yes
 DisableWelcomePage=no
 WizardStyle=classic
 WizardImageFile=.\pyrevit-cli.bmp
 WizardSmallImageFile=.\pyrevit-banner.bmp
-ArchitecturesInstallIn64BitMode=x64
+ArchitecturesInstallIn64BitMode=x64compatible
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"

@@ -19,6 +19,14 @@ import os.path as op
 from collections import namedtuple
 import traceback
 import re
+
+# Perf instrumentation must be the first pyrevit import so the first mark
+# below times as close to "pyrevit module load entry" as the import order
+# allows. Each mark is a no-op until the pyRevit logger is importable and
+# only surfaces when DEBUG logging is enabled.
+from pyrevit._perf import mark as _perfmark
+_perfmark("pyrevit.__init__:entry")
+
 from pyrevit.compat import PY3
 
 import clr  # pylint: disable=E0401
@@ -26,6 +34,7 @@ import clr  # pylint: disable=E0401
 import System
 
 from pyrevit import compat
+_perfmark("pyrevit.__init__:after compat+clr+System")
 
 PYREVIT_ADDON_NAME = 'pyRevit'
 PYREVIT_CLI_NAME = 'pyrevit.exe'
@@ -107,8 +116,10 @@ from pyrevit.compat import safe_strtype
 from pyrevit.framework import Process
 from pyrevit.framework import Windows
 from pyrevit.framework import Forms
+_perfmark("pyrevit.__init__:after framework")
 from pyrevit import api
 from pyrevit.api import DB, UI, ApplicationServices, AdWindows
+_perfmark("pyrevit.__init__:after api")
 
 # -----------------------------------------------------------------------------
 # Base Exceptions
@@ -195,7 +206,7 @@ class _HostApplication(object):
     Examples:
             ```python
             hostapp = _HostApplication()
-            hostapp.is_newer_than(2017)
+            hostapp.is_newer_than(2022)
             ```
     """
 
@@ -264,10 +275,7 @@ class _HostApplication(object):
     @property
     def subversion(self):
         """str: Return subversion number (e.g. '2018.3')."""
-        if hasattr(self.app, 'SubVersionNumber'):
-            return self.app.SubVersionNumber
-        else:
-            return '{}.0'.format(self.version)
+        return self.app.SubVersionNumber
 
     @property
     def version_name(self):
@@ -277,11 +285,9 @@ class _HostApplication(object):
     @property
     def build(self):
         """str: Return build number (e.g. '20170927_1515(x64)')."""
-        if int(self.version) >= 2021:
-            # uses labs module that is imported later in this code
-            return labs.extract_build_from_exe(self.proc_path)
-        else:
-            return self.app.VersionBuild
+        # Revit 2021+ VersionBuild reports the same value as VersionNumber.
+        # uses labs module that is imported later in this code
+        return labs.extract_build_from_exe(self.proc_path)
 
     @property
     def serial_no(self):
@@ -298,9 +304,7 @@ class _HostApplication(object):
         Returns:
             (str): Pretty name of the host
         """
-        host_name = self.version_name
-        if self.is_newer_than(2017):
-            host_name = host_name.replace(self.version, self.subversion)
+        host_name = self.version_name.replace(self.version, self.subversion)
         return "%s build: %s" % (host_name, self.build)
 
     @property
@@ -345,10 +349,7 @@ class _HostApplication(object):
     @property
     def proc_window(self):
         """``intptr``: Return handle to current process window."""
-        if self.is_newer_than(2019, or_equal=True):
-            return self.uiapp.MainWindowHandle
-        else:
-            return AdWindows.ComponentManager.ApplicationWindow
+        return self.uiapp.MainWindowHandle
 
     @property
     def proc_screen(self):
@@ -823,4 +824,16 @@ PYREVIT_FILE_PREFIX_STAMPED_USER_REGEX = \
 # -----------------------------------------------------------------------------
 # config labs modules
 # -----------------------------------------------------------------------------
+_perfmark("pyrevit.__init__:before labs")
 from pyrevit import labs
+from pyRevitLabs import Common as PyRevitLabsCommon
+_perfmark("pyrevit.__init__:after labs (exit)")
+
+# Align roaming/programdata paths with the C# install-scope resolver.
+ALLUSER_PROGRAMDATA = PyRevitLabsCommon.PyRevitLabsConsts.PyRevitProgramDataPath
+USER_ROAMING_DIR = PyRevitLabsCommon.PyRevitLabsConsts.PyRevitPath
+PYREVIT_ALLUSER_APP_DIR = ALLUSER_PROGRAMDATA
+PYREVIT_APP_DIR = USER_ROAMING_DIR
+PYREVIT_VERSION_APP_DIR = op.join(PYREVIT_APP_DIR, HOST_APP.version)
+THIRDPARTY_EXTENSIONS_DEFAULT_DIR = \
+    op.join(PYREVIT_APP_DIR, 'Extensions')

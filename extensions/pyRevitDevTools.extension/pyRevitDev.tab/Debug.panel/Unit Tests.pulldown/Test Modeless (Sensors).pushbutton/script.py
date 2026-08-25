@@ -9,9 +9,6 @@ from pyrevit.framework import Input
 from pyrevit import script
 
 
-__context__ = 'zero-doc'
-__author__ = "{{author}}"
-__persistentengine__ = True
 
 logger = script.get_logger()
 

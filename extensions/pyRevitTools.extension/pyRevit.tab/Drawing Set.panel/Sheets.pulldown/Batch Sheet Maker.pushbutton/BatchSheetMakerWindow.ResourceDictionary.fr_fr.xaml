@@ -1,0 +1,20 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Créateur de feuilles par lot</system:String>
+    
+    <system:String x:Key="InstructionsLine1">Entrez la liste des numéros et noms de feuilles dans ce format :</system:String>
+    <system:String x:Key="SheetNumberLabel">numéro-de-feuille</system:String>
+    <system:String x:Key="TAB">TAB</system:String>
+    <system:String x:Key="SheetNameLabel">nom-de-feuille</system:String>
+    <system:String x:Key="SheetNameExample">NOM DE LA FEUILLE</system:String>
+    <system:String x:Key="InstructionsLine2">Plusieurs feuilles avec des noms identiques peuvent être listées avec des plages de numéros de feuilles :</system:String>
+    <system:String x:Key="RangeOfSheetNumbers">Plage de numéros de feuilles :</system:String>
+    <system:String x:Key="RangeExample">par ex. A103--A106 ou A103::A106</system:String>
+    <system:String x:Key="ListOfSheetNumbers">Liste de numéros de feuilles :</system:String>
+    <system:String x:Key="ListExample">par ex. A104,A105 ou A104;A105</system:String>
+    
+    <system:String x:Key="CreateSheets">Créer des feuilles</system:String>
+    <system:String x:Key="CreatePlaceholders">Créer des espaces réservés</system:String>
+    <system:String x:Key="CreateButton">Créer</system:String>
+</ResourceDictionary>

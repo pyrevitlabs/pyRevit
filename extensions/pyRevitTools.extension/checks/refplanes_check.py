@@ -1,16 +1,21 @@
 # -*- coding: UTF-8 -*-
 import datetime
+import os
 
 from pyrevit import coreutils
-from pyrevit import script
-from pyrevit import revit, DB
-
+from pyrevit import DB
+from pyrevit.coreutils import applocales
 from pyrevit.preflight import PreflightTestCase
-from pyrevit.compat import safe_strtype
+
+_XAML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "locale", "Checks.xaml")
+
+
+def _t(key):
+    return applocales.get_locale_string_from_xaml(_XAML, key)
+
 
 def checkModel(doc, output):
-
-    output.print_md("### Reference planes<br />")
+    output.print_md("### {0}<br />".format(_t("ReferencePlanes")))
     # reference plane without name
     refPlaneCollector = (
         DB.FilteredElementCollector(doc)
@@ -18,33 +23,30 @@ def checkModel(doc, output):
         .ToElements()
     )
     RefPCount = len(refPlaneCollector)
-    output.print_md("\n**Reference planes: **{0} \n\n".format(RefPCount))
+    output.print_md("\n**{0} **{1} \n\n".format(_t("ReferencePlanesCount"), RefPCount))
     noNameRefPCount = 0
-    
+
     refPlaneList, refPlanNames = [], []
 
     for refPlane in refPlaneCollector:
         refPlaneList.append(refPlane.Id)
         refPlanNames.append(refPlane.Name)
-        output.print_md("NAME: {0}\t\tID: {1}"
-                        .format(refPlane.Name, output.linkify(refPlane.Id)))
+        output.print_md("{0} {1}\t\t{2} {3}"
+                        .format(_t("NameLabel"), refPlane.Name,
+                                _t("IdLabel"), output.linkify(refPlane.Id)))
+
 
 class ModelChecker(PreflightTestCase):
-    """
-    List all reference planes in the model
-    This QC tools returns you with the following data:
-        Reference planes count, link to, name
-
-    """
-
-    name = "Reference Plan Lister"
+    name = _t("CheckName_ReferencePlanLister")
     author = "Jean-Marc Couffin"
-
 
     def startTest(self, doc, output):
         timer = coreutils.Timer()
         checkModel(doc, output)
         endtime = timer.get_time()
         endtime_hms = str(datetime.timedelta(seconds=endtime))
-        endtime_hms_claim = "Transaction took " + endtime_hms
+        endtime_hms_claim = "{} {}".format(_t("TransactionTook"), endtime_hms)
         print(endtime_hms_claim)
+
+
+ModelChecker.__doc__ = _t("CheckDescription_ReferencePlanLister")

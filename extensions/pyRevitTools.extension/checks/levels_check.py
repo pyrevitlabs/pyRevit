@@ -1,6 +1,16 @@
 # -*- coding: UTF-8 -*-
-from pyrevit import script, revit, DB, DOCS
+import os
+
+from pyrevit import script, DB, DOCS
+from pyrevit.coreutils import applocales
 from pyrevit.preflight import PreflightTestCase
+
+_XAML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "locale", "Checks.xaml")
+
+
+def _t(key):
+    return applocales.get_locale_string_from_xaml(_XAML, key)
+
 
 doc = DOCS.doc
 
@@ -24,7 +34,7 @@ def levels_names(document=doc):
     return levels_names
 
 
-def levels_elevation(document=doc):
+def levels_types(document=doc):
     levels = levels_collector(document)
     levels_types_names = []
     for level in levels:
@@ -65,30 +75,33 @@ def levels_scoped(document=doc):
 def checkModel(doc, output):
     output = script.get_output()
     output.close_others()
-    output.print_md("# Level Data Lister")
+    output.print_md("# {}".format(_t("LevelsDataLister")))
     count = levels_count()
-    output.print_md("## Number of levels: {0}".format(count))
-    names = levels_names() # [1,2,3,4]
-    types = levels_elevation() # [bubble, bubble, bubble, bubble]
-    pinned = levels_pinned() # [True, False, True, False]
-    scoper = levels_scoped() # [Name of scope, Name of scope, Name of scope, Name of scope]
-    elevation = levels_elevation() # [1.0, 2.0, 3.0, 4.0]
-    output.print_table(table_data=zip(names, types, pinned, scoper, elevation), title="Levels", columns=["Name", "Type", "Pinned", "Scope Box", "Elevation"])
-
+    output.print_md("## {0}: {1}".format(_t("NumberOfLevels"), count))
+    names = levels_names()
+    types = levels_types()
+    pinned = levels_pinned()
+    scoper = levels_scoped()
+    elevation = levels_elevation()
+    output.print_table(
+        table_data=zip(names, types, pinned, scoper, elevation),
+        title=_t("Levels"),
+        columns=[
+            _t("Name"),
+            _t("Type"),
+            _t("Pinned"),
+            _t("ScopeBox"),
+            _t("Elevation"),
+        ]
+    )
 
 
 class ModelChecker(PreflightTestCase):
-    """
-    List levels, if they are pinned, scoped boxed, or named and its elevation.
-
-    This QC tools returns you with the following data:
-        Levels count, name, type, pinned status, scope box, and elevation.
-
-    """
-
-    name = "Levels Data Lister"
+    name = _t("CheckName_LevelsDataLister")
     author = "Jean-Marc Couffin"
-
 
     def startTest(self, doc, output):
         checkModel(doc, output)
+
+
+ModelChecker.__doc__ = _t("CheckDescription_LevelsDataLister")

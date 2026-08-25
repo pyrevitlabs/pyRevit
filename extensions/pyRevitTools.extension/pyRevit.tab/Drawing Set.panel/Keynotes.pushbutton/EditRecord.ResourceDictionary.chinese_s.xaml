@@ -1,0 +1,51 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">编辑关键注释</system:String>
+    <system:String x:Key="KeynoteTitle">关键注释键</system:String>
+    <system:String x:Key="ParentTitle">关键注释父项</system:String>
+    <system:String x:Key="ApplyChanges">应用更改</system:String>
+    <system:String x:Key="UpperInfo">转换为大写</system:String>
+    <system:String x:Key="LowerInfo">转换为小写</system:String>
+    <system:String x:Key="TitleCaseInfo">转换为标题大小写</system:String>
+    <system:String x:Key="SentenceCaseInfo">转换为句子大小写</system:String>
+    <system:String x:Key="TranslateInfo">翻译</system:String>
+    <system:String x:Key="TemplatesInfo">模板</system:String>
+    
+    
+    <system:String x:Key="AddCategoryTitle">添加类别</system:String>
+    <system:String x:Key="CreateCategoryKey">创建类别键</system:String>
+    <system:String x:Key="AddCategoryApply">添加类别</system:String>
+    
+    <system:String x:Key="EditCategoryTitle">编辑类别</system:String>
+    <system:String x:Key="EditCategoryKey">类别键</system:String>
+    <system:String x:Key="EditCategoryApply">更新类别</system:String>
+    
+    <system:String x:Key="AddKeynoteTitle">添加关键注释</system:String>
+    <system:String x:Key="CreateKeynoteKey">创建关键注释键</system:String>
+    <system:String x:Key="AddKeynoteApply">添加关键注释</system:String>
+    
+    <system:String x:Key="EditKeynoteTitle">编辑关键注释</system:String>
+    <system:String x:Key="EditKeynoteKey">关键注释键</system:String>
+    <system:String x:Key="EditKeynoteApply">更新关键注释</system:String>
+    
+    
+    <system:String x:Key="CategoryKeyValidate">类别必须具有唯一键。</system:String>
+    <system:String x:Key="CategoryTitleValidate">类别必须具有标题。</system:String>
+    <system:String x:Key="CategoryTitleRemoved">现有标题已删除。类别必须具有标题。</system:String>
+    
+    <system:String x:Key="KeynoteKeyValidate">关键注释必须具有唯一键。</system:String>
+    <system:String x:Key="KeynoteTextValidate">关键注释必须具有文本。</system:String>
+    <system:String x:Key="KeynoteParentValidate">关键注释必须具有父项。</system:String>
+    <system:String x:Key="KeynoteTextRemoved">现有文本已删除。关键注释必须具有文本。</system:String>
+    
+    <system:String x:Key="EnterUniqueKey">输入唯一键</system:String>
+    <system:String x:Key="PickParent">选择父项...</system:String>
+    
+    <system:String x:Key="SelectTemplate">选择模板</system:String>
+    <system:String x:Key="TemplateReserved">-- 保留供将来使用 --</system:String>
+    <system:String x:Key="TemplateDontUse">!! 请勿使用 !!</system:String>
+    <system:String x:Key="ComingSoon">尚未实现。即将推出。</system:String>
+    
+    
+</ResourceDictionary>

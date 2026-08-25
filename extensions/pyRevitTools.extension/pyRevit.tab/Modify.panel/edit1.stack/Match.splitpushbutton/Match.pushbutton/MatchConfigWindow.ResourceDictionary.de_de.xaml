@@ -1,0 +1,33 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Abgleich-Optionen</system:String>
+    
+    <system:String x:Key="CheckAll">Alle Auswählen</system:String>
+    <system:String x:Key="CheckNone">Alle Abwählen</system:String>
+    <system:String x:Key="SaveOptions">Optionen Speichern</system:String>
+    
+    <system:String x:Key="DimensionOverrides">Bemaßungsüberschreibungen:</system:String>
+    <system:String x:Key="PrefixValue">Präfix-Wert</system:String>
+    <system:String x:Key="AboveValue">Wert Oben</system:String>
+    <system:String x:Key="ReplacedValue">Ersetzter Wert</system:String>
+    <system:String x:Key="TextPosition">Textposition</system:String>
+    <system:String x:Key="BelowValue">Wert Unten</system:String>
+    <system:String x:Key="PostfixValue">Postfix-Wert</system:String>
+    
+    <system:String x:Key="ElementGraphicsOverrides">Elementgrafik-Überschreibungen:</system:String>
+    <system:String x:Key="Halftone">Halbton</system:String>
+    <system:String x:Key="Transparency">Transparenz</system:String>
+    
+    <system:String x:Key="Surface">Oberfläche</system:String>
+    <system:String x:Key="LineColor">Linienfarbe</system:String>
+    <system:String x:Key="LinePattern">Linienmuster</system:String>
+    <system:String x:Key="LineWeight">Linienstärke</system:String>
+    <system:String x:Key="Foreground">Vordergrund</system:String>
+    <system:String x:Key="FillColor">Füllfarbe</system:String>
+    <system:String x:Key="FillPattern">Füllmuster</system:String>
+    <system:String x:Key="FillPatternVisibility">Füllmuster-Sichtbarkeit</system:String>
+    <system:String x:Key="Background">Hintergrund</system:String>
+    
+    <system:String x:Key="Cut">Schnitt</system:String>
+</ResourceDictionary>

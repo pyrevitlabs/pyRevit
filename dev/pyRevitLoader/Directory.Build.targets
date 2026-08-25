@@ -2,22 +2,36 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
     <Import Project="../Directory.Build.targets"/>
 
+    <PropertyGroup Condition="'$(IsTestProject)' == 'true' AND '$(SkipPyRevitDeploy)' == ''">
+        <SkipPyRevitDeploy>true</SkipPyRevitDeploy>
+    </PropertyGroup>
+
     <ItemGroup>
         <None Remove="obj\**" />
     </ItemGroup>
     
-    <ItemGroup Condition="$(UseRunner)=='' OR $(UseRunner)==False">
-        <Compile Include="..\Source\PyRevitLoaderApplication.cs" Link="Source\PyRevitLoaderApplication.cs"/>
-        <Compile Include="..\Source\ScriptExecutor.cs" Link="Source\ScriptExecutor.cs"/>
-    </ItemGroup>
-
-    <ItemGroup Condition="$(UseRunner)==True">
+    <ItemGroup Condition="'$(UseRunner)' == 'true'">
         <Compile Include="..\Source\PyRevitRunnerApplication.cs" Link="Source\PyRevitRunnerApplication.cs"/>
         <Compile Include="..\Source\PyRevitRunnerCommand.cs" Link="Source\PyRevitRunnerCommand.cs"/>
         <Compile Include="..\Source\ScriptExecutor.cs" Link="Source\ScriptExecutor.cs"/>
+        <Compile Include="..\Source\ErrorReporter.cs" Link="Source\ErrorReporter.cs"/>
     </ItemGroup>
 
-    <ItemGroup Condition="$(IronPythonVersion.Contains('PR'))">
+    <ItemGroup Condition="'$(UseLoader)' == 'true'">
+        <Compile Include="..\Source\PyRevitLoaderApplication.cs" Link="Source\PyRevitLoaderApplication.cs"/>
+        <Compile Include="..\Source\ScriptExecutor.cs" Link="Source\ScriptExecutor.cs"/>
+        <Compile Include="..\Source\SmartButtonExecutor.cs" Link="Source\SmartButtonExecutor.cs"/>
+        <Compile Include="..\Source\ComboBoxExecutor.cs" Link="Source\ComboBoxExecutor.cs"/>
+        <Compile Include="..\Source\ErrorReporter.cs" Link="Source\ErrorReporter.cs"/>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(UseRunner)' == 'true'">
+        <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.Json.dll" Private="false" />
+        <Reference Include="pyRevitLabs.PyRevit" HintPath="$(PyRevitBinDir)\pyRevitLabs.PyRevit.dll" Private="false" />
+        <Reference Include="pyRevitLabs.PyRevit.Runtime.$(RevitVersion)" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\pyRevitLabs.PyRevit.Runtime.$(RevitVersion).dll" Private="false" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(UseIronPython)' != 'false' AND $(IronPythonVersion.Contains('PR'))">
         <Reference Include="IronPython" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\pyRevitLabs.IronPython.dll"/>
         <Reference Include="IronPython.Modules" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\pyRevitLabs.IronPython.Modules.dll"/>
         <Reference Include="IronPython.SQLite" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\pyRevitLabs.IronPython.SQLite.dll"/>
@@ -26,27 +40,94 @@
         <Reference Include="Microsoft.Scripting" HintPath="$(PyRevitEnginesDir)\$(IronPythonVersion)\pyRevitLabs.Microsoft.Scripting.dll"/>
     </ItemGroup>
 
-    <ItemGroup Condition="!$(IronPythonVersion.Contains('PR'))">
+    <ItemGroup Condition="'$(UseIronPython)' != 'false' AND !$(IronPythonVersion.Contains('PR'))">
         <PackageReference Include="IronPython" Version="$(Version)"/>
     </ItemGroup>
     
     <ItemGroup>
         <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="Microsoft.CSharp"/>
     </ItemGroup>
-
-    <ItemGroup>
-        <EmbeddedResource Include="$(IronPythonStdLibDir)\$(IronPythonStdLib)"/>
+    
+    <ItemGroup Condition="'$(UseAssemblyBuilder)' == 'true'">
+        <ProjectReference Include="..\pyRevitAssemblyBuilder\pyRevitAssemblyBuilder.csproj" />
+    </ItemGroup>
+    
+    <ItemGroup Condition="'$(UseExtensionParser)' == 'true'">
+        <ProjectReference Include="..\pyRevitExtensionParser\pyRevitExtensionParser.csproj" />
     </ItemGroup>
 
-    <Target Name="Deploy" AfterTargets="AfterBuild">
-        <ItemGroup>
-            <AllFilesToCopy Include="$(TargetDir)\**\*.dll"
-                            Exclude="$(TargetDir)\**\Xceed.Wpf.AvalonDock.dll" />
-        </ItemGroup>
-        <Copy SourceFiles="@(AllFilesToCopy)" 
-                DestinationFolder="$(PyRevitEnginesDir)\$(IronPythonVersion)" />
+    <!--
+      Test projects should not deploy referenced project binaries into engine folders.
+      This avoids file-lock warning noise during `dotnet test` when Revit has loaded those DLLs.
+    -->
+    <ItemGroup Condition="'$(IsTestProject)' == 'true'">
+        <ProjectReference Update="..\pyRevitAssemblyBuilder\pyRevitAssemblyBuilder.csproj"
+                          AdditionalProperties="SkipPyRevitDeploy=true" />
+        <ProjectReference Update="..\pyRevitExtensionParser\pyRevitExtensionParser.csproj"
+                          AdditionalProperties="SkipPyRevitDeploy=true" />
+    </ItemGroup>
+    
+    <ItemGroup Condition="'$(UseIronPython)' != 'false'">
+        <EmbeddedResource Include="$(IronPythonStdLibDir)\$(IronPythonStdLib)"/>
+    </ItemGroup>
+    
+    <ItemGroup Condition="'$(UseRoslyn)' == 'true'">
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" />
+    </ItemGroup>
+    
+    <!--
+      Exclude DLLs that are already deployed to bin/netcore/ or bin/netfx/ root.
+      PyRevitLoaderApplication.OnStartup calls LoadAssembliesInFolder(commonFolder)
+      where commonFolder = bin/netcore/ (or bin/netfx/), so engine-folder copies
+      are redundant duplicates.
+    -->
+    <PropertyGroup>
+        <DeployCopyRetryCount>10</DeployCopyRetryCount>
+        <DeployCopyRetryWaitSeconds>1</DeployCopyRetryWaitSeconds>
+        <DeployCopyExcludeFiles>Xceed.Wpf.AvalonDock.dll Microsoft.CodeAnalysis.dll Microsoft.CodeAnalysis.CSharp.dll Microsoft.CodeAnalysis.CSharp.resources.dll Microsoft.CodeAnalysis.resources.dll Microsoft.CodeAnalysis.VisualBasic.dll Microsoft.CodeAnalysis.VisualBasic.resources.dll YamlDotNet.dll DotNetVersionFinder.dll LibGit2Sharp.dll MadMilkman.Ini.dll OpenMcdf.dll pyRevitLabs.Common.dll</DeployCopyExcludeFiles>
+        <DeployCopyExcludeWildcards>Microsoft.Bcl.*.dll git2-*.dll System.*.dll</DeployCopyExcludeWildcards>
+    </PropertyGroup>
+
+    <Target Name="Deploy" AfterTargets="AfterBuild" Condition="'$(SkipPyRevitDeploy)' != 'true'">
+        <!-- Robocopy provides /R retry semantics; MSBuild Copy lacks RetryCount in this project graph. -->
+        <Exec Command="robocopy &quot;$(TargetDir.TrimEnd('\'))&quot; &quot;$(PyRevitEnginesDir)\$(IronPythonVersion)&quot; *.dll /R:$(DeployCopyRetryCount) /W:$(DeployCopyRetryWaitSeconds) /XF $(DeployCopyExcludeFiles) $(DeployCopyExcludeWildcards) /NP /NFL /NDL /NJH /NJS /IS /IT"
+              IgnoreExitCode="true"
+              Condition="'$(DeployToAllVersions)' != 'true' AND '$(IsTestProject)' != 'true'">
+            <Output TaskParameter="ExitCode" PropertyName="_DeployCopyExitCode" />
+        </Exec>
+        <Error Text="Failed to deploy engine binaries to $(PyRevitEnginesDir)\$(IronPythonVersion)."
+               Condition="'$(DeployToAllVersions)' != 'true' AND '$(IsTestProject)' != 'true' AND $(_DeployCopyExitCode) &gt;= 8" />
         <Message Importance="high" 
-                Text="$(MSBuildProjectName) -> Copy to $([System.IO.Path]::GetFullPath('$(PyRevitEnginesDir)\$(IronPythonVersion)'))" />
+                Text="$(MSBuildProjectName) -> Copy to $([System.IO.Path]::GetFullPath('$(PyRevitEnginesDir)\$(IronPythonVersion)'))"
+                Condition="'$(DeployToAllVersions)' != 'true' AND '$(IsTestProject)' != 'true'" />
+        
+        <!-- Multi-version deployment for shared components -->
+        <Exec Command="robocopy &quot;$(TargetDir.TrimEnd('\'))&quot; &quot;$(PyRevitEnginesDir)\IPY342&quot; *.dll /R:$(DeployCopyRetryCount) /W:$(DeployCopyRetryWaitSeconds) /XF $(DeployCopyExcludeFiles) $(DeployCopyExcludeWildcards) /NP /NFL /NDL /NJH /NJS /IS /IT"
+              IgnoreExitCode="true"
+              Condition="'$(DeployToAllVersions)' == 'true' AND '$(IsTestProject)' != 'true'">
+            <Output TaskParameter="ExitCode" PropertyName="_DeployCopyExitCode" />
+        </Exec>
+        <Error Text="Failed to deploy engine binaries to $(PyRevitEnginesDir)\IPY342."
+               Condition="'$(DeployToAllVersions)' == 'true' AND '$(IsTestProject)' != 'true' AND $(_DeployCopyExitCode) &gt;= 8" />
+        <Message Importance="high" 
+                Text="$(MSBuildProjectName) -> Copy to $([System.IO.Path]::GetFullPath('$(PyRevitEnginesDir)\IPY342'))"
+                Condition="'$(DeployToAllVersions)' == 'true' AND '$(IsTestProject)' != 'true'" />
+        <Exec Command="robocopy &quot;$(TargetDir.TrimEnd('\'))&quot; &quot;$(PyRevitEnginesDir)\IPY2712PR&quot; *.dll /R:$(DeployCopyRetryCount) /W:$(DeployCopyRetryWaitSeconds) /XF $(DeployCopyExcludeFiles) $(DeployCopyExcludeWildcards) /NP /NFL /NDL /NJH /NJS /IS /IT"
+              IgnoreExitCode="true"
+              Condition="'$(DeployToAllVersions)' == 'true' AND '$(IsTestProject)' != 'true'">
+            <Output TaskParameter="ExitCode" PropertyName="_DeployCopyExitCode" />
+        </Exec>
+        <Error Text="Failed to deploy engine binaries to $(PyRevitEnginesDir)\IPY2712PR."
+               Condition="'$(DeployToAllVersions)' == 'true' AND '$(IsTestProject)' != 'true' AND $(_DeployCopyExitCode) &gt;= 8" />
+        <Message Importance="high" 
+                Text="$(MSBuildProjectName) -> Copy to $([System.IO.Path]::GetFullPath('$(PyRevitEnginesDir)\IPY2712PR'))"
+                Condition="'$(DeployToAllVersions)' == 'true' AND '$(IsTestProject)' != 'true'" />
+    </Target>
+
+    <!-- DeployCodeAnalysisDlls disabled: CodeAnalysis DLLs are deployed by pyRevitLabs.Common
+         to bin/netcore/ and bin/netfx/. The loader's LoadAssembliesInFolder(commonFolder) already
+         loads these DLLs from bin/netcore/ (or bin/netfx/ for netfx builds) at startup. -->
+    <Target Name="DeployCodeAnalysisDlls" AfterTargets="Deploy" Condition="'false'">
     </Target>
 
 </Project>

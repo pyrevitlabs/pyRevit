@@ -1,6 +1,6 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Make Pattern"
+        Title="{DynamicResource Title}"
         SizeToContent="Height"
         Width="350" Height="475"
         MinWidth="350" MaxWidth="550" MinHeight="475"
@@ -12,7 +12,7 @@
     <DockPanel Margin="10" >
         <DockPanel HorizontalAlignment="Stretch" DockPanel.Dock="Top">
             <StackPanel DockPanel.Dock="Top">
-                <Label x:Name="prompt_lb" FontWeight="Bold" Padding="0,0,0,5">Enter New Pattern Name</Label>
+                <Label x:Name="prompt_lb" FontWeight="Bold" Padding="0,0,0,5" Content="{DynamicResource EnterNewPatternName}"/>
                 <ComboBox x:Name="pat_name_cb"
                       Height="30"
                       IsEditable="True"
@@ -29,53 +29,53 @@
                           Width="60"/>
                     <Button Click="export_pat" 
                         Margin="0,0,10,0"
-                        Content="Export PAT File"/>
+                        Content="{DynamicResource ExportPATFile}"/>
                 </DockPanel>
                 <Button x:Name="create_b"
                         Click="make_pattern"
                         Margin="0,5,0,0"
                         DockPanel.Dock="Bottom"
                         Height="30"
-                        Content="Create Pattern"
+                        Content="{DynamicResource CreatePattern}"
                         IsDefault="True"/>
             </StackPanel>
-            <GroupBox x:Name="resolver_ops" DockPanel.Dock="Bottom" Header="Resolver Options" Margin="0,10,0,0">
+            <GroupBox x:Name="resolver_ops" DockPanel.Dock="Bottom" Header="{DynamicResource ResolverOptions}" Margin="0,10,0,0">
                 <StackPanel Margin="5">
-                    <CheckBox x:Name="createfilledregion_cb" Margin="0,5,0,0" IsChecked="False" Content="Create Filled Region" />
-                    <CheckBox x:Name="highestres_cb" Margin="0,10,0,0" IsChecked="True" Content="Use Highest Resolution"/>
+                    <CheckBox x:Name="createfilledregion_cb" Margin="0,5,0,0" IsChecked="False" Content="{DynamicResource CreateFilledRegion}" />
+                    <CheckBox x:Name="highestres_cb" Margin="0,10,0,0" IsChecked="True" Content="{DynamicResource UseHighestResolution}"/>
                     <DockPanel Margin="0,10,0,0">
-                        <TextBlock Text="Captured View Scale"  Margin="0,0,10,2" VerticalAlignment="Center" />
+                        <TextBlock Text="{DynamicResource CapturedViewScale}"  Margin="0,0,10,2" VerticalAlignment="Center" />
                         <TextBox x:Name="viewscale_tb" Text="1.0" VerticalContentAlignment="Center" Height="24" IsEnabled="False"/>
                     </DockPanel>
                     <DockPanel Margin="0,10,0,0">
-                        <TextBlock Text="Scale Multiplier"  Margin="0,0,10,2" VerticalAlignment="Center" />
+                        <TextBlock Text="{DynamicResource ScaleMultiplier}"  Margin="0,0,10,2" VerticalAlignment="Center" />
                         <TextBox x:Name="multiplier_tb" Text="1.0" VerticalContentAlignment="Center" Height="24"/>
                     </DockPanel>
                     <DockPanel Margin="0,10,0,0">
-                        <TextBlock Text="Rotation (in Degrees)"  Margin="0,0,10,2" VerticalAlignment="Center" />
+                        <TextBlock Text="{DynamicResource RotationInDegrees}"  Margin="0,0,10,2" VerticalAlignment="Center" />
                         <TextBox x:Name="rotation_tb" Text="0" VerticalContentAlignment="Center" Height="24"/>
                     </DockPanel>
                     <WrapPanel Margin="0,10,0,0">
-                        <CheckBox x:Name="fliphoriz_cb" Content="Flip Horizontally" />
-                        <CheckBox x:Name="flipvert_cb" Margin="10,0,0,0" Content="Flip Vertically" />
+                        <CheckBox x:Name="fliphoriz_cb" Content="{DynamicResource FlipHorizontally}" />
+                        <CheckBox x:Name="flipvert_cb" Margin="10,0,0,0" Content="{DynamicResource FlipVertically}" />
                     </WrapPanel>
                 </StackPanel>
             </GroupBox>
-            <GroupBox Header="Pattern Type" DockPanel.Dock="Bottom" Margin="0,10,0,0">
+            <GroupBox Header="{DynamicResource PatternType}" DockPanel.Dock="Bottom" Margin="0,10,0,0">
                 <WrapPanel>
                     <RadioButton x:Name="is_detail_cb"
                                 GroupName="reporting_level"
                                 Margin="10,10,0,10"
                                 IsChecked="False"
-                                Checked="target_changed">
-                        Detail Pattern
+                                Checked="target_changed"
+                                Content="{DynamicResource DetailPattern}">
                     </RadioButton>
                     <RadioButton x:Name="is_model_cb"
                                 GroupName="reporting_level"
                                 Margin="10,10,0,10"
                                 IsChecked="True"
-                                Checked="target_changed">
-                        Model Pattern
+                                Checked="target_changed"
+                                Content="{DynamicResource ModelPattern}">
                     </RadioButton>
                 </WrapPanel>
             </GroupBox>

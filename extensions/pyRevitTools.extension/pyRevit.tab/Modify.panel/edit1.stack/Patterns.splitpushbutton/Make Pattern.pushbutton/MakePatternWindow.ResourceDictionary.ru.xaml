@@ -1,0 +1,26 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Создать Шаблон</system:String>
+    
+    <system:String x:Key="EnterNewPatternName">Введите Имя Нового Шаблона</system:String>
+    <system:String x:Key="SelectPatternToExport">Выберите Шаблон для Экспорта</system:String>
+    
+    <system:String x:Key="ExportPATFile">Экспортировать Файл PAT</system:String>
+    <system:String x:Key="CreatePattern">Создать Шаблон</system:String>
+    <system:String x:Key="NoLineworkSelected">Линии Не Выбраны</system:String>
+    <system:String x:Key="IncompatibleViewType">Несовместимый Тип Вида</system:String>
+    
+    <system:String x:Key="ResolverOptions">Параметры Разрешения</system:String>
+    <system:String x:Key="CreateFilledRegion">Создать Залитую Область</system:String>
+    <system:String x:Key="UseHighestResolution">Использовать Наивысшее Разрешение</system:String>
+    <system:String x:Key="CapturedViewScale">Масштаб Захваченного Вида</system:String>
+    <system:String x:Key="ScaleMultiplier">Множитель Масштаба</system:String>
+    <system:String x:Key="RotationInDegrees">Поворот (в Градусах)</system:String>
+    <system:String x:Key="FlipHorizontally">Отразить Горизонтально</system:String>
+    <system:String x:Key="FlipVertically">Отразить Вертикально</system:String>
+    
+    <system:String x:Key="PatternType">Тип Шаблона</system:String>
+    <system:String x:Key="DetailPattern">Шаблон Деталей</system:String>
+    <system:String x:Key="ModelPattern">Шаблон Модели</system:String>
+</ResourceDictionary>

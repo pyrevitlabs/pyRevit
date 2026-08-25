@@ -1,17 +1,23 @@
 # -*- coding: utf-8 -*-
 """Routes HTTP Server."""
-#pylint: disable=import-error,invalid-name,broad-except
-#pylint: disable=missing-docstring
+
+# pylint: disable=import-error,invalid-name,broad-except
+# pylint: disable=missing-docstring
 import sys
 import traceback
-import cgi
 import json
 import threading
 
 from pyrevit.api import UI
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.compat import PY3
+from pyrevit.compat import PY2
 from pyrevit.compat import urlparse
+
+if PY3:
+    from urllib.parse import parse_qs
+else:
+    from urlparse import parse_qs
 
 from pyrevit.routes.server import exceptions as excp
 from pyrevit.routes.server import base
@@ -29,6 +35,24 @@ else:
 mlogger = get_logger(__name__)
 
 
+def _utf8_decode(value):
+    """Decode raw utf-8 byte strings left by Python 2 percent-decoding."""
+    if isinstance(value, str):
+        return value.decode("utf-8")
+    return value
+
+
+def _decode_utf8_params(params):
+    """Decode utf-8 keys and values of a parsed query params dictionary."""
+    decoded = {}
+    for key, value in params.items():
+        if isinstance(value, list):
+            decoded[_utf8_decode(key)] = [_utf8_decode(v) for v in value]
+        else:
+            decoded[_utf8_decode(key)] = _utf8_decode(value)
+    return decoded
+
+
 # instance of event handler created when this module is loaded
 # on hosts main thread. Creating external events on non-main threads
 # are prohibited by the host. this event handler is reconfigured
@@ -39,55 +63,65 @@ EVENT_HNDLR = UI.ExternalEvent.Create(REQUEST_HNDLR)
 
 class HttpRequestHandler(BaseHTTPRequestHandler):
     """HTTP Requests Handler."""
+
     def _parse_api_path(self):
         url_parts = urlparse(self.path)
         if url_parts:
-            levels = url_parts.path.split('/')
+            levels = url_parts.path.split("/")
             # host:ip/<api_name>/<route>/.../.../...
             if levels and len(levels) >= 2:
                 api_name = levels[1]
                 if len(levels) > 2:
-                    api_path = '/' + '/'.join(levels[2:])
+                    api_path = "/" + "/".join(levels[2:])
                 else:
-                    api_path = '/'
-                return api_name, api_path
-        return None, None
+                    api_path = "/"
+                query_string = url_parts.query
+                return api_name, api_path, query_string
+        return None, None, None
 
     def _parse_request_info(self):
         # find the app
-        api_name, api_path = self._parse_api_path() #type:str, str
+        api_name, api_path, query_string = self._parse_api_path()  # type: str, str, str
         if not api_name:
             raise excp.APINotDefinedException(api_name)
-        return api_name, api_path
+        return api_name, api_path, query_string
 
     def _find_route_handler(self, api_name, path, method):
         route, route_handler = router.get_route_handler(
-            api_name=api_name,
-            path=path,
-            method=method
-            )
+            api_name=api_name, path=path, method=method
+        )
         if not route_handler:
             raise excp.RouteHandlerNotDefinedException(api_name, path, method)
         return route, route_handler
 
-    def _prepare_request(self, route, path, method):
+    def _prepare_request(self, route, path, method, query_string=None):
         # process request data
         data = None
-        content_length = self.headers.getheader('content-length') # type: str
+        content_length = self.headers.get("content-length")  # type: str
         if content_length and content_length.isnumeric():
             data = self.rfile.read(int(content_length))
             # format data
-            content_type_header = self.headers.getheader('content-type')
+            content_type_header = self.headers.get("content-type")
             if content_type_header:
-                content_type, _ = cgi.parse_header(content_type_header)
-                if content_type == 'application/json':
+                content_type = content_type_header.split(";")[0].strip()
+                if content_type == "application/json":
                     data = json.loads(data)
+
+        # parse query string into a dictionary
+        query_params = {}
+        if query_string:
+            # parse_qs returns lists for values; flatten single values to strings
+            parsed = parse_qs(query_string)
+            query_params = {k: v[0] if len(v) == 1 else v for k, v in parsed.items()}
+            if PY2:
+                query_params = _decode_utf8_params(query_params)
 
         return base.Request(
             path=path,
             method=method,
             data=data,
-            params=router.extract_route_params(route.pattern, path)
+            params=router.extract_route_params(route.pattern, path),
+            query_params=query_params,
         )
 
     def _prepare_host_handler(self, request, route_handler):
@@ -121,28 +155,36 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
     def _write_response(self, response):
         r = handler.RequestHandler.parse_response(response)
         self.send_response(r.status)
+        body = r.data if r.data is not None else "\n"
+        if isinstance(body, str):
+            body = body.encode("utf-8")
+        elif not isinstance(body, bytes):
+            body = str(body).encode("utf-8")
+
+        self.send_header("Content-Length", str(len(body)))
         if r.headers:
             for key, value in r.headers.items():
+                if str(key).lower() == "content-length":
+                    continue
                 self.send_header(key, value)
-            self.end_headers()
+        self.end_headers()
         # sending \n if no data otherwise Postman panics for some reason
-        self.wfile.write(r.data or "\n")
+        self.wfile.write(body)
 
     def _handle_route(self, method):
         # process the given url and find API and route
-        api_name, path = self._parse_request_info()
+        api_name, path, query_string = self._parse_request_info()
 
         # find the handler function registered by the API and route
         route, route_handler = self._find_route_handler(api_name, path, method)
 
         # prepare a request obj to be passed to registered handler
-        request = self._prepare_request(route, path, method)
+        request = self._prepare_request(route, path, method, query_string)
 
         # if handler has uiapp in arguments, run in host api context
         if handler.RequestHandler.wants_api_context(route_handler):
             # create a handler and event object in host
-            req_hndlr, event_hndlr = \
-                self._prepare_host_handler(request, route_handler)
+            req_hndlr, event_hndlr = self._prepare_host_handler(request, route_handler)
 
             # do the handling work
             # if request has callback url, raise the event handler and return
@@ -161,14 +203,12 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
         # otherwise run here
         else:
             # now run the method, and gret response
-            response = \
-                handler.RequestHandler.run_handler(
-                    handler=route_handler,
-                    kwargs=handler.RequestHandler.prepare_handler_kwargs(
-                        request=request,
-                        handler=route_handler
-                    )
-                )
+            response = handler.RequestHandler.run_handler(
+                handler=route_handler,
+                kwargs=handler.RequestHandler.prepare_handler_kwargs(
+                    request=request, handler=route_handler
+                ),
+            )
             # prepare response
             self._write_response(response)
 
@@ -179,58 +219,56 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
             self._handle_route(method=method)
         except Exception as ex:
             # get exception info
-            sys.exc_type, sys.exc_value, sys.exc_traceback = \
-                sys.exc_info()
+            exc_type, exc_value, exc_tb = sys.exc_info()
             # go back one frame to grab exception stack from handler
             # and grab traceback lines
-            tb_report = ''.join(
-                traceback.format_tb(sys.exc_traceback)[1:]
-            )
+            tb_report = "".join(traceback.format_tb(exc_tb)[1:])
             self._write_response(
                 excp.ServerException(
                     message=str(ex),
-                    exception_type=sys.exc_type,
-                    exception_traceback=tb_report
+                    exception_type=exc_type,
+                    exception_traceback=tb_report,
                 )
             )
 
     # CRUD Methods ------------------------------------------------------------
     # create
     def do_POST(self):
-        self._process_request(method='POST')
+        self._process_request(method="POST")
 
     # read
     def do_GET(self):
-        self._process_request(method='GET')
+        self._process_request(method="GET")
 
     # update
     def do_PUT(self):
-        self._process_request(method='PUT')
+        self._process_request(method="PUT")
 
     # delete
     def do_DELETE(self):
-        self._process_request(method='DELETE')
+        self._process_request(method="DELETE")
 
     # rest of standard http methods -------------------------------------------
     # https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods
     def do_HEAD(self):
-        self._process_request(method='HEAD')
+        self._process_request(method="HEAD")
 
     def do_CONNECT(self):
-        self._process_request(method='CONNECT')
+        self._process_request(method="CONNECT")
 
     def do_OPTIONS(self):
-        self._process_request(method='OPTIONS')
+        self._process_request(method="OPTIONS")
 
     def do_TRACE(self):
-        self._process_request(method='TRACE')
+        self._process_request(method="TRACE")
 
     def do_PATCH(self):
-        self._process_request(method='PATCH')
+        self._process_request(method="PATCH")
 
 
 class ThreadedHttpServer(ThreadingMixIn, HTTPServer):
     """Threaded HTTP server."""
+
     allow_reuse_address = True
 
     def shutdown(self):
@@ -247,6 +285,7 @@ class RoutesServer(object):
         host (str): host
         port (int): port
     """
+
     def __init__(self, host, port):
         self.server = ThreadedHttpServer((host, port), HttpRequestHandler)
         self.host = host
@@ -254,12 +293,13 @@ class RoutesServer(object):
         self.start()
 
     def __str__(self):
-        return "Routes server is listening on http://%s:%s" \
-            % (self.host or "0.0.0.0", self.port)
+        return "Routes server is listening on http://%s:%s" % (
+            self.host or "0.0.0.0",
+            self.port,
+        )
 
     def __repr__(self):
-        return '<RoutesServer @ http://%s:%s>' \
-            % (self.host or "0.0.0.0", self.port)
+        return "<RoutesServer @ http://%s:%s>" % (self.host or "0.0.0.0", self.port)
 
     def start(self):
         self.server_thread = threading.Thread(target=self.server.serve_forever)

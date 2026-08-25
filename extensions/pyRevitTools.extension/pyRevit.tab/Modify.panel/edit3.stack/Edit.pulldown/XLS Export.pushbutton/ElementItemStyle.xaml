@@ -72,10 +72,10 @@
                         <Style TargetType="TextBlock">
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding is_type}" Value="True">
-                                    <Setter Property="Text" Value="TYPE"/>
+                                    <Setter Property="Text" Value="{DynamicResource TypeLabel}"/>
                                 </DataTrigger>
                                 <DataTrigger Binding="{Binding is_type}" Value="False">
-                                    <Setter Property="Text" Value="INSTANCE"/>
+                                    <Setter Property="Text" Value="{DynamicResource InstanceLabel}"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>

@@ -4,7 +4,7 @@
     WindowStyle="None"
     AllowsTransparency="True"
     Background="White"
-    Title="Toggle Grid Bubbles"
+    Title="{DynamicResource Title}"
     MinHeight="400"
     MinWidth="380"
     SizeToContent="Height"
@@ -28,7 +28,7 @@
 
         <!-- Header -->
         <Grid Grid.Row="0" Background="#FF667EEA">
-            <TextBlock Text="Toggle Grid Bubbles" FontSize="18" FontWeight="Bold"
+            <TextBlock Text="{DynamicResource HeaderTitle}" FontSize="18" FontWeight="Bold"
                        HorizontalAlignment="Center" Margin="0,15,0,15"
                        Foreground="White" VerticalAlignment="Center"/>
             <Button Content="❌" Click="cancel" Background="Transparent" FontSize="14"
@@ -38,7 +38,7 @@
         </Grid>
 
         <!-- Operation Scope -->
-        <GroupBox Grid.Row="1" Header="Operation Scope" Margin="15,10,15,15"
+        <GroupBox Grid.Row="1" Header="{DynamicResource OperationScopeHeader}" Margin="15,10,15,15"
                   FontWeight="SemiBold" Foreground="#FF444444">
             <StackPanel Margin="15">
                 <StackPanel Orientation="Horizontal">
@@ -51,22 +51,22 @@
         </GroupBox>
 
         <!-- Toggle All -->
-        <GroupBox Grid.Row="2" Header="Toggle all active grids" Margin="15,5,15,15"
+        <GroupBox Grid.Row="2" Header="{DynamicResource ToggleAllHeader}" Margin="15,5,15,15"
                   FontWeight="SemiBold" Foreground="#FF444444">
             <Grid Margin="15">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <RadioButton x:Name="show_all" Grid.Column="0" GroupName="ToggleAll" Content="Show All"
+                <RadioButton x:Name="show_all" Grid.Column="0" GroupName="ToggleAll" Content="{DynamicResource ShowAll}"
                              Margin="10" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12"/>
-                <RadioButton x:Name="hide_all" Grid.Column="1" GroupName="ToggleAll" Content="Hide All"
+                <RadioButton x:Name="hide_all" Grid.Column="1" GroupName="ToggleAll" Content="{DynamicResource HideAll}"
                              Margin="10" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12"/>
             </Grid>
         </GroupBox>
 
         <!-- Toggle by Direction -->
-        <GroupBox Grid.Row="3" Header="Toggle active grids by direction" Margin="15,5,15,15"
+        <GroupBox Grid.Row="3" Header="{DynamicResource ToggleByDirectionHeader}" Margin="15,5,15,15"
                   FontWeight="SemiBold" Foreground="#FF444444">
             <Grid Margin="15">
                 <Grid.RowDefinitions>
@@ -80,16 +80,16 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
-                <CheckBox x:Name="check_top" Grid.Row="0" Grid.Column="1" Content="Top"
+                <CheckBox x:Name="check_top" Grid.Row="0" Grid.Column="1" Content="{DynamicResource Top}"
                           HorizontalAlignment="Center" VerticalAlignment="Center"
                           Margin="0,8,0,8" FontSize="12"/>
-                <CheckBox x:Name="check_left" Grid.Row="1" Grid.Column="0" Content="Left"
+                <CheckBox x:Name="check_left" Grid.Row="1" Grid.Column="0" Content="{DynamicResource Left}"
                           HorizontalAlignment="Center" VerticalAlignment="Center"
                           Margin="0,8,0,8" FontSize="12"/>
-                <CheckBox x:Name="check_right" Grid.Row="1" Grid.Column="2" Content="Right"
+                <CheckBox x:Name="check_right" Grid.Row="1" Grid.Column="2" Content="{DynamicResource Right}"
                           HorizontalAlignment="Center" VerticalAlignment="Center"
                           Margin="0,8,0,8" FontSize="12"/>
-                <CheckBox x:Name="check_bottom" Grid.Row="2" Grid.Column="1" Content="Bottom"
+                <CheckBox x:Name="check_bottom" Grid.Row="2" Grid.Column="1" Content="{DynamicResource Bottom}"
                           HorizontalAlignment="Center" VerticalAlignment="Center"
                           Margin="0,8,0,8" FontSize="12"/>
             </Grid>
@@ -114,16 +114,16 @@
                         <ColumnDefinition Width="30"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Text="◀" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    <TextBlock Grid.Column="1" Text="Back" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="1" Text="{DynamicResource Back}" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Grid>
             </Button>
 
-            <Button Grid.Column="1" Content="Cancel" Click="cancel"
+            <Button Grid.Column="1" Content="{DynamicResource Cancel}" Click="cancel"
                     HorizontalAlignment="Stretch" VerticalAlignment="Center"
                     Height="40" Margin="5,0,5,0" Background="#FFF8F9FA"
                     BorderBrush="#FFDEE2E6" Foreground="#FF666666" FontSize="12"/>
 
-            <Button Grid.Column="2" Content="OK" Click="confirm"
+            <Button Grid.Column="2" Content="{DynamicResource OK}" Click="confirm"
                     HorizontalAlignment="Stretch" VerticalAlignment="Center"
                     Height="40" Margin="5,0,0,0" Background="#FF667EEA"
                     BorderBrush="#FF667EEA" Foreground="White" FontWeight="SemiBold" FontSize="12"/>

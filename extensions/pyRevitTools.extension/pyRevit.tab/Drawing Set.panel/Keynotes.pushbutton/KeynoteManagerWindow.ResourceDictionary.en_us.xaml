@@ -48,7 +48,7 @@
     <system:String x:Key="EnableHistory">Enable History</system:String>
     <system:String x:Key="EnableHistoryInfo">Enable history tracking on keynotes.</system:String>
     
-    <GridLength x:Key="RightPanelWidth">140</GridLength>
+    <GridLength x:Key="RightPanelWidth">190</GridLength>
     <GridLength x:Key="RefreshKeynotesWidth">70</GridLength>
     
     

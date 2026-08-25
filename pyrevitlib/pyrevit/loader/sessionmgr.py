@@ -1,3 +1,4 @@
+# encoding: utf-8
 """The loader module manages the workflow of loading a new pyRevit session.
 
 Its main purpose is to orchestrate the process of finding pyRevit extensions,
@@ -10,41 +11,41 @@ The only public function is `load_session()` that loads a new session.
 Everything else is private.
 """
 import sys
-from collections import namedtuple
 
 from pyrevit import EXEC_PARAMS, HOST_APP
-from pyrevit import MAIN_LIB_DIR, MISC_LIB_DIR
 from pyrevit import framework
 from pyrevit.coreutils import Timer
 from pyrevit.coreutils import assmutils
 from pyrevit.coreutils import envvars
-from pyrevit.coreutils import appdata
 from pyrevit.coreutils import logger
-from pyrevit.coreutils import applocales
 from pyrevit.loader import sessioninfo
-from pyrevit.loader import asmmaker
-from pyrevit.loader import uimaker
 from pyrevit.loader import hooks
+from pyrevit.labs import PyRevit
 from pyrevit.userconfig import user_config
-from pyrevit.extensions import extensionmgr
 from pyrevit.versionmgr import updater
 from pyrevit.versionmgr import upgrade
 from pyrevit import telemetry
 from pyrevit import routes
+
 # import the runtime first to get all the c-sharp code to compile
 from pyrevit import runtime
 from pyrevit.runtime import types as runtime_types
+
 # now load the rest of module that could depend on the compiled runtime
 from pyrevit import output
 
 from pyrevit import DB, UI, revit
 
 
-#pylint: disable=W0703,C0302,C0103,no-member
+# pylint: disable=W0703,C0302,C0103,no-member
 mlogger = logger.get_logger(__name__)
 
-
-AssembledExtension = namedtuple('AssembledExtension', ['ext', 'assm'])
+# Session timing and output state shared between perform_preload() and
+# perform_postload(). The C# loader invokes these as two separate steps, so the
+# state is carried on the persistent engine module rather than a call stack.
+_SESSION_TIMER = None
+_SESSION_OUTPUT = None
+_OUTPUT_SETUP_TIME = None
 
 
 def _clear_running_engines():
@@ -56,38 +57,47 @@ def _clear_running_engines():
 
         runtime_types.ScriptEngineManager.ClearEngines(
             excludeEngine=EXEC_PARAMS.engine_id
-            )
+        )
         return True
     except AttributeError:
         return False
 
 
 def _setup_output():
-    # create output window and assign handle
-    out_window = runtime.types.ScriptConsole()
+    # route C#-side NLog messages into the session output window
+    runtime_types.ScriptOutput.ConfigureLogging()
+    # create the runtime-owned singleton output window and assign handle
+    out = runtime_types.ScriptOutput.GetDefault()
+    out_window = out.window
+    # protect from close_other_outputs triggered by startup-script windows
+    try:
+        out.set_session_output(True)
+    except Exception:
+        pass
     runtime_info = sessioninfo.get_runtime_info()
-    out_window.AppVersion = '{}:{}:{}'.format(
+    out_window.AppVersion = "{}:{}:{}".format(
         runtime_info.pyrevit_version,
-        int(runtime_info.engine_version),
-        runtime_info.host_version
-        )
+        runtime_info.engine_version,
+        runtime_info.host_version,
+    )
 
     # create output stream and set stdout to it
     # we're not opening the output window here.
     # The output stream will open the window if anything is being printed.
-    outstr = runtime.types.ScriptIO(out_window)
+    outstr = out.output_stream
     sys.stdout = outstr
     # sys.stderr = outstr
-    stdout_hndlr = logger.get_stdout_hndlr()
-    stdout_hndlr.stream = outstr
 
-    return out_window
+    # return the runtime wrapper so self_destruct works on first load too
+    return out
 
 
 def _cleanup_output():
+    try:
+        runtime_types.ScriptOutput.GetDefault().set_session_output(False)
+    except Exception:
+        pass
     sys.stdout = None
-    stdout_hndlr = logger.get_stdout_hndlr()
-    stdout_hndlr.stream = None
 
 
 # -----------------------------------------------------------------------------
@@ -104,12 +114,11 @@ def _set_autoupdate_inprogress(state):
 def _perform_onsessionloadstart_ops():
     # clear the cached engines
     if not _clear_running_engines():
-        mlogger.debug('No Engine Manager exists...')
+        mlogger.debug("No Engine Manager exists...")
 
     # check for updates
-    if user_config.auto_update \
-            and not _check_autoupdate_inprogress():
-        mlogger.info('Auto-update is active. Attempting update...')
+    if user_config.auto_update and not _check_autoupdate_inprogress():
+        mlogger.info("Auto-update is active. Attempting update...")
         _set_autoupdate_inprogress(True)
         updater.update_pyrevit()
         _set_autoupdate_inprogress(False)
@@ -120,9 +129,6 @@ def _perform_onsessionloadstart_ops():
 
     # reset the list of assemblies loaded under pyRevit session
     sessioninfo.set_loaded_pyrevit_assemblies([])
-
-    # init executor
-    runtime_types.ScriptExecutor.Initialize()
 
     # init routes
     routes.init()
@@ -139,12 +145,6 @@ def _perform_onsessionloadstart_ops():
 
 
 def _perform_onsessionloadcomplete_ops():
-    # cleanup old assembly files.
-    asmmaker.cleanup_assembly_files()
-
-    # clean up temp app files between sessions.
-    appdata.cleanup_appdata_folder()
-
     # activate hooks now
     hooks.activate()
 
@@ -159,101 +159,146 @@ def _perform_onsessionloadcomplete_ops():
         if active_server:
             mlogger.info(str(active_server))
         else:
-            mlogger.error('Routes servers failed activation')
+            mlogger.error("Routes servers failed activation")
 
 
-def _new_session():
-    """Create an assembly and UI for each installed UI extensions."""
-    assembled_exts = []
-    # get all installed ui extensions
-    for ui_ext in extensionmgr.get_installed_ui_extensions():
-        # configure extension components for metadata
-        # e.g. liquid templates like {{author}}
-        ui_ext.configure()
+def perform_preload():
+    """Run pre-load session setup before the C# loader builds the UI.
 
-        # collect all module references from extensions
-        ui_ext_modules = []
-        # FIXME: currently dlls inside bin/ are not pre-loaded since
-        # this will lock them by Revit. Maybe all dlls should be loaded
-        # from memory (read binary and load assembly)?
-        # ui_ext_modules.extend(ui_ext.get_extension_modules())
-        ui_ext_modules.extend(ui_ext.get_command_modules())
-        # make sure they are all loaded
-        assmutils.load_asm_files(ui_ext_modules)
-        # and update env information
-        sessioninfo.update_loaded_pyrevit_referenced_modules(ui_ext_modules)
+    Invoked by the C# session orchestrator as the first step of a load. Sets up
+    the session environment, output window, and pre-load services, and records
+    the session timer so perform_postload() can report load time.
+    """
+    global _SESSION_TIMER, _SESSION_OUTPUT, _OUTPUT_SETUP_TIME
 
-        # create a dll assembly and get assembly info
-        ext_asm_info = asmmaker.create_assembly(ui_ext)
-        if not ext_asm_info:
-            mlogger.critical('Failed to create assembly for: %s', ui_ext)
-            continue
-        else:
-            mlogger.info('Extension assembly created: %s', ui_ext.name)
+    # must run before setup_runtime_vars(), the first attachment consumer, so a
+    # re-attached clone is picked up on reload
+    PyRevit.PyRevitAttachments.ClearAttachmentCache()
 
-        assembled_exts.append(
-            AssembledExtension(ext=ui_ext, assm=ext_asm_info)
-        )
+    sessioninfo.setup_runtime_vars()
 
-    # add names of the created assemblies to the session info
-    sessioninfo.set_loaded_pyrevit_assemblies(
-        [x.assm.name for x in assembled_exts]
-    )
+    # time from before output setup so the reported load time reflects the full
+    # user wait, including first-load output window construction
+    _SESSION_TIMER = Timer()
 
-    # run startup scripts for this ui extension, if any
-    for assm_ext in assembled_exts:
-        if assm_ext.ext.startup_script:
-            # build syspaths for the startup script
-            sys_paths = [assm_ext.ext.directory]
-            if assm_ext.ext.library_path:
-                sys_paths.insert(0, assm_ext.ext.library_path)
-
-            mlogger.info('Running startup tasks for %s', assm_ext.ext.name)
-            mlogger.debug('Executing startup script for extension: %s',
-                          assm_ext.ext.name)
-
-            # now run
-            execute_extension_startup_script(
-                assm_ext.ext.startup_script,
-                assm_ext.ext.name,
-                sys_paths=sys_paths
-                )
-
-    # register extension hooks
-    for assm_ext in assembled_exts:
-        hooks.register_hooks(assm_ext.ext)
-
-    # update/create ui (needs the assembly to link button actions
-    # to commands saved in the dll)
-    for assm_ext in assembled_exts:
-        uimaker.update_pyrevit_ui(
-            assm_ext.ext,
-            assm_ext.assm,
-            user_config.load_beta
-        )
-        mlogger.info('UI created for extension: %s', assm_ext.ext.name)
-
-    # re-sort the ui elements
-    for assm_ext in assembled_exts:
-        uimaker.sort_pyrevit_ui(assm_ext.ext)
-
-    # cleanup existing UI. This is primarily for cleanups after reloading
-    uimaker.cleanup_pyrevit_ui()
-
-    # reflow the ui if requested, depending on the language direction
-    if user_config.respect_language_direction:
-        current_applocale = applocales.get_current_applocale()
-        uimaker.reflow_pyrevit_ui(direction=current_applocale.lang_dir)
+    if EXEC_PARAMS.first_load:
+        _SESSION_OUTPUT = _setup_output()
+        _OUTPUT_SETUP_TIME = _SESSION_TIMER.get_time()
     else:
-        uimaker.reflow_pyrevit_ui()
+        from pyrevit import script
+
+        _SESSION_OUTPUT = script.get_output()
+        _OUTPUT_SETUP_TIME = None
+
+    _perform_onsessionloadstart_ops()
+
+
+def perform_postload():
+    """Finalize the session after the C# loader has built the UI.
+
+    Invoked by the C# session orchestrator as the last step of a load. Runs
+    post-load services, registers the assemblies the C# loader produced, reports
+    load time, and tears down the startup output stream.
+
+    Returns:
+        (str): session uuid
+    """
+    _perform_onsessionloadcomplete_ops()
+
+    # so find_pyrevitcmd can locate commands the C# loader compiled
+    _register_loaded_pyrevit_assemblies()
+
+    if _SESSION_TIMER is not None:
+        endtime = _SESSION_TIMER.get_time()
+        success_emoji = ":OK_hand:" if endtime < 3.00 else ":thumbs_up:"
+        mlogger.info("Load time: %s seconds %s", endtime, success_emoji)
+        if _OUTPUT_SETUP_TIME is not None:
+            mlogger.debug(
+                "Load breakdown: output setup %.3fs | session build %.3fs",
+                _OUTPUT_SETUP_TIME,
+                endtime - _OUTPUT_SETUP_TIME,
+            )
+
+    # if everything went well, self destruct
+    try:
+        timeout = user_config.startuplog_timeout
+        if (
+            timeout > 0
+            and not logger.loggers_have_errors()
+            and _SESSION_OUTPUT is not None
+        ):
+            _SESSION_OUTPUT.self_destruct(timeout)
+    except Exception as imp_err:
+        mlogger.error("Error setting up self_destruct on output window | %s", imp_err)
+
+    _cleanup_output()
+    return sessioninfo.get_session_uuid()
+
+
+def _invoke_csharp_loadsession():
+    """Invoke the C# session orchestrator and return the new session uuid.
+
+    The C# entry (PyRevitLoaderApplication.LoadSession) runs the full sequence:
+    perform_preload(), the C# UI build, then perform_postload().
+    """
+    loader_app_type = None
+    for assembly in framework.AppDomain.CurrentDomain.GetAssemblies():
+        try:
+            if assembly.GetName().Name.startswith("pyRevitLoader"):
+                loader_app_type = assembly.GetType(
+                    "PyRevitLoader.PyRevitLoaderApplication"
+                )
+                if loader_app_type:
+                    break
+        except Exception:
+            continue
+
+    if not loader_app_type:
+        mlogger.error("PyRevitLoaderApplication not found in loaded assemblies")
+        return None
+
+    load_session_method = loader_app_type.GetMethod("LoadSession")
+    if not load_session_method:
+        mlogger.error("LoadSession method not found in PyRevitLoaderApplication")
+        return None
+
+    mlogger.info("Loading session using C# LoadSession method...")
+    load_session_method.Invoke(None, framework.Array[object](()))
+    return sessioninfo.get_session_uuid()
+
+
+def _register_loaded_pyrevit_assemblies():
+    """Find and register pyRevit assemblies loaded by the C# session manager.
+
+    Scans all loaded assemblies in the AppDomain to find pyRevit extension assemblies.
+    Note: .NET cannot unload assemblies, so count may include old assemblies from
+    previous reloads - this is expected behavior.
+    """
+    pyrevit_assemblies = []
+
+    for assembly in framework.AppDomain.CurrentDomain.GetAssemblies():
+        try:
+            assembly_name = assembly.GetName().Name
+            if assembly_name and assembly_name.startswith("pyRevit_"):
+                pyrevit_assemblies.append(assembly_name)
+                mlogger.debug("Found pyRevit assembly: %s", assembly_name)
+        except Exception:
+            continue
+
+    if pyrevit_assemblies:
+        sessioninfo.set_loaded_pyrevit_assemblies(pyrevit_assemblies)
+        # mlogger.info('Registered %d pyRevit assemblies', len(pyrevit_assemblies))
+    else:
+        mlogger.warning("No pyRevit assemblies found")
 
 
 def load_session():
     """Handles loading/reloading of the pyRevit addin and extensions.
 
-    To create a proper ui, pyRevit extensions needs to be properly parsed and
-    a dll assembly needs to be created. This function handles these tasks
-    through interactions with .extensions, .loader.asmmaker, and .loader.uimaker.
+    Delegates to the C# session orchestrator, which drives the full load:
+    perform_preload(), the C# assembly/UI build, then perform_postload(). This
+    is the entry used for reloads; the initial Revit startup invokes the C#
+    orchestrator directly.
 
     Examples:
         ```python
@@ -262,68 +307,15 @@ def load_session():
         ```
 
     Returns:
-        (str): sesion uuid
+        (str): session uuid
     """
-    # setup runtime environment variables
-    sessioninfo.setup_runtime_vars()
-
-    # the loader dll addon, does not create an output window
-    # if an output window is not provided, create one
-    if EXEC_PARAMS.first_load:
-        output_window = _setup_output()
-    else:
-        from pyrevit import script
-        output_window = script.get_output()
-
-    # initialize timer to measure load time
-    timer = Timer()
-
-    # perform pre-load tasks
-    _perform_onsessionloadstart_ops()
-
-    # create a new session
-    _new_session()
-
-    # perform post-load tasks
-    _perform_onsessionloadcomplete_ops()
-
-    # log load time and thumbs-up :)
-    endtime = timer.get_time()
-    success_emoji = ':OK_hand:' if endtime < 3.00 else ':thumbs_up:'
-    mlogger.info('Load time: %s seconds %s', endtime, success_emoji)
-
-    # if everything went well, self destruct
-    try:
-        timeout = user_config.startuplog_timeout
-        if timeout > 0 and not logger.loggers_have_errors():
-            if EXEC_PARAMS.first_load:
-                # output_window is of type ScriptConsole
-                output_window.SelfDestructTimer(timeout)
-            else:
-                # output_window is of type PyRevitOutputWindow
-                output_window.self_destruct(timeout)
-    except Exception as imp_err:
-        mlogger.error('Error setting up self_destruct on output window | %s',
-                      imp_err)
-
-    _cleanup_output()
-    return sessioninfo.get_session_uuid()
-
-
-def _perform_onsessionreload_ops():
-    pass
-
-
-def _perform_onsessionreloadcomplete_ops():
-    pass
+    return _invoke_csharp_loadsession()
 
 
 def reload_pyrevit():
-    _perform_onsessionreload_ops()
-    mlogger.info('Reloading....')
-    session_Id = load_session()
-    _perform_onsessionreloadcomplete_ops()
-    return session_Id
+    mlogger.info("Reloading....")
+    return load_session()
+
 
 # -----------------------------------------------------------------------------
 # Functions related to finding/executing
@@ -331,6 +323,7 @@ def reload_pyrevit():
 # -----------------------------------------------------------------------------
 class PyRevitExternalCommandType(object):
     """PyRevit external command type."""
+
     def __init__(self, extcmd_type, extcmd_availtype):
         self._extcmd_type = extcmd_type
         self._extcmd = extcmd_type()
@@ -359,54 +352,57 @@ class PyRevitExternalCommandType(object):
 
     @property
     def script(self):
-        return getattr(self._extcmd.ScriptData, 'ScriptPath', None)
+        return getattr(self._extcmd.ScriptData, "ScriptPath", None)
 
     @property
     def config_script(self):
-        return getattr(self._extcmd.ScriptData, 'ConfigScriptPath', None)
+        return getattr(self._extcmd.ScriptData, "ConfigScriptPath", None)
 
     @property
     def search_paths(self):
-        value = getattr(self._extcmd.ScriptRuntimeConfigs, 'SearchPaths', [])
+        value = getattr(self._extcmd.ScriptRuntimeConfigs, "SearchPaths", [])
         return list(value)
 
     @property
     def arguments(self):
-        value = getattr(self._extcmd.ScriptRuntimeConfigs, 'Arguments', [])
+        value = getattr(self._extcmd.ScriptRuntimeConfigs, "Arguments", [])
         return list(value)
 
     @property
     def engine_cfgs(self):
-        return getattr(self._extcmd.ScriptRuntimeConfigs, 'EngineConfigs', '')
+        return getattr(self._extcmd.ScriptRuntimeConfigs, "EngineConfigs", "")
 
     @property
     def helpsource(self):
-        return getattr(self._extcmd.ScriptData, 'HelpSource', None)
+        return getattr(self._extcmd.ScriptData, "HelpSource", None)
 
     @property
     def tooltip(self):
-        return getattr(self._extcmd.ScriptData, 'Tooltip', None)
+        return getattr(self._extcmd.ScriptData, "Tooltip", None)
 
     @property
     def name(self):
-        return getattr(self._extcmd.ScriptData, 'CommandName', None)
+        return getattr(self._extcmd.ScriptData, "CommandName", None)
 
     @property
     def bundle(self):
-        return getattr(self._extcmd.ScriptData, 'CommandBundle', None)
+        return getattr(self._extcmd.ScriptData, "CommandBundle", None)
 
     @property
     def extension(self):
-        return getattr(self._extcmd.ScriptData, 'CommandExtension', None)
+        return getattr(self._extcmd.ScriptData, "CommandExtension", None)
 
     @property
     def unique_id(self):
-        return getattr(self._extcmd.ScriptData, 'CommandUniqueId', None)
+        return getattr(self._extcmd.ScriptData, "CommandUniqueId", None)
+
+    @property
+    def control_id(self):
+        return getattr(self._extcmd.ScriptData, "CommandControlId", None)
 
     def is_available(self, category_set, zerodoc=False):
         if self._extcmd_availtype:
-            return self._extcmd_avail.IsCommandAvailable(HOST_APP.uiapp,
-                                                         category_set)
+            return self._extcmd_avail.IsCommandAvailable(HOST_APP.uiapp, category_set)
         elif not zerodoc:
             return True
 
@@ -417,8 +413,8 @@ pyrevit_extcmdtype_cache = []
 
 
 def find_all_commands(category_set=None, cache=True):
-    global pyrevit_extcmdtype_cache    #pylint: disable=W0603
-    if cache and pyrevit_extcmdtype_cache:    #pylint: disable=E0601
+    global pyrevit_extcmdtype_cache  # pylint: disable=W0603
+    if cache and pyrevit_extcmdtype_cache:  # pylint: disable=E0601
         pyrevit_extcmds = pyrevit_extcmdtype_cache
     else:
         pyrevit_extcmds = []
@@ -429,28 +425,31 @@ def find_all_commands(category_set=None, cache=True):
 
                 for pyrvt_type in all_exported_types:
                     tname = pyrvt_type.FullName
-                    availtname = pyrvt_type.Name \
-                                 + runtime.CMD_AVAIL_NAME_POSTFIX
+                    availtname = pyrvt_type.Name + runtime.CMD_AVAIL_NAME_POSTFIX
                     pyrvt_availtype = None
 
-                    if not tname.endswith(runtime.CMD_AVAIL_NAME_POSTFIX)\
-                            and runtime.RUNTIME_NAMESPACE not in tname:
+                    if (
+                        not tname.endswith(runtime.CMD_AVAIL_NAME_POSTFIX)
+                        and runtime.RUNTIME_NAMESPACE not in tname
+                        and pyrvt_type.IsSubclassOf(runtime.CMD_EXECUTOR_TYPE)
+                    ):
                         for exported_type in all_exported_types:
                             if exported_type.Name == availtname:
                                 pyrvt_availtype = exported_type
 
                         pyrevit_extcmds.append(
-                            PyRevitExternalCommandType(pyrvt_type,
-                                                       pyrvt_availtype)
-                            )
+                            PyRevitExternalCommandType(pyrvt_type, pyrvt_availtype)
+                        )
         if cache:
             pyrevit_extcmdtype_cache = pyrevit_extcmds
 
     # now check commands in current context if requested
     if category_set:
-        return [x for x in pyrevit_extcmds
-                if x.is_available(category_set=category_set,
-                                  zerodoc=HOST_APP.uidoc is None)]
+        return [
+            x
+            for x in pyrevit_extcmds
+            if x.is_available(category_set=category_set, zerodoc=HOST_APP.uidoc is None)
+        ]
     else:
         return pyrevit_extcmds
 
@@ -474,7 +473,7 @@ def find_pyrevitcmd(pyrevitcmd_unique_id):
 
     Examples:
         ```python
-        cmd = find_pyrevitcmd('pyRevitCorepyRevitpyRevittoolsReload')
+        cmd = find_pyrevitcmd('pyrevitcore_pyrevit_pyrevit_tools_reload')
         command_instance = cmd()
         command_instance.Execute() # Provide commandData, message, elements
         ```
@@ -485,32 +484,48 @@ def find_pyrevitcmd(pyrevitcmd_unique_id):
     Returns:
         (type):Type for the command with matching unique name
     """
+    def _normalize_lookup_id(value):
+        if not value:
+            return ""
+
+        normalized = []
+        for char in str(value).lower():
+            normalized.append(char if char.isalnum() else "_")
+
+        if normalized and normalized[0].isdigit():
+            normalized.insert(0, "_")
+
+        return "".join(normalized)
+
+    lookup_id = _normalize_lookup_id(pyrevitcmd_unique_id)
+
     # go through assmebles loaded under current pyRevit session
     # and try to find the command
-    mlogger.debug('Searching for pyrevit command: %s', pyrevitcmd_unique_id)
+    mlogger.debug("Searching for pyrevit command: %s", pyrevitcmd_unique_id)
     for loaded_assm_name in sessioninfo.get_loaded_pyrevit_assemblies():
-        mlogger.debug('Expecting assm: %s', loaded_assm_name)
+        mlogger.debug("Expecting assm: %s", loaded_assm_name)
         loaded_assm = assmutils.find_loaded_asm(loaded_assm_name)
         if loaded_assm:
-            mlogger.debug('Found assm: %s', loaded_assm_name)
+            mlogger.debug("Found assm: %s", loaded_assm_name)
             for pyrvt_type in loaded_assm[0].GetTypes():
-                mlogger.debug('Found Type: %s', pyrvt_type)
-                if pyrvt_type.FullName == pyrevitcmd_unique_id:
-                    mlogger.debug('Found pyRevit command in %s',
-                                  loaded_assm_name)
+                mlogger.debug("Found Type: %s", pyrvt_type)
+                if pyrvt_type.FullName == pyrevitcmd_unique_id \
+                        or pyrvt_type.Name == pyrevitcmd_unique_id \
+                        or _normalize_lookup_id(pyrvt_type.FullName) == lookup_id \
+                        or _normalize_lookup_id(pyrvt_type.Name) == lookup_id:
+                    mlogger.debug("Found pyRevit command in %s", loaded_assm_name)
                     return pyrvt_type
-            mlogger.debug('Could not find pyRevit command.')
+            mlogger.debug("Could not find pyRevit command.")
         else:
-            mlogger.debug('Can not find assm: %s', loaded_assm_name)
+            mlogger.debug("Can not find assm: %s", loaded_assm_name)
 
     return None
 
 
 def create_tmp_commanddata():
-    tmp_cmd_data = \
-        framework.FormatterServices.GetUninitializedObject(
-            UI.ExternalCommandData
-            )
+    tmp_cmd_data = framework.FormatterServices.GetUninitializedObject(
+        UI.ExternalCommandData
+    )
     tmp_cmd_data.Application = HOST_APP.uiapp
     # tmp_cmd_data.IsReadOnly = False
     # tmp_cmd_data.View = None
@@ -518,14 +533,14 @@ def create_tmp_commanddata():
     return tmp_cmd_data
 
 
-def execute_command_cls(extcmd_type, arguments=None,
-                        config_mode=False, exec_from_ui=False):
+def execute_command_cls(
+    extcmd_type, arguments=None, config_mode=False, exec_from_ui=True
+):
 
     command_instance = extcmd_type()
     # pass the arguments to the instance
     if arguments:
-        command_instance.ScriptRuntimeConfigs.Arguments = \
-            framework.List[str](arguments)
+        command_instance.ScriptRuntimeConfigs.Arguments = framework.List[str](arguments)
     # this is a manual execution from python code and not by user
     command_instance.ExecConfigs.MimicExecFromUI = exec_from_ui
     # force using the config script
@@ -536,9 +551,7 @@ def execute_command_cls(extcmd_type, arguments=None,
     # string message,
     # ElementSet elements
     # )
-    re = command_instance.Execute(create_tmp_commanddata(),
-                                  '',
-                                  DB.ElementSet())
+    re = command_instance.Execute(create_tmp_commanddata(), "", DB.ElementSet())
     command_instance = None
     return re
 
@@ -552,53 +565,7 @@ def execute_command(pyrevitcmd_unique_id):
     cmd_class = find_pyrevitcmd(pyrevitcmd_unique_id)
 
     if not cmd_class:
-        mlogger.error('Can not find command with unique name: %s',
-                      pyrevitcmd_unique_id)
+        mlogger.error("Can not find command with unique name: %s", pyrevitcmd_unique_id)
         return None
     else:
         execute_command_cls(cmd_class)
-
-
-def execute_extension_startup_script(script_path, ext_name, sys_paths=None):
-    """Executes a script using pyRevit script executor.
-
-    Args:
-        script_path (str): Address of the script file
-        ext_name (str): Name of the extension
-        sys_paths (list): additional search paths
-    """
-    core_syspaths = [MAIN_LIB_DIR, MISC_LIB_DIR]
-    if sys_paths:
-        sys_paths.extend(core_syspaths)
-    else:
-        sys_paths = core_syspaths
-
-    script_data = runtime.types.ScriptData()
-    script_data.ScriptPath = script_path
-    script_data.ConfigScriptPath = None
-    script_data.CommandUniqueId = ''
-    script_data.CommandName = 'Starting {}'.format(ext_name)
-    script_data.CommandBundle = ''
-    script_data.CommandExtension = ext_name
-    script_data.HelpSource = ''
-
-    script_runtime_cfg = runtime.types.ScriptRuntimeConfigs()
-    script_runtime_cfg.CommandData = create_tmp_commanddata()
-    script_runtime_cfg.SelectedElements = None
-    script_runtime_cfg.SearchPaths = framework.List[str](sys_paths or [])
-    script_runtime_cfg.Arguments = framework.List[str]([])
-    script_runtime_cfg.EngineConfigs = \
-        runtime.create_ipyengine_configs(
-            clean=True,
-            full_frame=True,
-            persistent=True,
-        )
-    script_runtime_cfg.RefreshEngine = False
-    script_runtime_cfg.ConfigMode = False
-    script_runtime_cfg.DebugMode = False
-    script_runtime_cfg.ExecutedFromUI = False
-
-    runtime.types.ScriptExecutor.ExecuteScript(
-        script_data,
-        script_runtime_cfg
-    )

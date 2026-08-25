@@ -1,0 +1,124 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">管理关键注释</system:String>
+    
+    <system:String x:Key="ImportKeynotes">导入关键注释</system:String>
+    <system:String x:Key="ImportKeynotesInfo">从 Revit 标准关键注释文件导入关键注释</system:String>
+    
+    <system:String x:Key="ExportKeynotes">导出全部</system:String>
+    <system:String x:Key="ExportKeynotesInfo">将关键注释导出到 Revit 标准关键注释文件</system:String>
+    
+    <system:String x:Key="ExportVisibleKeynotes">或可见项</system:String>
+    <system:String x:Key="ExportVisibleKeynotesInfo">将列出的关键注释导出到 Revit 标准关键注释文件</system:String>
+
+    <system:String x:Key="RefreshKeynotes">刷新</system:String>
+    <system:String x:Key="RefreshKeynotesInfo">重新加载关键注释文件并根据更改更新关键注释</system:String>
+   
+    <system:String x:Key="ChangeKeynote">更改关键注释文件。</system:String>
+    <system:String x:Key="ShowKeynote">显示关键注释文件。</system:String>
+    
+    <system:String x:Key="UpdateKeynote">更新模型</system:String>
+    <system:String x:Key="UpdateKeynoteInfo">重新加载关键注释文件并根据更改更新关键注释</system:String>
+
+    <system:String x:Key="CategoryKeynotes">类别</system:String>
+    <system:String x:Key="AddKeynoteCategory">添加新的关键注释类别</system:String>
+    <system:String x:Key="EditKeynoteCategory">编辑选定的类别</system:String>
+    <system:String x:Key="RemoveKeynoteCategory">删除选定的类别</system:String>
+    <system:String x:Key="ReKeyKeynoteCategory">更改选定类别的键</system:String>
+    <system:String x:Key="ShowChangeKeynoteCategoryHistory">显示类别更改历史</system:String>
+
+    <system:String x:Key="Keynotes">关键注释</system:String>
+    <system:String x:Key="AddKeynote">添加新的关键注释</system:String>
+    <system:String x:Key="SearchKeynote">查找选定关键注释的实例</system:String>
+    <system:String x:Key="EditKeynote">编辑选定的关键注释</system:String>
+    <system:String x:Key="RemoveKeynote">删除选定的关键注释</system:String>
+    <system:String x:Key="AddChildKeynote">将新的关键注释添加为选定关键注释的子项</system:String>
+    <system:String x:Key="DuplicateKeynote">复制选定的关键注释</system:String>
+    <system:String x:Key="ChangeKeyKeynote">更改选定关键注释的键</system:String>
+    <system:String x:Key="ChangeCategoryKeynote">更改选定关键注释的类别</system:String>
+    <system:String x:Key="ShowChangeKeynoteHistory">显示关键注释更改历史</system:String>
+
+    <system:String x:Key="PlaceKeynote">放置</system:String>
+    <system:String x:Key="UserKeynotes">用户关键注释</system:String>
+    <system:String x:Key="ElementKeynotes">图元关键注释</system:String>
+    <system:String x:Key="MaterialKeynotes">材质关键注释</system:String>
+
+    <system:String x:Key="KeynotesHistory">关键注释历史</system:String>
+    <system:String x:Key="EnableHistory">启用历史</system:String>
+    <system:String x:Key="EnableHistoryInfo">启用关键注释的历史跟踪。</system:String>
+    
+    <GridLength x:Key="RightPanelWidth">190</GridLength>
+    <GridLength x:Key="RefreshKeynotesWidth">70</GridLength>
+    
+    
+    <system:String x:Key="AllCategories">-- 所有类别 --</system:String>
+    <system:String x:Key="ADCLockedLocalFile">关键注释文件正在被 {} 修改和锁定。请稍后再试</system:String>
+    <system:String x:Key="ADCLockedLocalFileNone">无法从 {} 获取关键注释文件</system:String>
+    <system:String x:Key="ADCNotAvailable">
+        此模型使用的关键注释文件似乎由 
+        {long} ({short}) 管理。但 {short} 
+        未运行或未安装。请安装/运行 
+        {short} 并再次打开关键注释管理器
+    </system:String>
+    
+    <system:String x:Key="SetKeynoteFileTransactionName">设置关键注释文件</system:String>
+    <system:String x:Key="KeynoteFileNotExists">关键注释文件不可访问。请选择关键注释文件。</system:String>
+    <system:String x:Key="KeynoteFileNotSetup">未设置关键注释文件。</system:String>
+    <system:String x:Key="KeynoteFileIsReadOnly">关键注释文件为只读。</system:String>
+    
+    <system:String x:Key="KeynoteFileConnectionFailed" xml:space="preserve">需要将现有关键注释文件转换为此工具可用的格式。生成的关键注释文件仍可由 Revit 读取，并可与其他项目共享。用户在转换过程中不应修改现有关键注释文件。
+您确定要转换吗？
+    </system:String>
+    
+    <system:String x:Key="KeynoteFileConnectionConvert">转换</system:String>
+    <system:String x:Key="KeynoteFileConnectionSelectOther">选择其他关键注释文件</system:String>
+    <system:String x:Key="KeynoteFileConnectionHelp">给我更多信息</system:String>
+    <system:String x:Key="KeynoteFileConversionCompleted">转换完成！</system:String>
+    <system:String x:Key="KeynoteFileConversionFailed">转换失败！%s</system:String>
+    <system:String x:Key="KeynoteFileNotConversion">关键注释文件尚未转换。</system:String>
+    <system:String x:Key="KeynoteFileLaunchAgain">再次启动工具以管理关键注释。</system:String>
+    
+    <system:String x:Key="KeynoteFileBackupException">备份现有关键注释文件时出错。</system:String>
+    <system:String x:Key="KeynoteFilePreparingException">准备新关键注释文件时出错。</system:String>
+    
+    <system:String x:Key="EnterUniqueKey">输入唯一键</system:String>
+    <system:String x:Key="ChooseUniqueKey">选择新键</system:String>
+    <system:String x:Key="SelectParentCategory">选择父类别</system:String>
+    
+    <system:String x:Key="SelectFilter">选择筛选器</system:String>
+    
+    <system:String x:Key="KeynoteLockedUnknownUser">和未知用户</system:String>
+    <system:String x:Key="KeynoteLocked">
+        类别已锁定，正在由 {} 编辑。 
+        请等待其更改提交。 
+        同时，您可以使用或修改此类别下的关键注释。
+    </system:String>
+    
+    <system:String x:Key="CategoryLockedUnknownUser">和未知用户</system:String>
+    <system:String x:Key="CategoryLocked">
+        类别已锁定，正在由 {} 编辑。 
+        请等待其更改提交。
+    </system:String>
+    
+    <system:String x:Key="CategoryChildrenLocked">此类别中至少有一个关键注释已锁定。请等待更改提交。</system:String>
+    <system:String x:Key="CategoryHasChildren">类别 "%s" 不为空。请先删除其所有关键注释。</system:String>
+    <system:String x:Key="CategoryUsed">类别 "%s" 在模型中使用。无法删除。</system:String>
+    <system:String x:Key="PromptToDeleteCategory">您确定要删除类别 "%s" 吗？</system:String>
+    
+    <system:String x:Key="KeynoteHasChildren">关键注释 "%s" 有子关键注释。请先删除其所有子关键注释。</system:String>
+    <system:String x:Key="KeynoteUsed">"关键注释 "%s" 在模型中使用。无法删除。</system:String>
+    <system:String x:Key="PromptToDeleteKeynote">您确定要删除关键注释 "%s" 吗？</system:String>
+    
+    <system:String x:Key="ReKeyKeynoteTransaction">重新设置关键注释键 {}</system:String>
+    <system:String x:Key="ReKeyKeynoteChildrenLocked">此关键注释的至少一个子关键注释已锁定。请等待更改提交。</system:String>
+    <system:String x:Key="ReCatKeynoteChildrenLocked">此关键注释的至少一个子关键注释已锁定。请等待更改提交。</system:String>
+    
+    
+    <system:String x:Key="KeynoteName">{} "{}" 关键注释 @ "{}"</system:String>
+    <system:String x:Key="LastEditKeynote"> - 最后编辑者 "{}"</system:String>
+    <system:String x:Key="UpdateKeynotesTransactionName">更新关键注释</system:String>
+    <system:String x:Key="ComingSoon">尚未实现。即将推出。</system:String>
+    <system:String x:Key="SkipDuplicates">如果存在重复项，是否要跳过？</system:String>
+    <system:String x:Key="MainException">创建关键注释管理器窗口</system:String>
+</ResourceDictionary>

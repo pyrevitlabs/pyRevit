@@ -1,20 +1,24 @@
 title:
-  ru: Легенды
   en_us: Legends
+  ko: 범례
   fr_fr: Légendes
+  ru: Легенды
+  chinese_s: 图例
+  es_es: Leyendas
   de_de: Legenden
+  pt_br: Legendas
 layout:
   - Copy Legends to Other Documents
   - Copy Legends as Drafting to Other Documents
-  - -----
+  - '-----'
   - Convert Drafting to Legend
   - Convert Legend to Drafting
-  - -----
+  - '-----'
   - List Legends on Sheets
-  - -----
+  - '-----'
   - Find Unused Keynotes
   - Open Keynotes File
-  - -----
+  - '-----'
   - 3D
   - Section
   - Top
@@ -23,3 +27,5 @@ layout:
   - Right
   - Front
   - Back
+  - '-----'
+  - FilterLegend

@@ -1,0 +1,34 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Настройка Пузырьков Сетки</system:String>
+    <system:String x:Key="HeaderTitle">Настройка Пузырьков Сетки</system:String>
+    <system:String x:Key="Subtitle">Настроить систему координат и допуск угла</system:String>
+    
+    <system:String x:Key="CoordinateSystemHeader">Система Координат</system:String>
+    <system:String x:Key="AllGrids">Все сетки</system:String>
+    <system:String x:Key="AllGridsDescription">Переключает все сетки в активном виде</system:String>
+    <system:String x:Key="TrueNorth">Истинный Север</system:String>
+    <system:String x:Key="TrueNorthDescription">Использует ориентацию истинного севера</system:String>
+    <system:String x:Key="ProjectNorth">Север Проекта</system:String>
+    <system:String x:Key="ProjectNorthDescription">Использует систему координат проекта (применяет 'Угол к Истинному Северу')</system:String>
+    <system:String x:Key="ViewOrientation">Ориентация Вида/Области Видимости</system:String>
+    <system:String x:Key="ViewOrientationDescription">Использует текущую ориентацию вида и области видимости</system:String>
+    
+    <system:String x:Key="AngleToleranceHeader">Допуск Угла</system:String>
+    <system:String x:Key="StrictLabel">1° (Строгий)</system:String>
+    <system:String x:Key="PermissiveLabel">40° (Допустимый)</system:String>
+    <system:String x:Key="HowThisWorks">Как это работает</system:String>
+    <system:String x:Key="HowThisWorksDescription">Управляет тем, насколько точно сетки должны выравниваться с выбранной системой координат. Низкие значения = только прямые сетки. Высокие значения = включает угловые сетки.</system:String>
+    
+    <system:String x:Key="AngleDescription1">Очень строгий - только идеально выровненные сетки</system:String>
+    <system:String x:Key="AngleDescription5">Плотный - хорошо для точных компоновок сетки</system:String>
+    <system:String x:Key="AngleDescription10">Умеренный - хорошо для большинства случаев</system:String>
+    <system:String x:Key="AngleDescription15">Расслабленный - включает слегка угловые сетки</system:String>
+    <system:String x:Key="AngleDescription25">Допустимый - включает больше угловых сеток</system:String>
+    <system:String x:Key="AngleDescription35">Очень допустимый - включает большинство ориентаций</system:String>
+    <system:String x:Key="AngleDescription40">Максимальный допуск - включает сильно угловые сетки</system:String>
+    
+    <system:String x:Key="Cancel">Отмена</system:String>
+    <system:String x:Key="Continue">Продолжить</system:String>
+</ResourceDictionary>

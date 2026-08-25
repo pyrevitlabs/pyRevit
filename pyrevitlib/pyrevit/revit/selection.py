@@ -205,17 +205,19 @@ def _pick_obj(obj_type, message, multiple=False, world=False, selection_filter=N
     mlogger.error("Error processing picked elements. return_values should be a list.")
 
 
-def pick_element(message=''):
+def pick_element(message='', pick_filter=None):
     """Asks the user to pick an element.
 
     Args:
         message (str): An optional message to display.
+        pick_filter (object, optional): An object specifying the filter to apply
+            when picking elements. Default is None.
 
     Returns:
         (Element): element selected by the user.
     """
     return _pick_obj(UI.Selection.ObjectType.Element,
-                     message)
+                     message, selection_filter=pick_filter)
 
 
 def pick_element_by_category(cat_name_or_builtin, message=''):
@@ -285,31 +287,37 @@ def pick_face(message=''):
                      message)
 
 
-def pick_linked(message=''):
+def pick_linked(message='', pick_filter=None):
     """Returns the linked element selected by the user.
 
     Args:
         message (str, optional): message to display. Defaults to ''.
+        pick_filter (object, optional): An object specifying the filter to apply
+            when picking elements. Default is None.
 
     Returns:
         (LinkedElement): The selected linked element.
     """
     return _pick_obj(UI.Selection.ObjectType.LinkedElement,
-                     message)
+                     message,
+                     selection_filter=pick_filter)
 
 
-def pick_elements(message=''):
+def pick_elements(message='', pick_filter=None):
     """Asks the user to pick multiple elements.
 
     Args:
         message (str): An optional message to display.
+        pick_filter (object, optional): An object specifying the filter to apply
+            when picking elements. Default is None.
 
     Returns:
         (list[Element]): elements selected by the user.
     """
     return _pick_obj(UI.Selection.ObjectType.Element,
                      message,
-                     multiple=True)
+                     multiple=True,
+                     selection_filter=pick_filter)
 
 
 def pick_elements_by_category(cat_name_or_builtin, message=''):
@@ -422,21 +430,26 @@ def pick_faces(message=''):
                      multiple=True)
 
 
-def pick_linkeds(message=''):
+def pick_linkeds(message='', pick_filter=None):
     """Selects linked elements.
 
     Args:
-        message (str): The message to display when selecting linked elements.
+        message (str, optional): The message to display when selecting
+            linked elements. Default is an empty string.
+        pick_filter (object, optional): An object specifying the filter to apply
+            when picking elements. Default is None.
 
     Returns:
         (list[LinkedElement]): selected linked elements.
     """
     return _pick_obj(UI.Selection.ObjectType.LinkedElement,
                      message,
-                     multiple=True)
+                     multiple=True,
+                     selection_filter=pick_filter)
 
 
 def pick_point(message=''):
+    # type: (str) -> DB.XYZ | None
     """Pick a point from the user interface.
 
     Args:
@@ -445,11 +458,63 @@ def pick_point(message=''):
     Returns:
         (tuple or None): A tuple representing the picked point as (x, y, z)
             coordinates, or None if no point was picked or an error occurred.
+
+    Side Effects:
+        If the active view does not have a ``SketchPlane`` assigned, this
+        function will automatically create a temporary work plane (aligned with the
+        active view) and assign it to the view before prompting for the point.
+        The work plane is removed after picking to avoid modifying the document.
     """
+    doc = HOST_APP.doc
+    active_view = doc.ActiveView
+    NO_SKETCHPLANE_VIEWTYPES = (
+        DB.ViewType.DraftingView,
+        DB.ViewType.Legend,
+        DB.ViewType.DrawingSheet,
+    )  # type: tuple[DB.ViewType]
+    needs_plane = (
+        active_view.SketchPlane is None
+        and active_view.ViewType not in NO_SKETCHPLANE_VIEWTYPES
+    )  # type: bool
+    result = None
+
     try:
-        return HOST_APP.uidoc.Selection.PickPoint(message)
-    except Exception:
+        if needs_plane:
+            tg = DB.TransactionGroup(doc, "Assigning a workplane to the current view")
+            tg.Start()
+
+            with DB.Transaction(doc, "Create temporary workplane") as t:
+                t.Start()
+                try:
+                    sketch_plane = DB.SketchPlane.Create(
+                        doc,
+                        DB.Plane.CreateByNormalAndOrigin(
+                            active_view.ViewDirection,
+                            active_view.Origin
+                        )
+                    )
+                    active_view.SketchPlane = sketch_plane
+                    t.Commit()
+                except Exception as ex:
+                    mlogger.error("Failed to create temporary sketch plane: %s", ex)
+                    t.RollBack()
+                    tg.RollBack()
+                    return None
+
+            result = HOST_APP.uidoc.Selection.PickPoint(message)
+
+            tg.RollBack()
+        else:
+            result = HOST_APP.uidoc.Selection.PickPoint(message)
+
+    except RevitExceptions.OperationCanceledException:
+        mlogger.debug("Operation canceled by user")
         return None
+    except Exception as ex:
+        mlogger.error("An error occurred during point picking: %s", ex)
+        return None
+
+    return result
 
 
 def pick_rectangle(message='', pick_filter=None):

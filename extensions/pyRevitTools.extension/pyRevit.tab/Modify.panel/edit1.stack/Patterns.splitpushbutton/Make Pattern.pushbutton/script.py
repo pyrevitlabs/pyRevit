@@ -71,17 +71,17 @@ class MakePatternWindow(forms.WPFWindow):
 
         if not self._selection:
             self.resolver_ops.IsEnabled = False
-            self.create_b.Content = "No Linework Selected"
+            self.create_b.Content = self.get_locale_string("NoLineworkSelected")
             self.create_b.IsEnabled = False
             self._export_only = True
-            self.prompt_lb.Content = "Select Pattern to Export"
+            self.prompt_lb.Content = self.get_locale_string("SelectPatternToExport")
 
         if revit.active_view.ViewType not in acceptable_viewtypes:
             self.resolver_ops.IsEnabled = False
-            self.create_b.Content = "Incompatible View Type"
+            self.create_b.Content = self.get_locale_string("IncompatibleViewType")
             self.create_b.IsEnabled = False
             self._export_only = True
-            self.prompt_lb.Content = "Select Pattern to Export"
+            self.prompt_lb.Content = self.get_locale_string("SelectPatternToExport")
 
         self.setup_patnames()
         self.setup_export_units()
@@ -184,14 +184,11 @@ class MakePatternWindow(forms.WPFWindow):
             elif isinstance(element, DB.FilledRegion):
                 bg_fillpat = \
                     revit.query.get_fillpattern_from_element(element)
-                fg_fillpat = None
-                # check for version otherwise fg_fillpat is same as bg_fillpat
-                if HOST_APP.is_newer_than(2018):
-                    fg_fillpat = \
-                        revit.query.get_fillpattern_from_element(
-                            element,
-                            background=False
-                            )
+                fg_fillpat = \
+                    revit.query.get_fillpattern_from_element(
+                        element,
+                        background=False
+                        )
                 # process both forground and background patterns
                 for fillpat in [bg_fillpat, fg_fillpat]:
                     # if available
@@ -253,13 +250,8 @@ class MakePatternWindow(forms.WPFWindow):
         biparam = DB.BuiltInParameter.VIEW_SCALE_PULLDOWN_IMPERIAL
         if revit.query.is_metric(revit.doc):
             biparam = DB.BuiltInParameter.VIEW_SCALE_PULLDOWN_METRIC
-        # re issue #510 indexing the builtinparam only works on >=2015
-        if HOST_APP.is_newer_than(2014):
-            self.viewscale_tb.Text = \
-                revit.active_view.Parameter[biparam].AsValueString()
-        else:
-            self.viewscale_tb.Text = \
-                revit.active_view.get_Parameter(biparam).AsValueString()
+        self.viewscale_tb.Text = \
+            revit.active_view.Parameter[biparam].AsValueString()
 
     def pick_domain(self):
         # ask user for origin and max domain points

@@ -1,0 +1,26 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Crear Patrón</system:String>
+    
+    <system:String x:Key="EnterNewPatternName">Introducir Nombre del Nuevo Patrón</system:String>
+    <system:String x:Key="SelectPatternToExport">Seleccionar Patrón para Exportar</system:String>
+    
+    <system:String x:Key="ExportPATFile">Exportar Archivo PAT</system:String>
+    <system:String x:Key="CreatePattern">Crear Patrón</system:String>
+    <system:String x:Key="NoLineworkSelected">No Hay Líneas Seleccionadas</system:String>
+    <system:String x:Key="IncompatibleViewType">Tipo de Vista Incompatible</system:String>
+    
+    <system:String x:Key="ResolverOptions">Opciones de Resolución</system:String>
+    <system:String x:Key="CreateFilledRegion">Crear Región Rellena</system:String>
+    <system:String x:Key="UseHighestResolution">Usar Resolución Más Alta</system:String>
+    <system:String x:Key="CapturedViewScale">Escala de Vista Capturada</system:String>
+    <system:String x:Key="ScaleMultiplier">Multiplicador de Escala</system:String>
+    <system:String x:Key="RotationInDegrees">Rotación (en Grados)</system:String>
+    <system:String x:Key="FlipHorizontally">Voltear Horizontalmente</system:String>
+    <system:String x:Key="FlipVertically">Voltear Verticalmente</system:String>
+    
+    <system:String x:Key="PatternType">Tipo de Patrón</system:String>
+    <system:String x:Key="DetailPattern">Patrón de Detalle</system:String>
+    <system:String x:Key="ModelPattern">Patrón de Modelo</system:String>
+</ResourceDictionary>

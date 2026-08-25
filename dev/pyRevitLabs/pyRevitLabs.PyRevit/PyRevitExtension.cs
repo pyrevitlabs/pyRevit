@@ -51,11 +51,22 @@ namespace pyRevitLabs.PyRevit {
             return string.Format("Name: \"{0}\" | Type: \"{1}\" | Repo: \"{2}\"", Name, Type, Url);
         }
 
-        public bool BuiltIn { get { return bool.Parse(_jsonObj.builtin); } }
+        public bool BuiltIn { get { return ParseJsonBool(_jsonObj.builtin, false); } }
 
-        public bool DefaultEnabled { get { return bool.Parse(_jsonObj.default_enabled); } }
+        public bool DefaultEnabled { get { return ParseJsonBool(_jsonObj.default_enabled, true); } }
 
-        public bool RocketModeCompatible { get { return bool.Parse(_jsonObj.rocket_mode_compatible); } }
+        public bool RocketModeCompatible { get { return ParseJsonBool(_jsonObj.rocket_mode_compatible, false); } }
+
+        private static bool ParseJsonBool(dynamic value, bool defaultValue) {
+            if (value == null)
+                return defaultValue;
+            try {
+                return Convert.ToString(value).Equals("true", StringComparison.OrdinalIgnoreCase);
+            }
+            catch {
+                return defaultValue;
+            }
+        }
 
         public string Name { get { return _jsonObj.name; } }
 
@@ -94,15 +105,9 @@ namespace pyRevitLabs.PyRevit {
             var extDefFile = GetExtensionDefFilePath(InstallPath);
             if (CommonUtils.VerifyFile(extDefFile))
                 Definition = new PyRevitExtensionDefinition(extDefFile);
-            else {
-                // if def file is not found try to grab the definitions from registered extensions
-                try {
-                    Definition = PyRevitExtensions.FindRegisteredExtension(Name);
-                }
-                catch {
-                    // let Definition be null if extension is not registered
-                }
-            }
+            // Without extension.json, leave Definition null; Name/Type/Url use path + git origin.
+            // Avoid FindRegisteredExtension(Name) here — it downloads the global extensions.json
+            // and made CLI commands like `env` stall on network I/O.
         }
 
         public string InstallPath { get; private set; }

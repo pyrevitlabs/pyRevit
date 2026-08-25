@@ -1,0 +1,33 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Options de Correspondance</system:String>
+    
+    <system:String x:Key="CheckAll">Tout Cocher</system:String>
+    <system:String x:Key="CheckNone">Tout Décocher</system:String>
+    <system:String x:Key="SaveOptions">Enregistrer les Options</system:String>
+    
+    <system:String x:Key="DimensionOverrides">Remplacements de Cote :</system:String>
+    <system:String x:Key="PrefixValue">Valeur de Préfixe</system:String>
+    <system:String x:Key="AboveValue">Valeur au-dessus</system:String>
+    <system:String x:Key="ReplacedValue">Valeur Remplacée</system:String>
+    <system:String x:Key="TextPosition">Position du Texte</system:String>
+    <system:String x:Key="BelowValue">Valeur en-dessous</system:String>
+    <system:String x:Key="PostfixValue">Valeur de Postfixe</system:String>
+    
+    <system:String x:Key="ElementGraphicsOverrides">Remplacements Graphiques d'Élément :</system:String>
+    <system:String x:Key="Halftone">Demi-teinte</system:String>
+    <system:String x:Key="Transparency">Transparence</system:String>
+    
+    <system:String x:Key="Surface">Surface</system:String>
+    <system:String x:Key="LineColor">Couleur de Ligne</system:String>
+    <system:String x:Key="LinePattern">Motif de Ligne</system:String>
+    <system:String x:Key="LineWeight">Épaisseur de Ligne</system:String>
+    <system:String x:Key="Foreground">Premier Plan</system:String>
+    <system:String x:Key="FillColor">Couleur de Remplissage</system:String>
+    <system:String x:Key="FillPattern">Motif de Remplissage</system:String>
+    <system:String x:Key="FillPatternVisibility">Visibilité du Motif de Remplissage</system:String>
+    <system:String x:Key="Background">Arrière-plan</system:String>
+    
+    <system:String x:Key="Cut">Coupe</system:String>
+</ResourceDictionary>

@@ -4,6 +4,8 @@ import os.path as op
 import sys
 import json
 
+from pyrevit._perf import mark as _perfmark
+_perfmark("pyrevit.runtime:entry")
 from pyrevit import PyRevitException, EXEC_PARAMS, HOST_APP
 import pyrevit.engine as eng
 from pyrevit import framework
@@ -19,6 +21,7 @@ from pyrevit.coreutils import appdata
 from pyrevit.loader import HASH_CUTOFF_LENGTH
 from pyrevit.userconfig import user_config
 import pyrevit.extensions as exts
+_perfmark("pyrevit.runtime:after imports")
 
 #pylint: disable=W0703,C0302,C0103
 mlogger = logger.get_logger(__name__)
@@ -62,6 +65,7 @@ try:
 except Exception as dotnet_sdk_err:
     DOTNET_TARGETPACK_DIRS = []
     mlogger.debug('Dotnet SDK is not installed. | %s', dotnet_sdk_err)
+_perfmark("pyrevit.runtime:after dotnet dir listings")
 
 
 # base classes for pyRevit commands --------------------------------------------
@@ -86,6 +90,7 @@ SOURCE_FILE_FILTER = r'(\.cs)'
 
 # get and load the active Cpython engine
 CPYTHON_ENGINE = user_config.get_active_cpython_engine()
+_perfmark("pyrevit.runtime:after user_config.get_active_cpython_engine()")
 
 # create a hash for the loader assembly
 # this hash is calculated based on:
@@ -103,6 +108,7 @@ BASE_TYPES_DIR_HASH = \
         )[:HASH_CUTOFF_LENGTH]
 RUNTIME_ASSM_FILE_ID = '{}_{}'\
     .format(BASE_TYPES_DIR_HASH, RUNTIME_NAMESPACE)
+_perfmark("pyrevit.runtime:after calculate_dir_hash + BASE_TYPES_DIR_HASH")
 
 RUNTIME_ASSM_FILE = \
     op.join(BIN_DIR, "pyRevitLabs.PyRevit.Runtime.{}.dll".format(HOST_APP.version))
@@ -180,6 +186,16 @@ def _get_framework_sdk_module(fw_module):
 
 def _get_reference_file(ref_name):
     mlogger.debug('Searching for dependency: %s', ref_name)
+    # On netcore the host often loads framework assemblies from the shared runtime
+    # (e.g. System.Collections.Immutable 8.x). A newer copy in bin/ may be 9.x;
+    # Assembly.LoadFrom that path then fails while the same name is already loaded.
+    if NETCORE:
+        loaded_asm = assmutils.find_loaded_asm(ref_name)
+        if loaded_asm:
+            mlogger.debug('Using host-loaded dependency: %s @ %s', ref_name,
+                          loaded_asm[0].Location)
+            return loaded_asm[0].Location
+
     # First try to find the dll in the project folder
     addin_file = framework.get_dll_file(ref_name)
     if addin_file:
@@ -269,8 +285,7 @@ def get_references():
                          'System.Text.RegularExpressions'])
 
     # another revit api
-    if HOST_APP.is_newer_than(2018):
-        ref_list.extend(['Xceed.Wpf.AvalonDock'])
+    ref_list.extend(['Xceed.Wpf.AvalonDock'])
 
     refs = (_get_reference_file(ref_name) for ref_name in ref_list)
     return [r for r in refs if r]
@@ -446,11 +461,13 @@ def create_type(modulebuilder, type_class, class_name, custom_attr_list, *args):
 # see it the assembly is already loaded
 RUNTIME_ASSM = None
 assm_list = assmutils.find_loaded_asm(RUNTIME_ASSM_NAME)
+_perfmark("pyrevit.runtime:after assmutils.find_loaded_asm")
 if assm_list:
     RUNTIME_ASSM = assm_list[0]
 else:
     # else, let's generate the assembly and load it
     RUNTIME_ASSM = _get_runtime_asm()
+    _perfmark("pyrevit.runtime:after _get_runtime_asm() (assembly load/compile)")
 
 if RUNTIME_ASSM is None:
     raise Exception("Error dynamically compiling pyRevit runtime")
@@ -467,3 +484,4 @@ CMD_AVAIL_TYPE_SELECTION = \
 CMD_AVAIL_TYPE_ZERODOC = \
     assmutils.find_type_by_name(RUNTIME_ASSM,
                                 CMD_AVAIL_TYPE_NAME_ZERODOC)
+_perfmark("pyrevit.runtime:exit (after 4x find_type_by_name)")

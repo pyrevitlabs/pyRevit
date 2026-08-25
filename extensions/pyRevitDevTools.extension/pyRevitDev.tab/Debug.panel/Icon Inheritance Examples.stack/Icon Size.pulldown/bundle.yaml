@@ -1,0 +1,6 @@
+title: Icon Size
+large_icon: true
+tooltip: This stacked pulldown opts into large icon display and has children with inherited icons.
+layout:
+  - Default Inherited
+  - Large Inherited

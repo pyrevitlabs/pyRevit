@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -20,7 +20,7 @@ namespace pyRevitLabs.PyRevit {
     }
 
     public class PyRevitProductData {
-        public static string ProductFileURL = GithubAPI.GetRawUrl(PyRevitLabsConsts.OriginalRepoId, PyRevitLabsConsts.TargetBranch, @"bin/pyrevit-products.json");
+        public static string ProductFileURL = GithubAPI.GetRawUrl(PyRevitLabsConsts.OriginalRepoId, PyRevitLabsConsts.TargetBranch, @"release/pyrevit-products.json");
 
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
@@ -49,6 +49,8 @@ namespace pyRevitLabs.PyRevit {
         public static List<PyRevitProductInfo> GetAllProductInfo() => _dstore.GetAllData();
 
         public static void Update() => _dstore.UpdateData(forceUpdate: true);
+
+        public static void RefreshIfStale() => _dstore.UpdateData(forceUpdate: false);
     }
 
     public class PyRevitProduct {

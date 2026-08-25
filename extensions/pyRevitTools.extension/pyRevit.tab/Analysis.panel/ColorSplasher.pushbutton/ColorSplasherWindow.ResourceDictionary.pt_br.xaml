@@ -1,0 +1,100 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <!-- Window Title -->
+    <system:String x:Key="ColorSplasher.Title">Colorir Elementos por Valor de Parâmetro</system:String>
+
+    <!-- Section Labels -->
+    <system:String x:Key="ColorSplasher.Labels.CategorySelection">Seleção de Categoria</system:String>
+    <system:String x:Key="ColorSplasher.Labels.ParameterSelection">Seleção de Parâmetro</system:String>
+    <system:String x:Key="ColorSplasher.Labels.ValuesColorAssignment">Atribuição de Cores aos Valores</system:String>
+    <system:String x:Key="ColorSplasher.Labels.ManageSchemes">Gerenciar Esquemas</system:String>
+    <system:String x:Key="ColorSplasher.Labels.GenerateColors">Gerar Cores</system:String>
+    <system:String x:Key="ColorSplasher.Labels.ApplySettings">Aplicar Configurações</system:String>
+
+    <!-- Buttons -->
+    <system:String x:Key="ColorSplasher.Buttons.SaveLoadScheme">Salvar / Carregar Esquema de Cores</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.GradientColors">Cores em Gradiente</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.RandomColors">Cores Aleatórias</system:String> 
+    <system:String x:Key="ColorSplasher.Buttons.SetColors">Definir Cores</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.Reset">Resetar</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.CreateLegend">Criar Legenda</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.CreateViewFilters">Criar Filtros de Vista</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.SelectAll">Selecionar Tudo</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.SelectNone">Selecionar Nenhum</system:String>
+
+    <!-- Checkboxes -->
+    <system:String x:Key="ColorSplasher.Checkboxes.ApplyLineColor">Aplicar Cor da Linha</system:String>
+    <system:String x:Key="ColorSplasher.Checkboxes.ApplyForegroundPattern">Aplicar Cor do Padrão de Primeiro Plano</system:String>
+    <system:String x:Key="ColorSplasher.Checkboxes.ApplyBackgroundPattern">Aplicar Cor do Padrão de Plano de Fundo</system:String>
+    <system:String x:Key="ColorSplasher.Checkboxes.ApplyBackgroundPattern.RequiresRevit2019">Aplicar Cor do Padrão de Plano de Fundo (Requer Revit 2019 ou mais recente)</system:String>
+
+    <!-- Tooltips -->
+    <system:String x:Key="ColorSplasher.Tooltips.CategorySelection">Selecione uma categoria para começar a colorir.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.ParameterSelection">Selecione um parâmetro para colorir elementos com base em seu valor.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.ValuesColorAssignment">Reatribua cores clicando em seu valor.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.SaveLoadScheme">Salve o esquema de cores atual ou carregue um existente.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.GradientColors">Com base na cor do primeiro e último valor, reatribua cores em gradiente para todos os valores.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.RandomColors">Reatribua novas cores aleatórias para todos os valores.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.SetColors">Substitua as cores por elemento na vista.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.Reset">Redefina as cores em sua vista do Revit para o estágio inicial.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.CreateLegend">Crie uma nova vista de legenda para todos os valores e suas cores.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.CreateViewFilters">Crie filtros de vista e regras para todos os valores e suas cores.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.ApplyLineColor">Quando habilitado, aplica a cor à cor da linha de projeção.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.ApplyForegroundPattern">Quando habilitado, aplica a cor às cores do padrão de superfície e de corte em primeiro plano.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.ApplyBackgroundPattern">Quando habilitado, aplica a cor às cores do padrão de superfície e de corte em plano de fundo. Requer Revit 2019 ou mais recente.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.SearchParameters">Digite para pesquisar e filtrar parâmetros.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.SelectAll">Selecione todos os elementos de todos os valores de parâmetros.</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.SelectNone">Limpe a seleção atual no Revit.</system:String>
+
+    <!-- Messages -->
+    <system:String x:Key="ColorSplasher.Messages.SelectCategoryHere">Selecione uma Categoria Aqui!</system:String>
+    <system:String x:Key="ColorSplasher.Messages.SelectCategory">Selecionar Categoria</system:String>
+    <system:String x:Key="ColorSplasher.Messages.SelectParameter">Selecionar Parâmetro</system:String>
+    <system:String x:Key="ColorSplasher.Messages.SpacesColorScheme">*Espaços podem exigir um esquema de cores na vista.</system:String>
+    <system:String x:Key="ColorSplasher.Messages.NoCategorySelected">Por favor, selecione uma categoria para redefinir as cores.</system:String>
+    <system:String x:Key="ColorSplasher.Messages.NoLegendView">Para criar uma nova legenda, você precisa ter pelo menos uma. Por favor, crie uma vista de legenda.</system:String>
+    <system:String x:Key="ColorSplasher.Messages.NoItemsForLegend">Nenhum item para criar uma legenda. Por favor, selecione uma categoria e parâmetro com valores.</system:String>
+    <system:String x:Key="ColorSplasher.Messages.LegendCreated">Legenda criada com sucesso: {0}</system:String>
+    <system:String x:Key="ColorSplasher.Messages.LegendFailed">Falha ao criar legenda: {0}</system:String>
+    <system:String x:Key="ColorSplasher.Messages.FilterNotSupported">A criação de filtros para este tipo de parâmetro não é suportada.</system:String>
+    <system:String x:Key="ColorSplasher.Messages.FilterCreationFailed">Os filtros de vista não foram criados. O parâmetro selecionado não é exposto pelo Revit e as regras não podem ser criadas.</system:String>
+    <system:String x:Key="ColorSplasher.Messages.ViewTypeNotSupported">As configurações de visibilidade não podem ser modificadas em vistas {0}. Por favor, altere sua vista atual.</system:String>
+    <system:String x:Key="ColorSplasher.Messages.UnableToAccessDocument">Não foi possível acessar o documento do Revit</system:String>
+    <system:String x:Key="ColorSplasher.Messages.UnableToAccessDocument.Content">Por favor, certifique-se de que você tem um projeto do Revit aberto e tente novamente.</system:String>
+
+    <!-- Placeholders -->
+    <system:String x:Key="ColorSplasher.Placeholders.SearchParameters">Pesquisar Parâmetros...</system:String>
+    <system:String x:Key="ColorSplasher.Placeholders.SelectCategoryAndParameter">Selecione uma categoria e um parâmetro para ver os valores</system:String>
+    <system:String x:Key="ColorSplasher.Messages.ShiftClickToSelect">Shift+Clique para selecionar elementos</system:String>
+
+    <!-- Save/Load Dialog -->
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.Title">Salvar / Carregar Esquema de Cores</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.IfLoading">Se Carregando um Esquema de Cores:</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.LoadByValue">Carregar por Valor de Parâmetro.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.LoadByValue.Tooltip">Apenas se carregando. Isso carregará o esquema de cores com base no Valor que o item tinha ao salvar.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.LoadByPosition">Carregar por Posição na Janela.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.LoadByPosition.Tooltip">Apenas se carregando. Isso carregará o esquema de cores com base na Posição que o item tinha ao salvar.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.SaveButton">Salvar Esquema de Cores</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.LoadButton">Carregar Esquema de Cores</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.IfLoading.Tooltip">Apenas se carregando.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.SaveTitle">Especifique o Caminho para Salvar o Esquema de Cores</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.LoadTitle">Especifique o Caminho para Carregar o Esquema de Cores</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.NoColorsDetected">Nenhuma Cor Detectada</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.NoColorsDetected.Message">A lista de valores na janela principal está vazia. Por favor, selecione uma categoria e parâmetro para adicionar itens com cores.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.NoValuesDetected">Nenhum Valor Detectado</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.NoValuesDetected.Message">A lista de valores na janela principal está vazia. Por favor, selecione uma categoria e parâmetro para adicionar itens para aplicar cores.</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.ErrorSaving">Erro ao Salvar Esquema</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.ErrorLoading">Erro ao Carregar Esquema</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.FileDoesNotExist">O arquivo não existe.</system:String>
+
+    <!-- TaskDialog Titles -->
+    <system:String x:Key="ColorSplasher.TaskDialog.Title">Colorir Elementos por Parâmetro</system:String>
+    <system:String x:Key="ColorSplasher.TaskDialog.Error">Erro do Color Splasher</system:String>
+
+    <!-- Legend Name Prefix -->
+    <system:String x:Key="ColorSplasher.LegendNamePrefix">Color Splasher - </system:String>
+
+</ResourceDictionary>

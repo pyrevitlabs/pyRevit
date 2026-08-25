@@ -4,7 +4,7 @@ Shift-Click:
 Select group members instead of parent group elements.
 """
 #pylint: disable=import-error,invalid-name,broad-except
-from pyrevit import revit, DB
+from pyrevit import revit, DB, EXEC_PARAMS
 from pyrevit.compat import get_elementid_value_func
 
 get_elementid_value = get_elementid_value_func()
@@ -29,7 +29,7 @@ invert_ids = view_element_ids.difference(selected_element_ids)
 # if shiftclick, select all the invert elements
 # otherwise do not select elements inside a group
 filtered_invert_ids = invert_ids.copy()
-if not __shiftclick__: #pylint: disable=undefined-variable
+if not EXEC_PARAMS.config_mode:
     # collect ids of elements inside a group
     grouped_element_ids = \
         [get_elementid_value(x.Id) for x in viewelements

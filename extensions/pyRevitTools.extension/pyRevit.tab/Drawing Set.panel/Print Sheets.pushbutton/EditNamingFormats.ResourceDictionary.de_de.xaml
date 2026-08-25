@@ -1,0 +1,18 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Namensformate</system:String>
+    
+    <system:String x:Key="NamingFormats">Namensformate</system:String>
+    <system:String x:Key="Save">Speichern</system:String>
+    <system:String x:Key="Duplicate">Duplizieren</system:String>
+    <system:String x:Key="Delete">Löschen</system:String>
+    
+    <system:String x:Key="FormatTitle">Formattitel</system:String>
+    <system:String x:Key="FormatTitleDescription">Dies ist der Name dieses spezifischen Namensformats. Geben Sie dem Format einen beschreibenden Namen, der leicht zu verstehen und zu finden ist. Zum Beispiel: "City of Portland ePermit"</system:String>
+    
+    <system:String x:Key="Template">Vorlage</system:String>
+    <system:String x:Key="TemplateDescription">Dies ist die tatsächliche Namensformatvorlage. Jedes "{}" (Tag) stellt einen Wert dar, der beim Erstellen des Namens für eine PDF-Datei ausgefüllt wird. Wählen Sie aus den unten aufgeführten Tags aus und ziehen Sie sie in dieses Feld.</system:String>
+    
+    <system:String x:Key="DragAndDropHint">Von den unten aufgeführten Formatierern ziehen und ablegen. Bewegen Sie die Maus über den Formatierer für die Beschreibung</system:String>
+</ResourceDictionary>

@@ -1,0 +1,18 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">命名格式</system:String>
+    
+    <system:String x:Key="NamingFormats">命名格式</system:String>
+    <system:String x:Key="Save">保存</system:String>
+    <system:String x:Key="Duplicate">复制</system:String>
+    <system:String x:Key="Delete">删除</system:String>
+    
+    <system:String x:Key="FormatTitle">格式标题</system:String>
+    <system:String x:Key="FormatTitleDescription">这是此特定命名格式的名称。为格式提供一个描述性名称，该名称易于理解和查找。例如："City of Portland ePermit"</system:String>
+    
+    <system:String x:Key="Template">模板</system:String>
+    <system:String x:Key="TemplateDescription">这是实际的命名格式模板。每个 "{}"（标签）代表一个值，在创建 PDF 文件的名称时将填充该值。从下面列出的标签中选择并将其拖到此框中。</system:String>
+    
+    <system:String x:Key="DragAndDropHint">从下面的格式化器拖放。将鼠标悬停在格式化器上以查看描述</system:String>
+</ResourceDictionary>

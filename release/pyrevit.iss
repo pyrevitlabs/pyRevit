@@ -14,7 +14,7 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-AppCopyright=Copyright © 2014-2025 pyRevitLabs.io
+AppCopyright=Copyright © 2014-2026 pyRevitLabs.io
 LicenseFile=..\LICENSE.txt
 ; Installer
 DefaultGroupName={#MyAppName}
@@ -29,7 +29,7 @@ UsePreviousAppDir=yes
 PrivilegesRequired=lowest
 ; Build info
 OutputDir=..\dist
-; See dev/scripts/config.py INSTALLER_EXES
+; Keep this list aligned with the installer assets staged by build/.
 OutputBaseFilename=pyRevit_{#MyAppVersion}_signed
 SetupIconFile=..\bin\pyrevit.ico
 Compression=lzma
@@ -38,7 +38,7 @@ DisableWelcomePage=no
 WizardStyle=classic
 WizardImageFile=.\pyrevit.bmp
 WizardSmallImageFile=.\pyrevit-banner.bmp
-ArchitecturesInstallIn64BitMode=x64
+ArchitecturesInstallIn64BitMode=x64compatible
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -73,24 +73,105 @@ Source: "..\pyRevitfile"; DestDir: "{app}"; Flags: ignoreversion; Components: co
 [Registry]
 ; Uninstaller does not undo this change
 ; Multiple installs keep adding the path
+; When run as admin, HKCU would be the elevated user's; PATH is set in CurStepChanged via ExecAsOriginalUser instead.
 ; https://stackoverflow.com/a/3431379/2350244
 ; https://stackoverflow.com/a/9962307/2350244 (mod path module)
-Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\bin"
+Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}\bin"; Check: NotAdminAndPathNotExists
 
 [Run]
-Filename: "{app}\bin\pyrevit.exe"; Description: "Clearning caches..."; Parameters: "caches clear --all"; Flags: runhidden
-Filename: "{app}\bin\pyrevit.exe"; Description: "Detach existing clones..."; Parameters: "detach --all"; Flags: runhidden
-Filename: "{app}\bin\pyrevit.exe"; Description: "Registering this clone..."; Parameters: "clones add this master --force"; Flags: runhidden
-Filename: "{app}\bin\pyrevit.exe"; Description: "Attaching this clone..."; Parameters: "attach master default --installed"; Flags: runhidden
+Filename: "{app}\bin\pyrevit.exe"; Description: "Clearing caches..."; Parameters: "caches clear --all"; Flags: runhidden; Check: not IsAdmin
+Filename: "{app}\bin\pyrevit.exe"; Description: "Detach existing clones..."; Parameters: "detach --all"; Flags: runhidden; Check: not IsAdmin
+Filename: "{app}\bin\pyrevit.exe"; Description: "Registering this clone..."; Parameters: "clones add this master --force"; Flags: runhidden; Check: not IsAdmin
+Filename: "{app}\bin\pyrevit.exe"; Description: "Attaching this clone..."; Parameters: "attach master default --installed"; Flags: runhidden; Check: not IsAdmin
+Filename: "{app}\bin\pyrevit.exe"; Description: "Seeding extension defaults..."; Parameters: "configs seedshippeddefaults"; Flags: runhidden; Check: not IsAdmin
 
 [UninstallRun]
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "ClearCaches"; Parameters: "caches clear --all"; Flags: runhidden
 Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detach --all"; Flags: runhidden
 
 [Code]
+function NotAdminAndPathNotExists: Boolean;
+var
+  OrigPath: String;
+  AppPath: String;
+begin
+  Result := not IsAdmin;
+  if Result then
+  begin
+    AppPath := ExpandConstant('{app}\bin');
+    if RegQueryStringValue(HKCU, 'Environment', 'Path', OrigPath) then
+      Result := Pos(';' + Uppercase(AppPath) + ';', ';' + Uppercase(OrigPath) + ';') = 0;
+  end;
+end;
+
+function RunPyRevitCommand(const Params: String): Boolean;
+var
+  ResultCode: Integer;
+  PyRevitExe: String;
+begin
+  Result := False;
+  PyRevitExe := ExpandConstant('{app}\bin\pyrevit.exe');
+  if not FileExists(PyRevitExe) then
+  begin
+    Log('pyrevit.exe not found: ' + PyRevitExe);
+    Exit;
+  end;
+  Result := ExecAsOriginalUser(PyRevitExe, Params, ExpandConstant('{app}\bin'), SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  if not Result then
+    Log('Failed to execute pyrevit ' + Params)
+  else if ResultCode <> 0 then
+  begin
+    Log('pyrevit exited with code ' + IntToStr(ResultCode) + ': ' + Params);
+    Result := False;
+  end;
+end;
+
+procedure RunElevatedUserPostInstallCommands;
+begin
+  RunPyRevitCommand('caches clear --all');
+  RunPyRevitCommand('detach --all');
+  if not RunPyRevitCommand('clones add this master --force') then
+    Log('Elevated install: pyrevit clones add failed for original user');
+  if not RunPyRevitCommand('attach master default --installed') then
+    Log('Elevated install: pyrevit attach failed for original user');
+  if not RunPyRevitCommand('configs seedshippeddefaults') then
+    Log('Elevated install: pyrevit configs seedshippeddefaults failed for original user');
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  Params: String;
+  InstallPathEscaped: String;
+  ResultCode: Integer;
+begin
+  if (CurStep = ssPostInstall) and IsAdmin then
+  begin
+    RunElevatedUserPostInstallCommands;
+    InstallPathEscaped := ExpandConstant('{app}\bin');
+    StringChangeEx(InstallPathEscaped, '''', '''''', True);
+    Params := '-NoProfile -ExecutionPolicy Bypass -Command "' +
+      '$appPath = ''' + InstallPathEscaped + ''';' +
+      '$userPath = [Environment]::GetEnvironmentVariable(''Path'', ''User'');' +
+      'if ($userPath -notlike "' + '"*$appPath*"' + '") {' +
+      '  [Environment]::SetEnvironmentVariable(''Path'', $userPath + '';'' + $appPath, ''User'')' +
+      '}"';
+    if ExecAsOriginalUser(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'), Params, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) and (ResultCode = 0) then
+      Log('Added install path to original user PATH')
+    else
+    begin
+      Log('ExecAsOriginalUser failed or non-zero exit when adding PATH');
+      MsgBox('pyRevit was installed, but the installer could not update the original user PATH environment variable.' + #13#10 + #13#10 + 'You may need to manually add the following folder to your user PATH, or re-run the installer without administrative privileges:' + #13#10 + '  ' + ExpandConstant('{app}\bin'), mbError, MB_OK);
+    end;
+  end;
+end;
+
 function InitializeSetup: Boolean;
 begin
+  // .NET 8 for Revit 2025-2026
   Dependency_AddDotNet80;
   Dependency_AddDotNet80Desktop;
+  // .NET 10 for Revit 2027+
+  Dependency_AddDotNet100;
+  Dependency_AddDotNet100Desktop;
   Result := True;
 end;

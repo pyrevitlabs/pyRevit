@@ -28,6 +28,7 @@ import pyrevitcore_globals
 
 logger = script.get_logger()
 available_revit_versions = [
+    "2027",
     "2026",
     "2025",
     "2024",
@@ -157,6 +158,8 @@ class SettingsWindow(forms.WPFWindow):
 
         self.loadbetatools_cb.IsChecked = user_config.load_beta
 
+        self.read_script_metadata_cb.IsChecked = user_config.read_script_metadata
+
         self.minimize_consoles_cb.IsChecked = user_config.output_close_others
 
         mode = user_config.output_close_mode_enum
@@ -235,7 +238,10 @@ class SettingsWindow(forms.WPFWindow):
     def _setup_env_vars_list(self):
         """Reads the pyRevit environment variables and updates the list"""
         env_vars_list = [
-            EnvVariable(k, v) for k, v in sorted(envvars.get_pyrevit_env_vars().items())
+            EnvVariable(k, v)
+            for k, v in sorted(
+                envvars.get_pyrevit_env_vars().items(), key=lambda kv: str(kv[0])
+            )
         ]
 
         self.envvars_lb.ItemsSource = env_vars_list
@@ -467,9 +473,10 @@ class SettingsWindow(forms.WPFWindow):
         return str(version) == EXEC_PARAMS.engine_ver
 
     def update_addinfiles(self):
-        """Enables/Disables the adding files for different Revit versions."""
-        # update active engine
-        attachment = user_config.get_current_attachment()
+        """Enables/Disables the addin files for different Revit versions."""
+        # read fresh: this attachment is rewritten below, so a value cached
+        # before an out-of-process change must not be written back
+        attachment = user_config.get_current_attachment(cached=False)
         if attachment:
             # if attachment is for all users dont attempt at making changes
             # user probably does not have write access and this fails
@@ -856,11 +863,26 @@ class SettingsWindow(forms.WPFWindow):
 
         user_config.load_beta = self.loadbetatools_cb.IsChecked
 
+        metadata_setting_changed = (
+            self.read_script_metadata_cb.IsChecked != user_config.read_script_metadata
+        )
+        user_config.read_script_metadata = self.read_script_metadata_cb.IsChecked
+
         user_config.output_close_others = self.minimize_consoles_cb.IsChecked
         if self.closewindows_current_rb.IsChecked:
             user_config.output_close_mode_enum = PyRevit.OutputCloseMode.CurrentCommand
         else:
             user_config.output_close_mode_enum = PyRevit.OutputCloseMode.CloseAll
+
+        if self.reload_requested:
+            return False
+        if metadata_setting_changed:
+            return forms.alert(
+                self.get_locale_string("CoreSettings.Loader.ReadScriptMetadata.Changed"),
+                yes=True,
+                no=True,
+            )
+        return False
 
     def _save_engines(self):
         # set active cpython engine
@@ -1021,7 +1043,7 @@ def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
 # windows explorer
 # otherwise, will show the Settings user interface
 if __name__ == "__main__":
-    if __shiftclick__:  # pylint: disable=E0602
+    if EXEC_PARAMS.config_mode:
         script.show_file_in_explorer(user_config.config_file)
     elif user_config.is_readonly:
         forms.alert("pyRevit settings are set by your admin.", exitscript=True)

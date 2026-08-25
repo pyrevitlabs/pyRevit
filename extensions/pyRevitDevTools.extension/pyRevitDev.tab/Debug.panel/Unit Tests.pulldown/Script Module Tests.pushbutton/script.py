@@ -1,6 +1,6 @@
-"""Unit Tests for pyrevit.script module."""
+"""Run script module unit tests from pyrevit.unittests."""
 
+from pyrevit.unittests import test_script_module
+from pyrevit.unittests.runner import run_module_tests
 
-__context__ = 'zero-doc'
-
-
+run_module_tests(test_script_module)

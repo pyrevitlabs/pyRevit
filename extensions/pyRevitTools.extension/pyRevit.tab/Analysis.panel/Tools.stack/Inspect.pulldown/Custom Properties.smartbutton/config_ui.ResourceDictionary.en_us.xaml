@@ -1,0 +1,13 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <system:String x:Key="Window.Title">Element Properties – Configure Additional Parameters</system:String>
+    <system:String x:Key="ChkEnableStartup">Load pane at startup</system:String>
+    <system:String x:Key="TbRestartHint">A Revit restart is required for startup changes to take effect.</system:String>
+    <system:String x:Key="TbParamsHint">Enter one parameter name per line. The pane picks up changes on the next selection change — no restart required.</system:String>
+    <system:String x:Key="TbExamples">Examples: Comments, Mark, Manufacturer, Type Comments</system:String>
+    <system:String x:Key="BtnCancel">Cancel</system:String>
+    <system:String x:Key="BtnSave">Save</system:String>
+
+</ResourceDictionary>

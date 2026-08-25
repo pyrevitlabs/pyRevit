@@ -1,3 +1,6 @@
-"""Unit Tests for pyrevit.revit module."""
+"""Run revit module unit tests from pyrevit.unittests."""
 
-__context__ = 'zero-doc'
+from pyrevit.unittests import test_revit_module
+from pyrevit.unittests.runner import run_module_tests
+
+run_module_tests(test_revit_module)

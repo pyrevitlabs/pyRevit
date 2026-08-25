@@ -1,6 +1,6 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Params2Param - Copy Parameter Values"
+        Title="{DynamicResource Title}"
         Width="750" Height="500" ResizeMode="CanResize">
     <Grid Margin="15">
         <Grid.RowDefinitions>
@@ -12,7 +12,7 @@
         
         <!-- Category Selection -->
         <StackPanel Grid.Row="0" Margin="0,0,0,15">
-            <Label Content="Select Category:" FontWeight="Bold" Margin="0,0,0,5"/>
+            <Label Content="{DynamicResource SelectCategory}" FontWeight="Bold" Margin="0,0,0,5"/>
             <ComboBox x:Name="categoryComboBox" Height="30" FontSize="12" 
                       DisplayMemberPath="Name" SelectedValuePath="BuiltInCategory"/>
         </StackPanel>
@@ -31,7 +31,7 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <Label Grid.Row="0" Content="Source Parameters (Select Multiple if needed):" FontWeight="Bold" Margin="0,0,0,5"/>
+                <Label Grid.Row="0" Content="{DynamicResource SourceParameters}" FontWeight="Bold" Margin="0,0,0,5"/>
                 <ListBox Grid.Row="1" x:Name="sourceParametersListBox" 
                          SelectionMode="Multiple" FontSize="12"
                          ScrollViewer.HorizontalScrollBarVisibility="Auto"
@@ -50,7 +50,7 @@
                     <RowDefinition Height="Auto"/> <!-- New row for separator input -->
                 </Grid.RowDefinitions>
                 
-                <Label Grid.Row="0" Content="Target Parameter (Select One):" FontWeight="Bold" Margin="0,0,0,5"/>
+                <Label Grid.Row="0" Content="{DynamicResource TargetParameter}" FontWeight="Bold" Margin="0,0,0,5"/>
                 <ListBox Grid.Row="1" x:Name="targetParametersListBox" 
                          SelectionMode="Single" FontSize="12"
                          ScrollViewer.HorizontalScrollBarVisibility="Auto"
@@ -61,21 +61,20 @@
 					<TextBlock TextWrapping="Wrap"
 							   FontWeight="Bold"
 							   Foreground="Black"
-							   Margin="0,0,0,5">
-						Insert separators between parameter values separated by spaces.
-					</TextBlock>
+							   Margin="0,0,0,5"
+							   Text="{DynamicResource InsertSeparators}"/>
 					<TextBox x:Name="separatorTextBox"
 							 Text=""
 							 Height="25"
 							 FontSize="12"/>
 				
 					<!-- Spaces Options -->
-                    <TextBlock Text="Add spaces to separators:" FontWeight="Bold" Margin="0,0,0,5"/>
+                    <TextBlock Text="{DynamicResource AddSpacesToSeparators}" FontWeight="Bold" Margin="0,0,0,5"/>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                        <RadioButton x:Name="spaceNoneRadio" Content="None" GroupName="SeparatorSpace" Margin="0,0,10,0"/>
-                        <RadioButton x:Name="spaceBeforeRadio" Content="Before" GroupName="SeparatorSpace" Margin="0,0,10,0"/>
-                        <RadioButton x:Name="spaceAfterRadio" Content="After" GroupName="SeparatorSpace" Margin="0,0,10,0"/>
-                        <RadioButton x:Name="spaceBeforeAfterRadio" Content="Before &amp; After" GroupName="SeparatorSpace" IsChecked="True"/>
+                        <RadioButton x:Name="spaceNoneRadio" Content="{DynamicResource None}" GroupName="SeparatorSpace" Margin="0,0,10,0"/>
+                        <RadioButton x:Name="spaceBeforeRadio" Content="{DynamicResource Before}" GroupName="SeparatorSpace" Margin="0,0,10,0"/>
+                        <RadioButton x:Name="spaceAfterRadio" Content="{DynamicResource After}" GroupName="SeparatorSpace" Margin="0,0,10,0"/>
+                        <RadioButton x:Name="spaceBeforeAfterRadio" Content="{DynamicResource BeforeAndAfter}" GroupName="SeparatorSpace" IsChecked="True"/>
                     </StackPanel>
                 </StackPanel>
             </Grid>
@@ -83,10 +82,10 @@
         
         <!-- Action Buttons -->
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button x:Name="executeButton" Content="Execute" Width="100" Height="35" 
+            <Button x:Name="executeButton" Content="{DynamicResource Execute}" Width="100" Height="35" 
                     Margin="0,0,10,0" FontSize="14" FontWeight="Bold" 
                     Background="LightBlue" Click="execute_button_click"/>
-            <Button x:Name="cancelButton" Content="Cancel" Width="100" Height="35" 
+            <Button x:Name="cancelButton" Content="{DynamicResource Cancel}" Width="100" Height="35" 
                     FontSize="14" Click="cancel_button_click"/>
         </StackPanel>
     </Grid>

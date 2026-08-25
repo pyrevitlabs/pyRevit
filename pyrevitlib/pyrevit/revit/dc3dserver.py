@@ -37,19 +37,40 @@ class Mesh(object):
         return (c - a).CrossProduct(b - a)
 
     @classmethod
-    def from_solid(cls, doc, solid):
+    def from_solid(cls, doc, solid, color=None):
+        """
+        Create a Mesh from a Revit Solid, optionally overriding per-face material colors.
+
+        Triangulates each face of the solid and collects edge segments.
+        Normals are derived per the mesh's DistributionOfNormals mode.
+
+        Args:
+            doc (DB.Document): The active Revit document, used to look up materials.
+            solid (DB.Solid): The Revit Solid to triangulate. Must be non-empty.
+            color (DB.ColorWithTransparency, optional): If provided, this color is
+                applied uniformly to all faces, overriding per-face material colors.
+                Faces with no material (<By Category>) still fall back to white when
+                color is None. Defaults to None.
+
+        Returns:
+            Mesh: A new Mesh instance, or None if an exception occurs.
+
+        Raises:
+            TypeError: If solid is not an instance of DB.Solid.
+        """
         try:
             if not isinstance(solid, DB.Solid):
                 raise TypeError("Provided object has to be a Revit Solid!")
             triangles = []
             edges = []
             for face in solid.Faces:
-                if face.MaterialElementId == DB.ElementId.InvalidElementId:
-                    # make it white if material is <By Category>
-                    color = DB.ColorWithTransparency(255, 255, 255, 0)
+                if color is not None:
+                    face_color = color
+                elif face.MaterialElementId == DB.ElementId.InvalidElementId:
+                    face_color = DB.ColorWithTransparency(255, 255, 255, 0)
                 else:
                     material = doc.GetElement(face.MaterialElementId)
-                    color = DB.ColorWithTransparency(
+                    face_color = DB.ColorWithTransparency(
                         material.Color.Red,
                         material.Color.Green,
                         material.Color.Blue,
@@ -84,7 +105,7 @@ class Mesh(object):
                             mesh_triangle.get_Vertex(1),
                             mesh_triangle.get_Vertex(2),
                             normal,
-                            color,
+                            face_color,
                         )
                     )
             for edge in solid.Edges:

@@ -37,6 +37,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
+        public static Tuple<Stream, System.Text.Encoding> DefaultErrorStreamConfig {
+            get {
+                return (Tuple<Stream, System.Text.Encoding>)AppDomain.CurrentDomain.GetData(DomainStorageKeys.IronPythonEngineDefaultErrorStreamCfgKey);
+            }
+
+            set {
+                AppDomain.CurrentDomain.SetData(DomainStorageKeys.IronPythonEngineDefaultErrorStreamCfgKey, value);
+            }
+        }
+
         public static Tuple<Stream, System.Text.Encoding> DefaultInputStreamConfig {
             get {
                 return (Tuple<Stream, System.Text.Encoding>)AppDomain.CurrentDomain.GetData(DomainStorageKeys.IronPythonEngineDefaultInputStreamCfgKey);
@@ -68,6 +78,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 // default flags
                 flags["LightweightScopes"] = true;
 
+                // Bound recursion so a runaway circular import raises a catchable
+                // RecursionError instead of overflowing the native stack and crashing
+                // Revit. IronPython does not enforce a limit unless one is set.
+                flags["RecursionLimit"] = 1000;
+
                 if (ExecEngineConfigs.full_frame) {
                     flags["Frames"] = true;
                     flags["FullFrames"] = true;
@@ -88,6 +103,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
                 // save the default stream for later resetting the streams
                 DefaultOutputStreamConfig = new Tuple<Stream, System.Text.Encoding>(Engine.Runtime.IO.OutputStream, Engine.Runtime.IO.OutputEncoding);
+                DefaultErrorStreamConfig = new Tuple<Stream, System.Text.Encoding>(Engine.Runtime.IO.ErrorStream, Engine.Runtime.IO.ErrorEncoding);
                 DefaultInputStreamConfig = new Tuple<Stream, System.Text.Encoding>(Engine.Runtime.IO.InputStream, Engine.Runtime.IO.InputEncoding);
 
                 // setup stdlib
@@ -188,23 +204,29 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private void SetupStreams(ref ScriptRuntime runtime) {
             Engine.Runtime.IO.SetOutput(runtime.OutputStream, System.Text.Encoding.UTF8);
+            Engine.Runtime.IO.SetErrorOutput(runtime.OutputStream, System.Text.Encoding.UTF8);
             Engine.Runtime.IO.SetInput(runtime.OutputStream, System.Text.Encoding.UTF8);
         }
 
         private void SetupBuiltins(ref ScriptRuntime runtime) {
+            InjectBuiltins(Engine, runtime, RecoveredFromCache, TypeId);
+        }
+
+        // Keep reserved builtins consistent across command and interactive engines.
+        internal static void InjectBuiltins(Microsoft.Scripting.Hosting.ScriptEngine engine, ScriptRuntime runtime, bool recoveredFromCache, string typeId) {
             // BUILTINS -----------------------------------------------------------------------------------------------
             // Get builtin to add custom variables
-            var builtin = IronPython.Hosting.Python.GetBuiltinModule(Engine);
+            var builtin = IronPython.Hosting.Python.GetBuiltinModule(engine);
 
             // Add timestamp and executuin uuid
             builtin.SetVariable("__execid__", runtime.ExecId);
             builtin.SetVariable("__timestamp__", runtime.ExecTimestamp);
 
             // Let commands know if they're being run in a cached engine
-            builtin.SetVariable("__cachedengine__", RecoveredFromCache);
+            builtin.SetVariable("__cachedengine__", recoveredFromCache);
 
             // Add current engine id to builtins
-            builtin.SetVariable("__cachedengineid__", TypeId);
+            builtin.SetVariable("__cachedengineid__", typeId);
 
             // Add this script executor to the the builtin to be globally visible everywhere
             // This support pyrevit functionality to ask information about the current executing command
@@ -246,6 +268,39 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // set event arguments for engine
             builtin.SetVariable("__eventsender__", runtime.ScriptRuntimeConfigs.EventSender);
             builtin.SetVariable("__eventargs__", runtime.ScriptRuntimeConfigs.EventArgs);
+
+            // Prevent user-provided variables from overwriting reserved pyRevit built-ins
+            var reservedBuiltinNames = new HashSet<string> {
+                "__execid__",
+                "__timestamp__",
+                "__cachedengine__",
+                "__cachedengineid__",
+                "__scriptruntime__",
+                "__revit__",
+                "__commanddata__",
+                "__elements__",
+                "__uibutton__",
+                "__commandpath__",
+                "__configcommandpath__",
+                "__commandname__",
+                "__commandbundle__",
+                "__commandextension__",
+                "__commanduniqueid__",
+                "__commandcontrolid__",
+                "__forceddebugmode__",
+                "__shiftclick__",
+                "__result__",
+                "__eventsender__",
+                "__eventargs__"
+            };
+
+            if (runtime.ScriptRuntimeConfigs?.Variables != null) {
+                foreach (var variable in runtime.ScriptRuntimeConfigs.Variables) {
+                    if (reservedBuiltinNames.Contains(variable.Key))
+                        continue;
+                    builtin.SetVariable(variable.Key, variable.Value);
+                }
+            }
         }
 
         private void SetupSearchPaths(ref ScriptRuntime runtime) {
@@ -303,6 +358,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (outStream != null) {
                 Engine.Runtime.IO.SetOutput(outStream.Item1, outStream.Item2);
                 outStream.Item1.Dispose();
+            }
+            Tuple<Stream, System.Text.Encoding> errStream = DefaultErrorStreamConfig;
+            if (errStream != null) {
+                Engine.Runtime.IO.SetErrorOutput(errStream.Item1, errStream.Item2);
+                errStream.Item1.Dispose();
             }
             Tuple<Stream, System.Text.Encoding> inStream = DefaultInputStreamConfig;
             if (inStream != null) {

@@ -1,0 +1,43 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Imprimir folhas</system:String>
+    
+    <system:String x:Key="Model">Modelo</system:String>
+    <system:String x:Key="LinkedPrefix">Vinculado: </system:String>
+    <system:String x:Key="SheetIndex">Índice de folhas</system:String>
+    
+    <system:String x:Key="SheetOrdering">Ordenação de folhas</system:String>
+    <system:String x:Key="ReversePrintOrder">Inverter ordem de impressão</system:String>
+    <system:String x:Key="ShowNonPrintableSheets">Mostrar folhas não imprimíveis (Esmaecidas)</system:String>
+    <system:String x:Key="IncludeNonPrintableInIndexing">Incluir folhas não imprimíveis na indexação</system:String>
+    <system:String x:Key="IndexDigits">Dígitos de índice</system:String>
+    <system:String x:Key="IndexStart">Início do índice</system:String>
+    <system:String x:Key="Reset">Redefinir</system:String>
+    
+    <system:String x:Key="SheetPrinting">Impressão de folhas</system:String>
+    <system:String x:Key="CombineIntoOnePDF">Combinar em um único PDF</system:String>
+    <system:String x:Key="ExportDWG">Exportar DWG</system:String>
+    <system:String x:Key="NamingFormat">Formato de nomenclatura</system:String>
+    <system:String x:Key="EditFormats">Editar formatos</system:String>
+    <system:String x:Key="Printer">Impressora</system:String>
+    <system:String x:Key="PageSettings">Configurações de página</system:String>
+    <system:String x:Key="IncompatibleWithPrinter">Incompatível com a impressora</system:String>
+    
+    <system:String x:Key="ListOfSheets">Lista das folhas no índice selecionado</system:String>
+    <system:String x:Key="SetPrintSettings">Definir configurações de impressão</system:String>
+    <system:String x:Key="ResetPrintSettings">Redefinir configurações de impressão</system:String>
+    <system:String x:Key="Guide">Guia</system:String>
+    <system:String x:Key="GuideText">As configurações de impressão podem ser definidas em tipos de carimbo. Crie um parâmetro de tipo "Configuração de impressão" (do tipo Texto) em uma família de carimbo e defina o valor do parâmetro como o nome da configuração de impressão desejada. Ao usar "Tamanho de papel variável", esta ferramenta atribuirá automaticamente a configuração de impressão correta com base no valor deste parâmetro</system:String>
+    
+    <system:String x:Key="KudosToRyan">Kudos to Ryan McCullough for PrintFromIndex</system:String>
+    
+    <system:String x:Key="CopySheetFileNames">Copiar nome(s) de arquivo de folha</system:String>
+    
+    <system:String x:Key="PrintIndex">Índice de impressão</system:String>
+    <system:String x:Key="SheetNumber">Número da folha</system:String>
+    <system:String x:Key="SheetName">Nome da folha</system:String>
+    <system:String x:Key="SheetRevision">Revisão da folha (Classificar por data)</system:String>
+    <system:String x:Key="PrintSetting">Configuração de impressão</system:String>
+    <system:String x:Key="FileName">Nome do arquivo</system:String>
+</ResourceDictionary>

@@ -1,7 +1,7 @@
 """Helper functions to update info and elements in Revit."""
 import os.path as op
 
-from pyrevit import HOST_APP, DOCS
+from pyrevit import DOCS
 from pyrevit.framework import List
 from pyrevit import DB
 from pyrevit.revit.db import query
@@ -9,14 +9,7 @@ from pyrevit.compat import get_elementid_value_func
 
 
 def set_name(element, new_name):
-    # grab viewname correctly
-    if isinstance(element, DB.View):
-        if HOST_APP.is_newer_than('2019', or_equal=True):
-            element.Name = new_name
-        else:
-            element.ViewName = new_name
-    else:
-        element.Name = new_name
+    element.Name = new_name
 
 
 def update_sheet_revisions(revisions, sheets=None, state=True, doc=None):
@@ -78,14 +71,9 @@ def update_param_value(rvt_param, value):
 
 
 def toggle_category_visibility(view, subcat, hidden=None):
-    if HOST_APP.is_older_than(2018):
-        if hidden is None:
-            hidden = not view.GetVisibility(subcat.Id)
-        view.SetVisibility(subcat.Id, hidden)
-    else:
-        if hidden is None:
-            hidden = not view.GetCategoryHidden(subcat.Id)
-        view.SetCategoryHidden(subcat.Id, hidden)
+    if hidden is None:
+        hidden = not view.GetCategoryHidden(subcat.Id)
+    view.SetCategoryHidden(subcat.Id, hidden)
 
 
 def rename_workset(workset, new_name, doc=None):
@@ -128,10 +116,7 @@ def set_crop_region(view, curve_loops):
     view.CropBoxActive = True
     crsm = view.GetCropRegionShapeManager()
     for cloop in curve_loops:
-        if HOST_APP.is_newer_than(2015):
-            crsm.SetCropShape(cloop)
-        else:
-            crsm.SetCropRegionShape(cloop)
+        crsm.SetCropShape(cloop)
     view.CropBoxActive = crop_active_saved
 
 

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
@@ -28,13 +28,17 @@ namespace pyRevitCLI {
         PrintLocalRevits(bool running = false) {
             if (running) {
                 PyRevitCLIAppCmds.PrintHeader("Running Revit Instances");
-                foreach (var revit in RevitController.ListRunningRevits().OrderByDescending(x => x.RevitProduct.Version))
-                    Console.WriteLine(revit);
+                foreach (var revit in RevitController.ListRunningRevits().OrderByDescending(x => x.RevitProduct?.Version ?? new Version(0, 0))) {
+                    var line = revit.ToString();
+                    global::System.Console.WriteLine(line);
+                }
             }
             else {
                 PyRevitCLIAppCmds.PrintHeader("Installed Revits");
-                foreach (var revit in RevitProduct.ListInstalledProducts().OrderByDescending(x => x.Version))
-                    Console.WriteLine(revit);
+                foreach (var revit in RevitProduct.ListInstalledProducts().OrderByDescending(x => x.Version)) {
+                    var line = revit.ToString();
+                    global::System.Console.WriteLine(line);
+                }
             }
         }
 
@@ -172,12 +176,12 @@ namespace pyRevitCLI {
                 foreach (var modelPath in File.ReadAllLines(targetFile))
                     modelFiles.Add(modelPath);
             }
-            // otherwise just work on this model
-            else
+            // otherwise just work on this model (if provided)
+            else if (!string.IsNullOrWhiteSpace(targetFile))
                 modelFiles.Add(targetFile);
 
 
-            // verify all models are accessible
+            // verify all models are accessible (only if models were provided)
             foreach (string modelFile in modelFiles)
                 if (!CommonUtils.VerifyFile(modelFile))
                     throw new Exception($"Model does not exist at \"{modelFile}\"");
@@ -210,7 +214,7 @@ namespace pyRevitCLI {
                 }
 
                 // if could not determine revit version from given files,
-                // use latest version
+                // use latest version (or specified version if provided)
                 if (revitYearNumber == 0)
                     revitYearNumber = RevitProduct.ListInstalledProducts().Max(r => r.ProductYear);
             }

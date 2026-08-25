@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Handle reading and parsing, writing and saving of all user configurations.
 
 This module handles the reading and writing of the pyRevit configuration files.
@@ -34,22 +35,25 @@ Examples:
     ```
 """
 #pylint: disable=C0103,C0413,W0703
-import os
 import os.path as op
+
+from pyrevit._perf import mark as _perfmark, time_block as _perfblock
+_perfmark("pyrevit.userconfig:entry")
 
 from pyrevit import EXEC_PARAMS, HOME_DIR, HOST_APP
 from pyrevit import PyRevitException
 from pyrevit import EXTENSIONS_DEFAULT_DIR, THIRDPARTY_EXTENSIONS_DEFAULT_DIR
-from pyrevit import PYREVIT_ALLUSER_APP_DIR, PYREVIT_APP_DIR
 from pyrevit.compat import winreg as wr
 
 from pyrevit.labs import PyRevit
+from pyrevit.labs import Common
 
 from pyrevit import coreutils
 from pyrevit.coreutils import appdata
 from pyrevit.coreutils import configparser
 from pyrevit.coreutils import logger
 from pyrevit.versionmgr import upgrade
+_perfmark("pyrevit.userconfig:after imports")
 # pylint: disable=C0103,C0413,W0703
 DEFAULT_CSV_SEPARATOR = ','
 
@@ -300,7 +304,26 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             CONSTS.ConfigsLoadBetaKey,
             value=state
         )
+    @property
+    def read_script_metadata(self):
+        """Whether to read script metadata (__title__, __author__, etc) from Python scripts.
+        
+        When False, pyRevit will skip reading metadata from .py script files and will
+        only use values from bundle.yaml. This improves startup performance but may
+        affect commands that rely on script-level metadata.
+        """
+        return self.core.get_option(
+            CONSTS.ConfigsReadScriptMetadataKey,
+            default_value=CONSTS.ConfigsReadScriptMetadataDefault,
+        )
 
+    @read_script_metadata.setter
+    def read_script_metadata(self, state):
+        self.core.set_option(
+            CONSTS.ConfigsReadScriptMetadataKey,
+            value=state
+        )
+    
     @property
     def output_close_others(self):
         """Whether to close other output windows."""
@@ -670,23 +693,38 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
     def get_thirdparty_ext_root_dirs(self, include_default=True):
         """Return a list of external extension directories set by the user.
 
+        When include_default is True and the pyRevit default extensions
+        directory exists, it is the FIRST entry in the returned list,
+        followed by user-configured directories in their config-file order.
+        Duplicates are removed while preserving order, and only paths that
+        currently exist on disk are returned.
+
         Returns:
             (list[str]): External user extension directories.
         """
-        dir_list = set()
+        # Fix for #3193: Use a list to preserve deterministic ordering.
+        # The default path should always come first when included, so that
+        # [0] is predictable across all call sites.
+        seen = set()
+        dir_list = []
+
         if include_default:
-            # add default ext path
-            dir_list.add(THIRDPARTY_EXTENSIONS_DEFAULT_DIR)
+            norm = op.normpath(THIRDPARTY_EXTENSIONS_DEFAULT_DIR)
+            if norm not in seen:
+                seen.add(norm)
+                dir_list.append(norm)
+
         try:
-            dir_list.update([
-                op.expandvars(op.normpath(x))
-                for x in self.core.get_option(
+            for x in self.core.get_option(
                     CONSTS.ConfigsUserExtensionsKey,
-                    default_value=[]
-                )])
+                    default_value=[]):
+                norm = op.expandvars(op.normpath(x))
+                if norm not in seen:
+                    seen.add(norm)
+                    dir_list.append(norm)
         except Exception as read_err:
             mlogger.error('Error reading list of user extension folders. | %s',
-                          read_err)
+                        read_err)
 
         return [x for x in dir_list if op.exists(x)]
 
@@ -728,28 +766,48 @@ class PyRevitConfig(configparser.PyRevitConfigParser):
             mlogger.error('Error setting list of user extension folders. | %s',
                           write_err)
 
-    def get_current_attachment(self):
-        """Return current pyRevit attachment."""
+    def get_current_attachment(self, cached=True):
+        """Return current pyRevit attachment.
+
+        The lookup re-reads the addin manifests and the clones registry from
+        disk, but those inputs cannot change for the running session except
+        through Attach/Detach or clone registry edits (which invalidate the
+        cache). The shared cache lets all script engines (startup scripts,
+        smartbuttons, commands, hooks) reuse a single disk lookup. Cleared on
+        reload by sessionmgr.load_session().
+
+        Args:
+            cached (bool): set False to bypass the session cache when the
+                attachment may have changed out of process (e.g. before
+                rewriting it from the settings dialog).
+        """
         try:
-            return PyRevit.PyRevitAttachments.GetAttached(int(HOST_APP.version))
+            host_version = int(HOST_APP.version)
+            if cached:
+                return PyRevit.PyRevitAttachments.GetAttachedCached(
+                    host_version)
+            return PyRevit.PyRevitAttachments.GetAttached(host_version)
         except PyRevitException as ex:
             mlogger.error('Error getting current attachment. | %s', ex)
 
     def get_active_cpython_engine(self):
         """Return active cpython engine."""
         # try to find attachment and get engines from the clone
-        attachment = self.get_current_attachment()
+        with _perfblock("userconfig.get_active_cpython_engine:GetAttached"):
+            attachment = self.get_current_attachment()
         if attachment and attachment.Clone:
             clone = attachment.Clone
         else:
             # if can not find attachment, instantiate a temp clone
             try:
-                clone = PyRevit.PyRevitClone(clonePath=HOME_DIR)
+                with _perfblock("userconfig.get_active_cpython_engine:PyRevitClone(HOME_DIR) fallback"):
+                    clone = PyRevit.PyRevitClone(clonePath=HOME_DIR)
             except Exception as cEx:
                 mlogger.debug('Can not create clone from path: %s', str(cEx))
                 clone = None
         # find cpython engines
-        engines = clone.GetCPythonEngines() if clone else []
+        with _perfblock("userconfig.get_active_cpython_engine:clone.GetCPythonEngines"):
+            engines = clone.GetCPythonEngines() if clone else []
         cpy_engines_dict = {x.Version: x for x in engines}
         mlogger.debug('cpython engines dict: %s', cpy_engines_dict)
 
@@ -826,7 +884,7 @@ def verify_configs(config_file_path=None):
     Returns:
         (pyrevit.userconfig.PyRevitConfig): pyRevit config file handler
     """
-    if config_file_path:
+    if config_file_path and not op.exists(config_file_path):
         mlogger.debug('Creating default config file at: %s', config_file_path)
         coreutils.touch(config_file_path)
 
@@ -844,10 +902,18 @@ def verify_configs(config_file_path=None):
 LOCAL_CONFIG_FILE = ADMIN_CONFIG_FILE = USER_CONFIG_FILE = CONFIG_FILE = ''
 user_config = None
 
+try:
+    Common.PyRevitInstallScope.SetRuntimeInstallRoot(HOME_DIR)
+except Exception as installRootEx:
+    mlogger.debug('Could not set runtime install root: %s', installRootEx)
+
 # location for default pyRevit config files
-LOCAL_CONFIG_FILE = find_config_file(HOME_DIR)
-ADMIN_CONFIG_FILE = find_config_file(PYREVIT_ALLUSER_APP_DIR)
-USER_CONFIG_FILE = find_config_file(PYREVIT_APP_DIR)
+_PROGRAM_DATA_CONFIG_DIR = Common.PyRevitLabsConsts.PyRevitProgramDataPath
+_USER_CONFIG_DIR = Common.PyRevitLabsConsts.PyRevitPath
+with _perfblock("pyrevit.userconfig:find_config_file x3 (HOME / ALLUSER / USER)"):
+    LOCAL_CONFIG_FILE = find_config_file(HOME_DIR)
+    ADMIN_CONFIG_FILE = find_config_file(_PROGRAM_DATA_CONFIG_DIR)
+    USER_CONFIG_FILE = find_config_file(_USER_CONFIG_DIR)
 
 # decide which config file to use
 # check if a config file is inside the repo. for developers config override
@@ -855,60 +921,47 @@ if LOCAL_CONFIG_FILE:
     CONFIG_TYPE = 'Local'
     CONFIG_FILE = LOCAL_CONFIG_FILE
 
-# check to see if there is any config file provided by admin
-elif ADMIN_CONFIG_FILE \
-        and os.access(ADMIN_CONFIG_FILE, os.W_OK) \
-        and not USER_CONFIG_FILE:
-    # if yes, copy that and use as default
-    # if admin config file is writable it means it is provided
-    # to bootstrap the first pyRevit run
+# otherwise ask the shared install-scope resolver so the CLI, the C# loader,
+# and the python runtime all agree on the active config file. it handles
+# admin-locked seeds, all-users installs, and first-run seeding of the
+# per-user config from the machine-wide config, and returns a per-user
+# config when the process can not write to the machine-wide config
+else:
     try:
-        CONFIG_TYPE = 'Seed'
-        # make a local copy if one does not exist
-        PyRevit.PyRevitConfigs.SetupConfig(ADMIN_CONFIG_FILE)
-        CONFIG_FILE = find_config_file(PYREVIT_APP_DIR)
-    except Exception as adminEx:
-        # if init operation failed, make a new config file
+        _active_config = Common.PyRevitInstallScope.GetActiveConfig()
+        CONFIG_FILE = _active_config.ConfigPath
+        if _active_config.IsReadOnly:
+            # settings are managed by the admin and can not be changed
+            CONFIG_TYPE = 'Admin'
+        elif _active_config.IsMachineConfig:
+            CONFIG_TYPE = 'AdminInstall'
+        else:
+            CONFIG_TYPE = 'User'
+    except Exception as scope_err:
+        mlogger.debug('Error resolving active config file. | %s', scope_err)
         CONFIG_TYPE = 'New'
         # setup config file name and path
         CONFIG_FILE = appdata.get_universal_data_file(file_id='config',
-                                                        file_ext='ini')
-        mlogger.warning(
-            'Failed to initialize config from seed file at %s\n'
-            'Using default config file',
-            ADMIN_CONFIG_FILE
-        )
-
-# unless it's locked. then read that config file and set admin-mode
-elif ADMIN_CONFIG_FILE \
-        and not os.access(ADMIN_CONFIG_FILE, os.W_OK):
-    CONFIG_TYPE = 'Admin'
-    CONFIG_FILE = ADMIN_CONFIG_FILE
-
-# if a config file is available for user use that
-elif USER_CONFIG_FILE:
-    CONFIG_TYPE = 'User'
-    CONFIG_FILE = USER_CONFIG_FILE
-
-# if nothing can be found, make a new one
-else:
-    CONFIG_TYPE = 'New'
-    # setup config file name and path
-    CONFIG_FILE = appdata.get_universal_data_file(file_id='config',
-                                                    file_ext='ini')
+                                                      file_ext='ini')
 
 mlogger.debug('Using %s config file: %s', CONFIG_TYPE, CONFIG_FILE)
 
 # read config, or setup default config file if not available
 # this pushes reading settings at first import of this module.
 try:
-    verify_configs(CONFIG_FILE)
-    user_config = PyRevitConfig(cfg_file_path=CONFIG_FILE,
-                                config_type=CONFIG_TYPE)
-    upgrade.upgrade_user_config(user_config)
-    user_config.save_changes()
+    with _perfblock("pyrevit.userconfig:verify_configs(CONFIG_FILE)"):
+        verify_configs(CONFIG_FILE)
+    with _perfblock("pyrevit.userconfig:PyRevitConfig(__init__)"):
+        user_config = PyRevitConfig(cfg_file_path=CONFIG_FILE,
+                                    config_type=CONFIG_TYPE)
+    with _perfblock("pyrevit.userconfig:upgrade.upgrade_user_config"):
+        upgrade.upgrade_user_config(user_config)
+    with _perfblock("pyrevit.userconfig:user_config.save_changes"):
+        user_config.save_changes()
 except Exception as cfg_err:
     mlogger.debug('Can not read confing file at: %s | %s',
                     CONFIG_FILE, cfg_err)
     mlogger.debug('Using configs in memory...')
     user_config = verify_configs()
+
+_perfmark("pyrevit.userconfig:exit (user_config ready)")

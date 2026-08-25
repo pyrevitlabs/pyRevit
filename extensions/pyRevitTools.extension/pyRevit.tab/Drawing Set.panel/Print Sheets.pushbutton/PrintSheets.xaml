@@ -1,6 +1,6 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Print Sheets" Height="800" Width="1500" ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
+        Title="{DynamicResource Title}" Height="800" Width="1500" ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
     <Window.Resources>
         <SolidColorBrush x:Key="RevBGColor" Color="#FFEEEEEE"/>
@@ -85,7 +85,7 @@
             <WrapPanel>
                 <TextBlock x:Name="sizeName" Text="{Binding name}" />
                 <Border x:Name="incompatibleMarker" Background="Red"  Height="18" Margin="8,0,0,0" CornerRadius="3">
-                    <TextBlock HorizontalAlignment="Left" Padding="5" Text="Incompatible with printer" FontSize="10" Foreground="White" VerticalAlignment="Center" />
+                    <TextBlock HorizontalAlignment="Left" Padding="5" Text="{DynamicResource IncompatibleWithPrinter}" FontSize="10" Foreground="White" VerticalAlignment="Center" />
                 </Border>
             </WrapPanel>
             <DataTemplate.Triggers>
@@ -111,14 +111,17 @@
                     <DockPanel Height="24">
                         <Grid Margin="0,0,10,0">
                             <Polygon Points="0,0 140,0 150,12 140,24 0,24"  Fill="{DynamicResource pyRevitDarkBrush}" SnapsToDevicePixels="True"/>
-                            <TextBlock Text="Model" FontWeight="Medium" VerticalAlignment="Center" Margin="10,0,10,0" Foreground="White"/>
+                            <TextBlock Text="{DynamicResource Model}" FontWeight="Medium" VerticalAlignment="Center" Margin="10,0,10,0" Foreground="White"/>
                         </Grid>
                         <ComboBox x:Name="documents_cb" SelectionChanged="doclist_changed" VerticalAlignment="Stretch">
                             <ComboBox.ItemTemplate>
                                 <DataTemplate>
                                     <Grid>
                                         <TextBlock x:Name="docname" Text="{Binding name}" />
-                                        <TextBlock x:Name="docname_linked" Text="{Binding name, StringFormat=Linked: {0}}" Visibility="Collapsed" />
+                                        <TextBlock x:Name="docname_linked" Visibility="Collapsed">
+                                            <Run Text="{DynamicResource LinkedPrefix}"/>
+                                            <Run Text="{Binding name}"/>
+                                        </TextBlock>
                                     </Grid>
                                     <DataTemplate.Triggers>
                                         <DataTrigger Binding="{Binding linked}" Value="True">
@@ -133,7 +136,7 @@
                     <DockPanel Height="24" Margin="0,5,0,0">
                         <Grid Margin="0,0,10,0">
                             <Polygon Points="0,0 140,0 150,12 140,24 0,24" Fill="{DynamicResource pyRevitDarkBrush}" SnapsToDevicePixels="True" />
-                            <TextBlock Text="Sheet Index" FontWeight="Medium" VerticalAlignment="Center" Margin="10,0,10,0" Foreground="White"/>
+                            <TextBlock Text="{DynamicResource SheetIndex}" FontWeight="Medium" VerticalAlignment="Center" Margin="10,0,10,0" Foreground="White"/>
                         </Grid>
                         <ComboBox x:Name="schedules_cb" SelectionChanged="sheetlist_changed" VerticalAlignment="Stretch">
                             <ComboBox.ItemTemplate>
@@ -153,45 +156,56 @@
                     <ColumnDefinition Width="2*" />
                     <ColumnDefinition Width="3*" />
                 </Grid.ColumnDefinitions>
-                <GroupBox Header="Sheet Ordering" Grid.Column="0" Margin="0,10,5,0" Padding="8">
+                <GroupBox Header="{DynamicResource SheetOrdering}" Grid.Column="0" Margin="0,10,5,0" Padding="8">
                     <StackPanel>
-                        <CheckBox x:Name="reverse_cb" IsChecked="False" Click="options_changed">Reverse Print Order</CheckBox>
+                        <CheckBox x:Name="reverse_cb" IsChecked="False" Click="options_changed" Content="{DynamicResource ReversePrintOrder}"/>
                         <StackPanel x:Name="order_sp" Margin="0,5,0,0">
-                            <CheckBox x:Name="placeholder_cb" IsChecked="True" Click="options_changed">Show Non-Printable Sheets (Grayed Out)</CheckBox>
-                            <CheckBox x:Name="indexspace_cb" Margin="0,5,0,0" IsChecked="True" Click="options_changed">Include Non-Printable Sheets in Indexing</CheckBox>
+                            <CheckBox x:Name="placeholder_cb" IsChecked="True" Click="options_changed" Content="{DynamicResource ShowNonPrintableSheets}"/>
+                            <CheckBox x:Name="indexspace_cb" Margin="0,5,0,0" IsChecked="True" Click="options_changed" Content="{DynamicResource IncludeNonPrintableInIndexing}"/>
                             <DockPanel Margin="0,5,0,0" Height="24" >
-                                <TextBlock Text="Index Digits" Width="80" VerticalAlignment="Center" DockPanel.Dock="Left" />
+                                <TextBlock Text="{DynamicResource IndexDigits}" Width="80" VerticalAlignment="Center" DockPanel.Dock="Left" />
                                 <Slider x:Name="index_slider" Margin="10,0,0,0"
                                         Minimum="3" Maximum="6" TickPlacement="TopLeft" IsSnapToTickEnabled="True" IsMoveToPointEnabled="True"
                                         ValueChanged="options_changed"/>
                             </DockPanel>
                             <DockPanel Margin="0,5,0,0" Height="24">
-                                <TextBlock Text="Index Start" Width="80"  VerticalAlignment="Center" DockPanel.Dock="Left"/>
-                                <Button Content="Reset" Width="50" DockPanel.Dock="Right"
+                                <TextBlock Text="{DynamicResource IndexStart}" Width="80"  VerticalAlignment="Center" DockPanel.Dock="Left"/>
+                                <Button Content="{DynamicResource Reset}" Width="50" DockPanel.Dock="Right"
                                         BorderThickness="0,1,1,1" BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}"
                                         Click="rest_index" />
                                 <TextBox x:Name="indexstart_tb" Text="0" Margin="10,0,0,0" VerticalContentAlignment="Center" Padding="5,0,0,0"
                                          PreviewTextInput="validate_index_start" TextChanged="options_changed"/>
                             </DockPanel>
+                            <DockPanel Margin="0,5,0,0" Height="24">
+                                <TextBlock Text="Sheet Lookup" Width="80"  VerticalAlignment="Center" DockPanel.Dock="Left"/>
+                                <TextBox x:Name="sheetsearch_tb" Text="" Margin="10,0,0,0" VerticalContentAlignment="Center" Padding="5,0,5,0" TextChanged="sheet_search_changed"/>
+                            </DockPanel>
                         </StackPanel>
                     </StackPanel>
                 </GroupBox>
-                <GroupBox Header="Sheet Printing" Grid.Column="1" Margin="0,10,5,0" Padding="8">
+                <GroupBox Header="{DynamicResource SheetPrinting}" Grid.Column="1" Margin="0,10,5,0" Padding="8">
                     <DockPanel>
                         <StackPanel DockPanel.Dock="Left">
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                            <CheckBox x:Name="combine_cb" DockPanel.Dock="Right" Margin="0,0,50,0" IsChecked="False" IsEnabled="True" Checked="options_changed" Unchecked="options_changed">Combine Into One PDF</CheckBox>
-                            <CheckBox x:Name="export_dwg" DockPanel.Dock="Right" Margin="0,0,0,0" IsChecked="False" IsEnabled="True" Checked="options_changed" Unchecked="options_changed">Export DWG</CheckBox>
+                            <CheckBox x:Name="combine_cb" DockPanel.Dock="Right" Margin="0,0,50,0" IsChecked="False" IsEnabled="True" Checked="options_changed" Unchecked="options_changed" Content="{DynamicResource CombineIntoOnePDF}"/>
+                            <CheckBox x:Name="export_dwg" DockPanel.Dock="Right" Margin="0,0,0,0" IsChecked="False" IsEnabled="True" Checked="options_changed" Unchecked="options_changed" Content="{DynamicResource ExportDWG}"/>
                             </StackPanel>
                             <DockPanel x:Name="namingformat_dp" Margin="0,5,0,0" Height="24" >
-                                <TextBlock Text="Naming Format" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                <Button Content="Edit Formats" DockPanel.Dock="Right" Width="100" BorderThickness="0,1,1,1" BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}" Click="edit_formats"/>
+                                <TextBlock Text="{DynamicResource NamingFormat}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <Button Content="{DynamicResource EditFormats}" DockPanel.Dock="Right" Width="100" BorderThickness="0,1,1,1" BorderBrush="{DynamicResource {x:Static SystemColors.ControlDarkBrushKey}}" Click="edit_formats"/>
                                 <ComboBox x:Name="namingformat_cb" FontFamily="Consolas" VerticalContentAlignment="Center" SelectionChanged="options_changed" >
                                     <ComboBox.ItemTemplate>
                                         <DataTemplate>
                                             <StackPanel Orientation="Horizontal">
                                                 <Border Padding="5,1,5,1">
-                                                    <TextBlock Text="{Binding name}"/>
+                                                    <TextBlock Text="{Binding name}">
+                                                        <TextBlock.ContextMenu>
+                                                            <ContextMenu>
+                                                                <MenuItem Header="Copy naming format"
+                                                                        Click="copy_naming_format"/>
+                                                            </ContextMenu>
+                                                        </TextBlock.ContextMenu>
+                                                    </TextBlock>
                                                 </Border>
                                             </StackPanel>
                                         </DataTemplate>
@@ -199,11 +213,11 @@
                                 </ComboBox>
                             </DockPanel>
                             <DockPanel Margin="0,5,0,0" Height="24" >
-                                <TextBlock Text="Printer" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <TextBlock Text="{DynamicResource Printer}" VerticalAlignment="Center" Margin="0,0,10,0"/>
                                 <ComboBox x:Name="printers_cb" SelectionChanged="printers_changed"/>
                             </DockPanel>
                             <DockPanel Margin="0,5,0,0" Height="24" >
-                                <TextBlock Text="Page Settings" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <TextBlock Text="{DynamicResource PageSettings}" VerticalAlignment="Center" Margin="0,0,10,0"/>
                                 <ComboBox x:Name="printsettings_cb" SelectionChanged="sheetlist_changed" ItemTemplate="{StaticResource printSettingsItem}" />
                             </DockPanel>
                         </StackPanel>
@@ -211,8 +225,7 @@
                 </GroupBox>
             </Grid>
             <StackPanel VerticalAlignment="Center" Margin="0,10,0,5">
-                <TextBlock TextWrapping="WrapWithOverflow" DockPanel.Dock="Left">
-                    List of the sheets in selected sheet index
+                <TextBlock TextWrapping="WrapWithOverflow" DockPanel.Dock="Left" Text="{DynamicResource ListOfSheets}">
                 </TextBlock>
                 <Border x:Name="errormsg_block" Background="Red" Padding="5" Margin="0,5,0,5" Visibility="Collapsed">
                     <TextBlock x:Name="errormsg_tb" Foreground="White" VerticalAlignment="Center" />
@@ -221,16 +234,13 @@
                     <DockPanel DockPanel.Dock="Right">
                         <DockPanel x:Name="sheetopts_wp" DockPanel.Dock="Right" IsEnabled="False">
                             <DockPanel DockPanel.Dock="Bottom">
-                                <Button DockPanel.Dock="Right" Height="25" Width="120" Margin="10,0,0,0" Content="Set Print Settings" Click="set_sheet_printsettings"/>
-                                <Button DockPanel.Dock="Left" Height="25" Width="120" Content="Reset Print Settings " Click="sheetlist_changed"/>
+                                <Button DockPanel.Dock="Right" Height="25" Width="120" Margin="10,0,0,0" Content="{DynamicResource SetPrintSettings}" Click="set_sheet_printsettings"/>
+                                <Button DockPanel.Dock="Left" Height="25" Width="120" Content="{DynamicResource ResetPrintSettings}" Click="sheetlist_changed"/>
                             </DockPanel>
                             <Grid />
                         </DockPanel>
-                        <Expander Header="Guide" Foreground="White" Cursor="Help">
-                            <TextBlock Margin="5,5,0,0" TextWrapping="Wrap" Foreground="White">
-                                Print settings can be set on titleblock types. Create a "Print Setting" type parameter (of type Text) on a titleblock family,
-                                and set the parameter value to the name of the desired print setting. When using "Variable Paper Size", this tool will
-                                automatically assign the correct print setting based on the value of this parameter
+                        <Expander Header="{DynamicResource Guide}" Foreground="White" Cursor="Help">
+                            <TextBlock Margin="5,5,0,0" TextWrapping="Wrap" Foreground="White" Text="{DynamicResource GuideText}">
                             </TextBlock>
                         </Expander>
                     </DockPanel>
@@ -240,7 +250,7 @@
         <StatusBar DockPanel.Dock="Bottom" Height="25" Background="{DynamicResource pyRevitDarkBrush}">
             <TextBlock Foreground="#ffffff" Margin="10,0,0,0" MouseDown="handle_url_click">
                 <Hyperlink NavigateUri="https://github.com/McCulloughRT/PrintFromIndex" Click="handle_url_click">
-                    Kudos to Ryan McCullough for PrintFromIndex
+                    <Run Text="{DynamicResource KudosToRyan}"/>
                 </Hyperlink>
             </TextBlock>
         </StatusBar>
@@ -259,18 +269,18 @@
                   SelectionChanged="sheet_selection_changed">
             <DataGrid.Resources>
                 <ContextMenu x:Key="ItemContextMenu">
-                    <MenuItem  Header="Copy Sheet File Name(s)" Click="copy_filenames" />
+                    <MenuItem  Header="{DynamicResource CopySheetFileNames}" Click="copy_filenames" />
                 </ContextMenu>
             </DataGrid.Resources>
 
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Print Index" Binding="{Binding print_index}" MinWidth="70" Width="70" IsReadOnly="True" CellStyle="{StaticResource IndexColumnStyle}"/>
-                <DataGridTextColumn Header="Sheet Number" Binding="{Binding number}" MinWidth="100" Width="100" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}"/>
-                <DataGridTextColumn Header="Sheet Name" Binding="{Binding name}" MinWidth="400" Width="400" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}"/>
-                <DataGridTemplateColumn Header="Sheet Revision (Sort By Date)" MinWidth="50" Width="1*" IsReadOnly="True"
+                <DataGridTextColumn Header="{StaticResource PrintIndex}" Binding="{Binding print_index}" MinWidth="70" Width="70" IsReadOnly="True" CellStyle="{StaticResource IndexColumnStyle}"/>
+                <DataGridTextColumn Header="{StaticResource SheetNumber}" Binding="{Binding number}" MinWidth="100" Width="100" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}"/>
+                <DataGridTextColumn Header="{StaticResource SheetName}" Binding="{Binding name}" MinWidth="400" Width="400" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}"/>
+                <DataGridTemplateColumn Header="{StaticResource SheetRevision}" MinWidth="50" Width="1*" IsReadOnly="True"
                                         CellTemplate="{StaticResource RevisionCell}" SortMemberPath="revision_date_sortable" />
-                <DataGridTemplateColumn x:Name="psettingcol" Header="Print Setting" MinWidth="50" Width="*" IsReadOnly="True" CellTemplate="{StaticResource PrintSettingCell}" Visibility="Collapsed"/>
-                <DataGridTextColumn x:Name="pfilename" Header="File Name" FontFamily="Consolas" Binding="{Binding print_filename}" MinWidth="50" Width="2*" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}" Visibility="Collapsed"/>
+                <DataGridTemplateColumn x:Name="psettingcol" Header="{StaticResource PrintSetting}" MinWidth="50" Width="*" IsReadOnly="True" CellTemplate="{StaticResource PrintSettingCell}" Visibility="Collapsed"/>
+                <DataGridTextColumn x:Name="pfilename" Header="{StaticResource FileName}" FontFamily="Consolas" Binding="{Binding print_filename}" MinWidth="50" Width="2*" IsReadOnly="True" CellStyle="{StaticResource DefaultColumnStyle}" Visibility="Collapsed"/>
             </DataGrid.Columns>
         </DataGrid>
     </DockPanel>

@@ -1,8 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AssemblyName>pyrevit</AssemblyName>
-    <ApplicationIcon>pyrevit_cli.ico</ApplicationIcon>
+    <ApplicationIcon>..\..\..\release\bin-assets\pyrevit_cli.ico</ApplicationIcon>
     <ApplicationManifest>pyrevit.manifest</ApplicationManifest>
     <SignAssembly>true</SignAssembly>
     
@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="docopt.net" Version="0.8.1" />
+    <PackageReference Include="docopt.net" Version="0.8.3" />
     <PackageReference Include="Colorful.Console" Version="1.2.15" />
   </ItemGroup>
 

@@ -1,0 +1,18 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Formatos de Nomenclatura</system:String>
+    
+    <system:String x:Key="NamingFormats">Formatos de Nomenclatura</system:String>
+    <system:String x:Key="Save">Salvar</system:String>
+    <system:String x:Key="Duplicate">Duplicar</system:String>
+    <system:String x:Key="Delete">Excluir</system:String>
+    
+    <system:String x:Key="FormatTitle">Título do Formato</system:String>
+    <system:String x:Key="FormatTitleDescription">Este é o nome deste formato de nomenclatura específico. Dê ao formato um nome descritivo que seja fácil de entender e encontrar. Por exemplo: "Prefeitura de São Paulo ePermit"</system:String>
+    
+    <system:String x:Key="Template">Modelo</system:String>
+    <system:String x:Key="TemplateDescription">Este é o modelo de formato de nomenclatura real. Cada "{}" (tag) representa um valor que será preenchido ao criar o nome para um arquivo PDF. Escolha e selecione entre as tags listadas abaixo e arraste-as para esta caixa.</system:String>
+    
+    <system:String x:Key="DragAndDropHint">Arraste e solte dos formatadores abaixo. Passe o mouse sobre o formatador para ver a descrição</system:String>
+</ResourceDictionary>

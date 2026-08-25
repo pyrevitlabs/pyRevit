@@ -1,17 +1,19 @@
 from __future__ import absolute_import
 
+import sys
+
 from .filepost import encode_multipart_formdata
+from .packages import six
 from .packages.six.moves.urllib.parse import urlencode
 
-
-__all__ = ['RequestMethods']
+__all__ = ["RequestMethods"]
 
 
 class RequestMethods(object):
     """
     Convenience mixin for classes who implement a :meth:`urlopen` method, such
-    as :class:`~urllib3.connectionpool.HTTPConnectionPool` and
-    :class:`~urllib3.poolmanager.PoolManager`.
+    as :class:`urllib3.HTTPConnectionPool` and
+    :class:`urllib3.PoolManager`.
 
     Provides behavior for making common types of HTTP request methods and
     decides which type of request field encoding to use.
@@ -36,16 +38,25 @@ class RequestMethods(object):
         explicitly.
     """
 
-    _encode_url_methods = set(['DELETE', 'GET', 'HEAD', 'OPTIONS'])
+    _encode_url_methods = {"DELETE", "GET", "HEAD", "OPTIONS"}
 
     def __init__(self, headers=None):
         self.headers = headers or {}
 
-    def urlopen(self, method, url, body=None, headers=None,
-                encode_multipart=True, multipart_boundary=None,
-                **kw):  # Abstract
-        raise NotImplemented("Classes extending RequestMethods must implement "
-                             "their own ``urlopen`` method.")
+    def urlopen(
+        self,
+        method,
+        url,
+        body=None,
+        headers=None,
+        encode_multipart=True,
+        multipart_boundary=None,
+        **kw
+    ):  # Abstract
+        raise NotImplementedError(
+            "Classes extending RequestMethods must implement "
+            "their own ``urlopen`` method."
+        )
 
     def request(self, method, url, fields=None, headers=None, **urlopen_kw):
         """
@@ -60,17 +71,18 @@ class RequestMethods(object):
         """
         method = method.upper()
 
-        if method in self._encode_url_methods:
-            return self.request_encode_url(method, url, fields=fields,
-                                           headers=headers,
-                                           **urlopen_kw)
-        else:
-            return self.request_encode_body(method, url, fields=fields,
-                                            headers=headers,
-                                            **urlopen_kw)
+        urlopen_kw["request_url"] = url
 
-    def request_encode_url(self, method, url, fields=None, headers=None,
-                           **urlopen_kw):
+        if method in self._encode_url_methods:
+            return self.request_encode_url(
+                method, url, fields=fields, headers=headers, **urlopen_kw
+            )
+        else:
+            return self.request_encode_body(
+                method, url, fields=fields, headers=headers, **urlopen_kw
+            )
+
+    def request_encode_url(self, method, url, fields=None, headers=None, **urlopen_kw):
         """
         Make a request using :meth:`urlopen` with the ``fields`` encoded in
         the url. This is useful for request methods like GET, HEAD, DELETE, etc.
@@ -78,25 +90,32 @@ class RequestMethods(object):
         if headers is None:
             headers = self.headers
 
-        extra_kw = {'headers': headers}
+        extra_kw = {"headers": headers}
         extra_kw.update(urlopen_kw)
 
         if fields:
-            url += '?' + urlencode(fields)
+            url += "?" + urlencode(fields)
 
         return self.urlopen(method, url, **extra_kw)
 
-    def request_encode_body(self, method, url, fields=None, headers=None,
-                            encode_multipart=True, multipart_boundary=None,
-                            **urlopen_kw):
+    def request_encode_body(
+        self,
+        method,
+        url,
+        fields=None,
+        headers=None,
+        encode_multipart=True,
+        multipart_boundary=None,
+        **urlopen_kw
+    ):
         """
         Make a request using :meth:`urlopen` with the ``fields`` encoded in
         the body. This is useful for request methods like POST, PUT, PATCH, etc.
 
         When ``encode_multipart=True`` (default), then
-        :meth:`urllib3.filepost.encode_multipart_formdata` is used to encode
+        :func:`urllib3.encode_multipart_formdata` is used to encode
         the payload with the appropriate content type. Otherwise
-        :meth:`urllib.urlencode` is used with the
+        :func:`urllib.parse.urlencode` is used with the
         'application/x-www-form-urlencoded' content type.
 
         Multipart encoding must be used when posting files, and it's reasonably
@@ -117,7 +136,7 @@ class RequestMethods(object):
             }
 
         When uploading a file, providing a filename (the first parameter of the
-        tuple) is optional but recommended to best mimick behavior of browsers.
+        tuple) is optional but recommended to best mimic behavior of browsers.
 
         Note that if ``headers`` are supplied, the 'Content-Type' header will
         be overwritten because it depends on the dynamic random boundary string
@@ -127,22 +146,46 @@ class RequestMethods(object):
         if headers is None:
             headers = self.headers
 
-        extra_kw = {'headers': {}}
+        extra_kw = {"headers": {}}
 
         if fields:
-            if 'body' in urlopen_kw:
+            if "body" in urlopen_kw:
                 raise TypeError(
-                    "request got values for both 'fields' and 'body', can only specify one.")
+                    "request got values for both 'fields' and 'body', can only specify one."
+                )
 
             if encode_multipart:
-                body, content_type = encode_multipart_formdata(fields, boundary=multipart_boundary)
+                body, content_type = encode_multipart_formdata(
+                    fields, boundary=multipart_boundary
+                )
             else:
-                body, content_type = urlencode(fields), 'application/x-www-form-urlencoded'
+                body, content_type = (
+                    urlencode(fields),
+                    "application/x-www-form-urlencoded",
+                )
 
-            extra_kw['body'] = body
-            extra_kw['headers'] = {'Content-Type': content_type}
+            extra_kw["body"] = body
+            extra_kw["headers"] = {"Content-Type": content_type}
 
-        extra_kw['headers'].update(headers)
+        extra_kw["headers"].update(headers)
         extra_kw.update(urlopen_kw)
 
         return self.urlopen(method, url, **extra_kw)
+
+
+if not six.PY2:
+
+    class RequestModule(sys.modules[__name__].__class__):
+        def __call__(self, *args, **kwargs):
+            """
+            If user tries to call this module directly urllib3 v2.x style raise an error to the user
+            suggesting they may need urllib3 v2
+            """
+            raise TypeError(
+                "'module' object is not callable\n"
+                "urllib3.request() method is not supported in this release, "
+                "upgrade to urllib3 v2 to use it\n"
+                "see https://urllib3.readthedocs.io/en/stable/v2-migration-guide.html"
+            )
+
+    sys.modules[__name__].__class__ = RequestModule

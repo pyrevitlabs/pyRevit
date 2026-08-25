@@ -57,6 +57,19 @@
     <system:String x:Key="CoreSettings.Development.Description">Options diverses pour le développement de pyRevit</system:String>
     <system:String x:Key="CoreSettings.Development.LoadBeta">Charger les outils bêta (Scripts avec __beta__ = True, le rechargement est requis)</system:String>
 
+    <system:String x:Key="CoreSettings.Loader">Chargeur</system:String>
+    <system:String x:Key="CoreSettings.Loader.Description">Configurer le mécanisme de chargement des assemblies de pyRevit. Le nouveau chargeur est une implémentation C# qui utilise la stratégie de compilation Roslyn</system:String>
+    <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata">Lire les métadonnées des scripts (Redémarrage requis)</system:String>
+    <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata.Description">
+        Lorsqu'elle est activée, pyRevit lit les métadonnées des scripts (__title__, __author__, __doc__, etc.) à partir des fichiers de scripts Python.
+        La désactivation de cette option peut améliorer les performances de démarrage, mais les commandes peuvent perdre les métadonnées définies dans les scripts.
+        Les valeurs de bundle.yaml seront toujours utilisées quelle que soit ce paramètre.
+    </system:String>
+    <system:String x:Key="CoreSettings.Loader.ReadScriptMetadata.Changed">
+        Le paramètre de lecture des métadonnées des scripts a changé. Un rechargement de
+        pyRevit est requis pour que ce changement prenne effet. Voulez-vous recharger maintenant ?
+    </system:String>
+
     <system:String x:Key="CoreSettings.CloseOtherConsoles">Fermer les consoles ouvertes</system:String>
     <system:String x:Key="CoreSettings.CloseOtherConsoles.Description">
         Si activé, pyRevit fermera les autres consoles de sortie lors de l'exécution d'un nouveau script.
@@ -64,6 +77,7 @@
         voulez comparer les sorties de plusieurs scripts.
     </system:String>
 
+    <system:String x:Key="CoreSettings.CloseOtherConsoles.Toggle">Réduire le nombre de consoles ouvertes:</system:String>
     <system:String x:Key="CoreSettings.CloseOtherConsoles.Current">Consoles de la commande actuelle</system:String>
     <system:String x:Key="CoreSettings.CloseOtherConsoles.Current.Description">
         Fermer toutes les fenêtres de console associées à la commande en cours d'exécution.

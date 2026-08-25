@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using pyRevitLabs.Common.Extensions;
 
@@ -30,7 +30,7 @@ namespace pyRevitCLI
                             { "configs",                "Manage pyRevit configurations" },
                         },
                         commands: new Dictionary<string, string>() {
-                            { "clone",                  "Create a clone of pyRevit on this machine" },
+                            { "clone",                  "Create a clone of pyRevit (downloads pre-built bin/ from public GitHub Release assets)" },
                             { "extend",                 "Create a clone of a third-party pyRevit extension on this machine" },
                             { "attach",                 "Attach pyRevit clone to installed Revit" },
                             { "switch",                 "Switch active pyRevit clone" },
@@ -85,7 +85,8 @@ namespace pyRevitCLI
                             { "--source=<image_url>",   "Clone source image url or path" },
                             { "--source=<repo_url>",    "Clone source git repo url" },
                             { "--image=<image_path>",   "Clone from a custom image (.zip archive)" },
-                            { "--branch=<branch_name>", "Branch to clone from" },
+                            { "--branch=<branch_name>", "Branch or release tag to clone from" },
+                            { "--skip-bin",             "Skip downloading pre-built binaries" },
                         });
                     break;
 
@@ -105,7 +106,7 @@ namespace pyRevitCLI
                             { "version",                "Get/Set version of a clone deployed from git repo" },
                             { "commit",                 "Get/Set head commit of a clone deployed from git repo" },
                             { "origin",                 "Get/Set origin of a clone deployed from git repo" },
-                            { "update",                 "Update clone to latest using the original source, deployment, and branch" },
+                            { "update",                 "Update clone to latest using the original source, deployment, and branch (refreshes bin/ from CI unless --skip-bin)" },
                             { "deployments",            "List deployments available in a clone" },
                             { "engines",                "List engines available in a clone" },
                         },
@@ -121,6 +122,7 @@ namespace pyRevitCLI
                             { "--reset",                "Reset remote origin url to default" },
                             { "--clearconfigs",         "Clear pyRevit configurations." },
                             { "--all",                  "All clones" },
+                            { "--skip-bin",             "Skip downloading CI binaries on update" },
                             { "--branch",               "Branch to clone from" },
                         });
                     break;
@@ -183,7 +185,9 @@ namespace pyRevitCLI
                             { "--dest=<dest_path>",     "Extension destination directory" },
                             { "--branch=<branch_name>", "Branch to clone from" },
                             { "--username=<username>",  "Username to access private repo. Must be specified with --password" },
-                            { "--password=<password>",  "Password to access private repo. Must be specified with --username" }
+                            { "--password=<password>",  "Password to access private repo. Must be specified with --username" },
+                            { "--token=<auth_token>",   "Access token to access private repo" },
+                            { "--persist-credentials",  "Save credentials to the pyRevit config file (as plain-text) so the extension can be updated later e.g. by the in-Revit extension manager" }
                         }
                     );
                     break;
@@ -328,6 +332,7 @@ namespace pyRevitCLI
                         header: "Manage pyRevit configurations",
                         mgmtCommands: new Dictionary<string, string>() {
                             { "seed",                   "Seed existing configuration file to %PROGRAMDATA%" },
+                            { "seedshippeddefaults",    "Write disabled flags for shipped extensions with default_enabled=False" },
                             { "routes",                 "Routes configurations" },
                             { "telemetry",              "Script Telemetry configurations" },
                             { "apptelemetry",           "Application Telemetry configurations" },

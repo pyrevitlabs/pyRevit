@@ -1,0 +1,43 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <!-- 固定参数行 -->
+    <system:String x:Key="LblWorkset">工作集</system:String>
+    <system:String x:Key="ChkWorkset.Tooltip">将工作集包含在复制中</system:String>
+    <system:String x:Key="ComboWorkset.Tooltip">此元素的用户工作集。</system:String>
+    <system:String x:Key="LblDesignOption">设计选项</system:String>
+    <system:String x:Key="ChkDesignOption.Tooltip">设计选项为只读</system:String>
+    <system:String x:Key="TbDesignOption.Tooltip">只读。无法通过 API 更改设计选项的成员关系。</system:String>
+
+    <!-- 参数区域 -->
+    <system:String x:Key="LblParameters">参数</system:String>
+
+    <!-- 操作按钮 -->
+    <system:String x:Key="BtnCopy">复制</system:String>
+    <system:String x:Key="BtnCopy.Tooltip">从当前选择中复制选中的参数</system:String>
+    <system:String x:Key="BtnPaste">粘贴</system:String>
+    <system:String x:Key="BtnPaste.Tooltip">从剪贴板填充字段 — 点击应用以提交</system:String>
+    <system:String x:Key="BtnFilter">过滤器</system:String>
+    <system:String x:Key="BtnFilter.Tooltip">为选中的参数创建/应用等值视图过滤器</system:String>
+    <system:String x:Key="BtnApply">应用</system:String>
+
+    <!-- 设计选项 — 默认值 -->
+    <system:String x:Key="MainModel">主模型</system:String>
+
+    <!-- 状态消息 -->
+    <system:String x:Key="Varies">不同</system:String>
+    <system:String x:Key="StatusNoSelection">未选择</system:String>
+    <system:String x:Key="StatusOneElement">1 个图元</system:String>
+    <system:String x:Key="StatusElements">{} 个图元</system:String>
+    <system:String x:Key="StatusCopied">已复制 {} 个参数</system:String>
+
+    <!-- 参数提示 -->
+    <system:String x:Key="TooltipParamNotFound">在选定图元上找不到参数</system:String>
+    <system:String x:Key="TooltipParamMissing">参数不适用于所有选定图元</system:String>
+    <system:String x:Key="TooltipParamReadOnly">参数对所有选定图元不可写</system:String>
+    <system:String x:Key="TooltipParamOpaque">整数选项参数 — 仅显示</system:String>
+    <system:String x:Key="TooltipMixedValues">选择中存在不同值</system:String>
+    <system:String x:Key="TooltipUndo">重置为当前图元值</system:String>
+
+</ResourceDictionary>

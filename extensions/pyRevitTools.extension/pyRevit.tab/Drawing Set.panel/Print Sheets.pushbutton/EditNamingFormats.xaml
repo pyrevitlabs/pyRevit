@@ -4,7 +4,7 @@
         WindowStartupLocation="CenterScreen"
         HorizontalContentAlignment="Center"
         ResizeMode="CanResizeWithGrip" SizeToContent="Height" Width="950" MinHeight="500"
-        Title="Naming Formats" Closing="cancelled">
+        Title="{DynamicResource Title}" Closing="cancelled">
     <Window.Resources>
         <Style x:Key="FormatterTextBox" TargetType="{x:Type TextBox}">
             <Setter Property="FontFamily" Value="Consolas" />
@@ -30,15 +30,15 @@
         </Grid.ColumnDefinitions>
 
         <DockPanel Grid.Column="0" Margin="0,0,5,0">
-            <TextBlock Text="Naming Formats" FontWeight="Medium" DockPanel.Dock="Top" />
-            <Button Content="Save" Height="30" Margin="0,5,0,0" Click="save_formats" DockPanel.Dock="Bottom"/>
+            <TextBlock Text="{DynamicResource NamingFormats}" FontWeight="Medium" DockPanel.Dock="Top" />
+            <Button Content="{DynamicResource Save}" Height="30" Margin="0,5,0,0" Click="save_formats" DockPanel.Dock="Bottom"/>
             <Grid DockPanel.Dock="Bottom" Margin="0,5,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition />
                     <ColumnDefinition />
                 </Grid.ColumnDefinitions>
-                <Button Grid.Column="0" Content="Duplicate" Height="30" Margin="0,0,3,0" DockPanel.Dock="Left" Click="duplicate_namingformat"/>
-                <Button Grid.Column="1" Content="Delete" Height="30" Margin="2,0,0,0" DockPanel.Dock="Right" Click="delete_namingformat"/>
+                <Button Grid.Column="0" Content="{DynamicResource Duplicate}" Height="30" Margin="0,0,3,0" DockPanel.Dock="Left" Click="duplicate_namingformat"/>
+                <Button Grid.Column="1" Content="{DynamicResource Delete}" Height="30" Margin="2,0,0,0" DockPanel.Dock="Right" Click="delete_namingformat"/>
             </Grid>
             <ListBox x:Name="formats_lb" FontFamily="Consolas" Margin="0,5,0,0" SelectionChanged="namingformat_changed" SelectionMode="Single" SelectedIndex="0">
                 <ListBox.ItemTemplate>
@@ -54,27 +54,22 @@
         <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" Width="4" />
 
         <StackPanel x:Name="namingformat_edit" Grid.Column="2" Margin="5,0,0,0">
-            <TextBlock Text="Format Title" FontWeight="Medium" />
-            <TextBlock TextWrapping="Wrap" Foreground="DimGray">
-                This is the name of this specific naming format. Give the format a descriptive
-                name that is easy to understand and find. For example: "City of Portland ePermit"
+            <TextBlock Text="{DynamicResource FormatTitle}" FontWeight="Medium" />
+            <TextBlock TextWrapping="Wrap" Foreground="DimGray" Text="{DynamicResource FormatTitleDescription}">
             </TextBlock>
             <TextBox x:Name="template_name_tb"
                      Text="{Binding name, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                      Style="{StaticResource FormatterTextBox}"/>
 
-            <TextBlock Text="Template" FontWeight="Medium" Margin="0,10,0,0" />
-            <TextBlock TextWrapping="Wrap" Foreground="DimGray">
-                This is the actual naming format template. Each "{}" (tag) represents a value that will be
-                filled when creating the name for a PDF file. Pick an choose from the tags listed
-                below and drag them to this box.
+            <TextBlock Text="{DynamicResource Template}" FontWeight="Medium" Margin="0,10,0,0" />
+            <TextBlock TextWrapping="Wrap" Foreground="DimGray" Text="{DynamicResource TemplateDescription}">
             </TextBlock>
             <TextBox x:Name="template_tb"
                      Text="{Binding template, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                      Style="{StaticResource FormatterTextBox}"
                      AllowDrop="True" PreviewDrop="stop_drag" PreviewDragOver="preview_drag"/>
 
-            <TextBlock Text="Drag and drop from formatters below. Hover over the formatter for description" Foreground="DimGray" Margin="0,5,0,0"/>
+            <TextBlock Text="{DynamicResource DragAndDropHint}" Foreground="DimGray" Margin="0,5,0,0"/>
             <ItemsControl x:Name="formatters_wp" Margin="0,5,0,0">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>

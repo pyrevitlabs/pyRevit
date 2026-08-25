@@ -1,0 +1,7 @@
+{
+  "setup-worktree-windows": [
+    "py -3.14 -m pipenv install",
+    "dotnet run --project build/Build.csproj -c Debug -- ci",
+    "dotnet test build/tests/Build.Tests.csproj -c Release"
+  ]
+}

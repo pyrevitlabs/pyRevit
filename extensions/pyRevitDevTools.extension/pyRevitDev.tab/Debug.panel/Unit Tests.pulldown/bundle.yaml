@@ -8,12 +8,16 @@ layout:
   - Forms Module Tests
   - Revit Module Tests
   - Script Module Tests
+  - Routes Module Tests
+  - Py3 Compat Tests
+  - Py3 Compat Tests (CPython)
   - -----
   - Test Output Stream
   - Test Input Stream
   - Test Multiple Outputs
   - Test UI Button
   - Test Independent Logging
+  - Test Markdown
   - -----
   - Test XAML
   - Test XAML (Localized)
@@ -27,5 +31,6 @@ layout:
   - Test Toast
   - Test FillPatternViewer
   - Test Family API
+  - Query get_name Tests
   - -----
   - Test Project Parameters

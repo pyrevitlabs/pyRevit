@@ -1,0 +1,173 @@
+#nullable enable
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using Autodesk.Revit.UI;
+using pyRevitAssemblyBuilder.AssemblyMaker;
+using pyRevitAssemblyBuilder.SessionManager;
+using pyRevitAssemblyBuilder.UIManager.Icons;
+using pyRevitExtensionParser;
+using static pyRevitExtensionParser.ExtensionParser;
+
+namespace pyRevitAssemblyBuilder.UIManager.Buttons
+{
+    /// <summary>
+    /// Base class for button builders providing common functionality.
+    /// </summary>
+    public abstract class ButtonBuilderBase : IButtonBuilder
+    {
+        protected readonly ILogger Logger;
+        protected readonly IButtonPostProcessor ButtonPostProcessor;
+
+        /// <inheritdoc/>
+        public abstract CommandComponentType[] SupportedTypes { get; }
+
+        /// <summary>
+        /// Initializes a new instance of the button builder base.
+        /// </summary>
+        /// <param name="logger">The logger instance.</param>
+        /// <param name="buttonPostProcessor">The button post-processor.</param>
+        protected ButtonBuilderBase(ILogger logger, IButtonPostProcessor buttonPostProcessor)
+        {
+            Logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            ButtonPostProcessor = buttonPostProcessor ?? throw new ArgumentNullException(nameof(buttonPostProcessor));
+        }
+
+        /// <inheritdoc/>
+        public bool CanHandle(CommandComponentType componentType)
+        {
+            return SupportedTypes.Contains(componentType);
+        }
+
+        /// <summary>
+        /// Times an AddItem-style ribbon call and records it for [PERF] instrumentation.
+        /// </summary>
+        protected T TimedAddItem<T>(Func<T> addItem)
+        {
+            var sw = Stopwatch.StartNew();
+            var item = addItem();
+            ButtonPostProcessor.RecordAddItemMs(sw.ElapsedMilliseconds);
+            return item;
+        }
+
+        /// <inheritdoc/>
+        public abstract void Build(ParsedComponent component, RibbonPanel parentPanel, string tabName, ExtensionAssemblyInfo assemblyInfo);
+
+        /// <summary>
+        /// Creates a PushButtonData for a standard push button.
+        /// </summary>
+        protected PushButtonData CreatePushButtonData(ParsedComponent component, ExtensionAssemblyInfo assemblyInfo)
+        {
+            // Use Title from bundle.yaml if available, otherwise fall back to DisplayName
+            var buttonText = ButtonPostProcessor.GetButtonText(component);
+
+            // Ensure the class name matches what the CommandTypeGenerator creates
+            var className = SanitizeClassName(component.UniqueId);
+
+            // Use DisplayName as the button's internal name to match control ID format.
+            var pushButtonData = new PushButtonData(
+                component.DisplayName,
+                buttonText,
+                assemblyInfo.Location,
+                className);
+
+            // Set availability class if context is defined
+            if (!string.IsNullOrEmpty(component.Context))
+            {
+                var availabilityClassName = className + "_avail";
+                pushButtonData.AvailabilityClassName = availabilityClassName;
+            }
+
+            return pushButtonData;
+        }
+
+        /// <summary>
+        /// Sanitizes a class name to match the CommandTypeGenerator logic.
+        /// </summary>
+        protected static string SanitizeClassName(string name)
+        {
+            var sb = new System.Text.StringBuilder();
+            foreach (char c in name)
+                sb.Append(char.IsLetterOrDigit(c) ? c : '_');
+
+            // Fix for #3107: C# class names cannot start with a digit.
+            if (sb.Length > 0 && char.IsDigit(sb[0]))
+                sb.Insert(0, '_');
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Resolves icon mode for compact contexts such as pulldowns, split children, and stacks.
+        /// </summary>
+        protected static IconMode GetCompactIconMode(ParsedComponent component)
+        {
+            return IconModeHelper.GetCompactIconMode(component);
+        }
+
+        /// <summary>
+        /// Updates command binding for an existing push button.
+        /// </summary>
+        protected void UpdatePushButtonCommandBinding(PushButton? button, ParsedComponent component, ExtensionAssemblyInfo assemblyInfo)
+        {
+            if (button == null || component == null || assemblyInfo == null)
+                return;
+
+            try
+            {
+                var className = SanitizeClassName(component.UniqueId);
+                button.AssemblyName = assemblyInfo.Location;
+                button.ClassName = className;
+
+                if (!string.IsNullOrEmpty(component.Context))
+                {
+                    button.AvailabilityClassName = className + "_avail";
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug($"Failed to update command binding for '{component.DisplayName}'. Exception: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Checks if a ribbon item with the specified name already exists in the panel.
+        /// </summary>
+        protected bool ItemExistsInPanel(RibbonPanel? panel, string itemName)
+        {
+            if (panel == null || string.IsNullOrEmpty(itemName))
+                return false;
+
+            try
+            {
+                var existingItems = panel.GetItems();
+                return existingItems.Any(item => item.Name == itemName);
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug($"Error checking if item '{itemName}' exists in panel. Exception: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Hides and disables an existing ribbon item when it is no longer supported.
+        /// </summary>
+        protected void DeactivateRibbonItem(RibbonItem? item, string itemName)
+        {
+            if (item == null)
+                return;
+
+            try
+            {
+                item.Visible = false;
+                item.Enabled = false;
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug($"Failed to deactivate ribbon item '{itemName}'. Exception: {ex.Message}");
+            }
+        }
+    }
+}

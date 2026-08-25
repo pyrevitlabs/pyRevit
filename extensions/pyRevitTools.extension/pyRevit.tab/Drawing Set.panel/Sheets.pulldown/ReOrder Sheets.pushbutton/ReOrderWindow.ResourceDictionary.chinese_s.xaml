@@ -1,0 +1,32 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">重新排序图纸</system:String>
+    
+    <system:String x:Key="SelectOrderParameter">选择排序参数</system:String>
+    
+    <system:String x:Key="Guide">指南</system:String>
+    <system:String x:Key="GuideText" xml:space="preserve">在此框中输入正则表达式模式。此模式用于检测
+图纸编号和组索引中的更改。例如，要使用图纸编号中的规程标识符进行分组
+（A1.00 中的 A），请使用 "([A-Z])\d"。模式中的 () 将规程标识符选择为一个组
+用于对图纸范围进行分组。</system:String>
+    <system:String x:Key="GuideRegexLink">查看 Regexr 了解如何使用正则表达式</system:String>
+    
+    <system:String x:Key="ListOfSheets">图纸列表（拖动以手动重新排序）</system:String>
+    
+    <system:String x:Key="ReorderButton">重新排序</system:String>
+    
+    <system:String x:Key="MoveToTop">>>> 顶部</system:String>
+    <system:String x:Key="Move10ToTop">10 &gt;&gt;</system:String>
+    <system:String x:Key="Move1ToTop">&gt;</system:String>
+    <system:String x:Key="Move1ToBottom">&lt;</system:String>
+    <system:String x:Key="Move10ToBottom">10 &lt;&lt;</system:String>
+    <system:String x:Key="MoveToBottom">底部 &lt;&lt;&lt;</system:String>
+    
+    <system:String x:Key="OrderIndex">排序索引</system:String>
+    <system:String x:Key="SheetNumber">图纸编号</system:String>
+    <system:String x:Key="SheetName">图纸名称</system:String>
+    
+    <system:String x:Key="NoSheetsInModel">此模型中没有图纸</system:String>
+    <system:String x:Key="NoOrderParametersFound">未找到 'Order' 参数。定义一个类型为 'Integer' 的项目参数，并将其分配给图纸类别。此工具可以在该参数上设置图纸排序索引。</system:String>
+</ResourceDictionary>

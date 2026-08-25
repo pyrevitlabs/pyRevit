@@ -9,6 +9,8 @@ Examples:
 #pylint: disable=W0703,C0302,C0103,W0614,E0401,W0611,C0413,ungrouped-imports
 import os.path as op
 from pyrevit.compat import IRONPY, NETCORE, PY2
+from pyrevit._perf import mark as _perfmark
+_perfmark("pyrevit.framework:entry")
 
 import clr
 import System
@@ -24,7 +26,6 @@ if NETCORE:
     clr.AddReference('System.Net.WebProxy')
     clr.AddReference('System.Runtime.Serialization.Formatters')
     clr.AddReference('System.Reflection.Emit')
-    clr.AddReference('Lokad.ILPack')
     clr.AddReference('System.ComponentModel')
     clr.AddReference('System.ObjectModel')
     clr.AddReference('System.Diagnostics.FileVersionInfo')
@@ -37,6 +38,7 @@ clr.AddReference('PresentationCore')
 clr.AddReference('PresentationFramework')
 clr.AddReference('System.Xml.Linq')
 clr.AddReference('WindowsBase')
+_perfmark("pyrevit.framework:after clr.AddReference (System+WPF)")
 
 from System import AppDomain, Version
 from System import Type
@@ -90,6 +92,7 @@ from System import Math
 from System.Management import ManagementObjectSearcher
 from System.Runtime.Serialization import FormatterServices
 from System.Linq import Enumerable
+_perfmark("pyrevit.framework:after `from System.* import` block")
 
 import pyrevit.engine as eng
 
@@ -147,6 +150,7 @@ except Exception:
 
 clr.AddReference('pyRevitLabs.Emojis')
 import pyRevitLabs.Emojis as Emojis
+_perfmark("pyrevit.framework:after IronPython+WPF+SQLite+CPDialogs+Emojis refs")
 
 
 # do not import anything from pyrevit before this
@@ -163,6 +167,30 @@ def get_dll_file(assembly_name):
     addin_file = op.join(BIN_DIR, assembly_name + '.dll')
     if op.exists(addin_file):
         return addin_file
+
+
+def add_reference_to_file(asm_file):
+    """Make a .NET assembly file available for import on any engine.
+
+    Engine-portable replacement for IronPython's
+    ``clr.AddReferenceToFileAndPath``, which does not exist under
+    CPython/pythonnet. Accepts a path with or without the ``.dll``
+    extension.
+
+    Args:
+        asm_file (str): path to the assembly file
+
+    Returns:
+        (Assembly | None): the loaded assembly; None under IronPython
+    """
+    if IRONPY:
+        return clr.AddReferenceToFileAndPath(asm_file)
+    # assembly names can contain dots (IxMilia.Dxf), so detect the
+    # extension by suffix, not by splitext
+    if not op.isfile(asm_file) \
+            and not asm_file.lower().endswith(ASSEMBLY_FILE_EXT):
+        asm_file += ASSEMBLY_FILE_EXT
+    return Assembly.LoadFrom(asm_file)
 
 
 def get_current_thread_id():

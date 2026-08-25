@@ -222,7 +222,8 @@ namespace pyRevitCLI
                         repoUrl: TryGetValue("--source"),
                         imagePath: TryGetValue("--image"),
                         destPath: TryGetValue("--dest"),
-                        credentials: TryGetCredentials()
+                        credentials: TryGetCredentials(),
+                        skipBin: arguments["--skip-bin"].IsTrue
                     );
             }
 
@@ -305,7 +306,8 @@ namespace pyRevitCLI
                     PyRevitCLICloneCmds.UpdateClone(
                             allClones: arguments["--all"].IsTrue,
                             cloneName: TryGetValue("<clone_name>"),
-                            credentials: TryGetCredentials()
+                            credentials: TryGetCredentials(),
+                            skipBin: arguments["--skip-bin"].IsTrue
                             );
 
                 else
@@ -394,7 +396,8 @@ namespace pyRevitCLI
                         destPath: TryGetValue("--dest"),
                         repoUrl: TryGetValue("<repo_url>"),
                         branchName: TryGetValue("--branch"),
-                        credentials: TryGetCredentials()
+                        credentials: TryGetCredentials(),
+                        persistCredentials: arguments["--persist-credentials"].IsTrue
                     );
 
                 else
@@ -779,7 +782,7 @@ namespace pyRevitCLI
                     else if (all("file")) {
                         var destPath = TryGetValue("<dest_path>");
                         if (destPath is null)
-                            Console.WriteLine(string.Format("Telemetry File Path: {0}", PyRevitConfigs.GetAppTelemetryFlags()));
+                            Console.WriteLine(string.Format("Telemetry File Path: {0}", PyRevitConfigs.GetTelemetryFilePath()));
                         else
                             PyRevitConfigs.EnableTelemetry(telemetryFileDir: destPath);
                     }
@@ -787,7 +790,7 @@ namespace pyRevitCLI
                     else if (all("server")) {
                         var serverUrl = TryGetValue("<dest_path>");
                         if (serverUrl is null)
-                            Console.WriteLine(string.Format("Telemetry Server Url: {0}", PyRevitConfigs.GetAppTelemetryFlags()));
+                            Console.WriteLine(string.Format("Telemetry Server Url: {0}", PyRevitConfigs.GetTelemetryServerUrl()));
                         else
                             PyRevitConfigs.EnableTelemetry(telemetryServerUrl: serverUrl);
 
@@ -857,6 +860,9 @@ namespace pyRevitCLI
 
                 else if (all("seed"))
                     PyRevitConfigs.SeedConfig(lockSeedConfig: arguments["--lock"].IsTrue);
+
+                else if (all("seedshippeddefaults"))
+                    PyRevitConfigs.SeedShippedExtensionDefaults();
 
                 else if (any("enable", "disable")) {
                     if (arguments["<option_path>"] != null) {

@@ -1,0 +1,100 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:system="clr-namespace:System;assembly=mscorlib">
+
+    <!-- Window Title -->
+    <system:String x:Key="ColorSplasher.Title">按参数值着色元素</system:String>
+
+    <!-- Section Labels -->
+    <system:String x:Key="ColorSplasher.Labels.CategorySelection">类别选择</system:String>
+    <system:String x:Key="ColorSplasher.Labels.ParameterSelection">参数选择</system:String>
+    <system:String x:Key="ColorSplasher.Labels.ValuesColorAssignment">值颜色分配</system:String>
+    <system:String x:Key="ColorSplasher.Labels.ManageSchemes">管理方案</system:String>
+    <system:String x:Key="ColorSplasher.Labels.GenerateColors">生成颜色</system:String>
+    <system:String x:Key="ColorSplasher.Labels.ApplySettings">应用设置</system:String>
+
+    <!-- Buttons -->
+    <system:String x:Key="ColorSplasher.Buttons.SaveLoadScheme">保存 / 加载颜色方案</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.GradientColors">渐变颜色</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.RandomColors">随机颜色</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.SetColors">设置颜色</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.Reset">重置</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.CreateLegend">创建图例</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.CreateViewFilters">创建视图过滤器</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.SelectAll">全选</system:String>
+    <system:String x:Key="ColorSplasher.Buttons.SelectNone">全不选</system:String>
+
+    <!-- Checkboxes -->
+    <system:String x:Key="ColorSplasher.Checkboxes.ApplyLineColor">应用线颜色</system:String>
+    <system:String x:Key="ColorSplasher.Checkboxes.ApplyForegroundPattern">应用前景图案颜色</system:String>
+    <system:String x:Key="ColorSplasher.Checkboxes.ApplyBackgroundPattern">应用背景图案颜色</system:String>
+    <system:String x:Key="ColorSplasher.Checkboxes.ApplyBackgroundPattern.RequiresRevit2019">应用背景图案颜色（需要 Revit 2019 或更高版本）</system:String>
+
+    <!-- Tooltips -->
+    <system:String x:Key="ColorSplasher.Tooltips.CategorySelection">选择一个类别以开始着色。</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.ParameterSelection">选择一个参数以根据其值对元素进行着色。</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.ValuesColorAssignment">通过单击其值来重新分配颜色。</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.SaveLoadScheme">保存当前颜色方案或加载现有方案。</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.GradientColors">基于第一个和最后一个值的颜色，为所有值重新分配渐变颜色。</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.RandomColors">为所有值重新分配新的随机颜色。</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.SetColors">替换视图中每个元素的颜色。</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.Reset">将 Revit 视图中的颜色重置为初始状态。</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.CreateLegend">为所有值及其颜色创建新的图例视图。</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.CreateViewFilters">为所有值及其颜色创建视图过滤器和规则。</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.ApplyLineColor">启用后，将颜色应用于投影线颜色。</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.ApplyForegroundPattern">启用后，将颜色应用于表面和切割的前景图案颜色。</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.ApplyBackgroundPattern">启用后，将颜色应用于表面和切割的背景图案颜色。需要 Revit 2019 或更高版本。</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.SearchParameters">输入以搜索和过滤参数。</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.SelectAll">选择所有元素的所有参数值。</system:String>
+    <system:String x:Key="ColorSplasher.Tooltips.SelectNone">清除 Revit 中的当前选择。</system:String>
+
+    <!-- Messages -->
+    <system:String x:Key="ColorSplasher.Messages.SelectCategoryHere">请在此处选择类别！</system:String>
+    <system:String x:Key="ColorSplasher.Messages.SelectCategory">选择类别</system:String>
+    <system:String x:Key="ColorSplasher.Messages.SelectParameter">选择参数</system:String>
+    <system:String x:Key="ColorSplasher.Messages.SpacesColorScheme">*空间可能需要在视图中使用颜色方案。</system:String>
+    <system:String x:Key="ColorSplasher.Messages.NoCategorySelected">请选择一个类别以重置颜色。</system:String>
+    <system:String x:Key="ColorSplasher.Messages.NoLegendView">要创建新图例，您需要至少有一个。请创建图例视图。</system:String>
+    <system:String x:Key="ColorSplasher.Messages.NoItemsForLegend">没有要创建图例的项目。请选择具有值的类别和参数。</system:String>
+    <system:String x:Key="ColorSplasher.Messages.LegendCreated">图例创建成功：{0}</system:String>
+    <system:String x:Key="ColorSplasher.Messages.LegendFailed">创建图例失败：{0}</system:String>
+    <system:String x:Key="ColorSplasher.Messages.FilterNotSupported">不支持为此类型的参数创建过滤器。</system:String>
+    <system:String x:Key="ColorSplasher.Messages.FilterCreationFailed">未创建视图过滤器。所选参数未由 Revit 公开，无法创建规则。</system:String>
+    <system:String x:Key="ColorSplasher.Messages.ViewTypeNotSupported">无法在 {0} 视图中修改可见性设置。请更改当前视图。</system:String>
+    <system:String x:Key="ColorSplasher.Messages.UnableToAccessDocument">无法访问 Revit 文档</system:String>
+    <system:String x:Key="ColorSplasher.Messages.UnableToAccessDocument.Content">请确保已打开 Revit 项目，然后重试。</system:String>
+
+    <!-- Placeholders -->
+    <system:String x:Key="ColorSplasher.Placeholders.SearchParameters">搜索参数...</system:String>
+    <system:String x:Key="ColorSplasher.Placeholders.SelectCategoryAndParameter">选择一个类别和一个参数以查看参数值</system:String>
+    <system:String x:Key="ColorSplasher.Messages.ShiftClickToSelect">Shift+点击以选择元素</system:String>
+
+    <!-- Save/Load Dialog -->
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.Title">保存 / 加载颜色方案</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.IfLoading">如果加载颜色方案：</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.LoadByValue">按参数值加载。</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.LoadByValue.Tooltip">仅在加载时。这将根据保存时项目具有的值加载颜色方案。</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.LoadByPosition">按窗口中的位置加载。</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.LoadByPosition.Tooltip">仅在加载时。这将根据保存时项目在窗口中的位置加载颜色方案。</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.SaveButton">保存颜色方案</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.LoadButton">加载颜色方案</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.IfLoading.Tooltip">仅在加载时。</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.SaveTitle">指定保存颜色方案的路径</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.LoadTitle">指定加载颜色方案的路径</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.NoColorsDetected">未检测到颜色</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.NoColorsDetected.Message">主窗口中的值列表为空。请选择类别和参数以添加带颜色的项目。</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.NoValuesDetected">未检测到值</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.NoValuesDetected.Message">主窗口中的值列表为空。请选择类别和参数以添加要应用颜色的项目。</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.ErrorSaving">保存方案时出错</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.ErrorLoading">加载方案时出错</system:String>
+    <system:String x:Key="ColorSplasher.SaveLoadDialog.FileDoesNotExist">文件不存在。</system:String>
+
+    <!-- TaskDialog Titles -->
+    <system:String x:Key="ColorSplasher.TaskDialog.Title">按参数着色元素</system:String>
+    <system:String x:Key="ColorSplasher.TaskDialog.Error">Color Splasher 错误</system:String>
+
+    <!-- Legend Name Prefix -->
+    <system:String x:Key="ColorSplasher.LegendNamePrefix">Color Splasher - </system:String>
+
+</ResourceDictionary>
