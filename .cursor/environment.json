@@ -1,0 +1,12 @@
+{
+  "name": "pyRevit (docs + tooling)",
+  "user": "ubuntu",
+  "install": "bash .cursor/install.sh",
+  "terminals": [
+    {
+      "name": "docs-server",
+      "command": "cd /workspace && PIPENV_VENV_IN_PROJECT=1 pipenv run mkdocs serve -a 0.0.0.0:8000"
+    }
+  ],
+  "ports": [8000]
+}

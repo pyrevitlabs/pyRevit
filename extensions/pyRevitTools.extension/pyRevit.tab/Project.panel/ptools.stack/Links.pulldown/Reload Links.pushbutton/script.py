@@ -2,7 +2,6 @@
 Can reload links "locally" for workshared models"""
 #pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 
-from pyrevit import HOST_APP
 from pyrevit import revit, DB
 from pyrevit import forms
 from pyrevit import script
@@ -78,17 +77,14 @@ def reload_links(ref_type=DB.ExternalFileReferenceType.RevitLink):
         logger.error('Load error: %s' % reload_err)
 
 
-linktypes = {'Revit Links': DB.ExternalFileReferenceType.RevitLink}
+linktypes = {
+    'Revit Links': DB.ExternalFileReferenceType.RevitLink,
+    'CAD Links': DB.ExternalFileReferenceType.CADLink,
+}
 
-if HOST_APP.is_newer_than(2017):
-    linktypes['CAD Links'] = DB.ExternalFileReferenceType.CADLink
-
-if len(linktypes) > 1:
-    selected_option = \
-        forms.CommandSwitchWindow.show(linktypes.keys(),
-                                       message='Select link type:')
-else:
-    selected_option = 'Revit Links'
+selected_option = \
+    forms.CommandSwitchWindow.show(linktypes.keys(),
+                                   message='Select link type:')
 
 if selected_option:
     reload_links(linktypes[selected_option])

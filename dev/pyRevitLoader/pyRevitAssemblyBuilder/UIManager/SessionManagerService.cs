@@ -39,10 +39,11 @@ namespace pyRevitAssemblyBuilder.SessionManager
         private Dictionary<string, bool> _directoryExistsCache = new Dictionary<string, bool>();
 
         /// <summary>
-        /// Pre-materialized library extension lib paths to avoid repeated Directory.Exists checks
-        /// per extension. Populated once in LoadSession() after libraryExtensions are retrieved.
+        /// Pre-materialized library-extension search paths (root plus nested lib/
+        /// when present) so startup scripts can import packages that live at the
+        /// .lib root. Populated once in LoadSession().
         /// </summary>
-        private List<string> _precomputedLibraryLibPaths = new List<string>();
+        private List<string> _precomputedLibrarySearchPaths = new List<string>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SessionManagerService"/> class.
@@ -152,18 +153,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 _logger.Debug($"[PERF]   parse '{name}': {elapsedMs}ms");
             }
 
-            // Pre-compute library extension lib paths once to avoid N*lib_count Directory.Exists checks
-            // in BuildSearchPaths() for each UI extension. Optimization for #3268.
-            _precomputedLibraryLibPaths.Clear();
-            foreach (var libExt in libraryExtensions)
-            {
-                var libLibPath = System.IO.Path.Combine(libExt.Directory, "lib");
-                if (System.IO.Directory.Exists(libLibPath))
-                {
-                    _precomputedLibraryLibPaths.Add(libLibPath);
-                }
-            }
-            _logger.Debug($"Pre-computed {_precomputedLibraryLibPaths.Count} library lib paths");
+            _precomputedLibrarySearchPaths = LibraryExtensionSearchPaths.Collect(libraryExtensions);
+            _logger.Debug($"Pre-computed {_precomputedLibrarySearchPaths.Count} library search paths");
             
             // Get UI extensions
             stepStopwatch.Restart();
@@ -687,9 +678,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 searchPaths.Insert(0, extLibPath);
             }
             
-            // Use pre-computed library extension lib paths (avoids N*lib_count Directory.Exists calls)
+            // Use pre-computed library-extension search paths (avoids N*lib_count Directory.Exists calls)
             // This is an optimization for #3268 - previously this loop was inside the foreach for each UI extension
-            searchPaths.AddRange(_precomputedLibraryLibPaths);
+            searchPaths.AddRange(_precomputedLibrarySearchPaths);
             
             // Add core pyRevit paths (pyrevitlib + site-packages) by discovering repo root
             // Cache the root lookup - it's the same for all extensions
