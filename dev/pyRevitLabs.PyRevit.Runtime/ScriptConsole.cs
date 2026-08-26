@@ -991,7 +991,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             SetProgressBarVisibility(true);
 
-            var widthStyleProperty = string.Format("{0}%", Math.Max(0, Math.Min(100, (curValue / maxValue) * 100)));
+            var widthStyleProperty = string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0}%", Math.Max(0, Math.Min(100, (curValue / maxValue) * 100)));
             _webView.PostScript(BuildUpdateProgressJs(ToJsString(widthStyleProperty)));
         }
 
