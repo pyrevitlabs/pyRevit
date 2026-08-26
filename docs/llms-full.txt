@@ -186,13 +186,12 @@ Wrapper to interact with the output window.
 
 ##### `renderer``property`
 
-Return html renderer inside output window.
+Raise: the legacy IE ``WebBrowser`` renderer was removed.
 
-Returns:
-
-| Type | Description |
-| --- | --- |
-| `WebBrowser` | HTML renderer |
+The output window now renders with Microsoft Edge WebView2 (Chromium).
+There is no live DOM object to reach for; use :func:`inject_to_head`,
+:func:`inject_to_body`, :func:`inject_script`, :func:`add_style`, and
+:func:`print_html` instead.
 
 ##### `output_id``property`
 
