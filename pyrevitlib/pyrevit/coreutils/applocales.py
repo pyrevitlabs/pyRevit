@@ -119,14 +119,12 @@ APP_LOCALES = [
     ),
 ]
 
-# add version specific languages
-if HOST_APP.is_newer_than(2018, or_equal=True):
-    APP_LOCALES.append(
-        AppLocale(
-            lang_type=ApplicationServices.LanguageType.English_GB,
-            lang_name="English Great Britain",
-            locale_codes=["en_gb"])
-        )
+APP_LOCALES.append(
+    AppLocale(
+        lang_type=ApplicationServices.LanguageType.English_GB,
+        lang_name="English Great Britain",
+        locale_codes=["en_gb"])
+    )
 
 # add custom languages provided by this module
 APP_LOCALES.append(

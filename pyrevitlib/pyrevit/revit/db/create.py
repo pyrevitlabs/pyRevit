@@ -281,10 +281,7 @@ def create_3d_view(view_name, isometric=True, doc=None):
         else:
             nview = DB.View3D.CreatePerspective(doc, default_3dview_type)
 
-    if HOST_APP.is_newer_than("2019", or_equal=True):
-        nview.Name = view_name
-    else:
-        nview.ViewName = view_name
+    nview.Name = view_name
 
     nview.CropBoxActive = False
     nview.CropBoxVisible = False
@@ -465,10 +462,7 @@ def create_filledregion(filledregion_name, fillpattern_element, doc=None):
             )
     source_filledregion = filledregion_types.FirstElement()
     new_filledregion = source_filledregion.Duplicate(filledregion_name)
-    if HOST_APP.is_newer_than(2019, or_equal=True):
-        new_filledregion.ForegroundPatternId = fillpattern_element.Id
-    else:
-        new_filledregion.FillPatternId = fillpattern_element.Id
+    new_filledregion.ForegroundPatternId = fillpattern_element.Id
     return new_filledregion
 
 
@@ -515,10 +509,7 @@ def create_param_value_filter(
 ):
     doc = doc or DOCS.doc
 
-    if HOST_APP.is_newer_than(2019, or_equal=True):
-        rules = None
-    else:
-        rules = framework.List[DB.FilterRule]()
+    rules = None
     param_prov = DB.ParameterValueProvider(param_id)
 
     # decide how to combine the rules
@@ -571,13 +562,10 @@ def create_param_value_filter(
         if exclude:
             rule = DB.FilterInverseRule(rule)
 
-        if HOST_APP.is_newer_than(2019, or_equal=True):
-            if rules:
-                rules = logical_merge(rules, DB.ElementParameterFilter(rule))
-            else:
-                rules = DB.ElementParameterFilter(rule)
+        if rules:
+            rules = logical_merge(rules, DB.ElementParameterFilter(rule))
         else:
-            rules.Add(rule)
+            rules = DB.ElementParameterFilter(rule)
 
     # collect applicable categories
     if category_list:
