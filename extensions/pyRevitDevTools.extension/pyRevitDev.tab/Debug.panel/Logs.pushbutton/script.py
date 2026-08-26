@@ -6,7 +6,6 @@ import re
 from pyrevit.coreutils import logger
 from pyrevit.coreutils import appdata
 from pyrevit import forms
-from pyrevit import forms
 from pyrevit import script
 
 

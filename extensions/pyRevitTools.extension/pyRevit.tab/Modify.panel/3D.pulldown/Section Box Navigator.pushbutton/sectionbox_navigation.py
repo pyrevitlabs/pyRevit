@@ -172,10 +172,10 @@ def find_next_grid_in_direction(start_point, direction_vector, grids, tolerance)
         if intersection_result != DB.SetComparisonResult.Overlap:
             continue
 
-        if result.Size == 0:
+        if not result:
             continue
 
-        intersection = result.get_Item(0).XYZPoint
+        intersection = result[0]
         to_intersection = intersection - start_point_flat
 
         distance_along_ray = to_intersection.DotProduct(direction_vector)
