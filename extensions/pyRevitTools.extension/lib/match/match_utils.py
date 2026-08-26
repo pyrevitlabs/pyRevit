@@ -52,11 +52,11 @@ class PropKeyValue(object):
         other_cats = sorted(self._cat_key(c) for c in other.categories)
 
         return (
-            self.name == other.name and
-            self.datatype == other.datatype and
-            self.value == other.value and
-            self.istype == other.istype and
-            self_cats == other_cats
+            self.name == other.name
+            and self.datatype == other.datatype
+            and self.value == other.value
+            and self.istype == other.istype
+            and self_cats == other_cats
         )
 
     def __hash__(self):
@@ -126,35 +126,37 @@ def get_source_properties(src_element, simple=False, preselect=None):
 
     for sparam in selected_params:
         mlogger.debug("Reading %s", sparam.name)
-        target = src_type if sparam.istype else src_element
-        tparam = target.LookupParameter(sparam.name)
-        if tparam:
-            if tparam.StorageType == DB.StorageType.Integer:
-                value = tparam.AsInteger()
-            elif tparam.StorageType == DB.StorageType.Double:
-                value = tparam.AsDouble()
-            elif tparam.StorageType == DB.StorageType.ElementId:
-                value = get_elementid_value(tparam.AsElementId())
-            else:
-                value = tparam.AsString()
+        try:
+            target = src_type if sparam.istype else src_element
+            tparam = target.LookupParameter(sparam.name)
+            if tparam:
+                if tparam.StorageType == DB.StorageType.Integer:
+                    value = tparam.AsInteger()
+                elif tparam.StorageType == DB.StorageType.Double:
+                    value = tparam.AsDouble()
+                elif tparam.StorageType == DB.StorageType.ElementId:
+                    value = get_elementid_value(tparam.AsElementId())
+                else:
+                    value = tparam.AsString()
 
-            props.append(
-                PropKeyValue(
-                    name=sparam.name,
-                    datatype=tparam.StorageType,
-                    value=value,
-                    istype=sparam.istype,
-                    display_value=tparam.AsValueString(),
-                    categories=[src_element.Category] if not simple else [],
+                props.append(
+                    PropKeyValue(
+                        name=sparam.name,
+                        datatype=tparam.StorageType,
+                        value=value,
+                        istype=sparam.istype,
+                        display_value=tparam.AsValueString(),
+                        categories=[src_element.Category] if not simple else [],
+                    )
                 )
-            )
+        except Exception as readex:
+            mlogger.warning("Failed reading parameter %s | %s", sparam.name, readex)
 
     return props
 
 
 def paste_props(source_props, paste_mode, category_filter=False, **kwargs):
-    """
-    paste_mode: "single" | "rectangle" | "selection"
+    """paste_mode: "single" | "rectangle" | "selection"
     """
     # Build category filter if the checkbox is ticked and categories are known
     pick_filter = None
@@ -198,7 +200,8 @@ def paste_props(source_props, paste_mode, category_filter=False, **kwargs):
                 dest_elements = list(revit.get_selection())
                 if category_filter:
                     dest_elements = [
-                        el for el in dest_elements
+                        el
+                        for el in dest_elements
                         if el.Category and el.Category.Id in cat_ids
                     ]
 

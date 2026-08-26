@@ -946,18 +946,10 @@ class ColorSplasherWindow(forms.WPFWindow):
             "apply_foreground_pattern_color", True
         )
 
-        if HOST_APP.is_newer_than(2019, or_equal=True):
-            self._chk_background_pattern.IsChecked = self._config.get_option(
-                "apply_background_pattern_color", False
-            )
-            self._chk_background_pattern.IsEnabled = True
-        else:
-            self._chk_background_pattern.IsChecked = False
-            self._chk_background_pattern.IsEnabled = False
-            bg_pattern_text = self.get_locale_string(
-                "ColorSplasher.Checkboxes.ApplyBackgroundPattern.RequiresRevit2019"
-            )
-            self._chk_background_pattern.Content = bg_pattern_text
+        self._chk_background_pattern.IsChecked = self._config.get_option(
+            "apply_background_pattern_color", False
+        )
+        self._chk_background_pattern.IsEnabled = True
 
         self.list_box2.SelectionChanged += self.list_selected_index_changed
         self.list_box2.MouseDown += self.list_box2_mouse_down
@@ -1029,10 +1021,9 @@ class ColorSplasherWindow(forms.WPFWindow):
         self._config.set_option(
             "apply_foreground_pattern_color", self._chk_foreground_pattern.IsChecked
         )
-        if HOST_APP.is_newer_than(2019, or_equal=True):
-            self._config.set_option(
-                "apply_background_pattern_color", self._chk_background_pattern.IsChecked
-            )
+        self._config.set_option(
+            "apply_background_pattern_color", self._chk_background_pattern.IsChecked
+        )
         pyrevit_script.save_config()
 
     def button_click_set_colors(self, sender, e):
