@@ -31,6 +31,13 @@ namespace pyRevitAssemblyBuilder.SessionManager
         public const string REFED_ASSMS_KEY = "PYREVIT_REFEDASSMS";
 
         /// <summary>
+        /// Env-dict key a postload autoupdate sets (envvars.SESSION_REPLACED_ENVVAR on the Python
+        /// side) when it triggers a nested reload, so the outer LoadSession() knows the session it
+        /// started with was just replaced and can skip its own now-stale final stopwatch/log.
+        /// </summary>
+        public const string SESSION_REPLACED_KEY = "PYREVIT_SESSIONREPLACED";
+
+        /// <summary>
         /// Python entry script that runs pre-load session setup.
         /// </summary>
         public const string PRELOAD_SCRIPT = "session_preload.py";
