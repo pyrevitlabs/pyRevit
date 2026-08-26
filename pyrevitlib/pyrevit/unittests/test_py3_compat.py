@@ -240,16 +240,18 @@ class OutParamMarshalingTests(unittest.TestCase):
             txn.RollBack()
 
     def test_curve_intersect_out_param(self):
-        """geom.intersect_curves marshals the IntersectionResultArray ref.
+        """geom.intersect_curves marshals intersection results.
 
-        Exercises the out-param wrapper behind query.get_gridpoints on
-        pure geometry, with no element creation or view dependency.
+        Exercises the Curve.Intersect wrapper on pure geometry, with no
+        element creation or view dependency. Works across both host API
+        generations (out-param overload and CurveIntersectResultOption).
         """
         from pyrevit import DB
         from pyrevit.revit import geom
 
         line_ns = DB.Line.CreateBound(DB.XYZ(0, -10, 0), DB.XYZ(0, 10, 0))
         line_ew = DB.Line.CreateBound(DB.XYZ(-10, 0, 0), DB.XYZ(10, 0, 0))
-        intres, results = geom.intersect_curves(line_ns, line_ew)
+        intres, points = geom.intersect_curves(line_ns, line_ew)
         self.assertEqual(intres, DB.SetComparisonResult.Overlap)
-        self.assertEqual(results.Size, 1)
+        self.assertEqual(len(points), 1)
+        self.assertIsInstance(points[0], DB.XYZ)

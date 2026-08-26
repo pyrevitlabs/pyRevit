@@ -3,7 +3,6 @@
 # pylint: disable=E0401,C0103
 from collections import OrderedDict
 
-from pyrevit import HOST_APP
 from pyrevit import revit, DB
 from pyrevit import forms
 from pyrevit import script
@@ -31,21 +30,13 @@ def colorvg(r, g, b, projline_only=False, xacn_name=None):
             ogs.SetProjectionLineColor(wireframe_color)
             ogs.SetCutLineColor(wireframe_color)
             if not projline_only:
-                if HOST_APP.is_newer_than(2018):
-                    ogs.SetSurfaceForegroundPatternColor(color)
-                    ogs.SetCutForegroundPatternColor(color)
-                else:
-                    ogs.SetProjectionFillColor(color)
-                    ogs.SetCutFillColor(color)
+                ogs.SetSurfaceForegroundPatternColor(color)
+                ogs.SetCutForegroundPatternColor(color)
 
                 solid_fpattern = revit.query.get_solid_fillpattern_element()
                 if solid_fpattern:
-                    if HOST_APP.is_newer_than(2018):
-                        ogs.SetCutForegroundPatternId(solid_fpattern.Id)
-                        ogs.SetSurfaceForegroundPatternId(solid_fpattern.Id)
-                    else:
-                        ogs.SetProjectionFillPatternId(solid_fpattern.Id)
-                        ogs.SetCutFillPatternId(solid_fpattern.Id)
+                    ogs.SetCutForegroundPatternId(solid_fpattern.Id)
+                    ogs.SetSurfaceForegroundPatternId(solid_fpattern.Id)
                 else:
                     logger.warning(
                         "Can not find solid fill pattern in model"

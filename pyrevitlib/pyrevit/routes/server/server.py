@@ -11,6 +11,7 @@ import threading
 from pyrevit.api import UI
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.compat import PY3
+from pyrevit.compat import PY2
 from pyrevit.compat import urlparse
 
 if PY3:
@@ -32,6 +33,24 @@ else:
 
 
 mlogger = get_logger(__name__)
+
+
+def _utf8_decode(value):
+    """Decode raw utf-8 byte strings left by Python 2 percent-decoding."""
+    if isinstance(value, str):
+        return value.decode("utf-8")
+    return value
+
+
+def _decode_utf8_params(params):
+    """Decode utf-8 keys and values of a parsed query params dictionary."""
+    decoded = {}
+    for key, value in params.items():
+        if isinstance(value, list):
+            decoded[_utf8_decode(key)] = [_utf8_decode(v) for v in value]
+        else:
+            decoded[_utf8_decode(key)] = _utf8_decode(value)
+    return decoded
 
 
 # instance of event handler created when this module is loaded
@@ -94,6 +113,8 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
             # parse_qs returns lists for values; flatten single values to strings
             parsed = parse_qs(query_string)
             query_params = {k: v[0] if len(v) == 1 else v for k, v in parsed.items()}
+            if PY2:
+                query_params = _decode_utf8_params(query_params)
 
         return base.Request(
             path=path,
