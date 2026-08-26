@@ -729,16 +729,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
             _gui = null;
             Dispose(true);
         }
-    }
 
-    private static void LogNonFatal(string operation, Exception ex) {
-        System.Diagnostics.Trace.TraceWarning(
-            "[ScriptIO] {0} | {1}",
-            operation,
-            ex
-        );
-        System.Diagnostics.Debug.WriteLine(
-            string.Format("[ScriptIO] {0} | {1}", operation, ex)
-        );
+        private static void LogNonFatal(string operation, Exception ex) {
+            System.Diagnostics.Trace.TraceWarning(
+                "[ScriptIO] {0} | {1}",
+                operation,
+                ex
+            );
+            System.Diagnostics.Debug.WriteLine(
+                string.Format("[ScriptIO] {0} | {1}", operation, ex)
+            );
+        }
     }
 }
