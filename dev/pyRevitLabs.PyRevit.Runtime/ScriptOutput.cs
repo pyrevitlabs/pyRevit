@@ -247,12 +247,23 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        public System.Windows.Forms.WebBrowser renderer => window.renderer;
         public string output_id => window.OutputId;
         public string output_uniqueid => window.OutputUniqueId;
         public bool is_closed_by_user => window.ClosedByUser;
         public string last_line => window.GetLastLine();
         public bool has_errors => _hasErrors;
+
+        /// <summary>Renderer engine identity, e.g. "WebView2/Chromium".</summary>
+        public string renderer_engine => window.RendererEngine;
+
+        /// <summary>Full renderer runtime version string, e.g. "151.0.4129.107".</summary>
+        public string renderer_version => window.RendererFullVersion;
+
+        /// <summary>
+        /// Evaluate JavaScript in the live output document: string results are
+        /// decoded, other results (number, boolean, object) come back as raw JSON.
+        /// </summary>
+        public string evaluate_js(string java_script) => window.RunJavaScript(java_script);
 
         public bool debug_mode {
             get { return output_stream.PrintDebugInfo; }
@@ -383,12 +394,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public void set_font(string font_family, float font_size) {
-            if (renderer != null)
-                renderer.Font = new System.Drawing.Font(
-                    font_family,
-                    font_size,
-                    System.Drawing.FontStyle.Regular,
-                    System.Drawing.GraphicsUnit.Point);
+            window.SetFont(font_family, font_size);
         }
 
         public void set_icon(string iconpath) { window.SetIcon(iconpath); }
@@ -409,7 +415,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public void open_url(string dest_url) {
-            renderer?.Navigate(dest_url, false);
+            window.NavigateInWindow(dest_url);
         }
 
         public void open_page(string dest_file) {
@@ -591,9 +597,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public string get_head_html() {
-            window.WaitReadyBrowser();
-            var head = renderer?.Document?.GetElementsByTagName("head");
-            return head != null && head.Count > 0 ? head[0].InnerHtml : string.Empty;
+            return window.GetHeadHtml();
         }
 
         public void inject_to_head(string element_tag, string element_contents, object attribs = null) {
@@ -617,22 +621,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private void InjectElement(string targetName, string elementTag, string contents, object attribs) {
             output_stream.Flush();
-            window.WaitReadyBrowser();
-            var document = renderer?.Document;
-            if (document == null)
-                return;
-
-            var element = document.CreateElement(elementTag);
-            if (!string.IsNullOrEmpty(contents))
-                element.InnerHtml = contents;
-
-            foreach (var attr in ToDictionary(attribs))
-                element.SetAttribute(attr.Key, attr.Value);
-
-            var targets = document.GetElementsByTagName(targetName);
-            if (targets != null && targets.Count > 0)
-                targets[0].AppendChild(element);
-            window.WaitReadyBrowser();
+            var attribsDict = ToDictionary(attribs);
+            window.InjectHtmlElement(targetName, elementTag, contents ?? string.Empty, attribsDict);
         }
 
         private static string MarkdownToHtml(string markdown) {
@@ -757,6 +747,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private static string InlineMarkdown(string text) {
             var encoded = text ?? string.Empty;
+            // links are converted first so emphasis patterns never touch urls
+            encoded = Regex.Replace(
+                encoded,
+                @"\[([^\]]+)\]\(([^)\s]+)(?:\s+""[^""]*"")?\)",
+                "<a href=\"$2\" style=\"color:#f39c12;\">$1</a>");
             encoded = Regex.Replace(encoded, @"\*\*(.+?)\*\*", "<strong>$1</strong>");
             encoded = Regex.Replace(encoded, @"__(.+?)__", "<strong>$1</strong>");
             encoded = Regex.Replace(encoded, @"\*(.+?)\*", "<em>$1</em>");
