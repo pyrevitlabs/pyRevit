@@ -497,6 +497,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         internal void SetFont(string fontFamily, float fontSize) {
             var family = (fontFamily ?? string.Empty).Trim().Replace("'", "\\'");
             var css = string.Format(
+                System.Globalization.CultureInfo.InvariantCulture,
                 "body {{ font-family: '{0}' !important; font-size: {1}pt !important; }}",
                 string.IsNullOrEmpty(family) ? "inherit" : family,
                 fontSize > 0 ? fontSize : 10f);
