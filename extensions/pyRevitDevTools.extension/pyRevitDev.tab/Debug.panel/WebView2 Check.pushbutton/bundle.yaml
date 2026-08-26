@@ -1,0 +1,8 @@
+title: WebView2 Check
+tooltip: >-
+  Validate the output window renders with WebView2 (Chromium): engine identity
+  and runtime version, Chromium user agent, html/script/style injection and
+  script execution, markdown link conversion, progress bar dom, revit://
+  deep-link anchors, the removed legacy renderer property, and the WebView2
+  user-data folder. Results print as a pass/fail table.
+context: zero-doc
