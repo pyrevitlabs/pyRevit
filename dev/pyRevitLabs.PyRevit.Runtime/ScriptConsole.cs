@@ -541,9 +541,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 _lastLine = OutputText;
 
             if (!_frozen) {
-                // Fail instead of dropping the entry when the renderer is not
-                // ready yet (e.g. right after the window is shown); the stream
-                // flush retries the entry once the document is available.
                 var document = ActiveDocument;
                 if (document == null || document.Body == null)
                     throw new InvalidOperationException(
@@ -665,9 +662,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             try {
                 AppendText("", ScriptConsoleConfigs.DefaultBlock, record: false);
             }
-            catch {
-                // cosmetic scroll fix; input must proceed even if the
-                // renderer is momentarily unavailable
+            catch (Exception ex) {
+                Debug.WriteLine($"ScriptConsole.GetInput: failed to append cosmetic scroll fix line. {ex}");
             }
             string inputText = stdinBar.ReadInput();
             stdinBar.Hide();

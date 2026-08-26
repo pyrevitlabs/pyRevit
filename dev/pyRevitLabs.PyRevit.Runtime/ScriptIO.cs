@@ -223,8 +223,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             bool needShow;
             lock (this) {
-                // Close out any buffered normal output first so it keeps its own
-                // (non-error) styling when it drains.
                 FinalizePendingEntry(keepIncompleteShortcode: false);
 
                 if (output != null && output.ClosedByUser) {
@@ -236,11 +234,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
                 _errored = true;
                 _erroredEngine = engineType;
-
-                // The traceback is enqueued as one unit: chunking it through
-                // Write() strands full-size chunks in the partial buffer (the
-                // count < StreamChunkSize heuristic treats them as incomplete)
-                // and can split emoji shortcodes mid-token.
                 var normalized = error_msg.Replace("\0", string.Empty);
                 _partial.Append(normalized.NormalizeNewLine());
                 FinalizePendingEntry(keepIncompleteShortcode: false);
@@ -283,8 +276,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
                             string.Format("<---- W offset: {0} count: {1} ---->", offset, count),
                             ScriptConsoleConfigs.DefaultBlock);
                     }
-                    catch {
-                        // diagnostics are best effort
+                    catch (Exception ex) {
+                        System.Diagnostics.Debug.WriteLine(
+                            string.Format("[ScriptIO] Failed to append debug diagnostics text (offset: {0}, count: {1}): {2}", offset, count, ex)
+                        );
                     }
                 }
 
@@ -547,11 +542,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 _pendingChars -= entry.Text.Length;
                 _lastEntryChars = entry.Text.Length;
             }
-
-            // A freshly shown window can still be initializing its renderer.
-            // Pump a few frames between attempts; if the entry still cannot be
-            // rendered, put it back at the front so a later tick retries it
-            // instead of silently dropping the content (e.g. tracebacks).
             var drained = false;
             for (var attempt = 0; attempt < RenderAttempts && !drained; attempt++) {
                 try {
@@ -680,8 +670,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
                                 string.Format("<---- R offset: {0} count: {1} ---->", offset, count),
                                 ScriptConsoleConfigs.DefaultBlock);
                         }
-                        catch {
-                            // diagnostics are best effort
+                        catch (Exception ex) {
+                            System.Diagnostics.Debug.WriteLine(
+                                string.Format("[ScriptIO] Failed to append read diagnostics text (offset: {0}, count: {1}): {2}", offset, count, ex)
+                            );
                         }
                     }
 
@@ -695,8 +687,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
                                     string.Format("<---- R copied: \"{0}\" size: {1} ---->", input, copyCount),
                                     ScriptConsoleConfigs.DefaultBlock);
                             }
-                            catch {
-                                // diagnostics are best effort
+                            catch (Exception ex) {
+                                System.Diagnostics.Debug.WriteLine(
+                                    string.Format("[ScriptIO] Failed to append read copied diagnostics text (size: {0}): {1}", copyCount, ex)
+                                );
                             }
                         }
                     }
@@ -735,5 +729,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
             _gui = null;
             Dispose(true);
         }
+    }
+
+    private static void LogNonFatal(string operation, Exception ex) {
+        System.Diagnostics.Trace.TraceWarning(
+            "[ScriptIO] {0} | {1}",
+            operation,
+            ex
+        );
+        System.Diagnostics.Debug.WriteLine(
+            string.Format("[ScriptIO] {0} | {1}", operation, ex)
+        );
     }
 }
