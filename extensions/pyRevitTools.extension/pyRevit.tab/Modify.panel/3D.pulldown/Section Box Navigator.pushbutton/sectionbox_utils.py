@@ -8,16 +8,14 @@ get_elementid_from_value = get_elementid_from_value_func()
 
 def is_2d_view(view, only_plan=False):
     """Check if a view is a 2D view (plan, elevation, section)."""
-    view_type = view.ViewType
-    if only_plan:
-        return view_type in (
-            DB.ViewType.FloorPlan,
-            DB.ViewType.CeilingPlan,
-        )
 
-    return view_type in (
-        DB.ViewType.FloorPlan,
-        DB.ViewType.CeilingPlan,
+    if isinstance(view, DB.ViewPlan):
+        return True
+
+    if only_plan:
+        return False
+
+    return view.ViewType in (
         DB.ViewType.Section,
         DB.ViewType.Elevation,
     )
