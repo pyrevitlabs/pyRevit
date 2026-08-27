@@ -187,6 +187,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private readonly object _pendingLock = new object();
         private readonly StringBuilder _pendingHtml = new StringBuilder();
         private readonly StringBuilder _frozenPendingHtml = new StringBuilder();
+        private readonly Queue<string> _pendingScripts = new Queue<string>();
         private volatile bool _flushQueued;
         private volatile bool _documentStarted;
         private volatile bool _outputLossReported;
@@ -638,7 +639,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public void ScrollToBottom() {
-            _webView.PostScript("window.scrollTo(0, document.body.scrollHeight);");
+            PostScriptWhenReady("window.scrollTo(0, document.body.scrollHeight);");
         }
 
         internal void ForceRenderFrame() {
@@ -798,6 +799,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private void WebView_DocumentReady(object sender, EventArgs e) {
             FlushPendingEntries();
+            FlushPendingScripts();
         }
 
         /// <summary>Push all buffered entries into the document, in order.</summary>
@@ -808,6 +810,35 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
             if (workPending)
                 FlushPendingEntries();
+            FlushPendingScripts();
+        }
+
+        private void PostScriptWhenReady(string javaScript) {
+            if (string.IsNullOrEmpty(javaScript) || ClosedByUser)
+                return;
+
+            EnsureDocumentReady();
+            lock (_pendingLock) {
+                if (!_webView.IsDocumentReady) {
+                    _pendingScripts.Enqueue(javaScript);
+                    return;
+                }
+            }
+
+            _webView.PostScript(javaScript);
+        }
+
+        private void FlushPendingScripts() {
+            string[] pendingScripts;
+            lock (_pendingLock) {
+                if (_pendingScripts.Count == 0 || ClosedByUser)
+                    return;
+                pendingScripts = _pendingScripts.ToArray();
+                _pendingScripts.Clear();
+            }
+
+            foreach (var pendingScript in pendingScripts)
+                _webView.PostScript(pendingScript);
         }
 
         /// <summary>
@@ -966,8 +997,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public void SetElementVisibility(bool visibility, string elementId) {
-            EnsureDocumentReady();
-            _webView.PostScript(BuildSetElementDisplayJs(
+            PostScriptWhenReady(BuildSetElementDisplayJs(
                 ToJsString(elementId),
                 visibility ? "''" : "'none'"));
         }
@@ -977,8 +1007,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 // taskbar progress object
                 this.TaskbarItemInfo.ProgressState = visibility ? System.Windows.Shell.TaskbarItemProgressState.Normal : System.Windows.Shell.TaskbarItemProgressState.None;
 
-            EnsureDocumentReady();
-            _webView.PostScript(BuildSetElementDisplayJs(
+            PostScriptWhenReady(BuildSetElementDisplayJs(
                 ToJsString(ScriptConsoleConfigs.ProgressBlockId),
                 visibility ? "''" : "'none'"));
         }
@@ -1034,7 +1063,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             UpdateTaskBarProgress(curValue, maxValue);
 
-            EnsureDocumentReady();
             if (!this.IsVisible) {
                 try {
                     this.Show();
@@ -1048,7 +1076,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             SetProgressBarVisibility(true);
 
             var widthStyleProperty = string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0}%", Math.Max(0, Math.Min(100, (curValue / maxValue) * 100)));
-            _webView.PostScript(BuildUpdateProgressJs(ToJsString(widthStyleProperty)));
+            PostScriptWhenReady(BuildUpdateProgressJs(ToJsString(widthStyleProperty)));
         }
 
         public void UpdateInlineWaitAnimation(bool state = true) {
@@ -1071,7 +1099,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return;
             }
 
-            EnsureDocumentReady();
             if (!this.IsVisible) {
                 try {
                     this.Show();
@@ -1084,7 +1111,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             _inlineWaitIndex = (_inlineWaitIndex + 1) % ScriptConsoleConfigs.InlineWaitSequence.Count;
             var waitText = ScriptConsoleConfigs.InlineWaitSequence[_inlineWaitIndex];
-            _webView.PostScript(BuildInlineWaitJs(ToJsString(waitText)));
+            PostScriptWhenReady(BuildInlineWaitJs(ToJsString(waitText)));
         }
 
         public void SelfDestructTimer(int seconds) {
@@ -1153,7 +1180,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     foreach (var attr in attribs)
                         attrs[attr.Key] = attr.Value ?? string.Empty;
                 }
-                _webView.PostScript(BuildInjectScriptElementJs(
+                PostScriptWhenReady(BuildInjectScriptElementJs(
                     ToJsString(contents ?? string.Empty),
                     pyRevitLabs.Json.JsonConvert.SerializeObject(attrs),
                     ToJsString(target)));
@@ -1170,11 +1197,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
 
             var html = string.Format("<{0}{1}>{2}</{0}>", elementTag, attrText, contents ?? string.Empty);
-            _webView.PostScript(BuildInjectHtmlJs(ToJsString(html), ToJsString(target)));
+            PostScriptWhenReady(BuildInjectHtmlJs(ToJsString(html), ToJsString(target)));
         }
 
         internal void PostRendererScript(string javaScript) {
-            _webView.PostScript(javaScript);
+            PostScriptWhenReady(javaScript);
         }
 
         internal bool RendererHasFocus {
