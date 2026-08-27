@@ -718,17 +718,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 QueueFlush();
         }
 
+        /// <summary>
+        /// Warning: the callback swallows its exceptions. An exception escaping a
+        /// <see cref="Dispatcher.BeginInvoke(Delegate, DispatcherPriority)"/>
+        /// callback reaches <c>Dispatcher.UnhandledException</c> and terminates
+        /// Revit; output failing to render must never be fatal.
+        /// </summary>
         private void QueueFlush() {
             if (_flushQueued || ClosedByUser)
                 return;
             _flushQueued = true;
-            // Guarded: an exception escaping a BeginInvoke callback reaches
-            // Dispatcher.UnhandledException and terminates Revit. Output failing
-            // to render must never be fatal.
             Dispatcher.BeginInvoke(
                 new Action(() => {
                     try {
-                        FlushPendingEntries(false);
+                        FlushPendingEntries();
                     }
                     catch (Exception ex) {
                         ScriptRendererLog.Error("output flush failed. {0}", ex);
@@ -737,7 +740,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 DispatcherPriority.Normal);
         }
 
-        private void FlushPendingEntries(bool waitForBrowser) {
+        /// <summary>
+        /// Post buffered entries into the document, in submission order.
+        ///
+        /// Important: writes are fire-and-forget. <c>ExecuteScriptAsync</c>
+        /// preserves submission order, so a later read still observes these
+        /// inserts, and the print path must never pump a nested dispatcher frame —
+        /// it runs inside Revit API callbacks during session load.
+        ///
+        /// Content arriving before the document is ready stays buffered until
+        /// <see cref="ScriptWebView.DocumentReady"/>; re-queueing instead would
+        /// spin the dispatcher for as long as the core takes to come up. Content
+        /// is discarded only once the renderer can never render it.
+        /// </summary>
+        private void FlushPendingEntries() {
             _flushQueued = false;
 
             string payload;
@@ -749,40 +765,39 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (payload.Length == 0 || ClosedByUser)
                 return;
 
-            // Nothing will ever render; drop the payload rather than buffer forever.
             if (_webView.RuntimeMissing || _webView.InitializationFailed) {
-                // Reported once per window: this runs on every subsequent write, and
-                // the record itself can reach the console and schedule another flush.
-                if (!_outputLossReported) {
-                    _outputLossReported = true;
-                    ScriptRendererLog.Error(
-                        "discarding output for this window: runtimeMissing={0} initFailed={1}",
-                        _webView.RuntimeMissing, _webView.InitializationFailed);
-                }
+                ReportOutputLossOnce();
                 return;
             }
 
             EnsureDocumentReady();
 
             if (!_webView.IsDocumentReady) {
-                // Put it back and wait for ScriptWebView.DocumentReady to flush us.
-                // Re-queueing here instead would spin the dispatcher at Normal
-                // priority for the whole second-or-two the core takes to come up.
                 lock (_pendingLock) {
                     _pendingHtml.Insert(0, payload);
                 }
                 return;
             }
 
-            // Always fire-and-forget. ExecuteScriptAsync preserves submission
-            // order, so a later EvalScript still observes these inserts, and the
-            // print path must never pump a nested dispatcher frame -- it runs
-            // inside Revit API callbacks during session load.
             _webView.PostScript(BuildInsertEntriesJs(ToJsString(payload)));
         }
 
+        /// <summary>
+        /// Report discarded output once per window: this is reached on every
+        /// subsequent write, and the record itself can reach the console and
+        /// schedule another flush.
+        /// </summary>
+        private void ReportOutputLossOnce() {
+            if (_outputLossReported)
+                return;
+            _outputLossReported = true;
+            ScriptRendererLog.Error(
+                "discarding output for this window: runtimeMissing={0} initFailed={1}",
+                _webView.RuntimeMissing, _webView.InitializationFailed);
+        }
+
         private void WebView_DocumentReady(object sender, EventArgs e) {
-            FlushPendingEntries(false);
+            FlushPendingEntries();
         }
 
         /// <summary>Push all buffered entries into the document, in order.</summary>
@@ -792,13 +807,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 workPending = _flushQueued || _pendingHtml.Length > 0;
             }
             if (workPending)
-                FlushPendingEntries(false);
+                FlushPendingEntries();
         }
 
         /// <summary>
-        /// Bring the renderer up and block until the document can be read.
-        /// Only for the synchronous public API (DOM reads, freeze, copy), which
-        /// runs from user commands -- never from the session-load print path.
+        /// Bring the renderer up and block until the document can be read, then
+        /// drain buffered content so a following read observes it.
+        ///
+        /// Warning: for the synchronous API only — DOM reads, freeze, and
+        /// injection, which run from user commands and would otherwise silently
+        /// drop work posted before the core is up. Never call this from the print
+        /// path; see <see cref="ScriptWebView.WaitUntilReady"/>.
         /// </summary>
         internal void EnsureDocumentReadyBlocking() {
             EnsureDocumentReady();
@@ -1124,9 +1143,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (string.IsNullOrEmpty(elementTag))
                 return;
 
-            // Blocking: injected styles and scripts are posted fire-and-forget and
-            // would be dropped if the core were not up yet. Reached from user
-            // commands (add_style, inject_script, set_font), never session load.
             EnsureDocumentReadyBlocking();
 
             var target = string.Equals(targetName, "head", StringComparison.OrdinalIgnoreCase) ? "head" : "body";
