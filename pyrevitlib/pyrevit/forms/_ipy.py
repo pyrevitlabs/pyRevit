@@ -346,10 +346,14 @@ class _WPFMixin(object):
     def _apply_dark_titlebar(self):
         """No-op by default; overridden by WPFWindow (Page has no title bar)."""
 
+    def _refresh_icon(self):
+        """No-op by default; overridden by WPFWindow (Page has no icon)."""
+
     def _on_theme_refresh(self):
         """Re-theme resources and, for windows, the native title bar."""
         _WPFMixin.setup_resources(self, set_root_colors=self._live_refresh_root_colors)
         self._apply_dark_titlebar()
+        self._refresh_icon()
 
     def _subscribe_theme_changed(self):
         """Subscribe this control to Revit's ThemeChanged event, if available.
@@ -682,9 +686,19 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         """Set window icon to given icon path."""
         self.Icon = utils.bitmap_from_file(icon_path)
 
+    def _refresh_icon(self):
+        """Repaint the default window icon for the active theme."""
+        self.setup_icon()
+
     def setup_icon(self):
-        """Setup default window icon."""
-        self.set_icon(op.join(BIN_DIR, "pyrevit_settings.png"))
+        """Setup default window icon, following the bundle icon convention.
+
+        Picks up pyrevit_settings.dark.png under a dark UI theme, the same
+        <name>.dark.png lookup that extension bundle icons use.
+        """
+        icon_file = revit.ui.resolve_icon_file(BIN_DIR, "pyrevit_settings.png")
+        if icon_file:
+            self.set_icon(icon_file)
 
     def hide(self):
         """Hide window."""
