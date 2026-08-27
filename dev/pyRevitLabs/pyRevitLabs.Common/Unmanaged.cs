@@ -109,8 +109,10 @@ namespace pyRevitLabs.Common {
             return DwmSetWindowAttribute(hwnd, attribute, ref value, sizeof(int)) == 0;
         }
 
-        // Asks DWM to render a window's native title bar using the OS dark-mode
-        // palette (Windows 10 20H1+/Windows 11). Silently no-ops on older Windows.
+        /// <summary>
+        /// Asks DWM to render a window's native title bar using the OS dark-mode palette.
+        /// </summary>
+        /// <remarks>Requires Windows 10 20H1+; silently no-ops on older Windows.</remarks>
         public static void SetImmersiveDarkMode(IntPtr hwnd, bool enabled) {
             int value = enabled ? 1 : 0;
             if (!TrySetAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, value)) {
@@ -118,9 +120,15 @@ namespace pyRevitLabs.Common {
             }
         }
 
-        // Sets the exact title bar background/text colors (Windows 11 22000+
-        // only; silently no-ops on Windows 10, which falls back to whatever
-        // SetImmersiveDarkMode picked). Colors are 0x00BBGGRR COLORREFs.
+        /// <summary>
+        /// Sets the exact title bar background and text colors.
+        /// </summary>
+        /// <remarks>
+        /// Requires Windows 11 22000+; silently no-ops on Windows 10, which keeps
+        /// whatever <see cref="SetImmersiveDarkMode"/> selected.
+        /// </remarks>
+        /// <param name="captionColorRef">Caption background as a 0x00BBGGRR COLORREF.</param>
+        /// <param name="textColorRef">Caption text as a 0x00BBGGRR COLORREF.</param>
         public static void SetTitleBarColors(IntPtr hwnd, int captionColorRef, int textColorRef) {
             TrySetAttribute(hwnd, DWMWA_CAPTION_COLOR, captionColorRef);
             TrySetAttribute(hwnd, DWMWA_TEXT_COLOR, textColorRef);

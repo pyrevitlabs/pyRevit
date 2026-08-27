@@ -82,15 +82,10 @@ XAML_FILES_DIR = op.dirname(__file__)
 THEME_XAML_FILE = op.join(XAML_FILES_DIR, "Theme.xaml")
 
 
-# Brand colours: constant across themes, used for HUD-style overlays
-# (CommandSwitchWindow, SearchPrompt, ProgressBar accent) that are
-# intentionally dark regardless of the active theme.
 _BRAND_DARK = (0xFF, 0x2C, 0x3E, 0x50)
 _BRAND_DARKER_DARK = (0xFF, 0x23, 0x30, 0x3D)
 _BRAND_ACCENT = (0xFF, 0xF3, 0x9C, 0x12)
 
-# Semantic palette applied to regular (non-HUD) window/control chrome.
-# Keys mirror the "pyRevit<Name>Brush" resources injected below.
 _PALETTE_LIGHT = {
     "WindowBackground": (0xFF, 0xFF, 0xFF, 0xFF),
     "WindowForeground": (0xFF, 0x00, 0x00, 0x00),
@@ -263,15 +258,21 @@ class _WPFMixin(object):
     """Shared behaviour for WPFWindow and WPFPanel.
 
     Not intended for direct use — inherit via WPFWindow or WPFPanel.
+
+    Attributes:
+        _live_refresh_root_colors (bool): whether a live theme-change refresh
+            re-applies Background/Foreground directly.
+
+    Important:
+        _live_refresh_root_colors stays False for WPFWindow: a HUD-style
+        overlay (CommandSwitchWindow, SearchPrompt, ...) declares its own
+        literal transparent Background in XAML and must not have it clobbered
+        while already open. WPFPanel overrides it to True — dockable panes
+        never use that transparent-HUD pattern, and unlike transient dialogs
+        they stay open for the whole Revit session, so they need to pick up a
+        live theme change.
     """
 
-    # Whether a live theme-change refresh re-applies Background/Foreground
-    # directly. False for WPFWindow: a HUD-style overlay (CommandSwitchWindow,
-    # SearchPrompt, ...) declares its own literal transparent Background in
-    # XAML and must not have it clobbered while already open. WPFPanel
-    # overrides this to True — dockable panes never use that transparent-HUD
-    # pattern, and unlike transient dialogs they stay open for the whole
-    # Revit session, so they need to actually pick up a live theme change.
     _live_refresh_root_colors = False
 
     # ------------------------------------------------------------------ resources
@@ -293,6 +294,14 @@ class _WPFMixin(object):
                 transparent HUD-style overlays) must be able to override this
                 afterwards. Live theme-change refreshes pass False so an
                 already-open HUD window is not forced opaque.
+
+        Note:
+            The root colours are assigned directly rather than left to the
+            implicit Window/Page style. The root element already exists before
+            its Resources are populated, and its own implicit-style lookup does
+            not reliably re-run once the brushes and Theme.xaml are merged
+            afterwards, even though descendants created later during XAML
+            parsing do pick the styles up.
         """
         res = wpf_ctrl.Resources
 
@@ -317,15 +326,6 @@ class _WPFMixin(object):
         res["pyRevitRecognizesAccessKey"] = DEFAULT_RECOGNIZE_ACCESS_KEY
 
         if set_root_colors:
-            # Set directly rather than relying on the implicit Window/Page
-            # style: the root element already exists before its Resources
-            # are populated, and its own implicit-style lookup does not
-            # reliably re-run once brushes/Theme.xaml are added afterwards,
-            # even though descendants created later during XAML parsing
-            # pick the styles up correctly. Since this runs before
-            # wpf.LoadComponent, a window/page whose own XAML declares a
-            # literal Background (the transparent HUD-style overlays)
-            # still wins, because that gets parsed afterwards.
             wpf_ctrl.Background = res["pyRevitWindowBackgroundBrush"]
             wpf_ctrl.Foreground = res["pyRevitWindowForegroundBrush"]
 
@@ -368,7 +368,9 @@ class _WPFMixin(object):
         except Exception:
             self._on_theme_changed = None
 
-    def _unsubscribe_theme_changed(self, sender=None, args=None):  # pylint: disable=unused-argument
+    def _unsubscribe_theme_changed(
+        self, sender=None, args=None
+    ):  # pylint: disable=unused-argument
         """Detach the ThemeChanged subscription set up by _subscribe_theme_changed."""
         handler = getattr(self, "_on_theme_changed", None)
         if handler is None:
@@ -773,9 +775,6 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
     editor_interaction = None
     contextual_help = None
 
-    # Dockable panes stay open for the whole Revit session and never use the
-    # transparent-HUD pattern, so a live theme change should always repaint
-    # their Background/Foreground directly (see _WPFMixin._on_theme_refresh).
     _live_refresh_root_colors = True
 
     def __init__(self):

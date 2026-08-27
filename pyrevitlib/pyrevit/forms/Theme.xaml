@@ -3,10 +3,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:prim="clr-namespace:System.Windows.Controls.Primitives;assembly=PresentationFramework">
 
-    <!-- Base window chrome. Individual windows may override by declaring
-         their own explicit Background/Foreground or TargetType styles.
-         The native title bar itself is re-skinned dark via DWM
-         (WPFWindow._apply_dark_titlebar), not replaced with custom chrome. -->
     <Style TargetType="Window">
         <Setter Property="Background" Value="{DynamicResource pyRevitWindowBackgroundBrush}"/>
         <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
@@ -16,7 +12,6 @@
         <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
     </Style>
 
-    <!-- Button / ToggleButton -->
     <Style x:Key="pyRevitButtonBaseStyle" TargetType="ButtonBase">
         <Setter Property="Background" Value="{DynamicResource pyRevitButtonBackgroundBrush}"/>
         <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
@@ -60,7 +55,6 @@
         </Style.Triggers>
     </Style>
 
-    <!-- TextBox / PasswordBox -->
     <Style TargetType="TextBox">
         <Setter Property="Background" Value="{DynamicResource pyRevitControlBackgroundBrush}"/>
         <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
@@ -107,7 +101,6 @@
         </Setter>
     </Style>
 
-    <!-- ComboBox -->
     <Style TargetType="ComboBoxItem">
         <Setter Property="Padding" Value="6,3"/>
         <Setter Property="Template">
@@ -222,7 +215,6 @@
         </Setter>
     </Style>
 
-    <!-- ListBox / ListView -->
     <Style TargetType="ListBox">
         <Setter Property="Background" Value="{DynamicResource pyRevitControlBackgroundBrush}"/>
         <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
@@ -286,7 +278,6 @@
         </Setter>
     </Style>
 
-    <!-- CheckBox / RadioButton -->
     <Style TargetType="CheckBox">
         <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
         <Setter Property="Template">
@@ -359,7 +350,6 @@
         </Setter>
     </Style>
 
-    <!-- Expander -->
     <Style TargetType="Expander">
         <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
         <Setter Property="Background" Value="{DynamicResource pyRevitWindowBackgroundBrush}"/>
@@ -442,7 +432,6 @@
         </Setter>
     </Style>
 
-    <!-- DatePicker / Calendar -->
     <Style TargetType="DatePickerTextBox">
         <Setter Property="Background" Value="{DynamicResource pyRevitControlBackgroundBrush}"/>
         <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
@@ -720,7 +709,6 @@
     </Style>
     <Style TargetType="Calendar" BasedOn="{StaticResource pyRevitCalendarStyle}"/>
 
-    <!-- GroupBox -->
     <Style TargetType="GroupBox">
         <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource pyRevitControlBorderBrush}"/>
@@ -745,7 +733,6 @@
         </Setter>
     </Style>
 
-    <!-- TabControl / TabItem -->
     <Style TargetType="TabItem">
         <Setter Property="Padding" Value="8,4"/>
         <Setter Property="Template">
@@ -775,7 +762,6 @@
         <Setter Property="BorderBrush" Value="{DynamicResource pyRevitControlBorderBrush}"/>
     </Style>
 
-    <!-- ScrollBar -->
     <Style x:Key="pyRevitScrollBarThumb" TargetType="Thumb">
         <Setter Property="Template">
             <Setter.Value>
@@ -836,7 +822,6 @@
         </Style.Triggers>
     </Style>
 
-    <!-- ContextMenu / MenuItem -->
     <Style TargetType="ContextMenu">
         <Setter Property="Background" Value="{DynamicResource pyRevitControlBackgroundBrush}"/>
         <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
@@ -860,7 +845,6 @@
         </Setter>
     </Style>
 
-    <!-- Misc -->
     <Style TargetType="ToolTip">
         <Setter Property="Background" Value="{DynamicResource pyRevitControlBackgroundBrush}"/>
         <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
