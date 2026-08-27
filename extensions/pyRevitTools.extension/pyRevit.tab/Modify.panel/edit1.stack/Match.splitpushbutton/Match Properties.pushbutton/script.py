@@ -5,6 +5,7 @@ Shift+Click:
 Open a modeless recall window pre-filled with the last matched properties.
 
 """
+
 import pickle
 
 from pyrevit import revit, DB, EXEC_PARAMS
@@ -13,7 +14,6 @@ from pyrevit import script
 
 from match.match_utils import get_source_properties, match_prop
 from match.clipboard import RecallWindow
-
 
 logger = script.get_logger()
 output = script.get_output()
@@ -33,9 +33,16 @@ def recall():
 
 
 def remember(src_props):
-    """Save selected matched properties to memory."""
-    with open(MEMFILE, "wb") as mf:
-        pickle.dump(src_props, mf)
+    """Save selected matched properties to memory.
+
+    Failure to persist (e.g. unpicklable values) is logged and ignored;
+    matching must proceed regardless of recall-memory state.
+    """
+    try:
+        with open(MEMFILE, "wb") as mf:
+            pickle.dump(src_props, mf)
+    except Exception as ex:
+        logger.debug("Failed saving matched properties to memory | %s", str(ex))
 
 
 # ── Shift+Click: open modeless recall window ─────────────────────────────────
@@ -65,9 +72,7 @@ else:
         with forms.WarningBar(title="Pick source object:"):
             source_element = revit.pick_element()
     elif target_type == "Views":
-        source_element = forms.select_views(
-            title="Select Source View", multiple=False
-        )
+        source_element = forms.select_views(title="Select Source View", multiple=False)
 
 if source_element:
     source_props = get_source_properties(source_element, simple=True)

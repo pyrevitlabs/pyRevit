@@ -38,6 +38,13 @@ elif PY3:
     import urllib
     from urllib.parse import urlparse
 
+try:
+    if PY3:
+        import requests
+    else:
+        import pyrevit.netrequests as requests
+except Exception:
+    import requests
 
 def _get_revit_version():
     """Returns the current Revit version as an integer."""
