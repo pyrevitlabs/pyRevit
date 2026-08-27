@@ -19,8 +19,6 @@ from sectionbox_navigation import (
 from sectionbox_utils import (
     is_2d_view,
     get_view_range_and_crop,
-    get_crop_element,
-    compute_rotation_angle,
     apply_plan_viewrange_from_sectionbox,
     to_world_identity,
 )
@@ -1232,67 +1230,65 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         if not view_data:
             return
 
-        vt = view_data.get("view_type", None)
         section_box = view_data.get("section_box", None)
 
-        # Has to be a seperate Transaction for rotate_crop_element to find the bbox
-        with revit.Transaction("Activate CropBox"):
-            if not self.current_view.CropBoxActive:
-                self.current_view.CropBoxActive = True
+        if isinstance(self.current_view, DB.ViewPlan):
+            with revit.Transaction("Activate CropBox"):
+                if not self.current_view.CropBoxActive:
+                    self.current_view.CropBoxActive = True
+                if not self.current_view.CropBoxVisible:
+                    self.current_view.CropBoxVisible = True
 
-            if not self.current_view.CropBoxVisible:
-                self.current_view.CropBoxVisible = True
+            with revit.Transaction("Align 2D View to 3D Section Box"):
+                tf = section_box.Transform
+                min_pt = section_box.Min
+                max_pt = section_box.Max
 
-        with revit.Transaction("Align 2D View to 3D Section Box"):
-            if vt == DB.ViewType.FloorPlan or vt == DB.ViewType.CeilingPlan:
-                self.current_view.CropBox = section_box
-                crop_el = get_crop_element(doc, self.current_view)
-                if crop_el:
-                    # --- 1. Compute 3D section box centroid in world coordinates ---
-                    tf = section_box.Transform
-                    sb_min = tf.OfPoint(section_box.Min)
-                    sb_max = tf.OfPoint(section_box.Max)
-                    sb_centroid = DB.XYZ(
-                        (sb_min.X + sb_max.X) / 2.0,
-                        (sb_min.Y + sb_max.Y) / 2.0,
-                        0,  # Z is ignored for plan rotation
+                # Box's real footprint corners, in local (rotation-invariant) space,
+                # taken to world coords via the box's own transform.
+                local_corners = [
+                    DB.XYZ(min_pt.X, min_pt.Y, 0),
+                    DB.XYZ(max_pt.X, min_pt.Y, 0),
+                    DB.XYZ(max_pt.X, max_pt.Y, 0),
+                    DB.XYZ(min_pt.X, max_pt.Y, 0),
+                ]
+                world_corners = [tf.OfPoint(c) for c in local_corners]
+                flat_z = world_corners[0].Z
+                world_corners = [DB.XYZ(p.X, p.Y, flat_z) for p in world_corners]
+
+                crsm = self.current_view.GetCropRegionShapeManager()
+                applied_shape = False
+                if crsm and crsm.CanHaveShape:
+                    loop = DB.CurveLoop()
+                    for i in range(4):
+                        loop.Append(
+                            DB.Line.CreateBound(world_corners[i], world_corners[(i + 1) % 4])
+                        )
+                    crsm.SetCropShape(loop)
+                    applied_shape = True
+                else:
+                    # View doesn't allow a custom shape - falls back to the old
+                    # behavior (sizes/positions but won't rotate).
+                    self.current_view.CropBox = section_box
+
+                apply_plan_viewrange_from_sectionbox(doc, self.current_view, section_box)
+
+                if applied_shape:
+                    self.show_status_message(
+                        3,
+                        self.get_locale_string("CropBoxAlignedFormat").format(view_data["view"].Name),
+                        "success",
                     )
-
-                    # --- 2. Compute current crop element centroid in view coordinates ---
-                    crop_box = crop_el.get_BoundingBox(self.current_view)
-                    crop_centroid = DB.XYZ(
-                        (crop_box.Min.X + crop_box.Max.X) / 2.0,
-                        (crop_box.Min.Y + crop_box.Max.Y) / 2.0,
-                        0,
+                else:
+                    print("failed aplying")
+                    self.show_status_message(
+                        3, self.get_locale_string("UnsupportedViewType"), "warning"
                     )
-
-                    # --- 3. Translate crop element so centroids align (XY only) ---
-                    translation = sb_centroid - crop_centroid
-                    DB.ElementTransformUtils.MoveElement(doc, crop_el.Id, translation)
-
-                    # --- 4. Rotate crop element around vertical axis through its centroid ---
-                    angle = compute_rotation_angle(section_box, self.current_view)
-                    axis = DB.Line.CreateBound(
-                        DB.XYZ(sb_centroid.X, sb_centroid.Y, 0),
-                        DB.XYZ(sb_centroid.X, sb_centroid.Y, 1),
-                    )
-                    DB.ElementTransformUtils.RotateElement(doc, crop_el.Id, axis, angle)
-                apply_plan_viewrange_from_sectionbox(
-                    doc, self.current_view, section_box
-                )
-                self.show_status_message(
-                    3,
-                    self.get_locale_string("CropBoxAlignedFormat").format(
-                        view_data["view"].Name
-                    ),
-                    "success",
-                )
-
-            else:
-                self.show_status_message(
-                    3, self.get_locale_string("UnsupportedViewType"), "warning"
-                )
-                return
+        else:
+            self.show_status_message(
+                3, self.get_locale_string("UnsupportedViewType"), "warning"
+            )
+            return
 
     def do_toggle(self):
         """Toggle section or crop box."""

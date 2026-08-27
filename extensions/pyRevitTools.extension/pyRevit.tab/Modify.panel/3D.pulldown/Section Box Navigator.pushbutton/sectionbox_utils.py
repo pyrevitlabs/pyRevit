@@ -1,6 +1,5 @@
 from pyrevit import DB
 from pyrevit.compat import get_elementid_value_func, get_elementid_from_value_func
-from pyrevit.coreutils import math
 
 get_elementid_value = get_elementid_value_func()
 get_elementid_from_value = get_elementid_from_value_func()
@@ -25,8 +24,8 @@ def get_view_range_and_crop(view, doc):
     """Extract view range and crop box information from a 2D view."""
     view_type = view.ViewType
 
-    # For floor/ceiling plans, use view range
-    if view_type in [DB.ViewType.FloorPlan, DB.ViewType.CeilingPlan]:
+    # For floor, ceiling, ... use view range
+    if isinstance(view, DB.ViewPlan):
         view_range = view.GetViewRange()
         top_level_id = view_range.GetLevelId(DB.PlanViewPlane.TopClipPlane)
         top_offset = view_range.GetOffset(DB.PlanViewPlane.TopClipPlane)
@@ -68,30 +67,6 @@ def get_view_range_and_crop(view, doc):
         }
 
     return None
-
-
-def get_crop_element(doc, view):
-    vid = get_elementid_value(view.Id)
-    expected_name = view.get_Parameter(DB.BuiltInParameter.VIEW_NAME).AsString()
-    cid = vid + 2
-    crop_el = doc.GetElement(get_elementid_from_value(cid))
-    if crop_el:
-        param = crop_el.get_Parameter(DB.BuiltInParameter.VIEW_NAME)
-        if param and param.AsString() == expected_name:
-            return crop_el
-
-
-def compute_rotation_angle(section_box, view):
-    # 3D box X-axis projected to XY
-    bx = section_box.Transform.BasisX
-    angle_box = math.atan2(bx.Y, bx.X)
-
-    # View X-axis in world
-    vx = view.CropBox.Transform.BasisX
-    angle_view = math.atan2(vx.Y, vx.X)
-
-    # rotation needed to align view to box
-    return angle_box - angle_view
 
 
 def apply_plan_viewrange_from_sectionbox(doc, view, section_box):
