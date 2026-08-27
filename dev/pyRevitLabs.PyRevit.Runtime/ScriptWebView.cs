@@ -1,11 +1,62 @@
 using System;
+using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
+using pyRevitLabs.NLog;
 
 namespace PyRevitLabs.PyRevit.Runtime {
+    /// <summary>
+    /// Renderer lifecycle tracing. Records go through NLog to
+    /// <see cref="ScriptLoggerService"/> like every other runtime record, so they
+    /// persist to the pyRevit runtime log and surface in the console only when
+    /// the user has debug logging on.
+    ///
+    /// Bringing WebView2 up is asynchronous and spans several callbacks, so when
+    /// an output window comes up blank the only way to tell "never started" from
+    /// "started and threw" from "loaded but never flushed" is this trail.
+    /// </summary>
+    internal static class ScriptRendererLog {
+        private static readonly Logger Logger = LogManager.GetLogger("pyrevit.runtime.webview");
+
+        // Renderer records can become visible console output, which appends to a
+        // window and schedules another flush. This keeps that from feeding back
+        // into renderer logging on the same thread.
+        [ThreadStatic]
+        private static bool _emitting;
+
+        public static void Debug(string format, params object[] args) {
+            Emit(false, format, args);
+        }
+
+        public static void Error(string format, params object[] args) {
+            Emit(true, format, args);
+        }
+
+        private static void Emit(bool isError, string format, object[] args) {
+            if (_emitting)
+                return;
+
+            _emitting = true;
+            try {
+                var message = args == null || args.Length == 0
+                    ? format
+                    : string.Format(CultureInfo.InvariantCulture, format, args);
+                if (isError)
+                    Logger.Error(message);
+                else
+                    Logger.Debug(message);
+            }
+            catch {
+            }
+            finally {
+                _emitting = false;
+            }
+        }
+    }
+
     /// <summary>
     /// Chromium renderer behind a script output window. Owns WebView2 control
     /// lifecycle, environment/user-data-folder setup, runtime availability
@@ -22,9 +73,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private readonly Microsoft.Web.WebView2.Wpf.WebView2 _control;
         private readonly Dispatcher _dispatcher;
         private TaskCompletionSource<bool> _navigationTcs;
+        private readonly TaskCompletionSource<bool> _readyTcs =
+            new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         private volatile bool _coreReady;
         private volatile bool _runtimeMissing;
         private volatile bool _initFailed;
+        private volatile bool _initStarted;
         private volatile bool _everNavigated;
         private volatile bool _lastNavigationCompleted = true;
         private bool _disposed;
@@ -37,6 +91,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// <summary>Raised for top-level navigations so the owner can enforce URL policy.</summary>
         public event EventHandler<Microsoft.Web.WebView2.Core.CoreWebView2NavigationStartingEventArgs> NavigationStartingRequested;
 
+        /// <summary>
+        /// Raised on the owner dispatcher whenever the view becomes able to accept
+        /// content: after the core comes online and after each navigation settles.
+        /// Owners buffering output flush on this instead of polling.
+        /// </summary>
+        public event EventHandler DocumentReady;
+
         public Microsoft.Web.WebView2.Wpf.WebView2 Control => _control;
 
         public Microsoft.Web.WebView2.Core.CoreWebView2 Core => _control.CoreWebView2;
@@ -46,6 +107,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         /// <summary>True when the machine has no WebView2 Runtime; the view shows an error page instead.</summary>
         public bool RuntimeMissing { get { return _runtimeMissing; } }
+
+        /// <summary>True when the core could not be brought up; the view will never render.</summary>
+        public bool InitializationFailed { get { return _initFailed; } }
+
+        /// <summary>True once the core is up or has permanently failed; never faults.</summary>
+        public Task ReadyTask { get { return _readyTcs.Task; } }
 
         /// <summary>Fast cross-thread check: core is up and the latest top-level navigation finished loading.</summary>
         public bool IsDocumentReady {
@@ -63,34 +130,66 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         /// <summary>
-        /// Bring the core online and run the first navigation. The provider is
-        /// invoked once, after the runtime is confirmed, and returns the URI to
-        /// load (or null to skip navigation). Blocks until the page has loaded.
+        /// Start bringing the core online and run the first navigation. The
+        /// provider is invoked once, after the runtime is confirmed, and returns
+        /// the URI to load (or null to skip navigation).
+        ///
+        /// This never blocks. Bringing WebView2 up takes seconds, and pyRevit
+        /// calls this from Revit API callbacks during session load; pumping a
+        /// nested dispatcher frame there re-enters Revit's message loop while
+        /// Revit is still initializing and terminates the process. Callers that
+        /// genuinely need the document buffer their content and flush from
+        /// <see cref="DocumentReady"/>, or wait explicitly via
+        /// <see cref="WaitUntilReady"/> from a context where pumping is safe.
         /// </summary>
         public void EnsureReady(Func<string> firstNavigationProvider = null) {
             if (_disposed)
                 return;
 
             if (_dispatcher.CheckAccess()) {
-                InitializeCore();
-                if (RuntimeMissing || !_coreReady)
-                    return;
-                if (firstNavigationProvider != null && !_everNavigated) {
-                    var uri = firstNavigationProvider();
-                    if (!string.IsNullOrEmpty(uri))
-                        Navigate(uri);
-                }
+                BeginInitialize(firstNavigationProvider);
                 return;
             }
 
             try {
-                _dispatcher.Invoke(new Action(() => EnsureReady(firstNavigationProvider)));
+                _dispatcher.BeginInvoke(new Action(() => EnsureReady(firstNavigationProvider)));
             }
             catch (TaskCanceledException) {
             }
         }
 
-        /// <summary>Navigate the top-level document and block until loading finishes (bounded).</summary>
+        /// <summary>
+        /// Block the calling thread until the core is up or has permanently
+        /// failed, keeping the owner dispatcher alive. Only safe outside Revit
+        /// API callbacks; the print path must not use this.
+        /// </summary>
+        public void WaitUntilReady(int timeoutMilliseconds = 30000) {
+            if (_disposed || _runtimeMissing || _initFailed || IsDocumentReady)
+                return;
+
+            if (!_dispatcher.CheckAccess()) {
+                try {
+                    _dispatcher.Invoke(new Action(() => WaitUntilReady(timeoutMilliseconds)));
+                }
+                catch (TaskCanceledException) {
+                }
+                return;
+            }
+
+            if (!_coreReady)
+                PumpUntil(_readyTcs.Task, timeoutMilliseconds);
+
+            if (_disposed || _runtimeMissing || _initFailed)
+                return;
+
+            // Core is up but the initial page may still be loading; the document
+            // is not readable until that navigation settles.
+            var navigation = _navigationTcs;
+            if (navigation != null && !IsDocumentReady)
+                PumpUntil(navigation.Task, timeoutMilliseconds);
+        }
+
+        /// <summary>Navigate the top-level document. Does not block; watch <see cref="DocumentReady"/>.</summary>
         public void Navigate(string url) {
             if (_disposed || string.IsNullOrEmpty(url))
                 return;
@@ -102,7 +201,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 _everNavigated = true;
                 _lastNavigationCompleted = false;
                 _control.CoreWebView2.Navigate(url);
-                PumpUntil(_navigationTcs.Task);
             });
         }
 
@@ -152,6 +250,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (_disposed)
                 return;
             _disposed = true;
+            // Release anyone pumping in WaitUntilReady before the control goes away.
+            _readyTcs.TrySetResult(false);
             try {
                 _control.Dispose();
             }
@@ -159,21 +259,82 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        private void InitializeCore() {
-            if (_coreReady || _disposed)
+        /// <summary>Start initialization once. Runs on the owner dispatcher and returns immediately.</summary>
+        private void BeginInitialize(Func<string> firstNavigationProvider) {
+            if (_disposed || _runtimeMissing || _initFailed)
                 return;
-            if (_initFailed)
-                throw new InvalidOperationException(
-                    "WebView2 initialization failed earlier in this window; not retrying.");
+
+            if (_coreReady) {
+                RunFirstNavigation(firstNavigationProvider);
+                return;
+            }
+
+            if (_initStarted)
+                return;
+            _initStarted = true;
 
             if (!IsRuntimeAvailable()) {
                 _runtimeMissing = true;
                 BrowserVersion = string.Empty;
+                _readyTcs.TrySetResult(false);
                 ShowRuntimeMissingDialog();
-                _control.NavigateToString(RuntimeMissingPageHtml);
+                try {
+                    _control.NavigateToString(RuntimeMissingPageHtml);
+                }
+                catch {
+                }
                 return;
             }
 
+            // The WPF control builds its child HWND as part of being loaded into
+            // the visual tree. Creating the controller before that attaches the
+            // browser to a window that does not exist yet and the view renders
+            // black. The old code got away with it because its nested pump
+            // happened to drive layout to completion; wait for the event instead.
+            ScriptRendererLog.Debug(
+                "init requested: loaded={0} size={1}x{2} visible={3}",
+                _control.IsLoaded, _control.ActualWidth, _control.ActualHeight, _control.IsVisible);
+
+            if (!_control.IsLoaded) {
+                System.Windows.RoutedEventHandler onLoaded = null;
+                onLoaded = (s, e) => {
+                    _control.Loaded -= onLoaded;
+                    ScriptRendererLog.Debug(
+                        "control loaded: size={0}x{1}", _control.ActualWidth, _control.ActualHeight);
+                    if (_disposed)
+                        return;
+                    StartInitialization(firstNavigationProvider);
+                };
+                _control.Loaded += onLoaded;
+                return;
+            }
+
+            StartInitialization(firstNavigationProvider);
+        }
+
+        /// <summary>
+        /// Start the async initialization from inside a dispatcher operation.
+        ///
+        /// This must not be called directly, even from the UI thread. pyRevit
+        /// reaches this from Revit API callbacks where SynchronizationContext
+        /// .Current is null -- WPF only installs the DispatcherSynchronizationContext
+        /// while a dispatcher operation runs. Starting the async method without
+        /// it makes WebView2's own internal awaits resume on the thread pool,
+        /// where SyncControllerWithParentWindow touches the control and dies on
+        /// Dispatcher.VerifyAccess. Going through InvokeAsync guarantees the
+        /// context for this method and everything it awaits.
+        /// </summary>
+        private void StartInitialization(Func<string> firstNavigationProvider) {
+            _dispatcher.InvokeAsync(() => {
+                if (_disposed)
+                    return;
+                // Fire and forget: faults are recorded inside, never rethrown --
+                // an escaping exception would land on the dispatcher unhandled.
+                var pending = InitializeCoreAsync(firstNavigationProvider);
+            });
+        }
+
+        private async Task InitializeCoreAsync(Func<string> firstNavigationProvider) {
             try {
                 Task<Microsoft.Web.WebView2.Core.CoreWebView2Environment> envTask;
                 lock (EnvironmentLock) {
@@ -187,35 +348,78 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     envTask = _sharedEnvironment;
                 }
 
-                PumpUntil(envTask);
-                if (!envTask.IsCompleted)
-                    throw new InvalidOperationException("Timed out creating the WebView2 environment.");
+                Microsoft.Web.WebView2.Core.CoreWebView2Environment environment;
+                try {
+                    environment = await envTask;
+                }
+                catch {
+                    // A transient failure must not poison every later window in
+                    // this Revit session; drop the cached task so the next one retries.
+                    lock (EnvironmentLock) {
+                        if (ReferenceEquals(_sharedEnvironment, envTask))
+                            _sharedEnvironment = null;
+                    }
+                    throw;
+                }
 
-                var initTask = _control.EnsureCoreWebView2Async(envTask.Result);
-                PumpUntil(initTask);
-                if (!initTask.IsCompleted || _control.CoreWebView2 == null)
-                    throw new InvalidOperationException(
-                        "Timed out initializing the WebView2 controller. "
-                        + "The host window may never have been shown.",
-                        Flatten(initTask));
+                if (_disposed)
+                    return;
 
-                BrowserVersion = envTask.Result.BrowserVersionString;
+                ScriptRendererLog.Debug(
+                    "environment ready (runtime {0}); creating controller",
+                    environment.BrowserVersionString);
+                await _control.EnsureCoreWebView2Async(environment);
+                ScriptRendererLog.Debug(
+                    "controller created: core={0} size={1}x{2}",
+                    _control.CoreWebView2 != null, _control.ActualWidth, _control.ActualHeight);
+
+                if (_disposed)
+                    return;
+                if (_control.CoreWebView2 == null)
+                    throw new InvalidOperationException("WebView2 controller was not created.");
+
+                BrowserVersion = environment.BrowserVersionString;
+
+                _control.CoreWebView2.NavigationStarting += OnNavigationStarting;
+                _control.CoreWebView2.NavigationCompleted += OnNavigationCompleted;
+                _control.CoreWebView2.Settings.AreDevToolsEnabled = false;
+                _control.CoreWebView2.Settings.IsStatusBarEnabled = false;
+
+                _coreReady = true;
+
+                // Start the first navigation before releasing WaitUntilReady, so a
+                // waiter always observes _navigationTcs and can go on to wait for
+                // the initial page rather than racing ahead of it.
+                RunFirstNavigation(firstNavigationProvider);
+                _readyTcs.TrySetResult(true);
+                RaiseDocumentReady();
             }
-            catch {
+            catch (Exception ex) {
                 _initFailed = true;
-                throw;
+                _readyTcs.TrySetResult(false);
+                ScriptRendererLog.Error(
+                    "WebView2 initialization failed; this output window will not render. {0}", ex);
             }
-
-            _control.CoreWebView2.NavigationStarting += OnNavigationStarting;
-            _control.CoreWebView2.NavigationCompleted += OnNavigationCompleted;
-            _control.CoreWebView2.Settings.AreDevToolsEnabled = false;
-            _control.CoreWebView2.Settings.IsStatusBarEnabled = false;
-
-            _coreReady = true;
         }
 
-        private static Exception Flatten(Task task) {
-            return task.Exception != null ? task.Exception.GetBaseException() : null;
+        private void RunFirstNavigation(Func<string> firstNavigationProvider) {
+            if (firstNavigationProvider == null || _everNavigated || !_coreReady || _disposed)
+                return;
+            var uri = firstNavigationProvider();
+            ScriptRendererLog.Debug("first navigation: {0}", uri ?? "<none>");
+            if (!string.IsNullOrEmpty(uri))
+                Navigate(uri);
+        }
+
+        private void RaiseDocumentReady() {
+            ScriptRendererLog.Debug(
+                "document ready check: ready={0} core={1} navigated={2} navigationSettled={3}",
+                IsDocumentReady, _coreReady, _everNavigated, _lastNavigationCompleted);
+            if (_disposed || !IsDocumentReady)
+                return;
+            var handler = DocumentReady;
+            if (handler != null)
+                handler(this, EventArgs.Empty);
         }
 
         /// <summary>
@@ -262,15 +466,22 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private void OnNavigationStarting(object sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationStartingEventArgs e) {
-            _lastNavigationCompleted = false;
+            // Deliberately does not clear _lastNavigationCompleted. Navigations we
+            // did not start -- revit:// deep links, blocked http -- are cancelled
+            // by the policy handler, and clearing the flag here would leave the
+            // view permanently "not ready" if a cancelled navigation never
+            // reported completion. Navigate() owns that flag.
             NavigationStartingRequested?.Invoke(this, e);
         }
 
         private void OnNavigationCompleted(object sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs e) {
+            ScriptRendererLog.Debug(
+                "navigation completed: success={0} status={1}", e.IsSuccess, e.WebErrorStatus);
             _lastNavigationCompleted = true;
             var tcs = _navigationTcs;
             _navigationTcs = null;
             tcs?.TrySetResult(e.IsSuccess);
+            RaiseDocumentReady();
         }
 
         private T InvokeOnUi<T>(Func<T> action) {

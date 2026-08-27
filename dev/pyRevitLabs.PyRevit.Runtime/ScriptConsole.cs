@@ -189,6 +189,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private readonly StringBuilder _frozenPendingHtml = new StringBuilder();
         private volatile bool _flushQueued;
         private volatile bool _documentStarted;
+        private volatile bool _outputLossReported;
         private string _frozenBodyHtml;
         private int _inlineWaitIndex = -1;
         private string _initialStyleSheetPath;
@@ -297,6 +298,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             _webView = new ScriptWebView(Dispatcher.CurrentDispatcher);
             _webView.NavigationStartingRequested += WebView_NavigationStarting;
+            _webView.DocumentReady += WebView_DocumentReady;
 
             InitializeComponent();
         }
@@ -424,7 +426,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// </summary>
         public Version RendererVersion {
             get {
-                EnsureDocumentReady();
+                EnsureDocumentReadyBlocking();
                 return Version.TryParse(_webView.BrowserVersion.Split(' ')[0], out var parsed)
                     ? parsed
                     : new Version(0, 0);
@@ -442,7 +444,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// </summary>
         public string RendererFullVersion {
             get {
-                EnsureDocumentReady();
+                EnsureDocumentReadyBlocking();
                 return _webView.BrowserVersion;
             }
         }
@@ -455,8 +457,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public string RunJavaScript(string javaScript) {
             if (string.IsNullOrEmpty(javaScript))
                 return string.Empty;
-            EnsureDocumentReady();
-            SyncFlushBlocking();
+            EnsureDocumentReadyBlocking();
             var result = _webView.EvalScript(javaScript);
             return DecodeJsonString(result) ?? result;
         }
@@ -468,15 +469,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         /// <summary>Full current document including the html wrapper.</summary>
         public string GetFullHtml() {
-            EnsureDocumentReady();
-            SyncFlushBlocking();
+            EnsureDocumentReadyBlocking();
             var html = DecodeJsonString(_webView.EvalScript("document.documentElement.outerHTML"));
             return ScriptConsoleConfigs.DOCTYPE + (html ?? string.Empty);
         }
 
         internal string GetHeadHtml() {
-            EnsureDocumentReady();
-            SyncFlushBlocking();
+            EnsureDocumentReadyBlocking();
             return DecodeJsonString(_webView.EvalScript("(document.head ? document.head.innerHTML : '')"))
                 ?? string.Empty;
         }
@@ -485,8 +484,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         internal void NavigateInWindow(string url) {
             if (string.IsNullOrEmpty(url))
                 return;
-            EnsureDocumentReady();
-            SyncFlushBlocking();
+            EnsureDocumentReadyBlocking();
             _webView.Navigate(url);
         }
 
@@ -539,9 +537,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public void WaitReadyBrowser() {
-            EnsureDocumentReady();
+            EnsureDocumentReadyBlocking();
         }
 
+        /// <summary>Start the renderer without waiting; safe from the print path.</summary>
         internal void WaitReadyBrowserLite() {
             EnsureDocumentReady();
         }
@@ -614,8 +613,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public void Freeze() {
             if (_frozen)
                 return;
-            EnsureDocumentReady();
-            SyncFlushBlocking();
+            EnsureDocumentReadyBlocking();
             _frozenBodyHtml = DecodeJsonString(_webView.EvalScript("(document.body ? document.body.innerHTML : '')")) ?? string.Empty;
             _frozen = true;
             UpdateInlineWaitAnimation();
@@ -624,8 +622,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public void Unfreeze() {
             if (!_frozen)
                 return;
-            EnsureDocumentReady();
-            SyncFlushBlocking();
+            EnsureDocumentReadyBlocking();
             string snapshot;
             lock (_pendingLock) {
                 if (_frozenPendingHtml.Length > 0) {
@@ -725,8 +722,18 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (_flushQueued || ClosedByUser)
                 return;
             _flushQueued = true;
+            // Guarded: an exception escaping a BeginInvoke callback reaches
+            // Dispatcher.UnhandledException and terminates Revit. Output failing
+            // to render must never be fatal.
             Dispatcher.BeginInvoke(
-                new Action(() => FlushPendingEntries(false)),
+                new Action(() => {
+                    try {
+                        FlushPendingEntries(false);
+                    }
+                    catch (Exception ex) {
+                        ScriptRendererLog.Error("output flush failed. {0}", ex);
+                    }
+                }),
                 DispatcherPriority.Normal);
         }
 
@@ -739,34 +746,64 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 _pendingHtml.Clear();
             }
 
-            if (payload.Length == 0 || ClosedByUser || _webView.RuntimeMissing)
+            if (payload.Length == 0 || ClosedByUser)
                 return;
+
+            // Nothing will ever render; drop the payload rather than buffer forever.
+            if (_webView.RuntimeMissing || _webView.InitializationFailed) {
+                // Reported once per window: this runs on every subsequent write, and
+                // the record itself can reach the console and schedule another flush.
+                if (!_outputLossReported) {
+                    _outputLossReported = true;
+                    ScriptRendererLog.Error(
+                        "discarding output for this window: runtimeMissing={0} initFailed={1}",
+                        _webView.RuntimeMissing, _webView.InitializationFailed);
+                }
+                return;
+            }
 
             EnsureDocumentReady();
 
             if (!_webView.IsDocumentReady) {
+                // Put it back and wait for ScriptWebView.DocumentReady to flush us.
+                // Re-queueing here instead would spin the dispatcher at Normal
+                // priority for the whole second-or-two the core takes to come up.
                 lock (_pendingLock) {
                     _pendingHtml.Insert(0, payload);
                 }
-                QueueFlush();
                 return;
             }
 
-            var js = BuildInsertEntriesJs(ToJsString(payload));
-            if (waitForBrowser)
-                _webView.EvalScript(js);
-            else
-                _webView.PostScript(js);
+            // Always fire-and-forget. ExecuteScriptAsync preserves submission
+            // order, so a later EvalScript still observes these inserts, and the
+            // print path must never pump a nested dispatcher frame -- it runs
+            // inside Revit API callbacks during session load.
+            _webView.PostScript(BuildInsertEntriesJs(ToJsString(payload)));
         }
 
-        /// <summary>Synchronously push all buffered entries into the document.</summary>
+        private void WebView_DocumentReady(object sender, EventArgs e) {
+            FlushPendingEntries(false);
+        }
+
+        /// <summary>Push all buffered entries into the document, in order.</summary>
         internal void SyncFlushBlocking() {
             bool workPending;
             lock (_pendingLock) {
                 workPending = _flushQueued || _pendingHtml.Length > 0;
             }
             if (workPending)
-                FlushPendingEntries(true);
+                FlushPendingEntries(false);
+        }
+
+        /// <summary>
+        /// Bring the renderer up and block until the document can be read.
+        /// Only for the synchronous public API (DOM reads, freeze, copy), which
+        /// runs from user commands -- never from the session-load print path.
+        /// </summary>
+        internal void EnsureDocumentReadyBlocking() {
+            EnsureDocumentReady();
+            _webView.WaitUntilReady();
+            SyncFlushBlocking();
         }
 
         /// <summary>
@@ -1087,8 +1124,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (string.IsNullOrEmpty(elementTag))
                 return;
 
-            EnsureDocumentReady();
-            SyncFlushBlocking();
+            // Blocking: injected styles and scripts are posted fire-and-forget and
+            // would be dropped if the core were not up yet. Reached from user
+            // commands (add_style, inject_script, set_font), never session load.
+            EnsureDocumentReadyBlocking();
 
             var target = string.Equals(targetName, "head", StringComparison.OrdinalIgnoreCase) ? "head" : "body";
 
