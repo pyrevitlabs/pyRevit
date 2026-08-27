@@ -6,6 +6,7 @@ verify_ssl = true
 [dev-packages]
 mypy = "*"
 pylint = "==4.0.6"
+pre-commit = "*"
 
 [packages]
 pyyaml = ">=5.4"
@@ -31,3 +32,4 @@ allow_prereleases = false
 docs = "mkdocs build"
 check-docstrings = "ruff check --fix pyrevitlib/pyrevit"
 check-py3 = "python ./dev/scripts/check_py3_compat.py"
+install-hooks = "pre-commit install"

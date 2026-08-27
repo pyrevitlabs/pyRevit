@@ -541,11 +541,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 _lastLine = OutputText;
 
             if (!_frozen) {
-                if (ActiveDocument != null) {
-                    ActiveDocument.Body.AppendChild(ComposeEntry(OutputText, HtmlElementType));
-                    if (IsScrolledNearBottom())
-                        ScrollToBottom();
-                }
+                var document = ActiveDocument;
+                if (document == null || document.Body == null)
+                    throw new InvalidOperationException(
+                        "Console renderer is not ready."
+                        );
+                document.Body.AppendChild(ComposeEntry(OutputText, HtmlElementType));
+                if (IsScrolledNearBottom())
+                    ScrollToBottom();
             }
             else if (_lastDocumentBody != null) {
                 _lastDocumentBody.AppendChild(ComposeEntry(OutputText, HtmlElementType));
@@ -656,7 +659,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
             stdinBar.Show();
             // printing an empty line will cause the page to scroll to
             // bottom again and not be covered by the input control
-            AppendText("", ScriptConsoleConfigs.DefaultBlock, record: false);
+            try {
+                AppendText("", ScriptConsoleConfigs.DefaultBlock, record: false);
+            }
+            catch (Exception ex) {
+                Debug.WriteLine($"ScriptConsole.GetInput: failed to append cosmetic scroll fix line. {ex}");
+            }
             string inputText = stdinBar.ReadInput();
             stdinBar.Hide();
 

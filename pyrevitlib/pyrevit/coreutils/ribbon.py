@@ -30,9 +30,7 @@ ICON_LARGE = 32
 DEFAULT_DPI = 96
 
 DEFAULT_TOOLTIP_IMAGE_FORMAT = ".png"
-DEFAULT_TOOLTIP_VIDEO_FORMAT = ".swf"
-if HOST_APP.is_newer_than(2019, or_equal=True):
-    DEFAULT_TOOLTIP_VIDEO_FORMAT = ".mp4"
+DEFAULT_TOOLTIP_VIDEO_FORMAT = ".mp4"
 
 
 def argb_to_brush(argb_color):
@@ -1928,26 +1926,16 @@ class _PyRevitRibbonPanel(GenericPyRevitUIContainer):
         )
 
     def create_split_button(self, item_name, icon_path, update_if_exists=False):
-        if self.itemdata_mode and HOST_APP.is_older_than("2017"):
-            raise PyRevitUIError(
-                "Revits earlier than 2017 do not support " "split buttons in a stack."
-            )
-        else:
-            self._create_button_group(
-                UI.SplitButtonData, item_name, icon_path, update_if_exists
-            )
-            self.ribbon_item(item_name).sync_with_current_item(True)
+        self._create_button_group(
+            UI.SplitButtonData, item_name, icon_path, update_if_exists
+        )
+        self.ribbon_item(item_name).sync_with_current_item(True)
 
     def create_splitpush_button(self, item_name, icon_path, update_if_exists=False):
-        if self.itemdata_mode and HOST_APP.is_older_than("2017"):
-            raise PyRevitUIError(
-                "Revits earlier than 2017 do not support " "split buttons in a stack."
-            )
-        else:
-            self._create_button_group(
-                UI.SplitButtonData, item_name, icon_path, update_if_exists
-            )
-            self.ribbon_item(item_name).sync_with_current_item(False)
+        self._create_button_group(
+            UI.SplitButtonData, item_name, icon_path, update_if_exists
+        )
+        self.ribbon_item(item_name).sync_with_current_item(False)
 
     def create_combobox(self, item_name, update_if_exists=False):
         """Create a ComboBox in the ribbon panel.

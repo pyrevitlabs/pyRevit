@@ -1,0 +1,14 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.16.2
+    hooks:
+      - id: ruff-format
+        exclude: ^(site-packages/|pyrevitlib/rpw/|dev/modules/)
+  - repo: local
+    hooks:
+      - id: dotnet-format
+        name: dotnet format (C#)
+        entry: python dev/scripts/format_staged_csharp.py
+        language: system
+        files: \.cs$
+        exclude: ^dev/modules/
