@@ -9,61 +9,6 @@
     <Window.Resources>
         <s:Boolean x:Key="BooleanTrue">True</s:Boolean>
 
-        <Style x:Key="AnimatedSwitch" TargetType="{x:Type ToggleButton}">
-            <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}" />
-            <Setter Property="Background" Value="#9E9E9E" />
-            <Setter Property="BorderBrush" Value="#757575" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ToggleButton">
-                        <Viewbox Stretch="Uniform">
-                            <Canvas Name="Layer_1" Width="20" Height="20" Canvas.Left="10" Canvas.Top="0">
-                                <Ellipse  Canvas.Left="0" Width="20" Height="20" Fill="{TemplateBinding Background}" Stroke="{TemplateBinding BorderBrush}" StrokeThickness="1"/>
-                                <Ellipse  Canvas.Left="15" Width="20" Height="20" Fill="{TemplateBinding Background}" Stroke="{TemplateBinding BorderBrush}" StrokeThickness="1"/>
-                                <Border Canvas.Left="10" Width="15" Height="20" Name="rect416927" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="0,1,0,1"/>
-                                <Ellipse x:Name="ellipse"  Canvas.Left="0" Width="20" Height="20" Fill="White" Stroke="{TemplateBinding BorderBrush}" StrokeThickness="1">
-                                    <Ellipse.RenderTransform>
-                                        <TranslateTransform X="0" Y="0" />
-                                    </Ellipse.RenderTransform>
-                                </Ellipse>
-                            </Canvas>
-                        </Viewbox>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsChecked" Value="True" >
-                                <Trigger.EnterActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetProperty="Background.Color" To="#2c3e50" Duration="0:0:0.2" />
-                                            <ColorAnimation Storyboard.TargetProperty="BorderBrush.Color" To="#1e2b38" Duration="0:0:0.2" />
-                                            <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(Ellipse.RenderTransform).(TranslateTransform.X)" Storyboard.TargetName="ellipse">
-                                                <SplineDoubleKeyFrame KeyTime="0" Value="0"/>
-                                                <SplineDoubleKeyFrame KeyTime="0:0:0.4" Value="15" KeySpline="0, 1, 0.6, 1"/>
-                                            </DoubleAnimationUsingKeyFrames>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.EnterActions>
-                                <Trigger.ExitActions>
-                                    <BeginStoryboard>
-                                        <Storyboard>
-                                            <ColorAnimation Storyboard.TargetProperty="Background.Color" To="#9E9E9E" Duration="0:0:0.2" />
-                                            <ColorAnimation Storyboard.TargetProperty="BorderBrush.Color" To="#757575" Duration="0:0:0.2" />
-                                            <DoubleAnimationUsingKeyFrames Storyboard.TargetProperty="(Ellipse.RenderTransform).(TranslateTransform.X)" Storyboard.TargetName="ellipse">
-                                                <SplineDoubleKeyFrame KeyTime="0" Value="15"/>
-                                                <SplineDoubleKeyFrame KeyTime="0:0:0.3" Value="0" KeySpline="0, 0.5, 0.5, 1"/>
-                                            </DoubleAnimationUsingKeyFrames>
-                                        </Storyboard>
-                                    </BeginStoryboard>
-                                </Trigger.ExitActions>
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Opacity" Value="0.35" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
         <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource {x:Type TextBox}}">
             <Style.Triggers>
                 <Trigger Property="IsReadOnly" Value="{StaticResource BooleanTrue}">
@@ -158,15 +103,13 @@
                         <GroupBox Header="{DynamicResource CoreSettings.General}">
                             <StackPanel>
                                 <WrapPanel Margin="10,15,0,5">
-                                    <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="rocketmode_cb" IsChecked="False"/>
-                                    <TextBlock Margin="30,4,0,0" Text="{DynamicResource CoreSettings.RocketMode}"/>
+                                    <CheckBox x:Name="rocketmode_cb" IsChecked="False" Content="{DynamicResource CoreSettings.RocketMode}"/>
                                 </WrapPanel>
-                                <TextBlock TextWrapping="WrapWithOverflow" Margin="65,0,10,10" Text="{DynamicResource CoreSettings.RocketMode.Description}"/>
+                                <TextBlock TextWrapping="WrapWithOverflow" Margin="20,0,10,10" Text="{DynamicResource CoreSettings.RocketMode.Description}"/>
                                 <WrapPanel Margin="10,10,0,10">
-                                    <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="checkupdates_cb" IsChecked="False"/>
-                                    <TextBlock Margin="30,4,0,0" Text="{DynamicResource CoreSettings.CheckUpdates}"/>
+                                    <CheckBox x:Name="checkupdates_cb" IsChecked="False" Content="{DynamicResource CoreSettings.CheckUpdates}"/>
                                 </WrapPanel>
-                                <TextBlock TextWrapping="WrapWithOverflow" Margin="65,0,10,10" Text="{DynamicResource CoreSettings.CheckUpdates.Description}"/>
+                                <TextBlock TextWrapping="WrapWithOverflow" Margin="20,0,10,10" Text="{DynamicResource CoreSettings.CheckUpdates.Description}"/>
                             </StackPanel>
                         </GroupBox>
                         <GroupBox Header="{DynamicResource CoreSettings.Engines}" Margin="0,10,0,0">
@@ -205,16 +148,14 @@
                             <StackPanel>
                                 <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0" Text="{DynamicResource CoreSettings.Development.Description}"/>
                                 <WrapPanel Margin="10,10,0,10">
-                                    <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="loadbetatools_cb" IsChecked="False"/>
-                                    <TextBlock Margin="30,4,0,0" Text="{DynamicResource CoreSettings.Development.LoadBeta}"/>
+                                    <CheckBox x:Name="loadbetatools_cb" IsChecked="False" Content="{DynamicResource CoreSettings.Development.LoadBeta}"/>
                                 </WrapPanel>
 
                                 <StackPanel Margin="10,5,10,10">
                                     <TextBlock FontWeight="Medium" Margin="0,5,0,0" Text="{DynamicResource CoreSettings.CloseOtherConsoles}"/>
                                     <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0" Text="{DynamicResource CoreSettings.CloseOtherConsoles.Description}"/>
                                     <WrapPanel Margin="0,15,0,0">
-                                        <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="minimize_consoles_cb" IsChecked="False"/>
-                                        <TextBlock Margin="30,4,0,0" Text="{DynamicResource CoreSettings.CloseOtherConsoles.Toggle}"/>
+                                        <CheckBox x:Name="minimize_consoles_cb" IsChecked="False" Content="{DynamicResource CoreSettings.CloseOtherConsoles.Toggle}"/>
                                     </WrapPanel>
                                 </StackPanel>
 
@@ -231,10 +172,9 @@
                             <StackPanel>
                                 <TextBlock TextWrapping="WrapWithOverflow" Margin="10,10,10,0" Text="{DynamicResource CoreSettings.Loader.Description}"/>
                                 <WrapPanel Margin="10,10,0,10">
-                                    <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="read_script_metadata_cb" IsChecked="False"/>
-                                    <TextBlock Margin="30,4,0,0" Text="{DynamicResource CoreSettings.Loader.ReadScriptMetadata}"/>
+                                    <CheckBox x:Name="read_script_metadata_cb" IsChecked="False" Content="{DynamicResource CoreSettings.Loader.ReadScriptMetadata}"/>
                                 </WrapPanel>
-                                <TextBlock TextWrapping="WrapWithOverflow" Margin="65,0,10,10" Text="{DynamicResource CoreSettings.Loader.ReadScriptMetadata.Description}"/>
+                                <TextBlock TextWrapping="WrapWithOverflow" Margin="20,0,10,10" Text="{DynamicResource CoreSettings.Loader.ReadScriptMetadata.Description}"/>
                             </StackPanel>
                         </GroupBox>
                         <GroupBox Header="{DynamicResource CoreSettings.Caching}" Margin="0,10,0,0">
@@ -362,8 +302,7 @@
                         </TextBlock>
                         <StackPanel>
                             <WrapPanel Margin="0,15,0,0">
-                                <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="routes_cb" IsChecked="False"/>
-                                <TextBlock Margin="30,4,0,0" FontWeight="Medium" Text="{DynamicResource Routes.Check}"/>
+                                <CheckBox x:Name="routes_cb" IsChecked="False" FontWeight="Medium" Content="{DynamicResource Routes.Check}"/>
                             </WrapPanel>
                             <GroupBox Header="{DynamicResource Routes.RestAPI}" Padding="10" Margin="0,10,0,0">
                                 <CheckBox x:Name="coreapi_cb">
@@ -399,8 +338,7 @@
                                 <CheckBox x:Name="telemetry_timestamp_cb" Content="{DynamicResource Telemetry.Settings.UseUTC}" />
                             </GroupBox>
                             <WrapPanel Margin="0,15,0,0">
-                                <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="telemetry_cb" IsChecked="False"/>
-                                <TextBlock Margin="30,4,0,0" FontWeight="Medium" Text="{DynamicResource Telemetry.ScriptTelemetry}" />
+                                <CheckBox x:Name="telemetry_cb" IsChecked="False" FontWeight="Medium" Content="{DynamicResource Telemetry.ScriptTelemetry}"/>
                             </WrapPanel>
                             <GroupBox Header="{DynamicResource Telemetry.SendTelemetry}" Padding="10" Margin="0,10,0,0">
                                 <WrapPanel>
@@ -444,8 +382,7 @@
                                          VerticalContentAlignment="Center"/>
                             </DockPanel>
                             <WrapPanel Margin="0,25,0,0">
-                                <ToggleButton Style="{StaticResource AnimatedSwitch}" Height="24" x:Name="apptelemetry_cb" IsChecked="False"/>
-                                <TextBlock Margin="30,4,0,0" FontWeight="Medium" Text="{DynamicResource Telemetry.Application}"/>
+                                <CheckBox x:Name="apptelemetry_cb" IsChecked="False" FontWeight="Medium" Content="{DynamicResource Telemetry.Application}"/>
                             </WrapPanel>
                             <TextBlock TextWrapping="WrapWithOverflow" Margin="0,15,0,0" Text="{DynamicResource Telemetry.Application.Description}"/>
                             <DockPanel Margin="0,10,0,0" IsEnabled="{Binding ElementName=apptelemetry_cb, Path=IsChecked}">

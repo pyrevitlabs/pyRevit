@@ -71,11 +71,19 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="TextBox">
-                    <Border Background="{TemplateBinding Background}"
+                    <Border x:Name="border"
+                            Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}">
                         <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"/>
                     </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{DynamicResource pyRevitDisabledForegroundBrush}"/>
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource pyRevitControlHoverBrush}"/>
+                            <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource pyRevitDisabledForegroundBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
@@ -139,7 +147,8 @@
                                       Focusable="False" ClickMode="Press">
                             <ToggleButton.Template>
                                 <ControlTemplate TargetType="ToggleButton">
-                                    <Border Background="{TemplateBinding Background}"
+                                    <Border x:Name="toggleBorder"
+                                            Background="{TemplateBinding Background}"
                                             BorderBrush="{TemplateBinding BorderBrush}"
                                             BorderThickness="{TemplateBinding BorderThickness}">
                                         <Grid>
@@ -147,11 +156,18 @@
                                                 <ColumnDefinition/>
                                                 <ColumnDefinition Width="20"/>
                                             </Grid.ColumnDefinitions>
-                                            <Path Grid.Column="1" Data="M0,0 L4,4 L8,0 Z"
+                                            <Path x:Name="arrow" Grid.Column="1" Data="M0,0 L4,4 L8,0 Z"
                                                   Fill="{DynamicResource pyRevitIconBrush}"
                                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                         </Grid>
                                     </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsEnabled" Value="False">
+                                            <Setter TargetName="toggleBorder" Property="Background" Value="{DynamicResource pyRevitControlHoverBrush}"/>
+                                            <Setter TargetName="toggleBorder" Property="BorderBrush" Value="{DynamicResource pyRevitDisabledForegroundBrush}"/>
+                                            <Setter TargetName="arrow" Property="Fill" Value="{DynamicResource pyRevitDisabledForegroundBrush}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
                                 </ControlTemplate>
                             </ToggleButton.Template>
                         </ToggleButton>
@@ -196,6 +212,9 @@
                         <Trigger Property="IsEditable" Value="True">
                             <Setter TargetName="content" Property="Visibility" Value="Collapsed"/>
                             <Setter TargetName="PART_EditableTextBox" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{DynamicResource pyRevitDisabledForegroundBrush}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -367,21 +386,24 @@
                                                          Fill="{DynamicResource pyRevitControlBackgroundBrush}"
                                                          Stroke="{DynamicResource pyRevitControlBorderBrush}"
                                                          StrokeThickness="1"/>
-                                                <Path x:Name="chevron"
-                                                      Data="M0,0 L3.25,3.25 L6.5,0"
-                                                      Stroke="{DynamicResource pyRevitSubtleForegroundBrush}"
-                                                      StrokeThickness="1.5"
-                                                      StrokeStartLineCap="Round"
-                                                      StrokeEndLineCap="Round"
-                                                      StrokeLineJoin="Round"
-                                                      Stretch="None"
+                                                <Grid x:Name="chevronBox"
+                                                      Width="10" Height="10"
                                                       HorizontalAlignment="Center"
                                                       VerticalAlignment="Center"
                                                       RenderTransformOrigin="0.5,0.5">
-                                                    <Path.RenderTransform>
+                                                    <Grid.RenderTransform>
                                                         <RotateTransform Angle="-90"/>
-                                                    </Path.RenderTransform>
-                                                </Path>
+                                                    </Grid.RenderTransform>
+                                                    <Path x:Name="chevron"
+                                                          Data="M0,0 L3.25,3.25 L6.5,0"
+                                                          Stroke="{DynamicResource pyRevitSubtleForegroundBrush}"
+                                                          StrokeThickness="1.2"
+                                                          StrokeStartLineCap="Round"
+                                                          StrokeEndLineCap="Round"
+                                                          StrokeLineJoin="Round"
+                                                          Stretch="Uniform"
+                                                          Margin="1.5"/>
+                                                </Grid>
                                             </Grid>
                                             <TextBlock Text="{Binding Header, RelativeSource={RelativeSource AncestorType=Expander}}"
                                                        Foreground="{DynamicResource pyRevitWindowForegroundBrush}"
@@ -390,7 +412,7 @@
                                     </Border>
                                     <ControlTemplate.Triggers>
                                         <Trigger Property="IsChecked" Value="True">
-                                            <Setter TargetName="chevron" Property="RenderTransform">
+                                            <Setter TargetName="chevronBox" Property="RenderTransform">
                                                 <Setter.Value>
                                                     <RotateTransform Angle="0"/>
                                                 </Setter.Value>

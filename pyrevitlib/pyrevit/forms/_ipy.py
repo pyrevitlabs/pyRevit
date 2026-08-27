@@ -102,6 +102,7 @@ _PALETTE_LIGHT = {
     "DisabledForeground": (0xFF, 0xA0, 0xA0, 0xA0),
     "SubtleForeground": (0xFF, 0x69, 0x69, 0x69),
     "Icon": (0xFF, 0x00, 0x00, 0x00),
+    "SelectionBackground": (0xFF, 0xCC, 0xE4, 0xF7),
     "SelectionForeground": (0xFF, 0x00, 0x00, 0x00),
     "ScrollBarThumb": (0xFF, 0xCC, 0xCC, 0xCC),
     "ScrollBarThumbHover": (0xFF, 0xAA, 0xAA, 0xAA),
@@ -118,7 +119,8 @@ _PALETTE_DARK = {
     "DisabledForeground": (0xFF, 0x7F, 0x8C, 0x8D),
     "SubtleForeground": (0xFF, 0x95, 0xA5, 0xA6),
     "Icon": (0xFF, 0xEC, 0xF0, 0xF1),
-    "SelectionForeground": (0xFF, 0xFF, 0xFF, 0xFF),
+    "SelectionBackground": (0xFF, 0x33, 0x50, 0x6E),
+    "SelectionForeground": (0xFF, 0xEC, 0xF0, 0xF1),
     "ScrollBarThumb": (0xFF, 0x45, 0x4F, 0x61),
     "ScrollBarThumbHover": (0xFF, 0x52, 0x5E, 0x73),
 }
@@ -310,7 +312,6 @@ class _WPFMixin(object):
         palette = _PALETTE_DARK if is_dark else _PALETTE_LIGHT
         for name, argb in palette.items():
             _set_color("pyRevit" + name, argb)
-        res["pyRevitSelectionBackgroundBrush"] = res["pyRevitAccentBrush"]
         res["pyRevitIsDarkTheme"] = is_dark
 
         res["pyRevitRecognizesAccessKey"] = DEFAULT_RECOGNIZE_ACCESS_KEY
