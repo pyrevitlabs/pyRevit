@@ -391,16 +391,32 @@ class _WPFMixin(object):
         lang_dictionary.Source = Uri(xaml_source, UriKind.Absolute)
         self.Resources.MergedDictionaries.Add(lang_dictionary)
 
-    def get_locale_string(self, string_name):
+    def get_locale_string(self, string_name, default=None):
         """Return a localised string from the merged ResourceDictionary.
+
+        Missing keys are treated as recoverable UI state: they are logged and a
+        safe fallback is returned so the form can keep working without surfacing a
+        blocking WPF exception dialog.
 
         Args:
             string_name (str): resource key.
+            default (any): fallback value when the resource is missing.
 
         Returns:
-            str: localised string value.
+            str: localised string value or the provided fallback.
         """
-        return self.FindResource(string_name)
+        value = self.TryFindResource(string_name)
+        if value is not None:
+            return value
+
+        fallback = default if default is not None else string_name
+        mlogger.warning(
+            "Missing WPF resource key '%s' on %s; using fallback '%s'.",
+            string_name,
+            self.__class__.__name__,
+            fallback,
+        )
+        return fallback
 
     # ------------------------------------------------------------------ images
 
@@ -1006,10 +1022,9 @@ class TemplateUserInputWindow(WPFWindow):
         if title:
             self.Title = title
         else:
-            try:
-                localized_title = self.get_locale_string(self.default_title_key)
-            except System.Windows.ResourceReferenceKeyNotFoundException:
-                localized_title = None
+            localized_title = self.get_locale_string(
+                self.default_title_key, "User Input"
+            )
             self.Title = (
                 localized_title if isinstance(localized_title, str) else "User Input"
             )
@@ -1331,13 +1346,9 @@ class SelectFromList(TemplateUserInputWindow):
             # defined in SelectFromList.xaml control the button content.
             self.select_b.Content = button_name
         else:
-            # Use localized default, falling back to generic text if resource is missing
-            try:
-                self.select_b.Content = self.get_locale_string(
-                    "SelectFromList.Select.Button"
-                )
-            except System.Windows.ResourceReferenceKeyNotFoundException:
-                self.select_b.Content = "Select"
+            self.select_b.Content = self.get_locale_string(
+                "SelectFromList.Select.Button", "Select"
+            )
 
         # attribute to use as name?
         self._nameattr = kwargs.get("name_attr", None)
@@ -1374,13 +1385,9 @@ class SelectFromList(TemplateUserInputWindow):
             # Let XAML DynamicResource provide the actual Text value.
             # The python-side self.ctx_groups_title is used for internal logic
             # and needs a safe fallback.
-            try:
-                self.ctx_groups_title = self.get_locale_string(
-                    "SelectFromList.GroupSelector.Label"
-                )
-            except System.Windows.ResourceReferenceKeyNotFoundException:
-                mlogger.warning("Missing resource key for group selector title.")
-                self.ctx_groups_title = "Groups"
+            self.ctx_groups_title = self.get_locale_string(
+                "SelectFromList.GroupSelector.Label", "Groups"
+            )
 
         self.ctx_groups_active = kwargs.get("default_group", None)
 
@@ -1499,24 +1506,15 @@ class SelectFromList(TemplateUserInputWindow):
 
     def _list_options(self, option_filter=None):
         if option_filter:
-            try:
-                self.checkall_b.Content = self.get_locale_string(
-                    "SelectFromList.Check.Button"
-                )
-            except System.Windows.ResourceReferenceKeyNotFoundException:
-                self.checkall_b.Content = "Check"
-            try:
-                self.uncheckall_b.Content = self.get_locale_string(
-                    "SelectFromList.Uncheck.Button"
-                )
-            except System.Windows.ResourceReferenceKeyNotFoundException:
-                self.uncheckall_b.Content = "Uncheck"
-            try:
-                self.toggleall_b.Content = self.get_locale_string(
-                    "SelectFromList.Toggle.Button"
-                )
-            except System.Windows.ResourceReferenceKeyNotFoundException:
-                self.toggleall_b.Content = "Toggle"
+            self.checkall_b.Content = self.get_locale_string(
+                "SelectFromList.Check.Button", "Check"
+            )
+            self.uncheckall_b.Content = self.get_locale_string(
+                "SelectFromList.Uncheck.Button", "Uncheck"
+            )
+            self.toggleall_b.Content = self.get_locale_string(
+                "SelectFromList.Toggle.Button", "Toggle"
+            )
             # get a match score for every item and sort high to low
             fuzzy_matches = sorted(
                 [
@@ -1538,24 +1536,15 @@ class SelectFromList(TemplateUserInputWindow):
                 [x[0] for x in fuzzy_matches if x[1] >= 80]
             )
         else:
-            try:
-                self.checkall_b.Content = self.get_locale_string(
-                    "SelectFromList.CheckAll.Button"
-                )
-            except System.Windows.ResourceReferenceKeyNotFoundException:
-                self.checkall_b.Content = "Check All"
-            try:
-                self.uncheckall_b.Content = self.get_locale_string(
-                    "SelectFromList.UncheckAll.Button"
-                )
-            except System.Windows.ResourceReferenceKeyNotFoundException:
-                self.uncheckall_b.Content = "Uncheck All"
-            try:
-                self.toggleall_b.Content = self.get_locale_string(
-                    "SelectFromList.ToggleAll.Button"
-                )
-            except System.Windows.ResourceReferenceKeyNotFoundException:
-                self.toggleall_b.Content = "Toggle All"
+            self.checkall_b.Content = self.get_locale_string(
+                "SelectFromList.CheckAll.Button", "Check All"
+            )
+            self.uncheckall_b.Content = self.get_locale_string(
+                "SelectFromList.UncheckAll.Button", "Uncheck All"
+            )
+            self.toggleall_b.Content = self.get_locale_string(
+                "SelectFromList.ToggleAll.Button", "Toggle All"
+            )
 
             self.list_lb.ItemsSource = ObservableCollection[TemplateListItem](
                 self._get_active_ctx()
