@@ -86,7 +86,7 @@ pyrevit attach dev default --installed
 
 ## Code style
 
-- Python: Google docstring convention. `ruff format` runs automatically on commit via a pre-commit hook (any commit touching `pyrevitlib/` except vendored `rpw/`) and will reformat and fail the commit for review if it changes anything — install it once with `pipenv run pre-commit install`. Also run `pipenv run ruff check --fix <path>` to lint before finishing; that part isn't hook-enforced.
+- Python: Google docstring convention. `ruff format` runs automatically on commit via a pre-commit hook for any staged Python file in the repo, except paths excluded by the hook (notably `site-packages/`, `pyrevitlib/rpw/`, and `dev/modules/`); it will reformat and fail the commit for review if it changes anything — install it once with `pipenv run pre-commit install`. Also run `pipenv run ruff check --fix <path>` to lint before finishing; that part isn't hook-enforced.
 - C#: matches each area's existing brace convention (see `.editorconfig`: same-line/K&R everywhere except the `pyRevitAssemblyBuilder`/`pyRevitExtensionParser`/`pyRevitExtensionParserTester` trio under `dev/pyRevitLoader/`, which use Allman). `dotnet format` runs automatically on commit via the same pre-commit hook for any staged `.cs` file (vendored `dev/modules/` excluded) and will reformat and fail the commit for review if it changes anything.
 
 ## Commenting guidelines
