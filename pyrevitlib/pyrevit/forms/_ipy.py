@@ -262,13 +262,14 @@ class _WPFMixin(object):
         if value is not None:
             return value
 
+        fallback = default if default is not None else string_name
         mlogger.warning(
             "Missing WPF resource key '%s' on %s; using fallback '%s'.",
             string_name,
             self.__class__.__name__,
-            default,
+            fallback,
         )
-        return default
+        return fallback
 
     # ------------------------------------------------------------------ images
 
