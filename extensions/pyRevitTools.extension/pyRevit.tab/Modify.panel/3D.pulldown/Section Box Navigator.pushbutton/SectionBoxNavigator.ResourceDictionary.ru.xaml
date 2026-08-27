@@ -97,6 +97,7 @@
     <system:String x:Key="ConfirmSectionBox">Подтвердить Бокс Сечения</system:String>
     <system:String x:Key="SectionBoxAlignedFormat">Бокс сечения выровнен с видом '{0}'</system:String>
     <system:String x:Key="CropBoxAlignedFormat">Рамка обрезки выровнена с видом '{0}'</system:String>
+    <system:String x:Key="ScopeBoxApplied">Область видимости применена к виду</system:String>
     <system:String x:Key="UnsupportedViewType">Неподдерживаемый тип вида.</system:String>
     <system:String x:Key="Activated">активирован</system:String>
     <system:String x:Key="Deactivated">деактивирован</system:String>

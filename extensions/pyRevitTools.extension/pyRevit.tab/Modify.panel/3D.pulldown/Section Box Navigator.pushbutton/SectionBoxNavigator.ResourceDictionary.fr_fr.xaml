@@ -97,6 +97,7 @@
     <system:String x:Key="ConfirmSectionBox">Confirmer la Boîte de Coupe</system:String>
     <system:String x:Key="SectionBoxAlignedFormat">Boîte de coupe alignée avec la vue '{0}'</system:String>
     <system:String x:Key="CropBoxAlignedFormat">Boîte de recadrage alignée avec la vue '{0}'</system:String>
+    <system:String x:Key="ScopeBoxApplied">Boîte de portée appliquée à la vue</system:String>
     <system:String x:Key="UnsupportedViewType">Type de vue non pris en charge.</system:String>
     <system:String x:Key="Activated">activé</system:String>
     <system:String x:Key="Deactivated">désactivé</system:String>

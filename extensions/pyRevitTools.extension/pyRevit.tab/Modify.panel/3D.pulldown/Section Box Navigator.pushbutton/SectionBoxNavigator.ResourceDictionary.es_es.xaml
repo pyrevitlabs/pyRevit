@@ -97,6 +97,7 @@
     <system:String x:Key="ConfirmSectionBox">Confirmar Caja de Sección</system:String>
     <system:String x:Key="SectionBoxAlignedFormat">Caja de sección alineada con la vista '{0}'</system:String>
     <system:String x:Key="CropBoxAlignedFormat">Caja de recorte alineada con la vista '{0}'</system:String>
+    <system:String x:Key="ScopeBoxApplied">Caja de alcance aplicada a la vista</system:String>
     <system:String x:Key="UnsupportedViewType">Tipo de vista no soportado.</system:String>
     <system:String x:Key="Activated">activado</system:String>
     <system:String x:Key="Deactivated">desactivado</system:String>

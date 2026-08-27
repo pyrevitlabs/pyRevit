@@ -1232,7 +1232,16 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
         section_box = view_data.get("section_box", None)
 
-        if isinstance(self.current_view, DB.ViewPlan):
+        is_view_plan = isinstance(self.current_view, DB.ViewPlan)
+        scope_box_param = self.current_view.get_Parameter(
+            DB.BuiltInParameter.VIEWER_VOLUME_OF_INTEREST_CROP
+        )
+        has_scope_box = (
+            scope_box_param is not None
+            and scope_box_param.AsElementId() != DB.ElementId.InvalidElementId
+        )
+
+        if is_view_plan and not has_scope_box:
             with revit.Transaction("Activate CropBox"):
                 if not self.current_view.CropBoxActive:
                     self.current_view.CropBoxActive = True
@@ -1285,9 +1294,14 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                         3, self.get_locale_string("UnsupportedViewType"), "warning"
                     )
         else:
-            self.show_status_message(
-                3, self.get_locale_string("UnsupportedViewType"), "warning"
-            )
+            if not is_view_plan:
+                self.show_status_message(
+                    3, self.get_locale_string("UnsupportedViewType"), "warning"
+                )
+            elif has_scope_box:
+                self.show_status_message(
+                    3, self.get_locale_string("ScopeBoxApplied"), "warning"
+                )
             return
 
     def do_toggle(self):
