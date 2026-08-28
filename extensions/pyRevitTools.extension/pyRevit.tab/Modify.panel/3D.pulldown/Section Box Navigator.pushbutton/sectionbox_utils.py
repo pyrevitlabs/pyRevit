@@ -121,18 +121,17 @@ def compute_rotation_angle(section_box, view):
     return angle_box - angle_view
 
 
-def align_crop_by_element(doc, view, section_box):
+def align_crop_by_transform(doc, view, section_box):
     """
     Align a plan view to a 3D section box by moving and rotating
-    the view's crop element.
+    the view's crop element. This rotates plan, so it no longer faces
+    Project North.
 
     Returns:
         bool: True if the crop element was successfully aligned.
     """
-    # TODO this currently does not work
     with revit.Transaction("Align 2D View to 3D Section Box - Plan"):
         crop_el = get_crop_element(doc, view)
-        # TODO this works successfully - tested, the 2 id distance convention is a thing
         if not crop_el:
             return False
 
@@ -147,9 +146,7 @@ def align_crop_by_element(doc, view, section_box):
         )
 
         # Get the current crop element center.
-        print(crop_el, view)
         crop_box = crop_el.get_BoundingBox(view)
-        print(crop_box)
         crop_centroid = DB.XYZ(
             (crop_box.Min.X + crop_box.Max.X) / 2.0,
             (crop_box.Min.Y + crop_box.Max.Y) / 2.0,
@@ -183,11 +180,7 @@ def align_crop_by_element(doc, view, section_box):
             angle,
         )
 
-        apply_plan_viewrange_from_sectionbox(
-            doc,
-            view,
-            section_box,
-        )
+        align_crop_by_shape(doc, view, section_box)
 
     return True
 

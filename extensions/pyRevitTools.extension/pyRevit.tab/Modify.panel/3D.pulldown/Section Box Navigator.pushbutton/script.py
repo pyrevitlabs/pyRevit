@@ -20,7 +20,7 @@ from sectionbox_utils import (
     is_2d_view,
     get_view_range_and_crop,
     section_box_from_crop,
-    align_crop_by_element,
+    align_crop_by_transform,
     align_crop_by_shape,
 )
 from sbox.sbox_actions import toggle, hide, align_to_face, temp_switch
@@ -1283,7 +1283,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 self.current_view.CropBoxVisible = True
 
         if result == "Rotate Crop Element":
-            success = align_crop_by_element(
+            success = align_crop_by_transform(
                 doc,
                 self.current_view,
                 section_box,
