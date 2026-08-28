@@ -326,13 +326,23 @@
                                   StrokeStartLineCap="Round"
                                   StrokeEndLineCap="Round"
                                   StrokeLineJoin="Round"
+                                   Visibility="Collapsed" Margin="2"/>
+                            <Path x:Name="indeterminate" Data="M1,4 L7,4"
+                                  Stroke="{DynamicResource pyRevitIconBrush}"
+                                  StrokeThickness="1.5"
+                                  StrokeStartLineCap="Round"
+                                  StrokeEndLineCap="Round"
                                   Visibility="Collapsed" Margin="2"/>
                         </Border>
-                        <ContentPresenter Margin="6,0,0,0" VerticalAlignment="Center"/>
+                        <ContentPresenter Margin="6,0,0,0" VerticalAlignment="Center"
+                                          RecognizesAccessKey="True"/>
                     </StackPanel>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="check" Property="Visibility" Value="Visible"/>
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="{x:Null}">
+                            <Setter TargetName="indeterminate" Property="Visibility" Value="Visible"/>
                         </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="box" Property="BorderBrush" Value="{DynamicResource pyRevitAccentBrush}"/>
@@ -342,6 +352,7 @@
                             <Setter TargetName="box" Property="Background" Value="{DynamicResource pyRevitControlHoverBrush}"/>
                             <Setter TargetName="box" Property="BorderBrush" Value="{DynamicResource pyRevitDisabledForegroundBrush}"/>
                             <Setter TargetName="check" Property="Stroke" Value="{DynamicResource pyRevitDisabledForegroundBrush}"/>
+                            <Setter TargetName="indeterminate" Property="Stroke" Value="{DynamicResource pyRevitDisabledForegroundBrush}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

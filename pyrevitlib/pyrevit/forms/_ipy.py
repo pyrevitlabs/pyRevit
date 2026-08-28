@@ -129,9 +129,6 @@ _PALETTE_DARK = {
 }
 
 
-_CONTRAST_MIN_ALPHA = 0x20
-
-
 def _colorref(argb):
     """Convert an (a, r, g, b) byte tuple to a Win32 COLORREF (0x00BBGGRR)."""
     _, r, g, b = argb
@@ -474,7 +471,9 @@ class _WPFMixin(object):
 
         Elements that declare their own Foreground are left untouched, and so
         are theme-brush backgrounds, which already pair with the theme
-        foreground. Safe to call again to re-evaluate after a theme change.
+        foreground. Translucent backgrounds are left untouched because their
+        effective color depends on the surface below them. Safe to call again
+        to re-evaluate after a theme change.
         """
         res = self.Resources
         try:
@@ -504,7 +503,7 @@ class _WPFMixin(object):
             if not isinstance(brush, Media.SolidColorBrush):
                 continue
             background = brush.Color
-            if background.A < _CONTRAST_MIN_ALPHA:
+            if background.A != 0xFF:
                 continue
             if _argb(background) in theme_argbs:
                 continue

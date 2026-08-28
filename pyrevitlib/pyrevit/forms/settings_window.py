@@ -37,10 +37,6 @@ from pyrevit.coreutils import appdata
 # Setting types that are purely visual and carry no config value.
 _DISPLAY_ONLY_TYPES = ("section", "separator")
 
-# Per-control layout, applied as attributes rather than as implicit styles in
-# Window.Resources. An implicit style declared on the window shadows the one
-# Theme.xaml contributes through MergedDictionaries, which would strip every
-# themed brush and template from that control type.
 _LABEL_ATTRS = 'Margin="0,4,0,0" Padding="0" FontWeight="SemiBold"'
 _TEXTBOX_ATTRS = 'Margin="0,0,0,2" Padding="5,2"'
 _COMBOBOX_ATTRS = 'Margin="0,0,0,2" Padding="5,2"'
@@ -48,11 +44,8 @@ _CHECKBOX_ATTRS = 'Margin="0,3,0,3"'
 _SLIDER_ATTRS = 'Margin="0,2,0,2" VerticalAlignment="Center"'
 _BROWSE_BUTTON_ATTRS = 'Margin="4,0,0,2" Padding="5,2" MinWidth="28"'
 
-# Row wrapper for composite settings (color / folder / file / slider).
 _ROW_GRID_MARGIN = 'Margin="0,0,0,2"'
 
-# Window height cap. SizeToContent grows the window to fit the schema up to
-# this, then the settings area scrolls instead of running off the screen.
 DEFAULT_MAX_HEIGHT = 560
 
 
