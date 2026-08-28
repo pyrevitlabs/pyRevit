@@ -36,7 +36,7 @@ from pyrevit.framework import System
 from pyrevit.framework import Threading
 from pyrevit.framework import Interop
 from pyrevit.framework import Input
-from pyrevit.framework import wpf, Forms, Controls, Media
+from pyrevit.framework import wpf, Forms, Controls, Documents, Media
 from pyrevit.framework import CPDialogs
 from pyrevit.framework import ComponentModel
 from pyrevit.framework import ObservableCollection
@@ -94,8 +94,12 @@ _PALETTE_LIGHT = {
     "ControlBorder": (0xFF, 0xCC, 0xCC, 0xCC),
     "ControlHover": (0xFF, 0xE5, 0xE5, 0xE5),
     "ControlPressed": (0xFF, 0xD9, 0xD9, 0xD9),
+    "ControlOverlayHover": (0x0C, 0x00, 0x00, 0x00),
+    "ControlOverlayPressed": (0x18, 0x00, 0x00, 0x00),
     "DisabledForeground": (0xFF, 0xA0, 0xA0, 0xA0),
     "SubtleForeground": (0xFF, 0x69, 0x69, 0x69),
+    "DangerBackground": (0xFF, 0xFB, 0xD5, 0xD5),
+    "SuccessBackground": (0xFF, 0xD4, 0xEF, 0xD8),
     "Icon": (0xFF, 0x00, 0x00, 0x00),
     "SelectionBackground": (0xFF, 0xCC, 0xE4, 0xF7),
     "SelectionForeground": (0xFF, 0x00, 0x00, 0x00),
@@ -111,8 +115,12 @@ _PALETTE_DARK = {
     "ControlBorder": (0xFF, 0x45, 0x4F, 0x61),
     "ControlHover": (0xFF, 0x45, 0x4F, 0x61),
     "ControlPressed": (0xFF, 0x52, 0x5E, 0x73),
+    "ControlOverlayHover": (0x28, 0xFF, 0xFF, 0xFF),
+    "ControlOverlayPressed": (0x37, 0xFF, 0xFF, 0xFF),
     "DisabledForeground": (0xFF, 0x7F, 0x8C, 0x8D),
     "SubtleForeground": (0xFF, 0x95, 0xA5, 0xA6),
+    "DangerBackground": (0xFF, 0x5C, 0x2E, 0x2E),
+    "SuccessBackground": (0xFF, 0x2C, 0x4C, 0x33),
     "Icon": (0xFF, 0xEC, 0xF0, 0xF1),
     "SelectionBackground": (0xFF, 0x33, 0x50, 0x6E),
     "SelectionForeground": (0xFF, 0xEC, 0xF0, 0xF1),
@@ -121,10 +129,120 @@ _PALETTE_DARK = {
 }
 
 
+_CONTRAST_MIN_ALPHA = 0x20
+
+
 def _colorref(argb):
     """Convert an (a, r, g, b) byte tuple to a Win32 COLORREF (0x00BBGGRR)."""
     _, r, g, b = argb
     return r | (g << 8) | (b << 16)
+
+
+def _argb(color):
+    """Convert a Media.Color to a hashable (a, r, g, b) byte tuple."""
+    return (color.A, color.R, color.G, color.B)
+
+
+def _srgb_component(byte_value):
+    """Linearize a single 0-255 sRGB channel for luminance math."""
+    channel = byte_value / 255.0
+    if channel <= 0.03928:
+        return channel / 12.92
+    return pow((channel + 0.055) / 1.055, 2.4)
+
+
+def _relative_luminance(color):
+    """Return the WCAG relative luminance of a Media.Color."""
+    return (
+        0.2126 * _srgb_component(color.R)
+        + 0.7152 * _srgb_component(color.G)
+        + 0.0722 * _srgb_component(color.B)
+    )
+
+
+def _contrast_ratio(first_color, second_color):
+    """Return the WCAG contrast ratio between two Media.Color values."""
+    first = _relative_luminance(first_color)
+    second = _relative_luminance(second_color)
+    return (max(first, second) + 0.05) / (min(first, second) + 0.05)
+
+
+def _background_property(wpf_element):
+    """Return the DependencyProperty painting an element's own background.
+
+    Returns:
+        DependencyProperty or None: None for elements that paint no background.
+    """
+    if isinstance(wpf_element, Controls.Control):
+        return Controls.Control.BackgroundProperty
+    if isinstance(wpf_element, Controls.TextBlock):
+        return Controls.TextBlock.BackgroundProperty
+    if isinstance(wpf_element, Controls.Panel):
+        return Controls.Panel.BackgroundProperty
+    if isinstance(wpf_element, Controls.Border):
+        return Controls.Border.BackgroundProperty
+    return None
+
+
+def _is_authored_value(wpf_element, dependency_property):
+    """Return True if a property value was authored rather than defaulted.
+
+    WPF hands out opaque metadata defaults for properties nobody set -- a bare
+    CheckBox reports a white Background its template never paints. Those must
+    not be mistaken for a real background, or the element gets a foreground
+    picked to contrast against a color that is never drawn.
+    """
+    try:
+        source = framework.Windows.DependencyPropertyHelper.GetValueSource(
+            wpf_element, dependency_property
+        ).BaseValueSource
+    except Exception:
+        return False
+    return source not in (
+        framework.Windows.BaseValueSource.Default,
+        framework.Windows.BaseValueSource.DefaultStyle,
+        framework.Windows.BaseValueSource.DefaultStyleTrigger,
+        framework.Windows.BaseValueSource.Inherited,
+        framework.Windows.BaseValueSource.Unknown,
+    )
+
+
+def _foreground_property(wpf_element):
+    """Return the DependencyProperty carrying text color for an element.
+
+    Controls and TextBlocks own a Foreground; Panels and Borders do not, so
+    the inherited TextElement.Foreground attached property is used to color
+    whatever text they contain.
+
+    Returns:
+        DependencyProperty or None: None for elements that paint no text.
+    """
+    if isinstance(wpf_element, Controls.Control):
+        return Controls.Control.ForegroundProperty
+    if isinstance(wpf_element, Controls.TextBlock):
+        return Controls.TextBlock.ForegroundProperty
+    if isinstance(wpf_element, (Controls.Panel, Controls.Border)):
+        return Documents.TextElement.ForegroundProperty
+    return None
+
+
+def _walk_logical_tree(root):
+    """Yield root and every logical descendant of a WPF element.
+
+    The logical tree deliberately excludes control-template internals, so
+    only elements authored in the window/panel XAML are visited.
+    """
+    pending = [root]
+    while pending:
+        current = pending.pop()
+        yield current
+        try:
+            children = framework.Windows.LogicalTreeHelper.GetChildren(current)
+        except Exception:
+            continue
+        for child in children:
+            if isinstance(child, framework.Windows.DependencyObject):
+                pending.append(child)
 
 
 def _is_dark_theme():
@@ -343,6 +461,66 @@ class _WPFMixin(object):
         """
         _WPFMixin.setup_resources(wpf_ctrl, set_root_colors=False)
 
+    def apply_contrast_foregrounds(self):
+        """Give every custom-background element a readable text color.
+
+        Walks the logical tree and, for each element painting a background
+        that is not one of the theme's own brushes, assigns whichever of the
+        theme window foreground/background colors contrasts better with it.
+        This keeps hardcoded accent colors in user XAML -- a pale red "danger"
+        button, a pale green "confirm" button -- legible under a dark UI
+        theme, where the inherited near-white text would otherwise vanish
+        into them.
+
+        Elements that declare their own Foreground are left untouched, and so
+        are theme-brush backgrounds, which already pair with the theme
+        foreground. Safe to call again to re-evaluate after a theme change.
+        """
+        res = self.Resources
+        try:
+            candidates = [
+                res["pyRevitWindowForegroundBrush"],
+                res["pyRevitWindowBackgroundBrush"],
+            ]
+            theme_argbs = set(
+                _argb(res[key]) for key in list(res.Keys) if str(key).endswith("Color")
+            )
+        except Exception:
+            return
+
+        managed = getattr(self, "_contrast_managed", None)
+        if managed is None:
+            managed = set()
+            self._contrast_managed = managed
+
+        for element in _walk_logical_tree(self):
+            fore_prop = _foreground_property(element)
+            back_prop = _background_property(element)
+            if fore_prop is None or back_prop is None:
+                continue
+            if not _is_authored_value(element, back_prop):
+                continue
+            brush = element.GetValue(back_prop)
+            if not isinstance(brush, Media.SolidColorBrush):
+                continue
+            background = brush.Color
+            if background.A < _CONTRAST_MIN_ALPHA:
+                continue
+            if _argb(background) in theme_argbs:
+                continue
+            if (
+                element.ReadLocalValue(fore_prop)
+                != framework.Windows.DependencyProperty.UnsetValue
+                and element not in managed
+            ):
+                continue
+            best = max(
+                candidates,
+                key=lambda candidate: _contrast_ratio(background, candidate.Color),
+            )
+            element.SetValue(fore_prop, best)
+            managed.add(element)
+
     def _apply_dark_titlebar(self):
         """No-op by default; overridden by WPFWindow (Page has no title bar)."""
 
@@ -352,6 +530,7 @@ class _WPFMixin(object):
     def _on_theme_refresh(self):
         """Re-theme resources and, for windows, the native title bar."""
         _WPFMixin.setup_resources(self, set_root_colors=self._live_refresh_root_colors)
+        self.apply_contrast_foregrounds()
         self._apply_dark_titlebar()
         self._refresh_icon()
 
@@ -653,6 +832,7 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
             wpf.LoadComponent(self, framework.StringReader(xaml_source))
 
         # set properties
+        self.apply_contrast_foregrounds()
         self.thread_id = framework.get_current_thread_id()
         if set_owner:
             self.setup_owner()
@@ -824,6 +1004,7 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
             wpf.LoadComponent(self, xaml_path)
         else:
             wpf.LoadComponent(self, framework.StringReader(xaml_source))
+        self.apply_contrast_foregrounds()
         self.thread_id = framework.get_current_thread_id()
         self._subscribe_theme_changed()
 

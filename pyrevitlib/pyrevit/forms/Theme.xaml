@@ -25,17 +25,19 @@
                             Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}">
-                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                           VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                           Margin="{TemplateBinding Padding}"
-                                           RecognizesAccessKey="True"/>
+                        <Border x:Name="overlay" Background="Transparent">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                               VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                               Margin="{TemplateBinding Padding}"
+                                               RecognizesAccessKey="True"/>
+                        </Border>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="border" Property="Background" Value="{DynamicResource pyRevitControlHoverBrush}"/>
+                            <Setter TargetName="overlay" Property="Background" Value="{DynamicResource pyRevitControlOverlayHoverBrush}"/>
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="border" Property="Background" Value="{DynamicResource pyRevitControlPressedBrush}"/>
+                            <Setter TargetName="overlay" Property="Background" Value="{DynamicResource pyRevitControlOverlayPressedBrush}"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Foreground" Value="{DynamicResource pyRevitDisabledForegroundBrush}"/>
@@ -222,15 +224,19 @@
     </Style>
     <Style TargetType="ListBoxItem">
         <Setter Property="Padding" Value="4,2"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ListBoxItem">
-                    <Border x:Name="border" Background="Transparent" Padding="{TemplateBinding Padding}">
-                        <ContentPresenter/>
+                    <Border x:Name="border" Background="{TemplateBinding Background}">
+                        <Border x:Name="overlay" Background="Transparent" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"/>
+                        </Border>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="border" Property="Background" Value="{DynamicResource pyRevitControlHoverBrush}"/>
+                            <Setter TargetName="overlay" Property="Background" Value="{DynamicResource pyRevitControlOverlayHoverBrush}"/>
                         </Trigger>
                         <Trigger Property="IsSelected" Value="True">
                             <Setter TargetName="border" Property="Background" Value="{DynamicResource pyRevitSelectionBackgroundBrush}"/>
@@ -250,15 +256,41 @@
         <Setter Property="Padding" Value="4,2"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
-        <Style.Triggers>
-            <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="Background" Value="{DynamicResource pyRevitControlHoverBrush}"/>
-            </Trigger>
-            <Trigger Property="IsSelected" Value="True">
-                <Setter Property="Background" Value="{DynamicResource pyRevitSelectionBackgroundBrush}"/>
-                <Setter Property="Foreground" Value="{DynamicResource pyRevitSelectionForegroundBrush}"/>
-            </Trigger>
-        </Style.Triggers>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListViewItem">
+                    <Border x:Name="border"
+                            Background="{TemplateBinding Background}"
+                            Padding="{TemplateBinding Padding}"
+                            SnapsToDevicePixels="True">
+                        <Grid>
+                            <GridViewRowPresenter x:Name="rowPresenter"
+                                                  Columns="{TemplateBinding GridView.ColumnCollection}"
+                                                  VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                                  SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                            <ContentPresenter x:Name="contentPresenter"
+                                              Visibility="Collapsed"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ListView}, Path=View}" Value="{x:Null}">
+                            <Setter TargetName="rowPresenter" Property="Visibility" Value="Collapsed"/>
+                            <Setter TargetName="contentPresenter" Property="Visibility" Value="Visible"/>
+                        </DataTrigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource pyRevitControlHoverBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="border" Property="Background" Value="{DynamicResource pyRevitSelectionBackgroundBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource pyRevitSelectionForegroundBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
     <Style TargetType="GridViewColumnHeader">
         <Setter Property="Background" Value="{DynamicResource pyRevitControlBackgroundBrush}"/>
@@ -286,7 +318,7 @@
                     <StackPanel Orientation="Horizontal">
                         <Border x:Name="box" Width="14" Height="14" VerticalAlignment="Center"
                                 Background="{DynamicResource pyRevitControlBackgroundBrush}"
-                                BorderBrush="{DynamicResource pyRevitControlBorderBrush}"
+                                BorderBrush="{DynamicResource pyRevitSubtleForegroundBrush}"
                                 BorderThickness="1">
                             <Path x:Name="check" Data="M0,4 L3,7 L8,0"
                                   Stroke="{DynamicResource pyRevitIconBrush}"
@@ -708,6 +740,133 @@
         </Setter>
     </Style>
     <Style TargetType="Calendar" BasedOn="{StaticResource pyRevitCalendarStyle}"/>
+
+    <Style x:Key="pyRevitSliderThumb" TargetType="Thumb">
+        <Setter Property="OverridesDefaultStyle" Value="True"/>
+        <Setter Property="Height" Value="14"/>
+        <Setter Property="Width" Value="14"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Thumb">
+                    <Ellipse x:Name="grip"
+                             Fill="{DynamicResource pyRevitAccentBrush}"
+                             Stroke="{DynamicResource pyRevitControlBorderBrush}"
+                             StrokeThickness="1"/>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="grip" Property="Stroke" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsDragging" Value="True">
+                            <Setter TargetName="grip" Property="Stroke" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="grip" Property="Fill" Value="{DynamicResource pyRevitDisabledForegroundBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <ControlTemplate x:Key="pyRevitHorizontalSlider" TargetType="Slider">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <TickBar x:Name="topTick" Grid.Row="0" Height="4" Placement="Top"
+                     Visibility="Collapsed"
+                     Fill="{DynamicResource pyRevitSubtleForegroundBrush}"/>
+            <Border Grid.Row="1" Height="4" CornerRadius="2" VerticalAlignment="Center"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{DynamicResource pyRevitControlBorderBrush}"
+                    BorderThickness="1"/>
+            <Track x:Name="PART_Track" Grid.Row="1">
+                <Track.DecreaseRepeatButton>
+                    <RepeatButton Command="Slider.DecreaseLarge" Opacity="0" Focusable="False"/>
+                </Track.DecreaseRepeatButton>
+                <Track.Thumb>
+                    <Thumb Style="{StaticResource pyRevitSliderThumb}"/>
+                </Track.Thumb>
+                <Track.IncreaseRepeatButton>
+                    <RepeatButton Command="Slider.IncreaseLarge" Opacity="0" Focusable="False"/>
+                </Track.IncreaseRepeatButton>
+            </Track>
+            <TickBar x:Name="bottomTick" Grid.Row="2" Height="4" Placement="Bottom"
+                     Visibility="Collapsed"
+                     Fill="{DynamicResource pyRevitSubtleForegroundBrush}"/>
+        </Grid>
+        <ControlTemplate.Triggers>
+            <Trigger Property="TickPlacement" Value="TopLeft">
+                <Setter TargetName="topTick" Property="Visibility" Value="Visible"/>
+            </Trigger>
+            <Trigger Property="TickPlacement" Value="BottomRight">
+                <Setter TargetName="bottomTick" Property="Visibility" Value="Visible"/>
+            </Trigger>
+            <Trigger Property="TickPlacement" Value="Both">
+                <Setter TargetName="topTick" Property="Visibility" Value="Visible"/>
+                <Setter TargetName="bottomTick" Property="Visibility" Value="Visible"/>
+            </Trigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+
+    <ControlTemplate x:Key="pyRevitVerticalSlider" TargetType="Slider">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TickBar x:Name="leftTick" Grid.Column="0" Width="4" Placement="Left"
+                     Visibility="Collapsed"
+                     Fill="{DynamicResource pyRevitSubtleForegroundBrush}"/>
+            <Border Grid.Column="1" Width="4" CornerRadius="2" HorizontalAlignment="Center"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{DynamicResource pyRevitControlBorderBrush}"
+                    BorderThickness="1"/>
+            <Track x:Name="PART_Track" Grid.Column="1" IsDirectionReversed="True">
+                <Track.DecreaseRepeatButton>
+                    <RepeatButton Command="Slider.DecreaseLarge" Opacity="0" Focusable="False"/>
+                </Track.DecreaseRepeatButton>
+                <Track.Thumb>
+                    <Thumb Style="{StaticResource pyRevitSliderThumb}"/>
+                </Track.Thumb>
+                <Track.IncreaseRepeatButton>
+                    <RepeatButton Command="Slider.IncreaseLarge" Opacity="0" Focusable="False"/>
+                </Track.IncreaseRepeatButton>
+            </Track>
+            <TickBar x:Name="rightTick" Grid.Column="2" Width="4" Placement="Right"
+                     Visibility="Collapsed"
+                     Fill="{DynamicResource pyRevitSubtleForegroundBrush}"/>
+        </Grid>
+        <ControlTemplate.Triggers>
+            <Trigger Property="TickPlacement" Value="TopLeft">
+                <Setter TargetName="leftTick" Property="Visibility" Value="Visible"/>
+            </Trigger>
+            <Trigger Property="TickPlacement" Value="BottomRight">
+                <Setter TargetName="rightTick" Property="Visibility" Value="Visible"/>
+            </Trigger>
+            <Trigger Property="TickPlacement" Value="Both">
+                <Setter TargetName="leftTick" Property="Visibility" Value="Visible"/>
+                <Setter TargetName="rightTick" Property="Visibility" Value="Visible"/>
+            </Trigger>
+        </ControlTemplate.Triggers>
+    </ControlTemplate>
+
+    <Style TargetType="Slider">
+        <Setter Property="Background" Value="{DynamicResource pyRevitControlBackgroundBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
+        <Setter Property="MinHeight" Value="21"/>
+        <Setter Property="Template" Value="{StaticResource pyRevitHorizontalSlider}"/>
+        <Style.Triggers>
+            <Trigger Property="Orientation" Value="Vertical">
+                <Setter Property="MinHeight" Value="0"/>
+                <Setter Property="MinWidth" Value="21"/>
+                <Setter Property="Template" Value="{StaticResource pyRevitVerticalSlider}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
 
     <Style TargetType="GroupBox">
         <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>

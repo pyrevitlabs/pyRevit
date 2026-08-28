@@ -37,12 +37,31 @@ from pyrevit.coreutils import appdata
 # Setting types that are purely visual and carry no config value.
 _DISPLAY_ONLY_TYPES = ("section", "separator")
 
+# Per-control layout, applied as attributes rather than as implicit styles in
+# Window.Resources. An implicit style declared on the window shadows the one
+# Theme.xaml contributes through MergedDictionaries, which would strip every
+# themed brush and template from that control type.
+_LABEL_ATTRS = 'Margin="0,4,0,0" Padding="0" FontWeight="SemiBold"'
+_TEXTBOX_ATTRS = 'Margin="0,0,0,2" Padding="5,2"'
+_COMBOBOX_ATTRS = 'Margin="0,0,0,2" Padding="5,2"'
+_CHECKBOX_ATTRS = 'Margin="0,3,0,3"'
+_SLIDER_ATTRS = 'Margin="0,2,0,2" VerticalAlignment="Center"'
+_BROWSE_BUTTON_ATTRS = 'Margin="4,0,0,2" Padding="5,2" MinWidth="28"'
+
+# Row wrapper for composite settings (color / folder / file / slider).
+_ROW_GRID_MARGIN = 'Margin="0,0,0,2"'
+
+# Window height cap. SizeToContent grows the window to fit the schema up to
+# this, then the settings area scrolls instead of running off the screen.
+DEFAULT_MAX_HEIGHT = 560
+
 
 class SettingsWindow(forms.WPFWindow):
     """Dynamic settings window that generates UI from schema."""
 
     def __init__(
-        self, settings_schema, section=None, title="Settings", width=450, custom_config=None
+        self, settings_schema, section=None, title="Settings", width=450,
+        custom_config=None, max_height=DEFAULT_MAX_HEIGHT
     ):
         """Initialize the settings window.
 
@@ -52,6 +71,7 @@ class SettingsWindow(forms.WPFWindow):
             title: Window title
             width: Window width in pixels
             custom_config: Will generate a new ini with the given name. Uses default if not provided.
+            max_height: Window height cap; past it the settings area scrolls
         """
         self.configparser = None
         if not custom_config:
@@ -69,6 +89,7 @@ class SettingsWindow(forms.WPFWindow):
         self.settings_schema = settings_schema
         self.window_title = title
         self.window_width = width
+        self.window_max_height = max_height
         self.config_section = section
         self.result = False
         self.controls = {}
@@ -107,6 +128,17 @@ class SettingsWindow(forms.WPFWindow):
             .replace("'", "&apos;")
         )
 
+    def _label_xaml(self, label):
+        """Build the XAML for a setting's caption Label.
+
+        Args:
+            label: Already XML-escaped caption text
+
+        Returns:
+            str: Label element markup
+        """
+        return '<Label Content="{0}" {1}/>'.format(label, _LABEL_ATTRS)
+
     def _generate_xaml(self):
         """Generate XAML string based on settings schema."""
 
@@ -116,44 +148,22 @@ class SettingsWindow(forms.WPFWindow):
             '        Title="Settings" Height="Auto" Width="{0}"'.format(
                 self.window_width
             ),
+            '        MaxHeight="{0}"'.format(self.window_max_height),
             '        WindowStartupLocation="CenterScreen"',
             '        ResizeMode="CanResizeWithGrip"',
             '        ShowInTaskbar="False"',
             '        SizeToContent="Height">',
-            "    <Window.Resources>",
-            '        <Style TargetType="Label">',
-            '            <Setter Property="Margin" Value="0,5,0,2"/>',
-            '            <Setter Property="FontWeight" Value="SemiBold"/>',
-            "        </Style>",
-            '        <Style TargetType="TextBox">',
-            '            <Setter Property="Margin" Value="0,0,0,4"/>',
-            '            <Setter Property="Padding" Value="5,3"/>',
-            "        </Style>",
-            '        <Style TargetType="ComboBox">',
-            '            <Setter Property="Margin" Value="0,0,0,4"/>',
-            '            <Setter Property="Padding" Value="5,3"/>',
-            "        </Style>",
-            '        <Style TargetType="CheckBox">',
-            '            <Setter Property="Margin" Value="0,5,0,4"/>',
-            "        </Style>",
-            '        <Style TargetType="Slider">',
-            '            <Setter Property="Margin" Value="0,4,0,4"/>',
-            '            <Setter Property="VerticalAlignment" Value="Center"/>',
-            "        </Style>",
-            '        <Style TargetType="Button" x:Key="BrowseButton">',
-            '            <Setter Property="Margin" Value="5,0,0,4"/>',
-            '            <Setter Property="Padding" Value="5,3"/>',
-            '            <Setter Property="MinWidth" Value="30"/>',
-            "        </Style>",
-            "    </Window.Resources>",
-            '    <Grid Margin="20">',
+            '    <Grid Margin="16,14,16,14">',
             "        <Grid.RowDefinitions>",
-            '            <RowDefinition Height="Auto"/>',
+            '            <RowDefinition Height="*"/>',
             '            <RowDefinition Height="Auto"/>',
             "        </Grid.RowDefinitions>",
             "        ",
             "        <!-- Settings Stack Panel -->",
-            '        <StackPanel Grid.Row="0" Margin="0,0,0,12">',
+            '        <ScrollViewer Grid.Row="0" Margin="0,0,0,10"'
+            ' VerticalScrollBarVisibility="Auto"'
+            ' HorizontalScrollBarVisibility="Disabled">',
+            '        <StackPanel Margin="0,0,4,0">',
         ]
 
         for setting in self.settings_schema:
@@ -170,25 +180,29 @@ class SettingsWindow(forms.WPFWindow):
                 xaml_parts.append(
                     '<TextBlock Text="{0}"'
                     ' FontWeight="Bold" FontSize="12"'
-                    ' Foreground="#555555"'
-                    ' Margin="0,14,0,3"/>'.format(label)
+                    ' Foreground="{{DynamicResource pyRevitSubtleForegroundBrush}}"'
+                    ' Margin="0,10,0,2"/>'.format(label)
                 )
-                xaml_parts.append('<Separator Margin="0,0,0,8" Background="#CCCCCC"/>')
+                xaml_parts.append('<Separator Margin="0,0,0,4"/>')
 
             elif setting_type == "separator":
                 # Bare horizontal rule, no label.
-                xaml_parts.append('<Separator Margin="0,10,0,10" Background="#DDDDDD"/>')
+                xaml_parts.append('<Separator Margin="0,6,0,6"/>')
 
             # ---- Interactive types ----------------------------------------------
 
             elif setting_type == "bool":
                 xaml_parts.append(
-                    '<CheckBox x:Name="{0}" Content="{1}"/>'.format(name, label)
+                    '<CheckBox x:Name="{0}" Content="{1}" {2}/>'.format(
+                        name, label, _CHECKBOX_ATTRS
+                    )
                 )
 
             elif setting_type == "choice":
-                xaml_parts.append('<Label Content="{0}"/>'.format(label))
-                xaml_parts.append('<ComboBox x:Name="{0}"/>'.format(name))
+                xaml_parts.append(self._label_xaml(label))
+                xaml_parts.append(
+                    '<ComboBox x:Name="{0}" {1}/>'.format(name, _COMBOBOX_ATTRS)
+                )
 
             elif setting_type == "slider":
                 # A Slider control paired with a live numeric readout.
@@ -196,8 +210,8 @@ class SettingsWindow(forms.WPFWindow):
                 min_val = setting.get("min", 0)
                 max_val = setting.get("max", 100)
                 step = setting.get("step", 1)
-                xaml_parts.append('<Label Content="{0}"/>'.format(label))
-                xaml_parts.append('<Grid Margin="0,0,0,4">')
+                xaml_parts.append(self._label_xaml(label))
+                xaml_parts.append('<Grid {0}>'.format(_ROW_GRID_MARGIN))
                 xaml_parts.append("    <Grid.ColumnDefinitions>")
                 xaml_parts.append('        <ColumnDefinition Width="*"/>')
                 xaml_parts.append('        <ColumnDefinition Width="46"/>')
@@ -208,8 +222,9 @@ class SettingsWindow(forms.WPFWindow):
                     ' Minimum="{mn}" Maximum="{mx}"'
                     ' TickFrequency="{step}" SmallChange="{step}"'
                     ' IsSnapToTickEnabled="True"'
-                    ' AutoToolTipPlacement="BottomRight"/>'.format(
-                        name=name, mn=min_val, mx=max_val, step=step
+                    ' AutoToolTipPlacement="BottomRight" {attrs}/>'.format(
+                        name=name, mn=min_val, mx=max_val, step=step,
+                        attrs=_SLIDER_ATTRS,
                     )
                 )
                 xaml_parts.append(
@@ -223,8 +238,8 @@ class SettingsWindow(forms.WPFWindow):
                 xaml_parts.append("</Grid>")
 
             elif setting_type == "color":
-                xaml_parts.append('<Label Content="{0}"/>'.format(label))
-                xaml_parts.append('<Grid Margin="0,0,0,4">')
+                xaml_parts.append(self._label_xaml(label))
+                xaml_parts.append('<Grid {0}>'.format(_ROW_GRID_MARGIN))
                 xaml_parts.append("    <Grid.ColumnDefinitions>")
                 xaml_parts.append('        <ColumnDefinition Width="30"/>')
                 xaml_parts.append('        <ColumnDefinition Width="5"/>')
@@ -233,49 +248,57 @@ class SettingsWindow(forms.WPFWindow):
                 xaml_parts.append("    </Grid.ColumnDefinitions>")
                 xaml_parts.append(
                     '    <Border x:Name="{0}_preview" Grid.Column="0"'
-                    ' BorderBrush="Gray" BorderThickness="1" CornerRadius="2">'.format(name)
+                    ' BorderBrush="{{DynamicResource pyRevitControlBorderBrush}}"'
+                    ' BorderThickness="1" CornerRadius="2">'.format(name)
                 )
                 xaml_parts.append('        <Rectangle Fill="White" Height="22"/>')
                 xaml_parts.append("    </Border>")
                 xaml_parts.append(
-                    '    <TextBox x:Name="{0}" Grid.Column="2"/>'.format(name)
+                    '    <TextBox x:Name="{0}" Grid.Column="2" {1}/>'.format(
+                        name, _TEXTBOX_ATTRS
+                    )
                 )
                 xaml_parts.append(
                     '    <Button x:Name="{0}_button" Grid.Column="3" Content="..."'
-                    ' Style="{{StaticResource BrowseButton}}"/>'.format(name)
+                    ' {1}/>'.format(name, _BROWSE_BUTTON_ATTRS)
                 )
                 xaml_parts.append("</Grid>")
 
             elif setting_type in ["folder", "file"]:
-                xaml_parts.append('<Label Content="{0}"/>'.format(label))
-                xaml_parts.append('<Grid Margin="0,0,0,4">')
+                xaml_parts.append(self._label_xaml(label))
+                xaml_parts.append('<Grid {0}>'.format(_ROW_GRID_MARGIN))
                 xaml_parts.append("    <Grid.ColumnDefinitions>")
                 xaml_parts.append('        <ColumnDefinition Width="*"/>')
                 xaml_parts.append('        <ColumnDefinition Width="Auto"/>')
                 xaml_parts.append("    </Grid.ColumnDefinitions>")
                 xaml_parts.append(
-                    '    <TextBox x:Name="{0}" Grid.Column="0"/>'.format(name)
+                    '    <TextBox x:Name="{0}" Grid.Column="0" {1}/>'.format(
+                        name, _TEXTBOX_ATTRS
+                    )
                 )
                 xaml_parts.append(
                     '    <Button x:Name="{0}_button" Grid.Column="1" Content="..."'
-                    ' Style="{{StaticResource BrowseButton}}"/>'.format(name)
+                    ' {1}/>'.format(name, _BROWSE_BUTTON_ATTRS)
                 )
                 xaml_parts.append("</Grid>")
 
             elif setting_type in ["int", "float", "string"]:
-                xaml_parts.append('<Label Content="{0}"/>'.format(label))
-                xaml_parts.append('<TextBox x:Name="{0}"/>'.format(name))
+                xaml_parts.append(self._label_xaml(label))
+                xaml_parts.append(
+                    '<TextBox x:Name="{0}" {1}/>'.format(name, _TEXTBOX_ATTRS)
+                )
 
         # Footer buttons
         xaml_parts.extend(
             [
                 "        </StackPanel>",
+                "        </ScrollViewer>",
                 '        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">',
-                '            <Button x:Name="reset_button" Content="Reset" Width="80" Height="30"'
-                '                       Margin="0,0,10,0"/>',
-                '            <Button x:Name="save_button" Content="Save" Width="80" Height="30"'
-                '                       Margin="0,0,10,0" IsDefault="True"/>',
-                '            <Button x:Name="cancel_button" Content="Cancel" Width="80" Height="30" IsCancel="True"/>',
+                '            <Button x:Name="reset_button" Content="Reset" Width="76" Height="26"'
+                '                       Margin="0,0,8,0"/>',
+                '            <Button x:Name="save_button" Content="Save" Width="76" Height="26"'
+                '                       Margin="0,0,8,0" IsDefault="True"/>',
+                '            <Button x:Name="cancel_button" Content="Cancel" Width="76" Height="26" IsCancel="True"/>',
                 "        </StackPanel>",
                 "    </Grid>",
                 "</Window>",
@@ -663,7 +686,8 @@ class SettingsWindow(forms.WPFWindow):
 # Public API
 # ---------------------------------------------------------------------------
 
-def show_settings(settings_schema, section=None, title="Settings", width=450, custom_config=None):
+def show_settings(settings_schema, section=None, title="Settings", width=450,
+                  custom_config=None, max_height=DEFAULT_MAX_HEIGHT):
     """Show settings window and return True if saved.
 
     Args:
@@ -696,6 +720,9 @@ def show_settings(settings_schema, section=None, title="Settings", width=450, cu
         title (str):   Window title (default: "Settings")
         width (int):   Window width in pixels (default: 450)
         custom_config (str): Use a custom ini file (default: None)
+        max_height (int): Window height cap in pixels; a schema taller than
+                       this scrolls instead of growing the window off screen
+                       (default: DEFAULT_MAX_HEIGHT)
 
     Returns:
         bool: True if settings were saved, False if canceled/reset.
@@ -723,6 +750,8 @@ def show_settings(settings_schema, section=None, title="Settings", width=450, cu
         if show_settings(settings_schema, section="MyToolSection", title="My Tool Settings"):
             print("Settings saved!")
     """
-    window = SettingsWindow(settings_schema, section, title, width, custom_config)
+    window = SettingsWindow(
+        settings_schema, section, title, width, custom_config, max_height
+    )
     window.ShowDialog()
     return window.result
