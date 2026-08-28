@@ -256,6 +256,10 @@
         <Setter Property="Padding" Value="4,2"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
+        <!-- Without an explicit template the default Aero one is kept, and it
+             paints its own glossy gradient over Background/Foreground. The two
+             presenters cover both ListView shapes: GridView rows use the row
+             presenter, a plain ListView uses the content presenter. -->
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ListViewItem">
@@ -320,19 +324,21 @@
                                 Background="{DynamicResource pyRevitControlBackgroundBrush}"
                                 BorderBrush="{DynamicResource pyRevitSubtleForegroundBrush}"
                                 BorderThickness="1">
-                            <Path x:Name="check" Data="M0,4 L3,7 L8,0"
-                                  Stroke="{DynamicResource pyRevitIconBrush}"
-                                  StrokeThickness="1.5"
-                                  StrokeStartLineCap="Round"
-                                  StrokeEndLineCap="Round"
-                                  StrokeLineJoin="Round"
-                                   Visibility="Collapsed" Margin="2"/>
-                            <Path x:Name="indeterminate" Data="M1,4 L7,4"
-                                  Stroke="{DynamicResource pyRevitIconBrush}"
-                                  StrokeThickness="1.5"
-                                  StrokeStartLineCap="Round"
-                                  StrokeEndLineCap="Round"
-                                  Visibility="Collapsed" Margin="2"/>
+                            <Grid>
+                                <Path x:Name="check" Data="M0,4 L3,7 L8,0"
+                                      Stroke="{DynamicResource pyRevitIconBrush}"
+                                      StrokeThickness="1.5"
+                                      StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round"
+                                      StrokeLineJoin="Round"
+                                      Visibility="Collapsed" Margin="2"/>
+                                <Path x:Name="indeterminate" Data="M1,4 L7,4"
+                                      Stroke="{DynamicResource pyRevitIconBrush}"
+                                      StrokeThickness="1.5"
+                                      StrokeStartLineCap="Round"
+                                      StrokeEndLineCap="Round"
+                                      Visibility="Collapsed" Margin="2"/>
+                            </Grid>
                         </Border>
                         <ContentPresenter Margin="6,0,0,0" VerticalAlignment="Center"
                                           RecognizesAccessKey="True"/>
