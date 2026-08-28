@@ -20,7 +20,7 @@ from sectionbox_utils import (
     is_2d_view,
     get_view_range_and_crop,
     apply_plan_viewrange_from_sectionbox,
-    to_world_identity,
+    section_box_from_crop,
 )
 from sbox.sbox_actions import toggle, hide, align_to_face, temp_switch
 from sectionbox_geometry import (
@@ -1170,7 +1170,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                     3, self.get_locale_string("CouldNotGetCropBox"), "error"
                 )
                 return
-            new_box = to_world_identity(crop_box)
+            new_box = section_box_from_crop(crop_box)
 
         elif crop_box:
             # For floor plans, use the existing logic

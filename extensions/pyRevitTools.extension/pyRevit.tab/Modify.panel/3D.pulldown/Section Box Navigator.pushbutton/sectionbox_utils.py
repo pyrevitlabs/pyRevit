@@ -113,14 +113,41 @@ def apply_plan_viewrange_from_sectionbox(doc, view, section_box):
     view.SetViewRange(vr)
 
 
-def to_world_identity(bbox):
-    t = bbox.Transform
+def section_box_from_crop(crop_box):
+    """Build a section box that reproduces a section/elevation crop.
 
-    p1 = t.OfPoint(bbox.Min)
-    p2 = t.OfPoint(bbox.Max)
+    SetSectionBox only supports yaw rotation: it expects Transform.BasisZ
+    to be world-up (0,0,1), with BasisX/BasisY horizontal. A section or
+    elevation view's own CropBox.Transform uses a different convention
+    -- BasisY is the vertical "view up" and BasisZ is the horizontal
+    view direction -- so copying it straight through gets its vertical
+    and horizontal roles swapped by SetSectionBox (the box ends up
+    "on its side"). Instead, build a proper yaw-only frame from the
+    view's horizontal right vector, and remap Min/Max onto it: the
+    view's vertical extent (old local Y) becomes the new local Z, and
+    the view's depth extent (old local Z) becomes the new local Y.
+
+    Assumes crop_box.Transform.BasisY is world-up, which holds for any
+    normal (non-tilted) Section or Elevation view -- those view types
+    are always vertical cutting planes in Revit.
+    """
+    t = crop_box.Transform
+    min_pt = crop_box.Min
+    max_pt = crop_box.Max
+
+    up = DB.XYZ.BasisZ
+    right = t.BasisX
+    forward = up.CrossProduct(right)
+
+    new_transform = DB.Transform.Identity
+    new_transform.Origin = t.Origin
+    new_transform.BasisX = right
+    new_transform.BasisY = forward
+    new_transform.BasisZ = up
 
     new_box = DB.BoundingBoxXYZ()
-    new_box.Transform = DB.Transform.Identity
-    new_box.Min = DB.XYZ(min(p1.X, p2.X), min(p1.Y, p2.Y), min(p1.Z, p2.Z))
-    new_box.Max = DB.XYZ(max(p1.X, p2.X), max(p1.Y, p2.Y), max(p1.Z, p2.Z))
+    new_box.Transform = new_transform
+    new_box.Min = DB.XYZ(min_pt.X, -max_pt.Z, min_pt.Y)
+    new_box.Max = DB.XYZ(max_pt.X, -min_pt.Z, max_pt.Y)
+
     return new_box
