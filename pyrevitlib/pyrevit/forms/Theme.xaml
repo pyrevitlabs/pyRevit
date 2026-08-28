@@ -17,7 +17,7 @@
         <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource pyRevitControlBorderBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="Padding" Value="8,3"/>
+        <Setter Property="Padding" Value="8,1"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ButtonBase">
@@ -129,7 +129,7 @@
         <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource pyRevitControlBorderBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="Padding" Value="6,3"/>
+        <Setter Property="Padding" Value="6,1"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ComboBox">
