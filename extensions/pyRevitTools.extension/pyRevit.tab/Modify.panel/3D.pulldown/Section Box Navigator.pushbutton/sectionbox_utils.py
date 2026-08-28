@@ -1,5 +1,7 @@
+from pyrevit import revit
 from pyrevit import DB
 from pyrevit.compat import get_elementid_value_func, get_elementid_from_value_func
+from pyrevit.coreutils import math
 
 get_elementid_value = get_elementid_value_func()
 get_elementid_from_value = get_elementid_from_value_func()
@@ -67,6 +69,199 @@ def get_view_range_and_crop(view, doc):
         }
 
     return None
+
+
+def get_crop_element(doc, view):
+    """
+    Get the crop element associated with a view.
+
+    For newly created views, the crop element is expected to be
+    two ElementIds after the view's ElementId.
+
+    Some template-derived plan views do not follow this relationship.
+    In those cases check if the resolved element has no Category,
+    assume one without is a crop element, as they have none.
+    """
+    vid = get_elementid_value(view.Id)
+    expected_name = view.get_Parameter(DB.BuiltInParameter.VIEW_NAME).AsString()
+
+    cid = vid + 2
+    crop_el = doc.GetElement(
+        get_elementid_from_value(cid)
+    )
+
+    if not crop_el:
+        return None
+
+    # Crop elements should have no Category.
+    try:
+        if crop_el.Category is not None:
+            return None
+    except Exception:
+        return None
+
+    # Keep the existing name check as an additional safeguard.
+    param = crop_el.get_Parameter(DB.BuiltInParameter.VIEW_NAME)
+    if param and param.AsString() == expected_name:
+        return crop_el
+    else:
+        return None
+
+
+def compute_rotation_angle(section_box, view):
+    # 3D box X-axis projected to XY
+    bx = section_box.Transform.BasisX
+    angle_box = math.atan2(bx.Y, bx.X)
+
+    # View X-axis in world
+    vx = view.CropBox.Transform.BasisX
+    angle_view = math.atan2(vx.Y, vx.X)
+
+    # rotation needed to align view to box
+    return angle_box - angle_view
+
+
+def align_crop_by_element(doc, view, section_box):
+    """
+    Align a plan view to a 3D section box by moving and rotating
+    the view's crop element.
+
+    Returns:
+        bool: True if the crop element was successfully aligned.
+    """
+    # TODO this currently does not work
+    with revit.Transaction("Align 2D View to 3D Section Box - Plan"):
+        crop_el = get_crop_element(doc, view)
+        # TODO this works successfully - tested, the 2 id distance convention is a thing
+        if not crop_el:
+            return False
+
+        # Get the actual four corners of the section box footprint.
+        world_corners = get_section_box_footprint(section_box)
+
+        # The center of the section box footprint in world coordinates.
+        sb_centroid = DB.XYZ(
+            sum(point.X for point in world_corners) / 4.0,
+            sum(point.Y for point in world_corners) / 4.0,
+            0,
+        )
+
+        # Get the current crop element center.
+        print(crop_el, view)
+        crop_box = crop_el.get_BoundingBox(view)
+        print(crop_box)
+        crop_centroid = DB.XYZ(
+            (crop_box.Min.X + crop_box.Max.X) / 2.0,
+            (crop_box.Min.Y + crop_box.Max.Y) / 2.0,
+            0,
+        )
+
+        # Move crop element so its center matches the section box center.
+        translation = sb_centroid - crop_centroid
+
+        DB.ElementTransformUtils.MoveElement(
+            doc,
+            crop_el.Id,
+            translation,
+        )
+
+        # Rotate crop element around the section box center.
+        angle = compute_rotation_angle(
+            section_box,
+            view,
+        )
+
+        axis = DB.Line.CreateBound(
+            DB.XYZ(sb_centroid.X, sb_centroid.Y, 0),
+            DB.XYZ(sb_centroid.X, sb_centroid.Y, 1),
+        )
+
+        DB.ElementTransformUtils.RotateElement(
+            doc,
+            crop_el.Id,
+            axis,
+            angle,
+        )
+
+        apply_plan_viewrange_from_sectionbox(
+            doc,
+            view,
+            section_box,
+        )
+
+    return True
+
+
+def align_crop_by_shape(doc, view, section_box):
+    """
+    Align a plan view to a 3D section box by setting the crop region
+    to the section box's world-space footprint.
+
+    Returns:
+        bool: True if a custom crop shape was successfully applied.
+    """
+    with revit.Transaction("Align 2D View to 3D Section Box - Shape"):
+        world_corners = get_section_box_footprint(section_box)
+
+        crsm = view.GetCropRegionShapeManager()
+
+        if not crsm or not crsm.CanHaveShape:
+            # This view does not support custom crop shapes.
+            # Preserve the previous fallback behavior.
+            view.CropBox = section_box
+
+            apply_plan_viewrange_from_sectionbox(
+                doc,
+                view,
+                section_box,
+            )
+
+            return False
+
+        loop = DB.CurveLoop()
+
+        for i in range(4):
+            loop.Append(
+                DB.Line.CreateBound(
+                    world_corners[i],
+                    world_corners[(i + 1) % 4],
+                )
+            )
+
+        crsm.SetCropShape(loop)
+
+        apply_plan_viewrange_from_sectionbox(
+            doc,
+            view,
+            section_box,
+        )
+
+    return True
+
+
+def get_section_box_footprint(section_box):
+    """
+    Return the four world-space corners of a section box's XY footprint.
+
+    The corners are returned in perimeter order.
+    """
+    tf = section_box.Transform
+    min_pt = section_box.Min
+    max_pt = section_box.Max
+
+    local_corners = [
+        DB.XYZ(min_pt.X, min_pt.Y, 0),
+        DB.XYZ(max_pt.X, min_pt.Y, 0),
+        DB.XYZ(max_pt.X, max_pt.Y, 0),
+        DB.XYZ(min_pt.X, max_pt.Y, 0),
+    ]
+
+    world_corners = [tf.OfPoint(corner) for corner in local_corners]
+
+    # A plan crop shape should be planar.
+    z = world_corners[0].Z
+
+    return [DB.XYZ(point.X, point.Y, z) for point in world_corners]
 
 
 def apply_plan_viewrange_from_sectionbox(doc, view, section_box):

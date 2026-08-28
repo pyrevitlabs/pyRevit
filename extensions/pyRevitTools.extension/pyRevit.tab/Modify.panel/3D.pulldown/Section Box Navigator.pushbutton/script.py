@@ -19,8 +19,9 @@ from sectionbox_navigation import (
 from sectionbox_utils import (
     is_2d_view,
     get_view_range_and_crop,
-    apply_plan_viewrange_from_sectionbox,
     section_box_from_crop,
+    align_crop_by_element,
+    align_crop_by_shape,
 )
 from sbox.sbox_actions import toggle, hide, align_to_face, temp_switch
 from sectionbox_geometry import (
@@ -428,9 +429,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 if last_view != self.current_view.Id:
                     self.clear_status_message()
 
-            if (
-                not is_3d_view or not self.current_view.IsSectionBoxActive
-            ):
+            if not is_3d_view or not self.current_view.IsSectionBoxActive:
                 self.txtTopLevelAbove.Text = self.get_locale_string(
                     "NoSectionBoxActive"
                 )
@@ -1230,9 +1229,12 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         if not view_data:
             return
 
-        section_box = view_data.get("section_box", None)
+        section_box = view_data.get("section_box")
+        if section_box is None:
+            return
 
         is_view_plan = isinstance(self.current_view, DB.ViewPlan)
+
         scope_box_param = self.current_view.get_Parameter(
             DB.BuiltInParameter.VIEWER_VOLUME_OF_INTEREST_CROP
         )
@@ -1241,68 +1243,76 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             and scope_box_param.AsElementId() != DB.ElementId.InvalidElementId
         )
 
-        if is_view_plan and not has_scope_box:
-            with revit.Transaction("Activate CropBox"):
-                if not self.current_view.CropBoxActive:
-                    self.current_view.CropBoxActive = True
-                if not self.current_view.CropBoxVisible:
-                    self.current_view.CropBoxVisible = True
-
-            with revit.Transaction("Align 2D View to 3D Section Box"):
-                tf = section_box.Transform
-                min_pt = section_box.Min
-                max_pt = section_box.Max
-
-                # Box's real footprint corners, in local (rotation-invariant) space,
-                # taken to world coords via the box's own transform.
-                local_corners = [
-                    DB.XYZ(min_pt.X, min_pt.Y, 0),
-                    DB.XYZ(max_pt.X, min_pt.Y, 0),
-                    DB.XYZ(max_pt.X, max_pt.Y, 0),
-                    DB.XYZ(min_pt.X, max_pt.Y, 0),
-                ]
-                world_corners = [tf.OfPoint(c) for c in local_corners]
-                flat_z = world_corners[0].Z
-                world_corners = [DB.XYZ(p.X, p.Y, flat_z) for p in world_corners]
-
-                crsm = self.current_view.GetCropRegionShapeManager()
-                applied_shape = False
-                if crsm and crsm.CanHaveShape:
-                    loop = DB.CurveLoop()
-                    for i in range(4):
-                        loop.Append(
-                            DB.Line.CreateBound(world_corners[i], world_corners[(i + 1) % 4])
-                        )
-                    crsm.SetCropShape(loop)
-                    applied_shape = True
-                else:
-                    # View doesn't allow a custom shape - falls back to the old
-                    # behavior (sizes/positions but won't rotate).
-                    self.current_view.CropBox = section_box
-
-                apply_plan_viewrange_from_sectionbox(doc, self.current_view, section_box)
-
-                if applied_shape:
-                    self.show_status_message(
-                        3,
-                        self.get_locale_string("CropBoxAlignedFormat").format(view_data["view"].Name),
-                        "success",
-                    )
-                else:
-                    print("failed aplying")
-                    self.show_status_message(
-                        3, self.get_locale_string("UnsupportedViewType"), "warning"
-                    )
-        else:
-            if not is_view_plan:
-                self.show_status_message(
-                    3, self.get_locale_string("UnsupportedViewType"), "warning"
-                )
-            elif has_scope_box:
-                self.show_status_message(
-                    3, self.get_locale_string("ScopeBoxApplied"), "warning"
-                )
+        # Both alignment methods only support plan views without a scope box.
+        if not is_view_plan:
+            self.show_status_message(
+                3,
+                self.get_locale_string("UnsupportedViewType"),
+                "warning",
+            )
             return
+
+        if has_scope_box:
+            self.show_status_message(
+                3,
+                self.get_locale_string("ScopeBoxApplied"),
+                "warning",
+            )
+            return
+
+        result = forms.alert(
+            "How should the 2D view be aligned to the 3D section box?",
+            title="Align View to 3D View",
+            options=[
+                "Rotate Crop Element",
+                "Set Crop Shape",
+                "Cancel",
+            ],
+        )
+
+        if result == "Cancel":
+            return
+
+        # The crop element needs to be activated in a separate transaction
+        # before it can reliably be accessed/transformed.
+        with revit.Transaction("Activate CropBox"):
+            if not self.current_view.CropBoxActive:
+                self.current_view.CropBoxActive = True
+
+            if not self.current_view.CropBoxVisible:
+                self.current_view.CropBoxVisible = True
+
+        if result == "Rotate Crop Element":
+            success = align_crop_by_element(
+                doc,
+                self.current_view,
+                section_box,
+            )
+
+        elif result == "Set Crop Shape":
+            success = align_crop_by_shape(
+                doc,
+                self.current_view,
+                section_box,
+            )
+
+        else:
+            return
+
+        if success:
+            self.show_status_message(
+                3,
+                self.get_locale_string("CropBoxAlignedFormat").format(
+                    view_data["view"].Name
+                ),
+                "success",
+            )
+        else:
+            self.show_status_message(
+                3,
+                self.get_locale_string("UnsupportedViewType"),
+                "warning",
+            )
 
     def do_toggle(self):
         """Toggle section or crop box."""
