@@ -6,7 +6,7 @@ from pyrevit.framework import Threading, System
 import pyrevit.extensions as exts
 from pyrevit.coreutils.ribbon import ICON_MEDIUM
 
-from customprops.custom_props_pane import CustomPropertiesPanel, CONFIG_SECTION
+from panes.customprops.pane import CustomPropertiesPanel, CONFIG_SECTION
 
 _PANEL_ID = CustomPropertiesPanel.panel_id
 

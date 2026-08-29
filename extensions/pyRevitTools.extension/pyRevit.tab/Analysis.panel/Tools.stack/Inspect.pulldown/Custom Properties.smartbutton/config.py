@@ -5,7 +5,7 @@ Shift-click the button to open this dialog.
 """
 from pyrevit import forms, script
 
-from customprops.custom_props_pane import CONFIG_SECTION
+from panes.customprops.pane import CONFIG_SECTION
 
 
 class ConfigWindow(forms.WPFWindow):
