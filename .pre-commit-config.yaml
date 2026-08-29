@@ -12,3 +12,15 @@ repos:
         language: system
         files: \.cs$
         exclude: ^dev/modules/
+      - id: ipy2-no-kwargs-trailing-comma
+        name: Reject IPY2-incompatible **kwargs, (IronPython 2.7)
+        description: |
+          IronPython 2.7.12 -- the default pyRevit runtime -- raises
+          SyntaxError: unexpected token ',' on `**kwargs,` in multi-line
+          signatures or calls (pre-PEP-448 grammar). ruff format emits
+          this pattern under any supported target-version, so the
+          formatter is opted out per-file via [tool.ruff] extend-exclude.
+          This hook is the cross-file backstop.
+        entry: python dev/scripts/check_ipy2_compat.py
+        language: system
+        files: ^pyrevitlib/.*\.py$
