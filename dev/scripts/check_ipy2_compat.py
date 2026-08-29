@@ -24,7 +24,7 @@ import re
 import sys
 
 
-PATTERN = re.compile(r"^\s+\*\*kwargs,\s*$", re.MULTILINE)
+PATTERN = re.compile(r"^\s+\*\*\w+,\s*$", re.MULTILINE)
 
 
 def _scan(path):
