@@ -89,6 +89,7 @@ _BRAND_ACCENT = (0xFF, 0xF3, 0x9C, 0x12)
 _PALETTE_LIGHT = {
     "WindowBackground": (0xFF, 0xFF, 0xFF, 0xFF),
     "WindowForeground": (0xFF, 0x00, 0x00, 0x00),
+    "ChromeBackground": (0xFF, 0xE8, 0xE8, 0xE8),
     "ControlBackground": (0xFF, 0xFF, 0xFF, 0xFF),
     "ButtonBackground": (0xFF, 0xF0, 0xF0, 0xF0),
     "ControlBorder": (0xFF, 0xCC, 0xCC, 0xCC),
@@ -110,6 +111,7 @@ _PALETTE_LIGHT = {
 _PALETTE_DARK = {
     "WindowBackground": (0xFF, 0x2E, 0x34, 0x40),
     "WindowForeground": (0xFF, 0xEC, 0xF0, 0xF1),
+    "ChromeBackground": (0xFF, 0x22, 0x29, 0x33),
     "ControlBackground": (0xFF, 0x22, 0x29, 0x33),
     "ButtonBackground": (0xFF, 0x22, 0x29, 0x33),
     "ControlBorder": (0xFF, 0x45, 0x4F, 0x61),
@@ -873,7 +875,7 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
             is_dark = _is_dark_theme()
             Common.DwmApi.SetImmersiveDarkMode(hwnd, is_dark)
             palette = _PALETTE_DARK if is_dark else _PALETTE_LIGHT
-            caption_color = _colorref(palette["ControlBackground"])
+            caption_color = _colorref(palette["ChromeBackground"])
             text_color = _colorref(palette["WindowForeground"])
             Common.DwmApi.SetTitleBarColors(hwnd, caption_color, text_color)
         except Exception:

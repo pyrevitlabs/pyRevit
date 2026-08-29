@@ -90,7 +90,7 @@
         </Canvas>
     </Window.Resources>
     <DockPanel>
-        <Grid Background="{DynamicResource pyRevitControlBackgroundBrush}" DockPanel.Dock="Bottom">
+        <Grid Background="{DynamicResource pyRevitChromeBackgroundBrush}" DockPanel.Dock="Bottom">
             <WrapPanel HorizontalAlignment="Right">
                 <Button x:Name="save_b" Content="{DynamicResource JustSave}" Click="save_settings" Width="150" Margin="10,10,10,10" Height="24"/>
                 <Button x:Name="savereload_b" Content="{DynamicResource SaveAndReload}" Click="save_settings_and_reload" Width="200" Margin="10,10,10,10" Height="24"/>
