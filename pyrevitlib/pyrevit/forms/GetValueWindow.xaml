@@ -6,7 +6,7 @@
         WindowStartupLocation="CenterScreen"
         HorizontalContentAlignment="Center">
     <Window.Resources>
-        <Style x:Key="CustomDatePickerStyle" TargetType="{x:Type DatePicker}">
+        <Style x:Key="CustomDatePickerStyle" TargetType="{x:Type DatePicker}" BasedOn="{StaticResource {x:Type DatePicker}}">
             <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
             <Setter Property="Background" Value="{DynamicResource pyRevitControlBackgroundBrush}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource pyRevitControlBorderBrush}"/>
