@@ -100,22 +100,45 @@ def _resolve_view_range_elevation(doc, view_range, plane):
 
 def _get_view_range_bounds(doc, view):
     """
-    Return (lower_elev, top_elev) absolute project elevations for a plan view.
-    Either value may be None if the plane is set to Unlimited or unresolvable.
+    Return (lower_elev, upper_elev) absolute project elevations for a plan
+    view. Either value may be None if the plane is set to Unlimited or
+    unresolvable.
 
-    "lower_elev" is the lower of the bottom clip plane and the view depth
-    plane. The view depth plane can extend further down than the bottom
-    clip plane - elements between the two still render (dashed), so only
-    elements below BOTH should be flagged as out of range.
+    For FloorPlan / AreaPlan / EngineeringPlan: "lower_elev" is the lower
+    of the bottom clip plane and the view depth plane. The view depth
+    plane can extend further DOWN than the bottom clip plane - elements
+    between the two still render (dashed), so only elements below BOTH
+    should be flagged as out of range. "upper_elev" is simply the top
+    clip plane.
+
+    For CeilingPlan (RCP), the relationship flips per Autodesk's
+    documented view range behavior: the Cut Plane is coincident with the
+    Bottom Clip Plane (Bottom is disabled/grayed out in the view range
+    dialog for RCPs), and it's the View Depth plane that can extend
+    further UP than the Top clip plane instead - elements between the two
+    still render (dashed). So for CeilingPlan, "upper_elev" is the higher
+    of the top clip plane and the view depth plane, and "lower_elev" is
+    simply the bottom/cut plane.
     """
     try:
         vr = view.GetViewRange()
         top = _resolve_view_range_elevation(doc, vr, DB.PlanViewPlane.TopClipPlane)
         bot = _resolve_view_range_elevation(doc, vr, DB.PlanViewPlane.BottomClipPlane)
         depth = _resolve_view_range_elevation(doc, vr, DB.PlanViewPlane.ViewDepthPlane)
-        candidates = [v for v in (bot, depth) if v is not None]
-        lower = min(candidates) if candidates else None
-        return lower, top
+
+        if view.ViewType == DB.ViewType.CeilingPlan:
+            # RCP: Cut Plane == Bottom Clip Plane (disabled/synced), and
+            # View Depth extends upward past Top rather than downward
+            # past Bottom.
+            upper_candidates = [v for v in (top, depth) if v is not None]
+            upper = max(upper_candidates) if upper_candidates else None
+            lower = bot
+        else:
+            lower_candidates = [v for v in (bot, depth) if v is not None]
+            lower = min(lower_candidates) if lower_candidates else None
+            upper = top
+
+        return lower, upper
     except Exception:
         pass
     return None, None
