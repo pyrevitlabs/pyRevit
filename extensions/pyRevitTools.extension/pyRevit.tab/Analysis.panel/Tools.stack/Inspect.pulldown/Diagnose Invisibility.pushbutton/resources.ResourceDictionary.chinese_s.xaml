@@ -1,0 +1,33 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="pick_prompt">选择要诊断的图元</sys:String>
+    <sys:String x:Key="select_view_title">选择视图</sys:String>
+    <sys:String x:Key="select_view_button">在此视图中诊断</sys:String>
+    <sys:String x:Key="no_elements_error">未选择或拾取任何图元。</sys:String>
+    <sys:String x:Key="no_view_error">未选择视图。</sys:String>
+    <sys:String x:Key="report_title">可见性诊断</sys:String>
+    <sys:String x:Key="status_visible">在此视图中可见。</sys:String>
+    <sys:String x:Key="status_hidden">在此视图中不可见：</sys:String>
+    <sys:String x:Key="status_error">诊断图元时出错</sys:String>
+    <sys:String x:Key="summary_line">可见 {} 个，不可见 {} 个。</sys:String>
+    <sys:String x:Key="reason_workset_hidden">工作集“{}”在此视图中被明确隐藏</sys:String>
+    <sys:String x:Key="reason_workset_closed">工作集“{}”已关闭（全局设置）</sys:String>
+    <sys:String x:Key="reason_workset_default_hidden">工作集“{}”被模型的默认工作集可见性设置隐藏</sys:String>
+    <sys:String x:Key="reason_phase_filter">被阶段过滤器隐藏（图元阶段状态：“{}”）</sys:String>
+    <sys:String x:Key="reason_design_option">图元属于设计选项“{}”，与此视图显示的选项不同</sys:String>
+    <sys:String x:Key="reason_category_hidden">类别“{}”在此视图中被隐藏</sys:String>
+    <sys:String x:Key="reason_subcategory_hidden">“{}”的子类别“{}”在此视图中被隐藏（图元可能属于该子类别）</sys:String>
+    <sys:String x:Key="reason_element_hidden">图元在此视图中被明确隐藏（隐藏/隔离）</sys:String>
+    <sys:String x:Key="reason_view_filter">被视图过滤器“{}”隐藏</sys:String>
+    <sys:String x:Key="reason_section_box">图元的边界框完全位于视图当前激活的三维剖切框之外</sys:String>
+    <sys:String x:Key="reason_crop_box">图元的边界框完全位于视图裁剪区域之外</sys:String>
+    <sys:String x:Key="reason_viewrange_above">图元位于视图范围顶部剖切面之上（图元最小 Z 值 {:.3f} ft &gt; 顶部 {:.3f} ft）</sys:String>
+    <sys:String x:Key="reason_viewrange_below">图元位于视图范围下边界（底部剖切面/视图深度）之下（图元最大 Z 值 {:.3f} ft &lt; 下边界 {:.3f} ft）</sys:String>
+    <sys:String x:Key="reason_view_template">已应用视图样板“{}”——部分可见性设置可能被锁定，需要在样板中修改</sys:String>
+    <sys:String x:Key="reason_view_specific">该图元为视图专属图元，属于另一个视图（“{}”），因此无法在此显示</sys:String>
+    <sys:String x:Key="reason_view_discipline">视图专业已设置为“{}”——部分类别会根据专业自动显示或隐藏，与可见性/图形设置无关</sys:String>
+    <sys:String x:Key="reason_unknown">图元不可见，但无法确定具体原因。可能原因：视图专属图元类型（例如来自另一视图的注释）、链接模型中的可见性，或详细程度设置。</sys:String>
+
+</ResourceDictionary>
