@@ -7,7 +7,6 @@
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
         ShowInTaskbar="False"
-        Background="#FFF7F7F7"
         FontFamily="Segoe UI"
         FontSize="13">
         <Grid Margin="16">
@@ -21,15 +20,13 @@
                     <TextBlock Text="Automatic Dimensions"
                                FontSize="24"
                                FontWeight="SemiBold"
-                               Foreground="#FF1F1F1F"
                                Margin="0,0,0,4" />
 
                     <TextBlock x:Name="status_tb"
                                Text=""
-                               Foreground="#FF555555"
                                Margin="0,0,0,14" />
 
-                    <Border Background="White" CornerRadius="8" Padding="12" Margin="0,0,0,10">
+                    <Border Padding="12" Margin="0,0,0,10">
                         <StackPanel>
                             <TextBlock Text="Mode" FontWeight="SemiBold" Margin="0,0,0,8" />
                             <StackPanel Orientation="Horizontal">
@@ -45,12 +42,11 @@
                             </StackPanel>
                             <TextBlock x:Name="mode_hint_tb"
                                        Margin="0,10,0,0"
-                                       TextWrapping="Wrap"
-                                       Foreground="#FF555555" />
+                                       TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
 
-                    <Border Background="White" CornerRadius="8" Padding="12" Margin="0,0,0,10">
+                    <Border Padding="12" Margin="0,0,0,10">
                         <StackPanel>
                             <TextBlock Text="Wall and opening references" FontWeight="SemiBold" Margin="0,0,0,8" />
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
@@ -74,7 +70,7 @@
                         </StackPanel>
                     </Border>
 
-                    <Border Background="White" CornerRadius="8" Padding="12" Margin="0,0,0,10">
+                    <Border Padding="12" Margin="0,0,0,10">
                         <StackPanel>
                             <TextBlock Text="Run options" FontWeight="SemiBold" Margin="0,0,0,8" />
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
@@ -84,7 +80,7 @@
                         </StackPanel>
                     </Border>
 
-                    <Border Background="White" CornerRadius="8" Padding="12" Margin="0,0,0,10">
+                    <Border Padding="12" Margin="0,0,0,10">
                         <StackPanel>
                             <TextBlock Text="Exterior offsets" FontWeight="SemiBold" Margin="0,0,0,8" />
                             <Grid>
@@ -115,16 +111,15 @@
 
                                 <TextBlock Grid.Row="1" Grid.ColumnSpan="11"
                                            Margin="0,8,0,0"
-                                           Foreground="#FF666666"
                                            Text="The first offset can be set to Auto (by view scale)." />
                             </Grid>
                         </StackPanel>
                     </Border>
 
-                    <Border Background="White" CornerRadius="8" Padding="12" Margin="0,0,0,10">
+                    <Border Padding="12" Margin="0,0,0,10">
                         <StackPanel>
                             <TextBlock Text="Selection summary" FontWeight="SemiBold" Margin="0,0,0,8" />
-                            <TextBlock Text="The current selection is read from the active view when you run the tool." TextWrapping="Wrap" Foreground="#FF555555" />
+                            <TextBlock Text="The current selection is read from the active view when you run the tool." TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
                 </StackPanel>
