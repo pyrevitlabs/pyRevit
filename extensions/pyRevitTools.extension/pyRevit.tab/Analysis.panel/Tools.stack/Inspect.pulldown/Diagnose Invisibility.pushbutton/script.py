@@ -179,6 +179,8 @@ def diagnose_invisibility(element, view, visible_ids=None):
         9.  View range / clip planes (plan views only, incl. view depth)
         10. View template active (informational - may lock visibility settings)
         11. View-specific element belonging to another view
+        12. View discipline (informational - some categories are shown or
+            hidden automatically based on discipline)
 
     Args:
         element: A Revit Element object.
@@ -617,6 +619,7 @@ def diagnose_invisibility(element, view, visible_ids=None):
     #     discipline-filtered", so - like the view template check above -
     #     this is reported as informational context rather than a
     #     confirmed cause.
+    #     More: https://www.modelical.com/en/revit-view-discipline/
     # ------------------------------------------------------------------
     try:
         discipline = view.Discipline
