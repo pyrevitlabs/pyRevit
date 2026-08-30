@@ -9,11 +9,11 @@ title:
   pt_br: pyRevit
 layout:
   - tools
-  - Python Shell
   - ">>>>>"
   - About
   - Update
   - Extensions
+  - Python Shell
   - prlinks
   - rpwlinks
   - links

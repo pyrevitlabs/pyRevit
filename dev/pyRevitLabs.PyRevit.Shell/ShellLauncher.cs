@@ -106,6 +106,7 @@ namespace PyRevitLabs.PyRevit.Shell {
                 RunEngineSetupOnMainThread(host, uiapp, searchPaths, mainDispatcher);
                 host.Console.ScriptScope.SetVariable("__window__", window);
                 EnsureInteractiveBuiltins(host.Engine, host.Console.ScriptScope);
+                EnsureSiteBuiltins(host.Engine, host.Console.ScriptScope);
             });
         }
 
@@ -152,6 +153,7 @@ namespace PyRevitLabs.PyRevit.Shell {
                 RunEngineSetupOnMainThread(host, uiapp, searchPaths, mainDispatcher);
                 host.Console.ScriptScope.SetVariable("__window__", gui);
                 EnsureInteractiveBuiltins(host.Engine, host.Console.ScriptScope);
+                EnsureSiteBuiltins(host.Engine, host.Console.ScriptScope);
             });
         }
 
@@ -212,6 +214,26 @@ namespace PyRevitLabs.PyRevit.Shell {
             }
             catch {
                 // Missing values surface through normal console errors.
+            }
+        }
+
+        // The console banner advertises copyright/credits/license, but the host starts the
+        // engine with empty search paths, so IronPython's own site import never resolves them.
+        static void EnsureSiteBuiltins(ScriptEngine engine, ScriptScope scope) {
+            const string snippet =
+"try:\n" +
+"    copyright\n" +
+"except NameError:\n" +
+"    try:\n" +
+"        import site\n" +
+"        site.setcopyright()\n" +
+"    except Exception:\n" +
+"        pass\n";
+            try {
+                engine.Execute(snippet, scope);
+            }
+            catch {
+                // A shell without the informational banner objects is still usable.
             }
         }
 
