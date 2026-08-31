@@ -9,6 +9,12 @@
     <system:String x:Key="LblDesignOption">Opção de Projeto</system:String>
     <system:String x:Key="ChkDesignOption.Tooltip">Opção de Projeto é somente leitura</system:String>
     <system:String x:Key="TbDesignOption.Tooltip">Somente leitura. A associação a opções de projeto não pode ser alterada via API.</system:String>
+    <system:String x:Key="LblCreator">Criado por</system:String>
+    <system:String x:Key="TbCreator.Tooltip">Usuário que criou o elemento.</system:String>
+    <system:String x:Key="LblLastChangedBy">Última modificação por</system:String>
+    <system:String x:Key="TbLastChangedBy.Tooltip">Usuário que modificou o elemento pela última vez.</system:String>
+    <system:String x:Key="LblOwner">Proprietário</system:String>
+    <system:String x:Key="TbOwner.Tooltip">Proprietário de worksharing atual para o elemento.</system:String>
 
     <!-- Seção de parâmetros -->
     <system:String x:Key="LblParameters">Parâmetros</system:String>

@@ -110,6 +110,20 @@ def _collect_worksets(doc):
     return items
 
 
+def _get_worksharing_info(doc, element, attr_name):
+    """Get worksharing info attribute (Creator, LastChangedBy, or Owner)."""
+    try:
+        if not doc or not element or not doc.IsWorkshared:
+            return ""
+        tooltip_info = DB.WorksharingUtils.GetWorksharingTooltipInfo(doc, element.Id)
+        if tooltip_info:
+            value = getattr(tooltip_info, attr_name, None)
+            return value or ""
+    except Exception:
+        pass
+    return ""
+
+
 # ---------------------------------------------------------------------------
 # Apply helpers (run inside a Transaction via ExternalEvent)
 # ---------------------------------------------------------------------------
@@ -393,6 +407,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
                     else self.get_locale_string("StatusElements").format(count)
                 )
                 self._show_fixed()
+                self._show_worksharing()
                 self._show_params()
         finally:
             self._suppress_dirty = False
@@ -404,6 +419,9 @@ class CustomPropertiesPanel(forms.WPFPanel):
         try:
             self.workset_combo.Text = ""
             self.design_option_tb.Text = ""
+            self.worksharing_creator_tb.Text = ""
+            self.worksharing_last_changed_by_tb.Text = ""
+            self.worksharing_owner_tb.Text = ""
             self.additional_panel.Children.Clear()
         finally:
             self._suppress_dirty = False
@@ -420,21 +438,40 @@ class CustomPropertiesPanel(forms.WPFPanel):
         self._set_combo_value(self.workset_combo, ws_names)
         try:
             self._clear_background(self.workset_combo)
-            unique_ws = list(set(ws_names))
-            self.workset_undo_btn.Tag = unique_ws[0] if len(unique_ws) == 1 else self._varies
+            self.workset_undo_btn.Tag = self._summarize_values(ws_names)
             self.workset_undo_btn.Visibility = forms.WPF_COLLAPSED
         except Exception:
             pass
 
         do_names = [_get_design_option_name(e, self._main_model) for e in self._elements]
-        unique = list(set(do_names))
-        self.design_option_tb.Text = unique[0] if len(unique) == 1 else self._varies
+        self.design_option_tb.Text = self._summarize_values(do_names)
+
+    def _show_worksharing(self):
+        doc = self._doc
+        if not self._elements:
+            self.worksharing_creator_tb.Text = ""
+            self.worksharing_last_changed_by_tb.Text = ""
+            self.worksharing_owner_tb.Text = ""
+            return
+
+        creator_names = [_get_worksharing_info(doc, e, "Creator") for e in self._elements]
+        last_changed_names = [_get_worksharing_info(doc, e, "LastChangedBy") for e in self._elements]
+        owner_names = [_get_worksharing_info(doc, e, "Owner") for e in self._elements]
+
+        self.worksharing_creator_tb.Text = self._summarize_values(creator_names)
+        self.worksharing_last_changed_by_tb.Text = self._summarize_values(last_changed_names)
+        self.worksharing_owner_tb.Text = self._summarize_values(owner_names)
+
+    def _summarize_values(self, values):
+        if not values:
+            return ""
+        unique = list(set(values))
+        return unique[0] if len(unique) == 1 else self._varies
 
     def _set_combo_value(self, combo, values):
         self._suppress_dirty = True
         try:
-            unique = list(set(values))
-            text = unique[0] if len(unique) == 1 else self._varies
+            text = self._summarize_values(values)
             idx = combo.Items.IndexOf(text)
             if idx >= 0:
                 combo.SelectedIndex = idx
@@ -529,7 +566,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
         elif opaque_int_param:
             tooltip = self.get_locale_string("TooltipParamOpaque")
 
-        text = "" if missing_param else (vals[0] if len(set(vals)) == 1 else self._varies)
+        text = "" if missing_param else self._summarize_values(vals)
         sel_readonly = readonly_param or missing_param
         return self._build_text_row(
             param_name, text, readonly=readonly, tooltip=tooltip, sel_readonly=sel_readonly
@@ -635,7 +672,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
             combo.Items.Add(opt)
 
         unique = list(set(current_names))
-        original_text = unique[0] if len(unique) == 1 else self._varies
+        original_text = self._summarize_values(current_names)
         self._suppress_dirty = True
         try:
             if len(unique) == 1:

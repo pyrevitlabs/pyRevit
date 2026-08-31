@@ -9,6 +9,12 @@
     <system:String x:Key="LblDesignOption">Entwurfsoption</system:String>
     <system:String x:Key="ChkDesignOption.Tooltip">Entwurfsoption ist schreibgeschützt</system:String>
     <system:String x:Key="TbDesignOption.Tooltip">Schreibgeschützt. Die Entwurfsoptionszugehörigkeit kann nicht über die API geändert werden.</system:String>
+    <system:String x:Key="LblCreator">Erstellt von</system:String>
+    <system:String x:Key="TbCreator.Tooltip">Benutzer, der das Element erstellt hat.</system:String>
+    <system:String x:Key="LblLastChangedBy">Zuletzt geändert von</system:String>
+    <system:String x:Key="TbLastChangedBy.Tooltip">Benutzer, der das Element zuletzt geändert hat.</system:String>
+    <system:String x:Key="LblOwner">Eigentümer</system:String>
+    <system:String x:Key="TbOwner.Tooltip">Aktueller Worksharing-Besitzer des Elements.</system:String>
 
     <!-- Parameterbereich -->
     <system:String x:Key="LblParameters">Parameter</system:String>
