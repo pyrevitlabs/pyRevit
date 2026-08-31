@@ -124,6 +124,22 @@ def _get_worksharing_info(doc, element, attr_name):
     return ""
 
 
+def _has_design_options(doc):
+    """Check if document has any design options."""
+    try:
+        if not doc:
+            return False
+        sets = (
+            DB.FilteredElementCollector(doc)
+            .OfCategory(DB.BuiltInCategory.OST_DesignOptionSets)
+            .WhereElementIsNotElementType()
+            .ToElements()
+        )
+        return len(sets) > 0
+    except Exception:
+        return False
+
+
 # ---------------------------------------------------------------------------
 # Apply helpers (run inside a Transaction via ExternalEvent)
 # ---------------------------------------------------------------------------
@@ -407,7 +423,6 @@ class CustomPropertiesPanel(forms.WPFPanel):
                     else self.get_locale_string("StatusElements").format(count)
                 )
                 self._show_fixed()
-                self._show_worksharing()
                 self._show_params()
         finally:
             self._suppress_dirty = False
@@ -423,44 +438,92 @@ class CustomPropertiesPanel(forms.WPFPanel):
             self.worksharing_last_changed_by_tb.Text = ""
             self.worksharing_owner_tb.Text = ""
             self.additional_panel.Children.Clear()
+
+            # Reset visibility to default (collapsed)
+            self.fixed_params_grid.Visibility = forms.WPF_COLLAPSED
+            self.design_option_lbl.Visibility = forms.WPF_COLLAPSED
+            self.design_option_tb.Visibility = forms.WPF_COLLAPSED
+            self.workset_cb.Visibility = forms.WPF_COLLAPSED
+            self.workset_lbl.Visibility = forms.WPF_COLLAPSED
+            self.workset_combo.Visibility = forms.WPF_COLLAPSED
+            self.workset_undo_btn.Visibility = forms.WPF_COLLAPSED
+            self.worksharing_creator_lbl.Visibility = forms.WPF_COLLAPSED
+            self.worksharing_creator_tb.Visibility = forms.WPF_COLLAPSED
+            self.worksharing_last_changed_by_lbl.Visibility = forms.WPF_COLLAPSED
+            self.worksharing_last_changed_by_tb.Visibility = forms.WPF_COLLAPSED
+            self.worksharing_owner_lbl.Visibility = forms.WPF_COLLAPSED
+            self.worksharing_owner_tb.Visibility = forms.WPF_COLLAPSED
         finally:
             self._suppress_dirty = False
         try:
             self._clear_background(self.workset_combo)
-            self.workset_undo_btn.Visibility = forms.WPF_COLLAPSED
         except Exception:
             pass
 
     def _show_fixed(self):
         doc = self._doc
 
-        ws_names = [_get_workset_name(doc, e) for e in self._elements]
-        self._set_combo_value(self.workset_combo, ws_names)
-        try:
-            self._clear_background(self.workset_combo)
-            self.workset_undo_btn.Tag = self._summarize_values(ws_names)
-            self.workset_undo_btn.Visibility = forms.WPF_COLLAPSED
-        except Exception:
-            pass
+        has_design_options = _has_design_options(doc)
+        has_worksets = bool(self._worksets)
 
-        do_names = [_get_design_option_name(e, self._main_model) for e in self._elements]
-        self.design_option_tb.Text = self._summarize_values(do_names)
-
-    def _show_worksharing(self):
-        doc = self._doc
-        if not self._elements:
-            self.worksharing_creator_tb.Text = ""
-            self.worksharing_last_changed_by_tb.Text = ""
-            self.worksharing_owner_tb.Text = ""
+        # If neither design options nor worksets exist, hide the entire grid row
+        if not has_design_options and not has_worksets:
+            self.fixed_params_grid.Visibility = forms.WPF_COLLAPSED
             return
 
-        creator_names = [_get_worksharing_info(doc, e, "Creator") for e in self._elements]
-        last_changed_names = [_get_worksharing_info(doc, e, "LastChangedBy") for e in self._elements]
-        owner_names = [_get_worksharing_info(doc, e, "Owner") for e in self._elements]
+        self.fixed_params_grid.Visibility = forms.WPF_VISIBLE
 
-        self.worksharing_creator_tb.Text = self._summarize_values(creator_names)
-        self.worksharing_last_changed_by_tb.Text = self._summarize_values(last_changed_names)
-        self.worksharing_owner_tb.Text = self._summarize_values(owner_names)
+        # Design Option row — show only if design options exist
+        design_option_visibility = (
+            forms.WPF_VISIBLE
+            if has_design_options
+            else forms.WPF_COLLAPSED
+        )
+        self.design_option_lbl.Visibility = design_option_visibility
+        self.design_option_tb.Visibility = design_option_visibility
+
+        # Workset info row — show only if worksets exist
+        workset_visibility = (
+            forms.WPF_VISIBLE
+            if has_worksets
+            else forms.WPF_COLLAPSED
+        )
+        self.workset_cb.Visibility = workset_visibility
+        self.workset_lbl.Visibility = workset_visibility
+        self.workset_combo.Visibility = workset_visibility
+        if not has_worksets:
+            self.workset_undo_btn.Visibility = forms.WPF_COLLAPSED
+
+        if has_worksets:
+            ws_names = [_get_workset_name(doc, e) for e in self._elements]
+            self._set_combo_value(self.workset_combo, ws_names)
+            try:
+                self._clear_background(self.workset_combo)
+                self.workset_undo_btn.Tag = self._summarize_values(ws_names)
+            except Exception:
+                pass
+
+        # Worksharing info rows — show only if worksets exist
+        worksharing_visibility = (
+            forms.WPF_VISIBLE
+            if has_worksets
+            else forms.WPF_COLLAPSED
+        )
+        self.worksharing_creator_lbl.Visibility = worksharing_visibility
+        self.worksharing_creator_tb.Visibility = worksharing_visibility
+        self.worksharing_last_changed_by_lbl.Visibility = worksharing_visibility
+        self.worksharing_last_changed_by_tb.Visibility = worksharing_visibility
+        self.worksharing_owner_lbl.Visibility = worksharing_visibility
+        self.worksharing_owner_tb.Visibility = worksharing_visibility
+
+        if has_worksets:
+            creator_names = [_get_worksharing_info(doc, e, "Creator") for e in self._elements]
+            last_changed_names = [_get_worksharing_info(doc, e, "LastChangedBy") for e in self._elements]
+            owner_names = [_get_worksharing_info(doc, e, "Owner") for e in self._elements]
+
+            self.worksharing_creator_tb.Text = self._summarize_values(creator_names)
+            self.worksharing_last_changed_by_tb.Text = self._summarize_values(last_changed_names)
+            self.worksharing_owner_tb.Text = self._summarize_values(owner_names)
 
     def _summarize_values(self, values):
         if not values:
@@ -791,13 +854,13 @@ class CustomPropertiesPanel(forms.WPFPanel):
         self._set_background(field, _DIRTY_BRUSH)
         try:
             if field is self.workset_combo:
-                self.workset_undo_btn.Visibility = framework.Windows.Visibility.Visible
+                self.workset_undo_btn.Visibility = forms.WPF_VISIBLE
             else:
                 parent = getattr(field, "Parent", None)
                 if parent is not None:
                     for child in parent.Children:
                         if isinstance(child, framework.Controls.Button):
-                            child.Visibility = framework.Windows.Visibility.Visible
+                            child.Visibility = forms.WPF_VISIBLE
                             break
         except Exception:
             pass
