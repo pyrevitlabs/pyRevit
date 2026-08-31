@@ -5,9 +5,8 @@ from pyrevit import forms, script
 _perfmark("startup.pyRevitTools:after `from pyrevit import forms, script`")
 from panes.customprops.pane import CONFIG_SECTION, CustomPropertiesPanel
 _perfmark("startup.pyRevitTools:after `from panes.customprops.pane import CONFIG_SECTION, CustomPropertiesPanel`")
-
 from panes.clipboard.pane import MatchHistoryClipboard
-_perfmark("startup.pyRevitTools:after `from match import MatchHistoryClipboard`")
+_perfmark("startup.pyRevitTools:after `from panes.clipboard.pane import MatchHistoryClipboard`")
 
 logger = script.get_logger()
 
