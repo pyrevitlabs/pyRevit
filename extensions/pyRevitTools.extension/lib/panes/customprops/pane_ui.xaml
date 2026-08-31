@@ -58,7 +58,8 @@
                    Foreground="#666666"
                    Margin="0,0,0,4"/>
 
-        <Border Grid.Row="1" Style="{StaticResource Separator}"/>
+        <Border x:Name="fixed_params_separator"
+              Grid.Row="1" Style="{StaticResource Separator}"/>
 
         <!-- Row 2: Fixed params (Workset + Design Option + Worksharing) -->
         <Grid x:Name="fixed_params_grid"
@@ -70,6 +71,7 @@
                 <ColumnDefinition Width="20"/>
             </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -105,36 +107,45 @@
             <TextBlock x:Name="design_option_lbl"
                        Grid.Row="1" Grid.Column="1"
                        Text="{DynamicResource LblDesignOption}"
+                       Margin="0,8,8,0"
                        Style="{StaticResource LabelStyle}"/>
             <TextBlock x:Name="design_option_tb"
                        Grid.Row="1" Grid.Column="2"
+                       Margin="0,8,0,0"
                        Style="{StaticResource ReadOnlyLabel}"
                        ToolTip="{DynamicResource TbDesignOption.Tooltip}"/>
 
+            <!-- Thin divider separating Design Option from the worksharing tooltip info group -->
+            <Border x:Name="worksharing_separator"
+                    Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"
+                    Height="1"
+                    Background="#DDDDDD"
+                    Margin="0,8,0,6"/>
+
             <TextBlock x:Name="worksharing_creator_lbl"
-                       Grid.Row="2" Grid.Column="1"
+                       Grid.Row="3" Grid.Column="1"
                        Text="{DynamicResource LblCreator}"
                        Style="{StaticResource LabelStyle}"/>
             <TextBlock x:Name="worksharing_creator_tb"
-                       Grid.Row="2" Grid.Column="2"
+                       Grid.Row="3" Grid.Column="2"
                        Style="{StaticResource ReadOnlyLabel}"
                        ToolTip="{DynamicResource TbCreator.Tooltip}"/>
 
             <TextBlock x:Name="worksharing_last_changed_by_lbl"
-                       Grid.Row="3" Grid.Column="1"
+                       Grid.Row="4" Grid.Column="1"
                        Text="{DynamicResource LblLastChangedBy}"
                        Style="{StaticResource LabelStyle}"/>
             <TextBlock x:Name="worksharing_last_changed_by_tb"
-                       Grid.Row="3" Grid.Column="2"
+                       Grid.Row="4" Grid.Column="2"
                        Style="{StaticResource ReadOnlyLabel}"
                        ToolTip="{DynamicResource TbLastChangedBy.Tooltip}"/>
 
             <TextBlock x:Name="worksharing_owner_lbl"
-                       Grid.Row="4" Grid.Column="1"
+                       Grid.Row="5" Grid.Column="1"
                        Text="{DynamicResource LblOwner}"
                        Style="{StaticResource LabelStyle}"/>
             <TextBlock x:Name="worksharing_owner_tb"
-                       Grid.Row="4" Grid.Column="2"
+                       Grid.Row="5" Grid.Column="2"
                        Style="{StaticResource ReadOnlyLabel}"
                        ToolTip="{DynamicResource TbOwner.Tooltip}"/>
         </Grid>

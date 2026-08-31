@@ -20,11 +20,16 @@ class ConfigWindow(forms.WPFWindow):
         enabled = self.my_config.get_option("enabled", False)
         self.enable_cb.IsChecked = bool(enabled)
         self._original_enabled = bool(enabled)
+        show_worksharing = self.my_config.get_option("show_worksharing_info", True)
+        self.worksharing_cb.IsChecked = bool(show_worksharing)
 
     def save_clicked(self, sender, args):
         self.my_config.set_option("additional_parameters", self.params_tb.Text)
         new_enabled = bool(self.enable_cb.IsChecked)
         self.my_config.set_option("enabled", new_enabled)
+        self.my_config.set_option(
+            "show_worksharing_info", bool(self.worksharing_cb.IsChecked)
+        )
         script.save_config()
         startup_changed = new_enabled != self._original_enabled
         self.Close()
