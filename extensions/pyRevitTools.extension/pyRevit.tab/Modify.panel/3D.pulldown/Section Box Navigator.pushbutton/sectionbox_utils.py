@@ -72,40 +72,17 @@ def get_view_range_and_crop(view, doc):
 
 
 def get_crop_element(doc, view):
-    """
-    Get the crop element associated with a view.
-
-    For newly created views, the crop element is expected to be
-    two ElementIds after the view's ElementId.
-
-    Some template-derived plan views do not follow this relationship.
-    In those cases check if the resolved element has no Category,
-    assume one without is a crop element, as they have none.
-    """
-    vid = get_elementid_value(view.Id)
-    expected_name = view.get_Parameter(DB.BuiltInParameter.VIEW_NAME).AsString()
-
-    cid = vid + 2
-    crop_el = doc.GetElement(
-        get_elementid_from_value(cid)
+    # https://jeremytammik.github.io/tbc/a/1622_get_crop_box_for_view.html
+    provider = DB.ParameterValueProvider(DB.ElementId(DB.BuiltInParameter.ID_PARAM))
+    rule = DB.FilterElementIdRule(provider, DB.FilterNumericEquals(), view.Id)
+    param_filter = DB.ElementParameterFilter(rule)
+    collector = (
+        DB.FilteredElementCollector(doc).WherePasses(param_filter).ToElementIds()
     )
-
-    if not crop_el:
-        return None
-
-    # Crop elements should have no Category.
-    try:
-        if crop_el.Category is not None:
-            return None
-    except Exception:
-        return None
-
-    # Keep the existing name check as an additional safeguard.
-    param = crop_el.get_Parameter(DB.BuiltInParameter.VIEW_NAME)
-    if param and param.AsString() == expected_name:
-        return crop_el
-    else:
-        return None
+    if collector:
+        for id in collector:
+            if id != view.Id:
+                return doc.GetElement(id)
 
 
 def compute_rotation_angle(section_box, view):
