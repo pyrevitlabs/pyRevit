@@ -765,7 +765,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
                 pass
 
         grid, _, sel_cb, undo_btn = self._make_row_grid(param_name, readonly=False)
-        if has_invalid:
+        if has_invalid and not options:
             sel_cb.IsEnabled = False
             return grid
         combo = framework.Controls.ComboBox()
