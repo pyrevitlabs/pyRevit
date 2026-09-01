@@ -703,6 +703,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
         current_names = []
         ref_class = None
         ref_bic = None
+        has_invalid = False
 
         for e in self._elements:
             try:
@@ -711,7 +712,12 @@ class CustomPropertiesPanel(forms.WPFPanel):
                     continue
 
                 eid = p.AsElementId()
+
                 if eid == DB.ElementId.InvalidElementId:
+                    has_invalid = True
+                    current_names.append(
+                        e.Name if hasattr(e, "Name") else ""
+                    )
                     continue
 
                 ref_el = doc.GetElement(eid)
@@ -760,6 +766,9 @@ class CustomPropertiesPanel(forms.WPFPanel):
                 pass
 
         grid, _, sel_cb, undo_btn = self._make_row_grid(param_name, readonly=False)
+        if has_invalid:
+            sel_cb.IsEnabled = False
+            return grid
         combo = framework.Controls.ComboBox()
         combo.Height = 22
         combo.FontSize = 11
