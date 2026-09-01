@@ -11,7 +11,7 @@ pre-commit = "*"
 [packages]
 pyyaml = ">=5.4"
 black = "*"
-setuptools = "==83.0.0"
+setuptools = "==84.0.0"
 mkdocs = "*"
 mkdocstrings = "*"
 mkdocstrings-python = "*"
