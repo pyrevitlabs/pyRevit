@@ -8,7 +8,7 @@ All other parameters are user-configured via the config dialog.
 
 import os.path as op
 
-from pyrevit import forms, HOST_APP, framework, revit
+from pyrevit import forms, HOST_APP, framework, revit, script
 from pyrevit import DB, UI
 from pyrevit.revit import is_yesno_parameter, query
 from pyrevit.revit.events import execute_in_revit_context
@@ -42,6 +42,7 @@ _HEADER_PREFIX = "#"
 
 def get_pane_config():
     """Reload user config and return (entries, show_worksharing_info).
+    First call caches data, subsequent calls use the cached data.
 
     entries is a list of ("param", name) / ("header", text) tuples, parsed
     from the "additional_parameters" option. A line starting with the
@@ -49,15 +50,20 @@ def get_pane_config():
     parameter name; any text after the prefix becomes its label, or the
     line renders as a plain separator if nothing follows it.
     """
-    try:
-        user_config.reload()
-        if not user_config.has_section(CONFIG_SECTION):
+    raw = script.get_envvar(CONFIG_SECTION)
+    show_worksharing = bool(script.get_envvar(CONFIG_SECTION+"_ws_info"))
+    if not raw:
+        try:
+            user_config.reload()
+            if not user_config.has_section(CONFIG_SECTION):
+                return [], True
+            section = getattr(user_config, CONFIG_SECTION)
+            raw = section.get_option("additional_parameters", "")
+            show_worksharing = bool(section.get_option("show_worksharing_info", True))
+            script.set_envvar(CONFIG_SECTION, raw)
+            script.set_envvar(CONFIG_SECTION+"_ws_info", show_worksharing)
+        except Exception:
             return [], True
-        section = getattr(user_config, CONFIG_SECTION)
-        raw = section.get_option("additional_parameters", "")
-        show_worksharing = bool(section.get_option("show_worksharing_info", True))
-    except Exception:
-        return [], True
 
     entries = []
     for line in raw.splitlines():
