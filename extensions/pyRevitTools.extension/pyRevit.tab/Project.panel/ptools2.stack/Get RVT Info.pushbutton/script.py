@@ -26,7 +26,9 @@ if rvt_file:
     print("Document Increment: {0}".format(mfile.DocumentIncrement))
 
     print("Project Information (Properties):")
-    for k, v in sorted(dict(mfile.ProjectInfoProperties).items()):
+    for k, v in sorted(
+        dict(mfile.ProjectInfoProperties).items(), key=lambda kv: str(kv[0])
+    ):
         print('\t{} = {}'.format(k, v))
 
     if mfile.IsFamily:

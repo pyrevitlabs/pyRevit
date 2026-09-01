@@ -6,7 +6,7 @@ import os.path as op
 import re
 from math import sqrt, pi, sin, cos, degrees
 
-from pyrevit import PyRevitException, HOST_APP
+from pyrevit import PyRevitException
 from pyrevit import framework
 from pyrevit.framework import List
 from pyrevit import coreutils
@@ -710,10 +710,7 @@ def _make_filledregion(fillpattern_name, fillpattern_id):
     source_fr = filledregion_types.FirstElement()
     with revit.Transaction('Create Filled Region'):
         new_fr = source_fr.Duplicate(fillpattern_name)
-        if HOST_APP.is_newer_than(2018):
-            new_fr.ForegroundPatternId = fillpattern_id
-        else:
-            new_fr.FillPatternId = fillpattern_id
+        new_fr.ForegroundPatternId = fillpattern_id
 
 
 def _export_pat(revit_pat, export_dir):

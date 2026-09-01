@@ -77,7 +77,7 @@ def _setup_output():
     runtime_info = sessioninfo.get_runtime_info()
     out_window.AppVersion = "{}:{}:{}".format(
         runtime_info.pyrevit_version,
-        int(runtime_info.engine_version),
+        runtime_info.engine_version,
         runtime_info.host_version,
     )
 
@@ -116,13 +116,6 @@ def _perform_onsessionloadstart_ops():
     if not _clear_running_engines():
         mlogger.debug("No Engine Manager exists...")
 
-    # check for updates
-    if user_config.auto_update and not _check_autoupdate_inprogress():
-        mlogger.info("Auto-update is active. Attempting update...")
-        _set_autoupdate_inprogress(True)
-        updater.update_pyrevit()
-        _set_autoupdate_inprogress(False)
-
     # once pre-load is complete, report environment conditions
     uuid_str = sessioninfo.new_session_uuid()
     sessioninfo.report_env()
@@ -160,6 +153,27 @@ def _perform_onsessionloadcomplete_ops():
             mlogger.info(str(active_server))
         else:
             mlogger.error("Routes servers failed activation")
+
+
+def _perform_postload_autoupdate():
+    """Run auto-update, if enabled, once the ribbon UI is fully built.
+
+    Called from perform_postload() rather than the preload path so a slow or
+    offline update check can never delay the ribbon's first paint.
+
+    If the update triggers a reload, that reload re-enters LoadSession()
+    while this postload call is still on the stack, replacing the current
+    session out from under it. Flags that via SESSION_REPLACED_ENVVAR so the
+    C# orchestrator can skip its own now-stale final stopwatch/log for the
+    outer (replaced) session once this call returns.
+    """
+    if user_config.auto_update and not _check_autoupdate_inprogress():
+        mlogger.info("Auto-update is active. Attempting update...")
+        _set_autoupdate_inprogress(True)
+        reloaded = updater.update_pyrevit()
+        _set_autoupdate_inprogress(False)
+        if reloaded:
+            envvars.set_pyrevit_env_var(envvars.SESSION_REPLACED_ENVVAR, True)
 
 
 def perform_preload():
@@ -231,8 +245,13 @@ def perform_postload():
     except Exception as imp_err:
         mlogger.error("Error setting up self_destruct on output window | %s", imp_err)
 
+    _perform_postload_autoupdate()
+
     _cleanup_output()
     return sessioninfo.get_session_uuid()
+
+
+_LOAD_SESSION_METHOD = None
 
 
 def _invoke_csharp_loadsession():
@@ -240,30 +259,38 @@ def _invoke_csharp_loadsession():
 
     The C# entry (PyRevitLoaderApplication.LoadSession) runs the full sequence:
     perform_preload(), the C# UI build, then perform_postload().
+
+    _LOAD_SESSION_METHOD is resolved lazily on the first call and cached in that
+    module-level global for the lifetime of the process: the loader assembly and
+    its LoadSession method never change once loaded, so re-resolving on every
+    reload is pure waste.
     """
-    loader_app_type = None
-    for assembly in framework.AppDomain.CurrentDomain.GetAssemblies():
-        try:
-            if assembly.GetName().Name.startswith("pyRevitLoader"):
-                loader_app_type = assembly.GetType(
-                    "PyRevitLoader.PyRevitLoaderApplication"
-                )
-                if loader_app_type:
-                    break
-        except Exception:
-            continue
+    global _LOAD_SESSION_METHOD
 
-    if not loader_app_type:
-        mlogger.error("PyRevitLoaderApplication not found in loaded assemblies")
-        return None
+    if _LOAD_SESSION_METHOD is None:
+        loader_app_type = None
+        for assembly in framework.AppDomain.CurrentDomain.GetAssemblies():
+            try:
+                if assembly.GetName().Name.startswith("pyRevitLoader"):
+                    loader_app_type = assembly.GetType(
+                        "PyRevitLoader.PyRevitLoaderApplication"
+                    )
+                    if loader_app_type:
+                        break
+            except Exception:
+                continue
 
-    load_session_method = loader_app_type.GetMethod("LoadSession")
-    if not load_session_method:
-        mlogger.error("LoadSession method not found in PyRevitLoaderApplication")
-        return None
+        if not loader_app_type:
+            mlogger.error("PyRevitLoaderApplication not found in loaded assemblies")
+            return None
+
+        _LOAD_SESSION_METHOD = loader_app_type.GetMethod("LoadSession")
+        if not _LOAD_SESSION_METHOD:
+            mlogger.error("LoadSession method not found in PyRevitLoaderApplication")
+            return None
 
     mlogger.info("Loading session using C# LoadSession method...")
-    load_session_method.Invoke(None, None)
+    _LOAD_SESSION_METHOD.Invoke(None, None)
     return sessioninfo.get_session_uuid()
 
 

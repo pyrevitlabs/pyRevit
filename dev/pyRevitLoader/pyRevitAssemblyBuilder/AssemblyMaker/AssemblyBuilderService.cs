@@ -76,13 +76,15 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             LoadExtensionModules(extension);
 
             // Include generation-time inputs that affect emitted command types, so cache invalidates
-            // when runtime behavior changes (e.g. rocket mode toggles or loader binary updates).
+            // when runtime behavior changes (rocket mode, generator schema, or library-extension
+            // search paths — those paths are compiled into each command).
             string strategySeed = string.Join("|",
                 _buildStrategy.ToString(),
                 $"rocket:{rocketMode}",
                 $"rocket_compat:{extension.RocketModeCompatible}",
                 $"builder:{GetAssemblyBuildFingerprint()}",
-                $"runtime:{GetRuntimeBuildFingerprint()}");
+                $"runtime:{GetRuntimeBuildFingerprint()}",
+                $"libs:{LibraryExtensionSearchPaths.CacheSeed(libraryExtensions)}");
             string hash = GetStableHash(extension.GetHash(strategySeed) + _revitVersion).Substring(0, 16);
             string fileName = $"pyRevit_{_revitVersion}_{hash}_{extension.Name}.dll";
 
@@ -145,6 +147,14 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         /// </remarks>
         private List<string> _loadedPyRevitAssemblyNames;
 
+        /// <summary>
+        /// Guards <see cref="_loadedPyRevitAssemblyNames"/>. <see cref="BuildExtensionAssembly"/>
+        /// runs concurrently across extensions when the session manager parallelizes the build
+        /// pass, and this cache-fill/read is the only mutable state that method touches on the
+        /// shared <see cref="AssemblyBuilderService"/> instance.
+        /// </summary>
+        private readonly object _loadedAssemblyNamesLock = new object();
+
         private void EnsureLoadedAssemblyNamesCached()
         {
             if (_loadedPyRevitAssemblyNames != null)
@@ -176,19 +186,22 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         /// <returns>True if an assembly for this extension is already loaded.</returns>
         private bool IsAnyExtensionAssemblyLoaded(ParsedExtension extension)
         {
-            EnsureLoadedAssemblyNamesCached();
-
-            // Assembly names follow: pyRevit_{revitVersion}_{hash}_{extensionName}
-            foreach (var name in _loadedPyRevitAssemblyNames)
+            lock (_loadedAssemblyNamesLock)
             {
-                if (name.EndsWith(extension.Name, StringComparison.OrdinalIgnoreCase))
-                {
-                    _logger.Debug($"Found loaded extension assembly: {name}");
-                    return true;
-                }
-            }
+                EnsureLoadedAssemblyNamesCached();
 
-            return false;
+                // Assembly names follow: pyRevit_{revitVersion}_{hash}_{extensionName}
+                foreach (var name in _loadedPyRevitAssemblyNames)
+                {
+                    if (name.EndsWith(extension.Name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        _logger.Debug($"Found loaded extension assembly: {name}");
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
 
         /// <summary>
@@ -239,6 +252,12 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         }
 
         /// <summary>
+        /// Guards the shared AppDomain environment dictionary, which <see cref="BuildExtensionAssembly"/>
+        /// may write to concurrently when extensions are built in parallel.
+        /// </summary>
+        private readonly object _envDictLock = new object();
+
+        /// <summary>
         /// Updates the AppDomain's environment dictionary with referenced assemblies.
         /// Mimics pythonic loader's sessioninfo.update_loaded_pyrevit_referenced_modules()
         /// </summary>
@@ -250,31 +269,34 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 const string envDictKey = SessionManager.Constants.ENV_DICT_KEY;
                 const string refedAssmsKey = SessionManager.Constants.REFED_ASSMS_KEY;
 
-                var envDict = AppDomain.CurrentDomain.GetData(envDictKey) as IDictionary<object, object>;
-                if (envDict == null)
-                    return;
-
-                // Get existing referenced assemblies
-                var existingAssemblies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                if (envDict.ContainsKey(refedAssmsKey))
+                lock (_envDictLock)
                 {
-                    var existingValue = envDict[refedAssmsKey] as string;
-                    if (!string.IsNullOrEmpty(existingValue))
+                    var envDict = AppDomain.CurrentDomain.GetData(envDictKey) as IDictionary<object, object>;
+                    if (envDict == null)
+                        return;
+
+                    // Get existing referenced assemblies
+                    var existingAssemblies = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    if (envDict.ContainsKey(refedAssmsKey))
                     {
-                        foreach (var path in existingValue.Split(Path.PathSeparator))
+                        var existingValue = envDict[refedAssmsKey] as string;
+                        if (!string.IsNullOrEmpty(existingValue))
                         {
-                            if (!string.IsNullOrWhiteSpace(path))
-                                existingAssemblies.Add(path);
+                            foreach (var path in existingValue.Split(Path.PathSeparator))
+                            {
+                                if (!string.IsNullOrWhiteSpace(path))
+                                    existingAssemblies.Add(path);
+                            }
                         }
                     }
+
+                    // Add new module paths
+                    existingAssemblies.UnionWith(newModulePaths);
+
+                    // Update the environment dictionary
+                    var updatedValue = string.Join(Path.PathSeparator.ToString(), existingAssemblies);
+                    envDict[refedAssmsKey] = updatedValue;
                 }
-
-                // Add new module paths
-                existingAssemblies.UnionWith(newModulePaths);
-
-                // Update the environment dictionary
-                var updatedValue = string.Join(Path.PathSeparator.ToString(), existingAssemblies);
-                envDict[refedAssmsKey] = updatedValue;
             }
             catch (Exception ex)
             {
@@ -390,18 +412,14 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             return BitConverter.ToString(hash).Replace("-", string.Empty).ToLowerInvariant();
         }
 
-        // Cache invalidation must trigger when the loader's command-type generation can
-        // change between pyRevit versions, but not on every rebuild/redeploy. Key it on the
-        // loader's semantic version only: previously this also mixed in the DLL file write
-        // time, which changed on every loader rebuild/update and forced every extension to
-        // recompile on each load. Computed once per session.
-        //
-        // Developer caveat: if you change code-generation logic without bumping the
-        // assembly version, the cache will serve the previously built DLLs. To force
-        // a rebuild during generator development, delete
-        // %APPDATA%/pyRevit/{revitVersion}/pyRevit_*.dll (the existing
-        // cleanup_assembly_files also clears unloaded ones on the next single-instance
-        // shutdown).
+        // Cache invalidation must trigger when emitted command types change, but not on
+        // every local rebuild. Do not mix in the DLL file write time: that forced every
+        // extension to recompile on each loader rebuild.
+        // Bump CommandTypeGeneratorSchema when generation logic changes without a
+        // pyRevit version bump. Library-extension directories are hashed separately
+        // in strategySeed so adding/removing a .lib or nested lib/ also invalidates.
+        private const string CommandTypeGeneratorSchema = "lib-root-1";
+
         private static readonly string _assemblyBuildFingerprint = ComputeAssemblyBuildFingerprint();
 
         private static string GetAssemblyBuildFingerprint() => _assemblyBuildFingerprint;
@@ -423,11 +441,12 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         {
             try
             {
-                return Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0";
+                var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0";
+                return version + "|" + CommandTypeGeneratorSchema;
             }
             catch
             {
-                return "0";
+                return "0|" + CommandTypeGeneratorSchema;
             }
         }
 

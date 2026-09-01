@@ -32,7 +32,7 @@ from legend_utils import (
     create_legend_row,
     autofit_column_widths,
 )
-from legend_config import (
+from legend_cfg import (
     INI,
     DEFAULTS_BOOL,
     resx as _t,

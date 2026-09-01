@@ -53,6 +53,7 @@ if (runCi)
     builder.Services.AddModule<BuildLoadersModule>();
     builder.Services.AddModule<BuildRuntimeModule>();
     builder.Services.AddModule<BuildRunnersModule>();
+    builder.Services.AddModule<BuildShellModule>();
     builder.Services.AddModule<StageBinAssetsModule>();
     builder.Services.AddModule<BuildAutocompModule>();
     builder.Services.AddModule<VerifyLibGit2Module>();

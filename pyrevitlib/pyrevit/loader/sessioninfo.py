@@ -26,7 +26,7 @@ RuntimeInfo = namedtuple('RuntimeInfo', ['pyrevit_version',
 
 Args:
     pyrevit_version (str): formatted pyRevit version
-    engine_version (int): active IronPython engine version
+    engine_version (str): active IronPython engine version
     host_version (str): Current Revit version
 """
 
@@ -38,12 +38,8 @@ def setup_runtime_vars():
     envvars.set_pyrevit_env_var(envvars.VERSION_ENVVAR, pyrvt_ver)
 
     # set app version env var
-    if HOST_APP.is_newer_than(2017):
-        envvars.set_pyrevit_env_var(envvars.APPVERSION_ENVVAR,
-                                    HOST_APP.subversion)
-    else:
-        envvars.set_pyrevit_env_var(envvars.APPVERSION_ENVVAR,
-                                    HOST_APP.version)
+    envvars.set_pyrevit_env_var(envvars.APPVERSION_ENVVAR,
+                                HOST_APP.subversion)
 
     # set ironpython engine version env var
     attachment = user_config.get_current_attachment()
@@ -83,7 +79,6 @@ def get_runtime_info():
         sessioninfo.get_runtime_info()
         ```
     """
-    # FIXME: add example output
     return RuntimeInfo(
         pyrevit_version=envvars.get_pyrevit_env_var(envvars.VERSION_ENVVAR),
         engine_version=envvars.get_pyrevit_env_var(envvars.IPYVERSION_ENVVAR),
@@ -126,7 +121,6 @@ def get_loaded_pyrevit_assemblies():
     Returns:
         (list[str]): list of loaded assemblies
     """
-    # FIXME: verify and document return type
     loaded_assms_str = envvars.get_pyrevit_env_var(envvars.LOADEDASSMS_ENVVAR)
     if loaded_assms_str:
         return loaded_assms_str.split(coreutils.DEFAULT_SEPARATOR)

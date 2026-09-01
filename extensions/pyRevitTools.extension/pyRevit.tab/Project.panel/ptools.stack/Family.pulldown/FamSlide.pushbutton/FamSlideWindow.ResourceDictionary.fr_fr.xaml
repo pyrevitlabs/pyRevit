@@ -1,0 +1,51 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="BtnRefresh">⟲ Actualiser le document</system:String>
+    <system:String x:Key="TooltipRefresh">Réanalyse le document de famille actif pour détecter les paramètres ajoutés ou supprimés. Utile aussi après avoir changé de famille ouverte.</system:String>
+    <system:String x:Key="TooltipShuffle">Mélanger les valeurs des paramètres. Attribue une valeur aléatoire à chaque paramètre modifiable dans sa plage de curseur actuelle. À utiliser avec prudence - ceci ne peut pas être annulé depuis FamSlide.</system:String>
+    <system:String x:Key="TooltipDeleteUnused">Supprimer tous les paramètres inutilisés. Supprime les paramètres de famille qui ne pilotent aucune cote, ne sont impliqués dans aucune formule et ne sont pas intégrés. À utiliser avec prudence.</system:String>
+    <system:String x:Key="TooltipToggleEditable">Afficher/masquer les paramètres modifiables. Bascule la visibilité des paramètres dont le curseur ou la case à cocher peut être modifié directement.</system:String>
+    <system:String x:Key="TooltipToggleLabels">Afficher/masquer les étiquettes. Bascule les petites étiquettes affichées sous chaque nom de paramètre.</system:String>
+    <system:String x:Key="BtnClose">Fermer</system:String>
+    <system:String x:Key="TooltipClose">Fermer FamSlide</system:String>
+    <system:String x:Key="GroupTitleValue">Paramètres de valeur</system:String>
+    <system:String x:Key="GroupTitleBuiltin">Paramètres intégrés</system:String>
+    <system:String x:Key="GroupTitleYesNo">Paramètres Oui/Non</system:String>
+    <system:String x:Key="TagInUse">utilisé</system:String>
+    <system:String x:Key="TagUsedInFormula">uF</system:String>
+    <system:String x:Key="TagHasFormula">dF</system:String>
+    <system:String x:Key="TagBuiltIn">intégré</system:String>
+    <system:String x:Key="TagInstance">instance</system:String>
+    <system:String x:Key="TagType">type</system:String>
+    <system:String x:Key="TagAssociated">associé</system:String>
+    <system:String x:Key="NoFamilyLoaded">(aucune famille chargée)</system:String>
+    <system:String x:Key="NoFamilyDocument">Aucun document de famille actif</system:String>
+    <system:String x:Key="ValueYes">Oui</system:String>
+    <system:String x:Key="ValueNo">Non</system:String>
+    <system:String x:Key="ConfirmShuffleMessage">Randomiser tous les paramètres modifiables dans leur plage actuelle du curseur ?
+
+Utilisez ensuite "Restaurer le préréglage" pour annuler.</system:String>
+    <system:String x:Key="ConfirmDeleteUnusedMessage">Supprimer tous les paramètres de famille qui ne pilotent aucune cote, ne sont impliqués dans aucune formule, ne sont associés à aucun autre paramètre et ne sont pas intégrés ?
+
+La détection est approximative - les paramètres utilisés de manière invisible pour FamSlide (ex. contraintes de familles imbriquées) peuvent quand même être supprimés.
+
+Ceci ne peut pas être annulé depuis FamSlide - utilisez si besoin la fonction Annuler de Revit.</system:String>
+    <system:String x:Key="AlertNoActiveDocument">Aucun document Revit actif.</system:String>
+    <system:String x:Key="AlertFamilyEditorOnly">FamSlide fonctionne uniquement dans l'éditeur de famille.
+Ouvrez une famille en édition et relancez cet outil.</system:String>
+    <system:String x:Key="MenuRename">Renommer…</system:String>
+    <system:String x:Key="MenuMakeInstance">Convertir en paramètre d'instance</system:String>
+    <system:String x:Key="MenuMakeType">Convertir en paramètre de type</system:String>
+    <system:String x:Key="DialogRenameTitle">Renommer le paramètre</system:String>
+    <system:String x:Key="PromptRenameParameter">Entrez un nouveau nom pour ce paramètre :</system:String>
+    <system:String x:Key="AlertRenameFailed">Impossible de renommer le paramètre « {} ». Il est peut-être intégré, ou le nouveau nom est déjà utilisé.</system:String>
+    <system:String x:Key="AlertToggleInstanceTypeFailed">Impossible de basculer Instance/Type pour le paramètre « {} ». Il est peut-être piloté par une formule ou restreint par Revit.</system:String>
+    <system:String x:Key="TooltipSavePreset">Enregistrer un préréglage. Mémorise les valeurs actuelles de tous les paramètres modifiables de cette famille, pour pouvoir y revenir rapidement plus tard.</system:String>
+    <system:String x:Key="TooltipRestorePreset">Restaurer le préréglage. Réapplique les valeurs enregistrées avec « Enregistrer un préréglage » pour cette famille. Ne fait rien si aucun préréglage n'a encore été enregistré.</system:String>
+    <system:String x:Key="AlertNoPresetSaved">Aucun préréglage n'a encore été enregistré pour cette famille. Utilisez d'abord « Enregistrer un préréglage ».</system:String>
+    <system:String x:Key="ConfirmRestorePresetMessage">Restaurer tous les paramètres modifiables aux valeurs enregistrées avec « Enregistrer un préréglage » ?
+
+Ceci ne peut pas être annulé depuis FamSlide - utilisez si besoin la fonction Annuler de Revit.</system:String>
+    <system:String x:Key="AlertPresetSaved">Préréglage enregistré pour {} paramètre(s).</system:String>
+</ResourceDictionary>

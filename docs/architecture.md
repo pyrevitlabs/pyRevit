@@ -6,23 +6,23 @@ Whether you want to create tools, troubleshoot issues, or contribute code, under
 
 ## Components of pyRevit
 
-1. **pyRevit Add-In (pyRevitLoader)**
+1. **pyRevit Add-In (pyRevitLoader)** — `dev/pyRevitLoader/`
     - A small piece of C# code that starts pyRevit inside Revit.
-    - It loads a Python script using the IronPython engine, which handles the rest of pyRevit’s functionality.
+    - Calls the C# session manager directly to build the UI and button commands (no IronPython bootstrap).
 
-2. **pyRevit python Libraries (pyrevitlibs)**
+2. **pyRevit Python Libraries (pyrevitlib)** — `pyrevitlib/pyrevit/`
     - Python packages that simplify working with the .NET Revit API.
     - Provide tools to create ribbon buttons, run scripts, and more.
 
-3. **Extensions**
+3. **Extensions** — see [Extensions](extensions.md) for bundle structure, `bundle.yaml`, script engines, and hooks.
     - These are the tools and features users see inside Revit.
     - They are mostly written in python, but can also be C#/VB.NET scripts, dynamo projects, and so on
     - Bundled extensions appear in the "pyRevit" tab, offering many tools.
     - Users can add extensions by:
-        - Enabling listed extensions in `dev/extensions/extensions.json` via the “Extensions” button in pyRevit.
+        - Enabling listed extensions in `extensions/extensions.json` via the "Extensions" button in pyRevit.
         - Creating custom extensions and adding their paths to the configuration.
 
-4. **pyRevit Command-Line Interface (CLI)**
+4. **pyRevit Command-Line Interface (CLI)** — `dev/pyRevitLabs/pyRevitCLI/`
     - A tool for managing configurations, running scripts in bulk, and troubleshooting.
     - Useful for corporate setups and advanced users.
     - The `pyrevit env` report includes the configured CPython engine version (`activeCpythonEngineVersion` in JSON).
@@ -30,6 +30,8 @@ Whether you want to create tools, troubleshoot issues, or contribute code, under
 5. **Telemetry Server**
     - A small server (written in Go) that tracks usage data of pyRevit tools.
     - Stores data in MongoDB or PostgreSQL for business intelligence.
+
+Command execution itself lives in a separate component, **PyRevit.Runtime** (`dev/pyRevitLabs.PyRevit.Runtime/`) — see [How pyRevit Commands run](#how-pyrevit-commands-run).
 
 ## How pyRevit Loads in Revit
 
@@ -66,14 +68,15 @@ There are multiple versions of `pyRevitLoader.dll` to support:
     - Another for Revit 2021-2024, built with the .NET Framework.
 - different IronPython versions; to this date:
     - version 2.7.12, the default one
-    - version 3.4.0, more recent but not fully tested.
+    - version 3.4.2, more recent but not fully tested.
 
 They share the same source code, but are _compiled against_ the different .net runtimes and IronPython versions.
 
+The legacy pure-Python loader (which supported pre-2021 Revit versions) has been removed; the C# loader requires Revit 2021+.
+
 !!! note
 
-    Since we cannot have multiple IronPython engines running at the same time, if the user switches the engine in the configuration, pyRevit will change the `.addin` manifest mentioned above to point to the correct dll path.
-    It may be that sometimes the addin is not created correctly or points to the wrong path, and this is why most of the times the `pyrevit attach` command solves the installation issues.
+    Only one IronPython runtime engine can be attached at a time; switching it (Settings UI or `pyrevit attach`) rewrites the `.addin` manifest to the matching `pyRevitLoader.dll` build. CPython selection is separate and doesn't touch the manifest. Manifests can also go stale from clone switches or mixed attachments — `pyrevit attach`/`switch` fixes them by recreating the manifest.
 
 ### Session loading
 
@@ -126,4 +129,10 @@ In turn, the code in `ScriptExecutor.cs` calls the appropriate script engine bas
 
 ???+ info
 
-    You can find the code of the engines in the files that end `Engine.cs`.
+    You can find the code of the engines in the files that end with `Engine.cs`, in `dev/pyRevitLabs.PyRevit.Runtime/`:
+
+    - `IronPythonEngine.cs` — default Python engine.
+    - `CPythonEngine.cs` — modern Python (3.12).
+    - `CLREngine.cs` — C#/VB.NET execution.
+    - `DynamoBIMEngine.cs` — Dynamo graphs.
+    - `GrasshopperEngine.cs` — Grasshopper definitions.

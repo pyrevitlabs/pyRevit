@@ -1,6 +1,6 @@
 #define MyAppName "pyRevit"
 #define MyAppUUID "f2a3da53-6f34-41d5-abbd-389ffa7f4d5f"
-#define MyAppVersion "6.5.3.26176"
+#define MyAppVersion "7.0.0.26237"
 #define MyAppPublisher "pyRevitLabs"
 #define MyAppURL "pyrevitlabs.io"
 #include "CodeDependencies.iss"
@@ -29,7 +29,7 @@ UsePreviousAppDir=yes
 PrivilegesRequired=admin
 ; Build info
 OutputDir=..\dist
-; See dev/scripts/config.py INSTALLER_EXES
+; Keep this list aligned with the installer assets staged by build/.
 OutputBaseFilename=pyRevit_{#MyAppVersion}_admin_signed
 SetupIconFile=..\bin\pyrevit.ico
 Compression=lzma

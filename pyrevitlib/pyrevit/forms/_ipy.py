@@ -38,7 +38,7 @@ from pyrevit.framework import System
 from pyrevit.framework import Threading
 from pyrevit.framework import Interop
 from pyrevit.framework import Input
-from pyrevit.framework import wpf, Forms, Controls, Media
+from pyrevit.framework import wpf, Forms, Controls, Documents, Media
 from pyrevit.framework import CPDialogs
 from pyrevit.framework import ComponentModel
 from pyrevit.framework import ObservableCollection
@@ -48,6 +48,7 @@ _perfmark("pyrevit.forms._ipy:after framework re-imports")
 from pyrevit.api import AdWindows
 
 _perfmark("pyrevit.forms._ipy:after pyrevit.api.AdWindows")
+from pyrevit.labs import Common
 from pyrevit import revit, UI, DB
 
 _perfmark("pyrevit.forms._ipy:after `from pyrevit import revit, UI, DB`")
@@ -88,6 +89,183 @@ WPF_VISIBLE = framework.Windows.Visibility.Visible
 
 
 XAML_FILES_DIR = op.dirname(__file__)
+THEME_XAML_FILE = op.join(XAML_FILES_DIR, "Theme.xaml")
+
+
+_BRAND_DARK = (0xFF, 0x2C, 0x3E, 0x50)
+_BRAND_DARKER_DARK = (0xFF, 0x23, 0x30, 0x3D)
+_BRAND_ACCENT = (0xFF, 0xF3, 0x9C, 0x12)
+
+_PALETTE_LIGHT = {
+    "WindowBackground": (0xFF, 0xFF, 0xFF, 0xFF),
+    "WindowForeground": (0xFF, 0x00, 0x00, 0x00),
+    "ChromeBackground": (0xFF, 0xE8, 0xE8, 0xE8),
+    "ControlBackground": (0xFF, 0xFF, 0xFF, 0xFF),
+    "ButtonBackground": (0xFF, 0xF0, 0xF0, 0xF0),
+    "ControlBorder": (0xFF, 0xCC, 0xCC, 0xCC),
+    "ControlHover": (0xFF, 0xE5, 0xE5, 0xE5),
+    "ControlPressed": (0xFF, 0xD9, 0xD9, 0xD9),
+    "ControlOverlayHover": (0x0C, 0x00, 0x00, 0x00),
+    "ControlOverlayPressed": (0x18, 0x00, 0x00, 0x00),
+    "DisabledForeground": (0xFF, 0xA0, 0xA0, 0xA0),
+    "SubtleForeground": (0xFF, 0x69, 0x69, 0x69),
+    "DangerBackground": (0xFF, 0xFB, 0xD5, 0xD5),
+    "SuccessBackground": (0xFF, 0xD4, 0xEF, 0xD8),
+    "Icon": (0xFF, 0x00, 0x00, 0x00),
+    "SelectionBackground": (0xFF, 0xCC, 0xE4, 0xF7),
+    "SelectionForeground": (0xFF, 0x00, 0x00, 0x00),
+    "ScrollBarThumb": (0xFF, 0xCC, 0xCC, 0xCC),
+    "ScrollBarThumbHover": (0xFF, 0xAA, 0xAA, 0xAA),
+}
+
+_PALETTE_DARK = {
+    "WindowBackground": (0xFF, 0x2E, 0x34, 0x40),
+    "WindowForeground": (0xFF, 0xEC, 0xF0, 0xF1),
+    "ChromeBackground": (0xFF, 0x22, 0x29, 0x33),
+    "ControlBackground": (0xFF, 0x22, 0x29, 0x33),
+    "ButtonBackground": (0xFF, 0x22, 0x29, 0x33),
+    "ControlBorder": (0xFF, 0x45, 0x4F, 0x61),
+    "ControlHover": (0xFF, 0x45, 0x4F, 0x61),
+    "ControlPressed": (0xFF, 0x52, 0x5E, 0x73),
+    "ControlOverlayHover": (0x28, 0xFF, 0xFF, 0xFF),
+    "ControlOverlayPressed": (0x37, 0xFF, 0xFF, 0xFF),
+    "DisabledForeground": (0xFF, 0x7F, 0x8C, 0x8D),
+    "SubtleForeground": (0xFF, 0x95, 0xA5, 0xA6),
+    "DangerBackground": (0xFF, 0x5C, 0x2E, 0x2E),
+    "SuccessBackground": (0xFF, 0x2C, 0x4C, 0x33),
+    "Icon": (0xFF, 0xEC, 0xF0, 0xF1),
+    "SelectionBackground": (0xFF, 0x33, 0x50, 0x6E),
+    "SelectionForeground": (0xFF, 0xEC, 0xF0, 0xF1),
+    "ScrollBarThumb": (0xFF, 0x45, 0x4F, 0x61),
+    "ScrollBarThumbHover": (0xFF, 0x52, 0x5E, 0x73),
+}
+
+
+def _colorref(argb):
+    """Convert an (a, r, g, b) byte tuple to a Win32 COLORREF (0x00BBGGRR)."""
+    _, r, g, b = argb
+    return r | (g << 8) | (b << 16)
+
+
+def _argb(color):
+    """Convert a Media.Color to a hashable (a, r, g, b) byte tuple."""
+    return (color.A, color.R, color.G, color.B)
+
+
+def _srgb_component(byte_value):
+    """Linearize a single 0-255 sRGB channel for luminance math."""
+    channel = byte_value / 255.0
+    if channel <= 0.03928:
+        return channel / 12.92
+    return pow((channel + 0.055) / 1.055, 2.4)
+
+
+def _relative_luminance(color):
+    """Return the WCAG relative luminance of a Media.Color."""
+    return (
+        0.2126 * _srgb_component(color.R)
+        + 0.7152 * _srgb_component(color.G)
+        + 0.0722 * _srgb_component(color.B)
+    )
+
+
+def _contrast_ratio(first_color, second_color):
+    """Return the WCAG contrast ratio between two Media.Color values."""
+    first = _relative_luminance(first_color)
+    second = _relative_luminance(second_color)
+    return (max(first, second) + 0.05) / (min(first, second) + 0.05)
+
+
+def _background_property(wpf_element):
+    """Return the DependencyProperty painting an element's own background.
+
+    Returns:
+        DependencyProperty or None: None for elements that paint no background.
+    """
+    if isinstance(wpf_element, Controls.Control):
+        return Controls.Control.BackgroundProperty
+    if isinstance(wpf_element, Controls.TextBlock):
+        return Controls.TextBlock.BackgroundProperty
+    if isinstance(wpf_element, Controls.Panel):
+        return Controls.Panel.BackgroundProperty
+    if isinstance(wpf_element, Controls.Border):
+        return Controls.Border.BackgroundProperty
+    return None
+
+
+def _is_authored_value(wpf_element, dependency_property):
+    """Return True if a property value was authored rather than defaulted.
+
+    WPF hands out opaque metadata defaults for properties nobody set -- a bare
+    CheckBox reports a white Background its template never paints. Those must
+    not be mistaken for a real background, or the element gets a foreground
+    picked to contrast against a color that is never drawn.
+    """
+    try:
+        source = framework.Windows.DependencyPropertyHelper.GetValueSource(
+            wpf_element, dependency_property
+        ).BaseValueSource
+    except Exception:
+        return False
+    return source not in (
+        framework.Windows.BaseValueSource.Default,
+        framework.Windows.BaseValueSource.DefaultStyle,
+        framework.Windows.BaseValueSource.DefaultStyleTrigger,
+        framework.Windows.BaseValueSource.Inherited,
+        framework.Windows.BaseValueSource.Unknown,
+    )
+
+
+def _foreground_property(wpf_element):
+    """Return the DependencyProperty carrying text color for an element.
+
+    Controls and TextBlocks own a Foreground; Panels and Borders do not, so
+    the inherited TextElement.Foreground attached property is used to color
+    whatever text they contain.
+
+    Returns:
+        DependencyProperty or None: None for elements that paint no text.
+    """
+    if isinstance(wpf_element, Controls.Control):
+        return Controls.Control.ForegroundProperty
+    if isinstance(wpf_element, Controls.TextBlock):
+        return Controls.TextBlock.ForegroundProperty
+    if isinstance(wpf_element, (Controls.Panel, Controls.Border)):
+        return Documents.TextElement.ForegroundProperty
+    return None
+
+
+def _walk_logical_tree(root):
+    """Yield root and every logical descendant of a WPF element.
+
+    The logical tree deliberately excludes control-template internals, so
+    only elements authored in the window/panel XAML are visited.
+    """
+    pending = [root]
+    while pending:
+        current = pending.pop()
+        yield current
+        try:
+            children = framework.Windows.LogicalTreeHelper.GetChildren(current)
+        except Exception:
+            continue
+        for child in children:
+            if isinstance(child, framework.Windows.DependencyObject):
+                pending.append(child)
+
+
+def _is_dark_theme():
+    """Return True if Revit's active UI theme is Dark.
+
+    Always False on Revit <2024, which has no UITheme concept.
+    """
+    try:
+        if HOST_APP.is_newer_than(2024, True):
+            from Autodesk.Revit.UI import UITheme
+            return revit.ui.get_current_theme() == UITheme.Dark
+    except Exception:
+        pass
+    return False
 
 
 def _make_param_def(param, istype, checked=False):
@@ -207,42 +385,191 @@ class _WPFMixin(object):
     """Shared behaviour for WPFWindow and WPFPanel.
 
     Not intended for direct use — inherit via WPFWindow or WPFPanel.
+
+    Attributes:
+        _live_refresh_root_colors (bool): whether a live theme-change refresh
+            re-applies Background/Foreground directly.
+
+    Important:
+        _live_refresh_root_colors stays False for WPFWindow: a HUD-style
+        overlay (CommandSwitchWindow, SearchPrompt, ...) declares its own
+        literal transparent Background in XAML and must not have it clobbered
+        while already open. WPFPanel overrides it to True — dockable panes
+        never use that transparent-HUD pattern, and unlike transient dialogs
+        they stay open for the whole Revit session, so they need to pick up a
+        live theme change.
     """
+
+    _live_refresh_root_colors = False
 
     # ------------------------------------------------------------------ resources
 
     @staticmethod
-    def setup_resources(wpf_ctrl):
+    def setup_resources(wpf_ctrl, set_root_colors=True):
         """Set pyRevit colour resources on any WPF control.
+
+        Injects the brand palette (constant, used by HUD-style overlays)
+        and the semantic light/dark palette (resolved from Revit's active
+        UI theme) as DynamicResource-able brushes. Safe to call again on
+        an already-loaded control to re-theme it in place.
+
+        Args:
+            wpf_ctrl: any WPF FrameworkElement with a Resources dict.
+            set_root_colors (bool): also force wpf_ctrl.Background/Foreground
+                directly. Only safe before the control's own XAML is parsed:
+                a window that declares its own literal Background (e.g. the
+                transparent HUD-style overlays) must be able to override this
+                afterwards. Live theme-change refreshes pass False so an
+                already-open HUD window is not forced opaque.
+
+        Note:
+            The root colours are assigned directly rather than left to the
+            implicit Window/Page style. The root element already exists before
+            its Resources are populated, and its own implicit-style lookup does
+            not reliably re-run once the brushes and Theme.xaml are merged
+            afterwards, even though descendants created later during XAML
+            parsing do pick the styles up.
+        """
+        res = wpf_ctrl.Resources
+
+        def _set_color(key, argb):
+            res[key + "Color"] = Media.Color.FromArgb(*argb)
+            res[key + "Brush"] = Media.SolidColorBrush(res[key + "Color"])
+
+        _set_color("pyRevitDark", _BRAND_DARK)
+        _set_color("pyRevitDarkerDark", _BRAND_DARKER_DARK)
+        _set_color("pyRevitAccent", _BRAND_ACCENT)
+        res["pyRevitButtonColor"] = Media.Color.FromArgb(0xFF, 0xFF, 0xFF, 0xFF)
+        res["pyRevitButtonForgroundBrush"] = Media.SolidColorBrush(
+            res["pyRevitButtonColor"]
+        )
+
+        is_dark = _is_dark_theme()
+        palette = _PALETTE_DARK if is_dark else _PALETTE_LIGHT
+        for name, argb in palette.items():
+            _set_color("pyRevit" + name, argb)
+        res["pyRevitIsDarkTheme"] = is_dark
+
+        res["pyRevitRecognizesAccessKey"] = DEFAULT_RECOGNIZE_ACCESS_KEY
+
+        if set_root_colors:
+            wpf_ctrl.Background = res["pyRevitWindowBackgroundBrush"]
+            wpf_ctrl.Foreground = res["pyRevitWindowForegroundBrush"]
+
+    @staticmethod
+    def apply_theme(wpf_ctrl):
+        """Re-resolve and re-apply theme resources on an already-loaded control.
+
+        Because window/control chrome binds to these resources with
+        DynamicResource, overwriting the values here is enough to repaint
+        an open window without reloading its XAML. Does not touch the root
+        Background/Foreground directly — see _live_refresh_root_colors.
 
         Args:
             wpf_ctrl: any WPF FrameworkElement with a Resources dict.
         """
-        wpf_ctrl.Resources["pyRevitDarkColor"] = Media.Color.FromArgb(
-            0xFF, 0x2C, 0x3E, 0x50
-        )
-        wpf_ctrl.Resources["pyRevitDarkerDarkColor"] = Media.Color.FromArgb(
-            0xFF, 0x23, 0x30, 0x3D
-        )
-        wpf_ctrl.Resources["pyRevitButtonColor"] = Media.Color.FromArgb(
-            0xFF, 0xFF, 0xFF, 0xFF
-        )
-        wpf_ctrl.Resources["pyRevitAccentColor"] = Media.Color.FromArgb(
-            0xFF, 0xF3, 0x9C, 0x12
-        )
-        wpf_ctrl.Resources["pyRevitDarkBrush"] = Media.SolidColorBrush(
-            wpf_ctrl.Resources["pyRevitDarkColor"]
-        )
-        wpf_ctrl.Resources["pyRevitAccentBrush"] = Media.SolidColorBrush(
-            wpf_ctrl.Resources["pyRevitAccentColor"]
-        )
-        wpf_ctrl.Resources["pyRevitDarkerDarkBrush"] = Media.SolidColorBrush(
-            wpf_ctrl.Resources["pyRevitDarkerDarkColor"]
-        )
-        wpf_ctrl.Resources["pyRevitButtonForgroundBrush"] = Media.SolidColorBrush(
-            wpf_ctrl.Resources["pyRevitButtonColor"]
-        )
-        wpf_ctrl.Resources["pyRevitRecognizesAccessKey"] = DEFAULT_RECOGNIZE_ACCESS_KEY
+        _WPFMixin.setup_resources(wpf_ctrl, set_root_colors=False)
+
+    def apply_contrast_foregrounds(self):
+        """Give every custom-background element a readable text color.
+
+        Walks the logical tree and, for each element painting a background
+        that is not one of the theme's own brushes, assigns whichever of the
+        theme window foreground/background colors contrasts better with it.
+        This keeps hardcoded accent colors in user XAML -- a pale red "danger"
+        button, a pale green "confirm" button -- legible under a dark UI
+        theme, where the inherited near-white text would otherwise vanish
+        into them.
+
+        Elements that declare their own Foreground are left untouched, and so
+        are theme-brush backgrounds, which already pair with the theme
+        foreground. Translucent backgrounds are left untouched because their
+        effective color depends on the surface below them. Safe to call again
+        to re-evaluate after a theme change.
+        """
+        res = self.Resources
+        try:
+            candidates = [
+                res["pyRevitWindowForegroundBrush"],
+                res["pyRevitWindowBackgroundBrush"],
+            ]
+            theme_argbs = set(
+                _argb(res[key]) for key in list(res.Keys) if str(key).endswith("Color")
+            )
+        except Exception:
+            return
+
+        managed = getattr(self, "_contrast_managed", None)
+        if managed is None:
+            managed = set()
+            self._contrast_managed = managed
+
+        for element in _walk_logical_tree(self):
+            fore_prop = _foreground_property(element)
+            back_prop = _background_property(element)
+            if fore_prop is None or back_prop is None:
+                continue
+            if not _is_authored_value(element, back_prop):
+                continue
+            brush = element.GetValue(back_prop)
+            if not isinstance(brush, Media.SolidColorBrush):
+                continue
+            background = brush.Color
+            if background.A != 0xFF:
+                continue
+            if _argb(background) in theme_argbs:
+                continue
+            if (
+                element.ReadLocalValue(fore_prop)
+                != framework.Windows.DependencyProperty.UnsetValue
+                and element not in managed
+            ):
+                continue
+            best = max(
+                candidates,
+                key=lambda candidate: _contrast_ratio(background, candidate.Color),
+            )
+            element.SetValue(fore_prop, best)
+            managed.add(element)
+
+    def _apply_dark_titlebar(self):
+        """No-op by default; overridden by WPFWindow (Page has no title bar)."""
+
+    def _refresh_icon(self):
+        """No-op by default; overridden by WPFWindow (Page has no icon)."""
+
+    def _on_theme_refresh(self):
+        """Re-theme resources and, for windows, the native title bar."""
+        _WPFMixin.setup_resources(self, set_root_colors=self._live_refresh_root_colors)
+        self.apply_contrast_foregrounds()
+        self._apply_dark_titlebar()
+        self._refresh_icon()
+
+    def _subscribe_theme_changed(self):
+        """Subscribe this control to Revit's ThemeChanged event, if available.
+
+        Silently no-ops on Revit versions without a UITheme concept.
+        """
+        try:
+            if not HOST_APP.is_newer_than(2024, True):
+                return
+            self._on_theme_changed = lambda sender, args: self._on_theme_refresh()
+            HOST_APP.uiapp.ThemeChanged += self._on_theme_changed
+        except Exception:
+            self._on_theme_changed = None
+
+    def _unsubscribe_theme_changed(
+        self, sender=None, args=None
+    ):  # pylint: disable=unused-argument
+        """Detach the ThemeChanged subscription set up by _subscribe_theme_changed."""
+        handler = getattr(self, "_on_theme_changed", None)
+        if handler is None:
+            return
+        try:
+            HOST_APP.uiapp.ThemeChanged -= handler
+        except Exception:
+            pass
+        self._on_theme_changed = None
 
     def merge_resource_dict(self, xaml_source):
         """Merge a ResourceDictionary xaml file into this control's resources.
@@ -254,16 +581,32 @@ class _WPFMixin(object):
         lang_dictionary.Source = Uri(xaml_source, UriKind.Absolute)
         self.Resources.MergedDictionaries.Add(lang_dictionary)
 
-    def get_locale_string(self, string_name):
+    def get_locale_string(self, string_name, default=None):
         """Return a localised string from the merged ResourceDictionary.
+
+        Missing keys are treated as recoverable UI state: they are logged and a
+        safe fallback is returned so the form can keep working without surfacing a
+        blocking WPF exception dialog.
 
         Args:
             string_name (str): resource key.
+            default (any): fallback value when the resource is missing.
 
         Returns:
-            str: localised string value.
+            str: localised string value or the provided fallback.
         """
-        return self.FindResource(string_name)
+        value = self.TryFindResource(string_name)
+        if value is not None:
+            return value
+
+        fallback = default if default is not None else string_name
+        mlogger.warning(
+            "Missing WPF resource key '%s' on %s; using fallback '%s'.",
+            string_name,
+            self.__class__.__name__,
+            fallback,
+        )
+        return fallback
 
     # ------------------------------------------------------------------ images
 
@@ -489,6 +832,7 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         self.window_id = coreutils.new_uuid()
 
         _WPFMixin.setup_resources(self)
+        self.merge_resource_dict(THEME_XAML_FILE)
         if not literal_string:
             xaml_path, pending_resource_merge = _resolve_xaml_source(xaml_source)
             # merge before LoadComponent so resources are available during parse
@@ -499,12 +843,16 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
             wpf.LoadComponent(self, framework.StringReader(xaml_source))
 
         # set properties
+        self.apply_contrast_foregrounds()
         self.thread_id = framework.get_current_thread_id()
         if set_owner:
             self.setup_owner()
         self.setup_icon()
         if handle_esc:
             self.setup_default_handlers()
+        self._apply_dark_titlebar()
+        self._subscribe_theme_changed()
+        self.Closed += self._unsubscribe_theme_changed
 
     def setup_owner(self):
         """Set the window owner."""
@@ -520,13 +868,46 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         if args.Key == Input.Key.Escape:
             self.Close()
 
+    def _apply_dark_titlebar(self):
+        """Re-skin this window's native title bar to match the active theme.
+
+        Keeps the OS chrome (icon, drag, resize, snap, min/max/close) intact;
+        only recolors it, instead of replacing it with custom-drawn chrome.
+        DWMWA_USE_IMMERSIVE_DARK_MODE picks light vs dark glyphs/contrast on
+        any supported Windows version; the exact caption/text colors (so the
+        title bar matches pyRevit's own palette rather than the OS default
+        dark gray) additionally require Windows 11 22000+ and are a no-op
+        elsewhere.
+        """
+        try:
+            wih = Interop.WindowInteropHelper(self)
+            hwnd = wih.EnsureHandle()
+            is_dark = _is_dark_theme()
+            Common.DwmApi.SetImmersiveDarkMode(hwnd, is_dark)
+            palette = _PALETTE_DARK if is_dark else _PALETTE_LIGHT
+            caption_color = _colorref(palette["ChromeBackground"])
+            text_color = _colorref(palette["WindowForeground"])
+            Common.DwmApi.SetTitleBarColors(hwnd, caption_color, text_color)
+        except Exception:
+            pass
+
     def set_icon(self, icon_path):
         """Set window icon to given icon path."""
         self.Icon = utils.bitmap_from_file(icon_path)
 
+    def _refresh_icon(self):
+        """Repaint the default window icon for the active theme."""
+        self.setup_icon()
+
     def setup_icon(self):
-        """Setup default window icon."""
-        self.set_icon(op.join(BIN_DIR, "pyrevit_settings.png"))
+        """Setup default window icon, following the bundle icon convention.
+
+        Picks up pyrevit_settings.dark.png under a dark UI theme, the same
+        <name>.dark.png lookup that extension bundle icons use.
+        """
+        icon_file = revit.ui.resolve_icon_file(BIN_DIR, "pyrevit_settings.png")
+        if icon_file:
+            self.set_icon(icon_file)
 
     def hide(self):
         """Hide window."""
@@ -601,6 +982,8 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
     editor_interaction = None
     contextual_help = None
 
+    _live_refresh_root_colors = True
+
     def __init__(self):
         """Initialize WPF panel and resources."""
         if not self.panel_id:
@@ -623,6 +1006,7 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
             literal_string (bool): True when xaml_source is raw content.
         """
         _WPFMixin.setup_resources(self)
+        self.merge_resource_dict(THEME_XAML_FILE)
         if not literal_string:
             xaml_path, pending_resource_merge = _resolve_xaml_source(xaml_source)
             # merge before LoadComponent so resources are available during parse
@@ -631,7 +1015,9 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
             wpf.LoadComponent(self, xaml_path)
         else:
             wpf.LoadComponent(self, framework.StringReader(xaml_source))
+        self.apply_contrast_foregrounds()
         self.thread_id = framework.get_current_thread_id()
+        self._subscribe_theme_changed()
 
     def _get_panel_output(self):
         """Get current output window and keep its title in sync with panel_title."""
@@ -829,10 +1215,9 @@ class TemplateUserInputWindow(WPFWindow):
         if title:
             self.Title = title
         else:
-            try:
-                localized_title = self.get_locale_string(self.default_title_key)
-            except System.Windows.ResourceReferenceKeyNotFoundException:
-                localized_title = None
+            localized_title = self.get_locale_string(
+                self.default_title_key, "User Input"
+            )
             self.Title = (
                 localized_title if isinstance(localized_title, str) else "User Input"
             )
@@ -899,8 +1284,12 @@ class TemplateListItem(Reactive):
         self._nameattr = name_attr
         self._checkable = checkable
 
-    def __nonzero__(self):
-        return self.state
+    def __bool__(self):
+        # Python 3 requires __bool__ to return an actual bool; state may be
+        # any truthy value (e.g. an int passed as `checked`)
+        return bool(self.state)
+
+    __nonzero__ = __bool__
 
     def __str__(self):
         return self.name or str(self.item)
@@ -1017,6 +1406,8 @@ class ParamDef(TemplateListItem):
 
     def __nonzero__(self):
         return True
+
+    __bool__ = __nonzero__
 
     def __iter__(self):
         for f in self._fields:
@@ -1148,13 +1539,9 @@ class SelectFromList(TemplateUserInputWindow):
             # defined in SelectFromList.xaml control the button content.
             self.select_b.Content = button_name
         else:
-            # Use localized default, falling back to generic text if resource is missing
-            try:
-                self.select_b.Content = self.get_locale_string(
-                    "SelectFromList.Select.Button"
-                )
-            except System.Windows.ResourceReferenceKeyNotFoundException:
-                self.select_b.Content = "Select"
+            self.select_b.Content = self.get_locale_string(
+                "SelectFromList.Select.Button", "Select"
+            )
 
         # attribute to use as name?
         self._nameattr = kwargs.get("name_attr", None)
@@ -1191,13 +1578,9 @@ class SelectFromList(TemplateUserInputWindow):
             # Let XAML DynamicResource provide the actual Text value.
             # The python-side self.ctx_groups_title is used for internal logic
             # and needs a safe fallback.
-            try:
-                self.ctx_groups_title = self.get_locale_string(
-                    "SelectFromList.GroupSelector.Label"
-                )
-            except System.Windows.ResourceReferenceKeyNotFoundException:
-                mlogger.warning("Missing resource key for group selector title.")
-                self.ctx_groups_title = "Groups"
+            self.ctx_groups_title = self.get_locale_string(
+                "SelectFromList.GroupSelector.Label", "Groups"
+            )
 
         self.ctx_groups_active = kwargs.get("default_group", None)
 
@@ -1264,7 +1647,9 @@ class SelectFromList(TemplateUserInputWindow):
             elif self.sort_groups == "natural":
                 sorted_groups = sorted(self._context.keys(), key=self._natural_sort_key)
             else:
-                sorted_groups = self._context.keys()  # No sorting
+                # list() so downstream .index()/binding works (dict.keys()
+                # is a non-indexable view on Python 3)
+                sorted_groups = list(self._context.keys())  # No sorting
 
             self._update_ctx_groups(sorted_groups)
 
@@ -1314,24 +1699,15 @@ class SelectFromList(TemplateUserInputWindow):
 
     def _list_options(self, option_filter=None):
         if option_filter:
-            try:
-                self.checkall_b.Content = self.get_locale_string(
-                    "SelectFromList.Check.Button"
-                )
-            except System.Windows.ResourceReferenceKeyNotFoundException:
-                self.checkall_b.Content = "Check"
-            try:
-                self.uncheckall_b.Content = self.get_locale_string(
-                    "SelectFromList.Uncheck.Button"
-                )
-            except System.Windows.ResourceReferenceKeyNotFoundException:
-                self.uncheckall_b.Content = "Uncheck"
-            try:
-                self.toggleall_b.Content = self.get_locale_string(
-                    "SelectFromList.Toggle.Button"
-                )
-            except System.Windows.ResourceReferenceKeyNotFoundException:
-                self.toggleall_b.Content = "Toggle"
+            self.checkall_b.Content = self.get_locale_string(
+                "SelectFromList.Check.Button", "Check"
+            )
+            self.uncheckall_b.Content = self.get_locale_string(
+                "SelectFromList.Uncheck.Button", "Uncheck"
+            )
+            self.toggleall_b.Content = self.get_locale_string(
+                "SelectFromList.Toggle.Button", "Toggle"
+            )
             # get a match score for every item and sort high to low
             fuzzy_matches = sorted(
                 [
@@ -1353,24 +1729,15 @@ class SelectFromList(TemplateUserInputWindow):
                 [x[0] for x in fuzzy_matches if x[1] >= 80]
             )
         else:
-            try:
-                self.checkall_b.Content = self.get_locale_string(
-                    "SelectFromList.CheckAll.Button"
-                )
-            except System.Windows.ResourceReferenceKeyNotFoundException:
-                self.checkall_b.Content = "Check All"
-            try:
-                self.uncheckall_b.Content = self.get_locale_string(
-                    "SelectFromList.UncheckAll.Button"
-                )
-            except System.Windows.ResourceReferenceKeyNotFoundException:
-                self.uncheckall_b.Content = "Uncheck All"
-            try:
-                self.toggleall_b.Content = self.get_locale_string(
-                    "SelectFromList.ToggleAll.Button"
-                )
-            except System.Windows.ResourceReferenceKeyNotFoundException:
-                self.toggleall_b.Content = "Toggle All"
+            self.checkall_b.Content = self.get_locale_string(
+                "SelectFromList.CheckAll.Button", "Check All"
+            )
+            self.uncheckall_b.Content = self.get_locale_string(
+                "SelectFromList.UncheckAll.Button", "Uncheck All"
+            )
+            self.toggleall_b.Content = self.get_locale_string(
+                "SelectFromList.ToggleAll.Button", "Toggle All"
+            )
 
             self.list_lb.ItemsSource = ObservableCollection[TemplateListItem](
                 self._get_active_ctx()
@@ -2206,9 +2573,9 @@ class SearchPrompt(WPFWindow):
     @property
     def search_matches(self):
         """List of matches for the given search term."""
-        # remove duplicates while keeping order
-        # results = list(set(self._search_results))
-        return OrderedDict.fromkeys(self._search_results).keys()
+        # remove duplicates while keeping order; list() so callers can index
+        # it (dict.keys() is a non-subscriptable view on Python 3)
+        return list(OrderedDict.fromkeys(self._search_results))
 
     def update_results_display(self, fill_match=False):
         """Update search prompt results based on current input text."""
