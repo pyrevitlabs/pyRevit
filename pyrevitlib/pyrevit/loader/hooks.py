@@ -30,7 +30,9 @@ def set_hooks_handler(handler):
 def get_event_hooks():
     """Get all the event hooks."""
     hooks_handler = get_hooks_handler()
-    return hooks_handler.GetAllEventHooks()
+    if hooks_handler:
+        return hooks_handler.GetAllEventHooks()
+    return []
 
 
 def unregister_all_hooks():
