@@ -131,7 +131,7 @@ def _collect_worksets(doc):
     return items
 
 
-def _get_worksharing_info(doc, element, attr_name):
+def _get_ws_info(doc, element, attr_name):
     """Get worksharing info attribute (Creator, LastChangedBy, or Owner)."""
     try:
         if not doc or not element or not doc.IsWorkshared:
@@ -522,8 +522,6 @@ class CustomPropertiesPanel(forms.WPFPanel):
         self.workset_cb.Visibility = workset_visibility
         self.workset_lbl.Visibility = workset_visibility
         self.workset_combo.Visibility = workset_visibility
-        if not has_worksets:
-            self.workset_undo_btn.Visibility = forms.WPF_COLLAPSED
 
         if has_worksets:
             ws_names = [_get_workset_name(doc, e) for e in self._elements]
@@ -531,6 +529,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
             try:
                 self._clear_background(self.workset_combo)
                 self.workset_undo_btn.Tag = self._summarize_values(ws_names)
+                self.workset_undo_btn.Visibility = forms.WPF_COLLAPSED
             except Exception:
                 pass
 
@@ -551,9 +550,9 @@ class CustomPropertiesPanel(forms.WPFPanel):
         self.worksharing_owner_tb.Visibility = worksharing_visibility
 
         if show_worksharing:
-            creator_names = [_get_worksharing_info(doc, e, "Creator") for e in self._elements]
-            last_changed_names = [_get_worksharing_info(doc, e, "LastChangedBy") for e in self._elements]
-            owner_names = [_get_worksharing_info(doc, e, "Owner") for e in self._elements]
+            creator_names = [_get_ws_info(doc, e, "Creator") for e in self._elements]
+            last_changed_names = [_get_ws_info(doc, e, "LastChangedBy") for e in self._elements]
+            owner_names = [_get_ws_info(doc, e, "Owner") for e in self._elements]
 
             self.worksharing_creator_tb.Text = self._summarize_values(creator_names)
             self.worksharing_last_changed_by_tb.Text = self._summarize_values(last_changed_names)
