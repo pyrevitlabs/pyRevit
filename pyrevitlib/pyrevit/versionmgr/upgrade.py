@@ -142,9 +142,8 @@ def remove_leftover_temp_files():
     univ_path = op.dirname(appdata.get_universal_data_file("X", 'bak'))
     if op.exists(univ_path):
         for entry in os.listdir(univ_path):
-            entry_path = op.join(univ_path, entry)
-            if op.isfile(entry_path) and entry.lower().endswith('..bak'):
-                appdata.garbage_data_file(entry_path)
+          if op.isfile(entry) and entry.lower().endswith('..bak'):
+                appdata.garbage_data_file(op.join(univ_path, entry))
 
 
 def upgrade_existing_pyrevit():

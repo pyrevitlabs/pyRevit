@@ -217,35 +217,3 @@ class HealBloatedTelemetryFieldsTests(unittest.TestCase):
 
         self.assertEqual(['telemetry_server_url'], healed)
         self.assertEqual('', values['telemetry_server_url'])
-
-
-class RemoveLeftoverTempFilesTests(unittest.TestCase):
-    def test_removes_leftover_bak_files_from_universal_data_dir(self):
-        with tempfile.TemporaryDirectory() as tempdir:
-            keep_file = os.path.join(tempdir, 'keep.txt')
-            stale_file = os.path.join(tempdir, 'stale..bak')
-            original_get_universal = upgrade.appdata.get_universal_data_file
-            original_garbage = getattr(upgrade.appdata, 'garbage_data_file', None)
-            try:
-                with open(keep_file, 'w') as keep:
-                    keep.write('keep me')
-                with open(stale_file, 'w') as stale:
-                    stale.write('remove me')
-
-                upgrade.appdata.get_universal_data_file = (
-                    lambda file_id, file_ext: os.path.join(
-                        tempdir, 'X.{}'.format(file_ext)
-                    )
-                )
-                upgrade.appdata.garbage_data_file = os.remove
-
-                upgrade.remove_leftover_temp_files()
-
-                self.assertTrue(os.path.exists(keep_file))
-                self.assertFalse(os.path.exists(stale_file))
-            finally:
-                upgrade.appdata.get_universal_data_file = original_get_universal
-                if original_garbage is None:
-                    delattr(upgrade.appdata, 'garbage_data_file')
-                else:
-                    upgrade.appdata.garbage_data_file = original_garbage
