@@ -143,6 +143,18 @@ class PrintUtils:
         return True
 
     @staticmethod
+    def export_combined_pdf(dir_path, sheet_ids, opt, doc, filename):
+        # Combine=True merges every exported sheet into a single PDF named
+        # by FileName, rather than one file per sheet.
+        opt.FileName = op.splitext(filename)[0]
+        opt.Combine = True
+        export_sheets = List[DB.ElementId]()
+        for sheet_id in sheet_ids:
+            export_sheets.Add(sheet_id)
+        doc.Export(dir_path, export_sheets, opt)
+        return True
+
+    @staticmethod
     def export_sheet_dwg(dir_path, sheet, opt, doc, filename):
         base_name = op.splitext(filename)[0]
         dwg_doc_name = base_name + ".dwg"
@@ -969,6 +981,13 @@ class PrintSheetsWindow(forms.WPFWindow):
         return True
 
     def _print_combined_sheets_in_order(self, target_sheets):
+        # The synthetic "Revit Internal Printer" is not a real print driver,
+        # so the print manager cannot combine to it. Export the ordered sheet
+        # set directly so combined output honors the print parameters.
+        if IS_REVIT_2022_OR_NEWER \
+                and self.selected_printer == "Revit Internal Printer":
+            self._export_combined_pdf_internal(target_sheets)
+            return
         # make sure we can access the print config
         print_mgr = self._get_printmanager()
         if not print_mgr:
@@ -1092,6 +1111,31 @@ class PrintSheetsWindow(forms.WPFWindow):
                         rvtsheet.SheetNumber = sheetnum
 
             self._reset_psettings()
+
+    def _export_combined_pdf_internal(self, target_sheets):
+        doc = self.selected_doc
+        dirPath = os.path.join(PrintUtils.get_dir(),
+                               PrintUtils.get_folder("_PRINT"))
+        PrintUtils.ensure_dir(dirPath)
+        PrintUtils.open_dir(dirPath)
+
+        # target_sheets already reflects the user's chosen order, including
+        # the reverse-print toggle. doc.Export honors the order of the viewIds
+        # list, so the sheets are exported as-is with no renumbering.
+        sheet_ids = [x.revit_sheet.Id for x in target_sheets if x.printable]
+        if not sheet_ids:
+            return
+
+        with revit.Transaction('Reload Keynote File', doc=doc):
+            DB.KeynoteTable.GetKeynoteTable(doc).Reload(None)
+
+        optspdf = PrintUtils.pdf_opts(
+            print_params=self.selected_print_setting.print_params)
+        try:
+            PrintUtils.export_combined_pdf(
+                dirPath, sheet_ids, optspdf, doc, "Combined Sheet Set")
+        except Exception as e:
+            logger.error('Failed to export combined PDF: %s', e)
 
     def _print_sheets_in_order(self, target_sheets):
         # make sure we can access the print config
