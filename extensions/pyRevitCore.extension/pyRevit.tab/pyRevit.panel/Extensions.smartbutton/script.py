@@ -11,6 +11,7 @@ from pyrevit import forms
 from pyrevit import EXEC_PARAMS
 from pyrevit import extensions as exts
 import pyrevit.extensions.extpackages as extpkgs
+from pyrevit.coreutils import credentials
 
 from pyrevit.userconfig import user_config, CONSTS
 
@@ -438,7 +439,7 @@ class ExtensionsWindow(forms.WPFWindow):
             # Pre-fill token from stored config if available
             stored_token = ""
             try:
-                stored_token = ext_pkg_item.ext_pkg.config.token or ""
+                stored_token = credentials.get_token(ext_pkg_item.ext_pkg.config_section_name) or ""
             except Exception:
                 pass
             self.custom_token_pb.Password = stored_token
@@ -603,12 +604,14 @@ class ExtensionsWindow(forms.WPFWindow):
                     logger.debug("Could not set config.url for pkg: %s", e)
                 if token:
                     pkg.config.private_repo = True
-                    pkg.config.token = token
+                    credentials.set_token(
+                        self.selected_pkg.ext_pkg.config_section_name, token
+                    )
                 else:
                     # Clear stored token if field is empty
                     try:
                         pkg.config.private_repo = False
-                        pkg.config.token = ""
+                        credentials.delete_token(self.selected_pkg.ext_pkg.config_section_name)
                     except Exception:
                         pass
                 # TODO this reimport is necessary, otherwise it crashes
@@ -635,7 +638,9 @@ class ExtensionsWindow(forms.WPFWindow):
                 token = self.custom_token_pb.Password.strip()
                 if token:
                     self.selected_pkg.ext_pkg.config.private_repo = True
-                    self.selected_pkg.ext_pkg.config.token = token
+                    credentials.set_token(
+                        self.selected_pkg.ext_pkg.config_section_name, token
+                    )
                 extpkgs.install(self.selected_pkg.ext_pkg, dest_path)
                 _ensure_path_registered(dest_path)
                 self._refresh_extension_list()
@@ -710,13 +715,11 @@ class ExtensionsWindow(forms.WPFWindow):
             temp_pkg.url = git_url
             temp_pkg.type = exts.ExtensionTypes.UI_EXTENSION
 
-            # If token was provided, store it in config
+            # If token was provided, encrypt it and mark repo as private
             if token:
                 temp_pkg.config.private_repo = True
-                temp_pkg.config.token = token
-                temp_pkg.config.username = "oauth2"  # for backwards compat - drop later
-                temp_pkg.config.password = token  # for backwards compat - drop later
-                user_config.save_changes()  # i don't like it - drop this later
+                user_config.save_changes()
+                credentials.set_token(temp_pkg.config_section_name, token)
 
             extpkgs.install(temp_pkg, dest_path)
             _ensure_path_registered(dest_path)
