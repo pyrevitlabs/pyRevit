@@ -137,18 +137,20 @@ def _collect_worksets(doc):
     return items
 
 
-def _get_ws_info(doc, element, attr_name):
-    """Get worksharing info attribute (Creator, LastChangedBy, or Owner)."""
+def _get_ws_info(doc, element):
+    """Get Creator, LastChangedBy and Owner."""
     try:
         if not doc or not element or not doc.IsWorkshared:
-            return ""
+            return "", "", ""
         tooltip_info = DB.WorksharingUtils.GetWorksharingTooltipInfo(doc, element.Id)
         if tooltip_info:
-            value = getattr(tooltip_info, attr_name, None)
-            return value or ""
+            creator = tooltip_info.Creator or ""
+            last_changed_by = tooltip_info.LastChangedBy or ""
+            owner = tooltip_info.Owner or ""
+            return creator, last_changed_by, owner
     except Exception:
         pass
-    return ""
+    return "", "", ""
 
 
 def _has_design_options(doc):
@@ -556,13 +558,11 @@ class CustomPropertiesPanel(forms.WPFPanel):
         self.worksharing_owner_tb.Visibility = worksharing_visibility
 
         if show_worksharing:
-            creator_names = [_get_ws_info(doc, e, "Creator") for e in self._elements]
-            last_changed_names = [_get_ws_info(doc, e, "LastChangedBy") for e in self._elements]
-            owner_names = [_get_ws_info(doc, e, "Owner") for e in self._elements]
+            creators, last_changed, owners = zip(*[_get_ws_info(doc, e) for e in self._elements])
 
-            self.worksharing_creator_tb.Text = self._summarize_values(creator_names)
-            self.worksharing_last_changed_by_tb.Text = self._summarize_values(last_changed_names)
-            self.worksharing_owner_tb.Text = self._summarize_values(owner_names)
+            self.worksharing_creator_tb.Text = self._summarize_values(creators)
+            self.worksharing_last_changed_by_tb.Text = self._summarize_values(last_changed)
+            self.worksharing_owner_tb.Text = self._summarize_values(owners)
 
     def _summarize_values(self, values):
         if not values:
