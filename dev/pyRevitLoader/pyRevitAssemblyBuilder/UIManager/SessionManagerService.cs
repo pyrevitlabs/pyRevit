@@ -875,7 +875,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         private static void SetMemberValue(Type targetType, object? instance, string memberName, object? value)
         {
             if (!TrySetMemberValue(targetType, instance, memberName, value))
-                throw new Exception($"Could not find member '{memberName}' on type {targetType.FullName}");
+                throw new MissingMemberException(targetType.FullName, memberName);
         }
 
         internal static bool TrySetMemberValue(Type targetType, object? instance, string memberName, object? value)
