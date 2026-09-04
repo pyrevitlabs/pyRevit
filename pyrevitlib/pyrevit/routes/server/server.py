@@ -64,6 +64,20 @@ EVENT_HNDLR = UI.ExternalEvent.Create(REQUEST_HNDLR)
 class HttpRequestHandler(BaseHTTPRequestHandler):
     """HTTP Requests Handler."""
 
+    def log_message(self, fmt, *args):
+        """Record a request without writing to stderr.
+
+        pyRevit directs stderr to its script output console, a WPF window that
+        can only be created on Revit's STA UI thread. Requests are served on
+        threads that are never STA, so a write here can terminate the Revit
+        process. Request logging must never reach stderr.
+
+        Args:
+            fmt (str): printf-style format string.
+            *args: Values interpolated into ``fmt``.
+        """
+        mlogger.debug(fmt, *args)
+
     def _parse_api_path(self):
         url_parts = urlparse(self.path)
         if url_parts:
@@ -267,13 +281,66 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
 
 
 class ThreadedHttpServer(ThreadingMixIn, HTTPServer):
-    """Threaded HTTP server."""
+    """Threaded HTTP server.
+
+    Requests are served on threads that are never STA, while pyRevit directs
+    stdout and stderr to its script output console, a WPF window that can only
+    be created on Revit's STA UI thread. An exception escaping one of these
+    threads is printed there and terminates the Revit process, so nothing here
+    may write to stderr and no exception may leave a thread.
+    """
 
     allow_reuse_address = True
 
     def shutdown(self):
         self.socket.close()
         HTTPServer.shutdown(self)
+
+    def handle_error(self, request, client_address):
+        """Report a failed request without writing to stderr.
+
+        See the class docstring for why stderr is unsafe here.
+
+        Args:
+            request: The request being processed.
+            client_address (tuple): Client address the request came from.
+        """
+        mlogger.debug(
+            "Routes request error | %s | %s", client_address, traceback.format_exc()
+        )
+
+    def process_request_thread(self, request, client_address):
+        """Serve a request, letting no exception escape the thread.
+
+        Stopping the server closes sockets while requests are still in flight,
+        so the per-request cleanup can raise. The inherited implementation
+        leaves that path unguarded, and an exception escaping here terminates
+        Revit for the reason given in the class docstring.
+
+        Args:
+            request: The request to process.
+            client_address (tuple): Client address the request came from.
+        """
+        try:
+            self.finish_request(request, client_address)
+        except Exception:
+            try:
+                self.handle_error(request, client_address)
+            except Exception:
+                mlogger.debug(
+                    "Routes handle_error failed | %s | %s",
+                    client_address,
+                    traceback.format_exc(),
+                )
+        finally:
+            try:
+                self.shutdown_request(request)
+            except Exception:
+                mlogger.debug(
+                    "Routes request cleanup error | %s | %s",
+                    client_address,
+                    traceback.format_exc(),
+                )
 
 
 class RoutesServer(object):
@@ -302,7 +369,24 @@ class RoutesServer(object):
         return "<RoutesServer @ http://%s:%s>" % (self.host or "0.0.0.0", self.port)
 
     def start(self):
-        self.server_thread = threading.Thread(target=self.server.serve_forever)
+        """Start the accept loop, at most once, on a guarded thread.
+
+        Activation starts each server more than once, which left a second
+        accept loop running against the same socket that nothing tracked and
+        shutdown never joined. The thread is guarded because an exception
+        escaping it terminates Revit; see the ``ThreadedHttpServer`` docstring.
+        """
+        existing = getattr(self, "server_thread", None)
+        if existing is not None and existing.is_alive():
+            return
+
+        def serve_forever_guarded():
+            try:
+                self.server.serve_forever()
+            except Exception:
+                mlogger.debug("Routes server loop exited | %s", traceback.format_exc())
+
+        self.server_thread = threading.Thread(target=serve_forever_guarded)
         self.server_thread.daemon = True
         self.server_thread.start()
 
