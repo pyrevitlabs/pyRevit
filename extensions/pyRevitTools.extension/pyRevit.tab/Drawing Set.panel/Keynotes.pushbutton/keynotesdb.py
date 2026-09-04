@@ -46,13 +46,14 @@ CSI_REGEX = r" \d{2}(\s|[-_.])\d{2}(\s|[-_.])\d{2}"
 
 
 def normalize_keynote_text(value):
-    """Collapse embedded line breaks to a single space for legacy keynote storage."""
+    """Collapse embedded line breaks and tabs to a single space for legacy keynote storage."""
     if value is None:
         return ""
 
     text = str(value)
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     text = re.sub(r"\s*\n\s*", " ", text)
+    text = text.replace("\t", " ")
     return text.strip()
 
 
