@@ -97,7 +97,7 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <!-- Level Navigation Controls -->
-            <GroupBox Grid.Row="0" Margin="0,0,0,10">
+            <GroupBox x:Name="levelNavigationGroup" Grid.Row="0" Margin="0,0,0,10">
                 <GroupBox.Header>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock>🏢</TextBlock>
@@ -324,7 +324,7 @@
             </Grid.RowDefinitions>
             
             <!-- Grid Navigation -->
-            <GroupBox Grid.Row="0" Margin="0,0,0,10">
+            <GroupBox x:Name="gridNavigationGroup" Grid.Row="0" Margin="0,0,0,10">
                 <GroupBox.Header>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock>▦</TextBlock>
@@ -408,7 +408,7 @@
             </GroupBox>
             
             <!-- Expansion Controls -->
-            <GroupBox Grid.Row="1" Margin="0,0,0,10">
+            <GroupBox x:Name="expansionGroup" Grid.Row="1" Margin="0,0,0,10">
                 <GroupBox.Header>
                     <StackPanel Orientation="Horizontal">
                         <TextBlock>⬍</TextBlock>

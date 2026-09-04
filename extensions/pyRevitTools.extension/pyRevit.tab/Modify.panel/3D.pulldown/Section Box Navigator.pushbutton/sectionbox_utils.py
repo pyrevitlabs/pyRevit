@@ -1,3 +1,4 @@
+from pyrevit import revit
 from pyrevit import DB
 from pyrevit.compat import get_elementid_value_func, get_elementid_from_value_func
 from pyrevit.coreutils import math
@@ -8,16 +9,14 @@ get_elementid_from_value = get_elementid_from_value_func()
 
 def is_2d_view(view, only_plan=False):
     """Check if a view is a 2D view (plan, elevation, section)."""
-    view_type = view.ViewType
-    if only_plan:
-        return view_type in (
-            DB.ViewType.FloorPlan,
-            DB.ViewType.CeilingPlan,
-        )
 
-    return view_type in (
-        DB.ViewType.FloorPlan,
-        DB.ViewType.CeilingPlan,
+    if isinstance(view, DB.ViewPlan):
+        return True
+
+    if only_plan:
+        return False
+
+    return view.ViewType in (
         DB.ViewType.Section,
         DB.ViewType.Elevation,
     )
@@ -27,8 +26,8 @@ def get_view_range_and_crop(view, doc):
     """Extract view range and crop box information from a 2D view."""
     view_type = view.ViewType
 
-    # For floor/ceiling plans, use view range
-    if view_type in [DB.ViewType.FloorPlan, DB.ViewType.CeilingPlan]:
+    # For floor, ceiling, ... use view range
+    if isinstance(view, DB.ViewPlan):
         view_range = view.GetViewRange()
         top_level_id = view_range.GetLevelId(DB.PlanViewPlane.TopClipPlane)
         top_offset = view_range.GetOffset(DB.PlanViewPlane.TopClipPlane)
@@ -73,14 +72,17 @@ def get_view_range_and_crop(view, doc):
 
 
 def get_crop_element(doc, view):
-    vid = get_elementid_value(view.Id)
-    expected_name = view.get_Parameter(DB.BuiltInParameter.VIEW_NAME).AsString()
-    cid = vid + 2
-    crop_el = doc.GetElement(get_elementid_from_value(cid))
-    if crop_el:
-        param = crop_el.get_Parameter(DB.BuiltInParameter.VIEW_NAME)
-        if param and param.AsString() == expected_name:
-            return crop_el
+    # https://jeremytammik.github.io/tbc/a/1622_get_crop_box_for_view.html
+    provider = DB.ParameterValueProvider(DB.ElementId(DB.BuiltInParameter.ID_PARAM))
+    rule = DB.FilterElementIdRule(provider, DB.FilterNumericEquals(), view.Id)
+    param_filter = DB.ElementParameterFilter(rule)
+    collector = (
+        DB.FilteredElementCollector(doc).WherePasses(param_filter).ToElementIds()
+    )
+    if collector:
+        for id in collector:
+            if id != view.Id:
+                return doc.GetElement(id)
 
 
 def compute_rotation_angle(section_box, view):
@@ -94,6 +96,142 @@ def compute_rotation_angle(section_box, view):
 
     # rotation needed to align view to box
     return angle_box - angle_view
+
+
+def align_crop_by_transform(doc, view, section_box):
+    """
+    Align a plan view to a 3D section box by moving and rotating
+    the view's crop element. This rotates plan, so it no longer faces
+    Project North.
+
+    Returns:
+        bool: True if the crop element was successfully aligned.
+    """
+    with revit.Transaction("Align 2D View to 3D Section Box - Plan"):
+        crop_el = get_crop_element(doc, view)
+        if not crop_el:
+            return False
+
+        # Get the actual four corners of the section box footprint.
+        world_corners = get_section_box_footprint(section_box)
+
+        # The center of the section box footprint in world coordinates.
+        sb_centroid = DB.XYZ(
+            sum(point.X for point in world_corners) / 4.0,
+            sum(point.Y for point in world_corners) / 4.0,
+            0,
+        )
+
+        # Get the current crop element center.
+        crop_box = crop_el.get_BoundingBox(view)
+        crop_centroid = DB.XYZ(
+            (crop_box.Min.X + crop_box.Max.X) / 2.0,
+            (crop_box.Min.Y + crop_box.Max.Y) / 2.0,
+            0,
+        )
+
+        # Move crop element so its center matches the section box center.
+        translation = sb_centroid - crop_centroid
+
+        DB.ElementTransformUtils.MoveElement(
+            doc,
+            crop_el.Id,
+            translation,
+        )
+
+        # Rotate crop element around the section box center.
+        angle = compute_rotation_angle(
+            section_box,
+            view,
+        )
+
+        axis = DB.Line.CreateBound(
+            DB.XYZ(sb_centroid.X, sb_centroid.Y, 0),
+            DB.XYZ(sb_centroid.X, sb_centroid.Y, 1),
+        )
+
+        DB.ElementTransformUtils.RotateElement(
+            doc,
+            crop_el.Id,
+            axis,
+            angle,
+        )
+
+        align_crop_by_shape(doc, view, section_box)
+
+    return True
+
+
+def align_crop_by_shape(doc, view, section_box):
+    """
+    Align a plan view to a 3D section box by setting the crop region
+    to the section box's world-space footprint.
+
+    Returns:
+        bool: True if a custom crop shape was successfully applied.
+    """
+    with revit.Transaction("Align 2D View to 3D Section Box - Shape"):
+        world_corners = get_section_box_footprint(section_box)
+
+        crsm = view.GetCropRegionShapeManager()
+
+        if not crsm or not crsm.CanHaveShape:
+            # This view does not support custom crop shapes.
+            # Preserve the previous fallback behavior.
+            view.CropBox = section_box
+
+            apply_plan_viewrange_from_sectionbox(
+                doc,
+                view,
+                section_box,
+            )
+
+            return False
+
+        loop = DB.CurveLoop()
+
+        for i in range(4):
+            loop.Append(
+                DB.Line.CreateBound(
+                    world_corners[i],
+                    world_corners[(i + 1) % 4],
+                )
+            )
+
+        crsm.SetCropShape(loop)
+
+        apply_plan_viewrange_from_sectionbox(
+            doc,
+            view,
+            section_box,
+        )
+
+    return True
+
+
+def get_section_box_footprint(section_box):
+    """
+    Return the four world-space corners of a section box's XY footprint.
+
+    The corners are returned in perimeter order.
+    """
+    tf = section_box.Transform
+    min_pt = section_box.Min
+    max_pt = section_box.Max
+
+    local_corners = [
+        DB.XYZ(min_pt.X, min_pt.Y, 0),
+        DB.XYZ(max_pt.X, min_pt.Y, 0),
+        DB.XYZ(max_pt.X, max_pt.Y, 0),
+        DB.XYZ(min_pt.X, max_pt.Y, 0),
+    ]
+
+    world_corners = [tf.OfPoint(corner) for corner in local_corners]
+
+    # A plan crop shape should be planar.
+    z = world_corners[0].Z
+
+    return [DB.XYZ(point.X, point.Y, z) for point in world_corners]
 
 
 def apply_plan_viewrange_from_sectionbox(doc, view, section_box):
@@ -140,14 +278,41 @@ def apply_plan_viewrange_from_sectionbox(doc, view, section_box):
     view.SetViewRange(vr)
 
 
-def to_world_identity(bbox):
-    t = bbox.Transform
+def section_box_from_crop(crop_box):
+    """Build a section box that reproduces a section/elevation crop.
 
-    p1 = t.OfPoint(bbox.Min)
-    p2 = t.OfPoint(bbox.Max)
+    SetSectionBox only supports yaw rotation: it expects Transform.BasisZ
+    to be world-up (0,0,1), with BasisX/BasisY horizontal. A section or
+    elevation view's own CropBox.Transform uses a different convention
+    -- BasisY is the vertical "view up" and BasisZ is the horizontal
+    view direction -- so copying it straight through gets its vertical
+    and horizontal roles swapped by SetSectionBox (the box ends up
+    "on its side"). Instead, build a proper yaw-only frame from the
+    view's horizontal right vector, and remap Min/Max onto it: the
+    view's vertical extent (old local Y) becomes the new local Z, and
+    the view's depth extent (old local Z) becomes the new local Y.
+
+    Assumes crop_box.Transform.BasisY is world-up, which holds for any
+    normal (non-tilted) Section or Elevation view -- those view types
+    are always vertical cutting planes in Revit.
+    """
+    t = crop_box.Transform
+    min_pt = crop_box.Min
+    max_pt = crop_box.Max
+
+    up = DB.XYZ.BasisZ
+    right = t.BasisX
+    forward = up.CrossProduct(right)
+
+    new_transform = DB.Transform.Identity
+    new_transform.Origin = t.Origin
+    new_transform.BasisX = right
+    new_transform.BasisY = forward
+    new_transform.BasisZ = up
 
     new_box = DB.BoundingBoxXYZ()
-    new_box.Transform = DB.Transform.Identity
-    new_box.Min = DB.XYZ(min(p1.X, p2.X), min(p1.Y, p2.Y), min(p1.Z, p2.Z))
-    new_box.Max = DB.XYZ(max(p1.X, p2.X), max(p1.Y, p2.Y), max(p1.Z, p2.Z))
+    new_box.Transform = new_transform
+    new_box.Min = DB.XYZ(min_pt.X, -max_pt.Z, min_pt.Y)
+    new_box.Max = DB.XYZ(max_pt.X, -min_pt.Z, max_pt.Y)
+
     return new_box
