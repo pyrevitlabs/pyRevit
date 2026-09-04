@@ -862,7 +862,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 ? "{\"clean\": false, \"full_frame\": true, \"persistent\": true}"
                 : "{\"clean\": true, \"full_frame\": true, \"persistent\": true}";
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "EngineConfigs", engineConfigsJson);
-            SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "SharedSessionEngine", sharedSessionEngine);
+            TrySetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "SharedSessionEngine", sharedSessionEngine);
 
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "RefreshEngine", false);
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "ConfigMode", false);
@@ -874,24 +874,30 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
         private static void SetMemberValue(Type targetType, object? instance, string memberName, object? value)
         {
+            if (!TrySetMemberValue(targetType, instance, memberName, value))
+                throw new Exception($"Could not find member '{memberName}' on type {targetType.FullName}");
+        }
+
+        internal static bool TrySetMemberValue(Type targetType, object? instance, string memberName, object? value)
+        {
             if (instance == null)
                 throw new ArgumentNullException(nameof(instance));
-                
+
             var property = targetType.GetProperty(memberName, BindingFlags.Public | BindingFlags.Instance);
             if (property != null)
             {
                 property.SetValue(instance, value);
-                return;
+                return true;
             }
 
             var field = targetType.GetField(memberName, BindingFlags.Public | BindingFlags.Instance);
             if (field != null)
             {
                 field.SetValue(instance, value);
-                return;
+                return true;
             }
 
-            throw new Exception($"Could not find member '{memberName}' on type {targetType.FullName}");
+            return false;
         }
 
         private bool DirectoryExistsCached(string path)
