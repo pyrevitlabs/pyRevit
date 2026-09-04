@@ -573,7 +573,7 @@ class EditRecordWindow(forms.WPFWindow):
 
     @active_text.setter
     def active_text(self, value):
-        self.recordText.Text = (value or "").strip()
+        self.recordText.Text = kdb.normalize_keynote_text(value)
 
     @property
     def active_parent_key(self):
