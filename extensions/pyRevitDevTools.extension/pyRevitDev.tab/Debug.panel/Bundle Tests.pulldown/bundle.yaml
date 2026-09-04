@@ -3,6 +3,7 @@ layout:
   - Test pyRevit Bundle
   - Test pyRevit Button
   - Test Smart Button
+  - Test Reload Icon Toggle
   - Test C# Script
   - Test Direct Invoke
   - Test Direct Invoke (ExecParams)
