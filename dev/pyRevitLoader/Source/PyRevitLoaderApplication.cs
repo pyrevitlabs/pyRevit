@@ -87,6 +87,7 @@ namespace PyRevitLoader
 				if (result == Result.Succeeded)
 				{
 					_themeChangeMonitor.SetSessionReady();
+					UiHostIntegration.Start(LoaderPath);
 				}
 				else
 				{
@@ -199,6 +200,7 @@ namespace PyRevitLoader
 
 		Result IExternalApplication.OnShutdown(UIControlledApplication application)
 		{
+			UiHostIntegration.Stop();
 			DisposeThemeChangeMonitor();
 			// FIXME: deallocate the python shell...
 			return Result.Succeeded;
