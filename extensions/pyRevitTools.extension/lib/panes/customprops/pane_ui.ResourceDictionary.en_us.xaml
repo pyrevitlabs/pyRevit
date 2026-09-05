@@ -9,6 +9,12 @@
     <system:String x:Key="LblDesignOption">Design Option</system:String>
     <system:String x:Key="ChkDesignOption.Tooltip">Design Option is read-only</system:String>
     <system:String x:Key="TbDesignOption.Tooltip">Read-only. Design option membership cannot be changed via the API.</system:String>
+    <system:String x:Key="LblCreator">Created By</system:String>
+    <system:String x:Key="TbCreator.Tooltip">User who created the element.</system:String>
+    <system:String x:Key="LblLastChangedBy">Last Changed By</system:String>
+    <system:String x:Key="TbLastChangedBy.Tooltip">User who last modified the element.</system:String>
+    <system:String x:Key="LblOwner">Owner</system:String>
+    <system:String x:Key="TbOwner.Tooltip">Current worksharing owner for the element.</system:String>
 
     <!-- Parameters section -->
     <system:String x:Key="LblParameters">Parameters</system:String>

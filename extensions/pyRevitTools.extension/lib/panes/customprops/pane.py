@@ -8,7 +8,7 @@ All other parameters are user-configured via the config dialog.
 
 import os.path as op
 
-from pyrevit import forms, HOST_APP, framework, revit
+from pyrevit import forms, HOST_APP, framework, revit, script
 from pyrevit import DB, UI
 from pyrevit.revit import is_yesno_parameter, query
 from pyrevit.revit.events import execute_in_revit_context
@@ -37,17 +37,44 @@ _DIRTY_BRUSH = SolidColorBrush(Color.FromArgb(255, 255, 250, 205))
 # ---------------------------------------------------------------------------
 
 
-def get_additional_param_names():
-    """Return list of extra parameter names from user config."""
-    try:
-        user_config.reload()
-        if not user_config.has_section(CONFIG_SECTION):
-            return []
-        section = getattr(user_config, CONFIG_SECTION)
-        raw = section.get_option("additional_parameters", "")
-        return [p.strip() for p in raw.splitlines() if p.strip()]
-    except Exception:
-        return []
+_HEADER_PREFIX = "#"
+
+
+def get_pane_config():
+    """Reload user config and return (entries, show_worksharing_info).
+    First call caches data, subsequent calls use the cached data.
+
+    entries is a list of ("param", name) / ("header", text) tuples, parsed
+    from the "additional_parameters" option. A line starting with the
+    header prefix ("#") is a section header/separator instead of a
+    parameter name; any text after the prefix becomes its label, or the
+    line renders as a plain separator if nothing follows it.
+    """
+    raw = script.get_envvar(CONFIG_SECTION)
+    show_worksharing = bool(script.get_envvar(CONFIG_SECTION+"_ws_info"))
+    if not raw:
+        try:
+            user_config.reload()
+            if not user_config.has_section(CONFIG_SECTION):
+                return [], True
+            section = getattr(user_config, CONFIG_SECTION)
+            raw = section.get_option("additional_parameters", "")
+            show_worksharing = bool(section.get_option("show_worksharing_info", True))
+            script.set_envvar(CONFIG_SECTION, raw)
+            script.set_envvar(CONFIG_SECTION+"_ws_info", show_worksharing)
+        except Exception:
+            return [], True
+
+    entries = []
+    for line in raw.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        if line.startswith(_HEADER_PREFIX):
+            entries.append(("header", line[len(_HEADER_PREFIX):].strip()))
+        else:
+            entries.append(("param", line))
+    return entries, show_worksharing
 
 
 # ---------------------------------------------------------------------------
@@ -108,6 +135,38 @@ def _collect_worksets(doc):
         pass
     items.sort(key=lambda t: t[0])
     return items
+
+
+def _get_ws_info(doc, element):
+    """Get Creator, LastChangedBy and Owner."""
+    try:
+        if not doc or not element or not doc.IsWorkshared:
+            return "", "", ""
+        tooltip_info = DB.WorksharingUtils.GetWorksharingTooltipInfo(doc, element.Id)
+        if tooltip_info:
+            creator = tooltip_info.Creator or ""
+            last_changed_by = tooltip_info.LastChangedBy or ""
+            owner = tooltip_info.Owner or ""
+            return creator, last_changed_by, owner
+    except Exception:
+        pass
+    return "", "", ""
+
+
+def _has_design_options(doc):
+    """Check if document has any design options."""
+    try:
+        if not doc:
+            return False
+        sets = (
+            DB.FilteredElementCollector(doc)
+            .OfCategory(DB.BuiltInCategory.OST_DesignOptionSets)
+            .WhereElementIsNotElementType()
+            .ToElements()
+        )
+        return len(sets) > 0
+    except Exception:
+        return False
 
 
 # ---------------------------------------------------------------------------
@@ -229,6 +288,9 @@ class CustomPropertiesPanel(forms.WPFPanel):
 
         self._copy_clipboard = []  # list of PropKeyValue
         self._suppress_dirty = False
+
+        self._param_entries = []  # [("param", name) | ("header", text), ...]
+        self._show_worksharing_info = True
 
         try:
             self._varies = self.get_locale_string("Varies")
@@ -392,6 +454,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
                     self.get_locale_string("StatusOneElement") if count == 1
                     else self.get_locale_string("StatusElements").format(count)
                 )
+                self._param_entries, self._show_worksharing_info = get_pane_config()
                 self._show_fixed()
                 self._show_params()
         finally:
@@ -404,37 +467,113 @@ class CustomPropertiesPanel(forms.WPFPanel):
         try:
             self.workset_combo.Text = ""
             self.design_option_tb.Text = ""
+            self.worksharing_creator_tb.Text = ""
+            self.worksharing_last_changed_by_tb.Text = ""
+            self.worksharing_owner_tb.Text = ""
             self.additional_panel.Children.Clear()
+
+            # Reset visibility to default (collapsed)
+            self.fixed_params_separator.Visibility = forms.WPF_COLLAPSED
+            self.fixed_params_grid.Visibility = forms.WPF_COLLAPSED
+            self.design_option_lbl.Visibility = forms.WPF_COLLAPSED
+            self.design_option_tb.Visibility = forms.WPF_COLLAPSED
+            self.workset_cb.Visibility = forms.WPF_COLLAPSED
+            self.workset_lbl.Visibility = forms.WPF_COLLAPSED
+            self.workset_combo.Visibility = forms.WPF_COLLAPSED
+            self.workset_undo_btn.Visibility = forms.WPF_COLLAPSED
+            self.worksharing_separator.Visibility = forms.WPF_COLLAPSED
+            self.worksharing_creator_lbl.Visibility = forms.WPF_COLLAPSED
+            self.worksharing_creator_tb.Visibility = forms.WPF_COLLAPSED
+            self.worksharing_last_changed_by_lbl.Visibility = forms.WPF_COLLAPSED
+            self.worksharing_last_changed_by_tb.Visibility = forms.WPF_COLLAPSED
+            self.worksharing_owner_lbl.Visibility = forms.WPF_COLLAPSED
+            self.worksharing_owner_tb.Visibility = forms.WPF_COLLAPSED
         finally:
             self._suppress_dirty = False
         try:
             self._clear_background(self.workset_combo)
-            self.workset_undo_btn.Visibility = forms.WPF_COLLAPSED
         except Exception:
             pass
 
     def _show_fixed(self):
         doc = self._doc
 
-        ws_names = [_get_workset_name(doc, e) for e in self._elements]
-        self._set_combo_value(self.workset_combo, ws_names)
-        try:
-            self._clear_background(self.workset_combo)
-            unique_ws = list(set(ws_names))
-            self.workset_undo_btn.Tag = unique_ws[0] if len(unique_ws) == 1 else self._varies
-            self.workset_undo_btn.Visibility = forms.WPF_COLLAPSED
-        except Exception:
-            pass
+        has_design_options = _has_design_options(doc)
+        has_worksets = bool(self._worksets)
 
+        # If neither design options nor worksets exist, hide the entire grid row
+        if not has_design_options and not has_worksets:
+            self.fixed_params_separator.Visibility = forms.WPF_COLLAPSED
+            self.fixed_params_grid.Visibility = forms.WPF_COLLAPSED
+            return
+
+        self.fixed_params_separator.Visibility = forms.WPF_VISIBLE
+        self.fixed_params_grid.Visibility = forms.WPF_VISIBLE
+
+        # Design Option row — show only if design options exist
+        design_option_visibility = (
+            forms.WPF_VISIBLE
+            if has_design_options
+            else forms.WPF_COLLAPSED
+        )
+        self.design_option_lbl.Visibility = design_option_visibility
+        self.design_option_tb.Visibility = design_option_visibility
         do_names = [_get_design_option_name(e, self._main_model) for e in self._elements]
-        unique = list(set(do_names))
-        self.design_option_tb.Text = unique[0] if len(unique) == 1 else self._varies
+        self.design_option_tb.Text = self._summarize_values(do_names)
+
+        # Workset info row — show only if worksets exist
+        workset_visibility = (
+            forms.WPF_VISIBLE
+            if has_worksets
+            else forms.WPF_COLLAPSED
+        )
+        self.workset_cb.Visibility = workset_visibility
+        self.workset_lbl.Visibility = workset_visibility
+        self.workset_combo.Visibility = workset_visibility
+
+        if has_worksets:
+            ws_names = [_get_workset_name(doc, e) for e in self._elements]
+            self._set_combo_value(self.workset_combo, ws_names)
+            try:
+                self._clear_background(self.workset_combo)
+                self.workset_undo_btn.Tag = self._summarize_values(ws_names)
+                self.workset_undo_btn.Visibility = forms.WPF_COLLAPSED
+            except Exception:
+                pass
+
+        # Worksharing info rows — show only if worksets exist and the user
+        # has not disabled them via the config window
+        show_worksharing = has_worksets and self._show_worksharing_info
+        worksharing_visibility = (
+            forms.WPF_VISIBLE
+            if show_worksharing
+            else forms.WPF_COLLAPSED
+        )
+        self.worksharing_separator.Visibility = worksharing_visibility
+        self.worksharing_creator_lbl.Visibility = worksharing_visibility
+        self.worksharing_creator_tb.Visibility = worksharing_visibility
+        self.worksharing_last_changed_by_lbl.Visibility = worksharing_visibility
+        self.worksharing_last_changed_by_tb.Visibility = worksharing_visibility
+        self.worksharing_owner_lbl.Visibility = worksharing_visibility
+        self.worksharing_owner_tb.Visibility = worksharing_visibility
+
+        if show_worksharing:
+            creators, last_changed, owners = zip(*[_get_ws_info(doc, e) for e in self._elements])
+
+            self.worksharing_creator_tb.Text = self._summarize_values(creators)
+            self.worksharing_last_changed_by_tb.Text = self._summarize_values(last_changed)
+            self.worksharing_owner_tb.Text = self._summarize_values(owners)
+
+    def _summarize_values(self, values):
+        if not values:
+            return ""
+        unique = list(set(values))
+        return unique[0] if len(unique) == 1 else self._varies
 
     def _set_combo_value(self, combo, values):
         self._suppress_dirty = True
         try:
-            unique = list(set(values))
-            text = unique[0] if len(unique) == 1 else self._varies
+            text = self._summarize_values(values)
             idx = combo.Items.IndexOf(text)
             if idx >= 0:
                 combo.SelectedIndex = idx
@@ -448,12 +587,15 @@ class CustomPropertiesPanel(forms.WPFPanel):
 
     def _show_params(self):
         self.additional_panel.Children.Clear()
-        param_names = get_additional_param_names()
-        if not param_names:
+        entries = self._param_entries
+        if not entries:
             return
         doc = self._doc
-        for pname in param_names:
-            row = self._make_param_row(pname, doc)
+        for kind, value in entries:
+            if kind == "header":
+                row = self._make_header_row(value)
+            else:
+                row = self._make_param_row(value, doc)
             if row is not None:
                 self.additional_panel.Children.Add(row)
 
@@ -529,7 +671,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
         elif opaque_int_param:
             tooltip = self.get_locale_string("TooltipParamOpaque")
 
-        text = "" if missing_param else (vals[0] if len(set(vals)) == 1 else self._varies)
+        text = "" if missing_param else self._summarize_values(vals)
         sel_readonly = readonly_param or missing_param
         return self._build_text_row(
             param_name, text, readonly=readonly, tooltip=tooltip, sel_readonly=sel_readonly
@@ -566,6 +708,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
         current_names = []
         ref_class = None
         ref_bic = None
+        has_invalid = False
 
         for e in self._elements:
             try:
@@ -574,7 +717,12 @@ class CustomPropertiesPanel(forms.WPFPanel):
                     continue
 
                 eid = p.AsElementId()
+
                 if eid == DB.ElementId.InvalidElementId:
+                    has_invalid = True
+                    current_names.append(
+                        e.Name if hasattr(e, "Name") else ""
+                    )
                     continue
 
                 ref_el = doc.GetElement(eid)
@@ -623,6 +771,9 @@ class CustomPropertiesPanel(forms.WPFPanel):
                 pass
 
         grid, _, sel_cb, undo_btn = self._make_row_grid(param_name, readonly=False)
+        if has_invalid and not options:
+            sel_cb.IsEnabled = False
+            return grid
         combo = framework.Controls.ComboBox()
         combo.Height = 22
         combo.FontSize = 11
@@ -635,7 +786,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
             combo.Items.Add(opt)
 
         unique = list(set(current_names))
-        original_text = unique[0] if len(unique) == 1 else self._varies
+        original_text = self._summarize_values(current_names)
         self._suppress_dirty = True
         try:
             if len(unique) == 1:
@@ -662,6 +813,29 @@ class CustomPropertiesPanel(forms.WPFPanel):
             self._mark_field_dirty(sender)
 
     # ── row / grid builders ───────────────────────────────────────────────────
+
+    def _make_header_row(self, text):
+        """Build a non-interactive separator row for the parameters list.
+
+        Not selectable, not copyable/pasteable, and never sent to Apply —
+        the existing row-scanning helpers only act on rows that pair a
+        TextBlock label with a value field, which this row never has.
+        """
+        panel = framework.Controls.StackPanel()
+        panel.Margin = framework.Windows.Thickness(0, 10, 0, 4)
+        if text:
+            lbl = framework.Controls.TextBlock()
+            lbl.Text = text
+            lbl.FontSize = 11
+            lbl.FontWeight = framework.Windows.FontWeights.SemiBold
+            lbl.Foreground = SolidColorBrush(Color.FromArgb(255, 0x55, 0x55, 0x55))
+            lbl.Margin = framework.Windows.Thickness(0, 0, 0, 3)
+            panel.Children.Add(lbl)
+        line = framework.Controls.Border()
+        line.Height = 1
+        line.Background = SolidColorBrush(Color.FromArgb(255, 0xDD, 0xDD, 0xDD))
+        panel.Children.Add(line)
+        return panel
 
     def _make_row_grid(self, param_name, readonly=False, sel_readonly=None):
         """Return (grid, label, sel_checkbox, undo_button). Caller puts field in col 2."""
@@ -754,13 +928,13 @@ class CustomPropertiesPanel(forms.WPFPanel):
         self._set_background(field, _DIRTY_BRUSH)
         try:
             if field is self.workset_combo:
-                self.workset_undo_btn.Visibility = framework.Windows.Visibility.Visible
+                self.workset_undo_btn.Visibility = forms.WPF_VISIBLE
             else:
                 parent = getattr(field, "Parent", None)
                 if parent is not None:
                     for child in parent.Children:
                         if isinstance(child, framework.Controls.Button):
-                            child.Visibility = framework.Windows.Visibility.Visible
+                            child.Visibility = forms.WPF_VISIBLE
                             break
         except Exception:
             pass

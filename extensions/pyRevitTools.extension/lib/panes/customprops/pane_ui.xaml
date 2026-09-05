@@ -58,10 +58,12 @@
                    Foreground="#666666"
                    Margin="0,0,0,4"/>
 
-        <Border Grid.Row="1" Style="{StaticResource Separator}"/>
+        <Border x:Name="fixed_params_separator"
+              Grid.Row="1" Style="{StaticResource Separator}"/>
 
-        <!-- Row 2: Fixed params (Workset + Design Option) with selection checkboxes -->
-        <Grid Grid.Row="2">
+        <!-- Row 2: Fixed params (Workset + Design Option + Worksharing) -->
+        <Grid x:Name="fixed_params_grid"
+              Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="20"/>
                 <ColumnDefinition Width="100"/>
@@ -71,6 +73,10 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
             <CheckBox x:Name="workset_cb"
@@ -78,7 +84,8 @@
                       VerticalAlignment="Center"
                       ToolTip="{DynamicResource ChkWorkset.Tooltip}"/>
 
-            <TextBlock Grid.Row="0" Grid.Column="1"
+            <TextBlock x:Name="workset_lbl"
+                       Grid.Row="0" Grid.Column="1"
                        Text="{DynamicResource LblWorkset}"
                        Style="{StaticResource LabelStyle}"/>
             <ComboBox x:Name="workset_combo"
@@ -96,19 +103,51 @@
                     Visibility="Collapsed"
                     ToolTip="{DynamicResource TooltipUndo}"/>
 
-            <CheckBox x:Name="design_option_cb"
-                      Grid.Row="1" Grid.Column="0"
-                      VerticalAlignment="Center"
-                      IsEnabled="False"
-                      ToolTip="{DynamicResource ChkDesignOption.Tooltip}"/>
 
-            <TextBlock Grid.Row="1" Grid.Column="1"
+            <TextBlock x:Name="design_option_lbl"
+                       Grid.Row="1" Grid.Column="1"
                        Text="{DynamicResource LblDesignOption}"
+                       Margin="0,8,8,0"
                        Style="{StaticResource LabelStyle}"/>
             <TextBlock x:Name="design_option_tb"
                        Grid.Row="1" Grid.Column="2"
+                       Margin="0,8,0,0"
                        Style="{StaticResource ReadOnlyLabel}"
                        ToolTip="{DynamicResource TbDesignOption.Tooltip}"/>
+
+            <!-- Thin divider separating Design Option from the worksharing tooltip info group -->
+            <Border x:Name="worksharing_separator"
+                    Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"
+                    Height="1"
+                    Background="#DDDDDD"
+                    Margin="0,8,0,6"/>
+
+            <TextBlock x:Name="worksharing_creator_lbl"
+                       Grid.Row="3" Grid.Column="1"
+                       Text="{DynamicResource LblCreator}"
+                       Style="{StaticResource LabelStyle}"/>
+            <TextBlock x:Name="worksharing_creator_tb"
+                       Grid.Row="3" Grid.Column="2"
+                       Style="{StaticResource ReadOnlyLabel}"
+                       ToolTip="{DynamicResource TbCreator.Tooltip}"/>
+
+            <TextBlock x:Name="worksharing_last_changed_by_lbl"
+                       Grid.Row="4" Grid.Column="1"
+                       Text="{DynamicResource LblLastChangedBy}"
+                       Style="{StaticResource LabelStyle}"/>
+            <TextBlock x:Name="worksharing_last_changed_by_tb"
+                       Grid.Row="4" Grid.Column="2"
+                       Style="{StaticResource ReadOnlyLabel}"
+                       ToolTip="{DynamicResource TbLastChangedBy.Tooltip}"/>
+
+            <TextBlock x:Name="worksharing_owner_lbl"
+                       Grid.Row="5" Grid.Column="1"
+                       Text="{DynamicResource LblOwner}"
+                       Style="{StaticResource LabelStyle}"/>
+            <TextBlock x:Name="worksharing_owner_tb"
+                       Grid.Row="5" Grid.Column="2"
+                       Style="{StaticResource ReadOnlyLabel}"
+                       ToolTip="{DynamicResource TbOwner.Tooltip}"/>
         </Grid>
 
         <Border Grid.Row="3" Style="{StaticResource Separator}"/>

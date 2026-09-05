@@ -9,6 +9,12 @@
     <system:String x:Key="LblDesignOption">设计选项</system:String>
     <system:String x:Key="ChkDesignOption.Tooltip">设计选项为只读</system:String>
     <system:String x:Key="TbDesignOption.Tooltip">只读。无法通过 API 更改设计选项的成员关系。</system:String>
+    <system:String x:Key="LblCreator">创建者</system:String>
+    <system:String x:Key="TbCreator.Tooltip">创建该元素的用户。</system:String>
+    <system:String x:Key="LblLastChangedBy">上次修改人</system:String>
+    <system:String x:Key="TbLastChangedBy.Tooltip">上次修改该元素的用户。</system:String>
+    <system:String x:Key="LblOwner">所有者</system:String>
+    <system:String x:Key="TbOwner.Tooltip">该元素的当前worksharing所有者。</system:String>
 
     <!-- 参数区域 -->
     <system:String x:Key="LblParameters">参数</system:String>
