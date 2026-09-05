@@ -30,11 +30,11 @@ if (-not (Test-Path $deployedHostRuntimeConfig)) { throw "Deployed host runtime 
 if (-not (Test-Path $probeDll)) { throw "Probe DLL not found: $probeDll" }
 
 Write-Host '[UI-SMOKE] building Revit 2024 loader integration'
-dotnet build $loaderProject -c Release -f net48 -p:RevitVersion=2024 -p:SkipPyRevitDeploy=true
+dotnet build $loaderProject -c Release -p:TargetFrameworks=net48 -p:RevitVersion=2024 -p:SkipPyRevitDeploy=true
 if ($LASTEXITCODE -ne 0) { throw 'Revit 2024 loader build failed.' }
 
 Write-Host '[UI-SMOKE] building Revit 2026 loader integration'
-dotnet build $loaderProject -c Release -f net8.0-windows -p:RevitVersion=2026 -p:SkipPyRevitDeploy=true
+dotnet build $loaderProject -c Release -p:TargetFrameworks=net8.0-windows -p:RevitVersion=2026 -p:SkipPyRevitDeploy=true
 if ($LASTEXITCODE -ne 0) { throw 'Revit 2026 loader build failed.' }
 
 Write-Host "[UI-SMOKE] running launcher probe pipe=$pipeName log=$logPath"
