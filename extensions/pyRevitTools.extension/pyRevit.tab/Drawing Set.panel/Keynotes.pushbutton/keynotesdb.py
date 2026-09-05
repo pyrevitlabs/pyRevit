@@ -45,6 +45,18 @@ EDIT_MODE_EDIT_KEYNOTE = "edit-keynote"
 CSI_REGEX = r" \d{2}(\s|[-_.])\d{2}(\s|[-_.])\d{2}"
 
 
+def normalize_keynote_text(value):
+    """Collapse embedded line breaks and tabs to a single space for legacy keynote storage."""
+    if value is None:
+        return ""
+
+    text = str(value)
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    text = re.sub(r"\s*\n\s*", " ", text)
+    text = text.replace("\t", " ")
+    return text.strip()
+
+
 class RKeynoteFilter(object):
     """Keynote smart filter."""
 
@@ -146,7 +158,7 @@ class RKeynote(object):
         self, key, text, parent_key=None, locked=False, owner=None, children=None
     ):
         self.key = key
-        self.text = text
+        self.text = normalize_keynote_text(text)
         self.parent_key = parent_key or ""
         self.locked = locked
         self.owner = owner or ""
@@ -491,11 +503,13 @@ def release_key(conn, key, category=False):
 
 
 def add_category(conn, key, text):
+    text = normalize_keynote_text(text)
     conn.InsertRecord(KEYNOTES_DB, CATEGORIES_TABLE, key, {CATEGORY_TITLE_FIELD: text})
     return RKeynote(key=key, text=text)
 
 
 def update_category_title(conn, key, new_title):
+    new_title = normalize_keynote_text(new_title)
     conn.UpdateRecord(
         KEYNOTES_DB, CATEGORIES_TABLE, key, {CATEGORY_TITLE_FIELD: new_title}
     )
@@ -517,6 +531,7 @@ def remove_category(conn, key):
 
 
 def add_keynote(conn, key, text, parent_key):
+    text = normalize_keynote_text(text)
     conn.InsertRecord(
         KEYNOTES_DB,
         KEYNOTES_TABLE,
@@ -535,6 +550,7 @@ def mark_keynote_under_edited(conn, key):
 
 
 def update_keynote_text(conn, key, text):
+    text = normalize_keynote_text(text)
     conn.UpdateRecord(KEYNOTES_DB, KEYNOTES_TABLE, key, {KEYNOTES_TEXT_FIELD: text})
 
 
@@ -709,18 +725,28 @@ def export_legacy_keynotes(conn, dest_legacy_keynotes_file, include_keys=None):
         with codecs.open(dest_legacy_keynotes_file, "w", "utf_16") as lkfile:
             for cat in categories:
                 if cat.key in include_keys:
-                    lkfile.write("{}\t{}\n".format(cat.key, cat.text))
+                    lkfile.write(
+                        "{}\t{}\n".format(cat.key, normalize_keynote_text(cat.text))
+                    )
             for knote in keynotes:
                 if knote.key in include_keys:
                     lkfile.write(
-                        "{}\t{}\t{}\n".format(knote.key, knote.text, knote.parent_key)
+                        "{}\t{}\t{}\n".format(
+                            knote.key,
+                            normalize_keynote_text(knote.text),
+                            knote.parent_key,
+                        )
                     )
 
     else:
         with codecs.open(dest_legacy_keynotes_file, "w", "utf_16") as lkfile:
             for cat in categories:
-                lkfile.write("{}\t{}\n".format(cat.key, cat.text))
+                lkfile.write("{}\t{}\n".format(cat.key, normalize_keynote_text(cat.text)))
             for knote in keynotes:
                 lkfile.write(
-                    "{}\t{}\t{}\n".format(knote.key, knote.text, knote.parent_key)
+                    "{}\t{}\t{}\n".format(
+                        knote.key,
+                        normalize_keynote_text(knote.text),
+                        knote.parent_key,
+                    )
                 )
