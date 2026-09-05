@@ -1,4 +1,5 @@
 using pyRevitAssemblyBuilder.SessionManager;
+using NUnit.Framework;
 
 namespace pyRevitExtensionParserTester
 {
