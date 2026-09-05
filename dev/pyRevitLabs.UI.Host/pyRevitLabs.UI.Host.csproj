@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>pyrevit-ui-host</AssemblyName>
+    <RootNamespace>PyRevitLabs.UI.Host</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\pyRevitLabs.UI.Protocol\pyRevitLabs.UI.Protocol.csproj" />
+  </ItemGroup>
+  <Target Name="DeployUiHost" AfterTargets="Build" Condition="'$(SkipPyRevitDeploy)' != 'true'">
+    <PropertyGroup>
+      <UiHostDeployDir>$(MSBuildThisFileDirectory)..\..\bin\ui-host</UiHostDeployDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <UiHostDeployFiles Include="$(TargetDir)*.*" />
+    </ItemGroup>
+    <MakeDir Directories="$(UiHostDeployDir)" />
+    <Copy SourceFiles="@(UiHostDeployFiles)" DestinationFolder="$(UiHostDeployDir)" SkipUnchangedFiles="true" />
+  </Target>
+</Project>

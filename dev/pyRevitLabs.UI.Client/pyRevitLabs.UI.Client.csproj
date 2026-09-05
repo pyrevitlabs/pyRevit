@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net48;net8.0-windows;net10.0-windows</TargetFrameworks>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>pyRevitLabs.UI.Client</AssemblyName>
+    <RootNamespace>PyRevitLabs.UI.Client</RootNamespace>
+  </PropertyGroup>
+</Project>
