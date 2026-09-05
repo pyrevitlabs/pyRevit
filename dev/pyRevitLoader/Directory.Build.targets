@@ -19,10 +19,12 @@
 
     <ItemGroup Condition="'$(UseLoader)' == 'true'">
         <Compile Include="..\Source\PyRevitLoaderApplication.cs" Link="Source\PyRevitLoaderApplication.cs"/>
+        <Compile Include="..\Source\UiHostIntegration.cs" Link="Source\UiHostIntegration.cs"/>
         <Compile Include="..\Source\ScriptExecutor.cs" Link="Source\ScriptExecutor.cs"/>
         <Compile Include="..\Source\SmartButtonExecutor.cs" Link="Source\SmartButtonExecutor.cs"/>
         <Compile Include="..\Source\ComboBoxExecutor.cs" Link="Source\ComboBoxExecutor.cs"/>
         <Compile Include="..\Source\ErrorReporter.cs" Link="Source\ErrorReporter.cs"/>
+        <ProjectReference Include="..\..\pyRevitLabs.UI.Client\pyRevitLabs.UI.Client.csproj" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(UseRunner)' == 'true'">

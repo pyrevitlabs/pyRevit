@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/ui-host-poc.yml'
       - 'dev/pyRevitLabs.UI.*/**'
+      - 'dev/pyRevitLoader/**'
   workflow_dispatch:
 
 permissions:

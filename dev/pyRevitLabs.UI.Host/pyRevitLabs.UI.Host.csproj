@@ -10,4 +10,14 @@
   <ItemGroup>
     <ProjectReference Include="..\pyRevitLabs.UI.Protocol\pyRevitLabs.UI.Protocol.csproj" />
   </ItemGroup>
+  <Target Name="DeployUiHost" AfterTargets="Build" Condition="'$(SkipPyRevitDeploy)' != 'true'">
+    <PropertyGroup>
+      <UiHostDeployDir>$(MSBuildThisFileDirectory)..\..\bin\ui-host</UiHostDeployDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <UiHostDeployFiles Include="$(TargetDir)*.*" />
+    </ItemGroup>
+    <MakeDir Directories="$(UiHostDeployDir)" />
+    <Copy SourceFiles="@(UiHostDeployFiles)" DestinationFolder="$(UiHostDeployDir)" SkipUnchangedFiles="true" />
+  </Target>
 </Project>
