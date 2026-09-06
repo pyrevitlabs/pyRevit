@@ -89,6 +89,8 @@ public static class UiHostLauncher
         arguments.Append(Quote(pipeName));
         arguments.Append(" --log ");
         arguments.Append(Quote(logPath));
+        arguments.Append(" --parent-pid ");
+        arguments.Append(Process.GetCurrentProcess().Id);
 
         var startInfo = new ProcessStartInfo
         {

@@ -7,13 +7,18 @@ using PyRevitLabs.UI.Protocol;
 const string defaultPipeName = "pyrevit-ui-poc";
 var pipeName = GetArgument(args, "--pipe") ?? defaultPipeName;
 var logPath = GetArgument(args, "--log") ?? Path.Combine(Path.GetTempPath(), "pyrevit-ui-host.log");
+var parentProcessId = GetIntArgument(args, "--parent-pid");
 
 using var log = new HostLog(logPath);
-log.Write($"starting host pid={Environment.ProcessId} pipe={pipeName} protocol={UiProtocol.Version}");
+using var hostCancellation = new CancellationTokenSource();
+log.Write($"starting host pid={Environment.ProcessId} pipe={pipeName} protocol={UiProtocol.Version} parentPid={parentProcessId?.ToString() ?? "-"}");
+var parentWatchTask = parentProcessId.HasValue
+    ? WatchParentAsync(parentProcessId.Value, hostCancellation, log)
+    : Task.CompletedTask;
 
 try
 {
-    while (true)
+    while (!hostCancellation.IsCancellationRequested)
     {
         log.Write("waiting for client");
         await using var pipe = new NamedPipeServerStream(
@@ -23,7 +28,7 @@ try
             PipeTransmissionMode.Byte,
             PipeOptions.Asynchronous);
 
-        await pipe.WaitForConnectionAsync();
+        await pipe.WaitForConnectionAsync(hostCancellation.Token);
         log.Write("client connected");
 
         try
@@ -49,8 +54,37 @@ catch (Exception ex)
     log.Write($"fatal: {ex}");
     return 1;
 }
+finally
+{
+    hostCancellation.Cancel();
+    await parentWatchTask;
+}
 
 return 0;
+
+static async Task WatchParentAsync(int parentProcessId, CancellationTokenSource hostCancellation, HostLog log)
+{
+    try
+    {
+        using var parentProcess = Process.GetProcessById(parentProcessId);
+        log.Write($"watching parent pid={parentProcessId}");
+        await parentProcess.WaitForExitAsync(hostCancellation.Token);
+        log.Write($"parent exited pid={parentProcessId}");
+        hostCancellation.Cancel();
+    }
+    catch (ArgumentException)
+    {
+        log.Write($"parent not running pid={parentProcessId}");
+        hostCancellation.Cancel();
+    }
+    catch (OperationCanceledException)
+    {
+    }
+    catch (Exception ex)
+    {
+        log.Write($"parent watch failed pid={parentProcessId}: {ex.Message}");
+    }
+}
 
 static async Task HandleClientAsync(Stream stream, HostLog log)
 {
@@ -132,6 +166,12 @@ static async Task ReadExactlyAsync(Stream stream, byte[] buffer)
             throw new EndOfStreamException();
         offset += read;
     }
+}
+
+static int? GetIntArgument(string[] values, string name)
+{
+    var value = GetArgument(values, name);
+    return int.TryParse(value, out var result) && result > 0 ? result : null;
 }
 
 static string? GetArgument(string[] values, string name)

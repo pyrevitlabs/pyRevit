@@ -88,7 +88,15 @@
         <DeployCopyRetryWaitSeconds>1</DeployCopyRetryWaitSeconds>
         <DeployCopyExcludeFiles>Xceed.Wpf.AvalonDock.dll Microsoft.CodeAnalysis.dll Microsoft.CodeAnalysis.CSharp.dll Microsoft.CodeAnalysis.CSharp.resources.dll Microsoft.CodeAnalysis.resources.dll Microsoft.CodeAnalysis.VisualBasic.dll Microsoft.CodeAnalysis.VisualBasic.resources.dll YamlDotNet.dll DotNetVersionFinder.dll LibGit2Sharp.dll MadMilkman.Ini.dll OpenMcdf.dll pyRevitLabs.Common.dll</DeployCopyExcludeFiles>
         <DeployCopyExcludeWildcards>Microsoft.Bcl.*.dll git2-*.dll System.*.dll</DeployCopyExcludeWildcards>
+        <PyRevitDevSigningCertThumbprint Condition="'$(PyRevitDevSigningCertThumbprint)' == ''">$(PYREVIT_DEV_SIGNING_CERT_THUMBPRINT)</PyRevitDevSigningCertThumbprint>
     </PropertyGroup>
+
+    <Target Name="SignLoaderForLocalDevelopment"
+            BeforeTargets="Deploy"
+            Condition="'$(UseLoader)' == 'true' AND '$(SkipPyRevitDeploy)' != 'true' AND '$(PyRevitDevSigningCertThumbprint)' != ''">
+        <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -Command &quot;$cert = Get-Item 'Cert:\CurrentUser\My\$(PyRevitDevSigningCertThumbprint)'; $sig = Set-AuthenticodeSignature -FilePath '$(TargetPath)' -Certificate $cert -HashAlgorithm SHA256; if ($sig.Status -ne 'Valid') { throw ('Failed to sign pyRevitLoader: ' + $sig.StatusMessage) }&quot;" />
+        <Message Importance="high" Text="$(MSBuildProjectName) -> Authenticode signed with local development certificate $(PyRevitDevSigningCertThumbprint)" />
+    </Target>
 
     <Target Name="Deploy" AfterTargets="AfterBuild" Condition="'$(SkipPyRevitDeploy)' != 'true'">
         <!-- Robocopy provides /R retry semantics; MSBuild Copy lacks RetryCount in this project graph. -->

@@ -9,18 +9,22 @@ namespace PyRevitLoader
     {
         private const string EnableEnvironmentVariable = "PYREVIT_UI_HOST_POC";
         private static UiHostSession _session;
+        private static readonly string IntegrationLogPath = Path.Combine(
+            Path.GetTempPath(), $"pyrevit-ui-integration-{Process.GetCurrentProcess().Id}.log");
 
         internal static void Start(string loaderPath)
         {
+            WriteLog($"start requested loaderPath={loaderPath} env={Environment.GetEnvironmentVariable(EnableEnvironmentVariable) ?? "<null>"}");
+
             if (!IsEnabled())
             {
-                Trace.WriteLine("[UI-HOST-INTEGRATION] disabled");
+                WriteLog("disabled");
                 return;
             }
 
             if (_session != null)
             {
-                Trace.WriteLine("[UI-HOST-INTEGRATION] host session already active");
+                WriteLog("host session already active");
                 return;
             }
 
@@ -29,7 +33,7 @@ namespace PyRevitLoader
                 var hostPath = ResolveHostPath(loaderPath);
                 if (hostPath == null)
                 {
-                    Trace.WriteLine("[UI-HOST-INTEGRATION] host binary not found");
+                    WriteLog("host binary not found");
                     return;
                 }
 
@@ -37,7 +41,7 @@ namespace PyRevitLoader
                 var pipeName = $"pyrevit-ui-revit-{processId}-{Guid.NewGuid():N}";
                 var logPath = Path.Combine(Path.GetTempPath(), $"pyrevit-ui-host-revit-{processId}.log");
 
-                Trace.WriteLine($"[UI-HOST-INTEGRATION] starting host path={hostPath} pipe={pipeName}");
+                WriteLog($"starting host path={hostPath} pipe={pipeName}");
                 _session = UiHostLauncher.StartAsync(
                     hostPath,
                     pipeName,
@@ -45,13 +49,13 @@ namespace PyRevitLoader
                     "pyrevit-loader").GetAwaiter().GetResult();
 
                 var hostInfo = _session.GetHostInfoAsync().GetAwaiter().GetResult();
-                Trace.WriteLine(
-                    $"[UI-HOST-INTEGRATION] ready hostPid={hostInfo.HostProcessId} " +
+                WriteLog(
+                    $"ready hostPid={hostInfo.HostProcessId} " +
                     $"protocol={hostInfo.ProtocolVersion} version={hostInfo.HostVersion} log={logPath}");
             }
             catch (Exception ex)
             {
-                Trace.WriteLine($"[UI-HOST-INTEGRATION] startup failed: {ex}");
+                WriteLog($"startup failed: {ex}");
                 Stop();
             }
         }
@@ -64,15 +68,28 @@ namespace PyRevitLoader
             try
             {
                 _session.Dispose();
-                Trace.WriteLine("[UI-HOST-INTEGRATION] stopped");
+                WriteLog("stopped");
             }
             catch (Exception ex)
             {
-                Trace.WriteLine($"[UI-HOST-INTEGRATION] shutdown failed: {ex}");
+                WriteLog($"shutdown failed: {ex}");
             }
             finally
             {
                 _session = null;
+            }
+        }
+
+        private static void WriteLog(string message)
+        {
+            var line = $"{DateTimeOffset.Now:O} [UI-HOST-INTEGRATION] {message}";
+            Trace.WriteLine(line);
+            try
+            {
+                File.AppendAllText(IntegrationLogPath, line + Environment.NewLine);
+            }
+            catch
+            {
             }
         }
 
