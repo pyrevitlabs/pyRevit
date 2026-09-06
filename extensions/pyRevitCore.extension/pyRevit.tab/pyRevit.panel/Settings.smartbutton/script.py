@@ -27,6 +27,7 @@ import pyrevitcore_globals
 
 
 logger = script.get_logger()
+ISOLATED_UI_CONFIG_KEY = "isolated_ui"
 available_revit_versions = [
     "2027",
     "2026",
@@ -276,6 +277,9 @@ class SettingsWindow(forms.WPFWindow):
 
         # output settings
         self.cur_stylesheet_tb.Text = output.get_stylesheet()
+        self.isolated_ui_cb.IsChecked = user_config.core.get_option(
+            ISOLATED_UI_CONFIG_KEY, default_value=False
+        )
         # pyrevit gui settings
         self.loadtooltipex_cb.IsChecked = user_config.tooltip_debug_info
 
@@ -802,7 +806,6 @@ class SettingsWindow(forms.WPFWindow):
         # current project tab style
         prj_tabstyle = self.project_tabstyle_cb.SelectedItem
         if prj_tabstyle:
-
             # reset all
             for tab_ctrl in prj_tab_ctrls:
                 tab_ctrl.Style = self.Resources["revitTab"]
@@ -817,7 +820,6 @@ class SettingsWindow(forms.WPFWindow):
         # current project tab style
         family_tabstyle = self.family_tabstyle_cb.SelectedItem
         if family_tabstyle:
-
             # reset all
             for tab_ctrl in family_tab_ctrls:
                 tab_ctrl.Style = self.Resources["revitTab"]
@@ -878,7 +880,9 @@ class SettingsWindow(forms.WPFWindow):
             return False
         if metadata_setting_changed:
             return forms.alert(
-                self.get_locale_string("CoreSettings.Loader.ReadScriptMetadata.Changed"),
+                self.get_locale_string(
+                    "CoreSettings.Loader.ReadScriptMetadata.Changed"
+                ),
                 yes=True,
                 no=True,
             )
@@ -925,12 +929,22 @@ class SettingsWindow(forms.WPFWindow):
         tabs.init_doc_colorizer(user_config)
 
         # output settings
+        isolated_ui_enabled = user_config.core.get_option(
+            ISOLATED_UI_CONFIG_KEY, default_value=False
+        )
+        isolated_ui_changed = self.isolated_ui_cb.IsChecked != isolated_ui_enabled
+        user_config.core.set_option(
+            ISOLATED_UI_CONFIG_KEY, value=self.isolated_ui_cb.IsChecked
+        )
         output.set_stylesheet(self.cur_stylesheet_tb.Text)
         default_stylesheet = output.get_default_stylesheet()
         if self.cur_stylesheet_tb.Text != default_stylesheet:
             user_config.output_stylesheet = self.cur_stylesheet_tb.Text
         elif user_config.output_stylesheet != default_stylesheet:
             user_config.output_stylesheet = None
+        if isolated_ui_changed and not self.reload_requested:
+            forms.alert(self.get_locale_string("UI-UX.IsolatedUI.RestartRequired"))
+
         # pyrevit gui settings
         if (
             self.loadtooltipex_cb.IsChecked != user_config.tooltip_debug_info

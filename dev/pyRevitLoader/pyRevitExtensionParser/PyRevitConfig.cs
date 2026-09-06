@@ -31,7 +31,7 @@ namespace pyRevitExtensionParser
         /// </summary>
         private const string TrueString = "true";
         private const string FalseString = "false";
-        
+
         /// <summary>
         /// Gets the full path to the configuration file.
         /// </summary>
@@ -46,7 +46,7 @@ namespace pyRevitExtensionParser
         /// Returns null if the value is not set or empty.
         /// Trailing/leading whitespace is automatically trimmed on read.
         /// </remarks>
-        public string UserExtensions 
+        public string UserExtensions
         {
             get
             {
@@ -150,6 +150,22 @@ namespace pyRevitExtensionParser
                 _ini.IniWriteValue("core", "loadbeta", value ? TrueString : FalseString);
                 // Drop legacy key so the file does not show two competing entries.
                 _ini.IniRemoveKey("core", "load_beta");
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets whether the experimental isolated UI host is enabled.
+        /// </summary>
+        public bool IsolatedUi
+        {
+            get
+            {
+                var value = _ini.IniReadValue("core", "isolated_ui");
+                return TryParseConfigBool(value, out var result) && result;
+            }
+            set
+            {
+                _ini.IniWriteValue("core", "isolated_ui", value ? TrueString : FalseString);
             }
         }
 
@@ -515,7 +531,8 @@ namespace pyRevitExtensionParser
         /// <summary>
         /// Matches pyRevitLabs config INI discovery (delegates to install scope helper).
         /// </summary>
-        private static string TryFindConfigIniInDirectory(string directory) {
+        private static string TryFindConfigIniInDirectory(string directory)
+        {
             return PyRevitInstallScope.FindConfigIniInDirectory(directory);
         }
 
@@ -563,16 +580,16 @@ namespace pyRevitExtensionParser
                 var disabledValue = _ini.IniReadValue(section, "disabled");
                 var privateRepoValue = _ini.IniReadValue(section, "private_repo");
                 var usernameValue = _ini.IniReadValue(section, "username");
-                
+
                 // Check if section exists by verifying any key has a value
-                if (!string.IsNullOrEmpty(disabledValue) || 
+                if (!string.IsNullOrEmpty(disabledValue) ||
                     !string.IsNullOrEmpty(privateRepoValue) ||
                     !string.IsNullOrEmpty(usernameValue))
                 {
                     // Section exists, parse all values
                     // Read password only if section exists (one less P/Invoke call for non-existent sections)
                     var passwordValue = _ini.IniReadValue(section, "password");
-                    
+
                     return new ExtensionConfig
                     {
                         Name = extensionName,
@@ -732,7 +749,7 @@ namespace pyRevitExtensionParser
         /// When false, each execution starts fresh. Defaults to false.
         /// </remarks>
         public bool Persistent { get; set; } = false;
-        
+
         /// <summary>
         /// Gets or sets whether the script should execute on the main UI thread.
         /// </summary>
@@ -751,7 +768,7 @@ namespace pyRevitExtensionParser
         /// <para>When true for Dynamo scripts, runs on main thread with automatic execution.</para>
         /// </remarks>
         public bool? Automate { get; set; }
-        
+
         /// <summary>
         /// Gets or sets the path to a Dynamo script file (.dyn).
         /// </summary>
@@ -802,7 +819,7 @@ namespace pyRevitExtensionParser
         /// <para>Format and usage depend on Dynamo engine implementation.</para>
         /// </remarks>
         public string DynamoModelNodesInfo { get; set; }
-        
+
         /// <summary>
         /// Gets whether the engine requires execution on the main thread.
         /// </summary>

@@ -309,6 +309,9 @@
     </system:String>
 
     <system:String x:Key="UI-UX.OutputWindow">Output Window</system:String>
+    <system:String x:Key="UI-UX.IsolatedUI">Isolated UI (beta)</system:String>
+    <system:String x:Key="UI-UX.IsolatedUI.Description">Runs the experimental pyRevit UI host in a separate process to isolate UI dependencies from Revit. Restart Revit after changing this option.</system:String>
+    <system:String x:Key="UI-UX.IsolatedUI.RestartRequired">Isolated UI setting changed. Restart Revit for this change to take effect.</system:String>
     <system:String x:Key="UI-UX.OutputStyling">Output Styling (CSS Stylesheet)</system:String>
     <system:String x:Key="UI-UX.PickCssToolTip">Pick a CSS style sheet to override the default.</system:String>
     <system:String x:Key="UI-UX.ResetCss">Reset</system:String>

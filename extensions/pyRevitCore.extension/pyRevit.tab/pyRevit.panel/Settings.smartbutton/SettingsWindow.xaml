@@ -1,4 +1,4 @@
-﻿<!--https://stackoverflow.com/questions/6850713/weird-xaml-parsing-error-when-trying-to-set-textbox-isreadonly-->
+<!--https://stackoverflow.com/questions/6850713/weird-xaml-parsing-error-when-trying-to-set-textbox-isreadonly-->
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:s="clr-namespace:System;assembly=mscorlib"
@@ -538,6 +538,8 @@
                         </GroupBox>
                         <GroupBox Header="{DynamicResource UI-UX.OutputWindow}" Margin="0,10,0,0" Padding="10">
                             <StackPanel>
+                                <CheckBox x:Name="isolated_ui_cb" Margin="0,0,0,5" Content="{DynamicResource UI-UX.IsolatedUI}" IsChecked="False" IsEnabled="True"/>
+                                <TextBlock Margin="20,0,0,10" Foreground="{DynamicResource pyRevitSubtleForegroundBrush}" TextWrapping="Wrap" Text="{DynamicResource UI-UX.IsolatedUI.Description}"/>
                                 <DockPanel Margin="0,10,0,10">
                                     <TextBlock DockPanel.Dock="Top" VerticalAlignment="Center" Text="{DynamicResource UI-UX.OutputStyling}"/>
                                     <WrapPanel DockPanel.Dock="Right" Margin="0,10,0,0">
