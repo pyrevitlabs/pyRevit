@@ -7,6 +7,7 @@ using System.Windows.Threading;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
 using Microsoft.Win32;
+using PyRevitLabs.UI.Protocol;
 
 internal sealed class OutputWindowManager : IDisposable
 {
@@ -336,7 +337,7 @@ internal sealed class IsolatedOutputWindow : Window
         if (e.Uri.StartsWith("revit:", StringComparison.OrdinalIgnoreCase))
         {
             e.Cancel = true;
-            await _events.SendAsync("output.navigate", _windowId, e.Uri);
+            await _events.SendAsync(UiMethods.Output.Navigate, _windowId, e.Uri);
             _log($"output navigation event id={_windowId} url={e.Uri}");
             return;
         }
@@ -476,7 +477,7 @@ internal sealed class IsolatedOutputWindow : Window
         CompleteInput(string.Empty);
         if (_browser.CoreWebView2 != null)
             _browser.CoreWebView2.NavigationStarting -= BrowserNavigationStarting;
-        await _events.SendAsync("output.closed", _windowId);
+        await _events.SendAsync(UiMethods.Output.Closed, _windowId);
         _log($"output window closed id={_windowId}");
     }
 }

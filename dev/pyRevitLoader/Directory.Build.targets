@@ -20,7 +20,6 @@
     <ItemGroup Condition="'$(UseLoader)' == 'true'">
         <Compile Include="..\Source\PyRevitLoaderApplication.cs" Link="Source\PyRevitLoaderApplication.cs"/>
         <Compile Include="..\Source\UiHostIntegration.cs" Link="Source\UiHostIntegration.cs"/>
-        <Compile Include="..\Source\IsolatedUiService.cs" Link="Source\IsolatedUiService.cs"/>
         <Compile Include="..\Source\ScriptExecutor.cs" Link="Source\ScriptExecutor.cs"/>
         <Compile Include="..\Source\SmartButtonExecutor.cs" Link="Source\SmartButtonExecutor.cs"/>
         <Compile Include="..\Source\ComboBoxExecutor.cs" Link="Source\ComboBoxExecutor.cs"/>

@@ -1,5 +1,6 @@
 using System.IO.Pipes;
 using System.Text.Json;
+using PyRevitLabs.UI.Protocol;
 
 internal sealed class HostEventChannel : IAsyncDisposable
 {
@@ -24,12 +25,11 @@ internal sealed class HostEventChannel : IAsyncDisposable
 
     public async Task SendAsync(string method, string windowId, string? value = null)
     {
-        var message = new
-        {
-            type = "event",
-            method,
-            payload = new { windowId, value },
-        };
+        var message = new UiMessage(
+            "event",
+            Method: method,
+            Payload: JsonSerializer.SerializeToElement(
+                new UiEventPayload { WindowId = windowId, Value = value }));
         var payload = JsonSerializer.SerializeToUtf8Bytes(message);
         var length = BitConverter.GetBytes(payload.Length);
 

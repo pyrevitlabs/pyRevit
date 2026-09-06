@@ -13,12 +13,12 @@ namespace PyRevitLoader
         private const string EnableEnvironmentVariable = "PYREVIT_UI_HOST_POC";
         private static UiHostSession _session;
 
-        internal static UiHostSession Session => _session;
         private static readonly ILogger Logger = ServiceFactory.CreateLogger();
 
         internal static void Start(string loaderPath)
         {
             var enabled = IsEnabled(out var enableSource);
+            UiHostClientContext.Configure(enabled);
             WriteLog($"start requested loaderPath={loaderPath} enabled={enabled} source={enableSource}");
 
             if (!enabled)
@@ -53,7 +53,7 @@ namespace PyRevitLoader
                     "pyrevit-loader",
                     WriteHostDiagnostic).GetAwaiter().GetResult();
 
-                IsolatedUiService.Attach(_session);
+                UiHostClientContext.Attach(_session);
                 WriteLog($"host process connected hostPid={_session.HostInfo.HostProcessId}");
                 WriteLog("requesting host.info");
                 var hostInfo = _session.GetHostInfoAsync().GetAwaiter().GetResult();
@@ -71,11 +71,14 @@ namespace PyRevitLoader
         internal static void Stop()
         {
             if (_session == null)
+            {
+                UiHostClientContext.Detach();
                 return;
+            }
 
             try
             {
-                IsolatedUiService.Detach(_session);
+                UiHostClientContext.Detach(_session);
                 _session.Dispose();
                 WriteLog("stopped");
             }

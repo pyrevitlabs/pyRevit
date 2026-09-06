@@ -1,5 +1,7 @@
+#if NET10_0_OR_GREATER
 using System.Text.Json;
 using System.Text.Json.Serialization;
+#endif
 
 namespace PyRevitLabs.UI.Protocol;
 
@@ -8,6 +10,7 @@ public static class UiProtocol
     public const int Version = 1;
 }
 
+#if NET10_0_OR_GREATER
 public sealed record UiMessage(
     [property: JsonPropertyName("type")] string Type,
     [property: JsonPropertyName("id")] string? Id = null,
@@ -23,3 +26,4 @@ public sealed record HostInfo(
     [property: JsonPropertyName("protocolVersion")] int ProtocolVersion,
     [property: JsonPropertyName("hostProcessId")] int HostProcessId,
     [property: JsonPropertyName("hostVersion")] string HostVersion);
+#endif

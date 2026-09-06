@@ -2,16 +2,30 @@ using System.IO;
 using System.Text.Json;
 using PyRevitLabs.UI.Protocol;
 
-internal static class OutputRequestHandler
+internal sealed class OutputServiceHandler : IUiServiceHandler
 {
-    public static async Task<UiMessage> HandleAsync(
-        UiMessage request,
-        OutputWindowManager windows)
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    };
+
+    private readonly OutputWindowManager _windows;
+
+    public OutputServiceHandler(OutputWindowManager windows)
+    {
+        _windows = windows ?? throw new ArgumentNullException(nameof(windows));
+    }
+
+    public string ServiceName => UiServices.Output;
+    public bool LogWireMessages => false;
+
+    public async Task<UiMessage> HandleAsync(UiMessage request)
     {
         if (request.Payload is null)
             throw new InvalidDataException("Output request payload is required.");
 
-        var payload = request.Payload.Value.Deserialize<OutputRequestPayload>()
+        var payload = request.Payload.Value.Deserialize<UiOutputPayload>(JsonOptions)
             ?? throw new InvalidDataException("Output request payload is invalid.");
         if (string.IsNullOrWhiteSpace(payload.WindowId))
             throw new InvalidDataException("Output window id is required.");
@@ -21,8 +35,8 @@ internal static class OutputRequestHandler
 
         switch (request.Method)
         {
-            case "output.create":
-                await windows.CreateAsync(
+            case UiMethods.Output.Create:
+                await _windows.CreateAsync(
                     windowId,
                     payload.Title ?? "pyRevit",
                     payload.Html ?? "<html><body></body></html>",
@@ -32,30 +46,31 @@ internal static class OutputRequestHandler
                     payload.Top ?? 100);
                 break;
 
-            case "output.append":
-                await windows.AppendHtmlAsync(windowId, payload.Html ?? string.Empty);
+            case UiMethods.Output.Append:
+                await _windows.AppendHtmlAsync(windowId, payload.Html ?? string.Empty);
                 break;
 
-            case "output.replace_body":
-                await windows.ReplaceBodyAsync(windowId, payload.Html ?? string.Empty);
+            case UiMethods.Output.ReplaceBody:
+                await _windows.ReplaceBodyAsync(windowId, payload.Html ?? string.Empty);
                 break;
 
-            case "output.inject":
-                await windows.InjectHtmlAsync(
+            case UiMethods.Output.Inject:
+                await _windows.InjectHtmlAsync(
                     windowId,
                     payload.Target ?? "body",
                     payload.Html ?? string.Empty);
                 break;
-            case "output.set_title":
-                await windows.SetTitleAsync(windowId, payload.Title ?? "pyRevit");
+
+            case UiMethods.Output.SetTitle:
+                await _windows.SetTitleAsync(windowId, payload.Title ?? "pyRevit");
                 break;
 
-            case "output.set_visibility":
-                await windows.SetVisibilityAsync(windowId, payload.Visible ?? true);
+            case UiMethods.Output.SetVisibility:
+                await _windows.SetVisibilityAsync(windowId, payload.Visible ?? true);
                 break;
 
-            case "output.set_bounds":
-                await windows.SetBoundsAsync(
+            case UiMethods.Output.SetBounds:
+                await _windows.SetBoundsAsync(
                     windowId,
                     payload.Width ?? 900,
                     payload.Height ?? 600,
@@ -63,49 +78,51 @@ internal static class OutputRequestHandler
                     payload.Top ?? 100);
                 break;
 
-            case "output.set_resizable":
-                await windows.SetResizableAsync(windowId, payload.Resizable ?? true);
+            case UiMethods.Output.SetResizable:
+                await _windows.SetResizableAsync(windowId, payload.Resizable ?? true);
                 break;
 
-            case "output.focus":
-                await windows.FocusAsync(windowId);
+            case UiMethods.Output.Focus:
+                await _windows.FocusAsync(windowId);
                 break;
 
-            case "output.close":
-                await windows.CloseAsync(windowId);
-                break;
-            case "output.navigate":
-                await windows.NavigateAsync(windowId, payload.Url ?? "about:blank");
+            case UiMethods.Output.Close:
+                await _windows.CloseAsync(windowId);
                 break;
 
-            case "output.progress":
-                await windows.SetProgressAsync(
+            case UiMethods.Output.Navigate:
+                await _windows.NavigateAsync(windowId, payload.Url ?? "about:blank");
+                break;
+
+            case UiMethods.Output.Progress:
+                await _windows.SetProgressAsync(
                     windowId,
                     payload.ProgressValue ?? 0,
                     payload.ProgressMaximum ?? 1,
                     payload.Visible ?? true);
                 break;
 
-            case "output.indeterminate":
-                await windows.SetIndeterminateAsync(windowId, payload.Indeterminate ?? false);
+            case UiMethods.Output.Indeterminate:
+                await _windows.SetIndeterminateAsync(windowId, payload.Indeterminate ?? false);
                 break;
 
-            case "output.log":
-                await windows.AppendLogAsync(
+            case UiMethods.Output.Log:
+                await _windows.AppendLogAsync(
                     windowId,
                     payload.Level ?? "info",
                     payload.Value ?? string.Empty);
                 break;
 
-            case "output.get_html":
-                value = await windows.GetHtmlAsync(windowId);
+            case UiMethods.Output.GetHtml:
+                value = await _windows.GetHtmlAsync(windowId);
                 break;
 
-            case "output.get_text":
-                value = await windows.GetTextAsync(windowId);
+            case UiMethods.Output.GetText:
+                value = await _windows.GetTextAsync(windowId);
                 break;
-            case "output.read_input":
-                value = await windows.ReadInputAsync(
+
+            case UiMethods.Output.ReadInput:
+                value = await _windows.ReadInputAsync(
                     windowId,
                     payload.InputMode ?? "text",
                     payload.Value);
@@ -116,11 +133,11 @@ internal static class OutputRequestHandler
                     $"Unsupported output method '{request.Method}'.");
         }
 
-        var response = new OutputResponsePayload(true, value);
+        var response = new UiOutputResponsePayload { Ok = true, Value = value };
         return new UiMessage(
             "response",
             request.Id,
             request.Method,
-            JsonSerializer.SerializeToElement(response));
+            JsonSerializer.SerializeToElement(response, JsonOptions));
     }
 }

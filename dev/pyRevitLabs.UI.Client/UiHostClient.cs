@@ -7,6 +7,7 @@ using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using PyRevitLabs.UI.Protocol;
 
 namespace PyRevitLabs.UI.Client;
 
@@ -52,7 +53,7 @@ public static class UiHostLauncher
             var hello = new HelloMessage
             {
                 Id = helloId,
-                Payload = new HelloPayload
+                Payload = new ClientHelloPayload
                 {
                     ProtocolVersion = UiHostSession.ProtocolVersion,
                     ClientName = clientName,
@@ -159,14 +160,32 @@ public static class UiHostLauncher
 }
 
 /// <summary>
+/// Event raised by the UI host on the asynchronous event channel.
+/// </summary>
+public sealed class UiHostEventArgs : EventArgs
+{
+    internal UiHostEventArgs(string method, string windowId, string? value)
+    {
+        Method = method;
+        WindowId = windowId;
+        Value = value;
+    }
+
+    public string Method { get; }
+    public string WindowId { get; }
+    public string? Value { get; }
+}
+
+/// <summary>
 /// Represents an active connection to one UI host process and owns that process lifetime.
 /// </summary>
-public sealed partial class UiHostSession : IDisposable
+public sealed class UiHostSession : IDisposable
 {
     private readonly Process _process;
     private readonly NamedPipeClientStream _pipe;
     private readonly NamedPipeServerStream _eventPipe;
     private readonly CancellationTokenSource _eventCancellation = new CancellationTokenSource();
+    private readonly SemaphoreSlim _requestLock = new SemaphoreSlim(1, 1);
     private readonly Task _eventLoopTask;
     private bool _disposed;
 
@@ -182,23 +201,23 @@ public sealed partial class UiHostSession : IDisposable
     /// <summary>
     /// Current wire protocol version supported by this client.
     /// </summary>
-    public const int ProtocolVersion = 1;
+    public const int ProtocolVersion = UiProtocol.Version;
 
     /// <summary>
     /// Information returned by the host during handshake.
     /// </summary>
     public UiHostInfo HostInfo { get; }
 
+    public event EventHandler<UiHostEventArgs>? EventReceived;
+
     /// <summary>
     /// Requests the current host information over the live pipe connection.
     /// </summary>
     public async Task<UiHostInfo> GetHostInfoAsync()
     {
-        ThrowIfDisposed();
-
         var request = new HostInfoRequestMessage { Id = Guid.NewGuid().ToString("N") };
-        await WireCodec.WriteAsync(_pipe, request).ConfigureAwait(false);
-        var response = await WireCodec.ReadAsync<HostInfoResponseMessage>(_pipe).ConfigureAwait(false);
+        var response = await RequestAsync<HostInfoRequestMessage, HostInfoResponseMessage>(request)
+            .ConfigureAwait(false);
 
         if (!string.Equals(response.Type, "response", StringComparison.Ordinal))
             throw new InvalidDataException($"Expected host.info response, got '{response.Type}'.");
@@ -232,12 +251,61 @@ public sealed partial class UiHostSession : IDisposable
         {
         }
         _eventCancellation.Dispose();
+        _requestLock.Dispose();
         _pipe.Dispose();
         UiHostLauncher.StopOwnedProcess(_process);
         Trace.WriteLine("[UI-CLIENT] host session disposed");
     }
 
-    private void ThrowIfDisposed()
+    internal async Task<TResponse> RequestAsync<TRequest, TResponse>(TRequest request)
+    {
+        ThrowIfDisposed();
+        await _requestLock.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            await WireCodec.WriteAsync(_pipe, request).ConfigureAwait(false);
+            return await WireCodec.ReadAsync<TResponse>(_pipe).ConfigureAwait(false);
+        }
+        finally
+        {
+            _requestLock.Release();
+        }
+    }
+
+    private async Task ListenForEventsAsync()
+    {
+        try
+        {
+            while (!_eventCancellation.IsCancellationRequested)
+            {
+                var message = await WireCodec.ReadAsync<UiEventMessage>(_eventPipe)
+                    .ConfigureAwait(false);
+                if (!string.Equals(message.Type, "event", StringComparison.Ordinal))
+                    continue;
+                var payload = message.Payload;
+                if (payload == null || string.IsNullOrWhiteSpace(payload.WindowId))
+                    continue;
+                EventReceived?.Invoke(
+                    this,
+                    new UiHostEventArgs(
+                        message.Method ?? string.Empty,
+                        payload.WindowId,
+                        payload.Value));
+            }
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+        catch (IOException) when (_eventCancellation.IsCancellationRequested)
+        {
+        }
+        catch (Exception ex)
+        {
+            Trace.WriteLine($"[UI-CLIENT] event loop stopped: {ex.Message}");
+        }
+    }
+
+    internal void ThrowIfDisposed()
     {
         if (_disposed)
             throw new ObjectDisposedException(nameof(UiHostSession));
@@ -329,11 +397,11 @@ internal sealed class HelloMessage
     public string Id { get; set; } = string.Empty;
 
     [DataMember(Name = "payload")]
-    public HelloPayload Payload { get; set; } = new HelloPayload();
+    public ClientHelloPayload Payload { get; set; } = new ClientHelloPayload();
 }
 
 [DataContract]
-internal sealed class HelloPayload
+internal sealed class ClientHelloPayload
 {
     [DataMember(Name = "protocolVersion")]
     public int ProtocolVersion { get; set; }
@@ -385,6 +453,19 @@ internal sealed class HostInfoResponseMessage
 
     [DataMember(Name = "payload")]
     public HostInfoPayload? Payload { get; set; }
+}
+
+[DataContract]
+internal sealed class UiEventMessage
+{
+    [DataMember(Name = "type")]
+    public string? Type { get; set; }
+
+    [DataMember(Name = "method")]
+    public string? Method { get; set; }
+
+    [DataMember(Name = "payload")]
+    public UiEventPayload? Payload { get; set; }
 }
 
 [DataContract]

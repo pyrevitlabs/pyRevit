@@ -21,6 +21,8 @@
 
     <PropertyGroup>
         <DeployDestinationFiles>$(PyRevitEnginesDir)\$(IronPythonVersion)\$(AssemblyName).dll</DeployDestinationFiles>
+        <UiDependencyConfiguration Condition="$(Configuration.Contains('Release'))">Release</UiDependencyConfiguration>
+        <UiDependencyConfiguration Condition="$(Configuration.Contains('Debug'))">Debug</UiDependencyConfiguration>
     </PropertyGroup>
     
     <ItemGroup>
@@ -31,6 +33,8 @@
     </ItemGroup>
 
     <ItemGroup>
+        <ProjectReference Include="$(MSBuildThisFileDirectory)..\pyRevitLabs.UI.Client\pyRevitLabs.UI.Client.csproj" AdditionalProperties="Configuration=$(UiDependencyConfiguration)" />
+        <ProjectReference Include="$(MSBuildThisFileDirectory)..\pyRevitLabs.UI.Protocol\pyRevitLabs.UI.Protocol.csproj" AdditionalProperties="Configuration=$(UiDependencyConfiguration)" />
         <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="System.Web" />
         <Reference Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" Include="System.Net.Http" />
         

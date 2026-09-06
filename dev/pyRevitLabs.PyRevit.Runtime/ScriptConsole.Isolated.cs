@@ -1,12 +1,14 @@
 using System;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
-using PyRevitLoader;
+using PyRevitLabs.UI.Client;
+using PyRevitLabs.UI.Protocol;
 using pyRevitLabs.Emojis;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public partial class ScriptConsole {
-        private readonly bool _isolatedUi = IsolatedUiService.IsAvailable;
+        private readonly bool _isolatedUi = UiHostClientContext.IsEnabled;
         private bool _isolatedWindowCreated;
         private bool _isolatedVisible;
         private bool _isolatedRegistered;
@@ -16,6 +18,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private double _isolatedHeight = 600;
         private double _isolatedLeft = 100;
         private double _isolatedTop = 100;
+
+        private static UiOutputClient IsolatedOutput => UiHostClientContext.Output;
+        private static void Wait(Task task) => task.GetAwaiter().GetResult();
+        private static T Wait<T>(Task<T> task) => task.GetAwaiter().GetResult();
 
         public bool IsIsolatedUi => _isolatedUi;
         public bool IsOutputVisible => _isolatedUi ? _isolatedVisible : IsVisible;
@@ -29,7 +35,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             MinWidth = 700;
             MinHeight = TitleBarHeight;
             ShowInTaskbar = false;
-            IsolatedUiService.EventReceived += IsolatedUiEventReceived;
+            if (!UiHostClientContext.IsAvailable)
+                throw new InvalidOperationException("Isolated UI is enabled but the UI host is not available.");
+            UiHostClientContext.EventReceived += IsolatedUiEventReceived;
             SetupDefaultPage();
             return true;
         }
@@ -37,14 +45,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (!_isolatedUi || _isolatedWindowCreated)
                 return;
 
-            IsolatedUiService.CreateWindow(
+            Wait(IsolatedOutput.CreateWindowAsync(
                 OutputUniqueId,
                 OutputTitle,
                 _isolatedInitialHtml,
                 _isolatedWidth,
                 _isolatedHeight,
                 _isolatedLeft,
-                _isolatedTop);
+                _isolatedTop));
             _isolatedWindowCreated = true;
             _isolatedVisible = true;
             RegisterIsolatedWindow();
@@ -71,7 +79,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return;
             }
             EnsureIsolatedWindow();
-            IsolatedUiService.SetVisibility(OutputUniqueId, true);
+            Wait(IsolatedOutput.SetVisibilityAsync(OutputUniqueId, true));
             _isolatedVisible = true;
         }
         public void HideOutput() {
@@ -81,7 +89,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
             if (!_isolatedWindowCreated)
                 return;
-            IsolatedUiService.SetVisibility(OutputUniqueId, false);
+            Wait(IsolatedOutput.SetVisibilityAsync(OutputUniqueId, false));
             _isolatedVisible = false;
         }
 
@@ -96,7 +104,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
             if (_isolatedWindowCreated) {
                 try {
-                    IsolatedUiService.Close(OutputUniqueId);
+                    Wait(IsolatedOutput.CloseAsync(OutputUniqueId));
                 }
                 catch {
                 }
@@ -105,21 +113,21 @@ namespace PyRevitLabs.PyRevit.Runtime {
             _isolatedVisible = false;
             ClosedByUser = true;
             UnregisterIsolatedWindow();
-            IsolatedUiService.EventReceived -= IsolatedUiEventReceived;
+            UiHostClientContext.EventReceived -= IsolatedUiEventReceived;
         }
 
-        private void IsolatedUiEventReceived(object sender, IsolatedUiEventArgs e) {
+        private void IsolatedUiEventReceived(object sender, UiHostEventArgs e) {
             if (!_isolatedUi || e.WindowId != OutputUniqueId)
                 return;
 
             Dispatcher.BeginInvoke(new Action(() => {
-                if (e.Method == "output.closed") {
+                if (e.Method == UiMethods.Output.Closed) {
                     _isolatedWindowCreated = false;
                     _isolatedVisible = false;
                     ClosedByUser = true;
                     UnregisterIsolatedWindow();
                 }
-                else if (e.Method == "output.navigate" && !string.IsNullOrEmpty(e.Value)) {
+                else if (e.Method == UiMethods.Output.Navigate && !string.IsNullOrEmpty(e.Value)) {
                     ScriptConsoleUtils.ProcessUrl(_uiApp, e.Value, this);
                 }
             }));
@@ -150,13 +158,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return;
             }
             EnsureIsolatedWindow();
-            IsolatedUiService.AppendHtml(OutputUniqueId, html);
+            Wait(IsolatedOutput.AppendHtmlAsync(OutputUniqueId, html));
         }
 
         private string GetIsolatedHtml() {
             if (!_isolatedWindowCreated)
                 return _isolatedInitialHtml;
-            return IsolatedUiService.GetHtml(OutputUniqueId);
+            return Wait(IsolatedOutput.GetHtmlAsync(OutputUniqueId));
         }
         public void SetOutputSize(double width, double height) {
             if (!_isolatedUi) {
@@ -167,8 +175,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (width > 0) _isolatedWidth = width;
             if (height > 0) _isolatedHeight = height;
             if (_isolatedWindowCreated)
-                IsolatedUiService.SetBounds(
-                    OutputUniqueId, _isolatedWidth, _isolatedHeight, _isolatedLeft, _isolatedTop);
+                Wait(IsolatedOutput.SetBoundsAsync(
+                    OutputUniqueId, _isolatedWidth, _isolatedHeight, _isolatedLeft, _isolatedTop));
         }
 
         public double GetOutputWidth() => _isolatedUi ? _isolatedWidth : Width;
@@ -185,8 +193,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             _isolatedLeft = area.Left + ((area.Width - _isolatedWidth) / 2);
             _isolatedTop = area.Top + ((area.Height - _isolatedHeight) / 2);
             if (_isolatedWindowCreated)
-                IsolatedUiService.SetBounds(
-                    OutputUniqueId, _isolatedWidth, _isolatedHeight, _isolatedLeft, _isolatedTop);
+                Wait(IsolatedOutput.SetBoundsAsync(
+                    OutputUniqueId, _isolatedWidth, _isolatedHeight, _isolatedLeft, _isolatedTop));
         }
 
         public void NavigateOutput(string url) {
@@ -195,14 +203,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return;
             }
             EnsureIsolatedWindow();
-            IsolatedUiService.Navigate(OutputUniqueId, url);
+            Wait(IsolatedOutput.NavigateAsync(OutputUniqueId, url));
         }
 
         private string ReadIsolatedInput() {
             EnsureIsolatedWindow();
             var lastLine = GetLastLine().ToLowerInvariant();
             var mode = lastLine.Contains("select") && lastLine.Contains("file") ? "file" : "text";
-            return IsolatedUiService.ReadInput(OutputUniqueId, mode);
+            return Wait(IsolatedOutput.ReadInputAsync(OutputUniqueId, mode));
         }
     }
 }

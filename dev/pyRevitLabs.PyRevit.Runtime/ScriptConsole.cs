@@ -15,7 +15,7 @@ using pyRevitLabs.Common;
 using pyRevitLabs.CommonWPF.Controls;
 using pyRevitLabs.Emojis;
 using pyRevitLabs.PyRevit;
-using PyRevitLoader;
+using PyRevitLabs.UI.Client;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public struct ScriptConsoleDebugger {
@@ -458,14 +458,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
             set {
                 Title = value;
                 if (_isolatedUi && _isolatedWindowCreated)
-                    IsolatedUiService.SetTitle(OutputUniqueId, value);
+                    Wait(IsolatedOutput.SetTitleAsync(OutputUniqueId, value));
             }
         }
 
         public void LockSize() {
             if (_isolatedUi) {
                 if (_isolatedWindowCreated)
-                    IsolatedUiService.SetResizable(OutputUniqueId, false);
+                    Wait(IsolatedOutput.SetResizableAsync(OutputUniqueId, false));
                 return;
             }
             this.ResizeMode = ResizeMode.NoResize;
@@ -474,7 +474,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public void UnlockSize() {
             if (_isolatedUi) {
                 if (_isolatedWindowCreated)
-                    IsolatedUiService.SetResizable(OutputUniqueId, true);
+                    Wait(IsolatedOutput.SetResizableAsync(OutputUniqueId, true));
                 return;
             }
             this.ResizeMode = ResizeMode.CanResizeWithGrip;
@@ -499,7 +499,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     _frozen = false;
                     if (_isolatedFrozenHtml.Length > 0) {
                         EnsureIsolatedWindow();
-                        IsolatedUiService.AppendHtml(OutputUniqueId, _isolatedFrozenHtml.ToString());
+                        Wait(IsolatedOutput.AppendHtmlAsync(OutputUniqueId, _isolatedFrozenHtml.ToString()));
                         _isolatedFrozenHtml.Clear();
                     }
                 }
@@ -557,7 +557,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public void FocusOutput() {
             if (_isolatedUi) {
                 EnsureIsolatedWindow();
-                IsolatedUiService.Focus(OutputUniqueId);
+                Wait(IsolatedOutput.FocusAsync(OutputUniqueId));
                 return;
             }
             renderer.Focus();
@@ -793,7 +793,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public void AppendActivityLog(string level, string message) {
             if (_isolatedUi) {
                 EnsureIsolatedWindow();
-                IsolatedUiService.AppendLog(OutputUniqueId, level, message);
+                Wait(IsolatedOutput.AppendLogAsync(OutputUniqueId, level, message));
                 return;
             }
 
@@ -833,7 +833,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             if (_isolatedUi) {
                 EnsureIsolatedWindow();
-                IsolatedUiService.SetProgress(OutputUniqueId, curValue, maxValue, true);
+                Wait(IsolatedOutput.SetProgressAsync(OutputUniqueId, curValue, maxValue, true));
                 return;
             }
 
@@ -849,7 +849,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             if (_isolatedUi) {
                 EnsureIsolatedWindow();
-                IsolatedUiService.SetIndeterminate(OutputUniqueId, indeterminate);
+                Wait(IsolatedOutput.SetIndeterminateAsync(OutputUniqueId, indeterminate));
                 return;
             }
 

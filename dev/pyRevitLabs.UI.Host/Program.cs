@@ -17,6 +17,8 @@ var parentWatchTask = parentProcessId.HasValue
     : Task.CompletedTask;
 await using var eventChannel = await HostEventChannel.ConnectAsync(eventPipeName);
 using var outputWindows = new OutputWindowManager(log.Write, eventChannel);
+var services = new UiServiceRegistry();
+services.Register(new OutputServiceHandler(outputWindows));
 log.Write($"event channel connected pipe={eventPipeName}");
 
 try
@@ -36,7 +38,7 @@ try
 
         try
         {
-            await HandleClientAsync(pipe, log, outputWindows);
+            await HandleClientAsync(pipe, log, services);
         }
         catch (EndOfStreamException)
         {
@@ -89,12 +91,15 @@ static async Task WatchParentAsync(int parentProcessId, CancellationTokenSource 
     }
 }
 
-static async Task HandleClientAsync(Stream stream, HostLog log, OutputWindowManager outputWindows)
+static async Task HandleClientAsync(Stream stream, HostLog log, UiServiceRegistry services)
 {
     while (true)
     {
         var message = await ReadMessageAsync(stream);
-        var logWireMessage = message.Method?.StartsWith("output.", StringComparison.Ordinal) != true;
+        IUiServiceHandler? serviceHandler = null;
+        if (string.Equals(message.Type, "request", StringComparison.Ordinal))
+            services.TryResolve(message.Method, out serviceHandler);
+        var logWireMessage = serviceHandler?.LogWireMessages ?? true;
         if (logWireMessage)
             log.Write($"received type={message.Type} id={message.Id ?? "-"} method={message.Method ?? "-"}");
 
@@ -103,10 +108,10 @@ static async Task HandleClientAsync(Stream stream, HostLog log, OutputWindowMana
         {
             if (message.Type == "hello")
                 response = HandleHello(message, log);
-            else if (message.Type == "request" && message.Method == "host.info")
+            else if (message.Type == "request" && message.Method == UiMethods.HostInfo)
                 response = CreateHostInfoResponse(message);
-            else if (message.Type == "request" && message.Method?.StartsWith("output.", StringComparison.Ordinal) == true)
-                response = await OutputRequestHandler.HandleAsync(message, outputWindows);
+            else if (message.Type == "request" && serviceHandler != null)
+                response = await serviceHandler.HandleAsync(message);
             else
                 response = CreateErrorResponse(message, "unsupported_message", "Message type or method is not supported.");
         }

@@ -7,4 +7,7 @@
     <AssemblyName>pyRevitLabs.UI.Client</AssemblyName>
     <RootNamespace>PyRevitLabs.UI.Client</RootNamespace>
   </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\pyRevitLabs.UI.Protocol\pyRevitLabs.UI.Protocol.csproj" />
+  </ItemGroup>
 </Project>
