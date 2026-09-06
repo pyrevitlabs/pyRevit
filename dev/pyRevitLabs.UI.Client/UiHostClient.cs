@@ -5,6 +5,7 @@ using System.IO.Pipes;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PyRevitLabs.UI.Client;
@@ -20,8 +21,8 @@ public static class UiHostLauncher
     public static async Task<UiHostSession> StartAsync(
         string hostPath,
         string pipeName,
-        string logPath,
         string clientName,
+        Action<string>? diagnosticSink = null,
         int timeoutMilliseconds = 5000)
     {
         if (string.IsNullOrWhiteSpace(hostPath))
@@ -33,13 +34,19 @@ public static class UiHostLauncher
         if (string.IsNullOrWhiteSpace(clientName))
             throw new ArgumentException("Client name is required.", nameof(clientName));
 
-        var process = StartHostProcess(hostPath, pipeName, logPath);
+        var eventPipeName = pipeName + "-events";
+        var eventPipe = new NamedPipeServerStream(eventPipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+        var process = StartHostProcess(hostPath, pipeName, eventPipeName, diagnosticSink);
         NamedPipeClientStream? pipe = null;
 
         try
         {
+            var eventConnectTask = eventPipe.WaitForConnectionAsync();
             pipe = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
             await pipe.ConnectAsync(timeoutMilliseconds).ConfigureAwait(false);
+            if (await Task.WhenAny(eventConnectTask, Task.Delay(timeoutMilliseconds)).ConfigureAwait(false) != eventConnectTask)
+                throw new TimeoutException("Timed out connecting UI host event pipe.");
+            await eventConnectTask.ConfigureAwait(false);
 
             var helloId = Guid.NewGuid().ToString("N");
             var hello = new HelloMessage
@@ -64,18 +71,23 @@ public static class UiHostLauncher
                     $"UI host protocol mismatch. Client={UiHostSession.ProtocolVersion}, Host={helloResponse.Payload.ProtocolVersion}.");
 
             Trace.WriteLine($"[UI-CLIENT] connected hostPid={helloResponse.Payload.HostProcessId} pipe={pipeName}");
-            return new UiHostSession(process, pipe, helloResponse.Payload);
+            return new UiHostSession(process, pipe, eventPipe, helloResponse.Payload);
         }
         catch
         {
             if (pipe != null)
                 pipe.Dispose();
+            eventPipe.Dispose();
             StopProcess(process);
             throw;
         }
     }
 
-    private static Process StartHostProcess(string hostPath, string pipeName, string logPath)
+    private static Process StartHostProcess(
+        string hostPath,
+        string pipeName,
+        string eventPipeName,
+        Action<string>? diagnosticSink)
     {
         var isDll = string.Equals(Path.GetExtension(hostPath), ".dll", StringComparison.OrdinalIgnoreCase);
         var arguments = new StringBuilder();
@@ -87,8 +99,8 @@ public static class UiHostLauncher
 
         arguments.Append("--pipe ");
         arguments.Append(Quote(pipeName));
-        arguments.Append(" --log ");
-        arguments.Append(Quote(logPath));
+        arguments.Append(" --event-pipe ");
+        arguments.Append(Quote(eventPipeName));
         arguments.Append(" --parent-pid ");
         arguments.Append(Process.GetCurrentProcess().Id);
 
@@ -98,14 +110,31 @@ public static class UiHostLauncher
             Arguments = arguments.ToString(),
             UseShellExecute = false,
             CreateNoWindow = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
         };
 
         var process = Process.Start(startInfo);
         if (process == null)
             throw new InvalidOperationException("Failed to start UI host process.");
 
+        process.OutputDataReceived += (_, e) => ForwardDiagnostic(diagnosticSink, e.Data, false);
+        process.ErrorDataReceived += (_, e) => ForwardDiagnostic(diagnosticSink, e.Data, true);
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+
         Trace.WriteLine($"[UI-CLIENT] started host pid={process.Id} path={hostPath}");
         return process;
+    }
+
+    private static void ForwardDiagnostic(Action<string>? diagnosticSink, string? message, bool isError)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+            return;
+        var formatted = isError ? $"stderr {message}" : message ?? string.Empty;
+        Trace.WriteLine($"[UI-CLIENT] {formatted}");
+        try { diagnosticSink?.Invoke(formatted); }
+        catch { }
     }
 
     private static string Quote(string value) => "\"" + value.Replace("\"", "\\\"") + "\"";
@@ -132,17 +161,22 @@ public static class UiHostLauncher
 /// <summary>
 /// Represents an active connection to one UI host process and owns that process lifetime.
 /// </summary>
-public sealed class UiHostSession : IDisposable
+public sealed partial class UiHostSession : IDisposable
 {
     private readonly Process _process;
     private readonly NamedPipeClientStream _pipe;
+    private readonly NamedPipeServerStream _eventPipe;
+    private readonly CancellationTokenSource _eventCancellation = new CancellationTokenSource();
+    private readonly Task _eventLoopTask;
     private bool _disposed;
 
-    internal UiHostSession(Process process, NamedPipeClientStream pipe, HostInfoPayload hostInfo)
+    internal UiHostSession(Process process, NamedPipeClientStream pipe, NamedPipeServerStream eventPipe, HostInfoPayload hostInfo)
     {
         _process = process;
         _pipe = pipe;
+        _eventPipe = eventPipe;
         HostInfo = new UiHostInfo(hostInfo.ProtocolVersion, hostInfo.HostProcessId, hostInfo.HostVersion ?? "unknown");
+        _eventLoopTask = ListenForEventsAsync();
     }
 
     /// <summary>
@@ -188,6 +222,16 @@ public sealed class UiHostSession : IDisposable
             return;
 
         _disposed = true;
+        _eventCancellation.Cancel();
+        _eventPipe.Dispose();
+        try
+        {
+            _eventLoopTask.Wait(1000);
+        }
+        catch
+        {
+        }
+        _eventCancellation.Dispose();
         _pipe.Dispose();
         UiHostLauncher.StopOwnedProcess(_process);
         Trace.WriteLine("[UI-CLIENT] host session disposed");

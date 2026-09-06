@@ -60,7 +60,7 @@
         <PackageReference Condition="'$(TargetFramework)' == 'net8.0-windows'" Include="System.CodeDom" Version="10.0.5" />
     </ItemGroup>
 
-    <Target Name="Deploy" AfterTargets="AfterBuild">
+    <Target Name="Deploy" AfterTargets="AfterBuild" Condition="'$(SkipPyRevitDeploy)' != 'true'">
         <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PyRevitEnginesDir)\$(IronPythonVersion)" />
         <Message Importance="high" Text="$(MSBuildProjectName) -> Copy to $([System.IO.Path]::GetFullPath('$(PyRevitEnginesDir)\$(IronPythonVersion)'))" />
     </Target>

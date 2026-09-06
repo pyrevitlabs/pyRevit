@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 
 using pyRevitExtensionParser;
+using pyRevitAssemblyBuilder.SessionManager;
 
 namespace PyRevitLoader
 {
@@ -11,8 +12,9 @@ namespace PyRevitLoader
     {
         private const string EnableEnvironmentVariable = "PYREVIT_UI_HOST_POC";
         private static UiHostSession _session;
-        private static readonly string IntegrationLogPath = Path.Combine(
-            Path.GetTempPath(), $"pyrevit-ui-integration-{Process.GetCurrentProcess().Id}.log");
+
+        internal static UiHostSession Session => _session;
+        private static readonly ILogger Logger = ServiceFactory.CreateLogger();
 
         internal static void Start(string loaderPath)
         {
@@ -42,26 +44,26 @@ namespace PyRevitLoader
 
                 var processId = Process.GetCurrentProcess().Id;
                 var pipeName = $"pyrevit-ui-revit-{processId}-{Guid.NewGuid():N}";
-                var logPath = Path.Combine(Path.GetTempPath(), $"pyrevit-ui-host-revit-{processId}.log");
 
                 WriteLog($"host resolved path={hostPath}");
-                WriteLog($"starting host pipe={pipeName} log={logPath}");
+                WriteLog($"starting host pipe={pipeName}");
                 _session = UiHostLauncher.StartAsync(
                     hostPath,
                     pipeName,
-                    logPath,
-                    "pyrevit-loader").GetAwaiter().GetResult();
+                    "pyrevit-loader",
+                    WriteHostDiagnostic).GetAwaiter().GetResult();
 
+                IsolatedUiService.Attach(_session);
                 WriteLog($"host process connected hostPid={_session.HostInfo.HostProcessId}");
                 WriteLog("requesting host.info");
                 var hostInfo = _session.GetHostInfoAsync().GetAwaiter().GetResult();
                 WriteLog(
                     $"ready hostPid={hostInfo.HostProcessId} " +
-                    $"protocol={hostInfo.ProtocolVersion} version={hostInfo.HostVersion} log={logPath}");
+                    $"protocol={hostInfo.ProtocolVersion} version={hostInfo.HostVersion}");
             }
             catch (Exception ex)
             {
-                WriteLog($"startup failed: {ex}");
+                WriteError($"startup failed: {ex}");
                 Stop();
             }
         }
@@ -73,12 +75,13 @@ namespace PyRevitLoader
 
             try
             {
+                IsolatedUiService.Detach(_session);
                 _session.Dispose();
                 WriteLog("stopped");
             }
             catch (Exception ex)
             {
-                WriteLog($"shutdown failed: {ex}");
+                WriteError($"shutdown failed: {ex}");
             }
             finally
             {
@@ -86,17 +89,22 @@ namespace PyRevitLoader
             }
         }
 
-        private static void WriteLog(string message)
+        internal static void WriteLog(string message)
         {
-            var line = $"{DateTimeOffset.Now:O} [UI-HOST-INTEGRATION] {message}";
-            Trace.WriteLine(line);
-            try
-            {
-                File.AppendAllText(IntegrationLogPath, line + Environment.NewLine);
-            }
-            catch
-            {
-            }
+            try { Logger.Debug($"[IsolatedUI] {message}"); }
+            catch { Trace.WriteLine($"[IsolatedUI] {message}"); }
+        }
+
+        private static void WriteHostDiagnostic(string message)
+        {
+            if (!string.IsNullOrWhiteSpace(message))
+                WriteLog($"host {message}");
+        }
+
+        private static void WriteError(string message)
+        {
+            try { Logger.Error($"[IsolatedUI] {message}"); }
+            catch { Trace.WriteLine($"[IsolatedUI] ERROR {message}"); }
         }
 
         private static bool IsEnabled(out string source)

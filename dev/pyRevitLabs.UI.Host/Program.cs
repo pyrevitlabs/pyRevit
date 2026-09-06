@@ -1,20 +1,23 @@
 using System.Diagnostics;
+using System.IO;
 using System.IO.Pipes;
-using System.Text;
 using System.Text.Json;
 using PyRevitLabs.UI.Protocol;
 
 const string defaultPipeName = "pyrevit-ui-poc";
 var pipeName = GetArgument(args, "--pipe") ?? defaultPipeName;
-var logPath = GetArgument(args, "--log") ?? Path.Combine(Path.GetTempPath(), "pyrevit-ui-host.log");
 var parentProcessId = GetIntArgument(args, "--parent-pid");
+var eventPipeName = GetArgument(args, "--event-pipe") ?? pipeName + "-events";
 
-using var log = new HostLog(logPath);
+var log = new HostLog();
 using var hostCancellation = new CancellationTokenSource();
 log.Write($"starting host pid={Environment.ProcessId} pipe={pipeName} protocol={UiProtocol.Version} parentPid={parentProcessId?.ToString() ?? "-"}");
 var parentWatchTask = parentProcessId.HasValue
     ? WatchParentAsync(parentProcessId.Value, hostCancellation, log)
     : Task.CompletedTask;
+await using var eventChannel = await HostEventChannel.ConnectAsync(eventPipeName);
+using var outputWindows = new OutputWindowManager(log.Write, eventChannel);
+log.Write($"event channel connected pipe={eventPipeName}");
 
 try
 {
@@ -33,7 +36,7 @@ try
 
         try
         {
-            await HandleClientAsync(pipe, log);
+            await HandleClientAsync(pipe, log, outputWindows);
         }
         catch (EndOfStreamException)
         {
@@ -86,22 +89,36 @@ static async Task WatchParentAsync(int parentProcessId, CancellationTokenSource 
     }
 }
 
-static async Task HandleClientAsync(Stream stream, HostLog log)
+static async Task HandleClientAsync(Stream stream, HostLog log, OutputWindowManager outputWindows)
 {
     while (true)
     {
         var message = await ReadMessageAsync(stream);
-        log.Write($"received type={message.Type} id={message.Id ?? "-"} method={message.Method ?? "-"}");
+        var logWireMessage = message.Method?.StartsWith("output.", StringComparison.Ordinal) != true;
+        if (logWireMessage)
+            log.Write($"received type={message.Type} id={message.Id ?? "-"} method={message.Method ?? "-"}");
 
-        UiMessage response = message.Type switch
+        UiMessage response;
+        try
         {
-            "hello" => HandleHello(message, log),
-            "request" when message.Method == "host.info" => CreateHostInfoResponse(message),
-            _ => CreateErrorResponse(message, "unsupported_message", "Message type or method is not supported.")
-        };
+            if (message.Type == "hello")
+                response = HandleHello(message, log);
+            else if (message.Type == "request" && message.Method == "host.info")
+                response = CreateHostInfoResponse(message);
+            else if (message.Type == "request" && message.Method?.StartsWith("output.", StringComparison.Ordinal) == true)
+                response = await OutputRequestHandler.HandleAsync(message, outputWindows);
+            else
+                response = CreateErrorResponse(message, "unsupported_message", "Message type or method is not supported.");
+        }
+        catch (Exception ex)
+        {
+            log.Write($"request failed method={message.Method ?? "-"}: {ex}");
+            response = CreateErrorResponse(message, "request_failed", ex.Message);
+        }
 
         await WriteMessageAsync(stream, response);
-        log.Write($"sent type={response.Type} id={response.Id ?? "-"}");
+        if (logWireMessage)
+            log.Write($"sent type={response.Type} id={response.Id ?? "-"}");
     }
 }
 
@@ -182,24 +199,11 @@ static string? GetArgument(string[] values, string name)
     return null;
 }
 
-sealed class HostLog : IDisposable
+sealed class HostLog
 {
-    private readonly StreamWriter _writer;
-
-    public HostLog(string path)
-    {
-        var directory = Path.GetDirectoryName(path);
-        if (!string.IsNullOrEmpty(directory))
-            Directory.CreateDirectory(directory);
-        _writer = new StreamWriter(path, append: true, Encoding.UTF8) { AutoFlush = true };
-    }
 
     public void Write(string message)
     {
-        var line = $"{DateTimeOffset.Now:O} [UI-HOST] {message}";
-        Console.WriteLine(line);
-        _writer.WriteLine(line);
+        Console.WriteLine($"[UI-HOST] {message}");
     }
-
-    public void Dispose() => _writer.Dispose();
 }
