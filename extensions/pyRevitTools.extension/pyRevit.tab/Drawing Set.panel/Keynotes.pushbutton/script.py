@@ -35,8 +35,6 @@ from pyrevit import forms
 from pyrevit import script
 
 from pyrevit.framework import System, Windows
-from System.Windows.Interop import WindowInteropHelper
-from System.Diagnostics import Process as SysProcess
 from System.Windows.Threading import DispatcherTimer
 from System import TimeSpan
 
@@ -789,18 +787,25 @@ class KeynoteManagerWindow(forms.WPFWindow):
         # queued actions can simply run inline instead.
         self._modal_mode = safe_mode
 
-        # Set Revit as the owner window — critical for modeless stability.
-        # Without this, WPF's message pump collides with Revit's on focus
-        # change, causing hard crashes.
-        try:
-            wih = WindowInteropHelper(self)
-            wih.Owner = SysProcess.GetCurrentProcess().MainWindowHandle
-        except Exception as ex:
-            logger.debug("WindowInteropHelper failed | %s" % ex)
+        # Owner is already set: forms.WPFWindow.__init__ above runs
+        # load_xaml -> setup_owner(), which owns this window to
+        # ComponentManager.ApplicationWindow (Revit's frame).  Owning it
+        # there keeps WPF's message pump from colliding with Revit's on
+        # focus change, and Win32 draws an owned window above its owner —
+        # which is what keeps this window over Revit.  Do not re-assign it.
 
-        # Modeless focus management — keep window always on top of Revit.
-        # Pointless (and visually intrusive) for a modal safe-mode window.
-        self.Topmost = not self._modal_mode
+        # Never set Topmost on this window, in either mode.  Win32 sorts
+        # windows into bands before sorting within a band: every
+        # WS_EX_TOPMOST window sits above every non-topmost one, and
+        # "owned above owner" only orders windows inside a band.  Child
+        # dialogs are created non-topmost (pyRevit realizes their HWND
+        # while their owner is still Revit's frame, and CreateWindowEx is
+        # the only moment the flag is inherited; a later `child.Owner =
+        # self` is just SetWindowLong(GWLP_HWNDPARENT)), so a topmost
+        # window here buries every one of them — including forms.alert's
+        # native UI.TaskDialog, which has no owner or topmost property to
+        # raise it with.
+        self.Topmost = False
 
         self._kfile = None
         self._kfile_handler = None
@@ -842,6 +847,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
         # drag state
         self._drag_start_point = None
         self._is_dragging = False
+        # SHIFT+CLICK-to-place: the row resolved on mouse-DOWN, placed on
+        # mouse-UP (see tree_preview_mouse_down).
+        self._shift_place_pending = None
+        self._shift_release_timer = None
 
         # modeless close state
         self._close_pending = False
@@ -2304,8 +2313,182 @@ class KeynoteManagerWindow(forms.WPFWindow):
     # DRAG AND DROP
     # =========================================================================
 
+    def _place_after_shift_release(self, rec):
+        """Place `rec`, but not while SHIFT is still physically held.
+
+        Revit reads modifier state as it dispatches a posted command and
+        starts its interactive tool, and discards the placement if SHIFT is
+        down — so wait for a clean keyboard first.
+
+        Polls rather than hooking KeyUp: this window may not hold keyboard
+        focus (the mouse-down that started this was suppressed), so a WPF
+        KeyUp is not guaranteed to arrive.
+        """
+        if not self._shift_is_down():
+            self._place_keynote(rec)
+            return
+
+        timer = DispatcherTimer()
+        timer.Interval = TimeSpan.FromMilliseconds(40)
+        # Bound the wait: a stuck or sticky SHIFT must not strand the
+        # placement forever.  25 x 40ms = 1s, then place regardless.
+        state = {"ticks": 0}
+
+        def _tick(sender, args):
+            # The window can be closed inside the wait — never place into a
+            # torn-down window (its ExternalEvent is already disposed).
+            if self._closed:
+                timer.Stop()
+                self._shift_release_timer = None
+                return
+            state["ticks"] += 1
+            timed_out = state["ticks"] > 25
+            if self._shift_is_down() and not timed_out:
+                return
+            timer.Stop()
+            self._shift_release_timer = None
+            self._place_keynote(rec)
+
+        # A DispatcherTimer tick fires after the command has returned, so it
+        # needs shielding like every other entry point; a local closure
+        # cannot go in _GUARDED_ENTRY_POINTS by name.
+        timer.Tick += ui_guard(_tick)
+        # Held on the instance so the timer cannot be collected mid-wait.
+        self._shift_release_timer = timer
+        timer.Start()
+
+    def _hint(self, message):
+        """Show a one-line, non-modal note in the status bar.
+
+        Not a TaskDialog: these fire on a mis-aimed click, where a modal box
+        would be worse than saying nothing.  Cleared by the next
+        _update_status_bar().
+        """
+        try:
+            self.statusRight.Text = message
+        except Exception:
+            pass
+
+    @staticmethod
+    def _shift_is_down():
+        """True when SHIFT is physically held.
+
+        Two sources, because neither alone is reliable: WPF's
+        Keyboard.Modifiers only reflects key events WPF itself has seen, so
+        it reads empty on the click that reactivates this window from Revit,
+        while WinForms' Control.ModifierKeys wraps Win32 GetKeyState and
+        reports true key state regardless of focus.  Either one is enough.
+
+        Flag test rather than equality, so a stray second modifier does not
+        eat the gesture; nothing here binds Ctrl+Click or Alt+Click.
+        """
+        try:
+            mods = Windows.Input.Keyboard.Modifiers
+            shift = Windows.Input.ModifierKeys.Shift
+            if (mods & shift) == shift:
+                return True
+        except Exception:
+            pass
+        try:
+            wmods = Windows.Forms.Control.ModifierKeys
+            wshift = Windows.Forms.Keys.Shift
+            return (wmods & wshift) == wshift
+        except Exception:
+            return False
+
+    @staticmethod
+    def _treeviewitem_from_source(source):
+        """Walk up from a clicked visual to the TreeViewItem that owns it.
+
+        args.OriginalSource is whatever was physically hit inside the item
+        template — the key badge, a TextBlock, the row Border — and can even
+        be a content element such as a Run, which VisualTreeHelper refuses.
+        Fall back to the logical tree for anything that is not a Visual.
+
+        Returns None for a click on the expand/collapse arrow, leaving that
+        gesture alone: the arrow is the only ToggleButton inside a row, the
+        item template being Borders and TextBlocks only.
+        """
+        dep = source
+        while dep is not None:
+            if isinstance(dep, Windows.Controls.Primitives.ToggleButton):
+                return None
+            if isinstance(dep, Windows.Controls.TreeViewItem):
+                return dep
+            try:
+                if isinstance(dep, Windows.Media.Visual):
+                    dep = Windows.Media.VisualTreeHelper.GetParent(dep)
+                else:
+                    dep = Windows.LogicalTreeHelper.GetParent(dep)
+            except Exception:
+                return None
+        return None
+
     def tree_preview_mouse_down(self, sender, args):
+        # SHIFT+CLICK a row places that keynote.  Handled from the tunneling
+        # Preview event so it lands before TreeViewItem's own selection
+        # handling and before a drag can start.
+
+        # Drop any pending placement from a gesture that never delivered its
+        # mouse-up here (released outside the tree), so it cannot fire late.
+        self._shift_place_pending = None
+
+        shift = False
+        tvi = None
+        try:
+            shift = self._shift_is_down()
+            if shift:
+                tvi = self._treeviewitem_from_source(args.OriginalSource)
+        except Exception as ex:
+            # A failed hit-test degrades to an ordinary click rather than
+            # breaking a mouse handler.
+            logger.debug("Shift+click hit-test failed | %s" % ex)
+
+        if shift and tvi is None:
+            # Empty space below the rows, or the expand/collapse arrow.
+            self._hint("Shift+Click a keynote row to place it")
+
+        if tvi is not None:
+            # Select by hand: Handled=True suppresses the click entirely, so
+            # nothing else can act on it, and the toolbar and status bar
+            # have to agree on which keynote is about to be armed.
+            tvi.IsSelected = True
+            self._drag_start_point = None
+            args.Handled = True
+            # Placed on mouse-UP, not here: PostCommand arms an interactive
+            # Revit tool, and handing it a half-finished mouse gesture (the
+            # button is still physically down) makes Revit drop the command.
+            self._shift_place_pending = tvi.DataContext
+            return
+
         self._drag_start_point = args.GetPosition(sender)
+
+    def tree_preview_mouse_up(self, sender, args):
+        """Place the row a SHIFT+CLICK armed on mouse-down, if any.
+
+        Marshalled off the input event rather than run inline: Revit drops a
+        posted command that arrives while WPF is still dispatching a mouse
+        gesture, so Background priority is used to reach the same settled
+        dispatcher frame a Button.Click handler runs from.
+
+        args is not marked Handled — the matching mouse-down was already
+        suppressed, and letting WPF finish its normal button-up bookkeeping
+        keeps its input state consistent.
+        """
+        pending = self._shift_place_pending
+        # Clear FIRST: a placement that throws must not leave the record
+        # armed to fire again on an unrelated later click.
+        self._shift_place_pending = None
+        if pending is None:
+            return
+        try:
+            self.Dispatcher.BeginInvoke(
+                System.Action(
+                    ui_guard(lambda: self._place_after_shift_release(pending))),
+                Windows.Threading.DispatcherPriority.Background)
+        except Exception as ex:
+            logger.debug("Shift+click dispatch failed | %s" % ex)
+            self._place_after_shift_release(pending)
 
     def tree_preview_mouse_move(self, sender, args):
         if self._drag_start_point is None:
@@ -2802,6 +2985,32 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._revit_run(_do, callback=_update_status, callback_on_error=False)
 
     def place_keynote(self, sender, args):
+        self._place_keynote(self.selected_keynote)
+
+    def _place_keynote(self, sel):
+        """Arm Revit's keynote-tag tool with `sel`'s key.
+
+        Shared by the toolbar button (on the current selection) and by
+        SHIFT+CLICK on a tree row (on the row clicked).  Takes the record
+        explicitly rather than reading self.selected_keynote, so the
+        shift-click path cannot place a keynote other than the one clicked.
+        """
+        if not sel:
+            return
+
+        # Only a leaf keynote is placeable: a top-level group is an
+        # organizational node, and a locked record is off-limits as it is for
+        # every other action.  The toolbar button is disabled in both cases
+        # (see _update_buttons), so this gate only fires on SHIFT+CLICK —
+        # hence reporting rather than returning quietly.
+        if sel.locked:
+            self._hint("%s is locked by another user — cannot place" % sel.key)
+            return
+        if not sel.parent_key:
+            self._hint("%s is a group — Shift+Click a keynote to place"
+                       % sel.key)
+            return
+
         # NOT AVAILABLE IN SAFE (MODAL) MODE — and this is a hard block, not
         # just a UX nicety.  PostCommandAndUpdateNewElementProperties both
         # (a) PostCommands an interactive tool that cannot run while a modal
@@ -2811,6 +3020,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
         # fires while a modal dialog blocks.  Left armed, it silently
         # auto-confirms EVERY later TaskDialog, including the delete-keynote
         # prompts = silent deletions from the shared keynote file.
+        # Checked after eligibility, so shift-clicking a group in safe mode
+        # does not alert about a placement that was never on offer.
         if self._modal_mode:
             forms.alert(
                 "Placing keynotes needs the modeless window, which requires "
@@ -2820,9 +3031,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 title="Not available in Safe Mode")
             return
 
-        sel = self.selected_keynote
-        if not sel:
-            return
         sel_key = sel.key
         postcmd = self.postable_keynote_command
 
@@ -2861,12 +3069,15 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self._refresh_used_keynotes()
             self._update_full_tree()
             self._update_status_bar()
-            # Re-assert visibility — Revit steals focus on PostCommand
-            try:
-                self.Topmost = not self._modal_mode
-                self.Activate()
-            except Exception:
-                pass
+            # After _update_status_bar, which would overwrite it.  Revit's
+            # tag tool holds the foreground and this window may be behind
+            # it, so name what got armed.
+            self._hint("Placing %s — click in the view" % sel_key)
+            # Do not re-raise or re-focus this window here.  The PostCommand
+            # above armed Revit's interactive keynote-tag tool, which now
+            # holds the foreground and is waiting for a click in the view;
+            # Activate() would pull focus off it.  Owner parenting already
+            # keeps this window above Revit's frame (see __init__).
 
         # callback_on_error=False: don't refresh/report as if a placement
         # happened when the PostCommand setup itself failed
@@ -3070,6 +3281,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self._search_timer.Stop()
         except Exception:
             pass
+        if self._shift_release_timer is not None:
+            try:
+                self._shift_release_timer.Stop()
+            except Exception:
+                pass
+            self._shift_release_timer = None
         if self._doc_changed_app:
             try:
                 self._doc_changed_app.DocumentChanged -= self._on_doc_changed
@@ -3136,7 +3353,8 @@ _GUARDED_ENTRY_POINTS = (
         "to_upper", "to_lower", "to_title", "to_sentence",
         "update_model", "window_closing", "window_keydown",
         "search_txt_changed", "selected_keynote_changed",
-        "tree_preview_mouse_down", "tree_preview_mouse_move",
+        "tree_preview_mouse_down", "tree_preview_mouse_up",
+        "tree_preview_mouse_move",
         "tree_double_click", "tree_drag_over", "tree_drop",
         "tree_item_drag_over", "tree_item_drag_leave", "tree_item_drop",
         # code-wired
@@ -3186,8 +3404,11 @@ try:
     if _existing:
         try:
             if _existing.IsLoaded:
-                _existing.Activate()
+                # Restore before activating: Activate()
+                # (SetForegroundWindow) does not un-minimize, and setting
+                # WindowState afterwards restores without re-activating.
                 _existing.WindowState = framework.Windows.WindowState.Normal
+                _existing.Activate()
                 _needs_new = False
         except Exception:
             # stale handle from a closed window or reloaded pyRevit
