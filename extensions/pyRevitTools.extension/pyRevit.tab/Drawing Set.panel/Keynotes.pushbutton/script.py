@@ -2313,6 +2313,16 @@ class KeynoteManagerWindow(forms.WPFWindow):
     # DRAG AND DROP
     # =========================================================================
 
+    def _cancel_shift_release_wait(self):
+        """Stop and forget any in-flight SHIFT-release wait."""
+        timer = self._shift_release_timer
+        self._shift_release_timer = None
+        if timer is not None:
+            try:
+                timer.Stop()
+            except Exception as ex:
+                logger.debug("Shift-release timer stop failed | %s" % ex)
+
     def _place_after_shift_release(self, rec):
         """Place `rec`, but not while SHIFT is still physically held.
 
@@ -2323,7 +2333,16 @@ class KeynoteManagerWindow(forms.WPFWindow):
         Polls rather than hooking KeyUp: this window may not hold keyboard
         focus (the mouse-down that started this was suppressed), so a WPF
         KeyUp is not guaranteed to arrive.
+
+        Only ever ONE wait may be in flight.  Each timer closes over its own
+        `rec`, so a second SHIFT+CLICK while SHIFT is still held would leave
+        two timers polling and place BOTH rows when SHIFT came up.  Note the
+        cancel has to happen before the immediate-placement branch too: a
+        gesture that arrives with SHIFT already released must still cancel
+        the earlier one, or the stale timer fires later on its own.
         """
+        self._cancel_shift_release_wait()
+
         if not self._shift_is_down():
             self._place_keynote(rec)
             return
@@ -2335,18 +2354,26 @@ class KeynoteManagerWindow(forms.WPFWindow):
         state = {"ticks": 0}
 
         def _tick(sender, args):
+            # A tick queued before this timer was cancelled can still be
+            # delivered afterwards.  Ignore it unless this is still the live
+            # wait — otherwise a superseded gesture would place its own row
+            # and null out the newer timer's slot on the way past.
+            if self._shift_release_timer is not timer:
+                try:
+                    timer.Stop()
+                except Exception:
+                    pass
+                return
             # The window can be closed inside the wait — never place into a
             # torn-down window (its ExternalEvent is already disposed).
             if self._closed:
-                timer.Stop()
-                self._shift_release_timer = None
+                self._cancel_shift_release_wait()
                 return
             state["ticks"] += 1
             timed_out = state["ticks"] > 25
             if self._shift_is_down() and not timed_out:
                 return
-            timer.Stop()
-            self._shift_release_timer = None
+            self._cancel_shift_release_wait()
             self._place_keynote(rec)
 
         # A DispatcherTimer tick fires after the command has returned, so it
@@ -2490,6 +2517,20 @@ class KeynoteManagerWindow(forms.WPFWindow):
             logger.debug("Shift+click dispatch failed | %s" % ex)
             self._place_after_shift_release(pending)
 
+    def tree_item_right_click(self, sender, args):
+        """Select the row under the cursor before its context menu opens.
+
+        The menu reuses the toolbar's handlers, which read
+        self.selected_keynote — and right-click does not move TreeView
+        selection on its own the way left-click does.  Without this, every
+        command on the menu would act on whatever was previously selected
+        rather than the row that was actually clicked.
+        """
+        tvi = self._treeviewitem_from_source(sender)
+        if tvi is not None:
+            tvi.IsSelected = True
+            tvi.Focus()
+
     def tree_preview_mouse_move(self, sender, args):
         if self._drag_start_point is None:
             return
@@ -2529,6 +2570,20 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if args.Data.GetDataPresent("keynote"):
             args.Effects = Windows.DragDropEffects.Move
 
+    @staticmethod
+    def _clear_row_highlight(row):
+        """Remove a row's drag highlight, back to TRANSPARENT — not null.
+
+        A null Background is not hit-testable, and the row Border relies on
+        Transparent (set in KeynoteManagerWindow.xaml) so clicks anywhere in
+        the row resolve to it.  Clearing to null here would silently stop
+        the row's empty space responding to clicks after the first drag
+        passed over it.  ClearValue is no help: the template's attribute IS
+        the local value, so clearing it falls back to null.
+        """
+        if hasattr(row, "Background"):
+            row.Background = Windows.Media.Brushes.Transparent
+
     def tree_item_drag_over(self, sender, args):
         args.Effects = getattr(Windows.DragDropEffects, "None")
         if args.Data.GetDataPresent("keynote"):
@@ -2541,16 +2596,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
             args.Handled = True
 
     def tree_item_drag_leave(self, sender, args):
-        if hasattr(sender, "Background"):
-            sender.Background = None
+        self._clear_row_highlight(sender)
 
     def tree_drop(self, sender, args):
         pass
 
     def tree_item_drop(self, sender, args):
         """Drop handler — reparent the dragged node under the target."""
-        if hasattr(sender, "Background"):
-            sender.Background = None
+        self._clear_row_highlight(sender)
 
         if not args.Data.GetDataPresent("keynote"):
             return
@@ -3083,6 +3136,35 @@ class KeynoteManagerWindow(forms.WPFWindow):
         # happened when the PostCommand setup itself failed
         self._revit_run(_do, callback=_on_placed, callback_on_error=False)
 
+    def _place_keynote_as(self, sender, args, radio):
+        """Place the selection using `radio`'s command, then restore the
+        Place selector to whatever it was checked to before.
+
+        Lets a single context-menu click place a specific keynote type
+        without disturbing the user's standing Place choice.
+
+        Restoring as soon as place_keynote() returns — rather than from its
+        async completion callback — is safe: _place_keynote reads
+        self.postcmd_idx synchronously via self.postable_keynote_command
+        and captures the result in a local before it ever queues the
+        PostCommand on the ExternalEvent.
+        """
+        prev_idx = self.postcmd_idx
+        try:
+            self.postcmd_idx = self.postcmd_options.index(radio)
+            self.place_keynote(sender, args)
+        finally:
+            self.postcmd_idx = prev_idx
+
+    def place_user_keynote(self, sender, args):
+        self._place_keynote_as(sender, args, self.userknote_rb)
+
+    def place_element_keynote(self, sender, args):
+        self._place_keynote_as(sender, args, self.elementknote_rb)
+
+    def place_material_keynote(self, sender, args):
+        self._place_keynote_as(sender, args, self.materialknote_rb)
+
     # =========================================================================
     # FILE OPERATIONS
     # =========================================================================
@@ -3281,12 +3363,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self._search_timer.Stop()
         except Exception:
             pass
-        if self._shift_release_timer is not None:
-            try:
-                self._shift_release_timer.Stop()
-            except Exception:
-                pass
-            self._shift_release_timer = None
+        self._cancel_shift_release_wait()
         if self._doc_changed_app:
             try:
                 self._doc_changed_app.DocumentChanged -= self._on_doc_changed
@@ -3348,7 +3425,9 @@ _GUARDED_ENTRY_POINTS = (
         "edit_keynote", "edit_category_inline", "expand_all_tree",
         "export_keynotes", "export_visible_keynotes", "import_keynotes",
         "indent_keynote", "outdent_keynote", "move_up", "move_down",
-        "place_keynote", "refresh", "rekey_keynote", "remove_keynote",
+        "place_keynote", "place_user_keynote", "place_element_keynote",
+        "place_material_keynote",
+        "refresh", "rekey_keynote", "remove_keynote",
         "show_case_menu", "show_keynote", "show_keynote_file",
         "to_upper", "to_lower", "to_title", "to_sentence",
         "update_model", "window_closing", "window_keydown",
@@ -3357,6 +3436,7 @@ _GUARDED_ENTRY_POINTS = (
         "tree_preview_mouse_move",
         "tree_double_click", "tree_drag_over", "tree_drop",
         "tree_item_drag_over", "tree_item_drag_leave", "tree_item_drop",
+        "tree_item_right_click",
         # code-wired
         "_on_search_timer_tick", "_on_window_loaded", "_on_doc_changed",
     )),
