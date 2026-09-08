@@ -152,24 +152,6 @@
             </Style.Triggers>
         </Style>
 
-        <!-- ============================================================ -->
-        <!-- TREE ITEM RIGHT-CLICK MENU STYLES                            -->
-        <!-- Mirror the toolbar's IsEnabled logic (_update_buttons) so the -->
-        <!-- context menu never offers an action the toolbar would not.    -->
-        <!-- "Keynote-only" = not a top-level group and not locked;        -->
-        <!-- "not locked"   = allowed on both groups and keynotes.         -->
-        <!-- ============================================================ -->
-        <!-- CtxMenuItem is intentionally empty and every item in the tree's
-             context menu must carry it (or a style based on it), even one
-             needing no enable logic.  pyRevit's Theme.xaml merges an
-             IMPLICIT <Style TargetType="MenuItem"> that replaces the whole
-             template with a flat Border(Padding 8,4) presenting Header
-             only.  Setting any explicit Style opts an item out of that
-             implicit style, so it renders with the native menu template
-             instead — which is why an item without one looked mis-padded
-             next to its neighbours, and why the pyRevit template also drops
-             InputGestureText and hides the shortcut labels.  Do not delete
-             this style as unused. -->
         <Style x:Key="CtxMenuItem" TargetType="MenuItem"/>
 
         <Style x:Key="CtxKeynoteMenuItem" TargetType="MenuItem"
@@ -196,16 +178,10 @@
             </Style.Triggers>
         </Style>
 
-        <!-- ============================================================ -->
-        <!-- HIERARCHICAL DATA TEMPLATE (the core visual for each node)   -->
-        <!-- ============================================================ -->
+
         <HierarchicalDataTemplate x:Key="KeynoteTreeItem"
                                   ItemsSource="{Binding children}">
-            <!-- Background="Transparent" is functional, not cosmetic: a null
-                 Background is not hit-testable, so clicks on the row's empty
-                 space would fall through to the TreeView and never resolve
-                 to a row. Transparent paints nothing, so the TreeViewItem's
-                 locked/selected highlight still shows through. -->
+
             <Border x:Name="itemBorder" Padding="4,4" Margin="0,0,16,0"
                     CornerRadius="3"
                     Background="Transparent"
@@ -219,13 +195,6 @@
                     Drop="tree_item_drop"
                     PreviewMouseRightButtonDown="tree_item_right_click">
 
-                <!-- Right-click menu — mirrors the action toolbar above.
-                     DataContext is rebound explicitly to the clicked row's
-                     data: a ContextMenu is not part of the visual tree it
-                     opens from, so it does not inherit DataContext on its
-                     own.  tree_item_right_click selects the row first, so
-                     every command here (and the toolbar handlers it reuses)
-                     acts on the item that was actually clicked. -->
                 <Border.ContextMenu>
                     <ContextMenu DataContext="{Binding PlacementTarget.DataContext,
                                                        RelativeSource={RelativeSource Self}}">
