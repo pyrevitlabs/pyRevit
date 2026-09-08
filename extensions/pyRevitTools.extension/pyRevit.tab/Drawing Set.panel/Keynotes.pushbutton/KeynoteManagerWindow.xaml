@@ -1,6 +1,6 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        ShowInTaskbar="False"
+        ShowInTaskbar="True"
         Width="720" Height="750"
         MinWidth="720" MinHeight="480"
         ResizeMode="CanResizeWithGrip"
@@ -157,8 +157,14 @@
         <!-- ============================================================ -->
         <HierarchicalDataTemplate x:Key="KeynoteTreeItem"
                                   ItemsSource="{Binding children}">
+            <!-- Background="Transparent" is functional, not cosmetic: a null
+                 Background is not hit-testable, so clicks on the row's empty
+                 space would fall through to the TreeView and never resolve
+                 to a row. Transparent paints nothing, so the TreeViewItem's
+                 locked/selected highlight still shows through. -->
             <Border x:Name="itemBorder" Padding="4,4" Margin="0,0,16,0"
                     CornerRadius="3"
+                    Background="Transparent"
                     AllowDrop="True"
                     HorizontalAlignment="Stretch"
                     MaxWidth="{Binding ActualWidth,
@@ -513,7 +519,8 @@
                                 ToolTip="Find in model" IsEnabled="False" Click="show_keynote"/>
                         <Button x:Name="placeBtn" Style="{StaticResource ToolbarButton}"
                                 Content="&#x1F4CC;" FontSize="12"
-                                ToolTip="Place in model" IsEnabled="False" Click="place_keynote"/>
+                                ToolTip="Place in model (or Shift+Click a keynote)"
+                                IsEnabled="False" Click="place_keynote"/>
                     </StackPanel>
                 </DockPanel>
             </Grid>
@@ -536,6 +543,7 @@
                       ItemContainerStyle="{StaticResource TreeItemContainer}"
                       SelectedItemChanged="selected_keynote_changed"
                       PreviewMouseLeftButtonDown="tree_preview_mouse_down"
+                      PreviewMouseLeftButtonUp="tree_preview_mouse_up"
                       PreviewMouseMove="tree_preview_mouse_move"
                       PreviewMouseDoubleClick="tree_double_click"
                       AllowDrop="True"
