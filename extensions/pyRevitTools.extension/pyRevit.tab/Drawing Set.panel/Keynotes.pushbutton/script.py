@@ -44,31 +44,6 @@ from pyrevit.interop import adc
 
 import keynotesdb as kdb
 
-# =============================================================================
-# PERSISTENT ENGINE REQUIREMENT
-# =============================================================================
-# This window is MODELESS: its WPF event handlers keep running long after the
-# pyRevit command returns.  On a NON-persistent engine, pyRevit wipes every
-# module-level global as soon as the command returns (IronPythonEngine.Execute
-# finally-block), so the next handler that touches a global raises NameError
-# into Revit's message pump = fatal crash (issue #3517).
-#
-# The persistent engine is declared in bundle.yaml (`engine: persistent: true`)
-# — NOT with a `__persistentengine__` constant here.  bundle.yaml is the
-# authoritative route: it is honored unconditionally by both the legacy and the
-# C# loader, whereas inline script metadata is gated by the
-# `core.read_script_metadata` setting, is ignored by the legacy loader whenever
-# bundle.yaml yields metadata (genericcomps.py: `if not self.meta`), and is
-# deprecated for removal in pyRevit 7.x.  (A bundle.yaml that fails to PARSE
-# falls back to script constants on the legacy loader — one more reason the
-# runtime probe below is the real safety net rather than either declaration.)
-#
-# Declaring it is still not a guarantee at RUNTIME (a stale cached command
-# assembly, a bundle.yaml parse failure, or a future loader change can all
-# yield a non-persistent engine), so this script does not trust the
-# declaration — it reads the engine config the loader actually baked into this
-# command and degrades to a safe modal window if persistence is missing.
-# See _persistent_engine_state() and the entry point at the bottom.
 
 logger = script.get_logger()
 output = script.get_output()
@@ -110,10 +85,7 @@ def _persistent_engine_state():
     so it reflects reality regardless of which metadata channel supplied it.
     """
     cfgs = None
-    # The engineCfgs JSON lives on ScriptRuntimeConfigs.EngineConfigs.  Try
-    # that first: EXEC_PARAMS.engine_cfgs reads ScriptRuntime.EngineConfigs,
-    # which does not exist on every build (it raises on 6.5.3), so it is only
-    # a secondary probe here.
+
     try:
         rt_cfgs = EXEC_PARAMS.script_runtime_cfgs
         cfgs = rt_cfgs.EngineConfigs if rt_cfgs else None
@@ -147,17 +119,12 @@ def _persistent_engine_state():
     except Exception:
         cfg = None
     if isinstance(cfg, dict):
-        # NOTE: a missing "persistent" key must read as False, matching the
-        # runtime — IronPythonEngineConfigs.persistent defaults to false, so
-        # anything the runtime cannot read is treated as non-persistent and
-        # the scope IS wiped.  Failing closed here keeps us in step with it.
+
         if "persistent" not in cfg:
             return False
         return _coerce_persistent_flag(cfg.get("persistent"))
 
-    # tolerate any JSON shape change — probe the raw text.  Quotes are
-    # stripped so a stringified value ("persistent":"false") reads the same
-    # as a real boolean ("persistent":false).
+
     probe = raw.replace(" ", "").replace('"', "").replace("'", "").lower()
     if "persistent:true" in probe:
         return True
@@ -165,15 +132,6 @@ def _persistent_engine_state():
         return False
     logger.debug("KeynoteManager | unrecognized engine cfgs: %s", raw)
     return None
-
-
-# =============================================================================
-# ADC MONKEY-PATCH — fix ReadOnlyList subscripting on .NET Framework
-# =============================================================================
-# pyRevit's adc.py uses [0] on .NET ReadOnlyList objects returned by the
-# Desktop Connector API.  This works on .NET 8 (Revit 2025+) but fails on
-# .NET Framework 4.x (Revit 2023/2024) because IronPython can't subscript
-# ReadOnlyList[T] with [].  The fix: iterate or use .Item[0] / LINQ First().
 
 
 def _safe_first(collection):
@@ -253,18 +211,6 @@ if not HOST_APP.is_newer_than("2024") and not getattr(
     adc._get_item_property_value = _patched_get_item_property_value
     adc._get_item_property_id_value = _patched_get_item_property_id_value
     adc._readonlylist_patched = True
-
-
-# =============================================================================
-# UI EXCEPTION SHIELD
-# =============================================================================
-# In a MODELESS window there is no pyRevit executor underneath WPF event
-# handlers: any exception that escapes a handler, a DispatcherTimer tick,
-# or a Dispatcher.BeginInvoke callback unwinds into Revit's native message
-# pump and terminates Revit (0xe0434352).  Every runtime entry point must
-# therefore be wrapped.  The wrapper deliberately captures everything it
-# needs as closure references / default args and uses only builtins in its
-# error path, so it keeps working even if the engine scope has been wiped.
 
 
 class KeynoteSetupError(Exception):
@@ -401,32 +347,14 @@ class RevitActionHandler(UI.IExternalEventHandler):
 
 
 # Singleton — only one keynote manager window at a time.
-# NOTE: module globals do NOT survive across button clicks (each execution
-# gets a fresh scope even on a persistent engine — IronPythonEngine.Execute
-# calls Engine.CreateScope() per run), so the singleton handle lives in
-# pyRevit's cross-scope environment variables instead.
+
 KEYNOTEMGR_WINDOW_ENVVAR = "KEYNOTEMGR_ACTIVE_WINDOW"
-
-# How many times the user may retry picking a keynote file during setup
-# before _connect_kfile gives up (bounds the "Select Other" retry loop).
 MAX_KFILE_ATTEMPTS = 5
-
-# Usage data comes from a collector over OST_KeynoteTags in the CURRENT
-# document, so "not in use" is advisory even when the query fully succeeded:
-# it cannot see other projects sharing this keynote file, linked models, or
-# element/material keynote parameters with no tag placed.  Destructive
-# commands say so rather than implying the check was authoritative.
 USAGE_SCOPE_NOTE = (
     "Usage is checked against keynote tags in THIS project only — other "
     "projects sharing this keynote file, linked models and un-tagged "
     "element/material keynotes are not visible to this check."
 )
-
-
-# =============================================================================
-# HELPERS
-# =============================================================================
-
 
 def get_keynote_pcommands():
     return list(
@@ -482,11 +410,6 @@ def _find_parent_of(all_categories, all_keynotes, child):
         if kn.key == pkey:
             return kn
     return None
-
-
-# =============================================================================
-# EDIT RECORD WINDOW (unchanged from pyRevit — works with EditRecord.xaml)
-# =============================================================================
 
 
 class EditRecordWindow(forms.WPFWindow):
@@ -780,48 +703,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name, reset_config=False, safe_mode=False):
         forms.WPFWindow.__init__(self, xaml_file_name)
 
-        # SAFE MODE = this command did not get a persistent engine, so the
-        # window must run MODAL (see the entry point).  While a modal dialog
-        # blocks, Revit does not pump ExternalEvents — but the command frame
-        # is still on the stack, so the Revit API is directly usable and
-        # queued actions can simply run inline instead.
         self._modal_mode = safe_mode
-
-        # Owner is already set: forms.WPFWindow.__init__ above runs
-        # load_xaml -> setup_owner(), which owns this window to
-        # ComponentManager.ApplicationWindow (Revit's frame).  Owning it
-        # there keeps WPF's message pump from colliding with Revit's on
-        # focus change, and Win32 draws an owned window above its owner —
-        # which is what keeps this window over Revit.  Do not re-assign it.
-
-        # Never set Topmost on this window, in either mode.  Win32 sorts
-        # windows into bands before sorting within a band: every
-        # WS_EX_TOPMOST window sits above every non-topmost one, and
-        # "owned above owner" only orders windows inside a band.  Child
-        # dialogs are created non-topmost (pyRevit realizes their HWND
-        # while their owner is still Revit's frame, and CreateWindowEx is
-        # the only moment the flag is inherited; a later `child.Owner =
-        # self` is just SetWindowLong(GWLP_HWNDPARENT)), so a topmost
-        # window here buries every one of them — including forms.alert's
-        # native UI.TaskDialog, which has no owner or topmost property to
-        # raise it with.
         self.Topmost = False
 
         self._kfile = None
         self._kfile_handler = None
         self._kfile_ext = None
         self._conn = None
-
-        # The document this window belongs to.  Deferred Revit actions must
-        # never run against a DIFFERENT document the user switched to.
         self._doc = revit.doc
-
-        # ExternalEvent is instance-owned: module-level creation would leak
-        # one Revit-registered event per button click (fresh scope per run).
-        # It is created at the very END of __init__ (see below) so that no
-        # setup failure can leak a Revit-registered event: if __init__ aborts,
-        # the entry-point handler never receives the instance and therefore
-        # could never dispose it.
         self._ext_handler = RevitActionHandler()
         self._ext_event = None
 
@@ -838,17 +727,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._used_keysdict = defaultdict(list)
         self._used_typesdict = defaultdict(set)
         self._used_viewsdict = defaultdict(list)
-        # True until a COMPLETE usage snapshot has been collected: the
-        # delete / re-key guards must not read "unused" out of a map that
-        # never got filled.
         self._usage_stale = True
         self._refresh_used_keynotes()
-
-        # drag state
         self._drag_start_point = None
         self._is_dragging = False
-        # SHIFT+CLICK-to-place: the row resolved on mouse-DOWN, placed on
-        # mouse-UP (see tree_preview_mouse_down).
         self._shift_place_pending = None
         self._shift_release_timer = None
 
@@ -859,11 +741,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
         # Wait 300ms after last keystroke before filtering.
         self._search_timer.Interval = TimeSpan.FromMilliseconds(300)
         self._search_timer.Tick += self._on_search_timer_tick
-
-        # Auto-refresh — subscribe to Revit's DocumentChanged event
-        # so usage counts and type filters update instantly.
-        # Deferred to Loaded event to avoid delegate creation crash
-        # during __init__ (IronPython .NET interop limitation).
         self._refresh_pending = False
         self._doc_changed_app = None
         self.Loaded += self._on_window_loaded
@@ -875,12 +752,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._update_full_tree()
         self._update_status_bar()
         self.search_tb.Focus()
-
-        # LAST step — everything that could abort __init__ has now succeeded,
-        # so this Revit-registered event cannot be orphaned.  Nothing above
-        # uses _revit_run, and the Loaded handler only fires after __init__.
-        # ExternalEvent.Create requires a valid API context, which holds here
-        # inside the command's execution frame.
         self._ext_event = UI.ExternalEvent.Create(self._ext_handler)
 
     # =========================================================================
@@ -938,9 +809,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     @property
     def all_categories(self):
-        # Quiet-safe: this property is hit from selection-changed and other
-        # hot paths — never alert or raise here (file may be mid-sync on a
-        # cloud drive).  Actions that need user feedback handle their own.
         if not self._conn:
             return []
         try:
@@ -1023,10 +891,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
             action()
 
         if self._modal_mode:
-            # Modal: ExternalEvents would never fire while we block, but we
-            # are still inside the command's API context — run the action
-            # directly.  (This holds for transactions; it does NOT hold for
-            # PostCommand — see place_keynote.)
             _succeeded = True
             try:
                 _doc_affine_action()
@@ -1039,12 +903,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 except Exception as disp_ex:
                     logger.debug("Failed to display error | %s", disp_ex)
             if callback and (_succeeded or callback_on_error):
-                # Marshal the callback instead of calling it inline: when the
-                # caller is window_closing, an inline callback would re-enter
-                # Close() from inside the Closing handler, which WPF rejects
-                # ("Cannot ... call Close while a Window is closing") — the
-                # window would silently stay open.  BeginInvoke matches the
-                # modeless ordering; ShowDialog keeps this Dispatcher pumping.
                 try:
                     self.Dispatcher.BeginInvoke(
                         System.Action(ui_guard(callback)),
@@ -1054,9 +912,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
             return
 
         if self._ext_event is None:
-            # window still initializing, or setup aborted.  Be loud: a
-            # silent return here would leave e.g. a cancelled close with no
-            # work done and no explanation.
             logger.error("KeynoteManager | ExternalEvent unavailable; "
                          "action not queued")
             forms.alert("Keynote Manager cannot reach Revit right now.\n"
@@ -1316,8 +1171,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
                             used_types[key].add(val)
                 except Exception:
                     pass
-                # Resolve owner view names NOW, while in API context,
-                # so tooltip building never hits the API from WPF events
                 try:
                     vel = doc.GetElement(kn.OwnerViewId)
                     if vel:
@@ -1325,9 +1178,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 except Exception:
                     pass
         except Exception as ex:
-            # The loop stopped early, so keynotes that ARE placed may be
-            # missing from `used`.  Report the failure instead of handing
-            # back a partial map that reads as "unused".
             logger.debug("Collect used keynotes failed | %s" % ex)
             return used, used_types, used_views, False
         return used, used_types, used_views, True
@@ -1393,10 +1243,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     "tag was updated.\nThe keynote file has already been "
                     "changed — press F5 and check the affected tags."
                     % operation)
-            # Fresh read failed, but the cached snapshot is a complete one:
-            # use it, and flag usage as unverified from here on so the next
-            # delete / re-key warns rather than trusting a map the model just
-            # refused to confirm.
             used = self._used_keysdict
             self._usage_stale = True
         return dict((k, list(used.get(k, []))) for k in keys)
@@ -1407,8 +1253,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     def save_config(self):
         if not self._kfile:
-            # nothing to key the per-file settings on (file resolution
-            # failed mid-session) — skip rather than write a None key
             return
         wg = {}
         for k, v in self._config.get_option("last_window_geom", {}).items():
@@ -1550,11 +1394,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 forms.alert("Keynote file not found. Select a valid file.")
                 self._change_kfile()
                 self._determine_kfile()
-            # Existence must be re-checked: get_local_keynote_file returns the
-            # path stored in the document WITHOUT testing it, so cancelling
-            # the picker hands back the same missing path.  Without this, a
-            # missing file would fall through to the read-only check below and
-            # be misreported as a permissions problem.
             if not self._kfile or not op.exists(self._kfile):
                 raise KeynoteSetupError(
                     "No valid keynote file set for this project.")
@@ -1610,10 +1449,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
                         raise KeynoteSetupError(
                             "Conversion failed: %s" % convex)
                 elif res == "Select Other":
-                    # Don't prompt on the final pass: _change_kfile COMMITS
-                    # set_keynote_file, so picking a file the loop is about
-                    # to discard would repoint the document at a keynote file
-                    # that was never actually tried.
                     if attempt >= MAX_KFILE_ATTEMPTS - 1:
                         raise KeynoteSetupError(
                             "Could not connect to a valid keynote file after "
@@ -1640,9 +1475,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 "Could not connect to a valid keynote file after {} "
                 "attempts.".format(MAX_KFILE_ATTEMPTS))
 
-        # Session shadow backup — DeffrelDB rewrites the whole file on
-        # every commit with no atomic-rename step; if a cloud-sync race
-        # ever mangles the file, this copy is the recovery point.
         if self._conn and self._kfile:
             try:
                 shadow = script.get_data_file(
@@ -2452,12 +2284,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         return None
 
     def tree_preview_mouse_down(self, sender, args):
-        # SHIFT+CLICK a row places that keynote.  Handled from the tunneling
-        # Preview event so it lands before TreeViewItem's own selection
-        # handling and before a drag can start.
-
-        # Drop any pending placement from a gesture that never delivered its
-        # mouse-up here (released outside the tree), so it cannot fire late.
+        # SHIFT+CLICK a row places that keynote. 
         self._shift_place_pending = None
 
         shift = False
@@ -2476,15 +2303,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self._hint("Shift+Click a keynote row to place it")
 
         if tvi is not None:
-            # Select by hand: Handled=True suppresses the click entirely, so
-            # nothing else can act on it, and the toolbar and status bar
-            # have to agree on which keynote is about to be armed.
             tvi.IsSelected = True
             self._drag_start_point = None
             args.Handled = True
-            # Placed on mouse-UP, not here: PostCommand arms an interactive
-            # Revit tool, and handing it a half-finished mouse gesture (the
-            # button is still physically down) makes Revit drop the command.
             self._shift_place_pending = tvi.DataContext
             return
 
@@ -2503,8 +2324,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
         keeps its input state consistent.
         """
         pending = self._shift_place_pending
-        # Clear FIRST: a placement that throws must not leave the record
-        # armed to fire again on an unrelated later click.
         self._shift_place_pending = None
         if pending is None:
             return
@@ -2639,10 +2458,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
                         stack.append(kn.key)
             return False
 
-        # Read the keynote list DIRECTLY and abort on failure — the quiet
-        # all_keynotes property returns [] on a read error, which would
-        # make this cycle check pass vacuously and let a parent_key cycle
-        # be committed to the shared file.
         try:
             fresh_keynotes = kdb.get_keynotes(self._conn)
         except Exception as ex:
@@ -2795,18 +2610,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
             forms.alert("No keynote file is connected.")
             return
 
-        # Ask the DATABASE, not the in-memory tree.  The tree is not a
-        # reliable source for this check, for three separate reasons:
-        #   - an active search filter hides children (sel.children returns
-        #     only the FILTERED subset);
-        #   - _build_full_tree truncates below max_depth, so a node at that
-        #     boundary looks childless while the file still has descendants
-        #     under it;
-        #   - the cycle guard skips already-visited nodes, which likewise
-        #     omits them from the snapshots.
-        # Deleting on a stale "no children" answer orphans those rows
-        # invisibly in the shared keynote file, so a read failure must ABORT
-        # rather than fall through to "no children".
         try:
             db_keynotes = kdb.get_keynotes(self._conn)
         except Exception as ex:
@@ -2873,15 +2676,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if not sel:
             return
         if not self._conn:
-            # _conn is legitimately None while the window is alive: the
-            # keynote file may have vanished, or a Change-File reconnect
-            # may have failed.
             forms.alert("No keynote file is connected.")
             return
-        # Locked-children check against the DATABASE for the same reason as
-        # remove_keynote: filtering, depth truncation and the cycle guard can
-        # all hide a locked child from the in-memory tree.  Abort on a read
-        # failure rather than proceeding on incomplete information.
         try:
             db_keynotes = kdb.get_keynotes(self._conn)
         except Exception as ex:
@@ -2933,9 +2729,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
             yes=True, no=True)
 
     def _rekey_refs(self, from_key, to_key):
-        # Re-query rather than trusting the cached snapshot: the keynote file
-        # has already been rewritten at this point, so a stale map here would
-        # silently leave tags pointing at a key that no longer exists.
         ids = self._collect_used_ids([from_key], "Re-key")
         with revit.Transaction("Re-Key {}".format(from_key)):
             for kid in ids.get(from_key, []):
@@ -3033,8 +2826,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 "Keynote '{}' — {} placements shown in output".format(key, len(kids))
             )
 
-        # callback_on_error=False: don't claim "N placements shown" when the
-        # report failed part-way (or was refused by the doc-affinity guard)
         self._revit_run(_do, callback=_update_status, callback_on_error=False)
 
     def place_keynote(self, sender, args):
@@ -3050,12 +2841,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
         """
         if not sel:
             return
-
-        # Only a leaf keynote is placeable: a top-level group is an
-        # organizational node, and a locked record is off-limits as it is for
-        # every other action.  The toolbar button is disabled in both cases
-        # (see _update_buttons), so this gate only fires on SHIFT+CLICK —
-        # hence reporting rather than returning quietly.
         if sel.locked:
             self._hint("%s is locked by another user — cannot place" % sel.key)
             return
@@ -3064,17 +2849,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
                        % sel.key)
             return
 
-        # NOT AVAILABLE IN SAFE (MODAL) MODE — and this is a hard block, not
-        # just a UX nicety.  PostCommandAndUpdateNewElementProperties both
-        # (a) PostCommands an interactive tool that cannot run while a modal
-        # dialog owns the UI and the command frame has not returned, and
-        # (b) arms pyRevit's CancelAllDialogs DialogBoxShowing hook, which is
-        # only ever unsubscribed from an Idling handler — and Idling never
-        # fires while a modal dialog blocks.  Left armed, it silently
-        # auto-confirms EVERY later TaskDialog, including the delete-keynote
-        # prompts = silent deletions from the shared keynote file.
-        # Checked after eligibility, so shift-clicking a group in safe mode
-        # does not alert about a placement that was never on offer.
         if self._modal_mode:
             forms.alert(
                 "Placing keynotes needs the modeless window, which requires "
@@ -3088,8 +2862,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         postcmd = self.postable_keynote_command
 
         def _do():
-            # clear first — a stale value from a previous click would
-            # otherwise be reported if this attempt fails early
+
             self._place_result = None
             keynotes_cat = revit.query.get_category(
                 DB.BuiltInCategory.OST_KeynoteTags)
@@ -3122,18 +2895,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self._refresh_used_keynotes()
             self._update_full_tree()
             self._update_status_bar()
-            # After _update_status_bar, which would overwrite it.  Revit's
-            # tag tool holds the foreground and this window may be behind
-            # it, so name what got armed.
-            self._hint("Placing %s — click in the view" % sel_key)
-            # Do not re-raise or re-focus this window here.  The PostCommand
-            # above armed Revit's interactive keynote-tag tool, which now
-            # holds the foreground and is waiting for a click in the view;
-            # Activate() would pull focus off it.  Owner parenting already
-            # keeps this window above Revit's frame (see __init__).
 
-        # callback_on_error=False: don't refresh/report as if a placement
-        # happened when the PostCommand setup itself failed
+            self._hint("Placing %s — click in the view" % sel_key)
+
+
         self._revit_run(_do, callback=_on_placed, callback_on_error=False)
 
     def _place_keynote_as(self, sender, args, radio):
@@ -3199,13 +2964,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self._refresh_used_keynotes()
             self._update_full_tree()
             self._update_status_bar()
-
-        # callback_on_error=False: _reload tears down and rebuilds the DB
-        # connection and sets _needs_update.  If _set_file failed, the
-        # document still points at the OLD file, so there is nothing to
-        # reload — and the likeliest failure is the doc-affinity guard, in
-        # which case reloading would rebind this window to a different
-        # document's keynote file.
         self._revit_run(_set_file, callback=_reload, callback_on_error=False)
 
     def show_keynote_file(self, sender, args):
@@ -3339,17 +3097,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 args.Cancel = True
 
                 def _do_update():
-                    # verified sync — raises if Revit did not actually
-                    # reload, so the gate below keeps the window open
                     self._sync_model_keynotes()
 
                 def _sync_done():
-                    # Only reached when the sync actually succeeded
-                    # (callback_on_error=False).  On failure the handler has
-                    # already alerted, _needs_update stays True and
-                    # _close_pending stays False, so the window remains open
-                    # and the next close attempt prompts again instead of
-                    # discarding an unsynced change.
                     self._close_pending = True
                     self._finalize_close()
 
@@ -3391,9 +3141,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
             except Exception:
                 pass
             self._ext_event = None
-        # Only the modeless window owns the singleton handle — a safe-mode
-        # (modal) window never registers one, so it must not clear a live
-        # modeless window's handle either.
         if not self._modal_mode:
             try:
                 envvars.set_pyrevit_env_var(KEYNOTEMGR_WINDOW_ENVVAR, None)
@@ -3404,9 +3151,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
 # =============================================================================
 # APPLY UI EXCEPTION SHIELD
 # =============================================================================
-# Every method that WPF, the DispatcherTimer, the Revit event system, or
-# the ExternalEvent framework can invoke AFTER the command returns must be
-# shielded.  Add new handlers to this list when wiring them in XAML.
+
 
 _GUARDED_ENTRY_POINTS = (
     (RevitActionHandler, (
@@ -3458,12 +3203,6 @@ for _cls, _names in _GUARDED_ENTRY_POINTS:
 # =============================================================================
 
 try:
-    # Is this command ACTUALLY running on a persistent engine?  Do not trust
-    # the declaration — read what the loader resolved (see the note at the
-    # top of this file).  True -> modeless (best UX).  False -> modal, which
-    # keeps the command frame alive for the window's whole lifetime and is
-    # therefore safe without a persistent engine.  None (undetermined) ->
-    # modeless, with ui_guard as the backstop.
     _persistent = _persistent_engine_state()
     _safe_mode = _persistent is False
     if _safe_mode:
@@ -3473,12 +3212,6 @@ try:
             "bundle.yaml declares `engine: persistent: true` and reload "
             "pyRevit; a stale cached command assembly can also cause this.")
 
-    # Singleton: if already open, bring to front.  The handle lives in
-    # pyRevit env-vars because module globals do not survive across
-    # executions (fresh scope per click even on a persistent engine).
-    # The LOOKUP runs in both modes: a live modeless window from an earlier
-    # run must be reused (never orphaned) even if this run lands in safe
-    # mode.  Only the REGISTRATION is modeless-only.
     _existing = envvars.get_pyrevit_env_var(KEYNOTEMGR_WINDOW_ENVVAR)
     _needs_new = True
     if _existing:
@@ -3515,9 +3248,6 @@ except KeynoteSetupError as kser:
     envvars.set_pyrevit_env_var(KEYNOTEMGR_WINDOW_ENVVAR, None)
     forms.alert(str(kser))
 except SystemExit:
-    # A SystemExit here (e.g. from a pyRevit library helper) would
-    # otherwise vanish with ZERO output — pyRevit's engine swallows
-    # SystemExitException silently.  Surface it instead of going dark.
     envvars.set_pyrevit_env_var(KEYNOTEMGR_WINDOW_ENVVAR, None)
     logger.error("KeynoteManager | a SystemExit was raised during setup")
     forms.alert(
