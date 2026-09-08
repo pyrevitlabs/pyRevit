@@ -3137,8 +3137,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._revit_run(_do, callback=_on_placed, callback_on_error=False)
 
     def _place_keynote_as(self, sender, args, radio):
-        """Place the selection using `radio`'s command, then restore the
-        Place selector to whatever it was checked to before.
+        """Place the selection with `radio`'s command and restore the selector.
 
         Lets a single context-menu click place a specific keynote type
         without disturbing the user's standing Place choice.
@@ -3157,12 +3156,15 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self.postcmd_idx = prev_idx
 
     def place_user_keynote(self, sender, args):
+        """Place a user keynote for the current selection."""
         self._place_keynote_as(sender, args, self.userknote_rb)
 
     def place_element_keynote(self, sender, args):
+        """Place an element keynote for the current selection."""
         self._place_keynote_as(sender, args, self.elementknote_rb)
 
     def place_material_keynote(self, sender, args):
+        """Place a material keynote for the current selection."""
         self._place_keynote_as(sender, args, self.materialknote_rb)
 
     # =========================================================================
