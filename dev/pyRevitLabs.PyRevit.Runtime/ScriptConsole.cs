@@ -503,13 +503,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             InjectHtmlElement("head", "style", css, null);
         }
 
-        private void ApplyCloseOthersConfig()
-        {
-            if (PyRevitConfigs.GetCloseOtherOutputs())
-            {
+        private void ApplyCloseOthersConfig() {
+            if (PyRevitConfigs.GetCloseOtherOutputs()) {
                 var mode = PyRevitConfigs.GetCloseOutputMode();
-                this.Dispatcher.BeginInvoke(new Action(() =>
-                {
+                this.Dispatcher.BeginInvoke(new Action(() => {
                     CloseOtherOutputs(filterByCommandId: mode == OutputCloseMode.CurrentCommand);
                 }));
             }
@@ -909,7 +906,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // if this is a know debugger stop error
             // make a nice report
             foreach (var dbgr in _supportedDebuggers) {
-                foreach(var stopFinder in dbgr.StopFinders) {
+                foreach (var stopFinder in dbgr.StopFinders) {
                     if (stopFinder.Item1.IsMatch(OutputText)) {
                         AppendText(
                             errorHeader + stopFinder.Item2,
@@ -960,7 +957,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
             stdinBar.Show();
             // printing an empty line will cause the page to scroll to
             // bottom again and not be covered by the input control
-            AppendText("", ScriptConsoleConfigs.DefaultBlock, record: false);
+            try {
+                AppendText("", ScriptConsoleConfigs.DefaultBlock, record: false);
+            }
+            catch (Exception ex) {
+                Debug.WriteLine($"ScriptConsole.GetInput: failed to append cosmetic scroll fix line. {ex}");
+            }
             string inputText = stdinBar.ReadInput();
             stdinBar.Hide();
 
@@ -1246,29 +1248,23 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return MakeButtonPath("M19.92,12.08L12,20L4.08,12.08L5.5,10.67L11,16.17V2H13V16.17L18.5,10.66L19.92,12.08M12,20H2V22H22V20H12Z");
         }
 
-        private void Save_Contents_Button_Clicked(object sender, RoutedEventArgs e)
-        {
-            var saveDlg = new System.Windows.Forms.SaveFileDialog()
-            {
+        private void Save_Contents_Button_Clicked(object sender, RoutedEventArgs e) {
+            var saveDlg = new System.Windows.Forms.SaveFileDialog() {
                 Title = "Save Output to:",
                 Filter = "HTML Files|*.html",
                 DefaultExt = "html",
                 AddExtension = true,
                 RestoreDirectory = true
             };
-            if (saveDlg.ShowDialog() != System.Windows.Forms.DialogResult.OK || string.IsNullOrWhiteSpace(saveDlg.FileName))
-            {
+            if (saveDlg.ShowDialog() != System.Windows.Forms.DialogResult.OK || string.IsNullOrWhiteSpace(saveDlg.FileName)) {
                 return;
             }
-            try
-            {
-                using (StreamWriter writer = File.CreateText(saveDlg.FileName))
-                {
+            try {
+                using (StreamWriter writer = File.CreateText(saveDlg.FileName)) {
                     writer.Write(GetFullHtml());
                 }
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 System.Windows.MessageBox.Show($"Error saving file: {ex.Message}", "Save Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -1283,7 +1279,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     IsAutoCollapseActive = false;
                     button.Content = GetPinIcon(false);
                     button.ToolTip = "Keep On Top";
-                } else {
+                }
+                else {
                     IsAutoCollapseActive = true;
                     button.Content = GetAutoCollapseIcon(true);
                     button.ToolTip = "Release";
@@ -1331,20 +1328,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return tempHtml;
         }
 
-        private void OpenButton_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
+        private void OpenButton_Click(object sender, RoutedEventArgs e) {
+            try {
                 var uri = new Uri(SaveContentsToTemp()).AbsoluteUri;
-                var processInfo = new ProcessStartInfo()
-                {
+                var processInfo = new ProcessStartInfo() {
                     FileName = uri,
                     UseShellExecute = true
                 };
                 Process.Start(processInfo);
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 System.Windows.MessageBox.Show($"Error opening file: {ex.Message}", "Open Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
@@ -1416,7 +1409,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                                 vkCode == VK_C
                                     ? "document.execCommand('Copy');"
                                     : "document.execCommand('SelectAll');");
-                        } catch (Exception ex) {
+                        }
+                        catch (Exception ex) {
                             System.Diagnostics.Debug.WriteLine($"[ScriptConsoleLowLevelKeyHook] execCommand failed: {ex.Message}");
                         }
                         return (IntPtr)1;

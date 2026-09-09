@@ -74,7 +74,7 @@
                      Text="{Binding bottomplane_new_value, UpdateSourceTrigger=PropertyChanged}" 
                      Width="100" Height="25" Margin="5,0"
                      HorizontalContentAlignment="Right" VerticalContentAlignment="Center"
-                     IsEnabled="{Binding can_modify_view}"
+                     IsEnabled="{Binding can_modify_bottom}"
                      Background="{Binding bottomplane_field_bg}"/>
             <ComboBox Grid.Row="3" Grid.Column="4" x:Name="bottomplane_level_combo" 
                       ItemsSource="{Binding available_levels}" 
@@ -82,7 +82,7 @@
                       DisplayMemberPath="Name" 
                       SelectedValuePath="IdValue"
                       Height="25" Margin="5,0" VerticalContentAlignment="Center"
-                      IsEnabled="{Binding can_modify_view}"
+                      IsEnabled="{Binding can_modify_bottom}"
                       Background="{Binding bottomplane_field_bg}"/>
             
             <!-- View Depth Row -->

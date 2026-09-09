@@ -9,6 +9,12 @@
     <system:String x:Key="LblDesignOption">Вариант проектирования</system:String>
     <system:String x:Key="ChkDesignOption.Tooltip">Вариант проектирования доступен только для чтения</system:String>
     <system:String x:Key="TbDesignOption.Tooltip">Только чтение. Принадлежность к варианту проектирования не может быть изменена через API.</system:String>
+    <system:String x:Key="LblCreator">Создал</system:String>
+    <system:String x:Key="TbCreator.Tooltip">Пользователь, создавший элемент.</system:String>
+    <system:String x:Key="LblLastChangedBy">Последнее изменение</system:String>
+    <system:String x:Key="TbLastChangedBy.Tooltip">Пользователь, последний раз изменивший элемент.</system:String>
+    <system:String x:Key="LblOwner">Владелец</system:String>
+    <system:String x:Key="TbOwner.Tooltip">Текущий владелец worksharing для элемента.</system:String>
 
     <!-- Раздел параметров -->
     <system:String x:Key="LblParameters">Параметры</system:String>

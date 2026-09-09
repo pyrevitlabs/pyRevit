@@ -24,6 +24,17 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
         private readonly RevitThemeDetector _themeDetector;
         private readonly BitmapCache _cache;
 
+        /// <summary>
+        /// Shared across every <see cref="IconManager"/> instance for the lifetime of the process,
+        /// not just one session: a fresh <see cref="IconManager"/> (and, before this, a fresh
+        /// <see cref="BitmapCache"/>) is created on every <c>LoadSession()</c> call, first load and
+        /// every reload alike, which threw away all the decoded ribbon icons on every reload for no
+        /// reason - icons are immutable per (path, size) except when a developer edits the file on
+        /// disk, which <see cref="BitmapCache.TryGet"/> already detects via last-write-time and
+        /// treats as a miss.
+        /// </summary>
+        private static readonly BitmapCache _sharedCache = new BitmapCache();
+
         // Accumulated time spent decoding cache misses (BitmapImage + EnsureProperDpi),
         // summed across every LoadBitmapSource call since the last reset.
         private long _decodeMs;
@@ -36,7 +47,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _themeDetector = new RevitThemeDetector(logger);
-            _cache = new BitmapCache();
+            _cache = _sharedCache;
         }
 
         /// <summary>
@@ -48,7 +59,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _themeDetector = themeDetector ?? throw new ArgumentNullException(nameof(themeDetector));
-            _cache = new BitmapCache();
+            _cache = _sharedCache;
         }
 
         /// <inheritdoc/>
