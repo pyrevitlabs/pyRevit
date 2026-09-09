@@ -666,7 +666,7 @@ def _get_target_elements():
     selection = revit.get_selection()
     if selection and len(selection) > 0:
         return list(selection.elements)
-    elements = revit.pick_elements()
+    elements = revit.pick_elements(message=_t("pick_prompt", "Select element(s) to diagnose"))
     return elements
 
 
