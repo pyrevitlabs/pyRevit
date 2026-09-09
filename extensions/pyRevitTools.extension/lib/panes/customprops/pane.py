@@ -472,7 +472,6 @@ class CustomPropertiesPanel(forms.WPFPanel):
             self.worksharing_owner_tb.Text = ""
             self.additional_panel.Children.Clear()
 
-            # Reset visibility to default (collapsed)
             self.fixed_params_separator.Visibility = forms.WPF_COLLAPSED
             self.fixed_params_grid.Visibility = forms.WPF_COLLAPSED
             self.design_option_lbl.Visibility = forms.WPF_COLLAPSED
@@ -501,7 +500,6 @@ class CustomPropertiesPanel(forms.WPFPanel):
         has_design_options = _has_design_options(doc)
         has_worksets = bool(self._worksets)
 
-        # If neither design options nor worksets exist, hide the entire grid row
         if not has_design_options and not has_worksets:
             self.fixed_params_separator.Visibility = forms.WPF_COLLAPSED
             self.fixed_params_grid.Visibility = forms.WPF_COLLAPSED
@@ -510,7 +508,6 @@ class CustomPropertiesPanel(forms.WPFPanel):
         self.fixed_params_separator.Visibility = forms.WPF_VISIBLE
         self.fixed_params_grid.Visibility = forms.WPF_VISIBLE
 
-        # Design Option row — show only if design options exist
         design_option_visibility = (
             forms.WPF_VISIBLE
             if has_design_options
@@ -521,7 +518,6 @@ class CustomPropertiesPanel(forms.WPFPanel):
         do_names = [_get_design_option_name(e, self._main_model) for e in self._elements]
         self.design_option_tb.Text = self._summarize_values(do_names)
 
-        # Workset info row — show only if worksets exist
         workset_visibility = (
             forms.WPF_VISIBLE
             if has_worksets
@@ -541,8 +537,6 @@ class CustomPropertiesPanel(forms.WPFPanel):
             except Exception:
                 pass
 
-        # Worksharing info rows — show only if worksets exist and the user
-        # has not disabled them via the config window
         show_worksharing = has_worksets and self._show_worksharing_info
         worksharing_visibility = (
             forms.WPF_VISIBLE

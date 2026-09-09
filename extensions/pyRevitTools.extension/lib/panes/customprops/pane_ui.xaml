@@ -59,11 +59,14 @@
                    Margin="0,0,0,4"/>
 
         <Border x:Name="fixed_params_separator"
-              Grid.Row="1" Style="{StaticResource Separator}"/>
+              Grid.Row="1" 
+              Visibility="Collapsed"
+              Style="{StaticResource Separator}"/>
 
         <!-- Row 2: Fixed params (Workset + Design Option + Worksharing) -->
         <Grid x:Name="fixed_params_grid"
-              Grid.Row="2">
+              Grid.Row="2"
+              Visibility="Collapsed">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="20"/>
                 <ColumnDefinition Width="100"/>
