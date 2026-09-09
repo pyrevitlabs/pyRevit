@@ -7,6 +7,7 @@ import sys
 import traceback
 import json
 import threading
+import time
 
 from pyrevit.api import UI
 from pyrevit.coreutils.logger import get_logger
@@ -65,6 +66,7 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
     """HTTP Requests Handler."""
 
     def log_message(self, message_format, *args):
+        """Log request messages through pyRevit's logger."""
         mlogger.debug(
             "Routes request from %s | %s",
             self.client_address[0],
@@ -279,15 +281,17 @@ class ThreadedHttpServer(ThreadingMixIn, HTTPServer):
     allow_reuse_address = True
 
     def handle_error(self, request, client_address):
+        """Log request-handler failures with their connection context."""
         mlogger.error(
-            "Routes request failed from %s | %s",
+            "Routes request failed from %s | request=%s | %s",
             client_address,
+            request,
             traceback.format_exc(),
         )
 
     def shutdown(self):
-        self.socket.close()
         HTTPServer.shutdown(self)
+        self.socket.close()
 
 
 class RoutesServer(object):
@@ -304,6 +308,7 @@ class RoutesServer(object):
         self.server = ThreadedHttpServer((host, port), HttpRequestHandler)
         self.host = host
         self.port = port
+        self._stopping = False
         self.start()
 
     def __str__(self):
@@ -316,10 +321,15 @@ class RoutesServer(object):
         return "<RoutesServer @ http://%s:%s>" % (self.host or "0.0.0.0", self.port)
 
     def _serve_forever(self):
-        try:
-            self.server.serve_forever()
-        except Exception as server_err:
-            mlogger.error("Routes server stopped unexpectedly | %s", server_err)
+        while not self._stopping:
+            try:
+                self.server.serve_forever()
+                return
+            except Exception as server_err:
+                if self._stopping:
+                    return
+                mlogger.error("Routes server stopped unexpectedly | %s", server_err)
+                time.sleep(1)
 
     def start(self):
         self.server_thread = threading.Thread(target=self._serve_forever)
@@ -330,5 +340,6 @@ class RoutesServer(object):
         self.server_thread.join()
 
     def stop(self):
+        self._stopping = True
         self.server.shutdown()
         self.waitForThread()
