@@ -191,6 +191,9 @@ public static class PyRevitConfigService {
                 if (!string.IsNullOrEmpty(dir))
                     Directory.CreateDirectory(dir);
                 File.Copy(userConfigPath, machineConfigPath);
+                FileAttributes attributes = File.GetAttributes(machineConfigPath);
+                if ((attributes & FileAttributes.ReadOnly) != 0)
+                    File.SetAttributes(machineConfigPath, attributes & ~FileAttributes.ReadOnly);
             }
             catch (Exception ex) {
                 ConfigurationDiagnostics.ReportWarning(
