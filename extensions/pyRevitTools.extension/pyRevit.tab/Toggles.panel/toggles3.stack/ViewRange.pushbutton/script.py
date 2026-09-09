@@ -115,6 +115,11 @@ class Context(object):
 
     @property
     def is_ceiling_plan(self):
+        """Whether the source view is a reflected ceiling plan.
+
+        Ceiling plans look up from the cut plane: planes are ordered
+        View Depth >= Top >= Cut, and Bottom is unused and stays synced to Cut.
+        """
         return (
             self.source_view is not None
             and self.source_view.ViewType == DB.ViewType.CeilingPlan
@@ -744,6 +749,11 @@ class MainViewModel(forms.Reactive):
 
     @forms.reactive
     def can_modify_bottom(self):
+        """Whether the Bottom plane inputs accept edits.
+
+        False on ceiling plans, where Bottom mirrors the cut plane and is
+        not editable, and false whenever the view itself is not modifiable.
+        """
         return self._can_modify_bottom
 
     @can_modify_bottom.setter
