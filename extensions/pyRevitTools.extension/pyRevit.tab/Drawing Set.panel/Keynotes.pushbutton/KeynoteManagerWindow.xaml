@@ -1,6 +1,6 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        ShowInTaskbar="False"
+        ShowInTaskbar="True"
         Width="720" Height="750"
         MinWidth="720" MinHeight="480"
         ResizeMode="CanResizeWithGrip"
@@ -152,13 +152,39 @@
             </Style.Triggers>
         </Style>
 
-        <!-- ============================================================ -->
-        <!-- HIERARCHICAL DATA TEMPLATE (the core visual for each node)   -->
-        <!-- ============================================================ -->
+        <Style x:Key="CtxMenuItem" TargetType="MenuItem"/>
+
+        <Style x:Key="CtxKeynoteMenuItem" TargetType="MenuItem"
+               BasedOn="{StaticResource CtxMenuItem}">
+            <Setter Property="IsEnabled" Value="False"/>
+            <Style.Triggers>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding is_category}" Value="False"/>
+                        <Condition Binding="{Binding locked}" Value="False"/>
+                    </MultiDataTrigger.Conditions>
+                    <Setter Property="IsEnabled" Value="True"/>
+                </MultiDataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="CtxNotLockedMenuItem" TargetType="MenuItem"
+               BasedOn="{StaticResource CtxMenuItem}">
+            <Setter Property="IsEnabled" Value="True"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding locked}" Value="True">
+                    <Setter Property="IsEnabled" Value="False"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+
         <HierarchicalDataTemplate x:Key="KeynoteTreeItem"
                                   ItemsSource="{Binding children}">
+
             <Border x:Name="itemBorder" Padding="4,4" Margin="0,0,16,0"
                     CornerRadius="3"
+                    Background="Transparent"
                     AllowDrop="True"
                     HorizontalAlignment="Stretch"
                     MaxWidth="{Binding ActualWidth,
@@ -166,7 +192,46 @@
                                        Mode=OneWay}"
                     DragOver="tree_item_drag_over"
                     DragLeave="tree_item_drag_leave"
-                    Drop="tree_item_drop">
+                    Drop="tree_item_drop"
+                    PreviewMouseRightButtonDown="tree_item_right_click">
+
+                <Border.ContextMenu>
+                    <ContextMenu DataContext="{Binding PlacementTarget.DataContext,
+                                                       RelativeSource={RelativeSource Self}}">
+                        <MenuItem Header="Add Keynote" InputGestureText="Ctrl+N"
+                                  Style="{StaticResource CtxMenuItem}"
+                                  Click="add_keynote"/>
+                        <Separator/>
+                        <MenuItem Header="Place User Keynote"
+                                  Style="{StaticResource CtxKeynoteMenuItem}"
+                                  Click="place_user_keynote"/>
+                        <MenuItem Header="Place Element Keynote"
+                                  Style="{StaticResource CtxKeynoteMenuItem}"
+                                  Click="place_element_keynote"/>
+                        <MenuItem Header="Place Material Keynote"
+                                  Style="{StaticResource CtxKeynoteMenuItem}"
+                                  Click="place_material_keynote"/>
+                        <Separator/>
+                        <MenuItem Header="Edit" InputGestureText="F2"
+                                  Style="{StaticResource CtxNotLockedMenuItem}"
+                                  Click="edit_keynote"/>
+                        <MenuItem Header="Duplicate" InputGestureText="Ctrl+D"
+                                  Style="{StaticResource CtxKeynoteMenuItem}"
+                                  Click="duplicate_keynote"/>
+                        <MenuItem Header="Change Key"
+                                  Style="{StaticResource CtxNotLockedMenuItem}"
+                                  Click="rekey_keynote"/>
+                        <MenuItem Header="Find in Model"
+                                  Style="{StaticResource CtxKeynoteMenuItem}"
+                                  Click="show_keynote"/>
+                        <Separator/>
+                        <MenuItem Header="Delete" InputGestureText="Del"
+                                  Foreground="{StaticResource DangerBrush}"
+                                  Style="{StaticResource CtxNotLockedMenuItem}"
+                                  Click="remove_keynote"/>
+                    </ContextMenu>
+                </Border.ContextMenu>
+
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -513,7 +578,8 @@
                                 ToolTip="Find in model" IsEnabled="False" Click="show_keynote"/>
                         <Button x:Name="placeBtn" Style="{StaticResource ToolbarButton}"
                                 Content="&#x1F4CC;" FontSize="12"
-                                ToolTip="Place in model" IsEnabled="False" Click="place_keynote"/>
+                                ToolTip="Place in model (or Shift+Click a keynote)"
+                                IsEnabled="False" Click="place_keynote"/>
                     </StackPanel>
                 </DockPanel>
             </Grid>
@@ -536,6 +602,7 @@
                       ItemContainerStyle="{StaticResource TreeItemContainer}"
                       SelectedItemChanged="selected_keynote_changed"
                       PreviewMouseLeftButtonDown="tree_preview_mouse_down"
+                      PreviewMouseLeftButtonUp="tree_preview_mouse_up"
                       PreviewMouseMove="tree_preview_mouse_move"
                       PreviewMouseDoubleClick="tree_double_click"
                       AllowDrop="True"
