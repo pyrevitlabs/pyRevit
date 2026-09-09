@@ -18,7 +18,7 @@
     <sys:String x:Key="reason_phase_filter">被阶段过滤器隐藏（图元阶段状态：“{}”）</sys:String>
     <sys:String x:Key="reason_design_option">图元属于设计选项“{}”，与此视图显示的选项不同</sys:String>
     <sys:String x:Key="reason_category_hidden">类别“{}”在此视图中被隐藏</sys:String>
-    <sys:String x:Key="reason_subcategory_hidden">“{}”的子类别“{}”在此视图中被隐藏（图元可能属于该子类别）</sys:String>
+    <sys:String x:Key="reason_subcategory_hidden">子类别“{}”（属于“{}”）在此视图中被隐藏（图元可能属于该子类别）</sys:String>
     <sys:String x:Key="reason_element_hidden">图元在此视图中被明确隐藏（隐藏/隔离）</sys:String>
     <sys:String x:Key="reason_view_filter">被视图过滤器“{}”隐藏</sys:String>
     <sys:String x:Key="reason_section_box">图元的边界框完全位于视图当前激活的三维剖切框之外</sys:String>
