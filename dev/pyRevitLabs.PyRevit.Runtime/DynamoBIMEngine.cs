@@ -82,11 +82,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
             //});
 
             try {
-                // Find the DynamoRevitApp type from the loaded DynamoRevitDS assembly.
-                // Search already-loaded assemblies first; this works in both .NET Framework
-                // and .NET Core / .NET 10 (Revit 2025+) where Activator.CreateInstance by
-                // assembly string name cannot locate assemblies that are not yet in the
-                // default load context's probe path.
                 Assembly dynamoAssembly = AppDomain.CurrentDomain.GetAssemblies()
                     .FirstOrDefault(a => a.GetName().Name == "DynamoRevitDS");
 
