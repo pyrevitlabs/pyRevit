@@ -15,8 +15,7 @@ namespace pyRevitLabs.Configurations.Ini;
 /// single-quoted Python list literals. Parsing is deliberately forgiving —
 /// see <see cref="Create"/>.
 /// </summary>
-public sealed class IniConfiguration : ConfigurationBase
-{
+public sealed class IniConfiguration : ConfigurationBase {
     /// <summary>File extension used for pyRevit configuration files.</summary>
     public static readonly string DefaultFileExtension = ".ini";
 
@@ -42,8 +41,7 @@ public sealed class IniConfiguration : ConfigurationBase
     /// <param name="configurationPath">Path to the INI file.</param>
     /// <param name="readOnly">True to discard writes instead of persisting them.</param>
     private IniConfiguration(string configurationPath, bool readOnly)
-        : base(configurationPath, readOnly)
-    {
+        : base(configurationPath, readOnly) {
         _parser = new FileIniDataParser();
         ConfigureTolerantParsing(_parser);
         _iniFile = !File.Exists(configurationPath)
@@ -51,8 +49,7 @@ public sealed class IniConfiguration : ConfigurationBase
             : _parser.ReadFile(_configurationPath, DefaultFileEncoding);
     }
 
-    private static void ConfigureTolerantParsing(FileIniDataParser parser)
-    {
+    private static void ConfigureTolerantParsing(FileIniDataParser parser) {
         var configuration = parser.Parser.Configuration;
         configuration.CaseInsensitive = true;
         configuration.CommentRegex = CommentPrefixRegex;
@@ -63,22 +60,14 @@ public sealed class IniConfiguration : ConfigurationBase
     }
 
     /// <summary>
-    /// Opens an INI-backed configuration, reading the file if it exists and
-    /// starting empty if it does not — so a fresh install can save settings
-    /// before any file is on disk.
-    /// <para>
-    /// Parsing never fails on a malformed file: unparseable lines are dropped
-    /// and the last value of a repeated key wins. A config that refused to load
-    /// would take down the loader, CLI, and script engines at once, and would
-    /// never reach the migrator that repairs it.
-    /// </para>
+    /// Opens an INI-backed configuration, creating an empty configuration when
+    /// the file does not exist.
     /// </summary>
     /// <param name="configurationPath">Path to the INI file. It need not exist.</param>
     /// <param name="readOnly">True to discard writes instead of persisting them.</param>
     /// <returns>A configuration over that file.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="configurationPath"/> is null.</exception>
-    public static IConfiguration Create(string configurationPath, bool readOnly = default)
-    {
+    public static IConfiguration Create(string configurationPath, bool readOnly = default) {
         if (configurationPath is null)
             throw new ArgumentNullException(nameof(configurationPath));
 
@@ -86,14 +75,12 @@ public sealed class IniConfiguration : ConfigurationBase
     }
 
     /// <inheritdoc />
-    protected override void SaveConfigurationImpl()
-    {
+    protected override void SaveConfigurationImpl() {
         SaveConfigurationImpl(_configurationPath);
     }
 
     /// <inheritdoc />
-    protected override void SaveConfigurationImpl(string configurationPath)
-    {
+    protected override void SaveConfigurationImpl(string configurationPath) {
         string? directory = Path.GetDirectoryName(configurationPath);
         if (!string.IsNullOrEmpty(directory))
             Directory.CreateDirectory(directory);
@@ -102,58 +89,48 @@ public sealed class IniConfiguration : ConfigurationBase
     }
 
     /// <inheritdoc />
-    protected override bool HasSectionImpl(string sectionName)
-    {
+    protected override bool HasSectionImpl(string sectionName) {
         return _iniFile.Sections.ContainsSection(sectionName);
     }
 
     /// <inheritdoc />
-    protected override bool HasSectionKeyImpl(string sectionName, string keyName)
-    {
+    protected override bool HasSectionKeyImpl(string sectionName, string keyName) {
         return HasSection(sectionName)
                && _iniFile.Sections[sectionName].ContainsKey(keyName);
     }
 
     /// <inheritdoc />
-    protected override IEnumerable<string> GetSectionNamesImpl()
-    {
+    protected override IEnumerable<string> GetSectionNamesImpl() {
         return _iniFile.Sections.Select(item => item.SectionName);
     }
 
     /// <inheritdoc />
-    protected override IEnumerable<string> GetSectionOptionNamesImpl(string sectionName)
-    {
+    protected override IEnumerable<string> GetSectionOptionNamesImpl(string sectionName) {
         return _iniFile.Sections[sectionName].Select(item => item.KeyName);
     }
 
     /// <inheritdoc />
-    protected override bool AddSectionImpl(string sectionName)
-    {
+    protected override bool AddSectionImpl(string sectionName) {
         return _iniFile.Sections.AddSection(sectionName);
     }
 
     /// <inheritdoc />
-    protected override bool RemoveSectionImpl(string sectionName)
-    {
+    protected override bool RemoveSectionImpl(string sectionName) {
         return _iniFile.Sections.RemoveSection(sectionName);
     }
 
     /// <inheritdoc />
-    protected override bool RemoveOptionImpl(string sectionName, string keyName)
-    {
+    protected override bool RemoveOptionImpl(string sectionName, string keyName) {
         return _iniFile[sectionName].RemoveKey(keyName);
     }
 
     /// <inheritdoc />
-    protected override void SetValueImpl<T>(string sectionName, string keyName, T value)
-    {
-        if (!HasSection(sectionName))
-        {
+    protected override void SetValueImpl<T>(string sectionName, string keyName, T value) {
+        if (!HasSection(sectionName)) {
             _iniFile.Sections.AddSection(sectionName);
         }
 
-        if (!HasSectionKey(sectionName, keyName))
-        {
+        if (!HasSectionKey(sectionName, keyName)) {
             _iniFile[sectionName].AddKey(keyName);
         }
 
@@ -170,8 +147,7 @@ public sealed class IniConfiguration : ConfigurationBase
     /// re-parse, since a legacy Python literal's Windows paths carry unescaped
     /// backslashes that JSON treats as bad escape sequences.
     /// </remarks>
-    protected override object GetValueImpl(Type typeObject, string sectionName, string keyName)
-    {
+    protected override object GetValueImpl(Type typeObject, string sectionName, string keyName) {
         string raw = _iniFile[sectionName][keyName];
         Type targetType = Nullable.GetUnderlyingType(typeObject) ?? typeObject;
 
@@ -179,8 +155,7 @@ public sealed class IniConfiguration : ConfigurationBase
         if (valueToParse.Length >= 2 && valueToParse.StartsWith("\"", StringComparison.Ordinal) && valueToParse.EndsWith("\"", StringComparison.Ordinal))
             valueToParse = valueToParse.Substring(1, valueToParse.Length - 2);
 
-        if ((targetType == typeof(int) || targetType == typeof(long)) && HexIntegerRegex.IsMatch(valueToParse))
-        {
+        if ((targetType == typeof(int) || targetType == typeof(long)) && HexIntegerRegex.IsMatch(valueToParse)) {
             long hexValue = Convert.ToInt64(valueToParse.Trim(), 16);
             if (typeObject == typeof(int))
                 return checked((int)hexValue);
@@ -195,14 +170,11 @@ public sealed class IniConfiguration : ConfigurationBase
         if (targetType == typeof(bool) && bool.TryParse(valueToParse, out bool boolValue))
             return boolValue;
 
-        if (targetType == typeof(string))
-        {
-            try
-            {
+        if (targetType == typeof(string)) {
+            try {
                 return JsonConvert.DeserializeObject(raw, typeObject) ?? raw;
             }
-            catch (JsonException)
-            {
+            catch (JsonException) {
                 return raw;
             }
         }
@@ -210,20 +182,17 @@ public sealed class IniConfiguration : ConfigurationBase
         if (targetType == typeof(List<string>))
             return DecodeStringList(raw, sectionName, keyName);
 
-        try
-        {
+        try {
             return JsonConvert.DeserializeObject(raw, typeObject)
                    ?? throw new ConfigurationException("Cannot deserialize value using the specified key.");
         }
-        catch (JsonException) when (IsContainerLiteral(valueToParse))
-        {
+        catch (JsonException) when (IsContainerLiteral(valueToParse)) {
             return JsonConvert.DeserializeObject(EscapeBackslashes(raw), typeObject)
                    ?? throw new ConfigurationException("Cannot deserialize value using the specified key.");
         }
     }
 
-    private static bool IsContainerLiteral(string value)
-    {
+    private static bool IsContainerLiteral(string value) {
         string trimmed = value.TrimStart();
         return trimmed.StartsWith("[", StringComparison.Ordinal)
                || trimmed.StartsWith("{", StringComparison.Ordinal);
@@ -239,28 +208,23 @@ public sealed class IniConfiguration : ConfigurationBase
     /// <c>"...\u\..."</c> (a literal "u" directory name, not a unicode escape)
     /// still gets doubled.
     /// </summary>
-    private static string EscapeBackslashes(string value)
-    {
+    private static string EscapeBackslashes(string value) {
         var builder = new StringBuilder(value.Length);
-        for (int i = 0; i < value.Length; i++)
-        {
+        for (int i = 0; i < value.Length; i++) {
             char c = value[i];
-            if (c != '\\')
-            {
+            if (c != '\\') {
                 builder.Append(c);
                 continue;
             }
 
-            if (i + 1 < value.Length && Array.IndexOf(SimpleJsonEscapeChars, value[i + 1]) >= 0)
-            {
+            if (i + 1 < value.Length && Array.IndexOf(SimpleJsonEscapeChars, value[i + 1]) >= 0) {
                 builder.Append(c).Append(value[i + 1]);
                 i++;
                 continue;
             }
 
             if (i + 5 < value.Length && value[i + 1] == 'u' && IsHexDigit(value[i + 2])
-                && IsHexDigit(value[i + 3]) && IsHexDigit(value[i + 4]) && IsHexDigit(value[i + 5]))
-            {
+                && IsHexDigit(value[i + 3]) && IsHexDigit(value[i + 4]) && IsHexDigit(value[i + 5])) {
                 builder.Append(value, i, 6);
                 i += 5;
                 continue;
@@ -289,8 +253,7 @@ public sealed class IniConfiguration : ConfigurationBase
     /// and fall back and the migrator can repair the key; silently yielding an
     /// empty list would drop every configured extension.
     /// </summary>
-    private static List<string> DecodeStringList(string raw, string sectionName, string keyName)
-    {
+    private static List<string> DecodeStringList(string raw, string sectionName, string keyName) {
         if (string.IsNullOrEmpty(raw))
             return new List<string>();
 
@@ -304,8 +267,7 @@ public sealed class IniConfiguration : ConfigurationBase
         if (TryJsonStringList(raw, out List<string>? jsonList))
             return jsonList!;
 
-        if (LegacyListFormat.TryParseSingleQuoted(trimmed, out List<string>? legacyList))
-        {
+        if (LegacyListFormat.TryParseSingleQuoted(trimmed, out List<string>? legacyList)) {
             ConfigurationDiagnostics.ReportInfo(
                 "Config value [" + sectionName + "] " + keyName + " was read using a legacy list format.");
             return legacyList!;
@@ -321,48 +283,37 @@ public sealed class IniConfiguration : ConfigurationBase
         && trimmed.Substring(1, trimmed.Length - 2).Trim().Length == 0;
 
     /// <summary>
-    /// Parses a JSON list literal, retrying with backslash-escaping when the
-    /// first attempt fails, since a legacy Windows path stored unescaped carries
-    /// backslashes JSON treats as bad escapes. Returns false for a value with no
-    /// double quote at all, since that is the Python single-quoted form rather
-    /// than JSON.
+    /// Parses a JSON string list, preserving legacy Windows path literals.
     /// </summary>
-    private static bool TryJsonStringList(string raw, out List<string>? list)
-    {
+    private static bool TryJsonStringList(string raw, out List<string>? list) {
         list = null;
 
         if (raw.IndexOf('"') < 0)
             return false;
 
-        try
-        {
+        try {
             list = JsonConvert.DeserializeObject<List<string>>(raw);
             return list != null;
         }
-        catch (JsonException)
-        {
+        catch (JsonException) {
         }
 
-        try
-        {
+        try {
             list = JsonConvert.DeserializeObject<List<string>>(EscapeBackslashes(raw));
             return list != null;
         }
-        catch (JsonException)
-        {
+        catch (JsonException) {
             return false;
         }
     }
 
     /// <inheritdoc />
-    protected override string GetRawValueImpl(string sectionName, string keyName)
-    {
+    protected override string GetRawValueImpl(string sectionName, string keyName) {
         return _iniFile[sectionName][keyName];
     }
 
     /// <inheritdoc />
-    protected override void SetRawValueImpl(string sectionName, string keyName, string rawValue)
-    {
+    protected override void SetRawValueImpl(string sectionName, string keyName, string rawValue) {
         if (!HasSection(sectionName))
             _iniFile.Sections.AddSection(sectionName);
 

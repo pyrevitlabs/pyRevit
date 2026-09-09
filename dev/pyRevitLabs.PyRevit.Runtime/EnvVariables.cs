@@ -5,10 +5,8 @@ using IronPython.Runtime;
 
 using pyRevitLabs.Common;
 
-namespace PyRevitLabs.PyRevit.Runtime
-{
-    public static class DomainStorageKeys
-    {
+namespace PyRevitLabs.PyRevit.Runtime {
+    public static class DomainStorageKeys {
         public static string keyPrefix = PyRevitLabsConsts.ProductName.ToUpperInvariant();
 
         public static string EnvVarsDictKey = keyPrefix + "EnvVarsDict";
@@ -19,8 +17,7 @@ namespace PyRevitLabs.PyRevit.Runtime
         public static string OutputWindowsDictKey = keyPrefix + "OutputWindowsDict";
     }
 
-    public static class EnvDictionaryKeys
-    {
+    public static class EnvDictionaryKeys {
         public static string keyPrefix = PyRevitLabsConsts.ProductName.ToUpperInvariant();
 
         public static string SessionUUID = string.Format("{0}_UUID", keyPrefix);
@@ -54,8 +51,7 @@ namespace PyRevitLabs.PyRevit.Runtime
         public static string TabColorizer = string.Format("{0}_TABCOLORIZER", keyPrefix);
     }
 
-    public class EnvDictionary
-    {
+    public class EnvDictionary {
         private PythonDictionary _envData = null;
 
         public string SessionUUID;
@@ -86,16 +82,11 @@ namespace PyRevitLabs.PyRevit.Runtime
 
 
         /// <summary>
-        /// A config option that is not set reaches this dictionary as a null, so
-        /// every field read below goes through a type-matched <c>GetXxx</c> helper
-        /// rather than an unboxing cast, which would throw and take down session
-        /// load over a single absent option.
+        /// Initializes environment values from the current application domain.
         /// </summary>
-        public EnvDictionary()
-        {
+        public EnvDictionary() {
             _envData = AppDomain.CurrentDomain.GetData(DomainStorageKeys.EnvVarsDictKey) as PythonDictionary;
-            if (_envData is null)
-            {
+            if (_envData is null) {
                 _envData = new PythonDictionary();
                 AppDomain.CurrentDomain.SetData(DomainStorageKeys.EnvVarsDictKey, _envData);
             }
@@ -138,25 +129,21 @@ namespace PyRevitLabs.PyRevit.Runtime
             ActiveStyleSheet = GetString(EnvDictionaryKeys.OutputStyleSheet, ActiveStyleSheet);
         }
 
-        private string GetString(string key, string fallback)
-        {
+        private string GetString(string key, string fallback) {
             return _envData.Contains(key) && _envData[key] is string value ? value : fallback;
         }
 
-        private bool GetBool(string key, bool fallback)
-        {
+        private bool GetBool(string key, bool fallback) {
             return _envData.Contains(key) && _envData[key] is bool value ? value : fallback;
         }
 
-        private string[] GetPathList(string key, string[] fallback)
-        {
+        private string[] GetPathList(string key, string[] fallback) {
             return _envData.Contains(key) && _envData[key] is string value
                 ? value.Split(Path.PathSeparator)
                 : fallback;
         }
 
-        public void ResetEventHooks()
-        {
+        public void ResetEventHooks() {
             if (_envData.Contains(EnvDictionaryKeys.Hooks)
                     && _envData[EnvDictionaryKeys.Hooks] is Dictionary<string, Dictionary<string, string>> hooks)
                 hooks.Clear();
@@ -174,8 +161,7 @@ namespace PyRevitLabs.PyRevit.Runtime
         /// Key/value pairs to store. Keys must match the string values of <see cref="EnvDictionaryKeys"/>.
         /// Values must be plain CLR primitives (string, bool, int) — IronPython coerces them correctly.
         /// </param>
-        public static void Seed(Dictionary<string, object> values)
-        {
+        public static void Seed(Dictionary<string, object> values) {
             var envData = AppDomain.CurrentDomain.GetData(DomainStorageKeys.EnvVarsDictKey) as PythonDictionary
                           ?? new PythonDictionary();
 
