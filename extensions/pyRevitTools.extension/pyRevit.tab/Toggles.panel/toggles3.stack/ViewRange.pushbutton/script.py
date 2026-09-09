@@ -28,7 +28,6 @@ from pyrevit.revit import events
 from pyrevit.framework import Convert, List, Color, SolidColorBrush
 from pyrevit.compat import get_elementid_value_func
 from collections import OrderedDict
-from System.Windows.Data import Binding
 
 doc = HOST_APP.doc
 uidoc = HOST_APP.uidoc
@@ -120,6 +119,12 @@ class Context(object):
             self.source_view is not None
             and self.source_view.ViewType == DB.ViewType.CeilingPlan
         )
+
+    def _read_plane(self, plane):
+        """Ceiling plans keep Bottom synced to Cut, so Bottom reads from Cut."""
+        if self.is_ceiling_plan and plane == DB.PlanViewPlane.BottomClipPlane:
+            return DB.PlanViewPlane.CutPlane
+        return plane
 
     def update_view_range(self, new_values, new_levels=None):
         if not self.source_view or not isinstance(self.source_view, DB.ViewPlan):
@@ -335,12 +340,7 @@ class Context(object):
 
             # Set level selections for each plane
             for plane in PLANES:
-                read_plane = (
-                    DB.PlanViewPlane.CutPlane
-                    if self.is_ceiling_plan
-                    and plane == DB.PlanViewPlane.BottomClipPlane
-                    else plane
-                )
+                read_plane = self._read_plane(plane)
                 level_id = view_range.GetLevelId(read_plane)
 
                 if plane == DB.PlanViewPlane.TopClipPlane:
@@ -447,12 +447,7 @@ class Context(object):
 
                 for plane in PLANES:
                     _, _, prefix = PLANES[plane]
-                    read_plane = (
-                        DB.PlanViewPlane.CutPlane
-                        if self.is_ceiling_plan
-                        and plane == DB.PlanViewPlane.BottomClipPlane
-                        else plane
-                    )
+                    read_plane = self._read_plane(plane)
                     level_id = view_range.GetLevelId(read_plane)
 
                     # Check if this plane is set to Unlimited
@@ -898,8 +893,6 @@ class MainViewModel(forms.Reactive):
 class MainWindow(forms.WPFWindow):
     def __init__(self):
         forms.WPFWindow.__init__(self, "MainWindow.xaml")
-        for control in (self.bottomplane_input, self.bottomplane_level_combo):
-            control.SetBinding(control.IsEnabledProperty, Binding("can_modify_bottom"))
         self.Closed += self.window_closed
         script.restore_window_position(self)
         # Events are now handled via @events.handle decorators
