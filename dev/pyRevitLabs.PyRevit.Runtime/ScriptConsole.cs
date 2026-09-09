@@ -550,6 +550,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
         internal void EnsureDocumentReady() {
             if (ClosedByUser)
                 return;
+            if (!Dispatcher.CheckAccess()) {
+                try {
+                    Dispatcher.Invoke(new Action(EnsureDocumentReady));
+                }
+                catch {
+                }
+                return;
+            }
             // The WebView2 controller can only be created once the window has
             // been shown: the renderer's child HWND does not exist before.
             // Surface the window exactly like the first printed entry would.
@@ -978,6 +986,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (inputUrl.StartsWith("http") && !inputUrl.StartsWith("http://localhost")) {
                 OpenUrlExternally(inputUrl);
             }
+            else if (inputUrl.StartsWith("http://localhost")) {
+                return;
+            }
             else if (inputUrl.StartsWith("revit")) {
                 e.Cancel = true;
                 ScriptConsoleUtils.ProcessUrl(_uiApp, inputUrl, this);
@@ -1206,6 +1217,21 @@ namespace PyRevitLabs.PyRevit.Runtime {
             PostScriptWhenReady(javaScript);
         }
 
+        internal void CopyRendererSelection() {
+            try {
+                Dispatcher.Invoke(new Action(() => {
+                    var selection = DecodeJsonString(
+                        _webView.EvalScript("window.getSelection().toString()"));
+                    if (!string.IsNullOrEmpty(selection))
+                        Clipboard.SetText(selection);
+                }));
+            }
+            catch (Exception ex) {
+                System.Diagnostics.Debug.WriteLine(
+                    $"[ScriptConsoleLowLevelKeyHook] copy failed: {ex.Message}");
+            }
+        }
+
         internal bool RendererHasFocus {
             get { return _webView.Control != null && _webView.Control.IsKeyboardFocusWithin; }
         }
@@ -1405,10 +1431,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     if (ctrl && (vkCode == VK_C || vkCode == VK_A) &&
                         _console.IsActive && _console.RendererHasFocus) {
                         try {
-                            _console.PostRendererScript(
-                                vkCode == VK_C
-                                    ? "document.execCommand('Copy');"
-                                    : "document.execCommand('SelectAll');");
+                            if (vkCode == VK_C)
+                                _console.CopyRendererSelection();
+                            else
+                                _console.PostRendererScript("document.execCommand('SelectAll');");
                         }
                         catch (Exception ex) {
                             System.Diagnostics.Debug.WriteLine($"[ScriptConsoleLowLevelKeyHook] execCommand failed: {ex.Message}");

@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows.Threading;
@@ -750,8 +751,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // links are converted first so emphasis patterns never touch urls
             encoded = Regex.Replace(
                 encoded,
-                @"\[([^\]]+)\]\(([^)\s]+)(?:\s+""[^""]*"")?\)",
-                "<a href=\"$2\" style=\"color:#f39c12;\">$1</a>");
+                @"\[([^\]]+)\]\(([^)\s""']+)(?:\s+""[^""]*"")?\)",
+                match => string.Format(
+                    "<a href=\"{0}\" style=\"color:#f39c12;\">{1}</a>",
+                    WebUtility.HtmlEncode(match.Groups[2].Value),
+                    match.Groups[1].Value));
             encoded = Regex.Replace(encoded, @"\*\*(.+?)\*\*", "<strong>$1</strong>");
             encoded = Regex.Replace(encoded, @"__(.+?)__", "<strong>$1</strong>");
             encoded = Regex.Replace(encoded, @"\*(.+?)\*", "<em>$1</em>");

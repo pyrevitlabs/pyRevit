@@ -259,7 +259,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
             _disposed = true;
             _readyTcs.TrySetResult(false);
             try {
-                _control.Dispose();
+                InvokeOnUi(() => {
+                    var core = _control.CoreWebView2;
+                    if (core != null) {
+                        core.NavigationStarting -= OnNavigationStarting;
+                        core.NavigationCompleted -= OnNavigationCompleted;
+                    }
+                    _control.Dispose();
+                });
             }
             catch {
             }
@@ -290,7 +297,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 _runtimeMissing = true;
                 BrowserVersion = string.Empty;
                 _readyTcs.TrySetResult(false);
-                ShowRuntimeMissingDialog();
+                _dispatcher.BeginInvoke(
+                    new Action(ShowRuntimeMissingDialog),
+                    DispatcherPriority.ApplicationIdle);
                 try {
                     _control.NavigateToString(RuntimeMissingPageHtml);
                 }
