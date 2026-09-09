@@ -15,19 +15,16 @@ namespace pyRevitLabs.Configurations;
 /// attributes, and caches those records until a write advances the store.
 /// Build one with <see cref="ConfigurationBuilder"/>.
 /// </summary>
-public sealed class ConfigurationService : IConfigurationService
-{
+public sealed class ConfigurationService : IConfigurationService {
     private readonly IConfiguration _configuration;
 
-    internal ConfigurationService(bool readOnly, IConfiguration configuration)
-    {
+    internal ConfigurationService(bool readOnly, IConfiguration configuration) {
         _configuration = configuration;
 
         ReadOnly = readOnly;
     }
 
-    internal static IConfigurationService Create(bool readOnly, IConfiguration configuration)
-    {
+    internal static IConfigurationService Create(bool readOnly, IConfiguration configuration) {
         return new ConfigurationService(readOnly, configuration);
     }
 
@@ -61,8 +58,7 @@ public sealed class ConfigurationService : IConfigurationService
     public EnvironmentSection Environment { get { EnsureSnapshots(); return _environment; } }
 
     /// <inheritdoc />
-    public void ReloadLoadConfigurations()
-    {
+    public void ReloadLoadConfigurations() {
         lock (_syncLock)
             _snapshotRevision = -1;
     }
@@ -72,10 +68,8 @@ public sealed class ConfigurationService : IConfigurationService
     /// reader never observes state older than the last write. The revision only
     /// ever increases, so any write changes it.
     /// </summary>
-    private void EnsureSnapshots()
-    {
-        lock (_syncLock)
-        {
+    private void EnsureSnapshots() {
+        lock (_syncLock) {
             long revision = _configuration.Revision;
             if (revision == _snapshotRevision)
                 return;
@@ -89,10 +83,11 @@ public sealed class ConfigurationService : IConfigurationService
     }
 
     /// <inheritdoc />
-    public T GetSection<T>()
-    {
-        Type configurationType = typeof(T);
-        return (T)CreateSection(configurationType, null, _configuration);
+    public T GetSection<T>() {
+        lock (_syncLock) {
+            Type configurationType = typeof(T);
+            return (T)CreateSection(configurationType, null, _configuration);
+        }
     }
 
     /// <summary>
@@ -102,42 +97,38 @@ public sealed class ConfigurationService : IConfigurationService
     private static readonly string[] ExtensionSectionSuffixes = { ".extension", ".lib" };
 
     /// <inheritdoc />
-    public ExtensionSection? GetExtensionSection(string extensionName)
-    {
+    public ExtensionSection? GetExtensionSection(string extensionName) {
         if (string.IsNullOrWhiteSpace(extensionName))
             throw new ArgumentException("Value cannot be null or whitespace.", nameof(extensionName));
 
-        foreach (string suffix in ExtensionSectionSuffixes)
-        {
-            string sectionName = extensionName + suffix;
-            if (_configuration.HasSection(sectionName))
-                return (ExtensionSection)CreateSection(typeof(ExtensionSection), sectionName, _configuration);
+        lock (_syncLock) {
+            foreach (string suffix in ExtensionSectionSuffixes) {
+                string sectionName = extensionName + suffix;
+                if (_configuration.HasSection(sectionName))
+                    return (ExtensionSection)CreateSection(typeof(ExtensionSection), sectionName, _configuration);
+            }
         }
 
         return null;
     }
 
     /// <inheritdoc />
-    public void SaveSection<T>(T sectionValue)
-    {
+    public void SaveSection<T>(T sectionValue) {
         EnsureWritable(sectionValue);
-        lock (_syncLock)
-        {
+        lock (_syncLock) {
             ApplySection(typeof(T), sectionValue!, _configuration);
             _configuration.SaveConfiguration();
         }
     }
 
     /// <inheritdoc />
-    public void ApplySection<T>(T sectionValue)
-    {
+    public void ApplySection<T>(T sectionValue) {
         EnsureWritable(sectionValue);
         lock (_syncLock)
             ApplySection(typeof(T), sectionValue!, _configuration);
     }
 
-    private void EnsureWritable(object? sectionValue)
-    {
+    private void EnsureWritable(object? sectionValue) {
         if (sectionValue is null)
             throw new ArgumentNullException(nameof(sectionValue));
 
@@ -150,16 +141,14 @@ public sealed class ConfigurationService : IConfigurationService
     /// the caller reporting success while the in-memory state disagrees with the
     /// file.
     /// </summary>
-    private void EnsureWritable()
-    {
+    private void EnsureWritable() {
         if (ReadOnly || _configuration.ReadOnly)
             throw new ConfigurationReadOnlyException(
                 $"Configuration {_configuration.ConfigurationPath} is read-only; changes cannot be saved.");
     }
 
     /// <inheritdoc />
-    public void SetSectionKeyValue<T>(string sectionName, string keyName, T keyValue)
-    {
+    public void SetSectionKeyValue<T>(string sectionName, string keyName, T keyValue) {
         if (keyValue == null)
             throw new ArgumentNullException(nameof(keyValue));
 
@@ -171,8 +160,7 @@ public sealed class ConfigurationService : IConfigurationService
 
         EnsureWritable();
 
-        lock (_syncLock)
-        {
+        lock (_syncLock) {
             _configuration.SetValue(sectionName, keyName, keyValue);
             _configuration.SaveConfiguration();
         }
@@ -182,15 +170,15 @@ public sealed class ConfigurationService : IConfigurationService
     public T? GetSectionKeyValueOrDefault<T>(
         string sectionName,
         string keyName,
-        T? defaultValue = default)
-    {
+        T? defaultValue = default) {
         if (string.IsNullOrEmpty(sectionName))
             throw new ArgumentException("Value cannot be null or empty.", nameof(sectionName));
 
         if (string.IsNullOrEmpty(keyName))
             throw new ArgumentException("Value cannot be null or empty.", nameof(keyName));
 
-        return _configuration.GetValueOrDefault<T>(sectionName, keyName, defaultValue);
+        lock (_syncLock)
+            return _configuration.GetValueOrDefault<T>(sectionName, keyName, defaultValue);
     }
 
     /// <summary>
@@ -199,13 +187,11 @@ public sealed class ConfigurationService : IConfigurationService
     /// <see cref="IConfiguration.SaveConfiguration()"/> call; <see cref="ApplySection{T}"/>
     /// omits it so an in-process caller can batch edits behind one flush.
     /// </summary>
-    private static void ApplySection(Type configurationType, object sectionValue, IConfiguration configuration)
-    {
+    private static void ApplySection(Type configurationType, object sectionValue, IConfiguration configuration) {
         string sectionName =
             GetCustomAttribute<SectionNameAttribute>(configurationType)?.SectionName ?? configurationType.Name;
 
-        foreach (var propertyInfo in GetProperties(configurationType))
-        {
+        foreach (var propertyInfo in GetProperties(configurationType)) {
             string keyName = GetCustomAttribute<KeyNameAttribute>(propertyInfo)?.KeyName ?? propertyInfo.Name;
 
             object? storedValue = GetKeyValue(configuration, propertyInfo, sectionName, keyName);
@@ -229,8 +215,7 @@ public sealed class ConfigurationService : IConfigurationService
     /// key/value content (order-independent), other enumerables by element
     /// sequence, and everything else falls back to ordinary equality.
     /// </summary>
-    private static bool ValuesEqual(object? left, object? right)
-    {
+    private static bool ValuesEqual(object? left, object? right) {
         if (left is IDictionary leftDict && right is IDictionary rightDict)
             return DictionariesEqual(leftDict, rightDict);
 
@@ -241,13 +226,11 @@ public sealed class ConfigurationService : IConfigurationService
         return Equals(left, right);
     }
 
-    private static bool DictionariesEqual(IDictionary left, IDictionary right)
-    {
+    private static bool DictionariesEqual(IDictionary left, IDictionary right) {
         if (left.Count != right.Count)
             return false;
 
-        foreach (DictionaryEntry entry in left)
-        {
+        foreach (DictionaryEntry entry in left) {
             if (!right.Contains(entry.Key) || !Equals(right[entry.Key], entry.Value))
                 return false;
         }
@@ -256,16 +239,14 @@ public sealed class ConfigurationService : IConfigurationService
     }
 
     private static object CreateSection(
-        Type configurationType, string? sectionNameOverride, IConfiguration configuration)
-    {
+        Type configurationType, string? sectionNameOverride, IConfiguration configuration) {
         string sectionName = sectionNameOverride
             ?? GetCustomAttribute<SectionNameAttribute>(configurationType)?.SectionName
             ?? configurationType.Name;
 
         var sectionConfiguration = Activator.CreateInstance(configurationType);
 
-        foreach (var propertyInfo in GetProperties(configurationType))
-        {
+        foreach (var propertyInfo in GetProperties(configurationType)) {
             string keyName = GetCustomAttribute<KeyNameAttribute>(propertyInfo)?.KeyName ?? propertyInfo.Name;
 
             object? keyValue = GetKeyValue(configuration, propertyInfo, sectionName, keyName);
@@ -280,14 +261,12 @@ public sealed class ConfigurationService : IConfigurationService
         return sectionConfiguration!;
     }
 
-    private static object? GetPropertyDefault(PropertyInfo propertyInfo)
-    {
+    private static object? GetPropertyDefault(PropertyInfo propertyInfo) {
         if (GetCustomAttribute<DefaultValueAttribute>(propertyInfo) is { } defaultAttr)
             return defaultAttr.Value;
 
         Type type = propertyInfo.PropertyType;
-        if (type.IsGenericType)
-        {
+        if (type.IsGenericType) {
             Type definition = type.GetGenericTypeDefinition();
             if (definition == typeof(List<>) || definition == typeof(Dictionary<,>))
                 return Activator.CreateInstance(type);
@@ -299,20 +278,17 @@ public sealed class ConfigurationService : IConfigurationService
     private static object? GetKeyValue(
         IConfiguration configuration,
         PropertyInfo propertyInfo,
-        string sectionName, string keyName)
-    {
+        string sectionName, string keyName) {
         return configuration.GetValueOrDefault(propertyInfo.PropertyType, sectionName, keyName);
     }
 
-    private static IEnumerable<PropertyInfo> GetProperties(Type configurationType)
-    {
+    private static IEnumerable<PropertyInfo> GetProperties(Type configurationType) {
         var flags = BindingFlags.Instance | BindingFlags.Public;
         return configurationType.GetProperties(flags)
             .Where(item => item.CanWrite && item.CanRead);
     }
 
-    private static T? GetCustomAttribute<T>(MemberInfo memberInfo) where T : Attribute
-    {
+    private static T? GetCustomAttribute<T>(MemberInfo memberInfo) where T : Attribute {
         return memberInfo.GetCustomAttributes(typeof(T), false).FirstOrDefault() as T;
     }
 }

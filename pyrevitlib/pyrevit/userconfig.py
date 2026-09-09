@@ -673,7 +673,7 @@ class PyRevitConfig(object):
 
     def get_ext_sources(self):
         """Return a list of extension definition source files."""
-        return list(set(self.environment.Sources))
+        return list(set(self.environment.Sources or []))
 
     def set_thirdparty_ext_root_dirs(self, path_list):
         """Updates list of external extension directories in config file.

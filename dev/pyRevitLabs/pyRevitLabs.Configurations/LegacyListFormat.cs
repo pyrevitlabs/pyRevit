@@ -9,8 +9,7 @@ namespace pyRevitLabs.Configurations;
 /// backend) and the migrator interpret it identically; delete when that format is
 /// no longer read from any config in the wild.
 /// </summary>
-public static class LegacyListFormat
-{
+public static class LegacyListFormat {
     /// <summary>
     /// Parses a Python single-quoted list literal without routing it through a JSON
     /// parser, so unescaped Windows-path backslashes survive; only the two escapes
@@ -22,8 +21,7 @@ public static class LegacyListFormat
     /// claimed as legacy, or the migrator would rewrite and back up an
     /// already-canonical config on every load.
     /// </summary>
-    public static bool TryParseSingleQuoted(string value, out List<string>? items)
-    {
+    public static bool TryParseSingleQuoted(string value, out List<string>? items) {
         items = null;
         if (string.IsNullOrEmpty(value))
             return false;
@@ -41,42 +39,38 @@ public static class LegacyListFormat
         int end = value.Length - 1;
         bool inString = false;
 
-        for (int i = 1; i < end; i++)
-        {
+        for (int i = 1; i < end; i++) {
             char c = value[i];
 
-            if (!inString)
-            {
-                if (c == '\'')
-                {
+            if (!inString) {
+                if (c == '\'') {
                     inString = true;
                     item.Length = 0;
                 }
-                else if (c != ',' && !char.IsWhiteSpace(c))
-                {
+                else if (c != ',' && !char.IsWhiteSpace(c)) {
                     return false;
                 }
 
                 continue;
             }
 
-            if (c == '\\' && i + 1 < end && (value[i + 1] == '\\' || value[i + 1] == '\''))
-            {
+            if (c == '\\' && i + 1 < end && (value[i + 1] == '\\' || value[i + 1] == '\'')) {
                 item.Append(value[i + 1]);
                 i++;
             }
-            else if (c == '\'' && IsClosingDelimiter(value, i, end))
-            {
+            else if (c == '\'' && IsClosingDelimiter(value, i, end)) {
                 inString = false;
                 result.Add(item.ToString());
             }
-            else
-            {
+            else {
                 item.Append(c);
             }
         }
 
         if (inString)
+            return false;
+
+        if (result.Count == 0)
             return false;
 
         items = result;
@@ -88,10 +82,8 @@ public static class LegacyListFormat
     /// item. An apostrophe inside a value is a delimiter only when the next
     /// meaningful character ends the item.
     /// </summary>
-    private static bool IsClosingDelimiter(string value, int index, int end)
-    {
-        for (int i = index + 1; i < end; i++)
-        {
+    private static bool IsClosingDelimiter(string value, int index, int end) {
+        for (int i = index + 1; i < end; i++) {
             if (char.IsWhiteSpace(value[i]))
                 continue;
 

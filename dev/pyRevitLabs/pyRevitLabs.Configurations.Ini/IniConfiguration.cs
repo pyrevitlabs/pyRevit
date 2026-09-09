@@ -211,46 +211,14 @@ public sealed class IniConfiguration : ConfigurationBase {
                || trimmed.StartsWith("{", StringComparison.Ordinal);
     }
 
-    private static readonly char[] SimpleJsonEscapeChars = { '"', '\\', '/', 'b', 'f', 'n', 'r', 't' };
+    private static readonly Regex LegacyPathSeparatorRegex = new(@"[A-Za-z]:\\(?!\\)", RegexOptions.Compiled);
 
     /// <summary>
-    /// Doubles a backslash only when it is not already the start of a valid JSON
-    /// escape sequence, so an already-correct escape elsewhere in the same value
-    /// (e.g. one list entry among several) is left untouched. <c>\u</c> is only
-    /// accepted when followed by 4 hex digits, so a legacy path like
-    /// <c>"...\u\..."</c> (a literal "u" directory name, not a unicode escape)
-    /// still gets doubled.
+    /// Converts legacy Windows path separators into JSON escapes.
     /// </summary>
     private static string EscapeBackslashes(string value) {
-        var builder = new StringBuilder(value.Length);
-        for (int i = 0; i < value.Length; i++) {
-            char c = value[i];
-            if (c != '\\') {
-                builder.Append(c);
-                continue;
-            }
-
-            if (i + 1 < value.Length && Array.IndexOf(SimpleJsonEscapeChars, value[i + 1]) >= 0) {
-                builder.Append(c).Append(value[i + 1]);
-                i++;
-                continue;
-            }
-
-            if (i + 5 < value.Length && value[i + 1] == 'u' && IsHexDigit(value[i + 2])
-                && IsHexDigit(value[i + 3]) && IsHexDigit(value[i + 4]) && IsHexDigit(value[i + 5])) {
-                builder.Append(value, i, 6);
-                i += 5;
-                continue;
-            }
-
-            builder.Append("\\\\");
-        }
-
-        return builder.ToString();
+        return value.Replace("\\", "\\\\");
     }
-
-    private static bool IsHexDigit(char c) =>
-        (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
 
     /// <summary>
     /// Decodes a stored <c>List&lt;string&gt;</c> across every list encoding
@@ -304,15 +272,10 @@ public sealed class IniConfiguration : ConfigurationBase {
         if (raw.IndexOf('"') < 0)
             return false;
 
-        try {
-            list = JsonConvert.DeserializeObject<List<string>>(raw);
-            return list != null;
-        }
-        catch (JsonException) {
-        }
+        string value = LegacyPathSeparatorRegex.IsMatch(raw) ? EscapeBackslashes(raw) : raw;
 
         try {
-            list = JsonConvert.DeserializeObject<List<string>>(EscapeBackslashes(raw));
+            list = JsonConvert.DeserializeObject<List<string>>(value);
             return list != null;
         }
         catch (JsonException) {

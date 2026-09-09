@@ -9,20 +9,17 @@ namespace pyRevitLabs.Configurations.Sections;
 /// how nulls resolve on read.
 /// </summary>
 [SectionName("routes")]
-public sealed record RoutesSection
-{
+public sealed record RoutesSection {
     /// <summary>Whether the routes server starts with the session. Default false.</summary>
     [KeyName("enabled")]
     [DefaultValue(false)]
     public bool? Status { get; set; }
 
     /// <summary>
-    /// Address the server binds to. Default empty, which binds every available
-    /// interface. Callers pass this straight to a socket bind, which rejects a
-    /// null host.
+    /// Address the server binds to. Defaults to loopback.
     /// </summary>
     [KeyName("host")]
-    [DefaultValue("")]
+    [DefaultValue("127.0.0.1")]
     public string? Host { get; set; }
 
     /// <summary>
