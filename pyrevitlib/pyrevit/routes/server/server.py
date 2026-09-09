@@ -64,6 +64,13 @@ EVENT_HNDLR = UI.ExternalEvent.Create(REQUEST_HNDLR)
 class HttpRequestHandler(BaseHTTPRequestHandler):
     """HTTP Requests Handler."""
 
+    def log_message(self, message_format, *args):
+        mlogger.debug(
+            "Routes request from %s | %s",
+            self.client_address[0],
+            message_format % args,
+        )
+
     def _parse_api_path(self):
         url_parts = urlparse(self.path)
         if url_parts:
@@ -271,6 +278,13 @@ class ThreadedHttpServer(ThreadingMixIn, HTTPServer):
 
     allow_reuse_address = True
 
+    def handle_error(self, request, client_address):
+        mlogger.error(
+            "Routes request failed from %s | %s",
+            client_address,
+            traceback.format_exc(),
+        )
+
     def shutdown(self):
         self.socket.close()
         HTTPServer.shutdown(self)
@@ -301,8 +315,14 @@ class RoutesServer(object):
     def __repr__(self):
         return "<RoutesServer @ http://%s:%s>" % (self.host or "0.0.0.0", self.port)
 
+    def _serve_forever(self):
+        try:
+            self.server.serve_forever()
+        except Exception as server_err:
+            mlogger.error("Routes server stopped unexpectedly | %s", server_err)
+
     def start(self):
-        self.server_thread = threading.Thread(target=self.server.serve_forever)
+        self.server_thread = threading.Thread(target=self._serve_forever)
         self.server_thread.daemon = True
         self.server_thread.start()
 
