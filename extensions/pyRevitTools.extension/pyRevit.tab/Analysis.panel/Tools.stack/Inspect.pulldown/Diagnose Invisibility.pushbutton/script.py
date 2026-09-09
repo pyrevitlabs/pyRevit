@@ -198,9 +198,11 @@ def diagnose_invisibility(element, view, visible_ids=None):
 
     # ------------------------------------------------------------------
     # Fast-path: if already visible, return immediately.
-    # Collecting all visible IDs upfront also provides the authoritative
-    # "is it actually hidden?" test, because Revit's own collector
-    # filters out everything not rendered in the view.
+    # Note: This test may fail cropboxes, as per API:
+    # "For elements which are outside of a crop region, they may still be passed by
+    # the collector because Revit relies on later processing to eliminate the elements
+    # hidden by the crop... You can compare the boundary of the region with the element's
+    # boundary if more precise results are required."
     # ------------------------------------------------------------------
     if visible_ids is None:
         visible_ids = set(
