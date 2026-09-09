@@ -1,7 +1,4 @@
-using System.Reflection;
 using pyRevitLabs.Configurations.Abstractions;
-using pyRevitLabs.Configurations.Attributes;
-using pyRevitLabs.Configurations.Sections;
 
 namespace pyRevitLabs.Configurations;
 
@@ -10,8 +7,7 @@ namespace pyRevitLabs.Configurations;
 /// reset keys and the backup path so the caller can log the repair (the
 /// Configurations assembly has no logging dependency of its own).
 /// </summary>
-public sealed class ConfigurationMigrationResult
-{
+public sealed class ConfigurationMigrationResult {
     /// <summary>True when the configuration was changed and written.</summary>
     public bool Migrated { get; }
 
@@ -44,8 +40,7 @@ public sealed class ConfigurationMigrationResult
 
     internal ConfigurationMigrationResult(
         bool migrated, bool backupFailed, int fromVersion,
-        string? backupPath, IReadOnlyList<string> resetKeys, IReadOnlyList<string> convertedKeys)
-    {
+        string? backupPath, IReadOnlyList<string> resetKeys, IReadOnlyList<string> convertedKeys) {
         Migrated = migrated;
         BackupFailed = backupFailed;
         FromVersion = fromVersion;
@@ -56,14 +51,9 @@ public sealed class ConfigurationMigrationResult
 }
 
 /// <summary>
-/// Repairs a configuration on load: drops typed-section values that no longer
-/// parse to their declared type and telemetry fields blown up by
-/// escape-doubling, and stamps a schema version. The repair runs whenever such
-/// a value is present on a writable config (so corruption introduced after the
-/// first run still self-heals); a config with nothing to fix is a no-op.
+/// Canonicalizes legacy configuration values and stamps the schema version.
 /// </summary>
-public static class ConfigurationMigrator
-{
+public static class ConfigurationMigrator {
     /// <summary>
     /// Schema version this build writes. A configuration stamped with it is not
     /// rescanned for version reasons, though corruption is still repaired.
@@ -72,29 +62,8 @@ public static class ConfigurationMigrator
 
     private const string VersionSection = "core";
     private const string VersionKey = "config_version";
-    private const int MaxFieldLength = 8192;
-
     private static readonly ConfigurationMigrationResult NotMigrated =
         new(false, false, 0, null, Array.Empty<string>(), Array.Empty<string>());
-
-    private static readonly Type[] KnownSections =
-    {
-        typeof(CoreSection), typeof(RoutesSection),
-        typeof(TelemetrySection), typeof(EnvironmentSection),
-    };
-
-    /// <summary>
-    /// Telemetry fields that escape-doubling degraded, paired with whether a
-    /// forward slash counts as an artifact in that field rather than content.
-    /// It does for the URLs, whose wreckage retains the separator slashes; in a
-    /// directory path a slash is part of the value.
-    /// </summary>
-    private static readonly (string Section, string Key, bool SlashIsArtifact)[] BloatFields =
-    {
-        ("telemetry", "telemetry_file_dir", false),
-        ("telemetry", "telemetry_server_url", true),
-        ("telemetry", "apptelemetry_server_url", true),
-    };
 
     /// <summary>
     /// Repairs the service's default configuration and stamps the schema version
@@ -104,19 +73,17 @@ public static class ConfigurationMigrator
     /// legacy on a later load.
     /// </summary>
     /// <exception cref="ArgumentNullException"><paramref name="service"/> is null.</exception>
-    public static ConfigurationMigrationResult Migrate(IConfigurationService service)
-    {
+    public static ConfigurationMigrationResult Migrate(IConfigurationService service) {
         if (service is null)
             throw new ArgumentNullException(nameof(service));
 
         IConfiguration config = service.Configuration;
         int version = ReadVersion(config);
 
-        var badKeys = FindUnreadableKeys(config);
         var legacyLists = FindLegacyListKeys(config);
         var legacyDicts = FindLegacyDictKeys(config);
         bool needsVersionStamp = version < CurrentVersion;
-        if (badKeys.Count == 0 && legacyLists.Count == 0 && legacyDicts.Count == 0 && !needsVersionStamp)
+        if (legacyLists.Count == 0 && legacyDicts.Count == 0 && !needsVersionStamp)
             return NotMigrated;
 
         bool hasFile = !string.IsNullOrEmpty(config.ConfigurationPath)
@@ -126,22 +93,13 @@ public static class ConfigurationMigrator
             return new ConfigurationMigrationResult(
                 false, true, version, null, Array.Empty<string>(), Array.Empty<string>());
 
-        var resetKeys = new List<string>();
-        foreach ((string section, string key) in badKeys)
-        {
-            config.RemoveOption(section, key);
-            resetKeys.Add(section + "." + key);
-        }
-
         var convertedKeys = new List<string>();
-        foreach ((string section, string key, List<string> value) in legacyLists)
-        {
+        foreach ((string section, string key, List<string> value) in legacyLists) {
             config.SetValue(section, key, value);
             convertedKeys.Add(section + "." + key);
         }
 
-        foreach ((string section, string key, Dictionary<string, string> value) in legacyDicts)
-        {
+        foreach ((string section, string key, Dictionary<string, string> value) in legacyDicts) {
             config.SetValue(section, key, value);
             convertedKeys.Add(section + "." + key);
         }
@@ -150,75 +108,9 @@ public static class ConfigurationMigrator
             config.SetValue(VersionSection, VersionKey, CurrentVersion);
 
         config.SaveConfiguration();
-        return new ConfigurationMigrationResult(true, false, version, backupPath, resetKeys, convertedKeys);
+        return new ConfigurationMigrationResult(
+            true, false, version, backupPath, Array.Empty<string>(), convertedKeys);
     }
-
-    /// <summary>
-    /// Finds present keys whose stored value cannot be read: typed-section
-    /// values that fail to parse to their declared type, and telemetry fields
-    /// left as escape-doubling wreckage.
-    /// </summary>
-    private static List<(string Section, string Key)> FindUnreadableKeys(IConfiguration config)
-    {
-        var bad = new List<(string, string)>();
-
-        foreach (Type sectionType in KnownSections)
-        {
-            string section = SectionName(sectionType);
-            foreach (PropertyInfo property in GetProperties(sectionType))
-            {
-                string key = KeyName(property);
-                if (!config.HasSectionKey(section, key))
-                    continue;
-
-                try
-                {
-                    config.GetValue(property.PropertyType, section, key);
-                }
-                catch
-                {
-                    bad.Add((section, key));
-                }
-            }
-        }
-
-        foreach ((string section, string key, bool slashIsArtifact) in BloatFields)
-        {
-            string? raw = config.GetRawValueOrDefault(section, key);
-            if (raw != null && IsTelemetryWreckage(raw, slashIsArtifact))
-                bad.Add((section, key));
-        }
-
-        return bad;
-    }
-
-    /// <summary>
-    /// Whether a stored telemetry value is escape-doubling wreckage rather than a
-    /// setting. Extreme length is one shape of it. The other is a value made up
-    /// entirely of quote and escape artifacts, which is what an empty field
-    /// degrades into after repeated re-encoding: it stays far below any length
-    /// threshold and carries nothing recoverable. An absent or canonical-empty
-    /// value is never wreckage, and neither is a value with no quote at all,
-    /// which is a legacy bare path or URL stored unencoded.
-    /// </summary>
-    private static bool IsTelemetryWreckage(string raw, bool slashIsArtifact)
-    {
-        if (raw.Length > MaxFieldLength)
-            return true;
-
-        string compact = new(raw.Where(c => !char.IsWhiteSpace(c)).ToArray());
-
-        if (compact.Length == 0 || compact == "\"\"")
-            return false;
-
-        if (compact.IndexOf('"') < 0 && compact.IndexOf('\'') < 0)
-            return false;
-
-        return compact.All(c => IsArtifact(c, slashIsArtifact));
-    }
-
-    private static bool IsArtifact(char value, bool slashIsArtifact) =>
-        value is '"' or '\'' or '\\' || (slashIsArtifact && value == '/');
 
     /// <summary>
     /// Finds List&lt;string&gt; keys stored in the legacy Python single-quoted form,
@@ -227,19 +119,15 @@ public static class ConfigurationMigrator
     /// custom/extension section carrying the same legacy form is repaired too.
     /// Reads raw (never decoded), so this scan alone does not report a legacy read.
     /// </summary>
-    private static List<(string Section, string Key, List<string> Value)> FindLegacyListKeys(IConfiguration config)
-    {
+    private static List<(string Section, string Key, List<string> Value)> FindLegacyListKeys(IConfiguration config) {
         var legacy = new List<(string, string, List<string>)>();
 
-        foreach (string section in config.GetSectionNames())
-        {
-            foreach (string key in config.GetSectionOptionNames(section))
-            {
+        foreach (string section in config.GetSectionNames()) {
+            foreach (string key in config.GetSectionOptionNames(section)) {
                 string? raw = config.GetRawValueOrDefault(section, key);
                 if (raw != null
                     && LegacyListFormat.TryParseSingleQuoted(raw.Trim(), out List<string>? value)
-                    && value != null)
-                {
+                    && value != null) {
                     legacy.Add((section, key, value));
                 }
             }
@@ -257,19 +145,15 @@ public static class ConfigurationMigrator
     /// report a legacy read.
     /// </summary>
     private static List<(string Section, string Key, Dictionary<string, string> Value)> FindLegacyDictKeys(
-        IConfiguration config)
-    {
+        IConfiguration config) {
         var legacy = new List<(string, string, Dictionary<string, string>)>();
 
-        foreach (string section in config.GetSectionNames())
-        {
-            foreach (string key in config.GetSectionOptionNames(section))
-            {
+        foreach (string section in config.GetSectionNames()) {
+            foreach (string key in config.GetSectionOptionNames(section)) {
                 string? raw = config.GetRawValueOrDefault(section, key);
                 if (raw != null
                     && LegacyDictFormat.TryParseSingleQuoted(raw.Trim(), out Dictionary<string, string>? value)
-                    && value != null)
-                {
+                    && value != null) {
                     legacy.Add((section, key, value));
                 }
             }
@@ -278,8 +162,7 @@ public static class ConfigurationMigrator
         return legacy;
     }
 
-    private static int ReadVersion(IConfiguration config)
-    {
+    private static int ReadVersion(IConfiguration config) {
         string? raw = config.GetRawValueOrDefault(VersionSection, VersionKey);
         if (string.IsNullOrEmpty(raw))
             return 0;
@@ -287,10 +170,8 @@ public static class ConfigurationMigrator
         return int.TryParse(raw!.Trim().Trim('"'), out int version) ? version : 0;
     }
 
-    private static string? TryBackup(string path)
-    {
-        try
-        {
+    private static string? TryBackup(string path) {
+        try {
             if (string.IsNullOrEmpty(path) || !File.Exists(path))
                 return null;
 
@@ -299,21 +180,9 @@ public static class ConfigurationMigrator
                 File.Copy(path, backup);
             return backup;
         }
-        catch
-        {
+        catch {
             return null;
         }
     }
 
-    private static IEnumerable<PropertyInfo> GetProperties(Type sectionType) =>
-        sectionType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Where(p => p.CanRead && p.CanWrite);
-
-    private static string SectionName(Type sectionType) =>
-        (sectionType.GetCustomAttributes(typeof(SectionNameAttribute), false)
-            .FirstOrDefault() as SectionNameAttribute)?.SectionName ?? sectionType.Name;
-
-    private static string KeyName(PropertyInfo property) =>
-        (property.GetCustomAttributes(typeof(KeyNameAttribute), false)
-            .FirstOrDefault() as KeyNameAttribute)?.KeyName ?? property.Name;
 }

@@ -13,38 +13,33 @@ namespace pyRevitLabs.Configurations.Ini.Tests;
 /// intended string-encoding contract: string values round-trip decoded, not
 /// JSON-quoted.
 /// </summary>
-public class GoldenFileFidelityTests
-{
+public class GoldenFileFidelityTests {
     private static string FixtureDir => Path.Combine(AppContext.BaseDirectory, "Fixtures");
 
     private static IConfiguration Load(string name) =>
         IniConfiguration.Create(Path.Combine(FixtureDir, name));
 
-    private static string TempCopy(string name)
-    {
+    private static string TempCopy(string name) {
         var dst = Path.Combine(Path.GetTempPath(), $"fidelity_{Guid.NewGuid():N}.ini");
         File.Copy(Path.Combine(FixtureDir, name), dst, true);
         return dst;
     }
 
     [Fact]
-    public void Bool_ReadsCorrectly()
-    {
+    public void Bool_ReadsCorrectly() {
         var cfg = Load("populated.ini");
         Assert.True(cfg.GetValue<bool>("core", "rocketmode"));
         Assert.False(cfg.GetValue<bool>("core", "checkupdates"));
     }
 
     [Fact]
-    public void Int_ReadsCorrectly()
-    {
+    public void Int_ReadsCorrectly() {
         var cfg = Load("populated.ini");
         Assert.Equal(10, cfg.GetValue<int>("core", "startuplogtimeout"));
     }
 
     [Fact]
-    public void StringList_ReadsCorrectly()
-    {
+    public void StringList_ReadsCorrectly() {
         var cfg = Load("populated.ini");
         var exts = cfg.GetValue<List<string>>("core", "userextensions");
         Assert.Equal(2, exts.Count);
@@ -53,8 +48,7 @@ public class GoldenFileFidelityTests
     }
 
     [Fact]
-    public void CorruptValue_DoesNotThrow_FallsBackToDefault()
-    {
+    public void CorruptValue_DoesNotThrow_FallsBackToDefault() {
         var cfg = Load("corrupted_clones.ini");
         var clones = cfg.GetValueOrDefault(
             "environment", "clones", new Dictionary<string, string>());
@@ -62,15 +56,13 @@ public class GoldenFileFidelityTests
     }
 
     [Fact]
-    public void CorruptFixture_OtherKeysStillReadable()
-    {
+    public void CorruptFixture_OtherKeysStillReadable() {
         var cfg = Load("corrupted_clones.ini");
         Assert.True(cfg.GetValue<bool>("core", "rocketmode"));
     }
 
     [Fact]
-    public void LegacyValues_DoNotThrowOnLoadOrDefaultRead()
-    {
+    public void LegacyValues_DoNotThrowOnLoadOrDefaultRead() {
         var cfg = Load("legacy_values.ini");
         Assert.NotNull(cfg.GetValueOrDefault<string>("core", "outputstylesheet", ""));
     }
@@ -79,8 +71,7 @@ public class GoldenFileFidelityTests
     /// Python-style "True"/"False" predate the JSON encoding and must still read.
     /// </summary>
     [Fact]
-    public void LegacyCapitalizedBool_ReadsCorrectly()
-    {
+    public void LegacyCapitalizedBool_ReadsCorrectly() {
         var cfg = Load("legacy_values.ini");
         Assert.True(cfg.GetValue<bool>("core", "rocketmode"));
         Assert.False(cfg.GetValue<bool>("core", "checkupdates"));
@@ -90,8 +81,7 @@ public class GoldenFileFidelityTests
     /// Windows paths in a legacy list carry backslashes that are not JSON escapes.
     /// </summary>
     [Fact]
-    public void LegacyUnescapedPathList_ReadsCorrectly()
-    {
+    public void LegacyUnescapedPathList_ReadsCorrectly() {
         var cfg = Load("legacy_values.ini");
         var exts = cfg.GetValue<List<string>>("core", "userextensions");
 
@@ -104,8 +94,7 @@ public class GoldenFileFidelityTests
     /// \t and \n are valid JSON escapes; in a path they must stay literal.
     /// </summary>
     [Fact]
-    public void LegacyUnescapedPathList_DoesNotInterpretEscapeSequences()
-    {
+    public void LegacyUnescapedPathList_DoesNotInterpretEscapeSequences() {
         var cfg = Load("legacy_values.ini");
         var exts = cfg.GetValue<List<string>>("core", "userextensions");
 
@@ -116,8 +105,7 @@ public class GoldenFileFidelityTests
     /// The clone registry is a map with the same unescaped-path problem as the list case.
     /// </summary>
     [Fact]
-    public void LegacyUnescapedPathMap_ReadsCorrectly()
-    {
+    public void LegacyUnescapedPathMap_ReadsCorrectly() {
         var cfg = Load("legacy_values.ini");
         var clones = cfg.GetValue<Dictionary<string, string>>("environment", "clones");
 
@@ -128,11 +116,9 @@ public class GoldenFileFidelityTests
     /// Readable legacy containers must survive migration, not be reset.
     /// </summary>
     [Fact]
-    public void Migration_KeepsLegacyUnescapedPathList()
-    {
+    public void Migration_KeepsLegacyUnescapedPathList() {
         var path = TempCopy("legacy_values.ini");
-        try
-        {
+        try {
             var service = new ConfigurationBuilder(false)
                 .AddIniConfiguration(path)
                 .Build();
@@ -147,8 +133,7 @@ public class GoldenFileFidelityTests
                 new List<string> { @"C:\Tools\ext1", @"D:\Program Files\ext2", @"C:\temp\new" },
                 reread.GetValue<List<string>>("core", "userextensions"));
         }
-        finally
-        {
+        finally {
             File.Delete(path);
         }
     }
@@ -157,11 +142,9 @@ public class GoldenFileFidelityTests
     /// A capitalized bool is a readable value, so migration must not drop it.
     /// </summary>
     [Fact]
-    public void Migration_KeepsLegacyCapitalizedBool()
-    {
+    public void Migration_KeepsLegacyCapitalizedBool() {
         var path = TempCopy("legacy_values.ini");
-        try
-        {
+        try {
             var service = new ConfigurationBuilder(false)
                 .AddIniConfiguration(path)
                 .Build();
@@ -175,15 +158,13 @@ public class GoldenFileFidelityTests
             Assert.True(reread.GetValue<bool>("core", "rocketmode"));
             Assert.False(reread.GetValue<bool>("core", "checkupdates"));
         }
-        finally
-        {
+        finally {
             File.Delete(path);
         }
     }
 
     [Fact]
-    public void MissingKey_OrDefault_ReturnsDefault()
-    {
+    public void MissingKey_OrDefault_ReturnsDefault() {
         var cfg = Load("empty.ini");
         Assert.Equal("fallback", cfg.GetValueOrDefault<string>("core", "user_locale", "fallback"));
     }
@@ -192,15 +173,13 @@ public class GoldenFileFidelityTests
     /// Large hex telemetry flags round-trip as a string (no 32-bit overflow).
     /// </summary>
     [Fact]
-    public void TelemetryEventFlags_LargeHex_ReadsAsString()
-    {
+    public void TelemetryEventFlags_LargeHex_ReadsAsString() {
         var cfg = Load("populated.ini");
         Assert.Equal("0x4000400004003", cfg.GetValue<string>("telemetry", "apptelemetry_event_flags"));
     }
 
     [Fact]
-    public void Acceptance_GetString_ReturnsDecoded()
-    {
+    public void Acceptance_GetString_ReturnsDecoded() {
         var cfg = Load("populated.ini");
         Assert.Equal("en_us", cfg.GetValue<string>("core", "user_locale"));
     }
@@ -209,11 +188,9 @@ public class GoldenFileFidelityTests
     /// Writing then re-reading a string yields the same value, with no quote/escape accumulation.
     /// </summary>
     [Fact]
-    public void Acceptance_StringRoundTrip_IsIdempotent()
-    {
+    public void Acceptance_StringRoundTrip_IsIdempotent() {
         var path = TempCopy("populated.ini");
-        try
-        {
+        try {
             var cfg = IniConfiguration.Create(path);
             cfg.SetValue("core", "user_locale", "fr_fr");
             cfg.SaveConfiguration();
@@ -221,8 +198,7 @@ public class GoldenFileFidelityTests
             var reread = IniConfiguration.Create(path);
             Assert.Equal("fr_fr", reread.GetValue<string>("core", "user_locale"));
         }
-        finally
-        {
+        finally {
             File.Delete(path);
         }
     }
@@ -232,11 +208,9 @@ public class GoldenFileFidelityTests
     /// write without rebuilding the service (shared-cache freshness).
     /// </summary>
     [Fact]
-    public void SaveSection_RefreshesTypedSnapshot_OnSameInstance()
-    {
+    public void SaveSection_RefreshesTypedSnapshot_OnSameInstance() {
         var path = TempCopy("populated.ini");
-        try
-        {
+        try {
             var service = new ConfigurationBuilder(false)
                 .AddIniConfiguration(path).Build();
 
@@ -246,18 +220,15 @@ public class GoldenFileFidelityTests
 
             Assert.Equal(99, service.Core.StartupLogTimeout);
         }
-        finally
-        {
+        finally {
             File.Delete(path);
         }
     }
 
     [Fact]
-    public void SaveSection_SingleProperty_DoesNotClobberSiblings()
-    {
+    public void SaveSection_SingleProperty_DoesNotClobberSiblings() {
         var path = TempCopy("populated.ini");
-        try
-        {
+        try {
             var service = new ConfigurationBuilder(false)
                 .AddIniConfiguration(path).Build();
 
@@ -269,8 +240,7 @@ public class GoldenFileFidelityTests
             Assert.Equal(2, exts.Count);
             Assert.Equal(99, reread.GetValue<int>("core", "startuplogtimeout"));
         }
-        finally
-        {
+        finally {
             File.Delete(path);
         }
     }
@@ -281,12 +251,10 @@ public class GoldenFileFidelityTests
     /// default is true — so the write is only provably applied if the value changes.
     /// </summary>
     [Fact]
-    public void SaveSection_SetToDefaultValue_StillWrites()
-    {
+    public void SaveSection_SetToDefaultValue_StillWrites() {
         var path = Path.Combine(Path.GetTempPath(), $"settodefault_{Guid.NewGuid():N}.ini");
         File.WriteAllText(path, "[core]\nrocketmode = false\n");
-        try
-        {
+        try {
             var service = new ConfigurationBuilder(false)
                 .AddIniConfiguration(path).Build();
 
@@ -296,8 +264,7 @@ public class GoldenFileFidelityTests
             var reread = IniConfiguration.Create(path);
             Assert.True(reread.GetValue<bool>("core", "rocketmode"));
         }
-        finally
-        {
+        finally {
             File.Delete(path);
         }
     }
@@ -310,8 +277,7 @@ public class GoldenFileFidelityTests
     /// to string.Empty.
     /// </summary>
     [Fact]
-    public void Defaults_MaterializePerTypeAndSection_WhenKeyAbsent()
-    {
+    public void Defaults_MaterializePerTypeAndSection_WhenKeyAbsent() {
         var service = new ConfigurationBuilder(false)
             .AddIniConfiguration(Path.Combine(FixtureDir, "empty.ini")).Build();
 
@@ -334,36 +300,30 @@ public class GoldenFileFidelityTests
     /// version is stamped.
     /// </summary>
     [Fact]
-    public void Migration_RepairsCorruptValue_AndStampsVersion()
-    {
+    public void Migration_StampsVersionWithoutRewritingUnreadableValue() {
         var path = TempCopy("corrupted_clones.ini");
-        try
-        {
+        try {
             var service = new ConfigurationBuilder(false)
                 .AddIniConfiguration(path)
                 .Build();
 
             var result = ConfigurationMigrator.Migrate(service);
             Assert.True(result.Migrated);
-            Assert.Contains("environment.clones", result.ResetKeys);
 
             var reread = IniConfiguration.Create(path);
-            Assert.False(reread.HasSectionKey("environment", "clones"));
+            Assert.True(reread.HasSectionKey("environment", "clones"));
             Assert.Equal(ConfigurationMigrator.CurrentVersion, reread.GetValue<int>("core", "config_version"));
             Assert.True(reread.GetValue<bool>("core", "rocketmode"));
         }
-        finally
-        {
+        finally {
             File.Delete(path);
         }
     }
 
     [Fact]
-    public void Migration_IsIdempotent()
-    {
+    public void Migration_IsIdempotent() {
         var path = TempCopy("populated.ini");
-        try
-        {
+        try {
             var first = new ConfigurationBuilder(false)
                 .AddIniConfiguration(path).Build();
             Assert.True(ConfigurationMigrator.Migrate(first).Migrated);
@@ -372,32 +332,27 @@ public class GoldenFileFidelityTests
                 .AddIniConfiguration(path).Build();
             Assert.False(ConfigurationMigrator.Migrate(second).Migrated);
         }
-        finally
-        {
+        finally {
             File.Delete(path);
         }
     }
 
     [Fact]
-    public void Migration_SelfHeals_WhenAlreadyStamped()
-    {
+    public void Migration_LeavesUnreadableValue_WhenAlreadyStamped() {
         var path = Path.Combine(Path.GetTempPath(), $"selfheal_{Guid.NewGuid():N}.ini");
         File.WriteAllText(path,
             "[core]\nconfig_version = 1\nrocketmode = true\n\n[environment]\nclones = \"oops\"\n");
-        try
-        {
+        try {
             var service = new ConfigurationBuilder(false)
                 .AddIniConfiguration(path).Build();
 
             var result = ConfigurationMigrator.Migrate(service);
-            Assert.True(result.Migrated);
-            Assert.Contains("environment.clones", result.ResetKeys);
+            Assert.False(result.Migrated);
 
             var reread = IniConfiguration.Create(path);
-            Assert.False(reread.HasSectionKey("environment", "clones"));
+            Assert.True(reread.HasSectionKey("environment", "clones"));
         }
-        finally
-        {
+        finally {
             File.Delete(path);
         }
     }

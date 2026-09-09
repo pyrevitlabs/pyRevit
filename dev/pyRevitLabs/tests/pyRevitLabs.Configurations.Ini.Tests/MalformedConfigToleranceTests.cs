@@ -14,26 +14,20 @@ namespace pyRevitLabs.Configurations.Ini.Tests;
 /// takes down the loader, the CLI, and the script engines at once, and never
 /// reaches the migrator that would repair it.
 /// </summary>
-public class MalformedConfigToleranceTests : IDisposable
-{
+public class MalformedConfigToleranceTests : IDisposable {
     private readonly List<string> _files = new();
 
-    public void Dispose()
-    {
-        foreach (string file in _files)
-        {
-            try
-            {
+    public void Dispose() {
+        foreach (string file in _files) {
+            try {
                 File.Delete(file);
             }
-            catch (IOException)
-            {
+            catch (IOException) {
             }
         }
     }
 
-    private IConfiguration Read(string content)
-    {
+    private IConfiguration Read(string content) {
         string path = Path.Combine(Path.GetTempPath(), $"malformed_{Guid.NewGuid():N}.ini");
         _files.Add(path);
         File.WriteAllText(path, content, new UTF8Encoding(false));
@@ -44,32 +38,28 @@ public class MalformedConfigToleranceTests : IDisposable
     /// Python's configparser accepts '#', so hand-edited configs carry it.
     /// </summary>
     [Fact]
-    public void HashComment_IsRead()
-    {
+    public void HashComment_IsRead() {
         IConfiguration config = Read("# pyRevit settings\n[core]\ndebug = true\n");
 
         Assert.True(config.GetValue<bool>("core", "debug"));
     }
 
     [Fact]
-    public void SemicolonComment_IsRead()
-    {
+    public void SemicolonComment_IsRead() {
         IConfiguration config = Read("; pyRevit settings\n[core]\ndebug = true\n");
 
         Assert.True(config.GetValue<bool>("core", "debug"));
     }
 
     [Fact]
-    public void DuplicateKey_LastValueWins()
-    {
+    public void DuplicateKey_LastValueWins() {
         IConfiguration config = Read("[core]\ndebug = true\ndebug = false\n");
 
         Assert.False(config.GetValue<bool>("core", "debug"));
     }
 
     [Fact]
-    public void DuplicateSection_IsMerged()
-    {
+    public void DuplicateSection_IsMerged() {
         IConfiguration config = Read("[core]\ndebug = true\n[core]\nverbose = true\n");
 
         Assert.True(config.GetValue<bool>("core", "debug"));
@@ -77,11 +67,17 @@ public class MalformedConfigToleranceTests : IDisposable
     }
 
     [Fact]
-    public void UnparsableLine_IsSkipped_AndSurroundingKeysSurvive()
-    {
-        IConfiguration config = Read("[core]\nthis line has no assignment\ndebug = true\n");
+    public void UnparsableFile_IsBackedUpAndDefaultsAreUsed() {
+        string path = Path.Combine(Path.GetTempPath(), $"malformed_{Guid.NewGuid():N}.ini");
+        _files.Add(path);
+        File.WriteAllText(path, "[core]\nthis line has no assignment\ndebug = true\n", new UTF8Encoding(false));
+        IConfiguration config = IniConfiguration.Create(path);
 
-        Assert.True(config.GetValue<bool>("core", "debug"));
+        Assert.False(config.HasSection("core"));
+        Assert.False(File.Exists(path));
+        string backupPath = Assert.Single(
+            Directory.GetFiles(Path.GetDirectoryName(path)!, Path.GetFileName(path) + ".*.bad"));
+        _files.Add(backupPath);
     }
 }
 
@@ -92,22 +88,18 @@ public class MalformedConfigToleranceTests : IDisposable
 /// nothing it stores ever reaches the file and a caller that must not report a
 /// false success tests <see cref="IConfigurationService.ReadOnly"/> itself.
 /// </summary>
-public class ReadOnlyWriteGuardTests : IDisposable
-{
+public class ReadOnlyWriteGuardTests : IDisposable {
     private readonly string _path =
         Path.Combine(Path.GetTempPath(), $"readonly_{Guid.NewGuid():N}.ini");
 
     public ReadOnlyWriteGuardTests() =>
         File.WriteAllText(_path, "[core]\nrocketmode = true\n", new UTF8Encoding(false));
 
-    public void Dispose()
-    {
-        try
-        {
+    public void Dispose() {
+        try {
             File.Delete(_path);
         }
-        catch (IOException)
-        {
+        catch (IOException) {
         }
     }
 
@@ -117,14 +109,12 @@ public class ReadOnlyWriteGuardTests : IDisposable
             .Build();
 
     [Fact]
-    public void SaveSection_OnReadOnlyConfig_Throws()
-    {
+    public void SaveSection_OnReadOnlyConfig_Throws() {
         Assert.Throws<ConfigurationReadOnlyException>(() => ReadOnlyService().SaveSection(new CoreSection { RocketMode = false }));
     }
 
     [Fact]
-    public void SetSectionKeyValue_OnReadOnlyConfig_Throws()
-    {
+    public void SetSectionKeyValue_OnReadOnlyConfig_Throws() {
         Assert.Throws<ConfigurationReadOnlyException>(() => ReadOnlyService().SetSectionKeyValue(
             "core", "rocketmode", false));
     }
@@ -133,14 +123,12 @@ public class ReadOnlyWriteGuardTests : IDisposable
     /// The write-through path behind user_config.core.X = value in Python.
     /// </summary>
     [Fact]
-    public void ApplySection_OnReadOnlyConfig_Throws()
-    {
+    public void ApplySection_OnReadOnlyConfig_Throws() {
         Assert.Throws<ConfigurationReadOnlyException>(() => ReadOnlyService().ApplySection(new CoreSection { RocketMode = false }));
     }
 
     [Fact]
-    public void RawWrite_OnReadOnlyConfig_NeverReachesFile()
-    {
+    public void RawWrite_OnReadOnlyConfig_NeverReachesFile() {
         IConfigurationService service = ReadOnlyService();
         IConfiguration configuration = service.Configuration;
 
@@ -151,8 +139,7 @@ public class ReadOnlyWriteGuardTests : IDisposable
     }
 
     [Fact]
-    public void RefusedWrite_LeavesValueUnchanged()
-    {
+    public void RefusedWrite_LeavesValueUnchanged() {
         IConfigurationService service = ReadOnlyService();
 
         Assert.Throws<ConfigurationReadOnlyException>(() => service.SetSectionKeyValue(

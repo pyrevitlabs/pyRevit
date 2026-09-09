@@ -12,14 +12,12 @@ namespace pyRevitLabs.Configurations.Ini;
 /// <see cref="PyRevitConfigStore"/>. Diagnostics route through
 /// <see cref="ConfigurationDiagnostics"/>; a host wires those to its logger.
 /// </summary>
-public static class PyRevitConfigService
-{
+public static class PyRevitConfigService {
     /// <summary>
     /// Returns the shared service, building it on first request and caching it
     /// for the process.
     /// </summary>
-    public static IConfigurationService GetShared()
-    {
+    public static IConfigurationService GetShared() {
         EnsureRegistered();
         return PyRevitConfigStore.GetShared();
     }
@@ -37,8 +35,7 @@ public static class PyRevitConfigService
     /// factory instead of leaving the store empty. An already-installed factory
     /// is never replaced.
     /// </summary>
-    public static void EnsureRegistered()
-    {
+    public static void EnsureRegistered() {
         if (!PyRevitConfigStore.HasFactory)
             PyRevitConfigStore.SetFactory(BuildConfigService);
     }
@@ -46,8 +43,7 @@ public static class PyRevitConfigService
     /// <summary>
     /// The configuration tier selected for the current install.
     /// </summary>
-    public enum ConfigSelection
-    {
+    public enum ConfigSelection {
         /// <summary>A config file inside the running clone (developer override).</summary>
         Local,
         /// <summary>
@@ -88,8 +84,7 @@ public static class PyRevitConfigService
     /// </summary>
     public static ConfigSelection SelectConfig(
         bool localExists, bool isAllUsers, bool isElevated,
-        bool adminExists, bool adminLocked, bool userExists)
-    {
+        bool adminExists, bool adminLocked, bool userExists) {
         if (localExists)
             return ConfigSelection.Local;
 
@@ -111,8 +106,7 @@ public static class PyRevitConfigService
     /// User, and New tiers all resolve to the same writable per-user config,
     /// after any seeding the Seed tier needs.
     /// </summary>
-    private static IConfigurationService BuildConfigService()
-    {
+    private static IConfigurationService BuildConfigService() {
         MigrateSplitAdminConfigIfNeeded();
 
         string localConfig = PyRevitInstallScope.GetLocalConfigFilePath();
@@ -129,8 +123,7 @@ public static class PyRevitConfigService
             adminLocked: adminExists && PyRevitInstallScope.HasReadOnlyAttribute(adminConfig),
             userExists: File.Exists(userConfig));
 
-        switch (selection)
-        {
+        switch (selection) {
             case ConfigSelection.Local:
                 return BuildWritable(localConfig);
 
@@ -150,8 +143,7 @@ public static class PyRevitConfigService
         return BuildWritable(userConfig);
     }
 
-    private static IConfigurationService BuildWritable(string configPath)
-    {
+    private static IConfigurationService BuildWritable(string configPath) {
         var service = CreateConfiguration(configPath, false);
         RunMigration(service, configPath);
         return service;
@@ -175,8 +167,7 @@ public static class PyRevitConfigService
     /// they are running on.
     /// </para>
     /// </summary>
-    internal static void MigrateSplitAdminConfigIfNeeded()
-    {
+    internal static void MigrateSplitAdminConfigIfNeeded() {
         if (!PyRevitInstallScope.IsAllUsersInstall() || !PyRevitInstallScope.IsElevatedProcess())
             return;
 
@@ -190,22 +181,18 @@ public static class PyRevitConfigService
     /// actually moved out of it, which is what makes the repair run once rather
     /// than on every load. A config with nothing left to contribute is left alone.
     /// </summary>
-    internal static void RepairSplitAdminConfig(string userConfigPath, string machineConfigPath)
-    {
+    internal static void RepairSplitAdminConfig(string userConfigPath, string machineConfigPath) {
         if (!File.Exists(userConfigPath))
             return;
 
-        if (!File.Exists(machineConfigPath))
-        {
-            try
-            {
+        if (!File.Exists(machineConfigPath)) {
+            try {
                 string? dir = Path.GetDirectoryName(machineConfigPath);
                 if (!string.IsNullOrEmpty(dir))
                     Directory.CreateDirectory(dir);
                 File.Copy(userConfigPath, machineConfigPath);
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 ConfigurationDiagnostics.ReportWarning(
                     "Could not promote per-user config to the machine config: " + ex.Message);
                 return;
@@ -226,17 +213,14 @@ public static class PyRevitConfigService
     /// the next time pyRevit starts. A rename that fails leaves the file in place
     /// and the repair retries on a later load.
     /// </summary>
-    private static void RetireSplitUserConfig(string userConfigPath)
-    {
+    private static void RetireSplitUserConfig(string userConfigPath) {
         string retiredPath = userConfigPath
             + ".split-admin." + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".bak";
 
-        try
-        {
+        try {
             File.Move(userConfigPath, retiredPath);
         }
-        catch (Exception ex)
-        {
+        catch (Exception ex) {
             ConfigurationDiagnostics.ReportWarning(
                 "Merged the per-user config into the machine config but could not retire "
                 + userConfigPath + ": " + ex.Message + ". The merge will run again on a later load.");
@@ -256,34 +240,27 @@ public static class PyRevitConfigService
     /// sections alone, so a source that contributed nothing still holds the only copy
     /// of its other sections.
     /// </summary>
-    internal static bool MergeAdminConfigFiles(string sourcePath, string targetPath)
-    {
-        try
-        {
+    internal static bool MergeAdminConfigFiles(string sourcePath, string targetPath) {
+        try {
             var source = IniConfiguration.Create(sourcePath);
             var target = IniConfiguration.Create(targetPath);
             bool changed = false;
 
-            if (CountRegisteredClones(target) == 0 && CountRegisteredClones(source) > 0)
-            {
+            if (CountRegisteredClones(target) == 0 && CountRegisteredClones(source) > 0) {
                 string? clones = source.GetRawValueOrDefault(EnvironmentSectionName, ClonesKeyName, null);
-                if (!string.IsNullOrEmpty(clones))
-                {
+                if (!string.IsNullOrEmpty(clones)) {
                     target.SetRawValue(EnvironmentSectionName, ClonesKeyName, clones!);
                     changed = true;
                 }
             }
 
-            foreach (string section in source.GetSectionNames())
-            {
+            foreach (string section in source.GetSectionNames()) {
                 if (!IsExtensionConfigSection(section) || target.HasSection(section))
                     continue;
 
-                foreach (string key in source.GetSectionOptionNames(section))
-                {
+                foreach (string key in source.GetSectionOptionNames(section)) {
                     string? raw = source.GetRawValueOrDefault(section, key, null);
-                    if (raw != null)
-                    {
+                    if (raw != null) {
                         target.SetRawValue(section, key, raw);
                         changed = true;
                     }
@@ -295,8 +272,7 @@ public static class PyRevitConfigService
 
             return changed;
         }
-        catch (Exception ex)
-        {
+        catch (Exception ex) {
             ConfigurationDiagnostics.ReportWarning(
                 "Could not merge split machine config: " + ex.Message);
             return false;
@@ -309,51 +285,35 @@ public static class PyRevitConfigService
     /// so the key alone does not prove the registry survived; the -1 case keeps
     /// unreadable user data from being mistaken for an empty registry.
     /// </summary>
-    private static int CountRegisteredClones(IConfiguration config)
-    {
+    private static int CountRegisteredClones(IConfiguration config) {
         if (!config.HasSectionKey(EnvironmentSectionName, ClonesKeyName))
             return 0;
 
-        try
-        {
+        try {
             var clones = config.GetValue<Dictionary<string, string>>(
                 EnvironmentSectionName, ClonesKeyName);
             return clones?.Count ?? 0;
         }
-        catch
-        {
+        catch {
             return -1;
         }
     }
 
-    private static bool IsExtensionConfigSection(string sectionName)
-    {
+    private static bool IsExtensionConfigSection(string sectionName) {
         return sectionName.EndsWith(ExtensionSectionSuffix, StringComparison.OrdinalIgnoreCase)
             || sectionName.EndsWith(LibrarySectionSuffix, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static void RunMigration(IConfigurationService service, string configPath)
-    {
+    private static void RunMigration(IConfigurationService service, string configPath) {
         var migration = ConfigurationMigrator.Migrate(service);
-        if (migration.BackupFailed)
-        {
+        if (migration.BackupFailed) {
             ConfigurationDiagnostics.ReportWarning(
                 "Skipped config migration for " + configPath +
                 ": could not create a backup; will retry on a later load.");
             return;
         }
 
-        if (migration.ResetKeys.Count > 0)
-        {
-            ConfigurationDiagnostics.ReportInfo(
-                "Repaired config " + configPath + ": reset " + migration.ResetKeys.Count +
-                " invalid value(s); backup: " + migration.BackupPath);
-            foreach (string key in migration.ResetKeys)
-                ConfigurationDiagnostics.ReportWarning("Reset invalid config value: " + key);
-        }
-
-        if (migration.ConvertedKeys.Count > 0)
-        {
+        if (migration.ConvertedKeys.Count > 0) {
             ConfigurationDiagnostics.ReportInfo(
                 "Canonicalized " + migration.ConvertedKeys.Count + " legacy list value(s) in " +
                 configPath + "; backup: " + migration.BackupPath);
@@ -362,24 +322,20 @@ public static class PyRevitConfigService
         }
     }
 
-    private static void SeedToUserConfig(string sourceFile, string targetFile)
-    {
-        try
-        {
+    private static void SeedToUserConfig(string sourceFile, string targetFile) {
+        try {
             string? dir = Path.GetDirectoryName(targetFile);
             if (!string.IsNullOrEmpty(dir))
                 Directory.CreateDirectory(dir);
             File.WriteAllText(targetFile, File.ReadAllText(sourceFile));
         }
-        catch (Exception ex)
-        {
+        catch (Exception ex) {
             ConfigurationDiagnostics.ReportWarning(
                 "Could not seed admin config to user config: " + ex.Message);
         }
     }
 
-    private static IConfigurationService CreateConfiguration(string configPath, bool readOnly)
-    {
+    private static IConfigurationService CreateConfiguration(string configPath, bool readOnly) {
         return new ConfigurationBuilder(readOnly)
             .AddIniConfiguration(configPath, readOnly)
             .Build();

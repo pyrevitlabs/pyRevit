@@ -46,17 +46,30 @@ public sealed class IniConfiguration : ConfigurationBase {
         ConfigureTolerantParsing(_parser);
         _iniFile = !File.Exists(configurationPath)
             ? new IniData()
-            : _parser.ReadFile(_configurationPath, DefaultFileEncoding);
+            : ReadConfiguration(_configurationPath);
     }
 
     private static void ConfigureTolerantParsing(FileIniDataParser parser) {
         var configuration = parser.Parser.Configuration;
         configuration.CaseInsensitive = true;
         configuration.CommentRegex = CommentPrefixRegex;
-        configuration.SkipInvalidLines = true;
+        configuration.SkipInvalidLines = false;
         configuration.AllowDuplicateSections = true;
         configuration.AllowDuplicateKeys = true;
         configuration.OverrideDuplicateKeys = true;
+    }
+
+    private IniData ReadConfiguration(string configurationPath) {
+        try {
+            return _parser.ReadFile(configurationPath, DefaultFileEncoding);
+        }
+        catch (Exception error) when (error is not IOException && error is not UnauthorizedAccessException) {
+            string backupPath = configurationPath + "." + DateTime.UtcNow.ToString("yyyyMMddHHmmssfff") + ".bad";
+            File.Move(configurationPath, backupPath);
+            ConfigurationDiagnostics.ReportWarning(
+                "Could not read config " + configurationPath + "; using defaults. Backup: " + backupPath + ".");
+            return new IniData();
+        }
     }
 
     /// <summary>
