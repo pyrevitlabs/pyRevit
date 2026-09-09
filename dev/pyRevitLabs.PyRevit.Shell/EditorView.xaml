@@ -1,0 +1,109 @@
+<UserControl x:Class="PyRevitLabs.PyRevit.Shell.EditorView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
+             xmlns:console="clr-namespace:PythonConsoleControl">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/pyRevitLabs.PyRevit.Shell;component/Themes/ShellTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="3*" />
+            <RowDefinition Height="10" />
+            <RowDefinition Height="2*" />
+        </Grid.RowDefinitions>
+
+        <ToolBarTray Grid.Row="0" IsLocked="True" Background="{DynamicResource ShellBarBackground}">
+            <ToolBar Loaded="ToolBar_Loaded">
+                <Button Style="{StaticResource ToolButton}" ToolTip="New file (Ctrl+N)" Click="NewFileClick">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource ToolGlyph}" Text="&#xE7C3;" />
+                        <TextBlock Style="{StaticResource ToolLabel}" Text="New" />
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource ToolButton}" ToolTip="Open file (Ctrl+O)" Click="OpenFileClick">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource ToolGlyph}" Text="&#xE8E5;" />
+                        <TextBlock Style="{StaticResource ToolLabel}" Text="Open" />
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource ToolButton}" ToolTip="Save file (Ctrl+S)" Click="SaveFileClick">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource ToolGlyph}" Text="&#xE74E;" />
+                        <TextBlock Style="{StaticResource ToolLabel}" Text="Save" />
+                    </StackPanel>
+                </Button>
+                <Button Style="{StaticResource ToolButton}" ToolTip="Save file as (Ctrl+Shift+S)" Click="SaveAsFileClick">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource ToolGlyph}" Text="&#xE792;" />
+                        <TextBlock Style="{StaticResource ToolLabel}" Text="Save As" />
+                    </StackPanel>
+                </Button>
+                <Separator />
+                <Button Style="{StaticResource ToolButton}" ToolTip="Cut" Command="Cut" CommandTarget="{Binding ElementName=textEditor}">
+                    <TextBlock Style="{StaticResource ToolGlyph}" Text="&#xE8C6;" Margin="0" />
+                </Button>
+                <Button Style="{StaticResource ToolButton}" ToolTip="Copy" Command="Copy" CommandTarget="{Binding ElementName=textEditor}">
+                    <TextBlock Style="{StaticResource ToolGlyph}" Text="&#xE8C8;" Margin="0" />
+                </Button>
+                <Button Style="{StaticResource ToolButton}" ToolTip="Paste" Command="Paste" CommandTarget="{Binding ElementName=textEditor}">
+                    <TextBlock Style="{StaticResource ToolGlyph}" Text="&#xE77F;" Margin="0" />
+                </Button>
+                <Separator />
+                <Button Style="{StaticResource ToolButton}" ToolTip="Undo (Ctrl+Z)" Command="Undo" CommandTarget="{Binding ElementName=textEditor}">
+                    <TextBlock Style="{StaticResource ToolGlyph}" Text="&#xE7A7;" Margin="0" />
+                </Button>
+                <Button Style="{StaticResource ToolButton}" ToolTip="Redo (Ctrl+Y)" Command="Redo" CommandTarget="{Binding ElementName=textEditor}">
+                    <TextBlock Style="{StaticResource ToolGlyph}" Text="&#xE7A6;" Margin="0" />
+                </Button>
+                <Separator />
+                <CheckBox Style="{StaticResource ToolCheckBox}" ToolTip="Toggle line numbers"
+                          IsChecked="{Binding ShowLineNumbers, ElementName=textEditor, Mode=TwoWay}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource ToolGlyph}" Text="&#xE8FD;" />
+                        <TextBlock Style="{StaticResource ToolLabel}" Text="Lines" />
+                    </StackPanel>
+                </CheckBox>
+                <CheckBox Style="{StaticResource ToolCheckBox}" ToolTip="Toggle word wrap"
+                          IsChecked="{Binding WordWrap, ElementName=textEditor, Mode=TwoWay}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource ToolGlyph}" Text="&#xE751;" />
+                        <TextBlock Style="{StaticResource ToolLabel}" Text="Wrap" />
+                    </StackPanel>
+                </CheckBox>
+                <Separator />
+                <Button Style="{StaticResource ToolButton}" ToolTip="Run selection, or whole file, in the console (F5)" Click="RunClick">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource ToolGlyph}" Text="&#xE768;" Foreground="{DynamicResource ShellRunGlyph}" />
+                        <TextBlock Style="{StaticResource ToolLabel}" Text="Run" FontWeight="SemiBold" />
+                    </StackPanel>
+                </Button>
+            </ToolBar>
+        </ToolBarTray>
+
+        <avalonEdit:TextEditor x:Name="textEditor"
+                               Grid.Row="1"
+                               FontFamily="Consolas"
+                               FontSize="12"
+                               ShowLineNumbers="True"
+                               WordWrap="False"
+                               PreviewKeyDown="TextEditor_PreviewKeyDown"
+                               GotFocus="TextEditor_GotFocus" />
+
+        <GridSplitter Grid.Row="2"
+                      Height="10"
+                      HorizontalAlignment="Stretch"
+                      VerticalAlignment="Center"
+                      Background="{DynamicResource ShellSplitterBackground}"
+                      ResizeBehavior="PreviousAndNext" ResizeDirection="Rows" />
+
+        <console:IronPythonConsoleControl x:Name="consoleControl" Grid.Row="3" />
+    </Grid>
+</UserControl>

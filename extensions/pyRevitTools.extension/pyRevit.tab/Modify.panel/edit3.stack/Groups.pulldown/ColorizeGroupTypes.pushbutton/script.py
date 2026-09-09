@@ -10,7 +10,6 @@ Groups with only 1 instance on views will be colored in gray
 import itertools
 from collections import defaultdict
 
-from pyrevit import HOST_APP
 from pyrevit import forms
 from pyrevit import revit, DB
 from pyrevit import script
@@ -131,26 +130,15 @@ def prepare_colors(groups_dict):
         else:
             color = colors[j]
             j += 1
-        if HOST_APP.is_newer_than(2019, or_equal=True):
-            groups_colors[gt_id] = (
-                DB.OverrideGraphicSettings()
-                .SetProjectionLineColor(color)
-                .SetProjectionLineWeight(6)
-                .SetSurfaceBackgroundPatternColor(color)
-                .SetCutLineColor(color)
-                .SetCutLineWeight(6)
-                .SetCutBackgroundPatternColor(color)
-            )
-        else:
-            groups_colors[gt_id] = (
-                DB.OverrideGraphicSettings()
-                .SetProjectionLineColor(color)
-                .SetProjectionLineWeight(6)
-                .SetProjectionFillColor(color)
-                .SetCutLineColor(color)
-                .SetCutLineWeight(6)
-                .SetCutFillColor(color)
-            )
+        groups_colors[gt_id] = (
+            DB.OverrideGraphicSettings()
+            .SetProjectionLineColor(color)
+            .SetProjectionLineWeight(6)
+            .SetSurfaceBackgroundPatternColor(color)
+            .SetCutLineColor(color)
+            .SetCutLineWeight(6)
+            .SetCutBackgroundPatternColor(color)
+        )
 
     return groups_colors
 

@@ -1,5 +1,4 @@
 #pylint: disable=E0401,C0111,W0613,C0103
-from pyrevit import HOST_APP
 from pyrevit import revit, DB
 from pyrevit import script
 from pyrevit import forms
@@ -42,44 +41,30 @@ def setup_style_per_config(from_style, to_style):
     if my_config.get_option('proj_line_weight', True):
         to_style.SetProjectionLineWeight(from_style.ProjectionLineWeight)
 
-    if HOST_APP.is_newer_than(2019, or_equal=True):
-        if my_config.get_option('proj_fill_color', True):
-            to_style.SetSurfaceForegroundPatternColor(
-                from_style.SurfaceForegroundPatternColor
-                )
-        if my_config.get_option('proj_fill_pattern', True):
-            to_style.SetSurfaceForegroundPatternId(
-                from_style.SurfaceForegroundPatternId
-                )
-        if my_config.get_option('proj_fill_pattern_visibility', True):
-            to_style.SetSurfaceForegroundPatternVisible(
-                from_style.IsSurfaceForegroundPatternVisible
-                )
-        if my_config.get_option('proj_bg_fill_color', True):
-            to_style.SetSurfaceBackgroundPatternColor(
-                from_style.SurfaceBackgroundPatternColor
-                )
-        if my_config.get_option('proj_bg_fill_pattern', True):
-            to_style.SetSurfaceBackgroundPatternId(
-                from_style.SurfaceBackgroundPatternId
-                )
-        if my_config.get_option('proj_bg_fill_pattern_visibility', True):
-            to_style.SetSurfaceBackgroundPatternVisible(
-                from_style.IsSurfaceBackgroundPatternVisible
-                )
-    else:
-        if my_config.get_option('proj_fill_color', True):
-            to_style.SetProjectionFillColor(
-                from_style.ProjectionFillColor
-                )
-        if my_config.get_option('proj_fill_pattern', True):
-            to_style.SetProjectionFillPatternId(
-                from_style.ProjectionFillPatternId
-                )
-        if my_config.get_option('proj_fill_pattern_visibility', True):
-            to_style.SetProjectionFillPatternVisible(
-                from_style.IsProjectionFillPatternVisible
-                )
+    if my_config.get_option('proj_fill_color', True):
+        to_style.SetSurfaceForegroundPatternColor(
+            from_style.SurfaceForegroundPatternColor
+            )
+    if my_config.get_option('proj_fill_pattern', True):
+        to_style.SetSurfaceForegroundPatternId(
+            from_style.SurfaceForegroundPatternId
+            )
+    if my_config.get_option('proj_fill_pattern_visibility', True):
+        to_style.SetSurfaceForegroundPatternVisible(
+            from_style.IsSurfaceForegroundPatternVisible
+            )
+    if my_config.get_option('proj_bg_fill_color', True):
+        to_style.SetSurfaceBackgroundPatternColor(
+            from_style.SurfaceBackgroundPatternColor
+            )
+    if my_config.get_option('proj_bg_fill_pattern', True):
+        to_style.SetSurfaceBackgroundPatternId(
+            from_style.SurfaceBackgroundPatternId
+            )
+    if my_config.get_option('proj_bg_fill_pattern_visibility', True):
+        to_style.SetSurfaceBackgroundPatternVisible(
+            from_style.IsSurfaceBackgroundPatternVisible
+            )
 
     # cuts
     if my_config.get_option('cut_line_color', True):
@@ -89,44 +74,30 @@ def setup_style_per_config(from_style, to_style):
     if my_config.get_option('cut_line_weight', True):
         to_style.SetCutLineWeight(from_style.CutLineWeight)
 
-    if HOST_APP.is_newer_than(2019, or_equal=True):
-        if my_config.get_option('cut_fill_color', True):
-            to_style.SetCutForegroundPatternColor(
-                from_style.CutForegroundPatternColor
-                )
-        if my_config.get_option('cut_fill_pattern', True):
-            to_style.SetCutForegroundPatternId(
-                from_style.CutForegroundPatternId
-                )
-        if my_config.get_option('cut_fill_pattern_visibility', True):
-            to_style.SetCutForegroundPatternVisible(
-                from_style.IsCutForegroundPatternVisible
-                )
-        if my_config.get_option('cut_bg_fill_color', True):
-            to_style.SetCutBackgroundPatternColor(
-                from_style.CutBackgroundPatternColor
-                )
-        if my_config.get_option('cut_bg_fill_pattern', True):
-            to_style.SetCutBackgroundPatternId(
-                from_style.CutBackgroundPatternId
-                )
-        if my_config.get_option('cut_bg_fill_pattern_visibility', True):
-            to_style.SetCutBackgroundPatternVisible(
-                from_style.IsCutBackgroundPatternVisible
-                )
-    else:
-        if my_config.get_option('cut_fill_color', True):
-            to_style.SetCutFillColor(
-                from_style.CutFillColor
-                )
-        if my_config.get_option('cut_fill_pattern', True):
-            to_style.SetCutFillPatternId(
-                from_style.CutFillPatternId
-                )
-        if my_config.get_option('cut_fill_pattern_visibility', True):
-            to_style.SetCutFillPatternVisible(
-                from_style.IsCutFillPatternVisible
-                )
+    if my_config.get_option('cut_fill_color', True):
+        to_style.SetCutForegroundPatternColor(
+            from_style.CutForegroundPatternColor
+            )
+    if my_config.get_option('cut_fill_pattern', True):
+        to_style.SetCutForegroundPatternId(
+            from_style.CutForegroundPatternId
+            )
+    if my_config.get_option('cut_fill_pattern_visibility', True):
+        to_style.SetCutForegroundPatternVisible(
+            from_style.IsCutForegroundPatternVisible
+            )
+    if my_config.get_option('cut_bg_fill_color', True):
+        to_style.SetCutBackgroundPatternColor(
+            from_style.CutBackgroundPatternColor
+            )
+    if my_config.get_option('cut_bg_fill_pattern', True):
+        to_style.SetCutBackgroundPatternId(
+            from_style.CutBackgroundPatternId
+            )
+    if my_config.get_option('cut_bg_fill_pattern_visibility', True):
+        to_style.SetCutBackgroundPatternVisible(
+            from_style.IsCutBackgroundPatternVisible
+            )
 
 
 def get_source_style(element_id):

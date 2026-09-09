@@ -56,6 +56,7 @@
     <Compile Include="HookManagerTests.cs" />
     <Compile Include="LibraryExtensionSearchPathTests.cs" />
     <Compile Include="SessionManagerIntegrationTests.cs" />
+    <Compile Include="SessionManagerReflectionCompatibilityTests.cs" />
     <Compile Include="PythonScriptMultiLangTest.cs" />
     <Compile Include="ComboBoxTests.cs" />
     <Compile Include="SmartButtonTests.cs" />

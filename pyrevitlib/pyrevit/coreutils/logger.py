@@ -1,4 +1,5 @@
 """Runtime-backed logging for pyRevit."""
+
 import io
 import logging
 import os.path as op
@@ -9,7 +10,6 @@ import traceback
 from pyrevit import EXEC_PARAMS, USER_DESKTOP
 from pyrevit.compat import safe_strtype
 from pyrevit import coreutils
-
 
 DEFAULT_LOGGING_LEVEL = logging.WARNING
 DEPRECATE_LOG_LEVEL = 25
@@ -24,10 +24,11 @@ def _resolve_service():
     try:
         runtime = EXEC_PARAMS.script_runtime
         if runtime:
-            service = getattr(runtime, 'LoggerService', None)
+            service = getattr(runtime, "LoggerService", None)
             if service is not None:
                 return service
         from pyrevit.runtime.types import ScriptLoggerService
+
         return ScriptLoggerService.GetDefault()
     except Exception:
         return None
@@ -40,7 +41,7 @@ def _safe_text(value):
         try:
             return safe_strtype(repr(value))
         except Exception:
-            return '<unprintable>'
+            return "<unprintable>"
 
 
 def _format_message(message, args):
@@ -52,19 +53,20 @@ def _format_message(message, args):
             else:
                 text = text % args
         except Exception:
-            rendered_args = ' '.join(_safe_text(arg) for arg in args)
+            rendered_args = " ".join(_safe_text(arg) for arg in args)
             if rendered_args:
-                text = '{} {}'.format(text, rendered_args)
-    return text.replace(op.sep, '/')
+                text = "{} {}".format(text, rendered_args)
+    return text.replace(op.sep, "/")
 
 
 def _format_current_exception():
     exc_type, exc_value, exc_traceback = sys.exc_info()
     if exc_type is None:
-        return ''
+        return ""
     try:
-        return ''.join(traceback.format_exception(
-            exc_type, exc_value, exc_traceback)).rstrip()
+        return "".join(
+            traceback.format_exception(exc_type, exc_value, exc_traceback)
+        ).rstrip()
     except Exception:
         return _safe_text(exc_value)
 
@@ -74,7 +76,7 @@ def _append_exception(message, exception_text):
         return message
     if not message:
         return exception_text
-    return '{}\n{}'.format(message, exception_text)
+    return "{}\n{}".format(message, exception_text)
 
 
 class LoggerWrapper(object):
@@ -83,15 +85,13 @@ class LoggerWrapper(object):
     def __init__(self, name):
         self.name = name
 
-    def _emit(self, level, message, args=(), exception_text=''):
+    def _emit(self, level, message, args=(), exception_text=""):
         service = _resolve_service()
         if service is None:
             return
-        rendered = _append_exception(
-            _format_message(message, args),
-            exception_text)
+        rendered = _append_exception(_format_message(message, args), exception_text)
         try:
-            service.Log(self.name, int(level), rendered)
+            service.Log(self.name, int(level), rendered, False)
         except Exception:
             pass
 
@@ -107,8 +107,7 @@ class LoggerWrapper(object):
     warn = warning
 
     def error(self, message, *args, **kwargs):
-        exception_text = _format_current_exception() \
-            if kwargs.get('exc_info') else ''
+        exception_text = _format_current_exception() if kwargs.get("exc_info") else ""
         self._emit(logging.ERROR, message, args, exception_text)
 
     def exception(self, message, *args, **kwargs):
@@ -177,31 +176,36 @@ class LoggerWrapper(object):
             return DEFAULT_LOGGING_LEVEL
 
     def log_parse_except(self, parsed_file, parse_ex):
-        err_msg = '<strong>Error while parsing file:</strong>\n{file}\n' \
-                  '<strong>Error type:</strong> {type}\n' \
-                  '<strong>Error Message:</strong> {errmsg}\n' \
-                  '<strong>Line/Column:</strong> {lineno}/{colno}\n' \
-                  '<strong>Line Text:</strong> {linetext}' \
-                  .format(file=parsed_file,
-                          type=parse_ex.__class__.__name__,
-                          errmsg=getattr(parse_ex, 'msg', ''),
-                          lineno=getattr(parse_ex, 'lineno', 0),
-                          colno=getattr(parse_ex, 'offset', 0),
-                          linetext=getattr(parse_ex, 'text', ''))
+        err_msg = (
+            "<strong>Error while parsing file:</strong>\n{file}\n"
+            "<strong>Error type:</strong> {type}\n"
+            "<strong>Error Message:</strong> {errmsg}\n"
+            "<strong>Line/Column:</strong> {lineno}/{colno}\n"
+            "<strong>Line Text:</strong> {linetext}".format(
+                file=parsed_file,
+                type=parse_ex.__class__.__name__,
+                errmsg=getattr(parse_ex, "msg", ""),
+                lineno=getattr(parse_ex, "lineno", 0),
+                colno=getattr(parse_ex, "offset", 0),
+                linetext=getattr(parse_ex, "text", ""),
+            )
+        )
         self.error(coreutils.prepare_html_str(err_msg))
 
-    def dev_log(self, source, message=''):
+    def dev_log(self, source, message=""):
         """Append a command-specific developer note on the user's desktop."""
-        devlog_fname = '{}.log'.format(
-            EXEC_PARAMS.command_uniqueid or self.name)
-        with io.open(op.join(USER_DESKTOP, devlog_fname), 'a', encoding='utf-8') \
-                as devlog_file:
+        devlog_fname = "{}.log".format(EXEC_PARAMS.command_uniqueid or self.name)
+        with io.open(
+            op.join(USER_DESKTOP, devlog_fname), "a", encoding="utf-8"
+        ) as devlog_file:
             devlog_file.write(
-                '{tstamp} [{exid}] {src}: {msg}\n'.format(
+                "{tstamp} [{exid}] {src}: {msg}\n".format(
                     tstamp=EXEC_PARAMS.exec_timestamp,
                     exid=EXEC_PARAMS.exec_id,
                     src=_safe_text(source),
-                    msg=_safe_text(message)))
+                    msg=_safe_text(message),
+                )
+            )
 
 
 class _RuntimeLoggingHandler(logging.Handler):
@@ -211,7 +215,7 @@ class _RuntimeLoggingHandler(logging.Handler):
     _emitting = threading.local()
 
     def emit(self, record):
-        if getattr(self._emitting, 'active', False):
+        if getattr(self._emitting, "active", False):
             return
 
         self._emitting.active = True
@@ -223,15 +227,18 @@ class _RuntimeLoggingHandler(logging.Handler):
 
             if record.exc_info:
                 try:
-                    exc_text = ''.join(traceback.format_exception(
-                        *record.exc_info)).rstrip()
+                    exc_text = "".join(
+                        traceback.format_exception(*record.exc_info)
+                    ).rstrip()
                 except Exception:
                     exc_text = _safe_text(record.exc_info[1])
                 message = _append_exception(_safe_text(message), exc_text)
 
             service = _resolve_service()
             if service is not None:
-                service.Log(record.name, int(record.levelno), _safe_text(message))
+                service.Log(
+                    record.name, int(record.levelno), _safe_text(message), False
+                )
         except Exception:
             pass
         finally:
@@ -241,7 +248,7 @@ class _RuntimeLoggingHandler(logging.Handler):
 def _install_standard_logging_bridge():
     root_logger = logging.getLogger()
     for handler in root_logger.handlers:
-        if getattr(handler, '_pyrevit_runtime_bridge', False):
+        if getattr(handler, "_pyrevit_runtime_bridge", False):
             return handler
 
     handler = _RuntimeLoggingHandler()
@@ -289,6 +296,7 @@ def get_runtime_logfile_path():
     """
     try:
         from pyrevit.runtime.types import ScriptLoggerService
+
         return ScriptLoggerService.GetDefaultLogFilePath() or None
     except Exception:
         return None

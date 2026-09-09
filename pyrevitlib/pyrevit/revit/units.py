@@ -28,6 +28,30 @@ def format_area(area_value, doc=None):
                                          forEditing=False)
 
 
+def format_length(length_value, doc=None):
+    """Return formatted length value in document units.
+
+    Args:
+        area_value (float): area value
+        doc (DB.Document, optional): Revit document, defaults to current
+
+    Returns:
+        (str): formatted value
+    """
+    doc = doc or DOCS.doc
+    if HOST_APP.is_newer_than(2021):
+        return DB.UnitFormatUtils.Format(units=doc.GetUnits(),
+                                         specTypeId=DB.SpecTypeId.Length,
+                                         value=length_value,
+                                         forEditing=False)
+    else:
+        return DB.UnitFormatUtils.Format(units=doc.GetUnits(),
+                                         unitType=DB.UnitType.UT_Length,
+                                         value=length_value,
+                                         maxAccuracy=False,
+                                         forEditing=False)
+
+
 def format_slope(slope_value, doc=None):
     """Return formatted slope value in document units.
 

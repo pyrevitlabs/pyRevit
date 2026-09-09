@@ -15,10 +15,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public override int Execute(ref ScriptRuntime runtime) {
-#if (REVIT2013 || REVIT2014)
-            TaskDialog.Show(PyRevitLabsConsts.ProductName, NotSupportedFeatureException.NotSupportedMessage);
-            return ScriptExecutorResultCodes.NotSupportedFeatureException;
-#else
             if (runtime.UIApp != null && runtime.UIApp.ActiveUIDocument != null) {
                 string familySourceFile = runtime.ScriptSourceFile;
                 UIDocument uidoc = runtime.UIApp.ActiveUIDocument;
@@ -91,7 +87,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             TaskDialog.Show(PyRevitLabsConsts.ProductName, "Failed accessing Application.");
             return ScriptExecutorResultCodes.FailedLoadingContent;
-#endif
         }
     }
 

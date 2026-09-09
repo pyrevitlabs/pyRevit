@@ -2,8 +2,7 @@
 
 import pyrevit.coreutils.git as libgit
 from pyrevit.compat import safe_strtype
-from pyrevit import coreutils
-from pyrevit import HOME_DIR
+from pyrevit.coreutils import envvars
 from pyrevit.coreutils.logger import get_logger
 from pyrevit import versionmgr
 from pyrevit.versionmgr import upgrade
@@ -12,6 +11,7 @@ from pyrevit.userconfig import user_config
 from pyrevit.extensions import extensionmgr
 
 import socket
+import time
 
 #pylint: disable=C0103,W0703
 logger = get_logger(__name__)
@@ -167,15 +167,47 @@ def has_pending_updates(repo_info):
     Args:
         repo_info (:obj:`pyrevit.coreutils.git.RepoInfo`):
             repository info wrapper object
+
+    Returns:
+        bool: True if the repo's remote is ahead of the local branch head.
     """
     if get_updates(repo_info):
         hist_div = libgit.compare_branch_heads(repo_info)
         if hist_div.BehindBy > 0:
             return True
+    return False
+
+
+CHECKUPDATES_TTL_SECONDS = 15 * 60
 
 
 def check_for_updates():
-    """Check whether any available repo has pending updates."""
+    """Check whether any available repo has pending updates.
+
+    Fetches every remote on every repo, which the Update smart button's
+    __selfinit__ calls on every session load/reload. Cached in-process for
+    CHECKUPDATES_TTL_SECONDS so rapid reloads (e.g. while developing) don't
+    re-hit the network each time. A no-internet result is never cached, so
+    a transient outage doesn't suppress update detection for the full TTL.
+    """
+    now = time.time()
+    last_check = envvars.get_pyrevit_env_var(
+        envvars.CHECKUPDATES_TIMESTAMP_ENVVAR)
+    if last_check is not None and (now - last_check) < CHECKUPDATES_TTL_SECONDS:
+        return envvars.get_pyrevit_env_var(envvars.CHECKUPDATES_RESULT_ENVVAR)
+
+    if not _check_connection():
+        logger.warning('No internet access detected. '
+                       'Skipping check for updates.')
+        return False
+
+    result = _check_for_updates_uncached()
+    envvars.set_pyrevit_env_var(envvars.CHECKUPDATES_TIMESTAMP_ENVVAR, now)
+    envvars.set_pyrevit_env_var(envvars.CHECKUPDATES_RESULT_ENVVAR, result)
+    return result
+
+
+def _check_for_updates_uncached():
     if _check_connection():
         logger.info('Checking for updates...')
 
@@ -185,6 +217,7 @@ def check_for_updates():
                 return True
             else:
                 logger.info('%s is up-to-date...', repo.name)
+        return False
     else:
         logger.warning('No internet access detected. '
                        'Skipping check for updates.')
@@ -213,7 +246,13 @@ def has_core_updates():
 
 
 def update_pyrevit():
-    """Update pyrevit and its extension repositories."""
+    """Update pyrevit and its extension repositories.
+
+    Returns:
+        bool: True if a reload was triggered (updates were applied), so a
+            caller running from inside a session load (e.g. postload
+            autoupdate) knows the current session was just replaced.
+    """
     if _check_connection():
         third_party_updated = False
         pyrevit_updated = False
@@ -259,12 +298,16 @@ def update_pyrevit():
                 # now reload pyrevit
                 from pyrevit.loader import sessionmgr
                 sessionmgr.reload_pyrevit()
+                return True
             else:
                 logger.info('pyRevit and extensions seem to be up-to-date.')
+                return False
         else:
             from pyrevit import script
             output = script.get_output()
             output.print_html(COREUPDATE_MESSAGE)
             logger.debug('Core updates. Skippin update and reload.')
+            return False
     else:
         logger.warning('No internet access detected. Skipping update.')
+        return False

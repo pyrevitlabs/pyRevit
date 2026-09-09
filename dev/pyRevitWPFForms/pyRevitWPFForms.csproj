@@ -43,7 +43,6 @@
     <Page Include="$(PyRevitExtDir)\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Sheets.pulldown\Batch Sheet Maker.pushbutton\BatchSheetMakerWindow.xaml" Link="Tools\BatchSheetMakerWindow.xaml" />
     <Page Include="$(PyRevitExtDir)\pyRevitTools.extension\pyRevit.tab\Drawing Set.panel\Sheets.pulldown\ReOrder Sheets.pushbutton\ReOrderWindow.xaml" Link="Tools\ReOrderWindow.xaml" />
     <Page Include="$(PyRevitExtDir)\pyRevitTools.extension\pyRevit.tab\Modify.panel\edit1.stack\Match.splitpushbutton\Match.pushbutton\MatchConfigWindow.xaml" Link="Tools\MatchConfigWindow.xaml" />
-    <Page Include="$(PyRevitExtDir)\pyRevitTools.extension\pyRevit.tab\Modify.panel\edit1.stack\Match.splitpushbutton\Match.pushbutton\MatchConfigWindowLegacy.xaml" Link="Tools\MatchConfigWindowLegacy.xaml" />
     <Page Include="$(PyRevitExtDir)\pyRevitTools.extension\pyRevit.tab\Modify.panel\edit1.stack\Patterns.splitpushbutton\Make Pattern.pushbutton\MakePatternWindow.xaml" Link="Tools\MakePatternWindow.xaml" />
     <Page Include="$(PyRevitExtDir)\pyRevitTools.extension\pyRevit.tab\Modify.panel\edit2.stack\ReValue.pushbutton\ReValueWindow.xaml" Link="Tools\ReValueWindow.xaml" />
     <Page Include="$(PyRevitExtDir)\pyRevitTools.extension\pyRevit.tab\Modify.panel\edit3.stack\Edit.pulldown\Convert Line Styles.pushbutton\ConvertLineStyles.xaml" Link="Tools\ConvertLineStyles.xaml" />

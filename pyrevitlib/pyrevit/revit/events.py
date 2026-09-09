@@ -113,14 +113,47 @@ def unregister_exec_handlers(handler_group_id):
 
 def delayed_unregister_exec_handlers(handler_group_id):
     HANDLER_UNREGISTERER.handler_group_id = handler_group_id
-    HANDLER_UNREGISTERER_EXTEVENT.Raise()
+    ext_event = _get_unregisterer_extevent()
+    if ext_event is None:
+        mlogger.error(
+            "Could not create ExternalEvent; event handlers remain registered"
+        )
+        return
+    try:
+        response = ext_event.Raise()
+        if response in (
+                UI.ExternalEventRequest.Denied,
+                UI.ExternalEventRequest.TimedOut):
+            mlogger.error(
+                "Could not unregister event handlers; "
+                "ExternalEvent request was {}".format(response)
+            )
+    except Exception as ex:
+        mlogger.error(
+            "Could not unregister event handlers: {}".format(ex)
+        )
+
+
+def _get_unregisterer_extevent():
+    # External events require API context, so retry creation on first use.
+    global HANDLER_UNREGISTERER_EXTEVENT
+    if HANDLER_UNREGISTERER_EXTEVENT is None:
+        try:
+            HANDLER_UNREGISTERER_EXTEVENT = UI.ExternalEvent.Create(HANDLER_UNREGISTERER)
+        except Exception:
+            HANDLER_UNREGISTERER_EXTEVENT = None
+    return HANDLER_UNREGISTERER_EXTEVENT
 
 
 REGISTERED_HANDLERS = {}
 HANDLER_UNREGISTERER = \
     FuncAsEventHandler(unregister_exec_handlers, purge=False)
-HANDLER_UNREGISTERER_EXTEVENT = \
-    UI.ExternalEvent.Create(HANDLER_UNREGISTERER)
+# Import can occur outside API context, so event creation may be deferred.
+try:
+    HANDLER_UNREGISTERER_EXTEVENT = \
+        UI.ExternalEvent.Create(HANDLER_UNREGISTERER)
+except Exception:
+    HANDLER_UNREGISTERER_EXTEVENT = None
 
 
 def handle(*args): #pylint: disable=no-method-argument
@@ -160,10 +193,31 @@ class _GenericExternalEventHandler(UI.IExternalEventHandler):
     def schedule(self, func):
         self._queue.append(func)
 
+    def discard(self, func):
+        try:
+            self._queue.remove(func)
+            return True
+        except ValueError:
+            return False
+
 
 if compat.IRONPY:
     _HANDLER = _GenericExternalEventHandler()
-    _EXTERNAL_EVENT = UI.ExternalEvent.Create(_HANDLER)
+    # Import can occur outside API context, so event creation may be deferred.
+    try:
+        _EXTERNAL_EVENT = UI.ExternalEvent.Create(_HANDLER)
+    except Exception:
+        _EXTERNAL_EVENT = None
+
+
+def _get_execute_extevent():
+    global _EXTERNAL_EVENT
+    if _EXTERNAL_EVENT is None:
+        try:
+            _EXTERNAL_EVENT = UI.ExternalEvent.Create(_HANDLER)
+        except Exception:
+            _EXTERNAL_EVENT = None
+    return _EXTERNAL_EVENT
 
 
 def execute_in_revit_context(func, *args, **kwargs):
@@ -238,5 +292,26 @@ def execute_in_revit_context(func, *args, **kwargs):
                 else:
                     g[k] = old
 
+    _ext_event = _get_execute_extevent()
+    if _ext_event is None:
+        mlogger.error(
+            "Could not create ExternalEvent; scheduled callback will not run"
+        )
+        return
+
     _HANDLER.schedule(_wrapper)
-    _EXTERNAL_EVENT.Raise()
+    try:
+        response = _ext_event.Raise()
+        if response in (
+                UI.ExternalEventRequest.Denied,
+                UI.ExternalEventRequest.TimedOut):
+            _HANDLER.discard(_wrapper)
+            mlogger.error(
+                "Could not schedule callback; "
+                "ExternalEvent request was {}".format(response)
+            )
+    except Exception as ex:
+        _HANDLER.discard(_wrapper)
+        mlogger.error(
+            "Could not schedule callback through ExternalEvent: {}".format(ex)
+        )
