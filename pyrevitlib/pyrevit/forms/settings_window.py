@@ -365,7 +365,9 @@ class SettingsWindow(forms.WPFWindow):
                         if setting_type == "color":
                             button.Click += lambda s, e, n=name: self._pick_color(n)
                         elif setting_type == "folder":
-                            button.Click += lambda s, e, n=name: self._pick_folder(n)
+                            button.Click += (
+                                lambda s, e, n=name, st=setting: self._pick_folder(n, st)
+                            )
                         elif setting_type == "file":
                             button.Click += (
                                 lambda s, e, n=name, st=setting: self._pick_file(n, st)
@@ -481,7 +483,7 @@ class SettingsWindow(forms.WPFWindow):
     # Folder / file helpers
     # ------------------------------------------------------------------
 
-    def _pick_folder(self, control_name):
+    def _pick_folder(self, control_name, setting):
         """Show folder picker and update control.
 
         Args:
@@ -490,7 +492,8 @@ class SettingsWindow(forms.WPFWindow):
         control = self.controls.get(control_name)
         if not control:
             return
-        selected_folder = forms.pick_folder()
+        init_dir = setting.get("init_dir", "")
+        selected_folder = forms.pick_folder(init_dir=init_dir)
         if selected_folder:
             control.Text = selected_folder
 
@@ -699,6 +702,7 @@ def show_settings(settings_schema, section=None, title="Settings", width=450,
             - type "string"    -- TextBox. Supports "required" (bool).
             - type "color"     -- TextBox + color-preview swatch + picker button.
             - type "folder"    -- TextBox + folder-browse button.
+                                  Supports "init_dir".
             - type "file"      -- TextBox + file-browse button.
                                   Supports "file_ext", "files_filter", "init_dir",
                                   "multi_file".
