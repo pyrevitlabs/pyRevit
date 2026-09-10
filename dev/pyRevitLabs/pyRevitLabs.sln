@@ -51,6 +51,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.UnitTests", "py
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.PyRevit.Runtime.Shared", "pyRevitLabs.PyRevit.Runtime.Shared\pyRevitLabs.PyRevit.Runtime.Shared.csproj", "{B239FF1F-F32A-4828-87B8-E5DAC6809567}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.UI.Protocol", "..\pyRevitLabs.UI.Protocol\pyRevitLabs.UI.Protocol.csproj", "{5B0B690A-21D1-4813-83AD-57A38EA7C314}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.UI.Client", "..\pyRevitLabs.UI.Client\pyRevitLabs.UI.Client.csproj", "{77EE3F5D-C0D7-46BB-A6B1-25DAED40B702}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "pyRevitLabs.UI.Host", "..\pyRevitLabs.UI.Host\pyRevitLabs.UI.Host.csproj", "{5126573A-5593-4F61-AF40-8B3291F0BC0C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -113,6 +119,18 @@ Global
 		{B239FF1F-F32A-4828-87B8-E5DAC6809567}.Debug|x64.Build.0 = Debug|x64
 		{B239FF1F-F32A-4828-87B8-E5DAC6809567}.Release|x64.ActiveCfg = Release|x64
 		{B239FF1F-F32A-4828-87B8-E5DAC6809567}.Release|x64.Build.0 = Release|x64
+		{5B0B690A-21D1-4813-83AD-57A38EA7C314}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{5B0B690A-21D1-4813-83AD-57A38EA7C314}.Debug|x64.Build.0 = Debug|Any CPU
+		{5B0B690A-21D1-4813-83AD-57A38EA7C314}.Release|x64.ActiveCfg = Release|Any CPU
+		{5B0B690A-21D1-4813-83AD-57A38EA7C314}.Release|x64.Build.0 = Release|Any CPU
+		{77EE3F5D-C0D7-46BB-A6B1-25DAED40B702}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{77EE3F5D-C0D7-46BB-A6B1-25DAED40B702}.Debug|x64.Build.0 = Debug|Any CPU
+		{77EE3F5D-C0D7-46BB-A6B1-25DAED40B702}.Release|x64.ActiveCfg = Release|Any CPU
+		{77EE3F5D-C0D7-46BB-A6B1-25DAED40B702}.Release|x64.Build.0 = Release|Any CPU
+		{5126573A-5593-4F61-AF40-8B3291F0BC0C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{5126573A-5593-4F61-AF40-8B3291F0BC0C}.Debug|x64.Build.0 = Debug|Any CPU
+		{5126573A-5593-4F61-AF40-8B3291F0BC0C}.Release|x64.ActiveCfg = Release|Any CPU
+		{5126573A-5593-4F61-AF40-8B3291F0BC0C}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

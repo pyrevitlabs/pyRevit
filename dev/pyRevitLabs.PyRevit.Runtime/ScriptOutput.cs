@@ -324,28 +324,28 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public void log_debug(string message) {
-            log_to_activity(output => output.activityBar.ConsoleLog(message));
+            log_to_activity(output => output.AppendActivityLog("debug", message));
         }
 
         public void log_success(string message) {
-            log_to_activity(output => output.activityBar.ConsoleLogOK(message));
+            log_to_activity(output => output.AppendActivityLog("success", message));
         }
 
         public void log_info(string message) {
-            log_to_activity(output => output.activityBar.ConsoleLogInfo(message));
+            log_to_activity(output => output.AppendActivityLog("info", message));
         }
 
         public void log_warning(string message) {
-            log_to_activity(output => output.activityBar.ConsoleLogWarning(message));
+            log_to_activity(output => output.AppendActivityLog("warning", message));
         }
 
         public void log_deprecate(string message) {
-            log_to_activity(output => output.activityBar.ConsoleLogWarning(message));
+            log_to_activity(output => output.AppendActivityLog("warning", message));
         }
 
         public void log_error(string message) {
             mark_error();
-            log_to_activity(output => output.activityBar.ConsoleLogError(message));
+            log_to_activity(output => output.AppendActivityLog("error", message));
         }
 
         public void log_critical(string message) {
@@ -362,25 +362,21 @@ namespace PyRevitLabs.PyRevit.Runtime {
             window.IsSessionOutput = isSessionOutput;
         }
 
-        public void close() { window.Close(); }
-        public void hide() { window.Hide(); }
-        public void show() { window.Show(); }
+        public void close() { window.CloseOutput(); }
+        public void hide() { window.HideOutput(); }
+        public void show() { window.ShowOutput(); }
         public void lock_size() { window.LockSize(); }
         public void unlock_size() { window.UnlockSize(); }
         public void freeze() { output_stream.Flush(); window.Freeze(); }
         public void unfreeze() { window.Unfreeze(); }
         public void set_title(string title) { window.OutputTitle = title; }
         public string get_title() { return window.OutputTitle; }
-        public void set_width(double width) { window.Width = width; }
-        public double get_width() { return window.Width; }
-        public void set_height(double height) { window.Height = height; }
-        public double get_height() { return window.Height; }
-        public void resize(double width, double height) { set_width(width); set_height(height); }
-        public void center() {
-            var workArea = System.Windows.SystemParameters.WorkArea;
-            window.Left = workArea.Left + ((workArea.Width - window.Width) / 2);
-            window.Top = workArea.Top + ((workArea.Height - window.Height) / 2);
-        }
+        public void set_width(double width) { window.SetOutputSize(width, window.GetOutputHeight()); }
+        public double get_width() { return window.GetOutputWidth(); }
+        public void set_height(double height) { window.SetOutputSize(window.GetOutputWidth(), height); }
+        public double get_height() { return window.GetOutputHeight(); }
+        public void resize(double width, double height) { window.SetOutputSize(width, height); }
+        public void center() { window.CenterOutput(); }
 
         public void set_font(string font_family, float font_size) {
             if (renderer != null)
@@ -409,7 +405,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public void open_url(string dest_url) {
-            renderer?.Navigate(dest_url, false);
+            window.NavigateOutput(dest_url);
         }
 
         public void open_page(string dest_file) {
