@@ -1,8 +1,8 @@
 title:
-  en_us: Python Shell
+  en_us: "Python\nShell"
 tooltip:
   en_us: >-
-    Open the interactive IronPython 3.4 shell. Type Python and see results immediately, with
-    syntax highlighting and CTRL+SPACE autocompletion. Shift+Click to choose how it opens
-    (modal, modeless, or docked).
+    Open the interactive IronPython shell running on the engine pyRevit is currently loaded
+    with. Type Python and see results immediately, with syntax highlighting and CTRL+SPACE
+    autocompletion. Shift+Click to choose how it opens (modal, modeless, or docked).
 context: zero-doc

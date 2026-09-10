@@ -9,6 +9,12 @@
     <system:String x:Key="LblDesignOption">Option de conception</system:String>
     <system:String x:Key="ChkDesignOption.Tooltip">L'option de conception est en lecture seule</system:String>
     <system:String x:Key="TbDesignOption.Tooltip">Lecture seule. L'appartenance aux options de conception ne peut pas être modifiée via l'API.</system:String>
+    <system:String x:Key="LblCreator">Créé par</system:String>
+    <system:String x:Key="TbCreator.Tooltip">Utilisateur qui a créé l'élément.</system:String>
+    <system:String x:Key="LblLastChangedBy">Dernière modification par</system:String>
+    <system:String x:Key="TbLastChangedBy.Tooltip">Utilisateur qui a modifié l'élément en dernier.</system:String>
+    <system:String x:Key="LblOwner">Propriétaire</system:String>
+    <system:String x:Key="TbOwner.Tooltip">Propriétaire worksharing actuel de l'élément.</system:String>
 
     <!-- Section paramètres -->
     <system:String x:Key="LblParameters">Paramètres</system:String>
