@@ -77,7 +77,12 @@ _VALID_VIEW_TYPES_BASE = [
     DB.ViewType.Walkthrough,
     DB.ViewType.Rendering,
 ]
-_PresureLossReport = getattr(DB.ViewType, "PresureLossReport", None)
+# PresureLossReport typo was corrected in Revit 2027
+_PresureLossReport = getattr(
+    DB.ViewType,
+    "PresureLossReport" if HOST_APP.is_older_than(2027) else "PressureLossReport",
+    None,
+)
 _SystemsAnalysisReport = getattr(DB.ViewType, "SystemsAnalysisReport", None)
 VALID_VIEW_TYPES = list(_VALID_VIEW_TYPES_BASE)
 if _PresureLossReport is not None:
