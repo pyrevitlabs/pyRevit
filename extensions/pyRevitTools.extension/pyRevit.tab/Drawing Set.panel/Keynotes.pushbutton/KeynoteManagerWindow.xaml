@@ -4,6 +4,7 @@
         Width="800" Height="750"
         MinWidth="760" MinHeight="480"
         ResizeMode="CanResizeWithGrip"
+        UseLayoutRounding="True"
         WindowStartupLocation="Manual"
         Title="Keynote Manager"
         Closing="window_closing"
