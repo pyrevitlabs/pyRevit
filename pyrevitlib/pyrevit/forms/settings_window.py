@@ -488,6 +488,7 @@ class SettingsWindow(forms.WPFWindow):
 
         Args:
             control_name: Name of the control to update
+            setting: Setting definition dict
         """
         control = self.controls.get(control_name)
         if not control:
