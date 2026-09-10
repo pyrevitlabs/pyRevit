@@ -190,7 +190,6 @@ with revit.TransactionGroup("Create Filter Legend(s)"):
                     legend_view = existing_legend
                     tracked_ids = get_managed_elements(legend_view)
                     clear_legend_view(doc, legend_view, tracked_ids)
-                    updated_count += 1
                 else:
                     legend_view = doc.GetElement(
                         base_legend.Duplicate(DB.ViewDuplicateOption.Duplicate)
@@ -203,7 +202,6 @@ with revit.TransactionGroup("Create Filter Legend(s)"):
                     )
                     legend_view.Name = legend_name
                     existing_view_names.add(legend_name)
-                    new_count += 1
 
                 filter_elems = revit.query.get_view_filters(src_view)
 
@@ -304,6 +302,11 @@ with revit.TransactionGroup("Create Filter Legend(s)"):
                         r.Id for r in swatch_regions
                     ]
                     save_managed_elements(legend_view, managed_ids)
+
+                if existing_legend is not None:
+                    updated_count += 1
+                else:
+                    new_count += 1
 
                 created_legends.append(legend_view)
 
