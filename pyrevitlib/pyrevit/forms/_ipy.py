@@ -3822,12 +3822,13 @@ def alert_ifnot(condition, msg, *args, **kwargs):
         return alert(msg, *args, **kwargs)
 
 
-def pick_folder(title=None, owner=None):
+def pick_folder(title=None, owner=None, init_dir=""):
     """Show standard windows pick folder dialog.
 
     Args:
         title (str, optional): title for the window
         owner (object, optional): owner of the dialog
+        init_dir (str, optional): initial directory
 
     Returns:
         (str): folder path
@@ -3837,6 +3838,8 @@ def pick_folder(title=None, owner=None):
         fb_dlg.IsFolderPicker = True
         if title:
             fb_dlg.Title = title
+        if init_dir:
+            fb_dlg.InitialDirectory = init_dir
 
         res = CPDialogs.CommonFileDialogResult.Cancel
         if owner:
@@ -3850,6 +3853,8 @@ def pick_folder(title=None, owner=None):
         fb_dlg = Forms.FolderBrowserDialog()
         if title:
             fb_dlg.Description = title
+        if init_dir:
+            fb_dlg.SelectedPath = init_dir
         if fb_dlg.ShowDialog() == Forms.DialogResult.OK:
             return fb_dlg.SelectedPath
 

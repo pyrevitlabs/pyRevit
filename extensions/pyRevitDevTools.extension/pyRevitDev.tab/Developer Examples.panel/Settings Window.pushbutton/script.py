@@ -95,6 +95,7 @@ settings = [
         "type": "folder",
         "label": "Export Folder",
         "default": "",
+        "init_dir": "C:\\",
     },
     # File settings
     {
