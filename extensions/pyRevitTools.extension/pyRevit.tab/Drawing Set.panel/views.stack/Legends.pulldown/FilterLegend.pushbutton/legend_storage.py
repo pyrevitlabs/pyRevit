@@ -20,11 +20,6 @@ from pyrevit.coreutils import extensible_storage
 
 
 class _FilterLegendLinkSchema(extensible_storage.BaseSchema):
-    # Fixed, unique schema identity -- do not change once tools are in
-    # the field, or existing links become unreadable (Schema.Lookup
-    # keys off this GUID). Generated once for this tool; if you fork
-    # this tool for a different one, generate a fresh GUID instead of
-    # reusing this.
     guid = "f3b1e4d2-7a5c-4b8e-9f3a-1234567890ab"
     schema_name = "pyRevitFilterLegendViewLink"
     vendor_id = "flgd"
