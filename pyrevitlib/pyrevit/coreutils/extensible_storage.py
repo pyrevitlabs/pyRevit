@@ -26,7 +26,7 @@ Example:
     from pyrevit.coreutils import extensible_storage
 
     class MyToolLinkSchema(extensible_storage.BaseSchema):
-        guid = "f3b1e4d2-7a5c-4b8e-9f3a-1234567890ab"
+        guid = "a1b2c3d4-e5f6-4a7b-8c9d-0123456789ab"
         schema_name = "MyToolElementLink"
         vendor_id = "mytool"
         fields = {"LinkedId": DB.ElementId}
@@ -75,7 +75,7 @@ class BaseSchema(object):
     application_guid = None
     read_access_level = DB.ExtensibleStorage.AccessLevel.Public
     write_access_level = DB.ExtensibleStorage.AccessLevel.Public
-    fields = {}
+    fields = None
     documentation = None
 
     @classmethod
