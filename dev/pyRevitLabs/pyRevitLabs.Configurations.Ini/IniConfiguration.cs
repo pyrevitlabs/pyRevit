@@ -46,7 +46,7 @@ public sealed class IniConfiguration : ConfigurationBase {
         ConfigureTolerantParsing(_parser);
         _iniFile = !File.Exists(configurationPath)
             ? new IniData()
-            : ReadConfiguration(_configurationPath);
+            : ReadConfiguration(_configurationPath, readOnly);
     }
 
     private static void ConfigureTolerantParsing(FileIniDataParser parser) {
@@ -59,15 +59,27 @@ public sealed class IniConfiguration : ConfigurationBase {
         configuration.OverrideDuplicateKeys = true;
     }
 
-    private IniData ReadConfiguration(string configurationPath) {
+    private IniData ReadConfiguration(string configurationPath, bool readOnly) {
         try {
             return _parser.ReadFile(configurationPath, DefaultFileEncoding);
         }
         catch (Exception error) when (error is not IOException && error is not UnauthorizedAccessException) {
+            if (readOnly) {
+                ConfigurationDiagnostics.ReportWarning(
+                    "Could not read config " + configurationPath + "; using defaults.");
+                return new IniData();
+            }
+
             string backupPath = configurationPath + "." + DateTime.UtcNow.ToString("yyyyMMddHHmmssfff") + ".bad";
-            File.Move(configurationPath, backupPath);
-            ConfigurationDiagnostics.ReportWarning(
-                "Could not read config " + configurationPath + "; using defaults. Backup: " + backupPath + ".");
+            try {
+                File.Move(configurationPath, backupPath);
+                ConfigurationDiagnostics.ReportWarning(
+                    "Could not read config " + configurationPath + "; using defaults. Backup: " + backupPath + ".");
+            }
+            catch {
+                ConfigurationDiagnostics.ReportWarning(
+                    "Could not read or back up config " + configurationPath + "; using defaults.");
+            }
             return new IniData();
         }
     }
