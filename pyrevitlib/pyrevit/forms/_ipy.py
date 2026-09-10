@@ -22,6 +22,7 @@ from pyrevit import PyRevitCPythonNotSupported, PyRevitException
 from pyrevit.compat import IRONPY
 from pyrevit.compat import safe_strtype, get_elementid_value_func
 from pyrevit._perf import mark as _perfmark
+
 _perfmark("pyrevit.forms._ipy:entry")
 
 if not IRONPY:
@@ -30,6 +31,7 @@ if not IRONPY:
 from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.coreutils import colors
+
 _perfmark("pyrevit.forms._ipy:after coreutils+logger+colors")
 from pyrevit import framework
 from pyrevit.framework import System
@@ -41,25 +43,33 @@ from pyrevit.framework import CPDialogs
 from pyrevit.framework import ComponentModel
 from pyrevit.framework import ObservableCollection
 from pyrevit.framework import Uri, UriKind, ResourceDictionary
+
 _perfmark("pyrevit.forms._ipy:after framework re-imports")
 from pyrevit.api import AdWindows
+
 _perfmark("pyrevit.forms._ipy:after pyrevit.api.AdWindows")
 from pyrevit.labs import Common
 from pyrevit import revit, UI, DB
+
 _perfmark("pyrevit.forms._ipy:after `from pyrevit import revit, UI, DB`")
 from pyrevit.forms import utils
 from pyrevit.forms import toaster
+
 _perfmark("pyrevit.forms._ipy:after forms.utils + forms.toaster")
 from pyrevit import versionmgr
+
 _perfmark("pyrevit.forms._ipy:after pyrevit.versionmgr")
 from pyrevit.userconfig import user_config
+
 _perfmark("pyrevit.forms._ipy:after `from pyrevit.userconfig import user_config`")
 
 import pyevent
+
 _perfmark("pyrevit.forms._ipy:after pyevent")
 
 import Autodesk.Windows.ComponentManager
 import Autodesk.Internal.InfoCenter
+
 _perfmark("pyrevit.forms._ipy:after Autodesk.Windows/Internal")
 
 
@@ -925,7 +935,7 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
         Subclass this, set the three required class attributes, then register
         and open the panel through the module-level helpers.
 
-        Use self.logger and self.output instead of using script.get_logger() and script.get_output() 
+        Use self.logger and self.output instead of using script.get_logger() and script.get_output()
         to ensure correct titles in the output window.
 
         Required class attributes:
@@ -1011,9 +1021,10 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
 
     def _get_panel_output(self):
         """Get current output window and keep its title in sync with panel_title."""
-        out = getattr(self, '_output', None)
+        out = getattr(self, "_output", None)
         try:
             from pyrevit import script as _script
+
             current_out = _script.get_output()
             if current_out:
                 self._output = current_out
@@ -2781,7 +2792,9 @@ class LevelOption(TemplateListItem):
 class FamilyParamOption(TemplateListItem):
     """Level wrapper for :func:`select_family_parameters`."""
 
-    def __init__(self, fparam, builtin=False, labeled=False, associated=False, checked=False):
+    def __init__(
+        self, fparam, builtin=False, labeled=False, associated=False, checked=False
+    ):
         super(FamilyParamOption, self).__init__(fparam, checked=checked)
         self.isbuiltin = builtin
         self.islabeled = labeled
@@ -3628,6 +3641,7 @@ def alert(
     no=False,
     retry=False,
     warn_icon=True,
+    icon="",
     options=None,
     exitscript=False,
 ):
@@ -3644,7 +3658,9 @@ def alert(
         yes (bool, optional): show Yes button, defaults to False
         no (bool, optional): show NO button, defaults to False
         retry (bool, optional): show Retry button, defaults to False
-        warn_icon (bool, optional): show warning icon
+        warn_icon (bool, optional): show "warning" icon. Ignored if `icon` is used. Defaults to True
+        icon (str, optional): icon to show, from one of "warning", "shield", "information", "error".
+            When provided (non-empty), this takes full precedence over `warn_icon` and `warn_icon` is ignored.
         options (list[str], optional): list of command link titles in order
         exitscript (bool, optional): exit if cancel or no, defaults to False
 
@@ -3704,11 +3720,30 @@ def alert(
     tdlg.TitleAutoPrefix = False
 
     # set icon
-    tdlg.MainIcon = (
-        UI.TaskDialogIcon.TaskDialogIconWarning
-        if warn_icon
-        else UI.TaskDialogIcon.TaskDialogIconNone
-    )
+    icon_map = {
+        "warning": UI.TaskDialogIcon.TaskDialogIconWarning,
+        "shield": UI.TaskDialogIcon.TaskDialogIconShield,
+        "information": UI.TaskDialogIcon.TaskDialogIconInformation,
+        "error": UI.TaskDialogIcon.TaskDialogIconError,
+    }
+
+    if icon:
+        # `icon` takes precedence if provided
+        key = icon.lower()
+        if key not in icon_map:
+            mlogger.warning(
+                "Unknown icon %r; falling back to no icon. " "Valid icons: %s",
+                icon,
+                ", ".join(sorted(icon_map)),
+            )
+        tdlg.MainIcon = icon_map.get(key, UI.TaskDialogIcon.TaskDialogIconNone)
+    else:
+        # else fall back to legacy `warn_icon` behavior to prevent breaking of existing scripts
+        tdlg.MainIcon = (
+            UI.TaskDialogIcon.TaskDialogIconWarning
+            if warn_icon
+            else UI.TaskDialogIcon.TaskDialogIconNone
+        )
 
     # tdlg.VerificationText = 'verif'
 
