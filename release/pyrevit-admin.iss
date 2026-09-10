@@ -133,6 +133,8 @@ end;
 
 function InitializeSetup: Boolean;
 begin
+  // WebView2 Runtime for the output window renderer
+  Dependency_AddWebView2;
   // .NET 8 for Revit 2025-2026
   Dependency_AddDotNet80;
   Dependency_AddDotNet80Desktop;
