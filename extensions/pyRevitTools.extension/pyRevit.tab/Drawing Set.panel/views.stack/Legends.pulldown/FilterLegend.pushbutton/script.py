@@ -31,6 +31,11 @@ from match.filter_utils import (
 from legend_utils import (
     create_legend_row,
     autofit_column_widths,
+    clear_legend_view,
+)
+from legend_storage import (
+    save_link,
+    get_linked_legend,
 )
 from legend_cfg import (
     INI,
@@ -149,6 +154,9 @@ sort_alpha = bool(
     cfg.get_option("sort_alphabetically", DEFAULTS_BOOL["sort_alphabetically"])
 )
 open_last = bool(cfg.get_option("open_last_legend", DEFAULTS_BOOL["open_last_legend"]))
+track_links = bool(
+    cfg.get_option("track_legend_updates", DEFAULTS_BOOL["track_legend_updates"])
+)
 
 # Column X offsets (relative to swatch's right edge)
 COL_NAME_X = swatch_width + col_width * 0.05
@@ -159,6 +167,8 @@ COL_VALUE_X = swatch_width + col_width * 2.05
 # LEGEND CREATION
 # ---------------------------------------------------------------------------
 created_legends = []
+new_count = 0
+updated_count = 0
 existing_view_names = set(v.Name for v in all_views)
 
 base_legend = revit.query.find_first_legend(doc=doc)
@@ -170,17 +180,27 @@ with revit.TransactionGroup("Create Filter Legend(s)"):
     for src_view in selected_views:
         try:
             with revit.Transaction("Create Filter Legend - {0}".format(src_view.Name)):
-                legend_view = doc.GetElement(
-                    base_legend.Duplicate(DB.ViewDuplicateOption.Duplicate)
+                existing_legend = (
+                    get_linked_legend(doc, src_view) if track_links else None
                 )
-                legend_view.Scale = 1
 
-                legend_name = unique_name(
-                    "Legend_Filters_{0}".format(src_view.Name),
-                    existing_view_names,
-                )
-                legend_view.Name = legend_name
-                existing_view_names.add(legend_name)
+                if existing_legend is not None:
+                    legend_view = existing_legend
+                    clear_legend_view(doc, legend_view)
+                    updated_count += 1
+                else:
+                    legend_view = doc.GetElement(
+                        base_legend.Duplicate(DB.ViewDuplicateOption.Duplicate)
+                    )
+                    legend_view.Scale = 1
+
+                    legend_name = unique_name(
+                        "Legend_Filters_{0}".format(src_view.Name),
+                        existing_view_names,
+                    )
+                    legend_view.Name = legend_name
+                    existing_view_names.add(legend_name)
+                    new_count += 1
 
                 filter_elems = revit.query.get_view_filters(src_view)
 
@@ -271,6 +291,9 @@ with revit.TransactionGroup("Create Filter Legend(s)"):
                     min_gap=col_width * 0.05,
                 )
 
+                if track_links:
+                    save_link(src_view, legend_view)
+
                 created_legends.append(legend_view)
 
         except Exception:
@@ -284,9 +307,17 @@ revit.uidoc.RefreshActiveView()
 if created_legends:
     if open_last:
         uidoc.ActiveView = created_legends[-1]
-    forms.alert(
-        _t("Msg_Done", "Created {0} legend view(s).").format(len(created_legends))
-    )
+    if new_count and updated_count:
+        message = _t(
+            "Msg_DoneMixed", "Created {0} legend view(s), updated {1}."
+        ).format(new_count, updated_count)
+    elif updated_count:
+        message = _t("Msg_Updated", "Updated {0} legend view(s).").format(
+            updated_count
+        )
+    else:
+        message = _t("Msg_Done", "Created {0} legend view(s).").format(new_count)
+    forms.alert(message)
 else:
     forms.alert(
         _t(
