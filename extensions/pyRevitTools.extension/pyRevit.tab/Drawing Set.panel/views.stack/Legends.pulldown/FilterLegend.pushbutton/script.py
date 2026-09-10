@@ -36,6 +36,8 @@ from legend_utils import (
 from legend_storage import (
     save_link,
     get_linked_legend,
+    save_managed_elements,
+    get_managed_elements,
 )
 from legend_cfg import (
     INI,
@@ -186,7 +188,8 @@ with revit.TransactionGroup("Create Filter Legend(s)"):
 
                 if existing_legend is not None:
                     legend_view = existing_legend
-                    clear_legend_view(doc, legend_view)
+                    tracked_ids = get_managed_elements(legend_view)
+                    clear_legend_view(doc, legend_view, tracked_ids)
                     updated_count += 1
                 else:
                     legend_view = doc.GetElement(
@@ -209,6 +212,7 @@ with revit.TransactionGroup("Create Filter Legend(s)"):
 
                 y = 0.0
                 name_notes, param_notes, value_notes = [], [], []
+                swatch_regions = []
 
                 # -- header row --
                 # Row height/next-row offset is measured from the actual
@@ -269,6 +273,8 @@ with revit.TransactionGroup("Create Filter Legend(s)"):
                         name_notes.append(row_notes[0])
                         param_notes.append(row_notes[1])
                         value_notes.append(row_notes[2])
+                        if region is not None:
+                            swatch_regions.append(region)
                         if ogs and region and ogs_has_overrides(ogs):
                             legend_view.SetElementOverrides(region.Id, ogs)
 
@@ -293,6 +299,11 @@ with revit.TransactionGroup("Create Filter Legend(s)"):
 
                 if track_links:
                     save_link(src_view, legend_view)
+                    all_notes = name_notes + param_notes + value_notes
+                    managed_ids = [n.Id for n in all_notes] + [
+                        r.Id for r in swatch_regions
+                    ]
+                    save_managed_elements(legend_view, managed_ids)
 
                 created_legends.append(legend_view)
 
