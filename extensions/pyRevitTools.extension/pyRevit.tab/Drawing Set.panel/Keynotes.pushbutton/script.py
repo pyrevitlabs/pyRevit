@@ -700,10 +700,10 @@ class EditRecordWindow(forms.WPFWindow):
 class KeynoteManagerWindow(forms.WPFWindow):
     """Keynote manager with unified tree and hierarchy controls.
 
-    The window opens at the XAML defaults (800x750, minimum 760x480) only when
-    no on-screen geometry is stored in the tool config; a previously saved size
-    and position always wins. Shift+Click on the button discards the stored
-    geometry so the defaults apply again.
+    The window opens at the XAML defaults (800x750, minimum 760x480). 
+    stored geometry takes precedence only when all four values exist 
+    and the saved rectangle is visible on-screen;otherwise
+    , retain the XAML defaults and center the window.
     """
 
     def __init__(self, xaml_file_name, reset_config=False, safe_mode=False):
