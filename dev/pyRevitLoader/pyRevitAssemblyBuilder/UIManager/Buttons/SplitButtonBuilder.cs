@@ -465,6 +465,18 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                         if (!wasVisible && IsRibbonItemVisible(existingBtn, fallbackVisible: false))
                             newlyVisibleNames.Add(sub.DisplayName);
 
+                        // Handle SmartButton-specific initialization on update;
+                        // __selfinit__ must re-run after post-processing since it may override the bundle icon
+                        if (sub.Type == CommandComponentType.SmartButton && _smartButtonScriptInitializer != null)
+                        {
+                            var shouldActivate = _smartButtonScriptInitializer.ExecuteSelfInit(sub, existingBtn);
+                            if (!shouldActivate)
+                            {
+                                existingBtn.Enabled = false;
+                                Logger.Debug($"SmartButton '{sub.DisplayName}' in split button deactivated by __selfinit__ during update.");
+                            }
+                        }
+
                         Logger.Debug($"Updated existing child button '{sub.DisplayName}' in split button '{component.DisplayName}'. New text: '{buttonText}'");
                     }
                     catch (Exception ex)
