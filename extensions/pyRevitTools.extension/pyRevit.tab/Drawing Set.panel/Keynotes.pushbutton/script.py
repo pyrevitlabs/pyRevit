@@ -928,7 +928,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         Returns False when the action could not be dispatched at all — the
         queued entry is dropped in that case, and a caller holding a guard
-        must release it."""
+        must release it.  Only Accepted and Pending count as dispatched, so
+        an unrecognised Raise() result fails safe instead of stranding that
+        guard."""
 
         def _doc_affine_action():
             if not self._is_owned_doc_active():
@@ -974,8 +976,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                          "| %s", rex)
             self._ext_handler.drop(entry)
             return False
-        if request in (UI.ExternalEventRequest.Denied,
-                       UI.ExternalEventRequest.TimedOut):
+        if request not in (UI.ExternalEventRequest.Accepted,
+                           UI.ExternalEventRequest.Pending):
             logger.error("KeynoteManager | Revit rejected the request | %s",
                          request)
             self._ext_handler.drop(entry)
