@@ -49,7 +49,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           submodules: recursive
@@ -91,7 +91,7 @@ jobs:
         if: >
           github.repository == env.MainRepo &&
           (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-          (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')
+          (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
         shell: pwsh
         working-directory: ${{ github.workspace }}
         env:
@@ -100,9 +100,14 @@ jobs:
           COMMIT_SHA: ${{ github.sha }}
         run: |
           $ErrorActionPreference = 'Stop'
-          $branch = $env:BRANCH_NAME
           $sha = $env:COMMIT_SHA
-          $safeBranch = $branch -replace '[/\\]', '-'
+          # Tags are cut from master. Publish as master-latest so clone-of-master
+          # still works when the master push event never ran.
+          if ($env:GITHUB_REF -like 'refs/tags/v*') {
+            $safeBranch = 'master'
+          } else {
+            $safeBranch = $env:BRANCH_NAME -replace '[/\\]', '-'
+          }
           $shaZip = "unsigned-bin-$sha.zip"
           $branchZip = "unsigned-bin-$safeBranch-latest.zip"
           Compress-Archive -Path bin -DestinationPath $shaZip -Force
@@ -118,19 +123,34 @@ jobs:
         if: >
           github.repository == env.MainRepo &&
           (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-          (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')
+          (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
         shell: pwsh
+        working-directory: ${{ github.workspace }}
         env:
           GH_TOKEN: ${{ github.token }}
+          COMMIT_SHA: ${{ github.sha }}
         run: |
           $ErrorActionPreference = 'Stop'
           $keep = New-Object System.Collections.Generic.HashSet[string]
+          # status=completed omits this in-progress run, so keep github.sha or the
+          # zip just uploaded is deleted as "not in the last 3 completed runs".
+          [void]$keep.Add($env:COMMIT_SHA)
           foreach ($branch in @('develop', 'master')) {
             $runs = gh api "repos/pyrevitlabs/pyRevit/actions/workflows/ci.yml/runs" `
               -f branch=$branch -f status=completed -f per_page=10 `
               --jq '.workflow_runs[] | select(.conclusion=="success") | .head_sha'
             $runs | Select-Object -First 3 | ForEach-Object { [void]$keep.Add($_) }
           }
+          # Tag CI reports head_branch as the tag name, so those runs never appear
+          # in the develop/master queries. Keep recent v* tag SHAs so a tagged
+          # release's per-commit zip survives the next develop prune when master
+          # CI never ran.
+          git tag -l "v*" --sort=-creatordate |
+            Select-Object -First 3 |
+            ForEach-Object {
+              $tagSha = git rev-list -n 1 $_
+              if ($tagSha) { [void]$keep.Add($tagSha.Trim()) }
+            }
           $assets = gh release view ci-binaries --json assets --jq '.assets[].name'
           foreach ($asset in $assets) {
             if ($asset -match '^unsigned-bin-.+-latest\.zip$') { continue }
@@ -145,7 +165,7 @@ jobs:
         if: >
           github.repository == env.MainRepo &&
           (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-          (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')
+          (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
         shell: pwsh
         working-directory: ${{ github.workspace }}
         env:
@@ -189,19 +209,31 @@ jobs:
         if: >
           github.repository == env.MainRepo &&
           (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
-          (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master')
+          (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v'))
         shell: pwsh
+        working-directory: ${{ github.workspace }}
         env:
           GH_TOKEN: ${{ github.token }}
+          COMMIT_SHA: ${{ github.sha }}
         run: |
           $ErrorActionPreference = 'Stop'
           $keep = New-Object System.Collections.Generic.HashSet[string]
+          # status=completed omits this in-progress run, so keep github.sha or the
+          # package just pushed is deleted as "not in the last 2 completed runs".
+          [void]$keep.Add($env:COMMIT_SHA)
           foreach ($branch in @('develop', 'master')) {
             $runs = gh api "repos/pyrevitlabs/pyRevit/actions/workflows/ci.yml/runs" `
               -f branch=$branch -f status=completed -f per_page=10 `
               --jq '.workflow_runs[] | select(.conclusion=="success") | .head_sha'
             $runs | Select-Object -First 2 | ForEach-Object { [void]$keep.Add($_) }
           }
+          # Same as release-asset prune: tag runs are invisible to branch= queries.
+          git tag -l "v*" --sort=-creatordate |
+            Select-Object -First 2 |
+            ForEach-Object {
+              $tagSha = git rev-list -n 1 $_
+              if ($tagSha) { [void]$keep.Add($tagSha.Trim()) }
+            }
           $versions = gh api --paginate "orgs/pyrevitlabs/packages/nuget/pyrevit.unsignedbin/versions" | ConvertFrom-Json
           foreach ($version in $versions) {
             if ($version.name -notmatch '^1\.0\.0-ci-([a-f0-9]{7})$') { continue }
@@ -256,7 +288,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           ref: ${{ github.sha }}

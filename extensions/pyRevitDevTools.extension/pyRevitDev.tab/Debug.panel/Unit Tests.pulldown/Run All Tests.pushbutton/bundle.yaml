@@ -1,1 +1,5 @@
 context: zero-doc
+tooltip: >-
+  Discovers every test module in pyrevit.unittests and runs it through the
+  pyRevit test runner. Document-dependent tests skip automatically on an
+  empty session; open a project document first for full coverage.

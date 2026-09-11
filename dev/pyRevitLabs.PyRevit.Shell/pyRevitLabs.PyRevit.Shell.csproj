@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Platforms>x64</Platforms>
+    <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
+    <UseRevit>true</UseRevit>
+    <UseWpf>true</UseWpf>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>pyRevitLabs.PyRevit.Shell</AssemblyName>
+    <RootNamespace>PyRevitLabs.PyRevit.Shell</RootNamespace>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <!-- Preserve resource names expected by the console highlighter. -->
+  <ItemGroup>
+    <None Remove="Resources\pyrevit.ico" />
+    <Resource Include="Resources\pyrevit.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Console\Resources\Python.xshd" />
+    <None Remove="Console\Resources\Python-Dark.xshd" />
+    <EmbeddedResource Include="Console\Resources\Python.xshd" LogicalName="PythonConsoleControl.Resources.Python.xshd" />
+    <EmbeddedResource Include="Console\Resources\Python-Dark.xshd" LogicalName="PythonConsoleControl.Resources.Python-Dark.xshd" />
+  </ItemGroup>
+</Project>

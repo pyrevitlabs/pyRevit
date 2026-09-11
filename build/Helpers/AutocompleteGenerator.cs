@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 namespace Build.Helpers;
 
 /// <summary>
-/// Minimal port of dev/_autocomplete.py for CI builds.
+/// Generates shell autocomplete data for CLI builds.
 /// </summary>
 public static partial class AutocompleteGenerator
 {

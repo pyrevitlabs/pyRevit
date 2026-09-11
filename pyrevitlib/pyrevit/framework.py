@@ -169,6 +169,30 @@ def get_dll_file(assembly_name):
         return addin_file
 
 
+def add_reference_to_file(asm_file):
+    """Make a .NET assembly file available for import on any engine.
+
+    Engine-portable replacement for IronPython's
+    ``clr.AddReferenceToFileAndPath``, which does not exist under
+    CPython/pythonnet. Accepts a path with or without the ``.dll``
+    extension.
+
+    Args:
+        asm_file (str): path to the assembly file
+
+    Returns:
+        (Assembly | None): the loaded assembly; None under IronPython
+    """
+    if IRONPY:
+        return clr.AddReferenceToFileAndPath(asm_file)
+    # assembly names can contain dots (IxMilia.Dxf), so detect the
+    # extension by suffix, not by splitext
+    if not op.isfile(asm_file) \
+            and not asm_file.lower().endswith(ASSEMBLY_FILE_EXT):
+        asm_file += ASSEMBLY_FILE_EXT
+    return Assembly.LoadFrom(asm_file)
+
+
 def get_current_thread_id():
     """Return manageed thread id of current thread."""
     return System.Threading.Thread.CurrentThread.ManagedThreadId

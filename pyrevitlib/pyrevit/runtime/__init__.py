@@ -285,8 +285,7 @@ def get_references():
                          'System.Text.RegularExpressions'])
 
     # another revit api
-    if HOST_APP.is_newer_than(2018):
-        ref_list.extend(['Xceed.Wpf.AvalonDock'])
+    ref_list.extend(['Xceed.Wpf.AvalonDock'])
 
     refs = (_get_reference_file(ref_name) for ref_name in ref_list)
     return [r for r in refs if r]

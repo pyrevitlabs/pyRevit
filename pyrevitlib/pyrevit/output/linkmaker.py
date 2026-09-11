@@ -9,6 +9,16 @@ mlogger = get_logger(__name__)
 
 
 PROTOCOL_NAME = 'revit://outputhelpers?'
+# ctrl+click adds the link's elements to the
+# current selection instead of replacing it
+APPEND_SELECTION_ONCLICK = (
+    'onclick="var appendEvt=window.event||event;'
+    'var appendLnk=this;'
+    'if(appendEvt.ctrlKey){'
+    'location.href=this.href+\'&append=true\';'
+    'setTimeout(function(){appendLnk.style.backgroundColor=&quot;#f39c12&quot;;},0);'
+    'return false;}return true;"'
+)
 LINK_SHOW_ICON = \
     'M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,' \
     '14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,' \
@@ -83,8 +93,10 @@ def make_link(element_ids, contents=None):
         base_link = 'href="{}{}{}&show={{}}"'.format(
             PROTOCOL_NAME, '&command=select&', reviturl
         )
-        linkattrs_select = base_link.format("false")
-        linkattrs_show = base_link.format("true")
+        linkattrs_select = \
+            base_link.format("false") + ' ' + APPEND_SELECTION_ONCLICK
+        linkattrs_show = \
+            base_link.format("true") + ' ' + APPEND_SELECTION_ONCLICK
 
     return DEFAULT_LINK.format(
         attrs_select=linkattrs_select,

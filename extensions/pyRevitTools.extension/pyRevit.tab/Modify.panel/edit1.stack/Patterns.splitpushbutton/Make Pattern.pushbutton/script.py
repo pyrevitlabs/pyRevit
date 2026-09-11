@@ -184,14 +184,11 @@ class MakePatternWindow(forms.WPFWindow):
             elif isinstance(element, DB.FilledRegion):
                 bg_fillpat = \
                     revit.query.get_fillpattern_from_element(element)
-                fg_fillpat = None
-                # check for version otherwise fg_fillpat is same as bg_fillpat
-                if HOST_APP.is_newer_than(2018):
-                    fg_fillpat = \
-                        revit.query.get_fillpattern_from_element(
-                            element,
-                            background=False
-                            )
+                fg_fillpat = \
+                    revit.query.get_fillpattern_from_element(
+                        element,
+                        background=False
+                        )
                 # process both forground and background patterns
                 for fillpat in [bg_fillpat, fg_fillpat]:
                     # if available
@@ -253,13 +250,8 @@ class MakePatternWindow(forms.WPFWindow):
         biparam = DB.BuiltInParameter.VIEW_SCALE_PULLDOWN_IMPERIAL
         if revit.query.is_metric(revit.doc):
             biparam = DB.BuiltInParameter.VIEW_SCALE_PULLDOWN_METRIC
-        # re issue #510 indexing the builtinparam only works on >=2015
-        if HOST_APP.is_newer_than(2014):
-            self.viewscale_tb.Text = \
-                revit.active_view.Parameter[biparam].AsValueString()
-        else:
-            self.viewscale_tb.Text = \
-                revit.active_view.get_Parameter(biparam).AsValueString()
+        self.viewscale_tb.Text = \
+            revit.active_view.Parameter[biparam].AsValueString()
 
     def pick_domain(self):
         # ask user for origin and max domain points

@@ -17,7 +17,7 @@ if PY3:  # pragma: no cover
     int2str = chr
 else:  # pragma: no cover
     string_type = basestring
-    # text_type = unicode
+    text_type = unicode
     int2str = unichr
 
 
@@ -131,7 +131,7 @@ MISC AUXILIARY CLASSES
 """
 
 
-class AtomicString(unicode):
+class AtomicString(text_type):
     """A string which should not be further processed."""
     pass
 
@@ -183,6 +183,6 @@ class HtmlStash(object):
         self.tag_data.append({'tag': tag, 'attrs': attrs,
                               'left_index': left_index,
                               'right_index': right_index})
-        placeholder = TAG_PLACEHOLDER % unicode(self.tag_counter)
+        placeholder = TAG_PLACEHOLDER % text_type(self.tag_counter)
         self.tag_counter += 1  # equal to the tag's index in self.tag_data
         return placeholder

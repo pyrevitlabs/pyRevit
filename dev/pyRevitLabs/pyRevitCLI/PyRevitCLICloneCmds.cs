@@ -48,7 +48,7 @@ namespace pyRevitCLI {
         }
 
         internal static void
-        CreateClone(string cloneName, string deployName, string branchName, string repoUrl, string imagePath, string destPath, GitInstallerCredentials credentials) {
+        CreateClone(string cloneName, string deployName, string branchName, string repoUrl, string imagePath, string destPath, GitInstallerCredentials credentials, bool skipBin = false) {
             // FIXME: implement image
             if (cloneName != null) {
                 // if deployment requested or image path is provided
@@ -58,7 +58,8 @@ namespace pyRevitCLI {
                         deploymentName: deployName,
                         branchName: branchName,
                         imagePath: imagePath,
-                        destPath: destPath
+                        destPath: destPath,
+                        installBinaries: !skipBin
                         );
                 // otherwise clone the full repo
                 else
@@ -68,7 +69,8 @@ namespace pyRevitCLI {
                         branchName: branchName,
                         repoUrl: repoUrl,
                         destPath: destPath,
-                        credentials: credentials
+                        credentials: credentials,
+                        installBinaries: !skipBin
                         );
             }
         }

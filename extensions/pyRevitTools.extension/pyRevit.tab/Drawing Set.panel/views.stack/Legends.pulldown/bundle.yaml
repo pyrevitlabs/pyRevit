@@ -27,3 +27,5 @@ layout:
   - Right
   - Front
   - Back
+  - '-----'
+  - FilterLegend

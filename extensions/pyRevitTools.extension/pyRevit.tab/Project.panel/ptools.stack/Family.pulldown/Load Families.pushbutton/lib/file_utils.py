@@ -3,7 +3,6 @@
 #pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 import re
 import os
-import itertools
 import fnmatch
 
 from pyrevit import script, forms
@@ -73,5 +72,5 @@ class FileFinder:
         pattern : str
             Regular expression pattern
         """
-        self.paths = itertools.ifilterfalse(    #pylint: disable=no-member
-            re.compile(pattern).match, self.paths)
+        exclude = re.compile(pattern).match
+        self.paths = {path for path in self.paths if not exclude(path)}

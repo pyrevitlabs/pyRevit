@@ -7,6 +7,7 @@ using System.Threading;
 using Autodesk.Revit.UI;
 using pyRevitExtensionParser;
 using pyRevitAssemblyBuilder.SessionManager;
+using pyRevitAssemblyBuilder.UIManager.Icons;
 
 namespace pyRevitAssemblyBuilder.UIManager
 {
@@ -68,17 +69,26 @@ namespace pyRevitAssemblyBuilder.UIManager
             if (_pushButton == null || string.IsNullOrEmpty(icon_path) || !File.Exists(icon_path))
                 return;
 
+            SetIcon(icon_path, icon_size);
+            var themePaths = ResolveThemePaths(icon_path);
+            RibbonIconRegistry.Register(
+                _pushButton,
+                isDarkTheme => SetIcon(isDarkTheme ? themePaths.Dark : themePaths.Light, icon_size));
+        }
+
+        private void SetIcon(string iconPath, int iconSize)
+        {
             try
             {
                 // Always create small bitmap (16px) for Image property
-                var smallBitmap = CreateBitmap(icon_path, UIManagerConstants.ICON_SMALL);
+                var smallBitmap = CreateBitmap(iconPath, UIManagerConstants.ICON_SMALL);
                 if (smallBitmap != null)
                     _pushButton.Image = smallBitmap;
 
                 // Create large bitmap based on icon_size parameter
                 // If icon_size is ICON_LARGE (32), use large; otherwise use medium (24)
-                int largeIconSize = (icon_size >= UIManagerConstants.ICON_LARGE) ? UIManagerConstants.ICON_LARGE : UIManagerConstants.ICON_MEDIUM;
-                var largeBitmap = CreateBitmap(icon_path, largeIconSize);
+                int largeIconSize = (iconSize >= UIManagerConstants.ICON_LARGE) ? UIManagerConstants.ICON_LARGE : UIManagerConstants.ICON_MEDIUM;
+                var largeBitmap = CreateBitmap(iconPath, largeIconSize);
                 if (largeBitmap != null)
                     _pushButton.LargeImage = largeBitmap;
             }
@@ -86,6 +96,50 @@ namespace pyRevitAssemblyBuilder.UIManager
             {
                 // Ignore icon setting errors
             }
+        }
+
+        private (string Light, string Dark) ResolveThemePaths(string iconPath)
+        {
+            if (string.Equals(iconPath, _component?.OnIconPath, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(iconPath, _component?.OnIconDarkPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return WithFallback(_component.OnIconPath, _component.OnIconDarkPath);
+            }
+
+            if (string.Equals(iconPath, _component?.OffIconPath, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(iconPath, _component?.OffIconDarkPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return WithFallback(_component.OffIconPath, _component.OffIconDarkPath);
+            }
+
+            var extension = Path.GetExtension(iconPath);
+            var fileName = Path.GetFileNameWithoutExtension(iconPath);
+            var directory = Path.GetDirectoryName(iconPath) ?? string.Empty;
+            string lightPath;
+            string darkPath;
+
+            if (fileName.EndsWith(".dark", StringComparison.OrdinalIgnoreCase))
+            {
+                lightPath = Path.Combine(directory, fileName.Substring(0, fileName.Length - 5) + extension);
+                darkPath = iconPath;
+            }
+            else
+            {
+                lightPath = iconPath;
+                darkPath = Path.Combine(directory, fileName + ".dark" + extension);
+            }
+
+            return WithFallback(lightPath, darkPath);
+        }
+
+        private static (string Light, string Dark) WithFallback(string lightPath, string darkPath)
+        {
+            var lightExists = !string.IsNullOrEmpty(lightPath) && File.Exists(lightPath);
+            var darkExists = !string.IsNullOrEmpty(darkPath) && File.Exists(darkPath);
+
+            var light = lightExists ? lightPath : darkPath;
+            var dark = darkExists ? darkPath : lightPath;
+            return (light ?? string.Empty, dark ?? string.Empty);
         }
 
         /// <summary>

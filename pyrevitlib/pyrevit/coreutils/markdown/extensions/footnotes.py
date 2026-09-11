@@ -194,7 +194,7 @@ class FootnoteExtension(Extension):
             )
             backlink.text = FN_BACKLINK_TEXT
 
-            if li.getchildren():
+            if len(li):
                 node = li[-1]
                 if node.tag == "p":
                     node.text = node.text + NBSP_PLACEHOLDER
@@ -313,7 +313,7 @@ class FootnotePattern(Pattern):
             if self.footnotes.md.output_format not in ['html5', 'xhtml5']:
                 a.set('rel', 'footnote')  # invalid in HTML5
             a.set('class', 'footnote-ref')
-            a.text = unicode(self.footnotes.footnotes.index(id) + 1)
+            a.text = util.text_type(self.footnotes.footnotes.index(id) + 1)
             return sup
         else:
             return None
@@ -384,7 +384,7 @@ class FootnoteTreeprocessor(Treeprocessor):
             result = self.footnotes.findFootnotesPlaceholder(root)
             if result:
                 child, parent, isText = result
-                ind = parent.getchildren().index(child)
+                ind = list(parent).index(child)
                 if isText:
                     parent.remove(child)
                     parent.insert(ind, footnotesDiv)

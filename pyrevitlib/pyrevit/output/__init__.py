@@ -30,7 +30,7 @@ else:
     from urllib import quote as urlquote
 
 
-DEFAULT_STYLESHEET_NAME = 'outputstyles.css'
+DEFAULT_STYLESHEET_NAME = "outputstyles.css"
 
 
 def docclosing_eventhandler(sender, args):
@@ -40,10 +40,9 @@ def docclosing_eventhandler(sender, args):
 
 def setup_output_closer():
     """Setup document closing event listener."""
-    HOST_APP.app.DocumentClosing += \
-        framework.EventHandler[DB.Events.DocumentClosingEventArgs](
-            docclosing_eventhandler
-            )
+    HOST_APP.app.DocumentClosing += framework.EventHandler[
+        DB.Events.DocumentClosingEventArgs
+    ](docclosing_eventhandler)
 
 
 def set_stylesheet(stylesheet):
@@ -53,8 +52,7 @@ def set_stylesheet(stylesheet):
         stylesheet (str): full path to stylesheet file
     """
     if op.isfile(stylesheet):
-        envvars.set_pyrevit_env_var(envvars.OUTPUT_STYLESHEET_ENVVAR,
-                                    stylesheet)
+        envvars.set_pyrevit_env_var(envvars.OUTPUT_STYLESHEET_ENVVAR, stylesheet)
 
 
 def get_stylesheet():
@@ -69,8 +67,9 @@ def get_default_stylesheet():
 
 def reset_stylesheet():
     """Reset active stylesheet to default."""
-    envvars.set_pyrevit_env_var(envvars.OUTPUT_STYLESHEET_ENVVAR,
-                                get_default_stylesheet())
+    envvars.set_pyrevit_env_var(
+        envvars.OUTPUT_STYLESHEET_ENVVAR, get_default_stylesheet()
+    )
 
 
 # setup output window stylesheet
@@ -117,16 +116,16 @@ class PyRevitOutputWindow(object):
         The binding is resolved during wrapper construction and reused for the
         wrapper's lifetime.
         """
-        out = self.__dict__.get('_rt_out')
+        out = self.__dict__.get("_rt_out")
         if out is None:
             # bind to the output of the running command; outside of a command
             # (e.g. during session load) fall back to the session output
             runtime = EXEC_PARAMS.script_runtime
             if runtime:
-                out = getattr(runtime, 'OutputService', None)
+                out = getattr(runtime, "OutputService", None)
             if out is None:
                 out = ScriptOutput.GetDefault()
-            object.__setattr__(self, '_rt_out', out)
+            object.__setattr__(self, "_rt_out", out)
         return out
 
     def __getattr__(self, name):
@@ -139,7 +138,7 @@ class PyRevitOutputWindow(object):
         Private (``_``-prefixed) names and anything the runtime object rejects
         are stored on the wrapper instead.
         """
-        if name.startswith('_'):
+        if name.startswith("_"):
             object.__setattr__(self, name, value)
             return
 
@@ -155,12 +154,19 @@ class PyRevitOutputWindow(object):
 
     @property
     def renderer(self):
-        """Return html renderer inside output window.
+        """Raise: the legacy IE ``WebBrowser`` renderer was removed.
 
-        Returns:
-            (System.Windows.Forms.WebBrowser): HTML renderer
+        The output window now renders with Microsoft Edge WebView2 (Chromium).
+        There is no live DOM object to reach for; use :func:`inject_to_head`,
+        :func:`inject_to_body`, :func:`inject_script`, :func:`add_style`, and
+        :func:`print_html` instead.
         """
-        return self._runtime_output().renderer
+        raise NotImplementedError(
+            "output.renderer (System.Windows.Forms.WebBrowser) was removed. "
+            "The output window renders with WebView2 (Chromium) now and does "
+            "not expose a browser control. Use inject_to_head, "
+            "inject_to_body, inject_script, add_style, or print_html."
+        )
 
     @property
     def output_id(self):
@@ -231,10 +237,8 @@ class PyRevitOutputWindow(object):
             ```
         """
         return self._runtime_output().inject_to_head(
-            element_tag,
-            element_contents,
-            attribs
-            )
+            element_tag, element_contents, attribs
+        )
 
     def inject_to_body(self, element_tag, element_contents, attribs=None):
         """Inject html element to current html body of the output window.
@@ -253,10 +257,8 @@ class PyRevitOutputWindow(object):
             ```
         """
         return self._runtime_output().inject_to_body(
-            element_tag,
-            element_contents,
-            attribs
-            )
+            element_tag, element_contents, attribs
+        )
 
     def inject_script(self, script_code, attribs=None, body=False):
         """Inject script tag into current head (or body) of the output window.
@@ -496,8 +498,9 @@ class PyRevitOutputWindow(object):
         """
         return self._runtime_output().print_md(safe_strtype(md_str))
 
-    def print_table(self, table_data, columns=None, formats=None,
-                    title='', last_line_style=''):
+    def print_table(
+        self, table_data, columns=None, formats=None, title="", last_line_style=""
+    ):
         """Print provided data in a table in output window.
 
         Args:
@@ -523,15 +526,18 @@ class PyRevitOutputWindow(object):
             ```
         """
         return self._runtime_output().print_table(
-            table_data,
-            columns,
-            formats,
-            title,
-            last_line_style
-            )
+            table_data, columns, formats, title, last_line_style
+        )
 
-    def print_html_table(self, table_data, columns=None, formats=None,
-                         title='', last_line_style='', **kwargs):
+    def print_html_table(
+        self,
+        table_data,
+        columns=None,
+        formats=None,
+        title="",
+        last_line_style="",
+        **kwargs
+    ):
         """Print provided data in a HTML table in output window.
 
         The same window can output several tables, each with their own
@@ -581,14 +587,14 @@ class PyRevitOutputWindow(object):
             formats,
             title,
             last_line_style,
-            kwargs.get('column_head_align_styles', None),
-            kwargs.get('column_data_align_styles', None),
-            kwargs.get('column_widths', None),
-            kwargs.get('column_vertical_border_style', None),
-            kwargs.get('table_width_style', None),
-            kwargs.get('repeat_head_as_foot', False),
-            kwargs.get('row_striping', True)
-            )
+            kwargs.get("column_head_align_styles", None),
+            kwargs.get("column_data_align_styles", None),
+            kwargs.get("column_widths", None),
+            kwargs.get("column_vertical_border_style", None),
+            kwargs.get("table_width_style", None),
+            kwargs.get("repeat_head_as_foot", False),
+            kwargs.get("row_striping", True),
+        )
 
     def print_image(self, image_path):
         r"""Prints given image to the output.
@@ -604,32 +610,38 @@ class PyRevitOutputWindow(object):
     @staticmethod
     def buttonify(uibutton, title=None):
         """Create an output-safe html button for a Revit ribbon button."""
-        label = title \
-            or getattr(uibutton, 'Text', None) \
-            or getattr(uibutton, 'AutomationName', None) \
-            or getattr(uibutton, 'Name', None) \
+        label = (
+            title
+            or getattr(uibutton, "Text", None)
+            or getattr(uibutton, "AutomationName", None)
+            or getattr(uibutton, "Name", None)
             or safe_strtype(uibutton)
-        control_id = getattr(uibutton, 'Id', None) \
-            or getattr(uibutton, 'Name', None) \
+        )
+        control_id = (
+            getattr(uibutton, "Id", None)
+            or getattr(uibutton, "Name", None)
             or EXEC_PARAMS.command_controlid
-        label = safe_strtype(label).replace('&', '&amp;') \
-                                  .replace('<', '&lt;') \
-                                  .replace('>', '&gt;')
+        )
+        label = (
+            safe_strtype(label)
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+        )
         quoted_control_id = urlquote(safe_strtype(control_id))
 
         return coreutils.prepare_html_str(
             '<a href="revit://outputhelpers?command=button&controlid={}" '
             'style="display:inline-block;text-decoration:none;font:inherit;'
-            'padding:4px 10px;border:1px solid #8a8f94;'
-            'background:#f5f6f7;color:#233749;">{}</a>'
-            .format(quoted_control_id, label)
-            )
+            "padding:4px 10px;border:1px solid #8a8f94;"
+            'background:#f5f6f7;color:#233749;">{}</a>'.format(quoted_control_id, label)
+        )
 
     def print_button(self, uibutton, title=None):
         """Print a Revit ribbon button as an embedded output button."""
         self.print_html(coreutils.reverse_html(self.buttonify(uibutton, title)))
 
-    def insert_divider(self, level=''):
+    def insert_divider(self, level=""):
         """Add horizontal rule to the output window."""
         return self._runtime_output().insert_divider(level)
 
@@ -663,7 +675,7 @@ class PyRevitOutputWindow(object):
         """
         return coreutils.prepare_html_str(
             linkmaker.make_link(element_ids, contents=title)
-            )
+        )
 
     def make_chart(self, version=None):
         """:obj:`PyRevitOutputChart`: Return chart object."""
@@ -672,68 +684,58 @@ class PyRevitOutputWindow(object):
     def make_line_chart(self, version=None):
         """:obj:`PyRevitOutputChart`: Return line chart object."""
         return charts.PyRevitOutputChart(
-            self,
-            chart_type=charts.LINE_CHART,
-            version=version
-            )
+            self, chart_type=charts.LINE_CHART, version=version
+        )
 
     def make_stacked_chart(self, version=None):
         """:obj:`PyRevitOutputChart`: Return stacked chart object."""
         chart = charts.PyRevitOutputChart(
-            self,
-            chart_type=charts.LINE_CHART,
-            version=version
-            )
-        chart.options.scales = {'yAxes': [{'stacked': True, }]}
+            self, chart_type=charts.LINE_CHART, version=version
+        )
+        chart.options.scales = {
+            "yAxes": [
+                {
+                    "stacked": True,
+                }
+            ]
+        }
         return chart
 
     def make_bar_chart(self, version=None):
         """:obj:`PyRevitOutputChart`: Return bar chart object."""
         return charts.PyRevitOutputChart(
-            self,
-            chart_type=charts.BAR_CHART,
-            version=version
-            )
+            self, chart_type=charts.BAR_CHART, version=version
+        )
 
     def make_radar_chart(self, version=None):
         """:obj:`PyRevitOutputChart`: Return radar chart object."""
         return charts.PyRevitOutputChart(
-            self,
-            chart_type=charts.RADAR_CHART,
-            version=version
-            )
+            self, chart_type=charts.RADAR_CHART, version=version
+        )
 
     def make_polar_chart(self, version=None):
         """:obj:`PyRevitOutputChart`: Return polar chart object."""
         return charts.PyRevitOutputChart(
-            self,
-            chart_type=charts.POLAR_CHART,
-            version=version
-            )
+            self, chart_type=charts.POLAR_CHART, version=version
+        )
 
     def make_pie_chart(self, version=None):
         """:obj:`PyRevitOutputChart`: Return pie chart object."""
         return charts.PyRevitOutputChart(
-            self,
-            chart_type=charts.PIE_CHART,
-            version=version
-            )
+            self, chart_type=charts.PIE_CHART, version=version
+        )
 
     def make_doughnut_chart(self, version=None):
         """:obj:`PyRevitOutputChart`: Return doughnut chart object."""
         return charts.PyRevitOutputChart(
-            self,
-            chart_type=charts.DOUGHNUT_CHART,
-            version=version
-            )
+            self, chart_type=charts.DOUGHNUT_CHART, version=version
+        )
 
     def make_bubble_chart(self, version=None):
         """:obj:`PyRevitOutputChart`: Return bubble chart object."""
         return charts.PyRevitOutputChart(
-            self,
-            chart_type=charts.BUBBLE_CHART,
-            version=version
-            )
+            self, chart_type=charts.BUBBLE_CHART, version=version
+        )
 
 
 def get_output():

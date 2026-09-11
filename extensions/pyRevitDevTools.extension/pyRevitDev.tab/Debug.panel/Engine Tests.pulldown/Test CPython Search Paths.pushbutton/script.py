@@ -1,5 +1,5 @@
 #! python3
-"""Prints the IronPython sys.path paths."""
+"""Prints the CPython sys.path paths."""
 
 import os
 import sys

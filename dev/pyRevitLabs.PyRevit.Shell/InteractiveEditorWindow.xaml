@@ -1,0 +1,33 @@
+<Window x:Class="PyRevitLabs.PyRevit.Shell.InteractiveEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:shell="clr-namespace:PyRevitLabs.PyRevit.Shell"
+        Title="pyRevit Python Editor"
+        Icon="/pyRevitLabs.PyRevit.Shell;component/Resources/pyrevit.ico"
+        Height="650" Width="950" MinHeight="300" MinWidth="400"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        ResizeMode="CanResize">
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="0"
+                      ResizeBorderThickness="6"
+                      CornerRadius="0"
+                      GlassFrameThickness="0"
+                      UseAeroCaptionButtons="False" />
+    </WindowChrome.WindowChrome>
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/pyRevitLabs.PyRevit.Shell;component/Themes/ShellTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <shell:ShellTitleBar Grid.Row="0" />
+        <shell:EditorView x:Name="editorView" Grid.Row="1" />
+    </Grid>
+</Window>

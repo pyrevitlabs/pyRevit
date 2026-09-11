@@ -1,7 +1,7 @@
 """Erase selected data schema and its entities."""
 
 from pyrevit import revit, DB
-from pyrevit import forms, HOST_APP
+from pyrevit import forms
 
 doc = revit.doc
 
@@ -20,12 +20,6 @@ sschemas = \
 for sschema in sschemas:
     with revit.Transaction("Remove Schema"):
         try:
-            if HOST_APP.version <= 2020:
-                DB.ExtensibleStorage.Schema.EraseSchemaAndAllEntities(
-                    schema=sschema,
-                    overrideWriteAccessWithUserPermission=True
-                )
-            else:
-                doc.EraseSchemaAndAllEntities(sschema)
+            doc.EraseSchemaAndAllEntities(sschema)
         except Exception as e:
             print(e)

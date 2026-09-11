@@ -35,14 +35,21 @@ from . import Extension
 from .. import util
 from ..blockprocessors import BlockProcessor
 
+# Resolve against this vendored copy's package, not a top-level
+# `markdown` install. Derive from __name__ (always populated) rather than
+# __package__, whose value is unreliable on IronPython.
+_package = __name__.rsplit('.', 1)[0]
 extensions = [
-    'markdown.extensions.smart_strong',
-    'markdown.extensions.fenced_code',
-    'markdown.extensions.footnotes',
-    'markdown.extensions.attr_list',
-    'markdown.extensions.def_list',
-    'markdown.extensions.tables',
-    'markdown.extensions.abbr'
+    '.'.join([_package, ext_name])
+    for ext_name in (
+        'smart_strong',
+        'fenced_code',
+        'footnotes',
+        'attr_list',
+        'def_list',
+        'tables',
+        'abbr',
+    )
 ]
 
 
@@ -76,7 +83,7 @@ class MarkdownInHtmlProcessor(BlockProcessor):
     """Process Markdown Inside HTML Blocks."""
     def test(self, parent, block):
         return block == util.TAG_PLACEHOLDER % \
-                        unicode(self.parser.blockprocessors.tag_counter + 1)
+                        util.text_type(self.parser.blockprocessors.tag_counter + 1)
 
     def _process_nests(self, element, block):
         """Process the element's child elements in self.run."""

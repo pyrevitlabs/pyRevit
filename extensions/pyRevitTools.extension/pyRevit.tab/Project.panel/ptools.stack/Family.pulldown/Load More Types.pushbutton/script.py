@@ -3,7 +3,6 @@
 import re
 import os.path as op
 
-from pyrevit.framework import clr
 from pyrevit import forms
 from pyrevit import revit, DB
 from pyrevit import script
@@ -105,13 +104,8 @@ with revit.ErrorSwallower():
     with revit.DryTransaction('Fake load'):
         # remove existing family so we can load the original
         revit.doc.Delete(family.Id)
-        # now load the original
-        ret_ref = clr.Reference[DB.Family]()
-        revit.doc.LoadFamily(fam_doc_path, ret_ref)
-        loaded_fam = ret_ref.Value
-        # get the symbols from the original
-        for sym_id in loaded_fam.GetFamilySymbolIds():
-            family_symbol = revit.doc.GetElement(sym_id)
+        # now load the original and get its symbols
+        for family_symbol in revit.create.load_family(fam_doc_path):
             family_symbol_name = revit.query.get_name(family_symbol)
             sortable_sym = SmartSortableFamilyType(family_symbol_name)
             logger.debug('Importable Type: {}'.format(sortable_sym))

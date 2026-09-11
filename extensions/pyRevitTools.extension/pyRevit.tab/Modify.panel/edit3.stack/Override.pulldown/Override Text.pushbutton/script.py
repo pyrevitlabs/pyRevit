@@ -66,7 +66,7 @@ def text_totitle():
     with revit.Transaction('to Sentence case'):
         for el in selection.elements:
             new_sentence = ''
-            for word in unicode(el.Text).split():
+            for word in str(el.Text).split():
                 idx = get_first_alpha_index(word)
                 if idx is not None:
                     new_sentence += ' ' \

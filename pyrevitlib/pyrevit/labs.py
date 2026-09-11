@@ -2,7 +2,6 @@
 import os.path as op
 #pylint: disable=W0703,C0302,C0103,W0614,E0401,W0611,C0413
 #pylint: disable=superfluous-parens,useless-import-alias
-from pyrevit import HOST_APP
 from pyrevit.framework import clr
 from pyrevit.compat import PY2
 from pyrevit._perf import mark as _perfmark
@@ -79,10 +78,6 @@ def extract_build_from_exe(proc_path):
     return "{}({})".format(pinfo.build, pinfo.target) \
         if pinfo.build else "20000101_0000(x64)"
 
-
-# activate binding resolver
-if HOST_APP.is_older_than(2019):
-    PyRevit.PyRevitBindings.ActivateResolver()
 
 # NLog output is configured by PyRevitLabs.PyRevit.Runtime.ScriptOutput.
 

@@ -53,9 +53,9 @@ class RawHtmlPostprocessor(Postprocessor):
         for i in range(self.markdown.htmlStash.html_counter):
             html, safe = self.markdown.htmlStash.rawHtmlBlocks[i]
             if self.markdown.safeMode and not safe:
-                if unicode(self.markdown.safeMode).lower() == 'escape':
+                if util.text_type(self.markdown.safeMode).lower() == 'escape':
                     html = self.escape(html)
-                elif unicode(self.markdown.safeMode).lower() == 'remove':
+                elif util.text_type(self.markdown.safeMode).lower() == 'remove':
                     html = ''
                 else:
                     html = self.markdown.html_replacement_text

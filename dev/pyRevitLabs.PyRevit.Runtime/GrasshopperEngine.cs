@@ -28,13 +28,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     if (methodInfo.Name == "Execute" && methodParams.Count() == 5) {
 
                         View activeView = null;
-#if !(REVIT2013 || REVIT2014)
                         if (runtime.UIApp != null && runtime.UIApp.ActiveUIDocument != null)
                             activeView = runtime.UIApp.ActiveUIDocument.ActiveGraphicalView;
-#else
-                        if (runtime.UIApp != null && runtime.UIApp.ActiveUIDocument != null)
-                            activeView = runtime.UIApp.ActiveUIDocument.ActiveView;
-#endif
 
                         // run the script
                         if (runtime.UIApp != null) {

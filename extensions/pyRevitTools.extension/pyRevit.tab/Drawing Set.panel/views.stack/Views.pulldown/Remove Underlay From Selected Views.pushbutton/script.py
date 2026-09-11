@@ -4,7 +4,6 @@
 # http://dp-stuff.org/revit-view-underlay-property-python-problem/
 
 
-from pyrevit import HOST_APP
 from pyrevit import revit, DB
 from pyrevit import forms
 from pyrevit.compat import get_elementid_value_func
@@ -20,12 +19,4 @@ if selected_views:
             if get_elementid_value(view.Category.Id) == \
                     int(DB.BuiltInCategory.OST_Views) \
                     and (view.CanBePrinted):
-                if HOST_APP.is_newer_than(2016):
-                    view.SetUnderlayRange(DB.ElementId.InvalidElementId, DB.ElementId.InvalidElementId)
-                else:
-                    p = view.get_Parameter(
-                        DB.BuiltInParameter.VIEW_UNDERLAY_ID
-                        )
-
-                    if p is not None:
-                        p.Set(DB.ElementId.InvalidElementId)
+                view.SetUnderlayRange(DB.ElementId.InvalidElementId, DB.ElementId.InvalidElementId)

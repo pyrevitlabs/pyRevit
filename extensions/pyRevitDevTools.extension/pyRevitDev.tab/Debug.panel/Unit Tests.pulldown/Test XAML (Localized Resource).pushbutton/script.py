@@ -1,6 +1,5 @@
 """Test loading XAML in IronPython."""
 #pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
-import urllib2
 import json
 from time import sleep
 import sys

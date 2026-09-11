@@ -213,7 +213,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
             ExecuteEventHooks(EventType.UIApplication_ViewActivated, sender, e);
         }
 
-#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017)
         public void UIApplication_TransferringProjectStandards(object sender, Autodesk.Revit.UI.Events.TransferringProjectStandardsEventArgs e) {
             ExecuteEventHooks(EventType.UIApplication_TransferringProjectStandards, sender, e);
         }
@@ -221,25 +220,19 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public void UIApplication_TransferredProjectStandards(object sender, Autodesk.Revit.UI.Events.TransferredProjectStandardsEventArgs e) {
             ExecuteEventHooks(EventType.UIApplication_TransferredProjectStandards, sender, e);
         }
-#endif
 
         public void UIApplication_Idling(object sender, Autodesk.Revit.UI.Events.IdlingEventArgs e) {
             ExecuteEventHooks(EventType.UIApplication_Idling, sender, e);
         }
 
-#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018)
         public void UIApplication_FormulaEditing(object sender, Autodesk.Revit.UI.Events.FormulaEditingEventArgs e) {
             ExecuteEventHooks(EventType.UIApplication_FormulaEditing, sender, e);
         }
-#endif
 
-#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016)
         public void UIApplication_FabricationPartBrowserChanged(object sender, Autodesk.Revit.UI.Events.FabricationPartBrowserChangedEventArgs e) {
             ExecuteEventHooks(EventType.UIApplication_FabricationPartBrowserChanged, sender, e);
         }
-#endif
 
-#if !(REVIT2013 || REVIT2014)
         public void UIApplication_DockableFrameVisibilityChanged(object sender, Autodesk.Revit.UI.Events.DockableFrameVisibilityChangedEventArgs e) {
             ExecuteEventHooks(EventType.UIApplication_DockableFrameVisibilityChanged, sender, e);
         }
@@ -247,7 +240,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public void UIApplication_DockableFrameFocusChanged(object sender, Autodesk.Revit.UI.Events.DockableFrameFocusChangedEventArgs e) {
             ExecuteEventHooks(EventType.UIApplication_DockableFrameFocusChanged, sender, e);
         }
-#endif
 
         public void UIApplication_DisplayingOptionsDialog(object sender, Autodesk.Revit.UI.Events.DisplayingOptionsDialogEventArgs e) {
             ExecuteEventHooks(EventType.UIApplication_DisplayingOptionsDialog, sender, e);
@@ -261,11 +253,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             ExecuteEventHooks(EventType.UIApplication_ApplicationClosing, sender, e);
         }
 
-#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017)
         public void Application_WorksharedOperationProgressChanged(object sender, Autodesk.Revit.DB.Events.WorksharedOperationProgressChangedEventArgs e) {
             ExecuteEventHooks(EventType.Application_WorksharedOperationProgressChanged, sender, e);
         }
-#endif
         public void Application_ViewPrinting(object sender, Autodesk.Revit.DB.Events.ViewPrintingEventArgs e) {
             ExecuteEventHooks(EventType.Application_ViewPrinting, sender, e);
         }
@@ -274,7 +264,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
             ExecuteEventHooks(EventType.Application_ViewPrinted, sender, e);
         }
 
-#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017)
         public void Application_ViewExporting(object sender, Autodesk.Revit.DB.Events.ViewExportingEventArgs e) {
             ExecuteEventHooks(EventType.Application_ViewExporting, sender, e);
         }
@@ -282,12 +271,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public void Application_ViewExported(object sender, Autodesk.Revit.DB.Events.ViewExportedEventArgs e) {
             ExecuteEventHooks(EventType.Application_ViewExported, sender, e);
         }
-#endif
         public void Application_ProgressChanged(object sender, Autodesk.Revit.DB.Events.ProgressChangedEventArgs e) {
             ExecuteEventHooks(EventType.Application_ProgressChanged, sender, e);
         }
 
-#if !(REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017)
         public void Application_LinkedResourceOpening(object sender, Autodesk.Revit.DB.Events.LinkedResourceOpeningEventArgs e) {
             ExecuteEventHooks(EventType.Application_LinkedResourceOpening, sender, e);
         }
@@ -295,7 +282,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public void Application_LinkedResourceOpened(object sender, Autodesk.Revit.DB.Events.LinkedResourceOpenedEventArgs e) {
             ExecuteEventHooks(EventType.Application_LinkedResourceOpened, sender, e);
         }
-#endif
 
         public void Application_FileImporting(object sender, Autodesk.Revit.DB.Events.FileImportingEventArgs e) {
             ExecuteEventHooks(EventType.Application_FileImporting, sender, e);
@@ -313,7 +299,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
             ExecuteEventHooks(EventType.Application_FileExported, sender, e);
         }
 
-#if !(REVIT2013 || REVIT2014)
         public void Application_FamilyLoadingIntoDocument(object sender, Autodesk.Revit.DB.Events.FamilyLoadingIntoDocumentEventArgs e) {
             ExecuteEventHooks(EventType.Application_FamilyLoadingIntoDocument, sender, e);
         }
@@ -321,13 +306,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public void Application_FamilyLoadedIntoDocument(object sender, Autodesk.Revit.DB.Events.FamilyLoadedIntoDocumentEventArgs e) {
             ExecuteEventHooks(EventType.Application_FamilyLoadedIntoDocument, sender, e);
         }
-#endif
 
         public void Application_FailuresProcessing(object sender, Autodesk.Revit.DB.Events.FailuresProcessingEventArgs e) {
             ExecuteEventHooks(EventType.Application_FailuresProcessing, sender, e);
         }
 
-#if !(REVIT2013 || REVIT2014)
         public void Application_ElementTypeDuplicating(object sender, Autodesk.Revit.DB.Events.ElementTypeDuplicatingEventArgs e) {
             ExecuteEventHooks(EventType.Application_ElementTypeDuplicating, sender, e);
         }
@@ -338,7 +321,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public void Application_DocumentWorksharingEnabled(object sender, Autodesk.Revit.DB.Events.DocumentWorksharingEnabledEventArgs e) {
             ExecuteEventHooks(EventType.Application_DocumentWorksharingEnabled, sender, e);
         }
-#endif
 
         public void Application_DocumentSynchronizingWithCentral(object sender, Autodesk.Revit.DB.Events.DocumentSynchronizingWithCentralEventArgs e) {
             ExecuteEventHooks(EventType.Application_DocumentSynchronizingWithCentral, sender, e);
@@ -404,11 +386,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             ExecuteEventHooks(EventType.Application_ApplicationInitialized, sender, e);
         }
 
-#if !(REVIT2013)
         public void AddInCommandBinding_BeforeExecuted(object sender, BeforeExecutedEventArgs e) {
             ExecuteEventHooks(EventType.AddInCommandBinding_BeforeExecuted, sender, e, e.CommandId.Name);
         }
-#endif
 
         public void AddInCommandBinding_CanExecute(object sender, CanExecuteEventArgs e) {
             ExecuteEventHooks(EventType.AddInCommandBinding_CanExecute, sender, e, e.CommandId.Name);

@@ -1,18 +1,15 @@
 """Deletes all extra lines styles created by the faulty Site Designer addin."""
 
-import StringIO
-
 from pyrevit.framework import List
 from pyrevit import revit, DB
 
 
-outputs = StringIO.StringIO()
+outputs = []
 catsToDelete = []
 
 
 def report(message):
-    outputs.write(message)
-    outputs.write('\n')
+    outputs.append(message)
 
 
 # COLLECT CATS - METHOD 1
@@ -62,4 +59,4 @@ if cllines:
                 continue
 
     report('\n\n')
-    print(outputs.getvalue())
+    print('\n'.join(outputs))

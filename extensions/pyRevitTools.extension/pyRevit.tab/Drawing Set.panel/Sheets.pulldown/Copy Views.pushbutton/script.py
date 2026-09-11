@@ -1,4 +1,4 @@
-from pyrevit import revit, DB, UI, HOST_APP
+from pyrevit import revit, DB
 from pyrevit import forms
 from pyrevit import script
 
@@ -40,14 +40,10 @@ selected_sheets = forms.select_sheets(title='Select Target Sheets',
 
 # get a list of viewports to be copied, updated
 if selected_sheets and len(selected_sheets) > 0:
-    if int(HOST_APP.version) > 2014:
-        cursheet = revit.uidoc.ActiveGraphicalView
-        for v in selected_sheets:
-            if cursheet.Id == v.Id:
-                selected_sheets.remove(v)
-    else:
-        cursheet = selected_sheets[0]
-        selected_sheets.remove(cursheet)
+    cursheet = revit.uidoc.ActiveGraphicalView
+    for v in selected_sheets:
+        if cursheet.Id == v.Id:
+            selected_sheets.remove(v)
 
     revit.uidoc.ActiveView = cursheet
     selected_vps = revit.pick_elements()

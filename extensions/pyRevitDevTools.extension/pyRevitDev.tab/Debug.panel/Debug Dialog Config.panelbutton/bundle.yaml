@@ -10,7 +10,6 @@ title:
 help_url: https://www.youtube.com/channel/UC-0THIvKRd6n7T2a5aKYaGg
 author: Test User
 context: zero-doc
-min_revit_version: 2019
 tooltips:
   de_de: Panelanzeigeoptionen und Debug-Einstellungen konfigurieren
   ru: Настроить опции отображения панели и настройки отладки

@@ -8,9 +8,8 @@ import os.path as op
 from collections import OrderedDict
 
 from pyrevit import HOST_APP, PyRevitException
-from pyrevit.compat import safe_strtype, IRONPY
+from pyrevit.compat import safe_strtype
 from pyrevit import framework
-from pyrevit.framework import clr
 from pyrevit.framework import DateTime, DateTimeOffset
 from pyrevit.coreutils.logger import get_logger
 
@@ -24,10 +23,7 @@ LIBGIT_DLL = framework.get_dll_file(GIT_LIB)
 mlogger.debug("Loading dll: %s", LIBGIT_DLL)
 
 try:
-    if IRONPY:
-        clr.AddReferenceToFileAndPath(LIBGIT_DLL)
-    else:
-        clr.AddReference(LIBGIT_DLL)
+    framework.add_reference_to_file(LIBGIT_DLL)
 
     import LibGit2Sharp as libgit  # pylint: disable=import-error
 

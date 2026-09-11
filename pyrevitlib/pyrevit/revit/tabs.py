@@ -226,29 +226,28 @@ def reset_doc_colorizer():
 def init_doc_colorizer(usercfg):
     """Initialize document colorizer from settings."""
     uiapp = HOST_APP.uiapp
-    if HOST_APP.is_newer_than(2018):
-        current_tabcolorizer = \
-            envvars.get_pyrevit_env_var(envvars.TABCOLORIZER_ENVVAR)
+    current_tabcolorizer = \
+        envvars.get_pyrevit_env_var(envvars.TABCOLORIZER_ENVVAR)
 
-        new_theme = get_tabcoloring_theme(usercfg)
+    new_theme = get_tabcoloring_theme(usercfg)
 
-        # cancel out the colorizer from previous runtime version
-        if current_tabcolorizer:
-            # TODO: adopt the previous slots state
-            # prev_theme = current_tabcolorizer.TabColoringTheme
-            # if prev_theme:
-            #     new_theme.InitSlots(prev_theme)
-            current_tabcolorizer.StopGroupingDocumentTabs()
+    # cancel out the colorizer from previous runtime version
+    if current_tabcolorizer:
+        # TODO: adopt the previous slots state
+        # prev_theme = current_tabcolorizer.TabColoringTheme
+        # if prev_theme:
+        #     new_theme.InitSlots(prev_theme)
+        current_tabcolorizer.StopGroupingDocumentTabs()
 
-        # start or stop the document colorizer
-        types.DocumentTabEventUtils.TabColoringTheme = new_theme
-        if usercfg.colorize_docs:
-            types.DocumentTabEventUtils.StartGroupingDocumentTabs(uiapp)
-        else:
-            types.DocumentTabEventUtils.StopGroupingDocumentTabs()
+    # start or stop the document colorizer
+    types.DocumentTabEventUtils.TabColoringTheme = new_theme
+    if usercfg.colorize_docs:
+        types.DocumentTabEventUtils.StartGroupingDocumentTabs(uiapp)
+    else:
+        types.DocumentTabEventUtils.StopGroupingDocumentTabs()
 
-        # set the new colorizer
-        envvars.set_pyrevit_env_var(
-            envvars.TABCOLORIZER_ENVVAR,
-            types.DocumentTabEventUtils
-            )
+    # set the new colorizer
+    envvars.set_pyrevit_env_var(
+        envvars.TABCOLORIZER_ENVVAR,
+        types.DocumentTabEventUtils
+        )
