@@ -14,19 +14,11 @@
         <!-- COLOR PALETTE                                                -->
         <!-- ============================================================ -->
         <SolidColorBrush x:Key="AccentBrush"        Color="#2B579A"/>
-        <SolidColorBrush x:Key="AccentLightBrush"   Color="#D6E4F0"/>
         <SolidColorBrush x:Key="AccentHoverBrush"   Color="#3A6FB0"/>
-        <SolidColorBrush x:Key="BorderBrush"        Color="#D1D1D1"/>
-        <SolidColorBrush x:Key="BorderLightBrush"   Color="#E8E8E8"/>
-        <SolidColorBrush x:Key="BgPanelBrush"       Color="#F5F5F5"/>
-        <SolidColorBrush x:Key="BgWhiteBrush"       Color="#FFFFFF"/>
-        <SolidColorBrush x:Key="TextPrimaryBrush"   Color="#1E1E1E"/>
-        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#6E6E6E"/>
-        <SolidColorBrush x:Key="TextMutedBrush"     Color="#999999"/>
         <SolidColorBrush x:Key="WarningBrush"       Color="#CA5010"/>
-        <SolidColorBrush x:Key="DangerBrush"        Color="#D13438"/>
+        <SolidColorBrush x:Key="DangerBrush"        Color="#E35054"/>
         <SolidColorBrush x:Key="LockedBgBrush"      Color="#FFF4CE"/>
-        <SolidColorBrush x:Key="DragOverBrush"      Color="#E8F0FE"/>
+        <SolidColorBrush x:Key="LockedFgBrush"      Color="#1E1E1E"/>
         <SolidColorBrush x:Key="UsedBadgeBgBrush"   Color="#E8F5E9"/>
         <SolidColorBrush x:Key="UsedBadgeFgBrush"   Color="#2E7D32"/>
         <SolidColorBrush x:Key="CatBadgeBrush"      Color="#333333"/>
@@ -45,7 +37,7 @@
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="8,4"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -115,7 +107,7 @@
         <Style x:Key="ToolbarSep" TargetType="Rectangle">
             <Setter Property="Width" Value="1"/>
             <Setter Property="Height" Value="20"/>
-            <Setter Property="Fill" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="Fill" Value="{DynamicResource pyRevitControlBorderBrush}"/>
             <Setter Property="Margin" Value="4,0"/>
         </Style>
 
@@ -124,9 +116,9 @@
             <Setter Property="Padding" Value="28,0,28,0"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource pyRevitControlBorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Background" Value="{StaticResource BgWhiteBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource pyRevitControlBackgroundBrush}"/>
         </Style>
 
         <!-- ============================================================ -->
@@ -142,12 +134,14 @@
             <Style.Triggers>
                 <DataTrigger Binding="{Binding locked}" Value="True">
                     <Setter Property="Background" Value="{StaticResource LockedBgBrush}"/>
+                    <Setter Property="Foreground" Value="{StaticResource LockedFgBrush}"/>
                 </DataTrigger>
                 <DataTrigger Binding="{Binding used}" Value="True">
                     <Setter Property="FontWeight" Value="Medium"/>
                 </DataTrigger>
                 <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="{StaticResource AccentLightBrush}"/>
+                    <Setter Property="Background" Value="{DynamicResource pyRevitSelectionBackgroundBrush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource pyRevitSelectionForegroundBrush}"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
@@ -256,7 +250,7 @@
                     <!-- KEYNOTE TEXT -->
                     <TextBlock x:Name="textDisplay" Grid.Column="1"
                                Text="{Binding text}"
-                               Foreground="{StaticResource TextPrimaryBrush}"
+                               Foreground="{DynamicResource pyRevitWindowForegroundBrush}"
                                FontSize="13"
                                VerticalAlignment="Center"
                                TextWrapping="Wrap"/>
@@ -266,10 +260,10 @@
                                 VerticalAlignment="Center" Margin="8,0,0,0">
                         <!-- Child count -->
                         <Border x:Name="childCountBadge" Visibility="Collapsed"
-                                Background="{StaticResource BorderLightBrush}"
+                                Background="{DynamicResource pyRevitControlHoverBrush}"
                                 CornerRadius="8" Padding="5,1,5,2"
                                 Margin="0,0,4,0">
-                            <TextBlock Foreground="{StaticResource TextSecondaryBrush}"
+                            <TextBlock Foreground="{DynamicResource pyRevitSubtleForegroundBrush}"
                                        FontSize="10" FontWeight="SemiBold">
                                 <TextBlock.Text>
                                     <MultiBinding StringFormat="{}{0} items">
@@ -351,7 +345,7 @@
                 <DataTrigger Binding="{Binding locked}" Value="True">
                     <Setter TargetName="lockBadge"  Property="Visibility" Value="Visible"/>
                     <Setter TargetName="textDisplay" Property="Foreground"
-                            Value="{StaticResource TextMutedBrush}"/>
+                            Value="{DynamicResource pyRevitDisabledForegroundBrush}"/>
                 </DataTrigger>
                 <DataTrigger Binding="{Binding has_element_type}" Value="True">
                     <Setter TargetName="typElBadge" Property="Visibility" Value="Visible"/>
@@ -370,7 +364,7 @@
     <!-- ================================================================ -->
     <!-- MAIN LAYOUT                                                      -->
     <!-- ================================================================ -->
-    <Grid Background="{StaticResource BgPanelBrush}">
+    <Grid Background="{DynamicResource pyRevitChromeBackgroundBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -380,8 +374,8 @@
 
         <!-- ROW 0 — FILE TOOLBAR -->
         <Border Grid.Row="0"
-                Background="{StaticResource BgWhiteBrush}"
-                BorderBrush="{StaticResource BorderBrush}"
+                Background="{DynamicResource pyRevitControlBackgroundBrush}"
+                BorderBrush="{DynamicResource pyRevitControlBorderBrush}"
                 BorderThickness="0,0,0,1" Padding="8,4">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
@@ -412,8 +406,8 @@
 
         <!-- ROW 1 — SEARCH + TREE TOOLBAR -->
         <Border Grid.Row="1"
-                Background="{StaticResource BgWhiteBrush}"
-                BorderBrush="{StaticResource BorderBrush}"
+                Background="{DynamicResource pyRevitControlBackgroundBrush}"
+                BorderBrush="{DynamicResource pyRevitControlBorderBrush}"
                 BorderThickness="0,0,0,1" Padding="8,5">
             <Grid>
                 <Grid.RowDefinitions>
@@ -434,7 +428,7 @@
                                    FontSize="12" IsHitTestVisible="False"
                                    VerticalAlignment="Center" HorizontalAlignment="Left"
                                    Margin="8,0,0,0"
-                                   Foreground="{StaticResource TextMutedBrush}">
+                                   Foreground="{DynamicResource pyRevitDisabledForegroundBrush}">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="Visibility" Value="Collapsed"/>
@@ -450,7 +444,7 @@
                                 Style="{StaticResource FlatButton}"
                                 HorizontalAlignment="Right" Width="24" Height="24"
                                 Content="&#x2715;" FontSize="10"
-                                Foreground="{StaticResource TextMutedBrush}"
+                                Foreground="{DynamicResource pyRevitDisabledForegroundBrush}"
                                 Click="clear_search"/>
                     </Grid>
                 </DockPanel>
@@ -460,7 +454,7 @@
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Margin="10,0,0,0">
                         <TextBlock Text="Place:" VerticalAlignment="Center"
                                    FontSize="11" Margin="0,0,6,0"
-                                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                                   Foreground="{DynamicResource pyRevitSubtleForegroundBrush}"/>
                         <RadioButton x:Name="userknote_rb" Content="User"
                                      VerticalAlignment="Center" Margin="0,0,8,0" FontSize="11"/>
                         <RadioButton x:Name="elementknote_rb" Content="Element"
@@ -492,7 +486,7 @@
                                 <TextBlock Text="+" FontSize="14" FontWeight="Bold" VerticalAlignment="Center"/>
                                 <TextBlock Text="Grp" FontSize="9" Margin="2,0,0,0"
                                            VerticalAlignment="Center" FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextSecondaryBrush}"/>
+                                           Foreground="{DynamicResource pyRevitSubtleForegroundBrush}"/>
                             </StackPanel>
                         </Button>
                         <Button x:Name="addKeynoteBtn" Style="{StaticResource ToolbarButton}"
@@ -501,7 +495,7 @@
                                 <TextBlock Text="+" FontSize="14" FontWeight="Bold" VerticalAlignment="Center"/>
                                 <TextBlock Text="Key" FontSize="9" Margin="2,0,0,0"
                                            VerticalAlignment="Center" FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextSecondaryBrush}"/>
+                                           Foreground="{DynamicResource pyRevitSubtleForegroundBrush}"/>
                             </StackPanel>
                         </Button>
 
@@ -512,23 +506,23 @@
                                 ToolTip="Indent — make child of sibling above (Tab)"
                                 IsEnabled="False" Click="indent_keynote">
                             <TextBlock Text="&#x21E5;" FontSize="16" FontWeight="Bold"
-                                       Foreground="{StaticResource AccentBrush}"/>
+                                       Foreground="{DynamicResource pyRevitWindowForegroundBrush}"/>
                         </Button>
                         <Button x:Name="outdentBtn" Style="{StaticResource ToolbarButton}" Width="34"
                                 ToolTip="Outdent — promote up one level (Shift+Tab)"
                                 IsEnabled="False" Click="outdent_keynote">
                             <TextBlock Text="&#x21E4;" FontSize="16" FontWeight="Bold"
-                                       Foreground="{StaticResource AccentBrush}"/>
+                                       Foreground="{DynamicResource pyRevitWindowForegroundBrush}"/>
                         </Button>
                         <Button x:Name="moveUpBtn" Style="{StaticResource ToolbarButton}" Width="28"
                                 ToolTip="Move up (Ctrl+Up)" IsEnabled="False" Click="move_up">
                             <TextBlock Text="&#x25B2;" FontSize="10"
-                                       Foreground="{StaticResource TextSecondaryBrush}"/>
+                                       Foreground="{DynamicResource pyRevitSubtleForegroundBrush}"/>
                         </Button>
                         <Button x:Name="moveDownBtn" Style="{StaticResource ToolbarButton}" Width="28"
                                 ToolTip="Move down (Ctrl+Down)" IsEnabled="False" Click="move_down">
                             <TextBlock Text="&#x25BC;" FontSize="10"
-                                       Foreground="{StaticResource TextSecondaryBrush}"/>
+                                       Foreground="{DynamicResource pyRevitSubtleForegroundBrush}"/>
                         </Button>
 
                         <Rectangle Style="{StaticResource ToolbarSep}"/>
@@ -551,7 +545,7 @@
                                 Width="36" ToolTip="Change text capitalization"
                                 IsEnabled="False" Click="show_case_menu">
                             <TextBlock Text="Aa" FontSize="12" FontWeight="SemiBold"
-                                       Foreground="{StaticResource TextSecondaryBrush}"/>
+                                       Foreground="{DynamicResource pyRevitSubtleForegroundBrush}"/>
                             <Button.ContextMenu>
                                 <ContextMenu x:Name="caseMenu">
                                     <MenuItem Header="UPPER CASE"   Click="to_upper"    InputGestureText="TT"/>
@@ -586,11 +580,11 @@
         </Border>
 
         <!-- ROW 2 — THE TREE -->
-        <Grid Grid.Row="2" Background="{StaticResource BgWhiteBrush}">
+        <Grid Grid.Row="2" Background="{DynamicResource pyRevitControlBackgroundBrush}">
             <TextBlock x:Name="emptyStateMsg"
                        Text="No keynotes loaded. Add a group to get started."
                        HorizontalAlignment="Center" VerticalAlignment="Center"
-                       FontSize="14" Foreground="{StaticResource TextMutedBrush}"
+                       FontSize="14" Foreground="{DynamicResource pyRevitDisabledForegroundBrush}"
                        Visibility="Collapsed"/>
 
             <TreeView x:Name="keynotes_tv"
