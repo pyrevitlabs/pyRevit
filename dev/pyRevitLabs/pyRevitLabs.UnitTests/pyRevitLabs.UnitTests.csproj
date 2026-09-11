@@ -2,6 +2,7 @@
   <PropertyGroup>
     <Platforms>x64</Platforms>
     <TestProjectType>UnitTest</TestProjectType>
+    <IsTestProject>true</IsTestProject>
     <TargetFrameworks>net48;net8.0-windows</TargetFrameworks>
   </PropertyGroup>
 
