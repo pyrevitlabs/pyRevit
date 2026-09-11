@@ -12,15 +12,15 @@ import System
 
 PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] == 3
-IRONPY = '.net' in sys.version.lower()
+IRONPY = ".net" in sys.version.lower()
 IRONPY2 = PY2 and IRONPY
 IRONPY3 = PY3 and IRONPY
 NETCORE = System.Environment.Version.Major >= 8  # Revit 2025 onwards
-NETFRAMEWORK = not NETCORE # Revit 2024 and earlier
+NETFRAMEWORK = not NETCORE  # Revit 2024 and earlier
 NO_REVIT = -1
 REVIT_NETCORE_VERSION = 2025
 
-#pylint: disable=import-error,unused-import
+# pylint: disable=import-error,unused-import
 if PY3:
     __builtins__["unicode"] = str
 
@@ -46,6 +46,7 @@ try:
 except Exception:
     import requests
 
+
 def _get_revit_version():
     """Returns the current Revit version as an integer."""
     if __revit__ is None:
@@ -63,11 +64,11 @@ def _get_revit_version():
         return int(__revit__.ControlledApplication.VersionNumber)
 
 
-#pylint: disable=C0103
+# pylint: disable=C0103
 safe_strtype = str
 if PY2:
     # https://gist.github.com/gornostal/1f123aaf838506038710
-    safe_strtype = lambda x: unicode(x)  #pylint: disable=E0602,unnecessary-lambda
+    safe_strtype = lambda x: unicode(x)  # pylint: disable=E0602,unnecessary-lambda
 
 
 def get_elementid_value_func():
@@ -86,8 +87,10 @@ def get_elementid_value_func():
         ```
     """
     attr = "Value" if _get_revit_version() > 2023 else "IntegerValue"
+
     def from_elementid(item):
         return getattr(item, attr)
+
     return from_elementid
 
 
@@ -106,9 +109,12 @@ def get_elementid_from_value_func():
         ```
     """
     from pyrevit.api import DB
+
     cast_class = System.Int64 if _get_revit_version() > 2023 else int
+
     def from_value(value):
         return DB.ElementId(cast_class(value))
+
     return from_value
 
 

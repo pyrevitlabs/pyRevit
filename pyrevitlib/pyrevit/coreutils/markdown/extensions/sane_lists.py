@@ -22,23 +22,25 @@ import re
 class SaneOListProcessor(OListProcessor):
     """Sane ordered list processor."""
 
-    SIBLING_TAGS = ['ol']
+    SIBLING_TAGS = ["ol"]
 
     def __init__(self, parser):
         super(SaneOListProcessor, self).__init__(parser)
-        self.CHILD_RE = re.compile(r'^[ ]{0,%d}((\d+\.))[ ]+(.*)' %
-                                   (self.tab_length - 1))
+        self.CHILD_RE = re.compile(
+            r"^[ ]{0,%d}((\d+\.))[ ]+(.*)" % (self.tab_length - 1)
+        )
 
 
 class SaneUListProcessor(UListProcessor):
     """Sane unordered list processor."""
 
-    SIBLING_TAGS = ['ul']
+    SIBLING_TAGS = ["ul"]
 
     def __init__(self, parser):
         super(SaneUListProcessor, self).__init__(parser)
-        self.CHILD_RE = re.compile(r'^[ ]{0,%d}(([*+-]))[ ]+(.*)' %
-                                   (self.tab_length - 1))
+        self.CHILD_RE = re.compile(
+            r"^[ ]{0,%d}(([*+-]))[ ]+(.*)" % (self.tab_length - 1)
+        )
 
 
 class SaneListExtension(Extension):
@@ -46,8 +48,8 @@ class SaneListExtension(Extension):
 
     def extendMarkdown(self, md, md_globals):
         """Override existing Processors."""
-        md.parser.blockprocessors['olist'] = SaneOListProcessor(md.parser)
-        md.parser.blockprocessors['ulist'] = SaneUListProcessor(md.parser)
+        md.parser.blockprocessors["olist"] = SaneOListProcessor(md.parser)
+        md.parser.blockprocessors["ulist"] = SaneUListProcessor(md.parser)
 
 
 def makeExtension(*args, **kwargs):

@@ -42,10 +42,10 @@ class SafeJsonDumpsTests(unittest.TestCase):
 
     @unittest.skipUnless(PY2, "Python 2 only long integer behavior")
     def test_long_integer(self):
-        value = long(2 ** 40)  # pylint: disable=undefined-variable
+        value = long(2**40)  # pylint: disable=undefined-variable
         result = handler._safe_json_dumps(value)
         self.assertEqual(str(value), result)
-        self.assertEqual(2 ** 40, json.loads(result))
+        self.assertEqual(2**40, json.loads(result))
 
     def test_float(self):
         result = handler._safe_json_dumps(3.14)
@@ -67,30 +67,30 @@ class SafeJsonDumpsTests(unittest.TestCase):
 
     def test_french_accented_string(self):
         """French accented chars like é (U+00E9) caused UnicodeDecodeError."""
-        result = handler._safe_json_dumps(u"caf\u00e9")
+        result = handler._safe_json_dumps("caf\u00e9")
         self.assertIn("\\u00e9", result)
         # Must round-trip through json.loads
-        self.assertEqual(u"caf\u00e9", json.loads(result))
+        self.assertEqual("caf\u00e9", json.loads(result))
 
     def test_multiple_accented_chars(self):
         """Typical French Revit view names with multiple accents."""
-        text = u"\u00c9L\u00c9VATIONS EXT\u00c9RIEURES"  # ÉLÉVATIONS EXTÉRIEURES
+        text = "\u00c9L\u00c9VATIONS EXT\u00c9RIEURES"  # ÉLÉVATIONS EXTÉRIEURES
         result = handler._safe_json_dumps(text)
         self.assertEqual(text, json.loads(result))
 
     def test_e_grave(self):
         """è (U+00E8) as in 'Système'."""
-        result = handler._safe_json_dumps(u"Syst\u00e8me")
-        self.assertEqual(u"Syst\u00e8me", json.loads(result))
+        result = handler._safe_json_dumps("Syst\u00e8me")
+        self.assertEqual("Syst\u00e8me", json.loads(result))
 
     def test_circumflex(self):
         """ê (U+00EA) as in 'Fenêtres'."""
-        result = handler._safe_json_dumps(u"Fen\u00eatres")
-        self.assertEqual(u"Fen\u00eatres", json.loads(result))
+        result = handler._safe_json_dumps("Fen\u00eatres")
+        self.assertEqual("Fen\u00eatres", json.loads(result))
 
     def test_mixed_ascii_and_unicode(self):
         """Mix of ASCII and non-ASCII in same string."""
-        text = u"Level 1 - \u00c9tage"
+        text = "Level 1 - \u00c9tage"
         result = handler._safe_json_dumps(text)
         self.assertEqual(text, json.loads(result))
 
@@ -138,15 +138,15 @@ class SafeJsonDumpsTests(unittest.TestCase):
         """Nested structure with non-ASCII values — the real-world scenario."""
         obj = {
             "views": [
-                {"name": u"PLAN G\u00c9N\u00c9RALE"},
-                {"name": u"Nomenclature des r\u00e9visions"},
+                {"name": "PLAN G\u00c9N\u00c9RALE"},
+                {"name": "Nomenclature des r\u00e9visions"},
             ],
             "total": 2,
         }
         result = handler._safe_json_dumps(obj)
         parsed = json.loads(result)
-        self.assertEqual(u"PLAN G\u00c9N\u00c9RALE", parsed["views"][0]["name"])
-        self.assertEqual(u"Nomenclature des r\u00e9visions", parsed["views"][1]["name"])
+        self.assertEqual("PLAN G\u00c9N\u00c9RALE", parsed["views"][0]["name"])
+        self.assertEqual("Nomenclature des r\u00e9visions", parsed["views"][1]["name"])
         self.assertEqual(2, parsed["total"])
 
     def test_tuple(self):
@@ -160,9 +160,9 @@ class SafeJsonDumpsTests(unittest.TestCase):
         self.assertEqual("{}", handler._safe_json_dumps({}))
 
     def test_dict_with_unicode_key(self):
-        result = handler._safe_json_dumps({u"\u00e9tage": 1})
+        result = handler._safe_json_dumps({"\u00e9tage": 1})
         parsed = json.loads(result)
-        self.assertEqual(1, parsed[u"\u00e9tage"])
+        self.assertEqual(1, parsed["\u00e9tage"])
 
     # --- Bool before int (isinstance ordering) ---
 
@@ -193,7 +193,7 @@ class ParseResponseUnicodeTests(unittest.TestCase):
 
     def test_string_response_with_accents(self):
         """Plain string response containing accented characters."""
-        response = u"Fen\u00eatres ext\u00e9rieures"
+        response = "Fen\u00eatres ext\u00e9rieures"
         result = self._parse_response_forced_fallback(response)
         self.assertEqual(base.OK, result.status)
         self.assertIsNotNone(result.data)
@@ -209,21 +209,21 @@ class ParseResponseUnicodeTests(unittest.TestCase):
             headers = {"Content-Type": "application/json"}
             data = {
                 "views": [
-                    u"\u00c9L\u00c9VATIONS",
-                    u"R\u00c9SERVOIRS",
+                    "\u00c9L\u00c9VATIONS",
+                    "R\u00c9SERVOIRS",
                 ]
             }
 
         result = self._parse_response_forced_fallback(_Resp())
         self.assertIsNotNone(result.data)
         parsed = json.loads(result.data)
-        self.assertEqual(u"\u00c9L\u00c9VATIONS", parsed["views"][0])
+        self.assertEqual("\u00c9L\u00c9VATIONS", parsed["views"][0])
 
     def test_exception_response_with_accents(self):
         """Exception-like response with non-ASCII in message."""
 
         class _ExcResp(object):
-            message = u"Erreur: \u00e9l\u00e9ment introuvable"
+            message = "Erreur: \u00e9l\u00e9ment introuvable"
             status = base.INTERNAL_SERVER_ERROR
             source = "test"
 
@@ -233,4 +233,4 @@ class ParseResponseUnicodeTests(unittest.TestCase):
         result = self._parse_response_forced_fallback(_ExcResp())
         self.assertEqual(base.INTERNAL_SERVER_ERROR, result.status)
         parsed = json.loads(result.data)
-        self.assertIn(u"\u00e9l\u00e9ment", parsed["exception"]["message"])
+        self.assertIn("\u00e9l\u00e9ment", parsed["exception"]["message"])

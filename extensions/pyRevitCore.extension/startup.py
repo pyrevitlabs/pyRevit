@@ -1,6 +1,8 @@
 """pyRevit core startup script"""
-#pylint: disable=import-error,unused-import,invalid-name
+
+# pylint: disable=import-error,unused-import,invalid-name
 from pyrevit._perf import mark as _perfmark, time_block as _perfblock
+
 _perfmark("startup.pyRevitCore:entry")
 
 import sys

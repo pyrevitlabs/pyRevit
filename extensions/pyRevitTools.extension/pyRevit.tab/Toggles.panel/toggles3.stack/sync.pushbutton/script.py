@@ -12,11 +12,7 @@ try:
     view_handling = getattr(my_config, "view_handling")
 except:
     view_handling = "nothing"
-    setattr(
-        my_config,
-        "view_handling",
-        "nothing"
-    )
+    setattr(my_config, "view_handling", "nothing")
     script.save_config()
 
 view_cache = []
@@ -53,13 +49,13 @@ def close_inactive_views(view_handling="nothing", document=doc):
             if view_handling == "reopen":
                 view_cache.append(ui_view.ViewId)
             doc_view = document.GetElement(ui_view.ViewId)
-            if doc_view.Id != starting_view.Id :
+            if doc_view.Id != starting_view.Id:
                 ui_view.Close()
     else:
         forms.show_balloon(
             "No Starting View Set",
             "No Starting View Set",
-            )
+        )
 
 
 def set_active_view(view):
@@ -79,19 +75,18 @@ def set_active_view(view):
         >>> active_view_name = set_active_view(my_view)
     """
     if not isinstance(view, DB.View):
-        raise TypeError(
-            'Element [{}] is not a View!'.format(view.Id))
+        raise TypeError("Element [{}] is not a View!".format(view.Id))
     name = view.Name
-    if view.ViewType != DB.ViewType.Internal and \
-            view.ViewType != DB.ViewType.ProjectBrowser:
+    if (
+        view.ViewType != DB.ViewType.Internal
+        and view.ViewType != DB.ViewType.ProjectBrowser
+    ):
         revit.uidoc.ActiveView = view
-        logger.debug('Active View is: {}'.format(view.Name))
+        logger.debug("Active View is: {}".format(view.Name))
         return name
     else:
-        logger.info('View {} ({}) cannot be activated.'.format(
-            name, view.ViewType))
-        return 'INTERNAL / PB: ' + name
-
+        logger.info("View {} ({}) cannot be activated.".format(name, view.ViewType))
+        return "INTERNAL / PB: " + name
 
 
 def sync_document():
@@ -132,7 +127,7 @@ def sync_document():
         doc.Save(save_options)
         doc.ReloadLatest(reload_latest_options)
         doc.Save(save_options)
-        doc.SynchronizeWithCentral(trans_options , sync_options)
+        doc.SynchronizeWithCentral(trans_options, sync_options)
 
         if view_handling == "reopen":
             for v_id in view_cache:
@@ -142,13 +137,14 @@ def sync_document():
                 except:
                     get_elementid_value = get_elementid_value_func()
                     logger.warn(
-                        "Failed to reopen view {}".format(get_elementid_value(v_id)))
+                        "Failed to reopen view {}".format(get_elementid_value(v_id))
+                    )
 
         endtime = timer.get_time()
         endtime_hms = str(datetime.timedelta(seconds=endtime).seconds)
         endtime_hms_claim = "Synchronisation took {}s.".format(endtime_hms)
         forms.show_balloon(endtime_hms_claim, "{}s. to synchronize".format(endtime_hms))
-    else :
+    else:
         forms.alert("Current Document is not Workshared and was not synched", "Error")
 
 

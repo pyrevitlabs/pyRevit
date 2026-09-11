@@ -6,6 +6,7 @@ Examples:
     coreutils.cleanup_string('some string')
     ```
 """
+
 # pylint: disable=invalid-name
 import os
 import os.path as op
@@ -34,20 +35,47 @@ from pyrevit import framework
 from System import Guid
 
 # pylint: disable=W0703,C0302
-DEFAULT_SEPARATOR = ';'
+DEFAULT_SEPARATOR = ";"
 
 # extracted from
 # https://www.fileformat.info/info/unicode/block/general_punctuation/images.htm
 UNICODE_NONPRINTABLE_CHARS = [
-    u'\u2000', u'\u2001', u'\u2002', u'\u2003', u'\u2004', u'\u2005', u'\u2006',
-    u'\u2007', u'\u2008', u'\u2009', u'\u200A', u'\u200B', u'\u200C', u'\u200D',
-    u'\u200E', u'\u200F',
-    u'\u2028', u'\u2029', u'\u202A', u'\u202B', u'\u202C', u'\u202D', u'\u202E',
-    u'\u202F',
-    u'\u205F', u'\u2060',
-    u'\u2066', u'\u2067', u'\u2068', u'\u2069', u'\u206A', u'\u206B', u'\u206C'
-    u'\u206D', u'\u206E', u'\u206F'
-    ]
+    "\u2000",
+    "\u2001",
+    "\u2002",
+    "\u2003",
+    "\u2004",
+    "\u2005",
+    "\u2006",
+    "\u2007",
+    "\u2008",
+    "\u2009",
+    "\u200a",
+    "\u200b",
+    "\u200c",
+    "\u200d",
+    "\u200e",
+    "\u200f",
+    "\u2028",
+    "\u2029",
+    "\u202a",
+    "\u202b",
+    "\u202c",
+    "\u202d",
+    "\u202e",
+    "\u202f",
+    "\u205f",
+    "\u2060",
+    "\u2066",
+    "\u2067",
+    "\u2068",
+    "\u2069",
+    "\u206a",
+    "\u206b",
+    "\u206c\u206d",
+    "\u206e",
+    "\u206f",
+]
 
 
 class Timer(object):
@@ -100,7 +128,7 @@ class ScriptFileParser(object):
         """
         self.ast_tree = None
         self.file_addr = file_address
-        with codecs.open(file_address, 'r', 'utf-8') as source_file:
+        with codecs.open(file_address, "r", "utf-8") as source_file:
             contents = source_file.read()
             if contents:
                 self.ast_tree = ast.parse(contents)
@@ -133,7 +161,7 @@ class ScriptFileParser(object):
         if self.ast_tree:
             doc_str = ast.get_docstring(self.ast_tree)
             if doc_str:
-                return doc_str.decode('utf-8')
+                return doc_str.decode("utf-8")
 
     def extract_param(self, param_name, default_value=None):
         """Find variable and extract its value.
@@ -151,13 +179,14 @@ class ScriptFileParser(object):
                 for node in ast.iter_child_nodes(self.ast_tree):
                     if isinstance(node, ast.Assign):
                         for target in node.targets:
-                            if hasattr(target, 'id') \
-                                    and target.id == param_name:
+                            if hasattr(target, "id") and target.id == param_name:
                                 return ast.literal_eval(node.value)
             except Exception as err:
-                raise PyRevitException('Error parsing parameter: {} '
-                                       'in script file for : {} | {}'
-                                       .format(param_name, self.file_addr, err))
+                raise PyRevitException(
+                    "Error parsing parameter: {} in script file for : {} | {}".format(
+                        param_name, self.file_addr, err
+                    )
+                )
         return default_value
 
 
@@ -212,7 +241,7 @@ class SafeDict(dict):
     """
 
     def __missing__(self, key):
-        return '{' + key + '}'
+        return "{" + key + "}"
 
 
 def get_all_subclasses(parent_classes):
@@ -290,31 +319,43 @@ def join_strings(str_list, separator=DEFAULT_SEPARATOR):
         if any(not isinstance(x, str) for x in str_list):
             str_list = [str(x) for x in str_list]
         return separator.join(str_list)
-    return ''
+    return ""
 
 
 # character replacement list for cleaning up file names
-SPECIAL_CHARS = {' ': '',
-                 '~': '',
-                 '!': 'EXCLAM',
-                 '@': 'AT',
-                 '#': 'SHARP',
-                 '$': 'DOLLAR',
-                 '%': 'PERCENT',
-                 '^': '',
-                 '&': 'AND',
-                 '*': 'STAR',
-                 '+': 'PLUS',
-                 ';': '', ':': '', ',': '', '\"': '',
-                 '{': '', '}': '', '[': '', ']': '', r'\(': '', r'\)': '',
-                 '-': 'MINUS',
-                 '=': 'EQUALS',
-                 '<': '', '>': '',
-                 '?': 'QMARK',
-                 '.': 'DOT',
-                 '_': 'UNDERS',
-                 '|': 'VERT',
-                 r'\/': '', '\\': ''}
+SPECIAL_CHARS = {
+    " ": "",
+    "~": "",
+    "!": "EXCLAM",
+    "@": "AT",
+    "#": "SHARP",
+    "$": "DOLLAR",
+    "%": "PERCENT",
+    "^": "",
+    "&": "AND",
+    "*": "STAR",
+    "+": "PLUS",
+    ";": "",
+    ":": "",
+    ",": "",
+    '"': "",
+    "{": "",
+    "}": "",
+    "[": "",
+    "]": "",
+    r"\(": "",
+    r"\)": "",
+    "-": "MINUS",
+    "=": "EQUALS",
+    "<": "",
+    ">": "",
+    "?": "QMARK",
+    ".": "DOT",
+    "_": "UNDERS",
+    "|": "VERT",
+    r"\/": "",
+    "\\": "",
+}
 
 
 def cleanup_string(input_str, skip=None):
@@ -355,7 +396,7 @@ def get_revit_instance_count():
     return len(list(framework.Process.GetProcessesByName(HOST_APP.proc_name)))
 
 
-def run_process(proc, cwd='C:'):
+def run_process(proc, cwd="C:"):
     """Run shell process silently.
 
     Args:
@@ -368,9 +409,10 @@ def run_process(proc, cwd='C:'):
         ```
     """
     import subprocess
-    return subprocess.Popen(proc,
-                            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                            cwd=cwd, shell=True)
+
+    return subprocess.Popen(
+        proc, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd, shell=True
+    )
 
 
 def inspect_calling_scope_local_var(variable_name):
@@ -424,7 +466,7 @@ def make_canonical_name(*args):
         ```
         "somename.someid.txt"
     """
-    return '.'.join(args)
+    return ".".join(args)
 
 
 def get_canonical_parts(canonical_string):
@@ -442,7 +484,7 @@ def get_canonical_parts(canonical_string):
         ```
         ['Config', 'SubConfig']
     """
-    return canonical_string.split('.')
+    return canonical_string.split(".")
 
 
 def get_file_name(file_path):
@@ -465,7 +507,7 @@ def get_str_hash(source_str):
     Returns:
         (str): hash value as string
     """
-    return hashlib.md5(source_str.encode('utf-8', 'ignore')).hexdigest()
+    return hashlib.md5(source_str.encode("utf-8", "ignore")).hexdigest()
 
 
 def calculate_dir_hash(dir_path, dir_filter, file_filter):
@@ -486,7 +528,7 @@ def calculate_dir_hash(dir_path, dir_filter, file_filter):
         "1a885a0cae99f53d6088b9f7cee3bf4d"
     """
     mtime_sum = 0
-    for root, dirs, files in os.walk(dir_path):  #pylint: disable=W0612
+    for root, dirs, files in os.walk(dir_path):  # pylint: disable=W0612
         if re.search(dir_filter, op.basename(root), flags=re.IGNORECASE):
             mtime_sum += op.getmtime(root)
             for filename in files:
@@ -515,7 +557,7 @@ def prepare_html_str(input_string):
         ```
         "&clt;p&cgt;Some text&clt;/p&cgt;"
     """
-    return input_string.replace('<', '&clt;').replace('>', '&cgt;')
+    return input_string.replace("<", "&clt;").replace(">", "&cgt;")
 
 
 def reverse_html(input_html):
@@ -537,11 +579,11 @@ def reverse_html(input_html):
         ```
         "<p>Some text</p>"
     """
-    return input_html.replace('&clt;', '<').replace('&cgt;', '>')
+    return input_html.replace("&clt;", "<").replace("&cgt;", ">")
 
 
 def escape_for_html(input_string):
-    return input_string.replace('<', '&lt;').replace('>', '&gt;')
+    return input_string.replace("<", "&lt;").replace(">", "&gt;")
 
 
 def read_url(url_to_open):
@@ -561,7 +603,7 @@ def touch(fname, times=None):
         fname (str): target file path
         times (int): number of times to touch the file
     """
-    with open(fname, 'a'):
+    with open(fname, "a"):
         os.utime(fname, times)
 
 
@@ -578,11 +620,12 @@ def read_source_file(source_file_path):
         PyRevitException: on read error
     """
     try:
-        with open(source_file_path, 'r') as code_file:
+        with open(source_file_path, "r") as code_file:
             return code_file.read()
     except Exception as read_err:
-        raise PyRevitException('Error reading source file: {} | {}'
-                               .format(source_file_path, read_err))
+        raise PyRevitException(
+            "Error reading source file: {} | {}".format(source_file_path, read_err)
+        )
 
 
 def open_folder_in_explorer(folder_path):
@@ -592,8 +635,8 @@ def open_folder_in_explorer(folder_path):
         folder_path (str): directory path
     """
     import subprocess
-    subprocess.Popen(r'explorer /open,"{}"'
-                     .format(os.path.normpath(folder_path)))
+
+    subprocess.Popen(r'explorer /open,"{}"'.format(os.path.normpath(folder_path)))
 
 
 def show_entry_in_explorer(entry_path):
@@ -603,8 +646,8 @@ def show_entry_in_explorer(entry_path):
         entry_path (str): directory or file path
     """
     import subprocess
-    subprocess.Popen(r'explorer /select,"{}"'
-                     .format(os.path.normpath(entry_path)))
+
+    subprocess.Popen(r'explorer /select,"{}"'.format(os.path.normpath(entry_path)))
 
 
 def fully_remove_dir(dir_path):
@@ -613,7 +656,8 @@ def fully_remove_dir(dir_path):
     Args:
         dir_path (str): directory path
     """
-    def del_rw(action, name, exc):   #pylint: disable=W0613
+
+    def del_rw(action, name, exc):  # pylint: disable=W0613
         """Force delete entry."""
         os.chmod(name, stat.S_IWRITE)
         os.remove(name)
@@ -643,9 +687,9 @@ def cleanup_filename(file_name, windows_safe=False):
         "Perforations 18 (New).txt"
     """
     if windows_safe:
-        return re.sub(r'[\/:*?"<>|]', '', file_name)
+        return re.sub(r'[\/:*?"<>|]', "", file_name)
     else:
-        return re.sub(r'[^\w_.() -#]|["]', '', file_name)
+        return re.sub(r'[^\w_.() -#]|["]', "", file_name)
 
 
 def _inc_or_dec_string(str_id, shift, refit=False, logger=None):
@@ -682,12 +726,12 @@ def _inc_or_dec_string(str_id, shift, refit=False, logger=None):
 
         # determine character range (# of chars, starting index)
         if this_char.isdigit():
-            char_range = ('0', '9')
+            char_range = ("0", "9")
         elif this_char.isalpha():
             # if this_char.isupper()
-            char_range = ('A', 'Z')
+            char_range = ("A", "Z")
             if this_char.islower():
-                char_range = ('a', 'z')
+                char_range = ("a", "z")
         else:
             next_str += this_char
             index -= 1
@@ -695,8 +739,7 @@ def _inc_or_dec_string(str_id, shift, refit=False, logger=None):
 
         # get character range properties
         direction = int(carry / abs(carry)) if carry != 0 else 1
-        start_char, end_char = \
-            char_range if direction > 0 else char_range[::-1]
+        start_char, end_char = char_range if direction > 0 else char_range[::-1]
         char_steps = abs(ord(end_char) - ord(start_char)) + 1
         # calculate offset
 
@@ -721,9 +764,8 @@ def _inc_or_dec_string(str_id, shift, refit=False, logger=None):
         carry = int((dist + abs(carry)) / char_steps) * direction
         if logger:
             logger.debug(
-                '\"{}\" index={} start_char=\"{}\" end_char=\"{}\" '
-                'next_carry={} direction={} dist={} offset={} next_char=\"{}\"'
-                .format(
+                '"{}" index={} start_char="{}" end_char="{}" '
+                'next_carry={} direction={} dist={} offset={} next_char="{}"'.format(
                     this_char,
                     index,
                     start_char,
@@ -732,7 +774,9 @@ def _inc_or_dec_string(str_id, shift, refit=False, logger=None):
                     direction,
                     dist,
                     offset,
-                    next_char))
+                    next_char,
+                )
+            )
         index -= 1
         # refit the final value
         # 009 --> 9
@@ -938,13 +982,15 @@ def is_url_valid(url_string):
         True
     """
     regex = re.compile(
-        r'^(?:http|ftp)s?://'                   # http:// or https://
-        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+'
-        r'(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'  # domain...
-        r'localhost|'                           # localhost...
-        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
-        r'(?::\d+)?'                            # optional port
-        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+        r"^(?:http|ftp)s?://"  # http:// or https://
+        r"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+"
+        r"(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|"  # domain...
+        r"localhost|"  # localhost...
+        r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"  # ...or ip
+        r"(?::\d+)?"  # optional port
+        r"(?:/?|[/?]\S+)$",
+        re.IGNORECASE,
+    )
 
     return regex.match(url_string)
 
@@ -972,13 +1018,13 @@ def reformat_string(orig_str, orig_format, new_format):
         '150:WD:1 HR - FLOOR ASSEMBLY (FLOOR/CEILING)'
     """
     # find the tags
-    tag_extractor = re.compile('{(.+?)}')
+    tag_extractor = re.compile("{(.+?)}")
     tags = tag_extractor.findall(orig_format)
 
     # replace the tags with regex patterns
     # to create a regex pattern that finds values
-    tag_replacer = re.compile('{.+?}')
-    value_extractor_pattern = tag_replacer.sub('(.+)', orig_format)
+    tag_replacer = re.compile("{.+?}")
+    value_extractor_pattern = tag_replacer.sub("(.+)", orig_format)
     # find all values
     value_extractor = re.compile(value_extractor_pattern)
     match = value_extractor.match(orig_str)
@@ -996,11 +1042,10 @@ def reformat_string(orig_str, orig_format, new_format):
 def get_mapped_drives_dict():
     """Return a dictionary of currently mapped network drives."""
     searcher = framework.ManagementObjectSearcher(
-        "root\\CIMV2",
-        "SELECT * FROM Win32_MappedLogicalDisk"
-        )
+        "root\\CIMV2", "SELECT * FROM Win32_MappedLogicalDisk"
+    )
 
-    return {x['DeviceID']: x['ProviderName'] for x in searcher.Get()}
+    return {x["DeviceID"]: x["ProviderName"] for x in searcher.Get()}
 
 
 def dletter_to_unc(dletter_path):
@@ -1067,9 +1112,7 @@ def random_hex_color():
         ```
         '#FF0000'
     """
-    return '#%02X%02X%02X' % (random_color(),
-                              random_color(),
-                              random_color())
+    return "#%02X%02X%02X" % (random_color(), random_color(), random_color())
 
 
 def random_rgb_color():
@@ -1081,9 +1124,7 @@ def random_rgb_color():
         ```
         'rgb(255, 0, 0)'
     """
-    return 'rgb(%d, %d, %d)' % (random_color(),
-                                random_color(),
-                                random_color())
+    return "rgb(%d, %d, %d)" % (random_color(), random_color(), random_color())
 
 
 def random_rgba_color():
@@ -1095,19 +1136,17 @@ def random_rgba_color():
         ```
         'rgba(255, 0, 0, 0.5)'
     """
-    return 'rgba(%d, %d, %d, %.2f)' % (random_color(),
-                                       random_color(),
-                                       random_color(),
-                                       random_alpha())
+    return "rgba(%d, %d, %d, %.2f)" % (
+        random_color(),
+        random_color(),
+        random_color(),
+        random_alpha(),
+    )
 
 
 def _color_distance_sq(c1, c2):
     """Return euclidean distance between two RGB colors."""
-    return (
-        (c1[0] - c2[0]) ** 2 +
-        (c1[1] - c2[1]) ** 2 +
-        (c1[2] - c2[2]) ** 2
-    )
+    return (c1[0] - c2[0]) ** 2 + (c1[1] - c2[1]) ** 2 + (c1[2] - c2[2]) ** 2
 
 
 def distinct_rgb_colors(count, attempts=200):
@@ -1133,7 +1172,7 @@ def distinct_rgb_colors(count, attempts=200):
             candidate = (
                 random.randint(0, 255),
                 random.randint(0, 255),
-                random.randint(0, 255)
+                random.randint(0, 255),
             )
 
             if not colors:
@@ -1154,13 +1193,13 @@ def distinct_rgb_colors(count, attempts=200):
 def distinct_hex_colors(count):
     """Return visually distinct colors in hex format."""
     colors = distinct_rgb_colors(count)
-    return ['#%02X%02X%02X' % c for c in colors]
+    return ["#%02X%02X%02X" % c for c in colors]
 
 
 def distinct_rgb_strings(count):
     """Return visually distinct colors in rgb(...) format."""
     colors = distinct_rgb_colors(count)
-    return ['rgb(%d, %d, %d)' % c for c in colors]
+    return ["rgb(%d, %d, %d)" % c for c in colors]
 
 
 def distinct_rgba_strings(count, alpha=None):
@@ -1170,7 +1209,7 @@ def distinct_rgba_strings(count, alpha=None):
     result = []
     for r, g, b in colors:
         a = alpha if alpha is not None else random_alpha()
-        result.append('rgba(%d, %d, %d, %.2f)' % (r, g, b, a))
+        result.append("rgba(%d, %d, %d, %.2f)" % (r, g, b, a))
 
     return result
 
@@ -1206,15 +1245,19 @@ def extract_range(formatted_str, max_range=500):
         ```
         ['M00A', 'M00B']
     """
-    for rchar, rchartype in {'::': 'range', '--': 'range',
-                             ',': 'list', ';': 'list'}.items():
+    for rchar, rchartype in {
+        "::": "range",
+        "--": "range",
+        ",": "list",
+        ";": "list",
+    }.items():
         if rchar in formatted_str:
-            if rchartype == 'range' \
-                    and formatted_str.count(rchar) == 1:
+            if rchartype == "range" and formatted_str.count(rchar) == 1:
                 items = []
                 start, end = formatted_str.split(rchar)
-                assert len(start) == len(end), \
-                    'Range start and end must have same length'
+                assert len(start) == len(end), (
+                    "Range start and end must have same length"
+                )
                 items.append(start)
                 item = increment_str(start, 1)
                 safe_counter = 0
@@ -1222,10 +1265,10 @@ def extract_range(formatted_str, max_range=500):
                     items.append(item)
                     item = increment_str(item, 1)
                     safe_counter += 1
-                    assert safe_counter < max_range, 'Max range reached.'
+                    assert safe_counter < max_range, "Max range reached."
                 items.append(end)
                 return items
-            elif rchartype == 'list':
+            elif rchartype == "list":
                 return [x.strip() for x in formatted_str.split(rchar)]
     return [formatted_str]
 
@@ -1237,8 +1280,8 @@ def check_encoding_bom(filename, bom_bytes=codecs.BOM_UTF8):
         filename (str): file path
         bom_bytes (bytes, optional): BOM bytes to check
     """
-    with open(filename, 'rb') as rtfile:
-        return rtfile.read()[:len(bom_bytes)] == bom_bytes
+    with open(filename, "rb") as rtfile:
+        return rtfile.read()[: len(bom_bytes)] == bom_bytes
 
 
 def has_nonprintable(input_str):
@@ -1268,17 +1311,20 @@ def get_enum_value(enum_type, value_string):
 def get_enum_none(enum_type):
     """Returns the None value in given Enum."""
     for val in get_enum_values(enum_type):
-        if str(val) == 'None':
+        if str(val) == "None":
             return val
 
 
 def extract_guid(source_str):
     """Extract GUID number from a string."""
-    guid_match = re.match(".*([0-9A-Fa-f]{8}"
-                          "[-][0-9A-Fa-f]{4}"
-                          "[-][0-9A-Fa-f]{4}"
-                          "[-][0-9A-Fa-f]{4}"
-                          "[-][0-9A-Fa-f]{12}).*", source_str)
+    guid_match = re.match(
+        ".*([0-9A-Fa-f]{8}"
+        "[-][0-9A-Fa-f]{4}"
+        "[-][0-9A-Fa-f]{4}"
+        "[-][0-9A-Fa-f]{4}"
+        "[-][0-9A-Fa-f]{12}).*",
+        source_str,
+    )
     if guid_match:
         return guid_match.groups()[0]
 
@@ -1286,12 +1332,12 @@ def extract_guid(source_str):
 def format_hex_rgb(rgb_value):
     """Formats rgb value as #RGB value string."""
     if isinstance(rgb_value, str):
-        if not rgb_value.startswith('#'):
-            return '#%s' % rgb_value
+        if not rgb_value.startswith("#"):
+            return "#%s" % rgb_value
         else:
             return rgb_value
     elif isinstance(rgb_value, int):
-        return '#%x' % rgb_value
+        return "#%x" % rgb_value
 
 
 def new_uuid():
@@ -1303,13 +1349,12 @@ def new_uuid():
 
 def is_box_visible_on_screens(left, top, width, height):
     """Check if given box is visible on any screen."""
-    bounds = \
-        framework.Drawing.Rectangle(
-            framework.Convert.ToInt32(0 if math.isnan(left) else left),
-            framework.Convert.ToInt32(0 if math.isnan(top) else top),
-            framework.Convert.ToInt32(0 if math.isnan(width) else width),
-            framework.Convert.ToInt32(0 if math.isnan(height) else height)
-            )
+    bounds = framework.Drawing.Rectangle(
+        framework.Convert.ToInt32(0 if math.isnan(left) else left),
+        framework.Convert.ToInt32(0 if math.isnan(top) else top),
+        framework.Convert.ToInt32(0 if math.isnan(width) else width),
+        framework.Convert.ToInt32(0 if math.isnan(height) else height),
+    )
     for scr in framework.Forms.Screen.AllScreens:
         if bounds.IntersectsWith(scr.Bounds):
             return True
@@ -1371,15 +1416,12 @@ def fuzzy_search_ratio(target_string, sfilter, regex=False):
     lower_tstring_parts = [x.lower() for x in tstring_parts]
     lower_sfilter_parts = [x.lower() for x in sfilter_parts]
     # exclude override
-    if any(x[0] == '!' for x in sfilter_parts):
+    if any(x[0] == "!" for x in sfilter_parts):
         exclude_indices = [
-            lower_sfilter_parts.index(i) for i in lower_sfilter_parts
-            if i[0] == '!'
+            lower_sfilter_parts.index(i) for i in lower_sfilter_parts if i[0] == "!"
         ]
         exclude_indices.reverse()
-        exclude_list = [
-            lower_sfilter_parts.pop(i) for i in exclude_indices
-        ]
+        exclude_list = [lower_sfilter_parts.pop(i) for i in exclude_indices]
         for e in exclude_list:
             # doesn't contain
             if len(e) > 1:
@@ -1449,13 +1491,13 @@ def kill_tasks(task_name):
 def int2hex_long(number):
     """Integer to hexadecimal string."""
     # python 2 fix of addin 'L' to long integers
-    return hex(number).replace('L', '')
+    return hex(number).replace("L", "")
 
 
 def hex2int_long(hex_string):
     """Hexadecimal string to Integer."""
     # python 2 fix of addin 'L' to long integers
-    hex_string.replace('L', '')
+    hex_string.replace("L", "")
     return int(hex_string, 16)
 
 

@@ -1,4 +1,5 @@
 """Markdown blocks parser."""
+
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
@@ -64,7 +65,7 @@ class BlockParser:
         """
         # Create a ElementTree from the lines
         self.root = util.etree.Element(self.markdown.doc_tag)
-        self.parseChunk(self.root, '\n'.join(lines))
+        self.parseChunk(self.root, "\n".join(lines))
         return util.etree.ElementTree(self.root)
 
     def parseChunk(self, parent, text):
@@ -79,7 +80,7 @@ class BlockParser:
         Nothing is returned.
 
         """
-        self.parseBlocks(parent, text.split('\n\n'))
+        self.parseBlocks(parent, text.split("\n\n"))
 
     def parseBlocks(self, parent, blocks):
         """Process blocks of markdown text and attach to given etree node.
