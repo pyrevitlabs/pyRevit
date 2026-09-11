@@ -33,17 +33,14 @@
                         HorizontalAlignment="Right"
                         VerticalAlignment="Center"
                         Margin="0,0,1,0"
+                        Padding="0,-4,0,0"
                         BorderThickness="0"
-                        Style="{DynamicResource ClearButton}"
+                        Background="{DynamicResource pyRevitControlBackgroundBrush}"
                         Click="clear_search">
-                    <Canvas Width="16" Height="16">
-                        <Path Canvas.Top="1" Canvas.Left="1"
+                    <Canvas Width="25" Height="25" VerticalAlignment="Center" HorizontalAlignment="Center">
+                        <Path Canvas.Top="3" Canvas.Left="1"
                               Data="{DynamicResource CloseSearchGeometry}"
-                              Fill="DimGray">
-                            <Path.LayoutTransform>
-                                <ScaleTransform ScaleX="0.7" ScaleY="0.7"/>
-                            </Path.LayoutTransform>
-                        </Path>
+                              Fill="{DynamicResource pyRevitSubtleForegroundBrush}"/>
                     </Canvas>
                 </Button>
             </Grid>
