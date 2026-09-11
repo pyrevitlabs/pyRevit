@@ -8,7 +8,7 @@ namespace pyRevitExtensionParserTest
     public class PanelBackgroundTests
     {
         private IEnumerable<ParsedExtension>? _installedExtensions;
-        
+
         [SetUp]
         public void Setup()
         {
@@ -19,11 +19,11 @@ namespace pyRevitExtensionParserTest
         public void TestPanelWithMultilineBackgroundParsing()
         {
             var testBundlePath = Path.Combine(
-                TestContext.CurrentContext.TestDirectory, 
-                "..", "..", "..", "..", "..", "..", 
+                TestContext.CurrentContext.TestDirectory,
+                "..", "..", "..", "..", "..", "..",
                 "extensions", "pyRevitDevTools.extension"
             );
-            
+
             if (!Directory.Exists(testBundlePath))
             {
                 Assert.Inconclusive($"Test bundle path not found: {testBundlePath}");
@@ -32,13 +32,13 @@ namespace pyRevitExtensionParserTest
 
             TestContext.Out.WriteLine("=== Testing Panel With Multi-line Background ===");
             TestContext.Out.WriteLine($"Test bundle path: {testBundlePath}");
-            
+
             var extensions = ParseInstalledExtensions(new[] { testBundlePath });
-            
+
             foreach (var extension in extensions)
             {
                 TestContext.Out.WriteLine($"Extension: {extension.Name}");
-                
+
                 // Find the Test Panel Colors panel
                 var panel = FindComponentRecursively(extension, "TestPanelColors");
                 if (panel != null)
@@ -48,17 +48,20 @@ namespace pyRevitExtensionParserTest
                     TestContext.Out.WriteLine($"Panel Background: {panel.PanelBackground ?? "NULL"}");
                     TestContext.Out.WriteLine($"Title Background: {panel.TitleBackground ?? "NULL"}");
                     TestContext.Out.WriteLine($"Slideout Background: {panel.SlideoutBackground ?? "NULL"}");
-                    
+
                     // Verify multi-line background format was parsed correctly
                     Assert.AreEqual(CommandComponentType.Panel, panel.Type);
                     Assert.AreEqual("#BB005591", panel.PanelBackground, "Panel background should be '#BB005591'");
                     Assert.AreEqual("#E2A000", panel.TitleBackground, "Title background should be '#E2A000'");
                     Assert.AreEqual("#E25200", panel.SlideoutBackground, "Slideout background should be '#E25200'");
-                    
+                    Assert.AreEqual("#1E3A5F", panel.DarkPanelBackground, "Dark panel background should be '#1E3A5F'");
+                    Assert.AreEqual("#7A5600", panel.DarkTitleBackground, "Dark title background should be '#7A5600'");
+                    Assert.AreEqual("#7A2C00", panel.DarkSlideoutBackground, "Dark slideout background should be '#7A2C00'");
+
                     return; // Test passed
                 }
             }
-            
+
             Assert.Fail("Test Panel Colors panel not found");
         }
 
@@ -66,11 +69,11 @@ namespace pyRevitExtensionParserTest
         public void TestPanelWithSingleLineBackgroundParsing()
         {
             var testBundlePath = Path.Combine(
-                TestContext.CurrentContext.TestDirectory, 
-                "..", "..", "..", "..", "..", "..", 
+                TestContext.CurrentContext.TestDirectory,
+                "..", "..", "..", "..", "..", "..",
                 "extensions", "pyRevitDevTools.extension"
             );
-            
+
             if (!Directory.Exists(testBundlePath))
             {
                 Assert.Inconclusive($"Test bundle path not found: {testBundlePath}");
@@ -79,13 +82,13 @@ namespace pyRevitExtensionParserTest
 
             TestContext.Out.WriteLine("=== Testing Panel With Single-line Background ===");
             TestContext.Out.WriteLine($"Test bundle path: {testBundlePath}");
-            
+
             var extensions = ParseInstalledExtensions(new[] { testBundlePath });
-            
+
             foreach (var extension in extensions)
             {
                 TestContext.Out.WriteLine($"Extension: {extension.Name}");
-                
+
                 // Find the Test Panel Background panel
                 var panel = FindComponentRecursively(extension, "TestPanelBackground");
                 if (panel != null)
@@ -95,17 +98,20 @@ namespace pyRevitExtensionParserTest
                     TestContext.Out.WriteLine($"Panel Background: {panel.PanelBackground ?? "NULL"}");
                     TestContext.Out.WriteLine($"Title Background: {panel.TitleBackground ?? "NULL"}");
                     TestContext.Out.WriteLine($"Slideout Background: {panel.SlideoutBackground ?? "NULL"}");
-                    
+
                     // Verify single-line background format was parsed correctly
                     Assert.AreEqual(CommandComponentType.Panel, panel.Type);
                     Assert.AreEqual("#BB005591", panel.PanelBackground, "Panel background should be '#BB005591'");
                     Assert.IsNull(panel.TitleBackground, "Title background should be null for single-line format");
                     Assert.IsNull(panel.SlideoutBackground, "Slideout background should be null for single-line format");
-                    
+                    Assert.AreEqual("#BB1E3A5F", panel.DarkPanelBackground, "Dark panel background should be '#BB1E3A5F'");
+                    Assert.IsNull(panel.DarkTitleBackground, "Dark title background should be null for single-line format");
+                    Assert.IsNull(panel.DarkSlideoutBackground, "Dark slideout background should be null for single-line format");
+
                     return; // Test passed
                 }
             }
-            
+
             Assert.Fail("Test Panel Background panel not found");
         }
 
@@ -114,21 +120,21 @@ namespace pyRevitExtensionParserTest
         {
             return FindComponentRecursively(extension.Children, name);
         }
-        
+
         private ParsedComponent? FindComponentRecursively(List<ParsedComponent>? components, string name)
         {
             if (components == null) return null;
-            
+
             foreach (var component in components)
             {
                 if (component.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
                     return component;
-                    
+
                 var found = FindComponentRecursively(component.Children, name);
                 if (found != null)
                     return found;
             }
-            
+
             return null;
         }
     }
