@@ -395,8 +395,6 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             if (extension != null)
             {
                 searchPaths.AddRange(extension.CollectBinaryPaths(component));
-                // Also search lib/ folders for backward compatibility with extensions
-                // that place DLLs under lib/ rather than bin/.
                 foreach (var libPath in extension.CollectLibraryPaths(component))
                 {
                     if (!searchPaths.Contains(libPath))

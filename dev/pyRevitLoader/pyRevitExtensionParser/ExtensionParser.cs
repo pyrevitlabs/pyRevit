@@ -903,8 +903,6 @@ namespace pyRevitExtensionParser
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            // An all-users install normally combines machine and per-user paths. A ReadOnly
-            // machine config is an explicit administrator policy, so it remains the sole source.
             if (PyRevitInstallScope.IsAllUsersInstall())
             {
                 var machineRoot = PyRevitLabsConsts.PyRevitProgramDataPath;
