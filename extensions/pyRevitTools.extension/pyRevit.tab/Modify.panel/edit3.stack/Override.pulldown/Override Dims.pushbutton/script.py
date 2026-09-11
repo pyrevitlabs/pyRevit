@@ -51,7 +51,7 @@ def set_dim_overrides(
 def bake_dim_value():
     with revit.Transaction("Overrride dims value"):
         for seg in grab_dims():
-            seg.ValueOverride = u"\u200e" + seg.ValueString
+            seg.ValueOverride = u"\u200e" + seg.ValueString  # fmt: skip
 
 
 def clear_overrides():
@@ -117,11 +117,11 @@ def set_to_tension_dev_length():
 
 
 def add_plusminus_prefix():
-    set_dim_overrides(grab_dims(), txn_name="PlusMinus Dims", prefix=u"\xb1")
+    set_dim_overrides(grab_dims(), txn_name="PlusMinus Dims", prefix=u"\xb1")  # fmt: skip
 
 
 def add_plusminus_suffix():
-    set_dim_overrides(grab_dims(), txn_name="PlusMinus Dims", suffix=u"\xb1")
+    set_dim_overrides(grab_dims(), txn_name="PlusMinus Dims", suffix=u"\xb1")  # fmt: skip
 
 
 def set_to_vif_below():

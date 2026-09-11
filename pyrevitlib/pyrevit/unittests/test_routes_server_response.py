@@ -79,7 +79,7 @@ class RoutesServerWriteResponseTests(unittest.TestCase):
         )
 
     def test_encodes_string_body_as_utf8_bytes(self):
-        data = u"caf\u00e9"
+        data = u"caf\u00e9"  # fmt: skip
         parsed = _FakeResponseObject(
             status=base.OK,
             data=data,
@@ -241,7 +241,7 @@ class RoutesServerQueryParsingTests(unittest.TestCase):
     def test_url_encoded_special_characters(self):
         """Percent-encoded characters in query values are decoded properly."""
         request = self._prepare("/items/", "/items/", "q=caf%C3%A9")
-        self.assertIn(u"caf\u00e9", request.query_params["q"])
+        self.assertIn(u"caf\u00e9", request.query_params["q"])  # fmt: skip
 
     # ------------------------------------------------------------------
     # Path and query string isolation

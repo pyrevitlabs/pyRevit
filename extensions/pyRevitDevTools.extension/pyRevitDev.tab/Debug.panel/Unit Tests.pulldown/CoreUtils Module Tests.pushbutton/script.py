@@ -54,6 +54,7 @@ for shft in TESTS:
             end = coreutils._inc_or_dec_string(
                 str_id=start, shift=step, refit=fit, logger=logger
             )
+            # fmt: off
             print(
                 "{result} {start} --{step}--> {end}={expected}".format(
                     result=u"\u2713" if end == expected else " ",
@@ -63,10 +64,12 @@ for shft in TESTS:
                     step=("[{}]" if fit else "{}").format(step),
                 )
             )
+            # fmt: on
             # test decrement
             end = coreutils._inc_or_dec_string(
                 str_id=expected, shift=-step, refit=fit, logger=logger
             )
+            # fmt: off
             print(
                 "{result} {expected}={end} <--{step}-- {start}".format(
                     result=u"\u2713" if end == start else " ",
@@ -76,3 +79,4 @@ for shft in TESTS:
                     step=("[{}]" if fit else "{}").format(step),
                 )
             )
+            # fmt: on

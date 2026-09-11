@@ -8,6 +8,7 @@ from pyrevit import DB
 from pyrevit.compat import get_elementid_value_func
 import pyrevit.revit.db.query as q
 
+# fmt: off
 _COPY_SUFFIXES = {
     "Copy",
     "Copie",
@@ -22,6 +23,7 @@ _COPY_SUFFIXES = {
     u"\ubcf5\uc0ac\ubcf8",
     u"M\xe1solat",
 }
+# fmt: on
 _COPY_PATTERN = re.compile(
     r"\s+(" + "|".join(re.escape(s) for s in _COPY_SUFFIXES) + r")\s+\d+$"
 )

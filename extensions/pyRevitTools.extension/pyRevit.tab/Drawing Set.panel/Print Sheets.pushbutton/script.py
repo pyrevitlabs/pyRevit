@@ -47,7 +47,7 @@ config = script.get_config()
 
 
 # Non Printable Char
-NPC = u"\u200e"
+NPC = u"\u200e"  # fmt: skip
 INDEX_FORMAT = "{{:0{digits}}}"
 
 

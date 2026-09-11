@@ -39,6 +39,7 @@ DEFAULT_SEPARATOR = ";"
 
 # extracted from
 # https://www.fileformat.info/info/unicode/block/general_punctuation/images.htm
+# fmt: off
 UNICODE_NONPRINTABLE_CHARS = [
     u"\u2000",
     u"\u2001",
@@ -76,6 +77,7 @@ UNICODE_NONPRINTABLE_CHARS = [
     u"\u206e",
     u"\u206f",
 ]
+# fmt: on
 
 
 class Timer(object):

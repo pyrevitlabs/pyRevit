@@ -17,6 +17,7 @@ from pyrevit.routes.server import base
 from pyrevit.compat import PY2
 
 
+# fmt: off
 class SafeJsonDumpsTests(unittest.TestCase):
     """Tests for handler._safe_json_dumps."""
 
@@ -234,3 +235,4 @@ class ParseResponseUnicodeTests(unittest.TestCase):
         self.assertEqual(base.INTERNAL_SERVER_ERROR, result.status)
         parsed = json.loads(result.data)
         self.assertIn(u"\u00e9l\u00e9ment", parsed["exception"]["message"])
+# fmt: on
