@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -77,7 +77,7 @@ namespace pyRevitLabs.Common {
     }
 
     public class pyRevitInvalidURLException : PyRevitException {
-        public pyRevitInvalidURLException(string url) { URL = url;  }
+        public pyRevitInvalidURLException(string url) { URL = url; }
 
         public string URL { get; private set; }
 

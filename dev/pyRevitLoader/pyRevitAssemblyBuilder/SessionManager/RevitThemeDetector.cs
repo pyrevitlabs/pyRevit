@@ -25,7 +25,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             // Return cached result if available
             if (_themeDetected)
                 return _cachedTheme ?? false;
-                
+
             try
             {
 #if (REVIT2021 || REVIT2022 || REVIT2023)
@@ -51,7 +51,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 return false;
             }
         }
-        
+
         /// <summary>
         /// Gets a string representation of the current theme
         /// </summary>
@@ -59,7 +59,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         {
             return IsDarkTheme() ? "Dark" : "Light";
         }
-        
+
         /// <summary>
         /// Clears the cached theme (call if user changes theme mid-session).
         /// </summary>

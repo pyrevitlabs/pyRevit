@@ -47,7 +47,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
 
             // Use localized title which handles fallback to DisplayName
             var panelText = ExtensionParser.GetComponentTitle(component);
-            
+
             var panel = _uiApp.GetRibbonPanels(tabName)
                 .FirstOrDefault(p => p.Name == panelText)
                 ?? _uiApp.CreateRibbonPanel(tabName, panelText);

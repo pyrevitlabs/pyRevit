@@ -15,19 +15,19 @@ namespace pyRevitExtensionParser
         public List<ParsedComponent> Children { get; set; }
         public string BundleFile { get; set; }
         public List<string> LayoutOrder { get; set; }
-        
+
         /// <summary>
         /// The control ID for this component, used to find the ribbon item.
         /// Format: "CustomCtrl_%CustomCtrl_%{tab}%{panel}%{group}%{button}"
         /// </summary>
         public string ControlId { get; set; }
-        
+
         /// <summary>
         /// Maps component names (from layout items) to their custom display titles.
         /// Used when layout items specify a custom title like: "Component Name[title:Custom Title]"
         /// </summary>
         public Dictionary<string, string> LayoutItemTitles { get; set; }
-        
+
         /// <summary>
         /// Maps component names to their layout directives for positioning control.
         /// Used when layout items specify positioning directives like:
@@ -35,7 +35,7 @@ namespace pyRevitExtensionParser
         /// "Component Name[beforeall:]", "Component Name[afterall:]"
         /// </summary>
         public Dictionary<string, LayoutDirective> LayoutDirectives { get; set; }
-        
+
         public bool HasSlideout { get; set; } = false;
         public string Title { get; set; }
         public string Author { get; set; }
@@ -54,50 +54,50 @@ namespace pyRevitExtensionParser
         public string AvailabilityClass { get; set; }
         public List<string> Modules { get; set; } = new List<string>();
         public EngineConfig Engine { get; set; }
-        
+
         /// <summary>
         /// Path to the config script (config.py, config.cs, etc.) if it exists.
         /// When no separate config script exists, this equals ScriptPath.
         /// </summary>
         public string ConfigScriptPath { get; set; }
-        
+
         /// <summary>
         /// Whether this component has a separate config script (config.py differs from script.py).
         /// Used to add the dot indicator (●) to button titles.
         /// </summary>
-        public bool HasConfigScript => 
-            !string.IsNullOrEmpty(ConfigScriptPath) && 
-            !string.IsNullOrEmpty(ScriptPath) && 
+        public bool HasConfigScript =>
+            !string.IsNullOrEmpty(ConfigScriptPath) &&
+            !string.IsNullOrEmpty(ScriptPath) &&
             !string.Equals(ConfigScriptPath, ScriptPath, System.StringComparison.OrdinalIgnoreCase);
-        
+
         /// <summary>
         /// Path to the "on" state icon for toggle/smart buttons.
         /// Used when the button is in the activated/on state.
         /// </summary>
         public string OnIconPath { get; set; }
-        
+
         /// <summary>
         /// Path to the dark theme "on" state icon for toggle/smart buttons.
         /// </summary>
         public string OnIconDarkPath { get; set; }
-        
+
         /// <summary>
         /// Path to the "off" state icon for toggle/smart buttons.
         /// Used when the button is in the deactivated/off state.
         /// </summary>
         public string OffIconPath { get; set; }
-        
+
         /// <summary>
         /// Path to the dark theme "off" state icon for toggle/smart buttons.
         /// </summary>
         public string OffIconDarkPath { get; set; }
-        
+
         /// <summary>
         /// Whether this component has on/off state icons for toggle functionality.
         /// </summary>
-        public bool HasToggleIcons => 
+        public bool HasToggleIcons =>
             !string.IsNullOrEmpty(OnIconPath) || !string.IsNullOrEmpty(OffIconPath);
-        
+
         /// <summary>
         /// Path to the tooltip media file (tooltip.mp4, tooltip.swf, or tooltip.png).
         /// Used for video or image tooltips on buttons.
@@ -119,22 +119,22 @@ namespace pyRevitExtensionParser
         /// Whether this component has a help file.
         /// </summary>
         public bool HasHelpFile => !string.IsNullOrEmpty(HelpFile);
-        
+
         /// <summary>
         /// Panel background color (ARGB hex format, e.g., '#BB005591')
         /// </summary>
         public string PanelBackground { get; set; }
-        
+
         /// <summary>
         /// Panel title background color (ARGB hex format, e.g., '#E2A000')
         /// </summary>
         public string TitleBackground { get; set; }
-        
+
         /// <summary>
         /// Panel slideout background color (ARGB hex format, e.g., '#E25200')
         /// </summary>
         public string SlideoutBackground { get; set; }
-        
+
         /// <summary>
         /// The directory path where this component resides
         /// </summary>

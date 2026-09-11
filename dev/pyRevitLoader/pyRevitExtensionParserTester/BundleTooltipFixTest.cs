@@ -12,20 +12,20 @@ namespace pyRevitExtensionParserTest
         public void TestTooltipParsingFix()
         {
             TestContext.Out.WriteLine("=== Testing Tooltip Parsing Fix ===");
-            
+
             // Create a temporary test directory structure using unique temp directory
             var testExtensionDir = Path.Combine(TestTempDir, "TestExt.extension");
             var testTabDir = Path.Combine(testExtensionDir, "TestTab.tab");
             var testPanelDir = Path.Combine(testTabDir, "TestPanel.panel");
             var testButtonDir = Path.Combine(testPanelDir, "TestButton.panelbutton");
-            
+
             // Create directory structure
             Directory.CreateDirectory(testButtonDir);
-            
+
             // Create a test script
             var scriptPath = Path.Combine(testButtonDir, "script.py");
             File.WriteAllText(scriptPath, "# Test script");
-            
+
             // Create bundle.yaml with plural "tooltips"
             var bundlePath = Path.Combine(testButtonDir, "bundle.yaml");
             var bundleContent = @"title:
@@ -37,41 +37,41 @@ tooltips:
 author: Test Framework
 ";
             File.WriteAllText(bundlePath, bundleContent);
-            
+
             TestContext.Out.WriteLine($"Created test extension at: {testExtensionDir}");
             TestContext.Out.WriteLine($"Bundle content:\n{bundleContent}");
-            
+
             // Parse the extension
             var extensions = ParseInstalledExtensions(new[] { testExtensionDir });
             var extension = extensions.FirstOrDefault();
-            
+
             Assert.IsNotNull(extension, "Should parse test extension");
             TestContext.Out.WriteLine($"Extension parsed: {extension.Name}");
-            
+
             // Find the test button
             var testButton = FindComponentRecursively(extension, "TestButton");
             Assert.IsNotNull(testButton, "Should find test button");
-            
+
             TestContext.Out.WriteLine($"Found button: {testButton.DisplayName}");
             TestContext.Out.WriteLine($"Button type: {testButton.Type}");
             TestContext.Out.WriteLine($"Bundle file: {testButton.BundleFile}");
             TestContext.Out.WriteLine($"Title: '{testButton.Title}'");
             TestContext.Out.WriteLine($"Tooltip: '{testButton.Tooltip}'");
             TestContext.Out.WriteLine($"Author: '{testButton.Author}'");
-            
+
             // Verify parsing results
             Assert.AreEqual(CommandComponentType.PanelButton, testButton.Type);
             Assert.AreEqual("Test Panel Button", testButton.Title);
             Assert.AreEqual("Test Framework", testButton.Author);
-            
+
             // The key test - tooltip should be parsed correctly
             Assert.IsNotNull(testButton.Tooltip, "Tooltip should not be null");
             Assert.IsNotEmpty(testButton.Tooltip, "Tooltip should not be empty");
-            Assert.IsTrue(testButton.Tooltip.Contains("test tooltip"), 
+            Assert.IsTrue(testButton.Tooltip.Contains("test tooltip"),
                          $"Tooltip should contain expected content, but was: '{testButton.Tooltip}'");
-            Assert.IsTrue(testButton.Tooltip.Contains("panel button"), 
+            Assert.IsTrue(testButton.Tooltip.Contains("panel button"),
                          $"Tooltip should contain 'panel button', but was: '{testButton.Tooltip}'");
-            
+
             TestContext.Out.WriteLine("? Tooltip parsing fix verified successfully!");
             Assert.Pass("Tooltip parsing fix test completed successfully");
         }
@@ -80,20 +80,20 @@ author: Test Framework
         public void TestTooltipWithColonContent()
         {
             TestContext.Out.WriteLine("=== Testing Tooltip with Colon Content (Shift-Click fix) ===");
-            
+
             // Create a temporary test directory structure using unique temp directory
             var testExtensionDir = Path.Combine(TestTempDir, "TestExt2.extension");
             var testTabDir = Path.Combine(testExtensionDir, "TestTab.tab");
             var testPanelDir = Path.Combine(testTabDir, "TestPanel.panel");
             var testButtonDir = Path.Combine(testPanelDir, "Paste State.pushbutton");
-            
+
             // Create directory structure
             Directory.CreateDirectory(testButtonDir);
-            
+
             // Create a test script
             var scriptPath = Path.Combine(testButtonDir, "script.py");
             File.WriteAllText(scriptPath, "# Test script");
-            
+
             // Create bundle.yaml with the exact tooltip structure from the issue
             var bundlePath = Path.Combine(testButtonDir, "bundle.yaml");
             var bundleContent = @"title:
@@ -110,53 +110,53 @@ tooltip:
 author: Test Framework
 ";
             File.WriteAllText(bundlePath, bundleContent);
-            
+
             TestContext.Out.WriteLine($"Created test extension at: {testExtensionDir}");
             TestContext.Out.WriteLine($"Bundle content:\n{bundleContent}");
-            
+
             // Parse the extension
             var extensions = ParseInstalledExtensions(new[] { testExtensionDir });
             var extension = extensions.FirstOrDefault();
-            
+
             Assert.IsNotNull(extension, "Should parse test extension");
             TestContext.Out.WriteLine($"Extension parsed: {extension.Name}");
-            
+
             // Find the test button
             var testButton = FindComponentRecursively(extension, "PasteState");
             Assert.IsNotNull(testButton, "Should find Paste State button");
-            
+
             TestContext.Out.WriteLine($"Found button: {testButton.DisplayName}");
             TestContext.Out.WriteLine($"Button type: {testButton.Type}");
             TestContext.Out.WriteLine($"Title: '{testButton.Title}'");
             TestContext.Out.WriteLine($"Tooltip: '{testButton.Tooltip}'");
             TestContext.Out.WriteLine($"Author: '{testButton.Author}'");
-            
+
             // Verify parsing results
             Assert.AreEqual(CommandComponentType.PushButton, testButton.Type);
             Assert.AreEqual("Paste State", testButton.Title);
             Assert.AreEqual("Test Framework", testButton.Author);
-            
+
             // The key test - tooltip should contain ALL content including "Shift-Click:" and "Show additional options"
             Assert.IsNotNull(testButton.Tooltip, "Tooltip should not be null");
             Assert.IsNotEmpty(testButton.Tooltip, "Tooltip should not be empty");
-            
+
             // Check that tooltip contains the beginning
-            Assert.IsTrue(testButton.Tooltip.Contains("Applies the copied state to the active view"), 
+            Assert.IsTrue(testButton.Tooltip.Contains("Applies the copied state to the active view"),
                          $"Tooltip should contain 'Applies the copied state', but was: '{testButton.Tooltip}'");
-            
+
             // Check that tooltip contains "Shift-Click:" (the part that was being cut off)
-            Assert.IsTrue(testButton.Tooltip.Contains("Shift-Click:"), 
+            Assert.IsTrue(testButton.Tooltip.Contains("Shift-Click:"),
                          $"Tooltip should contain 'Shift-Click:', but was: '{testButton.Tooltip}'");
-            
+
             // Check that tooltip contains the end (Show additional options)
-            Assert.IsTrue(testButton.Tooltip.Contains("Show additional options"), 
+            Assert.IsTrue(testButton.Tooltip.Contains("Show additional options"),
                          $"Tooltip should contain 'Show additional options', but was: '{testButton.Tooltip}'");
-            
+
             TestContext.Out.WriteLine("? Tooltip with colon content test verified successfully!");
             Assert.Pass("Tooltip with colon content test completed successfully");
         }
 
-[Test]
+        [Test]
         public void TestMultilineAuthorParsing()
         {
             TestContext.Out.WriteLine("=== Testing Multiline Author Parsing ===");

@@ -417,7 +417,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }, sender, e);
         }
 
-            public void UIApplication_FabricationPartBrowserChanged(object sender, Autodesk.Revit.UI.Events.FabricationPartBrowserChangedEventArgs e) {
+        public void UIApplication_FabricationPartBrowserChanged(object sender, Autodesk.Revit.UI.Events.FabricationPartBrowserChangedEventArgs e) {
             // TODO: implement
             //e.GetAllSolutionsPartsTypeCounts
             //e.GetCurrentSolutionPartTypeIds
@@ -1072,7 +1072,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 extTelemetryEventHandler.EventTelemetryDelegate = SendJournalCommandExecutedTelemetry;
 
                 extTelemetryEvent.Raise();
-                while (extTelemetryEvent.IsPending);
+                while (extTelemetryEvent.IsPending) ;
             }
         }
 

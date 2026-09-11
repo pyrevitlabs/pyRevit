@@ -22,12 +22,12 @@ namespace pyRevitExtensionParser
         /// The type of rule: any, all, exact, not_any, not_all, not_exact
         /// </summary>
         public string RuleType { get; set; }
-        
+
         /// <summary>
         /// The list of items (category names, view types, etc.) for this rule
         /// </summary>
         public List<string> Items { get; set; } = new List<string>();
-        
+
         /// <summary>
         /// Whether this is a NOT rule (inverted logic)
         /// </summary>
@@ -35,7 +35,7 @@ namespace pyRevitExtensionParser
 
         private string BaseRuleType =>
             IsNot && RuleType.Length > 4 ? RuleType.Substring(4) : RuleType;
-        
+
         /// <summary>
         /// Gets the separator character for this rule type
         /// </summary>
@@ -52,7 +52,7 @@ namespace pyRevitExtensionParser
                 }
             }
         }
-        
+
         /// <summary>
         /// Converts this rule to the formatted string for runtime consumption.
         /// </summary>
@@ -70,11 +70,11 @@ namespace pyRevitExtensionParser
             }
 
             var formatted = "(" + joined + ")";
-            
+
             return IsNot ? "!" + formatted : formatted;
         }
     }
-    
+
     /// <summary>
     /// Represents a layout directive for controlling component positioning in the UI.
     /// </summary>
@@ -139,7 +139,7 @@ namespace pyRevitExtensionParser
         /// </summary>
         public string Target { get; set; }
     }
-    
+
     /// <summary>
     /// Represents a parsed pyRevit bundle configuration containing all metadata,
     /// layout information, and engine settings for a command or component.
@@ -308,7 +308,7 @@ namespace pyRevitExtensionParser
         /// </code>
         /// </example>
         public string Context { get; set; }
-        
+
         /// <summary>
         /// Gets or sets the list of context items when context is specified as a YAML list.
         /// </summary>
@@ -317,7 +317,7 @@ namespace pyRevitExtensionParser
         /// Use <see cref="GetFormattedContext"/> to get the runtime-formatted context string.
         /// </remarks>
         public List<string> ContextItems { get; set; } = new List<string>();
-        
+
         /// <summary>
         /// Gets or sets context rules for complex context specifications using any/all/exact/not_ keys.
         /// </summary>
@@ -333,7 +333,7 @@ namespace pyRevitExtensionParser
         /// </code>
         /// </remarks>
         public List<ContextRule> ContextRules { get; set; } = new List<ContextRule>();
-        
+
         /// <summary>
         /// Gets the formatted context string for runtime consumption.
         /// </summary>
