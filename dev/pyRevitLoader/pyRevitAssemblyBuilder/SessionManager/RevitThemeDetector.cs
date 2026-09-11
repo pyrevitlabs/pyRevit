@@ -4,14 +4,19 @@ using System.Reflection;
 namespace pyRevitAssemblyBuilder.SessionManager
 {
     /// <summary>
-    /// Utility for detecting Revit's UI theme.
+    /// Single source of truth for the UI theme that ribbon icons and smart buttons render against.
     /// </summary>
     /// <remarks>
-    /// The theme is read reflectively from the loaded RevitAPIUI assembly instead of through a
-    /// compile-time reference, because pyRevitAssemblyBuilder is version-agnostic: a single net48
-    /// build serves Revit 2021-2024 and a single net8.0 build serves Revit 2025+. A compile-time
-    /// switch on the baseline Revit version of each target framework reported Light unconditionally
-    /// on Revit 2024, which does support the dark theme (issue #3628).
+    /// Invariant: the theme is resolved reflectively, never through a compile-time Revit API
+    /// reference or a <c>#if REVIT20xx</c> switch. pyRevitAssemblyBuilder is version-agnostic - one
+    /// net48 build serves Revit 2021-2024, one net8.0 build serves Revit 2025+ - so a compile-time
+    /// switch resolves against each target framework's baseline version instead of the running host.
+    /// That is how Revit 2024 came to report Light unconditionally despite supporting dark theme
+    /// (#3628).
+    /// <para>
+    /// Important: the resolved theme is cached for the lifetime of the process, not per instance,
+    /// so every instance observes the same value until <see cref="ClearCache"/> runs.
+    /// </para>
     /// </remarks>
     public class RevitThemeDetector
     {
@@ -37,9 +42,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
         }
 
         /// <summary>
-        /// Detects the current Revit UI theme (cached after first call).
+        /// Resolves the running host's UI theme, treating a host with no theme API and a failed
+        /// lookup alike as light rather than propagating either.
         /// </summary>
-        /// <returns>True if the current theme is dark, false if light or cannot be determined</returns>
         public bool IsDarkTheme()
         {
             if (_themeDetected)
@@ -60,7 +65,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
         }
 
         /// <summary>
-        /// Gets a string representation of the current theme
+        /// Names the theme the way Revit's own <c>UITheme</c> does, as "Dark" or "Light", so the
+        /// value round-trips against theme strings coming off the Revit API.
         /// </summary>
         public string GetThemeName()
         {
@@ -68,19 +74,19 @@ namespace pyRevitAssemblyBuilder.SessionManager
         }
 
         /// <summary>
-        /// Clears the cached theme (call if user changes theme mid-session).
+        /// Drops the cached theme so the next lookup re-queries the host.
         /// </summary>
+        /// <remarks>
+        /// Invariant: must run on every session load. Revit changes theme without restarting the
+        /// process, and a cache left stale across a reload repaints the whole ribbon with the
+        /// previous theme's icons.
+        /// </remarks>
         public static void ClearCache()
         {
             _cachedTheme = null;
             _themeDetected = false;
         }
 
-        /// <summary>
-        /// Reads <c>UIThemeManager.CurrentTheme</c> from the RevitAPIUI assembly backing
-        /// <paramref name="revitUiApplicationType"/>.
-        /// </summary>
-        /// <returns>The theme name, or null on a Revit version without UI theme support.</returns>
         internal static string ReadCurrentThemeName(Type revitUiApplicationType)
         {
             var themeManagerType = revitUiApplicationType?.Assembly.GetType(ThemeManagerTypeName);
