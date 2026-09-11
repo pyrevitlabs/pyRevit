@@ -930,7 +930,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
         queued entry is dropped in that case, and a caller holding a guard
         must release it.  Only Accepted and Pending count as dispatched, so
         an unrecognised Raise() result fails safe instead of stranding that
-        guard."""
+        guard.
+        """
 
         def _doc_affine_action():
             if not self._is_owned_doc_active():
