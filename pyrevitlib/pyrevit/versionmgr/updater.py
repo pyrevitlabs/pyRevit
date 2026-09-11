@@ -4,6 +4,7 @@ import pyrevit.coreutils.git as libgit
 from pyrevit.compat import safe_strtype
 from pyrevit.coreutils import envvars
 from pyrevit.coreutils.logger import get_logger
+from pyrevit.coreutils import credentials
 from pyrevit import versionmgr
 from pyrevit.versionmgr import upgrade
 
@@ -44,8 +45,19 @@ def _check_connection(host="8.8.8.8", port=53, timeout=3):
 def _get_extension_credentials(repo_info):
     try:
         repo_config = user_config.get_section(repo_info.name)
-        if repo_config.private_repo:
-            return repo_config.username, repo_config.password
+        if not repo_config.private_repo:
+            return None, None
+        # repo_info.name is the extension folder name (e.g. MyTool.extension),
+        # which matches extpkg.config_section_name -- the same key used when
+        # the token was stored during install.
+        token = credentials.get_token(repo_info.name)
+        if token:
+            return 'oauth2', token
+        # Legacy fallback: per-extension plaintext credentials not yet migrated
+        username = repo_config.get_option('username', None)
+        password = repo_config.get_option('password', None)
+        if username and password:
+            return username, password
         return None, None
     except Exception:
         return None, None
