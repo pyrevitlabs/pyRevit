@@ -49,6 +49,33 @@ logger = script.get_logger()
 output = script.get_output()
 
 
+def _resolve_bundle_dir():
+    """Resolve the bundle directory at module load.
+
+    EXEC_PARAMS.command_path is valid only during the current invocation, so
+    a modeless window's handlers must never read it (#3548).
+    """
+    cmd_path = EXEC_PARAMS.command_path
+    if cmd_path:
+        return cmd_path
+    try:
+        fallback = op.dirname(op.abspath(__file__))
+    except Exception:
+        fallback = ""
+    logger.warning("KeynoteManager | command path unavailable at module "
+                   "load; bundle assets resolved from %s",
+                   fallback or "<cwd>")
+    return fallback
+
+
+_BUNDLE_DIR = _resolve_bundle_dir()
+
+
+def bundle_file(filename):
+    """Absolute path to a bundle file, safe to call after the invocation ends."""
+    return op.join(_BUNDLE_DIR, filename)
+
+
 def _coerce_persistent_flag(value):
     """Interpret an engineCfgs "persistent" value, failing CLOSED.
 
@@ -418,7 +445,7 @@ class EditRecordWindow(forms.WPFWindow):
     def __init__(
         self, owner, conn, mode, rkeynote=None, rkey=None, text=None, pkey=None
     ):
-        forms.WPFWindow.__init__(self, "EditRecord.xaml")
+        forms.WPFWindow.__init__(self, bundle_file("EditRecord.xaml"))
         self.Owner = owner
         self._res = None
         self._commited = False
@@ -736,6 +763,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         # modeless close state
         self._close_pending = False
+        self._close_prompt_open = False
+        self._close_sync_pending = False
 
         self._search_timer = DispatcherTimer()
         # Wait 300ms after last keystroke before filtering.
@@ -880,7 +909,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
         — otherwise transactions would silently modify the wrong model.
 
         Pass callback_on_error=False when the callback reports success or
-        discards state, so a failed action cannot masquerade as a good one."""
+        discards state, so a failed action cannot masquerade as a good one.
+
+        Returns False when the action could not be dispatched at all; a
+        caller holding a guard must release it on False."""
 
         def _doc_affine_action():
             if not self._is_owned_doc_active():
@@ -909,17 +941,23 @@ class KeynoteManagerWindow(forms.WPFWindow):
                         Windows.Threading.DispatcherPriority.Background)
                 except Exception as cbex:
                     logger.debug("Callback dispatch failed | %s", cbex)
-            return
+            return True
 
         if self._ext_event is None:
             logger.error("KeynoteManager | ExternalEvent unavailable; "
                          "action not queued")
             forms.alert("Keynote Manager cannot reach Revit right now.\n"
                         "Please try again.")
-            return
+            return False
         self._ext_handler.queue(_doc_affine_action, callback, self,
                                 callback_on_error=callback_on_error)
-        self._ext_event.Raise()
+        try:
+            self._ext_event.Raise()
+        except Exception as rex:
+            logger.error("KeynoteManager | could not raise ExternalEvent "
+                         "| %s", rex)
+            return False
+        return True
 
     # =========================================================================
     # TREE STATE PRESERVATION
@@ -3085,26 +3123,46 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self.Close()
 
     def window_closing(self, sender, args):
-        # If we haven't synced yet and user closed via X button, ask
+        """Offer to sync pending changes before closing.
+
+        Invariant:
+            The alert is modal to Revit, not to this modeless window, so
+            Close re-enters mid-prompt and mid-sync; no guard may be held
+            across the ExternalEvent or the window becomes unclosable (#3548).
+        """
         if self._needs_update and not self._close_pending:
-            res = forms.alert(
-                "Keynote file has been modified.\n"
-                "Sync changes to the Revit model before closing?",
-                yes=True,
-                no=True,
-            )
+            if self._close_prompt_open or self._close_sync_pending:
+                args.Cancel = True
+                return
+
+            self._close_prompt_open = True
+            try:
+                res = forms.alert(
+                    "Keynote file has been modified.\n"
+                    "Sync changes to the Revit model before closing?",
+                    yes=True,
+                    no=True,
+                )
+            finally:
+                self._close_prompt_open = False
+
             if res:
                 args.Cancel = True
+                self._close_sync_pending = True
 
                 def _do_update():
-                    self._sync_model_keynotes()
+                    try:
+                        self._sync_model_keynotes()
+                    finally:
+                        self._close_sync_pending = False
 
                 def _sync_done():
                     self._close_pending = True
                     self._finalize_close()
 
-                self._revit_run(_do_update, callback=_sync_done,
-                                callback_on_error=False)
+                if not self._revit_run(_do_update, callback=_sync_done,
+                                       callback_on_error=False):
+                    self._close_sync_pending = False
                 return
 
         # Proceed with cleanup
