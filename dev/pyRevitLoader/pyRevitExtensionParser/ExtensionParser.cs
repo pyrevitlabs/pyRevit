@@ -899,56 +899,58 @@ namespace pyRevitExtensionParser
                 roots.Add(thirdPartyExtensionsPath);
             }
 
-            var userExtensions = GetConfig().UserExtensionsList;
+            var userExtensions = GetConfig().UserExtensionsList
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
 
-            // A ReadOnly machine config is a deliberate admin lock and the only config the
-            // loader should consult; honouring user-writable extension paths here would defeat
-            // it. In every other case, also pick up extension paths from the "other" config:
-            // for an active ProgramData config that's the per-user AppData config, and for the
-            // AppData fallback that standard users hit on an admin install it is the machine
-            // ProgramData config (whose userextensions may have been added after seeding).
-            var activeConfig = PyRevitInstallScope.GetActiveConfig(createIfMissing: false);
-            if (!activeConfig.IsReadOnly)
+            // An all-users install normally combines machine and per-user paths. A ReadOnly
+            // machine config is an explicit administrator policy, so it remains the sole source.
+            if (PyRevitInstallScope.IsAllUsersInstall())
             {
-                string otherConfigPath = null;
-                if (activeConfig.IsMachineConfig)
-                {
-                    var perUserRoot = PyRevitLabsConsts.PyRevitPath;
-                    var perUserPath = PyRevitInstallScope.FindConfigIniInDirectory(perUserRoot)
-                        ?? Path.Combine(perUserRoot, PyRevitLabsConsts.DefaultConfigsFileName);
-                    if (File.Exists(perUserPath) &&
-                        !string.Equals(perUserPath, activeConfig.ConfigPath, StringComparison.OrdinalIgnoreCase))
-                    {
-                        otherConfigPath = perUserPath;
-                    }
-                }
-                else
-                {
-                    var machineRoot = PyRevitLabsConsts.PyRevitProgramDataPath;
-                    var machinePath = PyRevitInstallScope.FindConfigIniInDirectory(machineRoot)
-                        ?? Path.Combine(machineRoot, PyRevitLabsConsts.DefaultConfigsFileName);
-                    if (File.Exists(machinePath) &&
-                        !string.Equals(machinePath, activeConfig.ConfigPath, StringComparison.OrdinalIgnoreCase))
-                    {
-                        otherConfigPath = machinePath;
-                    }
-                }
+                var machineRoot = PyRevitLabsConsts.PyRevitProgramDataPath;
+                var machinePath = PyRevitInstallScope.FindConfigIniInDirectory(machineRoot)
+                    ?? Path.Combine(machineRoot, PyRevitLabsConsts.DefaultConfigsFileName);
 
-                if (otherConfigPath != null)
+                if (!PyRevitInstallScope.HasReadOnlyAttribute(machinePath))
                 {
-                    try
+                    var activeConfig = PyRevitInstallScope.GetActiveConfig(createIfMissing: false);
+                    string otherConfigPath = null;
+                    if (activeConfig.IsMachineConfig)
                     {
-                        var otherConfig = new PyRevitConfig(otherConfigPath);
-                        var existingPaths = new HashSet<string>(userExtensions, StringComparer.OrdinalIgnoreCase);
-                        foreach (var path in otherConfig.UserExtensionsList)
+                        var perUserRoot = PyRevitLabsConsts.PyRevitPath;
+                        var perUserPath = PyRevitInstallScope.FindConfigIniInDirectory(perUserRoot)
+                            ?? Path.Combine(perUserRoot, PyRevitLabsConsts.DefaultConfigsFileName);
+                        if (File.Exists(perUserPath) &&
+                            !string.Equals(perUserPath, activeConfig.ConfigPath, StringComparison.OrdinalIgnoreCase))
                         {
-                            if (existingPaths.Add(path))
-                                userExtensions.Add(path);
+                            otherConfigPath = perUserPath;
                         }
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        logger.Debug("Could not read extension paths from '{0}': {1}", otherConfigPath, ex.Message);
+                        if (File.Exists(machinePath) &&
+                            !string.Equals(machinePath, activeConfig.ConfigPath, StringComparison.OrdinalIgnoreCase))
+                        {
+                            otherConfigPath = machinePath;
+                        }
+                    }
+
+                    if (otherConfigPath != null)
+                    {
+                        try
+                        {
+                            var otherConfig = new PyRevitConfig(otherConfigPath);
+                            var existingPaths = new HashSet<string>(userExtensions, StringComparer.OrdinalIgnoreCase);
+                            foreach (var path in otherConfig.UserExtensionsList)
+                            {
+                                if (existingPaths.Add(path))
+                                    userExtensions.Add(path);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Debug("Could not read extension paths from '{0}': {1}", otherConfigPath, ex.Message);
+                        }
                     }
                 }
             }
