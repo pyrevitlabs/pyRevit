@@ -55,7 +55,10 @@ def _find_incompatible_commas(source):
             and comma.type == tokenize.OP
             and comma.string == ","
             and unpacking.start[0] == name.start[0] == comma.start[0]
-            and following.type in (tokenize.COMMENT, tokenize.NEWLINE, tokenize.NL)
+            and (
+                following.type in (tokenize.COMMENT, tokenize.NEWLINE, tokenize.NL)
+                or (following.type == tokenize.OP and following.string == ")")
+            )
         ):
             commas.append((comma, name))
     return commas
