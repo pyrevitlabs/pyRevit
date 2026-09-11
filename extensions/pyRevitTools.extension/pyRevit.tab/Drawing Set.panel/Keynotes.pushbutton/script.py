@@ -335,8 +335,23 @@ class RevitActionHandler(UI.IExternalEventHandler):
         (e.g. clearing a pending-changes flag, closing the window) — running
         it after a failed action would silently claim work that never
         happened.
+
+        Returns the queued entry, for `drop` if it never reaches Revit.
         """
-        self._queue.append((action, callback, window, callback_on_error))
+        entry = (action, callback, window, callback_on_error)
+        self._queue.append(entry)
+        return entry
+
+    def drop(self, entry):
+        """Discard a queued entry whose ExternalEvent was never accepted.
+
+        Execute drains the whole queue, so an entry left behind by a rejected
+        request would run on the next unrelated raise.
+        """
+        try:
+            self._queue.remove(entry)
+        except ValueError:
+            pass
 
     def Execute(self, app):
         """Called by Revit on the main thread when the event fires."""
@@ -911,8 +926,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
         Pass callback_on_error=False when the callback reports success or
         discards state, so a failed action cannot masquerade as a good one.
 
-        Returns False when the action could not be dispatched at all; a
-        caller holding a guard must release it on False."""
+        Returns False when the action could not be dispatched at all — the
+        queued entry is dropped in that case, and a caller holding a guard
+        must release it."""
 
         def _doc_affine_action():
             if not self._is_owned_doc_active():
@@ -949,13 +965,22 @@ class KeynoteManagerWindow(forms.WPFWindow):
             forms.alert("Keynote Manager cannot reach Revit right now.\n"
                         "Please try again.")
             return False
-        self._ext_handler.queue(_doc_affine_action, callback, self,
-                                callback_on_error=callback_on_error)
+        entry = self._ext_handler.queue(_doc_affine_action, callback, self,
+                                        callback_on_error=callback_on_error)
         try:
-            self._ext_event.Raise()
+            request = self._ext_event.Raise()
         except Exception as rex:
             logger.error("KeynoteManager | could not raise ExternalEvent "
                          "| %s", rex)
+            self._ext_handler.drop(entry)
+            return False
+        if request in (UI.ExternalEventRequest.Denied,
+                       UI.ExternalEventRequest.TimedOut):
+            logger.error("KeynoteManager | Revit rejected the request | %s",
+                         request)
+            self._ext_handler.drop(entry)
+            forms.alert("Revit is not accepting requests right now.\n"
+                        "Please try again.")
             return False
         return True
 
