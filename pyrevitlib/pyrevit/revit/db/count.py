@@ -16,11 +16,11 @@ _COPY_SUFFIXES = {
     "Kopia",
     "Kopi",
     "Kopio",
-    "\u041a\u043e\u043f\u0438\u044f",
-    "\u30b3\u30d4\u30fc",
-    "\u526f\u672c",  # Chinese Simplified
-    "\ubcf5\uc0ac\ubcf8",
-    "M\xe1solat",
+    u"\u041a\u043e\u043f\u0438\u044f",
+    u"\u30b3\u30d4\u30fc",
+    u"\u526f\u672c",  # Chinese Simplified
+    u"\ubcf5\uc0ac\ubcf8",
+    u"M\xe1solat",
 }
 _COPY_PATTERN = re.compile(
     r"\s+(" + "|".join(re.escape(s) for s in _COPY_SUFFIXES) + r")\s+\d+$"

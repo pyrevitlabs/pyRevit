@@ -56,7 +56,7 @@ for shft in TESTS:
             )
             print(
                 "{result} {start} --{step}--> {end}={expected}".format(
-                    result="\u2713" if end == expected else " ",
+                    result=u"\u2713" if end == expected else " ",
                     start=start,
                     end=end,
                     expected=expected,
@@ -69,7 +69,7 @@ for shft in TESTS:
             )
             print(
                 "{result} {expected}={end} <--{step}-- {start}".format(
-                    result="\u2713" if end == start else " ",
+                    result=u"\u2713" if end == start else " ",
                     start=expected,
                     end=end,
                     expected=start,
