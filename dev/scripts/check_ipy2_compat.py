@@ -10,37 +10,99 @@ unloadable.
 
 The formatter is opted out for ``pyrevitlib/pyrevit/forms/_ipy.py`` via a
 separate ``[tool.ruff] extend-exclude`` entry. This hook is the belt-and-
-suspenders line of defense: it scans every ``pyrevitlib/`` Python file and
-fails the commit if ``**kwargs,`` ever appears anywhere - including in
+suspenders line of defense: it tokenizes every ``pyrevitlib/`` Python file and
+fails the commit if executable code includes ``**kwargs,`` - including in
 modules that load before ``_ipy.py`` at IronPython startup - so the same bug
 cannot land again under a different path.
 
 Run standalone for local checks::
 
     python dev/scripts/check_ipy2_compat.py path/to/file.py ...
+
+Use ``--fix`` to remove only the incompatible trailing commas after formatting::
+
+    python dev/scripts/check_ipy2_compat.py --fix path/to/file.py ...
 """
 
-import re
+import io
 import sys
+import tokenize
 
 
-PATTERN = re.compile(r"^[^\S\r\n]+\*\*\w+,[^\S\r\n]*(?:#.*)?$", re.MULTILINE)
+def _read_source(path):
+    try:
+        with open(path, "rb") as source:
+            encoding, _ = tokenize.detect_encoding(source.readline)
+        with open(path, encoding=encoding, newline="") as source:
+            return source.read(), encoding
+    except (OSError, SyntaxError, UnicodeDecodeError):
+        return None, None
+
+
+def _find_incompatible_commas(source):
+    try:
+        tokens = list(tokenize.generate_tokens(io.StringIO(source).readline))
+    except tokenize.TokenError:
+        return []
+
+    commas = []
+    for index in range(len(tokens) - 3):
+        unpacking, name, comma, following = tokens[index : index + 4]
+        if (
+            unpacking.type == tokenize.OP
+            and unpacking.string == "**"
+            and name.type == tokenize.NAME
+            and comma.type == tokenize.OP
+            and comma.string == ","
+            and unpacking.start[0] == name.start[0] == comma.start[0]
+            and following.type in (tokenize.COMMENT, tokenize.NEWLINE, tokenize.NL)
+        ):
+            commas.append((comma, name))
+    return commas
 
 
 def _scan(path):
-    try:
-        text = open(path, encoding="utf-8", errors="replace").read()
-    except OSError:
+    source, _ = _read_source(path)
+    if source is None:
         return []
-    hits = []
-    for match in PATTERN.finditer(text):
-        line = text.count("\n", 0, match.start()) + 1
-        hits.append((line, match.group(0).rstrip()))
-    return hits
+    return [
+        (comma.start[0], "**{},".format(name.string))
+        for comma, name in _find_incompatible_commas(source)
+    ]
+
+
+def _remove_incompatible_commas(path):
+    source, encoding = _read_source(path)
+    if source is None:
+        return []
+
+    commas = _find_incompatible_commas(source)
+    if not commas:
+        return []
+
+    line_offsets = []
+    offset = 0
+    for line in source.splitlines(keepends=True):
+        line_offsets.append(offset)
+        offset += len(line)
+
+    source_chars = list(source)
+    for comma, _ in reversed(commas):
+        source_chars.pop(line_offsets[comma.start[0] - 1] + comma.start[1])
+
+    with open(path, "w", encoding=encoding, newline="") as output:
+        output.write("".join(source_chars))
+    return [(comma.start[0], "**{},".format(name.string)) for comma, name in commas]
 
 
 def main(paths):
-    """Return a failing status when paths contain unsupported syntax."""
+    """Check paths for unsupported syntax, optionally removing the commas."""
+    fix = paths[:1] == ["--fix"]
+    if fix:
+        paths = paths[1:]
+        for path in paths:
+            _remove_incompatible_commas(path)
+
     findings = [(p, line, snippet) for p in paths for line, snippet in _scan(p)]
     if not findings:
         return 0
