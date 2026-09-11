@@ -24,7 +24,7 @@ import re
 import sys
 
 
-PATTERN = re.compile(r"^\s+\*\*\w+,\s*$", re.MULTILINE)
+PATTERN = re.compile(r"^[^\S\r\n]+\*\*\w+,[^\S\r\n]*(?:#.*)?$", re.MULTILINE)
 
 
 def _scan(path):
@@ -40,6 +40,7 @@ def _scan(path):
 
 
 def main(paths):
+    """Return a failing status when paths contain unsupported syntax."""
     findings = [(p, line, snippet) for p in paths for line, snippet in _scan(p)]
     if not findings:
         return 0
