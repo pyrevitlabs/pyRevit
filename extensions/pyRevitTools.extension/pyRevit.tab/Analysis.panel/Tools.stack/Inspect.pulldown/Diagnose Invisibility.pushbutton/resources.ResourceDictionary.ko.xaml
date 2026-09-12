@@ -1,0 +1,33 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="pick_prompt">진단할 요소를 선택하세요</sys:String>
+    <sys:String x:Key="select_view_title">뷰 선택</sys:String>
+    <sys:String x:Key="select_view_button">이 뷰에서 진단</sys:String>
+    <sys:String x:Key="no_elements_error">선택하거나 지정한 요소가 없습니다.</sys:String>
+    <sys:String x:Key="no_view_error">선택한 뷰가 없습니다.</sys:String>
+    <sys:String x:Key="report_title">가시성 진단</sys:String>
+    <sys:String x:Key="status_visible">이 뷰에서 표시됩니다.</sys:String>
+    <sys:String x:Key="status_hidden">이 뷰에서 표시되지 않습니다:</sys:String>
+    <sys:String x:Key="status_error">요소 진단 중 오류 발생</sys:String>
+    <sys:String x:Key="summary_line">표시됨 {}개, 표시되지 않음 {}개.</sys:String>
+    <sys:String x:Key="reason_workset_hidden">워크셋 '{}'이(가) 이 뷰에서 명시적으로 숨겨져 있습니다</sys:String>
+    <sys:String x:Key="reason_workset_closed">워크셋 '{}'이(가) 닫혀 있습니다 (전역 설정)</sys:String>
+    <sys:String x:Key="reason_workset_default_hidden">워크셋 '{}'이(가) 모델의 기본 워크셋 표시 설정에 의해 숨겨져 있습니다</sys:String>
+    <sys:String x:Key="reason_phase_filter">단계 필터에 의해 숨겨짐 (요소 단계 상태: '{}')</sys:String>
+    <sys:String x:Key="reason_design_option">요소가 이 뷰에 표시된 옵션과 다른 디자인 옵션 '{}'에 속합니다</sys:String>
+    <sys:String x:Key="reason_category_hidden">카테고리 '{}'이(가) 이 뷰에서 숨겨져 있습니다</sys:String>
+    <sys:String x:Key="reason_subcategory_hidden">'{}'의 하위 카테고리 '{}'이(가) 이 뷰에서 숨겨져 있습니다 (요소가 여기에 속할 수 있습니다)</sys:String>
+    <sys:String x:Key="reason_element_hidden">요소가 이 뷰에서 명시적으로 숨겨져 있습니다 (숨기기/격리)</sys:String>
+    <sys:String x:Key="reason_view_filter">뷰 필터 '{}'에 의해 숨겨짐</sys:String>
+    <sys:String x:Key="reason_section_box">요소의 경계 상자가 뷰의 활성 3D 단면 상자를 완전히 벗어났습니다</sys:String>
+    <sys:String x:Key="reason_crop_box">요소의 경계 상자가 뷰의 자르기 영역을 완전히 벗어났습니다</sys:String>
+    <sys:String x:Key="reason_viewrange_above">요소가 뷰 범위의 상단 절단면보다 위에 있습니다 (요소 최소 Z {:.3f} ft &gt; 상단 {:.3f} ft)</sys:String>
+    <sys:String x:Key="reason_viewrange_below">요소가 뷰 범위의 하단 경계(하단 절단면/뷰 깊이)보다 아래에 있습니다 (요소 최대 Z {:.3f} ft &lt; 하단 경계 {:.3f} ft)</sys:String>
+    <sys:String x:Key="reason_view_template">뷰 템플릿 '{}'이(가) 적용되어 있습니다 - 일부 표시 설정이 잠겨 있을 수 있으며 템플릿에서 변경해야 합니다</sys:String>
+    <sys:String x:Key="reason_view_specific">요소가 뷰 전용이며 다른 뷰('{}')에 속해 있어 여기에 나타날 수 없습니다</sys:String>
+    <sys:String x:Key="reason_view_discipline">뷰 분야가 '{}'(으)로 설정되어 있습니다 - 일부 카테고리는 표시/그래픽 설정과 무관하게 분야에 따라 자동으로 표시되거나 숨겨집니다</sys:String>
+    <sys:String x:Key="reason_unknown">요소가 보이지 않지만 정확한 원인을 확인할 수 없습니다. 가능한 원인: 다른 뷰의 주석과 같은 뷰 전용 요소 유형, 링크 모델의 가시성, 또는 상세 수준입니다.</sys:String>
+
+</ResourceDictionary>
