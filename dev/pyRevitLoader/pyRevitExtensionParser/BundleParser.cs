@@ -602,6 +602,8 @@ namespace pyRevitExtensionParser
             if (node is YamlScalarNode scalar)
             {
                 SetBackground(parsed, "panel", scalar.Value, dark);
+                SetBackground(parsed, "title", scalar.Value, dark);
+                SetBackground(parsed, "slideout", scalar.Value, dark);
                 return;
             }
 

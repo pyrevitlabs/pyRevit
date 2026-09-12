@@ -102,11 +102,11 @@ namespace pyRevitExtensionParserTest
                     // Verify single-line background format was parsed correctly
                     Assert.AreEqual(CommandComponentType.Panel, panel.Type);
                     Assert.AreEqual("#BB005591", panel.PanelBackground, "Panel background should be '#BB005591'");
-                    Assert.IsNull(panel.TitleBackground, "Title background should be null for single-line format");
-                    Assert.IsNull(panel.SlideoutBackground, "Slideout background should be null for single-line format");
+                    Assert.AreEqual("#BB005591", panel.TitleBackground, "Title background should be '#BB005591'");
+                    Assert.AreEqual("#BB005591", panel.SlideoutBackground, "Slideout background should be '#BB005591'");
                     Assert.AreEqual("#BB1E3A5F", panel.DarkPanelBackground, "Dark panel background should be '#BB1E3A5F'");
-                    Assert.IsNull(panel.DarkTitleBackground, "Dark title background should be null for single-line format");
-                    Assert.IsNull(panel.DarkSlideoutBackground, "Dark slideout background should be null for single-line format");
+                    Assert.AreEqual("#BB1E3A5F", panel.DarkTitleBackground, "Dark title background should be '#BB1E3A5F'");
+                    Assert.AreEqual("#BB1E3A5F", panel.DarkSlideoutBackground, "Dark slideout background should be '#BB1E3A5F'");
 
                     return; // Test passed
                 }
