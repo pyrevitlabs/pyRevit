@@ -700,8 +700,43 @@ class EditRecordWindow(forms.WPFWindow):
 class KeynoteManagerWindow(forms.WPFWindow):
     """Keynote manager with unified tree and hierarchy controls."""
 
+    def _apply_theme_brushes(self):
+        """Swap in dark-theme values for the brushes that cannot be shared.
+
+        Nearly every colour in the XAML is either a pyRevit theme brush or a
+        self-contained chip that pairs its own background and foreground. Three
+        cannot be: a danger FOREGROUND has to be dark against white and light
+        against the dark row surface (#222933) - no single value clears 4.5:1
+        on both - and the locked-row tint inverts the same way.
+
+        The XAML carries the light values and references these keys with
+        DynamicResource, so this override takes effect when it runs and the
+        window still renders correctly when it does not.
+        """
+        try:
+            if not self.Resources["pyRevitIsDarkTheme"]:
+                return
+        except Exception:
+            # key absent on older pyRevit builds - keep the light values
+            return
+
+        def _brush(red, green, blue):
+            return Windows.Media.SolidColorBrush(
+                Windows.Media.Color.FromArgb(0xFF, red, green, blue))
+
+        try:
+            # #FF8A8C on #222933 = 6.47:1 (light #C42B2F would be 2.61:1)
+            self.Resources["DangerBrush"] = _brush(0xFF, 0x8A, 0x8C)
+            # amber tint that still reads as a distinct row (1.51:1) and
+            # carries the normal foreground at 8.44:1
+            self.Resources["LockedBgBrush"] = _brush(0x54, 0x42, 0x18)
+            self.Resources["LockedFgBrush"] = _brush(0xEC, 0xF0, 0xF1)
+        except Exception as ex:
+            logger.debug("Dark theme brush override failed | %s", ex)
+
     def __init__(self, xaml_file_name, reset_config=False, safe_mode=False):
         forms.WPFWindow.__init__(self, xaml_file_name)
+        self._apply_theme_brushes()
 
         self._modal_mode = safe_mode
         self.Topmost = False
@@ -745,8 +780,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._doc_changed_app = None
         self.Loaded += self._on_window_loaded
 
-        self.set_image_source(self.expandAllIcon, "expand_all.png")
-        self.set_image_source(self.collapseAllIcon, "collapse_all.png")
 
         self.load_config(reset_config)
         self._update_full_tree()
