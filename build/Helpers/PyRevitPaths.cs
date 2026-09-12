@@ -22,6 +22,8 @@ public static class PyRevitPaths
     public static string Runner2712Project => Path.Combine(DevPath, "pyRevitLoader", "pyRevitRunner.2712PR", "pyRevitRunner.2712PR.csproj");
     public static string Runner342Project => Path.Combine(DevPath, "pyRevitLoader", "pyRevitRunner.342", "pyRevitRunner.342.csproj");
     public static string ExtensionParserTestProject => Path.Combine(DevPath, "pyRevitLoader", "pyRevitExtensionParserTester", "pyRevitExtensionParserTest.csproj");
+    public static string ConfigurationsTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.Configurations.Tests", "pyRevitLabs.Configurations.Tests.csproj");
+    public static string IniConfigurationsTestProject => Path.Combine(DevPath, "pyRevitLabs", "tests", "pyRevitLabs.Configurations.Ini.Tests", "pyRevitLabs.Configurations.Ini.Tests.csproj");
 
     public static string IronPython2Solution => Path.Combine(DevPath, "modules", "pyRevitLabs.IronPython2.sln");
     public static string IronPython2LibProject => Path.Combine(DevPath, "modules", "pyRevitLabs.ironpython2", "Src", "IronPython", "IronPython.csproj");

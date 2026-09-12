@@ -37,6 +37,9 @@ Icon?
 
 # ignore local config file
 *.ini
+# but not the configurations project and tests
+!dev/pyRevitLabs/pyRevitLabs.Configurations.Ini/
+!dev/pyRevitLabs/tests/**/Fixtures/*.ini
 
 # Release and installer files
 release/pyrevit*cache

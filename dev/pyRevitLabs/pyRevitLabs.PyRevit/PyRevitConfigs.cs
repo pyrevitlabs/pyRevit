@@ -2,33 +2,16 @@
 using System.IO;
 using System.Security.Principal;
 using System.Security.AccessControl;
-using System.Collections.Generic;
-
 using pyRevitLabs.Common;
+using pyRevitLabs.Configurations;
+using pyRevitLabs.Configurations.Abstractions;
+using pyRevitLabs.Configurations.Ini;
+using pyRevitLabs.Configurations.Ini.Extensions;
+using pyRevitLabs.Configurations.Sections;
 using pyRevitLabs.NLog;
 
 namespace pyRevitLabs.PyRevit
 {
-    public class PyRevitConfigValueNotSet : PyRevitException
-    {
-        public PyRevitConfigValueNotSet(string sectionName, string keyName)
-        {
-            ConfigSection = sectionName;
-            ConfigKey = keyName;
-        }
-
-        public string ConfigSection { get; set; }
-        public string ConfigKey { get; set; }
-
-        public override string Message
-        {
-            get
-            {
-                return String.Format("Config value not set \"{0}:{1}\"", ConfigSection, ConfigKey);
-            }
-        }
-    }
-
     public enum PyRevitLogLevels
     {
         Quiet,
@@ -44,148 +27,38 @@ namespace pyRevitLabs.PyRevit
 
     public static class PyRevitConfigs
     {
-        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+        private static readonly Logger _logger = LogManager.GetCurrentClassLogger();
 
-        // get config file
-        public static PyRevitConfig GetConfigFile()
+        /// <summary>
+        /// Routes the Configurations-layer diagnostics (discovery, migration,
+        /// tolerant-read fallbacks) to the pyRevit log.
+        /// </summary>
+        static PyRevitConfigs()
         {
-            MigrateSplitAdminConfigIfNeeded();
-
-            // the shared resolver handles install scope, admin-locked seeds, and
-            // first-run seeding of the per-user config from the machine-wide config
-            var activeConfig = PyRevitInstallScope.GetActiveConfig();
-            if (!CommonUtils.VerifyFile(activeConfig.ConfigPath))
-                CommonUtils.EnsureFile(activeConfig.ConfigPath);
-
-            return new PyRevitConfig(activeConfig.ConfigPath, adminMode: activeConfig.IsReadOnly);
+            ConfigurationDiagnostics.Warn = message => _logger.Warn(message);
+            ConfigurationDiagnostics.Info = message => _logger.Info(message);
         }
 
-        private static void MigrateSplitAdminConfigIfNeeded()
-        {
-            if (!PyRevitInstallScope.IsAllUsersInstall())
-                return;
+        /// <summary>
+        /// Returns the shared config service, built once and cached for the
+        /// process. Call <see cref="ReloadConfig"/> after a settings change to
+        /// force the next access to re-read from disk.
+        /// </summary>
+        public static IConfigurationService GetConfigFile()
+            => PyRevitConfigService.GetShared();
 
-            try
-            {
-                MigrateSplitAdminConfig();
-            }
-            catch (Exception ex)
-            {
-                // migration is a best-effort repair; standard users may not be able
-                // to write the machine-wide config and must not be blocked by it
-                logger.Debug("Skipped split admin config migration | {0}", ex.Message);
-            }
-        }
+        /// <summary>
+        /// Drops the cached config service so the next <see cref="GetConfigFile"/>
+        /// rebuilds from disk. Used when settings are edited and a reload is required.
+        /// </summary>
+        public static void ReloadConfig() => PyRevitConfigService.Reload();
 
-        private static void MigrateSplitAdminConfig()
-        {
-            string appDataConfig = Path.Combine(
-                PyRevitLabsConsts.PyRevitPath,
-                PyRevitConsts.DefaultConfigsFileName);
-            var appDataDiscovered = PyRevitConsts.FindConfigFileInDirectory(PyRevitLabsConsts.PyRevitPath);
-            if (appDataDiscovered != null)
-                appDataConfig = appDataDiscovered;
-
-            if (!CommonUtils.VerifyFile(appDataConfig))
-                return;
-
-            string programDataConfig = Path.Combine(
-                PyRevitLabsConsts.PyRevitProgramDataPath,
-                PyRevitConsts.DefaultConfigsFileName);
-            var programDataDiscovered = PyRevitConsts.FindConfigFileInDirectory(
-                PyRevitLabsConsts.PyRevitProgramDataPath);
-            if (programDataDiscovered != null)
-                programDataConfig = programDataDiscovered;
-
-            if (!CommonUtils.VerifyFile(programDataConfig))
-            {
-                logger.Debug(
-                    "Migrating admin install config from \"{0}\" to ProgramData",
-                    appDataConfig);
-                SetupConfig(appDataConfig);
-                return;
-            }
-
-            if (!PyRevitInstallScope.IsFileWritable(programDataConfig))
-            {
-                logger.Debug(
-                    "Machine config \"{0}\" is not writable; skipping split-config migration",
-                    programDataConfig);
-                return;
-            }
-
-            if (ConfigFileHasClones(programDataConfig) && !HasMissingExtensionSections(appDataConfig, programDataConfig))
-                return;
-
-            logger.Debug(
-                "Merging split admin install config from \"{0}\" into \"{1}\"",
-                appDataConfig,
-                programDataConfig);
-            MergeAdminConfigFiles(appDataConfig, programDataConfig);
-        }
-
-        private static bool HasMissingExtensionSections(string sourceConfig, string targetConfig)
-        {
-            try
-            {
-                var source = new PyRevitConfig(sourceConfig);
-                var target = new PyRevitConfig(targetConfig);
-                foreach (var sectionName in source.GetSectionNames())
-                {
-                    if (!IsExtensionConfigSection(sectionName))
-                        continue;
-                    if (!target.HasSection(sectionName))
-                        return true;
-                }
-            }
-            catch
-            {
-                return false;
-            }
-            return false;
-        }
-
-        private static bool IsExtensionConfigSection(string sectionName)
-        {
-            return sectionName.EndsWith(PyRevitConsts.ExtensionUIPostfix, StringComparison.OrdinalIgnoreCase)
-                || sectionName.EndsWith(PyRevitConsts.ExtensionLibraryPostfix, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static void MergeAdminConfigFiles(string sourceConfigPath, string targetConfigPath)
-        {
-            var source = new PyRevitConfig(sourceConfigPath);
-            var target = new PyRevitConfig(targetConfigPath);
-
-            if (!ConfigFileHasClones(targetConfigPath))
-            {
-                var clonesDict = source.GetDictValue(
-                    PyRevitConsts.EnvConfigsSectionName,
-                    PyRevitConsts.EnvConfigsInstalledClonesKey);
-                if (clonesDict != null && clonesDict.Count > 0)
-                {
-                    target.SetValue(
-                        PyRevitConsts.EnvConfigsSectionName,
-                        PyRevitConsts.EnvConfigsInstalledClonesKey,
-                        clonesDict);
-                }
-            }
-
-            foreach (var sectionName in source.GetSectionNames())
-            {
-                if (!IsExtensionConfigSection(sectionName))
-                    continue;
-                if (target.HasSection(sectionName))
-                    continue;
-
-                foreach (var keyName in source.GetSectionKeyNames(sectionName))
-                {
-                    var value = source.GetValue(sectionName, keyName);
-                    if (value != null)
-                        target.SetValue(sectionName, keyName, value);
-                }
-            }
-        }
-
+        /// <summary>
+        /// Writes the disabled flag for shipped extensions whose definition sets
+        /// default_enabled=false, so freshly installed clones honor the shipped
+        /// default. An existing entry is never overwritten, preserving any explicit
+        /// user choice.
+        /// </summary>
         public static void SeedShippedExtensionDefaults(string clonePath = null)
         {
             string extensionsRoot = null;
@@ -207,78 +80,56 @@ namespace pyRevitLabs.PyRevit
 
             if (!CommonUtils.VerifyPath(extensionsRoot))
             {
-                logger.Debug("No shipped extensions directory found for seeding defaults.");
+                _logger.Debug("No shipped extensions directory found for seeding defaults.");
                 return;
             }
 
             var cfg = GetConfigFile();
-            foreach (var extDir in Directory.GetDirectories(extensionsRoot, "*" + PyRevitConsts.ExtensionUIPostfix))
+            foreach (var postfix in new[] { PyRevitConsts.ExtensionUIPostfix, PyRevitConsts.ExtensionLibraryPostfix })
             {
-                try
+                foreach (var extDir in Directory.GetDirectories(extensionsRoot, "*" + postfix))
                 {
-                    var ext = new PyRevitExtension(extDir);
-                    if (ext.Definition != null && !ext.Definition.DefaultEnabled)
+                    try
                     {
-                        var existing = cfg.GetValue(ext.ConfigName, PyRevitConsts.ExtensionDisabledKey);
-                        if (existing == null)
-                            cfg.SetValue(ext.ConfigName, PyRevitConsts.ExtensionDisabledKey, true);
+                        var ext = new PyRevitExtension(extDir);
+                        if (ext.Definition != null && !ext.Definition.DefaultEnabled)
+                        {
+                            string existing = cfg.GetSectionKeyValueOrDefault<string>(
+                                ext.ConfigName, PyRevitConsts.ExtensionDisabledKey, null);
+                            if (existing is null)
+                                cfg.SetSectionKeyValue(
+                                    ext.ConfigName, PyRevitConsts.ExtensionDisabledKey, true);
+                        }
                     }
-                }
-                catch (Exception ex)
-                {
-                    logger.Debug("Skipping shipped extension seed for \"{0}\" | {1}", extDir, ex.Message);
-                }
-            }
-
-            foreach (var libDir in Directory.GetDirectories(extensionsRoot, "*" + PyRevitConsts.ExtensionLibraryPostfix))
-            {
-                try
-                {
-                    var ext = new PyRevitExtension(libDir);
-                    if (ext.Definition != null && !ext.Definition.DefaultEnabled)
+                    catch (Exception ex)
                     {
-                        var existing = cfg.GetValue(ext.ConfigName, PyRevitConsts.ExtensionDisabledKey);
-                        if (existing == null)
-                            cfg.SetValue(ext.ConfigName, PyRevitConsts.ExtensionDisabledKey, true);
+                        _logger.Debug("Skipping shipped extension seed for \"{0}\" | {1}", extDir, ex.Message);
                     }
-                }
-                catch (Exception ex)
-                {
-                    logger.Debug("Skipping shipped library seed for \"{0}\" | {1}", libDir, ex.Message);
                 }
             }
         }
 
-        private static bool ConfigFileHasClones(string configPath)
-        {
-            if (!CommonUtils.VerifyFile(configPath))
-                return false;
-            try
-            {
-                var cfg = new PyRevitConfig(configPath);
-                var clonesDict = cfg.GetDictValue(
-                    PyRevitConsts.EnvConfigsSectionName,
-                    PyRevitConsts.EnvConfigsInstalledClonesKey);
-                return clonesDict != null && clonesDict.Count > 0;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        // deletes config file
+        /// <summary>
+        /// Deletes the user config file and drops the cached service, so the
+        /// next access rebuilds from a fresh config. Does nothing when no file
+        /// is present.
+        /// </summary>
+        /// <exception cref="PyRevitException">The file exists but could not be deleted.</exception>
         public static void DeleteConfig()
         {
-            if (File.Exists(PyRevitConsts.ConfigFilePath))
-                try
-                {
-                    File.Delete(PyRevitConsts.ConfigFilePath);
-                }
-                catch (Exception ex)
-                {
-                    throw new PyRevitException(string.Format("Failed deleting config file \"{0}\" | {1}", PyRevitConsts.ConfigFilePath, ex.Message));
-                }
+            PyRevitConfigService.Reload();
+            if (!File.Exists(PyRevitConsts.ConfigFilePath)) return;
+
+            _logger.Info("Deleting config {@ConfigPath}...", PyRevitConsts.ConfigFilePath);
+
+            try
+            {
+                File.Delete(PyRevitConsts.ConfigFilePath);
+            }
+            catch (Exception ex)
+            {
+                throw new PyRevitException($"Failed deleting config file \"{PyRevitConsts.ConfigFilePath}\"", ex);
+            }
         }
 
         // copy config file into all users directory as seed config file
@@ -287,37 +138,33 @@ namespace pyRevitLabs.PyRevit
             string sourceFile = PyRevitConsts.ConfigFilePath;
             string targetFile = PyRevitConsts.AdminConfigFilePath;
 
-            logger.Debug("Seeding config file \"{0}\" to \"{1}\"", sourceFile, targetFile);
+            _logger.Debug("Seeding config file \"{@SourceFile}\" to \"{@TargetFile}\"", sourceFile, targetFile);
+
+            if (!File.Exists(sourceFile)) return;
 
             try
             {
-                if (File.Exists(sourceFile))
-                {
-                    File.Copy(sourceFile, targetFile, true);
+                File.Copy(sourceFile, targetFile, true);
 
-                    if (lockSeedConfig)
+                if (lockSeedConfig)
+                {
+                    try
+                    {
+                        File.SetAttributes(targetFile, FileAttributes.ReadOnly);
+                    }
+                    catch (InvalidOperationException ex)
                     {
                         var currentUser = WindowsIdentity.GetCurrent();
-                        try
-                        {
-                            File.SetAttributes(targetFile, FileAttributes.ReadOnly);
-                        }
-                        catch (InvalidOperationException ex)
-                        {
-                            logger.Error(
-                                string.Format(
-                                    "You cannot assign ownership to user \"{0}\"." +
-                                    "Either you don't have TakeOwnership permissions, " +
-                                    "or it is not your user account. | {1}", currentUser.Name, ex.Message
-                                    )
-                            );
-                        }
+                        _logger.Error(ex,
+                            $"You cannot assign ownership to user \"{currentUser.Name}\"."
+                            + "Either you don't have TakeOwnership permissions, "
+                            + "or it is not your user account.");
                     }
                 }
             }
             catch (Exception ex)
             {
-                throw new PyRevitException(string.Format("Failed seeding config file. | {0}", ex.Message));
+                throw new PyRevitException("Failed seeding config file.", ex);
             }
         }
 
@@ -325,534 +172,582 @@ namespace pyRevitLabs.PyRevit
         // if admin config file exists, create initial config file from seed config
         public static void SetupConfig(string templateConfigFilePath = null)
         {
+            PyRevitConfigService.Reload();
             string sourceFile = templateConfigFilePath;
             string targetFile = PyRevitConsts.ConfigFilePath;
 
-            if (sourceFile is string)
+            if (string.IsNullOrEmpty(sourceFile))
             {
-                logger.Debug("Seeding config file \"{0}\" to \"{1}\"", sourceFile, targetFile);
-
-                try
-                {
-                    var directory = Path.GetDirectoryName(targetFile);
-                    if (!string.IsNullOrEmpty(directory))
-                        CommonUtils.EnsurePath(directory);
-                    File.WriteAllText(targetFile, File.ReadAllText(sourceFile));
-                }
-                catch (Exception ex)
-                {
-                    throw new PyRevitException(
-                        $"Failed configuring config file from template at {sourceFile} | {ex.Message}"
-                    );
-                }
-            }
-            else
                 CommonUtils.EnsureFile(targetFile);
+                return;
+            }
+
+
+            _logger.Debug("Seeding config file \"{@SourceFile}\" to \"{@TargetFile}\"", sourceFile, targetFile);
+
+            try
+            {
+                string targetDir = Path.GetDirectoryName(targetFile);
+                if (!string.IsNullOrEmpty(targetDir))
+                    CommonUtils.EnsurePath(targetDir);
+
+                File.WriteAllText(targetFile, File.ReadAllText(sourceFile));
+            }
+            catch (Exception ex)
+            {
+                throw new PyRevitException($"Failed configuring config file from template at {sourceFile}...", ex);
+            }
         }
 
         // specific configuration public access  ======================================================================
         // general telemetry
         public static bool GetUTCStamps()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryUTCTimestampsKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsTelemetryUTCTimestampsDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Telemetry?.TelemetryUseUtcTimeStamps ?? false;
         }
 
         public static void SetUTCStamps(bool state)
         {
-            var cfg = GetConfigFile();
-            logger.Debug("Setting telemetry utc timestamps...");
-            cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryUTCTimestampsKey, state);
+            _logger.Debug("Setting telemetry utc timestamps to {@UseUtc}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(new TelemetrySection() { TelemetryUseUtcTimeStamps = state });
         }
 
         // routes
         public static bool GetRoutesServerStatus()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesServerKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsRoutesServerDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Routes.Status ?? false;
         }
 
         public static void SetRoutesServerStatus(bool state)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesServerKey, state);
+            _logger.Debug("Setting routes server status to {@Status}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(new RoutesSection() { Status = state });
         }
 
-        public static void EnableRoutesServer() => SetRoutesServerStatus(true);
+        public static void EnableRoutesServer()
+            => SetRoutesServerStatus(true);
 
-        public static void DisableRoutesServer() => SetRoutesServerStatus(false);
+        public static void DisableRoutesServer()
+            => SetRoutesServerStatus(false);
 
         public static string GetRoutesServerHost()
         {
-            var cfg = GetConfigFile();
-            return cfg.GetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesHostKey);
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Routes.Host;
         }
 
         public static void SetRoutesServerHost(string host)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesHostKey, host);
+            _logger.Debug("Setting routes server host to {@Host}...", host);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(new RoutesSection() { Host = host });
         }
 
         public static int GetRoutesServerPort()
         {
-            var cfg = GetConfigFile();
-            var port = cfg.GetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesPortKey);
-            return port != null ? int.Parse(port) : PyRevitConsts.ConfigsRoutesPortDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Routes.Port ?? 48884;
         }
 
         public static void SetRoutesServerPort(int port)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsRoutesPortKey, port);
+            _logger.Debug("Setting routes server port to {@Port}...", port);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(new RoutesSection() { Port = port });
         }
 
         public static bool GetRoutesLoadCoreAPIStatus()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsLoadCoreAPIKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsRoutesServerDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Routes.LoadCoreApi ?? false;
         }
 
         public static void SetRoutesLoadCoreAPIStatus(bool state)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsRoutesSection, PyRevitConsts.ConfigsLoadCoreAPIKey, state);
+            _logger.Debug("Setting routes load core API status to {@LoadCoreApi}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(new RoutesSection() { LoadCoreApi = state });
         }
 
         // telemetry
         public static bool GetTelemetryStatus()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryStatusKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsTelemetryStatusDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Telemetry?.TelemetryStatus ?? false;
         }
 
         public static void SetTelemetryStatus(bool state)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryStatusKey, state);
+            _logger.Debug("Setting telemetry status to {@TelemetryStatus}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(new TelemetrySection() { TelemetryStatus = state });
         }
 
         public static string GetTelemetryFilePath()
         {
-            var cfg = GetConfigFile();
-            return cfg.GetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryFileDirKey) ?? string.Empty;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Telemetry.TelemetryFileDir ?? string.Empty;
         }
 
         public static string GetTelemetryServerUrl()
         {
-            var cfg = GetConfigFile();
-            return cfg.GetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryServerUrlKey) ?? string.Empty;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Telemetry.TelemetryServerUrl ?? string.Empty;
         }
 
-        public static void EnableTelemetry(string telemetryFileDir = null, string telemetryServerUrl = null)
+        public static void EnableTelemetry(string telemetryFileDir = null,
+            string telemetryServerUrl = null)
         {
-            var cfg = GetConfigFile();
-            logger.Debug(string.Format("Enabling telemetry... path: \"{0}\" server: {1}",
-                                       telemetryFileDir, telemetryServerUrl));
-            SetTelemetryStatus(true);
+            _logger.Debug("Enabling telemetry...");
 
-            if (telemetryFileDir != null)
+            if (!string.IsNullOrEmpty(telemetryFileDir) && !Directory.Exists(telemetryFileDir))
             {
-                if (telemetryFileDir == string.Empty)
-                {
-                    // set empty value
-                    cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryFileDirKey, telemetryFileDir);
-                }
-                else
-                {
-                    if (CommonUtils.VerifyPath(telemetryFileDir))
-                        cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryFileDirKey, telemetryFileDir);
-                    else
-                        logger.Debug("Invalid log path \"{0}\"", telemetryFileDir);
-                }
+                _logger.Warn("Directory \"{@TelemetryFileDir}\" does not exist", telemetryFileDir);
+                telemetryFileDir = default;
             }
 
-            if (telemetryServerUrl != null)
-                cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryServerUrlKey, telemetryServerUrl);
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(
+                new TelemetrySection()
+                {
+                    TelemetryStatus = true,
+                    TelemetryFileDir = telemetryFileDir,
+                    TelemetryServerUrl = telemetryServerUrl
+                });
         }
 
         public static bool GetTelemetryIncludeHooks()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryIncludeHooksKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsTelemetryIncludeHooksDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Telemetry.TelemetryIncludeHooks ?? false;
         }
 
         public static void SetTelemetryIncludeHooks(bool state)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryIncludeHooksKey, state);
+            _logger.Debug("Setting telemetry include hooks to {@TelemetryIncludeHooks}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(new TelemetrySection() { TelemetryIncludeHooks = state });
         }
 
         public static void DisableTelemetry()
         {
-            var cfg = GetConfigFile();
-            logger.Debug("Disabling telemetry...");
-            cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsTelemetryStatusKey, false);
+            _logger.Debug("Disabling telemetry...");
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(new TelemetrySection() { TelemetryStatus = false });
         }
 
         // app telemetry
         public static bool GetAppTelemetryStatus()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsAppTelemetryStatusKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsAppTelemetryStatusDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Telemetry.AppTelemetryStatus ?? false;
         }
 
         public static void SetAppTelemetryStatus(bool state)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsAppTelemetryStatusKey, state);
+            _logger.Debug("Setting app telemetry status to {@AppTelemetryStatus}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(new TelemetrySection() { AppTelemetryStatus = state });
         }
 
         public static string GetAppTelemetryServerUrl()
         {
-            var cfg = GetConfigFile();
-            return cfg.GetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsAppTelemetryServerUrlKey) ?? string.Empty;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Telemetry.AppTelemetryServerUrl ?? string.Empty;
         }
 
         public static void EnableAppTelemetry(string apptelemetryServerUrl = null)
         {
-            var cfg = GetConfigFile();
-            logger.Debug(string.Format("Enabling app telemetry... server: {0}", apptelemetryServerUrl));
-            SetAppTelemetryStatus(true);
+            _logger.Debug("Enabling app telemetry...");
 
-            if (apptelemetryServerUrl != null)
-                cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsAppTelemetryServerUrlKey, apptelemetryServerUrl);
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(
+                new TelemetrySection()
+                {
+                    AppTelemetryStatus = true,
+                    AppTelemetryServerUrl = apptelemetryServerUrl
+                });
         }
 
         public static void DisableAppTelemetry()
         {
-            var cfg = GetConfigFile();
-            logger.Debug("Disabling app telemetry...");
-            cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsAppTelemetryStatusKey, false);
+            _logger.Debug("Disabling app telemetry...");
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(new TelemetrySection() { AppTelemetryStatus = false });
         }
 
         public static string GetAppTelemetryFlags()
         {
-            var cfg = GetConfigFile();
-            return cfg.GetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsAppTelemetryEventFlagsKey) ?? string.Empty;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Telemetry.AppTelemetryEventFlags ?? string.Empty;
         }
 
         public static void SetAppTelemetryFlags(string flags)
         {
-            var cfg = GetConfigFile();
-            logger.Debug("Setting app telemetry flags...");
-            if (flags != null)
-                cfg.SetValue(PyRevitConsts.ConfigsTelemetrySection, PyRevitConsts.ConfigsAppTelemetryEventFlagsKey, flags);
+            _logger.Debug("Setting app telemetry flags to {@AppTelemetryEventFlags}...", flags);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(
+                new TelemetrySection()
+                { AppTelemetryEventFlags = flags });
         }
 
         // caching
         public static bool GetBinaryCaches()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsBinaryCacheKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsBinaryCacheDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.BinCache ?? PyRevitConsts.ConfigsBinaryCacheDefault;
         }
 
         public static void SetBinaryCaches(bool state)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsBinaryCacheKey, state);
+            _logger.Debug("Setting binary caches {@BinCache}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(new CoreSection() { BinCache = state });
         }
 
         // update checking config
         public static bool GetCheckUpdates()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsCheckUpdatesKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsCheckUpdatesDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.CheckUpdates ?? false;
         }
 
         public static void SetCheckUpdates(bool state)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsCheckUpdatesKey, state);
+            _logger.Debug("Setting check updates to {@CheckUpdates}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(new CoreSection() { CheckUpdates = state });
         }
 
         // auto update config
         public static bool GetAutoUpdate()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsAutoUpdateKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsAutoUpdateDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.AutoUpdate ?? false;
         }
 
         public static void SetAutoUpdate(bool state)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsAutoUpdateKey, state);
+            _logger.Debug("Setting auto update to {@AutoUpdate}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(new CoreSection() { AutoUpdate = state });
         }
 
         // rocket mode config
         public static bool GetRocketMode()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsRocketModeKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsRocketModeDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.RocketMode ?? false;
         }
 
         public static void SetRocketMode(bool state)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsRocketModeKey, state);
+            _logger.Debug("Setting rocket mode to {@RocketMode}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(new CoreSection() { RocketMode = state });
         }
 
         // logging level config
+
+        /// <summary>
+        /// Maps the stored debug/verbose flags to a log level. Shared by this facade
+        /// and the Python config facade so both agree on the representation without
+        /// either re-deriving it.
+        /// </summary>
+        public static PyRevitLogLevels ToLoggingLevel(bool? debug, bool? verbose)
+        {
+            if (verbose == true && debug != true)
+                return PyRevitLogLevels.Verbose;
+            if (debug == true)
+                return PyRevitLogLevels.Debug;
+            return PyRevitLogLevels.Quiet;
+        }
+
+        /// <summary>Debug implies verbose, so the two flags are always written together.</summary>
+        public static bool LoggingLevelDebugFlag(PyRevitLogLevels level)
+            => level == PyRevitLogLevels.Debug;
+
+        public static bool LoggingLevelVerboseFlag(PyRevitLogLevels level)
+            => level == PyRevitLogLevels.Debug || level == PyRevitLogLevels.Verbose;
+
         public static PyRevitLogLevels GetLoggingLevel()
         {
-            var cfg = GetConfigFile();
-            var verboseCfg = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsVerboseKey);
-            bool verbose = verboseCfg != null ? bool.Parse(verboseCfg) : PyRevitConsts.ConfigsVerboseDefault;
-
-            var debugCfg = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsDebugKey);
-            bool debug = debugCfg != null ? bool.Parse(debugCfg) : PyRevitConsts.ConfigsDebugDefault;
-
-            if (verbose && !debug)
-                return PyRevitLogLevels.Verbose;
-            else if (debug)
-                return PyRevitLogLevels.Debug;
-
-            return PyRevitLogLevels.Quiet;
+            IConfigurationService cfg = GetConfigFile();
+            return ToLoggingLevel(cfg.Core.Debug, cfg.Core.Verbose);
         }
 
         public static void SetLoggingLevel(PyRevitLogLevels level)
         {
-            var cfg = GetConfigFile();
-            if (level == PyRevitLogLevels.Quiet)
-            {
-                cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsVerboseKey, false);
-                cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsDebugKey, false);
-            }
+            _logger.Debug("Setting logging level to {@LogLevel}...", level);
 
-            if (level == PyRevitLogLevels.Verbose)
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(new CoreSection()
             {
-                cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsVerboseKey, true);
-                cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsDebugKey, false);
-            }
-
-            if (level == PyRevitLogLevels.Debug)
-            {
-                cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsVerboseKey, true);
-                cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsDebugKey, true);
-            }
+                Debug = LoggingLevelDebugFlag(level),
+                Verbose = LoggingLevelVerboseFlag(level),
+            });
         }
 
         // file logging config
         public static bool GetFileLogging()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsFileLoggingKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsFileLoggingDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.FileLogging ?? false;
         }
 
         public static void SetFileLogging(bool state)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsFileLoggingKey, state);
+            _logger.Debug("Setting file logging to {@FileLogging}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(new CoreSection() { FileLogging = state });
         }
 
         // misc startup
         public static int GetStartupLogTimeout()
         {
-            var cfg = GetConfigFile();
-            var timeout = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsStartupLogTimeoutKey);
-            return timeout != null ? int.Parse(timeout) : PyRevitConsts.ConfigsStartupLogTimeoutDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.StartupLogTimeout ?? 0;
         }
 
         public static void SetStartupLogTimeout(int timeout)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsStartupLogTimeoutKey, timeout);
+            _logger.Debug("Setting startup log timeout to {@StartupLogTimeout}...", timeout);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(new CoreSection() { StartupLogTimeout = timeout });
         }
 
         public static string GetRequiredHostBuild()
         {
-            var cfg = GetConfigFile();
-            var timeout = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsRequiredHostBuildKey);
-            return timeout != null ? timeout : string.Empty;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.RequiredHostBuild ?? string.Empty;
         }
 
         public static void SetRequiredHostBuild(string buildnumber)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsRequiredHostBuildKey, buildnumber);
+            _logger.Debug("Setting required host build to {@RequiredHostBuild}...", buildnumber);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(new CoreSection() { RequiredHostBuild = buildnumber });
         }
 
-        public static int GetMinHostDriveFreeSpace()
+        public static long GetMinHostDriveFreeSpace()
         {
-            var cfg = GetConfigFile();
-            var timeout = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsMinDriveSpaceKey);
-            return timeout != null ? int.Parse(timeout) : 0;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.MinHostDriveFreeSpace ?? 0;
         }
 
-        public static void SetMinHostDriveFreeSpace(int freespace)
+        public static void SetMinHostDriveFreeSpace(long freespace)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsMinDriveSpaceKey, freespace);
+            _logger.Debug("Setting min host drive free space to {@MinHostDriveFreeSpace}...", freespace);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(new CoreSection() { MinHostDriveFreeSpace = freespace });
         }
 
         // load beta config
         public static bool GetLoadBetaTools()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsLoadBetaKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsLoadBetaDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.LoadBeta ?? false;
         }
 
         public static void SetLoadBetaTools(bool state)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsLoadBetaKey, state);
+            _logger.Debug("Setting load beta tools to {@LoadBeta}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(new CoreSection() { LoadBeta = state });
         }
 
         // close other outputs config
         public static bool GetCloseOtherOutputs()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsCloseOtherOutputsKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsCloseOtherOutputsDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.CloseOtherOutputs ?? false;
         }
 
         public static void SetCloseOtherOutputs(bool state)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsCloseOtherOutputsKey, state);
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(new CoreSection() { CloseOtherOutputs = state });
         }
+
+        /// <summary>
+        /// Maps the stored close-output-mode value to the enum, tolerating
+        /// quoting/casing and falling back to the default. Shared by this facade
+        /// and the Python config facade.
+        /// </summary>
+        public static OutputCloseMode ToCloseOutputMode(string rawValue)
+        {
+            var s = (rawValue ?? PyRevitConsts.ConfigsCloseOutputModeDefault).Trim().Trim('"', '\'');
+            if (s.Equals(PyRevitConsts.ConfigsCloseOutputModeCloseAll, StringComparison.InvariantCultureIgnoreCase))
+                return OutputCloseMode.CloseAll;
+            return OutputCloseMode.CurrentCommand;
+        }
+
+        public static string CloseOutputModeConfigValue(OutputCloseMode mode)
+            => (mode == OutputCloseMode.CloseAll)
+                ? PyRevitConsts.ConfigsCloseOutputModeCloseAll
+                : PyRevitConsts.ConfigsCloseOutputModeCurrentCommand;
 
         public static OutputCloseMode GetCloseOutputMode()
         {
-            var cfg = GetConfigFile();
-            var raw = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsCloseOutputModeKey);
-
-            var s = (raw ?? PyRevitConsts.ConfigsCloseOutputModeDefault).Trim().Trim('"', '\'');
-
-            if (s.Equals(PyRevitConsts.ConfigsCloseOutputModeCloseAll, StringComparison.InvariantCultureIgnoreCase))
-            {
-                return OutputCloseMode.CloseAll;
-            }
-
-            return OutputCloseMode.CurrentCommand;
+            IConfigurationService cfg = GetConfigFile();
+            return ToCloseOutputMode(cfg.Core.CloseOutputMode);
         }
 
         public static void SetCloseOutputMode(OutputCloseMode mode)
         {
-            var cfg = GetConfigFile();
-            var value = (mode == OutputCloseMode.CloseAll)
-                ? PyRevitConsts.ConfigsCloseOutputModeCloseAll
-                : PyRevitConsts.ConfigsCloseOutputModeCurrentCommand;
-
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsCloseOutputModeKey, value);
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(
+                new CoreSection() { CloseOutputMode = CloseOutputModeConfigValue(mode) });
         }
 
         // cpythonengine
         public static int GetCpythonEngineVersion()
         {
-            var cfg = GetConfigFile();
-            var timeout = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsCPythonEngineKey);
-            return timeout != null ? int.Parse(timeout) : PyRevitConsts.ConfigsCPythonEngineDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.CpythonEngineVersion ?? 0;
         }
 
         public static void SetCpythonEngineVersion(int version)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsCPythonEngineKey, version);
+            _logger.Debug("Setting cpyhon engine version to {@CpythonEngineVersion}...", version);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(new CoreSection() { CpythonEngineVersion = version });
         }
 
         // ux ui
         public static string GetUserLocale()
         {
-            var cfg = GetConfigFile();
-            return cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsLocaleKey) ?? string.Empty;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.UserLocale ?? "";
         }
 
         public static void SetUserLocale(string localCode)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsLocaleKey, localCode);
+            _logger.Debug("Setting user locale to {@LocalCode}...", localCode);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(new CoreSection() { UserLocale = localCode });
         }
 
         public static string GetOutputStyleSheet()
         {
-            var cfg = GetConfigFile();
-            return cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsOutputStyleSheet) ?? string.Empty;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.OutputStyleSheet ?? string.Empty;
         }
 
-        public static void SetOutputStyleSheet(string outputCSSFilePath)
+        /// <summary>
+        /// Sets the output stylesheet path, or clears the key when
+        /// <paramref name="outputCssFilePath"/> is empty so consumers revert to
+        /// their built-in default stylesheet.
+        /// </summary>
+        public static void SetOutputStyleSheet(string outputCssFilePath)
         {
-            var cfg = GetConfigFile();
-            if (File.Exists(outputCSSFilePath))
-                cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsOutputStyleSheet, outputCSSFilePath);
+            _logger.Debug("Setting output style sheet to {@OutputCssFilePath}...", outputCssFilePath);
+
+            IConfigurationService cfg = GetConfigFile();
+            if (string.IsNullOrEmpty(outputCssFilePath))
+            {
+                cfg.Configuration.RemoveOption("core", "outputstylesheet");
+                cfg.Configuration.SaveConfiguration();
+            }
+            else if (File.Exists(outputCssFilePath))
+                cfg.SaveSection(new CoreSection() { OutputStyleSheet = outputCssFilePath });
         }
 
         // user access to tools
         public static bool GetUserCanUpdate()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsUserCanUpdateKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsUserCanUpdateDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.UserCanUpdate ?? false;
         }
 
         public static bool GetUserCanExtend()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsUserCanExtendKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsUserCanExtendDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.UserCanExtend ?? false;
         }
 
         public static bool GetUserCanConfig()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsUserCanConfigKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsUserCanConfigDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.UserCanConfig ?? false;
         }
 
         public static void SetUserCanUpdate(bool state)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsUserCanUpdateKey, state);
+            _logger.Debug("Setting user can install to {@UserCanUpdate}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(new CoreSection() { UserCanUpdate = state });
         }
 
         public static void SetUserCanExtend(bool state)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsUserCanExtendKey, state);
+            _logger.Debug("Setting user can install to {@UserCanExtend}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(new CoreSection() { UserCanExtend = state });
         }
 
         public static void SetUserCanConfig(bool state)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsUserCanConfigKey, state);
+            _logger.Debug("Setting user can install to {@UserCanConfig}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(new CoreSection() { UserCanConfig = state });
         }
 
         public static bool GetColorizeDocs()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsColorizeDocsKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsColorizeDocsDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.ColorizeDocs ?? false;
         }
 
         public static void SetColorizeDocs(bool state)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsColorizeDocsKey, state);
+            _logger.Debug("Setting colorize docs to {@ColorizeDocs}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(new CoreSection() { ColorizeDocs = state });
         }
 
         public static bool GetAppendTooltipEx()
         {
-            var cfg = GetConfigFile();
-            var status = cfg.GetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsAppendTooltipExKey);
-            return status != null ? bool.Parse(status) : PyRevitConsts.ConfigsAppendTooltipExDefault;
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.Core.TooltipDebugInfo ?? false;
         }
 
         public static void SetAppendTooltipEx(bool state)
         {
-            var cfg = GetConfigFile();
-            cfg.SetValue(PyRevitConsts.ConfigsCoreSection, PyRevitConsts.ConfigsAppendTooltipExKey, state);
+            _logger.Debug("Setting tooltip debug info to {@TooltipDebugInfo}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SaveSection(new CoreSection() { TooltipDebugInfo = state });
         }
     }
 }

@@ -107,6 +107,8 @@ Run unit tests:
 dotnet test tests/Build.Tests.csproj -c Release
 ```
 
+The `ci` pipeline also runs the configuration core, INI backend, and parser parity tests.
+
 ### Pipeline modes
 
 | Args | Purpose |

@@ -6,11 +6,13 @@ using System.Reflection;
 using DocoptNet;
 using pyRevitCLI.Properties;
 using pyRevitLabs.Common;
+using pyRevitLabs.Configurations.Exceptions;
 using pyRevitLabs.NLog;
 using pyRevitLabs.NLog.Config;
 using pyRevitLabs.NLog.Targets;
 using pyRevitLabs.PyRevit;
 using Console = Colorful.Console;
+using Environment = System.Environment;
 
 
 // NOTE:
@@ -23,8 +25,7 @@ using Console = Colorful.Console;
 // 6) Make sure PyRevitCLI.ProcessArguments checks and ask for help print
 
 
-namespace pyRevitCLI
-{
+namespace pyRevitCLI {
 
     internal enum PyRevitCLILogLevel {
         Quiet,
@@ -78,7 +79,7 @@ namespace pyRevitCLI
         // cli version property
         public static string CLIPath => Assembly.GetExecutingAssembly().Location;
         public static Version CLIVersion => Assembly.GetExecutingAssembly().GetName().Version;
-        public static string CLIInfoVersion  {
+        public static string CLIInfoVersion {
             get {
                 var infoVerAttr = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyInformationalVersionAttribute)).FirstOrDefault();
                 if (infoVerAttr is AssemblyInformationalVersionAttribute infoVer)
@@ -88,15 +89,17 @@ namespace pyRevitCLI
         }
 
         // cli entry point:
+        /// <summary>
+        /// A <see cref="ConfigurationReadOnlyException"/> raised while processing arguments
+        /// (e.g. writing to an admin-locked config) is logged as a warning rather than treated
+        /// as a failure, matching pre-refactor CLI behavior.
+        /// </summary>
         static void Main(string[] args) {
-            AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
-            {
-                if (args.Name.StartsWith("Newtonsoft.Json,"))
-                {
+            AppDomain.CurrentDomain.AssemblyResolve += (sender, args) => {
+                if (args.Name.StartsWith("Newtonsoft.Json,")) {
                     var assemblyPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pyRevitLabs.Json.dll");
                     logger.Debug($"Looking for Newtonsoft.Json assembly at: {assemblyPath}");
-                    if (File.Exists(assemblyPath))
-                    {
+                    if (File.Exists(assemblyPath)) {
                         var assembly = Assembly.LoadFrom(assemblyPath);
                         logger.Debug($"Successfully loaded Newtonsoft.Json assembly from: {assemblyPath}");
                         return assembly;
@@ -163,6 +166,10 @@ namespace pyRevitCLI
                 try {
                     // now call methods based on inputs
                     ProcessArguments();
+                }
+                catch (ConfigurationReadOnlyException ex) {
+                    logger.Error(ex.Message);
+                    Environment.ExitCode = -1;
                 }
                 catch (Exception ex) {
                     LogException(ex, logLevel);
@@ -238,7 +245,7 @@ namespace pyRevitCLI
                     PyRevitCLICloneCmds.OpenClone(TryGetValue("<clone_name>"));
 
                 else if (all("add")) {
-                    if(all("this"))
+                    if (all("this"))
                         PyRevitCLICloneCmds.RegisterClone(
                             TryGetValue("<clone_name>"),
                             Path.GetDirectoryName(CLIPath),
@@ -457,13 +464,13 @@ namespace pyRevitCLI
                         PyRevitCLIExtensionCmds.PrintExtensionSearchPaths();
                 }
 
-                else if (any("enable", "disable"))
+                else if (any("enable", "disable")) {
                     PyRevitCLIExtensionCmds.ToggleExtension(
                         enable: arguments["enable"].IsTrue,
                         cloneName: TryGetValue("<clone_name>"),
                         extName: TryGetValue("<extension_name>")
                     );
-
+                }
                 else if (all("sources")) {
                     if (IsHelpMode)
                         PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.ExtensionsSources);
@@ -675,11 +682,12 @@ namespace pyRevitCLI
                 }
 
                 else if (all("startuptimeout")) {
-                    if (arguments["<timeout>"] is null)
+                    var timeout = TryGetValue("<timeout>");
+                    if (timeout is null)
                         Console.WriteLine(string.Format("Startup log timeout is set to: {0}",
                                                         PyRevitConfigs.GetStartupLogTimeout()));
                     else
-                        PyRevitConfigs.SetStartupLogTimeout(int.Parse(TryGetValue("<timeout>")));
+                        PyRevitConfigs.SetStartupLogTimeout(int.Parse(timeout));
                 }
 
                 else if (all("loadbeta")) {
@@ -691,11 +699,12 @@ namespace pyRevitCLI
                 }
 
                 else if (all("cpyversion")) {
-                    if (arguments["<cpy_version>"] is null)
+                    var cpyVersion = TryGetValue("<cpy_version>");
+                    if (cpyVersion is null)
                         Console.WriteLine(string.Format("CPython version is set to: {0}",
                                                         PyRevitConfigs.GetCpythonEngineVersion()));
                     else
-                        PyRevitConfigs.SetCpythonEngineVersion(int.Parse(TryGetValue("<cpy_version>")));
+                        PyRevitConfigs.SetCpythonEngineVersion(int.Parse(cpyVersion));
                 }
 
                 else if (all("usercanupdate")) {
@@ -851,11 +860,12 @@ namespace pyRevitCLI
                 }
 
                 else if (all("outputcss")) {
-                    if (arguments["<css_path>"] is null)
+                    var cssPath = TryGetValue("<css_path>");
+                    if (cssPath is null)
                         Console.WriteLine(string.Format("Output Style Sheet is set to: {0}",
                                                         PyRevitConfigs.GetOutputStyleSheet()));
                     else
-                        PyRevitConfigs.SetOutputStyleSheet(TryGetValue("<css_path>"));
+                        PyRevitConfigs.SetOutputStyleSheet(cssPath);
                 }
 
                 else if (all("seed"))
@@ -873,7 +883,8 @@ namespace pyRevitCLI
                             string configOption = orignalOptionValue.Split(':')[1];
 
                             var cfg = PyRevitConfigs.GetConfigFile();
-                            cfg.SetValue(configSection, configOption, arguments["enable"].IsTrue);
+                            cfg.SetSectionKeyValue(
+                                configSection, configOption, arguments["enable"].IsTrue);
                         }
                         else
                             PyRevitCLIAppHelps.PrintHelp(PyRevitCLICommandType.Main);
@@ -892,14 +903,14 @@ namespace pyRevitCLI
 
                             // if no value provided, read the value
                             var optValue = TryGetValue("<option_value>");
-                            if (optValue != null)
-                                cfg.SetValue(configSection, configOption, optValue);
-                            else if (optValue is null) {
-                                var existingVal = cfg.GetValue(configSection, configOption);
-                                if (existingVal != null)
-                                    Console.WriteLine( string.Format("{0} = {1}", configOption, existingVal));
+                            if (optValue is not null)
+                                cfg.SetSectionKeyValue(configSection, configOption, optValue);
+                            else {
+                                var existingVal = cfg.GetSectionKeyValueOrDefault<string>(configSection, configOption);
+                                if (existingVal is not null)
+                                    Console.WriteLine($"{configOption} = {existingVal}");
                                 else
-                                    Console.WriteLine(string.Format("Configuration key \"{0}\" is not set", configOption));
+                                    Console.WriteLine($"Configuration key \"{configOption}\" is not set");
                             }
                         }
                         else

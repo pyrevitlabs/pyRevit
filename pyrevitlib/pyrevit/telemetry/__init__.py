@@ -20,6 +20,7 @@ dictionary that is included with the telemetry record.
 Scripts should use the instance of this class provided by the
 script module. See `script.get_results()` for examples
 """
+
 import os.path as op
 import json
 
@@ -37,13 +38,12 @@ from pyrevit.labs import PyRevit
 
 from pyrevit.telemetry import events as telemetry_events
 
-
 # templates for telemetry file naming
-FILE_LOG_EXT = 'json'
-FILE_LOG_FILENAME_TEMPLATE = '{}_{}_telemetry.{}'
+FILE_LOG_EXT = "json"
+FILE_LOG_FILENAME_TEMPLATE = "{}_{}_telemetry.{}"
 
 
-#pylint: disable=W0703,C0302,C0103
+# pylint: disable=W0703,C0302,C0103
 mlogger = get_logger(__name__)
 
 # pyrevit global consts
@@ -79,12 +79,17 @@ def get_telemetry_include_hooks():
 
 
 def set_telemetry_state(state):
-    envvars.set_pyrevit_env_var(envvars.TELEMETRYSTATE_ENVVAR, state)
+    """Set the telemetry on/off state.
+
+    Coerces state to bool: the runtime unboxes this env value straight to a
+    CLR bool, which throws on None, and an unset config option reads as None.
+    """
+    envvars.set_pyrevit_env_var(envvars.TELEMETRYSTATE_ENVVAR, bool(state))
     user_config.telemetry_status = state
 
 
 def set_telemetry_utc_timestamp(state):
-    envvars.set_pyrevit_env_var(envvars.TELEMETRYUTCTIMESTAMPS_ENVVAR, state)
+    envvars.set_pyrevit_env_var(envvars.TELEMETRYUTCTIMESTAMPS_ENVVAR, bool(state))
     user_config.telemetry_utc_timestamp = state
 
 
@@ -125,7 +130,7 @@ def set_telemetry_server_url(server_url, persist=True):
 
 
 def set_telemetry_include_hooks(state):
-    envvars.set_pyrevit_env_var(envvars.TELEMETRYINCLUDEHOOKS_ENVVAR, state)
+    envvars.set_pyrevit_env_var(envvars.TELEMETRYINCLUDEHOOKS_ENVVAR, bool(state))
     user_config.telemetry_include_hooks = state
 
 
@@ -134,11 +139,11 @@ def disable_telemetry():
 
 
 def disable_telemetry_to_file():
-    set_telemetry_file_path('')
+    set_telemetry_file_path("")
 
 
 def disable_telemetry_to_server():
-    set_telemetry_server_url('')
+    set_telemetry_server_url("")
 
 
 def get_apptelemetry_state():
@@ -146,7 +151,7 @@ def get_apptelemetry_state():
 
 
 def set_apptelemetry_state(state):
-    envvars.set_pyrevit_env_var(envvars.APPTELEMETRYSTATE_ENVVAR, state)
+    envvars.set_pyrevit_env_var(envvars.APPTELEMETRYSTATE_ENVVAR, bool(state))
     user_config.apptelemetry_status = state
 
 
@@ -164,8 +169,9 @@ def get_apptelemetry_server_url():
 
 def get_apptelemetry_event_flags():
     # default value is 16 bytes of 0
-    flags_hex = \
-        user_config.apptelemetry_event_flags or '0x00000000000000000000000000000000'
+    flags_hex = (
+        user_config.apptelemetry_event_flags or "0x00000000000000000000000000000000"
+    )
     return coreutils.hex2int_long(flags_hex)
 
 
@@ -187,8 +193,7 @@ def set_apptelemetry_server_url(server_url, persist=True):
 def set_apptelemetry_event_flags(event_flags):
     flags_hex = coreutils.int2hex_long(event_flags)
     user_config.apptelemetry_event_flags = flags_hex
-    envvars.set_pyrevit_env_var(
-        envvars.APPTELEMETRYEVENTFLAGS_ENVVAR, flags_hex)
+    envvars.set_pyrevit_env_var(envvars.APPTELEMETRYEVENTFLAGS_ENVVAR, flags_hex)
 
 
 def disable_apptelemetry():
@@ -196,7 +201,7 @@ def disable_apptelemetry():
 
 
 def disable_apptelemetry_to_server():
-    set_apptelemetry_server_url('')
+    set_apptelemetry_server_url("")
 
 
 def get_apptelemetry_event_types():
@@ -205,31 +210,31 @@ def get_apptelemetry_event_types():
 
 def get_apptelemetry_event_state(flags, event_type):
     event_idx = get_apptelemetry_event_types().index(event_type)
-    return flags & (1<<event_idx)
+    return flags & (1 << event_idx)
 
 
 def set_apptelemetry_event_state(flags, event_type):
-    return flags | (1<<int(event_type))
+    return flags | (1 << int(event_type))
 
 
 def unset_apptelemetry_event_state(flags, event_type):
-    return flags & ~(1<<int(event_type))
+    return flags & ~(1 << int(event_type))
 
 
 def _setup_default_logfile(telemetry_fullpath):
     # setup default telemetry file name
     if not op.exists(telemetry_fullpath):
         # if file does not exist, let's write the basic JSON list to it.
-        with open(telemetry_fullpath, 'w') as log_file:
-            log_file.write('[]')
+        with open(telemetry_fullpath, "w") as log_file:
+            log_file.write("[]")
 
 
 def get_status_from_url(server_url):
     server_url = server_url.lower()
-    if server_url.endswith('scripts/'):
-        server_url = server_url.replace('scripts/', 'status')
-    elif server_url.endswith('events/'):
-        server_url = server_url.replace('events/', 'status')
+    if server_url.endswith("scripts/"):
+        server_url = server_url.replace("scripts/", "status")
+    elif server_url.endswith("events/"):
+        server_url = server_url.replace("events/", "status")
 
     try:
         return json.loads(urlopen(server_url).read())
@@ -239,13 +244,17 @@ def get_status_from_url(server_url):
 
 def get_status():
     return get_status_from_url(
-        get_telemetry_server_url()
-        or get_apptelemetry_server_url()
-        )
+        get_telemetry_server_url() or get_apptelemetry_server_url()
+    )
 
 
 def setup_telemetry(session_id=None):
-    """Sets up the telemetry default config and environment values."""
+    """Sets up the telemetry default config and environment values.
+
+    The setters here are called with persist=False: this is a startup-time
+    push from user_config to env, not a value change, so it must not write
+    back to the config.
+    """
     # make sure session id is availabe
     if not session_id:
         session_id = sessioninfo.get_session_uuid()
@@ -262,9 +271,6 @@ def setup_telemetry(session_id=None):
     # read or setup default values for file telemetry
     # default file path and name for telemetry
     telemetry_file_dir = user_config.telemetry_file_dir
-    # persist=False: this is a startup-time push from user_config to env,
-    # not a value change. Avoids redundant round-trip writes that
-    # previously fed the escape-doubling bug.
     set_telemetry_file_dir(telemetry_file_dir, persist=False)
 
     # check file telemetry config and setup destination
@@ -274,26 +280,29 @@ def setup_telemetry(session_id=None):
     # if config exists, create new telemetry file under the same address
     elif telemetry_state:
         if op.isdir(telemetry_file_dir):
-            telemetry_file_name = \
-                FILE_LOG_FILENAME_TEMPLATE.format(PYREVIT_FILE_PREFIX,
-                                                  session_id,
-                                                  FILE_LOG_EXT)
+            telemetry_file_name = FILE_LOG_FILENAME_TEMPLATE.format(
+                PYREVIT_FILE_PREFIX, session_id, FILE_LOG_EXT
+            )
             # if directory is valid
-            telemetry_fullfilepath = \
-                op.join(telemetry_file_dir, telemetry_file_name)
+            telemetry_fullfilepath = op.join(telemetry_file_dir, telemetry_file_name)
             set_telemetry_file_path(telemetry_fullfilepath)
             # setup telemetry file or disable if failed
             try:
                 _setup_default_logfile(telemetry_fullfilepath)
             except Exception as write_err:
-                mlogger.error('Telemetry is active but log file location '
-                              'is not accessible. | %s', write_err)
+                mlogger.error(
+                    "Telemetry is active but log file location "
+                    "is not accessible. | %s",
+                    write_err,
+                )
                 disable_telemetry_to_file()
         else:
             # if not, show error and disable file telemetry
-            mlogger.error('Provided telemetry address "%s" does not exits or '
-                          'is not a directory. File telemetry disabled.',
-                          telemetry_file_dir)
+            mlogger.error(
+                'Provided telemetry address "%s" does not exits or '
+                "is not a directory. File telemetry disabled.",
+                telemetry_file_dir,
+            )
             disable_telemetry_to_file()
 
     # read or setup default values for server telemetry
@@ -320,8 +329,7 @@ def setup_telemetry(session_id=None):
     apptelemetry_server_url = user_config.apptelemetry_server_url
 
     # check server telemetry config and setup destination
-    if not apptelemetry_server_url \
-            or coreutils.is_blank(apptelemetry_server_url):
+    if not apptelemetry_server_url or coreutils.is_blank(apptelemetry_server_url):
         # if no config is provided, disable output
         disable_apptelemetry_to_server()
     else:
@@ -342,8 +350,7 @@ def setup_telemetry(session_id=None):
         apptelemetry_event_flags = get_apptelemetry_event_flags()
         # re-register events with new telemetry_handler
         telemetry_events.register_event_telemetry(
-            new_telemetry_handler,
-            apptelemetry_event_flags
+            new_telemetry_handler, apptelemetry_event_flags
         )
 
     user_config.save_changes()

@@ -20,7 +20,7 @@ sort order, and auto-open behavior -- see config.py.
 
 from pyrevit import revit, forms, script, op
 from pyrevit import DB
-from pyrevit.coreutils.configparser import PyRevitConfigParser
+from pyrevit.coreutils.configparser import open_config_file
 from pyrevit.coreutils import appdata, unique_name
 
 from match.filter_utils import (
@@ -123,7 +123,7 @@ if not text_type_names:
 CONFIG_FILE = appdata.get_universal_data_file(file_id=INI, file_ext="ini")
 if not op.exists(CONFIG_FILE):
     open(CONFIG_FILE, "w").close()
-configparser = PyRevitConfigParser(cfg_file_path=CONFIG_FILE)
+configparser = open_config_file(CONFIG_FILE)
 try:
     cfg = configparser.get_section(doc.Title)
 except AttributeError:
@@ -312,9 +312,7 @@ if created_legends:
             "Msg_DoneMixed", "Created {0} legend view(s), updated {1}."
         ).format(new_count, updated_count)
     elif updated_count:
-        message = _t("Msg_Updated", "Updated {0} legend view(s).").format(
-            updated_count
-        )
+        message = _t("Msg_Updated", "Updated {0} legend view(s).").format(updated_count)
     else:
         message = _t("Msg_Done", "Created {0} legend view(s).").format(new_count)
     forms.alert(message)
