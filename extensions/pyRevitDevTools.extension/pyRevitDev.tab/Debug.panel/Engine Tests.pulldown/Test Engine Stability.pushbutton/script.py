@@ -3,11 +3,9 @@ from pyrevit import coreutils
 from pyrevit import framework
 from pyrevit import script
 
-framework.clr.AddReference('IronPython')
+framework.clr.AddReference("IronPython")
 import IronPython.Hosting
 import IronPython.Runtime
-
-
 
 
 output = script.get_output()
@@ -51,7 +49,7 @@ for idx in range(1, MAX_TESTS):
     engine_times.append(eng_time)
 
     output_timer = coreutils.Timer()
-    print('Engine {}: {}'.format(idx, eng_time))
+    print("Engine {}: {}".format(idx, eng_time))
     output_times.append(output_timer.get_time())
 
 
@@ -61,12 +59,12 @@ chart = output.make_line_chart()
 
 chart.data.labels = [x for x in range(0, MAX_TESTS + 1)]
 
-engine_dataset = chart.data.new_dataset('engine_timer')
-engine_dataset.set_color(0xc3, 0x10, 0x10, 0.4)
+engine_dataset = chart.data.new_dataset("engine_timer")
+engine_dataset.set_color(0xC3, 0x10, 0x10, 0.4)
 engine_dataset.data = engine_times
 
-output_dataset = chart.data.new_dataset('output_timer')
-output_dataset.set_color(0xf0, 0xa7, 0x19, 0.4)
+output_dataset = chart.data.new_dataset("output_timer")
+output_dataset.set_color(0xF0, 0xA7, 0x19, 0.4)
 output_dataset.data = output_times
 
 chart.draw()

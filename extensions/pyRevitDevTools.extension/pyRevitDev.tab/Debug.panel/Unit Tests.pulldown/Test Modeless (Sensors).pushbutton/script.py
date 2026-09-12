@@ -1,5 +1,5 @@
-"""
-"""
+""" """
+
 # pylint: skip-file
 from pyrevit import HOST_APP, framework, EXEC_PARAMS
 from pyrevit import forms
@@ -7,7 +7,6 @@ from pyrevit import revit, DB, UI
 from pyrevit.runtime import types as runtime_types
 from pyrevit.framework import Input
 from pyrevit import script
-
 
 
 logger = script.get_logger()
@@ -28,7 +27,7 @@ class SensorGroup(forms.Reactive):
 
 
 class Sensor(forms.Reactive):
-    def __init__(self, header, value='', has_progress=False):
+    def __init__(self, header, value="", has_progress=False):
         self._header = header
         self._value = value
         self._has_progress = has_progress
@@ -81,18 +80,14 @@ class NonModalWindow(forms.WPFWindow):
         self.doc_title_snsr = Sensor("Title")
         self.doc_elmnts_snsr = Sensor("Elements", has_progress=True)
         self.doc_snsrs = SensorGroup(
-            "Document",
-            [self.doc_title_snsr, self.doc_elmnts_snsr]
-            )
+            "Document", [self.doc_title_snsr, self.doc_elmnts_snsr]
+        )
         self.cat_snsrs = SensorGroup("Categories", self.make_category_sensors())
-        self.sensor_groups = [
-            self.doc_snsrs,
-            self.cat_snsrs
-        ]
+        self.sensor_groups = [self.doc_snsrs, self.cat_snsrs]
         self.sensorsPanel.ItemsSource = self.sensor_groups
         self.update_ui()
 
-    @revit.events.handle('doc-changed', 'doc-closed', 'doc-opened', 'view-activated')
+    @revit.events.handle("doc-changed", "doc-closed", "doc-opened", "view-activated")
     def uiupdator_eventhandler(sender, args):
         # the decorator captures the function from the class and not from the
         # instance. so the capture function is not bound thus no 'self'
@@ -109,29 +104,27 @@ class NonModalWindow(forms.WPFWindow):
 
             self.dispatch(self.update_category_sensors, self.cat_snsrs.sensors, count)
         else:
-            self.doc_title_snsr.value = 'N/A'
+            self.doc_title_snsr.value = "N/A"
             self.doc_elmnts_snsr.value = 0
 
     def make_category_sensors(self):
         sensors = []
-        for cat in revit.query.get_doc_categories(doc=revit.doc,
-                                                  include_subcats=False):
+        for cat in revit.query.get_doc_categories(doc=revit.doc, include_subcats=False):
             sensors.append(Sensor(cat.Name, has_progress=True))
         return sensors
 
     def sort_category_sensors_list(self):
-        self.cat_snsrs.sensors = \
-            sorted(self.cat_snsrs.sensors,
-                   key=lambda x: x.progress,
-                   reverse=True)
+        self.cat_snsrs.sensors = sorted(
+            self.cat_snsrs.sensors, key=lambda x: x.progress, reverse=True
+        )
 
     def update_category_sensors(self, sensors, max_count):
         for sensor in sensors:
-            bicat = revit.query.get_builtincategory(sensor.header,
-                                                    doc=revit.doc)
+            bicat = revit.query.get_builtincategory(sensor.header, doc=revit.doc)
             if bicat:
-                elements = revit.query.get_elements_by_categories([bicat],
-                                                                  doc=revit.doc)
+                elements = revit.query.get_elements_by_categories(
+                    [bicat], doc=revit.doc
+                )
                 count = len(elements)
                 sensor.value = count
                 sensor.progress = count
@@ -142,10 +135,10 @@ class NonModalWindow(forms.WPFWindow):
         if args.ChangedButton == Input.MouseButton.Left:
             self.DragMove()
 
-    def window_closing(self, sender, args): #pylint: disable=unused-argument
+    def window_closing(self, sender, args):  # pylint: disable=unused-argument
         revit.events.stop_events()
 
 
-ui = script.load_ui(NonModalWindow(), ui_file='sensors.xaml')
+ui = script.load_ui(NonModalWindow(), ui_file="sensors.xaml")
 
 ui.show(modal=__shiftclick__)

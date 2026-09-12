@@ -608,7 +608,10 @@ class FamSlideWindow(forms.WPFWindow):
                         else:
                             continue
 
-                    elif row.group == "yesno" or row.storage_type == DB.StorageType.Integer:
+                    elif (
+                        row.group == "yesno"
+                        or row.storage_type == DB.StorageType.Integer
+                    ):
                         fm.Set(row.param, int(value))
                     elif row.storage_type == DB.StorageType.Double:
                         fm.Set(row.param, float(value))

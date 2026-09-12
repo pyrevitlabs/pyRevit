@@ -1,5 +1,6 @@
 #! python3
 """Test CPython event handler subscribe/unsubscribe."""
+
 # pylint: skip-file
 from pyrevit import HOST_APP
 from pyrevit import UI, DB

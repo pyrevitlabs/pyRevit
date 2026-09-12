@@ -1,6 +1,7 @@
 """This is the panel pushbutton (Could be used for panel config)."""
 
 from pyrevit import script
+
 logger = script.get_logger()
 
 
@@ -9,11 +10,11 @@ logger = script.get_logger()
 
 
 if __shiftclick__:
-    print('Shift-Clicked button')
+    print("Shift-Clicked button")
 
 if __forceddebugmode__:
-    print('Ctrl-Clicked button')
+    print("Ctrl-Clicked button")
 
 
-logger.debug('Debug message')
-print('Try different Modifier keys with this button to check results.')
+logger.debug("Debug message")
+print("Try different Modifier keys with this button to check results.")

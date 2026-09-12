@@ -3,20 +3,24 @@
 Shift-Click:
 Select group members instead of parent group elements.
 """
-#pylint: disable=import-error,invalid-name,broad-except
+
+# pylint: disable=import-error,invalid-name,broad-except
 from pyrevit import revit, DB, EXEC_PARAMS
 from pyrevit.compat import get_elementid_value_func
 
 get_elementid_value = get_elementid_value_func()
 
 # get view elements
-viewelements = DB.FilteredElementCollector(revit.doc, revit.active_view.Id)\
-                 .WhereElementIsNotElementType()\
-                 .ToElements()
+viewelements = (
+    DB.FilteredElementCollector(revit.doc, revit.active_view.Id)
+    .WhereElementIsNotElementType()
+    .ToElements()
+)
 # remove anything that is a direct DB.Element obj
 # these are the weird internal objects that Revit uses like a camera obj
-view_element_ids = \
-    {get_elementid_value(x.Id) for x in viewelements if x.GetType() is not DB.Element}
+view_element_ids = {
+    get_elementid_value(x.Id) for x in viewelements if x.GetType() is not DB.Element
+}
 
 # get current selection
 selection = revit.get_selection()
@@ -31,10 +35,11 @@ invert_ids = view_element_ids.difference(selected_element_ids)
 filtered_invert_ids = invert_ids.copy()
 if not EXEC_PARAMS.config_mode:
     # collect ids of elements inside a group
-    grouped_element_ids = \
-        [get_elementid_value(x.Id) for x in viewelements
-         if x.GetType() is not DB.Element
-         and x.GroupId != DB.ElementId.InvalidElementId]
+    grouped_element_ids = [
+        get_elementid_value(x.Id)
+        for x in viewelements
+        if x.GetType() is not DB.Element and x.GroupId != DB.ElementId.InvalidElementId
+    ]
 
     for element_id in invert_ids:
         if element_id in grouped_element_ids:

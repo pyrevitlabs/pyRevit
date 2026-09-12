@@ -10,7 +10,7 @@ from pyrevit import forms
 
 
 def pin_viewports(sheet_list):
-    with revit.Transaction('Pin all viewports'):
+    with revit.Transaction("Pin all viewports"):
         for sheet in sheet_list:
             count = 0
             alreadypinnedcount = 0
@@ -21,24 +21,24 @@ def pin_viewports(sheet_list):
                     count += 1
                 else:
                     alreadypinnedcount += 1
-            print('Pinned {} viewports on sheet: {} - {}'
-                  '\n({} viewports were already pinned)'
-                  .format(count,
-                          sheet.SheetNumber,
-                          sheet.Name,
-                          alreadypinnedcount))
+            print(
+                "Pinned {} viewports on sheet: {} - {}"
+                "\n({} viewports were already pinned)".format(
+                    count, sheet.SheetNumber, sheet.Name, alreadypinnedcount
+                )
+            )
 
 
 if EXEC_PARAMS.config_mode:
     if isinstance(revit.active_view, DB.ViewSheet):
         sel_sheets = [revit.active_view]
     else:
-        forms.alert('Active view must be a sheet.')
+        forms.alert("Active view must be a sheet.")
         script.exit()
 else:
-    sel_sheets = forms.select_sheets(title='Select Sheets',
-                                     use_selection = True,
-                                     include_placeholder=False)
+    sel_sheets = forms.select_sheets(
+        title="Select Sheets", use_selection=True, include_placeholder=False
+    )
 
 
 if sel_sheets:
