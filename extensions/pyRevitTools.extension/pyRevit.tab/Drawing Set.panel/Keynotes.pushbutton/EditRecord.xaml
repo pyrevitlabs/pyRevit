@@ -13,7 +13,7 @@
         <Canvas x:Key="translateIcon">
             <Path Canvas.Top="-9" Canvas.Left="-8"
                   Data="M12.87,15.07L10.33,12.56L10.36,12.53C12.1,10.59 13.34,8.36 14.07,6H17V4H10V2H8V4H1V6H12.17C11.5,7.92 10.44,9.75 9,11.35C8.07,10.32 7.3,9.19 6.69,8H4.69C5.42,9.63 6.42,11.17 7.67,12.56L2.58,17.58L4,19L9,14L12.11,17.11L12.87,15.07M18.5,10H16.5L12,22H14L15.12,19H19.87L21,22H23L18.5,10M15.88,17L17.5,12.67L19.12,17H15.88Z"
-                  Fill="Black">
+                  Fill="{DynamicResource pyRevitIconBrush}">
                 <Path.LayoutTransform>
                     <ScaleTransform ScaleX="0.7" ScaleY="0.7" />
                 </Path.LayoutTransform>
@@ -23,7 +23,7 @@
         <Canvas x:Key="templatesIcon">
             <Path Canvas.Top="-9" Canvas.Left="-8"
                   Data="M20,6H12L10,4H4A2,2 0 0,0 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8A2,2 0 0,0 20,6M15,16H6V14H15V16M18,12H6V10H18V12Z" 
-                  Fill="Black">
+                  Fill="{DynamicResource pyRevitIconBrush}">
                 <Path.LayoutTransform>
                     <ScaleTransform ScaleX="0.7" ScaleY="0.7" />
                 </Path.LayoutTransform>
@@ -33,7 +33,7 @@
         <Canvas x:Key="donotuseIcon">
             <Path Canvas.Top="-7" Canvas.Left="-7"
                   Data="M12,0A12,12 0 0,1 24,12A12,12 0 0,1 12,24A12,12 0 0,1 0,12A12,12 0 0,1 12,0M12,2A10,10 0 0,0 2,12C2,14.4 2.85,16.6 4.26,18.33L18.33,4.26C16.6,2.85 14.4,2 12,2M12,22A10,10 0 0,0 22,12C22,9.6 21.15,7.4 19.74,5.67L5.67,19.74C7.4,21.15 9.6,22 12,22Z"
-                  Fill="Black">
+                  Fill="{DynamicResource pyRevitIconBrush}">
                 <Path.LayoutTransform>
                     <ScaleTransform ScaleX="0.6" ScaleY="0.6" />
                 </Path.LayoutTransform>

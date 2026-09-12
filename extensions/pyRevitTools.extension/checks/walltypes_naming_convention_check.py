@@ -14,7 +14,9 @@ import os
 from pyrevit.coreutils import applocales
 from pyrevit.preflight import PreflightTestCase
 
-_XAML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "locale", "Checks.xaml")
+_XAML = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "locale", "Checks.xaml"
+)
 
 
 def _t(key):

@@ -56,12 +56,45 @@ Common keys:
 - `is_beta`, `highlight` (`new` or `updated`), `collapsed`.
 - `engine` — `clean`, `full_frame`, `persistent`, `mainthread` (plus Dynamo-specific `automate`, `dynamo_path`, `dynamo_path_check_existing`, `dynamo_force_manual_run`, `dynamo_model_nodes_info`).
 - `layout` — reorders/nests child buttons instead of relying on folder order; use `---` for a separator and `>>>` to start a slideout.
+- `background` / `background_dark` — panel bundles only; see [Panel background colors](#panel-background-colors).
 
 Bundle-type-specific keys: `modules` (link buttons), `assembly` / `command_class` / `availability_class` (invoke/link buttons), `hyperlink` (URL buttons).
 
 ???+ info
 
     The full key list lives in the `MDATA_*` constants in `pyrevitlib/pyrevit/extensions/__init__.py`, and is consumed by `_read_bundle_metadata()` in `pyrevitlib/pyrevit/extensions/genericcomps.py`. `extensions/pyRevitBundlesCreatorExtension.extension` has a worked `bundle.yaml` example per bundle type, and its own UI scaffolds new bundles interactively.
+
+## Panel background colors
+
+A `*.panel` bundle can paint its own background. `background` takes either one color for the main
+panel surface, or a map naming each area:
+
+```yaml
+background: '#BB005591'
+```
+
+```yaml
+background:
+  panel: '#BB005591'
+  title: '#E2A000'
+  slideout: '#E25200'
+```
+
+Colors are `#RRGGBB` or `#AARRGGBB`.
+
+`background_dark` takes the same two forms and applies when Revit runs in dark theme, the same way
+`icon.dark.png` replaces `icon.png`. Its scalar form also sets only the main panel surface:
+
+```yaml
+background: '#BB005591'
+background_dark: '#BB1E3A5F'
+```
+
+Each area falls back to its `background` color when `background_dark` leaves that area unset, so a
+bundle can override the title bar alone. A bundle that declares `background_dark` only keeps the
+stock Revit background in light theme. Switching theme in Revit repaints the panels without a
+reload; on Revit 2021–2023 the theme API is unavailable, so `background_dark` is ignored and
+`background` always applies.
 
 ## Script engines
 

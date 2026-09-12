@@ -26,27 +26,27 @@ namespace pyRevitAssemblyBuilder.SessionManager
         // Env-dict key string values.  These must match EnvDictionaryKeys in the Runtime
         // (dev/pyRevitLabs.PyRevit.Runtime/EnvVariables.cs).  The prefix is "PYREVIT" because
         // PyRevitLabsConsts.ProductName = "PYREVIT".
-        private const string KeySessionUUID          = "PYREVIT_UUID";
-        private const string KeyRevitVersion         = "PYREVIT_APPVERSION";
-        private const string KeyVersion              = "PYREVIT_VERSION";
-        private const string KeyClone                = "PYREVIT_CLONE";
-        private const string KeyIPYVersion           = "PYREVIT_IPYVERSION";
-        private const string KeyCPYVersion           = "PYREVIT_CPYVERSION";
-        private const string KeyTelemetryState       = "PYREVIT_TELEMETRYSTATE";
-        private const string KeyTelemetryUTC         = "PYREVIT_TELEMETRYUTCTIMESTAMPS";
-        private const string KeyTelemetryFileDir     = "PYREVIT_TELEMETRYDIR";
-        private const string KeyTelemetryFile        = "PYREVIT_TELEMETRYFILE";
-        private const string KeyTelemetryServer      = "PYREVIT_TELEMETRYSERVER";
-        private const string KeyTelemetryHooks       = "PYREVIT_TELEMETRYINCLUDEHOOKS";
-        private const string KeyAppTelemetryState    = "PYREVIT_APPTELEMETRYSTATE";
-        private const string KeyAppTelemetryServer   = "PYREVIT_APPTELEMETRYSERVER";
-        private const string KeyAppTelemetryFlags    = "PYREVIT_APPTELEMETRYEVENTFLAGS";
-        private const string KeyAutoUpdating         = "PYREVIT_AUTOUPDATE";
-        private const string KeyOutputStyleSheet     = "PYREVIT_STYLESHEET";
+        private const string KeySessionUUID = "PYREVIT_UUID";
+        private const string KeyRevitVersion = "PYREVIT_APPVERSION";
+        private const string KeyVersion = "PYREVIT_VERSION";
+        private const string KeyClone = "PYREVIT_CLONE";
+        private const string KeyIPYVersion = "PYREVIT_IPYVERSION";
+        private const string KeyCPYVersion = "PYREVIT_CPYVERSION";
+        private const string KeyTelemetryState = "PYREVIT_TELEMETRYSTATE";
+        private const string KeyTelemetryUTC = "PYREVIT_TELEMETRYUTCTIMESTAMPS";
+        private const string KeyTelemetryFileDir = "PYREVIT_TELEMETRYDIR";
+        private const string KeyTelemetryFile = "PYREVIT_TELEMETRYFILE";
+        private const string KeyTelemetryServer = "PYREVIT_TELEMETRYSERVER";
+        private const string KeyTelemetryHooks = "PYREVIT_TELEMETRYINCLUDEHOOKS";
+        private const string KeyAppTelemetryState = "PYREVIT_APPTELEMETRYSTATE";
+        private const string KeyAppTelemetryServer = "PYREVIT_APPTELEMETRYSERVER";
+        private const string KeyAppTelemetryFlags = "PYREVIT_APPTELEMETRYEVENTFLAGS";
+        private const string KeyAutoUpdating = "PYREVIT_AUTOUPDATE";
+        private const string KeyOutputStyleSheet = "PYREVIT_STYLESHEET";
 
         // Must match DomainStorageKeys.EnvVarsDictKey in the Runtime (EnvVariables.cs).
         // Kept as a literal because pyRevitAssemblyBuilder does not reference that assembly.
-        private const string KeyEnvVarsDict          = "PYREVITEnvVarsDict";
+        private const string KeyEnvVarsDict = "PYREVITEnvVarsDict";
 
         /// <summary>
         /// Builds the session environment dictionary and stores it in the AppDomain via a reflection
@@ -72,28 +72,28 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
             var values = new Dictionary<string, object>
             {
-                [KeySessionUUID]        = Guid.NewGuid().ToString(),
-                [KeyRevitVersion]       = !string.IsNullOrEmpty(seededAppVersion)
+                [KeySessionUUID] = Guid.NewGuid().ToString(),
+                [KeyRevitVersion] = !string.IsNullOrEmpty(seededAppVersion)
                                               ? seededAppVersion!
                                               : (uiApp?.Application?.VersionNumber ?? string.Empty),
-                [KeyVersion]            = ReadPyRevitVersion(pyRevitRoot),
-                [KeyClone]              = "Unknown",
-                [KeyIPYVersion]         = ReadIPYVersion(pyRevitRoot),
-                [KeyCPYVersion]         = ReadCPYVersion(pyRevitRoot),
+                [KeyVersion] = ReadPyRevitVersion(pyRevitRoot),
+                [KeyClone] = "Unknown",
+                [KeyIPYVersion] = ReadIPYVersion(pyRevitRoot),
+                [KeyCPYVersion] = ReadCPYVersion(pyRevitRoot),
 
-                [KeyTelemetryState]     = config.TelemetryState,
-                [KeyTelemetryUTC]       = config.TelemetryUTCTimeStamps,
-                [KeyTelemetryFileDir]   = config.TelemetryFilePath,
-                [KeyTelemetryFile]      = string.Empty,
-                [KeyTelemetryServer]    = config.TelemetryServerUrl,
-                [KeyTelemetryHooks]     = config.TelemetryIncludeHooks,
+                [KeyTelemetryState] = config.TelemetryState,
+                [KeyTelemetryUTC] = config.TelemetryUTCTimeStamps,
+                [KeyTelemetryFileDir] = config.TelemetryFilePath,
+                [KeyTelemetryFile] = string.Empty,
+                [KeyTelemetryServer] = config.TelemetryServerUrl,
+                [KeyTelemetryHooks] = config.TelemetryIncludeHooks,
 
-                [KeyAppTelemetryState]  = config.AppTelemetryState,
+                [KeyAppTelemetryState] = config.AppTelemetryState,
                 [KeyAppTelemetryServer] = config.AppTelemetryServerUrl,
-                [KeyAppTelemetryFlags]  = config.AppTelemetryEventFlags,
+                [KeyAppTelemetryFlags] = config.AppTelemetryEventFlags,
 
-                [KeyAutoUpdating]       = config.AutoUpdate,
-                [KeyOutputStyleSheet]   = ResolveOutputStyleSheet(config.OutputStyleSheet, pyRevitRoot),
+                [KeyAutoUpdating] = config.AutoUpdate,
+                [KeyOutputStyleSheet] = ResolveOutputStyleSheet(config.OutputStyleSheet, pyRevitRoot),
             };
 
             // Delegate to EnvDictionary.Seed() in the Runtime, which owns PythonDictionary creation.

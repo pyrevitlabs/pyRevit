@@ -49,11 +49,11 @@ namespace pyRevitAssemblyBuilder.UIManager
         public string script_file => _component?.ScriptPath ?? string.Empty;
 
         /// <summary>Gets the on icon path (theme-aware).</summary>
-        public string on_icon_path => _isDarkTheme && !string.IsNullOrEmpty(_component?.OnIconDarkPath) 
+        public string on_icon_path => _isDarkTheme && !string.IsNullOrEmpty(_component?.OnIconDarkPath)
             ? _component.OnIconDarkPath : _component?.OnIconPath ?? string.Empty;
 
         /// <summary>Gets the off icon path (theme-aware).</summary>
-        public string off_icon_path => _isDarkTheme && !string.IsNullOrEmpty(_component?.OffIconDarkPath) 
+        public string off_icon_path => _isDarkTheme && !string.IsNullOrEmpty(_component?.OffIconDarkPath)
             ? _component.OffIconDarkPath : _component?.OffIconPath ?? string.Empty;
 
         /// <summary>Whether the current theme is dark.</summary>
@@ -71,7 +71,7 @@ namespace pyRevitAssemblyBuilder.UIManager
 
             SetIcon(icon_path, icon_size);
             var themePaths = ResolveThemePaths(icon_path);
-            RibbonIconRegistry.Register(
+            RibbonThemeRegistry.Register(
                 _pushButton,
                 isDarkTheme => SetIcon(isDarkTheme ? themePaths.Dark : themePaths.Light, icon_size));
         }
@@ -155,10 +155,10 @@ namespace pyRevitAssemblyBuilder.UIManager
                 // Match pythonic loader: double size and DPI
                 int adjustedIconSize = iconSize * 2;
                 double adjustedDpi = UIManagerConstants.DEFAULT_DPI * 2;
-                
+
                 // Get screen scale factor (matches HOST_APP.proc_screen_scalefactor)
                 double screenScaling = GetScreenScaleFactor();
-                
+
                 // Read file bytes to avoid file locking issues
                 var fileBytes = File.ReadAllBytes(iconPath);
                 using (var memoryStream = new MemoryStream(fileBytes))
@@ -171,21 +171,21 @@ namespace pyRevitAssemblyBuilder.UIManager
                     baseImage.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
                     baseImage.EndInit();
                     baseImage.Freeze();
-                    
+
                     // Get image data for creating properly DPI-scaled bitmap
                     int imageSize = baseImage.PixelWidth;
                     var imageFormat = baseImage.Format;
                     int bytesPerPixel = (baseImage.Format.BitsPerPixel + 7) / 8;
                     int stride = imageSize * bytesPerPixel;
                     int arraySize = stride * imageSize;
-                    
+
                     byte[] imageData = new byte[arraySize];
                     baseImage.CopyPixels(imageData, stride, 0);
-                    
+
                     // Create bitmap with proper DPI (matches pythonic loader)
                     int scaledSize = (int)(adjustedIconSize * screenScaling);
                     double scaledDpi = adjustedDpi * screenScaling;
-                    
+
                     var bitmapSource = System.Windows.Media.Imaging.BitmapSource.Create(
                         scaledSize,
                         scaledSize,
@@ -205,7 +205,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                 return null;
             }
         }
-        
+
         /// <summary>
         /// Gets the screen scale factor for the current process.
         /// Matches HOST_APP.proc_screen_scalefactor in the pythonic loader.
@@ -216,15 +216,15 @@ namespace pyRevitAssemblyBuilder.UIManager
             try
             {
                 // Get system DPI using WPF
-                var dpiXProperty = typeof(System.Windows.SystemParameters).GetProperty("DpiX", 
+                var dpiXProperty = typeof(System.Windows.SystemParameters).GetProperty("DpiX",
                     BindingFlags.NonPublic | BindingFlags.Static);
-                
+
                 if (dpiXProperty != null)
                 {
                     int dpiX = (int)dpiXProperty.GetValue(null, null);
                     return dpiX / UIManagerConstants.DEFAULT_DPI;
                 }
-                
+
                 return 1.0;
             }
             catch
@@ -262,7 +262,7 @@ namespace pyRevitAssemblyBuilder.UIManager
         {
             if (string.IsNullOrEmpty(fileName))
                 return null;
-            
+
             // If it's already an absolute path (result of ui.resolve_icon_file), just validate it
             if (Path.IsPathRooted(fileName))
             {
@@ -355,11 +355,11 @@ namespace pyRevitAssemblyBuilder.UIManager
             _uiApp = uiApp;
             _logger = logger;
             _themeDetector = new RevitThemeDetector(logger);
-            
+
             // Do static initialization once
             EnsureStaticInitialized();
         }
-        
+
         /// <summary>
         /// One-time static initialization to find assemblies and types (expensive operations).
         /// </summary>
@@ -367,12 +367,12 @@ namespace pyRevitAssemblyBuilder.UIManager
         {
             if (_staticInitialized || _staticInitializationFailed)
                 return;
-                
+
             lock (_staticLock)
             {
                 if (_staticInitialized || _staticInitializationFailed)
                     return;
-                    
+
                 try
                 {
                     // Use AssemblyCache instead of scanning AppDomain directly

@@ -116,7 +116,7 @@ namespace pyRevitCLI {
             else if (cloneName != null) {
                 // lets detach the clone if there is any attachments to it
                 var clone = PyRevitClones.GetRegisteredClone(cloneName);
-                foreach(var attachment in PyRevitAttachments.GetAttachments())
+                foreach (var attachment in PyRevitAttachments.GetAttachments())
                     if (attachment.Clone.Equals(clone)) {
                         logger.Debug($"Detaching existing attachment: {attachment}");
                         PyRevitAttachments.Detach(attachment.Product.ProductYear, attachment.AllUsers);
@@ -277,7 +277,7 @@ namespace pyRevitCLI {
                                            + "Use installer to update.");
 
         }
-        
+
         internal static void
         AttachClone(PyRevitClone clone, string engineId,
                     string revitYear, bool installed, bool attached,

@@ -90,7 +90,7 @@ namespace pyRevitLabs.TargetApps.Revit {
                 installPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Autodesk", installPath);
                 logger.Debug("Using default install path: \"{0}\"", installPath);
             }
-                
+
             var possibleLocations = new List<string>() {
                 Path.Combine(installPath, "Revit.exe"),
                 Path.Combine(installPath, "Program", "Revit.exe")
@@ -121,7 +121,7 @@ namespace pyRevitLabs.TargetApps.Revit {
                 else
                     return 2000 + version.Major;
             }
-                
+
             return version.Major;
         }
 
@@ -267,112 +267,100 @@ namespace pyRevitLabs.TargetApps.Revit {
             if (_installedProductsCache != null)
                 return _installedProductsCache.ToList();
 
-            lock (_installedProductsCacheLock)
-            {
+            lock (_installedProductsCacheLock) {
                 if (_installedProductsCache != null)
                     return _installedProductsCache.ToList();
 
-            var installedRevits = new HashSet<RevitProduct>();
+                var installedRevits = new HashSet<RevitProduct>();
 
-            // pattern for finding revit installation entries in registry
-            // matching:
-            //     Revit 2019
-            //     Revit 2019 - German
-            //     Revit Architecture 2016 - Imperial
-            // fails:
-            //     Revit Content Libraries 2016
-            var revitFinder = new Regex(@"^Revit\s[A-Za-z]*\s*\d{4}\s?($|\s-)");
-            // also match Revit Preview Release (e.g. 2027 preview) and "Autodesk Revit Preview Release"
-            var previewFinder = new Regex(@"^(Autodesk\s+)?Revit\s+Preview\s+Release\s*$", RegexOptions.IgnoreCase);
+                // pattern for finding revit installation entries in registry
+                // matching:
+                //     Revit 2019
+                //     Revit 2019 - German
+                //     Revit Architecture 2016 - Imperial
+                // fails:
+                //     Revit Content Libraries 2016
+                var revitFinder = new Regex(@"^Revit\s[A-Za-z]*\s*\d{4}\s?($|\s-)");
+                // also match Revit Preview Release (e.g. 2027 preview) and "Autodesk Revit Preview Release"
+                var previewFinder = new Regex(@"^(Autodesk\s+)?Revit\s+Preview\s+Release\s*$", RegexOptions.IgnoreCase);
 
-            // open parent regkey
-            var uninstallKey =
-                Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall");
-            // loop thru subkeys and find matching
-            foreach (var key in uninstallKey.GetSubKeyNames())
-            {
-                var subkey = uninstallKey.OpenSubKey(key);
-                var appName = subkey.GetValue("DisplayName") as string;
-                logger.Debug("Analysing registered app: {0} @ {1}", appName, subkey.Name);
-                if (appName != null && (revitFinder.IsMatch(appName) || previewFinder.IsMatch(appName)))
-                {
-                    logger.Debug("App is a Revit product: {0}", appName);
-                    try
-                    {
-                        // collect info from reg key
-                        var regName = subkey.GetValue("DisplayName") as string;
-                        var regVersion = subkey.GetValue("DisplayVersion") as string;
-                        var regInstallPath = subkey.GetValue("InstallLocation") as string;
-                        if (regInstallPath == null)
-                        {
-                            // Entries without an install location are typically add-ins; skip them.
-                            continue;
-                        }
-                        var languageValue = subkey.GetValue("Language");
-                        int regLangCode;
-                        if (languageValue is int langCode)
-                        {
-                            regLangCode = langCode;
-                        }
-                        else
-                        {
-                            // Missing or invalid language code; skip this entry to avoid runtime casting errors.
-                            logger.Debug("Skipping registered app \"{0}\" because registry key \"Language\" is missing or invalid.", appName);
-                            continue;
-                        }
-                        // try to find binary location
-                        var binaryFilePath = RevitProductData.GetBinaryLocation(regInstallPath)?.NormalizeAsPath();
-                        logger.Debug("Version from registry key: \"{0}\"", regVersion);
-                        logger.Debug("Install path from registry key: \"{0}\"", regInstallPath);
-                        logger.Debug("Binary path from registry key: \"{0}\"", binaryFilePath ?? "");
-                        logger.Debug("Language code from registry key: \"{0}\"", regLangCode);
-
-                        var revitProduct = FindRevitProduct(regVersion, binaryFilePath);
-                        if (revitProduct is null)
-                        {
-                            logger.Debug("Could not determine Revit product for \"{0}\" (version: {1}). This installation will be excluded from the list. " +
-                                       "This may occur if the version is not listed in pyrevit-hosts.json or if product information could not be read from the binary file.",
-                                       regName, regVersion);
-                            continue;
-                        }
-                        logger.Debug("Revit Product is : {0}", revitProduct);
-                        // grab the registry name if it doesn't have a name
-                        if (revitProduct.Name is null || revitProduct.Name == string.Empty)
-                            revitProduct.Name = regName;
-
-                        // build from a registry version if it doesn't already have one
-                        if (revitProduct.Version is null && (regVersion != null && regVersion != string.Empty))
-                        {
-                            try
-                            {
-                                revitProduct.Version = new Version(regVersion);
+                // open parent regkey
+                var uninstallKey =
+                    Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall");
+                // loop thru subkeys and find matching
+                foreach (var key in uninstallKey.GetSubKeyNames()) {
+                    var subkey = uninstallKey.OpenSubKey(key);
+                    var appName = subkey.GetValue("DisplayName") as string;
+                    logger.Debug("Analysing registered app: {0} @ {1}", appName, subkey.Name);
+                    if (appName != null && (revitFinder.IsMatch(appName) || previewFinder.IsMatch(appName))) {
+                        logger.Debug("App is a Revit product: {0}", appName);
+                        try {
+                            // collect info from reg key
+                            var regName = subkey.GetValue("DisplayName") as string;
+                            var regVersion = subkey.GetValue("DisplayVersion") as string;
+                            var regInstallPath = subkey.GetValue("InstallLocation") as string;
+                            if (regInstallPath == null) {
+                                // Entries without an install location are typically add-ins; skip them.
+                                continue;
                             }
-                            catch { }
+                            var languageValue = subkey.GetValue("Language");
+                            int regLangCode;
+                            if (languageValue is int langCode) {
+                                regLangCode = langCode;
+                            }
+                            else {
+                                // Missing or invalid language code; skip this entry to avoid runtime casting errors.
+                                logger.Debug("Skipping registered app \"{0}\" because registry key \"Language\" is missing or invalid.", appName);
+                                continue;
+                            }
+                            // try to find binary location
+                            var binaryFilePath = RevitProductData.GetBinaryLocation(regInstallPath)?.NormalizeAsPath();
+                            logger.Debug("Version from registry key: \"{0}\"", regVersion);
+                            logger.Debug("Install path from registry key: \"{0}\"", regInstallPath);
+                            logger.Debug("Binary path from registry key: \"{0}\"", binaryFilePath ?? "");
+                            logger.Debug("Language code from registry key: \"{0}\"", regLangCode);
+
+                            var revitProduct = FindRevitProduct(regVersion, binaryFilePath);
+                            if (revitProduct is null) {
+                                logger.Debug("Could not determine Revit product for \"{0}\" (version: {1}). This installation will be excluded from the list. " +
+                                           "This may occur if the version is not listed in pyrevit-hosts.json or if product information could not be read from the binary file.",
+                                           regName, regVersion);
+                                continue;
+                            }
+                            logger.Debug("Revit Product is : {0}", revitProduct);
+                            // grab the registry name if it doesn't have a name
+                            if (revitProduct.Name is null || revitProduct.Name == string.Empty)
+                                revitProduct.Name = regName;
+
+                            // build from a registry version if it doesn't already have one
+                            if (revitProduct.Version is null && (regVersion != null && regVersion != string.Empty)) {
+                                try {
+                                    revitProduct.Version = new Version(regVersion);
+                                }
+                                catch { }
+                            }
+
+                            // update install path from registry if it can't find one
+                            if (regInstallPath != null && regInstallPath != string.Empty) {
+                                if (CommonUtils.VerifyFile(binaryFilePath))
+                                    revitProduct.InstallLocation = regInstallPath;
+                            }
+
+                            // this can only come from registrys
+                            revitProduct.LanguageCode = regLangCode;
+
+                            // add to list now, only if install location is verified
+                            string pLocation = revitProduct.InstallLocation;
+                            if (pLocation != null && pLocation != string.Empty)
+                                installedRevits.Add(revitProduct);
                         }
-
-                        // update install path from registry if it can't find one
-                        if (regInstallPath != null && regInstallPath != string.Empty)
-                        {
-                            if (CommonUtils.VerifyFile(binaryFilePath))
-                                revitProduct.InstallLocation = regInstallPath;
+                        catch (Exception rpEx) {
+                            var innerMessage = rpEx.InnerException is null ? "" : $" | {rpEx.InnerException.Message}";
+                            logger.Error("Error determining installed Revit Product from: {0} | {1}{2}",
+                                         appName, rpEx.Message, innerMessage);
                         }
-
-                        // this can only come from registrys
-                        revitProduct.LanguageCode = regLangCode;
-
-                        // add to list now, only if install location is verified
-                        string pLocation = revitProduct.InstallLocation;
-                        if (pLocation != null && pLocation != string.Empty)
-                            installedRevits.Add(revitProduct);
-                    }
-                    catch (Exception rpEx)
-                    {
-                        var innerMessage = rpEx.InnerException is null ? "" : $" | {rpEx.InnerException.Message}";
-                        logger.Error("Error determining installed Revit Product from: {0} | {1}{2}",
-                                     appName, rpEx.Message, innerMessage);
                     }
                 }
-            }
 
                 _installedProductsCache = installedRevits.ToList();
                 return _installedProductsCache.ToList();

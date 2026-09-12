@@ -3,7 +3,7 @@
 Shift-Click:
 Pick from default output locations.
 """
-#pylint: disable=C0103,E0401
+# pylint: disable=C0103,E0401
 
 import os.path as op
 
@@ -21,18 +21,19 @@ output = script.get_output()
 
 open_exported = False
 incl_headers = False
-basefolder = ''
+basefolder = ""
 # if user shift-clicks, default to user desktop,
 # otherwise ask for a folder containing the PDF files
 if EXEC_PARAMS.config_mode:
     destopt, switches = forms.CommandSwitchWindow.show(
         ["My Desktop", "Where Revit Model Is", "My Downloads", "User Select"],
-        switches=["Open CSV File","Include Headers"],
-        message="Select destination:")
+        switches=["Open CSV File", "Include Headers"],
+        message="Select destination:",
+    )
     if destopt == "My Desktop":
-        basefolder = op.expandvars('%userprofile%\\desktop')
+        basefolder = op.expandvars("%userprofile%\\desktop")
     elif destopt == "My Downloads":
-        basefolder = op.expandvars('%userprofile%\\downloads')
+        basefolder = op.expandvars("%userprofile%\\downloads")
     elif destopt == "Where Revit Model Is":
         central_path = revit.query.get_central_path()
         if central_path:
@@ -56,18 +57,23 @@ if basefolder:
     if schedules_to_export:
         vseop = DB.ViewScheduleExportOptions()
         if incl_headers:
-            vseop.ColumnHeaders = coreutils.get_enum_value(DB.ExportColumnHeaders,"OneRow")
+            vseop.ColumnHeaders = coreutils.get_enum_value(
+                DB.ExportColumnHeaders, "OneRow"
+            )
         else:
             vseop.ColumnHeaders = coreutils.get_enum_none(DB.ExportColumnHeaders)
         vseop.TextQualifier = DB.ExportTextQualifier.DoubleQuote
 
         # determine which separator to use
-        csv_sp = ','
+        csv_sp = ","
         regional_sep = user_config.get_list_separator()
-        if regional_sep != ',':
-            if forms.alert("Regional settings list separator is \"{}\"\n"
-                           "Do you want to use this instead of comma?"
-                           .format(regional_sep), yes=True, no=True):
+        if regional_sep != ",":
+            if forms.alert(
+                'Regional settings list separator is "{}"\n'
+                "Do you want to use this instead of comma?".format(regional_sep),
+                yes=True,
+                no=True,
+            ):
                 csv_sp = regional_sep
 
         if csv_sp:
@@ -76,14 +82,11 @@ if basefolder:
             vseop.HeadersFootersBlanks = False
 
             for sched in schedules_to_export:
-                fname = \
-                    coreutils.cleanup_filename(revit.query.get_name(sched)) \
-                    + '.csv'
+                fname = coreutils.cleanup_filename(revit.query.get_name(sched)) + ".csv"
                 sched.Export(basefolder, fname, vseop)
                 exported = op.join(basefolder, fname)
                 revit.files.correct_text_encoding(exported)
-                output.print_md("**EXPORTED:** {0}"
-                                .format(revit.query.get_name(sched)))
+                output.print_md("**EXPORTED:** {0}".format(revit.query.get_name(sched)))
                 print(exported)
                 if open_exported:
                     coreutils.run_process('"%s"' % exported)

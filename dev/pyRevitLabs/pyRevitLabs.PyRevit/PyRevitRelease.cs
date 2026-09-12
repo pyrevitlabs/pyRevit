@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
@@ -8,7 +8,7 @@ using pyRevitLabs.Json.Linq;
 
 namespace pyRevitLabs.PyRevit {
 
-    public class PyRevitRelease: GithubReleaseInfo {
+    public class PyRevitRelease : GithubReleaseInfo {
         // Check whether this is a pyRevit release
         public bool IsPyRevitRelease { get { return !tag_name.Contains(PyRevitConsts.CLIReleasePrefix); } }
 

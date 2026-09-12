@@ -312,9 +312,7 @@ if created_legends:
             "Msg_DoneMixed", "Created {0} legend view(s), updated {1}."
         ).format(new_count, updated_count)
     elif updated_count:
-        message = _t("Msg_Updated", "Updated {0} legend view(s).").format(
-            updated_count
-        )
+        message = _t("Msg_Updated", "Updated {0} legend view(s).").format(updated_count)
     else:
         message = _t("Msg_Done", "Created {0} legend view(s).").format(new_count)
     forms.alert(message)
