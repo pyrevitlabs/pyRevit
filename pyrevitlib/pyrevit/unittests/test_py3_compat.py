@@ -71,6 +71,31 @@ def _import_failures(module_names):
 class ImportTests(unittest.TestCase):
     """Every supported module must be importable on the running engine."""
 
+    def test_requests_backend_matches_engine(self):
+        """IronPython uses the CLR HTTP shim; CPython uses requests."""
+        from pyrevit import compat
+
+        expected_module = "pyrevit.netrequests" if IRONPY else "requests"
+        self.assertEqual(expected_module, compat.requests.__name__)
+
+    def test_vendored_requests_imports(self):
+        """Direct requests imports remain available on every Python 3 engine."""
+        failures = _import_failures(["urllib3", "requests"])
+        self.assertEqual(
+            [], failures, "import failures:\n{}".format("\n".join(failures))
+        )
+
+    def test_vendored_requests_wraps_invalid_json(self):
+        """Malformed JSON raises the documented Requests exception."""
+        import requests
+
+        response = requests.Response()
+        response._content = b"{"
+        response.encoding = "utf-8"
+
+        with self.assertRaises(requests.exceptions.JSONDecodeError):
+            response.json()
+
     def test_core_module_imports(self):
         """Core pyrevit modules import cleanly on this engine."""
         failures = _import_failures(CORE_MODULES)
@@ -84,7 +109,7 @@ class ImportTests(unittest.TestCase):
         ".NET 8 hosts — dev/libs/netcore omits them",
     )
     def test_interop_module_imports(self):
-        """interop modules import cleanly (needs the framework CLR shim)."""
+        """Interop modules import cleanly (needs the framework CLR shim)."""
         failures = _import_failures(INTEROP_MODULES)
         self.assertEqual(
             [], failures, "import failures:\n{}".format("\n".join(failures))
@@ -104,7 +129,7 @@ class ImportTests(unittest.TestCase):
         import pyRevitLabs.Json  # noqa pylint: disable=import-error,unused-import
 
     def test_interop_native_module_imports(self):
-        """interop modules that load native/external binaries (opt-in)."""
+        """Interop modules that load native/external binaries (opt-in)."""
         if not TEST_NATIVE_INTEROP:
             self.skipTest(
                 "loads native binaries into the Revit process; set "
