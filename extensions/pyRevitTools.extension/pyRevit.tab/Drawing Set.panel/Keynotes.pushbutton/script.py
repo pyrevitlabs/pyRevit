@@ -704,7 +704,13 @@ class EditRecordWindow(forms.WPFWindow):
 
 
 class KeynoteManagerWindow(forms.WPFWindow):
-    """Keynote manager with unified tree and hierarchy controls."""
+    """Keynote manager with unified tree and hierarchy controls.
+
+    The window opens at the XAML defaults (800x750, minimum 760x480). 
+    stored geometry takes precedence only when all four values exist 
+    and the saved rectangle is visible on-screen;otherwise
+    , retain the XAML defaults and center the window.
+    """
 
     def _apply_theme_brushes(self):
         """Swap in dark-theme values for the brushes that cannot be shared.
