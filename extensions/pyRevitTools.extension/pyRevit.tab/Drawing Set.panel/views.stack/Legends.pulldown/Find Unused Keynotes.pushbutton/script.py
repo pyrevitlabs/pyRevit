@@ -7,10 +7,12 @@ from pyrevit import forms
 
 
 usedkeynotes = set()
-keynotes = DB.FilteredElementCollector(revit.doc)\
-             .OfCategory(DB.BuiltInCategory.OST_KeynoteTags)\
-             .WhereElementIsNotElementType()\
-             .ToElements()
+keynotes = (
+    DB.FilteredElementCollector(revit.doc)
+    .OfCategory(DB.BuiltInCategory.OST_KeynoteTags)
+    .WhereElementIsNotElementType()
+    .ToElements()
+)
 
 for knote in keynotes:
     usedkeynotes.add(knote.TagText)
@@ -20,7 +22,7 @@ kt = DB.KeynoteTable.GetKeynoteTable(revit.doc)
 entries = kt.GetKeyBasedTreeEntries()
 
 if not entries:
-    forms.alert('There are no keynotes set for this model.')
+    forms.alert("There are no keynotes set for this model.")
 else:
     for knote in kt.GetKeyBasedTreeEntries():
         allkeynotes.add(knote.Key)

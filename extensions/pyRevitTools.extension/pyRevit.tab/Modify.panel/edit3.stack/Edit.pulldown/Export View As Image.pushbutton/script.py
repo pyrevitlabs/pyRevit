@@ -6,8 +6,8 @@ from pyrevit import revit, DB
 
 # collect file location from user
 dialog = Forms.SaveFileDialog()
-dialog.Title = 'Export current view as PNG'
-dialog.Filter = 'PNG files (*.PNG)|*.PNG'
+dialog.Title = "Export current view as PNG"
+dialog.Filter = "PNG files (*.PNG)|*.PNG"
 
 if dialog.ShowDialog() == Forms.DialogResult.OK:
     # set up the export options

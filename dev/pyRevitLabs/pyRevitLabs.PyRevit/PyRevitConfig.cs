@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -22,8 +22,7 @@ namespace pyRevitLabs.PyRevit {
             if (cfgFilePath is null)
                 throw new PyRevitException("Config file path can not be null.");
 
-            if (CommonUtils.VerifyFile(cfgFilePath))
-            {
+            if (CommonUtils.VerifyFile(cfgFilePath)) {
                 ConfigFilePath = cfgFilePath;
 
                 // INI formatting
@@ -52,8 +51,7 @@ namespace pyRevitLabs.PyRevit {
             try {
                 _config.Save(ConfigFilePath);
             }
-            catch (Exception ex)
-            {
+            catch (Exception ex) {
                 throw new PyRevitException(
                     $"Failed to save config to \"{ConfigFilePath}\". | {ex.Message}");
             }
@@ -95,23 +93,19 @@ namespace pyRevitLabs.PyRevit {
 
         // set config key value, creates the config if not set yet
         public void SetValue(string sectionName, string keyName, string stringValue) {
-            if (stringValue is null)
-            {
+            if (stringValue is null) {
                 logger.Debug("Can not set null value for \"{0}:{1}\"", sectionName, keyName);
                 return;
             }
-            if (!_config.Sections.Contains(sectionName))
-            {
+            if (!_config.Sections.Contains(sectionName)) {
                 logger.Debug("Adding config section \"{0}\"", sectionName);
                 _config.Sections.Add(sectionName);
             }
-            if (!_config.Sections[sectionName].Keys.Contains(keyName))
-            {
+            if (!_config.Sections[sectionName].Keys.Contains(keyName)) {
                 logger.Debug("Adding config key \"{0}:{1}\"", sectionName, keyName);
                 _config.Sections[sectionName].Keys.Add(keyName);
             }
-            if (_config.Sections[sectionName].Keys[keyName].Value == stringValue)
-            {
+            if (_config.Sections[sectionName].Keys[keyName].Value == stringValue) {
                 logger.Debug("Config \"{0}:{1}\" already set to \"{2}\"", sectionName, keyName, stringValue);
                 return;
             }
@@ -139,7 +133,7 @@ namespace pyRevitLabs.PyRevit {
         public void SetValue(string sectionName, string keyName, IDictionary<string, string> dictString) {
             SetValue(sectionName, keyName, dictString.ConvertToTomlDictString());
         }
-    
+
         // removes a value from config file
         public bool DeleteValue(string sectionName, string keyName) {
             logger.Debug(string.Format("Try getting config \"{0}:{1}\"", sectionName, keyName));

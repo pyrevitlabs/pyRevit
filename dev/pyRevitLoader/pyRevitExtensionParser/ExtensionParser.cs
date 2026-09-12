@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using pyRevitLabs.Common;
 using pyRevitLabs.Json.Linq;
 using pyRevitLabs.NLog;
 
@@ -872,7 +873,7 @@ namespace pyRevitExtensionParser
             }
         }
 
-        private static List<string> GetExtensionRoots()
+        internal static List<string> GetExtensionRoots()
         {
             var roots = new List<string>();
 
@@ -898,7 +899,60 @@ namespace pyRevitExtensionParser
                 roots.Add(thirdPartyExtensionsPath);
             }
 
-            var userExtensions = GetConfig().UserExtensionsList;
+            var userExtensions = GetConfig().UserExtensionsList
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (PyRevitInstallScope.IsAllUsersInstall())
+            {
+                var machineRoot = PyRevitLabsConsts.PyRevitProgramDataPath;
+                var machinePath = PyRevitInstallScope.FindConfigIniInDirectory(machineRoot)
+                    ?? Path.Combine(machineRoot, PyRevitLabsConsts.DefaultConfigsFileName);
+
+                if (!PyRevitInstallScope.HasReadOnlyAttribute(machinePath))
+                {
+                    var activeConfig = PyRevitInstallScope.GetActiveConfig(createIfMissing: false);
+                    string otherConfigPath = null;
+                    if (activeConfig.IsMachineConfig)
+                    {
+                        var perUserRoot = PyRevitLabsConsts.PyRevitPath;
+                        var perUserPath = PyRevitInstallScope.FindConfigIniInDirectory(perUserRoot)
+                            ?? Path.Combine(perUserRoot, PyRevitLabsConsts.DefaultConfigsFileName);
+                        if (File.Exists(perUserPath) &&
+                            !string.Equals(perUserPath, activeConfig.ConfigPath, StringComparison.OrdinalIgnoreCase))
+                        {
+                            otherConfigPath = perUserPath;
+                        }
+                    }
+                    else
+                    {
+                        if (File.Exists(machinePath) &&
+                            !string.Equals(machinePath, activeConfig.ConfigPath, StringComparison.OrdinalIgnoreCase))
+                        {
+                            otherConfigPath = machinePath;
+                        }
+                    }
+
+                    if (otherConfigPath != null)
+                    {
+                        try
+                        {
+                            var otherConfig = new PyRevitConfig(otherConfigPath);
+                            var existingPaths = new HashSet<string>(userExtensions, StringComparer.OrdinalIgnoreCase);
+                            foreach (var path in otherConfig.UserExtensionsList)
+                            {
+                                if (existingPaths.Add(path))
+                                    userExtensions.Add(path);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.Debug("Could not read extension paths from '{0}': {1}", otherConfigPath, ex.Message);
+                        }
+                    }
+                }
+            }
+
             var userExtensionsCount = 0;
             var userExtensionsAdded = 0;
             foreach (var extPath in userExtensions)
@@ -1437,6 +1491,9 @@ namespace pyRevitExtensionParser
                     PanelBackground = bundleInComponent?.PanelBackground,
                     TitleBackground = bundleInComponent?.TitleBackground,
                     SlideoutBackground = bundleInComponent?.SlideoutBackground,
+                    DarkPanelBackground = bundleInComponent?.DarkPanelBackground,
+                    DarkTitleBackground = bundleInComponent?.DarkTitleBackground,
+                    DarkSlideoutBackground = bundleInComponent?.DarkSlideoutBackground,
                     Icons = ParseIconsForComponent(dir),
                     TargetAssembly = bundleInComponent?.Assembly,
                     CommandClass = bundleInComponent?.CommandClass,

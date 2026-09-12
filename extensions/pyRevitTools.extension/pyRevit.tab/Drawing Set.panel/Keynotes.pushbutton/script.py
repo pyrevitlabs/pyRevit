@@ -97,8 +97,9 @@ def _persistent_engine_state():
         except Exception:
             cfgs = None
     if not cfgs:
-        logger.debug("KeynoteManager | engine cfgs unavailable — "
-                     "persistent state undetermined")
+        logger.debug(
+            "KeynoteManager | engine cfgs unavailable — persistent state undetermined"
+        )
         return None
 
     # tolerate a typed configs object instead of a JSON string
@@ -119,11 +120,9 @@ def _persistent_engine_state():
     except Exception:
         cfg = None
     if isinstance(cfg, dict):
-
         if "persistent" not in cfg:
             return False
         return _coerce_persistent_flag(cfg.get("persistent"))
-
 
     probe = raw.replace(" ", "").replace('"', "").replace("'", "").lower()
     if "persistent:true" in probe:
@@ -220,6 +219,7 @@ class KeynoteSetupError(Exception):
     safe while the pyRevit command itself is executing.  Once the modeless
     window exists, a SystemExit escaping a handler terminates Revit.
     """
+
     pass
 
 
@@ -245,7 +245,8 @@ def ui_guard(fn, _logger=logger, _alert=forms.alert):
             try:
                 _logger.error(
                     "KeynoteManager | unhandled error in %s | %s",
-                    getattr(fn, "__name__", "?"), ex,
+                    getattr(fn, "__name__", "?"),
+                    ex,
                 )
             except Exception:
                 pass
@@ -255,8 +256,11 @@ def ui_guard(fn, _logger=logger, _alert=forms.alert):
                     # (e.g. persistent engine flag lost).  The window can
                     # no longer run its code safely; tell the user once.
                     wnd = args[0] if args else None
-                    already = getattr(wnd, "_scope_wiped_notified", False) \
-                        if wnd is not None else True
+                    already = (
+                        getattr(wnd, "_scope_wiped_notified", False)
+                        if wnd is not None
+                        else True
+                    )
                     if not already:
                         try:
                             wnd._scope_wiped_notified = True
@@ -299,8 +303,7 @@ class RevitActionHandler(UI.IExternalEventHandler):
     def __init__(self):
         self._queue = []
 
-    def queue(self, action, callback=None, window=None,
-              callback_on_error=True):
+    def queue(self, action, callback=None, window=None, callback_on_error=True):
         """Add an action (and optional WPF-thread callback) to the queue.
 
         callback_on_error=False skips the callback when the action raises.
@@ -355,6 +358,7 @@ USAGE_SCOPE_NOTE = (
     "projects sharing this keynote file, linked models and un-tagged "
     "element/material keynotes are not visible to this check."
 )
+
 
 def get_keynote_pcommands():
     return list(
@@ -637,7 +641,9 @@ class EditRecordWindow(forms.WPFWindow):
         if self.active_key in available:
             available.remove(self.active_key)
         new_parent = forms.SelectFromList.show(
-            natsorted(available), title="Select Parent", multiselect=False,
+            natsorted(available),
+            title="Select Parent",
+            multiselect=False,
             owner=self,
         )
         if new_parent:
@@ -706,8 +712,44 @@ class KeynoteManagerWindow(forms.WPFWindow):
     , retain the XAML defaults and center the window.
     """
 
+    def _apply_theme_brushes(self):
+        """Swap in dark-theme values for the brushes that cannot be shared.
+
+        Nearly every colour in the XAML is either a pyRevit theme brush or a
+        self-contained chip that pairs its own background and foreground. Three
+        cannot be: a danger FOREGROUND has to be dark against white and light
+        against the dark row surface (#222933) - no single value clears 4.5:1
+        on both - and the locked-row tint inverts the same way.
+
+        The XAML carries the light values and references these keys with
+        DynamicResource, so this override takes effect when it runs and the
+        window still renders correctly when it does not.
+        """
+        try:
+            if not self.Resources["pyRevitIsDarkTheme"]:
+                return
+        except Exception:
+            # key absent on older pyRevit builds - keep the light values
+            return
+
+        def _brush(red, green, blue):
+            return Windows.Media.SolidColorBrush(
+                Windows.Media.Color.FromArgb(0xFF, red, green, blue)
+            )
+
+        try:
+            # #FF8A8C on #222933 = 6.47:1 (light #C42B2F would be 2.61:1)
+            self.Resources["DangerBrush"] = _brush(0xFF, 0x8A, 0x8C)
+            # amber tint that still reads as a distinct row (1.51:1) and
+            # carries the normal foreground at 8.44:1
+            self.Resources["LockedBgBrush"] = _brush(0x54, 0x42, 0x18)
+            self.Resources["LockedFgBrush"] = _brush(0xEC, 0xF0, 0xF1)
+        except Exception as ex:
+            logger.debug("Dark theme brush override failed | %s", ex)
+
     def __init__(self, xaml_file_name, reset_config=False, safe_mode=False):
         forms.WPFWindow.__init__(self, xaml_file_name)
+        self._apply_theme_brushes()
 
         self._modal_mode = safe_mode
         self.Topmost = False
@@ -750,9 +792,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._refresh_pending = False
         self._doc_changed_app = None
         self.Loaded += self._on_window_loaded
-
-        self.set_image_source(self.expandAllIcon, "expand_all.png")
-        self.set_image_source(self.collapseAllIcon, "collapse_all.png")
 
         self.load_config(reset_config)
         self._update_full_tree()
@@ -838,8 +877,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
     # =========================================================================
 
     def _update_status_bar(self):
-        safe = " \u2014 SAFE MODE (no persistent engine)" \
-            if self._modal_mode else ""
+        safe = " \u2014 SAFE MODE (no persistent engine)" if self._modal_mode else ""
         if self._kfile:
             fname = op.basename(self._kfile)
             handler = " ( ACC / FORMA )" if self._kfile_handler == "adc" else ""
@@ -854,12 +892,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
             knotes = self.all_keynotes if self._conn else []
             # Never print "0 in use" off a map that failed to collect \u2014 the
             # count is the only place the user sees that usage is unknown.
-            used = ("usage unverified (F5)" if self._usage_stale
-                    else "{} in use".format(len(self._used_keysdict)))
-            self.statusRight.Text = (
-                "{} groups \u00b7 {} keynotes \u00b7 {}".format(
-                    len(cats), len(knotes), used
-                )
+            used = (
+                "usage unverified (F5)"
+                if self._usage_stale
+                else "{} in use".format(len(self._used_keysdict))
+            )
+            self.statusRight.Text = "{} groups \u00b7 {} keynotes \u00b7 {}".format(
+                len(cats), len(knotes), used
             )
         except Exception:
             self.statusRight.Text = ""
@@ -871,10 +910,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
     def _is_owned_doc_active(self):
         """True when this window's document is still the active document."""
         try:
-            return (self._doc is not None
-                    and self._doc.IsValidObject
-                    and revit.doc is not None
-                    and self._doc.Equals(revit.doc))
+            return (
+                self._doc is not None
+                and self._doc.IsValidObject
+                and revit.doc is not None
+                and self._doc.Equals(revit.doc)
+            )
         except Exception:
             return False
 
@@ -893,7 +934,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 raise Exception(
                     "Keynote Manager was opened for a different document.\n"
                     "Switch back to that document, or close and reopen "
-                    "the Keynote Manager.")
+                    "the Keynote Manager."
+                )
             action()
 
         if self._modal_mode:
@@ -912,19 +954,23 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 try:
                     self.Dispatcher.BeginInvoke(
                         System.Action(ui_guard(callback)),
-                        Windows.Threading.DispatcherPriority.Background)
+                        Windows.Threading.DispatcherPriority.Background,
+                    )
                 except Exception as cbex:
                     logger.debug("Callback dispatch failed | %s", cbex)
             return
 
         if self._ext_event is None:
-            logger.error("KeynoteManager | ExternalEvent unavailable; "
-                         "action not queued")
-            forms.alert("Keynote Manager cannot reach Revit right now.\n"
-                        "Please try again.")
+            logger.error(
+                "KeynoteManager | ExternalEvent unavailable; action not queued"
+            )
+            forms.alert(
+                "Keynote Manager cannot reach Revit right now.\nPlease try again."
+            )
             return
-        self._ext_handler.queue(_doc_affine_action, callback, self,
-                                callback_on_error=callback_on_error)
+        self._ext_handler.queue(
+            _doc_affine_action, callback, self, callback_on_error=callback_on_error
+        )
         self._ext_event.Raise()
 
     # =========================================================================
@@ -1169,8 +1215,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 used[key].append(kn.Id)
                 # Detect keynote type from the tag's source param
                 try:
-                    src = kn.Parameter[
-                        DB.BuiltInParameter.KEY_SOURCE_PARAM]
+                    src = kn.Parameter[DB.BuiltInParameter.KEY_SOURCE_PARAM]
                     if src and src.HasValue:
                         val = src.AsString()
                         if val:
@@ -1199,8 +1244,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         better than a partial one, and F5 can still recover.
         """
         try:
-            used, used_types, used_views, ok = \
-                self.get_used_keynote_elements()
+            used, used_types, used_views, ok = self.get_used_keynote_elements()
         except Exception as ex:
             logger.debug("Refresh used keys failed | %s" % ex)
             self._usage_stale = True
@@ -1225,7 +1269,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
             "Cannot verify whether '%s' is placed in the model — reading "
             "keynote usage from the document failed, so this tool does NOT "
             "know whether any tag references it.\n\n"
-            "Press F5 to refresh first." % key)
+            "Press F5 to refresh first." % key
+        )
 
     def _collect_used_ids(self, keys, operation):
         """Fresh tag ids for `keys`, collected in the current API context.
@@ -1247,8 +1292,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 raise Exception(
                     "%s: could not read keynote tags from the model, so no "
                     "tag was updated.\nThe keynote file has already been "
-                    "changed — press F5 and check the affected tags."
-                    % operation)
+                    "changed — press F5 and check the affected tags." % operation
+                )
             used = self._used_keysdict
             self._usage_stale = True
         return dict((k, list(used.get(k, []))) for k in keys)
@@ -1287,8 +1332,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
             w, h, t, l = wg[self._kfile]
         else:
             w, h, t, l = (None, None, None, None)
-        if (all(v is not None for v in (w, h, t, l))
-                and coreutils.is_box_visible_on_screens(l, t, w, h)):
+        if all(
+            v is not None for v in (w, h, t, l)
+        ) and coreutils.is_box_visible_on_screens(l, t, w, h):
             self.window_geom = (w, h, t, l)
         else:
             self.WindowStartupLocation = (
@@ -1356,7 +1402,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 locked, owner = adc.is_locked(self._kfile_ext)
                 if locked:
                     raise KeynoteSetupError(
-                        "Keynote file is locked by {}.".format(owner))
+                        "Keynote file is locked by {}.".format(owner)
+                    )
             except KeynoteSetupError:
                 raise
             except Exception:
@@ -1374,8 +1421,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         except KeynoteSetupError:
             raise
         except Exception as adcex:
-            raise KeynoteSetupError(
-                "ADC communication failed.\n{}".format(adcex))
+            raise KeynoteSetupError("ADC communication failed.\n{}".format(adcex))
 
     def _change_kfile(self):
         kfile = forms.pick_file("txt")
@@ -1401,11 +1447,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 self._change_kfile()
                 self._determine_kfile()
             if not self._kfile or not op.exists(self._kfile):
-                raise KeynoteSetupError(
-                    "No valid keynote file set for this project.")
+                raise KeynoteSetupError("No valid keynote file set for this project.")
             if not os.access(self._kfile, os.W_OK):
-                raise KeynoteSetupError(
-                    "Keynote file is read-only:\n" + self._kfile)
+                raise KeynoteSetupError("Keynote file is read-only:\n" + self._kfile)
 
             # Release any previous connection (reconnect via Change File)
             if self._conn:
@@ -1429,8 +1473,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
             except Exception as probex:
                 raise KeynoteSetupError(
                     "The keynote file's folder does not allow creating lock "
-                    "files (offline or locked by a sync client?):\n{}\n\n{}"
-                    .format(op.dirname(self._kfile), probex))
+                    "files (offline or locked by a sync client?):\n{}\n\n{}".format(
+                        op.dirname(self._kfile), probex
+                    )
+                )
 
             try:
                 self._conn = kdb.connect(self._kfile)
@@ -1448,18 +1494,19 @@ class KeynoteManagerWindow(forms.WPFWindow):
                         self._convert_existing()
                         if not self._conn:
                             raise KeynoteSetupError(
-                                "Converted — please reopen Keynote Manager.")
+                                "Converted — please reopen Keynote Manager."
+                            )
                     except KeynoteSetupError:
                         raise
                     except Exception as convex:
-                        raise KeynoteSetupError(
-                            "Conversion failed: %s" % convex)
+                        raise KeynoteSetupError("Conversion failed: %s" % convex)
                 elif res == "Select Other":
                     if attempt >= MAX_KFILE_ATTEMPTS - 1:
                         raise KeynoteSetupError(
                             "Could not connect to a valid keynote file after "
                             "{} attempts.\n\nPlease reopen Keynote Manager "
-                            "to try again.".format(MAX_KFILE_ATTEMPTS))
+                            "to try again.".format(MAX_KFILE_ATTEMPTS)
+                        )
                     self._change_kfile()
                     self._determine_kfile()
                     continue  # retry in THIS frame — never recurse
@@ -1470,7 +1517,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     )
                     raise KeynoteSetupError(
                         "See the help page for converting the keynote file, "
-                        "then reopen Keynote Manager.")
+                        "then reopen Keynote Manager."
+                    )
                 else:
                     raise KeynoteSetupError("No valid keynote file.")
 
@@ -1478,13 +1526,16 @@ class KeynoteManagerWindow(forms.WPFWindow):
             break
         else:
             raise KeynoteSetupError(
-                "Could not connect to a valid keynote file after {} "
-                "attempts.".format(MAX_KFILE_ATTEMPTS))
+                "Could not connect to a valid keynote file after {} attempts.".format(
+                    MAX_KFILE_ATTEMPTS
+                )
+            )
 
         if self._conn and self._kfile:
             try:
                 shadow = script.get_data_file(
-                    "kshadow_" + op.basename(self._kfile), "txt")
+                    "kshadow_" + op.basename(self._kfile), "txt"
+                )
                 shutil.copy(self._kfile, shadow)
                 logger.debug("Keynote shadow backup: %s", shadow)
             except Exception as shex:
@@ -1503,8 +1554,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
         try:
             shutil.copy(self._kfile, temp)
         except Exception:
-            raise Exception("Backup failed — conversion aborted, keynote "
-                            "file untouched.")
+            raise Exception(
+                "Backup failed — conversion aborted, keynote file untouched."
+            )
         try:
             with open(self._kfile, "w"):
                 pass
@@ -1519,8 +1571,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     "Conversion failed AND the original could not be "
                     "restored (file locked by a sync client?).\n\n"
                     "Your keynotes are SAFE in this backup:\n{}\n\n"
-                    "Copy it back manually once the file unlocks."
-                    .format(temp))
+                    "Copy it back manually once the file unlocks.".format(temp)
+                )
             raise ex
         # success — keep the backup anyway; it is cheap insurance
         logger.debug("Legacy keynote backup kept at: %s", temp)
@@ -1542,8 +1594,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self._conn = None
             forms.alert(
                 "The keynote file is missing — renamed or removed by the "
-                "sync client?\n{}\n\nUse Change Keynote File to reconnect."
-                .format(self._kfile))
+                "sync client?\n{}\n\nUse Change Keynote File to reconnect.".format(
+                    self._kfile
+                )
+            )
             return []
         try:
             categories = kdb.get_categories(self._conn)
@@ -1560,7 +1614,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
             forms.alert(
                 "Error loading keynotes:\n%s\n\n"
                 "The keynote file may be locked or syncing. "
-                "Use Refresh (F5) to retry." % ex)
+                "Use Refresh (F5) to retry." % ex
+            )
             return []
 
         # Build parent -> children map from keynotes
@@ -1587,7 +1642,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 if node.key in visited:
                     logger.warning(
                         "Keynote hierarchy cycle detected at key '%s' — "
-                        "check the keynote file.", node.key)
+                        "check the keynote file.",
+                        node.key,
+                    )
                     continue
                 visited.add(node.key)
                 # Replace the children list (clear first to avoid dupes)
@@ -1595,12 +1652,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     node.children.pop()
                 if depth >= max_depth:
                     logger.warning(
-                        "Keynote nesting deeper than %s levels truncated "
-                        "at key '%s'.", max_depth, node.key)
+                        "Keynote nesting deeper than %s levels truncated at key '%s'.",
+                        max_depth,
+                        node.key,
+                    )
                     continue
                 for child in natsorted(
-                        children_map.get(node.key, []),
-                        key=lambda x: x.key):
+                    children_map.get(node.key, []), key=lambda x: x.key
+                ):
                     node.children.append(child)
                     stack.append((child, depth + 1))
 
@@ -1894,8 +1953,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         temp_key = "__swap_{}__".format(uuid.uuid4().hex[:8])
 
         try:
-            kdb.swap_keys(
-                self._conn, sel_key, other_key, temp_key, category=is_cat)
+            kdb.swap_keys(self._conn, sel_key, other_key, temp_key, category=is_cat)
 
             # Update references in Revit model (async via ExternalEvent)
             sk, ok = sel_key, other_key
@@ -2028,8 +2086,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         # Collect data on the Revit thread (we have API access here)
         try:
-            new_used, new_types, new_views, ok = \
-                self.get_used_keynote_elements()
+            new_used, new_types, new_views, ok = self.get_used_keynote_elements()
         except Exception:
             self._refresh_pending = False
             self._usage_stale = True
@@ -2058,7 +2115,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
         try:
             self.Dispatcher.BeginInvoke(
                 System.Action(ui_guard(_update_ui)),
-                Windows.Threading.DispatcherPriority.Background)
+                Windows.Threading.DispatcherPriority.Background,
+            )
         except Exception:
             self._refresh_pending = False
 
@@ -2290,7 +2348,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         return None
 
     def tree_preview_mouse_down(self, sender, args):
-        # SHIFT+CLICK a row places that keynote. 
+        # SHIFT+CLICK a row places that keynote.
         self._shift_place_pending = None
 
         shift = False
@@ -2336,8 +2394,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
         try:
             self.Dispatcher.BeginInvoke(
                 System.Action(
-                    ui_guard(lambda: self._place_after_shift_release(pending))),
-                Windows.Threading.DispatcherPriority.Background)
+                    ui_guard(lambda: self._place_after_shift_release(pending))
+                ),
+                Windows.Threading.DispatcherPriority.Background,
+            )
         except Exception as ex:
             logger.debug("Shift+click dispatch failed | %s" % ex)
             self._place_after_shift_release(pending)
@@ -2469,7 +2529,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
         except Exception as ex:
             forms.alert(
                 "Keynote file is busy — move not applied.\n%s\n\n"
-                "Try the move again." % ex)
+                "Try the move again." % ex
+            )
             return
 
         if dragged.parent_key and _is_descendant(
@@ -2621,7 +2682,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
         except Exception as ex:
             forms.alert(
                 "Keynote file is busy — nothing was deleted.\n%s\n\n"
-                "Please try again." % ex)
+                "Please try again." % ex
+            )
             return
         has_any_children = any(k.parent_key == sel.key for k in db_keynotes)
 
@@ -2672,10 +2734,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 "%s\n\nDelete %s '%s' anyway?  Any tag still pointing at "
                 "'%s' would keep that key with no matching row in the "
                 "keynote file." % (unknown, kind, key, key),
-                yes=True, no=True)
+                yes=True,
+                no=True,
+            )
         return forms.alert(
-            "Delete %s '%s'?\n\n%s" % (kind, key, USAGE_SCOPE_NOTE),
-            yes=True, no=True)
+            "Delete %s '%s'?\n\n%s" % (kind, key, USAGE_SCOPE_NOTE), yes=True, no=True
+        )
 
     def rekey_keynote(self, sender, args):
         sel = self.selected_keynote
@@ -2687,8 +2751,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
         try:
             db_keynotes = kdb.get_keynotes(self._conn)
         except Exception as ex:
-            forms.alert("Keynote file is busy — re-key not applied.\n%s\n\n"
-                        "Please try again." % ex)
+            forms.alert(
+                "Keynote file is busy — re-key not applied.\n%s\n\n"
+                "Please try again." % ex
+            )
             return
         if any(k.locked for k in db_keynotes if k.parent_key == sel.key):
             forms.alert("Some children are locked — cannot re-key.")
@@ -2696,11 +2762,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
         try:
             from_key = sel.key
             to_key = self._pick_new_key()
-            if (to_key and to_key != from_key
-                    and self._confirm_rekey(from_key, to_key)):
+            if to_key and to_key != from_key and self._confirm_rekey(from_key, to_key):
                 # single atomic commit with rollback on failure
                 kdb.rekey_with_children(
-                    self._conn, from_key, to_key, category=sel.is_category)
+                    self._conn, from_key, to_key, category=sel.is_category
+                )
                 # Update Revit element refs (async via ExternalEvent)
                 fk, tk = from_key, to_key
                 self._revit_run(lambda: self._rekey_refs(fk, tk))
@@ -2725,14 +2791,22 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 "%s\n\nRe-key '%s' to '%s' anyway?  Placed tags may NOT be "
                 "updated, leaving them pointing at the old key."
                 % (unknown, from_key, to_key),
-                yes=True, no=True)
+                yes=True,
+                no=True,
+            )
         return forms.alert(
             "Re-key '%s' to '%s'?\n\nKeynote tags in this project will be "
             "re-pointed to the new key (%d found in the last usage check).\n\n"
-            "%s" % (from_key, to_key,
-                    len(self._used_keysdict.get(from_key, [])),
-                    USAGE_SCOPE_NOTE),
-            yes=True, no=True)
+            "%s"
+            % (
+                from_key,
+                to_key,
+                len(self._used_keysdict.get(from_key, [])),
+                USAGE_SCOPE_NOTE,
+            ),
+            yes=True,
+            no=True,
+        )
 
     def _rekey_refs(self, from_key, to_key):
         ids = self._collect_used_ids([from_key], "Re-key")
@@ -2804,7 +2878,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self.statusLeft.Text = (
                 "Keynote '{}' — usage unverified, press F5".format(key)
                 if self._usage_stale
-                else "Keynote '{}' — not placed in model".format(key))
+                else "Keynote '{}' — not placed in model".format(key)
+            )
             return
 
         def _do():
@@ -2851,8 +2926,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self._hint("%s is locked by another user — cannot place" % sel.key)
             return
         if not sel.parent_key:
-            self._hint("%s is a group — Shift+Click a keynote to place"
-                       % sel.key)
+            self._hint("%s is a group — Shift+Click a keynote to place" % sel.key)
             return
 
         if self._modal_mode:
@@ -2861,7 +2935,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 "a persistent engine (see SAFE MODE in the status bar).\n\n"
                 "Close the Keynote Manager, then place the tag — or reload "
                 "pyRevit so the tool gets a persistent engine.",
-                title="Not available in Safe Mode")
+                title="Not available in Safe Mode",
+            )
             return
 
         sel_key = sel.key
@@ -2870,16 +2945,15 @@ class KeynoteManagerWindow(forms.WPFWindow):
         def _do():
 
             self._place_result = None
-            keynotes_cat = revit.query.get_category(
-                DB.BuiltInCategory.OST_KeynoteTags)
+            keynotes_cat = revit.query.get_category(DB.BuiltInCategory.OST_KeynoteTags)
             if not keynotes_cat:
-                self._place_result = 'no_family'
+                self._place_result = "no_family"
                 return
             def_id = revit.doc.GetDefaultFamilyTypeId(keynotes_cat.Id)
             if not def_id or not revit.doc.GetElement(def_id):
-                self._place_result = 'no_family'
+                self._place_result = "no_family"
                 return
-            self._place_result = 'ok'
+            self._place_result = "ok"
             DocumentEventUtils.PostCommandAndUpdateNewElementProperties(
                 HOST_APP.uiapp,
                 revit.doc,
@@ -2890,20 +2964,20 @@ class KeynoteManagerWindow(forms.WPFWindow):
             )
 
         def _on_placed():
-            result = getattr(self, '_place_result', None)
-            if result == 'no_family':
+            result = getattr(self, "_place_result", None)
+            if result == "no_family":
                 forms.alert(
                     "No Keynote Tag family is loaded in this project.\n\n"
                     "Please load a Keynote Tag family from the library "
                     "before placing keynotes.",
-                    title="Keynote Tag Missing")
+                    title="Keynote Tag Missing",
+                )
                 return
             self._refresh_used_keynotes()
             self._update_full_tree()
             self._update_status_bar()
 
             self._hint("Placing %s — click in the view" % sel_key)
-
 
         self._revit_run(_do, callback=_on_placed, callback_on_error=False)
 
@@ -2955,7 +3029,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 forms.alert(
                     "Keynote Manager was opened for a different document.\n"
                     "Switch back to that document, or close and reopen "
-                    "the Keynote Manager.")
+                    "the Keynote Manager."
+                )
                 return
             try:
                 self._determine_kfile()
@@ -2970,6 +3045,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self._refresh_used_keynotes()
             self._update_full_tree()
             self._update_status_bar()
+
         self._revit_run(_set_file, callback=_reload, callback_on_error=False)
 
     def show_keynote_file(self, sender, args):
@@ -3024,8 +3100,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
             # callback_on_error=False: never clear _needs_update or claim
             # success if the update transaction failed
-            self._revit_run(_do_update, callback=_on_update_complete,
-                            callback_on_error=False)
+            self._revit_run(
+                _do_update, callback=_on_update_complete, callback_on_error=False
+            )
         else:
             forms.alert("The Revit model is already up to date.", title="Up to Date")
 
@@ -3042,19 +3119,22 @@ class KeynoteManagerWindow(forms.WPFWindow):
         """
         doc = self._doc
         if doc is None or not doc.IsValidObject:
-            raise Exception("The document this window was opened for is no "
-                            "longer available.")
+            raise Exception(
+                "The document this window was opened for is no longer available."
+            )
 
         ktable = DB.KeynoteTable.GetKeynoteTable(doc)
 
         def _reload_checked():
             status = ktable.Reload(None)
-            if not _is_enum(status, "Success",
-                            getattr(DB, "ExternalResourceLoadStatus", None)):
+            if not _is_enum(
+                status, "Success", getattr(DB, "ExternalResourceLoadStatus", None)
+            ):
                 raise Exception(
                     "Revit could not reload the keynote table "
                     "(status: {}).\n\nThe keynote file may be locked, "
-                    "missing, or still syncing.".format(status))
+                    "missing, or still syncing.".format(status)
+                )
 
         if doc.IsModifiable:
             # already inside a transaction — just do the checked reload
@@ -3068,11 +3148,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
             _reload_checked()
             tstatus = txn.Commit()
             resolved = True
-            if not _is_enum(tstatus, "Committed",
-                            getattr(DB, "TransactionStatus", None)):
+            if not _is_enum(
+                tstatus, "Committed", getattr(DB, "TransactionStatus", None)
+            ):
                 raise Exception(
-                    "Revit rolled back the keynote update "
-                    "(status: {}).".format(tstatus))
+                    "Revit rolled back the keynote update (status: {}).".format(tstatus)
+                )
         finally:
             if not resolved:
                 try:
@@ -3109,8 +3190,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     self._close_pending = True
                     self._finalize_close()
 
-                self._revit_run(_do_update, callback=_sync_done,
-                                callback_on_error=False)
+                self._revit_run(
+                    _do_update, callback=_sync_done, callback_on_error=False
+                )
                 return
 
         # Proceed with cleanup
@@ -3160,37 +3242,79 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
 
 _GUARDED_ENTRY_POINTS = (
-    (RevitActionHandler, (
-        "Execute",
-    )),
-    (EditRecordWindow, (
-        "apply_changes", "cancel_changes", "pick_key", "pick_parent",
-        "select_template", "translate",
-        "to_upper", "to_lower", "to_title", "to_sentence",
-        "window_closing",
-    )),
-    (KeynoteManagerWindow, (
-        # XAML-wired
-        "add_category", "add_keynote", "change_keynote_file", "clear_search",
-        "collapse_all_tree", "custom_filter", "duplicate_keynote",
-        "edit_keynote", "edit_category_inline", "expand_all_tree",
-        "export_keynotes", "export_visible_keynotes", "import_keynotes",
-        "indent_keynote", "outdent_keynote", "move_up", "move_down",
-        "place_keynote", "place_user_keynote", "place_element_keynote",
-        "place_material_keynote",
-        "refresh", "rekey_keynote", "remove_keynote",
-        "show_case_menu", "show_keynote", "show_keynote_file",
-        "to_upper", "to_lower", "to_title", "to_sentence",
-        "update_model", "window_closing", "window_keydown",
-        "search_txt_changed", "selected_keynote_changed",
-        "tree_preview_mouse_down", "tree_preview_mouse_up",
-        "tree_preview_mouse_move",
-        "tree_double_click", "tree_drag_over", "tree_drop",
-        "tree_item_drag_over", "tree_item_drag_leave", "tree_item_drop",
-        "tree_item_right_click",
-        # code-wired
-        "_on_search_timer_tick", "_on_window_loaded", "_on_doc_changed",
-    )),
+    (RevitActionHandler, ("Execute",)),
+    (
+        EditRecordWindow,
+        (
+            "apply_changes",
+            "cancel_changes",
+            "pick_key",
+            "pick_parent",
+            "select_template",
+            "translate",
+            "to_upper",
+            "to_lower",
+            "to_title",
+            "to_sentence",
+            "window_closing",
+        ),
+    ),
+    (
+        KeynoteManagerWindow,
+        (
+            # XAML-wired
+            "add_category",
+            "add_keynote",
+            "change_keynote_file",
+            "clear_search",
+            "collapse_all_tree",
+            "custom_filter",
+            "duplicate_keynote",
+            "edit_keynote",
+            "edit_category_inline",
+            "expand_all_tree",
+            "export_keynotes",
+            "export_visible_keynotes",
+            "import_keynotes",
+            "indent_keynote",
+            "outdent_keynote",
+            "move_up",
+            "move_down",
+            "place_keynote",
+            "place_user_keynote",
+            "place_element_keynote",
+            "place_material_keynote",
+            "refresh",
+            "rekey_keynote",
+            "remove_keynote",
+            "show_case_menu",
+            "show_keynote",
+            "show_keynote_file",
+            "to_upper",
+            "to_lower",
+            "to_title",
+            "to_sentence",
+            "update_model",
+            "window_closing",
+            "window_keydown",
+            "search_txt_changed",
+            "selected_keynote_changed",
+            "tree_preview_mouse_down",
+            "tree_preview_mouse_up",
+            "tree_preview_mouse_move",
+            "tree_double_click",
+            "tree_drag_over",
+            "tree_drop",
+            "tree_item_drag_over",
+            "tree_item_drag_leave",
+            "tree_item_drop",
+            "tree_item_right_click",
+            # code-wired
+            "_on_search_timer_tick",
+            "_on_window_loaded",
+            "_on_doc_changed",
+        ),
+    ),
 )
 
 for _cls, _names in _GUARDED_ENTRY_POINTS:
@@ -3201,7 +3325,9 @@ for _cls, _names in _GUARDED_ENTRY_POINTS:
         else:
             logger.warning(
                 "ui_guard: %s.%s not found — XAML handler unshielded?",
-                _cls.__name__, _mname)
+                _cls.__name__,
+                _mname,
+            )
 
 
 # =============================================================================
@@ -3216,7 +3342,8 @@ try:
             "KeynoteManager | no persistent engine resolved for this "
             "command — opening in safe (modal) mode.  Check that "
             "bundle.yaml declares `engine: persistent: true` and reload "
-            "pyRevit; a stale cached command assembly can also cause this.")
+            "pyRevit; a stale cached command assembly can also cause this."
+        )
 
     _existing = envvars.get_pyrevit_env_var(KEYNOTEMGR_WINDOW_ENVVAR)
     _needs_new = True
@@ -3246,8 +3373,7 @@ try:
             # modal: blocks here until the user closes the window
             _new_window.show(modal=True)
         else:
-            envvars.set_pyrevit_env_var(
-                KEYNOTEMGR_WINDOW_ENVVAR, _new_window)
+            envvars.set_pyrevit_env_var(KEYNOTEMGR_WINDOW_ENVVAR, _new_window)
             _new_window.show(modal=False)
 except KeynoteSetupError as kser:
     # Expected setup failures (no keynote file, ADC offline, locked file)
@@ -3261,7 +3387,8 @@ except SystemExit:
         "triggered before the window opened).\n\n"
         "Check the output window above for any earlier messages, "
         "and check the pyRevit log if this repeats.",
-        title="Keynote Manager")
+        title="Keynote Manager",
+    )
 except BaseException as kmex:  # noqa: broad by design — never fail silently
     envvars.set_pyrevit_env_var(KEYNOTEMGR_WINDOW_ENVVAR, None)
     logger.error("KeynoteManager | %s", kmex)

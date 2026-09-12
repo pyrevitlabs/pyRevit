@@ -21,7 +21,9 @@ from pyrevit.preflight import PreflightTestCase
 import pyrevit.revit.db.query as q
 import pyrevit.revit.db.count as cnt
 
-_XAML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "locale", "Checks.xaml")
+_XAML = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "locale", "Checks.xaml"
+)
 
 
 def _t(key):
@@ -631,7 +633,7 @@ class ReportData:
         """
         Exports the current data to a CSV file.
         If the CSV file does not exist, it creates a new file and writes the headers and data.
-        If the CSV file exists, it appends the data only if a row with the same date and document 
+        If the CSV file exists, it appends the data only if a row with the same date and document
         name does not already exist.
 
         Args:
@@ -678,7 +680,9 @@ def get_revit_link_pinning_status(rvtlink_instance=None):
     return (
         "-"
         if not hasattr(rvtlink_instance, "Pinned")
-        else "Unpinned" if not rvtlink_instance.Pinned else "Pinned"
+        else "Unpinned"
+        if not rvtlink_instance.Pinned
+        else "Pinned"
     )
 
 
@@ -980,7 +984,7 @@ def audit_document(doc, output):
             if not link_doc:
                 logger.error(
                     "Link '%s' is not loaded -- skipping.",
-                    q.get_rvt_link_instance_name(rvt_link_instance)
+                    q.get_rvt_link_instance_name(rvt_link_instance),
                 )
                 continue
             link_document_data = ReportData(link_doc)

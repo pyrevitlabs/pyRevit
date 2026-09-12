@@ -15,12 +15,12 @@ namespace pyRevitExtensionParserTest
     {
         private IEnumerable<ParsedExtension>? _installedExtensions;
         private string? _testExtensionPath;
-        
+
         [SetUp]
         public override void BaseSetUp()
         {
             base.BaseSetUp();
-            
+
             // Create comprehensive test extension on-the-fly
             _testExtensionPath = TestExtensionFactory.CreateComprehensiveTestExtension(TestTempDir);
             _installedExtensions = ParseInstalledExtensions(new[] { _testExtensionPath });
@@ -36,7 +36,7 @@ namespace pyRevitExtensionParserTest
             }
 
             TestContext.Out.WriteLine("=== Testing Push Button With Simple Bundle ===");
-            
+
             foreach (var extension in _installedExtensions)
             {
                 // Note: Folder name is "Selection Test.pushbutton", Name is "SelectionTest" (spaces removed)
@@ -50,21 +50,21 @@ namespace pyRevitExtensionParserTest
                     TestContext.Out.WriteLine($"Title: {pushButton.Title ?? "None"}");
                     TestContext.Out.WriteLine($"Tooltip: {pushButton.Tooltip ?? "None"}");
                     TestContext.Out.WriteLine($"Author: {pushButton.Author ?? "None"}");
-                    
+
                     Assert.AreEqual(CommandComponentType.PushButton, pushButton.Type);
                     Assert.AreEqual("Selection Test", pushButton.DisplayName);
-                    
+
                     Assert.IsNotNull(pushButton.BundleFile, "Bundle file should be present");
                     Assert.IsTrue(pushButton.BundleFile.EndsWith("bundle.yaml"), "Bundle file should be bundle.yaml");
-                    
+
                     Assert.AreEqual("Selection Test", pushButton.Title);
                     Assert.AreEqual("Test command that requires element selection", pushButton.Tooltip);
                     Assert.AreEqual("Test User", pushButton.Author);
-                    
+
                     return;
                 }
             }
-            
+
             Assert.Fail("SelectionTest push button not found");
         }
 
@@ -78,7 +78,7 @@ namespace pyRevitExtensionParserTest
             }
 
             TestContext.Out.WriteLine("=== Testing Push Button With Selection Context ===");
-            
+
             foreach (var extension in _installedExtensions)
             {
                 var pushButton = FindComponentRecursively(extension, "SelectionTest");
@@ -108,31 +108,31 @@ namespace pyRevitExtensionParserTest
             var tabDir = Path.Combine(tempDir, "TestTab.tab");
             var panelDir = Path.Combine(tabDir, "TestPanel.panel");
             var buttonDir = Path.Combine(panelDir, "TestNewlineButton.pushbutton");
-            
+
             Directory.CreateDirectory(buttonDir);
-            
+
             var scriptPath = Path.Combine(buttonDir, "script.py");
             // Test with \n in the title
             File.WriteAllText(scriptPath, @"__title__ = 'Generate\nAPI Stubs'
 print('test')");
-            
+
             // Parse the extension
             var extensions = ParseInstalledExtensions(new[] { tempDir });
             var extension = extensions.FirstOrDefault();
-            
+
             Assert.IsNotNull(extension, "Extension should be parsed");
-            
+
             var testButton = FindComponentRecursively(extension, "TestNewlineButton");
             Assert.IsNotNull(testButton, "TestNewlineButton should be found");
-            
+
             // Verify that \n is converted to an actual newline
             Assert.IsNotNull(testButton.Title, "Title should not be null");
             Assert.That(testButton.Title, Does.Contain("\n"), "Title should contain an actual newline character");
             Assert.That(testButton.Title, Is.EqualTo("Generate\nAPI Stubs"), "Title should have newline properly parsed");
-            
+
             // Verify it's NOT the literal \n string
             Assert.That(testButton.Title, Does.Not.Contain("\\n"), "Title should not contain literal \\n");
-            
+
             TestContext.Out.WriteLine($"Title successfully parsed with newline: '{testButton.Title}'");
         }
 
@@ -144,9 +144,9 @@ print('test')");
             var tabDir = Path.Combine(tempDir, "TestTab.tab");
             var panelDir = Path.Combine(tabDir, "TestPanel.panel");
             var buttonDir = Path.Combine(panelDir, "TestButton.pushbutton");
-            
+
             Directory.CreateDirectory(buttonDir);
-            
+
             var scriptPath = Path.Combine(buttonDir, "script.py");
             // Test with various escape sequences - use raw Python string literals
             var scriptContent = new StringBuilder();
@@ -155,25 +155,25 @@ print('test')");
             scriptContent.AppendLine("__doc__ = 'Backslash: \\\\'");
             scriptContent.AppendLine("print('test')");
             File.WriteAllText(scriptPath, scriptContent.ToString());
-            
+
             // Parse the extension
             var extensions = ParseInstalledExtensions(new[] { tempDir });
             var extension = extensions.FirstOrDefault();
-            
+
             Assert.IsNotNull(extension, "Extension should be parsed");
-            
+
             var testButton = FindComponentRecursively(extension, "TestButton");
             Assert.IsNotNull(testButton, "TestButton should be found");
-            
+
             // Verify newline and tab are converted
             Assert.That(testButton.Title, Is.EqualTo("Line1\nLine2\tTab"), "Title should have \\n and \\t converted");
-            
+
             // Verify single quote (no escape needed when using double quotes in Python)
             Assert.That(testButton.Author, Is.EqualTo("Test's Author"), "Author should preserve single quote");
-            
+
             // Verify backslash escape
             Assert.That(testButton.Tooltip, Is.EqualTo("Backslash: \\"), "Tooltip should have \\\\ converted to single backslash");
-            
+
             TestContext.Out.WriteLine($"Title: '{testButton.Title}'");
             TestContext.Out.WriteLine($"Author: '{testButton.Author}'");
             TestContext.Out.WriteLine($"Tooltip: '{testButton.Tooltip}'");
@@ -187,9 +187,9 @@ print('test')");
             var tabDir = Path.Combine(tempDir, "TestTab.tab");
             var panelDir = Path.Combine(tabDir, "TestPanel.panel");
             var buttonDir = Path.Combine(panelDir, "TestCommentButton.pushbutton");
-            
+
             Directory.CreateDirectory(buttonDir);
-            
+
             var scriptPath = Path.Combine(buttonDir, "script.py");
             // Test with trailing comment after the title string - this is the reported bug case
             var scriptContent = new StringBuilder();
@@ -198,31 +198,31 @@ print('test')");
             scriptContent.AppendLine("__doc__ = 'Description here'  # Another comment");
             scriptContent.AppendLine("print('test')");
             File.WriteAllText(scriptPath, scriptContent.ToString());
-            
+
             // Parse the extension
             var extensions = ParseInstalledExtensions(new[] { tempDir });
             var extension = extensions.FirstOrDefault();
-            
+
             Assert.IsNotNull(extension, "Extension should be parsed");
-            
+
             var testButton = FindComponentRecursively(extension, "TestCommentButton");
             Assert.IsNotNull(testButton, "TestCommentButton should be found");
-            
+
             // Verify title does NOT contain the trailing comment
-            Assert.That(testButton.Title, Is.EqualTo("Place Views on Sheets"), 
+            Assert.That(testButton.Title, Is.EqualTo("Place Views on Sheets"),
                 "Title should NOT contain trailing comment text");
             Assert.That(testButton.Title, Does.Not.Contain("#"), "Title should not contain comment marker");
-            Assert.That(testButton.Title, Does.Not.Contain("Name of the button"), 
+            Assert.That(testButton.Title, Does.Not.Contain("Name of the button"),
                 "Title should not contain comment text");
-            
+
             // Verify author is parsed correctly (no trailing comment)
-            Assert.That(testButton.Author, Is.EqualTo("Test Author"), 
+            Assert.That(testButton.Author, Is.EqualTo("Test Author"),
                 "Author should NOT contain trailing comment text");
-            
+
             // Verify tooltip is parsed correctly (no trailing comment)
-            Assert.That(testButton.Tooltip, Is.EqualTo("Description here"), 
+            Assert.That(testButton.Tooltip, Is.EqualTo("Description here"),
                 "Tooltip should NOT contain trailing comment text");
-            
+
             TestContext.Out.WriteLine($"Title correctly parsed: '{testButton.Title}'");
             TestContext.Out.WriteLine($"Author correctly parsed: '{testButton.Author}'");
             TestContext.Out.WriteLine($"Tooltip correctly parsed: '{testButton.Tooltip}'");
@@ -233,7 +233,7 @@ print('test')");
         {
             if (parent == null || string.IsNullOrEmpty(componentName))
                 return null;
-                
+
             if (parent.Name == componentName)
                 return parent;
 
@@ -260,7 +260,7 @@ print('test')");
     public class DevToolsPanelButtonTests
     {
         private IEnumerable<ParsedExtension>? _installedExtensions;
-        
+
         [SetUp]
         public void Setup()
         {
@@ -278,7 +278,7 @@ print('test')");
             }
 
             TestContext.Out.WriteLine("=== Testing Push Button Without Bundle File ===");
-            
+
             foreach (var extension in _installedExtensions)
             {
                 var pushButton = FindComponentRecursively(extension, "Logs");
@@ -292,21 +292,21 @@ print('test')");
                     TestContext.Out.WriteLine($"Title: {pushButton.Title ?? "None"}");
                     TestContext.Out.WriteLine($"Tooltip: {pushButton.Tooltip ?? "None"}");
                     TestContext.Out.WriteLine($"Author: {pushButton.Author ?? "None"}");
-                    
+
                     // Verify basic push button properties
                     Assert.AreEqual(CommandComponentType.PushButton, pushButton.Type);
                     Assert.IsNotNull(pushButton.ScriptPath);
                     Assert.IsTrue(pushButton.ScriptPath.EndsWith("script.py"));
                     Assert.AreEqual("Logs", pushButton.DisplayName);
-                    
+
                     // Should have no bundle file
                     Assert.IsNull(pushButton.BundleFile);
-                    
+
                     // Test completed successfully
                     return;
                 }
             }
-            
+
             Assert.Fail("Logs push button not found");
         }
 
@@ -381,7 +381,7 @@ print('test')");
             }
 
             TestContext.Out.WriteLine("=== Testing Pulldown With Complex Bundle ===");
-            
+
             foreach (var extension in _installedExtensions)
             {
                 var pulldown = FindComponentRecursively(extension, "BundleTests");
@@ -393,29 +393,29 @@ print('test')");
                     TestContext.Out.WriteLine($"Bundle File: {pulldown.BundleFile ?? "None"}");
                     TestContext.Out.WriteLine($"Highlight: {pulldown.Highlight ?? "None"}");
                     TestContext.Out.WriteLine($"Layout Order Count: {pulldown.LayoutOrder?.Count ?? 0}");
-                    
+
                     // Verify pulldown properties
                     Assert.AreEqual(CommandComponentType.PullDown, pulldown.Type);
                     Assert.AreEqual("Bundle Tests", pulldown.DisplayName);
-                    
+
                     // Bundle file should be present
                     Assert.IsNotNull(pulldown.BundleFile, "Bundle file should be present");
                     Assert.IsTrue(pulldown.BundleFile.EndsWith("bundle.yaml"), "Bundle file should be bundle.yaml");
-                    
+
                     // Verify complex bundle features
                     Assert.AreEqual("new", pulldown.Highlight, "Highlight should be 'new'");
                     Assert.IsNotNull(pulldown.LayoutOrder, "Layout order should be parsed");
                     Assert.IsTrue(pulldown.LayoutOrder.Count > 0, "Layout order should have items");
-                    
+
                     // Verify layout contains expected items
                     Assert.IsTrue(pulldown.LayoutOrder.Contains("Test pyRevit Bundle"), "Layout should contain 'Test pyRevit Bundle'");
                     Assert.IsTrue(pulldown.LayoutOrder.Contains("Test pyRevit Button"), "Layout should contain 'Test pyRevit Button'");
-                    
+
                     // Test completed successfully
                     return;
                 }
             }
-            
+
             Assert.Fail("BundleTests pulldown not found");
         }
 
@@ -429,7 +429,7 @@ print('test')");
             }
 
             TestContext.Out.WriteLine("=== Testing Panel Button With Bundle File ===");
-            
+
             foreach (var extension in _installedExtensions)
             {
                 var panelButton = FindComponentRecursively(extension, "DebugDialogConfig");
@@ -443,27 +443,27 @@ print('test')");
                     TestContext.Out.WriteLine($"Title: {panelButton.Title ?? "None"}");
                     TestContext.Out.WriteLine($"Tooltip: {panelButton.Tooltip ?? "None"}");
                     TestContext.Out.WriteLine($"Author: {panelButton.Author ?? "None"}");
-                    
+
                     // Verify basic panel button properties
                     Assert.AreEqual(CommandComponentType.PanelButton, panelButton.Type);
                     Assert.IsNotNull(panelButton.ScriptPath);
                     Assert.IsTrue(panelButton.ScriptPath.EndsWith("script.py"));
                     Assert.AreEqual("Debug Dialog Config", panelButton.DisplayName);
-                    
+
                     // Bundle file should be present and parsed
                     Assert.IsNotNull(panelButton.BundleFile, "Bundle file should be present");
                     Assert.IsTrue(panelButton.BundleFile.EndsWith("bundle.yaml"), "Bundle file should be bundle.yaml");
-                    
+
                     // Verify bundle metadata was parsed
                     Assert.AreEqual("Panel Configuration", panelButton.Title);
                     Assert.AreEqual("Configure panel display options and debug settings", panelButton.Tooltip);
                     Assert.AreEqual("Test User", panelButton.Author);
-                    
+
                     // Test completed successfully
                     return;
                 }
             }
-            
+
             Assert.Fail("DebugDialogConfig panel button not found");
         }
 
@@ -477,7 +477,7 @@ print('test')");
             }
 
             TestContext.Out.WriteLine("=== Testing Panel Button With Context Availability ===");
-            
+
             foreach (var extension in _installedExtensions)
             {
                 var panelButton = FindComponentRecursively(extension, "DebugDialogConfig");
@@ -546,7 +546,7 @@ print('test')");
             CollectionAssert.AreEqual(expectedLayout, bundlePulldown.LayoutOrder);
 
             Assert.IsNotNull(bundlePulldown.Children, "Pulldown children should not be null");
-            
+
             // List of layout items that have corresponding child components
             // Note: "Test Content Bundle - no rfa in folder nor specifed in bundle" is in bundle.yaml
             // but does not have a corresponding component directory, so it won't have a child
@@ -571,7 +571,7 @@ print('test')");
                 "Test Hyperlink",
                 "Test Блог"
             };
-            
+
             foreach (var layoutName in expectedChildren)
             {
                 var child = bundlePulldown.Children.FirstOrDefault(c => c.DisplayName == layoutName);
@@ -682,7 +682,7 @@ print('test')");
         {
             if (parent == null || string.IsNullOrEmpty(componentName))
                 return null;
-                
+
             if (parent.Name == componentName)
                 return parent;
 
@@ -708,10 +708,10 @@ print('test')");
                 TestContext.Out.WriteLine($"{indent}- NULL COMPONENT");
                 return;
             }
-            
+
             var indent2 = new string(' ', depth * 2);
             TestContext.Out.WriteLine($"{indent2}- {component.Name ?? "NULL"} ({component.DisplayName ?? "NULL"}) [{component.Type}]");
-            
+
             if (component.Children != null)
             {
                 foreach (var child in component.Children)

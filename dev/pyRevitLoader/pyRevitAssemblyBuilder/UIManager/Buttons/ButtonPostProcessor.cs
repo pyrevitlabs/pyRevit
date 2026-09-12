@@ -135,7 +135,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 // Use reflection to access the Highlight property since it's in Autodesk.Internal namespace
                 var highlightValue = component.Highlight.ToLowerInvariant();
                 var highlightProperty = adwButton.GetType().GetProperty("Highlight");
-                
+
                 if (highlightProperty != null)
                 {
                     var highlightModeType = highlightProperty.PropertyType;
@@ -169,7 +169,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
             // Early exit if no help URL is configured
             if (component == null || ribbonItem == null)
                 return;
-            
+
             try
             {
                 var helpUrl = component.GetLocalizedHelpUrl();
@@ -218,13 +218,13 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 var getRibbonItemMethod = ribbonItem.GetType().GetMethod(
                     "getRibbonItem",
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                    
+
                 if (getRibbonItemMethod != null)
                 {
                     var result = getRibbonItemMethod.Invoke(ribbonItem, null);
                     return result as RibbonButton;
                 }
-                
+
                 var ribbon = ComponentManager.Ribbon;
                 if (ribbon?.Tabs == null)
                     return null;
@@ -268,7 +268,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 {
                     return button;
                 }
-                
+
                 // Check in split buttons
                 if (item is RibbonSplitButton splitButton && splitButton.Items != null)
                 {

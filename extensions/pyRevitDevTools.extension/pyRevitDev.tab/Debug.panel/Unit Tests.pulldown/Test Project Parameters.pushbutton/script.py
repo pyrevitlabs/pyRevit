@@ -1,7 +1,6 @@
 # -*- coding: UTF-8 -*-
 """Test Project Parameters Functions - Issue #2695"""
 
-
 import sys
 import traceback
 import time
@@ -48,7 +47,6 @@ def test_basic_functionality():
     output.print_md("## Testing basic functionality...")
 
     try:
-
         # Get results both ways
         original_list = get_project_parameters()
         iterator_list = list(iter_project_parameters())
@@ -97,7 +95,6 @@ def test_early_termination():
     output.print_md("## Testing early termination...")
 
     try:
-
         # Test early termination - get only first 3 parameters
         count = 0
         first_five = []
@@ -143,7 +140,6 @@ def test_boolean_return():
     output.print_md("## Testing boolean return...")
 
     try:
-
         # Get a real parameter name if available
         params = get_project_parameters()
         if params:
@@ -216,7 +212,6 @@ def test_performance():
     output.print_md("## Testing performance...")
 
     try:
-
         # Time original implementation
         start_time = time.time()
         original_result = _get_project_parameters_original()
