@@ -10,8 +10,12 @@ hl.log_hook(
     {
         "cancellable?": str(args.Cancellable),
         "doc": str(revit.doc),
-        "master_file": str(args.IsSavingAsCentralFile if HOST_APP.is_newer_than(2021) else args.IsSavingAsMasterFile),
+        "master_file": str(
+            args.IsSavingAsCentralFile
+            if HOST_APP.is_newer_than(2021)
+            else args.IsSavingAsMasterFile
+        ),
         "doc_path": str(args.PathName),
     },
-    log_doc_access=True
+    log_doc_access=True,
 )

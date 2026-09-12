@@ -3,6 +3,7 @@
 Shift-Click:
 Pick favorites from all available categories
 """
+
 # pylint: disable=E0401,W0703,C0103
 from pyrevit import revit, DB
 from pyrevit import forms
@@ -34,20 +35,22 @@ FREQUENTLY_SELECTED_CATEGORIES = [
     DB.BuiltInCategory.OST_Ceilings,
     DB.BuiltInCategory.OST_SectionBox,
     DB.BuiltInCategory.OST_ElevationMarks,
-    DB.BuiltInCategory.OST_Parking
+    DB.BuiltInCategory.OST_Parking,
 ]
 
 
 class FSCategoryItem(forms.TemplateListItem):
     """Wrapper class for frequently selected category list item"""
+
     pass
 
 
 def load_configs():
     """Load list of frequently selected categories from configs or defaults"""
-    fscats = my_config.get_option('fscats', [])
-    revit_cats = [revit.query.get_category(x)
-                  for x in (fscats or FREQUENTLY_SELECTED_CATEGORIES)]
+    fscats = my_config.get_option("fscats", [])
+    revit_cats = [
+        revit.query.get_category(x) for x in (fscats or FREQUENTLY_SELECTED_CATEGORIES)
+    ]
     return list(filter(None, revit_cats))
 
 
@@ -59,8 +62,7 @@ def save_configs(categories):
 
 def reset_defaults(options):
     """Reset frequently selected categories to defaults"""
-    defaults = [revit.query.get_category(x)
-                for x in FREQUENTLY_SELECTED_CATEGORIES]
+    defaults = [revit.query.get_category(x) for x in FREQUENTLY_SELECTED_CATEGORIES]
     default_names = [x.Name for x in defaults if x]
     for opt in options:
         if opt.name in default_names:
@@ -72,20 +74,22 @@ def configure_fscats():
     prev_fscats = load_configs()
     all_cats = revit.doc.Settings.Categories
     all_cats = list(all_cats)
-    all_cats.append(revit.doc.Settings.Categories.get_Item(DB.BuiltInCategory.OST_AreaSchemeLines))
+    all_cats.append(
+        revit.doc.Settings.Categories.get_Item(DB.BuiltInCategory.OST_AreaSchemeLines)
+    )
     prev_fscatnames = [x.Name for x in prev_fscats]
     fscats = forms.SelectFromList.show(
         sorted(
-            [FSCategoryItem(x,
-                            checked=x.Name in prev_fscatnames,
-                            name_attr='Name')
-             for x in all_cats],
-            key=lambda x: x.name
-            ),
-        title='Select Favorite Categories',
-        button_name='Apply',
+            [
+                FSCategoryItem(x, checked=x.Name in prev_fscatnames, name_attr="Name")
+                for x in all_cats
+            ],
+            key=lambda x: x.name,
+        ),
+        title="Select Favorite Categories",
+        button_name="Apply",
         multiselect=True,
-        resetfunc=reset_defaults
+        resetfunc=reset_defaults,
     )
     if fscats:
         save_configs(fscats)

@@ -102,9 +102,7 @@ def align_to_face(doc, uidoc):
             detail_level=current_view.DetailLevel,
         )
 
-        solids = [
-            g for g in geom_objs if isinstance(g, DB.Solid) and g.Faces.Size > 0
-        ]
+        solids = [g for g in geom_objs if isinstance(g, DB.Solid) and g.Faces.Size > 0]
 
         # Find face that contains the picked point
         target_face = None
@@ -121,9 +119,7 @@ def align_to_face(doc, uidoc):
                 break
 
         if not target_face:
-            forms.alert(
-                "Couldn't find a face at the picked point.", exitscript=True
-            )
+            forms.alert("Couldn't find a face at the picked point.", exitscript=True)
 
         local_normal = target_face.ComputeNormal(DB.UV(0.5, 0.5)).Normalize()
         world_normal = transform.OfVector(local_normal).Normalize()

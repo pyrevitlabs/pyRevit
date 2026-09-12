@@ -262,6 +262,7 @@ def _is_dark_theme():
     try:
         if HOST_APP.is_newer_than(2024, True):
             from Autodesk.Revit.UI import UITheme
+
             return revit.ui.get_current_theme() == UITheme.Dark
     except Exception:
         pass
@@ -558,9 +559,7 @@ class _WPFMixin(object):
         except Exception:
             self._on_theme_changed = None
 
-    def _unsubscribe_theme_changed(
-        self, sender=None, args=None
-    ):  # pylint: disable=unused-argument
+    def _unsubscribe_theme_changed(self, sender=None, args=None):  # pylint: disable=unused-argument
         """Detach the ThemeChanged subscription set up by _subscribe_theme_changed."""
         handler = getattr(self, "_on_theme_changed", None)
         if handler is None:
@@ -3732,7 +3731,7 @@ def alert(
         key = icon.lower()
         if key not in icon_map:
             mlogger.warning(
-                "Unknown icon %r; falling back to no icon. " "Valid icons: %s",
+                "Unknown icon %r; falling back to no icon. Valid icons: %s",
                 icon,
                 ", ".join(sorted(icon_map)),
             )
@@ -4040,7 +4039,7 @@ def pick_excel_file(save=False, title=None):
     if save:
         return save_file(file_ext="xlsx")
     return pick_file(
-        files_filter="Excel Workbook (*.xlsx)|*.xlsx|" "Excel 97-2003 Workbook|*.xls",
+        files_filter="Excel Workbook (*.xlsx)|*.xlsx|Excel 97-2003 Workbook|*.xls",
         title=title,
     )
 

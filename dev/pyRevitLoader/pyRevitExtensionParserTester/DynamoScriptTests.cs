@@ -14,8 +14,8 @@ namespace pyRevitExtensionParserTest
         {
             // Path to the real pyRevitDevTools extension
             _devToolsPath = Path.GetFullPath(Path.Combine(
-                TestContext.CurrentContext.TestDirectory, 
-                "..", "..", "..", "..", "..", "..", 
+                TestContext.CurrentContext.TestDirectory,
+                "..", "..", "..", "..", "..", "..",
                 "extensions", "pyRevitDevTools.extension"));
         }
 
@@ -30,24 +30,24 @@ namespace pyRevitExtensionParserTest
 
             // Act - Parse the pyRevitDevTools extension
             var parsedExtensions = ParseInstalledExtensions(new[] { _devToolsPath }).ToList();
-            
+
             Assert.That(parsedExtensions.Count, Is.EqualTo(1), "Should parse pyRevitDevTools extension");
-            
+
             var extension = parsedExtensions.First();
-            
+
             // Look for Test DynamoBIM button (has script.dyn)
             var dynamoButton = FindComponentRecursively(extension, "TestDynamoBIM");
-            
+
             Assert.That(dynamoButton, Is.Not.Null, "Should find TestDynamoBIM button");
-            Assert.That(dynamoButton.ScriptPath, Does.EndWith("script.dyn"), 
+            Assert.That(dynamoButton.ScriptPath, Does.EndWith("script.dyn"),
                 "TestDynamoBIM should have script.dyn");
-            Assert.That(File.Exists(dynamoButton.ScriptPath), Is.True, 
+            Assert.That(File.Exists(dynamoButton.ScriptPath), Is.True,
                 "script.dyn file should exist");
-            
+
             // Also verify config.dyn exists in same directory
             var configPath = Path.Combine(Path.GetDirectoryName(dynamoButton.ScriptPath)!, "config.dyn");
             Assert.That(File.Exists(configPath), Is.True, "config.dyn should also exist");
-            
+
             TestContext.WriteLine($"Found TestDynamoBIM script at: {dynamoButton.ScriptPath}");
         }
 
@@ -62,11 +62,11 @@ namespace pyRevitExtensionParserTest
 
             // Act - Parse the pyRevitDevTools extension
             var parsedExtensions = ParseInstalledExtensions(new[] { _devToolsPath }).ToList();
-            
+
             Assert.That(parsedExtensions.Count, Is.EqualTo(1), "Should parse pyRevitDevTools extension");
-            
+
             var extension = parsedExtensions.First();
-            
+
             // Look for Test DynamoBIM GUI button (has custom-named folie_architecturale_script.dyn)
             var dynamoGuiButton = FindComponentRecursively(extension, "TestDynamoBIMGUI");
 
@@ -91,18 +91,18 @@ namespace pyRevitExtensionParserTest
             // Act - Parse the pyRevitDevTools extension
             var parsedExtensions = ParseInstalledExtensions(new[] { _devToolsPath }).ToList();
             var extension = parsedExtensions.First();
-            
+
             // Find both buttons
             var dynamoButton = FindComponentRecursively(extension, "TestDynamoBIM");
             var dynamoGuiButton = FindComponentRecursively(extension, "TestDynamoBIMGUI");
-            
+
             // Assert both are recognized as PushButtons
             Assert.That(dynamoButton, Is.Not.Null, "Should find TestDynamoBIM");
-            Assert.That(dynamoButton.Type, Is.EqualTo(CommandComponentType.PushButton), 
+            Assert.That(dynamoButton.Type, Is.EqualTo(CommandComponentType.PushButton),
                 "TestDynamoBIM should be a PushButton");
-            
+
             Assert.That(dynamoGuiButton, Is.Not.Null, "Should find TestDynamoBIMGUI");
-            Assert.That(dynamoGuiButton.Type, Is.EqualTo(CommandComponentType.PushButton), 
+            Assert.That(dynamoGuiButton.Type, Is.EqualTo(CommandComponentType.PushButton),
                 "TestDynamoBIMGUI should be a PushButton");
         }
 

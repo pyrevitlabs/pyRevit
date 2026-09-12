@@ -16,19 +16,19 @@ namespace pyRevitLabs.UnitTests.RevitAddons {
 
             // All should use AppData
             var expectedBasePath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-            
-            Assert.IsTrue(path2025.StartsWith(expectedBasePath, StringComparison.OrdinalIgnoreCase), 
+
+            Assert.IsTrue(path2025.StartsWith(expectedBasePath, StringComparison.OrdinalIgnoreCase),
                 $"User-level path for 2025 should start with {expectedBasePath}");
-            Assert.IsTrue(path2027.StartsWith(expectedBasePath, StringComparison.OrdinalIgnoreCase), 
+            Assert.IsTrue(path2027.StartsWith(expectedBasePath, StringComparison.OrdinalIgnoreCase),
                 $"User-level path for 2027 should start with {expectedBasePath}");
-            Assert.IsTrue(path2030.StartsWith(expectedBasePath, StringComparison.OrdinalIgnoreCase), 
+            Assert.IsTrue(path2030.StartsWith(expectedBasePath, StringComparison.OrdinalIgnoreCase),
                 $"User-level path for 2030 should start with {expectedBasePath}");
 
             // Verify path structure
-            Assert.IsTrue(path2025.Contains(@"Autodesk\Revit\Addins\2025") || 
+            Assert.IsTrue(path2025.Contains(@"Autodesk\Revit\Addins\2025") ||
                           path2025.Contains("Autodesk/Revit/Addins/2025"),
                 $"Path 2025 should contain correct structure: {path2025}");
-            Assert.IsTrue(path2027.Contains(@"Autodesk\Revit\Addins\2027") || 
+            Assert.IsTrue(path2027.Contains(@"Autodesk\Revit\Addins\2027") ||
                           path2027.Contains("Autodesk/Revit/Addins/2027"),
                 $"Path 2027 should contain correct structure: {path2027}");
         }
@@ -42,16 +42,16 @@ namespace pyRevitLabs.UnitTests.RevitAddons {
 
             // All should use CommonApplicationData (ProgramData)
             var expectedBasePath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-            
-            Assert.IsTrue(path2024.StartsWith(expectedBasePath), 
+
+            Assert.IsTrue(path2024.StartsWith(expectedBasePath),
                 $"All-users path for 2024 should start with {expectedBasePath}");
-            Assert.IsTrue(path2025.StartsWith(expectedBasePath), 
+            Assert.IsTrue(path2025.StartsWith(expectedBasePath),
                 $"All-users path for 2025 should start with {expectedBasePath}");
-            Assert.IsTrue(path2026.StartsWith(expectedBasePath), 
+            Assert.IsTrue(path2026.StartsWith(expectedBasePath),
                 $"All-users path for 2026 should start with {expectedBasePath}");
 
             // Verify path structure
-            Assert.IsTrue(path2026.Contains(@"Autodesk\Revit\Addins\2026") || 
+            Assert.IsTrue(path2026.Contains(@"Autodesk\Revit\Addins\2026") ||
                           path2026.Contains("Autodesk/Revit/Addins/2026"),
                 $"Path 2026 should contain correct structure: {path2026}");
         }
@@ -105,7 +105,7 @@ namespace pyRevitLabs.UnitTests.RevitAddons {
         public void GetRevitAddonsFilePath_Consistency_Test() {
             // Test that GetRevitAddonsFilePath uses GetRevitAddonsFolder correctly
             // This is an integration test to ensure the methods work together
-            
+
             // For user-level
             var userFilePath2027 = pyRevitLabs.TargetApps.Revit.RevitAddons.GetRevitAddonsFilePath(2027, "TestAddin", allusers: false);
             var userFolder2027 = pyRevitLabs.TargetApps.Revit.RevitAddons.GetRevitAddonsFolder(2027, allUsers: false);

@@ -10,7 +10,8 @@ matched to the target) so Linework overrides that still reference them
 do not leave the model in a crash-prone state. Hard deletion is unsafe
 because the Revit API cannot remap Linework edge overrides.
 """
-#pylint: disable=import-error,invalid-name,unused-argument,broad-except
+
+# pylint: disable=import-error,invalid-name,unused-argument,broad-except
 from pyrevit.framework import List
 from pyrevit import revit, DB
 from pyrevit import forms
@@ -18,8 +19,8 @@ from pyrevit import script
 from pyrevit.compat import get_elementid_value_func
 
 
-NO_COLOR_COLOR = '#000000'
-RETIRE_PREFIX = 'zz_merged -> '
+NO_COLOR_COLOR = "#000000"
+RETIRE_PREFIX = "zz_merged -> "
 
 
 logger = script.get_logger()
@@ -32,12 +33,9 @@ class StyleOption(object):
         self.style = style
 
     def __str__(self):
-        return '{} ({} {} {})'.format(
-            self.name,
-            self.weight,
-            self.color_hex,
-            self.pattern_name
-            )
+        return "{} ({} {} {})".format(
+            self.name, self.weight, self.color_hex, self.pattern_name
+        )
 
     def ToString(self):
         return str(self)
@@ -66,9 +64,9 @@ class StyleOption(object):
     @property
     def color_hex(self):
         if self.color:
-            return '#{:x02}{:x02}{:x02}'.format(self.color.Red,
-                                                self.color.Green,
-                                                self.color.Blue)
+            return "#{:x02}{:x02}{:x02}".format(
+                self.color.Red, self.color.Green, self.color.Blue
+            )
         else:
             return NO_COLOR_COLOR
 
@@ -76,11 +74,11 @@ class StyleOption(object):
     def pattern(self):
         return self.style.Document.GetElement(
             self.category.GetLinePatternId(DB.GraphicsStyleType.Projection)
-            )
+        )
 
     @property
     def pattern_name(self):
-        return self.pattern.Name if self.pattern else 'Solid'
+        return self.pattern.Name if self.pattern else "Solid"
 
 
 class StyleConvert(object):
@@ -136,15 +134,13 @@ class ConvertLineStylesWindow(forms.WPFWindow):
         self.Closing += self.Close_Click
         self._setup_styles()
 
-
     def Close_Click(self, sender, args):
         pass
 
     def _setup_styles(self):
         self._styles = revit.query.get_line_styles(doc=revit.doc)
         self._styleops = [StyleOption(x) for x in self._styles]
-        self.fromStyles.ItemsSource = \
-            sorted(self._styleops, key=lambda x: x.name)
+        self.fromStyles.ItemsSource = sorted(self._styleops, key=lambda x: x.name)
         self.toStyles.ItemsSource = self.fromStyles.ItemsSource
         self.convertList.ItemsSource = []
 
@@ -180,19 +176,18 @@ class ConvertLineStylesWindow(forms.WPFWindow):
 
     def get_editable_lines(self):
         """Return list of lines for style convertping."""
-        mc_filter = \
-            DB.ElementMulticategoryFilter(
-                List[DB.BuiltInCategory](
-                    [
-                        DB.BuiltInCategory.OST_Lines,
-                        DB.BuiltInCategory.OST_SketchLines
-                    ])
-                )
+        mc_filter = DB.ElementMulticategoryFilter(
+            List[DB.BuiltInCategory](
+                [DB.BuiltInCategory.OST_Lines, DB.BuiltInCategory.OST_SketchLines]
+            )
+        )
 
-        tline_cl = DB.FilteredElementCollector(revit.doc)\
-                    .WherePasses(mc_filter)\
-                    .WhereElementIsNotElementType()\
-                    .ToElements()
+        tline_cl = (
+            DB.FilteredElementCollector(revit.doc)
+            .WherePasses(mc_filter)
+            .WhereElementIsNotElementType()
+            .ToElements()
+        )
 
         lines = []
         conv_detlines = self.convert_detaillines
@@ -200,8 +195,7 @@ class ConvertLineStylesWindow(forms.WPFWindow):
         conv_skhlines = self.convert_sketchlines
         for tline in tline_cl:
             # skip grouped lines
-            if tline.GroupId is None \
-                    or tline.GroupId == DB.ElementId.InvalidElementId:
+            if tline.GroupId is None or tline.GroupId == DB.ElementId.InvalidElementId:
                 # sketchlines could be detail or model so process first
                 # but only detail sketchlines are editable
                 if revit.query.is_detail_curve(tline):
@@ -244,57 +238,47 @@ class ConvertLineStylesWindow(forms.WPFWindow):
         pass
 
     def _collect_line_categories(self):
-        lines_cat = revit.doc.Settings.Categories.get_Item(
-            DB.BuiltInCategory.OST_Lines
-            )
+        lines_cat = revit.doc.Settings.Categories.get_Item(DB.BuiltInCategory.OST_Lines)
         return list(lines_cat.SubCategories)
 
     def _unique_retire_name(self, from_name, to_name, existing_names):
-        base = '{}{} => {}'.format(RETIRE_PREFIX, from_name, to_name)
+        base = "{}{} => {}".format(RETIRE_PREFIX, from_name, to_name)
         name = base
         index = 2
         while name in existing_names:
-            name = '{} ({})'.format(base, index)
+            name = "{} ({})".format(base, index)
             index += 1
         return name
 
     def _copy_category_graphics(self, from_cat, to_cat):
-        for style_type in (DB.GraphicsStyleType.Projection,
-                           DB.GraphicsStyleType.Cut):
+        for style_type in (DB.GraphicsStyleType.Projection, DB.GraphicsStyleType.Cut):
             try:
                 weight = to_cat.GetLineWeight(style_type)
                 if weight and weight > 0:
                     from_cat.SetLineWeight(weight, style_type)
             except Exception as ex:
                 logger.debug(
-                    'Failed copying line weight for \"%s\" | %s',
-                    from_cat.Name, ex
-                    )
+                    'Failed copying line weight for "%s" | %s', from_cat.Name, ex
+                )
             try:
                 pattern_id = to_cat.GetLinePatternId(style_type)
                 if pattern_id is not None:
                     from_cat.SetLinePatternId(pattern_id, style_type)
             except Exception as ex:
                 logger.debug(
-                    'Failed copying line pattern for \"%s\" | %s',
-                    from_cat.Name, ex
-                    )
+                    'Failed copying line pattern for "%s" | %s', from_cat.Name, ex
+                )
         try:
             if to_cat.LineColor and to_cat.LineColor.IsValid:
                 from_cat.LineColor = to_cat.LineColor
         except Exception as ex:
-            logger.debug(
-                'Failed copying line color for \"%s\" | %s',
-                from_cat.Name, ex
-                )
+            logger.debug('Failed copying line color for "%s" | %s', from_cat.Name, ex)
 
     def _remap_mep_hidden_line_styles(self, line_converts):
         # Project MEP hidden-line setting can reference a custom style; deleting
         # that style without remapping can destabilize the document.
         try:
-            mep_settings = DB.MEPHiddenLineSettings.GetMEPHiddenLineSettings(
-                revit.doc
-                )
+            mep_settings = DB.MEPHiddenLineSettings.GetMEPHiddenLineSettings(revit.doc)
         except Exception:
             return
 
@@ -312,15 +296,16 @@ class ConvertLineStylesWindow(forms.WPFWindow):
                     try:
                         mep_settings.LineStyle = style_convert.to_style.style.Id
                         logger.info(
-                            'Remapped MEP hidden line style \"%s\" -> \"%s\"',
+                            'Remapped MEP hidden line style "%s" -> "%s"',
                             from_style.name,
-                            style_convert.to_style.name
-                            )
+                            style_convert.to_style.name,
+                        )
                     except Exception as ex:
                         logger.warning(
-                            'Could not remap MEP hidden line style \"%s\" | %s',
-                            from_style.name, ex
-                            )
+                            'Could not remap MEP hidden line style "%s" | %s',
+                            from_style.name,
+                            ex,
+                        )
                     return
 
     def _remap_remaining_curve_styles(self, line_converts):
@@ -334,15 +319,19 @@ class ConvertLineStylesWindow(forms.WPFWindow):
         if not from_names:
             return
 
-        curves = DB.FilteredElementCollector(revit.doc)\
-            .OfClass(DB.CurveElement)\
-            .WhereElementIsNotElementType()\
+        curves = (
+            DB.FilteredElementCollector(revit.doc)
+            .OfClass(DB.CurveElement)
+            .WhereElementIsNotElementType()
             .ToElements()
+        )
 
         for curve in curves:
             # keep grouped curves unchanged (consistent with primary conversion pass)
-            if curve.GroupId is not None \
-                    and curve.GroupId != DB.ElementId.InvalidElementId:
+            if (
+                curve.GroupId is not None
+                and curve.GroupId != DB.ElementId.InvalidElementId
+            ):
                 continue
             try:
                 style_name = curve.LineStyle.Name
@@ -355,15 +344,15 @@ class ConvertLineStylesWindow(forms.WPFWindow):
                 curve.LineStyle = to_style
             except Exception as ex:
                 logger.debug(
-                    'Could not remap curve %s style \"%s\" | %s',
-                    get_elementid_value(curve.Id), style_name, ex
-                    )
+                    'Could not remap curve %s style "%s" | %s',
+                    get_elementid_value(curve.Id),
+                    style_name,
+                    ex,
+                )
 
     def retire_linecats(self, line_converts):
         """Match source style look to target and rename; keep ElementIds."""
-        existing_names = set(
-            cat.Name for cat in self._collect_line_categories()
-            )
+        existing_names = set(cat.Name for cat in self._collect_line_categories())
 
         for style_convert in line_converts:
             to_cat = style_convert.to_style.category
@@ -372,35 +361,24 @@ class ConvertLineStylesWindow(forms.WPFWindow):
                 if not from_cat:
                     continue
                 if get_elementid_value(from_cat.Id) < 0:
-                    logger.warning(
-                        'Skipping builtin line style \"%s\"',
-                        from_cat.Name
-                        )
+                    logger.warning('Skipping builtin line style "%s"', from_cat.Name)
                     continue
                 old_name = from_cat.Name
                 try:
                     self._copy_category_graphics(from_cat, to_cat)
                     new_name = self._unique_retire_name(
-                        old_name,
-                        style_convert.to_style.name,
-                        existing_names
-                        )
+                        old_name, style_convert.to_style.name, existing_names
+                    )
                     from_cat.Name = new_name
                     existing_names.add(new_name)
-                    logger.info(
-                        'Retired line style \"%s\" as \"%s\"',
-                        old_name, new_name
-                        )
+                    logger.info('Retired line style "%s" as "%s"', old_name, new_name)
                 except Exception as ex:
-                    logger.warning(
-                        'Failed retiring line style \"%s\" | %s',
-                        old_name, ex
-                        )
+                    logger.warning('Failed retiring line style "%s" | %s', old_name, ex)
 
     def convert_styles(self, sender, args):
         self.Close()
         editable_lines = self.get_editable_lines()
-        with revit.Transaction('Convert Line Styles'):
+        with revit.Transaction("Convert Line Styles"):
             for style_convert in self.line_converts:
                 for eline in editable_lines:
                     style_convert.convert_style(eline)
@@ -411,5 +389,5 @@ class ConvertLineStylesWindow(forms.WPFWindow):
                 self.retire_linecats(self.line_converts)
 
 
-if __name__ == '__main__':
-    ConvertLineStylesWindow('ConvertLineStyles.xaml').show(modal=True)
+if __name__ == "__main__":
+    ConvertLineStylesWindow("ConvertLineStyles.xaml").show(modal=True)

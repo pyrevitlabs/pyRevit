@@ -5,7 +5,9 @@ from pyrevit import script, DB, DOCS
 from pyrevit.coreutils import applocales
 from pyrevit.preflight import PreflightTestCase
 
-_XAML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "locale", "Checks.xaml")
+_XAML = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "locale", "Checks.xaml"
+)
 
 
 def _t(key):
@@ -16,7 +18,11 @@ doc = DOCS.doc
 
 
 def grids_collector(document):
-    grids = DB.FilteredElementCollector(document).OfCategory(DB.BuiltInCategory.OST_Grids).WhereElementIsNotElementType()
+    grids = (
+        DB.FilteredElementCollector(document)
+        .OfCategory(DB.BuiltInCategory.OST_Grids)
+        .WhereElementIsNotElementType()
+    )
     return grids
 
 
@@ -40,7 +46,9 @@ def grids_types(document=doc):
     for grid in grids:
         grid_type = document.GetElement(grid.GetTypeId())
         # grid_type = grid.get_Parameter(DB.BuiltInParameter.ELEM_TYPE_PARAM).AsElement()
-        grids_types.append(grid_type.get_Parameter(DB.BuiltInParameter.SYMBOL_NAME_PARAM).AsString())
+        grids_types.append(
+            grid_type.get_Parameter(DB.BuiltInParameter.SYMBOL_NAME_PARAM).AsString()
+        )
     return grids_types
 
 
@@ -56,7 +64,9 @@ def grids_scoped(document=doc):
     grids = grids_collector(document)
     scoped_grids = []
     for grid in grids:
-        scope = grid.get_Parameter(DB.BuiltInParameter.DATUM_VOLUME_OF_INTEREST).AsElementId()
+        scope = grid.get_Parameter(
+            DB.BuiltInParameter.DATUM_VOLUME_OF_INTEREST
+        ).AsElementId()
         scope = document.GetElement(scope)
         if scope:
             scoped_grids.append(scope.Name)
@@ -84,7 +94,7 @@ def checkModel(doc, output):
                 _t("Type"),
                 _t("Pinned"),
                 _t("ScopeBox"),
-            ]
+            ],
         )
 
 

@@ -13,7 +13,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// Clears the extension cache, forcing a re-parse on next access.
         /// </summary>
         void ClearCache();
-        
+
         /// <summary>
         /// Clears all parser caches including the static caches in ExtensionParser.
         /// This ensures newly installed or enabled extensions are discovered on reload.

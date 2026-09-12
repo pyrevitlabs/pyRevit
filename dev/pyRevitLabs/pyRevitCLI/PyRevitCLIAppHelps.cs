@@ -2,11 +2,9 @@ using System;
 using System.Collections.Generic;
 using pyRevitLabs.Common.Extensions;
 
-namespace pyRevitCLI
-{
+namespace pyRevitCLI {
     internal static class PyRevitCLIAppHelps {
-        internal static void PrintHelp(PyRevitCLICommandType commandType)
-        {
+        internal static void PrintHelp(PyRevitCLICommandType commandType) {
             PrintHelp(commandType, 0);
         }
         internal static void PrintHelp(PyRevitCLICommandType commandType, int exitCode) {

@@ -1,9 +1,7 @@
 using System;
 
-namespace pyRevitLabs.PyRevit.Runtime.Shared
-{
-    public class ExecParams
-    {
+namespace pyRevitLabs.PyRevit.Runtime.Shared {
+    public class ExecParams {
         public string ExecId { get; }
 
         public string ExecTimeStamp { get; }
@@ -48,8 +46,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared
                           bool configMode,
                           bool debugMode,
                           bool executedFromUI,
-                          object uiButton)
-        {
+                          object uiButton) {
             ExecId = execId;
             ExecTimeStamp = execTimeStamp;
             ScriptPath = scriptPath;

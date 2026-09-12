@@ -953,7 +953,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (hue < 240) return q1 + (q2 - q1) * (240 - hue) / 60;
             return q1;
         }
-    
+
     }
 
     public class TabColoringRule {
@@ -979,7 +979,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
     public class TabColoringStyle {
         public string Name { get; private set; }
-        
+
         public Thickness BorderThickness { get; set; } = new Thickness();
         public bool FillBackground { get; set; } = false;
 
@@ -1046,7 +1046,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // selected tab hides the bottom border
             var selectedThickness = new Thickness(BorderThickness.Left, BorderThickness.Top, BorderThickness.Right, 0);
             triggerSelected.Setters.Add(
-                new Setter { Property = TabItem.BorderThicknessProperty, Value = FillBackground ? new Thickness(1,1,1,0) : selectedThickness }
+                new Setter { Property = TabItem.BorderThicknessProperty, Value = FillBackground ? new Thickness(1, 1, 1, 0) : selectedThickness }
             );
 
             // apply border highlighting only when background is active, otherwise the difference is not visible
@@ -1054,7 +1054,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 triggerSelected.Setters.Add(
                     new Setter { Property = TabItem.BorderBrushProperty, Value = Brushes.White }
                 );
-            } else {
+            }
+            else {
                 triggerSelected.Setters.Add(
                     new Setter { Property = TabItem.BorderBrushProperty, Value = borderHighlightBrush }
                 );
@@ -1075,7 +1076,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
     public class TabColoringTheme {
         public class RuleSlot {
             public TabColoringRule Rule { get; private set; }
-            
+
             public RuleSlot(TabColoringRule rule) => Rule = rule;
 
             public long Id { get; set; }
@@ -1091,7 +1092,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public TabColoringStyle TabStyle { get; set; }
         public TabColoringStyle FamilyTabStyle { get; set; }
-        
+
         public List<TabColoringRule> _tabOrderRules = default;
         public List<TabColoringRule> TabOrderRules {
             get {
@@ -1156,10 +1157,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
         // keep a unique hash for the state of open tabs
         // this helps refreshing the tab styling only once
         string _lastTabState = string.Empty;
-        
+
         // storage for tab original styles set. this is used when resetting tabs
         Dictionary<TabItem, Style> _tabOrigStyles = new Dictionary<TabItem, Style>();
-        
+
         // used slots for coloring rules
         List<RuleSlot> _ruleSlots = new List<RuleSlot>();
 
@@ -1235,13 +1236,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 );
             }
         }
-        
+
         void Set(TabItem tab, long docId, bool isFamilyTab) {
             // determine style
             TabColoringStyle tstyle = isFamilyTab ? FamilyTabStyle : TabStyle;
 
             string title = ((LayoutDocument)tab.Header).Title;
-            
+
             // apply colors by filter
             bool filtered = false;
             foreach (var rule in TabFilterRules) {
@@ -1332,7 +1333,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 foreach (RuleSlot slot in theme._ruleSlots) {
                     if (index >= ruleCount)
                         break;
-                    
+
                     _ruleSlots.Add(
                         new RuleSlot(TabOrderRules[index]) {
                             Id = slot.Id,
@@ -1536,16 +1537,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
     /// 
     /// Called from MinifyUI smartbutton via pyrevit.runtime.types.
     /// </summary>
-    public static class RibbonTabVisibilityUtils
-    {
+    public static class RibbonTabVisibilityUtils {
         public static bool IsHidingTabs { get; private set; }
 
         private static HashSet<string> _hiddenTabTitles = new HashSet<string>();
         private static List<Autodesk.Windows.RibbonTab> _hookedTabs
             = new List<Autodesk.Windows.RibbonTab>();
 
-        public static void StartHidingTabs(IEnumerable<string> tabTitles)
-        {
+        public static void StartHidingTabs(IEnumerable<string> tabTitles) {
             StopHidingTabs();
 
             _hiddenTabTitles = new HashSet<string>(tabTitles);
@@ -1554,13 +1553,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             IsHidingTabs = true;
 
-            foreach (var tab in Autodesk.Windows.ComponentManager.Ribbon.Tabs)
-            {
-                if (_hiddenTabTitles.Contains(tab.Title))
-                {
+            foreach (var tab in Autodesk.Windows.ComponentManager.Ribbon.Tabs) {
+                if (_hiddenTabTitles.Contains(tab.Title)) {
                     var inpc = tab as System.ComponentModel.INotifyPropertyChanged;
-                    if (inpc != null)
-                    {
+                    if (inpc != null) {
                         inpc.PropertyChanged += OnTabPropertyChanged;
                         _hookedTabs.Add(tab);
                     }
@@ -1569,12 +1565,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        public static void StopHidingTabs()
-        {
-            foreach (var tab in _hookedTabs)
-            {
-                try
-                {
+        public static void StopHidingTabs() {
+            foreach (var tab in _hookedTabs) {
+                try {
                     var inpc = tab as System.ComponentModel.INotifyPropertyChanged;
                     if (inpc != null)
                         inpc.PropertyChanged -= OnTabPropertyChanged;
@@ -1589,8 +1582,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private static void OnTabPropertyChanged(
                 object sender,
-                System.ComponentModel.PropertyChangedEventArgs e)
-        {
+                System.ComponentModel.PropertyChangedEventArgs e) {
             if (!IsHidingTabs) return;
             if (e.PropertyName != "IsVisible") return;
 

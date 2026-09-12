@@ -205,6 +205,7 @@ for pdf_file in pdf_files:
         rename_count += 1
     except OSError as e:
         import errno as _errno
+
         err_count += 1
         if e.errno == _errno.EEXIST:
             print(get_locale_string(STR["not_renamed_exists"]).format(pdf_file))
