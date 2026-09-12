@@ -3,6 +3,7 @@
 This tool looks for project parameters (on Sheets) that are
 Instance, of type Integer, and have "Order" in their names.
 """
+
 # pylint: disable=W0613,E0401,C0103
 # pylint: disable=missing-class-docstring,missing-function-docstring,broad-except
 import re
@@ -135,9 +136,7 @@ class ReOrderWindow(forms.WPFWindow):
         if self.selected_item_param:
             items = sorted(
                 items,
-                key=lambda x: x.LookupParameter(
-                    self.selected_item_param
-                ).AsInteger(),
+                key=lambda x: x.LookupParameter(self.selected_item_param).AsInteger(),
             )
         return items
 
@@ -219,9 +218,7 @@ class ReOrderWindow(forms.WPFWindow):
     def move_to_bottom(self, sender, args):
         selected, unselected = self._get_selected_nonselected()
         if selected:
-            items = self._insert_list_in_list(
-                selected, unselected, len(unselected)
-            )
+            items = self._insert_list_in_list(selected, unselected, len(unselected))
             self.items_list = items
 
     def reorder_items(self, sender, args):
@@ -229,9 +226,7 @@ class ReOrderWindow(forms.WPFWindow):
         self._config.set_option("index_grouping_pattern", self.grouping_pattern)
         with revit.Transaction("Reorder Sheets"):
             for item in self.items_list:
-                idx_param = item.revit_item.LookupParameter(
-                    self.selected_item_param
-                )
+                idx_param = item.revit_item.LookupParameter(self.selected_item_param)
                 if idx_param:
                     idx_param.Set(item.order_index)
 

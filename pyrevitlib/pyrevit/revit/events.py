@@ -1,5 +1,6 @@
 """Revit events handler management."""
-#pylint: disable=unused-argument
+
+# pylint: disable=unused-argument
 from collections import deque
 from pyrevit import HOST_APP
 from pyrevit import EXEC_PARAMS, DB, UI
@@ -13,10 +14,11 @@ mlogger = get_logger(__name__)
 
 class FuncAsEventHandler(UI.IExternalEventHandler):
     """Turns a function into an event handler."""
+
     __namespace__ = EXEC_PARAMS.exec_id
 
     def __init__(self, handler_func, purge=True):
-        self.name = 'FuncAsEventHandler'
+        self.name = "FuncAsEventHandler"
         self.handler_group_id = None
         self.handler_func = handler_func
         self.purge = purge
@@ -38,51 +40,48 @@ def create_handler(handler_func, handler_args_type):
 def add_handler(event_name, handler_func):
     event_handler = None
 
-    if event_name == 'doc-changed':
-        event_handler = \
-            create_handler(handler_func, DB.Events.DocumentChangedEventArgs)
+    if event_name == "doc-changed":
+        event_handler = create_handler(handler_func, DB.Events.DocumentChangedEventArgs)
         HOST_APP.app.DocumentChanged += event_handler
 
-    elif event_name == 'doc-closed':
-        event_handler = \
-            create_handler(handler_func, DB.Events.DocumentClosedEventArgs)
+    elif event_name == "doc-closed":
+        event_handler = create_handler(handler_func, DB.Events.DocumentClosedEventArgs)
         HOST_APP.app.DocumentClosed += event_handler
 
-    elif event_name == 'doc-opened':
-        event_handler = \
-            create_handler(handler_func, DB.Events.DocumentOpenedEventArgs)
+    elif event_name == "doc-opened":
+        event_handler = create_handler(handler_func, DB.Events.DocumentOpenedEventArgs)
         HOST_APP.app.DocumentOpened += event_handler
 
-    elif event_name == 'view-activated':
-        event_handler = \
-            create_handler(handler_func, UI.Events.ViewActivatedEventArgs)
+    elif event_name == "view-activated":
+        event_handler = create_handler(handler_func, UI.Events.ViewActivatedEventArgs)
         HOST_APP.uiapp.ViewActivated += event_handler
 
-    elif event_name == 'selection-changed':
+    elif event_name == "selection-changed":
         if HOST_APP.is_older_than(2023):
             mlogger.error("Not available in this Revit Version")
             return
-        event_handler = \
-            create_handler(handler_func, UI.Events.SelectionChangedEventArgs)
+        event_handler = create_handler(
+            handler_func, UI.Events.SelectionChangedEventArgs
+        )
         HOST_APP.uiapp.SelectionChanged += event_handler
 
     return event_handler
 
 
 def remove_handler(event_name, event_handler):
-    if event_name == 'doc-changed':
+    if event_name == "doc-changed":
         HOST_APP.app.DocumentChanged -= event_handler
 
-    elif event_name == 'doc-closed':
+    elif event_name == "doc-closed":
         HOST_APP.app.DocumentClosed -= event_handler
 
-    elif event_name == 'doc-opened':
+    elif event_name == "doc-opened":
         HOST_APP.app.DocumentOpened -= event_handler
 
-    elif event_name == 'view-activated':
+    elif event_name == "view-activated":
         HOST_APP.uiapp.ViewActivated -= event_handler
 
-    elif event_name == 'selection-changed':
+    elif event_name == "selection-changed":
         if HOST_APP.is_older_than(2023):
             mlogger.error("Not available in this Revit Version")
             return
@@ -98,16 +97,17 @@ def register_handler(event_name, handler_func, handler_group_id):
 
 
 def unregister_handler(event_name, handler_func, handler_group_id):
-    if handler_group_id in REGISTERED_HANDLERS \
-            and event_name in REGISTERED_HANDLERS[handler_group_id]:
+    if (
+        handler_group_id in REGISTERED_HANDLERS
+        and event_name in REGISTERED_HANDLERS[handler_group_id]
+    ):
         event_handler = REGISTERED_HANDLERS[handler_group_id].pop(event_name)
         remove_handler(event_name, event_handler)
 
 
 def unregister_exec_handlers(handler_group_id):
     if handler_group_id in REGISTERED_HANDLERS:
-        for event_name, handler_func in \
-                REGISTERED_HANDLERS[handler_group_id].items():
+        for event_name, handler_func in REGISTERED_HANDLERS[handler_group_id].items():
             unregister_handler(event_name, handler_func, handler_group_id)
 
 
@@ -122,16 +122,15 @@ def delayed_unregister_exec_handlers(handler_group_id):
     try:
         response = ext_event.Raise()
         if response in (
-                UI.ExternalEventRequest.Denied,
-                UI.ExternalEventRequest.TimedOut):
+            UI.ExternalEventRequest.Denied,
+            UI.ExternalEventRequest.TimedOut,
+        ):
             mlogger.error(
                 "Could not unregister event handlers; "
                 "ExternalEvent request was {}".format(response)
             )
     except Exception as ex:
-        mlogger.error(
-            "Could not unregister event handlers: {}".format(ex)
-        )
+        mlogger.error("Could not unregister event handlers: {}".format(ex))
 
 
 def _get_unregisterer_extevent():
@@ -139,30 +138,32 @@ def _get_unregisterer_extevent():
     global HANDLER_UNREGISTERER_EXTEVENT
     if HANDLER_UNREGISTERER_EXTEVENT is None:
         try:
-            HANDLER_UNREGISTERER_EXTEVENT = UI.ExternalEvent.Create(HANDLER_UNREGISTERER)
+            HANDLER_UNREGISTERER_EXTEVENT = UI.ExternalEvent.Create(
+                HANDLER_UNREGISTERER
+            )
         except Exception:
             HANDLER_UNREGISTERER_EXTEVENT = None
     return HANDLER_UNREGISTERER_EXTEVENT
 
 
 REGISTERED_HANDLERS = {}
-HANDLER_UNREGISTERER = \
-    FuncAsEventHandler(unregister_exec_handlers, purge=False)
+HANDLER_UNREGISTERER = FuncAsEventHandler(unregister_exec_handlers, purge=False)
 # Import can occur outside API context, so event creation may be deferred.
 try:
-    HANDLER_UNREGISTERER_EXTEVENT = \
-        UI.ExternalEvent.Create(HANDLER_UNREGISTERER)
+    HANDLER_UNREGISTERER_EXTEVENT = UI.ExternalEvent.Create(HANDLER_UNREGISTERER)
 except Exception:
     HANDLER_UNREGISTERER_EXTEVENT = None
 
 
-def handle(*args): #pylint: disable=no-method-argument
+def handle(*args):  # pylint: disable=no-method-argument
     def decorator(function):
         def wrapper(*args, **kwargs):
             return function(*args, **kwargs)
+
         for event_name in args:
             register_handler(event_name, wrapper, EXEC_PARAMS.exec_id)
         return wrapper
+
     return decorator
 
 
@@ -267,8 +268,7 @@ def execute_in_revit_context(func, *args, **kwargs):
     # restored to avoid contaminating mutable script state (doc, uidoc, etc.).
     _module_type = type(compat)
     _saved_modules = {
-        k: v for k, v in func.__globals__.items()
-        if type(v) is _module_type
+        k: v for k, v in func.__globals__.items() if type(v) is _module_type
     }
 
     def _wrapper():
@@ -277,9 +277,7 @@ def execute_in_revit_context(func, *args, **kwargs):
         _MISSING = object()
         g = func.__globals__
         saved = {
-            k: g.get(k, _MISSING)
-            for k in _saved_modules
-            if k not in g or g[k] is None
+            k: g.get(k, _MISSING) for k in _saved_modules if k not in g or g[k] is None
         }
         for k in saved:
             g[k] = _saved_modules[k]
@@ -294,21 +292,21 @@ def execute_in_revit_context(func, *args, **kwargs):
 
     _ext_event = _get_execute_extevent()
     if _ext_event is None:
-        mlogger.error(
-            "Could not create ExternalEvent; scheduled callback will not run"
-        )
+        mlogger.error("Could not create ExternalEvent; scheduled callback will not run")
         return
 
     _HANDLER.schedule(_wrapper)
     try:
         response = _ext_event.Raise()
         if response in (
-                UI.ExternalEventRequest.Denied,
-                UI.ExternalEventRequest.TimedOut):
+            UI.ExternalEventRequest.Denied,
+            UI.ExternalEventRequest.TimedOut,
+        ):
             _HANDLER.discard(_wrapper)
             mlogger.error(
-                "Could not schedule callback; "
-                "ExternalEvent request was {}".format(response)
+                "Could not schedule callback; ExternalEvent request was {}".format(
+                    response
+                )
             )
     except Exception as ex:
         _HANDLER.discard(_wrapper)

@@ -28,51 +28,52 @@ class HeaderIdTreeprocessor(Treeprocessor):
 
     def run(self, doc):
         start_level, force_id = self._get_meta()
-        slugify = self.config['slugify']
-        sep = self.config['separator']
+        slugify = self.config["slugify"]
+        sep = self.config["separator"]
         for elem in doc:
-            if elem.tag in ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']:
+            if elem.tag in ["h1", "h2", "h3", "h4", "h5", "h6"]:
                 if force_id:
                     if "id" in elem.attrib:
-                        id = elem.get('id')
+                        id = elem.get("id")
                     else:
-                        id = stashedHTML2text(''.join(elem.itertext()), self.md)
+                        id = stashedHTML2text("".join(elem.itertext()), self.md)
                         id = slugify(id, sep)
-                    elem.set('id', unique(id, self.IDs))
+                    elem.set("id", unique(id, self.IDs))
                 if start_level:
                     level = int(elem.tag[-1]) + start_level
                     if level > 6:
                         level = 6
-                    elem.tag = 'h%d' % level
+                    elem.tag = "h%d" % level
 
     def _get_meta(self):
         """Return meta data suported by this ext as a tuple."""
-        level = int(self.config['level']) - 1
-        force = parseBoolValue(self.config['forceid'])
-        if hasattr(self.md, 'Meta'):
-            if 'header_level' in self.md.Meta:
-                level = int(self.md.Meta['header_level'][0]) - 1
-            if 'header_forceid' in self.md.Meta:
-                force = parseBoolValue(self.md.Meta['header_forceid'][0])
+        level = int(self.config["level"]) - 1
+        force = parseBoolValue(self.config["forceid"])
+        if hasattr(self.md, "Meta"):
+            if "header_level" in self.md.Meta:
+                level = int(self.md.Meta["header_level"][0]) - 1
+            if "header_forceid" in self.md.Meta:
+                force = parseBoolValue(self.md.Meta["header_forceid"][0])
         return level, force
 
 
 class HeaderIdExtension(Extension):
     """Header ID extension."""
+
     def __init__(self, *args, **kwargs):
         # set defaults
         self.config = {
-            'level': ['1', 'Base level for headers.'],
-            'forceid': ['True', 'Force all headers to have an id.'],
-            'separator': ['-', 'Word separator.'],
-            'slugify': [slugify, 'Callable to generate anchors']
+            "level": ["1", "Base level for headers."],
+            "forceid": ["True", "Force all headers to have an id."],
+            "separator": ["-", "Word separator."],
+            "slugify": [slugify, "Callable to generate anchors"],
         }
 
         super(HeaderIdExtension, self).__init__(*args, **kwargs)
 
         warnings.warn(
-            'The HeaderId Extension is pending deprecation. Use the TOC Extension instead.',
-            PendingDeprecationWarning
+            "The HeaderId Extension is pending deprecation. Use the TOC Extension instead.",
+            PendingDeprecationWarning,
         )
 
     def extendMarkdown(self, md, md_globals):
@@ -80,12 +81,12 @@ class HeaderIdExtension(Extension):
         self.processor = HeaderIdTreeprocessor()
         self.processor.md = md
         self.processor.config = self.getConfigs()
-        if 'attr_list' in md.treeprocessors.keys():
+        if "attr_list" in md.treeprocessors.keys():
             # insert after attr_list treeprocessor
-            md.treeprocessors.add('headerid', self.processor, '>attr_list')
+            md.treeprocessors.add("headerid", self.processor, ">attr_list")
         else:
             # insert after 'prettify' treeprocessor.
-            md.treeprocessors.add('headerid', self.processor, '>prettify')
+            md.treeprocessors.add("headerid", self.processor, ">prettify")
 
     def reset(self):
         self.processor.IDs = set()

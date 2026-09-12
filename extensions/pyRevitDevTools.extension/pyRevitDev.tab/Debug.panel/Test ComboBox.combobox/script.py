@@ -9,13 +9,16 @@ This script serves as a reference for:
 
 Note: This ComboBox is driven only by event handler functions.
 """
-#pylint: disable=C0103,E0401
+
+# pylint: disable=C0103,E0401
 from Autodesk.Revit.UI import TaskDialog
 
 
-
 def _ensure_dynamic_items(ctx):
-    if ctx.user_data.ContainsKey('dynamic_items_added') and ctx.user_data['dynamic_items_added']:
+    if (
+        ctx.user_data.ContainsKey("dynamic_items_added")
+        and ctx.user_data["dynamic_items_added"]
+    ):
         return
 
     ui_item = ctx.ui_item
@@ -36,11 +39,11 @@ def _ensure_dynamic_items(ctx):
     if all_items and not ctx.current_item:
         ui_item.current = all_items[0]
 
-    ctx.user_data['dynamic_items_added'] = True
+    ctx.user_data["dynamic_items_added"] = True
 
 
 def _show_ui_info_once(ctx):
-    if ctx.user_data.ContainsKey('ui_info_shown') and ctx.user_data['ui_info_shown']:
+    if ctx.user_data.ContainsKey("ui_info_shown") and ctx.user_data["ui_info_shown"]:
         return
 
     ui_item = ctx.ui_item
@@ -53,25 +56,27 @@ def _show_ui_info_once(ctx):
     TaskDialog.Show(
         "Test ComboBox",
         "Enabled: {}\nVisible: {}\nContextual help: {}".format(
-            ui_item.enabled,
-            ui_item.visible,
-            ctx_help_type
-        )
+            ui_item.enabled, ui_item.visible, ctx_help_type
+        ),
     )
 
-    ctx.user_data['ui_info_shown'] = True
+    ctx.user_data["ui_info_shown"] = True
 
 
 def __cmb_on_change__(sender, args, ctx):
     """Fired when user selects a different item."""
     _show_ui_info_once(ctx)
 
-    print("ComboBox Selection Changed - Current selection: {}".format(sender.Current.ItemText if sender.Current else "None"))
+    print(
+        "ComboBox Selection Changed - Current selection: {}".format(
+            sender.Current.ItemText if sender.Current else "None"
+        )
+    )
     current = sender.Current
     if current:
         TaskDialog.Show(
             "ComboBox Selection Changed",
-            "Selected: {}\nID: {}".format(current.ItemText, current.Name)
+            "Selected: {}\nID: {}".format(current.ItemText, current.Name),
         )
 
 
@@ -84,14 +89,15 @@ def __cmb_dropdown_open__(sender, args, ctx):
     _ensure_dynamic_items(ctx)
 
 
-
 def __cmb_dropdown_close__(sender, args, ctx):
     """Fired when dropdown is closed."""
     current = sender.Current
-    print("ComboBox Dropdown Closed - Current selection: {}".format(current.ItemText if current else "None"))
-    TaskDialog.Show(
-        "ComboBox Dropdown Closed",
-        "Current selection: {}".format(
+    print(
+        "ComboBox Dropdown Closed - Current selection: {}".format(
             current.ItemText if current else "None"
         )
+    )
+    TaskDialog.Show(
+        "ComboBox Dropdown Closed",
+        "Current selection: {}".format(current.ItemText if current else "None"),
     )

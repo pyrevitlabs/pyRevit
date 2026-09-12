@@ -66,14 +66,14 @@ class ExampleUI(forms.WPFWindow):
                         Content="2a. Update (WRONG - Will Crash)"
                         Height="30"
                         Margin="0,5"
-                        Background="#FFCCCC"
+                        Background="{DynamicResource pyRevitDangerBackgroundBrush}"
                         Click="update_wrong_clicked"/>
 
                 <Button Name="update_correct_button"
                         Content="2b. Update (CORRECT - With Context)"
                         Height="30"
                         Margin="0,5"
-                        Background="#CCFFCC"
+                        Background="{DynamicResource pyRevitSuccessBackgroundBrush}"
                         Click="update_correct_clicked"/>
 
                 <Button Name="output_button"
@@ -96,7 +96,9 @@ class ExampleUI(forms.WPFWindow):
         if not self.chk_context.IsChecked:
             self._do_pick_element("Without External Event Context")
         else:
-            execute_in_revit_context(self._do_pick_element, "With External Event Content")
+            execute_in_revit_context(
+                self._do_pick_element, "With External Event Content"
+            )
 
     def _do_pick_element(self, message):
         """Actually pick the element (runs in Revit context)."""

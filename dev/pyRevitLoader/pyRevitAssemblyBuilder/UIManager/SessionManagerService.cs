@@ -25,7 +25,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         private readonly IUIRibbonScanner _ribbonScanner;
         private readonly UIApplication _uiApp;
         private readonly ILogger _logger;
-        
+
         // These fields are initialized in InitializeScriptExecutor(), not the constructor
         private Assembly? _runtimeAssembly;
         private string? _pyRevitRoot;
@@ -69,9 +69,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
             _uiManager = uiManager ?? throw new ArgumentNullException(nameof(uiManager));
             _ribbonScanner = ribbonScanner ?? throw new ArgumentNullException(nameof(ribbonScanner));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            
+
             // Get UIApplication from UIManagerService via public property
-            _uiApp = uiManager.UIApplication 
+            _uiApp = uiManager.UIApplication
                 ?? throw new ArgumentNullException(nameof(uiManager), "UIManagerService must have a valid UIApplication.");
         }
 
@@ -95,20 +95,20 @@ namespace pyRevitAssemblyBuilder.SessionManager
             var totalStopwatch = Stopwatch.StartNew();
             var stepStopwatch = new Stopwatch();
 
-            RibbonIconRegistry.Clear();
-            
+            RibbonThemeRegistry.Clear();
+
             // STEP 1: Reset panel backgrounds before creating new UI
             // This matches Python's reset_backgrounds() behavior
             stepStopwatch.Restart();
             _ribbonScanner.ResetPanelBackgrounds();
             _logger.Debug($"[PERF] ResetPanelBackgrounds: {stepStopwatch.ElapsedMilliseconds}ms");
-            
+
             // STEP 2: Reset dirty flags on all existing pyRevit UI elements
             // This marks all existing elements as potentially orphaned
             stepStopwatch.Restart();
             _ribbonScanner.ResetDirtyFlags();
             _logger.Debug($"[PERF] ResetDirtyFlags: {stepStopwatch.ElapsedMilliseconds}ms");
-            
+
             // Clear all caches to ensure newly installed/enabled extensions are discovered
             // This is critical for reload scenarios where extensions may have been added or toggled
             stepStopwatch.Restart();
@@ -117,7 +117,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
             // Revit can change its UI theme without restarting the host process.
             RevitThemeDetector.ClearCache();
-            
+
             // Initialize the ScriptExecutor before executing any scripts
             stepStopwatch.Restart();
             InitializeScriptExecutor();
@@ -155,12 +155,12 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
             _precomputedLibrarySearchPaths = LibraryExtensionSearchPaths.Collect(libraryExtensions);
             _logger.Debug($"Pre-computed {_precomputedLibrarySearchPaths.Count} library search paths");
-            
+
             // Get UI extensions
             stepStopwatch.Restart();
             var uiExtensions = _extensionManager?.GetInstalledUIExtensions()?.ToList();
             _logger.Debug($"[PERF] GetUIExtensions: {stepStopwatch.ElapsedMilliseconds}ms ({uiExtensions?.Count ?? 0} extensions)");
-            
+
             if (uiExtensions == null || uiExtensions.Count == 0)
             {
                 _logger.Warning("No UI extensions found or extension manager is null.");
@@ -512,7 +512,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         private void InitializeScriptExecutor()
         {
             // Cache runtime assembly lookup - it's used by every extension
-            _runtimeAssembly = FindRuntimeAssembly() 
+            _runtimeAssembly = FindRuntimeAssembly()
                 ?? throw new InvalidOperationException("Could not find PyRevit runtime assembly");
 
             var scriptExecutorType = _runtimeAssembly.GetType("PyRevitLabs.PyRevit.Runtime.ScriptExecutor")
@@ -522,28 +522,28 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 ?? throw new InvalidOperationException("Could not find ScriptExecutor.Initialize method");
 
             initializeMethod.Invoke(null, null);
-            
+
             // Cache bin directory and pyRevit root for repeated use
             _binDir = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             _pyRevitRoot = FindPyRevitRoot(_binDir);
-            
+
             if (_pyRevitRoot != null)
                 _logger.Debug($"pyRevit root resolved to: {_pyRevitRoot}");
             else
                 _logger.Debug("pyRevit root could not be resolved from bin directory; will retry during BuildSearchPaths");
-            
+
             // Cache reflection types and methods for startup script execution - HUGE performance boost
             _scriptDataType = _runtimeAssembly.GetType("PyRevitLabs.PyRevit.Runtime.ScriptData");
             _scriptRuntimeConfigsType = _runtimeAssembly.GetType("PyRevitLabs.PyRevit.Runtime.ScriptRuntimeConfigs");
             _scriptExecutorType = _runtimeAssembly.GetType("PyRevitLabs.PyRevit.Runtime.ScriptExecutor");
             _scriptExecutorConfigsType = _runtimeAssembly.GetType("PyRevitLabs.PyRevit.Runtime.ScriptExecutorConfigs");
-            
+
             if (_scriptDataType != null && _scriptRuntimeConfigsType != null && _scriptExecutorType != null && _scriptExecutorConfigsType != null)
             {
                 _executeScriptMethod = _scriptExecutorType.GetMethod("ExecuteScript",
                     new Type[] { _scriptDataType, _scriptRuntimeConfigsType, _scriptExecutorConfigsType });
             }
-            
+
             var externalCommandDataType = typeof(Autodesk.Revit.UI.ExternalCommandData);
             _externalCommandDataAppProperty = externalCommandDataType.GetProperty("Application");
         }
@@ -554,7 +554,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             var assembly = AssemblyCache.GetByPrefix("pyRevitLabs.PyRevit.Runtime");
             if (assembly != null)
                 return assembly;
-            
+
             // If not found in cache, try to load from the bin directory
             var binDir = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             if (!string.IsNullOrEmpty(binDir))
@@ -567,7 +567,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     return loaded;
                 }
             }
-            
+
             return null;
         }
 
@@ -583,7 +583,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         {
             if (string.IsNullOrEmpty(extension.StartupScript))
                 return;
-            
+
             try
             {
                 // Validate cached types
@@ -591,7 +591,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 {
                     throw new Exception("Reflection types not properly cached during initialization");
                 }
-                
+
                 // Build search paths for the startup script
                 var searchPaths = BuildSearchPaths(extension);
 
@@ -600,19 +600,19 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
                 var sharedSessionEngine = (_uiManager?.RocketMode ?? false) && extension.RocketModeCompatible;
                 var scriptRuntimeConfigs = CreateScriptRuntimeConfigs(searchPaths, sharedSessionEngine);
-                
+
                 // Execute the script using cached method
                 if (scriptData == null || scriptRuntimeConfigs == null || _executeScriptMethod == null)
                 {
                     throw new Exception("One or more required objects is null");
                 }
-                
+
                 try
                 {
                     _logger.Info($"Executing startup script for extension: {extension.Name}");
-                    
+
                     var result = _executeScriptMethod.Invoke(null, new[] { scriptData, scriptRuntimeConfigs, null });
-                    
+
                     // Check if the script execution succeeded (result code 0 = success)
                     if (result != null && (int)result != 0)
                     {
@@ -751,25 +751,25 @@ namespace pyRevitAssemblyBuilder.SessionManager
         private List<string> BuildSearchPaths(ParsedExtension extension)
         {
             var searchPaths = new List<string> { extension.Directory };
-            
+
             // Add extension's lib folder if it exists (cached)
             var extLibPath = System.IO.Path.Combine(extension.Directory, "lib");
             if (DirectoryExistsCached(extLibPath))
             {
                 searchPaths.Insert(0, extLibPath);
             }
-            
+
             // Use pre-computed library-extension search paths (avoids N*lib_count Directory.Exists calls)
             // This is an optimization for #3268 - previously this loop was inside the foreach for each UI extension
             searchPaths.AddRange(_precomputedLibrarySearchPaths);
-            
+
             // Add core pyRevit paths (pyrevitlib + site-packages) by discovering repo root
             // Cache the root lookup - it's the same for all extensions
             if (_pyRevitRoot == null)
             {
                 _pyRevitRoot = FindPyRevitRoot(extension.Directory, _binDir) ?? string.Empty;
             }
-            
+
             if (!string.IsNullOrEmpty(_pyRevitRoot))
             {
                 var pyRevitLibDir = System.IO.Path.Combine(_pyRevitRoot, Constants.PYREVIT_LIB_DIR);
@@ -784,7 +784,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     searchPaths.Add(sitePackagesDir);
                 }
             }
-            
+
             return searchPaths;
         }
 
@@ -797,7 +797,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         {
             if (_scriptDataType == null)
                 throw new InvalidOperationException("ScriptData type not initialized");
-                
+
             var scriptData = Activator.CreateInstance(_scriptDataType)
                 ?? throw new InvalidOperationException("Failed to create ScriptData instance");
             SetMemberValue(_scriptDataType, scriptData, "ScriptPath", extension.StartupScript);
@@ -833,72 +833,78 @@ namespace pyRevitAssemblyBuilder.SessionManager
             var tmpCommandData = System.Runtime.CompilerServices.RuntimeHelpers
                 .GetUninitializedObject(typeof(Autodesk.Revit.UI.ExternalCommandData));
 #endif
-                
+
             if (_externalCommandDataAppProperty == null)
                 throw new Exception("Could not find Application property on ExternalCommandData");
-                
+
             _externalCommandDataAppProperty.SetValue(tmpCommandData, _uiApp);
-            
+
             // Create ScriptRuntimeConfigs using cached type
             if (_scriptRuntimeConfigsType == null)
                 throw new InvalidOperationException("ScriptRuntimeConfigs type not initialized");
-                
+
             var scriptRuntimeConfigs = Activator.CreateInstance(_scriptRuntimeConfigsType)
                 ?? throw new InvalidOperationException("Failed to create ScriptRuntimeConfigs instance");
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "UIApp", _uiApp);
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "CommandData", tmpCommandData);
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "SelectedElements", null);
-            
+
             // Set search paths as List<string>
             var listType = typeof(List<string>);
             var searchPathsList = Activator.CreateInstance(listType, new object[] { searchPaths });
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "SearchPaths", searchPathsList);
-            
+
             // Set empty arguments
             var argumentsList = Activator.CreateInstance(listType, new object[] { new string[0] });
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "Arguments", argumentsList);
-            
+
             var engineConfigsJson = sharedSessionEngine
                 ? "{\"clean\": false, \"full_frame\": true, \"persistent\": true}"
                 : "{\"clean\": true, \"full_frame\": true, \"persistent\": true}";
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "EngineConfigs", engineConfigsJson);
-            SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "SharedSessionEngine", sharedSessionEngine);
+            TrySetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "SharedSessionEngine", sharedSessionEngine);
 
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "RefreshEngine", false);
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "ConfigMode", false);
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "DebugMode", false);
             SetMemberValue(_scriptRuntimeConfigsType, scriptRuntimeConfigs, "ExecutedFromUI", false);
-            
+
             return scriptRuntimeConfigs;
         }
 
         private static void SetMemberValue(Type targetType, object? instance, string memberName, object? value)
         {
+            if (!TrySetMemberValue(targetType, instance, memberName, value))
+                throw new MissingMemberException(targetType.FullName, memberName);
+        }
+
+        internal static bool TrySetMemberValue(Type targetType, object? instance, string memberName, object? value)
+        {
             if (instance == null)
                 throw new ArgumentNullException(nameof(instance));
-                
+
             var property = targetType.GetProperty(memberName, BindingFlags.Public | BindingFlags.Instance);
             if (property != null)
             {
                 property.SetValue(instance, value);
-                return;
+                return true;
             }
 
             var field = targetType.GetField(memberName, BindingFlags.Public | BindingFlags.Instance);
             if (field != null)
             {
                 field.SetValue(instance, value);
-                return;
+                return true;
             }
 
-            throw new Exception($"Could not find member '{memberName}' on type {targetType.FullName}");
+            return false;
         }
 
         private bool DirectoryExistsCached(string path)
         {
             if (string.IsNullOrEmpty(path))
                 return false;
-                
+
             if (!_directoryExistsCache.TryGetValue(path, out bool exists))
             {
                 exists = System.IO.Directory.Exists(path);
@@ -906,7 +912,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             }
             return exists;
         }
-        
+
         internal static string? FindPyRevitRoot(params string?[] hintPaths)
         {
             foreach (var hint in hintPaths)

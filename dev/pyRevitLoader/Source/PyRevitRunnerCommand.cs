@@ -14,18 +14,22 @@ using PyRevitLabs.PyRevit.Runtime;
 using System.Reflection;
 using System.IO;
 
-namespace PyRevitRunner {
+namespace PyRevitRunner
+{
     [Regeneration(RegenerationOption.Manual)]
     [Transaction(TransactionMode.Manual)]
-    public class PyRevitRunnerCommand : IExternalCommand {
+    public class PyRevitRunnerCommand : IExternalCommand
+    {
 
-        public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements) {
+        public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
+        {
             // grab application and command data, skip elements since this is a batch runner and user doesn't 
             // see the gui to make selections
             Application = commandData.Application;
             CommandData = commandData;
 
-            try {
+            try
+            {
                 // 1
                 // Processing Journal Data and getting the script path to be executed
                 IDictionary<string, string> dataMap = commandData.JournalData;
@@ -53,7 +57,8 @@ namespace PyRevitRunner {
                 // Executing the script via runtime dispatcher
                 ScriptExecutor.Initialize();
                 var scriptData = BuildScriptData(ScriptSourceFile);
-                var runtimeConfigs = new ScriptRuntimeConfigs {
+                var runtimeConfigs = new ScriptRuntimeConfigs
+                {
                     CommandData = commandData,
                     SelectedElements = elements,
                     SearchPaths = ModuleSearchPaths,
@@ -64,22 +69,26 @@ namespace PyRevitRunner {
                     RefreshEngine = false,
                     ExecutedFromUI = false
                 };
-                try {
+                try
+                {
                     var logFilePathProp = typeof(ScriptRuntimeConfigs).GetProperty("LogFilePath");
                     if (logFilePathProp != null) logFilePathProp.SetValue(runtimeConfigs, LogFile);
-                    
+
                     var suppressOutputProp = typeof(ScriptRuntimeConfigs).GetProperty("SuppressOutput");
                     if (suppressOutputProp != null) suppressOutputProp.SetValue(runtimeConfigs, true);
-                    
+
                     var variablesProp = typeof(ScriptRuntimeConfigs).GetProperty("Variables");
-                    if (variablesProp != null) {
+                    if (variablesProp != null)
+                    {
                         variablesProp.SetValue(runtimeConfigs, new Dictionary<string, object>() {
                             {"__batchexec__",  true },
                             {"__logfile__", LogFile ?? string.Empty },
                             {"__models__", ModelPaths },
                         });
                     }
-                } catch {
+                }
+                catch
+                {
                     // Properties not available in this version of ScriptRuntimeConfigs
                 }
 
@@ -97,7 +106,8 @@ namespace PyRevitRunner {
                 else
                     return Result.Cancelled;
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 LogRunnerError(LogFile, ex);
                 commandData.JournalData.Add("pyRevitRunner Execution Failure", ex.Message);
                 return Result.Cancelled;
@@ -113,7 +123,8 @@ namespace PyRevitRunner {
         public string LogFile { get; private set; }
         public bool DebugMode { get; private set; }
 
-        private static string GetDeployPath() {
+        private static string GetDeployPath()
+        {
             var loaderDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             var engineDir = Path.GetDirectoryName(loaderDir);
             var runtimeDir = Path.GetDirectoryName(engineDir); // netcore or netfx
@@ -124,22 +135,26 @@ namespace PyRevitRunner {
         private static string GetPyRevitLibsPath() => Path.Combine(GetDeployPath(), "pyrevitlib");
         private static string GetSitePkgsPath() => Path.Combine(GetDeployPath(), "site-packages");
 
-        private static void AddSearchPaths(List<string> searchPaths, string rawPaths) {
+        private static void AddSearchPaths(List<string> searchPaths, string rawPaths)
+        {
             if (string.IsNullOrWhiteSpace(rawPaths))
                 return;
 
-            foreach (var searchPath in rawPaths.Split(';')) {
+            foreach (var searchPath in rawPaths.Split(';'))
+            {
                 if (!string.IsNullOrWhiteSpace(searchPath))
                     searchPaths.Add(searchPath);
             }
         }
 
-        private static ScriptData BuildScriptData(string scriptPath) {
+        private static ScriptData BuildScriptData(string scriptPath)
+        {
             var scriptDir = Path.GetDirectoryName(scriptPath);
             var commandName = Path.GetFileNameWithoutExtension(scriptPath) ?? string.Empty;
             var commandBundle = scriptDir != null ? Path.GetFileName(scriptDir) : string.Empty;
 
-            return new ScriptData {
+            return new ScriptData
+            {
                 ScriptPath = scriptPath,
                 ConfigScriptPath = scriptPath,
                 CommandUniqueId = Guid.NewGuid().ToString(),
@@ -153,13 +168,17 @@ namespace PyRevitRunner {
             };
         }
 
-        private static string NormalizeEngineConfigs(string engineConfigsRaw) {
+        private static string NormalizeEngineConfigs(string engineConfigsRaw)
+        {
             JObject configs = new JObject();
-            if (!string.IsNullOrWhiteSpace(engineConfigsRaw)) {
-                try {
+            if (!string.IsNullOrWhiteSpace(engineConfigsRaw))
+            {
+                try
+                {
                     configs = JObject.Parse(engineConfigsRaw);
                 }
-                catch (Exception ex) {
+                catch (Exception ex)
+                {
                     // Best-effort: invalid JSON falls back to defaults.
                     System.Diagnostics.Debug.WriteLine(
                         string.Format("[PyRevitRunner] Failed to parse EngineConfigs JSON: {0}", ex)
@@ -179,17 +198,20 @@ namespace PyRevitRunner {
             return configs.ToString(Formatting.None);
         }
 
-        private static void EnsureLogFile(string logFilePath) {
+        private static void EnsureLogFile(string logFilePath)
+        {
             if (string.IsNullOrWhiteSpace(logFilePath))
                 return;
 
-            try {
+            try
+            {
                 var logDir = Path.GetDirectoryName(logFilePath);
                 if (!string.IsNullOrEmpty(logDir))
                     Directory.CreateDirectory(logDir);
                 File.WriteAllText(logFilePath, string.Empty);
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 // Best-effort: log file setup should not fail the runner.
                 System.Diagnostics.Debug.WriteLine(
                     string.Format("[PyRevitRunner] Failed to initialize log file '{0}': {1}", logFilePath, ex)
@@ -197,7 +219,8 @@ namespace PyRevitRunner {
             }
         }
 
-        private static string ResolveOutputStyleSheet(string configuredStyleSheet, string clonePath) {
+        private static string ResolveOutputStyleSheet(string configuredStyleSheet, string clonePath)
+        {
             var configured = configuredStyleSheet?.Trim();
             if (!string.IsNullOrEmpty(configured) && File.Exists(configured))
                 return configured;
@@ -209,14 +232,17 @@ namespace PyRevitRunner {
             return File.Exists(bundled) ? bundled : string.Empty;
         }
 
-        private static void LogRunnerError(string logFilePath, Exception ex) {
+        private static void LogRunnerError(string logFilePath, Exception ex)
+        {
             if (string.IsNullOrWhiteSpace(logFilePath))
                 return;
 
-            try {
+            try
+            {
                 File.AppendAllText(logFilePath, ex.ToString());
             }
-            catch (Exception exInner) {
+            catch (Exception exInner)
+            {
                 // Best-effort: do not throw while writing the runner error log.
                 System.Diagnostics.Debug.WriteLine(
                     string.Format("[PyRevitRunner] Failed to append runner error to '{0}': {1}", logFilePath, exInner)
@@ -224,7 +250,8 @@ namespace PyRevitRunner {
             }
         }
 
-        private static void SeedEnvDictionary(UIApplication uiApp) {
+        private static void SeedEnvDictionary(UIApplication uiApp)
+        {
             var envData = AppDomain.CurrentDomain.GetData(DomainStorageKeys.EnvVarsDictKey) as PythonDictionary;
             if (envData == null)
                 envData = new PythonDictionary();
@@ -274,11 +301,14 @@ namespace PyRevitRunner {
     }
 
 
-    public class PyRevitRunnerCommandAvail : IExternalCommandAvailability {
-        public PyRevitRunnerCommandAvail() {
+    public class PyRevitRunnerCommandAvail : IExternalCommandAvailability
+    {
+        public PyRevitRunnerCommandAvail()
+        {
         }
 
-        public bool IsCommandAvailable(UIApplication uiApp, CategorySet selectedCategories) {
+        public bool IsCommandAvailable(UIApplication uiApp, CategorySet selectedCategories)
+        {
             return true;
         }
     }

@@ -432,7 +432,9 @@ class ExtensionsWindow(forms.WPFWindow):
             # Installed custom extension: let the user edit URL and token, then Update.
             self.custom_git_url_tb.IsReadOnly = False
             if getattr(self, "custom_ext_name_tb", None):
-                self.custom_ext_name_tb.IsReadOnly = True  # name is structural, keep fixed
+                self.custom_ext_name_tb.IsReadOnly = (
+                    True  # name is structural, keep fixed
+                )
             self.custom_ext_install_path_tb.Text = ext_pkg_item.ext_pkg.is_installed
             self.path_custom_ext_b.IsEnabled = False
             # Pre-fill token from stored config if available
@@ -614,6 +616,7 @@ class ExtensionsWindow(forms.WPFWindow):
                 # TODO this reimport is necessary, otherwise it crashes
                 # with 'referenced before assignment'. Investigate.
                 from pyrevit.userconfig import user_config
+
                 user_config.save_changes()
                 forms.alert(
                     "Extension settings saved.\n\n"
@@ -733,7 +736,7 @@ class ExtensionsWindow(forms.WPFWindow):
 
         except Exception as custom_install_err:
             logger.exception(
-                "Error installing custom extension." " | {}".format(custom_install_err)
+                "Error installing custom extension. | {}".format(custom_install_err)
             )
             forms.alert(
                 "Error installing extension: \n{}".format(str(custom_install_err)),

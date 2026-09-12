@@ -20,9 +20,10 @@ namespace pyRevitLabs.TargetApps.Revit {
             VendorId = doc.DocumentElement.SelectSingleNode("/RevitAddIns/AddIn/VendorId").InnerText;
 
             var addInIdNode = doc.DocumentElement.SelectSingleNode("/RevitAddIns/AddIn/AddInId");
-            if(addInIdNode != null) {
+            if (addInIdNode != null) {
                 AddInId = addInIdNode.InnerText;
-            } else {
+            }
+            else {
                 AddInId = doc.DocumentElement.SelectSingleNode("/RevitAddIns/AddIn/ClientId").InnerText;
             }
         }

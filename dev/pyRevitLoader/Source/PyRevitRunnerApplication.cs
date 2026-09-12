@@ -10,14 +10,17 @@ using Autodesk.Revit.UI;
  * methods manually loads the IronPython assemblies before calling into the 
  * ScriptExecutor that has IronPython references
  */
-namespace PyRevitRunner {
+namespace PyRevitRunner
+{
     [Regeneration(RegenerationOption.Manual)]
     [Transaction(TransactionMode.Manual)]
-    class PyRevitRunnerApplication : IExternalApplication {
+    class PyRevitRunnerApplication : IExternalApplication
+    {
         public static string LoaderPath => Path.GetDirectoryName(typeof(PyRevitRunnerApplication).Assembly.Location);
 
         // Hook into Revit to allow starting a command.
-        Result IExternalApplication.OnStartup(UIControlledApplication application) {
+        Result IExternalApplication.OnStartup(UIControlledApplication application)
+        {
             LoadAssembliesInFolder(LoaderPath);
             // We need to also looad dlls from two folders up
             var commonFolder = Path.GetDirectoryName(Path.GetDirectoryName(LoaderPath));
@@ -49,7 +52,8 @@ namespace PyRevitRunner {
             }
         }
 
-        private static Result RegisterExternalCommand(UIControlledApplication application) {
+        private static Result RegisterExternalCommand(UIControlledApplication application)
+        {
             var assembly = typeof(PyRevitRunnerApplication).Assembly;
 
             RibbonPanel ribbonPanel = application.CreateRibbonPanel("pyRevitRunner");
@@ -67,7 +71,8 @@ namespace PyRevitRunner {
             return Result.Succeeded;
         }
 
-        Result IExternalApplication.OnShutdown(UIControlledApplication application) {
+        Result IExternalApplication.OnShutdown(UIControlledApplication application)
+        {
             // FIXME: deallocate the python shell...
             return Result.Succeeded;
         }

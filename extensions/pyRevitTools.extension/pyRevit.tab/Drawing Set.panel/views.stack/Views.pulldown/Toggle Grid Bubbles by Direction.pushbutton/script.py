@@ -382,7 +382,6 @@ class CustomGrids:
 
             pt1, pt2 = self.get_endpoints(g)
             if pt1 and pt2:
-
                 if self.__coordinate_system in ["view", "elevation_mode"]:
                     # For view orientation, use direction vector approach with user-defined tolerance
                     grid_vector = pt2 - pt1
@@ -912,9 +911,7 @@ def validate_active_view():
     elif active_view.ViewType not in VIEW_TYPES:
         forms.alert(
             "The view must be a floor plan, ceiling plan, elevation or section.\n\
-		Your active view is : {}".format(
-                active_view.ViewType
-            )
+		Your active view is : {}".format(active_view.ViewType)
         )
         return False
     return True
