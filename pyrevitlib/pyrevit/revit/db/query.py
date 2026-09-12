@@ -42,9 +42,11 @@ GRAPHICAL_VIEWTYPES = [
     DB.ViewType.Walkthrough,
     DB.ViewType.Rendering,
 ]
-# PresureLossReport was removed in Revit 2027
+# PresureLossReport typo was corrected in Revit 2027
 if HOST_APP.is_older_than(2027):
     GRAPHICAL_VIEWTYPES.append(DB.ViewType.PresureLossReport)
+else:
+    GRAPHICAL_VIEWTYPES.append(DB.ViewType.PressureLossReport)
 
 
 DETAIL_CURVES = (DB.DetailLine, DB.DetailArc, DB.DetailEllipse, DB.DetailNurbSpline)
