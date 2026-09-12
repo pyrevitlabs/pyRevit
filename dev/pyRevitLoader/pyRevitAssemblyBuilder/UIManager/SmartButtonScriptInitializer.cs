@@ -71,7 +71,7 @@ namespace pyRevitAssemblyBuilder.UIManager
 
             SetIcon(icon_path, icon_size);
             var themePaths = ResolveThemePaths(icon_path);
-            RibbonIconRegistry.Register(
+            RibbonThemeRegistry.Register(
                 _pushButton,
                 isDarkTheme => SetIcon(isDarkTheme ? themePaths.Dark : themePaths.Light, icon_size));
         }

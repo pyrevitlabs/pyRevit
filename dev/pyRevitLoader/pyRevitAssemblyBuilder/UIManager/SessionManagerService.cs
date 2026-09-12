@@ -95,7 +95,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             var totalStopwatch = Stopwatch.StartNew();
             var stepStopwatch = new Stopwatch();
 
-            RibbonIconRegistry.Clear();
+            RibbonThemeRegistry.Clear();
 
             // STEP 1: Reset panel backgrounds before creating new UI
             // This matches Python's reset_backgrounds() behavior

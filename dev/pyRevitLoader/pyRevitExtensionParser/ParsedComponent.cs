@@ -136,6 +136,21 @@ namespace pyRevitExtensionParser
         public string SlideoutBackground { get; set; }
 
         /// <summary>
+        /// Dark theme panel background color (ARGB hex format), or null to reuse <see cref="PanelBackground"/>
+        /// </summary>
+        public string DarkPanelBackground { get; set; }
+
+        /// <summary>
+        /// Dark theme panel title background color (ARGB hex format), or null to reuse <see cref="TitleBackground"/>
+        /// </summary>
+        public string DarkTitleBackground { get; set; }
+
+        /// <summary>
+        /// Dark theme panel slideout background color (ARGB hex format), or null to reuse <see cref="SlideoutBackground"/>
+        /// </summary>
+        public string DarkSlideoutBackground { get; set; }
+
+        /// <summary>
         /// The directory path where this component resides
         /// </summary>
         public string Directory { get; set; }

@@ -38,12 +38,9 @@ elif PY3:
     import urllib
     from urllib.parse import urlparse
 
-try:
-    if PY3:
-        import requests
-    else:
-        import pyrevit.netrequests as requests
-except Exception:
+if IRONPY:
+    import pyrevit.netrequests as requests
+else:
     import requests
 
 

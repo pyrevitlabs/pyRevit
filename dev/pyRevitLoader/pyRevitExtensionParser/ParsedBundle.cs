@@ -475,6 +475,31 @@ namespace pyRevitExtensionParser
         public string SlideoutBackground { get; set; }
 
         /// <summary>
+        /// Gets or sets the dark theme background color for the panel containing this bundle.
+        /// </summary>
+        /// <remarks>
+        /// Parsed from the <c>background_dark</c> section, which mirrors <c>background</c>.
+        /// Falls back to <see cref="PanelBackground"/> when not specified.
+        /// </remarks>
+        public string DarkPanelBackground { get; set; }
+
+        /// <summary>
+        /// Gets or sets the dark theme background color for the title bar of this bundle's panel.
+        /// </summary>
+        /// <remarks>
+        /// Falls back to <see cref="TitleBackground"/> when not specified.
+        /// </remarks>
+        public string DarkTitleBackground { get; set; }
+
+        /// <summary>
+        /// Gets or sets the dark theme background color for slideout panels.
+        /// </summary>
+        /// <remarks>
+        /// Falls back to <see cref="SlideoutBackground"/> when not specified.
+        /// </remarks>
+        public string DarkSlideoutBackground { get; set; }
+
+        /// <summary>
         /// Gets or sets the engine configuration settings for script execution.
         /// </summary>
         /// <remarks>

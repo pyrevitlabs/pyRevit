@@ -20,7 +20,7 @@ using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Events;
 using pyRevitAssemblyBuilder.AssemblyMaker;
 using pyRevitAssemblyBuilder.SessionManager;
-using pyRevitAssemblyBuilder.UIManager.Icons;
+using pyRevitAssemblyBuilder.UIManager;
 using pyRevitExtensionParser;
 using System;
 using System.Diagnostics;
@@ -168,30 +168,30 @@ namespace PyRevitLoader
                 return;
 
             _themeRefreshPending = true;
-            _uiApplication.Idling -= RefreshIconsOnIdling;
-            _uiApplication.Idling += RefreshIconsOnIdling;
+            _uiApplication.Idling -= RefreshThemeOnIdling;
+            _uiApplication.Idling += RefreshThemeOnIdling;
         }
 
-        private static void RefreshIconsOnIdling(object sender, IdlingEventArgs eventArgs)
+        private static void RefreshThemeOnIdling(object sender, IdlingEventArgs eventArgs)
         {
             if (_uiApplication != null)
             {
-                _uiApplication.Idling -= RefreshIconsOnIdling;
+                _uiApplication.Idling -= RefreshThemeOnIdling;
             }
 
             _themeRefreshPending = false;
-            RibbonIconRegistry.RefreshAll(_pendingDarkTheme);
+            RibbonThemeRegistry.RefreshAll(_pendingDarkTheme);
         }
 
         private static void DisposeThemeChangeMonitor()
         {
             if (_uiApplication != null)
             {
-                _uiApplication.Idling -= RefreshIconsOnIdling;
+                _uiApplication.Idling -= RefreshThemeOnIdling;
             }
 
             _themeRefreshPending = false;
-            RibbonIconRegistry.Clear();
+            RibbonThemeRegistry.Clear();
             _themeChangeMonitor?.Dispose();
             _themeChangeMonitor = null;
             _uiApplication = null;

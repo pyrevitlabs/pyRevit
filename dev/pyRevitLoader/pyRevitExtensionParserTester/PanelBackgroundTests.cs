@@ -54,6 +54,9 @@ namespace pyRevitExtensionParserTest
                     Assert.AreEqual("#BB005591", panel.PanelBackground, "Panel background should be '#BB005591'");
                     Assert.AreEqual("#E2A000", panel.TitleBackground, "Title background should be '#E2A000'");
                     Assert.AreEqual("#E25200", panel.SlideoutBackground, "Slideout background should be '#E25200'");
+                    Assert.AreEqual("#1E3A5F", panel.DarkPanelBackground, "Dark panel background should be '#1E3A5F'");
+                    Assert.AreEqual("#7A5600", panel.DarkTitleBackground, "Dark title background should be '#7A5600'");
+                    Assert.AreEqual("#7A2C00", panel.DarkSlideoutBackground, "Dark slideout background should be '#7A2C00'");
 
                     return; // Test passed
                 }
@@ -99,8 +102,11 @@ namespace pyRevitExtensionParserTest
                     // Verify single-line background format was parsed correctly
                     Assert.AreEqual(CommandComponentType.Panel, panel.Type);
                     Assert.AreEqual("#BB005591", panel.PanelBackground, "Panel background should be '#BB005591'");
-                    Assert.IsNull(panel.TitleBackground, "Title background should be null for single-line format");
-                    Assert.IsNull(panel.SlideoutBackground, "Slideout background should be null for single-line format");
+                    Assert.AreEqual("#BB005591", panel.TitleBackground, "Title background should be '#BB005591'");
+                    Assert.AreEqual("#BB005591", panel.SlideoutBackground, "Slideout background should be '#BB005591'");
+                    Assert.AreEqual("#BB1E3A5F", panel.DarkPanelBackground, "Dark panel background should be '#BB1E3A5F'");
+                    Assert.AreEqual("#BB1E3A5F", panel.DarkTitleBackground, "Dark title background should be '#BB1E3A5F'");
+                    Assert.AreEqual("#BB1E3A5F", panel.DarkSlideoutBackground, "Dark slideout background should be '#BB1E3A5F'");
 
                     return; // Test passed
                 }
