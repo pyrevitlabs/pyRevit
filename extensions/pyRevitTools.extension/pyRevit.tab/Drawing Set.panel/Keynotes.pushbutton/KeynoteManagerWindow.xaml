@@ -16,7 +16,13 @@
         <SolidColorBrush x:Key="AccentBrush"        Color="#2B579A"/>
         <SolidColorBrush x:Key="AccentHoverBrush"   Color="#3A6FB0"/>
         <SolidColorBrush x:Key="WarningBrush"       Color="#CA5010"/>
-        <SolidColorBrush x:Key="DangerBrush"        Color="#E35054"/>
+        <!-- Light-theme values. A danger FOREGROUND must be dark on white
+             and light on the dark row surface, which no single colour can
+             satisfy, and the locked-row tint inverts the same way. The dark
+             variants are swapped in at runtime (see _apply_theme_brushes in
+             script.py); these stay as a working fallback if that never runs.
+             Referenced with DynamicResource so the swap takes effect. -->
+        <SolidColorBrush x:Key="DangerBrush"        Color="#C42B2F"/>
         <SolidColorBrush x:Key="LockedBgBrush"      Color="#FFF4CE"/>
         <SolidColorBrush x:Key="LockedFgBrush"      Color="#1E1E1E"/>
         <SolidColorBrush x:Key="UsedBadgeBgBrush"   Color="#E8F5E9"/>
@@ -156,8 +162,8 @@
             <Setter Property="AllowDrop" Value="True"/>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding locked}" Value="True">
-                    <Setter Property="Background" Value="{StaticResource LockedBgBrush}"/>
-                    <Setter Property="Foreground" Value="{StaticResource LockedFgBrush}"/>
+                    <Setter Property="Background" Value="{DynamicResource LockedBgBrush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource LockedFgBrush}"/>
                 </DataTrigger>
                 <DataTrigger Binding="{Binding used}" Value="True">
                     <Setter Property="FontWeight" Value="Medium"/>
@@ -364,7 +370,7 @@
                                   Click="show_keynote"/>
                         <Separator/>
                         <MenuItem Header="Delete" InputGestureText="Del"
-                                  Foreground="{StaticResource DangerBrush}"
+                                  Foreground="{DynamicResource DangerBrush}"
                                   Style="{StaticResource CtxNotLockedMenuItem}"
                                   Click="remove_keynote"/>
                     </ContextMenu>
@@ -714,7 +720,7 @@
                         <!-- Delete -->
                         <Button x:Name="removeBtn" Style="{StaticResource ToolbarButton}"
                                 Content="&#x2715;" FontSize="12"
-                                Foreground="{StaticResource DangerBrush}"
+                                Foreground="{DynamicResource DangerBrush}"
                                 ToolTip="Delete (Del)" IsEnabled="False" Click="remove_keynote"/>
 
                         <Rectangle Style="{StaticResource ToolbarSep}"/>
