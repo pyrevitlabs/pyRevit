@@ -745,8 +745,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._doc_changed_app = None
         self.Loaded += self._on_window_loaded
 
-        self.set_image_source(self.expandAllIcon, "expand_all.png")
-        self.set_image_source(self.collapseAllIcon, "collapse_all.png")
 
         self.load_config(reset_config)
         self._update_full_tree()

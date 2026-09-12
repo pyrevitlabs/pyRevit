@@ -318,7 +318,7 @@
                         <Border x:Name="lockBadge" Visibility="Collapsed"
                                 Background="{StaticResource WarningBrush}"
                                 CornerRadius="8" Padding="6,1,6,2">
-                            <TextBlock Foreground="White"
+                            <TextBlock Foreground="White" FontFamily="Segoe UI Symbol"
                                        FontSize="10" FontWeight="SemiBold">
                                 <TextBlock.Text>
                                     <MultiBinding StringFormat="&#x1F512; {0}">
@@ -390,7 +390,7 @@
                     <Button Style="{StaticResource FlatButton}"
                             Content="Change File" Click="change_keynote_file"/>
                     <Button Style="{StaticResource ToolbarButton}"
-                            Content="&#x1F4C2;" FontSize="14"
+                            Content="&#x1F4C2;" FontSize="14" FontFamily="Segoe UI Symbol"
                             ToolTip="Show in Explorer" Click="show_keynote_file"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
@@ -424,7 +424,7 @@
                     <Grid>
                         <TextBox x:Name="search_tb" Style="{StaticResource SearchBox}"
                                  TextChanged="search_txt_changed"/>
-                        <TextBlock Text="&#x1F50D;  Search keynotes..."
+                        <TextBlock Text="&#x1F50D;  Search keynotes..." FontFamily="Segoe UI Symbol"
                                    FontSize="12" IsHitTestVisible="False"
                                    VerticalAlignment="Center" HorizontalAlignment="Left"
                                    Margin="8,0,0,0"
@@ -466,15 +466,13 @@
                     <StackPanel Orientation="Horizontal">
                         <Button x:Name="expandAllBtn" Style="{StaticResource ToolbarButton}" Width="28"
                                 ToolTip="Expand all" Click="expand_all_tree">
-                            <Image x:Name="expandAllIcon" Width="16" Height="16"
-                                   Stretch="Uniform" SnapsToDevicePixels="True"
-                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                            <TextBlock Text="&#x229E;" FontSize="14" FontFamily="Segoe UI Symbol"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Button>
                         <Button x:Name="collapseAllBtn" Style="{StaticResource ToolbarButton}" Width="28"
                                 ToolTip="Collapse all" Click="collapse_all_tree">
-                            <Image x:Name="collapseAllIcon" Width="16" Height="16"
-                                   Stretch="Uniform" SnapsToDevicePixels="True"
-                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                            <TextBlock Text="&#x229F;" FontSize="14" FontFamily="Segoe UI Symbol"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Button>
 
                         <Rectangle Style="{StaticResource ToolbarSep}"/>
@@ -535,7 +533,7 @@
                                 Content="&#x2750;" FontSize="13"
                                 ToolTip="Duplicate (Ctrl+D)" IsEnabled="False" Click="duplicate_keynote"/>
                         <Button x:Name="rekeyBtn" Style="{StaticResource ToolbarButton}"
-                                Content="&#x1F511;" FontSize="12"
+                                Content="&#x1F511;" FontSize="12" FontFamily="Segoe UI Symbol"
                                 ToolTip="Change key" IsEnabled="False" Click="rekey_keynote"/>
 
                         <Rectangle Style="{StaticResource ToolbarSep}"/>
@@ -568,10 +566,10 @@
 
                         <!-- Find / Place -->
                         <Button x:Name="findBtn" Style="{StaticResource ToolbarButton}"
-                                Content="&#x1F50D;" FontSize="12"
+                                Content="&#x1F50D;" FontSize="12" FontFamily="Segoe UI Symbol"
                                 ToolTip="Find in model" IsEnabled="False" Click="show_keynote"/>
                         <Button x:Name="placeBtn" Style="{StaticResource ToolbarButton}"
-                                Content="&#x1F4CC;" FontSize="12"
+                                Content="&#x1F4CC;" FontSize="12" FontFamily="Segoe UI Symbol"
                                 ToolTip="Place in model (or Shift+Click a keynote)"
                                 IsEnabled="False" Click="place_keynote"/>
                     </StackPanel>
