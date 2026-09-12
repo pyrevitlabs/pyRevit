@@ -140,6 +140,11 @@
             <Setter Property="Margin" Value="4,0"/>
         </Style>
 
+        <!-- A KEYED style is a local value, so it outranks the implicit
+             TargetType="TextBox" style pyRevit merges in from Theme.xaml -
+             which is what supplies Foreground/CaretBrush/SelectionBrush.
+             Without repeating them here the box themes its background but
+             keeps the stock black text: black on dark in dark mode. -->
         <Style x:Key="SearchBox" TargetType="TextBox">
             <Setter Property="Height" Value="30"/>
             <Setter Property="Padding" Value="28,0,28,0"/>
@@ -148,6 +153,9 @@
             <Setter Property="BorderBrush" Value="{DynamicResource pyRevitControlBorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Background" Value="{DynamicResource pyRevitControlBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
+            <Setter Property="CaretBrush" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
+            <Setter Property="SelectionBrush" Value="{DynamicResource pyRevitAccentBrush}"/>
         </Style>
 
         <!-- ============================================================ -->
@@ -468,13 +476,10 @@
                         <Border x:Name="lockBadge" Visibility="Collapsed"
                                 Background="{StaticResource WarningBrush}"
                                 CornerRadius="8" Padding="6,1,6,2">
-                            <TextBlock Foreground="White" FontFamily="Segoe UI Symbol"
+                            <TextBlock Foreground="White"
                                        FontSize="10" FontWeight="SemiBold">
-                                <TextBlock.Text>
-                                    <MultiBinding StringFormat="&#x1F512; {0}">
-                                        <Binding Path="owner"/>
-                                    </MultiBinding>
-                                </TextBlock.Text>
+                                <Run FontFamily="Segoe MDL2 Assets" Text="&#xE72E;&#160;"/>
+                                <Run Text="{Binding owner}"/>
                             </TextBlock>
                         </Border>
                     </StackPanel>
@@ -551,7 +556,7 @@
                     <Button Style="{StaticResource FlatButton}"
                             Content="Change File" Click="change_keynote_file"/>
                     <Button Style="{StaticResource ToolbarButton}"
-                            Content="&#x1F4C2;" FontSize="14" FontFamily="Segoe UI Symbol"
+                            Content="&#xE8B7;" FontSize="14" FontFamily="Segoe MDL2 Assets"
                             ToolTip="Show in Explorer" Click="show_keynote_file"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
@@ -585,11 +590,14 @@
                     <Grid>
                         <TextBox x:Name="search_tb" Style="{StaticResource SearchBox}"
                                  TextChanged="search_txt_changed"/>
-                        <TextBlock Text="&#x1F50D;  Search keynotes..." FontFamily="Segoe UI Symbol"
-                                   FontSize="12" IsHitTestVisible="False"
+                        <!-- Glyph and label need different fonts: MDL2 has no
+                             Latin glyphs, so only the icon Run uses it. -->
+                        <TextBlock FontSize="12" IsHitTestVisible="False"
                                    VerticalAlignment="Center" HorizontalAlignment="Left"
                                    Margin="8,0,0,0"
                                    Foreground="{DynamicResource pyRevitDisabledForegroundBrush}">
+                            <Run FontFamily="Segoe MDL2 Assets" Text="&#xE721;&#160;&#160;"/>
+                            <Run Text="Search keynotes..."/>
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="Visibility" Value="Collapsed"/>
@@ -694,7 +702,7 @@
                                 Content="&#x2750;" FontSize="13"
                                 ToolTip="Duplicate (Ctrl+D)" IsEnabled="False" Click="duplicate_keynote"/>
                         <Button x:Name="rekeyBtn" Style="{StaticResource ToolbarButton}"
-                                Content="&#x1F511;" FontSize="12" FontFamily="Segoe UI Symbol"
+                                Content="&#xE192;" FontSize="12" FontFamily="Segoe MDL2 Assets"
                                 ToolTip="Change key" IsEnabled="False" Click="rekey_keynote"/>
 
                         <Rectangle Style="{StaticResource ToolbarSep}"/>
@@ -727,10 +735,10 @@
 
                         <!-- Find / Place -->
                         <Button x:Name="findBtn" Style="{StaticResource ToolbarButton}"
-                                Content="&#x1F50D;" FontSize="12" FontFamily="Segoe UI Symbol"
+                                Content="&#xE721;" FontSize="12" FontFamily="Segoe MDL2 Assets"
                                 ToolTip="Find in model" IsEnabled="False" Click="show_keynote"/>
                         <Button x:Name="placeBtn" Style="{StaticResource ToolbarButton}"
-                                Content="&#x1F4CC;" FontSize="12" FontFamily="Segoe UI Symbol"
+                                Content="&#xE718;" FontSize="12" FontFamily="Segoe MDL2 Assets"
                                 ToolTip="Place in model (or Shift+Click a keynote)"
                                 IsEnabled="False" Click="place_keynote"/>
                     </StackPanel>
