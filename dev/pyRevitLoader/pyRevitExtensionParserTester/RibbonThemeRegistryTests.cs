@@ -1,21 +1,21 @@
-using pyRevitAssemblyBuilder.UIManager.Icons;
+using pyRevitAssemblyBuilder.UIManager;
 
 namespace pyRevitExtensionParserTest
 {
     [TestFixture]
     [NonParallelizable]
-    public class RibbonIconRegistryTests
+    public class RibbonThemeRegistryTests
     {
         [SetUp]
         public void SetUp()
         {
-            RibbonIconRegistry.Clear();
+            RibbonThemeRegistry.Clear();
         }
 
         [TearDown]
         public void TearDown()
         {
-            RibbonIconRegistry.Clear();
+            RibbonThemeRegistry.Clear();
         }
 
         [Test]
@@ -23,10 +23,10 @@ namespace pyRevitExtensionParserTest
         {
             var item = new object();
             var themes = new List<bool>();
-            RibbonIconRegistry.Register(item, themes.Add);
+            RibbonThemeRegistry.Register(item, themes.Add);
 
-            RibbonIconRegistry.RefreshAll(true);
-            RibbonIconRegistry.RefreshAll(false);
+            RibbonThemeRegistry.RefreshAll(true);
+            RibbonThemeRegistry.RefreshAll(false);
 
             Assert.That(themes, Is.EqualTo(new[] { true, false }));
         }
@@ -37,24 +37,24 @@ namespace pyRevitExtensionParserTest
             var item = new object();
             var firstCalls = 0;
             var secondCalls = 0;
-            RibbonIconRegistry.Register(item, _ => firstCalls++);
-            RibbonIconRegistry.Register(item, _ => secondCalls++);
+            RibbonThemeRegistry.Register(item, _ => firstCalls++);
+            RibbonThemeRegistry.Register(item, _ => secondCalls++);
 
-            RibbonIconRegistry.RefreshAll(true);
+            RibbonThemeRegistry.RefreshAll(true);
 
-            Assert.That(RibbonIconRegistry.Count, Is.EqualTo(1));
+            Assert.That(RibbonThemeRegistry.Count, Is.EqualTo(1));
             Assert.That(firstCalls, Is.Zero);
             Assert.That(secondCalls, Is.EqualTo(1));
         }
 
         [Test]
-        public void BrokenControlDoesNotPreventOtherIconsFromRefreshing()
+        public void BrokenControlDoesNotPreventOtherRibbonElementsFromRefreshing()
         {
             var successfulCalls = 0;
-            RibbonIconRegistry.Register(new object(), _ => throw new InvalidOperationException());
-            RibbonIconRegistry.Register(new object(), _ => successfulCalls++);
+            RibbonThemeRegistry.Register(new object(), _ => throw new InvalidOperationException());
+            RibbonThemeRegistry.Register(new object(), _ => successfulCalls++);
 
-            Assert.DoesNotThrow(() => RibbonIconRegistry.RefreshAll(true));
+            Assert.DoesNotThrow(() => RibbonThemeRegistry.RefreshAll(true));
             Assert.That(successfulCalls, Is.EqualTo(1));
         }
     }
