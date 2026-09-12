@@ -21,13 +21,34 @@
         <SolidColorBrush x:Key="LockedFgBrush"      Color="#1E1E1E"/>
         <SolidColorBrush x:Key="UsedBadgeBgBrush"   Color="#E8F5E9"/>
         <SolidColorBrush x:Key="UsedBadgeFgBrush"   Color="#2E7D32"/>
-        <SolidColorBrush x:Key="CatBadgeBrush"      Color="#333333"/>
+        <!-- Category key badge. Must stay dark enough for its hardcoded white
+             text AND stay visible against BOTH row surfaces: #FFFFFF (light)
+             and pyRevitControlBackground #222933 (dark). #333333 was only
+             1.16:1 against the dark row, so the badge vanished. -->
+        <SolidColorBrush x:Key="CatBadgeBrush"      Color="#525E73"/>
         <SolidColorBrush x:Key="TypeElBgBrush"      Color="#E3F2FD"/>
         <SolidColorBrush x:Key="TypeElFgBrush"      Color="#1565C0"/>
         <SolidColorBrush x:Key="TypeMatBgBrush"     Color="#FFF3E0"/>
         <SolidColorBrush x:Key="TypeMatFgBrush"     Color="#E65100"/>
         <SolidColorBrush x:Key="TypeUsrBgBrush"     Color="#F3E5F5"/>
         <SolidColorBrush x:Key="TypeUsrFgBrush"     Color="#6A1B9A"/>
+
+        <!-- Row selection colours.
+             TreeItemContainer uses the STOCK TreeViewItem template, whose
+             internal "Bd" border repaints the row from SYSTEM brushes when
+             selected - and swaps to the INACTIVE variant (a light grey) the
+             moment the tree loses focus, which is exactly what happens when
+             the context menu opens. A Style setter cannot reach Bd, but these
+             window-level key overrides do. Active and inactive are mapped to
+             the SAME brush so the row does not change colour on right-click. -->
+        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}"
+                         Color="{DynamicResource pyRevitSelectionBackgroundColor}"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}"
+                         Color="{DynamicResource pyRevitSelectionForegroundColor}"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}"
+                         Color="{DynamicResource pyRevitSelectionBackgroundColor}"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}"
+                         Color="{DynamicResource pyRevitSelectionForegroundColor}"/>
 
         <!-- ============================================================ -->
         <!-- BASE BUTTON STYLES                                           -->
@@ -54,10 +75,12 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#E8E8E8"/>
+                                <Setter TargetName="border" Property="Background"
+                                        Value="{DynamicResource pyRevitControlHoverBrush}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#D0D0D0"/>
+                                <Setter TargetName="border" Property="Background"
+                                        Value="{DynamicResource pyRevitControlPressedBrush}"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Opacity" Value="0.35"/>
@@ -146,7 +169,128 @@
             </Style.Triggers>
         </Style>
 
-        <Style x:Key="CtxMenuItem" TargetType="MenuItem"/>
+        <!-- ============================================================ -->
+        <!-- CONTEXT MENUS                                                -->
+        <!-- WPF's default ContextMenu/MenuItem templates paint a light
+             icon gutter that no Background setter can reach, so it stayed
+             white in dark mode. pyRevit ships no menu theming, so both
+             controls are retemplated here. These are IMPLICIT styles so
+             they also cover the unstyled `caseMenu` further down.
+             NOTE: no submenu (Popup) support - this window has no nested
+             MenuItems. Add the submenu parts if that ever changes. -->
+        <Style TargetType="ContextMenu">
+            <Setter Property="Background" Value="{DynamicResource pyRevitControlBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource pyRevitControlBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContextMenu">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="3" Padding="0,4"
+                                SnapsToDevicePixels="True">
+                            <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="MenuItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
+            <Setter Property="Padding" Value="12,5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Border x:Name="bg"
+                                Background="{TemplateBinding Background}"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <!-- Foreground is inherited from the MenuItem, so an
+                                     element-level Foreground (the red Delete) flows
+                                     through untouched. -->
+                                <ContentPresenter x:Name="hdr" Grid.Column="0"
+                                                  ContentSource="Header"
+                                                  VerticalAlignment="Center"
+                                                  RecognizesAccessKey="True"/>
+                                <TextBlock x:Name="gesture" Grid.Column="1"
+                                           Text="{TemplateBinding InputGestureText}"
+                                           Margin="28,0,0,0"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource pyRevitSubtleForegroundBrush}"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <!-- Collapse (not just blank) the gesture column, or its
+                                 margin is still measured for items with no shortcut. -->
+                            <Trigger Property="InputGestureText" Value="">
+                                <Setter TargetName="gesture" Property="Visibility" Value="Collapsed"/>
+                            </Trigger>
+                            <!-- Repaint the text too: the Delete item carries a local red
+                                 Foreground, which is unreadable on the selection fill. -->
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="bg" Property="Background"
+                                        Value="{DynamicResource pyRevitSelectionBackgroundBrush}"/>
+                                <Setter TargetName="hdr" Property="TextElement.Foreground"
+                                        Value="{DynamicResource pyRevitSelectionForegroundBrush}"/>
+                                <Setter TargetName="gesture" Property="Foreground"
+                                        Value="{DynamicResource pyRevitSelectionForegroundBrush}"/>
+                            </Trigger>
+                            <!-- Target the presenter, not the MenuItem: an element-level
+                                 Foreground outranks a template trigger, so disabling the
+                                 red Delete would otherwise leave it looking enabled. -->
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="hdr" Property="TextElement.Foreground"
+                                        Value="{DynamicResource pyRevitDisabledForegroundBrush}"/>
+                                <Setter TargetName="gesture" Property="Foreground"
+                                        Value="{DynamicResource pyRevitDisabledForegroundBrush}"/>
+                            </Trigger>
+                            <!-- A disabled item still reports IsHighlighted on hover, so
+                                 without this it would light up as if it were clickable.
+                                 Declared last: for the same target+property, last wins. -->
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsHighlighted" Value="True"/>
+                                    <Condition Property="IsEnabled" Value="False"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="bg" Property="Background" Value="Transparent"/>
+                                <Setter TargetName="hdr" Property="TextElement.Foreground"
+                                        Value="{DynamicResource pyRevitDisabledForegroundBrush}"/>
+                            </MultiTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Menu separators only; toolbar dividers use ToolbarSep (Rectangle).
+             MUST be keyed with MenuItem.SeparatorStyleKey: MenuItem.PrepareMenuItem
+             force-repoints a menu Separator's Style via SetResourceReference to that
+             key whenever the current style came from an implicit reference, so an
+             unkeyed TargetType="Separator" style is silently discarded and the OS
+             theme's light, gutter-indented rule is used instead. -->
+        <Style x:Key="{x:Static MenuItem.SeparatorStyleKey}" TargetType="Separator">
+            <Setter Property="Background" Value="{DynamicResource pyRevitControlBorderBrush}"/>
+            <Setter Property="Margin" Value="8,4"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Separator">
+                        <Rectangle Height="1" Fill="{TemplateBinding Background}"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="CtxMenuItem" TargetType="MenuItem"
+               BasedOn="{StaticResource {x:Type MenuItem}}"/>
 
         <Style x:Key="CtxKeynoteMenuItem" TargetType="MenuItem"
                BasedOn="{StaticResource CtxMenuItem}">
@@ -347,6 +491,17 @@
                     <Setter TargetName="textDisplay" Property="Foreground"
                             Value="{DynamicResource pyRevitDisabledForegroundBrush}"/>
                 </DataTrigger>
+                <!-- A locked row that is ALSO selected must keep the selection
+                     foreground; the locked setter above would otherwise leave
+                     low-contrast disabled-grey text on the selection fill. -->
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding locked}" Value="True"/>
+                        <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TreeViewItem}}" Value="True"/>
+                    </MultiDataTrigger.Conditions>
+                    <Setter TargetName="textDisplay" Property="Foreground"
+                            Value="{DynamicResource pyRevitSelectionForegroundBrush}"/>
+                </MultiDataTrigger>
                 <DataTrigger Binding="{Binding has_element_type}" Value="True">
                     <Setter TargetName="typElBadge" Property="Visibility" Value="Visible"/>
                 </DataTrigger>
