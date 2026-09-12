@@ -4,6 +4,9 @@ namespace pyRevitExtensionParserTest
 {
     [TestFixture]
     [NonParallelizable]
+    /// <summary>
+    /// Verifies theme detection independently of the Revit API version available at compile time.
+    /// </summary>
     public class RevitThemeDetectorTests
     {
         [SetUp]
@@ -13,6 +16,9 @@ namespace pyRevitExtensionParserTest
         public void ClearThemeCacheAfterTest() => RevitThemeDetector.ClearCache();
 
         [Test]
+        /// <summary>
+        /// Confirms that a dark theme is returned by the detector.
+        /// </summary>
         public void DarkThemeNameIsDetectedRegardlessOfBaselineRevitVersion()
         {
             var detector = new RevitThemeDetector(new MockLogger(), () => "Dark");
@@ -22,6 +28,9 @@ namespace pyRevitExtensionParserTest
         }
 
         [Test]
+        /// <summary>
+        /// Confirms that unavailable theme support uses the light-theme fallback.
+        /// </summary>
         public void MissingThemeSupportFallsBackToLight()
         {
             var detector = new RevitThemeDetector(new MockLogger(), () => null);
@@ -31,6 +40,9 @@ namespace pyRevitExtensionParserTest
         }
 
         [Test]
+        /// <summary>
+        /// Confirms that failed theme reads use the light-theme fallback and are logged.
+        /// </summary>
         public void ThemeReadFailureFallsBackToLightAndIsLogged()
         {
             var logger = new MockLogger();
@@ -43,6 +55,9 @@ namespace pyRevitExtensionParserTest
         }
 
         [Test]
+        /// <summary>
+        /// Confirms that a detected theme remains cached until the cache is cleared.
+        /// </summary>
         public void ThemeIsReadOnceUntilTheCacheIsCleared()
         {
             var reads = 0;
@@ -67,6 +82,9 @@ namespace pyRevitExtensionParserTest
         }
 
         [Test]
+        /// <summary>
+        /// Confirms that the reflection reader returns no theme when the API is unavailable.
+        /// </summary>
         public void ReadCurrentThemeNameReturnsNullWhenThemeManagerIsUnavailable()
         {
             Assert.That(RevitThemeDetector.ReadCurrentThemeName(typeof(string)), Is.Null);
