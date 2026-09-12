@@ -2,11 +2,11 @@ using pyRevitAssemblyBuilder.SessionManager;
 
 namespace pyRevitExtensionParserTest
 {
-    [TestFixture]
-    [NonParallelizable]
     /// <summary>
     /// Verifies theme detection independently of the Revit API version available at compile time.
     /// </summary>
+    [TestFixture]
+    [NonParallelizable]
     public class RevitThemeDetectorTests
     {
         [SetUp]
@@ -15,10 +15,10 @@ namespace pyRevitExtensionParserTest
         [TearDown]
         public void ClearThemeCacheAfterTest() => RevitThemeDetector.ClearCache();
 
-        [Test]
         /// <summary>
         /// Confirms that a dark theme is returned by the detector.
         /// </summary>
+        [Test]
         public void DarkThemeNameIsDetectedRegardlessOfBaselineRevitVersion()
         {
             var detector = new RevitThemeDetector(new MockLogger(), () => "Dark");
@@ -27,10 +27,10 @@ namespace pyRevitExtensionParserTest
             Assert.That(detector.GetThemeName(), Is.EqualTo("Dark"));
         }
 
-        [Test]
         /// <summary>
         /// Confirms that unavailable theme support uses the light-theme fallback.
         /// </summary>
+        [Test]
         public void MissingThemeSupportFallsBackToLight()
         {
             var detector = new RevitThemeDetector(new MockLogger(), () => null);
@@ -39,10 +39,10 @@ namespace pyRevitExtensionParserTest
             Assert.That(detector.GetThemeName(), Is.EqualTo("Light"));
         }
 
-        [Test]
         /// <summary>
         /// Confirms that failed theme reads use the light-theme fallback and are logged.
         /// </summary>
+        [Test]
         public void ThemeReadFailureFallsBackToLightAndIsLogged()
         {
             var logger = new MockLogger();
@@ -54,10 +54,10 @@ namespace pyRevitExtensionParserTest
             Assert.That(logger.Errors, Has.Count.EqualTo(1));
         }
 
-        [Test]
         /// <summary>
         /// Confirms that a detected theme remains cached until the cache is cleared.
         /// </summary>
+        [Test]
         public void ThemeIsReadOnceUntilTheCacheIsCleared()
         {
             var reads = 0;
@@ -81,10 +81,10 @@ namespace pyRevitExtensionParserTest
             Assert.That(reads, Is.EqualTo(2));
         }
 
-        [Test]
         /// <summary>
         /// Confirms that the reflection reader returns no theme when the API is unavailable.
         /// </summary>
+        [Test]
         public void ReadCurrentThemeNameReturnsNullWhenThemeManagerIsUnavailable()
         {
             Assert.That(RevitThemeDetector.ReadCurrentThemeName(typeof(string)), Is.Null);
