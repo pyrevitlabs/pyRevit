@@ -56,6 +56,8 @@ class Revit(BaseObject):
 
     def __init__(self):
         try:
+            if __revit__ is None:
+                raise NameError('__revit__ handle is not available')
             self.uiapp = __revit__
             self._host = Revit.HOSTS.RPS
         except NameError:

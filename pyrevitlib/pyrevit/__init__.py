@@ -203,6 +203,13 @@ class _HostApplication(object):
     info on the active screen, active document and ui-document, available
     postable commands, and other functionality.
 
+    Note:
+        The ``__revit__`` builtin this wraps is always a ``UI.UIApplication``,
+        in commands and in event hooks alike; pyRevit normalizes every Revit
+        application handle before injecting it. It is ``None`` only outside a
+        Revit host. The remaining type checks below tolerate third-party hosts
+        that set ``__revit__`` themselves.
+
     Examples:
             ```python
             hostapp = _HostApplication()
@@ -213,19 +220,35 @@ class _HostApplication(object):
     def __init__(self):
         self._postable_cmds = []
 
+    @staticmethod
+    def _get_handle():
+        """Return the __revit__ builtin, or None where nothing injected it.
+
+        Note:
+            Read live on every access rather than cached at construction: in a
+            cached engine this module stays imported across runs while the
+            runtime re-injects the builtin for each execution.
+        """
+        try:
+            return __revit__  #pylint: disable=undefined-variable
+        except NameError:
+            return None
+
     @property
     def uiapp(self):
-        """Return UIApplication provided to the running command."""
-        if isinstance(__revit__, UI.UIApplication):  #pylint: disable=undefined-variable
-            return __revit__  #pylint: disable=undefined-variable
+        """Return UIApplication provided to the running command, or None."""
+        handle = self._get_handle()
+        if isinstance(handle, UI.UIApplication):
+            return handle
 
     @property
     def app(self):
-        """Return Application provided to the running command."""
+        """Return Application provided to the running command, or None."""
         if self.uiapp:
             return self.uiapp.Application
-        elif isinstance(__revit__, ApplicationServices.Application):  #pylint: disable=undefined-variable
-            return __revit__  #pylint: disable=undefined-variable
+        handle = self._get_handle()
+        if isinstance(handle, ApplicationServices.Application):
+            return handle
 
     @property
     def addin_id(self):
@@ -239,8 +262,17 @@ class _HostApplication(object):
 
     @property
     def uidoc(self):
-        """Return active UIDocument."""
-        return getattr(self.uiapp, 'ActiveUIDocument', None)
+        """Return active UIDocument, or None when there is no UI context.
+
+        Note:
+            In DB-only event hooks the wrapped ``UIApplication`` is real but Revit
+            can refuse ``ActiveUIDocument`` while the originating event runs, so
+            the API exception is treated the same as an absent document.
+        """
+        try:
+            return getattr(self.uiapp, 'ActiveUIDocument', None)
+        except Exception:
+            return None
 
     @property
     def doc(self):
@@ -437,13 +469,7 @@ class _HostApplication(object):
 
 
 
-try:
-    # Create an intance of host application wrapper
-    # making sure __revit__ is available
-    HOST_APP = _HostApplication()
-except Exception:
-    raise Exception('Critical Error: Host software is not supported. '
-                    '(__revit__ handle is not available)')
+HOST_APP = _HostApplication()
 
 
 # -----------------------------------------------------------------------------

@@ -158,10 +158,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             if (runtime.UIApp != null)
                 SetVariable(builtins, "__revit__", runtime.UIApp);
-            else if (runtime.UIControlledApp != null)
-                SetVariable(builtins, "__revit__", runtime.UIControlledApp);
-            else if (runtime.App != null)
-                SetVariable(builtins, "__revit__", runtime.App);
             else
                 builtins.SetItem("__revit__".ToPython(), PyObject.FromManagedObject(null));
 
@@ -192,8 +188,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
             SetVariable(builtins, "__eventsender__", runtime.ScriptRuntimeConfigs.EventSender);
             SetVariable(builtins, "__eventargs__", runtime.ScriptRuntimeConfigs.EventArgs);
 
+            // Prevent user-provided variables from overwriting reserved pyRevit built-ins
             if (runtime.ScriptRuntimeConfigs?.Variables != null) {
                 foreach (var variable in runtime.ScriptRuntimeConfigs.Variables) {
+                    if (ReservedBuiltinNames.Contains(variable.Key))
+                        continue;
                     SetVariable(builtins, variable.Key, variable.Value);
                 }
             }

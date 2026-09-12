@@ -133,6 +133,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     App = (Application)ScriptRuntimeConfigs.EventSender;
             }
 
+            RevitAppResolver.SeedSessionUIApplication(
+                ScriptRuntimeConfigs.CommandData != null
+                    ? ScriptRuntimeConfigs.CommandData.Application
+                    : _uiApp);
+
             // prepare results
             ExecutionResult = ScriptExecutorResultCodes.Succeeded;
             TraceMessage = string.Empty;
@@ -364,13 +369,28 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public UIControlledApplication UIControlledApp { get; set; }
 
+        /// <summary>
+        /// UI application handle for this runtime, resolved from whichever application
+        /// handle the runtime was given.
+        /// </summary>
+        /// <remarks>
+        /// Revit events deliver DB-only senders (<see cref="Application"/>,
+        /// <see cref="ControlledApplication"/>) as well as UI ones, so handles that carry no
+        /// UI application of their own are normalized through
+        /// <see cref="RevitAppResolver"/>. The resolved handle is cached for the lifetime of
+        /// the runtime. Null when no UI application can be reached at all, and once the
+        /// runtime has been disposed.
+        /// </remarks>
         public UIApplication UIApp {
             get {
                 if (ScriptRuntimeConfigs.CommandData != null)
                     return ScriptRuntimeConfigs.CommandData.Application;
-                else if (_uiApp != null)
-                    return _uiApp;
-                return null;
+
+                if (_uiApp == null && !IsDisposed)
+                    _uiApp = RevitAppResolver.GetUIApplication(
+                        (object)UIControlledApp ?? (object)ControlledApp ?? _app);
+
+                return _uiApp;
             }
 
             set {

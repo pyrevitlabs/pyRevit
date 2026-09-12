@@ -3,8 +3,9 @@
 
 import os.path as op
 import datetime
-USER_DESKTOP = op.expandvars('%userprofile%\\desktop')
-HOOK_LOGS = op.join(USER_DESKTOP, 'hooks.log')
+
+USER_DESKTOP = op.expandvars("%userprofile%\\desktop")
+HOOK_LOGS = op.join(USER_DESKTOP, "hooks.log")
 
 
 def _timestamp():
@@ -12,17 +13,26 @@ def _timestamp():
 
 
 def _write_record(record_str):
-    with open(HOOK_LOGS, 'a') as f:
-        f.write(record_str + '\n')
+    with open(HOOK_LOGS, "a") as f:
+        f.write(record_str + "\n")
+
+
+def _handle_typename():
+    try:
+        return type(__revit__).__name__
+    except NameError:
+        return "undefined"
 
 
 def log_hook():
     # collect document element count as doc access test if requested
     # write log record with data
-    record_str = "{} [app-init] cpython".format(_timestamp())
+    record_str = '{} [app-init] cpython handle: "{}"'.format(
+        _timestamp(), _handle_typename()
+    )
     _write_record(record_str)
 
 
 log_hook()
 
-print('app-init.py hook running')
+print("app-init.py hook running")
