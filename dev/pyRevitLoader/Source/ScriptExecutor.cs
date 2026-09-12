@@ -18,6 +18,14 @@ namespace PyRevitLoader {
         private bool _fullframe = false;
         private readonly UIApplication _revit = null;
 
+        /// <summary>
+        /// Creates an executor with no host application handle, usable only for
+        /// <see cref="AddEmbeddedLib(ScriptEngine)"/>.
+        /// </summary>
+        /// <remarks>
+        /// Warning: <see cref="SetupEnvironment(ScriptEngine)"/> rejects an instance built
+        /// this way, because it could only inject a null <c>__revit__</c>.
+        /// </remarks>
         public ScriptExecutor() {
         }
 
@@ -168,8 +176,28 @@ namespace PyRevitLoader {
             return scope;
         }
 
+        /// <summary>
+        /// Injects pyRevit's reserved builtins into <paramref name="engine"/>.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// This executor was built without a host application handle.
+        /// </exception>
+        /// <remarks>
+        /// Invariant: <c>__revit__</c> is always a non-null <c>UIApplication</c>. This is the
+        /// second injection site for that builtin - smart buttons and combo boxes run
+        /// through here rather than through the runtime engines - and the pyrevit library
+        /// resolves the host application through it, so a null or differently-typed handle
+        /// degrades every consumer silently. Keep this in sync with
+        /// <c>PyRevitLabs.PyRevit.Runtime.RevitAppResolver</c>, which enforces the same
+        /// contract for command and event-hook execution.
+        /// </remarks>
         public void SetupEnvironment(ScriptEngine engine, ScriptScope scope) {
-            // add two special variables: __revit__ and __vars__ to be globally visible everywhere:            
+            if (_revit == null)
+                throw new InvalidOperationException(
+                    "ScriptExecutor has no UIApplication handle; cannot set up a script " +
+                    "environment. Construct it with the host UIApplication.");
+
+            // add two special variables: __revit__ and __vars__ to be globally visible everywhere:
             var builtin = IronPython.Hosting.Python.GetBuiltinModule(engine);
             builtin.SetVariable("__revit__", _revit);
 
