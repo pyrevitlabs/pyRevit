@@ -233,14 +233,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             builtin.SetVariable("__scriptruntime__", runtime);
 
             // Add host application handle to the builtin to be globally visible everywhere
-            if (runtime.UIApp != null)
-                builtin.SetVariable("__revit__", runtime.UIApp);
-            else if (runtime.UIControlledApp != null)
-                builtin.SetVariable("__revit__", runtime.UIControlledApp);
-            else if (runtime.App != null)
-                builtin.SetVariable("__revit__", runtime.App);
-            else
-                builtin.SetVariable("__revit__", (object)null);
+            builtin.SetVariable("__revit__", (object)runtime.UIApp);
 
             // Adding data provided by IExternalCommand.Execute
             builtin.SetVariable("__commanddata__", runtime.ScriptRuntimeConfigs.CommandData);

@@ -203,6 +203,13 @@ class _HostApplication(object):
     info on the active screen, active document and ui-document, available
     postable commands, and other functionality.
 
+    Note:
+        The ``__revit__`` builtin this wraps is always a ``UI.UIApplication``,
+        in commands and in event hooks alike; pyRevit normalizes every Revit
+        application handle before injecting it. It is ``None`` only outside a
+        Revit host. The remaining type checks below tolerate third-party hosts
+        that set ``__revit__`` themselves.
+
     Examples:
             ```python
             hostapp = _HostApplication()

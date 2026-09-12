@@ -158,10 +158,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             if (runtime.UIApp != null)
                 SetVariable(builtins, "__revit__", runtime.UIApp);
-            else if (runtime.UIControlledApp != null)
-                SetVariable(builtins, "__revit__", runtime.UIControlledApp);
-            else if (runtime.App != null)
-                SetVariable(builtins, "__revit__", runtime.App);
             else
                 builtins.SetItem("__revit__".ToPython(), PyObject.FromManagedObject(null));
 
