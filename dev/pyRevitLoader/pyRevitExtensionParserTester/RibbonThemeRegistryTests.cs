@@ -48,7 +48,7 @@ namespace pyRevitExtensionParserTest
         }
 
         [Test]
-        public void BrokenControlDoesNotPreventOtherIconsFromRefreshing()
+        public void BrokenControlDoesNotPreventOtherRibbonElementsFromRefreshing()
         {
             var successfulCalls = 0;
             RibbonThemeRegistry.Register(new object(), _ => throw new InvalidOperationException());

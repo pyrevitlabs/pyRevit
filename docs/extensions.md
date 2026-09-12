@@ -66,8 +66,8 @@ Bundle-type-specific keys: `modules` (link buttons), `assembly` / `command_class
 
 ## Panel background colors
 
-A `*.panel` bundle can paint its own background. `background` takes either one color for the whole
-panel, or a map naming each area:
+A `*.panel` bundle can paint its own background. `background` takes either one color for the main
+panel surface, or a map naming each area:
 
 ```yaml
 background: '#BB005591'
@@ -83,7 +83,7 @@ background:
 Colors are `#RRGGBB` or `#AARRGGBB`.
 
 `background_dark` takes the same two forms and applies when Revit runs in dark theme, the same way
-`icon.dark.png` replaces `icon.png`:
+`icon.dark.png` replaces `icon.png`. Its scalar form also sets only the main panel surface:
 
 ```yaml
 background: '#BB005591'

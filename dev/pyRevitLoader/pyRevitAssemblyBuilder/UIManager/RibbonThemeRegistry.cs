@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using pyRevitLabs.NLog;
 
 namespace pyRevitAssemblyBuilder.UIManager
 {
@@ -11,6 +12,7 @@ namespace pyRevitAssemblyBuilder.UIManager
     /// </summary>
     public static class RibbonThemeRegistry
     {
+        private static readonly Logger nlog = LogManager.GetCurrentClassLogger();
         private static readonly object SyncRoot = new object();
         private static readonly Dictionary<object, Action<bool>> RefreshActions =
             new Dictionary<object, Action<bool>>(ReferenceComparer.Instance);
@@ -47,9 +49,9 @@ namespace pyRevitAssemblyBuilder.UIManager
                 {
                     refreshAction(isDarkTheme);
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // A stale ribbon element must not prevent the remaining updates.
+                    nlog.Debug(ex, "Failed to refresh a ribbon element for the active theme.");
                 }
             }
         }

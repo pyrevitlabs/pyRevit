@@ -168,15 +168,15 @@ namespace PyRevitLoader
                 return;
 
             _themeRefreshPending = true;
-            _uiApplication.Idling -= RefreshIconsOnIdling;
-            _uiApplication.Idling += RefreshIconsOnIdling;
+            _uiApplication.Idling -= RefreshThemeOnIdling;
+            _uiApplication.Idling += RefreshThemeOnIdling;
         }
 
-        private static void RefreshIconsOnIdling(object sender, IdlingEventArgs eventArgs)
+        private static void RefreshThemeOnIdling(object sender, IdlingEventArgs eventArgs)
         {
             if (_uiApplication != null)
             {
-                _uiApplication.Idling -= RefreshIconsOnIdling;
+                _uiApplication.Idling -= RefreshThemeOnIdling;
             }
 
             _themeRefreshPending = false;
@@ -187,7 +187,7 @@ namespace PyRevitLoader
         {
             if (_uiApplication != null)
             {
-                _uiApplication.Idling -= RefreshIconsOnIdling;
+                _uiApplication.Idling -= RefreshThemeOnIdling;
             }
 
             _themeRefreshPending = false;
