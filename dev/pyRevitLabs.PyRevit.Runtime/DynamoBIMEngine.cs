@@ -1,7 +1,6 @@
 using System;
-using System.IO;
+using System.Linq;
 using System.Collections.Generic;
-using System.Runtime.Remoting;
 using System.Reflection;
 
 using Autodesk.Revit.UI;
@@ -67,10 +66,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 // current workspaceModel already points to the Dynamo file we want to 
                 // run (or perform other tasks). If that's the case, we want to use the
                 // current workspaceModel.
-                journalData["dynPathCheckExisting "] = ExecEngineConfigs.dynamo_path_check_existing ? "True" : "False";
+                journalData["dynPathCheckExisting"] = ExecEngineConfigs.dynamo_path_check_existing ? "True" : "False";
                 // The journal file can specify if the Dynamo workspace opened
                 // from DynPathKey will be forced in manual mode.
-                journalData["dynForceManualRun "] = ExecEngineConfigs.dynamo_force_manual_run ? "True" : "False";
+                journalData["dynForceManualRun"] = ExecEngineConfigs.dynamo_force_manual_run ? "True" : "False";
             }
 
             if (ExecEngineConfigs.dynamo_model_nodes_info != null && ExecEngineConfigs.dynamo_model_nodes_info != string.Empty) {
@@ -84,23 +83,37 @@ namespace PyRevitLabs.PyRevit.Runtime {
             //});
 
             try {
-                // find the DynamoRevitApp from DynamoRevitDS.dll
-                // this should be already loaded since Dynamo loads before pyRevit
-                ObjectHandle dynRevitAppObjHandle =
-                    Activator.CreateInstance("DynamoRevitDS", "Dynamo.Applications.DynamoRevitApp");
-                object dynRevitApp = dynRevitAppObjHandle.Unwrap();
-                MethodInfo execDynamo = dynRevitApp.GetType().GetMethod("ExecuteDynamoCommand");
+                Assembly dynamoAssembly = AppDomain.CurrentDomain.GetAssemblies()
+                    .FirstOrDefault(a => a.GetName().Name == "DynamoRevitDS");
+
+                if (dynamoAssembly == null) {
+                    TaskDialog.Show(PyRevitLabsConsts.ProductName,
+                        "Can not find Dynamo installation or determine which Dynamo version to Run.\n\n" +
+                        "Run Dynamo once to select the active version.");
+                    return ScriptExecutorResultCodes.ExecutionException;
+                }
+
+                Type dynRevitAppType = dynamoAssembly.GetType("Dynamo.Applications.DynamoRevitApp");
+                if (dynRevitAppType == null) {
+                    TaskDialog.Show(PyRevitLabsConsts.ProductName,
+                        "Could not locate DynamoRevitApp in the loaded Dynamo assembly.\n\n" +
+                        "The installed Dynamo version may not be compatible.");
+                    return ScriptExecutorResultCodes.ExecutionException;
+                }
+
+                object dynRevitApp = Activator.CreateInstance(dynRevitAppType);
+                MethodInfo execDynamo = dynRevitAppType.GetMethod("ExecuteDynamoCommand");
+
+                if (execDynamo == null) {
+                    TaskDialog.Show(PyRevitLabsConsts.ProductName,
+                        "Could not locate ExecuteDynamoCommand in DynamoRevitApp.\n\n" +
+                        "The installed Dynamo version may not be compatible.");
+                    return ScriptExecutorResultCodes.ExecutionException;
+                }
 
                 // run the script
                 execDynamo.Invoke(dynRevitApp, new object[] { journalData, runtime.UIApp });
                 return ScriptExecutorResultCodes.Succeeded;
-            }
-            catch (FileNotFoundException) {
-                // if failed in finding DynamoRevitDS.dll, assume no dynamo
-                TaskDialog.Show(PyRevitLabsConsts.ProductName,
-                    "Can not find Dynamo installation or determine which Dynamo version to Run.\n\n" +
-                    "Run Dynamo once to select the active version.");
-                return ScriptExecutorResultCodes.ExecutionException;
             }
             catch (Exception dynEx) {
                 // on any other errors
