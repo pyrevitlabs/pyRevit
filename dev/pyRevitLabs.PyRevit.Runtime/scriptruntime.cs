@@ -133,7 +133,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     App = (Application)ScriptRuntimeConfigs.EventSender;
             }
 
-            RevitAppResolver.SetSessionUIApplication(
+            RevitAppResolver.SeedSessionUIApplication(
                 ScriptRuntimeConfigs.CommandData != null
                     ? ScriptRuntimeConfigs.CommandData.Application
                     : _uiApp);

@@ -33,12 +33,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// fallback for handles that carry no public route back to the UI application.
         /// </summary>
         /// <remarks>
-        /// Safe to call repeatedly; a null handle is ignored so an existing fallback is
-        /// never dropped. The stored handle is valid for the whole Revit process, not just
-        /// one pyRevit session, and is therefore kept across reloads.
+        /// Safe to call repeatedly; null handles are ignored.
+        ///
+        /// <para>Invariant: the first non-null handle wins and is never replaced. The
+        /// session loader seeds this with the startup handle before any command runs, and
+        /// that one stays valid for the whole Revit process. Later callers offer
+        /// event-scoped handles (<c>ExternalCommandData.Application</c>, event senders)
+        /// that Revit may invalidate once their event returns, so letting those overwrite
+        /// the fallback would trade a stable handle for an expiring one.</para>
         /// </remarks>
-        public static void SetSessionUIApplication(UIApplication uiApp) {
-            if (uiApp != null)
+        public static void SeedSessionUIApplication(UIApplication uiApp) {
+            if (_sessionUIApp == null && uiApp != null)
                 _sessionUIApp = uiApp;
         }
 
@@ -49,7 +54,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// <param name="appHandle">
         /// Any Revit application handle, typically an event sender. Unknown types and null
         /// fall back to the session handle recorded by
-        /// <see cref="SetSessionUIApplication(UIApplication)"/>.
+        /// <see cref="SeedSessionUIApplication(UIApplication)"/>.
         /// </param>
         /// <remarks>
         /// Warning: a <see cref="UIApplication"/> built from a DB-only handle is live but may
@@ -59,7 +64,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static UIApplication GetUIApplication(object appHandle) {
             switch (appHandle) {
                 case UIApplication uiApp:
-                    SetSessionUIApplication(uiApp);
+                    SeedSessionUIApplication(uiApp);
                     return uiApp;
                 case Application app:
                     return FromApplication(app);

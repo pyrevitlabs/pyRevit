@@ -246,8 +246,17 @@ class _HostApplication(object):
 
     @property
     def uidoc(self):
-        """Return active UIDocument."""
-        return getattr(self.uiapp, 'ActiveUIDocument', None)
+        """Return active UIDocument, or None when there is no UI context.
+
+        Note:
+            In DB-only event hooks the wrapped ``UIApplication`` is real but Revit
+            can refuse ``ActiveUIDocument`` while the originating event runs, so
+            the API exception is treated the same as an absent document.
+        """
+        try:
+            return getattr(self.uiapp, 'ActiveUIDocument', None)
+        except Exception:
+            return None
 
     @property
     def doc(self):
