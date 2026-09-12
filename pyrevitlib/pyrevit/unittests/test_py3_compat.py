@@ -85,6 +85,17 @@ class ImportTests(unittest.TestCase):
             [], failures, "import failures:\n{}".format("\n".join(failures))
         )
 
+    def test_vendored_requests_wraps_invalid_json(self):
+        """Malformed JSON raises the documented Requests exception."""
+        import requests
+
+        response = requests.Response()
+        response._content = b"{"
+        response.encoding = "utf-8"
+
+        with self.assertRaises(requests.exceptions.JSONDecodeError):
+            response.json()
+
     def test_core_module_imports(self):
         """Core pyrevit modules import cleanly on this engine."""
         failures = _import_failures(CORE_MODULES)
