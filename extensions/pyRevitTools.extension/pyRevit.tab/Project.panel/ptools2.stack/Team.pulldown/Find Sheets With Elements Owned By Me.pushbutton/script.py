@@ -3,19 +3,21 @@ from pyrevit import revit, DB, UI
 from pyrevit import forms
 
 
-sheetsnotsorted = DB.FilteredElementCollector(revit.doc)\
-                    .OfCategory(DB.BuiltInCategory.OST_Sheets)\
-                    .WhereElementIsNotElementType()\
-                    .ToElements()
+sheetsnotsorted = (
+    DB.FilteredElementCollector(revit.doc)
+    .OfCategory(DB.BuiltInCategory.OST_Sheets)
+    .WhereElementIsNotElementType()
+    .ToElements()
+)
 
 sheets = sorted(sheetsnotsorted, key=lambda x: x.SheetNumber)
 
 filteredlist = []
 
 if revit.doc.IsWorkshared:
-    print('Searching all sheets...\n')
-    print('NAME      NUMBER')
-    print('-'*100)
+    print("Searching all sheets...\n")
+    print("NAME      NUMBER")
+    print("-" * 100)
     for sheet in sheets:
         sheetisedited = False
         sheetviewlist = []
@@ -24,28 +26,31 @@ if revit.doc.IsWorkshared:
         for vportid in vportids:
             sheetviewlist.append(revit.doc.GetElement(vportid).ViewId)
         for view in sheetviewlist:
-            curviewelements = DB.FilteredElementCollector(revit.doc)\
-                                .OwnedByView(view)\
-                                .WhereElementIsNotElementType()\
-                                .ToElements()
+            curviewelements = (
+                DB.FilteredElementCollector(revit.doc)
+                .OwnedByView(view)
+                .WhereElementIsNotElementType()
+                .ToElements()
+            )
 
             if len(curviewelements) > 0:
                 for el in curviewelements:
                     wti = DB.WorksharingUtils.GetWorksharingTooltipInfo(
-                        revit.doc,
-                        el.Id
-                        )
+                        revit.doc, el.Id
+                    )
                     # wti.Creator, wti.Owner, wti.LastChangedBy
                     if wti.Owner.lower() == HOST_APP.username.lower():
                         filteredlist.append(sheet)
-                        print('{0}{1}'
-                              .format(
-                                  sheet.Parameter[DB.BuiltInParameter.SHEET_NUMBER]
-                                       .AsString().ljust(10),
-                                  sheet.Parameter[DB.BuiltInParameter.SHEET_NAME]
-                                       .AsString().ljust(50)
-                                       )
-                              )
+                        print(
+                            "{0}{1}".format(
+                                sheet.Parameter[DB.BuiltInParameter.SHEET_NUMBER]
+                                .AsString()
+                                .ljust(10),
+                                sheet.Parameter[DB.BuiltInParameter.SHEET_NAME]
+                                .AsString()
+                                .ljust(50),
+                            )
+                        )
 
                         sheetisedited = True
                         break
@@ -53,6 +58,6 @@ if revit.doc.IsWorkshared:
                 break
         else:
             pass
-    print('\nAll done...')
+    print("\nAll done...")
 else:
-    forms.alert('Model is not workshared.')
+    forms.alert("Model is not workshared.")

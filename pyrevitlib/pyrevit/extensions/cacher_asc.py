@@ -1,4 +1,5 @@
 """Base module to handle extension ASCII caching."""
+
 import json
 import codecs
 
@@ -9,21 +10,24 @@ from pyrevit.coreutils.logger import get_logger
 from pyrevit.extensions import components as comps
 from pyrevit.extensions import genericcomps as gencomps
 
-#pylint: disable=W0703,C0302,C0103
+# pylint: disable=W0703,C0302,C0103
 mlogger = get_logger(__name__)
 
 
 def _get_cache_file(cached_ext):
-    return appdata.get_data_file(file_id='cache_{}'.format(cached_ext.name),
-                                 file_ext='json')
+    return appdata.get_data_file(
+        file_id="cache_{}".format(cached_ext.name), file_ext="json"
+    )
 
 
 def _make_cache_from_cmp(obj):
-    return json.dumps(obj,
-                      default=lambda o: o.get_cache_data(),
-                      sort_keys=True,
-                      indent=4,
-                      ensure_ascii=False)
+    return json.dumps(
+        obj,
+        default=lambda o: o.get_cache_data(),
+        sort_keys=True,
+        indent=4,
+        ensure_ascii=False,
+    )
 
 
 def _make_layoutitems_from_cache(parent_cmp, cached_layoutitems):
@@ -46,16 +50,19 @@ def _make_layoutitems_from_cache(parent_cmp, cached_layoutitems):
 
 
 def _make_sub_cmp_from_cache(parent_cmp, cached_sub_cmps):
-    mlogger.debug('Processing cache for: %s', parent_cmp)
+    mlogger.debug("Processing cache for: %s", parent_cmp)
     # get allowed classes under this component
     allowed_sub_cmps = get_all_subclasses(parent_cmp.allowed_sub_cmps)
-    mlogger.debug('Allowed sub components are: %s', allowed_sub_cmps)
+    mlogger.debug("Allowed sub components are: %s", allowed_sub_cmps)
     # iterate through list of cached sub components
     for cached_cmp in cached_sub_cmps:  # type: dict
         for sub_class in allowed_sub_cmps:
             if sub_class.type_id == cached_cmp[gencomps.TYPE_ID_KEY]:
-                mlogger.debug('Creating sub component from cache: %s, %s',
-                              cached_cmp[gencomps.NAME_KEY], sub_class)
+                mlogger.debug(
+                    "Creating sub component from cache: %s, %s",
+                    cached_cmp[gencomps.NAME_KEY],
+                    sub_class,
+                )
 
                 # cached_cmp might contain gencomps.SUB_CMP_KEY. This needs to be
                 # removed since this function will make all the children
@@ -92,46 +99,45 @@ def _make_sub_cmp_from_cache(parent_cmp, cached_sub_cmps):
 
 def _read_cache_for(cached_ext):
     try:
-        mlogger.debug('Reading cache for: %s', cached_ext)
+        mlogger.debug("Reading cache for: %s", cached_ext)
         cache_file = _get_cache_file(cached_ext)
-        mlogger.debug('Cache file is: %s', cache_file)
-        with codecs.open(_get_cache_file(cached_ext), 'r', 'utf-8') \
-                as cache_file:
+        mlogger.debug("Cache file is: %s", cache_file)
+        with codecs.open(_get_cache_file(cached_ext), "r", "utf-8") as cache_file:
             cached_tab_dict = json.load(cache_file)
         return cached_tab_dict
     except Exception as err:
-        raise PyRevitException('Error reading cache for: {} | {}'
-                               .format(cached_ext, err))
+        raise PyRevitException(
+            "Error reading cache for: {} | {}".format(cached_ext, err)
+        )
 
 
 def _write_cache_for(parsed_ext):
     try:
-        mlogger.debug('Writing cache for: %s', parsed_ext)
+        mlogger.debug("Writing cache for: %s", parsed_ext)
         cache_file = _get_cache_file(parsed_ext)
-        mlogger.debug('Cache file is: %s', cache_file)
-        with codecs.open(cache_file, 'w', 'utf-8') as cache_file:
+        mlogger.debug("Cache file is: %s", cache_file)
+        with codecs.open(cache_file, "w", "utf-8") as cache_file:
             cache_file.write(_make_cache_from_cmp(parsed_ext))
     except Exception as err:
-        mlogger.debug('Error writing cache...')
-        raise PyRevitException('Error writing cache for: {} | {}'
-                               .format(parsed_ext, err))
+        mlogger.debug("Error writing cache...")
+        raise PyRevitException(
+            "Error writing cache for: {} | {}".format(parsed_ext, err)
+        )
 
 
 def update_cache(parsed_ext):
-    mlogger.debug('Updating cache for tab: %s ...', parsed_ext.name)
+    mlogger.debug("Updating cache for tab: %s ...", parsed_ext.name)
     _write_cache_for(parsed_ext)
-    mlogger.debug('Cache updated for tab: %s', parsed_ext.name)
+    mlogger.debug("Cache updated for tab: %s", parsed_ext.name)
 
 
 def get_cached_extension(installed_ext):
     cached_ext_dict = _read_cache_for(installed_ext)
     # try:
-    mlogger.debug('Constructing components from cache for: %s',
-                    installed_ext)
+    mlogger.debug("Constructing components from cache for: %s", installed_ext)
     # get cached sub component dictionary and call recursive maker function
-    _make_sub_cmp_from_cache(installed_ext,
-                                cached_ext_dict.pop(gencomps.SUB_CMP_KEY))
-    mlogger.debug('Load successful...')
+    _make_sub_cmp_from_cache(installed_ext, cached_ext_dict.pop(gencomps.SUB_CMP_KEY))
+    mlogger.debug("Load successful...")
     # except Exception as err:
     #     mlogger.debug('Error reading cache...')
     #     raise PyRevitException('Error creating ext from cache for: {} | {}'
@@ -143,22 +149,26 @@ def get_cached_extension(installed_ext):
 def is_cache_valid(extension):
     try:
         cached_ext_dict = _read_cache_for(extension)  # type: dict
-        mlogger.debug('Extension cache directory is: %s for: %s',
-                      extension.directory, extension)
+        mlogger.debug(
+            "Extension cache directory is: %s for: %s", extension.directory, extension
+        )
         cache_dir_valid = cached_ext_dict[gencomps.EXT_DIR_KEY] == extension.directory
 
-        mlogger.debug('Extension cache version is: %s for: %s',
-                      extension.pyrvt_version, extension)
-        cache_version_valid = \
+        mlogger.debug(
+            "Extension cache version is: %s for: %s", extension.pyrvt_version, extension
+        )
+        cache_version_valid = (
             cached_ext_dict[comps.EXT_HASH_VERSION_KEY] == extension.pyrvt_version
+        )
 
-        mlogger.debug('Extension hash value is: %s for:%s',
-                      extension.dir_hash_value, extension)
-        cache_hash_valid = \
+        mlogger.debug(
+            "Extension hash value is: %s for:%s", extension.dir_hash_value, extension
+        )
+        cache_hash_valid = (
             cached_ext_dict[comps.EXT_HASH_VALUE_KEY] == extension.dir_hash_value
+        )
 
-        cache_valid = \
-            cache_dir_valid and cache_version_valid and cache_hash_valid
+        cache_valid = cache_dir_valid and cache_version_valid and cache_hash_valid
 
         # cache is valid if both version and hash value match
         return cache_valid
@@ -168,5 +178,4 @@ def is_cache_valid(extension):
         return False
 
     except Exception as err:
-        mlogger.debug('Error determining cache validity: %s | %s',
-                      extension, err)
+        mlogger.debug("Error determining cache validity: %s | %s", extension, err)

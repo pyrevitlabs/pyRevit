@@ -1,4 +1,4 @@
-﻿#nullable enable
+#nullable enable
 using pyRevitExtensionParser;
 using System;
 using System.Collections.Generic;

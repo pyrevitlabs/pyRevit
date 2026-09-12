@@ -1717,7 +1717,6 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             }
 
         elif is_2d_view(self.current_view, only_plan=True):
-
             selected_view = forms.select_views(
                 multiple=False,
                 filterfunc=lambda v: isinstance(v, DB.View3D),

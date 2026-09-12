@@ -211,9 +211,7 @@ def build_settings_schema(doc, text_type_names):
         {
             "name": "track_legend_updates",
             "type": "bool",
-            "label": resx(
-                "Settings_TrackLegend", "Track & Update Existing Legends"
-            ),
+            "label": resx("Settings_TrackLegend", "Track & Update Existing Legends"),
             "default": DEFAULTS_BOOL["track_legend_updates"],
         },
     ]

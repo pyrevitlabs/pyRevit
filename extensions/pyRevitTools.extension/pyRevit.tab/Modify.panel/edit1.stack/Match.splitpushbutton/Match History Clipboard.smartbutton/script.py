@@ -57,6 +57,4 @@ def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
 if __name__ == "__main__":
     if forms.is_registered_dockable_panel(MatchHistoryClipboard):
         dockable_panel = forms.get_dockable_panel(MatchHistoryClipboard)
-        forms.toggle_dockable_panel(
-            MatchHistoryClipboard, not dockable_panel.IsShown()
-        )
+        forms.toggle_dockable_panel(MatchHistoryClipboard, not dockable_panel.IsShown())

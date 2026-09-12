@@ -145,8 +145,7 @@ def _make_clone_options(username=None, password=None):
 
 
 def _make_pull_signature():
-    mlogger.debug("Creating pull signature for username: %s",
-                  HOST_APP.username)
+    mlogger.debug("Creating pull signature for username: %s", HOST_APP.username)
     return libgit.Signature(
         HOST_APP.username, HOST_APP.username, DateTimeOffset(DateTime.Now)
     )
@@ -195,8 +194,7 @@ def git_pull(repo_info):
         return RepoInfo(repo)
 
     except Exception as pull_err:
-        mlogger.debug("Failed git pull: %s | %s",
-                      repo_info.directory, pull_err)
+        mlogger.debug("Failed git pull: %s | %s", repo_info.directory, pull_err)
         _process_git_error(pull_err)
 
 
@@ -226,8 +224,7 @@ def git_fetch(repo_info):
         return RepoInfo(repo)
 
     except Exception as fetch_err:
-        mlogger.debug("Failed git fetch: %s | %s",
-                      repo_info.directory, fetch_err)
+        mlogger.debug("Failed git fetch: %s | %s", repo_info.directory, fetch_err)
         _process_git_error(fetch_err)
 
 
@@ -305,8 +302,7 @@ def get_all_new_commits(repo_info):
     repo = repo_info.repo
     current_commit = repo_info.last_commit_hash
 
-    ref_commit = repo.Lookup(libgit.ObjectId(current_commit),
-                             libgit.ObjectType.Commit)
+    ref_commit = repo.Lookup(libgit.ObjectId(current_commit), libgit.ObjectType.Commit)
 
     # Let's only consider the refs that lead to this commit...
     refs = repo.Refs.ReachableFrom([ref_commit])

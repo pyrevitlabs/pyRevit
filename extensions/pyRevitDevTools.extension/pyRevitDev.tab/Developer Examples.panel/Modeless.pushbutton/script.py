@@ -96,7 +96,9 @@ class ExampleUI(forms.WPFWindow):
         if not self.chk_context.IsChecked:
             self._do_pick_element("Without External Event Context")
         else:
-            execute_in_revit_context(self._do_pick_element, "With External Event Content")
+            execute_in_revit_context(
+                self._do_pick_element, "With External Event Content"
+            )
 
     def _do_pick_element(self, message):
         """Actually pick the element (runs in Revit context)."""

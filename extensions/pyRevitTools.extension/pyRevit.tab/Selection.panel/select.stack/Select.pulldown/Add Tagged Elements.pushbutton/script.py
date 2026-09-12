@@ -1,5 +1,6 @@
 from pyrevit import revit, DB, UI, HOST_APP
 from pyrevit import forms
+
 #  import List
 from System.Collections.Generic import List
 
@@ -20,7 +21,6 @@ for el in selection:
         elif isinstance(el, DB.AreaTag):
             tagged_elements.append(el.Area.Id)
     else:
-
         if isinstance(el, DB.IndependentTag):
             tagged_elements.append(el.TaggedLocalElementId)
         elif isinstance(el, DB.Architecture.RoomTag):
@@ -34,4 +34,4 @@ for el in selection:
 if len(tagged_elements) > 0:
     selection.append(tagged_elements)
 else:
-    forms.alert('Please select at least one element tag.')
+    forms.alert("Please select at least one element tag.")

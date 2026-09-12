@@ -7,7 +7,9 @@ from pyrevit import DB
 from pyrevit.coreutils import applocales
 from pyrevit.preflight import PreflightTestCase
 
-_XAML = os.path.join(os.path.dirname(os.path.abspath(__file__)), "locale", "Checks.xaml")
+_XAML = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "locale", "Checks.xaml"
+)
 
 
 def _t(key):
@@ -18,9 +20,7 @@ def checkModel(doc, output):
     output.print_md("### {0}<br />".format(_t("ReferencePlanes")))
     # reference plane without name
     refPlaneCollector = (
-        DB.FilteredElementCollector(doc)
-        .OfClass(DB.ReferencePlane)
-        .ToElements()
+        DB.FilteredElementCollector(doc).OfClass(DB.ReferencePlane).ToElements()
     )
     RefPCount = len(refPlaneCollector)
     output.print_md("\n**{0} **{1} \n\n".format(_t("ReferencePlanesCount"), RefPCount))
@@ -31,9 +31,14 @@ def checkModel(doc, output):
     for refPlane in refPlaneCollector:
         refPlaneList.append(refPlane.Id)
         refPlanNames.append(refPlane.Name)
-        output.print_md("{0} {1}\t\t{2} {3}"
-                        .format(_t("NameLabel"), refPlane.Name,
-                                _t("IdLabel"), output.linkify(refPlane.Id)))
+        output.print_md(
+            "{0} {1}\t\t{2} {3}".format(
+                _t("NameLabel"),
+                refPlane.Name,
+                _t("IdLabel"),
+                output.linkify(refPlane.Id),
+            )
+        )
 
 
 class ModelChecker(PreflightTestCase):

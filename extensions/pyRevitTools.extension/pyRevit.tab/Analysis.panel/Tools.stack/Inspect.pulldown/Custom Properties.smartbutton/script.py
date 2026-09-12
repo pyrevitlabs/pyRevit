@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Toggle the Custom Properties dockable pane."""
+
 from pyrevit import forms, script
 from pyrevit.revit import ui
 from pyrevit.framework import Threading, System
@@ -16,7 +17,9 @@ def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
         if is_shown:
             icon = ui.resolve_icon_file(script_cmp.directory, exts.DEFAULT_ON_ICON_FILE)
         else:
-            icon = ui.resolve_icon_file(script_cmp.directory, exts.DEFAULT_OFF_ICON_FILE)
+            icon = ui.resolve_icon_file(
+                script_cmp.directory, exts.DEFAULT_OFF_ICON_FILE
+            )
         ui_button_cmp.set_icon(icon, icon_size=ICON_MEDIUM)
 
     def update_icon_from_pane():
