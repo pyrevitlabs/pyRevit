@@ -1,3 +1,4 @@
 title: "Temporary\nGraphics"
+min_revit_version: 2022
 engine:
   persistent: true

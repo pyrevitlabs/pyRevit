@@ -8,13 +8,15 @@ This module:
 - Exposes high-level helpers (e.g. IFCExporter) around Document.Export
   for IFC exports.
 """
+
 import os.path as op
 import json
 import codecs
-from pyrevit import clr, BIN_DIR, DB
+from pyrevit import BIN_DIR, DB
+from pyrevit import framework
 from pyrevit.coreutils.logger import get_logger
 
-clr.AddReferenceToFileAndPath(op.join(BIN_DIR, "Ifc.Net"))
+framework.add_reference_to_file(op.join(BIN_DIR, "Ifc.Net"))
 
 import Ifc4
 
@@ -93,9 +95,7 @@ def load_config(config_path):
             )
 
 
-def build_export_options(
-    config=None, overrides=None, filter_view_id=None
-):
+def build_export_options(config=None, overrides=None, filter_view_id=None):
     """
     Build an IFCExportOptions object from a config dict and/or keyword overrides.
 
@@ -125,7 +125,9 @@ def build_export_options(
     ifc_version_int = cfg.get("IFCVersion", 0)
     ifc_version_enum = IFC_VERSION_MAP.get(ifc_version_int, DB.IFCVersion.Default)
     options.FileVersion = ifc_version_enum
-    mlogger.debug("IFCVersion       : {} ({})".format(ifc_version_int, ifc_version_enum))
+    mlogger.debug(
+        "IFCVersion       : {} ({})".format(ifc_version_int, ifc_version_enum)
+    )
 
     # -- Direct properties --------------------------------------------------
     options.SpaceBoundaryLevel = int(cfg.get("SpaceBoundaries", 0))

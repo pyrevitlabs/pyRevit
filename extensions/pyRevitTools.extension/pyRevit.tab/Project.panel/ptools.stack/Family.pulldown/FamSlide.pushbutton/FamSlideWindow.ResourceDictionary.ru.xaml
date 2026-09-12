@@ -1,0 +1,51 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="BtnRefresh">⟲ Обновить документ</system:String>
+    <system:String x:Key="TooltipRefresh">Повторно сканирует активный документ семейства на предмет новых или удалённых параметров. Также полезно при переключении на другое открытое семейство.</system:String>
+    <system:String x:Key="TooltipShuffle">Перемешать значения параметров. Присваивает каждому редактируемому параметру случайное значение в пределах текущего диапазона ползунка. Используйте с осторожностью - это действие нельзя отменить из FamSlide.</system:String>
+    <system:String x:Key="TooltipDeleteUnused">Удалить все неиспользуемые параметры. Удаляет параметры семейства, которые не управляют размерами, не участвуют в формулах и не являются встроенными. Используйте с осторожностью.</system:String>
+    <system:String x:Key="TooltipToggleEditable">Показать/скрыть редактируемые параметры. Переключает видимость параметров, значение которых можно изменить напрямую.</system:String>
+    <system:String x:Key="TooltipToggleLabels">Показать/скрыть метки. Переключает отображение небольших меток под именем каждого параметра.</system:String>
+    <system:String x:Key="BtnClose">Закрыть</system:String>
+    <system:String x:Key="TooltipClose">Закрыть FamSlide</system:String>
+    <system:String x:Key="GroupTitleValue">Параметры значений</system:String>
+    <system:String x:Key="GroupTitleBuiltin">Встроенные параметры</system:String>
+    <system:String x:Key="GroupTitleYesNo">Параметры Да/Нет</system:String>
+    <system:String x:Key="TagInUse">используется</system:String>
+    <system:String x:Key="TagUsedInFormula">uF</system:String>
+    <system:String x:Key="TagHasFormula">dF</system:String>
+    <system:String x:Key="TagBuiltIn">встроенный</system:String>
+    <system:String x:Key="TagInstance">экземпляр</system:String>
+    <system:String x:Key="TagType">тип</system:String>
+    <system:String x:Key="TagAssociated">связан</system:String>
+    <system:String x:Key="NoFamilyLoaded">(семейство не загружено)</system:String>
+    <system:String x:Key="NoFamilyDocument">Нет активного документа семейства</system:String>
+    <system:String x:Key="ValueYes">Да</system:String>
+    <system:String x:Key="ValueNo">Нет</system:String>
+    <system:String x:Key="ConfirmShuffleMessage">Случайным образом изменить все редактируемые параметры в пределах текущего диапазона ползунка?
+
+Используйте "Восстановить пресет" после этого, чтобы отменить.</system:String>
+    <system:String x:Key="ConfirmDeleteUnusedMessage">Удалить все параметры семейства, которые не управляют размерами, не участвуют в формулах, не связаны с другими параметрами и не являются встроенными?
+
+Обнаружение выполняется по эвристике - параметры, используемые способами, невидимыми для FamSlide (например, ограничения вложенных семейств), всё равно могут быть удалены.
+
+Это действие нельзя отменить из FamSlide - при необходимости используйте отмену Revit.</system:String>
+    <system:String x:Key="AlertNoActiveDocument">Нет активного документа Revit.</system:String>
+    <system:String x:Key="AlertFamilyEditorOnly">FamSlide работает только в редакторе семейств.
+Откройте семейство для редактирования и запустите инструмент снова.</system:String>
+    <system:String x:Key="MenuRename">Переименовать…</system:String>
+    <system:String x:Key="MenuMakeInstance">Сделать параметром экземпляра</system:String>
+    <system:String x:Key="MenuMakeType">Сделать параметром типа</system:String>
+    <system:String x:Key="DialogRenameTitle">Переименовать параметр</system:String>
+    <system:String x:Key="PromptRenameParameter">Введите новое имя для этого параметра:</system:String>
+    <system:String x:Key="AlertRenameFailed">Не удалось переименовать параметр «{}». Возможно, он встроенный, или новое имя уже используется.</system:String>
+    <system:String x:Key="AlertToggleInstanceTypeFailed">Не удалось переключить Экземпляр/Тип для параметра «{}». Возможно, он управляется формулой или ограничен Revit иным образом.</system:String>
+    <system:String x:Key="TooltipSavePreset">Сохранить пресет. Запоминает текущие значения всех редактируемых параметров этого семейства, чтобы можно было быстро вернуться к ним позже.</system:String>
+    <system:String x:Key="TooltipRestorePreset">Восстановить пресет. Повторно применяет значения, сохранённые с помощью 'Сохранить пресет' для этого семейства. Ничего не делает, если пресет ещё не был сохранён.</system:String>
+    <system:String x:Key="AlertNoPresetSaved">Для этого семейства ещё не сохранён пресет. Сначала используйте 'Сохранить пресет'.</system:String>
+    <system:String x:Key="ConfirmRestorePresetMessage">Восстановить все редактируемые параметры до значений, сохранённых с помощью 'Сохранить пресет'?
+
+Это действие нельзя отменить из FamSlide - при необходимости используйте отмену Revit.</system:String>
+    <system:String x:Key="AlertPresetSaved">Пресет сохранён для {} параметр(ов).</system:String>
+</ResourceDictionary>

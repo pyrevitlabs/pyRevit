@@ -23,8 +23,7 @@ using Console = Colorful.Console;
 // 6) Make sure PyRevitCLI.ProcessArguments checks and ask for help print
 
 
-namespace pyRevitCLI
-{
+namespace pyRevitCLI {
 
     internal enum PyRevitCLILogLevel {
         Quiet,
@@ -78,7 +77,7 @@ namespace pyRevitCLI
         // cli version property
         public static string CLIPath => Assembly.GetExecutingAssembly().Location;
         public static Version CLIVersion => Assembly.GetExecutingAssembly().GetName().Version;
-        public static string CLIInfoVersion  {
+        public static string CLIInfoVersion {
             get {
                 var infoVerAttr = Assembly.GetExecutingAssembly().GetCustomAttributes(typeof(AssemblyInformationalVersionAttribute)).FirstOrDefault();
                 if (infoVerAttr is AssemblyInformationalVersionAttribute infoVer)
@@ -89,14 +88,11 @@ namespace pyRevitCLI
 
         // cli entry point:
         static void Main(string[] args) {
-            AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
-            {
-                if (args.Name.StartsWith("Newtonsoft.Json,"))
-                {
+            AppDomain.CurrentDomain.AssemblyResolve += (sender, args) => {
+                if (args.Name.StartsWith("Newtonsoft.Json,")) {
                     var assemblyPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "pyRevitLabs.Json.dll");
                     logger.Debug($"Looking for Newtonsoft.Json assembly at: {assemblyPath}");
-                    if (File.Exists(assemblyPath))
-                    {
+                    if (File.Exists(assemblyPath)) {
                         var assembly = Assembly.LoadFrom(assemblyPath);
                         logger.Debug($"Successfully loaded Newtonsoft.Json assembly from: {assemblyPath}");
                         return assembly;
@@ -222,7 +218,8 @@ namespace pyRevitCLI
                         repoUrl: TryGetValue("--source"),
                         imagePath: TryGetValue("--image"),
                         destPath: TryGetValue("--dest"),
-                        credentials: TryGetCredentials()
+                        credentials: TryGetCredentials(),
+                        skipBin: arguments["--skip-bin"].IsTrue
                     );
             }
 
@@ -237,7 +234,7 @@ namespace pyRevitCLI
                     PyRevitCLICloneCmds.OpenClone(TryGetValue("<clone_name>"));
 
                 else if (all("add")) {
-                    if(all("this"))
+                    if (all("this"))
                         PyRevitCLICloneCmds.RegisterClone(
                             TryGetValue("<clone_name>"),
                             Path.GetDirectoryName(CLIPath),
@@ -896,7 +893,7 @@ namespace pyRevitCLI
                             else if (optValue is null) {
                                 var existingVal = cfg.GetValue(configSection, configOption);
                                 if (existingVal != null)
-                                    Console.WriteLine( string.Format("{0} = {1}", configOption, existingVal));
+                                    Console.WriteLine(string.Format("{0} = {1}", configOption, existingVal));
                                 else
                                     Console.WriteLine(string.Format("Configuration key \"{0}\" is not set", configOption));
                             }

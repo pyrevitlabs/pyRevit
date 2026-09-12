@@ -1,0 +1,33 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="pick_prompt">Selecione o(s) elemento(s) a diagnosticar</sys:String>
+    <sys:String x:Key="select_view_title">Selecionar vista</sys:String>
+    <sys:String x:Key="select_view_button">Diagnosticar nesta vista</sys:String>
+    <sys:String x:Key="no_elements_error">Nenhum elemento selecionado ou escolhido.</sys:String>
+    <sys:String x:Key="no_view_error">Nenhuma vista selecionada.</sys:String>
+    <sys:String x:Key="report_title">Diagnóstico de visibilidade</sys:String>
+    <sys:String x:Key="status_visible">Visível nesta vista.</sys:String>
+    <sys:String x:Key="status_hidden">NÃO visível nesta vista:</sys:String>
+    <sys:String x:Key="status_error">Erro ao diagnosticar o elemento</sys:String>
+    <sys:String x:Key="summary_line">{} visível(is), {} não visível(is).</sys:String>
+    <sys:String x:Key="reason_workset_hidden">O subprojeto '{}' está explicitamente oculto nesta vista</sys:String>
+    <sys:String x:Key="reason_workset_closed">O subprojeto '{}' está fechado (configuração global)</sys:String>
+    <sys:String x:Key="reason_workset_default_hidden">O subprojeto '{}' está oculto pela configuração padrão de visibilidade de subprojetos do modelo</sys:String>
+    <sys:String x:Key="reason_phase_filter">Oculto pelo filtro de fase (status de fase do elemento: '{}')</sys:String>
+    <sys:String x:Key="reason_design_option">O elemento pertence à opção de projeto '{}', diferente da opção exibida nesta vista</sys:String>
+    <sys:String x:Key="reason_category_hidden">A categoria '{}' está oculta nesta vista</sys:String>
+    <sys:String x:Key="reason_subcategory_hidden">A subcategoria '{}' de '{}' está oculta nesta vista (o elemento pode pertencer a ela)</sys:String>
+    <sys:String x:Key="reason_element_hidden">O elemento está explicitamente oculto nesta vista (Ocultar/Isolar)</sys:String>
+    <sys:String x:Key="reason_view_filter">Oculto pelo filtro de vista '{}'</sys:String>
+    <sys:String x:Key="reason_section_box">A caixa delimitadora do elemento está totalmente fora da caixa de seção 3D ativa da vista</sys:String>
+    <sys:String x:Key="reason_crop_box">A caixa delimitadora do elemento está totalmente fora da região de recorte da vista</sys:String>
+    <sys:String x:Key="reason_viewrange_above">O elemento está acima do plano de corte superior do alcance da vista (Z mín. do elemento {:.3f} ft &gt; topo {:.3f} ft)</sys:String>
+    <sys:String x:Key="reason_viewrange_below">O elemento está abaixo do limite inferior do alcance da vista (plano de corte inferior / profundidade de vista) (Z máx. do elemento {:.3f} ft &lt; limite inferior {:.3f} ft)</sys:String>
+    <sys:String x:Key="reason_view_template">O modelo de vista '{}' está aplicado - algumas configurações de visibilidade podem estar bloqueadas e devem ser alteradas no modelo de vista</sys:String>
+    <sys:String x:Key="reason_view_specific">O elemento é específico de vista e pertence a outra vista ('{}'), portanto não pode aparecer aqui</sys:String>
+    <sys:String x:Key="reason_view_discipline">A disciplina da vista está definida como '{}' - algumas categorias são exibidas ou ocultadas automaticamente com base na disciplina, independentemente das configurações de visibilidade/gráficos</sys:String>
+    <sys:String x:Key="reason_unknown">O elemento não está visível, mas não foi possível determinar uma causa específica. Possíveis causas: tipo de elemento específico de vista (ex.: anotação de outra vista), visibilidade em um modelo vinculado, ou nível de detalhe.</sys:String>
+
+</ResourceDictionary>

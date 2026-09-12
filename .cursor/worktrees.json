@@ -1,7 +1,7 @@
 {
   "setup-worktree-windows": [
     "py -3.14 -m pipenv install",
-    "py -3.14 -m pipenv run pyrevit build products Debug",
-    "py -3.14 -m pipenv run pyrevit build labs Debug"
+    "dotnet run --project build/Build.csproj -c Debug -- ci",
+    "dotnet test build/tests/Build.Tests.csproj -c Release"
   ]
 }

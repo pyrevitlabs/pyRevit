@@ -33,7 +33,7 @@ namespace pyRevitLabs.Common {
         public abstract bool IsValid();
         public abstract Credentials GetCredentials();
     }
-    
+
     public class GitInstallerUsernamePasswordCredentials : GitInstallerCredentials {
         public string Username { get; set; }
         public string Password { get; set; }
@@ -78,8 +78,7 @@ namespace pyRevitLabs.Common {
             // add username and password to clone options, if provided by user
             if (creds is GitInstallerCredentials && creds.IsValid())
                 cloneOps.FetchOptions.CredentialsProvider = (_url, _usernameFromUrl, _credTypes) => creds.GetCredentials();
-            try
-            {
+            try {
                 // attempt at cloning the repo
                 logger.Debug("Cloning \"{0}:{1}\" to \"{2}\"", repoPath, branchName, destPath);
                 Repository.Clone(repoPath, destPath, cloneOps);

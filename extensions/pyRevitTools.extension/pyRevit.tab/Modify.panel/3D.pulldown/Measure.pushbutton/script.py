@@ -56,7 +56,7 @@ def calculate_distances(point1, point2):
     dz = abs(point2.Z - point1.Z)
     diagonal = point1.DistanceTo(point2)
 
-    horizontal = sqrt(dx ** 2 + dy ** 2)
+    horizontal = sqrt(dx**2 + dy**2)
 
     if horizontal == 0:
         slope = pi / 2.0  # 90 degrees (vertical)
@@ -133,7 +133,9 @@ def create_and_show_point_mesh(point1):
     global dc3d_server
     try:
         new_meshes = []
-        new_meshes.append(create_cone_mesh(point1, CONE_SCALE, CONE_COLOR, doc.ActiveView))
+        new_meshes.append(
+            create_cone_mesh(point1, CONE_SCALE, CONE_COLOR, doc.ActiveView)
+        )
         if dc3d_server:
             existing_meshes = dc3d_server.meshes if dc3d_server.meshes else []
             dc3d_server.meshes = existing_meshes + new_meshes
@@ -211,15 +213,27 @@ def perform_measurement():
 
         dx, dy, dz, diagonal, slope = calculate_distances(point1, point2)
 
-        measure_window.point1_text.Text = measure_window.get_locale_string("Point1Format").format(format_point(point1))
-        measure_window.point2_text.Text = measure_window.get_locale_string("Point2Format").format(format_point(point2))
-        measure_window.dx_text.Text = measure_window.get_locale_string("DeltaXFormat").format(format_distance(dx))
-        measure_window.dy_text.Text = measure_window.get_locale_string("DeltaYFormat").format(format_distance(dy))
-        measure_window.dz_text.Text = measure_window.get_locale_string("DeltaZFormat").format(format_distance(dz))
-        measure_window.diagonal_text.Text = measure_window.get_locale_string("DiagonalFormat").format(
-            format_distance(diagonal)
-        )
-        measure_window.slope_text.Text = measure_window.get_locale_string("SlopeFormat").format(format_slope(slope))
+        measure_window.point1_text.Text = measure_window.get_locale_string(
+            "Point1Format"
+        ).format(format_point(point1))
+        measure_window.point2_text.Text = measure_window.get_locale_string(
+            "Point2Format"
+        ).format(format_point(point2))
+        measure_window.dx_text.Text = measure_window.get_locale_string(
+            "DeltaXFormat"
+        ).format(format_distance(dx))
+        measure_window.dy_text.Text = measure_window.get_locale_string(
+            "DeltaYFormat"
+        ).format(format_distance(dy))
+        measure_window.dz_text.Text = measure_window.get_locale_string(
+            "DeltaZFormat"
+        ).format(format_distance(dz))
+        measure_window.diagonal_text.Text = measure_window.get_locale_string(
+            "DiagonalFormat"
+        ).format(format_distance(diagonal))
+        measure_window.slope_text.Text = measure_window.get_locale_string(
+            "SlopeFormat"
+        ).format(format_slope(slope))
 
         # Add to history
         history_entry = (
@@ -282,9 +296,14 @@ class MeasureWindow(forms.WPFWindow):
             self.Height = self.Height + 20
         if not slope_unit_symbol_label:
             self.show_element(self.project_unit_text)
-            self.project_unit_text.Text = self.project_unit_text.Text + (
-                "\n" + self.get_locale_string("ProjectUnitSlopeUnits") + slope_unit_label
-            ).lstrip()
+            self.project_unit_text.Text = (
+                self.project_unit_text.Text
+                + (
+                    "\n"
+                    + self.get_locale_string("ProjectUnitSlopeUnits")
+                    + slope_unit_label
+                ).lstrip()
+            )
             self.Height = self.Height + 20
 
         # Handle window close event

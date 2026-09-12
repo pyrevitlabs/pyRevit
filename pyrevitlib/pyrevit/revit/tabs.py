@@ -1,6 +1,7 @@
 """Document colorizer python API."""
-#pylint: disable=import-error,invalid-name,broad-except
-#pylint: disable=no-member
+
+# pylint: disable=import-error,invalid-name,broad-except
+# pylint: disable=no-member
 from pyrevit import HOST_APP
 from pyrevit.runtime import types
 from pyrevit.framework import Media
@@ -10,19 +11,16 @@ from pyrevit.coreutils import envvars
 
 def hex_to_brush(color_hex):
     """Convert hex color to WPF brush."""
-    return Media.SolidColorBrush(
-        Media.ColorConverter.ConvertFromString(color_hex)
-    )
+    return Media.SolidColorBrush(Media.ColorConverter.ConvertFromString(color_hex))
 
 
 def hex_from_brush(solid_brush):
     """Convert WPF brush to hex color."""
     color = solid_brush.Color
-    color_hex = ''.join(
-        '{:02X}'.format(int(x)) for x in
-        [color.A, color.R, color.G, color.B]
-        )
-    return '#' + color_hex
+    color_hex = "".join(
+        "{:02X}".format(int(x)) for x in [color.A, color.R, color.G, color.B]
+    )
+    return "#" + color_hex
 
 
 def _get_tabcoloring_cfgs(usercfg):
@@ -33,7 +31,7 @@ def _get_tabcoloring_cfgs(usercfg):
 
 
 def _get_sort_colorize_docs(tabcfgs):
-    return tabcfgs.get_option('sort_colorize_docs', False)
+    return tabcfgs.get_option("sort_colorize_docs", False)
 
 
 def _set_sort_colorize_docs(tabcfgs, theme):
@@ -41,59 +39,57 @@ def _set_sort_colorize_docs(tabcfgs, theme):
 
 
 def _get_tab_orderrules(tabcfgs, default=False):
-    default_colors = \
-        [hex_from_brush(b) for b in types.TabColoringTheme.DefaultBrushes]
+    default_colors = [hex_from_brush(b) for b in types.TabColoringTheme.DefaultBrushes]
     tab_colors = default_colors
     if not default:
-        tab_colors = tabcfgs.get_option('tab_colors', default_colors)
+        tab_colors = tabcfgs.get_option("tab_colors", default_colors)
     return List[types.TabColoringRule](
         [types.TabColoringRule(hex_to_brush(c)) for c in tab_colors]
-        )
+    )
 
 
 def _set_tab_ordercolors(tabcfgs, theme):
-    tabcfgs.tab_colors = \
-        [hex_from_brush(c.Brush) for c in theme.TabOrderRules]
+    tabcfgs.tab_colors = [hex_from_brush(c.Brush) for c in theme.TabOrderRules]
 
 
 def _get_tab_filterrules(tabcfgs):
-    tab_filtercolors = tabcfgs.get_option('tab_filtercolors', {})
+    tab_filtercolors = tabcfgs.get_option("tab_filtercolors", {})
     return List[types.TabColoringRule](
-        [types.TabColoringRule(hex_to_brush(c), f)
-         for c, f in tab_filtercolors.items()]
+        [types.TabColoringRule(hex_to_brush(c), f) for c, f in tab_filtercolors.items()]
     )
 
 
 def _set_tab_filtercolors(tabcfgs, theme):
-    tabcfgs.tab_filtercolors = \
-        {hex_from_brush(c.Brush):str(c.TitleFilter)
-         for c in theme.TabFilterRules}
+    tabcfgs.tab_filtercolors = {
+        hex_from_brush(c.Brush): str(c.TitleFilter) for c in theme.TabFilterRules
+    }
 
 
 def _get_tabstyle(tabcfgs):
     tabstyle_index = tabcfgs.get_option(
-        'tabstyle_index',
-        types.TabColoringTheme.DefaultTabColoringStyleIndex
-        )
+        "tabstyle_index", types.TabColoringTheme.DefaultTabColoringStyleIndex
+    )
     return types.TabColoringTheme.AvailableStyles[tabstyle_index]
 
 
 def _set_tabstyle(tabcfgs, theme):
-    tabcfgs.tabstyle_index = \
-        types.TabColoringTheme.AvailableStyles.IndexOf(theme.TabStyle)
+    tabcfgs.tabstyle_index = types.TabColoringTheme.AvailableStyles.IndexOf(
+        theme.TabStyle
+    )
 
 
 def _get_family_tabstyle(tabcfgs):
     family_tabstyle_index = tabcfgs.get_option(
-        'family_tabstyle_index',
-        types.TabColoringTheme.DefaultFamilyTabColoringStyleIndex
-        )
+        "family_tabstyle_index",
+        types.TabColoringTheme.DefaultFamilyTabColoringStyleIndex,
+    )
     return types.TabColoringTheme.AvailableStyles[family_tabstyle_index]
 
 
 def _set_family_tabstyle(tabcfgs, theme):
-    tabcfgs.family_tabstyle_index = \
-        types.TabColoringTheme.AvailableStyles.IndexOf(theme.FamilyTabStyle)
+    tabcfgs.family_tabstyle_index = types.TabColoringTheme.AvailableStyles.IndexOf(
+        theme.FamilyTabStyle
+    )
 
 
 def get_tabcoloring_theme(usercfg):
@@ -136,9 +132,7 @@ def get_tab_orderrule(theme, index):
 
 def add_tab_orderrule(theme, color):
     """Add coloring rule to active theme."""
-    theme.TabOrderRules.Add(
-        types.TabColoringRule(hex_to_brush(color))
-        )
+    theme.TabOrderRules.Add(types.TabColoringRule(hex_to_brush(color)))
 
 
 def remove_tab_orderrule(theme, index):
@@ -156,11 +150,10 @@ def get_tab_filterrule(theme, index):
     """Get coloring filter rule from active theme, at index."""
     tfr = theme.TabFilterRules[index]
     color = tfr.Brush.Color
-    color_hex = ''.join(
-        '{:02X}'.format(int(x)) for x in
-        [color.A, color.R, color.G, color.B]
-        )
-    return '#' + color_hex, str(tfr.TitleFilter)
+    color_hex = "".join(
+        "{:02X}".format(int(x)) for x in [color.A, color.R, color.G, color.B]
+    )
+    return "#" + color_hex, str(tfr.TitleFilter)
 
 
 def add_tab_filterrule(theme, color, title_filter):
@@ -226,29 +219,26 @@ def reset_doc_colorizer():
 def init_doc_colorizer(usercfg):
     """Initialize document colorizer from settings."""
     uiapp = HOST_APP.uiapp
-    if HOST_APP.is_newer_than(2018):
-        current_tabcolorizer = \
-            envvars.get_pyrevit_env_var(envvars.TABCOLORIZER_ENVVAR)
+    current_tabcolorizer = envvars.get_pyrevit_env_var(envvars.TABCOLORIZER_ENVVAR)
 
-        new_theme = get_tabcoloring_theme(usercfg)
+    new_theme = get_tabcoloring_theme(usercfg)
 
-        # cancel out the colorizer from previous runtime version
-        if current_tabcolorizer:
-            # TODO: adopt the previous slots state
-            # prev_theme = current_tabcolorizer.TabColoringTheme
-            # if prev_theme:
-            #     new_theme.InitSlots(prev_theme)
-            current_tabcolorizer.StopGroupingDocumentTabs()
+    # cancel out the colorizer from previous runtime version
+    if current_tabcolorizer:
+        # TODO: adopt the previous slots state
+        # prev_theme = current_tabcolorizer.TabColoringTheme
+        # if prev_theme:
+        #     new_theme.InitSlots(prev_theme)
+        current_tabcolorizer.StopGroupingDocumentTabs()
 
-        # start or stop the document colorizer
-        types.DocumentTabEventUtils.TabColoringTheme = new_theme
-        if usercfg.colorize_docs:
-            types.DocumentTabEventUtils.StartGroupingDocumentTabs(uiapp)
-        else:
-            types.DocumentTabEventUtils.StopGroupingDocumentTabs()
+    # start or stop the document colorizer
+    types.DocumentTabEventUtils.TabColoringTheme = new_theme
+    if usercfg.colorize_docs:
+        types.DocumentTabEventUtils.StartGroupingDocumentTabs(uiapp)
+    else:
+        types.DocumentTabEventUtils.StopGroupingDocumentTabs()
 
-        # set the new colorizer
-        envvars.set_pyrevit_env_var(
-            envvars.TABCOLORIZER_ENVVAR,
-            types.DocumentTabEventUtils
-            )
+    # set the new colorizer
+    envvars.set_pyrevit_env_var(
+        envvars.TABCOLORIZER_ENVVAR, types.DocumentTabEventUtils
+    )

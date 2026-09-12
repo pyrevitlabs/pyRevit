@@ -1,4 +1,4 @@
-from pyrevit import revit, DB, UI, HOST_APP
+from pyrevit import revit, DB
 from pyrevit import forms
 from pyrevit import script
 
@@ -7,13 +7,20 @@ logger = script.get_logger()
 
 
 def is_placable(view):
-    if view and view.ViewType and view.ViewType in [DB.ViewType.Schedule,
-                                                    DB.ViewType.DraftingView,
-                                                    DB.ViewType.Legend,
-                                                    DB.ViewType.CostReport,
-                                                    DB.ViewType.LoadsReport,
-                                                    DB.ViewType.ColumnSchedule,
-                                                    DB.ViewType.PanelSchedule]:
+    if (
+        view
+        and view.ViewType
+        and view.ViewType
+        in [
+            DB.ViewType.Schedule,
+            DB.ViewType.DraftingView,
+            DB.ViewType.Legend,
+            DB.ViewType.CostReport,
+            DB.ViewType.LoadsReport,
+            DB.ViewType.ColumnSchedule,
+            DB.ViewType.PanelSchedule,
+        ]
+    ):
         return True
     return False
 
@@ -29,36 +36,34 @@ def update_if_placed(vport, exst_vps):
 
 selViewports = []
 
-allSheetedSchedules = DB.FilteredElementCollector(revit.doc)\
-                        .OfClass(DB.ScheduleSheetInstance)\
-                        .ToElements()
+allSheetedSchedules = (
+    DB.FilteredElementCollector(revit.doc)
+    .OfClass(DB.ScheduleSheetInstance)
+    .ToElements()
+)
 
 
-selected_sheets = forms.select_sheets(title='Select Target Sheets',
-                                      include_placeholder=False,
-                                      button_name='Select Sheets')
+selected_sheets = forms.select_sheets(
+    title="Select Target Sheets", include_placeholder=False, button_name="Select Sheets"
+)
 
 # get a list of viewports to be copied, updated
 if selected_sheets and len(selected_sheets) > 0:
-    if int(HOST_APP.version) > 2014:
-        cursheet = revit.uidoc.ActiveGraphicalView
-        for v in selected_sheets:
-            if cursheet.Id == v.Id:
-                selected_sheets.remove(v)
-    else:
-        cursheet = selected_sheets[0]
-        selected_sheets.remove(cursheet)
+    cursheet = revit.uidoc.ActiveGraphicalView
+    for v in selected_sheets:
+        if cursheet.Id == v.Id:
+            selected_sheets.remove(v)
 
     revit.uidoc.ActiveView = cursheet
     selected_vps = revit.pick_elements()
 
     if selected_vps:
-        with revit.Transaction('Copy Viewports to Sheets'):
+        with revit.Transaction("Copy Viewports to Sheets"):
             for sht in selected_sheets:
-                existing_vps = [revit.doc.GetElement(x)
-                                for x in sht.GetAllViewports()]
-                existing_schedules = [x for x in allSheetedSchedules
-                                      if x.OwnerViewId == sht.Id]
+                existing_vps = [revit.doc.GetElement(x) for x in sht.GetAllViewports()]
+                existing_schedules = [
+                    x for x in allSheetedSchedules if x.OwnerViewId == sht.Id
+                ]
                 for vp in selected_vps:
                     if isinstance(vp, DB.Viewport):
                         src_view = revit.doc.GetElement(vp.ViewId)
@@ -68,18 +73,18 @@ if selected_sheets and len(selected_sheets) > 0:
                             break
                         # if not, create a new viewport
                         elif is_placable(src_view):
-                            new_vp = \
-                                DB.Viewport.Create(revit.doc,
-                                                   sht.Id,
-                                                   vp.ViewId,
-                                                   vp.GetBoxCenter())
+                            new_vp = DB.Viewport.Create(
+                                revit.doc, sht.Id, vp.ViewId, vp.GetBoxCenter()
+                            )
 
                             new_vp.ChangeTypeId(vp.GetTypeId())
                         else:
-                            logger.warning('Skipping %s. This view type '
-                                           'can not be placed on '
-                                           'multiple sheets.',
-                                           revit.query.get_name(src_view))
+                            logger.warning(
+                                "Skipping %s. This view type "
+                                "can not be placed on "
+                                "multiple sheets.",
+                                revit.query.get_name(src_view),
+                            )
                     elif isinstance(vp, DB.ScheduleSheetInstance):
                         # check if schedule already exists
                         # and update location
@@ -89,11 +94,10 @@ if selected_sheets and len(selected_sheets) > 0:
                                 break
                         # if not, place the schedule
                         else:
-                            DB.ScheduleSheetInstance.Create(revit.doc,
-                                                            sht.Id,
-                                                            vp.ScheduleId,
-                                                            vp.Point)
+                            DB.ScheduleSheetInstance.Create(
+                                revit.doc, sht.Id, vp.ScheduleId, vp.Point
+                            )
     else:
-        forms.alert('At least one viewport must be selected.')
+        forms.alert("At least one viewport must be selected.")
 else:
-    forms.alert('At least one sheet must be selected.')
+    forms.alert("At least one sheet must be selected.")

@@ -61,7 +61,7 @@ results = avf.display_avf_values(
     schema_desc="AVF pick-and-display demo",
 )
 
-elem_id_val = results.keys()[0]
+elem_id_val = list(results.keys())[0]
 success, sfp_id = results[elem_id_val]
 
 if success:

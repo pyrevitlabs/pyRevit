@@ -18,7 +18,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// a redundant full extension re-parse.
         /// </summary>
         /// <param name="extension">The extension to register hooks for.</param>
-        /// <param name="libraryExtensions">Library extensions whose lib/ paths are added to hook search paths.</param>
+        /// <param name="libraryExtensions">Library extensions whose directories (and nested lib/ if present) are added to hook search paths.</param>
         /// <param name="runtimeAssembly">The loaded pyRevit Runtime assembly for reflection calls.</param>
         /// <param name="pyRevitRoot">Root directory of the pyRevit installation (for pyrevitlib + site-packages paths).</param>
         void RegisterHooks(

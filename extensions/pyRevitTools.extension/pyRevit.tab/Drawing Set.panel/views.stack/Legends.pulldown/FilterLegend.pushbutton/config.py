@@ -2,7 +2,7 @@
 from pyrevit import revit, forms
 from pyrevit.forms import settings_window
 
-from legend_config import INI, resx, get_text_type_options, build_settings_schema
+from legend_cfg import INI, resx, get_text_type_options, build_settings_schema
 
 doc = revit.doc
 

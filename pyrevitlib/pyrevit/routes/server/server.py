@@ -7,10 +7,12 @@ import sys
 import traceback
 import json
 import threading
+import time
 
 from pyrevit.api import UI
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.compat import PY3
+from pyrevit.compat import PY2
 from pyrevit.compat import urlparse
 
 if PY3:
@@ -34,6 +36,24 @@ else:
 mlogger = get_logger(__name__)
 
 
+def _utf8_decode(value):
+    """Decode raw utf-8 byte strings left by Python 2 percent-decoding."""
+    if isinstance(value, str):
+        return value.decode("utf-8")
+    return value
+
+
+def _decode_utf8_params(params):
+    """Decode utf-8 keys and values of a parsed query params dictionary."""
+    decoded = {}
+    for key, value in params.items():
+        if isinstance(value, list):
+            decoded[_utf8_decode(key)] = [_utf8_decode(v) for v in value]
+        else:
+            decoded[_utf8_decode(key)] = _utf8_decode(value)
+    return decoded
+
+
 # instance of event handler created when this module is loaded
 # on hosts main thread. Creating external events on non-main threads
 # are prohibited by the host. this event handler is reconfigured
@@ -45,19 +65,13 @@ EVENT_HNDLR = UI.ExternalEvent.Create(REQUEST_HNDLR)
 class HttpRequestHandler(BaseHTTPRequestHandler):
     """HTTP Requests Handler."""
 
-    def log_message(self, fmt, *args):
-        """Record a request without writing to stderr.
-
-        pyRevit directs stderr to its script output console, a WPF window that
-        can only be created on Revit's STA UI thread. Requests are served on
-        threads that are never STA, so a write here can terminate the Revit
-        process. Request logging must never reach stderr.
-
-        Args:
-            fmt (str): printf-style format string.
-            *args: Values interpolated into ``fmt``.
-        """
-        mlogger.debug(fmt, *args)
+    def log_message(self, message_format, *args):
+        """Log request messages through pyRevit's logger."""
+        mlogger.debug(
+            "Routes request from %s | %s",
+            self.client_address[0],
+            message_format % args,
+        )
 
     def _parse_api_path(self):
         url_parts = urlparse(self.path)
@@ -108,6 +122,8 @@ class HttpRequestHandler(BaseHTTPRequestHandler):
             # parse_qs returns lists for values; flatten single values to strings
             parsed = parse_qs(query_string)
             query_params = {k: v[0] if len(v) == 1 else v for k, v in parsed.items()}
+            if PY2:
+                query_params = _decode_utf8_params(query_params)
 
         return base.Request(
             path=path,
@@ -271,9 +287,18 @@ class ThreadedHttpServer(ThreadingMixIn, HTTPServer):
 
     allow_reuse_address = True
 
+    def handle_error(self, request, client_address):
+        """Log request-handler failures with their connection context."""
+        mlogger.error(
+            "Routes request failed from %s | request=%s | %s",
+            client_address,
+            request,
+            traceback.format_exc(),
+        )
+
     def shutdown(self):
-        self.socket.close()
         HTTPServer.shutdown(self)
+        self.socket.close()
 
     def handle_error(self, request, client_address):
         """Report a failed request without writing to stderr.
@@ -336,6 +361,7 @@ class RoutesServer(object):
         self.server = ThreadedHttpServer((host, port), HttpRequestHandler)
         self.host = host
         self.port = port
+        self._stopping = False
         self.start()
 
     def __str__(self):
@@ -346,6 +372,17 @@ class RoutesServer(object):
 
     def __repr__(self):
         return "<RoutesServer @ http://%s:%s>" % (self.host or "0.0.0.0", self.port)
+
+    def _serve_forever(self):
+        while not self._stopping:
+            try:
+                self.server.serve_forever()
+                return
+            except Exception as server_err:
+                if self._stopping:
+                    return
+                mlogger.error("Routes server stopped unexpectedly | %s", server_err)
+                time.sleep(1)
 
     def start(self):
         """Start the accept loop, at most once, on a guarded thread.
@@ -373,5 +410,6 @@ class RoutesServer(object):
         self.server_thread.join()
 
     def stop(self):
+        self._stopping = True
         self.server.shutdown()
         self.waitForThread()

@@ -1,9 +1,9 @@
-""" Module to load Family into project """
-#pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
+"""Module to load Family into project"""
+
+# pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 import os
 import re
 
-from pyrevit.framework import clr
 from pyrevit import forms, revit, DB, script
 
 logger = script.get_logger()
@@ -35,6 +35,7 @@ class FamilyLoader:
     ------
     Based on Ehsan Iran-Nejads 'Load More Types'
     """
+
     def __init__(self, path):
         """
         Parameters
@@ -72,25 +73,20 @@ class FamilyLoader:
         ------
         Uses SmartSortableFamilySymbol for effective sorting
         """
-        logger.debug('Fake loading family: {}'.format(self.name))
+        logger.debug("Fake loading family: {}".format(self.name))
         symbol_set = set()
         with revit.ErrorSwallower():
             # DryTransaction will rollback all the changes
-            with revit.DryTransaction('Fake load'):
-                ret_ref = clr.Reference[DB.Family]()
-                revit.doc.LoadFamily(self.path, ret_ref)
-                loaded_fam = ret_ref.Value
-                # Get the symbols
-                for symbol_id in loaded_fam.GetFamilySymbolIds():
-                    symbol = revit.doc.GetElement(symbol_id)
+            with revit.DryTransaction("Fake load"):
+                for symbol in revit.create.load_family(self.path):
                     symbol_name = revit.query.get_name(symbol)
                     sortable_sym = SmartSortableFamilySymbol(symbol_name)
-                    logger.debug('Importable Symbol: {}'.format(sortable_sym))
+                    logger.debug("Importable Symbol: {}".format(sortable_sym))
                     symbol_set.add(sortable_sym)
         return sorted(symbol_set)
 
     def load_selective(self):
-        """ Loads the family and selected symbols. """
+        """Loads the family and selected symbols."""
         symbols = self.get_symbols()
 
         # Dont prompt if only 1 symbol available
@@ -100,39 +96,40 @@ class FamilyLoader:
 
         # User input -> Select family symbols
         selected_symbols = forms.SelectFromList.show(
-            symbols,
-            title=self.name,
-            button_name="Load type(s)",
-            multiselect=True)
+            symbols, title=self.name, button_name="Load type(s)", multiselect=True
+        )
         if selected_symbols is None:
-            logger.debug('No family symbols selected.')
+            logger.debug("No family symbols selected.")
             return
-        logger.debug('Selected symbols are: {}'.format(selected_symbols))
+        logger.debug("Selected symbols are: {}".format(selected_symbols))
 
         # Load family with selected symbols
-        with revit.Transaction('Loaded {}'.format(self.name)):
+        with revit.Transaction("Loaded {}".format(self.name)):
             try:
                 for symbol in selected_symbols:
-                    logger.debug('Loading symbol: {}'.format(symbol))
+                    logger.debug("Loading symbol: {}".format(symbol))
                     revit.doc.LoadFamilySymbol(self.path, symbol.symbol_name)
-                logger.debug('Successfully loaded all selected symbols')
+                logger.debug("Successfully loaded all selected symbols")
             except Exception as load_err:
                 logger.error(
-                    'Error loading family symbol from {} | {}'
-                    .format(self.path, load_err))
+                    "Error loading family symbol from {} | {}".format(
+                        self.path, load_err
+                    )
+                )
                 raise load_err
 
     def load_all(self):
-        """ Loads family and all its symbols. """
-        with revit.Transaction('Loaded {}'.format(self.name)):
+        """Loads family and all its symbols."""
+        with revit.Transaction("Loaded {}".format(self.name)):
             try:
                 revit.doc.LoadFamily(self.path)
-                logger.debug(
-                    'Successfully loaded family: {}'.format(self.name))
+                logger.debug("Successfully loaded family: {}".format(self.name))
             except Exception as load_err:
                 logger.error(
-                    'Error loading family symbol from {} | {}'
-                    .format(self.path, load_err))
+                    "Error loading family symbol from {} | {}".format(
+                        self.path, load_err
+                    )
+                )
                 raise load_err
 
 
@@ -159,12 +156,11 @@ class SmartSortableFamilySymbol:
     Copied from Ehsan Iran-Nejads SmartSortableFamilyType
     in 'Load More Types'.
     """
+
     def __init__(self, symbol_name):
         self.symbol_name = symbol_name
         self.sort_alphabetically = False
-        self.number_list = [
-            int(x)
-            for x in re.findall(r'\d+', self.symbol_name)]
+        self.number_list = [int(x) for x in re.findall(r"\d+", self.symbol_name)]
         if not self.number_list:
             self.sort_alphabetically = True
 
@@ -172,10 +168,9 @@ class SmartSortableFamilySymbol:
         return self.symbol_name
 
     def __repr__(self):
-        return '<SmartSortableFamilySymbol Name:{} Values:{} StringSort:{}>'\
-               .format(self.symbol_name,
-                       self.number_list,
-                       self.sort_alphabetically)
+        return "<SmartSortableFamilySymbol Name:{} Values:{} StringSort:{}>".format(
+            self.symbol_name, self.number_list, self.sort_alphabetically
+        )
 
     def __eq__(self, other):
         return self.symbol_name == other.symbol_name

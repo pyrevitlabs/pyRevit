@@ -21,6 +21,16 @@ namespace pyRevitLabs.Common {
             return false;
         }
 
+        public static bool IsVersionTagRef(string refName) {
+            if (string.IsNullOrWhiteSpace(refName))
+                return false;
+
+            var normalized = refName.Trim();
+            return normalized.Length >= 2
+                && (normalized[0] == 'v' || normalized[0] == 'V')
+                && char.IsDigit(normalized[1]);
+        }
+
         public static bool IsForkRepo(string repoId) {
             return !string.Equals(
                 repoId?.Trim(),

@@ -35,9 +35,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
     }
 
     public static class Telemetry {
-#if REVIT2021_OR_GREATER
-        private static string _exeBuild = null;  
-#endif
+        private static string _exeBuild = null;
 
 
         public static string DefaultUser { get; set; } = string.Empty;
@@ -48,11 +46,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public static async void PostTelemetryRecord(string telemetryServerUrl, object telemetryRecord) {
             try {
-                using(var client = new HttpClient()) {
+                using (var client = new HttpClient()) {
                     string jsonValue = SerializeTelemetryRecord(telemetryRecord);
                     await client.PostAsync(telemetryServerUrl, new StringContent(jsonValue, Encoding.UTF8, "application/json"));
                 }
-            } catch(Exception ex) {
+            }
+            catch (Exception ex) {
                 Console.WriteLine("Bim4EveryoneSink catch exception{0}{1}", Environment.NewLine, ex);
             }
         }
@@ -102,7 +101,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public static string GetRevitVersion(object source) {
             string revit = string.Empty;
-            
+
             switch (source) {
                 case UIControlledApplication uictrlapp:
                     revit = uictrlapp.ControlledApplication.VersionNumber;
@@ -119,7 +118,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     revit = app.VersionNumber;
                     break;
             }
-            
+
             return revit;
         }
 
@@ -127,22 +126,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // determine build number
             string revitbuild = string.Empty;
 
-#if (REVIT2013 || REVIT2014 || REVIT2015 || REVIT2016 || REVIT2017 || REVIT2018 || REVIT2019 || REVIT2020)
-            switch (source) {
-                case UIControlledApplication uictrlapp:
-                    revitbuild = uictrlapp.ControlledApplication.VersionBuild;
-                    break;
-                case UIApplication uiapp:
-                    revitbuild = uiapp.Application.VersionBuild;
-                    break;
-                case ControlledApplication ctrlapp:
-                    revitbuild = ctrlapp.VersionBuild;
-                    break;
-                case Application app:
-                    revitbuild = app.VersionBuild;
-                    break;
-            }
-#else
             // Revit 2021 has a bug on .VersionBuild
             // it reports identical value as .VersionNumber
             // let's give a invalid, but correctly formatted value to the telemetry server
@@ -158,7 +141,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
             else
                 revitbuild = _exeBuild;
-#endif
             return revitbuild;
         }
     }

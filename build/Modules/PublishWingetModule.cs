@@ -31,8 +31,11 @@ public sealed class PublishWingetModule(IOptions<PublishOptions> publishOptions)
         var outputDir = Path.Combine(Path.GetTempPath(), "pyrevit-winget-manifests");
         Directory.CreateDirectory(outputDir);
 
-        var pyRevitUrls = BuildPyRevitUrls(versionInfo, releaseTag);
-        var cliUrls = BuildCliUrls(versionInfo, releaseTag);
+        var pyRevitUrls = BuildPyRevitUrls(versionInfo, releaseTag).ToArray();
+        var cliUrls = BuildCliUrls(versionInfo, releaseTag).ToArray();
+
+        await EnsurePublishedBaselineSupportsAsync("pyRevit.pyRevit", pyRevitUrls.Length, cancellationToken);
+        await EnsurePublishedBaselineSupportsAsync("pyRevit.pyRevit.CLI", cliUrls.Length, cancellationToken);
 
         await PublishPackageAsync(
             context,
@@ -159,6 +162,20 @@ public sealed class PublishWingetModule(IOptions<PublishOptions> publishOptions)
             cancellationToken: cancellationToken);
     }
 
+    private static async Task EnsurePublishedBaselineSupportsAsync(
+        string packageId,
+        int installerCount,
+        CancellationToken cancellationToken)
+    {
+        var published = await WingetManifestHelper.GetPublishedInstallerSetAsync(packageId, cancellationToken);
+        if (published is null)
+        {
+            return;
+        }
+
+        WingetManifestHelper.EnsureCompatibleInstallerCount(published, installerCount, packageId);
+    }
+
     private static IEnumerable<string> BuildPyRevitUrls(VersionInfo versionInfo, string releaseTag)
     {
         var baseUrl = $"https://github.com/pyrevitlabs/pyRevit/releases/download/{releaseTag}/";
@@ -169,7 +186,6 @@ public sealed class PublishWingetModule(IOptions<PublishOptions> publishOptions)
     {
         var baseUrl = $"https://github.com/pyrevitlabs/pyRevit/releases/download/{releaseTag}/";
         yield return $"{baseUrl}pyRevit_CLI_{versionInfo.InstallVersion}_admin_signed.exe|x64|machine";
-        yield return $"{baseUrl}pyRevit_CLI_{versionInfo.InstallVersion}_admin_signed.msi|x64|machine";
     }
 
 }

@@ -1,4 +1,5 @@
 """Opens the git repository page."""
+
 from pyrevit import script
 from pyrevit.versionmgr import urls
 
