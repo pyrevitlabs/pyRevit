@@ -5,7 +5,14 @@ import pickle
 from pyrevit import forms, revit, op, script
 from pyrevit import DB
 from pyrevit.revit.events import execute_in_revit_context
-from pyrevit.framework import ComponentModel, wpf, Controls, Uri, UriKind, ResourceDictionary
+from pyrevit.framework import (
+    ComponentModel,
+    wpf,
+    Controls,
+    Uri,
+    UriKind,
+    ResourceDictionary,
+)
 from pyrevit.compat import get_elementid_value_func
 
 from match.match_utils import (
@@ -47,6 +54,7 @@ def _merge_resource_dict(control, xaml_path):
 def _merge_locale(control):
     """Merge the clipboard locale ResourceDictionary into a WPF element."""
     from pyrevit.userconfig import user_config
+
     base = op.join(_DIR, "clipboard_ui")
     locale_path = "{}.ResourceDictionary.{}.xaml".format(base, user_config.user_locale)
     if not op.exists(locale_path):
@@ -186,8 +194,7 @@ class ClipboardContent(Controls.UserControl):
         new_items = [ParameterItem(p) for p in props]
         new_props = [ni.source_prop for ni in new_items]
         filtered_old = [
-            item for item in self._items
-            if item.source_prop not in new_props
+            item for item in self._items if item.source_prop not in new_props
         ]
         self._items = (new_items + filtered_old)[:MAX_HISTORY_ITEMS]
         for item in self._items:
@@ -345,7 +352,9 @@ class ClipboardContent(Controls.UserControl):
                 PropKeyValue(
                     name=tparam.Definition.Name,
                     datatype=tparam.StorageType,
-                    value=get_elementid_value(value) if isinstance(value, DB.ElementId) else value,
+                    value=get_elementid_value(value)
+                    if isinstance(value, DB.ElementId)
+                    else value,
                     istype=False,
                     display_value=tparam.AsValueString() or str(value),
                     categories=[elem.Category],
@@ -370,9 +379,12 @@ class ClipboardContent(Controls.UserControl):
                 fg = get_contrasting_brush(bg)
         if props:
             execute_in_revit_context(
-                paste_props, props, "single",
+                paste_props,
+                props,
+                "single",
                 bool(self.categoryFilterCheck.IsChecked),
-                background=bg, foreground=fg,
+                background=bg,
+                foreground=fg,
             )
 
     def paste_rectangle(self, sender, args):
@@ -385,16 +397,21 @@ class ClipboardContent(Controls.UserControl):
                 fg = get_contrasting_brush(bg)
         if props:
             execute_in_revit_context(
-                paste_props, props, "rectangle",
+                paste_props,
+                props,
+                "rectangle",
                 bool(self.categoryFilterCheck.IsChecked),
-                background=bg, foreground=fg,
+                background=bg,
+                foreground=fg,
             )
 
     def paste_selection(self, sender, args):
         props = self._selected_props()
         if props:
             execute_in_revit_context(
-                paste_props, props, "selection",
+                paste_props,
+                props,
+                "selection",
                 bool(self.categoryFilterCheck.IsChecked),
             )
 

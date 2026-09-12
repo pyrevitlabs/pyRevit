@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Helper functions to query info and elements from Revit."""
+
 # pylint: disable=W0703,C0103,too-many-lines
 from collections import namedtuple
 from os.path import basename, splitext
@@ -243,19 +244,13 @@ def get_param(element, param_identifier, default=None):
 
     try:
         if isinstance(param_identifier, str):
-            return _param_or_default(
-                element.LookupParameter(param_identifier), default
-            )
+            return _param_or_default(element.LookupParameter(param_identifier), default)
 
         if isinstance(param_identifier, DB.BuiltInParameter):
-            return _param_or_default(
-                element.get_Parameter(param_identifier), default
-            )
+            return _param_or_default(element.get_Parameter(param_identifier), default)
 
         if isinstance(param_identifier, framework.System.Guid):
-            return _param_or_default(
-                element.get_Parameter(param_identifier), default
-            )
+            return _param_or_default(element.get_Parameter(param_identifier), default)
 
         if isinstance(param_identifier, DB.ElementId):
             return _param_or_default(
@@ -443,7 +438,9 @@ def get_value_range(param_name, doc=None, elements=None):
     return values
 
 
-def get_elements_by_parameter(param_name, param_value, doc=None, partial=False, view_id=None):
+def get_elements_by_parameter(
+    param_name, param_value, doc=None, partial=False, view_id=None
+):
     """
     Finds elements by inspecting each element individually and comparing
     the value of a named parameter.
@@ -487,7 +484,9 @@ def get_elements_by_parameter(param_name, param_value, doc=None, partial=False, 
     return found_els
 
 
-def get_elements_by_param_value(param_name, param_value, inverse=False, doc=None, view_id=None):
+def get_elements_by_param_value(
+    param_name, param_value, inverse=False, doc=None, view_id=None
+):
     """
     Finds elements using a native Revit ElementParameterFilter.
 
@@ -1175,7 +1174,7 @@ def get_document_clean_name(doc=None):
     _CLOUD_URI_SCHEMES = ("BIM 360://", "ACC://", "Autodesk Docs://")
     for scheme in _CLOUD_URI_SCHEMES:
         if document_name.startswith(scheme):
-            document_name = document_name[len(scheme):]
+            document_name = document_name[len(scheme) :]
             break
 
     return splitext(basename(document_name))[0]
@@ -2361,9 +2360,7 @@ def get_solid_fillpattern_element(doc=None):
         pattern if found; otherwise ``None``.
     """
     doc = doc or DOCS.doc
-    patterns = get_all_fillpattern_elements(
-        DB.FillPatternTarget.Drafting, doc=doc
-    )
+    patterns = get_all_fillpattern_elements(DB.FillPatternTarget.Drafting, doc=doc)
     for fp in patterns:
         if fp.GetFillPattern().IsSolidFill:
             return fp
@@ -3255,7 +3252,12 @@ def get_element_workset(element):
         return workset_table.GetWorkset(element.WorksetId)
 
 
-def get_geometry(element, include_invisible=False, compute_references=False, detail_level=DB.ViewDetailLevel.Medium):
+def get_geometry(
+    element,
+    include_invisible=False,
+    compute_references=False,
+    detail_level=DB.ViewDetailLevel.Medium,
+):
     """
     Retrieves the geometry of a given Revit element.
 

@@ -194,6 +194,43 @@ def autofit_column_widths(doc, view, notes_by_column, base_offsets, min_gap=0.0)
     return new_offsets
 
 
+def clear_legend_view(doc, view, managed_ids=None):
+    """Delete a previously-generated legend's own elements so it can be
+    redrawn from scratch, without touching any annotation the user may
+    have added to the legend by hand.
+
+    Args:
+        doc: Document
+        view: Legend View to clear
+        managed_ids: iterable of ElementId this tool previously
+            recorded as its own for `view`. When None, falls back to deleting
+            every TextNote and FilledRegion in the view
+
+    Returns:
+        int: number of elements deleted
+
+    Must be called inside an open transaction.
+    """
+    if managed_ids is not None:
+        to_delete = [
+            eid for eid in managed_ids if doc.GetElement(eid) is not None
+        ]
+    else:
+        to_delete = []
+        for cls in (DB.TextNote, DB.FilledRegion):
+            collector = (
+                DB.FilteredElementCollector(doc, view.Id)
+                .OfClass(cls)
+                .WhereElementIsNotElementType()
+            )
+            to_delete.extend(e.Id for e in collector)
+
+    if to_delete:
+        doc.Delete(List[DB.ElementId](to_delete))
+
+    return len(to_delete)
+
+
 def create_legend_row(
     doc,
     view,

@@ -9,7 +9,7 @@ Options:
     -h, --help                          Show this help
     -V, --version                       Show command version
     -e <encod>, --encode <encod>        File encoding [default: utf-8]
-""" # noqa
+"""  # noqa
 
 import sys
 
@@ -24,10 +24,10 @@ logger = script.get_logger()
 
 try:
     logger.debug(sys.argv)
-    args = docopt.docopt(__doc__,
-                         version='testdocopt {}'.format('v0.1'),
-                         help=True)
+    args = docopt.docopt(__doc__, version="testdocopt {}".format("v0.1"), help=True)
     print(args)
 except docopt.DocoptExit:
-    forms.alert('This command needs command line arguments. '
-                'Run from pyRevit search and provide arguments')
+    forms.alert(
+        "This command needs command line arguments. "
+        "Run from pyRevit search and provide arguments"
+    )

@@ -10,8 +10,7 @@ from ws4links_translations import TRANSLATIONS_SCRIPT
 doc = HOST_APP.doc
 logger = script.get_logger()
 translations = TRANSLATIONS_SCRIPT.get(
-    user_config.user_locale,
-    TRANSLATIONS_SCRIPT["en_us"]
+    user_config.user_locale, TRANSLATIONS_SCRIPT["en_us"]
 )  # type: dict[str, str | list]
 
 
@@ -30,10 +29,14 @@ def main():
         selection = (
             DB.FilteredElementCollector(doc)
             .WhereElementIsNotElementType()
-            .WherePasses(DB.LogicalOrFilter([
-                DB.ElementClassFilter(DB.RevitLinkInstance),
-                DB.ElementClassFilter(DB.ImportInstance)
-            ]))
+            .WherePasses(
+                DB.LogicalOrFilter(
+                    [
+                        DB.ElementClassFilter(DB.RevitLinkInstance),
+                        DB.ElementClassFilter(DB.ImportInstance),
+                    ]
+                )
+            )
             .ToElements()
         )
 
@@ -42,7 +45,7 @@ def main():
             enable_worksharing = alert(
                 translations["Worksharing.Enable.Message"],
                 options=translations["Worksharing.Enable.Options"],
-                warn_icon=False
+                warn_icon=False,
             )  # type: str
             if not enable_worksharing:
                 script.exit()
@@ -55,7 +58,7 @@ def main():
                 alert(
                     translations["Worksharing.Enable.Error"],
                     title=translations["Worksharing.Enable.Error.Title"],
-                    exitscript=True
+                    exitscript=True,
                 )
 
         with revit.Transaction(translations["Transaction.Name"]):

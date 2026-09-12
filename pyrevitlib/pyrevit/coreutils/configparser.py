@@ -1,4 +1,5 @@
 """Base module for pyRevit config parsing."""
+
 import json
 import codecs
 from pyrevit.compat import configparser
@@ -6,13 +7,14 @@ from pyrevit.compat import configparser
 from pyrevit import PyRevitException, PyRevitIOError
 from pyrevit import coreutils
 
-#pylint: disable=W0703,C0302
+# pylint: disable=W0703,C0302
 KEY_VALUE_TRUE = "True"
 KEY_VALUE_FALSE = "False"
 
 
 class PyRevitConfigSectionParser(object):
     """Config section parser object. Handle section options."""
+
     def __init__(self, config_parser, section_name):
         self._parser = config_parser
         self._section_name = section_name
@@ -24,10 +26,11 @@ class PyRevitConfigSectionParser(object):
         return self._section_name
 
     def __repr__(self):
-        return '<PyRevitConfigSectionParser object '    \
-               'at 0x{0:016x} '                         \
-               'config section \'{1}\'>'                \
-               .format(id(self), self._section_name)
+        return (
+            "<PyRevitConfigSectionParser object "
+            "at 0x{0:016x} "
+            "config section '{1}'>".format(id(self), self._section_name)
+        )
 
     def __getattr__(self, param_name):
         try:
@@ -35,7 +38,7 @@ class PyRevitConfigSectionParser(object):
             value = raw_value
             try:
                 try:
-                    return json.loads(value)  #pylint: disable=W0123
+                    return json.loads(value)  # pylint: disable=W0123
                 except Exception:
                     # try fix legacy formats
                     # cleanup python style true, false values
@@ -44,20 +47,22 @@ class PyRevitConfigSectionParser(object):
                     elif value == KEY_VALUE_FALSE:
                         value = json.dumps(False)
                     # cleanup string representations
-                    value = value.replace('\'', '"').encode('string-escape')
+                    value = value.replace("'", '"').encode("string-escape")
                     # try parsing again
                     try:
-                        return json.loads(value)  #pylint: disable=W0123
+                        return json.loads(value)  # pylint: disable=W0123
                     except Exception:
                         # if failed again then the value is a string
                         # but is not encapsulated in quotes
                         # e.g. option = C:\Users\Desktop
                         value = value.strip()
-                        if (not value.startswith('(')
-                                and not value.startswith('[')
-                                and not value.startswith('{')):
-                            value = "\"%s\"" % value
-                        return json.loads(value)  #pylint: disable=W0123
+                        if (
+                            not value.startswith("(")
+                            and not value.startswith("[")
+                            and not value.startswith("{")
+                        ):
+                            value = '"%s"' % value
+                        return json.loads(value)  # pylint: disable=W0123
             except Exception:
                 # All decode attempts failed. The local 'value' has been
                 # mutated by the fallback chain (string-escape encoded,
@@ -68,20 +73,18 @@ class PyRevitConfigSectionParser(object):
                 # fields). Return the original raw bytes instead.
                 return raw_value
         except (configparser.NoOptionError, configparser.NoSectionError):
-            raise AttributeError('Parameter does not exist in config file: {}'
-                                 .format(param_name))
+            raise AttributeError(
+                "Parameter does not exist in config file: {}".format(param_name)
+            )
 
     def __setattr__(self, param_name, value):
         # check agaist used attribute names
-        if param_name in ['_parser', '_section_name']:
-            super(PyRevitConfigSectionParser, self).__setattr__(param_name,
-                                                                value)
+        if param_name in ["_parser", "_section_name"]:
+            super(PyRevitConfigSectionParser, self).__setattr__(param_name, value)
         else:
             # if not used by this object, then set a config section
             try:
-                new_value = json.dumps(value,
-                                       separators=(',', ':'),
-                                       ensure_ascii=False)
+                new_value = json.dumps(value, separators=(",", ":"), ensure_ascii=False)
                 # Idempotency check: skip the write when the encoded value
                 # is byte-identical to what's already stored. Prevents
                 # progressive escape-doubling on round-trip cycles when
@@ -90,19 +93,16 @@ class PyRevitConfigSectionParser(object):
                 # telemetry config fields). Side benefit: eliminates
                 # redundant disk writes when nothing has changed.
                 try:
-                    current_value = self._parser.get(self._section_name,
-                                                     param_name)
+                    current_value = self._parser.get(self._section_name, param_name)
                     if current_value == new_value:
                         return
-                except (configparser.NoOptionError,
-                        configparser.NoSectionError):
+                except (configparser.NoOptionError, configparser.NoSectionError):
                     pass
-                return self._parser.set(self._section_name,
-                                        param_name,
-                                        new_value)
+                return self._parser.set(self._section_name, param_name, new_value)
             except Exception as set_err:
-                raise PyRevitException('Error setting parameter value. '
-                                       '| {}'.format(set_err))
+                raise PyRevitException(
+                    "Error setting parameter value. | {}".format(set_err)
+                )
 
     @property
     def header(self):
@@ -150,7 +150,7 @@ class PyRevitConfigSectionParser(object):
         """Get all subsections."""
         subsections = []
         for section_name in self._parser.sections():
-            if section_name.startswith(self._section_name + '.'):
+            if section_name.startswith(self._section_name + "."):
                 subsec = PyRevitConfigSectionParser(self._parser, section_name)
                 subsections.append(subsec)
         return subsections
@@ -164,12 +164,13 @@ class PyRevitConfigSectionParser(object):
 
 class PyRevitConfigParser(object):
     """Config parser object. Handle config sections and io."""
+
     def __init__(self, cfg_file_path=None):
         self._cfg_file_path = cfg_file_path
         self._parser = configparser.ConfigParser()
         if self._cfg_file_path:
             try:
-                with codecs.open(self._cfg_file_path, 'r', 'utf-8') as cfg_file:
+                with codecs.open(self._cfg_file_path, "r", "utf-8") as cfg_file:
                     try:
                         self._parser.readfp(cfg_file)
                     except AttributeError:
@@ -188,8 +189,8 @@ class PyRevitConfigParser(object):
             return PyRevitConfigSectionParser(self._parser, section_name)
         else:
             raise AttributeError(
-                'Section \"{}\" does not exist in config file.'
-                .format(section_name))
+                'Section "{}" does not exist in config file.'.format(section_name)
+            )
 
     def get_config_file_hash(self):
         """Get calculated unique hash for this config.
@@ -197,7 +198,7 @@ class PyRevitConfigParser(object):
         Returns:
             (str): hash of the config.
         """
-        with codecs.open(self._cfg_file_path, 'r', 'utf-8') as cfg_file:
+        with codecs.open(self._cfg_file_path, "r", "utf-8") as cfg_file:
             cfg_hash = coreutils.get_str_hash(cfg_file.read())
 
         return cfg_hash
@@ -232,11 +233,10 @@ class PyRevitConfigParser(object):
         for cfg_section_name in self._parser.sections():
             master_section = coreutils.get_canonical_parts(cfg_section_name)[0]
             if section_name == master_section:
-                return PyRevitConfigSectionParser(self._parser,
-                                                  master_section)
+                return PyRevitConfigSectionParser(self._parser, master_section)
 
         # if no match happened then raise exception
-        raise AttributeError('Section does not exist in config file.')
+        raise AttributeError("Section does not exist in config file.")
 
     def remove_section(self, section_name):
         """Remove section from config."""
@@ -248,8 +248,9 @@ class PyRevitConfigParser(object):
     def reload(self, cfg_file_path=None):
         """Reload config from original or given file."""
         try:
-            with codecs.open(cfg_file_path \
-                    or self._cfg_file_path, 'r', 'utf-8') as cfg_file:
+            with codecs.open(
+                cfg_file_path or self._cfg_file_path, "r", "utf-8"
+            ) as cfg_file:
                 try:
                     self._parser.readfp(cfg_file)
                 except AttributeError:
@@ -260,8 +261,9 @@ class PyRevitConfigParser(object):
     def save(self, cfg_file_path=None):
         """Save config to original or given file."""
         try:
-            with codecs.open(cfg_file_path \
-                    or self._cfg_file_path, 'w', 'utf-8') as cfg_file:
+            with codecs.open(
+                cfg_file_path or self._cfg_file_path, "w", "utf-8"
+            ) as cfg_file:
                 self._parser.write(cfg_file)
         except (OSError, IOError):
             raise PyRevitIOError()

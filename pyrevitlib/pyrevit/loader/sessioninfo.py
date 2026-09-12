@@ -1,4 +1,5 @@
 """Manage information about pyRevit sessions."""
+
 import sys
 from collections import namedtuple
 
@@ -15,13 +16,13 @@ from pyrevit import runtime
 from pyrevit.loader.systemdiag import system_diag
 
 
-#pylint: disable=W0703,C0302,C0103
+# pylint: disable=W0703,C0302,C0103
 mlogger = get_logger(__name__)
 
 
-RuntimeInfo = namedtuple('RuntimeInfo', ['pyrevit_version',
-                                         'engine_version',
-                                         'host_version'])
+RuntimeInfo = namedtuple(
+    "RuntimeInfo", ["pyrevit_version", "engine_version", "host_version"]
+)
 """Session runtime information tuple.
 
 Args:
@@ -38,34 +39,30 @@ def setup_runtime_vars():
     envvars.set_pyrevit_env_var(envvars.VERSION_ENVVAR, pyrvt_ver)
 
     # set app version env var
-    envvars.set_pyrevit_env_var(envvars.APPVERSION_ENVVAR,
-                                HOST_APP.subversion)
+    envvars.set_pyrevit_env_var(envvars.APPVERSION_ENVVAR, HOST_APP.subversion)
 
     # set ironpython engine version env var
     attachment = user_config.get_current_attachment()
     if attachment and attachment.Clone:
-        envvars.set_pyrevit_env_var(envvars.CLONENAME_ENVVAR,
-                                    attachment.Clone.Name)
-        envvars.set_pyrevit_env_var(envvars.IPYVERSION_ENVVAR,
-                                    str(attachment.Engine.Version))
+        envvars.set_pyrevit_env_var(envvars.CLONENAME_ENVVAR, attachment.Clone.Name)
+        envvars.set_pyrevit_env_var(
+            envvars.IPYVERSION_ENVVAR, str(attachment.Engine.Version)
+        )
     else:
-        mlogger.debug('Can not determine attachment.')
+        mlogger.debug("Can not determine attachment.")
         envvars.set_pyrevit_env_var(envvars.CLONENAME_ENVVAR, "Unknown")
         envvars.set_pyrevit_env_var(envvars.IPYVERSION_ENVVAR, "0")
 
     # set cpython engine version env var
     cpyengine = user_config.get_active_cpython_engine()
     if cpyengine:
-        envvars.set_pyrevit_env_var(envvars.CPYVERSION_ENVVAR,
-                                    str(cpyengine.Version))
+        envvars.set_pyrevit_env_var(envvars.CPYVERSION_ENVVAR, str(cpyengine.Version))
     else:
         envvars.set_pyrevit_env_var(envvars.CPYVERSION_ENVVAR, "0")
 
     # set a list of important assemblies
     # this is required for dotnet script execution
-    set_loaded_pyrevit_referenced_modules(
-        runtime.get_references()
-        )
+    set_loaded_pyrevit_referenced_modules(runtime.get_references())
 
 
 def get_runtime_info():
@@ -82,8 +79,8 @@ def get_runtime_info():
     return RuntimeInfo(
         pyrevit_version=envvars.get_pyrevit_env_var(envvars.VERSION_ENVVAR),
         engine_version=envvars.get_pyrevit_env_var(envvars.IPYVERSION_ENVVAR),
-        host_version=envvars.get_pyrevit_env_var(envvars.APPVERSION_ENVVAR)
-        )
+        host_version=envvars.get_pyrevit_env_var(envvars.APPVERSION_ENVVAR),
+    )
 
 
 def set_session_uuid(uuid_str):
@@ -136,8 +133,8 @@ def set_loaded_pyrevit_assemblies(loaded_assm_name_list):
     """
     envvars.set_pyrevit_env_var(
         envvars.LOADEDASSMS_ENVVAR,
-        coreutils.DEFAULT_SEPARATOR.join(loaded_assm_name_list)
-        )
+        coreutils.DEFAULT_SEPARATOR.join(loaded_assm_name_list),
+    )
 
 
 def get_loaded_pyrevit_referenced_modules():
@@ -151,8 +148,8 @@ def get_loaded_pyrevit_referenced_modules():
 def set_loaded_pyrevit_referenced_modules(loaded_assm_name_list):
     envvars.set_pyrevit_env_var(
         envvars.REFEDASSMS_ENVVAR,
-        coreutils.DEFAULT_SEPARATOR.join(loaded_assm_name_list)
-        )
+        coreutils.DEFAULT_SEPARATOR.join(loaded_assm_name_list),
+    )
 
 
 def update_loaded_pyrevit_referenced_modules(loaded_assm_name_list):
@@ -167,19 +164,22 @@ def report_env():
     system_diag()
 
     # get python version that includes last commit hash
-    mlogger.info('pyRevit version: %s - </> with :growing_heart: in %s',
-                 envvars.get_pyrevit_env_var(envvars.VERSION_ENVVAR),
-                 about.get_pyrevit_about().madein)
+    mlogger.info(
+        "pyRevit version: %s - </> with :growing_heart: in %s",
+        envvars.get_pyrevit_env_var(envvars.VERSION_ENVVAR),
+        about.get_pyrevit_about().madein,
+    )
 
     if user_config.rocket_mode:
-        mlogger.info('pyRevit Rocket Mode enabled. :rocket:')
+        mlogger.info("pyRevit Rocket Mode enabled. :rocket:")
 
-    mlogger.info('Host is %s pid: %s', HOST_APP.pretty_name, HOST_APP.proc_id)
+    mlogger.info("Host is %s pid: %s", HOST_APP.pretty_name, HOST_APP.proc_id)
     # ipy 2.7.10 has a new line in its sys.version :rolling-eyes-emoji:
-    mlogger.info('Running on: %s', sys.version.replace('\n', ' '))
-    mlogger.info('User is: %s', HOST_APP.username)
-    mlogger.info('Home Directory is: %s', HOME_DIR)
-    mlogger.info('Session uuid is: %s', get_session_uuid())
-    mlogger.info('Runtime assembly is: %s', runtime.RUNTIME_ASSM_NAME)
-    mlogger.info('Config file is (%s): %s',
-                 user_config.config_type, user_config.config_file)
+    mlogger.info("Running on: %s", sys.version.replace("\n", " "))
+    mlogger.info("User is: %s", HOST_APP.username)
+    mlogger.info("Home Directory is: %s", HOME_DIR)
+    mlogger.info("Session uuid is: %s", get_session_uuid())
+    mlogger.info("Runtime assembly is: %s", runtime.RUNTIME_ASSM_NAME)
+    mlogger.info(
+        "Config file is (%s): %s", user_config.config_type, user_config.config_file
+    )

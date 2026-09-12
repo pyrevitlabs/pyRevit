@@ -31,6 +31,7 @@ DEFAULTS_MM = {
 DEFAULTS_BOOL = {
     "sort_alphabetically": True,
     "open_last_legend": True,
+    "track_legend_updates": True,
 }
 
 
@@ -206,5 +207,11 @@ def build_settings_schema(doc, text_type_names):
             "type": "bool",
             "label": resx("Settings_OpenLegend", "Open Last Created Legend"),
             "default": DEFAULTS_BOOL["open_last_legend"],
+        },
+        {
+            "name": "track_legend_updates",
+            "type": "bool",
+            "label": resx("Settings_TrackLegend", "Track & Update Existing Legends"),
+            "default": DEFAULTS_BOOL["track_legend_updates"],
         },
     ]

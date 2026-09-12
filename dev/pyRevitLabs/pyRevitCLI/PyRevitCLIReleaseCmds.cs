@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
@@ -106,8 +106,7 @@ namespace pyRevitCLI {
             string downloadUrl = null;
             switch (assetType) {
                 case GithubReleaseAssetType.Archive: downloadUrl = matchedRelease.ArchiveURL; break;
-                case GithubReleaseAssetType.Installer:
-                    {
+                case GithubReleaseAssetType.Installer: {
                         var rawInstallerUrl = matchedRelease.InstallerURL;
 
                         downloadUrl = rawInstallerUrl.Replace(".nupkg", "_signed.exe").Replace("_CLI_", "_").Replace("-cli.", "_").Replace("_admin_signed.exe", "_signed.exe");

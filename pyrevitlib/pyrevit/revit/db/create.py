@@ -38,9 +38,7 @@ class FamilyLoaderOptionsHandler(DB.IFamilyLoadOptions):
     def __init__(self, overwriteParameterValues=True):
         self._overwriteParameterValues = overwriteParameterValues
 
-    def OnFamilyFound(
-        self, familyInUse, overwriteParameterValues
-    ):  # pylint: disable=W0613
+    def OnFamilyFound(self, familyInUse, overwriteParameterValues):  # pylint: disable=W0613
         """A method called when the family was found in the target document.
 
         The interface declares ref parameters: IronPython passes a
@@ -439,7 +437,7 @@ def enable_worksharing(
             doc.EnableWorksharing(levels_workset_name, default_workset_name)
         else:
             raise PyRevitException(
-                "Worksharing can not be enabled. " "(CanEnableWorksharing is False)"
+                "Worksharing can not be enabled. (CanEnableWorksharing is False)"
             )
 
 
@@ -457,8 +455,7 @@ def create_filledregion(filledregion_name, fillpattern_element, doc=None):
     for filledregion_type in filledregion_types:
         if query.get_name(filledregion_type) == filledregion_name:
             raise PyRevitException(
-                'Filled Region matching "{}" already '
-                "exists.".format(filledregion_name)
+                'Filled Region matching "{}" already exists.'.format(filledregion_name)
             )
     source_filledregion = filledregion_types.FirstElement()
     new_filledregion = source_filledregion.Duplicate(filledregion_name)

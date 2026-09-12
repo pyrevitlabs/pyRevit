@@ -25,7 +25,7 @@ namespace pyRevitExtensionParserTester
         public void Constructor_WithNullRevitVersion_ThrowsArgumentNullException()
         {
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => 
+            Assert.Throws<ArgumentNullException>(() =>
                 new AssemblyBuilderService(null, AssemblyBuildStrategy.Roslyn, _mockLogger));
         }
 
@@ -43,7 +43,7 @@ namespace pyRevitExtensionParserTester
         public void BuildExtensionAssembly_WithNullExtension_ThrowsArgumentNullException()
         {
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => 
+            Assert.Throws<ArgumentNullException>(() =>
                 _service.BuildExtensionAssembly(null));
         }
 

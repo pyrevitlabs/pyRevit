@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.IO.Compression;
 using System.Drawing;
@@ -16,7 +16,7 @@ namespace pyRevitLabs.Emojis {
         private static ImageConverter _converter = new ImageConverter();
         private static Dictionary<string, string> _encodedEmoji = new Dictionary<string, string>();
         private static Dictionary<string, string> _normalizedEmojiAliases = null;
-        
+
         public const string EmojiSpanTemplate = "<span><img src=\"data:image/png;base64,{0}\" class=\"emoji\" title=\"{1}\"></span>";
 
         public static Dictionary<string, string> EmojiDict = new Dictionary<string, string>() {

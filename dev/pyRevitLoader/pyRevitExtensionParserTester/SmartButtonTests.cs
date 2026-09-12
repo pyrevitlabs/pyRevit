@@ -81,23 +81,23 @@ print('Other')
             var extension = extensions.First();
 
             var allComponents = GetAllComponentsFlat(extension);
-            
+
             // Verify pulldown is parsed
             var pulldown = allComponents.FirstOrDefault(c => c.Type == CommandComponentType.PullDown);
             Assert.IsNotNull(pulldown, "Pulldown should be found");
             Assert.AreEqual("Bundle Tests", pulldown.DisplayName);
-            
+
             // Verify SmartButton inside pulldown is parsed
             var smartButton = allComponents.FirstOrDefault(c => c.Type == CommandComponentType.SmartButton);
             Assert.IsNotNull(smartButton, "SmartButton in pulldown should be found");
             Assert.AreEqual("Test Smart Button", smartButton.DisplayName);
             Assert.AreEqual(CommandComponentType.SmartButton, smartButton.Type);
-            
+
             // Verify SmartButton is a child of the pulldown
             Assert.IsNotNull(pulldown.Children, "Pulldown should have children");
             var smartButtonInPulldown = pulldown.Children.FirstOrDefault(c => c.Type == CommandComponentType.SmartButton);
             Assert.IsNotNull(smartButtonInPulldown, "SmartButton should be a child of pulldown");
-            
+
             // Verify on/off icons are detected
             Assert.IsTrue(smartButton.HasToggleIcons, "SmartButton should have toggle icons");
             Assert.IsNotNull(smartButton.OnIconPath, "OnIconPath should not be null");
@@ -109,7 +109,7 @@ print('Other')
         {
             var panelDir = CreateTabAndPanel();
             var smartButtonDir = CreateSubDirectory("Test.extension/Test.tab/TestPanel.panel/Toggle.smartbutton");
-            
+
             // Create a simple smart button script
             CreateFile("Test.extension/Test.tab/TestPanel.panel/Toggle.smartbutton/script.py", @"
 # Smart button script
@@ -119,10 +119,10 @@ def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
 
             var extensions = ParseInstalledExtensions(new[] { _extensionDir });
             var extension = extensions.First();
-            
+
             var allComponents = GetAllComponentsFlat(extension);
             var smartButton = allComponents.FirstOrDefault(c => c.Type == CommandComponentType.SmartButton);
-            
+
             Assert.IsNotNull(smartButton, "SmartButton should be found");
             Assert.AreEqual(CommandComponentType.SmartButton, smartButton.Type);
             Assert.AreEqual("Toggle", smartButton.DisplayName);
@@ -133,13 +133,13 @@ def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
         {
             var panelDir = CreateTabAndPanel();
             var smartButtonDir = CreateSubDirectory("Test.extension/Test.tab/TestPanel.panel/Toggle.smartbutton");
-            
+
             // Create main script
             CreateFile("Test.extension/Test.tab/TestPanel.panel/Toggle.smartbutton/script.py", @"
 # Main script
 print('Hello')
 ");
-            
+
             // Create config script
             CreateFile("Test.extension/Test.tab/TestPanel.panel/Toggle.smartbutton/config.py", @"
 # Config script for shift+click
@@ -148,10 +148,10 @@ print('Config')
 
             var extensions = ParseInstalledExtensions(new[] { _extensionDir });
             var extension = extensions.First();
-            
+
             var allComponents = GetAllComponentsFlat(extension);
             var smartButton = allComponents.FirstOrDefault(c => c.Type == CommandComponentType.SmartButton);
-            
+
             Assert.IsNotNull(smartButton, "SmartButton should be found");
             Assert.IsTrue(smartButton.HasConfigScript, "SmartButton should have config script");
             Assert.IsNotNull(smartButton.ConfigScriptPath, "ConfigScriptPath should not be null");
@@ -164,7 +164,7 @@ print('Config')
         {
             var panelDir = CreateTabAndPanel();
             var smartButtonDir = CreateSubDirectory("Test.extension/Test.tab/TestPanel.panel/Toggle.smartbutton");
-            
+
             // Create only main script (no config.py)
             CreateFile("Test.extension/Test.tab/TestPanel.panel/Toggle.smartbutton/script.py", @"
 # Main script only
@@ -173,14 +173,14 @@ print('Hello')
 
             var extensions = ParseInstalledExtensions(new[] { _extensionDir });
             var extension = extensions.First();
-            
+
             var allComponents = GetAllComponentsFlat(extension);
             var smartButton = allComponents.FirstOrDefault(c => c.Type == CommandComponentType.SmartButton);
-            
+
             Assert.IsNotNull(smartButton, "SmartButton should be found");
             Assert.IsFalse(smartButton.HasConfigScript, "SmartButton should not have config script");
             // ConfigScriptPath should equal ScriptPath when no separate config exists
-            Assert.AreEqual(smartButton.ScriptPath, smartButton.ConfigScriptPath, 
+            Assert.AreEqual(smartButton.ScriptPath, smartButton.ConfigScriptPath,
                 "ConfigScriptPath should equal ScriptPath when no config.py exists");
         }
 
@@ -189,12 +189,12 @@ print('Hello')
         {
             var panelDir = CreateTabAndPanel();
             var smartButtonDir = CreateSubDirectory("Test.extension/Test.tab/TestPanel.panel/Toggle.smartbutton");
-            
+
             // Create script
             CreateFile("Test.extension/Test.tab/TestPanel.panel/Toggle.smartbutton/script.py", @"
 print('Hello')
 ");
-            
+
             // Create on/off icons (minimal valid PNG)
             var minimalPng = CreateMinimalPng();
             CreateFile("Test.extension/Test.tab/TestPanel.panel/Toggle.smartbutton/on.png", minimalPng);
@@ -202,17 +202,17 @@ print('Hello')
 
             var extensions = ParseInstalledExtensions(new[] { _extensionDir });
             var extension = extensions.First();
-            
+
             var allComponents = GetAllComponentsFlat(extension);
             var smartButton = allComponents.FirstOrDefault(c => c.Type == CommandComponentType.SmartButton);
-            
+
             Assert.IsNotNull(smartButton, "SmartButton should be found");
             Assert.IsTrue(smartButton.HasToggleIcons, "SmartButton should have toggle icons");
             Assert.IsNotNull(smartButton.OnIconPath, "OnIconPath should not be null");
             Assert.IsNotNull(smartButton.OffIconPath, "OffIconPath should not be null");
-            Assert.IsTrue(smartButton.OnIconPath.EndsWith("on.png", System.StringComparison.OrdinalIgnoreCase), 
+            Assert.IsTrue(smartButton.OnIconPath.EndsWith("on.png", System.StringComparison.OrdinalIgnoreCase),
                 "OnIconPath should end with on.png");
-            Assert.IsTrue(smartButton.OffIconPath.EndsWith("off.png", System.StringComparison.OrdinalIgnoreCase), 
+            Assert.IsTrue(smartButton.OffIconPath.EndsWith("off.png", System.StringComparison.OrdinalIgnoreCase),
                 "OffIconPath should end with off.png");
         }
 
@@ -221,12 +221,12 @@ print('Hello')
         {
             var panelDir = CreateTabAndPanel();
             var smartButtonDir = CreateSubDirectory("Test.extension/Test.tab/TestPanel.panel/Toggle.smartbutton");
-            
+
             // Create script
             CreateFile("Test.extension/Test.tab/TestPanel.panel/Toggle.smartbutton/script.py", @"
 print('Hello')
 ");
-            
+
             // Create on/off icons with dark variants
             var minimalPng = CreateMinimalPng();
             CreateFile("Test.extension/Test.tab/TestPanel.panel/Toggle.smartbutton/on.png", minimalPng);
@@ -236,19 +236,19 @@ print('Hello')
 
             var extensions = ParseInstalledExtensions(new[] { _extensionDir });
             var extension = extensions.First();
-            
+
             var allComponents = GetAllComponentsFlat(extension);
             var smartButton = allComponents.FirstOrDefault(c => c.Type == CommandComponentType.SmartButton);
-            
+
             Assert.IsNotNull(smartButton, "SmartButton should be found");
             Assert.IsTrue(smartButton.HasToggleIcons, "SmartButton should have toggle icons");
             Assert.IsNotNull(smartButton.OnIconPath, "OnIconPath should not be null");
             Assert.IsNotNull(smartButton.OnIconDarkPath, "OnIconDarkPath should not be null");
             Assert.IsNotNull(smartButton.OffIconPath, "OffIconPath should not be null");
             Assert.IsNotNull(smartButton.OffIconDarkPath, "OffIconDarkPath should not be null");
-            Assert.IsTrue(smartButton.OnIconDarkPath.EndsWith("on.dark.png", System.StringComparison.OrdinalIgnoreCase), 
+            Assert.IsTrue(smartButton.OnIconDarkPath.EndsWith("on.dark.png", System.StringComparison.OrdinalIgnoreCase),
                 "OnIconDarkPath should end with on.dark.png");
-            Assert.IsTrue(smartButton.OffIconDarkPath.EndsWith("off.dark.png", System.StringComparison.OrdinalIgnoreCase), 
+            Assert.IsTrue(smartButton.OffIconDarkPath.EndsWith("off.dark.png", System.StringComparison.OrdinalIgnoreCase),
                 "OffIconDarkPath should end with off.dark.png");
         }
 
@@ -257,7 +257,7 @@ print('Hello')
         {
             var panelDir = CreateTabAndPanel();
             var smartButtonDir = CreateSubDirectory("Test.extension/Test.tab/TestPanel.panel/Toggle.smartbutton");
-            
+
             // Create only script (no on/off icons)
             CreateFile("Test.extension/Test.tab/TestPanel.panel/Toggle.smartbutton/script.py", @"
 print('Hello')
@@ -265,10 +265,10 @@ print('Hello')
 
             var extensions = ParseInstalledExtensions(new[] { _extensionDir });
             var extension = extensions.First();
-            
+
             var allComponents = GetAllComponentsFlat(extension);
             var smartButton = allComponents.FirstOrDefault(c => c.Type == CommandComponentType.SmartButton);
-            
+
             Assert.IsNotNull(smartButton, "SmartButton should be found");
             Assert.IsFalse(smartButton.HasToggleIcons, "SmartButton should not have toggle icons");
             Assert.IsNull(smartButton.OnIconPath, "OnIconPath should be null");
@@ -280,22 +280,22 @@ print('Hello')
         {
             var panelDir = CreateTabAndPanel();
             var smartButtonDir = CreateSubDirectory("Test.extension/Test.tab/TestPanel.panel/Toggle.smartbutton");
-            
+
             // Create script
             CreateFile("Test.extension/Test.tab/TestPanel.panel/Toggle.smartbutton/script.py", @"
 print('Hello')
 ");
-            
+
             // Create only on.png (no off.png)
             var minimalPng = CreateMinimalPng();
             CreateFile("Test.extension/Test.tab/TestPanel.panel/Toggle.smartbutton/on.png", minimalPng);
 
             var extensions = ParseInstalledExtensions(new[] { _extensionDir });
             var extension = extensions.First();
-            
+
             var allComponents = GetAllComponentsFlat(extension);
             var smartButton = allComponents.FirstOrDefault(c => c.Type == CommandComponentType.SmartButton);
-            
+
             Assert.IsNotNull(smartButton, "SmartButton should be found");
             Assert.IsTrue(smartButton.HasToggleIcons, "SmartButton should have toggle icons even with partial set");
             Assert.IsNotNull(smartButton.OnIconPath, "OnIconPath should not be null");
@@ -307,13 +307,13 @@ print('Hello')
         {
             var panelDir = CreateTabAndPanel();
             var buttonDir = CreateSubDirectory("Test.extension/Test.tab/TestPanel.panel/MyButton.pushbutton");
-            
+
             // Create main script
             CreateFile("Test.extension/Test.tab/TestPanel.panel/MyButton.pushbutton/script.py", @"
 # Main script
 print('Hello')
 ");
-            
+
             // Create config script
             CreateFile("Test.extension/Test.tab/TestPanel.panel/MyButton.pushbutton/config.py", @"
 # Config script
@@ -322,10 +322,10 @@ print('Config')
 
             var extensions = ParseInstalledExtensions(new[] { _extensionDir });
             var extension = extensions.First();
-            
+
             var allComponents = GetAllComponentsFlat(extension);
             var pushButton = allComponents.FirstOrDefault(c => c.Type == CommandComponentType.PushButton);
-            
+
             Assert.IsNotNull(pushButton, "PushButton should be found");
             Assert.IsTrue(pushButton.HasConfigScript, "PushButton should have config script");
         }
@@ -337,7 +337,7 @@ print('Config')
             var stackDir = CreateSubDirectory("Test.extension/Test.tab/TestPanel.panel/MyStack.stack");
             var smartButtonDir = CreateSubDirectory("Test.extension/Test.tab/TestPanel.panel/MyStack.stack/Toggle.smartbutton");
             var pushButtonDir = CreateSubDirectory("Test.extension/Test.tab/TestPanel.panel/MyStack.stack/Other.pushbutton");
-            
+
             // Create scripts
             CreateFile("Test.extension/Test.tab/TestPanel.panel/MyStack.stack/Toggle.smartbutton/script.py", @"
 def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
@@ -357,10 +357,10 @@ print('Other')
 
             var extensions = ParseInstalledExtensions(new[] { _extensionDir });
             var extension = extensions.First();
-            
+
             var allComponents = GetAllComponentsFlat(extension);
             var smartButton = allComponents.FirstOrDefault(c => c.Type == CommandComponentType.SmartButton);
-            
+
             Assert.IsNotNull(smartButton, "SmartButton in stack should be found");
             Assert.IsTrue(smartButton.HasConfigScript, "SmartButton in stack should have config script");
             Assert.IsTrue(smartButton.HasToggleIcons, "SmartButton in stack should have toggle icons");
@@ -376,7 +376,7 @@ print('Other')
             return result;
         }
 
-        private static void CollectComponents(System.Collections.Generic.IEnumerable<ParsedComponent> components, 
+        private static void CollectComponents(System.Collections.Generic.IEnumerable<ParsedComponent> components,
             System.Collections.Generic.List<ParsedComponent> result)
         {
             if (components == null) return;
@@ -393,7 +393,7 @@ print('Other')
         {
             var panelDir = CreateTabAndPanel();
             var smartButtonDir = CreateSubDirectory("Test.extension/Test.tab/TestPanel.panel/Toggle.smartbutton");
-            
+
             // Create main script and config script
             CreateFile("Test.extension/Test.tab/TestPanel.panel/Toggle.smartbutton/script.py", @"
 def __selfinit__(script_cmp, ui_button_cmp, __rvt__):
@@ -412,29 +412,29 @@ print('Config dialog')
 
             var extensions = ParseInstalledExtensions(new[] { _extensionDir });
             var extension = extensions.First();
-            
+
             // Verify the extension was parsed correctly
             Assert.IsNotNull(extension, "Extension should be parsed");
-            
+
             // Get the SmartButton component
             var allComponents = GetAllComponentsFlat(extension);
             var smartButton = allComponents.FirstOrDefault(c => c.Type == CommandComponentType.SmartButton);
-            
+
             Assert.IsNotNull(smartButton, "SmartButton should be found");
             Assert.IsTrue(smartButton.HasConfigScript, "SmartButton should have config script");
-            
+
             // Verify config script path is different from script path
             Assert.AreNotEqual(smartButton.ScriptPath, smartButton.ConfigScriptPath,
                 "ConfigScriptPath should be different from ScriptPath");
-            
+
             // Generate code using RoslynCommandTypeGenerator
             var codeGenerator = new pyRevitAssemblyBuilder.AssemblyMaker.RoslynCommandTypeGenerator(_mockLogger);
             var generatedCode = codeGenerator.GenerateExtensionCode(extension, "2024");
-            
+
             // Verify the generated code contains the config script path
             Assert.IsTrue(generatedCode.Contains("config.py"),
                 "Generated code should contain config.py path");
-            
+
             // Verify both script path and config path are in the generated code (they should be different)
             Assert.IsTrue(generatedCode.Contains("script.py"),
                 "Generated code should contain script.py path");
@@ -445,7 +445,7 @@ print('Config dialog')
         {
             var panelDir = CreateTabAndPanel();
             var smartButtonDir = CreateSubDirectory("Test.extension/Test.tab/TestPanel.panel/Toggle.smartbutton");
-            
+
             // Create only main script (no config script)
             CreateFile("Test.extension/Test.tab/TestPanel.panel/Toggle.smartbutton/script.py", @"
 print('Hello')
@@ -453,13 +453,13 @@ print('Hello')
 
             var extensions = ParseInstalledExtensions(new[] { _extensionDir });
             var extension = extensions.First();
-            
+
             var allComponents = GetAllComponentsFlat(extension);
             var smartButton = allComponents.FirstOrDefault(c => c.Type == CommandComponentType.SmartButton);
-            
+
             Assert.IsNotNull(smartButton, "SmartButton should be found");
             Assert.IsFalse(smartButton.HasConfigScript, "SmartButton should not have config script");
-            
+
             // ConfigScriptPath should equal ScriptPath when no separate config exists
             Assert.AreEqual(smartButton.ScriptPath, smartButton.ConfigScriptPath,
                 "ConfigScriptPath should equal ScriptPath when no config.py exists");
@@ -470,7 +470,7 @@ print('Hello')
         {
             var panelDir = CreateTabAndPanel();
             var buttonDir = CreateSubDirectory("Test.extension/Test.tab/TestPanel.panel/MyButton.pushbutton");
-            
+
             // Create main script and config script
             CreateFile("Test.extension/Test.tab/TestPanel.panel/MyButton.pushbutton/script.py", @"
 print('Main action')
@@ -481,14 +481,14 @@ print('Config dialog')
 
             var extensions = ParseInstalledExtensions(new[] { _extensionDir });
             var extension = extensions.First();
-            
+
             var allComponents = GetAllComponentsFlat(extension);
             var pushButton = allComponents.FirstOrDefault(c => c.Type == CommandComponentType.PushButton);
-            
+
             Assert.IsNotNull(pushButton, "PushButton should be found");
             Assert.IsTrue(pushButton.HasConfigScript, "PushButton should have config script");
             Assert.IsNotNull(pushButton.ConfigScriptPath, "ConfigScriptPath should not be null");
-            Assert.IsTrue(pushButton.ConfigScriptPath.EndsWith("config.py"), 
+            Assert.IsTrue(pushButton.ConfigScriptPath.EndsWith("config.py"),
                 "ConfigScriptPath should end with config.py");
         }
 

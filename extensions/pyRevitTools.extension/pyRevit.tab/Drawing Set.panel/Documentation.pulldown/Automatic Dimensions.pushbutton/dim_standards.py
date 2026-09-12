@@ -18,16 +18,17 @@ IronPython 2.7 note: 1/16 is INTEGER division = 0 there, which would
 silently zero these constants - hence the __future__ import and float
 literals. Keep both.
 """
+
 from __future__ import division
 
 INCH = 1.0 / 12.0
 
 # Gap between the object and the start of the extension line.
-EXTENSION_LINE_GAP_FT = (1.0 / 16.0) * INCH        # 1/16"
+EXTENSION_LINE_GAP_FT = (1.0 / 16.0) * INCH  # 1/16"
 
 # Spacing between stacked/parallel dimension tiers, and minimum
 # distance from the object outline to the first dimension line.
-TIER_SPACING_FT = (3.0 / 8.0) * INCH               # 3/8"
+TIER_SPACING_FT = (3.0 / 8.0) * INCH  # 3/8"
 
 # --- exterior first-string offset (user-configurable, paper inches) ---
 #
@@ -36,19 +37,19 @@ TIER_SPACING_FT = (3.0 / 8.0) * INCH               # 3/8"
 # 3/8" apart. A uniform 3/8" puts the first string too close to the wall.
 # Both values are PAPER inches; multiply by View.Scale for model feet.
 
-TIER_SPACING_DEFAULT_IN = 0.375     # 3/8" between stacked tiers
-FIRST_OFFSET_DEFAULT_IN = 0.75      # fallback when scale is unlisted
+TIER_SPACING_DEFAULT_IN = 0.375  # 3/8" between stacked tiers
+FIRST_OFFSET_DEFAULT_IN = 0.75  # fallback when scale is unlisted
 
 # "Auto" preset: constant paper offset reads cramped at large scales and
 # wasteful at small ones, so the preset tapers with the view scale.
 SCALE_FIRST_OFFSET_IN = {
-    12: 1.0,     # 1"    = 1'-0"
-    16: 1.0,     # 3/4"  = 1'-0"
-    24: 0.75,    # 1/2"  = 1'-0"
-    32: 0.75,    # 3/8"  = 1'-0"
-    48: 0.75,    # 1/4"  = 1'-0"
-    64: 0.625,   # 3/16" = 1'-0"
-    96: 0.5,     # 1/8"  = 1'-0"
+    12: 1.0,  # 1"    = 1'-0"
+    16: 1.0,  # 3/4"  = 1'-0"
+    24: 0.75,  # 1/2"  = 1'-0"
+    32: 0.75,  # 3/8"  = 1'-0"
+    48: 0.75,  # 1/4"  = 1'-0"
+    64: 0.625,  # 3/16" = 1'-0"
+    96: 0.5,  # 1/8"  = 1'-0"
 }
 
 
@@ -77,16 +78,16 @@ def parse_paper_inches(text):
     the caller decides what None means."""
     if text is None:
         return None
-    s = str(text).strip().replace('"', '').replace("''", '')
+    s = str(text).strip().replace('"', "").replace("''", "")
     if not s:
         return None
-    s = s.replace('-', ' ')
+    s = s.replace("-", " ")
     parts = s.split()
     total = 0.0
     seen = False
     for part in parts:
-        if '/' in part:
-            top_bot = part.split('/')
+        if "/" in part:
+            top_bot = part.split("/")
             if len(top_bot) != 2:
                 return None
             try:
@@ -104,10 +105,10 @@ def parse_paper_inches(text):
 
 
 # Minimum overall extension line length.
-MIN_EXTENSION_LINE_FT = (9.0 / 16.0) * INCH        # 9/16"
+MIN_EXTENSION_LINE_FT = (9.0 / 16.0) * INCH  # 9/16"
 
 # Minimum plotted text height for dimensions/annotation.
-MIN_TEXT_HEIGHT_FT = (3.0 / 32.0) * INCH           # 3/32"
+MIN_TEXT_HEIGHT_FT = (3.0 / 32.0) * INCH  # 3/32"
 
 # Exterior dimensioning targets: structural stud faces at run ends,
 # centerlines of door/window openings. (Informational - enforced by

@@ -5,6 +5,7 @@ Skip the sheet selector popup.
 Select titleblocks on currently selected sheets in project browser.
 
 """
+
 # pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 from pyrevit import revit, EXEC_PARAMS
 from pyrevit import forms
@@ -39,9 +40,7 @@ def print_titleblocks(sheets):
                     output.linkify(tblock.Id),
                 )
             )
-    print(
-        "{}".format(output.linkify(all_tblocks, title="Select All TitleBlocks"))
-    )
+    print("{}".format(output.linkify(all_tblocks, title="Select All TitleBlocks")))
 
 
 # orchestrate

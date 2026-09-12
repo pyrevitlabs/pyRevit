@@ -94,7 +94,12 @@ CLR_REF_EXEMPT = [
 PY2_ONLY_ITER_METHODS = {"iteritems", "iterkeys", "itervalues"}
 PY2_ONLY_ITERTOOLS = {"ifilter", "ifilterfalse", "imap", "izip", "izip_longest"}
 PY2_ONLY_NAMES = {
-    "xrange", "basestring", "unicode", "unichr", "long", "StandardError",
+    "xrange",
+    "basestring",
+    "unicode",
+    "unichr",
+    "long",
+    "StandardError",
 } | PY2_ONLY_ITERTOOLS
 ENGINE_GUARD_NAMES = {"PY2", "PY3", "IRONPY", "IRONPY2", "IRONPY3"}
 
@@ -102,20 +107,54 @@ ENGINE_GUARD_NAMES = {"PY2", "PY3", "IRONPY", "IRONPY2", "IRONPY3"}
 # name is imported (reduce/reload/intern have functools/importlib/sys homes) or
 # engine-guarded.
 PY2_REMOVED_BUILTIN_CALLS = {
-    "raw_input", "execfile", "apply", "coerce", "intern", "buffer",
-    "cmp", "reduce", "reload", "file",
+    "raw_input",
+    "execfile",
+    "apply",
+    "coerce",
+    "intern",
+    "buffer",
+    "cmp",
+    "reduce",
+    "reload",
+    "file",
 }
 
 # Stdlib modules renamed/removed in Python 3 (2to3 fix_imports). Matched on the
 # top-level import name; engine-guarded imports (compat shims) are skipped.
 PY2_ONLY_MODULES = {
-    "StringIO", "cStringIO", "Queue", "cPickle", "ConfigParser", "copy_reg",
-    "__builtin__", "HTMLParser", "htmlentitydefs", "urllib2", "urlparse",
-    "robotparser", "httplib", "cookielib", "Cookie", "BaseHTTPServer",
-    "SimpleHTTPServer", "CGIHTTPServer", "SocketServer", "xmlrpclib",
-    "SimpleXMLRPCServer", "Tkinter", "tkFileDialog", "tkMessageBox",
-    "thread", "dummy_thread", "UserDict", "UserList", "UserString",
-    "anydbm", "commands", "_winreg", "markupbase",
+    "StringIO",
+    "cStringIO",
+    "Queue",
+    "cPickle",
+    "ConfigParser",
+    "copy_reg",
+    "__builtin__",
+    "HTMLParser",
+    "htmlentitydefs",
+    "urllib2",
+    "urlparse",
+    "robotparser",
+    "httplib",
+    "cookielib",
+    "Cookie",
+    "BaseHTTPServer",
+    "SimpleHTTPServer",
+    "CGIHTTPServer",
+    "SocketServer",
+    "xmlrpclib",
+    "SimpleXMLRPCServer",
+    "Tkinter",
+    "tkFileDialog",
+    "tkMessageBox",
+    "thread",
+    "dummy_thread",
+    "UserDict",
+    "UserList",
+    "UserString",
+    "anydbm",
+    "commands",
+    "_winreg",
+    "markupbase",
 }
 
 # Python-3 lazy views/iterators that were lists in Python 2. Indexing or
@@ -415,8 +454,9 @@ def check_file(path):
                                 path,
                                 node.lineno,
                                 "PY2-MODULE",
-                                "module `{}` was renamed/removed in "
-                                "Python 3".format(alias.name),
+                                "module `{}` was renamed/removed in Python 3".format(
+                                    alias.name
+                                ),
                             )
                         )
 
@@ -430,8 +470,9 @@ def check_file(path):
                                     path,
                                     node.lineno,
                                     "PY2-ITER",
-                                    "itertools.{} does not exist in "
-                                    "Python 3".format(alias.name),
+                                    "itertools.{} does not exist in Python 3".format(
+                                        alias.name
+                                    ),
                                 )
                             )
                 if (
@@ -444,8 +485,9 @@ def check_file(path):
                             path,
                             node.lineno,
                             "PY2-MODULE",
-                            "module `{}` was renamed/removed in "
-                            "Python 3".format(node.module),
+                            "module `{}` was renamed/removed in Python 3".format(
+                                node.module
+                            ),
                         )
                     )
 
@@ -586,9 +628,7 @@ def main():
 
     if file_count == 0:
         print(
-            "error: scanned 0 files from {}".format(
-                ", ".join(str(r) for r in roots)
-            ),
+            "error: scanned 0 files from {}".format(", ".join(str(r) for r in roots)),
             file=sys.stderr,
         )
         return 2

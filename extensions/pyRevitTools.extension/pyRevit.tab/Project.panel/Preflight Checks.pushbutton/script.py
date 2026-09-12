@@ -1,5 +1,6 @@
 # -*- coding: UTF-8 -*-
 """Run preflight checks on current model"""
+
 # pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 import os
 from pyrevit import preflight
@@ -39,7 +40,9 @@ def ask_for_preflight_checks():
     title = applocales.get_locale_string_from_xaml(
         template_xaml, "SelectPreflightCheckTitle"
     )
-    button_name = applocales.get_locale_string_from_xaml(template_xaml, "RunCheckButton")
+    button_name = applocales.get_locale_string_from_xaml(
+        template_xaml, "RunCheckButton"
+    )
 
     # ask user for test case
     selected_check = PreflightSelectFromList.show(
@@ -56,9 +59,7 @@ def ask_for_preflight_checks():
 
     if selected_check:
         logger.debug("Running: {}".format(selected_check))
-        preflight.run_preflight_check(
-            selected_check, doc=revit.doc, output=output
-        )
+        preflight.run_preflight_check(selected_check, doc=revit.doc, output=output)
 
 
 if __name__ == "__main__":
