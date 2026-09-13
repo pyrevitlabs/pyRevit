@@ -330,7 +330,14 @@ class RevitActionHandler(UI.IExternalEventHandler):
     def __init__(self):
         self._queue = []
 
-    def queue(self, action, callback=None, window=None, callback_on_error=True):
+    def queue(
+        self,
+        action,
+        callback=None,
+        window=None,
+        callback_on_error=True,
+        on_finished=None,
+    ):
         """Add an action (and optional WPF-thread callback) to the queue.
 
         callback_on_error=False skips the callback when the action raises.
@@ -1325,7 +1332,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
     def _update_status_bar(self):
         safe = " \u2014 SAFE MODE (no persistent engine)" if self._modal_mode else ""
-        if self._kfile:
+        if self._follow_error and not self._modal_mode:
+            safe += " \u2014 NOT following ({})".format(self._follow_error)
+        if self._bind_error:
+            self.statusLeft.Text = self._bind_error.replace("\n", "  ") + safe
+        elif self._kfile:
             fname = op.basename(self._kfile)
             handler = " ( ACC / FORMA )" if self._kfile_handler == "adc" else ""
             self.statusLeft.Text = "{}{} \u2014 {}{}".format(
@@ -2029,13 +2040,28 @@ class KeynoteManagerWindow(forms.WPFWindow):
             _succeeded = True
             try:
                 try:
-                    self.Dispatcher.BeginInvoke(
-                        System.Action(ui_guard(callback)),
-                        Windows.Threading.DispatcherPriority.Background,
-                    )
-                except Exception as cbex:
-                    logger.debug("Callback dispatch failed | %s", cbex)
-            return
+                    _doc_affine_action()
+                except Exception as ex:
+                    _succeeded = False
+                    logger.error("KeynoteManager | action failed | %s", ex)
+                    # wrapped so an alert failure cannot bypass the gate below
+                    try:
+                        forms.alert(str(ex))
+                    except Exception as disp_ex:
+                        logger.debug("Failed to display error | %s", disp_ex)
+                if callback and (_succeeded or callback_on_error):
+                    try:
+                        self.Dispatcher.BeginInvoke(
+                            System.Action(ui_guard(callback)),
+                            Windows.Threading.DispatcherPriority.Background,
+                        )
+                    except Exception as cbex:
+                        logger.debug("Callback dispatch failed | %s", cbex)
+            finally:
+                # the modal branch refuses in-line, so this is the only
+                # release the caller's guard will ever get (#3631)
+                self._run_on_finished(_finished)
+            return True
 
         if self._ext_event is None:
             logger.error(
@@ -2044,11 +2070,32 @@ class KeynoteManagerWindow(forms.WPFWindow):
             forms.alert(
                 "Keynote Manager cannot reach Revit right now.\nPlease try again."
             )
-            return
-        self._ext_handler.queue(
-            _doc_affine_action, callback, self, callback_on_error=callback_on_error
+            self._run_on_finished(_finished)
+            return False
+        entry = self._ext_handler.queue(
+            _doc_affine_action,
+            callback,
+            self,
+            callback_on_error=callback_on_error,
+            on_finished=_finished,
         )
-        self._ext_event.Raise()
+        try:
+            request = self._ext_event.Raise()
+        except Exception as rex:
+            logger.error("KeynoteManager | could not raise ExternalEvent | %s", rex)
+            self._ext_handler.drop(entry)
+            self._run_on_finished(_finished)
+            return False
+        if request not in (
+            UI.ExternalEventRequest.Accepted,
+            UI.ExternalEventRequest.Pending,
+        ):
+            logger.error("KeynoteManager | Revit rejected the request | %s", request)
+            self._ext_handler.drop(entry)
+            self._run_on_finished(_finished)
+            forms.alert("Revit is not accepting requests right now.\nPlease try again.")
+            return False
+        return True
 
     # =========================================================================
     # TREE STATE PRESERVATION
@@ -2650,9 +2697,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 self._determine_kfile()
             if not self._kfile or not op.exists(self._kfile):
                 raise KeynoteSetupError("No valid keynote file set for this project.")
-            if not os.access(self._kfile, os.W_OK):
-                raise KeynoteSetupError("Keynote file is read-only:\n" + self._kfile)
-
             # Release any previous connection (reconnect via Change File)
             if self._conn:
                 try:
@@ -2661,24 +2705,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     pass
                 self._conn = None
 
-            # Pre-flight: DeffrelDB creates/deletes '<kfile>.lock' sidecar
-            # files in INFINITE retry loops with no timeout
-            # (DataStore.CreateLock/DeleteLock).  If the folder refuses file
-            # create/delete — offline cloud folder, sync client holding
-            # handles — Revit would hang at 100% CPU forever.  Prove the
-            # folder allows it before connecting.
-            probe = self._kfile + ".probe_{}".format(uuid.uuid4().hex[:6])
-            try:
-                with open(probe, "w"):
-                    pass
-                os.remove(probe)
-            except Exception as probex:
-                raise KeynoteSetupError(
-                    "The keynote file's folder does not allow creating lock "
-                    "files (offline or locked by a sync client?):\n{}\n\n{}".format(
-                        op.dirname(self._kfile), probex
-                    )
-                )
+            self._preflight_kfile(self._kfile)
 
             try:
                 self._conn = kdb.connect(self._kfile)
@@ -2737,14 +2764,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         # and every later project switch reads the connection from it.
         self._register_file()
         if self._conn and self._kfile:
-            try:
-                shadow = script.get_data_file(
-                    "kshadow_" + op.basename(self._kfile), "txt"
-                )
-                shutil.copy(self._kfile, shadow)
-                logger.debug("Keynote shadow backup: %s", shadow)
-            except Exception as shex:
-                logger.debug("Shadow backup failed | %s", shex)
+            self._shadow_once(self._kfile)
 
     def _convert_existing(self):
         """Convert a legacy keynote file in place.
@@ -4629,9 +4649,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 forms.alert("Revit model updated successfully.", title="Success")
 
             # callback_on_error=False: never clear _needs_update or claim
-            # success if the update transaction failed
+            # success if the update transaction failed.
+            # needs_active_doc=False: the sync names self._doc explicitly,
+            # so it is correct from whichever project is in front (#3631).
             self._revit_run(
-                _do_update, callback=_on_update_complete, callback_on_error=False
+                _do_update,
+                callback=_on_update_complete,
+                callback_on_error=False,
+                needs_active_doc=False,
             )
         else:
             forms.alert("The Revit model is already up to date.", title="Up to Date")
@@ -4794,8 +4819,22 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     self._close_pending = True
                     self._finalize_close()
 
+                def _release_close_sync():
+                    self._close_sync_pending = False
+
+                # needs_active_doc=False: _sync_all_dirty reloads each
+                # binding's keynote table explicitly and never reads
+                # revit.doc, so refusing it because another project is in
+                # front only blocks a sync that would have succeeded.
+                # on_finished: the refusal raises BEFORE the action runs, so
+                # releasing inside _do_update would strand the guard and
+                # make every later Close a silent no-op (#3631).
                 self._revit_run(
-                    _do_update, callback=_sync_done, callback_on_error=False
+                    _do_update,
+                    callback=_sync_done,
+                    callback_on_error=False,
+                    on_finished=_release_close_sync,
+                    needs_active_doc=False,
                 )
                 return
 

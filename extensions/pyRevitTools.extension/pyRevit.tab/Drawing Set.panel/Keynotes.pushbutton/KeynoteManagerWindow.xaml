@@ -532,6 +532,18 @@
                     <Setter TargetName="textDisplay" Property="Foreground"
                             Value="{DynamicResource pyRevitSelectionForegroundBrush}"/>
                 </MultiDataTrigger>
+                <!-- Same correction one state further out: a locked row can
+                     sit in a multi-selection WITHOUT being the focused row,
+                     and the `locked` setter above would otherwise leave
+                     disabled-grey text on the selection fill. -->
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding locked}" Value="True"/>
+                        <Condition Binding="{Binding multi_selected}" Value="True"/>
+                    </MultiDataTrigger.Conditions>
+                    <Setter TargetName="textDisplay" Property="Foreground"
+                            Value="{DynamicResource pyRevitSelectionForegroundBrush}"/>
+                </MultiDataTrigger>
                 <DataTrigger Binding="{Binding has_element_type}" Value="True">
                     <Setter TargetName="typElBadge" Property="Visibility" Value="Visible"/>
                 </DataTrigger>
