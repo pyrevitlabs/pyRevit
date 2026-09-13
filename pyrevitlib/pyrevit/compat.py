@@ -71,7 +71,6 @@ def _get_revit_version():
     except AttributeError:
         pass
     try:
-        # UIControlledApplication
         return int(host_app.ControlledApplication.VersionNumber)
     except AttributeError:
         return NO_REVIT

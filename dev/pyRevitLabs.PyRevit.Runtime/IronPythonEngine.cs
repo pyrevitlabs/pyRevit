@@ -263,10 +263,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             builtin.SetVariable("__eventsender__", runtime.ScriptRuntimeConfigs.EventSender);
             builtin.SetVariable("__eventargs__", runtime.ScriptRuntimeConfigs.EventArgs);
 
-            // Prevent user-provided variables from overwriting reserved pyRevit built-ins
             if (runtime.ScriptRuntimeConfigs?.Variables != null) {
                 foreach (var variable in runtime.ScriptRuntimeConfigs.Variables) {
-                    if (ReservedBuiltinNames.Contains(variable.Key))
+                    if (IsReservedBuiltinName(variable.Key))
                         continue;
                     builtin.SetVariable(variable.Key, variable.Value);
                 }

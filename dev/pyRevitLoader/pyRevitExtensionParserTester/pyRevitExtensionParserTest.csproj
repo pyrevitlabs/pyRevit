@@ -10,7 +10,8 @@
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
 	<UseLoader>false</UseLoader>
-	<UseIronPython>false</UseIronPython>
+	<UseIronPython>true</UseIronPython>
+	<IronPythonStdLib>python_342_lib.zip</IronPythonStdLib>
     <UseRevit>false</UseRevit>
     <UseAssemblyBuilder>true</UseAssemblyBuilder>
     <UseExtensionParser>true</UseExtensionParser>
@@ -25,6 +26,8 @@
   <ItemGroup>
     <Compile Include="TestHelpers\TempFileTestBase.cs" />
     <Compile Include="TestHelpers\TestExtensionBuilder.cs" />
+    <Compile Include="..\Source\ErrorReporter.cs" Link="Source\ErrorReporter.cs" />
+    <Compile Include="..\Source\ScriptExecutor.cs" Link="Source\ScriptExecutor.cs" />
     <Compile Include="MockLogger.cs" />
     <Compile Include="DarkIconTests.cs" />
     <Compile Include="TestConfiguration.cs" />
@@ -72,6 +75,7 @@
     <Compile Include="VersionFilteringTests.cs" />
     <Compile Include="PyRevitRootResolutionTests.cs" />
     <Compile Include="ScriptLoggerServiceTests.cs" />
+    <Compile Include="ScriptExecutorTests.cs" />
     <Compile Include="RevitThemeChangeMonitorTests.cs" />
     <Compile Include="RibbonThemeRegistryTests.cs" />
     <Compile Include="RevitThemeDetectorTests.cs" />

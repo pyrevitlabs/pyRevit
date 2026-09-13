@@ -32,7 +32,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// <c>__revit__</c> above all, which the whole library resolves the host
         /// application through.
         /// </remarks>
-        public static readonly HashSet<string> ReservedBuiltinNames = new HashSet<string> {
+        private static readonly HashSet<string> ReservedBuiltinNames = new HashSet<string> {
             "__execid__",
             "__timestamp__",
             "__cachedengine__",
@@ -55,6 +55,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             "__eventsender__",
             "__eventargs__"
         };
+
+        protected static bool IsReservedBuiltinName(string name) {
+            return ReservedBuiltinNames.Contains(name);
+        }
 
         public string Id { get; private set; }
 
