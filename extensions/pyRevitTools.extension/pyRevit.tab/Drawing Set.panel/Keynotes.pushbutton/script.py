@@ -327,7 +327,7 @@ class RevitActionHandler(UI.IExternalEventHandler):
         self._queue = []
 
     def queue(self, action, callback=None, window=None,
-              callback_on_error=True):
+              callback_on_error=True, on_finished=None):
         """Add an action (and optional WPF-thread callback) to the queue.
 
         callback_on_error=False skips the callback when the action raises.
@@ -336,9 +336,16 @@ class RevitActionHandler(UI.IExternalEventHandler):
         it after a failed action would silently claim work that never
         happened.
 
+        on_finished ALWAYS runs on the WPF thread once the entry is done —
+        after a success, after a raise, and after a callback that was
+        skipped or itself threw.  Release a guard taken before queueing
+        there and NOWHERE else: `action` never runs at all when the
+        dispatcher refuses it, so a guard released inside `action` or
+        inside `callback` stays held forever on the refusal path (#3631).
+
         Returns the queued entry, for `drop` if it never reaches Revit.
         """
-        entry = (action, callback, window, callback_on_error)
+        entry = (action, callback, window, callback_on_error, on_finished)
         self._queue.append(entry)
         return entry
 
@@ -356,33 +363,50 @@ class RevitActionHandler(UI.IExternalEventHandler):
     def Execute(self, app):
         """Called by Revit on the main thread when the event fires."""
         while self._queue:
-            action, callback, window, callback_on_error = self._queue.pop(0)
+            (action, callback, window, callback_on_error,
+             on_finished) = self._queue.pop(0)
             succeeded = True
             try:
-                action()
-            except Exception as ex:
-                succeeded = False
-                logger.error("RevitActionHandler | %s" % ex)
-                # ALWAYS surface the failure — the callback_on_error=False
-                # call sites rely on the user being told why nothing
-                # happened, so this must not be conditional on IsLoaded.
                 try:
-                    if window and window.IsLoaded:
-                        window.Dispatcher.Invoke(
-                            System.Action(lambda e=str(ex): forms.alert(e))
-                        )
-                    else:
-                        forms.alert(str(ex))
-                except Exception as disp_ex:
-                    logger.debug("Failed to display error in window | %s" % disp_ex)
-            if callback and (succeeded or callback_on_error):
-                try:
-                    if window and window.IsLoaded:
-                        window.Dispatcher.Invoke(System.Action(ui_guard(callback)))
-                    else:
-                        ui_guard(callback)()
-                except Exception as cbex:
-                    logger.debug("Callback failed | %s" % cbex)
+                    action()
+                except Exception as ex:
+                    succeeded = False
+                    logger.error("RevitActionHandler | %s" % ex)
+                    # ALWAYS surface the failure — the callback_on_error=False
+                    # call sites rely on the user being told why nothing
+                    # happened, so this must not be conditional on IsLoaded.
+                    try:
+                        if window and window.IsLoaded:
+                            window.Dispatcher.Invoke(
+                                System.Action(lambda e=str(ex): forms.alert(e))
+                            )
+                        else:
+                            forms.alert(str(ex))
+                    except Exception as disp_ex:
+                        logger.debug("Failed to display error in window | %s"
+                                     % disp_ex)
+                if callback and (succeeded or callback_on_error):
+                    try:
+                        if window and window.IsLoaded:
+                            window.Dispatcher.Invoke(
+                                System.Action(ui_guard(callback)))
+                        else:
+                            ui_guard(callback)()
+                    except Exception as cbex:
+                        logger.debug("Callback failed | %s" % cbex)
+            finally:
+                # covers the action AND the callback: an action refused
+                # before it ran, and a callback that threw, must both still
+                # release the caller's guard (#3631)
+                if on_finished:
+                    try:
+                        if window and window.IsLoaded:
+                            window.Dispatcher.Invoke(
+                                System.Action(ui_guard(on_finished)))
+                        else:
+                            ui_guard(on_finished)()
+                    except Exception as finex:
+                        logger.debug("on_finished failed | %s" % finex)
 
     def GetName(self):
         return "KeynoteManagerHandler"
@@ -778,7 +802,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         # modeless close state
         self._close_pending = False
-        self._close_prompt_open = False
         self._close_sync_pending = False
 
         self._search_timer = DispatcherTimer()
@@ -916,25 +939,49 @@ class KeynoteManagerWindow(forms.WPFWindow):
         except Exception:
             return False
 
-    def _revit_run(self, action, callback=None, callback_on_error=True):
+    def _run_on_finished(self, on_finished):
+        """Dispatch a release hook to the WPF thread, after any callback.
+
+        Queued at the same priority as the callback, so it always lands
+        after it.  Never raises — a failed release must not take down a
+        caller that is already unwinding.
+        """
+        if not on_finished:
+            return
+        try:
+            self.Dispatcher.BeginInvoke(
+                System.Action(ui_guard(on_finished)),
+                Windows.Threading.DispatcherPriority.Background)
+        except Exception as finex:
+            logger.debug("on_finished dispatch failed | %s", finex)
+
+    def _revit_run(self, action, callback=None, callback_on_error=True,
+                   on_finished=None, needs_active_doc=True):
         """Queue an action to execute on Revit's main thread.
         Optional callback runs on the WPF thread after the action.
 
-        The action is refused if the user switched to a different document
-        — otherwise transactions would silently modify the wrong model.
+        By default the action is refused if the user switched to a
+        different document — otherwise transactions would silently modify
+        the wrong model.  Pass needs_active_doc=False for an action that
+        names its document explicitly (self._doc) and never reads
+        revit.doc: refusing one of those blocks work that would have been
+        correct, and leaves the user no way to complete it (#3631).
 
         Pass callback_on_error=False when the callback reports success or
         discards state, so a failed action cannot masquerade as a good one.
 
-        Returns False when the action could not be dispatched at all — the
-        queued entry is dropped in that case, and a caller holding a guard
-        must release it.  Only Accepted and Pending count as dispatched, so
-        an unrecognised Raise() result fails safe instead of stranding that
-        guard.
+        on_finished ALWAYS runs, on the WPF thread, however the attempt
+        ended — completed, refused before the action ran, or never
+        dispatched at all.  It is the ONLY safe place to release a guard
+        taken before the call.
+
+        Returns False when the action could not be dispatched at all and
+        the queued entry was dropped.  Only Accepted and Pending count as
+        dispatched, so an unrecognised Raise() result fails safe.
         """
 
         def _doc_affine_action():
-            if not self._is_owned_doc_active():
+            if needs_active_doc and not self._is_owned_doc_active():
                 raise Exception(
                     "Keynote Manager was opened for a different document.\n"
                     "Switch back to that document, or close and reopen "
@@ -944,22 +991,27 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if self._modal_mode:
             _succeeded = True
             try:
-                _doc_affine_action()
-            except Exception as ex:
-                _succeeded = False
-                logger.error("KeynoteManager | action failed | %s", ex)
-                # wrapped so an alert failure cannot bypass the gate below
                 try:
-                    forms.alert(str(ex))
-                except Exception as disp_ex:
-                    logger.debug("Failed to display error | %s", disp_ex)
-            if callback and (_succeeded or callback_on_error):
-                try:
-                    self.Dispatcher.BeginInvoke(
-                        System.Action(ui_guard(callback)),
-                        Windows.Threading.DispatcherPriority.Background)
-                except Exception as cbex:
-                    logger.debug("Callback dispatch failed | %s", cbex)
+                    _doc_affine_action()
+                except Exception as ex:
+                    _succeeded = False
+                    logger.error("KeynoteManager | action failed | %s", ex)
+                    # wrapped so an alert failure cannot bypass the gate below
+                    try:
+                        forms.alert(str(ex))
+                    except Exception as disp_ex:
+                        logger.debug("Failed to display error | %s", disp_ex)
+                if callback and (_succeeded or callback_on_error):
+                    try:
+                        self.Dispatcher.BeginInvoke(
+                            System.Action(ui_guard(callback)),
+                            Windows.Threading.DispatcherPriority.Background)
+                    except Exception as cbex:
+                        logger.debug("Callback dispatch failed | %s", cbex)
+            finally:
+                # the modal branch refuses in-line, so this is the only
+                # release the caller's guard will ever get (#3631)
+                self._run_on_finished(on_finished)
             return True
 
         if self._ext_event is None:
@@ -967,21 +1019,25 @@ class KeynoteManagerWindow(forms.WPFWindow):
                          "action not queued")
             forms.alert("Keynote Manager cannot reach Revit right now.\n"
                         "Please try again.")
+            self._run_on_finished(on_finished)
             return False
         entry = self._ext_handler.queue(_doc_affine_action, callback, self,
-                                        callback_on_error=callback_on_error)
+                                        callback_on_error=callback_on_error,
+                                        on_finished=on_finished)
         try:
             request = self._ext_event.Raise()
         except Exception as rex:
             logger.error("KeynoteManager | could not raise ExternalEvent "
                          "| %s", rex)
             self._ext_handler.drop(entry)
+            self._run_on_finished(on_finished)
             return False
         if request not in (UI.ExternalEventRequest.Accepted,
                            UI.ExternalEventRequest.Pending):
             logger.error("KeynoteManager | Revit rejected the request | %s",
                          request)
             self._ext_handler.drop(entry)
+            self._run_on_finished(on_finished)
             forms.alert("Revit is not accepting requests right now.\n"
                         "Please try again.")
             return False
@@ -3083,9 +3139,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 forms.alert("Revit model updated successfully.", title="Success")
 
             # callback_on_error=False: never clear _needs_update or claim
-            # success if the update transaction failed
+            # success if the update transaction failed.
+            # needs_active_doc=False: the sync names self._doc explicitly,
+            # so it is correct from whichever project is in front (#3631).
             self._revit_run(_do_update, callback=_on_update_complete,
-                            callback_on_error=False)
+                            callback_on_error=False,
+                            needs_active_doc=False)
         else:
             forms.alert("The Revit model is already up to date.", title="Up to Date")
 
@@ -3154,43 +3213,57 @@ class KeynoteManagerWindow(forms.WPFWindow):
         """Offer to sync pending changes before closing.
 
         Invariant:
-            The alert is modal to Revit, not to this modeless window, so
-            Close re-enters mid-prompt and mid-sync; no guard may be held
-            across the ExternalEvent or the window becomes unclosable (#3548).
+            The prompt is owned by this window, so Close cannot re-enter
+            while it is up.  The SYNC that follows is asynchronous and the
+            window stays live across it, so the guard held over the
+            ExternalEvent MUST be released from on_finished and nowhere
+            else, or the window becomes unclosable (#3548, #3631).
         """
         if self._needs_update and not self._close_pending:
-            if self._close_prompt_open or self._close_sync_pending:
+            if self._close_sync_pending:
                 args.Cancel = True
                 return
 
-            self._close_prompt_open = True
-            try:
-                res = forms.alert(
-                    "Keynote file has been modified.\n"
-                    "Sync changes to the Revit model before closing?",
-                    yes=True,
-                    no=True,
-                )
-            finally:
-                self._close_prompt_open = False
+            # Owned by THIS window rather than by Revit.  forms.alert builds
+            # a Revit TaskDialog, which is modal to Revit's main window but
+            # NOT to a modeless WPF window: the manager could be raised over
+            # its own prompt, leaving a window that ignored X with no dialog
+            # anywhere in sight.  An owned MessageBox disables this window
+            # while it is up, so the re-entrant Close that
+            # _close_prompt_open existed to absorb cannot happen at all.
+            res = Windows.MessageBox.Show(
+                self,
+                "Keynote file has been modified.\n"
+                "Sync changes to the Revit model before closing?",
+                "Keynote Manager",
+                Windows.MessageBoxButton.YesNo,
+                Windows.MessageBoxImage.Question)
 
-            if res:
+            if res == Windows.MessageBoxResult.Yes:
                 args.Cancel = True
                 self._close_sync_pending = True
 
                 def _do_update():
-                    try:
-                        self._sync_model_keynotes()
-                    finally:
-                        self._close_sync_pending = False
+                    self._sync_model_keynotes()
 
                 def _sync_done():
                     self._close_pending = True
                     self._finalize_close()
 
-                if not self._revit_run(_do_update, callback=_sync_done,
-                                       callback_on_error=False):
+                def _release_close_sync():
                     self._close_sync_pending = False
+
+                # needs_active_doc=False: _sync_model_keynotes reloads
+                # self._doc's keynote table and never reads revit.doc, so
+                # refusing it because another project is in front only
+                # blocks a sync that would have succeeded.
+                # on_finished: the refusal raises BEFORE the action runs, so
+                # releasing inside _do_update would strand the guard and
+                # make every later Close a silent no-op (#3631).
+                self._revit_run(_do_update, callback=_sync_done,
+                                callback_on_error=False,
+                                on_finished=_release_close_sync,
+                                needs_active_doc=False)
                 return
 
         # Proceed with cleanup
