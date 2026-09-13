@@ -12,6 +12,7 @@ from pyrevit.coreutils import logger
 from pyrevit import framework
 from pyrevit.framework import System
 from pyrevit import revit
+from pyrevit import forms
 
 from pyrevit.labs import DeffrelDB as dfdb
 
@@ -147,11 +148,16 @@ class RKeynoteFilters(object):
         return cleaned
 
 
-class RKeynote(object):
+class RKeynote(forms.Reactive):
     """Object representing a keynote entry in the databaseself.
 
     This object also has properties for the status of the keynote e.g.
     locked by another user or being used in the current model.
+
+    Reactive because of `multi_selected`: the keynote tree virtualizes with
+    container RECYCLING, so a row's highlight has to live on the DATA.  A
+    container painted directly would carry that highlight onto whatever
+    unrelated keynote it is recycled for when the user scrolls.
     """
 
     def __init__(
@@ -172,6 +178,7 @@ class RKeynote(object):
         self.used = False
         self.used_count = 0
         self.tooltip = "Referenced on views:"
+        self._multi_selected = False
 
     def __str__(self):
         return repr(self)
@@ -188,6 +195,24 @@ class RKeynote(object):
         if self._filter:
             return self._filtered_children
         return self._children
+
+    @property
+    def multi_selected(self):
+        """True when this row is part of a multi-row selection.
+
+        A notifying property rather than a plain attribute: the tree is
+        rebuilt from the file only on refresh, so toggling this has to
+        update the bound row in place.
+        """
+        return self._multi_selected
+
+    @multi_selected.setter
+    def multi_selected(self, value):
+        value = bool(value)
+        if value == self._multi_selected:
+            return          # never raise a no-op change at the binding
+        self._multi_selected = value
+        self.OnPropertyChanged("multi_selected")
 
     @property
     def is_category(self):
@@ -644,6 +669,129 @@ def rekey_with_children(conn, key, new_key, category=False):
 
 
 # import export ---------------------------------------------------------------
+
+
+def _paste_step(conn, row):
+    """Build the (do, undo) pair for one pasted row.
+
+    Every closure binds its values as default arguments: the caller builds
+    these in a loop, and a late-bound free variable would make every undo
+    step revert the LAST row instead of its own.
+    """
+    key = row["key"]
+    text = normalize_keynote_text(row.get("text") or "")
+    is_cat = bool(row.get("is_category"))
+    action = row.get("action")
+
+    if action == "add":
+        if is_cat:
+            def _do(k=key, t=text):
+                add_category(conn, k, t)
+
+            def _undo(k=key):
+                remove_category(conn, k)
+        else:
+            parent = row.get("parent") or ""
+
+            def _do(k=key, t=text, p=parent):
+                add_keynote(conn, k, t, p)
+
+            def _undo(k=key):
+                remove_keynote(conn, k)
+        return _do, _undo
+
+    if action == "overwrite":
+        # target_text comes from the classification pass, so this does not
+        # re-scan the whole table once per row
+        old_text = normalize_keynote_text(row.get("target_text") or "")
+        if is_cat:
+            def _do(k=key, t=text):
+                update_category_title(conn, k, t)
+
+            def _undo(k=key, t=old_text):
+                update_category_title(conn, k, t)
+        else:
+            def _do(k=key, t=text):
+                update_keynote_text(conn, k, t)
+
+            def _undo(k=key, t=old_text):
+                update_keynote_text(conn, k, t)
+        return _do, _undo
+
+    raise ValueError("unknown paste action: %s" % action)
+
+
+def paste_records(conn, rows):
+    """Add or overwrite `rows` in ONE compensated bulk action.
+
+    Each row is {key, text, parent, is_category, target_text, action} where
+    action is 'add' or 'overwrite'; anything else must be filtered out by
+    the caller.  Rows MUST be ordered parents-before-children so a keynote
+    never lands before the group it names as its parent.
+
+    Pasting rewrites a SHARED keynote file, so a half-applied paste is the
+    thing to avoid above all: _run_with_compensation reverts the completed
+    steps in memory before re-raising, and the single commit on END then
+    writes the original state back.
+
+    'overwrite' replaces the record's TEXT only.  The target keeps its own
+    placement in the tree: re-parenting an existing keynote because another
+    project files it elsewhere would move tags out from under that project.
+    """
+    steps = [_paste_step(conn, row) for row in rows]
+    if not steps:
+        return 0
+    _run_with_compensation(conn, steps)
+    return len(steps)
+
+
+def _delete_step(conn, row):
+    """Build the (do, undo) pair for one deleted row.
+
+    The undo RE-ADDS the record, so the row has to carry its text and
+    parent: once DropRecord has run there is nothing left to read them
+    from.  Values bind as default arguments for the reason given in
+    _paste_step.
+    """
+    key = row["key"]
+    text = normalize_keynote_text(row.get("text") or "")
+
+    if row.get("is_category"):
+        def _do(k=key):
+            remove_category(conn, k)
+
+        def _undo(k=key, t=text):
+            add_category(conn, k, t)
+    else:
+        parent = row.get("parent") or ""
+
+        def _do(k=key):
+            remove_keynote(conn, k)
+
+        def _undo(k=key, t=text, p=parent):
+            add_keynote(conn, k, t, p)
+    return _do, _undo
+
+
+def delete_records(conn, rows):
+    """Remove `rows` in ONE compensated bulk action.
+
+    Rows MUST be ordered CHILDREN BEFORE PARENTS: a group cannot be
+    dropped while anything still names it as a parent.  The compensation
+    then unwinds in reverse, which re-adds parents before their children —
+    the only order in which the restore is valid.
+
+    Deleting rewrites a SHARED keynote file and drops text that cannot be
+    recovered from the model, so a half-applied delete is the thing to
+    avoid above all: _run_with_compensation reverts the completed steps in
+    memory before re-raising, and the single commit on END then writes the
+    original state back.
+    """
+    steps = [_delete_step(conn, row) for row in rows]
+    if not steps:
+        return 0
+    _run_with_compensation(conn, steps)
+    return len(steps)
 
 
 def _import_keynotes_from_lines(conn, lines, skip_dup=False):

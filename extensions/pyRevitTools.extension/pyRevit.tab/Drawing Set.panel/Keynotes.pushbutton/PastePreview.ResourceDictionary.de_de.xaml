@@ -1,0 +1,27 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Schlüsselnotizen einfügen</system:String>
+    <system:String x:Key="TakeAllFromSource">Alle aus der Quelle übernehmen</system:String>
+    <system:String x:Key="OnlyNew">Nur neue</system:String>
+    <system:String x:Key="TakeNone">Keine</system:String>
+    <system:String x:Key="ColKey">Schlüssel</system:String>
+    <system:String x:Key="ColSource">Aus der Quelle</system:String>
+    <system:String x:Key="ColTarget">Derzeit im Ziel</system:String>
+    <system:String x:Key="ColResult">Ergebnis</system:String>
+    <system:String x:Key="PasteAction">Einfügen</system:String>
+    <system:String x:Key="CancelAction">Abbrechen</system:String>
+    <system:String x:Key="HeaderInto">{0} Einträge aus „{1}“ in „{2}“.</system:String>
+    <system:String x:Key="HeaderNote">Markierte Zeilen werden in die Schlüsselnotizdatei des Ziels geschrieben; alles andere bleibt unverändert.</system:String>
+    <system:String x:Key="FooterNote">Bei einer Konfliktzeile wird nur der TEXT im Ziel ersetzt — die Position in der Struktur bleibt erhalten.</system:String>
+    <system:String x:Key="SummaryCounts">{0} hinzufügen · {1} ersetzen · {2} unverändert</system:String>
+    <system:String x:Key="GroupTag">(Gruppe)</system:String>
+    <system:String x:Key="ResultAdd">Hinzufügen</system:String>
+    <system:String x:Key="ResultReplace">Text ersetzen</system:String>
+    <system:String x:Key="ResultIdentical">Bereits vorhanden</system:String>
+    <system:String x:Key="ResultLocked">Gesperrt von {0}</system:String>
+    <system:String x:Key="ResultNoParent">Keine übergeordnete Gruppe</system:String>
+    <system:String x:Key="UnknownSource">einem anderen Projekt</system:String>
+    <system:String x:Key="SameFileNote">(dieselbe Schlüsselnotizdatei)</system:String>
+    <system:String x:Key="UnknownUser">einem anderen Benutzer</system:String>
+</ResourceDictionary>
