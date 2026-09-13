@@ -57,7 +57,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Tooltips
         {
             // Set the text tooltip
             ribbonItem.ToolTip = BuildButtonTooltip(component);
-            
+
             // Set media if available
             SetTooltipMedia(ribbonItem, component);
         }
@@ -71,12 +71,12 @@ namespace pyRevitAssemblyBuilder.UIManager.Tooltips
             try
             {
                 var extension = System.IO.Path.GetExtension(component.MediaFile).ToLowerInvariant();
-                
+
                 if (extension == UIManagerConstants.TOOLTIP_IMAGE_FORMAT)
                 {
                     SetTooltipImage(ribbonItem, component);
                 }
-                else if (extension == UIManagerConstants.TOOLTIP_VIDEO_FORMAT_MP4 || 
+                else if (extension == UIManagerConstants.TOOLTIP_VIDEO_FORMAT_MP4 ||
                          extension == UIManagerConstants.TOOLTIP_VIDEO_FORMAT_SWF)
                 {
                     SetTooltipVideo(ribbonItem, component);
@@ -93,13 +93,13 @@ namespace pyRevitAssemblyBuilder.UIManager.Tooltips
         {
             // Use centralized localized title method
             var baseText = ExtensionParser.GetComponentTitle(component);
-            
+
             // Add dot indicator if component has a separate config script
             if (component.HasConfigScript)
             {
                 return $"{baseText} {UIManagerConstants.ConfigScriptTitlePostfix}";
             }
-            
+
             return baseText;
         }
 
@@ -130,7 +130,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Tooltips
                 // Create StackPanel with image
                 var stackPanel = new StackPanel();
                 var image = new Image();
-                
+
                 // Load the image
                 var bitmapImage = new BitmapImage();
                 bitmapImage.BeginInit();
@@ -138,13 +138,13 @@ namespace pyRevitAssemblyBuilder.UIManager.Tooltips
                 bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
                 bitmapImage.EndInit();
                 bitmapImage.Freeze();
-                
+
                 image.Source = bitmapImage;
                 stackPanel.Children.Add(image);
 
                 ribbonToolTip.ExpandedContent = stackPanel;
                 adWindowsRibbonItem.ToolTip = ribbonToolTip;
-                
+
                 // Resolve the tooltip to apply changes
                 AdWindowsHelper.ResolveToolTip(adWindowsRibbonItem);
             }
@@ -209,7 +209,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Tooltips
 
                 ribbonToolTip.ExpandedContent = stackPanel;
                 adWindowsRibbonItem.ToolTip = ribbonToolTip;
-                
+
                 // Resolve the tooltip to apply changes
                 AdWindowsHelper.ResolveToolTip(adWindowsRibbonItem);
             }

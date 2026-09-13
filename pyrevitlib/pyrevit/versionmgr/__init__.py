@@ -8,6 +8,7 @@ Examples:
         ```
         '4.10-beta2'
 """
+
 import os.path as op
 
 from pyrevit import HOME_DIR, BIN_DIR
@@ -20,7 +21,7 @@ from pyrevit.coreutils import envvars
 from pyrevit.coreutils import git
 
 
-#pylint: disable=W0703,C0302,C0103
+# pylint: disable=W0703,C0302,C0103
 mlogger = get_logger(__name__)
 
 
@@ -30,11 +31,12 @@ class _PyRevitVersion(object):
     Args:
         commit_hash (str): signature
     """
+
     major = VERSION_MAJOR
     minor = VERSION_MINOR
     patch = VERSION_PATCH
     metadata = BUILD_METADATA
-    signature = ''
+    signature = ""
 
     def __init__(self, signature):
         self.signature = safe_strtype(signature)[:7]
@@ -51,22 +53,24 @@ class _PyRevitVersion(object):
 
     def as_str_tuple(self):
         """Returns version as an string tuple ('major', 'minor', 'patch')."""
-        ver_tuple = (safe_strtype(_PyRevitVersion.major),
-                     safe_strtype(_PyRevitVersion.minor),
-                     safe_strtype(self.patch))
+        ver_tuple = (
+            safe_strtype(_PyRevitVersion.major),
+            safe_strtype(_PyRevitVersion.minor),
+            safe_strtype(self.patch),
+        )
         return ver_tuple
 
     def get_formatted(self, strict=False, extended=False):
         """Returns 'major.minor.patch' in string."""
-        formatted_ver = '{}.{}.{}'.format(_PyRevitVersion.major,
-                                          _PyRevitVersion.minor,
-                                          _PyRevitVersion.patch)
+        formatted_ver = "{}.{}.{}".format(
+            _PyRevitVersion.major, _PyRevitVersion.minor, _PyRevitVersion.patch
+        )
 
         if not strict and self.metadata:
-            formatted_ver += ('.' + self.metadata)
+            formatted_ver += "." + self.metadata
 
         if extended and not strict:
-            formatted_ver += (':' + self.signature)
+            formatted_ver += ":" + self.signature
 
         return formatted_ver
 
@@ -80,8 +84,7 @@ def get_pyrevit_repo():
     try:
         return git.get_repo(HOME_DIR)
     except Exception as repo_err:
-        mlogger.debug('Can not create repo from directory: %s | %s',
-                      HOME_DIR, repo_err)
+        mlogger.debug("Can not create repo from directory: %s | %s", HOME_DIR, repo_err)
 
 
 def get_pyrevit_version():
@@ -93,8 +96,8 @@ def get_pyrevit_version():
     try:
         return _PyRevitVersion(get_pyrevit_repo().last_commit_hash)
     except Exception as ver_err:
-        mlogger.debug('Can not get pyRevit patch number. | %s', ver_err)
-        return _PyRevitVersion('')
+        mlogger.debug("Can not get pyRevit patch number. | %s", ver_err)
+        return _PyRevitVersion("")
 
 
 def get_pyrevit_cli_version():

@@ -6,13 +6,15 @@ Examples:
     pyutils.safe_cast('string', int, 0)
     ```
 """
-#pylint: disable=C0103
+
+# pylint: disable=C0103
 import re
 import copy
 from itertools import tee
 from collections import OrderedDict
 
 from pyrevit.compat import PY2, Callable
+
 if PY2:
     from itertools import izip as zip
 
@@ -39,11 +41,10 @@ class DefaultOrderedDict(OrderedDict):
     """
 
     # Source: http://stackoverflow.com/a/6190500/562769
-    def __init__(self, default_factory=None, *a, **kw): #pylint: disable=W1113
+    def __init__(self, default_factory=None, *a, **kw):  # pylint: disable=W1113
 
-        if (default_factory is not None \
-                and not isinstance(default_factory, Callable)):
-            raise TypeError('first argument must be callable')
+        if default_factory is not None and not isinstance(default_factory, Callable):
+            raise TypeError("first argument must be callable")
         OrderedDict.__init__(self, *a, **kw)
         self.default_factory = default_factory
 
@@ -74,12 +75,13 @@ class DefaultOrderedDict(OrderedDict):
         return type(self)(self.default_factory, self)
 
     def __deepcopy__(self, memo):
-        return type(self)(self.default_factory,
-                          copy.deepcopy(self.items()))
+        return type(self)(self.default_factory, copy.deepcopy(self.items()))
 
     def __repr__(self, _repr_running=None):
-        return 'OrderedDefaultDict(%s, %s)' % (self.default_factory,
-                                               OrderedDict.__repr__(self))
+        return "OrderedDefaultDict(%s, %s)" % (
+            self.default_factory,
+            OrderedDict.__repr__(self),
+        )
 
 
 def pairwise(iterable, step=2):
@@ -200,7 +202,7 @@ def merge(d1, d2):
         }
     """
     if not (isinstance(d1, dict) and isinstance(d2, dict)):
-        raise Exception('Both inputs must be of type dict')
+        raise Exception("Both inputs must be of type dict")
 
     for key, new_value in d2.items():
         if key in d1:
@@ -243,4 +245,4 @@ def almost_equal(a, b, rnd=5):
     Returns:
         (bool): True if almost equal
     """
-    return a == b or int(a*10**rnd) == int(b*10**rnd)
+    return a == b or int(a * 10**rnd) == int(b * 10**rnd)

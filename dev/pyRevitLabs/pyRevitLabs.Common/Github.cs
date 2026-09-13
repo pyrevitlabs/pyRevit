@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -76,7 +76,7 @@ namespace pyRevitLabs.Common {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         public const string APIReleasesURL = @"https://api.github.com/repos/{0}/releases";
-        
+
         public const string ArchiveFileExtension = ".zip";
         public const string ArchiveInternalBranchPath = @"{0}-{1}";
         public const string APIArchiveURL = @"https://github.com/{0}/archive/{1}" + ArchiveFileExtension;
@@ -88,7 +88,7 @@ namespace pyRevitLabs.Common {
             // https://developer.github.com/v3/repos/releases/
             using (var response = CommonUtils.GetHttpResponse(endpoint)) {
                 // if (AuthToken is null)
-                    // throw new Exception("Missing authorization token. Set on GITHUBTOKEN env var");
+                // throw new Exception("Missing authorization token. Set on GITHUBTOKEN env var");
 
                 // response.Headers.Add(HttpRequestHeader.Authorization, $"token {AuthToken}");
                 IList<T> releases;

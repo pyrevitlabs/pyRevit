@@ -53,8 +53,13 @@ class SettingsWindow(forms.WPFWindow):
     """Dynamic settings window that generates UI from schema."""
 
     def __init__(
-        self, settings_schema, section=None, title="Settings", width=450,
-        custom_config=None, max_height=DEFAULT_MAX_HEIGHT
+        self,
+        settings_schema,
+        section=None,
+        title="Settings",
+        width=450,
+        custom_config=None,
+        max_height=DEFAULT_MAX_HEIGHT,
     ):
         """Initialize the settings window.
 
@@ -71,7 +76,9 @@ class SettingsWindow(forms.WPFWindow):
             self.config = script.get_config(section)
         else:
             section = section or "DEFAULT"
-            CONFIG_FILE = appdata.get_universal_data_file(file_id=custom_config, file_ext='ini')
+            CONFIG_FILE = appdata.get_universal_data_file(
+                file_id=custom_config, file_ext="ini"
+            )
             if not op.exists(CONFIG_FILE):
                 open(CONFIG_FILE, "w").close()
             self.configparser = PyRevitConfigParser(cfg_file_path=CONFIG_FILE)
@@ -204,7 +211,7 @@ class SettingsWindow(forms.WPFWindow):
                 max_val = setting.get("max", 100)
                 step = setting.get("step", 1)
                 xaml_parts.append(self._label_xaml(label))
-                xaml_parts.append('<Grid {0}>'.format(_ROW_GRID_MARGIN))
+                xaml_parts.append("<Grid {0}>".format(_ROW_GRID_MARGIN))
                 xaml_parts.append("    <Grid.ColumnDefinitions>")
                 xaml_parts.append('        <ColumnDefinition Width="*"/>')
                 xaml_parts.append('        <ColumnDefinition Width="46"/>')
@@ -216,7 +223,10 @@ class SettingsWindow(forms.WPFWindow):
                     ' TickFrequency="{step}" SmallChange="{step}"'
                     ' IsSnapToTickEnabled="True"'
                     ' AutoToolTipPlacement="BottomRight" {attrs}/>'.format(
-                        name=name, mn=min_val, mx=max_val, step=step,
+                        name=name,
+                        mn=min_val,
+                        mx=max_val,
+                        step=step,
                         attrs=_SLIDER_ATTRS,
                     )
                 )
@@ -232,7 +242,7 @@ class SettingsWindow(forms.WPFWindow):
 
             elif setting_type == "color":
                 xaml_parts.append(self._label_xaml(label))
-                xaml_parts.append('<Grid {0}>'.format(_ROW_GRID_MARGIN))
+                xaml_parts.append("<Grid {0}>".format(_ROW_GRID_MARGIN))
                 xaml_parts.append("    <Grid.ColumnDefinitions>")
                 xaml_parts.append('        <ColumnDefinition Width="30"/>')
                 xaml_parts.append('        <ColumnDefinition Width="5"/>')
@@ -253,13 +263,13 @@ class SettingsWindow(forms.WPFWindow):
                 )
                 xaml_parts.append(
                     '    <Button x:Name="{0}_button" Grid.Column="3" Content="..."'
-                    ' {1}/>'.format(name, _BROWSE_BUTTON_ATTRS)
+                    " {1}/>".format(name, _BROWSE_BUTTON_ATTRS)
                 )
                 xaml_parts.append("</Grid>")
 
             elif setting_type in ["folder", "file"]:
                 xaml_parts.append(self._label_xaml(label))
-                xaml_parts.append('<Grid {0}>'.format(_ROW_GRID_MARGIN))
+                xaml_parts.append("<Grid {0}>".format(_ROW_GRID_MARGIN))
                 xaml_parts.append("    <Grid.ColumnDefinitions>")
                 xaml_parts.append('        <ColumnDefinition Width="*"/>')
                 xaml_parts.append('        <ColumnDefinition Width="Auto"/>')
@@ -271,7 +281,7 @@ class SettingsWindow(forms.WPFWindow):
                 )
                 xaml_parts.append(
                     '    <Button x:Name="{0}_button" Grid.Column="1" Content="..."'
-                    ' {1}/>'.format(name, _BROWSE_BUTTON_ATTRS)
+                    " {1}/>".format(name, _BROWSE_BUTTON_ATTRS)
                 )
                 xaml_parts.append("</Grid>")
 
@@ -336,7 +346,11 @@ class SettingsWindow(forms.WPFWindow):
 
             elif setting_type == "slider":
                 try:
-                    val = float(current_value) if current_value is not None else float(setting.get("min", 0))
+                    val = (
+                        float(current_value)
+                        if current_value is not None
+                        else float(setting.get("min", 0))
+                    )
                     # Clamp to declared bounds.
                     min_val = float(setting.get("min", 0))
                     max_val = float(setting.get("max", 100))
@@ -348,8 +362,8 @@ class SettingsWindow(forms.WPFWindow):
                 display = getattr(self, name + "_display", None)
                 if display:
                     self._update_slider_display(name)
-                    control.ValueChanged += (
-                        lambda s, e, n=name: self._on_slider_changed(n)
+                    control.ValueChanged += lambda s, e, n=name: (
+                        self._on_slider_changed(n)
                     )
 
             elif setting_type in ["int", "float", "string", "color", "folder", "file"]:
@@ -357,7 +371,9 @@ class SettingsWindow(forms.WPFWindow):
 
                 if setting_type == "color":
                     self._update_color_preview(name, control.Text)
-                    control.TextChanged += lambda s, e, n=name: self._on_color_text_changed(n)
+                    control.TextChanged += lambda s, e, n=name: (
+                        self._on_color_text_changed(n)
+                    )
 
                 if setting_type in ["color", "folder", "file"]:
                     button = getattr(self, name + "_button", None)
@@ -365,12 +381,12 @@ class SettingsWindow(forms.WPFWindow):
                         if setting_type == "color":
                             button.Click += lambda s, e, n=name: self._pick_color(n)
                         elif setting_type == "folder":
-                            button.Click += (
-                                lambda s, e, n=name, st=setting: self._pick_folder(n, st)
+                            button.Click += lambda s, e, n=name, st=setting: (
+                                self._pick_folder(n, st)
                             )
                         elif setting_type == "file":
-                            button.Click += (
-                                lambda s, e, n=name, st=setting: self._pick_file(n, st)
+                            button.Click += lambda s, e, n=name, st=setting: (
+                                self._pick_file(n, st)
                             )
 
     # ------------------------------------------------------------------
@@ -683,8 +699,15 @@ class SettingsWindow(forms.WPFWindow):
 # Public API
 # ---------------------------------------------------------------------------
 
-def show_settings(settings_schema, section=None, title="Settings", width=450,
-                  custom_config=None, max_height=DEFAULT_MAX_HEIGHT):
+
+def show_settings(
+    settings_schema,
+    section=None,
+    title="Settings",
+    width=450,
+    custom_config=None,
+    max_height=DEFAULT_MAX_HEIGHT,
+):
     """Show settings window and return True if saved.
 
     Args:

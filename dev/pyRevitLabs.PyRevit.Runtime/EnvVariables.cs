@@ -17,8 +17,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static string OutputWindowsDictKey = keyPrefix + "OutputWindowsDict";
     }
 
-    public static class EnvDictionaryKeys
-    {
+    public static class EnvDictionaryKeys {
         public static string keyPrefix = PyRevitLabsConsts.ProductName.ToUpperInvariant();
 
         public static string SessionUUID = string.Format("{0}_UUID", keyPrefix);
@@ -37,7 +36,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static string TelemetryFilePath = string.Format("{0}_TELEMETRYFILE", keyPrefix);
         public static string TelemetryServerUrl = string.Format("{0}_TELEMETRYSERVER", keyPrefix);
         public static string TelemetryIncludeHooks = string.Format("{0}_TELEMETRYINCLUDEHOOKS", keyPrefix);
-        
+
         public static string AppTelemetryState = string.Format("{0}_APPTELEMETRYSTATE", keyPrefix);
         public static string AppTelemetryHandler = string.Format("{0}_APPTELEMETRYHANDLER", keyPrefix);
         public static string AppTelemetryServerUrl = string.Format("{0}_APPTELEMETRYSERVER", keyPrefix);
@@ -52,8 +51,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static string TabColorizer = string.Format("{0}_TABCOLORIZER", keyPrefix);
     }
 
-    public class EnvDictionary
-    {
+    public class EnvDictionary {
         private PythonDictionary _envData = null;
 
         public string SessionUUID;
@@ -75,7 +73,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public string AppTelemetryServerUrl;
         public string AppTelemetryEventFlags;
 
-        public Dictionary<string, Dictionary<string, string>> EventHooks = 
+        public Dictionary<string, Dictionary<string, string>> EventHooks =
             new Dictionary<string, Dictionary<string, string>>();
 
         public string ActiveStyleSheet;
@@ -83,8 +81,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public bool TelemetryUTCTimeStamps;
 
 
-        public EnvDictionary()
-        {
+        public EnvDictionary() {
             // get the dictionary from appdomain
             _envData = (PythonDictionary)AppDomain.CurrentDomain.GetData(DomainStorageKeys.EnvVarsDictKey);
 

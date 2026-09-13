@@ -1,5 +1,6 @@
 """Reformat parameter string values (Super handy for renaming elements)"""
-#pylint: disable=E0401,W0703,W0613
+
+# pylint: disable=E0401,W0703,W0613
 import re
 
 from pyrevit import coreutils
@@ -11,9 +12,9 @@ class ReValueItem(object):
     def __init__(self, eid, oldvalue, final=False):
         self.eid = eid
         self.oldvalue = oldvalue
-        self.newvalue = ''
+        self.newvalue = ""
         self.final = final
-        self.tooltip = ''
+        self.tooltip = ""
 
     def format_value(self, from_pattern, to_pattern):
         try:
@@ -22,21 +23,19 @@ class ReValueItem(object):
 
             if from_pattern:
                 # if format contains pattern finders use reformatter
-                if any(x in from_pattern for x in ['{', '}']):
-                    self.newvalue = \
-                        coreutils.reformat_string(self.oldvalue,
-                                                  from_pattern,
-                                                  to_pattern)
-                    self.tooltip = '{} --> {}'.format(from_pattern, to_pattern)
+                if any(x in from_pattern for x in ["{", "}"]):
+                    self.newvalue = coreutils.reformat_string(
+                        self.oldvalue, from_pattern, to_pattern
+                    )
+                    self.tooltip = "{} --> {}".format(from_pattern, to_pattern)
                 # otherwise use a simple find/replacer
                 else:
-                    self.newvalue = \
-                        re.sub(from_pattern, to_pattern, self.oldvalue)
+                    self.newvalue = re.sub(from_pattern, to_pattern, self.oldvalue)
             else:
-                self.tooltip = 'No Conversion Specified'
-                self.newvalue = ''
+                self.tooltip = "No Conversion Specified"
+                self.newvalue = ""
         except Exception:
-            self.newvalue = ''
+            self.newvalue = ""
 
 
 class ReValueWindow(forms.WPFWindow):
@@ -76,8 +75,7 @@ class ReValueWindow(forms.WPFWindow):
         for element in self._target_elements:
             # grab element parameters
             for param in element.Parameters:
-                if not param.IsReadOnly \
-                        and param.StorageType == DB.StorageType.String:
+                if not param.IsReadOnly and param.StorageType == DB.StorageType.String:
                     unique_params.add(param.Definition.Name)
             # grab element family parameters
             # if element.Family:
@@ -88,7 +86,7 @@ class ReValueWindow(forms.WPFWindow):
             #                 'Family: {}'.format(param.Definition.Name)
             #                 )
 
-        all_params = ['Name', 'Family: Name']
+        all_params = ["Name", "Family: Name"]
         all_params.extend(sorted(list(unique_params)))
         self.params_cb.ItemsSource = all_params
         self.params_cb.SelectedIndex = 0
@@ -103,11 +101,11 @@ class ReValueWindow(forms.WPFWindow):
     def on_param_change(self, sender, args):
         self._reset_preview()
         for element in self._target_elements:
-            old_value = ''
-            if self.selected_param == 'Name':
+            old_value = ""
+            if self.selected_param == "Name":
                 old_value = revit.query.get_name(element)
-            elif self.selected_param == 'Family: Name':
-                if hasattr(element, 'Family') and element.Family:
+            elif self.selected_param == "Family: Name":
+                if hasattr(element, "Family") and element.Family:
                     old_value = revit.query.get_name(element.Family)
             # elif 'Family:' in self.selected_param:
             #     if element.Family:
@@ -121,21 +119,18 @@ class ReValueWindow(forms.WPFWindow):
                     old_value = param.AsString()
 
             newitem = ReValueItem(eid=element.Id, oldvalue=old_value)
-            newitem.format_value(self.old_format,
-                                 self.new_format)
+            newitem.format_value(self.old_format, self.new_format)
             self._revalue_items.append(newitem)
         self._refresh_preview()
 
     def on_format_change(self, sender, args):
         for item in self._revalue_items:
             if not item.final:
-                item.format_value(self.old_format,
-                                  self.new_format)
+                item.format_value(self.old_format, self.new_format)
         self._refresh_preview()
 
     def on_selection_change(self, sender, args):
-        if self.preview_dg.SelectedItems.Count == 1 \
-                and not self.new_format:
+        if self.preview_dg.SelectedItems.Count == 1 and not self.new_format:
             self.old_format = self.preview_dg.SelectedItem.oldvalue
 
     def mark_as_final(self, sender, args):
@@ -148,14 +143,15 @@ class ReValueWindow(forms.WPFWindow):
     def apply_new_values(self, sender, args):
         self.Close()
         try:
-            with revit.Transaction('ReValue {}'.format(self.selected_param),
-                                   log_errors=False):
+            with revit.Transaction(
+                "ReValue {}".format(self.selected_param), log_errors=False
+            ):
                 for item in self._revalue_items:
                     if item.newvalue:
                         element = revit.doc.GetElement(item.eid)
-                        if self.selected_param == 'Name':
+                        if self.selected_param == "Name":
                             element.Name = item.newvalue
-                        elif self.selected_param == 'Family: Name':
+                        elif self.selected_param == "Family: Name":
                             if element.Family:
                                 element.Family.Name = item.newvalue
                         else:
@@ -163,7 +159,7 @@ class ReValueWindow(forms.WPFWindow):
                             if param:
                                 param.Set(item.newvalue)
         except Exception as ex:
-            forms.alert(str(ex), title='Error')
+            forms.alert(str(ex), title="Error")
 
 
-ReValueWindow('ReValueWindow.xaml').show(modal=True)
+ReValueWindow("ReValueWindow.xaml").show(modal=True)

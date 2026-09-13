@@ -68,7 +68,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
             if (item == null || component == null)
                 return;
 
-            RibbonIconRegistry.Register(
+            RibbonThemeRegistry.Register(
                 item,
                 isDarkTheme => ApplyIcon(item, component, parentComponent, iconMode, isDarkTheme));
 

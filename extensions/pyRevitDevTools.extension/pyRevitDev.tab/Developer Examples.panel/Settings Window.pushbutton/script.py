@@ -115,7 +115,9 @@ output = script.get_output()
 output.set_title("Settings Window Test Results")
 
 # Show the settings window
-if settings_window.show_settings(settings, section="develop_test_section", title="Advanced Tool Settings"):
+if settings_window.show_settings(
+    settings, section="develop_test_section", title="Advanced Tool Settings"
+):
     output.print_md("## Settings Window Test Results\n")
     output.print_md("**Status:** Settings saved successfully! :white_check_mark:\n")
 
@@ -143,23 +145,20 @@ if settings_window.show_settings(settings, section="develop_test_section", title
         else:
             display_value = str(saved_value)
 
-        table_data.append([
-            label,
-            name,
-            setting_type,
-            display_value
-        ])
+        table_data.append([label, name, setting_type, display_value])
 
     # Display results table
     output.print_table(
         table_data=table_data,
         columns=["Label", "Setting Name", "Type", "Saved Value"],
         title="Saved Settings",
-        formats=["", "", "", ""]
+        formats=["", "", "", ""],
     )
 
     output.print_md("\n---\n")
-    output.print_md("**Note:** Values shown above are retrieved from the config file after saving.")
+    output.print_md(
+        "**Note:** Values shown above are retrieved from the config file after saving."
+    )
 
 else:
     output.print_md("## Settings Window Test Results\n")

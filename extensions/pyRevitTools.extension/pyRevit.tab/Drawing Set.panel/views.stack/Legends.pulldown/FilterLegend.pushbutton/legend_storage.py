@@ -1,18 +1,26 @@
 # -*- coding: utf-8 -*-
-"""Filter Legend's Source View -> generated Legend View link.
+"""Filter Legend's Source View -> generated Legend View link, and
+which elements within a generated legend are this tool's own.
 
 Thin, tool-specific wrapper around the generic
 pyrevit.coreutils.extensible_storage helper (see that module for the
-underlying Extensible Storage mechanics). The link is stored on the
-*source* view -- not a separate DataStorage element -- since the source
-view is always at hand both when saving the link (we just created its
-legend) and when reading it (it's the view the user picked again), so
-there is nothing to collect/clean up separately.
+underlying Extensible Storage mechanics). Two separate schemas, since
+they're two separate concerns attached to two different elements:
+
+  * The Source View -> Legend View link lives on the *source* view --
+    it's always at hand both when saving the link (we just created its
+    legend) and when reading it (it's the view the user picked again),
+    so there is nothing to collect/clean up separately.
+
+  * The list of elements a legend owns lives on the *legend* view
+    itself, so a future run can delete exactly those elements before
+    redrawing -- and leave anything the user added to the legend by
+    hand alone.
 
 Only this file needs to change if the Filter Legend tool ever needs to
-track additional data alongside the link (e.g. a "last generated"
-timestamp): add a field to _FilterLegendLinkSchema.fields and pass it
-through save_link().
+track additional data (e.g. a "last generated" timestamp): add a field
+to the relevant schema class and pass it through the corresponding
+save_* function.
 """
 
 from pyrevit import DB
@@ -26,7 +34,17 @@ class _FilterLegendLinkSchema(extensible_storage.BaseSchema):
     fields = {"LegendViewId": DB.ElementId}
 
 
+class _FilterLegendManagedElementsSchema(extensible_storage.BaseSchema):
+    guid = "a17c9e4b-2d6f-4a91-8b3d-9e5f6a7b8c0d"
+    schema_name = "pyRevitFilterLegendManagedElements"
+    vendor_id = "flgd"
+    array_fields = {"ManagedElementIds": DB.ElementId}
+
+
 _storage = extensible_storage.ElementDataStorage(_FilterLegendLinkSchema)
+_managed_storage = extensible_storage.ElementDataStorage(
+    _FilterLegendManagedElementsSchema
+)
 
 
 def save_link(source_view, legend_view):
@@ -91,3 +109,41 @@ def clear_link(source_view):
     Must be called inside an open transaction.
     """
     _storage.clear_data(source_view)
+
+
+def save_managed_elements(legend_view, element_ids):
+    """Record which elements in `legend_view` this tool generated, so a
+    future update knows exactly what to delete before redrawing --
+    and, just as importantly, what *not* to delete (anything the user
+    added to the legend by hand).
+
+    Overwrites any previously recorded list for this legend.
+
+    Args:
+        legend_view: DB.View (Legend) that owns the elements
+        element_ids: iterable of DB.ElementId generated for this legend
+
+    Must be called inside an open transaction.
+    """
+    _managed_storage.set_data(legend_view, ManagedElementIds=list(element_ids))
+
+
+def get_managed_elements(legend_view):
+    """Return the element ids previously recorded for `legend_view`.
+
+    Args:
+        legend_view: DB.View (Legend) to check
+
+    Returns:
+        list of DB.ElementId, or None if nothing has ever been
+        recorded for this legend -- e.g. it was linked by a version of
+        this tool that predates managed-element tracking. Callers
+        should treat None and an empty list differently: None means
+        "unknown, fall back to something safer"; an empty list means
+        "recorded, and there were none" (a legend whose filters have
+        all since been removed from the source view).
+    """
+    data = _managed_storage.get_data(legend_view)
+    if data is None:
+        return None
+    return data.get("ManagedElementIds")

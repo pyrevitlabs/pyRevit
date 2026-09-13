@@ -63,8 +63,9 @@ def calc_param_total(element_list, param_name):
             type_param = el_type.LookupParameter(param_name)
             if not type_param:
                 logger.error(
-                    "Elemend with ID: {} "
-                    "does not have parameter: {}.".format(el.Id, param_name)
+                    "Elemend with ID: {} does not have parameter: {}.".format(
+                        el.Id, param_name
+                    )
                 )
             else:
                 sum_total = _add_total(sum_total, type_param)

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -149,8 +149,7 @@ Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""
                                       addinPath: WorkingDirectory);
         }
 
-        private static void CopyAll(DirectoryInfo source, DirectoryInfo target)
-        {
+        private static void CopyAll(DirectoryInfo source, DirectoryInfo target) {
             if (source.FullName.NormalizeAsPath() == target.FullName.NormalizeAsPath())
                 return;
 
@@ -158,15 +157,13 @@ Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""
             CommonUtils.EnsurePath(target.FullName);
 
             // Copy each file into it's new directory.
-            foreach (FileInfo fi in source.GetFiles())
-            {
+            foreach (FileInfo fi in source.GetFiles()) {
                 logger.Debug(@"Copying {0}\{1}", target.FullName, fi.Name);
                 fi.CopyTo(Path.Combine(target.ToString(), fi.Name), true);
             }
 
             // Copy each subdirectory using recursion.
-            foreach (DirectoryInfo diSourceSubDir in source.GetDirectories())
-            {
+            foreach (DirectoryInfo diSourceSubDir in source.GetDirectories()) {
                 DirectoryInfo nextTargetSubDir =
                     target.CreateSubdirectory(diSourceSubDir.Name);
                 CopyAll(diSourceSubDir, nextTargetSubDir);
@@ -219,7 +216,7 @@ Jrn.Data ""TaskDialogResult"" , ""Do you want to save changes to Untitled?"", ""
                 revitProcess.WaitForExit();
             }
             execEnv.End(opts);
-            
+
             return execEnv;
         }
     }

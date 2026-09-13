@@ -1,4 +1,5 @@
 """Read and Write Excel Files."""
+
 # pylint: disable=import-error
 import xlrd
 import xlsxwriter
@@ -16,7 +17,7 @@ def _read_xlsheet(xlsheet, columns=[], datatype=None, headers=True):
         elif datatype:
             drow = datatype(drow)
         xlsheetdata.append(drow)
-    return {'headers': xlsheetheader, 'rows': xlsheetdata}
+    return {"headers": xlsheetheader, "rows": xlsheetdata}
 
 
 def load(xlfile, sheets=[], columns=[], datatype=None, headers=True):
@@ -41,15 +42,13 @@ def load(xlfile, sheets=[], columns=[], datatype=None, headers=True):
     for xlsheet in xlwb.sheets():
         if sheets:
             if xlsheet.name in sheets:
-                xldata[xlsheet.name] = _read_xlsheet(xlsheet,
-                                                     columns=columns,
-                                                     datatype=datatype,
-                                                     headers=headers)
+                xldata[xlsheet.name] = _read_xlsheet(
+                    xlsheet, columns=columns, datatype=datatype, headers=headers
+                )
         else:
-            xldata[xlsheet.name] = _read_xlsheet(xlsheet,
-                                                 columns=columns,
-                                                 datatype=datatype,
-                                                 headers=headers)
+            xldata[xlsheet.name] = _read_xlsheet(
+                xlsheet, columns=columns, datatype=datatype, headers=headers
+            )
     return xldata
 
 

@@ -19,10 +19,9 @@ from sectionbox_navigation import (
 from sectionbox_utils import (
     is_2d_view,
     get_view_range_and_crop,
-    get_crop_element,
-    compute_rotation_angle,
-    apply_plan_viewrange_from_sectionbox,
-    to_world_identity,
+    section_box_from_crop,
+    align_crop_by_transform,
+    align_crop_by_shape,
 )
 from sbox.sbox_actions import toggle, hide, align_to_face, temp_switch
 from sectionbox_geometry import (
@@ -60,6 +59,15 @@ TOLERANCE = 1e-5
 DATAFILENAME = "SectionBox"
 TEMP_DATAFILE = script.get_instance_data_file("SectionBoxTemp")
 WINDOW_POSITION = "sbnavigator_window_pos"
+IS_DARK = forms.is_dark_theme()
+BRUSH_COLORS = {
+    "error": Media.Brushes.Red if not IS_DARK else Media.Brushes.LightCoral,
+    "warning": Media.Brushes.Orange if not IS_DARK else Media.Brushes.Gold,
+    "info": Media.Brushes.Blue if not IS_DARK else Media.Brushes.LightSkyBlue,
+    "success": Media.Brushes.Green if not IS_DARK else Media.Brushes.LightGreen,
+    "default_subtle": Media.Brushes.Gray if not IS_DARK else Media.Brushes.LightGray,
+    "default_text": Media.Brushes.Black if not IS_DARK else Media.Brushes.White,
+}
 
 
 def initialize_globals():
@@ -382,7 +390,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             lbl = Controls.TextBlock()
             lbl.Text = self.get_locale_string("NoLevelFoundInDirection")
             lbl.Margin = System.Windows.Thickness(10, 5, 10, 5)
-            lbl.Foreground = Media.Brushes.Gray
+            lbl.Foreground = BRUSH_COLORS.get("default_subtle")
             menu.Children.Add(lbl)
 
     # ----------
@@ -410,20 +418,27 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 self.current_length_unit = length_unit
                 self.update_fields_with_unit_dependencies()
 
+            is_3d_view = isinstance(self.current_view, DB.View3D)
+            is_plan_view = is_2d_view(self.current_view, only_plan=True)
+
+            self.levelNavigationGroup.IsEnabled = is_3d_view
+            self.gridNavigationGroup.IsEnabled = is_3d_view
+            self.expansionGroup.IsEnabled = is_3d_view
+            self.btnAlignBoxToFace.IsEnabled = is_3d_view
+            self.btnTempSwitch.IsEnabled = is_3d_view
+            self.btnAlignToView.IsEnabled = is_3d_view or is_plan_view
+
             if is_2d_view(self.current_view):
                 self.btnAlignToView.Content = self.get_locale_string("AlignWith3DView")
                 if last_view != self.current_view.Id:
                     self.clear_status_message()
 
-            elif isinstance(self.current_view, DB.View3D):
+            elif is_3d_view:
                 self.btnAlignToView.Content = self.get_locale_string("AlignWith2DView")
                 if last_view != self.current_view.Id:
                     self.clear_status_message()
 
-            if (
-                not isinstance(self.current_view, DB.View3D)
-                or not self.current_view.IsSectionBoxActive
-            ):
+            if not is_3d_view or not self.current_view.IsSectionBoxActive:
                 self.txtTopLevelAbove.Text = self.get_locale_string(
                     "NoSectionBoxActive"
                 )
@@ -527,15 +542,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             message_type: "info", "error", "warning", "success" (for color coding)
         """
         try:
-            # Define color mapping
-            colors = {
-                "error": Media.Brushes.Red,
-                "warning": Media.Brushes.Orange,
-                "info": Media.Brushes.Blue,
-                "success": Media.Brushes.Green,
-            }
-
-            color = colors.get(message_type.lower(), Media.Brushes.Black)
+            color = BRUSH_COLORS.get(message_type.lower())
 
             def update_ui():
                 if column == 1:
@@ -600,12 +607,12 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                     self.txtGridStatus.Text = self.get_locale_string(
                         "NoSectionBoxActive"
                     )
-                    self.txtGridStatus.Foreground = Media.Brushes.Gray
+                    self.txtGridStatus.Foreground = BRUSH_COLORS.get("default_subtle")
                     return
 
                 # Get current grid position info if needed
                 self.txtGridStatus.Text = "..."
-                self.txtGridStatus.Foreground = Media.Brushes.Black
+                self.txtGridStatus.Foreground = BRUSH_COLORS.get("default_text")
 
             self.Dispatcher.Invoke(System.Action(update_ui))
         except Exception as ex:
@@ -621,11 +628,11 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                     self.txtExpandActionsStatus.Text = self.get_locale_string(
                         "NoSectionBoxActive"
                     )
-                    self.txtExpandActionsStatus.Foreground = Media.Brushes.Gray
+                    self.txtExpandActionsStatus.Foreground = BRUSH_COLORS.get("default_subtle")
                     return
 
                 self.txtExpandActionsStatus.Text = "..."
-                self.txtExpandActionsStatus.Foreground = Media.Brushes.Black
+                self.txtExpandActionsStatus.Foreground = BRUSH_COLORS.get("default_text")
 
             self.Dispatcher.Invoke(System.Action(update_ui))
         except Exception as ex:
@@ -1163,7 +1170,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                     3, self.get_locale_string("CouldNotGetCropBox"), "error"
                 )
                 return
-            new_box = to_world_identity(crop_box)
+            new_box = section_box_from_crop(crop_box)
 
         elif crop_box:
             # For floor plans, use the existing logic
@@ -1223,10 +1230,52 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
         if not view_data:
             return
 
-        vt = view_data.get("view_type", None)
-        section_box = view_data.get("section_box", None)
+        section_box = view_data.get("section_box")
+        if section_box is None:
+            return
 
-        # Has to be a seperate Transaction for rotate_crop_element to find the bbox
+        is_view_plan = isinstance(self.current_view, DB.ViewPlan)
+
+        scope_box_param = self.current_view.get_Parameter(
+            DB.BuiltInParameter.VIEWER_VOLUME_OF_INTEREST_CROP
+        )
+        has_scope_box = (
+            scope_box_param is not None
+            and scope_box_param.AsElementId() != DB.ElementId.InvalidElementId
+        )
+
+        # Both alignment methods only support plan views without a scope box.
+        if not is_view_plan:
+            self.show_status_message(
+                3,
+                self.get_locale_string("UnsupportedViewType"),
+                "warning",
+            )
+            return
+
+        if has_scope_box:
+            self.show_status_message(
+                3,
+                self.get_locale_string("ScopeBoxApplied"),
+                "warning",
+            )
+            return
+
+        result = forms.alert(
+            "How should the 2D view be aligned to the 3D section box?",
+            title="Align View to 3D View",
+            options=[
+                "Rotate Crop Element",
+                "Set Crop Shape",
+                "Cancel",
+            ],
+        )
+
+        if result == "Cancel":
+            return
+
+        # The crop element needs to be activated in a separate transaction
+        # before it can reliably be accessed/transformed.
         with revit.Transaction("Activate CropBox"):
             if not self.current_view.CropBoxActive:
                 self.current_view.CropBoxActive = True
@@ -1234,56 +1283,37 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             if not self.current_view.CropBoxVisible:
                 self.current_view.CropBoxVisible = True
 
-        with revit.Transaction("Align 2D View to 3D Section Box"):
-            if vt == DB.ViewType.FloorPlan or vt == DB.ViewType.CeilingPlan:
-                self.current_view.CropBox = section_box
-                crop_el = get_crop_element(doc, self.current_view)
-                if crop_el:
-                    # --- 1. Compute 3D section box centroid in world coordinates ---
-                    tf = section_box.Transform
-                    sb_min = tf.OfPoint(section_box.Min)
-                    sb_max = tf.OfPoint(section_box.Max)
-                    sb_centroid = DB.XYZ(
-                        (sb_min.X + sb_max.X) / 2.0,
-                        (sb_min.Y + sb_max.Y) / 2.0,
-                        0,  # Z is ignored for plan rotation
-                    )
+        if result == "Rotate Crop Element":
+            success = align_crop_by_transform(
+                doc,
+                self.current_view,
+                section_box,
+            )
 
-                    # --- 2. Compute current crop element centroid in view coordinates ---
-                    crop_box = crop_el.get_BoundingBox(self.current_view)
-                    crop_centroid = DB.XYZ(
-                        (crop_box.Min.X + crop_box.Max.X) / 2.0,
-                        (crop_box.Min.Y + crop_box.Max.Y) / 2.0,
-                        0,
-                    )
+        elif result == "Set Crop Shape":
+            success = align_crop_by_shape(
+                doc,
+                self.current_view,
+                section_box,
+            )
 
-                    # --- 3. Translate crop element so centroids align (XY only) ---
-                    translation = sb_centroid - crop_centroid
-                    DB.ElementTransformUtils.MoveElement(doc, crop_el.Id, translation)
+        else:
+            return
 
-                    # --- 4. Rotate crop element around vertical axis through its centroid ---
-                    angle = compute_rotation_angle(section_box, self.current_view)
-                    axis = DB.Line.CreateBound(
-                        DB.XYZ(sb_centroid.X, sb_centroid.Y, 0),
-                        DB.XYZ(sb_centroid.X, sb_centroid.Y, 1),
-                    )
-                    DB.ElementTransformUtils.RotateElement(doc, crop_el.Id, axis, angle)
-                apply_plan_viewrange_from_sectionbox(
-                    doc, self.current_view, section_box
-                )
-                self.show_status_message(
-                    3,
-                    self.get_locale_string("CropBoxAlignedFormat").format(
-                        view_data["view"].Name
-                    ),
-                    "success",
-                )
-
-            else:
-                self.show_status_message(
-                    3, self.get_locale_string("UnsupportedViewType"), "warning"
-                )
-                return
+        if success:
+            self.show_status_message(
+                3,
+                self.get_locale_string("CropBoxAlignedFormat").format(
+                    view_data["view"].Name
+                ),
+                "success",
+            )
+        else:
+            self.show_status_message(
+                3,
+                self.get_locale_string("UnsupportedViewType"),
+                "warning",
+            )
 
     def do_toggle(self):
         """Toggle section or crop box."""
@@ -1717,7 +1747,6 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             }
 
         elif is_2d_view(self.current_view, only_plan=True):
-
             selected_view = forms.select_views(
                 multiple=False,
                 filterfunc=lambda v: isinstance(v, DB.View3D),

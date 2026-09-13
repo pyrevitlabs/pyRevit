@@ -10,6 +10,7 @@ the first line of pyrevit/__init__.py without triggering circular loads. The
 pyRevit logger is resolved lazily on first use; checkpoints that fire before
 the logger is importable (early bootstrap) are silently skipped.
 """
+
 import time
 
 # perf_counter exists on IronPython 2.7.6+ and CPython 3.3+; fall back to
@@ -31,6 +32,7 @@ def _logger():
         return _LOGGER[0]
     try:
         from pyrevit.coreutils.logger import get_logger
+
         _LOGGER[0] = get_logger("pyrevit.perf")
     except Exception:
         return None
