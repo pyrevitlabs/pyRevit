@@ -406,13 +406,12 @@ class _WPFMixin(object):
     # ------------------------------------------------------------------ resources
 
     @staticmethod
-    def setup_resources(wpf_ctrl, set_root_colors=True):
+    def setup_resources(wpf_ctrl, set_root_colors=True, resolve_theme=False):
         """Set pyRevit colour resources on any WPF control.
 
         Injects the brand palette (constant, used by HUD-style overlays)
-        and the semantic light/dark palette (resolved from Revit's active
-        UI theme) as DynamicResource-able brushes. Safe to call again on
-        an already-loaded control to re-theme it in place.
+        and the semantic light/dark palette as DynamicResource-able brushes.
+        Theme resolution is opt-in so forms default to the light palette.
 
         Args:
             wpf_ctrl: any WPF FrameworkElement with a Resources dict.
@@ -422,6 +421,8 @@ class _WPFMixin(object):
                 transparent HUD-style overlays) must be able to override this
                 afterwards. Live theme-change refreshes pass False so an
                 already-open HUD window is not forced opaque.
+            resolve_theme (bool): resolve the palette from Revit's active UI
+                theme. Defaults to False.
 
         Note:
             The root colours are assigned directly rather than left to the
@@ -445,7 +446,7 @@ class _WPFMixin(object):
             res["pyRevitButtonColor"]
         )
 
-        is_dark = _is_dark_theme()
+        is_dark = resolve_theme and _is_dark_theme()
         palette = _PALETTE_DARK if is_dark else _PALETTE_LIGHT
         for name, argb in palette.items():
             _set_color("pyRevit" + name, argb)
@@ -469,7 +470,9 @@ class _WPFMixin(object):
         Args:
             wpf_ctrl: any WPF FrameworkElement with a Resources dict.
         """
-        _WPFMixin.setup_resources(wpf_ctrl, set_root_colors=False)
+        _WPFMixin.setup_resources(
+            wpf_ctrl, set_root_colors=False, resolve_theme=True
+        )
 
     def apply_contrast_foregrounds(self):
         """Give every custom-background element a readable text color.
@@ -541,7 +544,11 @@ class _WPFMixin(object):
 
     def _on_theme_refresh(self):
         """Re-theme resources and, for windows, the native title bar."""
-        _WPFMixin.setup_resources(self, set_root_colors=self._live_refresh_root_colors)
+        _WPFMixin.setup_resources(
+            self,
+            set_root_colors=self._live_refresh_root_colors,
+            resolve_theme=True,
+        )
         self.apply_contrast_foregrounds()
         self._apply_dark_titlebar()
         self._refresh_icon()
@@ -785,6 +792,7 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         literal_string (bool): xaml_source contains xaml content, not filepath
         handle_esc (bool): handle Escape button and close the window
         set_owner (bool): set the owner of window to host app window
+        resolve_theme (bool): resolve the palette from Revit's active UI theme. Defaults to False.
 
     Examples:
         ```python
@@ -802,7 +810,12 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
     """
 
     def __init__(
-        self, xaml_source, literal_string=False, handle_esc=True, set_owner=True
+        self,
+        xaml_source,
+        literal_string=False,
+        handle_esc=True,
+        set_owner=True,
+        resolve_theme=False,
     ):
         """Initialize WPF window and resources."""
         # load xaml
@@ -811,10 +824,16 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
             literal_string=literal_string,
             handle_esc=handle_esc,
             set_owner=set_owner,
+            resolve_theme=resolve_theme,
         )
 
     def load_xaml(
-        self, xaml_source, literal_string=False, handle_esc=True, set_owner=True
+        self,
+        xaml_source,
+        literal_string=False,
+        handle_esc=True,
+        set_owner=True,
+        resolve_theme=False,
     ):
         """Load the window XAML file.
 
@@ -826,11 +845,14 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
                 Defaults to True.
             set_owner (bool, optional): Whether to set the window owner.
                 Defaults to True.
+            auto_theme_switch (bool, optional): Whether to refresh theme
+                resources when Revit's theme changes. Defaults to False.
         """
+        self.resolve_theme = resolve_theme
         # create new id for this window
         self.window_id = coreutils.new_uuid()
 
-        _WPFMixin.setup_resources(self)
+        _WPFMixin.setup_resources(self, resolve_theme=self.resolve_theme)
         self.merge_resource_dict(THEME_XAML_FILE)
         if not literal_string:
             xaml_path, pending_resource_merge = _resolve_xaml_source(xaml_source)
@@ -850,7 +872,8 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         if handle_esc:
             self.setup_default_handlers()
         self._apply_dark_titlebar()
-        self._subscribe_theme_changed()
+        if self.resolve_theme:
+            self._subscribe_theme_changed()
         self.Closed += self._unsubscribe_theme_changed
 
     def setup_owner(self):
@@ -983,7 +1006,7 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
 
     _live_refresh_root_colors = True
 
-    def __init__(self):
+    def __init__(self, resolve_theme=False):
         """Initialize WPF panel and resources."""
         if not self.panel_id:
             raise PyRevitException('"panel_id" class attribute is not set')
@@ -992,9 +1015,9 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
         if not self.panel_title:
             raise PyRevitException('"panel_title" class attribute is not set')
 
-        self.load_xaml(self.panel_source)
+        self.load_xaml(self.panel_source, resolve_theme=resolve_theme)
 
-    def load_xaml(self, xaml_source, literal_string=False):
+    def load_xaml(self, xaml_source, literal_string=False, resolve_theme=False):
         """Load the panel XAML file.
 
         Supports the full locale-fallback chain (see _resolve_xaml_source) and
@@ -1003,8 +1026,11 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
         Args:
             xaml_source (str): XAML content string or file path.
             literal_string (bool): True when xaml_source is raw content.
+            resolve_theme (bool): resolve the palette from Revit's active UI
+                theme. Defaults to False.
         """
-        _WPFMixin.setup_resources(self)
+        self.resolve_theme = resolve_theme
+        _WPFMixin.setup_resources(self, resolve_theme=self.resolve_theme)
         self.merge_resource_dict(THEME_XAML_FILE)
         if not literal_string:
             xaml_path, pending_resource_merge = _resolve_xaml_source(xaml_source)
@@ -1016,7 +1042,8 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
             wpf.LoadComponent(self, framework.StringReader(xaml_source))
         self.apply_contrast_foregrounds()
         self.thread_id = framework.get_current_thread_id()
-        self._subscribe_theme_changed()
+        if self.resolve_theme:
+            self._subscribe_theme_changed()
 
     def _get_panel_output(self):
         """Get current output window and keep its title in sync with panel_title."""
