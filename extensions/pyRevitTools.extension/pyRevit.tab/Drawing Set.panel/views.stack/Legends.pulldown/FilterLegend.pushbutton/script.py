@@ -282,7 +282,7 @@ with revit.TransactionGroup("Create Filter Legend(s)"):
                             f.Name,
                             src_view.Name,
                         )
-                        row_advance = row_height
+                        raise
 
                     y -= row_advance + row_spacing
 
