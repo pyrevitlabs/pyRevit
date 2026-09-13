@@ -758,6 +758,339 @@ class EditRecordWindow(forms.WPFWindow):
                 pass
 
 
+class PastePreviewWindow(forms.WPFWindow):
+    """Shows what a paste would do to the TARGET file, row by row.
+
+    Projects in a firm share a master keynote standard, so a key existing
+    on both sides is the NORMAL case, not the exception.  The dangerous
+    one is the same key with different text: that means the two projects
+    have diverged, and silently taking either side loses somebody's
+    edit.  Conflicts are therefore listed unticked — the user opts in.
+
+    Rows are built in code rather than data-bound: WPF binding to plain
+    IronPython objects is unreliable, and the whole grid is throwaway.
+    """
+
+    # Conflicts first: they are the only rows needing a decision.
+    _STATUS_RANK = {"Conflict": 0, "New": 1, "Missing parent": 2,
+                    "Locked": 3, "Identical": 4}
+
+    # (resource key, English fallback, brush).  Every string here is
+    # resolved through the merged ResourceDictionary, which is OPTIONAL:
+    # _resolve_xaml_source merges nothing when no locale file is present,
+    # so each entry has to carry a usable default.
+    _RESULT = {
+        "New": ("ResultAdd", "Add", "NewBrush"),
+        "Conflict": ("ResultReplace", "Replace text", "ConflictBrush"),
+        "Identical": ("ResultIdentical", "Already there", "MutedBrush"),
+        "Locked": ("ResultLocked", "Locked by {0}", "MutedBrush"),
+        "Missing parent": ("ResultNoParent", "No parent group",
+                           "MutedBrush"),
+    }
+
+    def _text(self, key, default):
+        """Localised string for `key`, falling back to the English default."""
+        try:
+            return self.get_locale_string(key, default) or default
+        except Exception:
+            return default
+
+    def __init__(self, owner, rows, source_doc, target_name, same_file=False):
+        forms.WPFWindow.__init__(self, bundle_file("PastePreview.xaml"))
+        self.Owner = owner
+        self.approved = None
+        # remember the caller's parents-before-children order: the display
+        # order below is by status, which would break insertion
+        self._order = dict((r["key"], i) for i, r in enumerate(rows))
+        self._rows = sorted(
+            rows,
+            key=lambda r: (self._STATUS_RANK.get(r["status"], 9), r["key"]))
+        self._boxes = []
+        self._by_key = {}
+        self._children = defaultdict(list)
+        for row in self._rows:
+            if row.get("parent_needs_add"):
+                self._children[row["parent"]].append(row["key"])
+        # guards the cascade below against re-entering itself
+        self._syncing = False
+
+        # composed here rather than by the caller, so both halves are
+        # translatable and the placeholders can be reordered per language
+        source_name = source_doc or self._text("UnknownSource",
+                                               "another project")
+        if same_file:
+            source_name += " " + self._text("SameFileNote",
+                                            "(same keynote file)")
+        self.headerText.Text = (
+            self._text("HeaderInto",
+                       "{0} record(s) from “{1}” into “{2}”.")
+            .format(len(self._rows), source_name, target_name)
+            + "\n"
+            + self._text("HeaderNote",
+                         "Ticked rows are written to the target keynote "
+                         "file; everything else is left exactly as it is."))
+        self.footerNote.Text = self._text(
+            "FooterNote",
+            "Taking a conflicting row replaces the target's TEXT only — "
+            "its place in the tree is kept.")
+        self._build_rows()
+        self._update_summary()
+
+    # --- construction ----------------------------------------------------
+
+    def _build_rows(self):
+        self.rowsPanel.Items.Clear()
+        del self._boxes[:]
+        for row in self._rows:
+            self.rowsPanel.Items.Add(self._make_row(row))
+
+    def _make_row(self, row):
+        grid = Windows.Controls.Grid()
+        grid.Margin = Windows.Thickness(4, 2, 4, 2)
+        for width, star in ((26, False), (150, False), (1, True),
+                            (1, True), (120, False)):
+            coldef = Windows.Controls.ColumnDefinition()
+            coldef.Width = Windows.GridLength(
+                width,
+                Windows.GridUnitType.Star if star
+                else Windows.GridUnitType.Pixel)
+            grid.ColumnDefinitions.Add(coldef)
+
+        status = row["status"]
+        box = Windows.Controls.CheckBox()
+        box.VerticalAlignment = Windows.VerticalAlignment.Center
+        box.IsEnabled = status in ("New", "Conflict")
+        # New rows are additive and safe; a conflict overwrites text that
+        # someone in the target project wrote, so it starts unticked.
+        box.IsChecked = (status == "New")
+        box.Tag = row
+        box.Checked += self._on_row_toggled
+        box.Unchecked += self._on_row_toggled
+        Windows.Controls.Grid.SetColumn(box, 0)
+        grid.Children.Add(box)
+        self._boxes.append(box)
+        self._by_key[row["key"]] = box
+
+        label = row["key"]
+        if row["is_category"]:
+            label += "  " + self._text("GroupTag", "(group)")
+        self._cell(grid, 1, label, mono=True)
+        self._cell(grid, 2, row["text"])
+        self._cell(grid, 3, row["target_text"])
+
+        res_key, res_default, brush = self._RESULT.get(
+            status, (None, status, "MutedBrush"))
+        text = self._text(res_key, res_default) if res_key else res_default
+        if status == "Locked":
+            owner = row.get("owner") or self._text("UnknownUser",
+                                                   "another user")
+            try:
+                text = text.format(owner)
+            except Exception:
+                # a translation with a stray brace must not kill the row
+                text = "%s %s" % (res_default.split("{")[0].strip(), owner)
+        self._cell(grid, 4, text, brush_key=brush)
+        return grid
+
+    def _cell(self, grid, column, text, brush_key=None, mono=False):
+        block = Windows.Controls.TextBlock()
+        block.Text = text or ""
+        block.FontSize = 11
+        block.TextTrimming = Windows.TextTrimming.CharacterEllipsis
+        block.VerticalAlignment = Windows.VerticalAlignment.Center
+        block.Margin = Windows.Thickness(4, 0, 4, 0)
+        if mono:
+            try:
+                block.FontFamily = Windows.Media.FontFamily("Consolas")
+            except Exception:
+                pass
+        if brush_key:
+            try:
+                block.SetResourceReference(
+                    Windows.Controls.TextBlock.ForegroundProperty, brush_key)
+            except Exception:
+                pass
+        Windows.Controls.Grid.SetColumn(block, column)
+        grid.Children.Add(block)
+        return block
+
+    # --- interaction -----------------------------------------------------
+
+    def _on_row_toggled(self, sender, args):
+        """Keep parents and children consistent.
+
+        A keynote whose group does not exist in the target yet can only be
+        written if that group is written too, so ticking a child pulls in
+        the groups it needs and unticking a group drops what sat under it.
+        Rows whose parent already exists in the target are independent and
+        are deliberately left alone.
+        """
+        if self._syncing:
+            return
+        self._syncing = True
+        try:
+            row = getattr(sender, "Tag", None)
+            if row is None:
+                return
+            if sender.IsChecked:
+                self._tick_required_parents(row)
+            else:
+                self._untick_dependents(row["key"])
+        except Exception as ex:
+            logger.debug("paste preview cascade failed | %s", ex)
+        finally:
+            self._syncing = False
+        self._update_summary()
+
+    def _tick_required_parents(self, row):
+        seen = set()
+        while row is not None and row.get("parent_needs_add"):
+            parent_key = row["parent"]
+            if parent_key in seen:
+                return                      # defensive: cyclic parentage
+            seen.add(parent_key)
+            box = self._by_key.get(parent_key)
+            if box is None or not box.IsEnabled:
+                return
+            box.IsChecked = True
+            row = box.Tag
+
+    def _untick_dependents(self, key):
+        stack = list(self._children.get(key, []))
+        while stack:
+            child_key = stack.pop()
+            box = self._by_key.get(child_key)
+            if box is None or not box.IsChecked:
+                continue
+            box.IsChecked = False
+            stack.extend(self._children.get(child_key, []))
+
+    def _update_summary(self):
+        adds = sum(1 for b in self._boxes
+                   if b.IsChecked and b.Tag["status"] == "New")
+        overs = sum(1 for b in self._boxes
+                    if b.IsChecked and b.Tag["status"] == "Conflict")
+        self.summaryText.Text = self._text(
+            "SummaryCounts",
+            "{0} to add · {1} to replace · {2} left alone").format(
+                adds, overs, len(self._rows) - adds - overs)
+        self.pasteBtn.IsEnabled = bool(adds or overs)
+
+    def _set_all(self, predicate):
+        """Apply a whole tick state at once.
+
+        Each of these is already internally consistent — every New row
+        is included or none is — so the per-row cascade is suppressed
+        rather than run once per checkbox.
+        """
+        self._syncing = True
+        try:
+            for box in self._boxes:
+                box.IsChecked = bool(box.IsEnabled and predicate(box.Tag))
+        finally:
+            self._syncing = False
+        self._update_summary()
+
+    def take_all(self, sender, args):
+        self._set_all(lambda row: True)
+
+    def only_new(self, sender, args):
+        self._set_all(lambda row: row["status"] == "New")
+
+    def take_none(self, sender, args):
+        self._set_all(lambda row: False)
+
+    # --- result ----------------------------------------------------------
+
+    def _finish(self, result):
+        try:
+            self.DialogResult = result   # closes a modal dialog
+        except Exception:
+            self.Close()
+
+    def do_paste(self, sender, args):
+        approved = []
+        for box in self._boxes:
+            if not box.IsChecked:
+                continue
+            row = dict(box.Tag)
+            row["action"] = "add" if row["status"] == "New" else "overwrite"
+            approved.append(row)
+        # back to parents-before-children before anything is written
+        approved.sort(key=lambda r: self._order.get(r["key"], 0))
+
+        # Belt and braces: the cascade above should make this impossible,
+        # but writing a keynote under a group that was never created would
+        # corrupt a SHARED file, so drop any such row rather than trust it.
+        writable = set(r["key"] for r in approved)
+        kept = []
+        for row in approved:
+            if row.get("parent_needs_add") and row["parent"] not in writable:
+                logger.warning("paste: %s dropped — its group %s is not "
+                               "being written", row["key"], row["parent"])
+                continue
+            kept.append(row)
+
+        self.approved = kept
+        self._finish(True)
+
+    def do_cancel(self, sender, args):
+        self.approved = None
+        self._finish(False)
+
+    def show(self):
+        self.ShowDialog()
+        return self.approved
+
+
+class _DocBinding(object):
+    """Per-document state the panel swaps in and out on a project switch.
+
+    The window keeps the ACTIVE binding's values in its own attributes
+    (self._conn, self._kfile, self._needs_update, the usage maps) so the
+    ~190 call sites that read them need no change: _capture_binding writes
+    them back out, _activate_binding writes the next ones in.
+
+    The keynote FILE is deliberately not held here.  Two open projects
+    usually share one, and they must then share a single connection and a
+    single ADC lock; see KeynoteManagerWindow._files.
+    """
+
+    def __init__(self, doc):
+        self.doc = doc
+        self.kfile = None      # key into KeynoteManagerWindow._files
+        self.error = None      # why this project shows no tree, or None
+        self.needs_update = False
+        self.used_keysdict = defaultdict(list)
+        self.used_typesdict = defaultdict(set)
+        self.used_viewsdict = defaultdict(list)
+        self.usage_stale = True
+        self.cache = []
+        self.snapshot_categories = []
+        self.snapshot_keynotes = []
+        self.search_term = ""
+        self.selected_key = None
+        self.scroll_offset = 0.0
+
+    @property
+    def title(self):
+        """Short project name for the title bar and multi-project prompts."""
+        try:
+            return op.splitext(op.basename(self.doc.PathName))[0] \
+                or self.doc.Title
+        except Exception:
+            try:
+                return self.doc.Title
+            except Exception:
+                return "<unknown project>"
+
+    def is_live(self):
+        try:
+            return self.doc is not None and self.doc.IsValidObject
+        except Exception:
+            return False
+
+
 # =============================================================================
 # MAIN KEYNOTE MANAGER WINDOW
 # =============================================================================
@@ -771,6 +1104,25 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         self._modal_mode = safe_mode
         self.Topmost = False
+        self._base_title = self.Title
+
+        # --- multi-project state ------------------------------------------
+        # _files is keyed by keynote FILE because two open projects often
+        # share one: they then share a connection and a single ADC lock,
+        # held until this window closes.
+        # _bindings is keyed by DOCUMENT.  self._binding is the one whose
+        # state is currently mirrored into the window's own attributes.
+        self._files = {}
+        self._bindings = []
+        self._binding = None
+        self._bind_error = None
+        self._pending_doc = None
+        self._inflight = 0
+        self._uiapp = None
+        self._follow_error = "not armed yet"
+        # Plain dicts, so the clipboard outlives a project switch and the
+        # source file's connection.
+        self._clipboard = None
 
         self._kfile = None
         self._kfile_handler = None
@@ -780,6 +1132,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._ext_handler = RevitActionHandler()
         self._ext_event = None
 
+        # The FIRST bind is interactive: the user asked for this window, so
+        # a missing or unconvertible file is worth a prompt.  Every later
+        # bind comes from a view switch and must stay silent (_bind_silent).
         self._determine_kfile()
         self._connect_kfile()
 
@@ -795,10 +1150,25 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._used_viewsdict = defaultdict(list)
         self._usage_stale = True
         self._refresh_used_keynotes()
+
+        # the document this window was opened for is binding #1
+        self._binding = _DocBinding(self._doc)
+        self._binding.kfile = self._kfile
+        self._bindings.append(self._binding)
+
         self._drag_start_point = None
         self._is_dragging = False
+        self._drag_left_window = False
+        self._drag_cancelled = False
         self._shift_place_pending = None
         self._shift_release_timer = None
+
+        # Multi-selection.  WPF TreeView selects one row, so the extra rows
+        # are tracked here and drawn from the row data (see
+        # RKeynote.multi_selected).
+        self._sel_keys = set()
+        self._sel_anchor = None
+        self._suspend_sel_reset = False
 
         # modeless close state
         self._close_pending = False
@@ -808,16 +1178,23 @@ class KeynoteManagerWindow(forms.WPFWindow):
         # Wait 300ms after last keystroke before filtering.
         self._search_timer.Interval = TimeSpan.FromMilliseconds(300)
         self._search_timer.Tick += self._on_search_timer_tick
+
+        # Coalesce view switches.  ViewActivated fires for every view, and
+        # the user may tab through several projects before settling;
+        # connecting can touch a cloud folder, so never bind on the first
+        # tick of a switch.
+        self._retarget_timer = DispatcherTimer()
+        self._retarget_timer.Interval = TimeSpan.FromMilliseconds(250)
+        self._retarget_timer.Tick += self._on_retarget_timer_tick
+
         self._refresh_pending = False
         self._doc_changed_app = None
         self.Loaded += self._on_window_loaded
 
-        self.set_image_source(self.expandAllIcon, "expand_all.png")
-        self.set_image_source(self.collapseAllIcon, "collapse_all.png")
-
         self.load_config(reset_config)
         self._update_full_tree()
         self._update_status_bar()
+        self._update_title()
         self.search_tb.Focus()
         self._ext_event = UI.ExternalEvent.Create(self._ext_handler)
 
@@ -901,7 +1278,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
     def _update_status_bar(self):
         safe = " \u2014 SAFE MODE (no persistent engine)" \
             if self._modal_mode else ""
-        if self._kfile:
+        if self._follow_error and not self._modal_mode:
+            safe += " \u2014 NOT following ({})".format(self._follow_error)
+        if self._bind_error:
+            self.statusLeft.Text = \
+                self._bind_error.replace("\n", "  ") + safe
+        elif self._kfile:
             fname = op.basename(self._kfile)
             handler = " ( ACC / FORMA )" if self._kfile_handler == "adc" else ""
             self.statusLeft.Text = "{}{} \u2014 {}{}".format(
@@ -922,8 +1304,606 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     len(cats), len(knotes), used
                 )
             )
+            if len(self._sel_keys) > 1:
+                self.statusRight.Text += " \u00b7 {} selected".format(
+                    len(self._sel_keys))
         except Exception:
             self.statusRight.Text = ""
+
+    # =========================================================================
+    # MULTI-SELECTION
+    # =========================================================================
+
+    def _flat_display_rows(self, filtered=True):
+        """Every row in tree order.
+
+        Walks the cached tree rather than the database: this runs on every
+        Ctrl/Shift click, and selecting rows must never touch the keynote
+        file.
+
+        filtered=True follows `children`, the search-aware view, so a
+        Shift+Click range covers exactly what is on screen.  filtered=False
+        follows the raw `_children`, which is what the SELECTION itself has
+        to be read through: a row stays selected while a search hides it,
+        and Copy must still take it rather than quietly dropping it.
+        """
+        rows = []
+
+        def _walk(nodes):
+            for rec in nodes or []:
+                rows.append(rec)
+                _walk(rec.children if filtered else rec._children)
+
+        _walk(self._cache)
+        return rows
+
+    def _apply_selection_marks(self, rows=None):
+        """Push the selection set onto the row objects.
+
+        Unfiltered: a row hidden by the current search keeps its highlight
+        so it is still marked when the search is cleared.
+        """
+        if rows is None:
+            rows = self._flat_display_rows(filtered=False)
+        for rec in rows:
+            rec.multi_selected = rec.key in self._sel_keys
+
+    def _set_selection(self, keys, anchor=None):
+        self._sel_keys = set(keys or [])
+        if anchor is not None:
+            self._sel_anchor = anchor
+        self._apply_selection_marks()
+        self._update_status_bar()
+        self._update_buttons()
+
+    def _toggle_in_selection(self, rec):
+        """Ctrl+Click: add or remove one row, keeping the rest."""
+        keys = set(self._sel_keys)
+        if not keys:
+            # first Ctrl+Click extends the row the user already had focused
+            focus = self.selected_keynote
+            if focus:
+                keys.add(focus.key)
+        if rec.key in keys:
+            keys.discard(rec.key)
+        else:
+            keys.add(rec.key)
+        self._set_selection(keys, anchor=rec.key)
+
+    def _extend_selection_to(self, rec):
+        """Shift+Click: select everything between the anchor and this row.
+
+        The anchor deliberately stays put, so a second Shift+Click
+        re-ranges from the same origin instead of creeping down the tree.
+        """
+        rows = self._flat_display_rows()
+        order = dict((r.key, i) for i, r in enumerate(rows))
+        anchor = self._sel_anchor
+        if anchor not in order:
+            focus = self.selected_keynote
+            anchor = focus.key if focus else rec.key
+        if anchor not in order or rec.key not in order:
+            self._set_selection([rec.key], anchor=rec.key)
+            return
+        low, high = sorted((order[anchor], order[rec.key]))
+        self._set_selection([r.key for r in rows[low:high + 1]], anchor=anchor)
+
+    @property
+    def selected_keynotes(self):
+        """The multi-selection in tree order, or the focused row alone.
+
+        Tree order matters: copy walks these as roots and writes parents
+        before children.
+        """
+        if not self._sel_keys:
+            focus = self.selected_keynote
+            return [focus] if focus else []
+        return [r for r in self._flat_display_rows(filtered=False)
+                if r.key in self._sel_keys]
+
+    def _prune_nested(self, recs):
+        """Keep only the topmost row of each selected branch.
+
+        Copy takes whole subtrees, so a keynote selected alongside its own
+        group would otherwise be collected twice.
+        """
+        chosen = set(r.key for r in recs)
+        parents = {}
+        for rec in self._flat_display_rows(filtered=False):
+            parents[rec.key] = rec.parent_key
+        roots = []
+        for rec in recs:
+            parent = parents.get(rec.key)
+            seen = set()
+            nested = False
+            while parent and parent not in seen:
+                seen.add(parent)
+                if parent in chosen:
+                    nested = True
+                    break
+                parent = parents.get(parent)
+            if not nested:
+                roots.append(rec.key)
+        return roots
+
+    # =========================================================================
+    # COPY / PASTE BETWEEN PROJECTS
+    # =========================================================================
+
+    def _subtree_rows(self, root_keys):
+        """Flatten `root_keys` and their descendants, parents before children.
+
+        Reads the FILE rather than the on-screen tree: RKeynote.children
+        returns the FILTERED children while a search is active, so walking
+        the view would silently copy only the rows matching the filter.
+        """
+        by_key = {}
+        kids = defaultdict(list)
+        knotes = kdb.get_keynotes(self._conn)
+        for rec in kdb.get_categories(self._conn) + knotes:
+            by_key[rec.key] = rec
+        for rec in knotes:
+            if rec.parent_key:
+                kids[rec.parent_key].append(rec)
+
+        rows = []
+        seen = set()
+
+        def _walk(key):
+            if key in seen:
+                return
+            rec = by_key.get(key)
+            if rec is None:
+                return
+            seen.add(key)
+            rows.append({"key": rec.key,
+                         "text": rec.text,
+                         "parent_key": rec.parent_key,
+                         "is_category": rec.is_category})
+            for child in natsorted(kids.get(key, []), key=lambda x: x.key):
+                _walk(child.key)
+
+        for root_key in root_keys:
+            _walk(root_key)
+        return rows
+
+    def copy_keynote(self, sender, args):
+        """Copy the selection and everything under it to the clipboard."""
+        picked = self.selected_keynotes
+        if not picked:
+            return
+        if not self._conn:
+            forms.alert("No keynote file is connected.")
+            return
+        root_keys = self._prune_nested(picked)
+        if not root_keys:
+            return
+        try:
+            rows = self._subtree_rows(root_keys)
+        except System.TimeoutException as toutex:
+            forms.alert(toutex.Message)
+            return
+        except Exception as ex:
+            forms.alert("Could not read the keynotes to copy.\n%s" % ex)
+            return
+        if not rows:
+            return
+        self._clipboard = {
+            "source_doc": self._binding.title if self._binding else "",
+            "source_kfile": self._kfile,
+            "roots": root_keys,
+            "items": rows,
+        }
+        knote_count = sum(1 for r in rows if not r["is_category"])
+        self._hint("Copied {} — {} keynote(s), {} group(s)".format(
+            ", ".join(root_keys), knote_count, len(rows) - knote_count))
+
+    def _classify_paste(self, items, target_parent):
+        """Work out what each incoming row would do.  READ ONLY.
+
+        Nothing may be written before the user approves the preview, so
+        this must not touch the target file.
+        """
+        existing = {}
+        for rec in (kdb.get_categories(self._conn)
+                    + kdb.get_keynotes(self._conn)):
+            existing[rec.key] = rec
+        locks = {}
+        try:
+            for lock in kdb.get_locks(self._conn):
+                if lock.IsRecordLock:
+                    locks[lock.LockTargetRecordKey] = lock.LockRequester
+        except Exception as ex:
+            logger.debug("lock read failed | %s", ex)
+
+        incoming = set(i["key"] for i in items)
+        rows = []
+        for item in items:
+            key = item["key"]
+            if item["is_category"]:
+                parent = ""                      # groups are roots
+            elif item["parent_key"] in incoming:
+                parent = item["parent_key"]      # copied with its parent
+            elif target_parent:
+                parent = target_parent           # re-home onto the selection
+            elif item["parent_key"] in existing:
+                parent = item["parent_key"]      # same group already here
+            else:
+                parent = None                    # nowhere to put it
+
+            old = existing.get(key)
+            if key in locks:
+                status = "Locked"
+            elif parent is None:
+                status = "Missing parent"
+            elif old is None:
+                status = "New"
+            elif (kdb.normalize_keynote_text(old.text)
+                  == kdb.normalize_keynote_text(item["text"])):
+                status = "Identical"
+            else:
+                status = "Conflict"
+
+            rows.append({"key": key,
+                         "text": item["text"],
+                         "parent": parent,
+                         "is_category": item["is_category"],
+                         "target_text": old.text if old else "",
+                         "owner": locks.get(key, ""),
+                         # True when this row's parent does not exist in the
+                         # target yet, so the row is only writable if the
+                         # parent is pasted too
+                         "parent_needs_add": bool(parent
+                                                  and parent in incoming
+                                                  and parent not in existing),
+                         "status": status})
+        return rows
+
+    def paste_keynote(self, sender, args):
+        """Paste the clipboard into the keynote file on screen."""
+        if not self._clipboard:
+            self._hint("Nothing copied yet")
+            return
+        if not self._conn:
+            forms.alert("No keynote file is connected.")
+            return
+
+        sel = self.selected_keynote
+        try:
+            rows = self._classify_paste(self._clipboard["items"],
+                                        sel.key if sel else None)
+        except System.TimeoutException as toutex:
+            forms.alert(toutex.Message)
+            return
+        except Exception as ex:
+            forms.alert("Could not read the target keynote file.\n%s" % ex)
+            return
+        if not rows:
+            return
+
+        approved = PastePreviewWindow(
+            self, rows,
+            self._clipboard.get("source_doc"),
+            self._binding.title if self._binding else "",
+            same_file=(self._clipboard.get("source_kfile") == self._kfile)
+        ).show()
+        if not approved:
+            return
+
+        try:
+            written = kdb.paste_records(self._conn, approved)
+        except System.TimeoutException as toutex:
+            forms.alert(toutex.Message)
+            return
+        except Exception as ex:
+            forms.alert("Paste failed — nothing was written.\n%s" % ex)
+            return
+
+        # every open project on THIS file now has a stale keynote table;
+        # _capture_binding fans that out to the other bindings
+        self._needs_update = True
+        self._hint("Pasted {} record(s)".format(written))
+        self._update_full_tree()
+        self._update_status_bar()
+        self._update_buttons()
+
+    # =========================================================================
+    # MULTI-PROJECT BINDINGS
+    # =========================================================================
+
+    def _find_binding(self, doc):
+        """The binding for `doc`, or None.
+
+        Linear over the handful of open projects rather than a dict lookup:
+        a Revit Document is not a safe dictionary key.
+        """
+        if doc is None:
+            return None
+        for b in self._bindings:
+            try:
+                if b.doc is not None and b.doc.IsValidObject \
+                        and b.doc.Equals(doc):
+                    return b
+            except Exception:
+                continue
+        return None
+
+    def _bind_silent(self, binding):
+        """Resolve and connect `binding`'s keynote file without prompting.
+
+        Following must never raise a file picker or a Convert dialog in the
+        middle of a view switch, so every failure lands in binding.error and
+        is shown in the panel instead.  Returns True when a connection is
+        available.
+
+        MUST run in a valid Revit API context (it is queued through
+        _revit_run): resolving the keynote file reads the KeynoteTable.
+        """
+        binding.error = None
+        binding.kfile = None
+        try:
+            kfile, kfile_ext, handler = self._resolve_kfile_for(binding.doc)
+        except KeynoteSetupError as kex:
+            binding.error = str(kex)
+            return False
+        except Exception as ex:
+            logger.debug("keynote file resolve failed | %s", ex)
+            binding.error = ("Could not resolve this project's keynote "
+                             "file.\n%s" % ex)
+            return False
+
+        if not kfile:
+            binding.error = ("This project has no keynote file set.\n"
+                             "Use Change Keynote File to pick one.")
+            return False
+
+        entry = self._files.get(kfile)
+        if entry is not None and entry.get("conn") is not None:
+            # another open project already has this file — share the
+            # connection and its single ADC lock
+            binding.kfile = kfile
+            return True
+
+        try:
+            conn = self._open_kfile(kfile)
+        except KeynoteSetupError as kex:
+            binding.error = str(kex)
+            return False
+        except Exception as ex:
+            binding.error = "Cannot connect to the keynote file.\n%s" % ex
+            return False
+
+        self._files[kfile] = {"conn": conn, "ext": kfile_ext,
+                              "handler": handler, "shadowed": False}
+        self._shadow_once(kfile)
+        binding.kfile = kfile
+        return True
+
+    def _capture_binding(self):
+        """Write the window's live state back into the active binding.
+
+        Also fans the pending-sync flag out to every other open project on
+        the SAME keynote file: editing that file leaves their keynote
+        tables stale too, and they have to be offered on close.
+        """
+        b = self._binding
+        if b is None:
+            return
+        b.needs_update = self._needs_update
+        b.used_keysdict = self._used_keysdict
+        b.used_typesdict = self._used_typesdict
+        b.used_viewsdict = self._used_viewsdict
+        b.usage_stale = self._usage_stale
+        b.cache = self._cache
+        b.snapshot_categories = self._snapshot_categories
+        b.snapshot_keynotes = self._snapshot_keynotes
+        b.error = self._bind_error
+        if self._needs_update and self._kfile:
+            for other in self._bindings:
+                if other is not b and other.kfile == self._kfile:
+                    other.needs_update = True
+        try:
+            b.search_term = self.search_tb.Text or ""
+        except Exception:
+            b.search_term = ""
+        try:
+            sel = self.selected_keynote
+            b.selected_key = sel.key if sel else None
+        except Exception:
+            b.selected_key = None
+        try:
+            b.scroll_offset = self._get_scroll_offset()
+        except Exception:
+            b.scroll_offset = 0.0
+
+    def _activate_binding(self, binding):
+        """Make `binding` the panel's view and redraw.
+
+        Mirrors the binding into the window's own attributes so every
+        existing call site (self._conn, self._kfile, the usage maps) keeps
+        working unchanged.
+        """
+        # the previous project's rows are gone from the tree; a key from
+        # one file means nothing in another
+        self._sel_keys = set()
+        self._sel_anchor = None
+        self._binding = binding
+        self._doc = binding.doc
+        self._kfile = binding.kfile
+        self._bind_error = binding.error
+        entry = self._files.get(binding.kfile) or {}
+        self._conn = entry.get("conn")
+        self._kfile_ext = entry.get("ext")
+        self._kfile_handler = entry.get("handler")
+        self._needs_update = binding.needs_update
+        self._used_keysdict = binding.used_keysdict
+        self._used_typesdict = binding.used_typesdict
+        self._used_viewsdict = binding.used_viewsdict
+        self._usage_stale = binding.usage_stale
+        self._cache = binding.cache
+        self._snapshot_categories = binding.snapshot_categories
+        self._snapshot_keynotes = binding.snapshot_keynotes
+
+        try:
+            self.search_tb.Text = binding.search_term or ""
+        except Exception:
+            pass
+        self._update_full_tree()
+        self._update_buttons()
+        self._update_status_bar()
+        self._update_title()
+        if binding.selected_key:
+            try:
+                self._select_keynote_by_key(binding.selected_key)
+            except Exception:
+                pass
+        try:
+            self._set_scroll_offset(binding.scroll_offset)
+        except Exception:
+            pass
+        if self._conn is not None and binding.usage_stale:
+            self._queue_usage_refresh()
+
+    def _queue_usage_refresh(self):
+        """Re-read this project's tag usage in a valid Revit API context.
+
+        A view switch lands on the WPF dispatcher, which is NOT a Revit API
+        context, so the collector has to go through the ExternalEvent.
+        """
+        holder = {}
+
+        def _query():
+            holder["data"] = self.get_used_keynote_elements()
+
+        def _apply():
+            if self._closed:
+                return
+            data = holder.get("data")
+            if not data:
+                return
+            used, types, views, ok = data
+            if ok:
+                self._used_keysdict = used
+                self._used_typesdict = types
+                self._used_viewsdict = views
+                self._usage_stale = False
+            else:
+                self._usage_stale = True
+            if self._binding is not None:
+                self._binding.used_keysdict = self._used_keysdict
+                self._binding.used_typesdict = self._used_typesdict
+                self._binding.used_viewsdict = self._used_viewsdict
+                self._binding.usage_stale = self._usage_stale
+            self._update_full_tree()
+            self._update_status_bar()
+
+        self._revit_run(_query, callback=_apply, callback_on_error=False,
+                        needs_active_doc=False)
+
+    def _retarget(self, doc):
+        """Point the panel at `doc`, connecting its keynote file if needed."""
+        binding = self._find_binding(doc)
+        if binding is not None and (binding.kfile or binding.error):
+            # already resolved once this session — swap straight in
+            self._capture_binding()
+            self._activate_binding(binding)
+            return
+
+        if binding is None:
+            binding = _DocBinding(doc)
+            self._bindings.append(binding)
+
+        def _resolve():
+            self._bind_silent(binding)
+
+        def _swap():
+            self._capture_binding()
+            self._activate_binding(binding)
+
+        # _bind_silent records its own failures, so the swap must happen
+        # either way: a project we cannot read still has to be shown, with
+        # the reason, rather than leaving the previous project on screen.
+        self._revit_run(_resolve, callback=_swap, needs_active_doc=False)
+
+    def _on_view_activated(self, sender, args):
+        """Follow the active document.  Runs on the Revit thread.
+
+        Fires for every view change, including within one project, so the
+        same-document case must cost nothing.
+        """
+        if self._closed or self._modal_mode:
+            return
+        try:
+            doc = args.Document
+        except Exception:
+            return
+        if doc is None:
+            return
+        try:
+            if self._doc is not None and self._doc.IsValidObject \
+                    and self._doc.Equals(doc):
+                self._pending_doc = None
+                return
+        except Exception:
+            pass
+        self._pending_doc = doc
+        try:
+            self._retarget_timer.Stop()
+            self._retarget_timer.Start()
+        except Exception:
+            logger.debug("retarget timer unavailable")
+
+    def _on_retarget_timer_tick(self, sender, args):
+        """Bind to whichever project the user actually settled on."""
+        try:
+            self._retarget_timer.Stop()
+        except Exception:
+            pass
+        if self._closed:
+            return
+        doc = self._pending_doc
+        if doc is None:
+            return
+        if self._inflight > 0:
+            # an action is already queued against the project on screen;
+            # swapping now would run it against the wrong model
+            try:
+                self._retarget_timer.Start()
+            except Exception:
+                pass
+            return
+        self._pending_doc = None
+        try:
+            self._retarget(doc)
+        except Exception as ex:
+            logger.error("KeynoteManager | could not follow document | %s", ex)
+
+    def _on_doc_closing(self, sender, args):
+        """Drop the binding for a project that is going away."""
+        if self._closed:
+            return
+        try:
+            doc = args.Document
+        except Exception:
+            return
+        b = self._find_binding(doc)
+        if b is None:
+            return
+        if b.needs_update:
+            logger.warning("KeynoteManager | %s closed with keynote changes "
+                           "that were never synced to it", b.title)
+        try:
+            self._bindings.remove(b)
+        except ValueError:
+            pass
+        if b is self._binding:
+            self._binding = None
+            self._pending_doc = revit.doc
+            try:
+                self._retarget_timer.Stop()
+                self._retarget_timer.Start()
+            except Exception:
+                pass
 
     # =========================================================================
     # REVIT THREAD DISPATCH (for modeless window)
@@ -980,6 +1960,17 @@ class KeynoteManagerWindow(forms.WPFWindow):
         dispatched, so an unrecognised Raise() result fails safe.
         """
 
+        # A queued action belongs to the project that was on screen when it
+        # was queued.  _on_retarget_timer_tick waits while this is non-zero,
+        # so the panel cannot swap underneath it.  on_finished always runs
+        # exactly once, on every path, which is what keeps this balanced.
+        self._inflight += 1
+
+        def _finished():
+            self._inflight = max(0, self._inflight - 1)
+            if on_finished:
+                on_finished()
+
         def _doc_affine_action():
             if needs_active_doc and not self._is_owned_doc_active():
                 raise Exception(
@@ -1011,7 +2002,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             finally:
                 # the modal branch refuses in-line, so this is the only
                 # release the caller's guard will ever get (#3631)
-                self._run_on_finished(on_finished)
+                self._run_on_finished(_finished)
             return True
 
         if self._ext_event is None:
@@ -1019,25 +2010,25 @@ class KeynoteManagerWindow(forms.WPFWindow):
                          "action not queued")
             forms.alert("Keynote Manager cannot reach Revit right now.\n"
                         "Please try again.")
-            self._run_on_finished(on_finished)
+            self._run_on_finished(_finished)
             return False
         entry = self._ext_handler.queue(_doc_affine_action, callback, self,
                                         callback_on_error=callback_on_error,
-                                        on_finished=on_finished)
+                                        on_finished=_finished)
         try:
             request = self._ext_event.Raise()
         except Exception as rex:
             logger.error("KeynoteManager | could not raise ExternalEvent "
                          "| %s", rex)
             self._ext_handler.drop(entry)
-            self._run_on_finished(on_finished)
+            self._run_on_finished(_finished)
             return False
         if request not in (UI.ExternalEventRequest.Accepted,
                            UI.ExternalEventRequest.Pending):
             logger.error("KeynoteManager | Revit rejected the request | %s",
                          request)
             self._ext_handler.drop(entry)
-            self._run_on_finished(on_finished)
+            self._run_on_finished(_finished)
             forms.alert("Revit is not accepting requests right now.\n"
                         "Please try again.")
             return False
@@ -1421,36 +2412,31 @@ class KeynoteManagerWindow(forms.WPFWindow):
     # KEYNOTE FILE CONNECTION
     # =========================================================================
 
-    def _determine_kfile(self):
-        """Determine the keynote file path for this project.
+    def _resolve_kfile_for(self, doc):
+        """Resolve (kfile, kfile_ext, handler) for `doc`.
+
+        Reads nothing off self and assigns nothing, so a view switch can
+        resolve a project the panel is not showing yet.  Raises
+        KeynoteSetupError when a file is configured but unreachable;
+        returns a None kfile when the project simply has none set.
 
         Resolution order:
           1. Local keynote file (revit.query.get_local_keynote_file)
           2. External/cloud file via ADC (Autodesk Desktop Connector)
-             - Resolve cloud path to local via adc.get_local_path()
-             - Graceful degradation for lock/sync on Public API
-          3. Alert user if ADC not available
+          3. Raise if ADC is needed and not available
         """
-        # resolve against the OWNING document, never whatever is active now
-        self._kfile = revit.query.get_local_keynote_file(doc=self._doc)
-        self._kfile_handler = None
-        self._kfile_ext = None
+        kfile = revit.query.get_local_keynote_file(doc=doc)
+        if kfile:
+            return kfile, None, None
 
-        if self._kfile:
-            return
-
-        self._kfile_ext = revit.query.get_external_keynote_file(doc=self._doc)
-        self._kfile_handler = "unknown"
-
-        if not self._kfile_ext:
-            return
+        kfile_ext = revit.query.get_external_keynote_file(doc=doc)
+        if not kfile_ext:
+            return None, None, "unknown"
 
         # CRITICAL: call is_available() FIRST on a clean AppDomain.
         # No legacy DLL probing before this point.
         if adc.is_available():
-            self._kfile_handler = "adc"
-            self._resolve_adc_keynote()
-            return
+            return self._resolve_adc_keynote(kfile_ext), kfile_ext, "adc"
 
         raise KeynoteSetupError(
             "{} is not available.\n\n"
@@ -1458,10 +2444,22 @@ class KeynoteManagerWindow(forms.WPFWindow):
             "in the system tray.".format(adc.ADC_NAME)
         )
 
-    def _resolve_adc_keynote(self):
-        """Resolve cloud keynote path to local file via ADC."""
+    def _determine_kfile(self):
+        """Resolve the keynote file for the document this window owns."""
+        # resolve against the OWNING document, never whatever is active now
+        (self._kfile, self._kfile_ext,
+         self._kfile_handler) = self._resolve_kfile_for(self._doc)
+
+    def _resolve_adc_keynote(self, kfile_ext):
+        """Resolve a cloud keynote path to a local file via ADC.
+
+        Takes the ADC lock and does NOT release it on a project switch: the
+        panel follows the active document, so dropping and retaking the
+        lock each time would hand it to a colleague mid-edit.  Every lock
+        taken here is released in window_closing.
+        """
         try:
-            local_kfile = adc.get_local_path(self._kfile_ext)
+            local_kfile = adc.get_local_path(kfile_ext)
 
             if not local_kfile:
                 raise KeynoteSetupError(
@@ -1469,7 +2467,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 )
 
             try:
-                locked, owner = adc.is_locked(self._kfile_ext)
+                locked, owner = adc.is_locked(kfile_ext)
                 if locked:
                     raise KeynoteSetupError(
                         "Keynote file is locked by {}.".format(owner))
@@ -1479,13 +2477,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 pass
 
             try:
-                adc.sync_file(self._kfile_ext)
-                adc.lock_file(self._kfile_ext)
+                adc.sync_file(kfile_ext)
+                adc.lock_file(kfile_ext)
             except Exception:
                 pass
 
-            self._kfile = local_kfile
-            self.Title += " ( ACC / FORMA )"
+            return local_kfile
 
         except KeynoteSetupError:
             raise
@@ -1501,6 +2498,125 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     revit.update.set_keynote_file(kfile, doc=self._doc)
             except Exception as ex:
                 forms.alert(str(ex))
+
+    def _preflight_kfile(self, kfile):
+        """Prove `kfile` is writable and its folder allows lock sidecars.
+
+        DeffrelDB creates/deletes '<kfile>.lock' sidecar files in INFINITE
+        retry loops with no timeout (DataStore.CreateLock/DeleteLock).  If
+        the folder refuses file create/delete — offline cloud folder, sync
+        client holding handles — Revit hangs at 100% CPU forever.  Prove
+        the folder allows it before connecting.
+        """
+        if not os.access(kfile, os.W_OK):
+            raise KeynoteSetupError("Keynote file is read-only:\n" + kfile)
+        probe = kfile + ".probe_{}".format(uuid.uuid4().hex[:6])
+        try:
+            with open(probe, "w"):
+                pass
+            os.remove(probe)
+        except Exception as probex:
+            raise KeynoteSetupError(
+                "The keynote file's folder does not allow creating lock "
+                "files (offline or locked by a sync client?):\n{}\n\n{}"
+                .format(op.dirname(kfile), probex))
+
+    def _open_kfile(self, kfile):
+        """Connect to `kfile` with no prompting.  Raises KeynoteSetupError.
+
+        The silent counterpart to _connect_kfile: a view switch must never
+        raise a file picker or a Convert dialog, so everything this cannot
+        handle becomes an error string on the binding instead.
+        """
+        if not kfile or not op.exists(kfile):
+            raise KeynoteSetupError("Keynote file not found:\n%s" % kfile)
+        self._preflight_kfile(kfile)
+        try:
+            return kdb.connect(kfile)
+        except System.TimeoutException as toutex:
+            raise KeynoteSetupError(toutex.Message)
+        except Exception as ex:
+            raise KeynoteSetupError(
+                "Cannot connect to this project's keynote file.\n%s\n\n"
+                "It may need conversion to the new format — open the "
+                "project and use Change Keynote File." % ex)
+
+    def _shadow_once(self, kfile):
+        """Back the keynote file up once per file per session."""
+        entry = self._files.get(kfile)
+        if not entry or entry.get("shadowed"):
+            return
+        try:
+            shadow = script.get_data_file(
+                "kshadow_" + op.basename(kfile), "txt")
+            shutil.copy(kfile, shadow)
+            entry["shadowed"] = True
+            logger.debug("Keynote shadow backup: %s", shadow)
+        except Exception as shex:
+            logger.debug("Shadow backup failed | %s", shex)
+
+    def _register_file(self):
+        """Publish the window's current connection into the shared file map.
+
+        _activate_binding rebuilds self._conn from self._files on every
+        project switch, so a connection opened anywhere ELSE — first
+        open, Change Keynote File, Convert — has to be registered here
+        or switching away and back would find nothing and blank the tree.
+        """
+        if not self._kfile or self._conn is None:
+            return
+        entry = self._files.get(self._kfile)
+        if entry is None:
+            entry = {"shadowed": False}
+            self._files[self._kfile] = entry
+        entry["conn"] = self._conn
+        entry["ext"] = self._kfile_ext
+        entry["handler"] = self._kfile_handler
+        self._bind_error = None
+        if self._binding is not None:
+            self._binding.kfile = self._kfile
+            self._binding.error = None
+
+    def _drop_file_entry(self, kfile, reason):
+        """Forget a keynote file so a project switch cannot resurrect it.
+
+        Clearing self._conn alone is not enough: it is only a mirror of
+        self._files, and the next _activate_binding would hand the dead
+        connection straight back.
+        """
+        entry = self._files.pop(kfile, None)
+        if entry:
+            conn = entry.get("conn")
+            if conn is not None:
+                try:
+                    conn.Dispose()
+                except Exception:
+                    pass
+        for b in self._bindings:
+            if b.kfile == kfile:
+                b.kfile = None
+                b.error = reason
+        if self._kfile == kfile:
+            self._conn = None
+            self._bind_error = reason
+
+    def _update_title(self):
+        """Rebuild the title from scratch for the currently bound project.
+
+        Never append: with the panel following the active document this
+        runs on every switch, and '+=' would stack suffixes.
+        """
+        bits = [self._base_title]
+        if self._binding is not None:
+            bits.append("— " + self._binding.title)
+        if self._kfile_handler == "adc":
+            bits.append("( ACC / FORMA )")
+        if self._modal_mode:
+            bits.append("[Safe Mode]")
+        try:
+            self.Title = " ".join(bits)
+        except Exception:
+            pass
 
     def _connect_kfile(self):
         """Resolve and connect the keynote file, with bounded user retries.
@@ -1519,10 +2635,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
             if not self._kfile or not op.exists(self._kfile):
                 raise KeynoteSetupError(
                     "No valid keynote file set for this project.")
-            if not os.access(self._kfile, os.W_OK):
-                raise KeynoteSetupError(
-                    "Keynote file is read-only:\n" + self._kfile)
-
             # Release any previous connection (reconnect via Change File)
             if self._conn:
                 try:
@@ -1531,22 +2643,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     pass
                 self._conn = None
 
-            # Pre-flight: DeffrelDB creates/deletes '<kfile>.lock' sidecar
-            # files in INFINITE retry loops with no timeout
-            # (DataStore.CreateLock/DeleteLock).  If the folder refuses file
-            # create/delete — offline cloud folder, sync client holding
-            # handles — Revit would hang at 100% CPU forever.  Prove the
-            # folder allows it before connecting.
-            probe = self._kfile + ".probe_{}".format(uuid.uuid4().hex[:6])
-            try:
-                with open(probe, "w"):
-                    pass
-                os.remove(probe)
-            except Exception as probex:
-                raise KeynoteSetupError(
-                    "The keynote file's folder does not allow creating lock "
-                    "files (offline or locked by a sync client?):\n{}\n\n{}"
-                    .format(op.dirname(self._kfile), probex))
+            self._preflight_kfile(self._kfile)
 
             try:
                 self._conn = kdb.connect(self._kfile)
@@ -1597,14 +2694,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 "Could not connect to a valid keynote file after {} "
                 "attempts.".format(MAX_KFILE_ATTEMPTS))
 
+        # Register BEFORE the backup: _shadow_once reads the file entry,
+        # and every later project switch reads the connection from it.
+        self._register_file()
         if self._conn and self._kfile:
-            try:
-                shadow = script.get_data_file(
-                    "kshadow_" + op.basename(self._kfile), "txt")
-                shutil.copy(self._kfile, shadow)
-                logger.debug("Keynote shadow backup: %s", shadow)
-            except Exception as shex:
-                logger.debug("Shadow backup failed | %s", shex)
+            self._shadow_once(self._kfile)
 
     def _convert_existing(self):
         """Convert a legacy keynote file in place.
@@ -1655,11 +2749,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
             # File vanished (cloud rename/eviction).  DeffrelDB would
             # silently resurrect it as an EMPTY file on the next call and
             # the tree would show blank — disconnect loudly instead.
-            self._conn = None
-            forms.alert(
-                "The keynote file is missing — renamed or removed by the "
-                "sync client?\n{}\n\nUse Change Keynote File to reconnect."
-                .format(self._kfile))
+            _gone = ("The keynote file is missing — renamed or removed "
+                     "by the sync client?\n{}\n\nUse Change Keynote File "
+                     "to reconnect.".format(self._kfile))
+            self._drop_file_entry(self._kfile, _gone)
+            forms.alert(_gone)
             return []
         try:
             categories = kdb.get_categories(self._conn)
@@ -1789,6 +2883,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         # Cache for fast re-filter
         self._cache = list(tree)
+
+        # Rows are rebuilt from the file on every refresh, so re-apply the
+        # highlight to the NEW objects, dropping keys that no longer exist.
+        if self._sel_keys:
+            live = self._flat_display_rows(filtered=False)
+            self._sel_keys &= set(r.key for r in live)
+            self._apply_selection_marks(live)
 
         # Flat snapshots for hot paths: selection-changed fires constantly
         # and must never re-read the DB file (slow / throwy on cloud drives)
@@ -2127,16 +3228,45 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 self._doc_changed_app.DocumentChanged += self._on_doc_changed
             except Exception:
                 self._doc_changed_app = None
+        if self._doc_changed_app is not None:
+            try:
+                self._doc_changed_app.DocumentClosing += self._on_doc_closing
+            except Exception:
+                logger.debug("DocumentClosing unavailable")
+        # ViewActivated is what tells us the user switched projects.  Only
+        # the modeless window follows: in safe mode Revit is blocked by the
+        # dialog and there is nothing to follow.
+        if not self._modal_mode:
+            try:
+                self._uiapp = HOST_APP.uiapp
+                self._uiapp.ViewActivated += self._on_view_activated
+                self._follow_error = None
+            except Exception as _subex:
+                # Surfaced in the status bar, not just logged: a silent
+                # failure here is indistinguishable from the panel simply
+                # not reacting, which costs a whole test cycle to diagnose.
+                self._uiapp = None
+                self._follow_error = str(_subex) or "ViewActivated refused"
+                logger.error("KeynoteManager | cannot follow the active "
+                             "document | %s", _subex)
+        else:
+            self._follow_error = "safe mode"
+        self._update_status_bar()
 
     def _on_doc_changed(self, sender, args):
         """Fires on the Revit thread after any document change.
         Refreshes keynote usage data and updates the tree."""
         if self._closed or self._refresh_pending:
             return
-        # Only react to changes in THIS window's document
+        # Only refresh the tree for the project on screen, but a change in
+        # another open project still invalidates ITS cached usage map, so
+        # flag that binding rather than dropping the event.
         try:
             changed_doc = args.GetDocument()
             if changed_doc and not changed_doc.Equals(self._doc):
+                other = self._find_binding(changed_doc)
+                if other is not None:
+                    other.usage_stale = True
                 return
         except Exception:
             pass
@@ -2198,6 +3328,15 @@ class KeynoteManagerWindow(forms.WPFWindow):
     # =========================================================================
 
     def selected_keynote_changed(self, sender, args):
+        # A plain click starts a new selection.  Ctrl/Shift clicks set
+        # IsSelected themselves and suppress this, so the rows they just
+        # gathered are not thrown away again.
+        if not self._suspend_sel_reset:
+            focus = self.selected_keynote
+            self._sel_keys = set([focus.key]) if focus else set()
+            self._sel_anchor = focus.key if focus else None
+            self._apply_selection_marks()
+            self._update_status_bar()
         self._update_buttons()
 
     # =========================================================================
@@ -2239,6 +3378,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
             if self.selected_keynote:
                 self.duplicate_keynote(sender, args)
                 args.Handled = True
+        elif key == Windows.Input.Key.C and mods == ctrl:
+            if self.selected_keynote:
+                self.copy_keynote(sender, args)
+                args.Handled = True
+        elif key == Windows.Input.Key.V and mods == ctrl:
+            self.paste_keynote(sender, args)
+            args.Handled = True
         elif key == Windows.Input.Key.I and mods == ctrl:
             self.import_keynotes(sender, args)
             args.Handled = True
@@ -2277,8 +3423,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
             except Exception as ex:
                 logger.debug("Shift-release timer stop failed | %s" % ex)
 
-    def _place_after_shift_release(self, rec):
-        """Place `rec`, but not while SHIFT is still physically held.
+    def _place_when_clear(self, rec):
+        """Place `rec`, but not while a disturbing modifier is still held.
 
         Revit reads modifier state as it dispatches a posted command and
         starts its interactive tool, and discards the placement if SHIFT is
@@ -2297,7 +3443,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         """
         self._cancel_shift_release_wait()
 
-        if not self._shift_is_down():
+        if not self._place_modifier_held():
             self._place_keynote(rec)
             return
 
@@ -2325,7 +3471,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 return
             state["ticks"] += 1
             timed_out = state["ticks"] > 25
-            if self._shift_is_down() and not timed_out:
+            if self._place_modifier_held() and not timed_out:
                 return
             self._cancel_shift_release_wait()
             self._place_keynote(rec)
@@ -2351,8 +3497,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
             pass
 
     @staticmethod
-    def _shift_is_down():
-        """True when SHIFT is physically held.
+    def _modifier_down(name):
+        """True when the named modifier ("Shift"/"Control"/"Alt") is held.
 
         Two sources, because neither alone is reliable: WPF's
         Keyboard.Modifiers only reflects key events WPF itself has seen, so
@@ -2360,22 +3506,40 @@ class KeynoteManagerWindow(forms.WPFWindow):
         while WinForms' Control.ModifierKeys wraps Win32 GetKeyState and
         reports true key state regardless of focus.  Either one is enough.
 
-        Flag test rather than equality, so a stray second modifier does not
-        eat the gesture; nothing here binds Ctrl+Click or Alt+Click.
+        Flag test rather than equality: the tree now binds Ctrl+Click,
+        Shift+Click AND Alt+Click, so each is tested on its own and a
+        second modifier held alongside must not eat the gesture.
         """
         try:
             mods = Windows.Input.Keyboard.Modifiers
-            shift = Windows.Input.ModifierKeys.Shift
-            if (mods & shift) == shift:
+            flag = getattr(Windows.Input.ModifierKeys, name)
+            if (mods & flag) == flag:
                 return True
         except Exception:
             pass
         try:
             wmods = Windows.Forms.Control.ModifierKeys
-            wshift = Windows.Forms.Keys.Shift
-            return (wmods & wshift) == wshift
+            wflag = getattr(Windows.Forms.Keys, name)
+            return (wmods & wflag) == wflag
         except Exception:
             return False
+
+    @staticmethod
+    def _shift_is_down():
+        """True when SHIFT is physically held."""
+        return KeynoteManagerWindow._modifier_down("Shift")
+
+    @staticmethod
+    def _place_modifier_held():
+        """True while a modifier that would disturb a posted command is held.
+
+        Revit reads modifier state as it dispatches the posted command and
+        starts its interactive tool, so the placement waits for a clean
+        keyboard.  Alt is included because Alt+Click is now the gesture
+        that arms it.
+        """
+        return (KeynoteManagerWindow._modifier_down("Shift")
+                or KeynoteManagerWindow._modifier_down("Alt"))
 
     @staticmethod
     def _treeviewitem_from_source(source):
@@ -2406,35 +3570,61 @@ class KeynoteManagerWindow(forms.WPFWindow):
         return None
 
     def tree_preview_mouse_down(self, sender, args):
-        # SHIFT+CLICK a row places that keynote. 
+        # CTRL+CLICK toggles a row, SHIFT+CLICK extends the range,
+        # ALT+CLICK places the row.
         self._shift_place_pending = None
 
-        shift = False
+        ctrl = shift = alt = False
         tvi = None
         try:
-            shift = self._shift_is_down()
-            if shift:
+            ctrl = self._modifier_down("Control")
+            shift = self._modifier_down("Shift")
+            alt = self._modifier_down("Alt")
+            if ctrl or shift or alt:
                 tvi = self._treeviewitem_from_source(args.OriginalSource)
         except Exception as ex:
             # A failed hit-test degrades to an ordinary click rather than
             # breaking a mouse handler.
-            logger.debug("Shift+click hit-test failed | %s" % ex)
+            logger.debug("Modifier click hit-test failed | %s" % ex)
 
-        if shift and tvi is None:
-            # Empty space below the rows, or the expand/collapse arrow.
-            self._hint("Shift+Click a keynote row to place it")
-
-        if tvi is not None:
-            tvi.IsSelected = True
-            self._drag_start_point = None
-            args.Handled = True
-            self._shift_place_pending = tvi.DataContext
+        # ALT+CLICK places the row (this was SHIFT+CLICK before multi-select
+        # took that gesture; the toolbar button and context menu are
+        # unchanged).  Checked first so Alt wins over a stray Shift.
+        if alt:
+            if tvi is None:
+                # Empty space below the rows, or the expand/collapse arrow.
+                self._hint("Alt+Click a keynote row to place it")
+            else:
+                tvi.IsSelected = True
+                self._drag_start_point = None
+                args.Handled = True
+                self._shift_place_pending = tvi.DataContext
             return
+
+        if (ctrl or shift) and tvi is not None:
+            rec = getattr(tvi, "DataContext", None)
+            if rec is not None and hasattr(rec, "key"):
+                if ctrl:
+                    self._toggle_in_selection(rec)
+                else:
+                    self._extend_selection_to(rec)
+                # Move WPF's own focus row to the clicked row without
+                # letting selected_keynote_changed collapse what we just
+                # gathered.
+                self._suspend_sel_reset = True
+                try:
+                    tvi.IsSelected = True
+                finally:
+                    self._suspend_sel_reset = False
+                self._update_buttons()
+                self._drag_start_point = None
+                args.Handled = True
+                return
 
         self._drag_start_point = args.GetPosition(sender)
 
     def tree_preview_mouse_up(self, sender, args):
-        """Place the row a SHIFT+CLICK armed on mouse-down, if any.
+        """Place the row an ALT+CLICK armed on mouse-down, if any.
 
         Marshalled off the input event rather than run inline: Revit drops a
         posted command that arrives while WPF is still dispatching a mouse
@@ -2452,11 +3642,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
         try:
             self.Dispatcher.BeginInvoke(
                 System.Action(
-                    ui_guard(lambda: self._place_after_shift_release(pending))),
+                    ui_guard(lambda: self._place_when_clear(pending))),
                 Windows.Threading.DispatcherPriority.Background)
         except Exception as ex:
-            logger.debug("Shift+click dispatch failed | %s" % ex)
-            self._place_after_shift_release(pending)
+            logger.debug("Place dispatch failed | %s" % ex)
+            self._place_when_clear(pending)
 
     def tree_item_right_click(self, sender, args):
         """Select the row under the cursor before its context menu opens.
@@ -2466,11 +3656,25 @@ class KeynoteManagerWindow(forms.WPFWindow):
         selection on its own the way left-click does.  Without this, every
         command on the menu would act on whatever was previously selected
         rather than the row that was actually clicked.
+
+        Right-clicking INSIDE an existing multi-selection is the exception:
+        the menu is about to act on every selected row, so moving the focus
+        must not collapse the selection down to the row under the cursor.
+        Right-clicking OUTSIDE it still starts a fresh single selection,
+        which is what the gesture means everywhere else.
         """
         tvi = self._treeviewitem_from_source(sender)
-        if tvi is not None:
+        if tvi is None:
+            return
+        rec = getattr(tvi, "DataContext", None)
+        inside = (rec is not None and hasattr(rec, "key")
+                  and len(self._sel_keys) > 1 and rec.key in self._sel_keys)
+        self._suspend_sel_reset = inside
+        try:
             tvi.IsSelected = True
             tvi.Focus()
+        finally:
+            self._suspend_sel_reset = False
 
     def tree_preview_mouse_move(self, sender, args):
         if self._drag_start_point is None:
@@ -2488,16 +3692,113 @@ class KeynoteManagerWindow(forms.WPFWindow):
             sel = self.selected_keynote
             if sel and not sel.locked:
                 self._is_dragging = True
+                self._drag_left_window = False
+                self._drag_cancelled = False
+                effect = getattr(Windows.DragDropEffects, "None")
                 try:
                     data = Windows.DataObject("keynote", sel)
-                    Windows.DragDrop.DoDragDrop(
-                        self.keynotes_tv, data, Windows.DragDropEffects.Move
-                    )
+                    # Subscribed only for the life of the drag: these fire
+                    # continuously and have nothing to say otherwise.
+                    self.keynotes_tv.GiveFeedback += self._drag_give_feedback
+                    self.keynotes_tv.QueryContinueDrag += \
+                        self._drag_query_continue
+                    try:
+                        effect = Windows.DragDrop.DoDragDrop(
+                            self.keynotes_tv, data, Windows.DragDropEffects.Move
+                        )
+                    finally:
+                        self.keynotes_tv.GiveFeedback -= \
+                            self._drag_give_feedback
+                        self.keynotes_tv.QueryContinueDrag -= \
+                            self._drag_query_continue
                 except Exception as ex:
                     logger.debug("Drag failed | %s" % ex)
                 finally:
                     self._is_dragging = False
                     self._drag_start_point = None
+                self._maybe_place_after_drag(sel, effect)
+
+    def _cursor_outside_window(self):
+        """True when the pointer is outside this window's own rectangle.
+
+        Both sides are DEVICE pixels: PointToScreen maps through the
+        window's HWND, and WinForms' Cursor.Position is already physical.
+        Comparing against Left/Top/Width instead would drift on a scaled
+        display, because those are device-independent units.
+
+        Fails CLOSED — an unanswerable hit-test must never be read as
+        "the user dropped this on Revit".
+        """
+        try:
+            pos = Windows.Forms.Cursor.Position
+            origin = self.PointToScreen(Windows.Point(0, 0))
+            corner = self.PointToScreen(
+                Windows.Point(self.ActualWidth, self.ActualHeight))
+        except Exception as ex:
+            logger.debug("drag hit-test failed | %s" % ex)
+            return False
+        return not (origin.X <= pos.X <= corner.X
+                    and origin.Y <= pos.Y <= corner.Y)
+
+    def _drag_query_continue(self, sender, args):
+        """Track where the drag is and whether the user bailed out.
+
+        Sampled during the drag rather than read once it ends: the pointer
+        can move between the button release and DoDragDrop returning.
+        """
+        try:
+            if args.EscapePressed:
+                self._drag_cancelled = True
+            self._drag_left_window = self._cursor_outside_window()
+        except Exception as ex:
+            logger.debug("drag tracking failed | %s" % ex)
+
+    def _drag_give_feedback(self, sender, args):
+        """Show a placement cursor once the drag leaves the panel.
+
+        Revit registers no drop target for our data, so Windows would show
+        the "no drop" cursor over the drawing area — telling the user
+        the exact opposite of what is about to happen.
+        """
+        if not self._drag_left_window:
+            return
+        try:
+            args.UseDefaultCursors = False
+            Windows.Input.Mouse.SetCursor(Windows.Input.Cursors.Cross)
+            args.Handled = True
+        except Exception as ex:
+            logger.debug("drag cursor failed | %s" % ex)
+
+    def _maybe_place_after_drag(self, rec, effect):
+        """Arm placement for a keynote dragged out onto the Revit window.
+
+        There is no drop to react to: Revit cannot accept a WPF drag, so
+        nothing outside this window ever reports an effect.  DoDragDrop is
+        synchronous though, so a drag that ENDED with no effect while the
+        pointer was outside the panel is one that finished somewhere we do
+        not own — in practice the drawing area behind us.
+
+        Deliberately conservative.  A drag cancelled with ESC, one that
+        dropped back onto the tree (which reparents and reports Move), and
+        one whose hit-test could not be answered all place nothing.
+
+        The placement itself is marshalled to a settled dispatcher frame
+        for the same reason the Alt+Click path is: Revit drops a posted
+        command that arrives while WPF is still dispatching the gesture.
+        """
+        if self._closed or self._modal_mode or rec is None:
+            return
+        if self._drag_cancelled or not self._drag_left_window:
+            return
+        if effect != getattr(Windows.DragDropEffects, "None"):
+            return          # the tree handled it: that was a reparent
+        try:
+            self.Dispatcher.BeginInvoke(
+                System.Action(ui_guard(lambda: self._place_when_clear(rec))),
+                Windows.Threading.DispatcherPriority.Background)
+        except Exception as ex:
+            logger.debug("drag placement dispatch failed | %s" % ex)
+            self._place_when_clear(rec)
 
     def tree_double_click(self, sender, args):
         if not self._is_dragging and self.selected_keynote:
@@ -2724,7 +4025,125 @@ class KeynoteManagerWindow(forms.WPFWindow):
         finally:
             self._update_full_tree()
 
+    def _remove_many(self, recs):
+        """Delete every selected row that can go, and report the rest.
+
+        Blockers CASCADE UPWARD: a group can only go once everything under
+        it goes, so one in-use keynote also spares its parent, and its
+        parent's parent.  That is settled to a fixpoint before anything is
+        written, and the skipped rows are named in the confirmation rather
+        than only afterwards, so the delete is never a surprise.
+
+        What does run is still one compensated write, so the keynote file
+        is never left half-changed even though the batch is partial.
+        """
+        try:
+            db_keynotes = kdb.get_keynotes(self._conn)
+        except Exception as ex:
+            forms.alert("Keynote file is busy — nothing was deleted.\n"
+                        "%s\n\nPlease try again." % ex)
+            return
+
+        children_of = defaultdict(list)
+        for knote in db_keynotes:
+            if knote.parent_key:
+                children_of[knote.parent_key].append(knote.key)
+
+        deletable = set(r.key for r in recs)
+        blocked = OrderedDict()
+
+        for rec in recs:
+            if rec.locked:
+                blocked[rec.key] = ("locked by %s"
+                                    % (rec.owner or "another user"))
+            elif rec.used:
+                blocked[rec.key] = "in use in the model"
+        for key in blocked:
+            deletable.discard(key)
+
+        # Fixpoint: dropping one row can block its parent, which can block
+        # ITS parent.  Each pass either removes a key from `deletable` or
+        # changes nothing, so this always settles.
+        changed = True
+        while changed:
+            changed = False
+            for rec in recs:
+                if rec.key not in deletable:
+                    continue
+                staying = [c for c in children_of.get(rec.key, [])
+                           if c not in deletable]
+                if staying:
+                    blocked[rec.key] = ("%d row(s) under it are staying"
+                                        % len(staying))
+                    deletable.discard(rec.key)
+                    changed = True
+
+        def _blocked_lines(limit):
+            items = list(blocked.items())[:limit]
+            out = "\n  ".join("%s — %s" % (k, why) for k, why in items)
+            if len(blocked) > limit:
+                out += "\n  ... and {} more".format(len(blocked) - limit)
+            return out
+
+        going = [r for r in recs if r.key in deletable]
+        if not going:
+            forms.alert("Nothing could be deleted.\n\n  "
+                        + _blocked_lines(12))
+            return
+
+        shown = [r.key for r in going[:12]]
+        msg = "Delete these {} rows?\n\n  {}".format(
+            len(going), "\n  ".join(shown))
+        if len(going) > 12:
+            msg += "\n  ... and {} more".format(len(going) - 12)
+        if blocked:
+            msg += ("\n\nSkipping {} row(s):\n\n  ".format(len(blocked))
+                    + _blocked_lines(8))
+        unverified = [r.key for r in going if self._usage_unknown_note(r.key)]
+        if unverified:
+            # same caveat _confirm_delete makes for a single row: an
+            # unverified usage map reports everything as unused, so the
+            # rec.used guard above can pass vacuously
+            msg += ("\n\nUsage could not be verified for {} of these. Any "
+                    "tag still pointing at a deleted key would keep that key "
+                    "with no matching row in the keynote file."
+                    .format(len(unverified)))
+        if not forms.alert(msg, yes=True, no=True):
+            return
+
+        # `going` keeps tree order (parents first); reversing a pre-order
+        # walk puts every child ahead of its parent at any depth
+        rows = [{"key": r.key, "text": r.text, "parent": r.parent_key,
+                 "is_category": r.is_category}
+                for r in reversed(going)]
+        try:
+            removed = kdb.delete_records(self._conn, rows)
+        except System.TimeoutException as toutex:
+            forms.alert(toutex.Message)
+            return
+        except Exception as ex:
+            forms.alert("Delete failed — nothing was removed.\n%s" % ex)
+            return
+
+        self._needs_update = True
+        self._set_selection([])
+        if blocked:
+            self._hint("Deleted {} rows, skipped {}".format(removed,
+                                                            len(blocked)))
+        else:
+            self._hint("Deleted {} rows".format(removed))
+
     def remove_keynote(self, sender, args):
+        picked = self.selected_keynotes
+        if len(picked) > 1:
+            if not self._conn:
+                forms.alert("No keynote file is connected.")
+                return
+            self._remove_many(picked)
+            self._update_full_tree()
+            self._update_status_bar()
+            return
+
         sel = self.selected_keynote
         if not sel:
             return
@@ -2957,7 +4376,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         """Arm Revit's keynote-tag tool with `sel`'s key.
 
         Shared by the toolbar button (on the current selection) and by
-        SHIFT+CLICK on a tree row (on the row clicked).  Takes the record
+        ALT+CLICK on a tree row (on the row clicked).  Takes the record
         explicitly rather than reading self.selected_keynote, so the
         shift-click path cannot place a keynote other than the one clicked.
         """
@@ -2967,7 +4386,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self._hint("%s is locked by another user — cannot place" % sel.key)
             return
         if not sel.parent_key:
-            self._hint("%s is a group — Shift+Click a keynote to place"
+            self._hint("%s is a group — Alt+Click a keynote to place"
                        % sel.key)
             return
 
@@ -3077,10 +4496,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 self._determine_kfile()
                 self._connect_kfile()
             except KeynoteSetupError as kex:
-                self._conn = None
+                self._drop_file_entry(self._kfile, str(kex))
                 forms.alert(str(kex))
                 self._update_full_tree()
                 self._update_status_bar()
+                self._update_title()
                 return
             self._needs_update = True
             self._refresh_used_keynotes()
@@ -3148,8 +4568,45 @@ class KeynoteManagerWindow(forms.WPFWindow):
         else:
             forms.alert("The Revit model is already up to date.", title="Up to Date")
 
+    def _dirty_bindings(self):
+        """Open projects whose keynote table is stale.
+
+        Call _capture_binding() on the WPF thread first: the active
+        project's pending flag lives on the window until it is captured.
+        """
+        out = []
+        for b in self._bindings:
+            if b.needs_update and b.is_live():
+                out.append(b)
+        return out
+
+    def _sync_all_dirty(self):
+        """Reload the keynote table in every open project that needs it.
+
+        One project failing must not hide another that succeeded, so each
+        is attempted, successes are cleared as they go, and the failures
+        are raised together at the end — which keeps the
+        callback_on_error gate meaningful for the caller.
+        """
+        failures = []
+        for b in self._dirty_bindings():
+            try:
+                self._sync_doc_keynotes(b.doc)
+                b.needs_update = False
+            except Exception as ex:
+                failures.append("%s: %s" % (b.title, ex))
+        if self._binding is not None:
+            self._needs_update = self._binding.needs_update
+        if failures:
+            raise Exception("Some projects were not updated:\n\n"
+                            + "\n".join(failures))
+
     def _sync_model_keynotes(self):
-        """Reload the model's keynote table and VERIFY that it happened.
+        """Reload the bound project's keynote table."""
+        self._sync_doc_keynotes(self._doc)
+
+    def _sync_doc_keynotes(self, doc):
+        """Reload `doc`'s keynote table and VERIFY that it happened.
 
         Neither pyRevit helper reports failure: revit.Transaction swallows
         commit errors and discards Commit()'s TransactionStatus
@@ -3159,7 +4616,6 @@ class KeynoteManagerWindow(forms.WPFWindow):
         would therefore return normally and be reported as success.  This
         RAISES instead, so the callback_on_error gate actually engages.
         """
-        doc = self._doc
         if doc is None or not doc.IsValidObject:
             raise Exception("The document this window was opened for is no "
                             "longer available.")
@@ -3219,23 +4675,39 @@ class KeynoteManagerWindow(forms.WPFWindow):
             ExternalEvent MUST be released from on_finished and nowhere
             else, or the window becomes unclosable (#3548, #3631).
         """
-        if self._needs_update and not self._close_pending:
+        if not self._close_pending:
+            # the project on screen keeps its pending flag on the window
+            self._capture_binding()
+            dirty = self._dirty_bindings()
+        else:
+            dirty = []
+
+        if dirty:
             if self._close_sync_pending:
                 args.Cancel = True
                 return
+
+            if len(dirty) == 1:
+                _msg = ("Keynote file has been modified.\n"
+                        "Sync changes to the Revit model before "
+                        "closing?")
+            else:
+                # a shared keynote file leaves every open project that
+                # uses it stale, not just the one that was edited
+                _msg = ("Keynote files have been modified.\n"
+                        "Sync changes to these open projects before "
+                        "closing?\n\n  "
+                        + "\n  ".join(b.title for b in dirty))
 
             # Owned by THIS window rather than by Revit.  forms.alert builds
             # a Revit TaskDialog, which is modal to Revit's main window but
             # NOT to a modeless WPF window: the manager could be raised over
             # its own prompt, leaving a window that ignored X with no dialog
-            # anywhere in sight.  An owned MessageBox disables this window
-            # while it is up, so the re-entrant Close that
+            # anywhere in sight (#3631).  An owned MessageBox disables this
+            # window while it is up, so the re-entrant Close that
             # _close_prompt_open existed to absorb cannot happen at all.
             res = Windows.MessageBox.Show(
-                self,
-                "Keynote file has been modified.\n"
-                "Sync changes to the Revit model before closing?",
-                "Keynote Manager",
+                self, _msg, "Keynote Manager",
                 Windows.MessageBoxButton.YesNo,
                 Windows.MessageBoxImage.Question)
 
@@ -3244,7 +4716,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 self._close_sync_pending = True
 
                 def _do_update():
-                    self._sync_model_keynotes()
+                    self._sync_all_dirty()
 
                 def _sync_done():
                     self._close_pending = True
@@ -3272,28 +4744,50 @@ class KeynoteManagerWindow(forms.WPFWindow):
             self._search_timer.Stop()
         except Exception:
             pass
+        try:
+            self._retarget_timer.Stop()
+        except Exception:
+            pass
         self._cancel_shift_release_wait()
         if self._doc_changed_app:
             try:
                 self._doc_changed_app.DocumentChanged -= self._on_doc_changed
             except Exception:
                 pass
-            self._doc_changed_app = None
-        if self._kfile_handler == "adc":
             try:
-                adc.unlock_file(self._kfile_ext)
+                self._doc_changed_app.DocumentClosing -= self._on_doc_closing
             except Exception:
                 pass
+            self._doc_changed_app = None
+        if self._uiapp is not None:
+            try:
+                self._uiapp.ViewActivated -= self._on_view_activated
+            except Exception:
+                pass
+            self._uiapp = None
         try:
             self.save_config()
         except Exception as ex:
             logger.debug("Save config failed | %s" % ex)
-        if self._conn:
-            try:
-                self._conn.Dispose()
-            except Exception:
-                pass
-            self._conn = None
+        # Release EVERY keynote file this window touched, not just the one
+        # on screen: following holds each project's ADC lock until close,
+        # and a lock left behind blocks a colleague with nothing in the UI
+        # to say so.
+        for _kpath, _kentry in list(self._files.items()):
+            if _kentry.get("handler") == "adc" and _kentry.get("ext"):
+                try:
+                    adc.unlock_file(_kentry["ext"])
+                except Exception:
+                    logger.debug("could not unlock %s", _kpath)
+            _kconn = _kentry.get("conn")
+            if _kconn is not None:
+                try:
+                    _kconn.Dispose()
+                except Exception:
+                    pass
+                _kentry["conn"] = None
+        self._files = {}
+        self._conn = None
         if self._ext_event is not None:
             try:
                 self._ext_event.Dispose()
@@ -3322,9 +4816,13 @@ _GUARDED_ENTRY_POINTS = (
         "to_upper", "to_lower", "to_title", "to_sentence",
         "window_closing",
     )),
+    (PastePreviewWindow, (
+        "take_all", "only_new", "take_none", "do_paste", "do_cancel",
+    )),
     (KeynoteManagerWindow, (
         # XAML-wired
         "add_category", "add_keynote", "change_keynote_file", "clear_search",
+        "copy_keynote", "paste_keynote",
         "collapse_all_tree", "custom_filter", "duplicate_keynote",
         "edit_keynote", "edit_category_inline", "expand_all_tree",
         "export_keynotes", "export_visible_keynotes", "import_keynotes",
@@ -3343,6 +4841,8 @@ _GUARDED_ENTRY_POINTS = (
         "tree_item_right_click",
         # code-wired
         "_on_search_timer_tick", "_on_window_loaded", "_on_doc_changed",
+        "_on_doc_closing", "_on_view_activated", "_on_retarget_timer_tick",
+        "_drag_query_continue", "_drag_give_feedback",
     )),
 )
 
@@ -3395,7 +4895,8 @@ try:
             safe_mode=_safe_mode,
         )
         if _safe_mode:
-            _new_window.Title += "  [Safe Mode]"
+            # [Safe Mode] is applied by _update_title, which rebuilds the
+            # whole title on every project switch
             # modal: blocks here until the user closes the window
             _new_window.show(modal=True)
         else:
