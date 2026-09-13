@@ -14,7 +14,7 @@ output = script.get_output()
 
 class UI(forms.WPFWindow):
     def __init__(self, xaml_file_name):
-        forms.WPFWindow.__init__(self, xaml_file_name, handle_esc=False)
+        forms.WPFWindow.__init__(self, xaml_file_name, handle_esc=False, resolve_theme=True)
 
         self.server = revit.dc3dserver.Server()
         if not self.server:

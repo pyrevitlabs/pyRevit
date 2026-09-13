@@ -422,7 +422,7 @@ class EditRecordWindow(forms.WPFWindow):
     def __init__(
         self, owner, conn, mode, rkeynote=None, rkey=None, text=None, pkey=None
     ):
-        forms.WPFWindow.__init__(self, "EditRecord.xaml")
+        forms.WPFWindow.__init__(self, "EditRecord.xaml", resolve_theme=True)
         self.Owner = owner
         self._res = None
         self._commited = False
@@ -748,7 +748,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             logger.debug("Dark theme brush override failed | %s", ex)
 
     def __init__(self, xaml_file_name, reset_config=False, safe_mode=False):
-        forms.WPFWindow.__init__(self, xaml_file_name)
+        forms.WPFWindow.__init__(self, xaml_file_name, resolve_theme=True)
         self._apply_theme_brushes()
 
         self._modal_mode = safe_mode

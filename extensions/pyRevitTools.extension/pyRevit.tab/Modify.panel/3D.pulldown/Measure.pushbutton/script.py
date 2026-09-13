@@ -278,7 +278,7 @@ class MeasureWindow(forms.WPFWindow):
     """Modeless WPF window for 3D measurement tool."""
 
     def __init__(self, xaml_file_name):
-        forms.WPFWindow.__init__(self, xaml_file_name, handle_esc=True)
+        forms.WPFWindow.__init__(self, xaml_file_name, handle_esc=True, resolve_theme=True)
         self.point1_text.Text = self.get_locale_string("Point1NotSelected")
         self.point2_text.Text = self.get_locale_string("Point2NotSelected")
         self.dx_text.Text = self.get_locale_string("DeltaXFormat").format("-")

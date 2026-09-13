@@ -55,7 +55,7 @@ class ReOrderWindow(forms.WPFWindow):
         return len(int_params)
 
     def __init__(self, xaml_file_name):
-        forms.WPFWindow.__init__(self, xaml_file_name)
+        forms.WPFWindow.__init__(self, xaml_file_name, resolve_theme=True)
 
         self._config = script.get_config()
 

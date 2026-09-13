@@ -487,7 +487,7 @@ class MatchHistoryClipboard(forms.WPFPanel):
 
 class RecallWindow(forms.WPFWindow):
     def __init__(self, target_type, initial_props, memfile):
-        forms.WPFWindow.__init__(self, _WINDOW_XAML)
+        forms.WPFWindow.__init__(self, _WINDOW_XAML, resolve_theme=True)
         self._content = ClipboardContent(
             is_recall=True,
             target_type=target_type,

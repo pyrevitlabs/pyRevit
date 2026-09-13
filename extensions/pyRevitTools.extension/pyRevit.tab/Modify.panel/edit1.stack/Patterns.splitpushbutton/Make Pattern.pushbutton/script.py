@@ -70,7 +70,7 @@ class MakePatternWindow(forms.WPFWindow):
         self._export_only = False
 
         # create pattern maker window and process options
-        forms.WPFWindow.__init__(self, xaml_file_name)
+        forms.WPFWindow.__init__(self, xaml_file_name, resolve_theme=True)
 
         if not self._selection:
             self.resolver_ops.IsEnabled = False

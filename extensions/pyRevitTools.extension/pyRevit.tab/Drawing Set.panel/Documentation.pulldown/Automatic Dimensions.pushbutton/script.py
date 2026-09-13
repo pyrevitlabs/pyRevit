@@ -64,7 +64,7 @@ class AutoDimWindow(forms.WPFWindow):
     between runs in the tool's own pyRevit config section."""
 
     def __init__(self, wall_count, fixture_count):
-        forms.WPFWindow.__init__(self, XAML)
+        forms.WPFWindow.__init__(self, XAML, resolve_theme=True)
         self.result = None
         self.wall_count = wall_count
         self.config = script.get_config()

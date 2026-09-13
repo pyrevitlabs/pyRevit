@@ -14,7 +14,7 @@ logger = script.get_logger()
 
 class AboutWindow(forms.WPFWindow):
     def __init__(self, xaml_file_name):
-        forms.WPFWindow.__init__(self, xaml_file_name)
+        forms.WPFWindow.__init__(self, xaml_file_name, resolve_theme=True)
 
         pyrvtabout = about.get_pyrevit_about()
 

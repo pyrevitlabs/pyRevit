@@ -857,7 +857,7 @@ class ColorSplasherWindow(forms.WPFWindow):
         ev_legend,
         ev_filters,
     ):
-        forms.WPFWindow.__init__(self, xaml_file_name)
+        forms.WPFWindow.__init__(self, xaml_file_name, resolve_theme=True)
         self.IsOpen = 1
         self.filter_ev = ev_filters
         self.legend_ev = ev_legend

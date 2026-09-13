@@ -85,7 +85,7 @@ class ExampleUI(forms.WPFWindow):
         </Window>
         """
 
-        forms.WPFWindow.__init__(self, xaml_layout, literal_string=True)
+        forms.WPFWindow.__init__(self, xaml_layout, literal_string=True, resolve_theme=True)
         self.output = script.get_output()
         self.selected_element = None
 

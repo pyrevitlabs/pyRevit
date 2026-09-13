@@ -92,7 +92,7 @@ class SettingsWindow(forms.WPFWindow):
 
     def __init__(self, xaml_file_name):
         """Sets up the settings ui"""
-        forms.WPFWindow.__init__(self, xaml_file_name)
+        forms.WPFWindow.__init__(self, xaml_file_name, resolve_theme=True)
         try:
             self._setup_core_options()
         except Exception as setup_params_err:
