@@ -829,12 +829,18 @@ class CustomPropertiesPanel(forms.WPFPanel):
             lbl.Text = text
             lbl.FontSize = 11
             lbl.FontWeight = framework.Windows.FontWeights.SemiBold
-            lbl.Foreground = SolidColorBrush(Color.FromArgb(255, 0x55, 0x55, 0x55))
+            lbl.SetResourceReference(
+                framework.Controls.TextBlock.ForegroundProperty,
+                "pyRevitWindowForegroundBrush",
+            )
             lbl.Margin = framework.Windows.Thickness(0, 0, 0, 3)
             panel.Children.Add(lbl)
         line = framework.Controls.Border()
         line.Height = 1
-        line.Background = SolidColorBrush(Color.FromArgb(255, 0xDD, 0xDD, 0xDD))
+        line.SetResourceReference(
+            framework.Controls.Border.BackgroundProperty,
+            "pyRevitControlBorderBrush",
+        )
         panel.Children.Add(line)
         return panel
 
