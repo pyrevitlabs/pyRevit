@@ -59,6 +59,15 @@ TOLERANCE = 1e-5
 DATAFILENAME = "SectionBox"
 TEMP_DATAFILE = script.get_instance_data_file("SectionBoxTemp")
 WINDOW_POSITION = "sbnavigator_window_pos"
+is_dark = forms.is_dark_theme()
+BRUSHCOLORS = {
+    "error": Media.Brushes.Red if not is_dark else Media.Brushes.LightCoral,
+    "warning": Media.Brushes.Orange if not is_dark else Media.Brushes.Gold,
+    "info": Media.Brushes.Blue if not is_dark else Media.Brushes.LightSkyBlue,
+    "success": Media.Brushes.Green if not is_dark else Media.Brushes.LightGreen,
+    "default_subtle": Media.Brushes.Gray if not is_dark else Media.Brushes.LightGray,
+    "default_text": Media.Brushes.Black if not is_dark else Media.Brushes.White,
+}
 
 
 def initialize_globals():
@@ -381,7 +390,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             lbl = Controls.TextBlock()
             lbl.Text = self.get_locale_string("NoLevelFoundInDirection")
             lbl.Margin = System.Windows.Thickness(10, 5, 10, 5)
-            lbl.Foreground = Media.Brushes.Gray
+            lbl.Foreground = BRUSHCOLORS.get("default_subtle")
             menu.Children.Add(lbl)
 
     # ----------
@@ -533,15 +542,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             message_type: "info", "error", "warning", "success" (for color coding)
         """
         try:
-            # Define color mapping
-            colors = {
-                "error": Media.Brushes.Red,
-                "warning": Media.Brushes.Orange,
-                "info": Media.Brushes.Blue,
-                "success": Media.Brushes.Green,
-            }
-
-            color = colors.get(message_type.lower(), Media.Brushes.Black)
+            color = BRUSHCOLORS.get(message_type.lower(), Media.Brushes.White)
 
             def update_ui():
                 if column == 1:
@@ -606,12 +607,12 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                     self.txtGridStatus.Text = self.get_locale_string(
                         "NoSectionBoxActive"
                     )
-                    self.txtGridStatus.Foreground = Media.Brushes.Gray
+                    self.txtGridStatus.Foreground = BRUSHCOLORS.get("default_subtle")
                     return
 
                 # Get current grid position info if needed
                 self.txtGridStatus.Text = "..."
-                self.txtGridStatus.Foreground = Media.Brushes.Black
+                self.txtGridStatus.Foreground = BRUSHCOLORS.get("default_text")
 
             self.Dispatcher.Invoke(System.Action(update_ui))
         except Exception as ex:
@@ -627,11 +628,11 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                     self.txtExpandActionsStatus.Text = self.get_locale_string(
                         "NoSectionBoxActive"
                     )
-                    self.txtExpandActionsStatus.Foreground = Media.Brushes.Gray
+                    self.txtExpandActionsStatus.Foreground = BRUSHCOLORS.get("default_subtle")
                     return
 
                 self.txtExpandActionsStatus.Text = "..."
-                self.txtExpandActionsStatus.Foreground = Media.Brushes.Black
+                self.txtExpandActionsStatus.Foreground = BRUSHCOLORS.get("default_text")
 
             self.Dispatcher.Invoke(System.Action(update_ui))
         except Exception as ex:

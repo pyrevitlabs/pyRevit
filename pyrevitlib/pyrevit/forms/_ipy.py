@@ -256,7 +256,7 @@ def _walk_logical_tree(root):
                 pending.append(child)
 
 
-def _is_dark_theme():
+def is_dark_theme():
     """Return True if Revit's active UI theme is Dark.
 
     Always False on Revit <2024, which has no UITheme concept.
@@ -447,7 +447,7 @@ class _WPFMixin(object):
             res["pyRevitButtonColor"]
         )
 
-        is_dark = _is_dark_theme()
+        is_dark = is_dark_theme()
         palette = _PALETTE_DARK if is_dark else _PALETTE_LIGHT
         for name, argb in palette.items():
             _set_color("pyRevit" + name, argb)
@@ -883,7 +883,7 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         try:
             wih = Interop.WindowInteropHelper(self)
             hwnd = wih.EnsureHandle()
-            is_dark = _is_dark_theme()
+            is_dark = is_dark_theme()
             Common.DwmApi.SetImmersiveDarkMode(hwnd, is_dark)
             palette = _PALETTE_DARK if is_dark else _PALETTE_LIGHT
             caption_color = _colorref(palette["ChromeBackground"])
