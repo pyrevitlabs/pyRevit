@@ -154,7 +154,7 @@ class DeveloperSamplePanel(forms.WPFPanel):
     panel_title = "pyRevit Sample Panel"
 
     def __init__(self):
-        forms.WPFPanel.__init__(self)
+        forms.WPFPanel.__init__(self, resolve_theme=True)
 
         # ---- pyrevit_version property ------------------------------------
         self.version_label.Text = self.pyrevit_version

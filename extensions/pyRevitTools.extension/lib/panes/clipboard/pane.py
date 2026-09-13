@@ -476,7 +476,7 @@ class MatchHistoryClipboard(forms.WPFPanel):
     panel_source = _PAGE_XAML
 
     def __init__(self):
-        forms.WPFPanel.__init__(self)
+        forms.WPFPanel.__init__(self, resolve_theme=True)
         self.Content = ClipboardContent(is_recall=False)
 
 
