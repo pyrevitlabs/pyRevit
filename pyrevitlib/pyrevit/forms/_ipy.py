@@ -109,6 +109,7 @@ _PALETTE_LIGHT = {
     "ControlOverlayPressed": (0x18, 0x00, 0x00, 0x00),  # translucent black
     "DisabledForeground": (0xFF, 0xA0, 0xA0, 0xA0),  # gray
     "SubtleForeground": (0xFF, 0x69, 0x69, 0x69),  # dim gray
+    "DangerForeground": (0xFF, 0xB4, 0x23, 0x18),
     "DangerBackground": (0xFF, 0xFB, 0xD5, 0xD5),  # misty rose
     "SuccessBackground": (0xFF, 0xD4, 0xEF, 0xD8),  # pale green
     "Icon": (0xFF, 0x00, 0x00, 0x00),  # black
@@ -131,6 +132,7 @@ _PALETTE_DARK = {
     "ControlOverlayPressed": (0x37, 0xFF, 0xFF, 0xFF),  # translucent white
     "DisabledForeground": (0xFF, 0x7F, 0x8C, 0x8D),  # gray
     "SubtleForeground": (0xFF, 0x95, 0xA5, 0xA6),  # muted blue-gray
+    "DangerForeground": (0xFF, 0xFF, 0x6B, 0x61),
     "DangerBackground": (0xFF, 0x5C, 0x2E, 0x2E),  # dark red
     "SuccessBackground": (0xFF, 0x2C, 0x4C, 0x33),  # dark green
     "Icon": (0xFF, 0xEC, 0xF0, 0xF1),  # light gray
@@ -254,7 +256,7 @@ def _walk_logical_tree(root):
                 pending.append(child)
 
 
-def _is_dark_theme():
+def is_dark_theme():
     """Return True if Revit's active UI theme is Dark.
 
     Always False on Revit <2024, which has no UITheme concept.
@@ -446,7 +448,7 @@ class _WPFMixin(object):
             res["pyRevitButtonColor"]
         )
 
-        is_dark = resolve_theme and _is_dark_theme()
+        is_dark = resolve_theme and is_dark_theme()
         palette = _PALETTE_DARK if is_dark else _PALETTE_LIGHT
         for name, argb in palette.items():
             _set_color("pyRevit" + name, argb)
@@ -904,7 +906,7 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         try:
             wih = Interop.WindowInteropHelper(self)
             hwnd = wih.EnsureHandle()
-            is_dark = _is_dark_theme()
+            is_dark = is_dark_theme()
             Common.DwmApi.SetImmersiveDarkMode(hwnd, is_dark)
             palette = _PALETTE_DARK if is_dark else _PALETTE_LIGHT
             caption_color = _colorref(palette["ChromeBackground"])
