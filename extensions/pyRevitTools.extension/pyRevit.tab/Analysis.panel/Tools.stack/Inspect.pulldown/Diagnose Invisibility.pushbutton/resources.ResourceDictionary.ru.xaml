@@ -1,0 +1,33 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="pick_prompt">Выберите элемент(ы) для диагностики</sys:String>
+    <sys:String x:Key="select_view_title">Выбор вида</sys:String>
+    <sys:String x:Key="select_view_button">Диагностировать в этом виде</sys:String>
+    <sys:String x:Key="no_elements_error">Элементы не выбраны и не указаны.</sys:String>
+    <sys:String x:Key="no_view_error">Вид не выбран.</sys:String>
+    <sys:String x:Key="report_title">Диагностика видимости</sys:String>
+    <sys:String x:Key="status_visible">Виден на этом виде.</sys:String>
+    <sys:String x:Key="status_hidden">НЕ виден на этом виде:</sys:String>
+    <sys:String x:Key="status_error">Ошибка при диагностике элемента</sys:String>
+    <sys:String x:Key="summary_line">Видимых: {}, невидимых: {}.</sys:String>
+    <sys:String x:Key="reason_workset_hidden">Рабочий набор '{}' явно скрыт на этом виде</sys:String>
+    <sys:String x:Key="reason_workset_closed">Рабочий набор '{}' закрыт (глобальная настройка)</sys:String>
+    <sys:String x:Key="reason_workset_default_hidden">Рабочий набор '{}' скрыт настройкой видимости рабочих наборов по умолчанию модели</sys:String>
+    <sys:String x:Key="reason_phase_filter">Скрыт фильтром фаз (статус фазы элемента: '{}')</sys:String>
+    <sys:String x:Key="reason_design_option">Элемент принадлежит варианту проектирования '{}', который отличается от варианта, отображаемого на этом виде</sys:String>
+    <sys:String x:Key="reason_category_hidden">Категория '{}' скрыта на этом виде</sys:String>
+    <sys:String x:Key="reason_subcategory_hidden">Подкатегория '{}' категории '{}' скрыта на этом виде (элемент может относиться к ней)</sys:String>
+    <sys:String x:Key="reason_element_hidden">Элемент явно скрыт на этом виде (Скрыть/Изолировать)</sys:String>
+    <sys:String x:Key="reason_view_filter">Скрыт фильтром вида '{}'</sys:String>
+    <sys:String x:Key="reason_section_box">Ограничивающий параллелепипед элемента полностью находится за пределами активного секущего объёма вида</sys:String>
+    <sys:String x:Key="reason_crop_box">Ограничивающий параллелепипед элемента полностью находится за пределами области обрезки вида</sys:String>
+    <sys:String x:Key="reason_viewrange_above">Элемент находится выше верхней секущей плоскости диапазона вида (мин. Z элемента {:.3f} фт &gt; верх {:.3f} фт)</sys:String>
+    <sys:String x:Key="reason_viewrange_below">Элемент находится ниже нижней границы диапазона вида (нижняя секущая плоскость / глубина вида) (макс. Z элемента {:.3f} фт &lt; нижняя граница {:.3f} фт)</sys:String>
+    <sys:String x:Key="reason_view_template">Применён шаблон вида '{}' - некоторые настройки видимости могут быть заблокированы, их нужно изменить в шаблоне</sys:String>
+    <sys:String x:Key="reason_view_specific">Элемент относится к определённому виду и принадлежит другому виду ('{}'), поэтому не может отображаться здесь</sys:String>
+    <sys:String x:Key="reason_view_discipline">Для вида установлена дисциплина '{}' - некоторые категории автоматически показываются или скрываются в зависимости от дисциплины, независимо от настроек видимости/графики</sys:String>
+    <sys:String x:Key="reason_unknown">Элемент не виден, но точную причину определить не удалось. Возможные причины: элемент, специфичный для другого вида (например, аннотация), видимость в связанном файле или уровень детализации.</sys:String>
+
+</ResourceDictionary>

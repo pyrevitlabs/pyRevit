@@ -104,7 +104,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                                         elementIdsToIsolate.Add(hostId);
                                 }
 #else
-                                    if (element.GetType() == typeof(IndependentTag)) {
+                                if (element.GetType() == typeof(IndependentTag)) {
                                     var hostId = ((IndependentTag)element).TaggedLocalElementId;
                                     if (hostId != ElementId.InvalidElementId)
                                         elementIdsToIsolate.Add(hostId);

@@ -1,9 +1,10 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         ShowInTaskbar="True"
-        Width="720" Height="750"
-        MinWidth="720" MinHeight="480"
+        Width="800" Height="750"
+        MinWidth="760" MinHeight="480"
         ResizeMode="CanResizeWithGrip"
+        UseLayoutRounding="True"
         WindowStartupLocation="Manual"
         Title="Keynote Manager"
         Closing="window_closing"
@@ -531,18 +532,6 @@
                     <Setter TargetName="textDisplay" Property="Foreground"
                             Value="{DynamicResource pyRevitSelectionForegroundBrush}"/>
                 </MultiDataTrigger>
-                <!-- Same correction one state further out: a locked row can
-                     sit in a multi-selection WITHOUT being the focused row,
-                     and the `locked` setter above would otherwise leave
-                     disabled-grey text on the selection fill. -->
-                <MultiDataTrigger>
-                    <MultiDataTrigger.Conditions>
-                        <Condition Binding="{Binding locked}" Value="True"/>
-                        <Condition Binding="{Binding multi_selected}" Value="True"/>
-                    </MultiDataTrigger.Conditions>
-                    <Setter TargetName="textDisplay" Property="Foreground"
-                            Value="{DynamicResource pyRevitSelectionForegroundBrush}"/>
-                </MultiDataTrigger>
                 <DataTrigger Binding="{Binding has_element_type}" Value="True">
                     <Setter TargetName="typElBadge" Property="Visibility" Value="Visible"/>
                 </DataTrigger>
@@ -698,19 +687,17 @@
 
                         <Rectangle Style="{StaticResource ToolbarSep}"/>
 
-                        <!-- HIERARCHY: Promote / Demote / Move Up / Move Down -->
+                        <!-- HIERARCHY: Indent / Outdent / Move Up / Move Down -->
+                        <Button x:Name="indentBtn" Style="{StaticResource ToolbarButton}" Width="34"
+                                ToolTip="Indent — make child of sibling above (Tab)"
+                                IsEnabled="False" Click="indent_keynote">
+                            <TextBlock Text="&#x21E5;" FontSize="16" FontWeight="Bold"
+                                       Foreground="{DynamicResource pyRevitWindowForegroundBrush}"/>
+                        </Button>
                         <Button x:Name="outdentBtn" Style="{StaticResource ToolbarButton}" Width="34"
                                 ToolTip="Promote — move up one level (Shift+Tab)"
                                 IsEnabled="False" Click="outdent_keynote">
-                            <TextBlock Text="&#x21E6;" FontSize="14" FontFamily="Segoe UI Symbol"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"
-                                       Foreground="{DynamicResource pyRevitWindowForegroundBrush}"/>
-                        </Button>
-                        <Button x:Name="indentBtn" Style="{StaticResource ToolbarButton}" Width="34"
-                                ToolTip="Demote — make child of the note above (Tab)"
-                                IsEnabled="False" Click="indent_keynote">
-                            <TextBlock Text="&#x21E8;" FontSize="14" FontFamily="Segoe UI Symbol"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                            <TextBlock Text="&#x21E4;" FontSize="16" FontWeight="Bold"
                                        Foreground="{DynamicResource pyRevitWindowForegroundBrush}"/>
                         </Button>
                         <Button x:Name="moveUpBtn" Style="{StaticResource ToolbarButton}" Width="28"
@@ -771,7 +758,7 @@
                                 ToolTip="Find in model" IsEnabled="False" Click="show_keynote"/>
                         <Button x:Name="placeBtn" Style="{StaticResource ToolbarButton}"
                                 Content="&#xE718;" FontSize="12" FontFamily="Segoe MDL2 Assets"
-                                ToolTip="Place in model (or Alt+Click / drag a keynote onto the view)"
+                                ToolTip="Place in model (or Shift+Click a keynote)"
                                 IsEnabled="False" Click="place_keynote"/>
                     </StackPanel>
                 </DockPanel>

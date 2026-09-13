@@ -10,6 +10,7 @@ Everything starts from `sessionmgr.load_session()` function...
 The only public function is `load_session()` that loads a new session.
 Everything else is private.
 """
+
 import sys
 
 from pyrevit import EXEC_PARAMS, HOST_APP
@@ -511,6 +512,7 @@ def find_pyrevitcmd(pyrevitcmd_unique_id):
     Returns:
         (type):Type for the command with matching unique name
     """
+
     def _normalize_lookup_id(value):
         if not value:
             return ""
@@ -536,10 +538,12 @@ def find_pyrevitcmd(pyrevitcmd_unique_id):
             mlogger.debug("Found assm: %s", loaded_assm_name)
             for pyrvt_type in loaded_assm[0].GetTypes():
                 mlogger.debug("Found Type: %s", pyrvt_type)
-                if pyrvt_type.FullName == pyrevitcmd_unique_id \
-                        or pyrvt_type.Name == pyrevitcmd_unique_id \
-                        or _normalize_lookup_id(pyrvt_type.FullName) == lookup_id \
-                        or _normalize_lookup_id(pyrvt_type.Name) == lookup_id:
+                if (
+                    pyrvt_type.FullName == pyrevitcmd_unique_id
+                    or pyrvt_type.Name == pyrevitcmd_unique_id
+                    or _normalize_lookup_id(pyrvt_type.FullName) == lookup_id
+                    or _normalize_lookup_id(pyrvt_type.Name) == lookup_id
+                ):
                     mlogger.debug("Found pyRevit command in %s", loaded_assm_name)
                     return pyrvt_type
             mlogger.debug("Could not find pyRevit command.")

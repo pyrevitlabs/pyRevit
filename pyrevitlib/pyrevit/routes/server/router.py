@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Route dictionary."""
-#pylint: disable=import-error,invalid-name,broad-except
+
+# pylint: disable=import-error,invalid-name,broad-except
 import re
 import uuid
 from collections import namedtuple
@@ -14,17 +15,17 @@ from pyrevit.routes.server import handler
 mlogger = get_logger(__name__)
 
 
-ROUTE_VAR_SEP = ':'
+ROUTE_VAR_SEP = ":"
 
 
-Route = namedtuple('Route', ['pattern', 'method'])
+Route = namedtuple("Route", ["pattern", "method"])
 
-RouteParam = namedtuple('RouteParam', ['key', 'value'])
+RouteParam = namedtuple("RouteParam", ["key", "value"])
 
 
 def _make_finder_pattern(route_pattern):
     modified_pattern = re.sub(r"\<.+?\>", "(.+)", route_pattern)
-    return '^%s$' % modified_pattern
+    return "^%s$" % modified_pattern
 
 
 def _find_pattern_keys(route_pattern):
@@ -56,9 +57,9 @@ def _validate_pattern(route_pattern):
 
 
 def _cast_value(cast, val):
-    if cast in ['int', 'float', 'double', 'bool']:
-        return eval('%s(%s)' % (cast, val)) #pylint: disable=eval-used
-    elif cast == 'uuid':
+    if cast in ["int", "float", "double", "bool"]:
+        return eval("%s(%s)" % (cast, val))  # pylint: disable=eval-used
+    elif cast == "uuid":
         return uuid.UUID(val)
 
 
@@ -66,8 +67,7 @@ def route_match(route, path, method):
     """Test if route pattern matches given request path."""
     finder_pattern = _make_finder_pattern(route.pattern)
     # if same method and matching pattern
-    if route.method == method \
-            and re.match(finder_pattern, path):
+    if route.method == method and re.match(finder_pattern, path):
         # check variable data types
         # e.g. paths below are different
         # api/v1/posts/<int:pid> matches
@@ -75,9 +75,9 @@ def route_match(route, path, method):
         # api/v1/posts/<int:pid> does not match
         #     api/v1/posts/661a4f7a-7377-11ea-9494-acde48001122
         for key, val in zip(
-                _find_pattern_keys(route.pattern),
-                _find_pattern_values(finder_pattern, path)
-            ):
+            _find_pattern_keys(route.pattern),
+            _find_pattern_values(finder_pattern, path),
+        ):
             if ROUTE_VAR_SEP in key:
                 cast, key = key.split(ROUTE_VAR_SEP)
                 try:
@@ -103,20 +103,16 @@ def extract_route_params(route_pattern, request_path):
     finder_pattern = _make_finder_pattern(route_pattern)
     route_params = []
     for key, val in zip(
-            _find_pattern_keys(route_pattern),
-            _find_pattern_values(finder_pattern, request_path)
-        ):
+        _find_pattern_keys(route_pattern),
+        _find_pattern_values(finder_pattern, request_path),
+    ):
         if ROUTE_VAR_SEP in key:
             cast, key = key.split(ROUTE_VAR_SEP)
             try:
                 val = _cast_value(cast, val)
             except Exception as cast_ex:
-                mlogger.debug(
-                    'Cast error %s -> %s | %s', val, cast, str(cast_ex)
-                    )
-        route_params.append(
-            RouteParam(key=key, value=val)
-        )
+                mlogger.debug("Cast error %s -> %s | %s", val, cast, str(cast_ex))
+        route_params.append(RouteParam(key=key, value=val))
     return route_params
 
 
@@ -182,7 +178,7 @@ def add_route(api_name, pattern, method, handler_func):
         app_routes = get_routes(api_name)
         app_routes[route] = handler_func
     else:
-        mlogger.error('Route pattern is invalid: %s', pattern)
+        mlogger.error("Route pattern is invalid: %s", pattern)
 
 
 def remove_route(api_name, pattern, method):

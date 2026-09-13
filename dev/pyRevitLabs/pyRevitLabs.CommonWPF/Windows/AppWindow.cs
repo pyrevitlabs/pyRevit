@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
@@ -26,13 +26,13 @@ namespace pyRevitLabs.CommonWPF.Windows {
         private void InitializeComponent() {
             // setting up user name and app version buttons
             var windowButtons = new WindowCommands();
-            
+
             var userButton = new Button() {
                 ToolTip = "Active User. Click to copy to clipboard.",
                 Focusable = false
             };
-            
-            FrameworkElementFactory textBlockFactory 
+
+            FrameworkElementFactory textBlockFactory
                 = new FrameworkElementFactory(typeof(TextBlock));
             textBlockFactory.SetValue(TextBlock.TextProperty, CurrentUser);
 
