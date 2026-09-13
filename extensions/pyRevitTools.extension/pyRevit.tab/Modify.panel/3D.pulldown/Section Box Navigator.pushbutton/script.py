@@ -59,7 +59,7 @@ TOLERANCE = 1e-5
 DATAFILENAME = "SectionBox"
 TEMP_DATAFILE = script.get_instance_data_file("SectionBoxTemp")
 WINDOW_POSITION = "sbnavigator_window_pos"
-IS_DARK = forms.IS_DARK_theme()
+IS_DARK = forms.is_dark_theme()
 BRUSH_COLORS = {
     "error": Media.Brushes.Red if not IS_DARK else Media.Brushes.LightCoral,
     "warning": Media.Brushes.Orange if not IS_DARK else Media.Brushes.Gold,
