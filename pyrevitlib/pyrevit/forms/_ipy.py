@@ -847,8 +847,8 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
                 Defaults to True.
             set_owner (bool, optional): Whether to set the window owner.
                 Defaults to True.
-            auto_theme_switch (bool, optional): Whether to refresh theme
-                resources when Revit's theme changes. Defaults to False.
+            resolve_theme (bool): resolve the palette from Revit's active UI
+                theme. Defaults to False.
         """
         self.resolve_theme = resolve_theme
         # create new id for this window
@@ -873,8 +873,8 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         self.setup_icon()
         if handle_esc:
             self.setup_default_handlers()
-        self._apply_dark_titlebar()
         if self.resolve_theme:
+            self._apply_dark_titlebar()
             self._subscribe_theme_changed()
         self.Closed += self._unsubscribe_theme_changed
 
