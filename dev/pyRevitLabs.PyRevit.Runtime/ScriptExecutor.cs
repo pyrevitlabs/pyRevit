@@ -235,8 +235,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // and ask for an engine (EngineManager return either new engine or an already active one)
             T engine = ScriptEngineManager.GetEngine<T>(ref runtime);
 
-            // a script may load a new pyRevit session, which discards cached engines;
-            // flag this one so the engine the script resumes into is left alone
             ScriptEngineManager.EnterEngine(engine.TypeId);
             try {
                 // init the engine
