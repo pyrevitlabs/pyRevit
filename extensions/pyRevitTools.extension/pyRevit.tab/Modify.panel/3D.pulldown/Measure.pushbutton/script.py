@@ -247,6 +247,8 @@ def perform_measurement():
 class MeasureWindow(forms.WPFWindow):
     """Modeless WPF window for 3D measurement tool."""
 
+    resolve_theme = True
+
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name, handle_esc=True)
         self.point1_text.Text = self.get_locale_string("Point1NotSelected")

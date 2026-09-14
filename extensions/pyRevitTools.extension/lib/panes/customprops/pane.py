@@ -282,6 +282,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
     )
     panel_id = "d3a7f2c1-8e45-4b9a-a312-0f6b7c8d9e10"
     panel_source = op.join(op.dirname(__file__), "pane_ui.xaml")
+    resolve_theme = True
 
     def __init__(self):
         forms.WPFPanel.__init__(self)

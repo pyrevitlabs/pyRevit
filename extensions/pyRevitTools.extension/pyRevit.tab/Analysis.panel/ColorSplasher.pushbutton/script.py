@@ -846,6 +846,8 @@ class CategoryInfo:
 
 
 class ColorSplasherWindow(forms.WPFWindow):
+    resolve_theme = True
+
     def __init__(
         self,
         xaml_file_name,

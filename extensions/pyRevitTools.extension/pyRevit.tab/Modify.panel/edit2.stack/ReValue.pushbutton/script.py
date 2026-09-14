@@ -39,6 +39,8 @@ class ReValueItem(object):
 
 
 class ReValueWindow(forms.WPFWindow):
+    resolve_theme = True
+
     def __init__(self, xaml_file_name):
         # create pattern maker window and process options
         forms.WPFWindow.__init__(self, xaml_file_name)

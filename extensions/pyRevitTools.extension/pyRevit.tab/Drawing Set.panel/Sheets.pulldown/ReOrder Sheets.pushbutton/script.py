@@ -30,6 +30,8 @@ class ListItem(object):
 
 
 class ReOrderWindow(forms.WPFWindow):
+    resolve_theme = True
+
     @staticmethod
     def ensure_orderable():
         sheets = revit.query.get_sheets()

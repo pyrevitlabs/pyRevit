@@ -27,6 +27,8 @@ def update_element_comment(element, comment_text):
 class ExampleUI(forms.WPFWindow):
     """Example modeless window showing execute_in_revit_context usage."""
 
+    resolve_theme = True
+
     def __init__(self):
         xaml_layout = """
         <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"

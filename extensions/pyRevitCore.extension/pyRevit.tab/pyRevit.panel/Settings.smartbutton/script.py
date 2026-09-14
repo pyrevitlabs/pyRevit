@@ -90,6 +90,8 @@ class RevitVersionCB:
 class SettingsWindow(forms.WPFWindow):
     """pyRevit Settings window that handles setting the pyRevit configs"""
 
+    resolve_theme = True
+
     def __init__(self, xaml_file_name):
         """Sets up the settings ui"""
         forms.WPFWindow.__init__(self, xaml_file_name)

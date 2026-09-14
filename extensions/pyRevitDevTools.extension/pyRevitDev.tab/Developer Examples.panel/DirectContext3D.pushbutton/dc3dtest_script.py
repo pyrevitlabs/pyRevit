@@ -13,6 +13,8 @@ output = script.get_output()
 
 
 class UI(forms.WPFWindow):
+    resolve_theme = True
+
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name, handle_esc=False)
 

@@ -13,6 +13,8 @@ logger = script.get_logger()
 
 
 class AboutWindow(forms.WPFWindow):
+    resolve_theme = True
+
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name)
 
