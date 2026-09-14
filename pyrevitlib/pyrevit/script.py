@@ -8,6 +8,7 @@ Examples:
     script.exit()
     ```
 """
+
 # pylint: disable=consider-using-f-string
 
 import sys
@@ -171,7 +172,7 @@ def get_config(section=None, reload=False):
         reload (bool, optional): forces a reload, in case changes were made.
 
     Returns:
-        (pyrevit.coreutils.configparser.PyRevitConfigSectionParser):
+        (pyrevit.coreutils.configparser.ConfigSection):
             Config section parser object
     """
     from pyrevit.userconfig import user_config
@@ -817,8 +818,7 @@ def data_exists(slot_name, this_project=True):
 
 
 def restore_window_position(window, command_name=None):
-    """
-    Restore window position from saved data.
+    """Restore window position from saved data.
 
     Args:
         window (System.Windows.Window): WPF window instance
@@ -864,8 +864,7 @@ def restore_window_position(window, command_name=None):
 
 
 def save_window_position(window, command_name=None):
-    """
-    Save window position to persistent storage.
+    """Save window position to persistent storage.
 
     Args:
         window (System.Windows.Window): WPF window instance

@@ -38,7 +38,6 @@ from pyrevit.labs import PyRevit
 
 from pyrevit.telemetry import events as telemetry_events
 
-
 # templates for telemetry file naming
 FILE_LOG_EXT = "json"
 FILE_LOG_FILENAME_TEMPLATE = "{}_{}_telemetry.{}"
@@ -80,12 +79,17 @@ def get_telemetry_include_hooks():
 
 
 def set_telemetry_state(state):
-    envvars.set_pyrevit_env_var(envvars.TELEMETRYSTATE_ENVVAR, state)
+    """Set the telemetry on/off state.
+
+    Coerces state to bool: the runtime unboxes this env value straight to a
+    CLR bool, which throws on None, and an unset config option reads as None.
+    """
+    envvars.set_pyrevit_env_var(envvars.TELEMETRYSTATE_ENVVAR, bool(state))
     user_config.telemetry_status = state
 
 
 def set_telemetry_utc_timestamp(state):
-    envvars.set_pyrevit_env_var(envvars.TELEMETRYUTCTIMESTAMPS_ENVVAR, state)
+    envvars.set_pyrevit_env_var(envvars.TELEMETRYUTCTIMESTAMPS_ENVVAR, bool(state))
     user_config.telemetry_utc_timestamp = state
 
 
@@ -126,7 +130,7 @@ def set_telemetry_server_url(server_url, persist=True):
 
 
 def set_telemetry_include_hooks(state):
-    envvars.set_pyrevit_env_var(envvars.TELEMETRYINCLUDEHOOKS_ENVVAR, state)
+    envvars.set_pyrevit_env_var(envvars.TELEMETRYINCLUDEHOOKS_ENVVAR, bool(state))
     user_config.telemetry_include_hooks = state
 
 
@@ -147,7 +151,7 @@ def get_apptelemetry_state():
 
 
 def set_apptelemetry_state(state):
-    envvars.set_pyrevit_env_var(envvars.APPTELEMETRYSTATE_ENVVAR, state)
+    envvars.set_pyrevit_env_var(envvars.APPTELEMETRYSTATE_ENVVAR, bool(state))
     user_config.apptelemetry_status = state
 
 
@@ -245,7 +249,12 @@ def get_status():
 
 
 def setup_telemetry(session_id=None):
-    """Sets up the telemetry default config and environment values."""
+    """Sets up the telemetry default config and environment values.
+
+    The setters here are called with persist=False: this is a startup-time
+    push from user_config to env, not a value change, so it must not write
+    back to the config.
+    """
     # make sure session id is availabe
     if not session_id:
         session_id = sessioninfo.get_session_uuid()
@@ -262,9 +271,6 @@ def setup_telemetry(session_id=None):
     # read or setup default values for file telemetry
     # default file path and name for telemetry
     telemetry_file_dir = user_config.telemetry_file_dir
-    # persist=False: this is a startup-time push from user_config to env,
-    # not a value change. Avoids redundant round-trip writes that
-    # previously fed the escape-doubling bug.
     set_telemetry_file_dir(telemetry_file_dir, persist=False)
 
     # check file telemetry config and setup destination

@@ -6,6 +6,9 @@ using System.Linq;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
+using pyRevitLabs.Configurations.Abstractions;
+using pyRevitLabs.Configurations.Ini;
+using pyRevitLabs.Configurations.Sections;
 using pyRevitLabs.NLog;
 
 namespace pyRevitLabs.PyRevit {
@@ -99,8 +102,7 @@ namespace pyRevitLabs.PyRevit {
         public static List<PyRevitClone> GetRegisteredClones() {
             // safely get clone list
             var cfg = PyRevitConfigs.GetConfigFile();
-            var clonesDict = cfg.GetDictValue(PyRevitConsts.EnvConfigsSectionName, PyRevitConsts.EnvConfigsInstalledClonesKey);
-            clonesDict = MergeMachineRegisteredClones(cfg, clonesDict);
+            var clonesDict = MergeMachineRegisteredClones(cfg, cfg.Environment.Clones);
 
             var validatedClones = new List<PyRevitClone>();
             if (clonesDict is null) {
@@ -147,7 +149,7 @@ namespace pyRevitLabs.PyRevit {
         // the per-user config so seeded copies can not go stale when an admin
         // re-registers or moves clones
         private static Dictionary<string, string> MergeMachineRegisteredClones(
-            PyRevitConfig activeConfig,
+            IConfigurationService activeConfig,
             Dictionary<string, string> clonesDict) {
             if (!PyRevitInstallScope.IsAllUsersInstall())
                 return clonesDict;
@@ -157,7 +159,7 @@ namespace pyRevitLabs.PyRevit {
                 return clonesDict;
 
             // active config already is the machine config; nothing to merge
-            var activeConfigPath = activeConfig.ConfigFilePath;
+            var activeConfigPath = activeConfig.Configuration.ConfigurationPath;
             if (activeConfigPath != null
                     && machineConfigPath.NormalizeAsPath().Equals(
                         activeConfigPath.NormalizeAsPath(),
@@ -166,10 +168,13 @@ namespace pyRevitLabs.PyRevit {
 
             Dictionary<string, string> machineClones = null;
             try {
-                var machineConfig = new PyRevitConfig(machineConfigPath, adminMode: true);
-                machineClones = machineConfig.GetDictValue(
-                    PyRevitConsts.EnvConfigsSectionName,
-                    PyRevitConsts.EnvConfigsInstalledClonesKey);
+                var machineConfig = IniConfiguration.Create(machineConfigPath, readOnly: true);
+                if (machineConfig.HasSectionKey(
+                        PyRevitConsts.EnvConfigsSectionName,
+                        PyRevitConsts.EnvConfigsInstalledClonesKey))
+                    machineClones = machineConfig.GetValue<Dictionary<string, string>>(
+                        PyRevitConsts.EnvConfigsSectionName,
+                        PyRevitConsts.EnvConfigsInstalledClonesKey);
             }
             catch (Exception readEx) {
                 logger.Debug("Could not read machine-wide clone registry | {0}", readEx.Message);
@@ -762,11 +767,8 @@ namespace pyRevitLabs.PyRevit {
         // updates the config value for registered clones
         public static void SaveRegisteredClones(IEnumerable<PyRevitClone> clonesList) {
             var cfg = PyRevitConfigs.GetConfigFile();
-            var newValueDic = clonesList.ToDictionary(x => x.Name, x => x.ClonePath);
-            cfg.SetValue(
-                PyRevitConsts.EnvConfigsSectionName,
-                PyRevitConsts.EnvConfigsInstalledClonesKey,
-                newValueDic);
+            cfg.SaveSection(
+                new EnvironmentSection() { Clones = clonesList.ToDictionary(item => item.Name, item => item.ClonePath) });
             PyRevitAttachments.ClearAttachmentCache();
         }
     }

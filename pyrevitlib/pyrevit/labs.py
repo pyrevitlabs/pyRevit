@@ -4,6 +4,7 @@ import os.path as op
 
 # pylint: disable=W0703,C0302,C0103,W0614,E0401,W0611,C0413
 # pylint: disable=superfluous-parens,useless-import-alias
+from pyrevit import HOST_APP
 from pyrevit.framework import clr
 from pyrevit.compat import PY2
 from pyrevit._perf import mark as _perfmark
@@ -12,7 +13,6 @@ _perfmark("pyrevit.labs:entry")
 
 # try loading pyrevitlabs
 clr.AddReference("Nett")
-clr.AddReference("MadMilkman.Ini")
 clr.AddReference("OpenMcdf")
 clr.AddReference("YamlDotNet")
 clr.AddReference("pyRevitLabs.NLog")
@@ -41,9 +41,11 @@ clr.AddReference("pyRevitLabs.DeffrelDB")
 clr.AddReference("pyRevitLabs.TargetApps.Revit")
 clr.AddReference("pyRevitLabs.PyRevit")
 clr.AddReference("PythonStubsBuilder")
-_perfmark("pyrevit.labs:after clr.AddReference block (14 pyRevitLabs DLLs)")
+
+clr.AddReference("pyRevitLabs.Configurations")
+clr.AddReference("pyRevitLabs.Configurations.Ini")
+_perfmark("pyrevit.labs:after clr.AddReference block (15 pyRevitLabs DLLs)")
 import Nett
-import MadMilkman.Ini
 import OpenMcdf
 import YamlDotNet as libyaml
 import pyRevitLabs.MahAppsMetro
@@ -58,11 +60,15 @@ from pyRevitLabs import TargetApps
 from pyRevitLabs import PyRevit
 from PythonStubs import PythonStubsBuilder
 
+from pyRevitLabs import Configurations
+from pyRevitLabs.Configurations import ConfigurationService
+from pyRevitLabs.Configurations import ConfigurationBuilder
+from pyRevitLabs.Configurations.Ini import IniConfiguration
+
 _perfmark("pyrevit.labs:after `from pyRevitLabs import` block")
 
 from pyrevit import coreutils
 from pyrevit.coreutils import logger
-
 
 mlogger = logger.get_logger(__name__)
 
@@ -85,6 +91,9 @@ def extract_build_from_exe(proc_path):
         else "20000101_0000(x64)"
     )
 
+
+if HOST_APP.is_older_than(2019):
+    PyRevit.PyRevitBindings.ActivateResolver()
 
 # NLog output is configured by PyRevitLabs.PyRevit.Runtime.ScriptOutput.
 
