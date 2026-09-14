@@ -10,6 +10,7 @@ from pyrevit import forms
 
 DEBUG = False
 
+
 def createreversedcurve(orig):
     # Create a new curve with the same geometry in the reverse direction.
     if isinstance(orig, DB.Line):
@@ -27,37 +28,35 @@ def sortcurvescontiguous(origcurves):
     _sixteenth = _inch / 16.0
     n = len(curves)
     if DEBUG:
-        print('NUMBER OF CURVES: {0}'.format(n))
+        print("NUMBER OF CURVES: {0}".format(n))
     # Walk through each curve (after the first)
     # to match up the curves in order
     for i in range(0, n):
         curve = curves[i]
         endpoint = curve.GetEndPoint(1)
-        found = (i + 1 >= n)
+        found = i + 1 >= n
         for j in range(i + 1, n):
             # If there is a match end->start,
             # this is the next curve
             p = curves[j].GetEndPoint(0)
             if DEBUG:
-                print('END2START: {0}'
-                      .format(_sixteenth > p.DistanceTo(endpoint)))
+                print("END2START: {0}".format(_sixteenth > p.DistanceTo(endpoint)))
             if _sixteenth > p.DistanceTo(endpoint):
                 if i + 1 != j:
                     tmp = curves[i + 1]
                     curves[i + 1] = curves[j]
                     curves[j] = tmp
                     if DEBUG:
-                        print('SWAPPED.')
+                        print("SWAPPED.")
                 if DEBUG:
-                    print('SWAP UNECESSARY.')
+                    print("SWAP UNECESSARY.")
                 found = True
                 break
             # If there is a match end->end,
             # reverse the next curve
             p = curves[j].GetEndPoint(1)
             if DEBUG:
-                print('END2END: {0}'
-                      .format(_sixteenth > p.DistanceTo(endpoint)))
+                print("END2END: {0}".format(_sixteenth > p.DistanceTo(endpoint)))
             if _sixteenth > p.DistanceTo(endpoint):
                 if i + 1 == j:
                     curves[i + 1] = createreversedcurve(curves[j])
@@ -66,7 +65,7 @@ def sortcurvescontiguous(origcurves):
                     curves[i + 1] = createreversedcurve(curves[j])
                     curves[j] = tmp
                 if DEBUG:
-                    print('REVERSED.')
+                    print("REVERSED.")
                 found = True
                 break
         if not found:
@@ -76,7 +75,9 @@ def sortcurvescontiguous(origcurves):
 
 def get_transformation(view_port, view, view_crop_shape):
     def _min_mix(_shape):
-        _max, _min = (lambda x: ([-x] * 3, [x-1] * 3))(2**63) # (2) 1x3 vectors with max/min 64 bit numbers
+        _max, _min = (lambda x: ([-x] * 3, [x - 1] * 3))(
+            2**63
+        )  # (2) 1x3 vectors with max/min 64 bit numbers
         _cl = _shape
         for _l in _cl:
             _p_zero = _l.GetEndPoint(0)
@@ -87,7 +88,10 @@ def get_transformation(view_port, view, view_crop_shape):
         return DB.XYZ(*_max), DB.XYZ(*_min)
 
     view_crop_max, view_crop_min = _min_mix(view_crop_shape)
-    sheet_max, sheet_min = view_port.GetBoxOutline().MaximumPoint, view_port.GetBoxOutline().MinimumPoint
+    sheet_max, sheet_min = (
+        view_port.GetBoxOutline().MaximumPoint,
+        view_port.GetBoxOutline().MinimumPoint,
+    )
 
     view_crop_center = (view_crop_max + view_crop_min) * 0.5
     sheet_center = (sheet_max + sheet_min) * 0.5
@@ -102,7 +106,7 @@ def get_transformation(view_port, view, view_crop_shape):
     basis_transform.BasisZ = view.ViewDirection * view.Scale
 
     # return composition of transforms going from right to left (sheet transform first, then basis transform)
-    return  basis_transform * sheet_transform
+    return basis_transform * sheet_transform
 
 
 def set_crop_boundary():
@@ -116,26 +120,27 @@ def set_crop_boundary():
             selviewports.append(el)
         elif isinstance(el, DB.CurveElement):
             selboundary.append(el)
-            
+
     if len(selviewports) > 0:
         selvp = selviewports[0]
         selview = revit.doc.GetElement(selvp.ViewId)
     else:
-        forms.alert('At least one viewport must be selected.')
+        forms.alert("At least one viewport must be selected.")
 
     if len(selboundary) < 3:
-        forms.alert('At least one closed polygon must be '
-                    'selected (minimum 3 detail lines).')
+        forms.alert(
+            "At least one closed polygon must be selected (minimum 3 detail lines)."
+        )
 
     # making sure the cropbox is active.
     if not selview.CropBoxActive:
-        with revit.Transaction('Activate Crop Box'):
+        with revit.Transaction("Activate Crop Box"):
             selview.CropBoxActive = True
 
     crsm = selview.GetCropRegionShapeManager()
     view_crop = crsm.GetCropShape()[0]
 
-    with revit.Transaction('Set Crop Region'):
+    with revit.Transaction("Set Crop Region"):
         selview.AreAnnotationCategoriesHidden = True
 
         curveloop = []
@@ -149,7 +154,7 @@ def set_crop_boundary():
         if sortedcurves:
             crop_shape = DB.CurveLoop.Create(List[DB.Curve](sortedcurves))
         else:
-            forms.alert('Curves must be in a closed loop.')
+            forms.alert("Curves must be in a closed loop.")
 
         transform = get_transformation(selvp, selview, view_crop)
         crop_shape = DB.CurveLoop.CreateViaTransform(crop_shape, transform)
@@ -162,4 +167,4 @@ selection = revit.get_selection()
 if selection:
     set_crop_boundary()
 else:
-    forms.alert('Select one viewport and a detail line boundary.')
+    forms.alert("Select one viewport and a detail line boundary.")

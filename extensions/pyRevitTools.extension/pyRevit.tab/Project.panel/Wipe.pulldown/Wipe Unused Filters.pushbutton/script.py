@@ -13,14 +13,18 @@ class ViewFilterToPurge(forms.TemplateListItem):
         return self.item.Name
 
 
-views = DB.FilteredElementCollector(revit.doc)\
-          .OfClass(DB.View)\
-          .WhereElementIsNotElementType()\
-          .ToElements()
+views = (
+    DB.FilteredElementCollector(revit.doc)
+    .OfClass(DB.View)
+    .WhereElementIsNotElementType()
+    .ToElements()
+)
 
-filters = DB.FilteredElementCollector(revit.doc)\
-            .OfClass(DB.ParameterFilterElement)\
-            .ToElements()
+filters = (
+    DB.FilteredElementCollector(revit.doc)
+    .OfClass(DB.ParameterFilterElement)
+    .ToElements()
+)
 
 usedFiltersSet = set()
 allFilters = set()
@@ -39,35 +43,36 @@ for v in views:
             usedFiltersSet.add(get_elementid_value(filter_id))
 
 if not allFilters:
-    forms.alert('There are no filters available.')
+    forms.alert("There are no filters available.")
     script.exit()
 
 unusedFilters = allFilters - usedFiltersSet
 
 if not unusedFilters:
-    forms.alert('All filters are in use. No purging necessary.')
+    forms.alert("All filters are in use. No purging necessary.")
 else:
     # ask user for wipe actions
-    return_options = \
-        forms.SelectFromList.show(
-            [ViewFilterToPurge(revit.doc.GetElement(DB.ElementId(x)))
-            for x in unusedFilters],
-            title='Select Filters to Purge',
-            width=500,
-            button_name='Purge Filters',
-            multiselect=True
-            )
+    return_options = forms.SelectFromList.show(
+        [
+            ViewFilterToPurge(revit.doc.GetElement(DB.ElementId(x)))
+            for x in unusedFilters
+        ],
+        title="Select Filters to Purge",
+        width=500,
+        button_name="Purge Filters",
+        multiselect=True,
+    )
 
     # print('{} Filters have not been used and will be purged.'
     #        .format(len(unusedFilters)))
 
     if return_options:
-        with revit.Transaction('Purge Unused Filters'):
+        with revit.Transaction("Purge Unused Filters"):
             for vf in return_options:
-                logger.debug('Purging Filter: {0}\t{1}'
-                                .format(vf.Id, vf.Name))
+                logger.debug("Purging Filter: {0}\t{1}".format(vf.Id, vf.Name))
                 try:
                     revit.doc.Delete(vf.Id)
                 except Exception as del_err:
-                    logger.error('Error purging filter: {} | {}'
-                                    .format(vf.Name, del_err))
+                    logger.error(
+                        "Error purging filter: {} | {}".format(vf.Name, del_err)
+                    )

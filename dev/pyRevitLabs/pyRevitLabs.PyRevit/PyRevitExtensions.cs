@@ -18,7 +18,7 @@ using pyRevitLabs.NLog;
  *  - Shipped extensions are the ones shipped as part of a clone (builtin) and specific to a clone
  *  - Installed extensions are installed globally in paths. All clones will see these extension
  *  - Registered extensions are extension metadata registered in json files. They ar used to extract info about an extension and find the install source
- */ 
+ */
 
 namespace pyRevitLabs.PyRevit {
     public static class PyRevitExtensions {
@@ -56,7 +56,7 @@ namespace pyRevitLabs.PyRevit {
             foreach (PyRevitExtension ext in FindExtensions(searchPath))
                 if (CompareExtensionNames(ext.Name, searchPattern))
                     return ext;
-            
+
             throw new PyRevitException(string.Format("Can not find extension matching \"{0}\"", searchPattern));
         }
 
@@ -216,6 +216,41 @@ namespace pyRevitLabs.PyRevit {
                 throw new PyRevitException(string.Format("Error installing extension. Null repo error on \"{0}\"",
                                                          repoPath));
 
+        }
+
+        // save extension credentials to config file so the extension can be updated later,
+        // by the in-Revit extension manager or the cli, without asking for credentials again.
+        // this writes the same config section and keys as the in-Revit extension manager
+        // @handled @logs
+        public static void SaveExtensionCredentials(string extensionName,
+                                                    PyRevitExtensionTypes extensionType,
+                                                    GitInstallerCredentials credentials) {
+            if (credentials is null
+                || !credentials.IsValid()
+                || (credentials is GitInstallerUsernamePasswordCredentials upCreds
+                    && (string.IsNullOrWhiteSpace(upCreds.Username) || string.IsNullOrWhiteSpace(upCreds.Password)))
+                || (credentials is GitInstallerAccessTokenCredentials tokCreds
+                    && string.IsNullOrWhiteSpace(tokCreds.AccessToken)))
+                throw new PyRevitException("Can not save invalid or empty credentials.");
+
+            var cfg = PyRevitConfigs.GetConfigFile();
+            string extSection = PyRevitExtension.MakeConfigName(extensionName, extensionType);
+
+            logger.Debug("Saving credentials for extension \"{0}\" to config section \"{1}\"",
+                         extensionName, extSection);
+
+            cfg.SetValue(extSection, PyRevitConsts.ExtensionPrivateRepoKey, true);
+            if (credentials is GitInstallerUsernamePasswordCredentials userpassCreds) {
+                cfg.SetValue(extSection, PyRevitConsts.ExtensionUsernameKey, userpassCreds.Username);
+                cfg.SetValue(extSection, PyRevitConsts.ExtensionPasswordKey, userpassCreds.Password);
+            }
+            else if (credentials is GitInstallerAccessTokenCredentials tokenCreds) {
+                cfg.SetValue(extSection, PyRevitConsts.ExtensionTokenKey, tokenCreds.AccessToken);
+                // the in-Revit updater authenticates with the username/password pair
+                // so store the token in that format as well
+                cfg.SetValue(extSection, PyRevitConsts.ExtensionUsernameKey, PyRevitConsts.ExtensionTokenDefaultUsername);
+                cfg.SetValue(extSection, PyRevitConsts.ExtensionPasswordKey, tokenCreds.AccessToken);
+            }
         }
 
         // installs extension
@@ -381,7 +416,6 @@ namespace pyRevitLabs.PyRevit {
                     var normSrc = src.NormalizeAsPath();
                     logger.Debug("Extension lookup source \"{0}\"", normSrc);
                     normSources.Add(normSrc);
-                    SaveExtensionLookupSources(normSources);
                 }
             }
             return normSources;

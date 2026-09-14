@@ -254,6 +254,11 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 (component.Type == CommandComponentType.LinkButton || component.Type == CommandComponentType.InvokeButton))
             {
                 searchPaths.AddRange(_currentExtension.CollectBinaryPaths(component));
+                foreach (var libPath in _currentExtension.CollectLibraryPaths(component))
+                {
+                    if (!searchPaths.Contains(libPath))
+                        searchPaths.Add(libPath);
+                }
             }
             else if (!string.IsNullOrEmpty(component.Directory))
             {

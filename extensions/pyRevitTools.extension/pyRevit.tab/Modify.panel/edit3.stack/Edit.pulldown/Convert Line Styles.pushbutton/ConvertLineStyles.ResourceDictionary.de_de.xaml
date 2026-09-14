@@ -11,5 +11,5 @@
     <system:String x:Key="ConvertModelLines">Modell-Linien konvertieren</system:String>
     <system:String x:Key="ConvertFilledRegionLines">Linien von Füllbereichen konvertieren (Füllbereiche müssen geschüttelt werden)</system:String>
     <system:String x:Key="ConvertGroupedLines">Gruppierte Linien konvertieren (Keine API-Unterstützung)</system:String>
-    <system:String x:Key="DeleteConvertedStyles">Konvertierte Stile nach Abschluss löschen</system:String>
+    <system:String x:Key="RetireConvertedStyles">Quellstile nach Abschluss zusammenführen und zurückziehen</system:String>
 </ResourceDictionary>

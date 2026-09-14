@@ -17,6 +17,7 @@ from pyrevit.routes.server import base
 from pyrevit.compat import PY2
 
 
+# fmt: off
 class SafeJsonDumpsTests(unittest.TestCase):
     """Tests for handler._safe_json_dumps."""
 
@@ -42,10 +43,10 @@ class SafeJsonDumpsTests(unittest.TestCase):
 
     @unittest.skipUnless(PY2, "Python 2 only long integer behavior")
     def test_long_integer(self):
-        value = long(2 ** 40)  # pylint: disable=undefined-variable
+        value = long(2**40)  # pylint: disable=undefined-variable
         result = handler._safe_json_dumps(value)
         self.assertEqual(str(value), result)
-        self.assertEqual(2 ** 40, json.loads(result))
+        self.assertEqual(2**40, json.loads(result))
 
     def test_float(self):
         result = handler._safe_json_dumps(3.14)
@@ -234,3 +235,4 @@ class ParseResponseUnicodeTests(unittest.TestCase):
         self.assertEqual(base.INTERNAL_SERVER_ERROR, result.status)
         parsed = json.loads(result.data)
         self.assertIn(u"\u00e9l\u00e9ment", parsed["exception"]["message"])
+# fmt: on

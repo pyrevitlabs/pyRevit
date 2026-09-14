@@ -1,4 +1,4 @@
-﻿using pyRevitExtensionParser;
+using pyRevitExtensionParser;
 using pyRevitExtensionParserTest.TestHelpers;
 using System.IO;
 using NUnit.Framework;
@@ -6,12 +6,12 @@ using static pyRevitExtensionParser.ExtensionParser;
 
 namespace pyRevitExtensionParserTest
 {
-	[TestFixture]
-	internal class ParsedComponentTests : TempFileTestBase
-	{
+    [TestFixture]
+    internal class ParsedComponentTests : TempFileTestBase
+    {
         private IEnumerable<ParsedExtension>? _installedExtensions;
         private string? _testExtensionPath;
-        
+
         [SetUp]
         public void Setup()
         {
@@ -86,7 +86,7 @@ namespace pyRevitExtensionParserTest
                 {
                     TestContext.Out.WriteLine($"=== Testing Pulldown Component in {parsedExtension.Name} ===");
                     TestContext.Out.WriteLine($"Extension Path: {parsedExtension.Directory}");
-                    
+
                     var pulldownComponent = FindComponentRecursively(parsedExtension, "TestPulldown");
                     if (pulldownComponent != null)
                     {
@@ -96,16 +96,16 @@ namespace pyRevitExtensionParserTest
                         TestContext.Out.WriteLine($"Tooltip: '{pulldownComponent.Tooltip ?? "NULL"}'");
                         TestContext.Out.WriteLine($"Bundle File: {pulldownComponent.BundleFile ?? "NULL"}");
                         TestContext.Out.WriteLine($"Title: {pulldownComponent.Title ?? "NULL"}");
-                        
+
                         // Verify the component was parsed correctly
                         Assert.That(pulldownComponent.Type,
                             Is.EqualTo(CommandComponentType.PullDown),
                             "Component should be PullDown type");
                         Assert.IsNotNull(pulldownComponent.Tooltip,
                             "Tooltip should not be null");
-                        Assert.IsTrue(pulldownComponent.Tooltip.Contains("test tooltip for the pulldown button"), 
+                        Assert.IsTrue(pulldownComponent.Tooltip.Contains("test tooltip for the pulldown button"),
                                      $"Tooltip should contain expected text, but was: '{pulldownComponent.Tooltip}'");
-                        
+
                         // Check child components
                         if (pulldownComponent.Children != null && pulldownComponent.Children.Count > 0)
                         {
@@ -115,7 +115,7 @@ namespace pyRevitExtensionParserTest
                                 TestContext.Out.WriteLine($"Child: {child.Name} - {child.DisplayName} - Tooltip: '{child.Tooltip ?? "NULL"}'");
                             }
                         }
-                        
+
                         Assert.Pass("Pulldown component parsing test completed successfully.");
                     }
                     else
@@ -148,5 +148,5 @@ namespace pyRevitExtensionParserTest
             return null;
         }
 
-	}
+    }
 }

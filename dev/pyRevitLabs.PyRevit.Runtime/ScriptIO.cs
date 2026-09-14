@@ -12,9 +12,26 @@ namespace PyRevitLabs.PyRevit.Runtime {
     /// surface used by the script engines is implemented.
     /// </summary>
     public class ScriptIO : Stream, IDisposable {
+        // A buffered output entry carries the error state captured when it was
+        // enqueued, so normal output drained after an error is not retroactively
+        // rendered as an error just because the stream later saw a traceback.
+        private struct PendingEntry {
+            public readonly string Text;
+            public readonly bool IsError;
+            public readonly ScriptEngineType Engine;
+
+            public PendingEntry(string text, bool isError, ScriptEngineType engine) {
+                Text = text;
+                IsError = isError;
+                Engine = engine;
+            }
+        }
+
         private WeakReference<ScriptRuntime> _runtime;
         private WeakReference<ScriptConsole> _gui;
-        private readonly Queue<string> _pending = new Queue<string>();
+        // A linked list (not a queue) so a failed render can re-queue its entry
+        // at the front and be retried once the renderer becomes ready.
+        private readonly LinkedList<PendingEntry> _pending = new LinkedList<PendingEntry>();
         private int _pendingChars;
         private readonly StringBuilder _partial = new StringBuilder();
         private readonly object _logLock = new object();
@@ -29,6 +46,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private const int MaxPendingChars = 1048576;
         private const int FlushMaxEntriesPerTick = 256;
         private const int FlushMaxCharsPerTick = 65536;
+        // Drain attempts per entry before it is re-queued for a later tick;
+        // covers a freshly shown window whose renderer is still initializing.
+        private const int RenderAttempts = 3;
         private static readonly TimeSpan FlushInterval = TimeSpan.FromMilliseconds(16);
         private static readonly TimeSpan SyncFlushInterval = TimeSpan.FromMilliseconds(50);
 
@@ -182,8 +202,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 _partial.Append(content);
                 FinalizePendingEntry(splitLargeEntries: false);
 
-                while (_pendingChars > MaxPendingChars && _pending.Count > 1)
-                    _pendingChars -= _pending.Dequeue().Length;
+                while (_pendingChars > MaxPendingChars && _pending.Count > 1) {
+                    _pendingChars -= _pending.First.Value.Text.Length;
+                    _pending.RemoveFirst();
+                }
 
                 pendingChars = _pendingChars;
             }
@@ -192,12 +214,36 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public void WriteError(string error_msg, ScriptEngineType engineType) {
-            _errored = true;
-            _erroredEngine = engineType;
-            foreach (string message_part in error_msg.SplitIntoChunks(1024)) {
-                var buffer = OutputEncoding.GetBytes(message_part);
-                Write(buffer, 0, buffer.Length);
+            if (string.IsNullOrEmpty(error_msg))
+                return;
+
+            var output = GetOutput();
+
+            AppendLog(error_msg);
+
+            bool needShow;
+            lock (this) {
+                FinalizePendingEntry(keepIncompleteShortcode: false);
+
+                if (output != null && output.ClosedByUser) {
+                    _gui = new WeakReference<ScriptConsole>(null);
+                    ClearPending();
+                    StopFlushTimer();
+                    return;
+                }
+
+                _errored = true;
+                _erroredEngine = engineType;
+                var normalized = error_msg.Replace("\0", string.Empty);
+                _partial.Append(normalized.NormalizeNewLine());
+                FinalizePendingEntry(keepIncompleteShortcode: false);
+
+                needShow = output != null && !output.IsVisible;
             }
+
+            if (output != null)
+                PumpAfterWrite(output, needShow, _pendingChars,
+                    forceSyncFlush: true);
         }
 
         public override void Write(byte[] buffer, int offset, int count) {
@@ -225,9 +271,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             lock (this) {
                 if (PrintDebugInfo) {
-                    output.AppendText(
-                        string.Format("<---- W offset: {0} count: {1} ---->", offset, count),
-                        ScriptConsoleConfigs.DefaultBlock);
+                    try {
+                        output.AppendText(
+                            string.Format("<---- W offset: {0} count: {1} ---->", offset, count),
+                            ScriptConsoleConfigs.DefaultBlock);
+                    }
+                    catch (Exception ex) {
+                        System.Diagnostics.Debug.WriteLine(
+                            string.Format("[ScriptIO] Failed to append debug diagnostics text (offset: {0}, count: {1}): {2}", offset, count, ex)
+                        );
+                    }
                 }
 
                 if (outputText.Length > 0)
@@ -237,8 +290,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 if (count < StreamChunkSize || _partial.Length >= MaxStreamEntryChars)
                     FinalizePendingEntry();
 
-                while (_pendingChars > MaxPendingChars && _pending.Count > 1)
-                    _pendingChars -= _pending.Dequeue().Length;
+                while (_pendingChars > MaxPendingChars && _pending.Count > 1) {
+                    _pendingChars -= _pending.First.Value.Text.Length;
+                    _pending.RemoveFirst();
+                }
 
                 pendingChars = _pendingChars;
             }
@@ -379,7 +434,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (entry.Length == 0)
                 return;
 
-            _pending.Enqueue(entry);
+            _pending.AddLast(new PendingEntry(entry, _errored, _erroredEngine));
             _pendingChars += entry.Length;
         }
 
@@ -466,8 +521,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private bool FlushOneEntry() {
             ScriptConsole output;
-            string entry;
-            bool morePending;
+            PendingEntry entry;
 
             lock (this) {
                 if (_pending.Count == 0) {
@@ -483,13 +537,36 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     return false;
                 }
 
-                entry = _pending.Dequeue();
-                _pendingChars -= entry.Length;
-                _lastEntryChars = entry.Length;
-                morePending = _pending.Count > 0;
+                entry = _pending.First.Value;
+                _pending.RemoveFirst();
+                _pendingChars -= entry.Text.Length;
+                _lastEntryChars = entry.Text.Length;
+            }
+            var drained = false;
+            for (var attempt = 0; attempt < RenderAttempts && !drained; attempt++) {
+                try {
+                    DrainOutput(output, entry);
+                    drained = true;
+                }
+                catch {
+                    output.WaitReadyBrowserLite();
+                }
             }
 
-            DrainOutput(output, entry);
+            if (!drained) {
+                lock (this) {
+                    _pending.AddFirst(entry);
+                    _pendingChars += entry.Text.Length;
+                    _lastEntryChars = entry.Text.Length;
+                }
+                StopFlushTimer();
+                return false;
+            }
+
+            bool morePending;
+            lock (this) {
+                morePending = _pending.Count > 0;
+            }
 
             if (!morePending) {
                 StopFlushTimer();
@@ -498,13 +575,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return true;
         }
 
-        private void DrainOutput(ScriptConsole output, string pending) {
-            if (string.IsNullOrEmpty(pending))
+        private void DrainOutput(ScriptConsole output, PendingEntry pending) {
+            if (string.IsNullOrEmpty(pending.Text))
                 return;
 
-            var prefixed = PrefixStartupOutput(pending);
-            if (_errored)
-                output.AppendError(prefixed, _erroredEngine);
+            var prefixed = PrefixStartupOutput(pending.Text);
+            if (pending.IsError)
+                output.AppendError(prefixed, pending.Engine);
             else
                 output.AppendHtmlFragment(prefixed, ScriptConsoleConfigs.DefaultBlock);
         }
@@ -542,7 +619,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return readline(size);
         }
 
-        public string readline(int size=-1) {
+        public string readline(int size = -1) {
             var buffer = new byte[1024];
             var _ = Read(buffer, 0, 1024);
             _ = Read(buffer, 0, 1024);
@@ -587,19 +664,35 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     input = output.GetInput();
                     _inputReceived = true;
 
-                    if (PrintDebugInfo)
-                        output.AppendText(
-                            string.Format("<---- R offset: {0} count: {1} ---->", offset, count),
-                            ScriptConsoleConfigs.DefaultBlock);
+                    if (PrintDebugInfo) {
+                        try {
+                            output.AppendText(
+                                string.Format("<---- R offset: {0} count: {1} ---->", offset, count),
+                                ScriptConsoleConfigs.DefaultBlock);
+                        }
+                        catch (Exception ex) {
+                            System.Diagnostics.Debug.WriteLine(
+                                string.Format("[ScriptIO] Failed to append read diagnostics text (offset: {0}, count: {1}): {2}", offset, count, ex)
+                            );
+                        }
+                    }
 
                     var inputBytes = OutputEncoding.GetBytes(input);
                     if (inputBytes.Length > 0) {
                         int copyCount = Math.Min(inputBytes.Length, count);
                         Buffer.BlockCopy(inputBytes, 0, buffer, offset, copyCount);
-                        if (PrintDebugInfo)
-                            output.AppendText(
-                                string.Format("<---- R copied: \"{0}\" size: {1} ---->", input, copyCount),
-                                ScriptConsoleConfigs.DefaultBlock);
+                        if (PrintDebugInfo) {
+                            try {
+                                output.AppendText(
+                                    string.Format("<---- R copied: \"{0}\" size: {1} ---->", input, copyCount),
+                                    ScriptConsoleConfigs.DefaultBlock);
+                            }
+                            catch (Exception ex) {
+                                System.Diagnostics.Debug.WriteLine(
+                                    string.Format("[ScriptIO] Failed to append read copied diagnostics text (size: {0}): {1}", copyCount, ex)
+                                );
+                            }
+                        }
                     }
 
                     return inputBytes.Length;
@@ -635,6 +728,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
             _runtime = null;
             _gui = null;
             Dispose(true);
+        }
+
+        private static void LogNonFatal(string operation, Exception ex) {
+            System.Diagnostics.Trace.TraceWarning(
+                "[ScriptIO] {0} | {1}",
+                operation,
+                ex
+            );
+            System.Diagnostics.Debug.WriteLine(
+                string.Format("[ScriptIO] {0} | {1}", operation, ex)
+            );
         }
     }
 }

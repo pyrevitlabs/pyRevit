@@ -145,6 +145,13 @@ namespace pyRevitLabs.PyRevit {
         public const string DefaultExtensionRepoDefaultBranch = "master";
         public const string ExtensionsDefaultDirName = "Extensions";
         public const string ExtensionDisabledKey = "disabled";
+        // per-extension credential keys; must match what the in-Revit
+        // extension manager and updater read from the config file
+        public const string ExtensionPrivateRepoKey = "private_repo";
+        public const string ExtensionUsernameKey = "username";
+        public const string ExtensionPasswordKey = "password";
+        public const string ExtensionTokenKey = "token";
+        public const string ExtensionTokenDefaultUsername = "oauth2";
         public const string ExtensionUIPostfix = ".extension";
         public const string ExtensionLibraryPostfix = ".lib";
         public const string ExtensionUIBinDirName = "bin";
@@ -180,8 +187,6 @@ namespace pyRevitLabs.PyRevit {
         public const string BundleScriptRevitFamilyPostfix = ".rfa";
 
         // loader settings
-        public const string ConfigsNewLoaderKey = "new_loader";
-        public const bool ConfigsNewLoaderDefault = true;
         public const string ConfigsReadScriptMetadataKey = "read_script_metadata";
         public const bool ConfigsReadScriptMetadataDefault = true;
 

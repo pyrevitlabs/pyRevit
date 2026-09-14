@@ -63,7 +63,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // extract engine configuration from runtime data
             try {
                 ExecEngineConfigs = JsonConvert.DeserializeObject<IronPythonEngineConfigs>(runtime.ScriptRuntimeConfigs.EngineConfigs);
-            } catch {}
+            }
+            catch { }
 
             // If the command required a fullframe engine
             // or if the command required a clean engine
@@ -209,19 +210,24 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private void SetupBuiltins(ref ScriptRuntime runtime) {
+            InjectBuiltins(Engine, runtime, RecoveredFromCache, TypeId);
+        }
+
+        // Keep reserved builtins consistent across command and interactive engines.
+        internal static void InjectBuiltins(Microsoft.Scripting.Hosting.ScriptEngine engine, ScriptRuntime runtime, bool recoveredFromCache, string typeId) {
             // BUILTINS -----------------------------------------------------------------------------------------------
             // Get builtin to add custom variables
-            var builtin = IronPython.Hosting.Python.GetBuiltinModule(Engine);
+            var builtin = IronPython.Hosting.Python.GetBuiltinModule(engine);
 
             // Add timestamp and executuin uuid
             builtin.SetVariable("__execid__", runtime.ExecId);
             builtin.SetVariable("__timestamp__", runtime.ExecTimestamp);
 
             // Let commands know if they're being run in a cached engine
-            builtin.SetVariable("__cachedengine__", RecoveredFromCache);
+            builtin.SetVariable("__cachedengine__", recoveredFromCache);
 
             // Add current engine id to builtins
-            builtin.SetVariable("__cachedengineid__", TypeId);
+            builtin.SetVariable("__cachedengineid__", typeId);
 
             // Add this script executor to the the builtin to be globally visible everywhere
             // This support pyrevit functionality to ask information about the current executing command
@@ -315,8 +321,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 #endif
             // for python make sure the first argument is the script
             pythonArgv.append(runtime.ScriptSourceFile);
-            foreach (var obj in runtime.ScriptRuntimeConfigs.Arguments)
-            {
+            foreach (var obj in runtime.ScriptRuntimeConfigs.Arguments) {
                 pythonArgv.append(obj);
             }
             sysmodule.SetVariable("argv", pythonArgv);

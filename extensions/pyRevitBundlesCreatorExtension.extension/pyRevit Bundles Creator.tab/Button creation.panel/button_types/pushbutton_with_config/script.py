@@ -6,7 +6,7 @@ from pyrevit import revit, DB
 output = script.get_output()
 output.close_others(True)
 output.center()
-output.set_title('Models Checker')
+output.set_title("Models Checker")
 
 
 doc = revit.doc
@@ -20,6 +20,7 @@ except:
 
 
 # Series of queries
+
 
 def project_number(doc):
     project_number = doc.ProjectInformation.Number
@@ -37,7 +38,7 @@ def doc_warnings(doc):
     for warning in warnings:
         descriptions.append(DB.FailureMessage.GetDescriptionText(warning))
     if len(descriptions):
-        return str(len(descriptions)) + ' Warnings in the project'
+        return str(len(descriptions)) + " Warnings in the project"
 
 
 # set minimal value to empty string

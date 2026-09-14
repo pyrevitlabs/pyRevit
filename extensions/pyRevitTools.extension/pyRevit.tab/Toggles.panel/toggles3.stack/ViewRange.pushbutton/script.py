@@ -51,6 +51,7 @@ PLANES = OrderedDict(
 get_elementid_value = get_elementid_value_func()
 INVALID_ID_VALUE = get_elementid_value(DB.ElementId.InvalidElementId)
 
+
 class Context(object):
     def __new__(cls, *args, **kwargs):
         if not hasattr(cls, "instance"):
@@ -113,6 +114,24 @@ class Context(object):
 
             self.context_changed()
 
+    @property
+    def is_ceiling_plan(self):
+        """Whether the source view is a reflected ceiling plan.
+
+        Ceiling plans look up from the cut plane: planes are ordered
+        View Depth >= Top >= Cut, and Bottom is unused and stays synced to Cut.
+        """
+        return (
+            self.source_view is not None
+            and self.source_view.ViewType == DB.ViewType.CeilingPlan
+        )
+
+    def _read_plane(self, plane):
+        """Ceiling plans keep Bottom synced to Cut, so Bottom reads from Cut."""
+        if self.is_ceiling_plan and plane == DB.PlanViewPlane.BottomClipPlane:
+            return DB.PlanViewPlane.CutPlane
+        return plane
+
     def update_view_range(self, new_values, new_levels=None):
         if not self.source_view or not isinstance(self.source_view, DB.ViewPlan):
             self.view_model.show_error("No valid plan view selected")
@@ -140,21 +159,19 @@ class Context(object):
         try:
             view_range = self.source_view.GetViewRange()
         except Exception as e:
-            self.view_model.show_error(
-                "Error reading view range: {}".format(e)
-            )
+            self.view_model.show_error("Error reading view range: {}".format(e))
             return False
 
         # Update levels
         if new_levels:
             for plane, new_level_id in new_levels.items():
+                if self.is_ceiling_plan and plane == DB.PlanViewPlane.BottomClipPlane:
+                    continue
                 current_level_id = view_range.GetLevelId(plane)
                 if new_level_id == DB.ElementId.InvalidElementId:
                     if current_level_id != DB.ElementId.InvalidElementId:
                         try:
-                            view_range.SetLevelId(
-                                plane, DB.ElementId.InvalidElementId
-                            )
+                            view_range.SetLevelId(plane, DB.ElementId.InvalidElementId)
                         except Exception:
                             pass
                 elif new_level_id and current_level_id != new_level_id:
@@ -165,6 +182,8 @@ class Context(object):
 
         # Update offsets
         for plane, offset_str in new_values.items():
+            if self.is_ceiling_plan and plane == DB.PlanViewPlane.BottomClipPlane:
+                continue
             level_id = view_range.GetLevelId(plane)
             if not level_id or level_id == DB.ElementId.InvalidElementId:
                 continue
@@ -186,9 +205,7 @@ class Context(object):
                     _, _, prefix = PLANES[plane]
                     self.view_model.set_field_error(prefix)
                     self.view_model.show_error(
-                        "Invalid number format in {} field".format(
-                            PLANES[plane][1]
-                        )
+                        "Invalid number format in {} field".format(PLANES[plane][1])
                     )
                     return False
 
@@ -196,9 +213,13 @@ class Context(object):
         error_prefixes = self._find_elevation_violations(view_range)
         if error_prefixes:
             self.view_model.set_field_error(*error_prefixes)
+            order = (
+                "View Depth \u2265 Top \u2265 Cut"
+                if self.is_ceiling_plan
+                else "Top \u2265 Cut \u2265 Bottom \u2265 View Depth"
+            )
             self.view_model.show_error(
-                "Invalid view range: plane elevations must be ordered "
-                "Top \u2265 Cut \u2265 Bottom \u2265 View Depth"
+                "Invalid view range: plane elevations must be ordered " + order
             )
             return False
 
@@ -237,6 +258,12 @@ class Context(object):
             DB.PlanViewPlane.BottomClipPlane,
             DB.PlanViewPlane.ViewDepthPlane,
         ]
+        if self.is_ceiling_plan:
+            ordered_planes = [
+                DB.PlanViewPlane.ViewDepthPlane,
+                DB.PlanViewPlane.TopClipPlane,
+                DB.PlanViewPlane.CutPlane,
+            ]
         elevations = {}
         for plane in ordered_planes:
             level_id = view_range.GetLevelId(plane)
@@ -249,11 +276,7 @@ class Context(object):
 
         # Check each adjacent pair
         error_planes = set()
-        checks = [
-            (DB.PlanViewPlane.TopClipPlane, DB.PlanViewPlane.CutPlane),
-            (DB.PlanViewPlane.CutPlane, DB.PlanViewPlane.BottomClipPlane),
-            (DB.PlanViewPlane.BottomClipPlane, DB.PlanViewPlane.ViewDepthPlane),
-        ]
+        checks = zip(ordered_planes, ordered_planes[1:])
         for higher, lower in checks:
             if higher in elevations and lower in elevations:
                 if elevations[higher] < elevations[lower] - 0.001:
@@ -317,7 +340,8 @@ class Context(object):
 
             # Set level selections for each plane
             for plane in PLANES:
-                level_id = view_range.GetLevelId(plane)
+                read_plane = self._read_plane(plane)
+                level_id = view_range.GetLevelId(read_plane)
 
                 if plane == DB.PlanViewPlane.TopClipPlane:
                     if level_id and level_id != DB.ElementId.InvalidElementId:
@@ -384,6 +408,7 @@ class Context(object):
             setattr(self.view_model, prefix + "_elevation", "-")
             setattr(self.view_model, prefix + "_new_value", "")
 
+        self.view_model.can_modify_bottom = False
         self.view_model.clear_warning()
         self.view_model.clear_field_errors()
 
@@ -395,6 +420,10 @@ class Context(object):
             server.meshes = []
             events.execute_in_revit_context(refresh_active_view)
             return
+
+        self.view_model.can_modify_bottom = (
+            self.view_model.can_modify_view and not self.is_ceiling_plan
+        )
 
         try:
             edges, triangles = [], []
@@ -418,7 +447,8 @@ class Context(object):
 
                 for plane in PLANES:
                     _, _, prefix = PLANES[plane]
-                    level_id = view_range.GetLevelId(plane)
+                    read_plane = self._read_plane(plane)
+                    level_id = view_range.GetLevelId(read_plane)
 
                     # Check if this plane is set to Unlimited
                     if not level_id or level_id == DB.ElementId.InvalidElementId:
@@ -438,7 +468,7 @@ class Context(object):
                     self.level_data[plane] = plane_level
 
                     plane_elevation = (
-                        plane_level.ProjectElevation + view_range.GetOffset(plane)
+                        plane_level.ProjectElevation + view_range.GetOffset(read_plane)
                     )
                     self.height_data[plane] = round(
                         DB.UnitUtils.ConvertFromInternalUnits(
@@ -449,7 +479,7 @@ class Context(object):
 
                     offset_value = round(
                         DB.UnitUtils.ConvertFromInternalUnits(
-                            view_range.GetOffset(plane), self.length_unit
+                            view_range.GetOffset(read_plane), self.length_unit
                         ),
                         2,
                     )
@@ -461,6 +491,12 @@ class Context(object):
                     # Store original level data
                     if plane not in self.original_level_data:
                         self.original_level_data[plane] = level_id
+
+                    if (
+                        self.is_ceiling_plan
+                        and plane == DB.PlanViewPlane.BottomClipPlane
+                    ):
+                        continue
 
                     cut_plane_vertices = [
                         DB.XYZ(c.X, c.Y, plane_elevation) for c in corners
@@ -561,31 +597,54 @@ class Context(object):
                 )
             return True
 
+
 class MainViewModel(forms.Reactive):
     # Brushes for field error highlighting
-    _DEFAULT_FIELD_BG = SolidColorBrush(Color.FromArgb(
-        Convert.ToByte(0), Convert.ToByte(255),
-        Convert.ToByte(255), Convert.ToByte(255)))  # Transparent
-    _ERROR_FIELD_BG = SolidColorBrush(Color.FromArgb(
-        Convert.ToByte(255), Convert.ToByte(255),
-        Convert.ToByte(200), Convert.ToByte(200)))  # Light red
+    _DEFAULT_FIELD_BG = SolidColorBrush(
+        Color.FromArgb(
+            Convert.ToByte(0),
+            Convert.ToByte(255),
+            Convert.ToByte(255),
+            Convert.ToByte(255),
+        )
+    )  # Transparent
+    _ERROR_FIELD_BG = SolidColorBrush(
+        Color.FromArgb(
+            Convert.ToByte(255),
+            Convert.ToByte(255),
+            Convert.ToByte(200),
+            Convert.ToByte(200),
+        )
+    )  # Light red
 
     # Warning banner brushes
-    _TRANSPARENT_BG = SolidColorBrush(Color.FromArgb(
-        Convert.ToByte(0), Convert.ToByte(0),
-        Convert.ToByte(0), Convert.ToByte(0)))
-    _ERROR_BANNER_BG = SolidColorBrush(Color.FromArgb(
-        Convert.ToByte(255), Convert.ToByte(254),
-        Convert.ToByte(235), Convert.ToByte(235)))  # Soft red bg
-    _ERROR_BANNER_FG = SolidColorBrush(Color.FromRgb(
-        Convert.ToByte(180), Convert.ToByte(30),
-        Convert.ToByte(30)))  # Dark red text
-    _SUCCESS_BANNER_BG = SolidColorBrush(Color.FromArgb(
-        Convert.ToByte(255), Convert.ToByte(235),
-        Convert.ToByte(250), Convert.ToByte(235)))  # Soft green bg
-    _SUCCESS_BANNER_FG = SolidColorBrush(Color.FromRgb(
-        Convert.ToByte(30), Convert.ToByte(120),
-        Convert.ToByte(30)))  # Dark green text
+    _TRANSPARENT_BG = SolidColorBrush(
+        Color.FromArgb(
+            Convert.ToByte(0), Convert.ToByte(0), Convert.ToByte(0), Convert.ToByte(0)
+        )
+    )
+    _ERROR_BANNER_BG = SolidColorBrush(
+        Color.FromArgb(
+            Convert.ToByte(255),
+            Convert.ToByte(254),
+            Convert.ToByte(235),
+            Convert.ToByte(235),
+        )
+    )  # Soft red bg
+    _ERROR_BANNER_FG = SolidColorBrush(
+        Color.FromRgb(Convert.ToByte(180), Convert.ToByte(30), Convert.ToByte(30))
+    )  # Dark red text
+    _SUCCESS_BANNER_BG = SolidColorBrush(
+        Color.FromArgb(
+            Convert.ToByte(255),
+            Convert.ToByte(235),
+            Convert.ToByte(250),
+            Convert.ToByte(235),
+        )
+    )  # Soft green bg
+    _SUCCESS_BANNER_FG = SolidColorBrush(
+        Color.FromRgb(Convert.ToByte(30), Convert.ToByte(120), Convert.ToByte(30))
+    )  # Dark green text
 
     def __init__(self):
         self._message = None
@@ -594,6 +653,7 @@ class MainViewModel(forms.Reactive):
         self._warning_bg = self._TRANSPARENT_BG
         self._warning_fg = self._ERROR_BANNER_FG
         self._can_modify_view = False
+        self._can_modify_bottom = False
 
         # Initialize level-related properties - use INTEGER values for WPF binding
         self._available_levels = []
@@ -628,7 +688,7 @@ class MainViewModel(forms.Reactive):
 
     def show_error(self, msg):
         """Show an error banner with warning icon."""
-        self._warning_icon = "\u26A0"  # ⚠
+        self._warning_icon = "\u26a0"  # ⚠
         self._warning_bg = self._ERROR_BANNER_BG
         self._warning_fg = self._ERROR_BANNER_FG
         # Trigger all bindings
@@ -704,6 +764,19 @@ class MainViewModel(forms.Reactive):
     @can_modify_view.setter
     def can_modify_view(self, value):
         self._can_modify_view = value
+
+    @forms.reactive
+    def can_modify_bottom(self):
+        """Whether the Bottom plane inputs accept edits.
+
+        False on ceiling plans, where Bottom mirrors the cut plane and is
+        not editable, and false whenever the view itself is not modifiable.
+        """
+        return self._can_modify_bottom
+
+    @can_modify_bottom.setter
+    def can_modify_bottom(self, value):
+        self._can_modify_bottom = value
 
     # Level properties
     @forms.reactive
@@ -845,6 +918,7 @@ class MainViewModel(forms.Reactive):
     def viewdepth_field_bg(self, value):
         self._viewdepth_field_bg = value
 
+
 class MainWindow(forms.WPFWindow):
     def __init__(self):
         forms.WPFWindow.__init__(self, "MainWindow.xaml")
@@ -903,9 +977,7 @@ class MainWindow(forms.WPFWindow):
 
             context.update_view_range(new_values, new_levels)
         except Exception as ex:
-            self.DataContext.show_error("Error applying changes: {}".format(
-                str(ex))
-            )
+            self.DataContext.show_error("Error applying changes: {}".format(str(ex)))
 
     def reset_values_click(self, sender, e):
         try:
@@ -985,11 +1057,11 @@ class MainWindow(forms.WPFWindow):
 
             self.DataContext.clear_warning()
         except Exception as ex:
-            self.DataContext.show_error("Error resetting values: {}".format(
-                str(ex))
-            )
+            self.DataContext.show_error("Error resetting values: {}".format(str(ex)))
+
 
 # ── Helper functions ────────────────────────────────────────────────
+
 
 def compare_views(view1, view2):
     if not view1 and not view2:
@@ -1001,8 +1073,10 @@ def compare_views(view1, view2):
         and view1.Id == view2.Id
     )
 
+
 def can_use_view_as_source(view):
     return isinstance(view, (DB.ViewPlan, DB.ViewSection))
+
 
 def corners_from_bb(bbox):
     transform = bbox.Transform
@@ -1016,11 +1090,13 @@ def corners_from_bb(bbox):
     ]
     return [transform.OfPoint(c) for c in corners]
 
+
 def create_edges(vertices, color):
     return [
         revit.dc3dserver.Edge(vertices[i - 1], vertices[i], color)
         for i in range(len(vertices))
     ]
+
 
 def create_triangles(vertices, color):
     return [
@@ -1044,9 +1120,11 @@ def create_triangles(vertices, color):
         ),
     ]
 
+
 def get_color_from_plane(plane):
     rgb = PLANES[plane][0]
     return DB.ColorWithTransparency(rgb[0], rgb[1], rgb[2], 180)
+
 
 def refresh_active_view():
     try:
@@ -1055,11 +1133,10 @@ def refresh_active_view():
             uidoc.ActiveView = context.active_view
         uidoc.RefreshActiveView()
         if context.source_view:
-            uidoc.Selection.SetElementIds(
-                List[DB.ElementId]([context.source_view.Id])
-            )
+            uidoc.Selection.SetElementIds(List[DB.ElementId]([context.source_view.Id]))
     except Exception as ex:
         logger.exception(ex)
+
 
 def _on_close_cleanup():
     """Deferred cleanup in valid Revit API context.
@@ -1090,11 +1167,13 @@ def _on_close_cleanup():
     # blocks re-entry until the server is fully removed.
     script.set_envvar(VIEWRANGE_WINDOW_KEY, None)
 
+
 # ── Event handlers & initialization ─────────────────────────────────
 # This code is ONLY reached on the first click. Subsequent clicks
 # hit script.exit() at the top of the file before even importing
 # pyrevit.revit.events, so no .NET ExternalEvent objects are created
 # and no event handlers are re-registered.
+
 
 @events.handle("view-activated")
 def view_activated(sender, args):
@@ -1102,6 +1181,7 @@ def view_activated(sender, args):
         context.active_view = args.CurrentActiveView
     except Exception as ex:
         logger.exception(ex)
+
 
 @events.handle("selection-changed")
 def selection_changed(sender, args):
@@ -1119,6 +1199,7 @@ def selection_changed(sender, args):
     except Exception as ex:
         logger.exception(ex)
 
+
 @events.handle("doc-changed")
 def doc_changed(sender, args):
     try:
@@ -1134,6 +1215,7 @@ def doc_changed(sender, args):
         context.context_changed()
     except Exception as ex:
         logger.exception(ex)
+
 
 # Initialize
 server = revit.dc3dserver.Server(register=False)

@@ -84,9 +84,9 @@ author: Test Author";
             // For folded style (>-), empty lines become paragraph breaks (single newline)
             Assert.That(bundle.Titles["en_us"], Does.Contain("Set"), "en_us title should contain 'Set'");
             Assert.That(bundle.Titles["en_us"], Does.Contain("Workset"), "en_us title should contain 'Workset'");
-            
+
             // The title should have both "Set" and "Workset" separated by a single newline
-            Assert.That(bundle.Titles["en_us"], Is.EqualTo("Set\nWorkset"), 
+            Assert.That(bundle.Titles["en_us"], Is.EqualTo("Set\nWorkset"),
                 $"Expected 'Set\\nWorkset' but got '{bundle.Titles["en_us"].Replace("\n", "\\n")}'");
 
             Assert.That(bundle.Titles["fr_fr"], Is.EqualTo("Active\nSous-Projet"),
@@ -135,7 +135,7 @@ author: Test Author";
             // Literal style should preserve empty lines as double newlines
             Assert.That(bundle.Titles["en_us"], Does.Contain("Set"));
             Assert.That(bundle.Titles["en_us"], Does.Contain("Workset"));
-            
+
             // Expected: "Set\n\nWorkset" (with empty line preserved as double newline)
             Assert.That(bundle.Titles["en_us"], Is.EqualTo("Set\n\nWorkset"),
                 $"Expected 'Set\\n\\nWorkset' but got '{bundle.Titles["en_us"].Replace("\n", "\\n")}'");

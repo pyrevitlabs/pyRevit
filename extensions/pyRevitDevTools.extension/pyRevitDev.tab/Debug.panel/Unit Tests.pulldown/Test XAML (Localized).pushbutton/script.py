@@ -1,6 +1,6 @@
 """Test loading XAML in IronPython."""
-#pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
-import urllib2
+
+# pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 import json
 from time import sleep
 import sys
@@ -19,11 +19,13 @@ from pyrevit import script
 logger = script.get_logger()
 output = script.get_output()
 
+
 class UI(forms.WPFWindow, forms.Reactive):
     def __init__(self):
         pass
 
+
 # init ui
-ui = script.load_ui(UI(), 'ui.xaml')
+ui = script.load_ui(UI(), "ui.xaml")
 # show modal or nonmodal
 ui.show_dialog()

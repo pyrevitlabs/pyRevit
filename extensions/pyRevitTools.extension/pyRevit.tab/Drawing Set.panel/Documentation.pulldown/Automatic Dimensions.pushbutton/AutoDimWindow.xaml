@@ -1,0 +1,147 @@
+    <Window
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Automatic Dimensions"
+        Width="720"
+        Height="660"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        FontFamily="Segoe UI"
+        FontSize="13">
+        <Grid Margin="16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <StackPanel>
+                    <TextBlock Text="Automatic Dimensions"
+                               FontSize="24"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,4" />
+
+                    <TextBlock x:Name="status_tb"
+                               Text=""
+                               Margin="0,0,0,14" />
+
+                    <Border Padding="12" Margin="0,0,0,10">
+                        <StackPanel>
+                            <TextBlock Text="Mode" FontWeight="SemiBold" Margin="0,0,0,8" />
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton x:Name="mode_ext_rb"
+                                             Content="Exterior"
+                                             GroupName="Mode"
+                                             Margin="0,0,18,0"
+                                             Checked="mode_changed" />
+                                <RadioButton x:Name="mode_int_rb"
+                                             Content="Interior"
+                                             GroupName="Mode"
+                                             Checked="mode_changed" />
+                            </StackPanel>
+                            <TextBlock x:Name="mode_hint_tb"
+                                       Margin="0,10,0,0"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Padding="12" Margin="0,0,0,10">
+                        <StackPanel>
+                            <TextBlock Text="Wall and opening references" FontWeight="SemiBold" Margin="0,0,0,8" />
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                <RadioButton x:Name="face_finish_rb"
+                                             Content="Finish face"
+                                             GroupName="Face"
+                                             Margin="0,0,18,0" />
+                                <RadioButton x:Name="face_core_rb"
+                                             Content="Core face"
+                                             GroupName="Face" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <RadioButton x:Name="open_cl_rb"
+                                             Content="Opening centerline"
+                                             GroupName="Openings"
+                                             Margin="0,0,18,0" />
+                                <RadioButton x:Name="open_ro_rb"
+                                             Content="R.O. sides"
+                                             GroupName="Openings" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Padding="12" Margin="0,0,0,10">
+                        <StackPanel>
+                            <TextBlock Text="Run options" FontWeight="SemiBold" Margin="0,0,0,8" />
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                <CheckBox x:Name="dry_cb" Content="Dry run" Margin="0,0,18,0" />
+                                <CheckBox x:Name="audit_cb" Content="Face audit" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Padding="12" Margin="0,0,0,10">
+                        <StackPanel>
+                            <TextBlock Text="Exterior offsets" FontWeight="SemiBold" Margin="0,0,0,8" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="16" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="18" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="16" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="18" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="16" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Text="First offset" />
+                                <ComboBox Grid.Row="0" Grid.Column="2" x:Name="first_offset_cb" IsEditable="True" />
+                                <TextBlock Grid.Row="0" Grid.Column="4" VerticalAlignment="Center" Text="Tier spacing" />
+                                <ComboBox Grid.Row="0" Grid.Column="6" x:Name="spacing_cb" IsEditable="True" />
+                                <TextBlock Grid.Row="0" Grid.Column="8" VerticalAlignment="Center" Text="Max drag (ft)" />
+                                <TextBox Grid.Row="0" Grid.Column="10" x:Name="split_tb" />
+
+                                <TextBlock Grid.Row="1" Grid.ColumnSpan="11"
+                                           Margin="0,8,0,0"
+                                           Text="The first offset can be set to Auto (by view scale)." />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Padding="12" Margin="0,0,0,10">
+                        <StackPanel>
+                            <TextBlock Text="Selection summary" FontWeight="SemiBold" Margin="0,0,0,8" />
+                            <TextBlock Text="The current selection is read from the active view when you run the tool." TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <Grid Grid.Row="1" Margin="0,12,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="1"
+                        Content="Dimension"
+                        MinWidth="110"
+                        Padding="18,8"
+                        Click="dimension_clicked" />
+                <Button Grid.Column="3"
+                        Content="Cancel"
+                        MinWidth="110"
+                        Padding="18,8"
+                        Click="cancel_clicked" />
+            </Grid>
+        </Grid>
+    </Window>

@@ -1,0 +1,52 @@
+titles:
+  en_us: "Filter\nLegend"
+  ko: "필터\n범례"
+  fr_fr: "Légende\ndes filtres"
+  ru: "Легенда\nфильтров"
+  chinese_s: "过滤器\n图例"
+  es_es: "Leyenda de\nfiltros"
+  de_de: "Filter-\nlegende"
+  pt_br: "Legenda de\nfiltros"
+
+tooltips:
+  en_us: |-
+    Create a Legend view listing a view's applied filters as rows of:
+    color swatch, filter name, parameter, value.
+    Filters that aren't simple "equals" rules show N/A for parameter/value.
+  ko: |-
+    선택한 뷰에 적용된 필터를 색상 견본, 필터 이름, 매개변수, 값 열로
+    구성된 범례 뷰로 생성합니다.
+    단순 "같음" 규칙이 아닌 필터는 매개변수/값에 N/A가 표시됩니다.
+  fr_fr: |-
+    Crée une vue de légende répertoriant les filtres appliqués à une vue
+    sous forme de lignes : échantillon de couleur, nom du filtre,
+    paramètre, valeur.
+    Les filtres qui ne sont pas de simples règles "égal à" affichent N/A.
+  ru: |-
+    Создаёт вид легенды со списком фильтров, применённых к виду, в виде
+    строк: образец цвета, имя фильтра, параметр, значение.
+    Для фильтров, не являющихся простыми правилами "равно", параметр и
+    значение показываются как N/A.
+  chinese_s: |-
+    创建一个图例视图，将某视图已应用的过滤器列为若干行：颜色样本、
+    过滤器名称、参数、值。
+    对于非简单"等于"规则的过滤器，参数/值将显示为 N/A。
+  es_es: |-
+    Crea una vista de leyenda que enumera los filtros aplicados a una
+    vista como filas de: muestra de color, nombre del filtro, parámetro,
+    valor.
+    Los filtros que no son reglas simples de "igual a" muestran N/A.
+  de_de: |-
+    Erstellt eine Legendenansicht, die die einer Ansicht zugewiesenen
+    Filter als Zeilen mit Farbmuster, Filtername, Parameter und Wert
+    auflistet.
+    Filter, die keine einfachen "gleich"-Regeln sind, zeigen N/A an.
+  pt_br: |-
+    Cria uma vista de legenda listando os filtros aplicados a uma vista
+    como linhas de: amostra de cor, nome do filtro, parâmetro, valor.
+    Filtros que não são regras simples de "igual a" exibem N/A.
+
+context: doc-project
+author: wurschdhaud
+min_revit_version: 2022
+

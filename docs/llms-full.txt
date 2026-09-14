@@ -186,13 +186,12 @@ Wrapper to interact with the output window.
 
 ##### `renderer``property`
 
-Return html renderer inside output window.
+Raise: the legacy IE ``WebBrowser`` renderer was removed.
 
-Returns:
-
-| Type | Description |
-| --- | --- |
-| `WebBrowser` | HTML renderer |
+The output window now renders with Microsoft Edge WebView2 (Chromium).
+There is no live DOM object to reach for; use :func:`inject_to_head`,
+:func:`inject_to_body`, :func:`inject_script`, :func:`add_style`, and
+:func:`print_html` instead.
 
 ##### `output_id``property`
 
@@ -2029,7 +2028,8 @@ the pyRevit dll paths have changed with pyrevit 5 (current WIP version), so you 
 If you don't have it already, you can build the CLI from sources and run it with
 
 ```md-code__content
-pipenv run pyrevit build labs
+cd build
+dotnet run -c Release -- ci
 copy .\release\.pyrevitargs .
 .\bin\pyrevit.exe attach dev default --installed
 
@@ -2042,7 +2042,8 @@ Currently, you cannot use Visual Studio's "Run" button to debug pyRevit because 
 1. **Build the Project**: Open a command prompt or PowerShell, navigate to your git directory, and build the project in Debug mode:
 
 ```md-code__content
-pipenv run pyrevit build products Debug
+cd build
+dotnet run -c Debug -- ci
 
 ```
 

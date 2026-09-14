@@ -1,40 +1,49 @@
 """Revit DB objects wrappers."""
+
 import os.path as op
 
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit.compat import safe_strtype
 from pyrevit import coreutils
 from pyrevit import DB
-from Autodesk.Revit.DB import Element   #pylint: disable=E0401
+from Autodesk.Revit.DB import Element  # pylint: disable=E0401
 from pyrevit.compat import get_elementid_value_func
 
 
-#pylint: disable=W0703,C0302,C0103
-__all__ = ('BaseWrapper', 'ElementWrapper',
-           'ExternalRef', 'ProjectParameter', 'ProjectInfo',
-           'XYZPoint', 'get_parameter_data_type', 'is_yesno_parameter')
+# pylint: disable=W0703,C0302,C0103
+__all__ = (
+    "BaseWrapper",
+    "ElementWrapper",
+    "ExternalRef",
+    "ProjectParameter",
+    "ProjectInfo",
+    "XYZPoint",
+    "get_parameter_data_type",
+    "is_yesno_parameter",
+)
 
 
 class BaseWrapper(object):
     """Base revit databse object wrapper."""
+
     def __init__(self, obj=None):
         self._wrapped = obj
 
     def __repr__(self, data=None):
         pdata = {}
-        if hasattr(self._wrapped, 'Id'):
+        if hasattr(self._wrapped, "Id"):
             get_elementid_value = get_elementid_value_func()
-            pdata['id'] = get_elementid_value(self._wrapped.Id)
+            pdata["id"] = get_elementid_value(self._wrapped.Id)
 
         if data:
             pdata.update(data)
 
-        datastr = ' '.join(['{0}:{1}'.format(k, v)
-                            for k, v in pdata.iteritems()]) #pylint: disable=E1101
-        return '<pyrevit.revit.db.{class_name} % {wrapping}{datastr}>' \
-               .format(class_name=self.__class__.__name__,
-                       wrapping=safe_strtype(self._wrapped),
-                       datastr=(' ' + datastr) if datastr else '')
+        datastr = " ".join(["{0}:{1}".format(k, v) for k, v in pdata.items()])
+        return "<pyrevit.revit.db.{class_name} % {wrapping}{datastr}>".format(
+            class_name=self.__class__.__name__,
+            wrapping=safe_strtype(self._wrapped),
+            datastr=(" " + datastr) if datastr else "",
+        )
 
     def unwrap(self):
         return self._wrapped
@@ -42,28 +51,32 @@ class BaseWrapper(object):
     @staticmethod
     def compare_attr(src, dest, attr_name, case_sensitive=False):
         if case_sensitive:
-            return safe_strtype(getattr(src, attr_name, '')).lower() == \
-                   safe_strtype(getattr(dest, attr_name, '')).lower()
+            return (
+                safe_strtype(getattr(src, attr_name, "")).lower()
+                == safe_strtype(getattr(dest, attr_name, "")).lower()
+            )
         else:
-            return safe_strtype(getattr(src, attr_name)) == \
-                   safe_strtype(getattr(dest, attr_name))
+            return safe_strtype(getattr(src, attr_name)) == safe_strtype(
+                getattr(dest, attr_name)
+            )
 
     @staticmethod
     def compare_attrs(src, dest, attr_names, case_sensitive=False):
-        return [BaseWrapper.compare_attr(src,
-                                         dest,
-                                         x,
-                                         case_sensitive=case_sensitive)
-                for x in attr_names]
+        return [
+            BaseWrapper.compare_attr(src, dest, x, case_sensitive=case_sensitive)
+            for x in attr_names
+        ]
 
 
 class ElementWrapper(BaseWrapper):
     """Revit element wrapper."""
+
     def __init__(self, element):
         super(ElementWrapper, self).__init__(element)
         if not isinstance(self._wrapped, DB.Element):
-            raise PyRevitException('Can not wrap object that are not '
-                                   'derived from Element.')
+            raise PyRevitException(
+                "Can not wrap object that are not derived from Element."
+            )
 
     @property
     def assoc_doc(self):
@@ -77,13 +90,13 @@ class ElementWrapper(BaseWrapper):
 
     @property
     def symbol_name(self):
-        symbol = getattr(self._wrapped, 'Symbol', None)
+        symbol = getattr(self._wrapped, "Symbol", None)
         if symbol:
             return Element.Name.GetValue(symbol)
 
     @property
     def family_name(self):
-        symbol = getattr(self._wrapped, 'Symbol', None)
+        symbol = getattr(self._wrapped, "Symbol", None)
         if symbol:
             return Element.Name.GetValue(symbol.Family)
 
@@ -102,11 +115,11 @@ class ElementWrapper(BaseWrapper):
     @property
     def mark(self):
         mparam = self._wrapped.Parameter[DB.BuiltInParameter.ALL_MODEL_MARK]
-        return mparam.AsString() if mparam else ''
+        return mparam.AsString() if mparam else ""
 
     @property
     def location(self):
-        locp = getattr(self._wrapped.Location, 'Point', None)
+        locp = getattr(self._wrapped.Location, "Point", None)
         if locp:
             return (locp.X, locp.Y, locp.Z)
         return (None, None, None)
@@ -135,6 +148,7 @@ class ElementWrapper(BaseWrapper):
 
 class ExternalRef(ElementWrapper):
     """External reference wraper."""
+
     def __init__(self, link, extref):
         super(ExternalRef, self).__init__(link)
         self._extref = extref
@@ -162,6 +176,7 @@ class ExternalRef(ElementWrapper):
 
 class ProjectParameter(BaseWrapper):
     """Project parameter wrapper."""
+
     def __init__(self, param_def, param_binding=None, param_ext_def=False):
         super(ProjectParameter, self).__init__()
         self.param_def = param_def
@@ -170,7 +185,7 @@ class ProjectParameter(BaseWrapper):
 
         self.shared = False
         self.param_ext_def = None
-        self.param_guid = ''
+        self.param_guid = ""
         if param_ext_def:
             self.shared = True
             self.param_ext_def = param_ext_def
@@ -178,8 +193,7 @@ class ProjectParameter(BaseWrapper):
 
         self.name = self.param_def.Name
 
-        # Revit <2017 does not have the Id parameter
-        self.param_id = getattr(self.param_def, 'Id', None)
+        self.param_id = getattr(self.param_def, "Id", None)
 
         if HOST_APP.is_exactly(2021):
             # Revit >2021 does not have the UnitType property
@@ -198,7 +212,6 @@ class ProjectParameter(BaseWrapper):
             self.param_type = self.param_def.ParameterType
             self.param_group = self.param_def.ParameterGroup
 
-
     def __eq__(self, other):
         if isinstance(self.param_def, DB.ExternalDefinition):
             return self.param_def.GUID == other.GUID or self.name == other.Name
@@ -211,23 +224,23 @@ class ProjectParameter(BaseWrapper):
 
     def _determine_binding_type(self):
         if isinstance(self.param_binding, DB.InstanceBinding):
-            return 'Instance'
+            return "Instance"
         elif isinstance(self.param_binding, DB.TypeBinding):
-            return 'Type'
+            return "Type"
 
 
 def get_parameter_data_type(definition):
     """Get parameter data type with version compatibility.
-    
-    Safely retrieves parameter data type, handling both old (ParameterType) 
+
+    Safely retrieves parameter data type, handling both old (ParameterType)
     and new (GetDataType) API versions.
-    
+
     Args:
-        definition: Parameter definition object (InternalDefinition, 
+        definition: Parameter definition object (InternalDefinition,
                    ExternalDefinition, SharedParameterDefinition, etc.)
-    
+
     Returns:
-        ForgeTypeId for Revit 2022+, ParameterType enum for older versions, 
+        ForgeTypeId for Revit 2022+, ParameterType enum for older versions,
         or None on error
     """
     try:
@@ -250,13 +263,13 @@ def get_parameter_data_type(definition):
 
 def is_yesno_parameter(definition):
     """Check if parameter is Yes/No (boolean) type.
-    
-    Version-aware check for Yes/No parameters using appropriate API 
+
+    Version-aware check for Yes/No parameters using appropriate API
     (SpecTypeId.Boolean.YesNo for 2022+, ParameterType.YesNo for older).
-    
+
     Args:
         definition: Parameter definition object
-    
+
     Returns:
         bool: True if parameter is Yes/No type, False otherwise
     """
@@ -264,18 +277,23 @@ def is_yesno_parameter(definition):
         data_type = get_parameter_data_type(definition)
         if data_type is None:
             return False
-        
+
         if HOST_APP.is_newer_than(2022, or_equal=True):
             # New API: compare with SpecTypeId
-            if hasattr(DB.SpecTypeId, 'Boolean') and hasattr(DB.SpecTypeId.Boolean, 'YesNo'):
-                return (data_type == DB.SpecTypeId.Boolean.YesNo)
+            if hasattr(DB.SpecTypeId, "Boolean") and hasattr(
+                DB.SpecTypeId.Boolean, "YesNo"
+            ):
+                return data_type == DB.SpecTypeId.Boolean.YesNo
             # Fallback: check TypeId string
-            if hasattr(data_type, 'TypeId'):
-                return ('bool' in data_type.TypeId.lower() and 'yesno' in data_type.TypeId.lower())
+            if hasattr(data_type, "TypeId"):
+                return (
+                    "bool" in data_type.TypeId.lower()
+                    and "yesno" in data_type.TypeId.lower()
+                )
         else:
             # Old API: use ParameterType enum
-            if hasattr(DB.ParameterType, 'YesNo'):
-                return (data_type == DB.ParameterType.YesNo)
+            if hasattr(DB.ParameterType, "YesNo"):
+                return data_type == DB.ParameterType.YesNo
         return False
     except Exception:
         return False
@@ -283,6 +301,7 @@ def is_yesno_parameter(definition):
 
 class ProjectInfo(BaseWrapper):
     """Project information."""
+
     def __init__(self, doc):
         super(ProjectInfo, self).__init__()
         self._doc = doc
@@ -292,70 +311,70 @@ class ProjectInfo(BaseWrapper):
         if not self._doc.IsFamilyDocument:
             return self._doc.ProjectInformation.Name
         else:
-            return ''
+            return ""
 
     @property
     def number(self):
         if not self._doc.IsFamilyDocument:
             return self._doc.ProjectInformation.Number
         else:
-            return ''
+            return ""
 
     @property
     def address(self):
         if not self._doc.IsFamilyDocument:
             return self._doc.ProjectInformation.Address
         else:
-            return ''
+            return ""
 
     @property
     def author(self):
         if not self._doc.IsFamilyDocument:
             return self._doc.ProjectInformation.Author
         else:
-            return ''
+            return ""
 
     @property
     def building_name(self):
         if not self._doc.IsFamilyDocument:
             return self._doc.ProjectInformation.BuildingName
         else:
-            return ''
+            return ""
 
     @property
     def client_name(self):
         if not self._doc.IsFamilyDocument:
             return self._doc.ProjectInformation.ClientName
         else:
-            return ''
+            return ""
 
     @property
     def issue_date(self):
         if not self._doc.IsFamilyDocument:
             return self._doc.ProjectInformation.IssueDate
         else:
-            return ''
+            return ""
 
     @property
     def org_name(self):
         if not self._doc.IsFamilyDocument:
             return self._doc.ProjectInformation.OrganizationName
         else:
-            return ''
+            return ""
 
     @property
     def org_desc(self):
         if not self._doc.IsFamilyDocument:
             return self._doc.ProjectInformation.OrganizationDescription
         else:
-            return ''
+            return ""
 
     @property
     def status(self):
         if not self._doc.IsFamilyDocument:
             return self._doc.ProjectInformation.Status
         else:
-            return ''
+            return ""
 
     @property
     def location(self):
@@ -372,6 +391,7 @@ class ProjectInfo(BaseWrapper):
 
 class XYZPoint(BaseWrapper):
     """Wrapper for XYZ point."""
+
     @property
     def x(self):
         return round(self._wrapped.X)
@@ -384,21 +404,19 @@ class XYZPoint(BaseWrapper):
     def z(self):
         return round(self._wrapped.Z)
 
-    def __repr__(self): #pylint: disable=W0222
-        return super(XYZPoint, self).__repr__({'X': self.x,
-                                               'Y': self.y,
-                                               'Z': self.z})
+    def __repr__(self):  # pylint: disable=W0222
+        return super(XYZPoint, self).__repr__({"X": self.x, "Y": self.y, "Z": self.z})
 
     def __hash__(self):
         return hash((self.x, self.y, self.z))
 
     def __eq__(self, other):
         if isinstance(other, DB.XYZ):
-            return self._wrapped.X == other.X \
-                    and self._wrapped.Y == other.Y \
-                    and self._wrapped.Z == other.Z
+            return (
+                self._wrapped.X == other.X
+                and self._wrapped.Y == other.Y
+                and self._wrapped.Z == other.Z
+            )
         elif isinstance(other, XYZPoint):
-            return self.x == other.x \
-                    and self.y == other.y \
-                    and self.z == other.z
+            return self.x == other.x and self.y == other.y and self.z == other.z
         return False

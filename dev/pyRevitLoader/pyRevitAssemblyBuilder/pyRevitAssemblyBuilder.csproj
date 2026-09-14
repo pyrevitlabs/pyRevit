@@ -36,7 +36,7 @@
         </Reference>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetFramework)' == 'net8.0-windows'">
+    <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
         <Reference Include="pyRevitLabs.NLog">
             <HintPath>..\..\libs\netcore\pyRevitLabs.NLog.dll</HintPath>
             <Private>false</Private>

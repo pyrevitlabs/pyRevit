@@ -1,7 +1,7 @@
 from pyrevit.framework import List
 from pyrevit import revit, DB, UI
 from pyrevit import forms
-#pylint: disable=invalid-name
+# pylint: disable=invalid-name
 
 
 selection = revit.get_selection()
@@ -9,12 +9,13 @@ selection = revit.get_selection()
 
 # collect all revision clouds
 cl = DB.FilteredElementCollector(revit.doc)
-revclouds = cl.OfCategory(DB.BuiltInCategory.OST_RevisionClouds)\
-              .WhereElementIsNotElementType()
+revclouds = cl.OfCategory(
+    DB.BuiltInCategory.OST_RevisionClouds
+).WhereElementIsNotElementType()
 
 
 if not revclouds:
-    forms.alert('At least one Revision Cloud must be selected.')
+    forms.alert("At least one Revision Cloud must be selected.")
 
 # get selected revision cloud info
 src_comment = None
@@ -27,8 +28,7 @@ for el in selection.elements:
 if src_comment:
     clouds = []
     for revcloud in revclouds:
-        cparam = \
-            revcloud.Parameter[DB.BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS]
+        cparam = revcloud.Parameter[DB.BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS]
         dest_comment = cparam.AsString()
         if src_comment == dest_comment:
             clouds.append(revcloud.Id)
@@ -36,4 +36,4 @@ if src_comment:
     # Replace revit selection with matched clouds
     revit.get_selection().set_to(clouds)
 else:
-    forms.alert('Selected revision cloud has no comments.')
+    forms.alert("Selected revision cloud has no comments.")

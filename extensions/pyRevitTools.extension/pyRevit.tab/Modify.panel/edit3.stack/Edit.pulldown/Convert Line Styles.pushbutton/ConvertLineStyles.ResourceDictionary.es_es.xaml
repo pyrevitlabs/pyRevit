@@ -11,5 +11,5 @@
     <system:String x:Key="ConvertModelLines">Convertir Líneas de Modelo</system:String>
     <system:String x:Key="ConvertFilledRegionLines">Convertir Líneas de Región Rellenada (Las Regiones Rellenadas Necesitan Agitación)</system:String>
     <system:String x:Key="ConvertGroupedLines">Convertir Líneas Agrupadas (Sin Soporte de API)</system:String>
-    <system:String x:Key="DeleteConvertedStyles">Eliminar Estilo(s) Convertido(s) Cuando Termine</system:String>
+    <system:String x:Key="RetireConvertedStyles">Fusionar y retirar estilos de origen al terminar</system:String>
 </ResourceDictionary>

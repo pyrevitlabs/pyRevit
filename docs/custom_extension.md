@@ -2,6 +2,8 @@
 
 If your tool is too specific to be included in the main pyRevit toolset, you can still share it as an external extension so others can discover and install it.
 
+See [Extensions](extensions.md) for how to structure and author the extension itself; this page covers listing it in the catalog.
+
 ### Steps
 
 1. Structure your repository so the `.tab` folder is at the root.

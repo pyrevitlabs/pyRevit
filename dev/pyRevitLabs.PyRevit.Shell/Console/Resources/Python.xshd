@@ -1,0 +1,117 @@
+﻿<?xml version="1.0"?>
+<SyntaxDefinition name="Python" extensions=".py"
+				  xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+
+  <Color name="Comment" foreground="Green" />
+  <Color name="String" foreground="Blue" />
+  <Color name="Char" foreground="Magenta" />
+  <Color name="Digits" foreground="DarkBlue" />
+  <Color name="Prompt" foreground="Blue" fontWeight="bold" />
+  <Color name="Keywords" foreground="MidnightBlue" fontWeight="bold" />
+  <Color name="ControlFlow" foreground="Blue" fontWeight="bold" />
+  <Color name="ClassName" foreground="Blue" fontWeight="bold" />
+  <Color name="FunctionDef" foreground="Blue" fontWeight="bold" />
+  <Color name="Exception" foreground="Teal" fontWeight="bold" />
+  <Color name="MethodCall" foreground="MidnightBlue" fontWeight="bold" />
+  <Color name="Operators" foreground="DarkCyan" fontWeight="bold" />
+  <Color name="Imports" foreground="Green" fontWeight="bold" />
+
+  <RuleSet ignoreCase="false">
+
+	<Span color="Comment" multiline="true">
+	  <Begin>"""</Begin>
+	  <End>"""</End>
+	</Span>
+
+	<Span color="Comment" multiline="true">
+	  <Begin>'''</Begin>
+	  <End>'''</End>
+	</Span>
+
+	<Span color="Comment">
+	  <Begin>\#</Begin>
+	</Span>
+
+	<Span color="String">
+	  <Begin>"</Begin>
+	  <End>"</End>
+	  <RuleSet>
+		<Span begin="\\" end="." />
+	  </RuleSet>
+	</Span>
+
+	<Span color="Char">
+	  <Begin>'</Begin>
+	  <End>'</End>
+	  <RuleSet>
+		<Span begin="\\" end="." />
+	  </RuleSet>
+	</Span>
+
+	<Keywords color="Prompt">
+	  <Word>&gt;&gt;&gt;</Word>
+	  <Word>...</Word>
+	</Keywords>
+
+	<Keywords color="Keywords">
+	  <Word>assert</Word>
+	  <Word>del</Word>
+	  <Word>exec</Word>
+	  <Word>global</Word>
+	  <Word>lambda</Word>
+	  <Word>pass</Word>
+	  <Word>print</Word>
+	  <Word>with</Word>
+	</Keywords>
+
+	<Keywords color="Operators">
+	  <Word>and</Word>
+	  <Word>as</Word>
+	  <Word>in</Word>
+	  <Word>is</Word>
+	  <Word>not</Word>
+	  <Word>or</Word>
+	</Keywords>
+
+	<Keywords color="ControlFlow">
+	  <Word>break</Word>
+	  <Word>continue</Word>
+	  <Word>elif</Word>
+	  <Word>else</Word>
+	  <Word>for</Word>
+	  <Word>if</Word>
+	  <Word>return</Word>
+	  <Word>while</Word>
+	  <Word>yield</Word>
+	</Keywords>
+
+	<Keywords color="Imports">
+	  <Word>import</Word>
+	  <Word>from</Word>
+	</Keywords>
+
+	<Keywords color="ClassName">
+	  <Word>class</Word>
+	</Keywords>
+
+	<Keywords color="FunctionDef">
+	  <Word>def</Word>
+	</Keywords>
+
+	<Keywords color="Exception">
+	  <Word>except</Word>
+	  <Word>finally</Word>
+	  <Word>raise</Word>
+	  <Word>try</Word>
+	</Keywords>
+
+	<Rule color="MethodCall">
+	  \b[\w]+(?=\s*\()
+	</Rule>
+
+	<Rule color="Digits">
+	  \b0[xX][0-9a-fA-F]+|\b(\d+(\.\d+)?|\.\d+)([eE][+-]?\d+)?[jJ]?\b
+	</Rule>
+
+  </RuleSet>
+</SyntaxDefinition>

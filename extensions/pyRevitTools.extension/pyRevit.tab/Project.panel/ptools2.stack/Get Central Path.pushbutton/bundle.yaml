@@ -1,52 +1,52 @@
 title:
-  en_us: Get Central Path
-  ko: 중앙 경로 가져오기
-  fr_fr: Obtenir le chemin du Central
-  ru: Получить путь к ФХ
-  chinese_s: 获取中心文件路径
-  es_es: Obtener ruta central
-  de_de: Pfad von Zentraldatei abrufen
-  pt_br: Obter Caminho do Central
+  en_us: Get Central Path ●
+  ko: 중앙 경로 가져오기 ●
+  fr_fr: Obtenir le chemin du Central ●
+  ru: Получить путь к ФХ ●
+  chinese_s: 获取中心文件路径 ●
+  es_es: Obtener ruta central ●
+  de_de: Pfad von Zentraldatei abrufen ●
+  pt_br: Obter Caminho do Central ●
 tooltip:
   en_us: >-
     Print the full path to the central model (workshared) or the local model path.
 
     Shift+Click:
 
-    Open model file in Explorer, or open ACC Docs project page for cloud models.
+    Open model file in Explorer, or open BIM360/ACC/Forma Docs project page for cloud models.
   ko: 중앙 모델(공유 작업)의 전체 경로 또는 로컬 모델 경로를 출력합니다.
   fr_fr: >-
     Afficher le chemin complet du modèle central (partagé) ou du modèle local.
 
     Shift+Clic :
 
-    Ouvrir le fichier modèle dans l'Explorateur, ou ouvrir la page projet ACC Docs pour les modèles cloud.
+    Ouvrir le fichier modèle dans l'Explorateur, ou ouvrir la page projet BIM360/ACC/Forma Docs pour les modèles cloud.
   ru: >-
     Выводит полный путь к центральной (совместный доступ) или локальной модели.
 
     Shift+Click:
 
-    Открывает файл модели в Проводнике или страницу проекта ACC Docs для облачных моделей.
+    Открывает файл модели в Проводнике или страницу проекта BIM360/ACC/Forma Docs для облачных моделей.
   chinese_s: "打印中心模型（工作共享）或本地模型的完整路径。
 
     Shift+单击：
 
-    在资源管理器中打开模型文件，或为云模型打开 ACC Docs 项目页面。"
+    在资源管理器中打开模型文件，或为云模型打开 BIM360/ACC/Forma Docs 项目页面。"
   es_es: >-
     Imprimir la ruta completa al modelo central (compartido) o al modelo local.
 
     Shift+Clic:
 
-    Abrir el archivo del modelo en el explorador, o abrir la página del proyecto ACC Docs para modelos en la nube.
+    Abrir el archivo del modelo en el explorador, o abrir la página del proyecto BIM360/ACC/Forma Docs para modelos en la nube.
   de_de: >-
     Gibt den vollständigen Pfad zur Zentraldatei (Arbeitsteilung) oder lokalen Datei aus.
 
     Shift+Click:
 
-    Öffnet die Modelldatei im Explorer, oder öffnet die ACC Docs Projektseite für Cloud-Modelle.
+    Öffnet die Modelldatei im Explorer, oder öffnet die BIM360/ACC/Forma Docs Projektseite für Cloud-Modelle.
   pt_br: >-
     Imprime o caminho completo para o modelo central (compartilhado) ou o modelo local.
 
     Shift-Clique:
 
-    Abre o arquivo do modelo no Explorador, ou abre a página do projeto ACC Docs para modelos na nuvem.
+    Abre o arquivo do modelo no Explorador, ou abre a página do projeto BIM360/ACC/Forma Docs para modelos na nuvem.

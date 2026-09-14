@@ -20,6 +20,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
         ///    - Executes startup scripts if present
         ///    - Creates the UI
         /// </remarks>
-        void LoadSession();
+        /// <param name="firstLoad">True on initial Revit startup, false on reload. Gates
+        /// first-load-only work such as removing stale appdata files from closed sessions.</param>
+        void LoadSession(bool firstLoad);
     }
 }

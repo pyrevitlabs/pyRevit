@@ -1,0 +1,76 @@
+title:
+  en_us: Wipe External Services
+  ko: 외부 서비스 삭제
+  fr_fr: Supprimer les services externes
+  ru: Очистить внешние сервисы
+  chinese_s: 清除外部服务
+  es_es: Limpiar servicios externos
+  de_de: Externe Dienste löschen
+  pt_br: Remover Serviços Externos
+tooltip:
+  en_us: >-
+    This tool helps you remove custom external services registered  in the
+    model that may be causing crashes or instability, such  as DirectContext3D
+    servers and TemporaryGraphicsHandlerService  callbacks (often added by
+    third-party plugins). Run the tool  and select the server(s) you'd like
+    to remove. Then hit "Remove  Selected Servers" and the process will
+    unregister them. This  can help resolve corruption or performance issues
+    caused by  orphaned or misbehaving external service registrations.
+  ko: >-
+    모델에 등록된 사용자 지정 외부 서비스 중 충돌이나 불안정을 유발할 수 있는 항목(예: DirectContext3D
+    서버 및 서드파티 플러그인이 자주 추가하는 TemporaryGraphicsHandlerService 콜백)을 제거하는 데
+    도움을 줍니다. 도구를 실행하고 제거하고 싶은 서버를 선택합니다. 그런 다음 "선택한 서버 제거"를 누르면
+    해당 서버들의 등록이 해제됩니다. 이는 방치되거나 오작동하는 외부 서비스 등록으로 인한 손상이나 성능
+    문제를 해결하는 데 도움이 될 수 있습니다.
+  fr_fr: >-
+    Cet outil vous aide à supprimer les services externes personnalisés
+    enregistrés dans le modèle qui peuvent causer des plantages  ou une
+    instabilité, tels que les serveurs DirectContext3D et  les rappels
+    TemporaryGraphicsHandlerService (souvent ajoutés  par des plugins tiers).
+    Exécutez l'outil et sélectionnez le(s)  serveur(s) que vous souhaitez
+    supprimer. Appuyez ensuite sur  "Supprimer les serveurs sélectionnés" et
+    le processus les  désenregistrera. Cela peut aider à résoudre des
+    problèmes de  corruption ou de performance causés par des enregistrements
+    de  services externes orphelins ou défaillants.
+  ru: >-
+    Данный инструмент поможет Вам удалить пользовательские внешние  сервисы,
+    зарегистрированные в модели, которые могут вызывать  сбои или
+    нестабильность, такие как серверы DirectContext3D и  обработчики
+    TemporaryGraphicsHandlerService (часто добавляемые  сторонними
+    плагинами). Запустите инструмент и выделите сервер(ы),  которые вы
+    хотите удалить. Затем нажмите "Удалить выбранные  серверы" и процесс
+    отменит их регистрацию. Это может помочь  устранить повреждения или
+    проблемы с производительностью,  вызванные забытыми или неисправно
+    работающими регистрациями  внешних сервисов.
+  chinese_s: 此工具帮助您移除模型中注册的可能导致崩溃或不稳定的自定义外部服务，例如 DirectContext3D 服务器以及第三方插件经常添加的 TemporaryGraphicsHandlerService 回调。运行工具，选择您希望移除的服务器，然后点击“移除所选服务器”，该过程将取消它们的注册。这有助于解决因遗留或异常的外部服务注册而导致的损坏或性能问题。
+  es_es: >-
+    Esta herramienta le ayuda a eliminar servicios externos personalizados
+    registrados en el modelo que pueden estar causando  bloqueos o
+    inestabilidad, como servidores DirectContext3D y  devoluciones de
+    llamada de TemporaryGraphicsHandlerService (a  menudo añadidos por
+    plugins de terceros). Ejecute la herramienta  y seleccione el/los
+    servidor(es) que desea eliminar. Luego  presione "Eliminar servidores
+    seleccionados" y el proceso  cancelará su registro. Esto puede ayudar a
+    resolver problemas  de corrupción o rendimiento causados por registros
+    de servicios  externos huérfanos o defectuosos.
+  de_de: >-
+    Dieses Werkzeug hilft Ihnen dabei, benutzerdefinierte externe  Dienste zu
+    entfernen, die im Modell registriert sind und  Abstürze oder Instabilität
+    verursachen können, wie z.B.  DirectContext3D-Server und
+    TemporaryGraphicsHandlerService-  Callbacks (häufig von
+    Drittanbieter-Plugins hinzugefügt).  Führen Sie das Werkzeug aus und
+    wählen Sie den/die Server aus,  den/die Sie entfernen möchten. Klicken
+    Sie dann auf "Ausgewählte  Server entfernen" und der Prozess hebt deren
+    Registrierung auf.  Dies kann helfen, Beschädigungen oder
+    Leistungsprobleme zu  beheben, die durch verwaiste oder fehlerhafte
+    Registrierungen  externer Dienste verursacht werden.
+  pt_br: >-
+    Esta ferramenta ajuda a remover serviços externos personalizados
+    registrados no modelo que podem estar causando travamentos  ou
+    instabilidade, como servidores DirectContext3D e callbacks
+    TemporaryGraphicsHandlerService (frequentemente adicionados  por plugins
+    de terceiros). Execute a ferramenta e selecione o(s)  servidor(es) que
+    deseja remover. Em seguida, clique em "Remover  Servidores Selecionados"
+    e o processo cancelará o registro deles.  Isso pode ajudar a resolver
+    problemas de corrupção ou desempenho  causados por registros de serviços
+    externos órfãos ou com mau  funcionamento.

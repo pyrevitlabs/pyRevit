@@ -15,6 +15,7 @@ namespace Build.Modules;
 [SkipIfNoGitHubToken]
 [DependsOn<GenerateReleaseNotesModule>]
 [DependsOn<SignChocoPackageModule>]
+[DependsOn<SignBinariesModule>(Optional = true)]
 public sealed class PublishGithubReleaseModule(IOptions<PublishOptions> publishOptions) : Module<string>
 {
     protected override async Task<string?> ExecuteAsync(IModuleContext context, CancellationToken cancellationToken)
@@ -37,14 +38,19 @@ public sealed class PublishGithubReleaseModule(IOptions<PublishOptions> publishO
             repositoryInfo.RepositoryName,
             newRelease);
 
-        var assetFiles = Directory.Exists(PyRevitPaths.DistPath)
-            ? Directory.GetFiles(PyRevitPaths.DistPath)
-                .Where(file =>
-                    file.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
-                    || file.EndsWith(".msi", StringComparison.OrdinalIgnoreCase)
-                    || file.EndsWith(".nupkg", StringComparison.OrdinalIgnoreCase))
-                .ToArray()
-            : [];
+        Directory.CreateDirectory(PyRevitPaths.DistPath);
+        var cloneBinZip = CloneBinPayloadHelper.CreateSignedBinZip(
+            PyRevitPaths.BinPath,
+            PyRevitPaths.DistPath,
+            versionInfo.BuildVersion);
+
+        var assetFiles = Directory.GetFiles(PyRevitPaths.DistPath)
+            .Where(file =>
+                file.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
+                || file.EndsWith(".msi", StringComparison.OrdinalIgnoreCase)
+                || file.EndsWith(".nupkg", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(file, cloneBinZip, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
 
         await assetFiles
             .ForEachAsync(async filePath =>
@@ -61,7 +67,6 @@ public sealed class PublishGithubReleaseModule(IOptions<PublishOptions> publishO
             }, cancellationToken)
             .ProcessInParallel();
 
-        Directory.CreateDirectory(PyRevitPaths.DistPath);
         await File.WriteAllTextAsync(
             PyRevitPaths.GitHubReleaseUrlFile,
             release.HtmlUrl,

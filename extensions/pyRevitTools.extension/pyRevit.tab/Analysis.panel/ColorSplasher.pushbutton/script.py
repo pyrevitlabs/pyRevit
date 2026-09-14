@@ -133,7 +133,9 @@ class ApplyColors(UI.IExternalEventHandler):
                 and not apply_background_pattern_color
             ):
                 apply_foreground_pattern_color = True
-            solid_fill_id = solid_fill_pattern_id()
+            solid_fill_id = getattr(
+                revit.query.get_solid_fillpattern_element(new_doc), "Id", None
+            )
 
             if wndw._categories.SelectedItem is None:
                 return
@@ -508,8 +510,13 @@ class CreateLegend(UI.IExternalEventHandler):
                     y_pos = prev_bbox.Min.Y - (height + spacing)
                 ini_x = max(list_max_x) + spacing
                 solid_fill_id = (
-                    solid_fill_pattern_id() if apply_foreground_pattern_color else None
+                    getattr(
+                        revit.query.get_solid_fillpattern_element(new_doc), "Id", None
+                    )
+                    if apply_foreground_pattern_color
+                    else None
                 )
+
                 for indx, y in enumerate(list_y):
                     try:
                         vw_item = wndw.list_box2.Items[indx]
@@ -655,7 +662,9 @@ class CreateFilters(UI.IExternalEventHandler):
                     param_storage_type = sel_par.rl_par.StorageType
                     categories = List[DB.ElementId]()
                     categories.Add(sel_cat.cat.Id)
-                    solid_fill_id = solid_fill_pattern_id()
+                    solid_fill_id = getattr(
+                        revit.query.get_solid_fillpattern_element(new_doc), "Id", None
+                    )
                     version = int(HOST_APP.version)
                     items_listbox = wndw.list_box2.Items
                     for i in range(items_listbox.Count):
@@ -941,18 +950,10 @@ class ColorSplasherWindow(forms.WPFWindow):
             "apply_foreground_pattern_color", True
         )
 
-        if HOST_APP.is_newer_than(2019, or_equal=True):
-            self._chk_background_pattern.IsChecked = self._config.get_option(
-                "apply_background_pattern_color", False
-            )
-            self._chk_background_pattern.IsEnabled = True
-        else:
-            self._chk_background_pattern.IsChecked = False
-            self._chk_background_pattern.IsEnabled = False
-            bg_pattern_text = self.get_locale_string(
-                "ColorSplasher.Checkboxes.ApplyBackgroundPattern.RequiresRevit2019"
-            )
-            self._chk_background_pattern.Content = bg_pattern_text
+        self._chk_background_pattern.IsChecked = self._config.get_option(
+            "apply_background_pattern_color", False
+        )
+        self._chk_background_pattern.IsEnabled = True
 
         self.list_box2.SelectionChanged += self.list_selected_index_changed
         self.list_box2.MouseDown += self.list_box2_mouse_down
@@ -979,10 +980,10 @@ class ColorSplasherWindow(forms.WPFWindow):
                 self.list_box2, System.Windows.Controls.ScrollBarVisibility.Auto
             )
         except Exception as exc:
-            # Best-effort: if scrollbar configuration fails, continue without breaking the UI  
-            get_logger(__name__).debug(  
-                "Failed to set horizontal scrollbar visibility for ColorSplasher list_box2.",  
-                exc_info=exc,  
+            # Best-effort: if scrollbar configuration fails, continue without breaking the UI
+            get_logger(__name__).debug(
+                "Failed to set horizontal scrollbar visibility for ColorSplasher list_box2.",
+                exc_info=exc,
             )
             pass
 
@@ -1024,10 +1025,9 @@ class ColorSplasherWindow(forms.WPFWindow):
         self._config.set_option(
             "apply_foreground_pattern_color", self._chk_foreground_pattern.IsChecked
         )
-        if HOST_APP.is_newer_than(2019, or_equal=True):
-            self._config.set_option(
-                "apply_background_pattern_color", self._chk_background_pattern.IsChecked
-            )
+        self._config.set_option(
+            "apply_background_pattern_color", self._chk_background_pattern.IsChecked
+        )
         pyrevit_script.save_config()
 
     def button_click_set_colors(self, sender, e):
@@ -1108,7 +1108,7 @@ class ColorSplasherWindow(forms.WPFWindow):
             number_items = self.list_box2.Items.Count
             if number_items <= 2:
                 return
-            
+
             # Get first and last colors
             first_item = self.list_box2.Items[0]
             last_item = self.list_box2.Items[number_items - 1]
@@ -1120,10 +1120,8 @@ class ColorSplasherWindow(forms.WPFWindow):
             end_color = last_row["Value"].colour
 
             # Generate gradient colors
-            list_colors = self.get_gradient_colors(
-                start_color, end_color, number_items
-            )
-            
+            list_colors = self.get_gradient_colors(start_color, end_color, number_items)
+
             # Collect existing values and update their colors
             list_values = []
             for indx in range(number_items):
@@ -1143,7 +1141,7 @@ class ColorSplasherWindow(forms.WPFWindow):
             self._table_data_3 = DataTable("Data")
             self._table_data_3.Columns.Add("Key", System.String)
             self._table_data_3.Columns.Add("Value", System.Object)
-            
+
             vl_par = [x.value for x in list_values]
             for key_, value_ in zip(vl_par, list_values):
                 self._table_data_3.Rows.Add(key_, value_)
@@ -1208,7 +1206,7 @@ class ColorSplasherWindow(forms.WPFWindow):
     def list_box2_mouse_down(self, sender, e):
         """
         track clicking on dialogbox
-        
+
         :param self: Description
         :param sender: Description
         :param e: Description
@@ -1240,9 +1238,9 @@ class ColorSplasherWindow(forms.WPFWindow):
         shift_from_event = (
             e.KeyboardDevice.Modifiers & ModifierKeys.Shift
         ) == ModifierKeys.Shift
-        shift_from_keyboard = Keyboard.IsKeyDown(
-            Key.LeftShift
-        ) or Keyboard.IsKeyDown(Key.RightShift)
+        shift_from_keyboard = Keyboard.IsKeyDown(Key.LeftShift) or Keyboard.IsKeyDown(
+            Key.RightShift
+        )
         self._shift_pressed_on_click = shift_from_event or shift_from_keyboard
 
     def list_selected_index_changed(self, sender, e):
@@ -1290,22 +1288,26 @@ class ColorSplasherWindow(forms.WPFWindow):
                             and sender.SelectedIndex < self._table_data_3.Rows.Count
                         ):
                             row = self._table_data_3.Rows[sender.SelectedIndex]
-                    
+
                     if row is None:
                         # Temporarily unsubscribe to prevent recursive calls
                         try:
-                            self.list_box2.SelectionChanged -= self.list_selected_index_changed
+                            self.list_box2.SelectionChanged -= (
+                                self.list_selected_index_changed
+                            )
                             sender.SelectedIndex = -1
                         except Exception:
                             pass
                         finally:
                             try:
-                                self.list_box2.SelectionChanged += self.list_selected_index_changed
+                                self.list_box2.SelectionChanged += (
+                                    self.list_selected_index_changed
+                                )
                             except Exception:
                                 pass
                         self._shift_pressed_on_click = False
                         return
-                    
+
                     value_item = row["Value"]
                     if (
                         hasattr(value_item, "ele_id")
@@ -1321,7 +1323,7 @@ class ColorSplasherWindow(forms.WPFWindow):
                         logger.debug("Selected %d elements", element_ids.Count)
                     else:
                         logger.debug("No elements found for selected value")
-                
+
                 # Temporarily unsubscribe to prevent recursive calls
                 try:
                     self.list_box2.SelectionChanged -= self.list_selected_index_changed
@@ -1330,7 +1332,9 @@ class ColorSplasherWindow(forms.WPFWindow):
                     pass
                 finally:
                     try:
-                        self.list_box2.SelectionChanged += self.list_selected_index_changed
+                        self.list_box2.SelectionChanged += (
+                            self.list_selected_index_changed
+                        )
                     except Exception:
                         pass
             except Exception as ex:
@@ -1343,7 +1347,9 @@ class ColorSplasherWindow(forms.WPFWindow):
                     pass
                 finally:
                     try:
-                        self.list_box2.SelectionChanged += self.list_selected_index_changed
+                        self.list_box2.SelectionChanged += (
+                            self.list_selected_index_changed
+                        )
                     except Exception:
                         pass
             finally:
@@ -1360,13 +1366,17 @@ class ColorSplasherWindow(forms.WPFWindow):
                     if row is None:
                         # Temporarily unsubscribe to prevent recursive calls
                         try:
-                            self.list_box2.SelectionChanged -= self.list_selected_index_changed
+                            self.list_box2.SelectionChanged -= (
+                                self.list_selected_index_changed
+                            )
                             sender.SelectedIndex = -1
                         except Exception:
                             pass
                         finally:
                             try:
-                                self.list_box2.SelectionChanged += self.list_selected_index_changed
+                                self.list_box2.SelectionChanged += (
+                                    self.list_selected_index_changed
+                                )
                             except Exception:
                                 pass
                         self._shift_pressed_on_click = False
@@ -2133,17 +2143,6 @@ def get_used_categories_parameters(cat_exc, acti_view, doc_param=None):
         list_cat.append(CategoryInfo(ele.Category, list_parameters))
     list_cat = sorted(list_cat, key=lambda x: x.name)
     return list_cat
-
-
-def solid_fill_pattern_id():
-    doc_param = revit.DOCS.doc
-    solid_fill_id = None
-    fillpatterns = DB.FilteredElementCollector(doc_param).OfClass(DB.FillPatternElement)
-    for pat in fillpatterns:
-        if pat.GetFillPattern().IsSolidFill:
-            solid_fill_id = pat.Id
-            break
-    return solid_fill_id
 
 
 def external_event_trace():

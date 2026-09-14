@@ -60,6 +60,15 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public bool DebugMode;
         public bool ExecutedFromUI;
 
+        /// <summary>
+        /// When set, the engine cache key (<see cref="ScriptEngine.TypeId"/>) ignores
+        /// <see cref="ScriptData.CommandExtension"/> so every caller that opts in shares one
+        /// engine for the lifetime of the current session load, instead of each getting its own.
+        /// Used by the C# session loader for its own trusted entry/startup scripts; regular
+        /// command execution never sets this and keeps today's per-extension engine caching.
+        /// </summary>
+        public bool SharedSessionEngine;
+
         public void Dispose() {
             CommandData = null;
             SelectedElements = null;

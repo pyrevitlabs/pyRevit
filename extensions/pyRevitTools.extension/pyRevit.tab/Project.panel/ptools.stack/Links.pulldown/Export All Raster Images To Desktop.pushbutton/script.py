@@ -20,16 +20,16 @@ def convert_size(size_bytes):
 
 
 def cleanup(cleanup_str):
-    cleanup_str = cleanup_str.replace(r'ü', 'ue')
-    cleanup_str = cleanup_str.replace(r'Ü', 'Ue')
-    cleanup_str = cleanup_str.replace(r'ö', 'oe')
-    cleanup_str = cleanup_str.replace(r'Ö', 'Oe')
-    cleanup_str = cleanup_str.replace(r'ä', 'ae')
-    cleanup_str = cleanup_str.replace(r'Ä', 'Ae')
-    cleanup_str = cleanup_str.replace(r'ß', 'ss')
-    cleanup_str = re.sub(r'[^a-zA-Z0-9_\-]', '_', cleanup_str)
-    cleanup_str = re.sub(r'_+', '_', cleanup_str)
-    cleanup_str = re.sub(r'(-_|_-)', '-', cleanup_str)
+    cleanup_str = cleanup_str.replace(r"ü", "ue")
+    cleanup_str = cleanup_str.replace(r"Ü", "Ue")
+    cleanup_str = cleanup_str.replace(r"ö", "oe")
+    cleanup_str = cleanup_str.replace(r"Ö", "Oe")
+    cleanup_str = cleanup_str.replace(r"ä", "ae")
+    cleanup_str = cleanup_str.replace(r"Ä", "Ae")
+    cleanup_str = cleanup_str.replace(r"ß", "ss")
+    cleanup_str = re.sub(r"[^a-zA-Z0-9_\-]", "_", cleanup_str)
+    cleanup_str = re.sub(r"_+", "_", cleanup_str)
+    cleanup_str = re.sub(r"(-_|_-)", "-", cleanup_str)
     return cleanup_str
 
 
@@ -38,9 +38,7 @@ stopwatch.Start()
 
 # dest_dir = op.expandvars('%userprofile%\\desktop')
 dest_dir = forms.pick_folder()
-img_types = DB.FilteredElementCollector(revit.doc)\
-              .OfClass(DB.ImageType)\
-              .ToElements()
+img_types = DB.FilteredElementCollector(revit.doc).OfClass(DB.ImageType).ToElements()
 
 with revit.Transaction("rename_img_types"):
     for img in img_types:
@@ -57,10 +55,13 @@ with revit.Transaction("rename_img_types"):
         new_img_type_name = prefix + img_size + suffix
         img.Name = new_img_type_name
 
-        print('EXPORTING {0}: {1}'.format(img_size[1:-1].rjust(8), image_name))
+        print("EXPORTING {0}: {1}".format(img_size[1:-1].rjust(8), image_name))
 
-print("pyRevit Export All Raster Images exported {0} images to {1} in: "
-      .format(len(img_types), dest_dir))
+print(
+    "pyRevit Export All Raster Images exported {0} images to {1} in: ".format(
+        len(img_types), dest_dir
+    )
+)
 
 stopwatch.Stop()
 timespan = stopwatch.Elapsed

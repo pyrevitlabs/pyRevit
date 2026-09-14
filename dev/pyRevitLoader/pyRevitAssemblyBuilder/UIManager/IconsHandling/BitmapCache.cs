@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.IO;
 using System.Threading;
 using System.Windows.Media.Imaging;
 
@@ -11,14 +12,28 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
     /// </summary>
     public class BitmapCache
     {
+        private readonly struct Entry
+        {
+            public Entry(DateTime lastWriteUtc, BitmapSource bitmap)
+            {
+                LastWriteUtc = lastWriteUtc;
+                Bitmap = bitmap;
+            }
+
+            public DateTime LastWriteUtc { get; }
+            public BitmapSource Bitmap { get; }
+        }
+
         // Key format: "filepath|size"
-        private readonly ConcurrentDictionary<string, BitmapSource> _cache = new ConcurrentDictionary<string, BitmapSource>();
+        private readonly ConcurrentDictionary<string, Entry> _cache = new ConcurrentDictionary<string, Entry>();
 
         private int _hits;
         private int _misses;
 
         /// <summary>
-        /// Tries to get a cached bitmap for the given path and size.
+        /// Tries to get a cached bitmap for the given path and size. A cache entry whose file
+        /// has been modified since it was cached counts as a miss, so a shared, process-lifetime
+        /// cache (see <see cref="IconManager"/>) still picks up icons edited between reloads.
         /// </summary>
         /// <param name="imagePath">The path to the image file.</param>
         /// <param name="targetSize">The target size of the icon.</param>
@@ -27,12 +42,19 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
         public bool TryGet(string imagePath, int targetSize, out BitmapSource bitmap)
         {
             var key = BuildKey(imagePath, targetSize);
-            if (_cache.TryGetValue(key, out bitmap))
+            if (_cache.TryGetValue(key, out var entry))
             {
-                Interlocked.Increment(ref _hits);
-                return true;
+                if (entry.LastWriteUtc == File.GetLastWriteTimeUtc(imagePath))
+                {
+                    bitmap = entry.Bitmap;
+                    Interlocked.Increment(ref _hits);
+                    return true;
+                }
+
+                _cache.TryRemove(key, out _);
             }
 
+            bitmap = null;
             Interlocked.Increment(ref _misses);
             return false;
         }
@@ -61,7 +83,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
                 return;
 
             var key = BuildKey(imagePath, targetSize);
-            _cache.TryAdd(key, bitmap);
+            _cache[key] = new Entry(File.GetLastWriteTimeUtc(imagePath), bitmap);
         }
 
         /// <summary>

@@ -29,6 +29,23 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// Key for referenced assemblies in environment dictionary.
         /// </summary>
         public const string REFED_ASSMS_KEY = "PYREVIT_REFEDASSMS";
+
+        /// <summary>
+        /// Env-dict key a postload autoupdate sets (envvars.SESSION_REPLACED_ENVVAR on the Python
+        /// side) when it triggers a nested reload, so the outer LoadSession() knows the session it
+        /// started with was just replaced and can skip its own now-stale final stopwatch/log.
+        /// </summary>
+        public const string SESSION_REPLACED_KEY = "PYREVIT_SESSIONREPLACED";
+
+        /// <summary>
+        /// Python entry script that runs pre-load session setup.
+        /// </summary>
+        public const string PRELOAD_SCRIPT = "session_preload.py";
+
+        /// <summary>
+        /// Python entry script that runs post-load session finalization.
+        /// </summary>
+        public const string POSTLOAD_SCRIPT = "session_postload.py";
     }
 
     /// <summary>
@@ -58,18 +75,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
     public static class RevitApiConstants
     {
         /// <summary>
-        /// Revit version where the UIApplication field name changed.
-        /// </summary>
-        public const int NEW_UIAPP_FIELD_VERSION = 2017;
-
-        /// <summary>
-        /// Field name for UIApplication in Revit 2017 and newer.
+        /// Field name for UIApplication on UIControlledApplication.
         /// </summary>
         public const string MODERN_UIAPP_FIELD = "m_uiapplication";
-
-        /// <summary>
-        /// Field name for UIApplication in Revit versions before 2017.
-        /// </summary>
-        public const string LEGACY_UIAPP_FIELD = "m_application";
     }
 }

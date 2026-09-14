@@ -4,7 +4,8 @@ By default excludes not-grouped elements from selection.
 Shift+Click:
 Include not-grouped elements
 """
-#pylint: disable=import-error,invalid-name,broad-except
+
+# pylint: disable=import-error,invalid-name,broad-except
 from pyrevit import revit, DB, EXEC_PARAMS
 from pyrevit import script
 

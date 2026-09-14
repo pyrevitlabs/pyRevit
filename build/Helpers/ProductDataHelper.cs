@@ -6,7 +6,7 @@ namespace Build.Helpers;
 
 public static class ProductDataHelper
 {
-    // pyrevit-products.json uses lowercase keys written by the legacy Python CLI.
+    // pyrevit-products.json uses lowercase keys for compatibility with existing consumers.
     private static readonly JsonSerializerOptions ProductJsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,

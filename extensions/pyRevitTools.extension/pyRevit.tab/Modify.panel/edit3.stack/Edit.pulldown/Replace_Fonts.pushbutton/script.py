@@ -38,13 +38,21 @@ def rename_element_type_if_needed(element_type, old_font, new_font_name):
         # Use case-insensitive replace
         new_name = current_name  # fallback value
         try:
-            new_name = re.sub(re.escape(old_font), new_font_name, current_name, flags=re.IGNORECASE)
+            new_name = re.sub(
+                re.escape(old_font), new_font_name, current_name, flags=re.IGNORECASE
+            )
             if new_name != current_name:
                 DB.Element.Name.SetValue(element_type, new_name)
-                logger.debug("Renamed type from '{}' to '{}'".format(current_name, new_name))
+                logger.debug(
+                    "Renamed type from '{}' to '{}'".format(current_name, new_name)
+                )
         except Exception as e:
             # Log error if renaming fails, but don't stop the script
-            logger.error("Failed to rename type '{}' to '{}': {}".format(current_name, new_name, e))
+            logger.error(
+                "Failed to rename type '{}' to '{}': {}".format(
+                    current_name, new_name, e
+                )
+            )
 
 
 def update_nested_generic_annotations(host_family_doc, font_name):
@@ -113,7 +121,9 @@ def update_nested_generic_annotations(host_family_doc, font_name):
             if found_in_this_nested:
                 found_in_any_nested = True
                 # Load the updated nested family back into its host family
-                nested_family_doc.LoadFamily(host_family_doc, FamilyLoaderOptionsHandler())
+                nested_family_doc.LoadFamily(
+                    host_family_doc, FamilyLoaderOptionsHandler()
+                )
 
         except Exception as e:
             logger.error(
@@ -162,7 +172,9 @@ def process_family_document(family_doc, new_font_name):
                     if param and param.HasValue:
                         old_font = param.AsString()
                         if old_font != new_font_name:
-                            rename_element_type_if_needed(element_type, old_font, new_font_name)
+                            rename_element_type_if_needed(
+                                element_type, old_font, new_font_name
+                            )
                             param.Set(new_font_name)
                             found = True
                             result.append(
@@ -184,7 +196,8 @@ def process_family_document(family_doc, new_font_name):
 
         # Process nested generic annotations
         nested_results, nested_found = update_nested_generic_annotations(
-            family_doc, new_font_name)
+            family_doc, new_font_name
+        )
         if nested_found:
             found = True
             result.extend(nested_results)

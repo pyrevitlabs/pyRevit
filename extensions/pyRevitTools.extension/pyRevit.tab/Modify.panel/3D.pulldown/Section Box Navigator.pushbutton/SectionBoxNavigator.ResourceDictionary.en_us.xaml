@@ -97,6 +97,7 @@
     <system:String x:Key="ConfirmSectionBox">Confirm Section Box</system:String>
     <system:String x:Key="SectionBoxAlignedFormat">Section box aligned to view '{0}'</system:String>
     <system:String x:Key="CropBoxAlignedFormat">Crop box aligned to view '{0}'</system:String>
+    <system:String x:Key="ScopeBoxApplied">Scope box applied to view</system:String>
     <system:String x:Key="UnsupportedViewType">Unsupported view type.</system:String>
     <system:String x:Key="Activated">activated</system:String>
     <system:String x:Key="Deactivated">deactivated</system:String>

@@ -11,4 +11,4 @@ The pyRevit repository is organized in the following folders:
 - `pyrevitlib` contains pyRevit and other related project's python libraries. It is usually the library that gets imported in the user scripts to ease the Revit API development.
 - `release` contains static assets needed to build the final product (pyrevit and pyrevit cli installers).
 - `site-packages` is the collection of third-party python packaces that are made available by pyRevit to the user. Given that the main python engine is IronPython 2.7.12, packages in that folder needs to be compatible with it.
-- `static` are assets for the website, youtube channels and so on, you can ignore it.
+- `docs/static` are assets for the website, youtube channels and so on, you can ignore it.

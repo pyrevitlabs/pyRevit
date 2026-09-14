@@ -1,0 +1,32 @@
+<UserControl x:Class="PyRevitLabs.PyRevit.Shell.ShellTitleBar"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Height="36">
+    <Border Background="{DynamicResource ShellTitleBarBackground}"
+            MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <Image Source="/pyRevitLabs.PyRevit.Shell;component/Resources/pyrevit.ico"
+                   Width="16" Height="16" Margin="12,0,8,0" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1"
+                       VerticalAlignment="Center"
+                       Foreground="{DynamicResource ShellTitleBarForeground}"
+                       Text="{Binding Title, RelativeSource={RelativeSource AncestorType={x:Type Window}}}" />
+            <Button Grid.Column="2" x:Name="minimizeButton"
+                    Style="{DynamicResource ShellTitleBarButton}"
+                    Click="MinimizeClick" Content="&#xE921;" ToolTip="Minimize" />
+            <Button Grid.Column="3" x:Name="maximizeButton"
+                    Style="{DynamicResource ShellTitleBarButton}"
+                    Click="MaximizeClick" Content="&#xE922;" ToolTip="Maximize" />
+            <Button Grid.Column="4" x:Name="closeButton"
+                    Style="{DynamicResource ShellTitleBarCloseButton}"
+                    Click="CloseClick" Content="&#xE8BB;" ToolTip="Close" />
+        </Grid>
+    </Border>
+</UserControl>

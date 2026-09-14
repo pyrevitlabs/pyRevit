@@ -12,6 +12,7 @@ All changes Copyright 2008-2014 The Python Markdown Project
 
 License: [BSD](http://www.opensource.org/licenses/bsd-license.php)
 """
+
 from __future__ import absolute_import
 from __future__ import unicode_literals
 from . import Extension
@@ -21,7 +22,7 @@ from ..util import etree, AtomicString
 import re
 
 # Global Vars
-ABBR_REF_RE = re.compile(r'[*]\[(?P<abbr>[^\]]*)\][ ]?:\s*(?P<title>.*)')
+ABBR_REF_RE = re.compile(r"[*]\[(?P<abbr>[^\]]*)\][ ]?:\s*(?P<title>.*)")
 
 
 class AbbrExtension(Extension):
@@ -29,7 +30,7 @@ class AbbrExtension(Extension):
 
     def extendMarkdown(self, md, md_globals):
         """Insert AbbrPreprocessor before ReferencePreprocessor."""
-        md.preprocessors.add('abbr', AbbrPreprocessor(md), '<reference')
+        md.preprocessors.add("abbr", AbbrPreprocessor(md), "<reference")
 
 
 class AbbrPreprocessor(Preprocessor):
@@ -44,10 +45,11 @@ class AbbrPreprocessor(Preprocessor):
         for line in lines:
             m = ABBR_REF_RE.match(line)
             if m:
-                abbr = m.group('abbr').strip()
-                title = m.group('title').strip()
-                self.markdown.inlinePatterns['abbr-%s' % abbr] = \
-                    AbbrPattern(self._generate_pattern(abbr), title)
+                abbr = m.group("abbr").strip()
+                title = m.group("title").strip()
+                self.markdown.inlinePatterns["abbr-%s" % abbr] = AbbrPattern(
+                    self._generate_pattern(abbr), title
+                )
             else:
                 new_text.append(line)
         return new_text
@@ -63,8 +65,8 @@ class AbbrPreprocessor(Preprocessor):
         """
         chars = list(text)
         for i in range(len(chars)):
-            chars[i] = r'[%s]' % chars[i]
-        return r'(?P<abbr>\b%s\b)' % (r''.join(chars))
+            chars[i] = r"[%s]" % chars[i]
+        return r"(?P<abbr>\b%s\b)" % (r"".join(chars))
 
 
 class AbbrPattern(Pattern):
@@ -75,9 +77,9 @@ class AbbrPattern(Pattern):
         self.title = title
 
     def handleMatch(self, m):
-        abbr = etree.Element('abbr')
-        abbr.text = AtomicString(m.group('abbr'))
-        abbr.set('title', self.title)
+        abbr = etree.Element("abbr")
+        abbr.text = AtomicString(m.group("abbr"))
+        abbr.set("title", self.title)
         return abbr
 
 
