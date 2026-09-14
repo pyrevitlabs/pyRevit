@@ -4,7 +4,7 @@
 
 from pyrevit import revit, script, forms
 from pyrevit.framework import System, Controls, Media
-from pyrevit.revit import events
+from pyrevit.revit import events, units
 from pyrevit import DB
 from pyrevit.coreutils import applocales
 
@@ -79,13 +79,7 @@ def initialize_globals():
     doc = revit.doc
     active_view = revit.active_view
 
-    length_format_options = doc.GetUnits().GetFormatOptions(DB.SpecTypeId.Length)
-    length_unit = length_format_options.GetUnitTypeId()
-    length_unit_label = DB.LabelUtils.GetLabelForUnit(length_unit)
-    length_unit_symbol = length_format_options.GetSymbolTypeId()
-    length_unit_symbol_label = None
-    if not length_unit_symbol.Empty():
-        length_unit_symbol_label = DB.LabelUtils.GetLabelForSymbol(length_unit_symbol)
+    length_unit, length_unit_label, _, length_unit_symbol_label = units.get_unit_info(DB.SpecTypeId.Length, doc)
 
     level_nudge_value = DB.UnitUtils.Convert(
         config_level_nudge_value, DB.UnitTypeId.Feet, length_unit
@@ -163,10 +157,6 @@ def create_adjusted_box(
     new_box.Transform = transform
 
     return new_box
-
-
-def format_length_value(value):
-    return DB.UnitFormatUtils.Format(doc.GetUnits(), DB.SpecTypeId.Length, value, False)
 
 
 # --------------------
@@ -368,7 +358,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
 
             # Format level name and elevation
             level_name = level.Name
-            level_elev = format_length_value(level.ProjectElevation)
+            level_elev = units.format_length(level.ProjectElevation, doc)
             btn.Content = "{0} ({1})".format(level_name, level_elev)
 
             # Store level info in Tag
@@ -471,20 +461,20 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             )
 
             if top_level_above_elevation:
-                top_level_above_elevation = format_length_value(
-                    top_level_above_elevation
+                top_level_above_elevation = units.format_length(
+                    top_level_above_elevation, doc
                 )
             if top_level_below_elevation:
-                top_level_below_elevation = format_length_value(
-                    top_level_below_elevation
+                top_level_below_elevation = units.format_length(
+                    top_level_below_elevation, doc
                 )
             if bottom_level_above_elevation:
-                bottom_level_above_elevation = format_length_value(
-                    bottom_level_above_elevation
+                bottom_level_above_elevation = units.format_length(
+                    bottom_level_above_elevation, doc
                 )
             if bottom_level_below_elevation:
-                bottom_level_below_elevation = format_length_value(
-                    bottom_level_below_elevation
+                bottom_level_below_elevation = units.format_length(
+                    bottom_level_below_elevation, doc
                 )
 
             # Update top info
@@ -501,7 +491,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             else:
                 self.txtTopLevelBelow.Text = self.get_locale_string("NoLevelBelowTop")
 
-            top = format_length_value(transformed_max.Z)
+            top = units.format_length(transformed_max.Z, doc)
             self.txtTopPosition.Text = self.get_locale_string("TopOfBoxFormat").format(
                 top
             )
@@ -524,7 +514,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                     "NoLevelBelowBottom"
                 )
 
-            bottom = format_length_value(transformed_min.Z)
+            bottom = units.format_length(transformed_min.Z, doc)
             self.txtBottomPosition.Text = self.get_locale_string(
                 "BottomOfBoxFormat"
             ).format(bottom)
@@ -919,7 +909,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 self.popupBoxDown.IsOpen = False
             else:
                 # Nudge mode - show nudge amount
-                nudge_display = format_length_value(abs(nudge_amount))
+                nudge_display = units.format_length(abs(nudge_amount), doc)
 
                 self.show_status_message(
                     1,
@@ -946,7 +936,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
             max_z_change=adjustment,
         ):
             # Success - show informative message
-            amount_display = format_length_value(amount)
+            amount_display = units.format_length(amount, doc)
             operation = (
                 self.get_locale_string("Expanded")
                 if is_expand
@@ -1134,7 +1124,7 @@ class SectionBoxNavigatorForm(forms.WPFWindow):
                 )
             else:
                 # Nudge mode
-                nudge_display = format_length_value(nudge_amount)
+                nudge_display = units.format_length(nudge_amount, doc)
 
                 direction_display = cardinal_dir.upper()
                 self.show_status_message(
