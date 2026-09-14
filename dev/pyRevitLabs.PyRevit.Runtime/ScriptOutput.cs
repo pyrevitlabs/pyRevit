@@ -276,9 +276,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private bool IsWindowClosed => _window != null && _window.ClosedByUser;
 
-        // True only when a window already exists and the user hasn't closed it. Lets the
-        // logger reach an open console without lazily creating one via the `window` getter.
-        internal bool IsWindowReady => _window != null && !_window.ClosedByUser;
+        /// <summary>
+        /// True only when a window already exists and has not been closed. Lets callers
+        /// reach an open console without lazily creating one via the <see cref="window"/> getter.
+        /// </summary>
+        public bool IsWindowReady => _window != null && !_window.ClosedByUser;
 
         public void mark_error() {
             _hasErrors = true;
@@ -369,9 +371,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 window.SelfDestructTimer(seconds);
         }
 
+        /// <summary>
+        /// Mark this output as the session-loader output so close_other_outputs spares it.
+        /// </summary>
+        /// <remarks>
+        /// Does not create a window: the flag is applied to an open window now, or to the
+        /// next window the <see cref="window"/> getter creates.
+        /// </remarks>
         public void set_session_output(bool isSessionOutput) {
             _isSessionOutput = isSessionOutput;
-            window.IsSessionOutput = isSessionOutput;
+            if (IsWindowReady)
+                _window.IsSessionOutput = isSessionOutput;
         }
 
         public void close() { window.Close(); }
