@@ -2,6 +2,7 @@
 from collections import deque
 from math import pi, atan, sqrt, acos
 from pyrevit import revit, forms, script
+from pyrevit.revit.units import get_unit_info, format_length, format_slope
 from pyrevit import DB
 from Autodesk.Revit.Exceptions import InvalidOperationException
 
@@ -9,22 +10,9 @@ logger = script.get_logger()
 
 doc = revit.doc
 uidoc = revit.uidoc
-# Length
-length_format_options = doc.GetUnits().GetFormatOptions(DB.SpecTypeId.Length)
-length_unit = length_format_options.GetUnitTypeId()
-length_unit_label = DB.LabelUtils.GetLabelForUnit(length_unit)
-length_unit_symbol = length_format_options.GetSymbolTypeId()
-length_unit_symbol_label = None
-if not length_unit_symbol.Empty():
-    length_unit_symbol_label = DB.LabelUtils.GetLabelForSymbol(length_unit_symbol)
-# Slope
-slope_format_options = doc.GetUnits().GetFormatOptions(DB.SpecTypeId.Slope)
-slope_unit = slope_format_options.GetUnitTypeId()
-slope_unit_label = DB.LabelUtils.GetLabelForUnit(slope_unit)
-slope_unit_symbol = slope_format_options.GetSymbolTypeId()
-slope_unit_symbol_label = None
-if not slope_unit_symbol.Empty():
-    slope_unit_symbol_label = DB.LabelUtils.GetLabelForSymbol(slope_unit_symbol)
+
+length_unit, length_unit_label, _, length_unit_symbol_label = get_unit_info(DB.SpecTypeId.Length, doc)
+slope_unit, slope_unit_label, _, slope_unit_symbol_label = get_unit_info(DB.SpecTypeId.Slope, doc)
 
 # Global variables
 measure_window = None
@@ -64,24 +52,6 @@ def calculate_distances(point1, point2):
         slope = atan(dz / horizontal)
 
     return dx, dy, dz, diagonal, slope
-
-
-def format_distance(value_internal):
-    return DB.UnitFormatUtils.Format(
-        doc.GetUnits(),
-        DB.SpecTypeId.Length,
-        value_internal,
-        False,
-    )
-
-
-def format_slope(value_internal):
-    return DB.UnitFormatUtils.Format(
-        doc.GetUnits(),
-        DB.SpecTypeId.Slope,
-        value_internal,
-        False,
-    )
 
 
 def format_point(point):
@@ -221,19 +191,19 @@ def perform_measurement():
         ).format(format_point(point2))
         measure_window.dx_text.Text = measure_window.get_locale_string(
             "DeltaXFormat"
-        ).format(format_distance(dx))
+        ).format(format_length(dx, doc))
         measure_window.dy_text.Text = measure_window.get_locale_string(
             "DeltaYFormat"
-        ).format(format_distance(dy))
+        ).format(format_length(dy, doc))
         measure_window.dz_text.Text = measure_window.get_locale_string(
             "DeltaZFormat"
-        ).format(format_distance(dz))
+        ).format(format_length(dz, doc))
         measure_window.diagonal_text.Text = measure_window.get_locale_string(
             "DiagonalFormat"
-        ).format(format_distance(diagonal))
+        ).format(format_length(diagonal, doc))
         measure_window.slope_text.Text = measure_window.get_locale_string(
             "SlopeFormat"
-        ).format(format_slope(slope))
+        ).format(format_slope(slope, doc))
 
         # Add to history
         history_entry = (
@@ -242,11 +212,11 @@ def perform_measurement():
                 len(measurement_history) + 1,
                 format_point(point1),
                 format_point(point2),
-                format_distance(dx),
-                format_distance(dy),
-                format_distance(dz),
-                format_distance(diagonal),
-                format_slope(slope),
+                format_length(dx, doc),
+                format_length(dy, doc),
+                format_length(dz, doc),
+                format_length(diagonal, doc),
+                format_slope(slope, doc),
             )
             .lstrip()
         )
