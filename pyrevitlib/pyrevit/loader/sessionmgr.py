@@ -227,8 +227,13 @@ def perform_postload():
     # if everything went well, self destruct
     try:
         timeout = user_config.startuplog_timeout
-        if timeout > 0 and not logger.loggers_have_errors():
-            runtime_types.ScriptOutput.GetDefault().self_destruct(timeout)
+        session_output = runtime_types.ScriptOutput.GetDefault()
+        if (
+            timeout > 0
+            and not logger.loggers_have_errors()
+            and session_output.IsWindowReady
+        ):
+            session_output.self_destruct(timeout)
     except Exception as imp_err:
         mlogger.error("Error setting up self_destruct on output window | %s", imp_err)
 
