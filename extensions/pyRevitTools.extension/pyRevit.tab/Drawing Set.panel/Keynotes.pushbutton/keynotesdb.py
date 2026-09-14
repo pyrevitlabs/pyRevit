@@ -258,8 +258,9 @@ class RKeynote(object):
 
         return self_pass or self._filtered_children
 
-    def update_used(self, used_keysdict, used_typesdict=None,
-                    view_names=None, doc=None):
+    def update_used(
+        self, used_keysdict, used_typesdict=None, view_names=None, doc=None
+    ):
         """Refresh usage state from pre-collected model data.
 
         Prefer passing `view_names` ({key: [view name, ...]}) collected in
@@ -301,8 +302,9 @@ class RKeynote(object):
                     self.tooltip += "\n" + view_name
 
         for crkey in self._children:
-            crkey.update_used(used_keysdict, used_typesdict,
-                              view_names=view_names, doc=doc)
+            crkey.update_used(
+                used_keysdict, used_typesdict, view_names=view_names, doc=doc
+            )
 
     def collect_keys(self):
         keys = {self.key, self.parent_key}
@@ -588,7 +590,8 @@ def _run_with_compensation(conn, steps):
                 except Exception:
                     mlogger.warning(
                         "Keynote operation rollback step failed — "
-                        "check the keynote file for consistency.")
+                        "check the keynote file for consistency."
+                    )
             raise
 
 
@@ -598,23 +601,26 @@ def swap_keys(conn, key_a, key_b, temp_key, category=False):
     children = get_keynotes(conn)
 
     steps = [
-        (lambda: upd(conn, key_a, temp_key),
-         lambda: upd(conn, temp_key, key_a)),
-        (lambda: upd(conn, key_b, key_a),
-         lambda: upd(conn, key_a, key_b)),
-        (lambda: upd(conn, temp_key, key_b),
-         lambda: upd(conn, key_b, temp_key)),
+        (lambda: upd(conn, key_a, temp_key), lambda: upd(conn, temp_key, key_a)),
+        (lambda: upd(conn, key_b, key_a), lambda: upd(conn, key_a, key_b)),
+        (lambda: upd(conn, temp_key, key_b), lambda: upd(conn, key_b, temp_key)),
     ]
     # children follow their original parent record to its new key
     for child in children:
         if child.parent_key == key_a:
             steps.append(
-                (lambda k=child.key: move_keynote(conn, k, key_b),
-                 lambda k=child.key: move_keynote(conn, k, key_a)))
+                (
+                    lambda k=child.key: move_keynote(conn, k, key_b),
+                    lambda k=child.key: move_keynote(conn, k, key_a),
+                )
+            )
         elif child.parent_key == key_b:
             steps.append(
-                (lambda k=child.key: move_keynote(conn, k, key_a),
-                 lambda k=child.key: move_keynote(conn, k, key_b)))
+                (
+                    lambda k=child.key: move_keynote(conn, k, key_a),
+                    lambda k=child.key: move_keynote(conn, k, key_b),
+                )
+            )
     _run_with_compensation(conn, steps)
 
 
@@ -624,14 +630,16 @@ def rekey_with_children(conn, key, new_key, category=False):
     children = get_keynotes(conn)
 
     steps = [
-        (lambda: upd(conn, key, new_key),
-         lambda: upd(conn, new_key, key)),
+        (lambda: upd(conn, key, new_key), lambda: upd(conn, new_key, key)),
     ]
     for child in children:
         if child.parent_key == key:
             steps.append(
-                (lambda k=child.key: move_keynote(conn, k, new_key),
-                 lambda k=child.key: move_keynote(conn, k, key)))
+                (
+                    lambda k=child.key: move_keynote(conn, k, new_key),
+                    lambda k=child.key: move_keynote(conn, k, key),
+                )
+            )
     _run_with_compensation(conn, steps)
 
 
@@ -741,7 +749,9 @@ def export_legacy_keynotes(conn, dest_legacy_keynotes_file, include_keys=None):
     else:
         with codecs.open(dest_legacy_keynotes_file, "w", "utf_16") as lkfile:
             for cat in categories:
-                lkfile.write("{}\t{}\n".format(cat.key, normalize_keynote_text(cat.text)))
+                lkfile.write(
+                    "{}\t{}\n".format(cat.key, normalize_keynote_text(cat.text))
+                )
             for knote in keynotes:
                 lkfile.write(
                     "{}\t{}\t{}\n".format(

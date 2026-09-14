@@ -291,8 +291,7 @@ def setup_telemetry(session_id=None):
                 _setup_default_logfile(telemetry_fullfilepath)
             except Exception as write_err:
                 mlogger.error(
-                    "Telemetry is active but log file location "
-                    "is not accessible. | %s",
+                    "Telemetry is active but log file location is not accessible. | %s",
                     write_err,
                 )
                 disable_telemetry_to_file()

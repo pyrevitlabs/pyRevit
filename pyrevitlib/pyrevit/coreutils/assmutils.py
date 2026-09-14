@@ -1,4 +1,5 @@
 """Utilities to load and manage assemblies."""
+
 import os.path as op
 
 from pyrevit import PyRevitException
@@ -62,22 +63,18 @@ def find_loaded_asm(asm_info, by_partial_name=False, by_location=False):
             None will be returned if assembly is not loaded.
     """
     loaded_asm_list = []
-    cleaned_asm_info = \
-        asm_info.lower().replace('.' + framework.ASSEMBLY_FILE_TYPE, '')
+    cleaned_asm_info = asm_info.lower().replace("." + framework.ASSEMBLY_FILE_TYPE, "")
     for loaded_assembly in framework.AppDomain.CurrentDomain.GetAssemblies():
         if by_partial_name:
-            if cleaned_asm_info in \
-                    safe_strtype(loaded_assembly.GetName().Name).lower():
+            if cleaned_asm_info in safe_strtype(loaded_assembly.GetName().Name).lower():
                 loaded_asm_list.append(loaded_assembly)
         elif by_location:
             try:
-                if op.normpath(loaded_assembly.Location) == \
-                        op.normpath(asm_info):
+                if op.normpath(loaded_assembly.Location) == op.normpath(asm_info):
                     loaded_asm_list.append(loaded_assembly)
             except Exception:
                 continue
-        elif cleaned_asm_info == \
-                safe_strtype(loaded_assembly.GetName().Name).lower():
+        elif cleaned_asm_info == safe_strtype(loaded_assembly.GetName().Name).lower():
             loaded_asm_list.append(loaded_assembly)
 
     return loaded_asm_list
@@ -100,5 +97,4 @@ def find_type_by_name(assembly, type_name):
     if base_class is not None:
         return base_class
     else:
-        raise PyRevitException('Can not find base class type: {}'
-                               .format(type_name))
+        raise PyRevitException("Can not find base class type: {}".format(type_name))

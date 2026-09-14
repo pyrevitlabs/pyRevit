@@ -40,6 +40,7 @@ frame at 0 deg, which is the exact identity transform.
 
 ENGINE: runs on pyRevit's default IronPython engine (no python3 shebang).
 """
+
 from pyrevit import revit, forms, script
 from pyrevit import DB
 from pyrevit.revit.units import format_length
@@ -69,8 +70,8 @@ class AutoDimWindow(forms.WPFWindow):
         self.config = script.get_config()
 
         mode = self.config.get_option("mode", MODE_INT)
-        self.mode_ext_rb.IsChecked = (mode == MODE_EXT)
-        self.mode_int_rb.IsChecked = (mode != MODE_EXT)
+        self.mode_ext_rb.IsChecked = mode == MODE_EXT
+        self.mode_int_rb.IsChecked = mode != MODE_EXT
 
         core = bool(self.config.get_option("measure_core", False))
         self.face_core_rb.IsChecked = core
@@ -81,26 +82,31 @@ class AutoDimWindow(forms.WPFWindow):
         self.open_cl_rb.IsChecked = not ro
 
         self.dry_cb.IsChecked = bool(self.config.get_option("dry_run", True))
-        self.audit_cb.IsChecked = bool(
-            self.config.get_option("face_audit", False))
+        self.audit_cb.IsChecked = bool(self.config.get_option("face_audit", False))
 
         # exterior offsets: editable combos, raw text persisted so the
         # user sees exactly what they typed on the next run. Items are
         # set from code (plain strings) - ComboBoxItem elements in XAML
         # would turn .Text into "System.Windows.Controls.ComboBoxItem:...".
         self.first_offset_cb.ItemsSource = [
-            AUTO_OFFSET_LABEL, '1/2"', '5/8"', '3/4"', '1"', '1 1/4"',
-            '1 1/2"']
-        self.first_offset_cb.Text = str(self.config.get_option(
-            "first_offset_text", AUTO_OFFSET_LABEL))
+            AUTO_OFFSET_LABEL,
+            '1/2"',
+            '5/8"',
+            '3/4"',
+            '1"',
+            '1 1/4"',
+            '1 1/2"',
+        ]
+        self.first_offset_cb.Text = str(
+            self.config.get_option("first_offset_text", AUTO_OFFSET_LABEL)
+        )
         self.spacing_cb.ItemsSource = ['1/4"', '3/8"', '1/2"']
-        self.spacing_cb.Text = str(self.config.get_option(
-            "tier_spacing_text", '3/8"'))
-        self.split_tb.Text = str(self.config.get_option(
-            "max_drag_text", "0"))
+        self.spacing_cb.Text = str(self.config.get_option("tier_spacing_text", '3/8"'))
+        self.split_tb.Text = str(self.config.get_option("max_drag_text", "0"))
 
         self.status_tb.Text = "{0} wall(s), {1} element(s) selected.".format(
-            wall_count, fixture_count)
+            wall_count, fixture_count
+        )
         self._update_hint()
 
     def _update_hint(self):
@@ -108,14 +114,17 @@ class AutoDimWindow(forms.WPFWindow):
             if self.wall_count:
                 self.mode_hint_tb.Text = (
                     "Dimensions the {0} wall(s) you selected, one string set "
-                    "per facing direction.".format(self.wall_count))
+                    "per facing direction.".format(self.wall_count)
+                )
             else:
                 self.mode_hint_tb.Text = (
                     "Select the perimeter walls first - exterior mode "
-                    "dimensions your selection.")
+                    "dimensions your selection."
+                )
         else:
             self.mode_hint_tb.Text = (
-                "Whole view, driven by placed Rooms. Selection is ignored.")
+                "Whole view, driven by placed Rooms. Selection is ignored."
+            )
 
     def mode_changed(self, sender, args):
         # fires during XAML load too, before the hint element exists
@@ -152,12 +161,11 @@ class AutoDimWindow(forms.WPFWindow):
             "openings_ro": bool(self.open_ro_rb.IsChecked),
             "dry_run": bool(self.dry_cb.IsChecked),
             "face_audit": bool(self.audit_cb.IsChecked),
-            "first_offset_in": first_in,   # None = auto per view scale
+            "first_offset_in": first_in,  # None = auto per view scale
             "tier_spacing_in": spacing_in,
             "max_drag_ft": max_drag_ft,
         }
-        for key in ("mode", "measure_core", "openings_ro", "dry_run",
-                    "face_audit"):
+        for key in ("mode", "measure_core", "openings_ro", "dry_run", "face_audit"):
             self.config.set_option(key, self.result[key])
         self.config.set_option("first_offset_text", first_text)
         self.config.set_option("tier_spacing_text", spacing_text)
@@ -169,7 +177,8 @@ class AutoDimWindow(forms.WPFWindow):
             # main() surfaces this in the run notes
             self.result["settings_warning"] = (
                 "Settings could not be saved ({0}) - this run works, "
-                "but choices will not be remembered.".format(save_err))
+                "but choices will not be remembered.".format(save_err)
+            )
         self.Close()
 
     def cancel_clicked(self, sender, args):
@@ -178,6 +187,7 @@ class AutoDimWindow(forms.WPFWindow):
 
 
 # ---------------------------------------------------------------- gather
+
 
 def gather_selection(view):
     """Returns (walls, fixtures, skipped_walls). Fixtures are selected
@@ -233,7 +243,8 @@ def build_runs(walls, notes, frame):
         for inst in dim_revit_io.get_hosted_openings(wall, doc):
             try:
                 pairs.append(
-                    (frame.to_local(dim_revit_io.get_opening_point(inst)), inst))
+                    (frame.to_local(dim_revit_io.get_opening_point(inst)), inst)
+                )
             except ValueError as ex:
                 notes.append("Skipped opening: {0}".format(ex))
         openings_by_wall[wall.Id] = pairs
@@ -257,16 +268,24 @@ def build_runs(walls, notes, frame):
                 run_openings.extend(openings_by_wall.get(w.Id, []))
             try:
                 tiers = dim_geometry.build_tiers(
-                    run_pts, [pt for pt, _ in run_openings])
+                    run_pts, [pt for pt, _ in run_openings]
+                )
             except dim_geometry.GeometryError as ex:
                 notes.append("Skipped one side: {0}".format(ex))
                 continue
-            runs.append({"pts": run_pts, "walls": run_walls,
-                         "openings": run_openings, "tiers": tiers})
+            runs.append(
+                {
+                    "pts": run_pts,
+                    "walls": run_walls,
+                    "openings": run_openings,
+                    "tiers": tiers,
+                }
+            )
     return runs
 
 
 # ------------------------------------------------- entries (value+kind)
+
 
 def opening_entries(run, ro_mode, notes, frame):
     """[(value, kind, payload)] for the run's openings.
@@ -290,10 +309,8 @@ def opening_entries(run, ro_mode, notes, frame):
             width = dim_revit_io.get_opening_width(inst)
             jambs = dim_revit_io.get_jamb_faces(inst, axis, center, width, frame)
             if jambs is not None:
-                entries.append(
-                    (jambs[0]["origin"][idx], "jamb", jambs[0]))
-                entries.append(
-                    (jambs[1]["origin"][idx], "jamb", jambs[1]))
+                entries.append((jambs[0]["origin"][idx], "jamb", jambs[0]))
+                entries.append((jambs[1]["origin"][idx], "jamb", jambs[1]))
                 continue
             sides = dim_revit_io.get_opening_side_references(inst)
             if sides is not None:
@@ -303,7 +320,8 @@ def opening_entries(run, ro_mode, notes, frame):
                 continue
             notes.append(
                 "Opening {0}: no jamb faces and no Left/Right "
-                "references - using centerline".format(inst.Id))
+                "references - using centerline".format(inst.Id)
+            )
         entries.append((center, "open_c", inst))
     return entries
 
@@ -332,9 +350,19 @@ def dedupe_entries(entries):
     return sorted(kept, key=lambda x: x[0])
 
 
-def resolve_entries(entries, axis, axis_faces, run, notes,
-                    measure_core=False, view=None, core_cache=None,
-                    prefer_exterior=True, face_audit=False, frame=None):
+def resolve_entries(
+    entries,
+    axis,
+    axis_faces,
+    run,
+    notes,
+    measure_core=False,
+    view=None,
+    core_cache=None,
+    prefer_exterior=True,
+    face_audit=False,
+    frame=None,
+):
     """Entries -> (references, kept_values). measure_core swaps wall
     finish-face references for the CORE boundary on the same side
     ("face of stud"), using per-wall MEASURED calibration - the fixed
@@ -353,8 +381,13 @@ def resolve_entries(entries, axis, axis_faces, run, notes,
             ref = payload["ref"]
             if measure_core and view is not None:
                 core_ref = dim_revit_io.core_face_reference(
-                    payload, view, doc,
-                    core_cache if core_cache is not None else {}, notes, frame)
+                    payload,
+                    view,
+                    doc,
+                    core_cache if core_cache is not None else {},
+                    notes,
+                    frame,
+                )
                 if core_ref is not None:
                     ref = core_ref
         elif kind == "open_side":
@@ -368,17 +401,20 @@ def resolve_entries(entries, axis, axis_faces, run, notes,
             ref = dim_revit_io.get_wall_centerline_reference(payload)
             if ref is None:
                 notes.append(
-                    "Partition {0}: no centerline reference - skipped"
-                    .format(payload.Id))
+                    "Partition {0}: no centerline reference - skipped".format(
+                        payload.Id
+                    )
+                )
         elif kind == "fixture":
             ref = dim_revit_io.get_instance_center_reference(payload, axis, frame)
             if ref is None:
                 notes.append(
-                    "Fixture {0}: no center reference - skipped"
-                    .format(payload.Id))
+                    "Fixture {0}: no center reference - skipped".format(payload.Id)
+                )
         elif kind == "wallpt":
             face_info = dim_revit_io.find_face_reference(
-                axis_faces, payload, prefer_exterior)
+                axis_faces, payload, prefer_exterior
+            )
             if face_info is not None:
                 # snap out to the wall's true finish face: the solid can
                 # show two faces on one side a fraction of an inch apart,
@@ -386,32 +422,45 @@ def resolve_entries(entries, axis, axis_faces, run, notes,
                 # (live audit: 0.3" inside the finish). Same wall, same
                 # side - this only ever moves the anchor outward.
                 face_info = dim_revit_io.outermost_same_face(
-                    axis_faces, face_info, axis)
+                    axis_faces, face_info, axis
+                )
             if face_audit:
                 idx = 0 if axis == "x" else 1
                 lines = []
                 for c in dim_revit_io.face_candidates(axis_faces, payload):
-                    chosen = (face_info is not None
-                              and c["origin"] == face_info["origin"]
-                              and c["wall_id"] == face_info["wall"].Id)
+                    chosen = (
+                        face_info is not None
+                        and c["origin"] == face_info["origin"]
+                        and c["wall_id"] == face_info["wall"].Id
+                    )
                     lines.append(
-                        "{0} wall {1} @ {2} | {3} side | {4:.3f} ft from "
-                        "target".format(
+                        "{0} wall {1} @ {2} | {3} side | {4:.3f} ft from target".format(
                             "-->" if chosen else "   ",
-                            c["wall_id"], format_length(c["origin"][idx]),
+                            c["wall_id"],
+                            format_length(c["origin"][idx]),
                             "outer" if c["exterior"] else "inner",
-                            c["plane_d"]))
+                            c["plane_d"],
+                        )
+                    )
                 notes.append(
                     "FACE AUDIT at ({0:.2f}, {1:.2f}) [{2}]:\n  {3}".format(
-                        payload[0], payload[1], axis.upper(),
-                        "\n  ".join(lines) or "no candidate faces"))
+                        payload[0],
+                        payload[1],
+                        axis.upper(),
+                        "\n  ".join(lines) or "no candidate faces",
+                    )
+                )
             if face_info is not None:
                 ref = face_info["ref"]
                 if measure_core and view is not None:
                     core_ref = dim_revit_io.core_face_reference(
-                        face_info, view, doc,
+                        face_info,
+                        view,
+                        doc,
                         core_cache if core_cache is not None else {},
-                        notes, frame)
+                        notes,
+                        frame,
+                    )
                     if core_ref is not None:
                         ref = core_ref
             if ref is None and run is not None:
@@ -420,12 +469,15 @@ def resolve_entries(entries, axis, axis_faces, run, notes,
                     if ref is not None:
                         notes.append(
                             "No face at ({0:.1f}, {1:.1f}) - used wall "
-                            "end point".format(payload[0], payload[1]))
+                            "end point".format(payload[0], payload[1])
+                        )
                         break
             if ref is None:
                 notes.append(
-                    "No reference at ({0:.1f}, {1:.1f}) - skipped"
-                    .format(payload[0], payload[1]))
+                    "No reference at ({0:.1f}, {1:.1f}) - skipped".format(
+                        payload[0], payload[1]
+                    )
+                )
         if ref is not None:
             refs.append(ref)
             kept.append(value)
@@ -433,6 +485,7 @@ def resolve_entries(entries, axis, axis_faces, run, notes,
 
 
 # ------------------------------------- direction grouping (exterior)
+
 
 def orientation_side(run, frame):
     """+1/-1: which perpendicular side the run's exterior faces, from
@@ -489,10 +542,12 @@ def _merge_group(group, axis, side, label):
         "pts": pts,
         "walls": walls,
         "openings": openings,
-        "tiers": {"axis": axis,
-                  "tier1": _merge_vals(t1),
-                  "tier2": _merge_vals(t2),
-                  "tier3": t3},
+        "tiers": {
+            "axis": axis,
+            "tier1": _merge_vals(t1),
+            "tier2": _merge_vals(t2),
+            "tier3": t3,
+        },
         "side": side,
         "label": label,
     }
@@ -531,7 +586,8 @@ def group_exterior_runs(runs, frame, segments_local, max_drag_ft=0.0):
             extreme = max(perp_vals) if side > 0 else min(perp_vals)
             records.append((extreme, r["tiers"]["tier1"]))
         clusters = dim_geometry.cluster_exterior_runs(
-            records, segments_local, axis, side, max_drag_ft)
+            records, segments_local, axis, side, max_drag_ft
+        )
         for c_no in range(len(clusters)):
             c_runs = [group[i] for i in clusters[c_no]]
             name = group_label(axis, side)
@@ -543,6 +599,7 @@ def group_exterior_runs(runs, frame, segments_local, max_drag_ft=0.0):
 
 
 # ------------------------------------------------------------ placement
+
 
 def run_side_and_base(run, fixtures_assigned, frame):
     """(side, base) for exterior placement: direction groups carry
@@ -581,22 +638,33 @@ def build_tier_plan(run, ro_mode, notes, frame):
     tiers = run["tiers"]
     t1 = dedupe_entries(
         opening_entries(run, ro_mode, notes, frame)
-        + wallpoint_entries(run, tiers["tier1"]))
+        + wallpoint_entries(run, tiers["tier1"])
+    )
     t2 = dedupe_entries(wallpoint_entries(run, tiers["tier2"]))
     t3 = dedupe_entries(wallpoint_entries(run, tiers["tier3"]))
-    return _drop_duplicate_tiers(
-        [("jogs+openings", t1), ("jogs", t2), ("overall", t3)])
+    return _drop_duplicate_tiers([("jogs+openings", t1), ("jogs", t2), ("overall", t3)])
 
 
-def place_run(view, run, plan, all_walls, face_cache, fixtures, notes,
-              measure_core=False, core_cache=None, face_audit=False,
-              frame=None, first_offset_in=None, spacing_in=None):
+def place_run(
+    view,
+    run,
+    plan,
+    all_walls,
+    face_cache,
+    fixtures,
+    notes,
+    measure_core=False,
+    core_cache=None,
+    face_audit=False,
+    frame=None,
+    first_offset_in=None,
+    spacing_in=None,
+):
     if frame is None:
         frame = dim_geometry.Frame(0.0)
     axis = run["tiers"]["axis"]
     if axis not in face_cache:
-        face_cache[axis] = dim_revit_io.collect_axis_faces(
-            all_walls, axis, None, frame)
+        face_cache[axis] = dim_revit_io.collect_axis_faces(all_walls, axis, None, frame)
     axis_faces = face_cache[axis]
 
     side, base = run_side_and_base(run, fixtures, frame)
@@ -607,13 +675,15 @@ def place_run(view, run, plan, all_walls, face_cache, fixtures, notes,
     # offset. Snap outward to the measured face - never inward.
     raw_base = base
     base = dim_geometry.snap_base_outward(
-        base, side,
-        dim_revit_io.exterior_face_perps(run["walls"], axis, frame))
+        base, side, dim_revit_io.exterior_face_perps(run["walls"], axis, frame)
+    )
     if abs(base - raw_base) > 0.01:
         notes.append(
             "{0}: base snapped {1:.2f} ft outward, location line -> "
             "outermost finish face.".format(
-                run.get("label") or "Run", (base - raw_base) * side))
+                run.get("label") or "Run", (base - raw_base) * side
+            )
+        )
 
     # paper inches -> model feet. None = the per-scale Auto preset, so
     # one saved setting works across sheets at different scales.
@@ -634,16 +704,32 @@ def place_run(view, run, plan, all_walls, face_cache, fixtures, notes,
         # increments even when a tier is skipped - tier identity (and
         # therefore each string's line position) stays deterministic
         tier_no += 1
-        refs, kept = resolve_entries(entries, axis, axis_faces, run, notes,
-                                     measure_core, view, core_cache,
-                                     True, face_audit, frame)
+        refs, kept = resolve_entries(
+            entries,
+            axis,
+            axis_faces,
+            run,
+            notes,
+            measure_core,
+            view,
+            core_cache,
+            True,
+            face_audit,
+            frame,
+        )
         if len(refs) < 2:
-            notes.append("Tier '{0}': fewer than 2 references - skipped"
-                         .format(label))
+            notes.append("Tier '{0}': fewer than 2 references - skipped".format(label))
             continue
         dim_revit_io.create_dimension_tier(
-            doc, view, refs, axis, (kept[0], kept[-1]),
-            positions[tier_no - 1], base_z, frame)
+            doc,
+            view,
+            refs,
+            axis,
+            (kept[0], kept[-1]),
+            positions[tier_no - 1],
+            base_z,
+            frame,
+        )
         placed += 1
     return placed
 
@@ -658,9 +744,9 @@ def place_run(view, run, plan, all_walls, face_cache, fixtures, notes,
 # up whatever wall face was nearest - that is what produced measurements
 # to random walls across the plan.
 
-MIN_ROOM_FT = 2.5        # a room thinner than this gets no string
-OBSTRUCTION_CLEAR_FT = 1.5   # object counts as "on" a line within this
-LINE_CLEAR_FT = 1.0      # two strings closer than this overlap
+MIN_ROOM_FT = 2.5  # a room thinner than this gets no string
+OBSTRUCTION_CLEAR_FT = 1.5  # object counts as "on" a line within this
+LINE_CLEAR_FT = 1.0  # two strings closer than this overlap
 
 
 def room_inward(poly, edge_mid, axis_perp_idx, edge_perp):
@@ -695,12 +781,16 @@ def edge_face_entry(room, edge, axis, value, inward, view_faces, notes):
             notes.append(
                 "{0}: boundary wall {1} exposed no face at {2} - used the "
                 "coincident face instead".format(
-                    room["name"], wall_id, format_length(value)))
+                    room["name"], wall_id, format_length(value)
+                )
+            )
     if rec is None:
         notes.append(
             "{0}: no view-visible wall face at {1} ({2} axis) - that end "
             "of the string is missing (room-separation line?)".format(
-                room["name"], format_length(value), axis.upper()))
+                room["name"], format_length(value), axis.upper()
+            )
+        )
         return None
     return (rec["origin"][0 if axis == "x" else 1], "face", rec)
 
@@ -710,8 +800,7 @@ def span_entries(room, span, axis, view_faces, notes):
     faces +axis into the room, the high end's faces -axis."""
     entries = []
     for (value, edge), inward in ((span[0], 1.0), (span[1], -1.0)):
-        entry = edge_face_entry(room, edge, axis, value, inward,
-                                view_faces, notes)
+        entry = edge_face_entry(room, edge, axis, value, inward, view_faces, notes)
         if entry is not None:
             entries.append(entry)
     return entries
@@ -743,8 +832,7 @@ def nudge(axis, pos, occupied, step, away, bounds=None):
     limit_lo = bounds[0] + 0.25 if bounds else None
     limit_hi = bounds[1] - 0.25 if bounds else None
     tries = 0
-    while (any(abs(p - pos) < LINE_CLEAR_FT for p in occupied[axis])
-           and tries < 4):
+    while any(abs(p - pos) < LINE_CLEAR_FT for p in occupied[axis]) and tries < 4:
         moved = pos + away * max(step, 0.5)
         if limit_lo is not None and not (limit_lo <= moved <= limit_hi):
             break
@@ -772,9 +860,10 @@ def drop_redundant(items, room_name, notes):
     seen = set()
     dropped = 0
     for item in items:
-        signature = (item["axis"],
-                     tuple(int(round(value * 100.0))
-                           for value, _, _ in item["entries"]))
+        signature = (
+            item["axis"],
+            tuple(int(round(value * 100.0)) for value, _, _ in item["entries"]),
+        )
         if signature in seen:
             dropped += 1
             continue
@@ -783,11 +872,13 @@ def drop_redundant(items, room_name, notes):
     if dropped:
         notes.append(
             "{0}: {1} redundant dimension(s) dropped (same measurement "
-            "already drawn).".format(room_name, dropped))
+            "already drawn).".format(room_name, dropped)
+        )
     return kept
 
 
 # ---- level 1: room lengths (east-west and north-south) ----
+
 
 def room_length_items(room, view_faces, objects, occupied, notes):
     """One string per axis measuring the room clear across, placed at a
@@ -808,26 +899,34 @@ def room_length_items(room, view_faces, objects, occupied, notes):
             if best is None or cost < best[0]:
                 best = (cost, perp, span)
         if best is None:
-            notes.append("{0} [{1}]: no usable quarter line - skipped"
-                         .format(room["name"], axis.upper()))
+            notes.append(
+                "{0} [{1}]: no usable quarter line - skipped".format(
+                    room["name"], axis.upper()
+                )
+            )
             continue
         _, perp, span = best
-        entries = dedupe_entries(span_entries(room, span, axis,
-                                              view_faces, notes))
+        entries = dedupe_entries(span_entries(room, span, axis, view_faces, notes))
         if len(entries) < 2:
             continue
         occupied[axis].append(perp)
-        items.append({"axis": axis, "pos": perp, "entries": entries,
-                      "run": None, "kind": "length",
-                      "label": "{0} [{1}] length".format(
-                          room["name"], axis.upper())})
+        items.append(
+            {
+                "axis": axis,
+                "pos": perp,
+                "entries": entries,
+                "run": None,
+                "kind": "length",
+                "label": "{0} [{1}] length".format(room["name"], axis.upper()),
+            }
+        )
     return items
 
 
 # ---- level 2: openings, measured inside the room ----
 
-def room_opening_items(room, view, view_faces, occupied, ro_mode, notes,
-                       frame):
+
+def room_opening_items(room, view, view_faces, occupied, ro_mode, notes, frame):
     """One string per room wall that hosts openings, running just inside
     the room parallel to that wall, spanning room corner to room corner so
     it never leaves the room.
@@ -867,8 +966,7 @@ def room_opening_items(room, view, view_faces, occupied, ro_mode, notes,
         if rec is None or length > rec["length"]:
             # the wall's LONGEST edge in this room decides where the string
             # sits - a short stub segment would put it in the wrong place
-            by_wall[key] = {"wall": wall, "axis": axis, "edge": edge,
-                            "length": length}
+            by_wall[key] = {"wall": wall, "axis": axis, "edge": edge, "length": length}
 
     for key in sorted(by_wall.keys()):
         rec = by_wall[key]
@@ -890,27 +988,25 @@ def room_opening_items(room, view, view_faces, occupied, ro_mode, notes,
         # scan just inside the wall to find the room's two PERPENDICULAR
         # boundary walls - those are the string's end anchors, and they
         # are what keeps it inside this room
-        span = dim_geometry.polygon_span_at(
-            poly, axis, edge_perp + inward * 0.5)
+        span = dim_geometry.polygon_span_at(poly, axis, edge_perp + inward * 0.5)
         if span is None:
             continue
         entries = span_entries(room, span, axis, view_faces, notes)
         lo_val, hi_val = span[0][0], span[1][0]
 
-        host_faces = dim_revit_io.collect_axis_faces(
-            [wall], axis, view, frame)
+        host_faces = dim_revit_io.collect_axis_faces([wall], axis, view, frame)
         if not host_faces:
-            notes.append("{0}: wall {1} has no view-visible axis faces - "
-                         "its openings are not dimensioned".format(
-                             room["name"], wall.Id))
+            notes.append(
+                "{0}: wall {1} has no view-visible axis faces - "
+                "its openings are not dimensioned".format(room["name"], wall.Id)
+            )
             continue
 
         found = 0
         outside = []
         for inst in opens:
             try:
-                center = frame.to_local(
-                    dim_revit_io.get_opening_point(inst))[idx]
+                center = frame.to_local(dim_revit_io.get_opening_point(inst))[idx]
             except ValueError as ex:
                 notes.append("Skipped opening: {0}".format(ex))
                 continue
@@ -924,12 +1020,12 @@ def room_opening_items(room, view, view_faces, occupied, ro_mode, notes,
             jambs = None
             if ro_mode:
                 width = dim_revit_io.get_opening_width(inst)
-                jambs = dim_revit_io.jamb_faces_from(
-                    host_faces, center, idx, width)
+                jambs = dim_revit_io.jamb_faces_from(host_faces, center, idx, width)
                 if jambs is None:
                     notes.append(
                         "Opening {0}: no view-visible jamb faces - "
-                        "centreline used".format(inst.Id))
+                        "centreline used".format(inst.Id)
+                    )
             if jambs is not None:
                 entries.append((jambs[0]["origin"][idx], "jamb", jambs[0]))
                 entries.append((jambs[1]["origin"][idx], "jamb", jambs[1]))
@@ -939,7 +1035,9 @@ def room_opening_items(room, view, view_faces, occupied, ro_mode, notes,
             notes.append(
                 "{0}: opening(s) {1} are in boundary wall {2} but outside "
                 "this room's extent along it - not dimensioned here".format(
-                    room["name"], ", ".join(outside[:5]), wall.Id))
+                    room["name"], ", ".join(outside[:5]), wall.Id
+                )
+            )
         if not found:
             continue
 
@@ -951,19 +1049,34 @@ def room_opening_items(room, view, view_faces, occupied, ro_mode, notes,
         # side, and never nudge back out through it
         half_thk = getattr(wall, "Width", 0.5) / 2.0
         perp_span = dim_geometry.polygon_span_at(
-            poly, "y" if axis == "x" else "x", (lo_val + hi_val) / 2.0)
-        bounds = ((perp_span[0][0], perp_span[1][0])
-                  if perp_span is not None else None)
-        pos = nudge(axis, edge_perp + inward * (half_thk + 0.75 * step),
-                    occupied, step, inward, bounds)
-        items.append({"axis": axis, "pos": pos, "entries": entries,
-                      "run": None, "kind": "openings",
-                      "label": "{0} openings, wall {1} [{2}]".format(
-                          room["name"], wall.Id, axis.upper())})
+            poly, "y" if axis == "x" else "x", (lo_val + hi_val) / 2.0
+        )
+        bounds = (perp_span[0][0], perp_span[1][0]) if perp_span is not None else None
+        pos = nudge(
+            axis,
+            edge_perp + inward * (half_thk + 0.75 * step),
+            occupied,
+            step,
+            inward,
+            bounds,
+        )
+        items.append(
+            {
+                "axis": axis,
+                "pos": pos,
+                "entries": entries,
+                "run": None,
+                "kind": "openings",
+                "label": "{0} openings, wall {1} [{2}]".format(
+                    room["name"], wall.Id, axis.upper()
+                ),
+            }
+        )
     return items
 
 
 # ---- level 3: fixtures, casework, columns - centre to nearest wall ----
+
 
 def object_items(room, obj, view_faces, occupied, step, notes, frame):
     """Dimension an object's CENTRE to the nearest bounding wall (user
@@ -1000,22 +1113,22 @@ def object_items(room, obj, view_faces, occupied, step, notes, frame):
     for axis in axes:
         idx = 0 if axis == "x" else 1
         _, (value, edge), inward = reach[axis]
-        wall_entry = edge_face_entry(room, edge, axis, value, inward,
-                                     view_faces, notes)
+        wall_entry = edge_face_entry(room, edge, axis, value, inward, view_faces, notes)
         if wall_entry is None:
             continue
-        center_ref = dim_revit_io.get_instance_center_reference(
-            inst, axis, frame)
+        center_ref = dim_revit_io.get_instance_center_reference(inst, axis, frame)
         if center_ref is None:
             notes.append(
                 "{0}: {1} {2} exposes no centre reference - not "
                 "dimensioned (its family has no Center (Left/Right) or "
                 "Center (Front/Back) reference plane)".format(
-                    room["name"], inst.Category.Name if inst.Category
-                    else "Object", inst.Id))
+                    room["name"],
+                    inst.Category.Name if inst.Category else "Object",
+                    inst.Id,
+                )
+            )
             continue
-        entries = dedupe_entries(
-            [wall_entry, (obj["pt"][idx], "fixture", inst)])
+        entries = dedupe_entries([wall_entry, (obj["pt"][idx], "fixture", inst)])
         if len(entries) < 2:
             continue
 
@@ -1034,10 +1147,18 @@ def object_items(room, obj, view_faces, occupied, step, notes, frame):
             bounds = (lo, hi)
         pos = nudge(axis, obj_perp, occupied, step, away, bounds)
 
-        items.append({"axis": axis, "pos": pos, "entries": entries,
-                      "run": None, "kind": "object",
-                      "label": "{0} object {1} [{2}]".format(
-                          room["name"], inst.Id, axis.upper())})
+        items.append(
+            {
+                "axis": axis,
+                "pos": pos,
+                "entries": entries,
+                "run": None,
+                "kind": "object",
+                "label": "{0} object {1} [{2}]".format(
+                    room["name"], inst.Id, axis.upper()
+                ),
+            }
+        )
     return items
 
 
@@ -1054,11 +1175,17 @@ def show_interior_dry_run(items, notes):
             turned = " — frame {0:.1f}°".format(frame.degrees())
         output.print_md(
             "### {0} — measures {1}, placed at {2}={3}{4}".format(
-                item["label"], item["axis"].upper(),
+                item["label"],
+                item["axis"].upper(),
                 "Y" if item["axis"] == "x" else "X",
-                format_length(item["pos"]), turned))
-        parts = ["{0} ({1})".format(format_length(v), KIND_LABEL[k])
-                 for v, k, _ in item["entries"]]
+                format_length(item["pos"]),
+                turned,
+            )
+        )
+        parts = [
+            "{0} ({1})".format(format_length(v), KIND_LABEL[k])
+            for v, k, _ in item["entries"]
+        ]
         output.print_md("- " + " | ".join(parts))
     if notes:
         output.print_md("### Notes")
@@ -1073,7 +1200,8 @@ def run_interior(view, fixtures, ro_mode, dry, measure_core, notes):
             "Interior mode is driven by Rooms, and this view has no "
             "placed rooms.\n\nPlace Room elements (with area) and run "
             "again.",
-            title="Dimension Strings — interior")
+            title="Dimension Strings — interior",
+        )
         return
 
     all_walls = dim_revit_io.get_basic_walls(doc, view)
@@ -1083,14 +1211,17 @@ def run_interior(view, fixtures, ro_mode, dry, measure_core, notes):
     # A room's frame comes from its boundary edges, length-weighted, so the
     # long walls decide and a short jog cannot tilt the room.
     for room in rooms:
-        edges = [(room["poly"][k], room["poly"][(k + 1) % len(room["poly"])])
-                 for k in range(len(room["poly"]))]
+        edges = [
+            (room["poly"][k], room["poly"][(k + 1) % len(room["poly"])])
+            for k in range(len(room["poly"]))
+        ]
         room["frame"] = dim_geometry.direction_frames(edges)[0]
         room["poly"] = [room["frame"].to_local(p) for p in room["poly"]]
 
     angles = sorted(set(round(r["frame"].degrees(), 1) for r in rooms))
-    notes.append("Room direction(s): {0}".format(
-        ", ".join("{0} deg".format(a) for a in angles)))
+    notes.append(
+        "Room direction(s): {0}".format(", ".join("{0} deg".format(a) for a in angles))
+    )
 
     # VIEW-AWARE faces per (axis, frame): Options.View makes these
     # references visible in the plan by construction. Model-dim_geometry
@@ -1105,7 +1236,8 @@ def run_interior(view, fixtures, ro_mode, dry, measure_core, notes):
             face_cache[key] = {}
             for axis in ("x", "y"):
                 face_cache[key][axis] = dim_revit_io.collect_axis_faces(
-                    all_walls, axis, view, frame)
+                    all_walls, axis, view, frame
+                )
         return face_cache[key]
 
     objects = dim_revit_io.get_room_objects(doc, view)
@@ -1133,37 +1265,33 @@ def run_interior(view, fixtures, ro_mode, dry, measure_core, notes):
         # obstructed by them and by the fixtures; object dims come last and
         # avoid both.
         opening_items = room_opening_items(
-            room, view, view_faces, occupied, ro_mode, notes, frame)
-        length_items = room_length_items(
-            room, view_faces, mine, occupied, notes)
+            room, view, view_faces, occupied, ro_mode, notes, frame
+        )
+        length_items = room_length_items(room, view_faces, mine, occupied, notes)
 
         object_dims = []
         for obj in mine:
-            got = object_items(room, obj, view_faces, occupied, step, notes,
-                               frame)
+            got = object_items(room, obj, view_faces, occupied, step, notes, frame)
             if got:
                 placed_objects += 1
             object_dims.extend(got)
 
         # one dimension per distinct measurement, across all three levels
         room_items = drop_redundant(
-            length_items + opening_items + object_dims, room["name"], notes)
+            length_items + opening_items + object_dims, room["name"], notes
+        )
         for item in room_items:
             item["frame"] = frame
 
-        counts["length"] += len([i for i in room_items
-                                 if i["kind"] == "length"])
-        counts["openings"] += len([i for i in room_items
-                                   if i["kind"] == "openings"])
-        counts["objects"] += len([i for i in room_items
-                                  if i["kind"] == "object"])
+        counts["length"] += len([i for i in room_items if i["kind"] == "length"])
+        counts["openings"] += len([i for i in room_items if i["kind"] == "openings"])
+        counts["objects"] += len([i for i in room_items if i["kind"] == "object"])
         items.extend(room_items)
 
     in_rooms = 0
     for obj in objects:
         for r in rooms:
-            if dim_geometry.point_in_polygon(
-                    r["frame"].to_local(obj["pt"]), r["poly"]):
+            if dim_geometry.point_in_polygon(r["frame"].to_local(obj["pt"]), r["poly"]):
                 in_rooms += 1
                 break
     notes.append(
@@ -1172,21 +1300,31 @@ def run_interior(view, fixtures, ro_mode, dry, measure_core, notes):
         "sit in rooms; {5} of them produced a dimension before redundant "
         "ones were dropped (objects sharing a position share a "
         "dimension).".format(
-            len(rooms), counts["length"], counts["openings"],
-            counts["objects"], in_rooms, placed_objects))
+            len(rooms),
+            counts["length"],
+            counts["openings"],
+            counts["objects"],
+            in_rooms,
+            placed_objects,
+        )
+    )
     notes.append(
         "Openings measured to: {0}.".format(
-            "the wall's cut faces (jambs)" if ro_mode else "centreline"))
+            "the wall's cut faces (jambs)" if ro_mode else "centreline"
+        )
+    )
     if fixtures:
         notes.append(
             "{0} selected element(s) ignored: interior mode dimensions "
             "every fixture/casework/column inside a Room automatically, "
-            "so selection is not used.".format(len(fixtures)))
+            "so selection is not used.".format(len(fixtures))
+        )
 
     if dry:
         if measure_core:
-            notes.append("Core mode: faces calibrated by measurement "
-                         "at placement time.")
+            notes.append(
+                "Core mode: faces calibrated by measurement at placement time."
+            )
         show_interior_dry_run(items, notes)
         return
 
@@ -1200,17 +1338,32 @@ def run_interior(view, fixtures, ro_mode, dry, measure_core, notes):
         for item in items:
             try:
                 refs, kept = resolve_entries(
-                    item["entries"], item["axis"],
-                    [], item["run"], notes,
-                    measure_core, view, core_cache,
-                    prefer_exterior=False, frame=item["frame"])
+                    item["entries"],
+                    item["axis"],
+                    [],
+                    item["run"],
+                    notes,
+                    measure_core,
+                    view,
+                    core_cache,
+                    prefer_exterior=False,
+                    frame=item["frame"],
+                )
                 if len(refs) < 2:
-                    notes.append("{0}: fewer than 2 references - "
-                                 "skipped".format(item["label"]))
+                    notes.append(
+                        "{0}: fewer than 2 references - skipped".format(item["label"])
+                    )
                     continue
                 dim = dim_revit_io.create_dimension_tier(
-                    doc, view, refs, item["axis"], (kept[0], kept[-1]),
-                    item["pos"], base_z, item["frame"])
+                    doc,
+                    view,
+                    refs,
+                    item["axis"],
+                    (kept[0], kept[-1]),
+                    item["pos"],
+                    base_z,
+                    item["frame"],
+                )
                 created.append((item["label"], dim.Id))
                 placed += 1
             except Exception as ex:
@@ -1220,15 +1373,17 @@ def run_interior(view, fixtures, ro_mode, dry, measure_core, notes):
     # Revit's commit-time failure resolution can DELETE dimensions it
     # considers invalid WITHOUT raising, so a run can report full success
     # and leave nothing behind. Verify survival explicitly.
-    vanished = [label for label, dim_id in created
-                if doc.GetElement(dim_id) is None]
+    vanished = [label for label, dim_id in created if doc.GetElement(dim_id) is None]
     if vanished:
         failed += len(vanished)
         placed -= len(vanished)
-        notes.insert(0, (
-            "REVIT SILENTLY DELETED {0} string(s) at commit (invalid "
-            "references): {1}".format(len(vanished),
-                                      ", ".join(vanished[:9]))))
+        notes.insert(
+            0,
+            (
+                "REVIT SILENTLY DELETED {0} string(s) at commit (invalid "
+                "references): {1}".format(len(vanished), ", ".join(vanished[:9]))
+            ),
+        )
 
     # A dimension can survive commit and still render in NO view, if its
     # references are not visible dim_geometry - the element exists, the owner
@@ -1242,35 +1397,43 @@ def run_interior(view, fixtures, ro_mode, dry, measure_core, notes):
         if dim is None:
             continue
         try:
-            shown = (dim.get_BoundingBox(
-                doc.GetElement(dim.OwnerViewId)) is not None)
+            shown = dim.get_BoundingBox(doc.GetElement(dim.OwnerViewId)) is not None
         except Exception:
             shown = True  # cannot tell - do not cry wolf
         if not shown:
             invisible.append("{0} (id {1})".format(label, dim_id))
     if invisible:
-        notes.insert(0, (
-            "{0} dimension(s) were created but render in NO view - their "
-            "references are not visible dim_geometry in this plan: {1}".format(
-                len(invisible), ", ".join(invisible[:9]))))
+        notes.insert(
+            0,
+            (
+                "{0} dimension(s) were created but render in NO view - their "
+                "references are not visible dim_geometry in this plan: {1}".format(
+                    len(invisible), ", ".join(invisible[:9])
+                )
+            ),
+        )
 
     if measure_core and core_cache:
         fell_back = [k for k in core_cache if not core_cache[k]]
-        notes.append("Core calibration: {0} wall(s) OK, {1} fell back "
-                     "to finish faces (ids: {2})".format(
-                         len(core_cache) - len(fell_back),
-                         len(fell_back),
-                         ", ".join(fell_back[:8]) or "none"))
+        notes.append(
+            "Core calibration: {0} wall(s) OK, {1} fell back "
+            "to finish faces (ids: {2})".format(
+                len(core_cache) - len(fell_back),
+                len(fell_back),
+                ", ".join(fell_back[:8]) or "none",
+            )
+        )
 
     summary = "Placed {0} of {1} interior dimension string(s).".format(
-        placed, len(items))
+        placed, len(items)
+    )
     if failed:
         # failures FIRST and verbatim - these lines are exactly what is
         # needed to diagnose a skipped string, don't bury them
-        failure_notes = [x for x in notes
-                         if "failed" in x or "skipped" in x.lower()]
-        summary += ("\n{0} string(s) failed/skipped:\n".format(failed)
-                    + "\n".join(failure_notes[:9]))
+        failure_notes = [x for x in notes if "failed" in x or "skipped" in x.lower()]
+        summary += "\n{0} string(s) failed/skipped:\n".format(failed) + "\n".join(
+            failure_notes[:9]
+        )
     if notes:
         output = script.get_output()
         output.print_md("### Interior placement notes")
@@ -1281,28 +1444,42 @@ def run_interior(view, fixtures, ro_mode, dry, measure_core, notes):
 
 # -------------------------------------------------------------- reports
 
-KIND_LABEL = {"wallpt": "wall", "open_c": "opening CL",
-              "open_side": "opening side", "cross": "partition CL",
-              "fixture": "fixture", "face": "wall face",
-              "jamb": "R.O. jamb", "vwall": "wall end"}
+KIND_LABEL = {
+    "wallpt": "wall",
+    "open_c": "opening CL",
+    "open_side": "opening side",
+    "cross": "partition CL",
+    "fixture": "fixture",
+    "face": "wall face",
+    "jamb": "R.O. jamb",
+    "vwall": "wall end",
+}
 
 
 def show_dry_run(runs, plans, mode, notes):
     output = script.get_output()
-    output.print_md("# Dimension strings — dry run ({0})".format(
-        "exterior" if mode == MODE_EXT else "interior"))
+    output.print_md(
+        "# Dimension strings — dry run ({0})".format(
+            "exterior" if mode == MODE_EXT else "interior"
+        )
+    )
     output.print_md("{0} run(s) | no model changes".format(len(runs)))
     for n in range(len(runs)):
         tiers = runs[n]["tiers"]
         title = runs[n].get("label") or "Run {0}".format(n + 1)
-        output.print_md("### {0} — axis {1}, {2} wall(s), "
-                        "{3} opening(s)".format(
-                            title, tiers["axis"].upper(),
-                            len(runs[n]["walls"]),
-                            len(runs[n]["openings"])))
+        output.print_md(
+            "### {0} — axis {1}, {2} wall(s), {3} opening(s)".format(
+                title,
+                tiers["axis"].upper(),
+                len(runs[n]["walls"]),
+                len(runs[n]["openings"]),
+            )
+        )
         for label, entries in plans[n]:
-            parts = ["{0} ({1})".format(format_length(v), KIND_LABEL[k])
-                     for v, k, _ in entries]
+            parts = [
+                "{0} ({1})".format(format_length(v), KIND_LABEL[k])
+                for v, k, _ in entries
+            ]
             output.print_md("- {0}: {1}".format(label, " | ".join(parts)))
     if notes:
         output.print_md("### Notes")
@@ -1311,6 +1488,7 @@ def show_dry_run(runs, plans, mode, notes):
 
 
 # ----------------------------------------------------------------- main
+
 
 def main():
     view = doc.ActiveView
@@ -1322,7 +1500,8 @@ def main():
         notes.append(
             "{0} selected wall(s) IGNORED - based below this view's "
             "level or not cut by its cut plane (the below-level walls "
-            "that previously hijacked witness lines).".format(skipped_sel))
+            "that previously hijacked witness lines).".format(skipped_sel)
+        )
 
     window = AutoDimWindow(len(walls), len(fixtures))
     window.show_dialog()
@@ -1346,7 +1525,9 @@ def main():
         notes.append(
             "Collection: {0} wall(s) visible, {1} basic, {2} on this "
             "level (below-level/underlay walls excluded).".format(
-                stats["visible"], stats["basic"], stats["this_level"]))
+                stats["visible"], stats["basic"], stats["this_level"]
+            )
+        )
         run_interior(view, fixtures, ro_mode, dry, measure_core, notes)
         return
 
@@ -1358,7 +1539,8 @@ def main():
             "Select the perimeter walls of one level and run again "
             "(the wall type's Interior/Exterior Function setting is "
             "deliberately ignored - it is unreliable in real models).",
-            title="Dimension Strings — exterior")
+            title="Dimension Strings — exterior",
+        )
         return
 
     # THE BUILDING'S DIRECTIONS. A dimension always measures ALONG its
@@ -1377,8 +1559,11 @@ def main():
         except ValueError:
             continue
     frames = dim_geometry.direction_frames(segments)
-    notes.append("Building direction(s): {0}".format(
-        ", ".join("{0:.1f} deg".format(f.degrees()) for f in frames)))
+    notes.append(
+        "Building direction(s): {0}".format(
+            ", ".join("{0:.1f} deg".format(f.degrees()) for f in frames)
+        )
+    )
 
     by_frame = {}
     frame_segments = {}
@@ -1395,7 +1580,8 @@ def main():
             "{0} wall(s) lie on none of the building's directions and were "
             "NOT dimensioned - a dimension can only measure along a line, "
             "and forcing them onto an axis they do not lie on would report "
-            "a shortened length.".format(skewed))
+            "a shortened length.".format(skewed)
+        )
 
     # Reference faces come from ALL walls in the view regardless of the
     # selection - with a partial selection, corner planes belong to
@@ -1407,26 +1593,31 @@ def main():
     work = []
     for idx in sorted(by_frame.keys()):
         frame = frames[idx]
-        f_segs = [(frame.to_local(a), frame.to_local(b))
-                  for a, b in frame_segments[idx]]
+        f_segs = [
+            (frame.to_local(a), frame.to_local(b)) for a, b in frame_segments[idx]
+        ]
         f_runs = build_runs(by_frame[idx], notes, frame)
         if not f_runs:
             continue
         f_runs = group_exterior_runs(f_runs, frame, f_segs, max_drag_ft)
         f_plans = [build_tier_plan(r, ro_mode, notes, frame) for r in f_runs]
-        keep = [n for n in range(len(f_runs))
-                if any(len(e) >= 2 for _, e in f_plans[n])]
+        keep = [
+            n for n in range(len(f_runs)) if any(len(e) >= 2 for _, e in f_plans[n])
+        ]
         f_runs = [f_runs[n] for n in keep]
         f_plans = [f_plans[n] for n in keep]
         for n in range(len(f_runs)):
             if len(frames) > 1:
                 f_runs[n]["label"] = "{0} @ {1:.1f} deg".format(
-                    f_runs[n].get("label") or "Run", frame.degrees())
+                    f_runs[n].get("label") or "Run", frame.degrees()
+                )
             work.append((frame, f_runs[n], f_plans[n]))
 
     if not work:
-        forms.alert("Could not build any dimensionable wall run.\n\n"
-                    + "\n".join(notes), title="Dimension Strings")
+        forms.alert(
+            "Could not build any dimensionable wall run.\n\n" + "\n".join(notes),
+            title="Dimension Strings",
+        )
         return
 
     runs = [w[1] for w in work]
@@ -1434,26 +1625,35 @@ def main():
 
     # say what the offset settings resolve to for THIS view, so the
     # dry run is checkable before anything is placed
-    resolved_first = (first_offset_in if first_offset_in is not None
-                      else dim_standards.first_offset_for_scale(view.Scale))
+    resolved_first = (
+        first_offset_in
+        if first_offset_in is not None
+        else dim_standards.first_offset_for_scale(view.Scale)
+    )
     notes.append(
         'Exterior offsets at 1:{0}: first string {1}" paper = {2:.2f} ft '
         '({3}), tier spacing {4}" paper = {5:.2f} ft.'.format(
-            view.Scale, resolved_first,
+            view.Scale,
+            resolved_first,
             resolved_first * dim_standards.INCH * view.Scale,
             "auto preset" if first_offset_in is None else "manual",
-            spacing_in, spacing_in * dim_standards.INCH * view.Scale))
+            spacing_in,
+            spacing_in * dim_standards.INCH * view.Scale,
+        )
+    )
     if max_drag_ft > 0.0:
         notes.append(
             "Side splitting: crossing rule plus manual distance cap of "
-            "{0:.1f} ft.".format(max_drag_ft))
+            "{0:.1f} ft.".format(max_drag_ft)
+        )
 
     if dry:
         if measure_core:
             notes.append(
                 "Core mode: core faces are calibrated by measurement "
                 "at placement time (temporary dimensions, auto-deleted) "
-                "- dry-run values are location-line based.")
+                "- dry-run values are location-line based."
+            )
         if face_audit:
             # resolve references WITHOUT placing anything, purely to record
             # which face won each contest. measure_core is forced off here:
@@ -1465,11 +1665,22 @@ def main():
                 key = (axis, round(frame.angle, 6))
                 if key not in audit_faces:
                     audit_faces[key] = dim_revit_io.collect_axis_faces(
-                        all_walls, axis, None, frame)
+                        all_walls, axis, None, frame
+                    )
                 for _, entries in plan:
-                    resolve_entries(entries, axis, audit_faces[key],
-                                    run, notes, False, view, None,
-                                    True, True, frame)
+                    resolve_entries(
+                        entries,
+                        axis,
+                        audit_faces[key],
+                        run,
+                        notes,
+                        False,
+                        view,
+                        None,
+                        True,
+                        True,
+                        frame,
+                    )
         show_dry_run(runs, plans, mode, notes)
         return
 
@@ -1484,23 +1695,38 @@ def main():
             face_cache = face_caches.setdefault(key, {})
             try:
                 placed += place_run(
-                    view, run, plan, all_walls, face_cache,
-                    [], notes, measure_core, core_cache, face_audit, frame,
-                    first_offset_in, spacing_in)
+                    view,
+                    run,
+                    plan,
+                    all_walls,
+                    face_cache,
+                    [],
+                    notes,
+                    measure_core,
+                    core_cache,
+                    face_audit,
+                    frame,
+                    first_offset_in,
+                    spacing_in,
+                )
             except Exception as ex:
                 failed += 1
                 notes.append("Run {0} failed: {1}".format(n + 1, ex))
 
     if measure_core and core_cache:
         fell_back = [k for k in core_cache if not core_cache[k]]
-        notes.append("Core calibration: {0} wall(s) OK, {1} fell back "
-                     "to finish faces (wall ids: {2})".format(
-                         len(core_cache) - len(fell_back),
-                         len(fell_back),
-                         ", ".join(fell_back[:8]) or "none"))
+        notes.append(
+            "Core calibration: {0} wall(s) OK, {1} fell back "
+            "to finish faces (wall ids: {2})".format(
+                len(core_cache) - len(fell_back),
+                len(fell_back),
+                ", ".join(fell_back[:8]) or "none",
+            )
+        )
 
     summary = "Placed {0} dimension string(s) across {1} run(s).".format(
-        placed, len(runs))
+        placed, len(runs)
+    )
     if failed:
         summary += "\n{0} run(s) failed.".format(failed)
     if notes:

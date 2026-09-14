@@ -109,6 +109,7 @@ _PALETTE_LIGHT = {
     "ControlOverlayPressed": (0x18, 0x00, 0x00, 0x00),
     "DisabledForeground": (0xFF, 0xA0, 0xA0, 0xA0),
     "SubtleForeground": (0xFF, 0x69, 0x69, 0x69),
+    "DangerForeground": (0xFF, 0xB4, 0x23, 0x18),
     "DangerBackground": (0xFF, 0xFB, 0xD5, 0xD5),
     "SuccessBackground": (0xFF, 0xD4, 0xEF, 0xD8),
     "Icon": (0xFF, 0x00, 0x00, 0x00),
@@ -131,6 +132,7 @@ _PALETTE_DARK = {
     "ControlOverlayPressed": (0x37, 0xFF, 0xFF, 0xFF),
     "DisabledForeground": (0xFF, 0x7F, 0x8C, 0x8D),
     "SubtleForeground": (0xFF, 0x95, 0xA5, 0xA6),
+    "DangerForeground": (0xFF, 0xFF, 0x6B, 0x61),
     "DangerBackground": (0xFF, 0x5C, 0x2E, 0x2E),
     "SuccessBackground": (0xFF, 0x2C, 0x4C, 0x33),
     "Icon": (0xFF, 0xEC, 0xF0, 0xF1),
@@ -254,7 +256,7 @@ def _walk_logical_tree(root):
                 pending.append(child)
 
 
-def _is_dark_theme():
+def is_dark_theme():
     """Return True if Revit's active UI theme is Dark.
 
     Always False on Revit <2024, which has no UITheme concept.
@@ -262,6 +264,7 @@ def _is_dark_theme():
     try:
         if HOST_APP.is_newer_than(2024, True):
             from Autodesk.Revit.UI import UITheme
+
             return revit.ui.get_current_theme() == UITheme.Dark
     except Exception:
         pass
@@ -444,7 +447,7 @@ class _WPFMixin(object):
             res["pyRevitButtonColor"]
         )
 
-        is_dark = _is_dark_theme()
+        is_dark = is_dark_theme()
         palette = _PALETTE_DARK if is_dark else _PALETTE_LIGHT
         for name, argb in palette.items():
             _set_color("pyRevit" + name, argb)
@@ -558,9 +561,7 @@ class _WPFMixin(object):
         except Exception:
             self._on_theme_changed = None
 
-    def _unsubscribe_theme_changed(
-        self, sender=None, args=None
-    ):  # pylint: disable=unused-argument
+    def _unsubscribe_theme_changed(self, sender=None, args=None):  # pylint: disable=unused-argument
         """Detach the ThemeChanged subscription set up by _subscribe_theme_changed."""
         handler = getattr(self, "_on_theme_changed", None)
         if handler is None:
@@ -882,7 +883,7 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         try:
             wih = Interop.WindowInteropHelper(self)
             hwnd = wih.EnsureHandle()
-            is_dark = _is_dark_theme()
+            is_dark = is_dark_theme()
             Common.DwmApi.SetImmersiveDarkMode(hwnd, is_dark)
             palette = _PALETTE_DARK if is_dark else _PALETTE_LIGHT
             caption_color = _colorref(palette["ChromeBackground"])
@@ -3732,7 +3733,7 @@ def alert(
         key = icon.lower()
         if key not in icon_map:
             mlogger.warning(
-                "Unknown icon %r; falling back to no icon. " "Valid icons: %s",
+                "Unknown icon %r; falling back to no icon. Valid icons: %s",
                 icon,
                 ", ".join(sorted(icon_map)),
             )
@@ -4040,7 +4041,7 @@ def pick_excel_file(save=False, title=None):
     if save:
         return save_file(file_ext="xlsx")
     return pick_file(
-        files_filter="Excel Workbook (*.xlsx)|*.xlsx|" "Excel 97-2003 Workbook|*.xls",
+        files_filter="Excel Workbook (*.xlsx)|*.xlsx|Excel 97-2003 Workbook|*.xls",
         title=title,
     )
 

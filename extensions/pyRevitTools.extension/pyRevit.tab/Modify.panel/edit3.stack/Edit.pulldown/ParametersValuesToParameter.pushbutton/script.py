@@ -3,6 +3,7 @@
 Script to copy parameter values from selected parameters to a target parameter
 for elements in a selected category using XAML UI.
 """
+
 import clr
 
 clr.AddReference("PresentationFramework")
@@ -22,9 +23,7 @@ def get_localized_texts():
         "English": {
             "window_title": "Params2Param - Copy Parameter Values",
             "select_category": "Select Category:",
-            "source_parameters": (
-                "Source Parameters (Select Multiple if needed):"
-            ),
+            "source_parameters": ("Source Parameters (Select Multiple if needed):"),
             "target_parameter": "Target Parameter (Select One):",
             "execute": "Execute",
             "cancel": "Cancel",
@@ -32,13 +31,10 @@ def get_localized_texts():
             "no_elements": "No elements found",
             "select_category_error": "Please select a category",
             "no_elements_error": "No elements found for selected category",
-            "select_source_error": (
-                "Please select at least one source parameter"
-            ),
+            "select_source_error": ("Please select at least one source parameter"),
             "select_target_error": "Please select a target parameter",
             "elements_updated": (
-                "{} elements updated with parameter values from [{}] to "
-                "'{}' parameter"
+                "{} elements updated with parameter values from [{}] to '{}' parameter"
             ),
             "elements_failed": "{} elements failed to update.",
         },
@@ -71,9 +67,7 @@ def get_localized_texts():
         "German": {
             "window_title": "Params2Param - Parameterwerte kopieren",
             "select_category": "Kategorie auswählen:",
-            "source_parameters": (
-                "Quellparameter (Mehrere auswählen falls nötig):"
-            ),
+            "source_parameters": ("Quellparameter (Mehrere auswählen falls nötig):"),
             "target_parameter": "Zielparameter (Einen auswählen):",
             "execute": "Ausführen",
             "cancel": "Abbrechen",
@@ -83,18 +77,14 @@ def get_localized_texts():
             "no_elements_error": (
                 "Keine Elemente für die ausgewählte Kategorie gefunden"
             ),
-            "select_source_error": (
-                "Bitte wählen Sie mindestens einen Quellparameter"
-            ),
+            "select_source_error": ("Bitte wählen Sie mindestens einen Quellparameter"),
             "select_target_error": "Bitte wählen Sie einen Zielparameter",
             "elements_updated": (
                 "{} Elemente mit Parameterwerten von [{}] zum Parameter "
                 "'{}' "
                 "aktualisiert"
             ),
-            "elements_failed": (
-                "{} Elemente konnten nicht aktualisiert werden."
-            ),
+            "elements_failed": ("{} Elemente konnten nicht aktualisiert werden."),
         },
         "Spanish": {
             "window_title": "Params2Param - Copiar Valores de Parámetros",
@@ -114,17 +104,13 @@ def get_localized_texts():
             "select_source_error": (
                 "Por favor seleccione al menos un parámetro fuente"
             ),
-            "select_target_error": (
-                "Por favor seleccione un parámetro objetivo"
-            ),
+            "select_target_error": ("Por favor seleccione un parámetro objetivo"),
             "elements_updated": (
                 "{} elementos actualizados con valores de parámetros de "
                 "[{}] "
                 "al parámetro '{}'"
             ),
-            "elements_failed": (
-                "{} elementos no pudieron ser actualizados."
-            ),
+            "elements_failed": ("{} elementos no pudieron ser actualizados."),
         },
         "Russian": {
             "window_title": "Params2Param - Копирование Значений Параметров",
@@ -144,9 +130,7 @@ def get_localized_texts():
             ),
             "select_target_error": "Пожалуйста, выберите целевой параметр",
             "elements_updated": (
-                "{} элементов обновлено значениями параметров из "
-                "[{}] "
-                "в параметр '{}'"
+                "{} элементов обновлено значениями параметров из [{}] в параметр '{}'"
             ),
             "elements_failed": "{} элементов не удалось обновить.",
         },
@@ -224,16 +208,16 @@ def get_parameter_value(element, parameter_name):
     return ""
 
 
-def create_parameter_value(element, parameter_names, separator="",
-                           space_option="beforeafter"):
+def create_parameter_value(
+    element, parameter_names, separator="", space_option="beforeafter"
+):
     """Create combined parameter value from multiple parameters with
     separators and spacing options."""
     if not parameter_names:
         return ""
 
     values = [
-        get_parameter_value(element, param_name)
-        for param_name in parameter_names
+        get_parameter_value(element, param_name) for param_name in parameter_names
     ]
 
     # Handle separator - if it contains spaces, split by spaces for cycling
@@ -249,7 +233,7 @@ def create_parameter_value(element, parameter_names, separator="",
         # Cycle through separators: use (i-1) because we start from values[1:]
         # but need to index separators from 0. This allows multiple separators
         # to be used in sequence (e.g., " - " and " | " will alternate)
-        sep = separators[(i-1) % len(separators)]
+        sep = separators[(i - 1) % len(separators)]
         # Apply spacing based on space_option
         if space_option == "none":
             combined += sep + val
@@ -267,6 +251,7 @@ def create_parameter_value(element, parameter_names, separator="",
 
 class Params2ParamWindow(forms.WPFWindow):
     """Main window class for the ParametersValuesToParameter tool."""
+
     def __init__(self):
         try:
             # find the path of ui.xaml
@@ -289,12 +274,8 @@ class Params2ParamWindow(forms.WPFWindow):
 
             # Get UI elements
             self.categoryComboBox = self.FindName("categoryComboBox")
-            self.sourceParametersListBox = self.FindName(
-                "sourceParametersListBox"
-            )
-            self.targetParametersListBox = self.FindName(
-                "targetParametersListBox"
-            )
+            self.sourceParametersListBox = self.FindName("sourceParametersListBox")
+            self.targetParametersListBox = self.FindName("targetParametersListBox")
             self.separatorTextBox = self.FindName("separatorTextBox")
 
             # Initialize radio buttons for spacing options
@@ -311,14 +292,11 @@ class Params2ParamWindow(forms.WPFWindow):
             self.set_localized_texts()
 
             # Set up event handlers
-            self.categoryComboBox.SelectionChanged += (
-                self.category_selection_changed
-            )
+            self.categoryComboBox.SelectionChanged += self.category_selection_changed
 
         except Exception as e:
             forms.alert(
-                "Error in window initialization: {}".format(str(e)),
-                exitscript=True
+                "Error in window initialization: {}".format(str(e)), exitscript=True
             )
 
     def set_localized_texts(self):
@@ -383,8 +361,7 @@ class Params2ParamWindow(forms.WPFWindow):
         )
         for name, built_in_cat in sorted_categories:
             category_item = type(
-                "CategoryItem", (),
-                {"Name": name, "BuiltInCategory": built_in_cat}
+                "CategoryItem", (), {"Name": name, "BuiltInCategory": built_in_cat}
             )()
             category_list.Add(category_item)
 
@@ -412,7 +389,7 @@ class Params2ParamWindow(forms.WPFWindow):
 
             # Get parameter names from all elements to ensure completeness
             all_param_names = set()
-            for elem in self.elements[:min(5, len(self.elements))]:  # Sample 5
+            for elem in self.elements[: min(5, len(self.elements))]:  # Sample 5
                 all_param_names.update(get_parameter_names(elem))
             self.parameter_names = sorted(all_param_names)
 
@@ -424,17 +401,20 @@ class Params2ParamWindow(forms.WPFWindow):
 
             # Populate target parameter list (only writable string parameters)
             target_param_names = set()
-            for elem in self.elements[:min(5, len(self.elements))]:  # sample 5
+            for elem in self.elements[: min(5, len(self.elements))]:  # sample 5
                 for p in elem.Parameters:
-                    if (p.Definition and p.StorageType == DB.StorageType.String and
-                            not p.IsReadOnly):
+                    if (
+                        p.Definition
+                        and p.StorageType == DB.StorageType.String
+                        and not p.IsReadOnly
+                    ):
                         target_param_names.add(p.Definition.Name)
 
             if self.targetParametersListBox:
                 target_param_list = List[str]()
                 target_param_list.AddRange(sorted(target_param_names))
                 self.targetParametersListBox.ItemsSource = target_param_list
-                
+
         except Exception as e:
             # Silently handle UI update errors to prevent crashes
             # This can happen when the window is being closed or UI is being updated
@@ -451,9 +431,7 @@ class Params2ParamWindow(forms.WPFWindow):
             forms.alert(self.texts["no_elements_error"], exitscript=True)
             return
 
-        selected_source_params = list(
-            self.sourceParametersListBox.SelectedItems
-        )
+        selected_source_params = list(self.sourceParametersListBox.SelectedItems)
         if not selected_source_params:
             forms.alert(self.texts["select_source_error"], exitscript=True)
             return
@@ -474,9 +452,7 @@ class Params2ParamWindow(forms.WPFWindow):
         updated_count = 0
         failed_count = 0
 
-        with revit.Transaction(
-            "Set parameters values in target parameter"
-        ):
+        with revit.Transaction("Set parameters values in target parameter"):
             for element in self.elements:
                 try:
                     # Get the target parameter
@@ -495,17 +471,16 @@ class Params2ParamWindow(forms.WPFWindow):
 
                     space_option = "beforeafter"  # default
                     try:
-                        if (self.spaceNoneRadio and
-                                self.spaceNoneRadio.IsChecked):
+                        if self.spaceNoneRadio and self.spaceNoneRadio.IsChecked:
                             space_option = "none"
-                        elif (self.spaceBeforeRadio and
-                                self.spaceBeforeRadio.IsChecked):
+                        elif self.spaceBeforeRadio and self.spaceBeforeRadio.IsChecked:
                             space_option = "before"
-                        elif (self.spaceAfterRadio and
-                                self.spaceAfterRadio.IsChecked):
+                        elif self.spaceAfterRadio and self.spaceAfterRadio.IsChecked:
                             space_option = "after"
-                        elif (self.spaceBeforeAfterRadio and
-                                self.spaceBeforeAfterRadio.IsChecked):
+                        elif (
+                            self.spaceBeforeAfterRadio
+                            and self.spaceBeforeAfterRadio.IsChecked
+                        ):
                             space_option = "beforeafter"
                     except (AttributeError, Exception):
                         # If radio buttons are not available, use default
@@ -537,23 +512,18 @@ class Params2ParamWindow(forms.WPFWindow):
 
                     updated_count += 1
 
-                except (AttributeError, ArgumentException,
-                        NullReferenceException):
+                except (AttributeError, ArgumentException, NullReferenceException):
                     # Handle common Revit API exceptions
                     failed_count += 1
                     continue
 
-        source_params_str = ", ".join(
-            str(p) for p in source_parameters
-        )
+        source_params_str = ", ".join(str(p) for p in source_parameters)
         message = self.texts["elements_updated"].format(
             updated_count, source_params_str, target_parameter
         )
 
         if failed_count > 0:
-            message += "\n\n" + self.texts["elements_failed"].format(
-                failed_count
-            )
+            message += "\n\n" + self.texts["elements_failed"].format(failed_count)
 
         forms.alert(message)
 
@@ -569,10 +539,7 @@ def main():
         window = Params2ParamWindow()
         window.show_dialog()
     except Exception as e:
-        forms.alert(
-            "Error initializing window: {}".format(str(e)),
-            exitscript=True
-        )
+        forms.alert("Error initializing window: {}".format(str(e)), exitscript=True)
 
 
 if __name__ == "__main__":

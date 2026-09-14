@@ -92,10 +92,8 @@ class ConfigSection(object):
         return self.__section_name
 
     def __repr__(self):
-        return (
-            "<ConfigSection object "
-            "at 0x{0:016x} "
-            "config section '{1}'>".format(id(self), self.__section_name)
+        return "<ConfigSection object at 0x{0:016x} config section '{1}'>".format(
+            id(self), self.__section_name
         )
 
     def __getattr__(self, param_name):

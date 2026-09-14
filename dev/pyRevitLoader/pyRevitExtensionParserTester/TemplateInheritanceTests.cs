@@ -70,13 +70,13 @@ namespace pyRevitExtensionParserTest
             TestContext.Out.WriteLine($"Tooltip: {testBundleButton.Tooltip}");
 
             Assert.That(testBundleButton.Tooltip, Is.Not.Null, "Tooltip should not be null");
-            Assert.That(testBundleButton.Tooltip, Does.Contain("Test pyRevit Bundle Tooltip"), 
+            Assert.That(testBundleButton.Tooltip, Does.Contain("Test pyRevit Bundle Tooltip"),
                 "Tooltip should contain the base text");
-            
+
             // The template_test should be substituted with the value from Debug.panel/bundle.yaml
-            Assert.That(testBundleButton.Tooltip, Does.Contain("Bundle liquid templating works"), 
+            Assert.That(testBundleButton.Tooltip, Does.Contain("Bundle liquid templating works"),
                 "Tooltip should contain substituted template_test value");
-            Assert.That(testBundleButton.Tooltip, Does.Not.Contain("{{template_test}}"), 
+            Assert.That(testBundleButton.Tooltip, Does.Not.Contain("{{template_test}}"),
                 "Tooltip should not contain unsubstituted template variable");
         }
 
@@ -139,13 +139,13 @@ namespace pyRevitExtensionParserTest
             // Check if extension-level bundle.yaml defines author
             var extensionBundlePath = Path.Combine(_extensionPath, "bundle.yaml");
             string? expectedAuthor = null;
-            
+
             if (File.Exists(extensionBundlePath))
             {
                 var extensionBundle = BundleParser.BundleYamlParser.Parse(extensionBundlePath);
                 expectedAuthor = extensionBundle.Author;
                 TestContext.Out.WriteLine($"Extension author: {expectedAuthor ?? "not defined"}");
-                
+
                 if (extensionBundle.Templates.ContainsKey("author"))
                 {
                     expectedAuthor = extensionBundle.Templates["author"];
@@ -238,7 +238,7 @@ namespace pyRevitExtensionParserTest
             TestContext.Out.WriteLine("=== Test pyRevit Bundle bundle.yaml ===");
             TestContext.Out.WriteLine($"Author: {bundle.Author ?? "null"}");
             TestContext.Out.WriteLine($"Hyperlink: {bundle.Hyperlink ?? "null"}");
-            
+
             Assert.That(bundle.Author, Is.Not.Null.And.Not.Empty,
                 "authors list should be parsed into author string");
             Assert.That(bundle.Author.Contains("John Doe"), Is.True,

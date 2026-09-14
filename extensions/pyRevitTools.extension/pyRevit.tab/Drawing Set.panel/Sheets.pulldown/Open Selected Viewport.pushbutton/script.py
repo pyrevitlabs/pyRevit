@@ -11,4 +11,4 @@ if len(selection) > 0 and isinstance(selection[0], DB.Viewport):
     view = revit.doc.GetElement(vpid)
     revit.uidoc.ActiveView = view
 else:
-    forms.alert('Select a Viewport first')
+    forms.alert("Select a Viewport first")

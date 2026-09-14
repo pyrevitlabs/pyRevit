@@ -1,5 +1,6 @@
 """Create section parallel to the plane of selected walls or planar element."""
-#pylint: disable=import-error,invalid-name,broad-except
+
+# pylint: disable=import-error,invalid-name,broad-except
 from pyrevit import revit, DB
 from pyrevit import script
 
@@ -54,9 +55,7 @@ def get_walls():
 
 
 def get_section_viewfamily():
-    return revit.doc.GetDefaultElementTypeId(
-        DB.ElementTypeGroup.ViewTypeSection
-        )
+    return revit.doc.GetDefaultElementTypeId(DB.ElementTypeGroup.ViewTypeSection)
 
 
 doc_section_type = get_section_viewfamily()

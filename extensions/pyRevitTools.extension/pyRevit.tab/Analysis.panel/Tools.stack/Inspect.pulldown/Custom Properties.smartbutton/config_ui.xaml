@@ -26,7 +26,7 @@
                    Text="{DynamicResource TbRestartHint}"
                    TextWrapping="Wrap"
                    FontSize="10"
-                   Foreground="#888888"
+                   Foreground="{DynamicResource pyRevitSubtleForegroundBrush}"
                    Margin="20,0,0,10"/>
 
         <CheckBox x:Name="worksharing_cb"
@@ -40,7 +40,7 @@
                    Text="{DynamicResource TbParamsHint}"
                    TextWrapping="Wrap"
                    FontSize="11"
-                   Foreground="#444444"
+                   Foreground="{DynamicResource pyRevitSubtleForegroundBrush}"
                    Margin="0,0,0,8"/>
 
         <TextBox x:Name="params_tb"
@@ -50,13 +50,13 @@
                  FontFamily="Consolas"
                  FontSize="11"
                  Padding="6"
-                 BorderBrush="#AAAAAA"/>
+                 BorderBrush="{DynamicResource pyRevitControlBorderBrush}"/>
 
         <TextBlock Grid.Row="5"
                    Text="{DynamicResource TbExamples}"
                    TextWrapping="Wrap"
                    FontSize="10"
-                   Foreground="#888888"
+                   Foreground="{DynamicResource pyRevitSubtleForegroundBrush}"
                    Margin="0,4,0,8"/>
 
         <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right">

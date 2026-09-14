@@ -333,8 +333,9 @@ def _update_extpkgs(ext_def_file, loaded_pkgs):
                 defined_exts_pkgs = extpkg_dict[PLUGIN_EXT_DEF_MANIFEST_NAME]
         except Exception as def_file_err:
             print(
-                "Can not parse plugin ext definition file: {} "
-                "| {}".format(ext_def_file, def_file_err)
+                "Can not parse plugin ext definition file: {} | {}".format(
+                    ext_def_file, def_file_err
+                )
             )
             return
 
@@ -396,7 +397,7 @@ def _remove_extpkg(extpkg, remove_dependencies=True):
             raise PyRevitPluginRemoveException("Can not find installed path.")
     else:
         raise PyRevitPluginRemoveException(
-            "Extension does not have url " "and can not be installed later."
+            "Extension does not have url and can not be installed later."
         )
 
     if remove_dependencies:
@@ -529,7 +530,7 @@ def install(extpkg, install_dir, install_dependencies=True):
         )
     except PyRevitPluginNoInstallLinkException:
         mlogger.error(
-            "Extension does not have an install link " "and can not be installed."
+            "Extension does not have an install link and can not be installed."
         )
 
 

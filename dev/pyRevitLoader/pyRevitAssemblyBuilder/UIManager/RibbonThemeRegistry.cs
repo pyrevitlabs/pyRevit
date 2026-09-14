@@ -1,21 +1,24 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using pyRevitLabs.NLog;
 
-namespace pyRevitAssemblyBuilder.UIManager.Icons
+namespace pyRevitAssemblyBuilder.UIManager
 {
     /// <summary>
-    /// Retains the icon update operation for each live ribbon control so theme changes can be
-    /// applied without rebuilding the pyRevit session.
+    /// Retains the theme update operation for each live ribbon element - icons on controls and
+    /// custom background brushes on panels - so theme changes are applied without rebuilding the
+    /// pyRevit session.
     /// </summary>
-    public static class RibbonIconRegistry
+    public static class RibbonThemeRegistry
     {
+        private static readonly Logger nlog = LogManager.GetCurrentClassLogger();
         private static readonly object SyncRoot = new object();
         private static readonly Dictionary<object, Action<bool>> RefreshActions =
             new Dictionary<object, Action<bool>>(ReferenceComparer.Instance);
 
         /// <summary>
-        /// Registers or replaces the theme-aware icon updater for a ribbon control.
+        /// Registers or replaces the theme-aware updater for a ribbon element.
         /// </summary>
         public static void Register(object item, Action<bool> refreshAction)
         {
@@ -29,7 +32,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
         }
 
         /// <summary>
-        /// Reapplies icons to all registered ribbon controls for the active theme.
+        /// Reapplies every registered updater for the active theme.
         /// </summary>
         public static void RefreshAll(bool isDarkTheme)
         {
@@ -46,9 +49,9 @@ namespace pyRevitAssemblyBuilder.UIManager.Icons
                 {
                     refreshAction(isDarkTheme);
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // A stale ribbon control must not prevent the remaining icons from updating.
+                    nlog.Debug(ex, "Failed to refresh a ribbon element for the active theme.");
                 }
             }
         }

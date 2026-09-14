@@ -62,8 +62,8 @@ namespace pyRevitAssemblyBuilder.UIManager
         }
 
         /// <summary>
-         /// Adds a single item using plain values instead of Revit API types.
-         /// </summary>
+        /// Adds a single item using plain values instead of Revit API types.
+        /// </summary>
         public RevitComboBoxMember AddItem(string name, string itemText, string groupName = null)
         {
             if (_comboBox == null || string.IsNullOrEmpty(name) || string.IsNullOrEmpty(itemText))

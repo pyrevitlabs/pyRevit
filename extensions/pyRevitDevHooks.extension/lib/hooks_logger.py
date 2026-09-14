@@ -3,8 +3,10 @@ import re
 import os
 import os.path as op
 import datetime
-HOOK_LOGS = op.join(os.environ.get('APPDATA', op.expandvars('%userprofile%')),
-                    'pyRevit', 'hooks.log')
+
+HOOK_LOGS = op.join(
+    os.environ.get("APPDATA", op.expandvars("%userprofile%")), "pyRevit", "hooks.log"
+)
 
 
 from pyrevit import revit
@@ -20,8 +22,8 @@ def _write_record(record_str):
             os.makedirs(op.dirname(HOOK_LOGS))
         except OSError:
             pass  # directory already exists - not an error
-        with open(HOOK_LOGS, 'a') as f:
-            f.write(record_str + '\n')
+        with open(HOOK_LOGS, "a") as f:
+            f.write(record_str + "\n")
     except (IOError, OSError):
         pass  # silently swallow write failures (e.g. permission denied)
 
@@ -30,14 +32,11 @@ def _get_hook_parts(hook_script):
     # finds the two parts of the hook script name
     # e.g command-before-exec[ID_INPLACE_COMPONENT].py
     # ('command-before-exec', 'ID_INPLACE_COMPONENT')
-    parts = re.findall(
-        r'([a-z -]+)\[?([A-Z _]+)?\]?\..+',
-        op.basename(hook_script)
-        )
+    parts = re.findall(r"([a-z -]+)\[?([A-Z _]+)?\]?\..+", op.basename(hook_script))
     if parts:
         return parts[0]
     else:
-        return '', ''
+        return "", ""
 
 
 def log_hook(hook_file, data, log_doc_access=False):
@@ -48,7 +47,7 @@ def log_hook(hook_file, data, log_doc_access=False):
 
     # write log record with data
     record_str = "{} [{}] ".format(_timestamp(), hook_name)
-    for k,v in data.items():
+    for k, v in data.items():
         record_str += '{}: "{}" '.format(k, v)
-    record_str += 'count: {}'.format(str(count))
+    record_str += "count: {}".format(str(count))
     _write_record(record_str)

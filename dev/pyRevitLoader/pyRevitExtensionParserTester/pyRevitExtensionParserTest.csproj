@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -31,6 +31,7 @@
     <Compile Include="LocalizationTests.cs" />
     <Compile Include="PanelButtonAndIconTests.cs" />
     <Compile Include="PanelBackgroundTests.cs" />
+    <Compile Include="PanelBackgroundResolverTests.cs" />
     <Compile Include="IconParsingTests.cs" />
     <Compile Include="IconFunctionalityTests.cs" />
     <Compile Include="BundleTooltipFixTest.cs" />
@@ -74,10 +75,13 @@
     <Compile Include="PyRevitRootResolutionTests.cs" />
     <Compile Include="ScriptLoggerServiceTests.cs" />
     <Compile Include="RevitThemeChangeMonitorTests.cs" />
-    <Compile Include="RibbonIconRegistryTests.cs" />
+    <Compile Include="RibbonThemeRegistryTests.cs" />
+    <Compile Include="RevitThemeDetectorTests.cs" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\pyRevitLabs\pyRevitLabs.Configurations\pyRevitLabs.Configurations.csproj" />
+    <ProjectReference Include="..\..\pyRevitLabs\pyRevitLabs.Configurations.Ini\pyRevitLabs.Configurations.Ini.csproj" />
     <ProjectReference Include="..\..\pyRevitLabs\pyRevitLabs.PyRevit\pyRevitLabs.PyRevit.csproj" />
     <ProjectReference Condition="'$(TargetFramework)' == 'net48'" Include="..\..\pyRevitLabs.PyRevit.Runtime\2024\pyRevitLabs.PyRevit.Runtime.2024.csproj" AdditionalProperties="Configuration=Debug IPY342" />
     <ProjectReference Condition="'$(TargetFramework)' == 'net8.0-windows'" Include="..\..\pyRevitLabs.PyRevit.Runtime\2026\pyRevitLabs.PyRevit.Runtime.2026.csproj" AdditionalProperties="Configuration=Debug IPY342" />

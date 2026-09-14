@@ -39,7 +39,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
-        
+
         /// <summary>
         /// Finds the pyRevit root directory by searching upward for marker files/directories.
         /// Falls back to the original 4-level traversal if markers are not found.
@@ -52,17 +52,17 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
             {
                 var markerPath = Path.Combine(currentDir, Constants.PYREVIT_MARKER_FILE);
                 var libDirPath = Path.Combine(currentDir, Constants.PYREVIT_LIB_DIR);
-                
+
                 if (File.Exists(markerPath) || Directory.Exists(libDirPath))
                     return currentDir;
-                
+
                 // Move to parent directory
                 var parentDir = Path.GetDirectoryName(currentDir);
                 if (parentDir == currentDir)
                     break; // Reached filesystem root
                 currentDir = parentDir;
             }
-            
+
             // Fallback to hardcoded traversal if markers not found
             var dllDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
             return Path.GetFullPath(Path.Combine(dllDir, "..", "..", "..", ".."));
@@ -128,10 +128,10 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 var searchPathsList = new List<string>();
                 if (!string.IsNullOrEmpty(scriptDir))
                     searchPathsList.Add(scriptDir);
-                
+
                 // Add lib/ folders from component hierarchy (extension -> tab -> panel -> button)
                 searchPathsList.AddRange(extension.CollectLibraryPaths(cmd));
-                
+
                 // Add binary paths from component hierarchy for module DLLs
                 searchPathsList.AddRange(extension.CollectBinaryPaths(cmd));
 
@@ -146,26 +146,26 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                     var sitePackagesDir = Path.Combine(_pyRevitRoot, Constants.SITE_PACKAGES_DIR);
                     searchPathsList.Add(sitePackagesDir);
                 }
-                
+
                 string searchPaths = string.Join(";", searchPathsList);
                 string tooltip = cmd.Tooltip ?? string.Empty;
                 string bundle = string.IsNullOrEmpty(scriptDir) ? string.Empty : Path.GetFileName(scriptDir);
                 string extName = extension.Name;
                 // Use the properly-built control ID from the component hierarchy
                 string ctrlId = cmd.ControlId ?? $"CustomCtrl_%CustomCtrl_%{extName}%{bundle}%{cmd.Name}";
-                
+
                 // Build engine configs based on bundle configuration or script type
                 string engineCfgs = CommandGenerationUtilities.BuildEngineConfigs(cmd, scriptPath, extension, rocketMode);
-                
+
                 // Get context from component - only use if explicitly defined
                 string context = cmd.Context ?? string.Empty;
                 bool hasExplicitContext = !string.IsNullOrEmpty(cmd.Context);
-                
+
                 string arguments = CommandGenerationUtilities.BuildCommandArguments(extension, cmd, revitVersion);
 
                 // Get config script path - use ConfigScriptPath if different from ScriptPath, otherwise use ScriptPath
                 string configScriptPath = cmd.ConfigScriptPath ?? scriptPath;
-                
+
                 // — Command class —
                 sb.AppendLine("[Regeneration(RegenerationOption.Manual)]");
                 sb.AppendLine("[Transaction(TransactionMode.Manual)]");
@@ -267,7 +267,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 
             return string.Empty;
         }
-        
+
         /// <summary>
         /// Builds the engine configuration JSON string based on script type and bundle settings
         /// </summary>
@@ -278,9 +278,9 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
         public static string BuildEngineConfigs(ParsedComponent cmd, string scriptPath, ParsedExtension extension = null, bool rocketMode = false)
         {
             var configs = new Dictionary<string, object>();
-            
+
             // Check if this is a Dynamo script
-            bool isDynamoScript = scriptPath != null && 
+            bool isDynamoScript = scriptPath != null &&
                                 scriptPath.EndsWith(".dyn", StringComparison.OrdinalIgnoreCase);
 
             // Determine clean engine setting:
@@ -307,26 +307,26 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 configs["type"] = cmd.Engine.Type;
                 configs["type_explicit"] = true;
             }
-            
+
             if (isDynamoScript)
             {
                 // Use EngineConfig.RequiresMainThread which already has the correct defaults.
                 bool requiresMainThread = cmd.Engine?.RequiresMainThread ?? false;
                 configs["automate"] = requiresMainThread;
-                
+
                 // Add Dynamo-specific settings
                 if (!string.IsNullOrEmpty(cmd.Engine?.DynamoPath))
                     configs["dynamo_path"] = cmd.Engine.DynamoPath;
-                    
+
                 // dynamo_path_exec defaults to true if not specified
                 configs["dynamo_path_exec"] = cmd.Engine?.DynamoPathExec ?? true;
-                
+
                 if (cmd.Engine?.DynamoPathCheckExisting != null)
                     configs["dynamo_path_check_existing"] = cmd.Engine.DynamoPathCheckExisting.Value;
-                    
+
                 if (cmd.Engine?.DynamoForceManualRun != null)
                     configs["dynamo_force_manual_run"] = cmd.Engine.DynamoForceManualRun.Value;
-                    
+
                 if (!string.IsNullOrEmpty(cmd.Engine?.DynamoModelNodesInfo))
                     configs["dynamo_model_nodes_info"] = cmd.Engine.DynamoModelNodesInfo;
             }
@@ -335,12 +335,12 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 // For non-Dynamo scripts (Python, C#, VB, Ruby, etc.)
                 configs["full_frame"] = cmd.Engine?.FullFrame ?? false;
                 configs["persistent"] = cmd.Engine?.Persistent ?? false;
-                
+
                 // Include mainthread setting if specified (for Python scripts that need main thread)
                 if (cmd.Engine?.MainThread != null)
                     configs["mainthread"] = cmd.Engine.MainThread.Value;
             }
-            
+
             // Build JSON string manually to ensure proper formatting
             var jsonParts = new List<string>();
             foreach (var kvp in configs)
@@ -352,7 +352,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 else
                     jsonParts.Add($"\"{kvp.Key}\":{kvp.Value}");
             }
-            
+
             return "{" + string.Join(",", jsonParts) + "}";
         }
 
@@ -393,7 +393,14 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 
             var searchPaths = new List<string>();
             if (extension != null)
+            {
                 searchPaths.AddRange(extension.CollectBinaryPaths(component));
+                foreach (var libPath in extension.CollectLibraryPaths(component))
+                {
+                    if (!searchPaths.Contains(libPath))
+                        searchPaths.Add(libPath);
+                }
+            }
             else if (!string.IsNullOrEmpty(component.Directory))
                 searchPaths.Add(component.Directory);
 
