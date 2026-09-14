@@ -802,7 +802,6 @@ class SettingsWindow(forms.WPFWindow):
         # current project tab style
         prj_tabstyle = self.project_tabstyle_cb.SelectedItem
         if prj_tabstyle:
-
             # reset all
             for tab_ctrl in prj_tab_ctrls:
                 tab_ctrl.Style = self.Resources["revitTab"]
@@ -817,7 +816,6 @@ class SettingsWindow(forms.WPFWindow):
         # current project tab style
         family_tabstyle = self.family_tabstyle_cb.SelectedItem
         if family_tabstyle:
-
             # reset all
             for tab_ctrl in family_tab_ctrls:
                 tab_ctrl.Style = self.Resources["revitTab"]
@@ -878,7 +876,9 @@ class SettingsWindow(forms.WPFWindow):
             return False
         if metadata_setting_changed:
             return forms.alert(
-                self.get_locale_string("CoreSettings.Loader.ReadScriptMetadata.Changed"),
+                self.get_locale_string(
+                    "CoreSettings.Loader.ReadScriptMetadata.Changed"
+                ),
                 yes=True,
                 no=True,
             )

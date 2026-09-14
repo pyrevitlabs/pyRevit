@@ -18,7 +18,7 @@ using pyRevitLabs.NLog;
  *  - Shipped extensions are the ones shipped as part of a clone (builtin) and specific to a clone
  *  - Installed extensions are installed globally in paths. All clones will see these extension
  *  - Registered extensions are extension metadata registered in json files. They ar used to extract info about an extension and find the install source
- */ 
+ */
 
 namespace pyRevitLabs.PyRevit {
     public static class PyRevitExtensions {
@@ -56,7 +56,7 @@ namespace pyRevitLabs.PyRevit {
             foreach (PyRevitExtension ext in FindExtensions(searchPath))
                 if (CompareExtensionNames(ext.Name, searchPattern))
                     return ext;
-            
+
             throw new PyRevitException(string.Format("Can not find extension matching \"{0}\"", searchPattern));
         }
 

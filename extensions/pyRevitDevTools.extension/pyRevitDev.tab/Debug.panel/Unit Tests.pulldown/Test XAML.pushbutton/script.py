@@ -1,6 +1,6 @@
 """Test loading XAML in IronPython."""
-#pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
-import urllib2
+
+# pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 import json
 from time import sleep
 import sys
@@ -117,54 +117,35 @@ class ViewModel(forms.Reactive):
         self._title = "Title"
 
         self.employee_data = [
-            EmployeeInfo(
-                name="Ehsan",
-                job="Architect",
-                supports=[
-                    "UX",
-                    "CLI",
-                    "Core"
-                ]),
+            EmployeeInfo(name="Ehsan", job="Architect", supports=["UX", "CLI", "Core"]),
             EmployeeInfo(
                 name="Gui",
                 job="Programmer",
                 supports=[
                     "CLI",
-                ]),
-            EmployeeInfo(
-                name="Alex",
-                job="Designer",
-                supports=[
-                    "Core"
-                ]),
-            EmployeeInfo(
-                name="Jeremy",
-                job="Designer",
-                supports=[
-                    "Core"
-                ]),
+                ],
+            ),
+            EmployeeInfo(name="Alex", job="Designer", supports=["Core"]),
+            EmployeeInfo(name="Jeremy", job="Designer", supports=["Core"]),
             EmployeeInfo(
                 name="Petr",
                 job="Manager",
                 supports=[
                     "Core",
                     "CLI",
-                ]),
+                ],
+            ),
         ]
 
         self.nested_data = NestedObject(text="Text in Data Object")
-        self.data = \
-            ButtonData(
-                title="Title in Data Object",
-                nested=self.nested_data
-                )
+        self.data = ButtonData(title="Title in Data Object", nested=self.nested_data)
 
-        self.server = Server(r'https://status.epicgames.com/api/v2/status.json')
+        self.server = Server(r"https://status.epicgames.com/api/v2/status.json")
 
         self.tags = [
-            Tag('Tag 1', [Mod('IFC', '#fc8f1b'), Mod('IFF', '#98af13')]),
-            Tag('Tag 2', [Mod('As-Built', '#a51c9a')]),
-            Tag('Tag 3', []),
+            Tag("Tag 1", [Mod("IFC", "#fc8f1b"), Mod("IFF", "#98af13")]),
+            Tag("Tag 2", [Mod("As-Built", "#a51c9a")]),
+            Tag("Tag 3", []),
         ]
 
     @forms.reactive
@@ -197,7 +178,7 @@ class UI(forms.WPFWindow, forms.Reactive):
         self.button.DataContext = self.vm.data
         self.statuslight.DataContext = self.vm.server
 
-        self.set_image_source(self.testimage, 'test.png')
+        self.set_image_source(self.testimage, "test.png")
         self.taglist.ItemsSource = self.vm.tags
 
     def set_status(self, status):
@@ -205,7 +186,7 @@ class UI(forms.WPFWindow, forms.Reactive):
 
     def check_status(self):
         status = json.loads(coreutils.read_url(self.vm.server.url))
-        sleep(4)    # fake slow io
+        sleep(4)  # fake slow io
         self.dispatch(self.set_status, status)
 
     def check_fortnite_status(self, sender, args):
@@ -223,13 +204,13 @@ class UI(forms.WPFWindow, forms.Reactive):
     def delete_stuff(self, pbar):
         try:
             walls = revit.query.get_elements_by_class(DB.Wall)
-            with revit.Transaction('Delete Walls'):
+            with revit.Transaction("Delete Walls"):
                 for idx, wall in enumerate(walls):
                     revit.delete.delete_elements(wall)
                     pbar.update_progress(idx + 1, len(walls))
                     sleep(0.5)
         except Exception as derr:
-            logger.dev_log('delete_stuff', str(derr))
+            logger.dev_log("delete_stuff", str(derr))
 
     def do_revit_work(self, sender, args):
         # self.dispatch(self.delete_stuff)
@@ -239,6 +220,6 @@ class UI(forms.WPFWindow, forms.Reactive):
 
 
 # init ui
-ui = script.load_ui(UI(), 'ui.xaml')
+ui = script.load_ui(UI(), "ui.xaml")
 # show modal or nonmodal
 ui.show_dialog()

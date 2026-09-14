@@ -1,0 +1,11 @@
+title:
+  en_us: Documentation
+  ko: 문서
+  fr_fr: Documentation
+  ru: Документация
+  chinese_s: 文档
+  es_es: Documentación
+  de_de: Dokumentation
+  pt_br: Documentação
+layout:
+  - Automatic Dimensions

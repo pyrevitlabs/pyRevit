@@ -1,6 +1,6 @@
 #define MyAppName "pyRevit CLI"
 #define MyAppUUID "9557b432-cf79-4ece-91cf-b8f996c88b47"
-#define MyAppVersion "6.5.3.26176"
+#define MyAppVersion "7.0.0.26237"
 #define MyAppPublisher "pyRevitLabs"
 #define MyAppURL "pyrevitlabs.io"
 #define MyAppExeName "pyrevit.exe"
@@ -66,6 +66,8 @@ Filename: "{app}\bin\pyrevit.exe"; RunOnceId: "DetachClones"; Parameters: "detac
 [Code]
 function InitializeSetup: Boolean;
 begin
+  // WebView2 Runtime for the output window renderer
+  Dependency_AddWebView2;
   Dependency_AddDotNet80;
   Dependency_AddDotNet80Desktop;
   Result := True;

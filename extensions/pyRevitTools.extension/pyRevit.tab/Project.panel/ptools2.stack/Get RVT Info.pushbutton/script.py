@@ -1,20 +1,27 @@
 """Get information from a RVT file."""
-#pylint: disable=E0401,C0103
+
+# pylint: disable=E0401,C0103
 from pyrevit import forms
 from pyrevit.revit import files
 from pyrevit import DB
 
-rvt_file = forms.pick_file(files_filter='Revit Files |*.rvt;*.rte;*.rfa|'
-                                        'Revit Model |*.rvt|'
-                                        'Revit Template |*.rte|'
-                                        'Revit Family |*.rfa')
+rvt_file = forms.pick_file(
+    files_filter="Revit Files |*.rvt;*.rte;*.rfa|"
+    "Revit Model |*.rvt|"
+    "Revit Template |*.rte|"
+    "Revit Family |*.rfa"
+)
 if rvt_file:
     mfile = files.get_file_info(rvt_file)
     bfi = DB.BasicFileInfo.Extract(rvt_file)
     if mfile.RevitProduct is not None:
-        print("Created in: {0} ({1}({2}))".format(mfile.RevitProduct,
-                                              mfile.RevitProduct.BuildNumber,
-                                              mfile.RevitProduct.BuildTarget))
+        print(
+            "Created in: {0} ({1}({2}))".format(
+                mfile.RevitProduct,
+                mfile.RevitProduct.BuildNumber,
+                mfile.RevitProduct.BuildTarget,
+            )
+        )
     else:
         print("Created in: {0}".format(bfi.Format))
     print("Workshared: {0}".format("Yes" if mfile.IsWorkshared else "No"))
@@ -26,8 +33,10 @@ if rvt_file:
     print("Document Increment: {0}".format(mfile.DocumentIncrement))
 
     print("Project Information (Properties):")
-    for k, v in sorted(dict(mfile.ProjectInfoProperties).items()):
-        print('\t{} = {}'.format(k, v))
+    for k, v in sorted(
+        dict(mfile.ProjectInfoProperties).items(), key=lambda kv: str(kv[0])
+    ):
+        print("\t{} = {}".format(k, v))
 
     if mfile.IsFamily:
         print("Model is a Revit Family!")

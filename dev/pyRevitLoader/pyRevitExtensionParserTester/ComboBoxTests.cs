@@ -35,10 +35,10 @@ members:
             Assert.That(bundle, Is.Not.Null);
             Assert.That(bundle.Members, Is.Not.Null);
             Assert.That(bundle.Members.Count, Is.EqualTo(2));
-            
+
             Assert.That(bundle.Members[0].Id, Is.EqualTo("one"));
             Assert.That(bundle.Members[0].Text, Is.EqualTo("One"));
-            
+
             Assert.That(bundle.Members[1].Id, Is.EqualTo("two"));
             Assert.That(bundle.Members[1].Text, Is.EqualTo("Two"));
         }
@@ -119,7 +119,7 @@ members:
         {
             // This test verifies that .combobox directories are parsed correctly
             // by the ExtensionParser
-            
+
             // The type mapping should convert ".combobox" to CommandComponentType.ComboBox
             var type = ExtensionParser.CommandComponentTypeExtensions.FromExtension(".combobox");
             Assert.That(type, Is.EqualTo(ExtensionParser.CommandComponentType.ComboBox));
@@ -154,7 +154,7 @@ members:
             // Assert
             Assert.That(bundle, Is.Not.Null);
             Assert.That(bundle.Members.Count, Is.EqualTo(1));
-            
+
             var member = bundle.Members[0];
             Assert.That(member.Id, Is.EqualTo("full"));
             Assert.That(member.Text, Is.EqualTo("Full Option"));

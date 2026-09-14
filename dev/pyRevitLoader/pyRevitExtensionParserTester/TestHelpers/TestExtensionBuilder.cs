@@ -56,7 +56,7 @@ namespace pyRevitExtensionParserTest.TestHelpers
         /// Creates a minimal extension with a single tab, panel, and push button.
         /// </summary>
         public static string CreateMinimalExtension(
-            string basePath, 
+            string basePath,
             string extensionName,
             string tabName = "TestTab",
             string panelName = "TestPanel",
@@ -68,7 +68,7 @@ namespace pyRevitExtensionParserTest.TestHelpers
                 .AddTab(tabName)
                 .AddPanel(panelName)
                 .AddPushButton(buttonName, scriptContent);
-            
+
             return builder.ExtensionPath;
         }
 
@@ -76,20 +76,20 @@ namespace pyRevitExtensionParserTest.TestHelpers
         /// Creates a push button in the specified directory.
         /// </summary>
         public static string CreatePushButton(
-            string parentDir, 
-            string buttonName, 
+            string parentDir,
+            string buttonName,
             string scriptContent = "pass",
             string? bundleYaml = null)
         {
             var buttonDir = Path.Combine(parentDir, $"{buttonName}.pushbutton");
             Directory.CreateDirectory(buttonDir);
             File.WriteAllText(Path.Combine(buttonDir, "script.py"), scriptContent);
-            
+
             if (!string.IsNullOrEmpty(bundleYaml))
             {
                 File.WriteAllText(Path.Combine(buttonDir, "bundle.yaml"), bundleYaml);
             }
-            
+
             return buttonDir;
         }
 
@@ -103,12 +103,12 @@ namespace pyRevitExtensionParserTest.TestHelpers
         {
             var pulldownDir = Path.Combine(parentDir, $"{pulldownName}.pulldown");
             Directory.CreateDirectory(pulldownDir);
-            
+
             if (!string.IsNullOrEmpty(bundleYaml))
             {
                 File.WriteAllText(Path.Combine(pulldownDir, "bundle.yaml"), bundleYaml);
             }
-            
+
             return pulldownDir;
         }
 
@@ -352,7 +352,7 @@ namespace pyRevitExtensionParserTest.TestHelpers
 
             // === Panel One: Localization Tests ===
             var panelOne = tabBuilder.AddPanel("LocalizationPanel");
-            
+
             // Button with full localization (replaces PanelOneButton1)
             panelOne.AddPushButton("LocalizedButton", "print('localized')", @"title:
   fr_fr: TEST TITLE 1 FR
@@ -387,7 +387,7 @@ tooltip:
 title:
   en_us: Test Pulldown
 author: Test Author");
-            
+
             // Add child buttons to pulldown
             pulldown.AddPushButton("SubButton1", "print('sub1')", @"title:
   en_us: Sub Button One
@@ -451,7 +451,7 @@ context: selection");
             var panelThree = tabBuilder.AddPanel("StackPanel");
             var stackPath = Path.Combine(panelThree.PanelPath, "test_stack.stack");
             Directory.CreateDirectory(stackPath);
-            
+
             TestExtensionBuilder.CreatePushButton(stackPath, "StackButton1", "print('stack1')");
             TestExtensionBuilder.CreatePushButton(stackPath, "StackButton2", "print('stack2')");
 
@@ -466,12 +466,12 @@ context: selection");
             var buttonDir = Path.Combine(parentDir, $"{buttonName}.panelbutton");
             Directory.CreateDirectory(buttonDir);
             File.WriteAllText(Path.Combine(buttonDir, "script.py"), scriptContent);
-            
+
             if (!string.IsNullOrEmpty(bundleYaml))
             {
                 File.WriteAllText(Path.Combine(buttonDir, "bundle.yaml"), bundleYaml);
             }
-            
+
             return buttonDir;
         }
 
@@ -519,7 +519,7 @@ context: selection");
             builder.Create();
 
             var tabBuilder = builder.AddTab("SeparatorTab");
-            
+
             // Panel with separator in layout
             var panelWithSeparator = tabBuilder.AddPanel("PanelWithSeparator");
             panelWithSeparator.WithBundleYaml(@"layout:

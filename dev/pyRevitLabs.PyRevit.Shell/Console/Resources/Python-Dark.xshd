@@ -1,0 +1,109 @@
+<?xml version="1.0"?>
+<SyntaxDefinition name="Python-Dark" extensions=".py"
+                  xmlns="http://icsharpcode.net/sharpdevelop/syntaxdefinition/2008">
+
+  <Color name="Comment" foreground="#7EC699" />
+  <Color name="String" foreground="#D7BA7D" />
+  <Color name="Char" foreground="#D7BA7D" />
+  <Color name="Digits" foreground="#B5CEA8" />
+  <Color name="Prompt" foreground="#9CDCFE" fontWeight="bold" />
+  <Color name="Keywords" foreground="#569CD6" fontWeight="bold" />
+  <Color name="ControlFlow" foreground="#C586C0" fontWeight="bold" />
+  <Color name="ClassName" foreground="#4EC9B0" fontWeight="bold" />
+  <Color name="FunctionDef" foreground="#DCDCAA" fontWeight="bold" />
+  <Color name="Exception" foreground="#F48771" fontWeight="bold" />
+  <Color name="MethodCall" foreground="#DCDCAA" fontWeight="bold" />
+
+  <RuleSet ignoreCase="false">
+
+    <Span color="Comment" multiline="true">
+      <Begin>"""</Begin>
+      <End>"""</End>
+    </Span>
+
+    <Span color="Comment" multiline="true">
+      <Begin>'''</Begin>
+      <End>'''</End>
+    </Span>
+
+    <Span color="Comment">
+      <Begin>\#</Begin>
+    </Span>
+
+    <Span color="String">
+      <Begin>"</Begin>
+      <End>"</End>
+      <RuleSet>
+        <Span begin="\\" end="." />
+      </RuleSet>
+    </Span>
+
+    <Span color="Char">
+      <Begin>'</Begin>
+      <End>'</End>
+      <RuleSet>
+        <Span begin="\\" end="." />
+      </RuleSet>
+    </Span>
+
+    <Keywords color="Prompt">
+      <Word>&gt;&gt;&gt;</Word>
+      <Word>...</Word>
+    </Keywords>
+
+    <Keywords color="Keywords">
+      <Word>and</Word>
+      <Word>as</Word>
+      <Word>assert</Word>
+      <Word>del</Word>
+      <Word>exec</Word>
+      <Word>global</Word>
+      <Word>in</Word>
+      <Word>is</Word>
+      <Word>lambda</Word>
+      <Word>not</Word>
+      <Word>or</Word>
+      <Word>pass</Word>
+      <Word>print</Word>
+      <Word>with</Word>
+    </Keywords>
+
+    <Keywords color="ControlFlow">
+      <Word>break</Word>
+      <Word>continue</Word>
+      <Word>elif</Word>
+      <Word>else</Word>
+      <Word>for</Word>
+      <Word>if</Word>
+      <Word>return</Word>
+      <Word>while</Word>
+      <Word>yield</Word>
+      <Word>import</Word>
+      <Word>from</Word>
+    </Keywords>
+
+    <Keywords color="ClassName">
+      <Word>class</Word>
+    </Keywords>
+
+    <Keywords color="FunctionDef">
+      <Word>def</Word>
+    </Keywords>
+
+    <Keywords color="Exception">
+      <Word>except</Word>
+      <Word>finally</Word>
+      <Word>raise</Word>
+      <Word>try</Word>
+    </Keywords>
+
+    <Rule color="MethodCall">
+      \b[\w]+(?=\s*\()
+    </Rule>
+
+    <Rule color="Digits">
+      \b0[xX][0-9a-fA-F]+|\b(\d+(\.\d+)?|\.\d+)([eE][+-]?\d+)?[jJ]?\b
+    </Rule>
+
+  </RuleSet>
+</SyntaxDefinition>

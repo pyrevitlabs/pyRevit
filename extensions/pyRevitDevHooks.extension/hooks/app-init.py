@@ -3,8 +3,9 @@
 
 import os.path as op
 import datetime
-USER_DESKTOP = op.expandvars('%userprofile%\\desktop')
-HOOK_LOGS = op.join(USER_DESKTOP, 'hooks.log')
+
+USER_DESKTOP = op.expandvars("%userprofile%\\desktop")
+HOOK_LOGS = op.join(USER_DESKTOP, "hooks.log")
 
 
 def _timestamp():
@@ -12,8 +13,8 @@ def _timestamp():
 
 
 def _write_record(record_str):
-    with open(HOOK_LOGS, 'a') as f:
-        f.write(record_str + '\n')
+    with open(HOOK_LOGS, "a") as f:
+        f.write(record_str + "\n")
 
 
 def log_hook():
@@ -25,4 +26,4 @@ def log_hook():
 
 log_hook()
 
-print('app-init.py hook running')
+print("app-init.py hook running")

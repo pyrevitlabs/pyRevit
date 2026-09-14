@@ -1,4 +1,5 @@
 """Hooks management."""
+
 from pyrevit import HOST_APP
 from pyrevit.coreutils import envvars
 from pyrevit.runtime.types import EventHooks
@@ -6,7 +7,7 @@ from pyrevit.runtime.types import EventHooks
 from pyrevit.loader import sessioninfo
 
 
-#pylint: disable=W0703,C0302,C0103
+# pylint: disable=W0703,C0302,C0103
 
 
 def get_hooks_handler():
@@ -30,7 +31,9 @@ def set_hooks_handler(handler):
 def get_event_hooks():
     """Get all the event hooks."""
     hooks_handler = get_hooks_handler()
-    return hooks_handler.GetAllEventHooks()
+    if hooks_handler:
+        return hooks_handler.GetAllEventHooks()
+    return []
 
 
 def unregister_all_hooks():

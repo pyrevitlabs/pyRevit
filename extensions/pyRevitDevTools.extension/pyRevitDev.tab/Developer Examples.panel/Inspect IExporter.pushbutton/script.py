@@ -1,7 +1,8 @@
 """tooltip."""
-#pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
-#pylint: disable=missing-class-docstring,missing-function-docstring
-#pylint: disable=unused-argument
+
+# pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
+# pylint: disable=missing-class-docstring,missing-function-docstring
+# pylint: disable=unused-argument
 from pyrevit.framework import List
 from pyrevit import revit, DB
 from pyrevit import script
@@ -19,26 +20,29 @@ def log(msg):
 
     if msg.startswith("+ "):
         depth += 1
-        print("\t"*depth + msg)
+        print("\t" * depth + msg)
         return
 
     if msg.startswith("- "):
-        print("\t"*depth + msg)
+        print("\t" * depth + msg)
         depth -= 1
         return
 
-    print("\t"*depth + "| " + msg)
+    print("\t" * depth + "| " + msg)
 
 
 def log_element(doc, eid):
     el = doc.GetElement(eid)
     get_elementid_value = get_elementid_value_func()
-    log("id={} name={} type={} category={}".format(
-        get_elementid_value(eid),
-        revit.query.get_name(el),
-        type(el),
-        el.Category.Name if el.Category else "?"
-        ))
+    log(
+        "id={} name={} type={} category={}".format(
+            get_elementid_value(eid),
+            revit.query.get_name(el),
+            type(el),
+            el.Category.Name if el.Category else "?",
+        )
+    )
+
 
 def log_node(doc, node):
     if isinstance(node, DB.RenderNode):

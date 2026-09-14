@@ -39,9 +39,15 @@ if results:
     selected_items = {item.item: item.state for item in results}
 
     my_config.set_option("set_workset", selected_items.get("Workset", False))
-    my_config.set_option("set_workset_checkout", selected_items.get("Workset Checkout", False))
-    my_config.set_option("set_workplane_to_level", selected_items.get("Workplane to Level", False))
-    my_config.set_option("set_workplane_visible", selected_items.get("View Workplane", False))
+    my_config.set_option(
+        "set_workset_checkout", selected_items.get("Workset Checkout", False)
+    )
+    my_config.set_option(
+        "set_workplane_to_level", selected_items.get("Workplane to Level", False)
+    )
+    my_config.set_option(
+        "set_workplane_visible", selected_items.get("View Workplane", False)
+    )
     my_config.set_option("set_phase", selected_items.get("Phase", False))
     # my_config.set_option(
     #     "set_design_option", selected_items.get("Design Option", False)

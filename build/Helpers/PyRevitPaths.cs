@@ -33,6 +33,7 @@ public static class PyRevitPaths
     public static string Engines2712NetCorePath => Path.Combine(BinPath, "netcore", "engines", "IPY2712PR");
 
     public static string RuntimeSolution => Path.Combine(DevPath, "pyRevitLabs.PyRevit.Runtime", "pyRevitLabs.PyRevit.Runtime.sln");
+    public static string ShellProject => Path.Combine(DevPath, "pyRevitLabs.PyRevit.Shell", "pyRevitLabs.PyRevit.Shell.csproj");
     public static string DirectoryBuildProps => Path.Combine(DevPath, "Directory.Build.props");
 
     public static string TelemetryServerPath => Path.Combine(DevPath, "pyRevitTelemetryServer");

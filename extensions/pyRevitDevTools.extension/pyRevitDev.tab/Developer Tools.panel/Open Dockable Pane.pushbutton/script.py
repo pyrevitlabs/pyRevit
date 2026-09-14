@@ -1,8 +1,5 @@
 """Prints calculated hash values for each extension."""
-#pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
-
-
-
+# pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 
 from pyrevit import forms
 

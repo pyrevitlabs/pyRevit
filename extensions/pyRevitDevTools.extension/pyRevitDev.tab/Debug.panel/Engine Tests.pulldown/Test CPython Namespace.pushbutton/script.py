@@ -1,5 +1,5 @@
 #! python3
-#pylint: disable=import-error,invalid-name,broad-except
+# pylint: disable=import-error,invalid-name,broad-except
 from pyrevit import EXEC_PARAMS
 from pyrevit import revit, UI
 
@@ -21,24 +21,22 @@ class CategoriesFilter(UI.Selection.ISelectionFilter):
 
 
 def select_objects_by_category(*names):
-    references = \
-        revit.uidoc.Selection.PickObjects(
-            UI.Selection.ObjectType.Element,
-            CategoriesFilter(names),
-            'Pick {}'.format(', '.join(names))
-            )
+    references = revit.uidoc.Selection.PickObjects(
+        UI.Selection.ObjectType.Element,
+        CategoriesFilter(names),
+        "Pick {}".format(", ".join(names)),
+    )
     return [revit.doc.GetElement(reference) for reference in references]
 
 
 def select_objects():
-    references = \
-        revit.uidoc.Selection.PickObjects(UI.Selection.ObjectType.Element)
+    references = revit.uidoc.Selection.PickObjects(UI.Selection.ObjectType.Element)
     return [revit.doc.GetElement(reference) for reference in references]
 
 
 def main():
     # rebars = select_objects()
-    rebars = select_objects_by_category('Walls')
+    rebars = select_objects_by_category("Walls")
     print(rebars)
 
 

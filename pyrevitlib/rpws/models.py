@@ -7,16 +7,19 @@ import datetime
 import enum
 
 
-ServerInfo = namedtuple('ServerInfo',
-                        ['name',                   # type: str
-                         'version',                # type: str
-                         'machine_name',           # type: str
-                         'roles',                  # type: list<ServerRole>
-                         'access_level_types',     # type: list<str>
-                         'max_path_length',        # type: int
-                         'max_name_length',        # type: int
-                         'servers',                # type: list<str>
-                         ])
+ServerInfo = namedtuple(
+    "ServerInfo",
+    [
+        "name",  # type: str
+        "version",  # type: str
+        "machine_name",  # type: str
+        "roles",  # type: list<ServerRole>
+        "access_level_types",  # type: list<str>
+        "max_path_length",  # type: int
+        "max_name_length",  # type: int
+        "servers",  # type: list<str>
+    ],
+)
 """ namedtuple for server properties
 
 Attributes:
@@ -45,10 +48,13 @@ class ServerRole(enum.Enum):
     Admin = 2
 
 
-ServerDriveInfo = namedtuple('ServerDriveInfo',
-                             ['drive_space',       # type: int
-                              'drive_freespace',   # type: int
-                              ])
+ServerDriveInfo = namedtuple(
+    "ServerDriveInfo",
+    [
+        "drive_space",  # type: int
+        "drive_freespace",  # type: int
+    ],
+)
 """ namedtuple for server drive info
 
 Attributes:
@@ -57,17 +63,20 @@ Attributes:
 """
 
 
-EntryContents = namedtuple('EntryContents',
-                           ['path',                # type: str
-                            'drive_space',         # type: int
-                            'drive_freespace',     # type: int
-                            'files',               # type: list<FileInfo>
-                            'folders',             # type: list<FolderInfo>
-                            'lock_context',        # type: str
-                            'lock_state',          # type: LockState
-                            'locks_inprogress',    # type: list<IPLockInfo>
-                            'models',              # type: list<ModelInfo>
-                            ])
+EntryContents = namedtuple(
+    "EntryContents",
+    [
+        "path",  # type: str
+        "drive_space",  # type: int
+        "drive_freespace",  # type: int
+        "files",  # type: list<FileInfo>
+        "folders",  # type: list<FolderInfo>
+        "lock_context",  # type: str
+        "lock_state",  # type: LockState
+        "locks_inprogress",  # type: list<IPLockInfo>
+        "models",  # type: list<ModelInfo>
+    ],
+)
 """ namedtuple for server entry contents
 (Encapsulates result of /contents)
 
@@ -84,22 +93,25 @@ Attributes:
 """
 
 
-EntryDirInfo = namedtuple('EntryDirInfo',
-                          ['path',                # type: str
-                           'name',                # type: str
-                           'size',                # type: int
-                           'date_created',        # type: DateEntry
-                           'date_modified',       # type: DateEntry
-                           'exists',              # type: bool
-                           'folder_count',        # type: int
-                           'is_folder',           # type: bool
-                           'last_modified_by',    # type: str
-                           'lock_context',        # type: str
-                           'lock_state',          # type: LockState
-                           'model_count',         # type: int
-                           'model_size',          # type: int
-                           'locks_inprogress',    # type: list<IPLockInfo>
-                           ])
+EntryDirInfo = namedtuple(
+    "EntryDirInfo",
+    [
+        "path",  # type: str
+        "name",  # type: str
+        "size",  # type: int
+        "date_created",  # type: DateEntry
+        "date_modified",  # type: DateEntry
+        "exists",  # type: bool
+        "folder_count",  # type: int
+        "is_folder",  # type: bool
+        "last_modified_by",  # type: str
+        "lock_context",  # type: str
+        "lock_state",  # type: LockState
+        "model_count",  # type: int
+        "model_size",  # type: int
+        "locks_inprogress",  # type: list<IPLockInfo>
+    ],
+)
 """ namedtuple for server entry directory info
 (Encapsulates result of /directoryinfo)
 
@@ -175,12 +187,15 @@ class LockType(enum.Enum):
     Permissions = 1
 
 
-FileInfo = namedtuple('FileInfo',
-                      ['path',                     # type: str
-                       'name',                     # type: str
-                       'size',                     # type: int
-                       'is_text',                  # type: bool
-                       ])
+FileInfo = namedtuple(
+    "FileInfo",
+    [
+        "path",  # type: str
+        "name",  # type: str
+        "size",  # type: int
+        "is_text",  # type: bool
+    ],
+)
 """ namedtuple for info on a server file
 
 Attributes:
@@ -191,15 +206,18 @@ Attributes:
 """
 
 
-FolderInfo = namedtuple('FolderInfo',
-                        ['path',                   # type: str
-                         'name',                   # type: str
-                         'size',                   # type: int
-                         'has_contents',           # type: bool
-                         'lock_context',           # type: str
-                         'lock_state',             # type: LockState
-                         'locks_inprogress',       # type: list<IPLockInfo>
-                         ])
+FolderInfo = namedtuple(
+    "FolderInfo",
+    [
+        "path",  # type: str
+        "name",  # type: str
+        "size",  # type: int
+        "has_contents",  # type: bool
+        "lock_context",  # type: str
+        "lock_state",  # type: LockState
+        "locks_inprogress",  # type: list<IPLockInfo>
+    ],
+)
 """ namedtuple for info on a server folder
 
 Attributes:
@@ -213,16 +231,19 @@ Attributes:
 """
 
 
-ModelInfo = namedtuple('ModelInfo',
-                       ['path',                    # type: str
-                        'name',                    # type: str
-                        'size',                    # type: int
-                        'support_size',            # type: int
-                        'product_version',         # type: int
-                        'lock_context',            # type: str
-                        'lock_state',              # type: LockState
-                        'locks_inprogress',        # type: list<IPLockInfo>
-                        ])
+ModelInfo = namedtuple(
+    "ModelInfo",
+    [
+        "path",  # type: str
+        "name",  # type: str
+        "size",  # type: int
+        "support_size",  # type: int
+        "product_version",  # type: int
+        "lock_context",  # type: str
+        "lock_state",  # type: LockState
+        "locks_inprogress",  # type: list<IPLockInfo>
+    ],
+)
 """ namedtuple for info on a server model
 
 Attributes:
@@ -237,16 +258,19 @@ Attributes:
 """
 
 
-ModelInfoEx = namedtuple('ModelInfoEx',
-                         ['path',                  # type: str
-                          'name',                  # type: str
-                          'size',                  # type: int
-                          'guid',                  # type: str
-                          'date_created',          # type: DateEntry
-                          'date_modified',         # type: DateEntry
-                          'last_modified_by',      # type: str
-                          'support_size',          # type: int
-                          ])
+ModelInfoEx = namedtuple(
+    "ModelInfoEx",
+    [
+        "path",  # type: str
+        "name",  # type: str
+        "size",  # type: int
+        "guid",  # type: str
+        "date_created",  # type: DateEntry
+        "date_modified",  # type: DateEntry
+        "last_modified_by",  # type: str
+        "support_size",  # type: int
+    ],
+)
 """ namedtuple for extended info on a server model
 
 Attributes:
@@ -261,9 +285,12 @@ Attributes:
 """
 
 
-ProjectInfo = namedtuple('ProjectInfo',
-                         ['parameters',            # type: list<ProjParameter>
-                          ])
+ProjectInfo = namedtuple(
+    "ProjectInfo",
+    [
+        "parameters",  # type: list<ProjParameter>
+    ],
+)
 """ namedtuple for project info of a hosted model
 
 Attributes:
@@ -271,14 +298,17 @@ Attributes:
 """
 
 
-ProjParameter = namedtuple('ProjParameter',
-                           ['name',                # type: str
-                            'value',               # type: str
-                            'id',                  # type: str
-                            'category',            # type: str
-                            'type',                # type: ParamType
-                            'datatype',            # type: ParamDataType
-                            ])
+ProjParameter = namedtuple(
+    "ProjParameter",
+    [
+        "name",  # type: str
+        "value",  # type: str
+        "id",  # type: str
+        "category",  # type: str
+        "type",  # type: ParamType
+        "datatype",  # type: ParamDataType
+    ],
+)
 """ namedtuple for info project parameters in a hosted model
 
 Attributes:
@@ -301,10 +331,10 @@ class ParamType(enum.Enum):
         Unknown = 'unknown'
     """
 
-    System = 'system'
-    Custom = 'custom'
-    Shared = 'shared'
-    Unknown = 'unknown'
+    System = "system"
+    Custom = "custom"
+    Shared = "shared"
+    Unknown = "unknown"
 
 
 class ParamDataType(enum.Enum):
@@ -320,19 +350,22 @@ class ParamDataType(enum.Enum):
         Unknown = 'unknown'
     """
 
-    Length = 'length'
-    Number = 'number'
-    Material = 'material'
-    Text = 'text'
+    Length = "length"
+    Number = "number"
+    Material = "material"
+    Text = "text"
     MultilineText = "multiline text"
-    YesNo = 'yes/no'
-    Unknown = 'unknown'
+    YesNo = "yes/no"
+    Unknown = "unknown"
 
 
-MHistoryInfo = namedtuple('MHistoryInfo',
-                          ['path',               # type: str
-                           'items',              # type: list<MHistoryItemInfo>
-                           ])
+MHistoryInfo = namedtuple(
+    "MHistoryInfo",
+    [
+        "path",  # type: str
+        "items",  # type: list<MHistoryItemInfo>
+    ],
+)
 """ namedtuple for model history info
 
 Attributes:
@@ -341,15 +374,18 @@ Attributes:
 """
 
 
-MHistoryItemInfo = namedtuple('MHistoryItemInfo',
-                              ['id',               # type: str
-                               'comment',          # type: str
-                               'date',             # type: DateEntry
-                               'model_size',       # type: int
-                               'overwrittenby',    # type: str
-                               'support_size',     # type: int
-                               'user',             # type: str
-                               ])
+MHistoryItemInfo = namedtuple(
+    "MHistoryItemInfo",
+    [
+        "id",  # type: str
+        "comment",  # type: str
+        "date",  # type: DateEntry
+        "model_size",  # type: int
+        "overwrittenby",  # type: str
+        "support_size",  # type: int
+        "user",  # type: str
+    ],
+)
 """ namedtuple for model history item info
 
 Attributes:
@@ -363,14 +399,17 @@ Attributes:
 """
 
 
-IPLockInfo = namedtuple('IPLockInfo',
-                        ['age',                    # type: TimeSpanEntry
-                         'lock_options',           # type: LockOptions
-                         'lock_type',              # type: LockType
-                         'model_path',             # type: str
-                         'timestamp',              # type: DateEntry
-                         'username',               # type: str
-                         ])
+IPLockInfo = namedtuple(
+    "IPLockInfo",
+    [
+        "age",  # type: TimeSpanEntry
+        "lock_options",  # type: LockOptions
+        "lock_type",  # type: LockType
+        "model_path",  # type: str
+        "timestamp",  # type: DateEntry
+        "username",  # type: str
+    ],
+)
 """ namedtuple for info on an in-progress entry lock
 
 Attributes:
@@ -383,11 +422,14 @@ Attributes:
 """
 
 
-ChildrenLockInfo = namedtuple('ChildrenLockInfo',
-                              ['path',             # type: str
-                               'items',            # type: list<str>
-                               'lock_context',     # type: str
-                               ])
+ChildrenLockInfo = namedtuple(
+    "ChildrenLockInfo",
+    [
+        "path",  # type: str
+        "items",  # type: list<str>
+        "lock_context",  # type: str
+    ],
+)
 """ namedtuple for info locked children under an entry
 
 Attributes:
@@ -415,7 +457,7 @@ class DateEntry(datetime.datetime):
         Args:
             date_string (str): Revit server timestamp string
         """
-        seconds_since_epoch = int(date_string[6:-2])/1000
+        seconds_since_epoch = int(date_string[6:-2]) / 1000
         return cls.utcfromtimestamp(seconds_since_epoch)
 
 
@@ -437,15 +479,15 @@ class TimeSpanEntry(datetime.timedelta):
         Args:
             timespan_string (str): Revit server timespan string
         """
-        days = re.findall('(\d+)D', timespan_string)
+        days = re.findall(r"(\d+)D", timespan_string)
         days = int(days[0]) if days else 0
 
-        minutes = re.findall('(\d+)M', timespan_string)
+        minutes = re.findall(r"(\d+)M", timespan_string)
         minutes = int(minutes[0]) if minutes else 0
 
-        seconds = re.findall('(\d+)\.(\d+)S', timespan_string)
-        seconds, millisecs = (int(seconds[0][0]), int(seconds[0][1])) \
-            if seconds else (0, 0)
+        seconds = re.findall(r"(\d+)\.(\d+)S", timespan_string)
+        seconds, millisecs = (
+            (int(seconds[0][0]), int(seconds[0][1])) if seconds else (0, 0)
+        )
 
-        return cls(days=days, minutes=minutes,
-                   seconds=seconds, milliseconds=millisecs)
+        return cls(days=days, minutes=minutes, seconds=seconds, milliseconds=millisecs)

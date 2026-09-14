@@ -1,9 +1,10 @@
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        ShowInTaskbar="False"
-        Width="720" Height="750"
-        MinWidth="720" MinHeight="480"
+        ShowInTaskbar="True"
+        Width="800" Height="750"
+        MinWidth="760" MinHeight="480"
         ResizeMode="CanResizeWithGrip"
+        UseLayoutRounding="True"
         WindowStartupLocation="Manual"
         Title="Keynote Manager"
         Closing="window_closing"
@@ -14,28 +15,47 @@
         <!-- COLOR PALETTE                                                -->
         <!-- ============================================================ -->
         <SolidColorBrush x:Key="AccentBrush"        Color="#2B579A"/>
-        <SolidColorBrush x:Key="AccentLightBrush"   Color="#D6E4F0"/>
         <SolidColorBrush x:Key="AccentHoverBrush"   Color="#3A6FB0"/>
-        <SolidColorBrush x:Key="BorderBrush"        Color="#D1D1D1"/>
-        <SolidColorBrush x:Key="BorderLightBrush"   Color="#E8E8E8"/>
-        <SolidColorBrush x:Key="BgPanelBrush"       Color="#F5F5F5"/>
-        <SolidColorBrush x:Key="BgWhiteBrush"       Color="#FFFFFF"/>
-        <SolidColorBrush x:Key="TextPrimaryBrush"   Color="#1E1E1E"/>
-        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#6E6E6E"/>
-        <SolidColorBrush x:Key="TextMutedBrush"     Color="#999999"/>
         <SolidColorBrush x:Key="WarningBrush"       Color="#CA5010"/>
-        <SolidColorBrush x:Key="DangerBrush"        Color="#D13438"/>
+        <!-- Light-theme values. A danger FOREGROUND must be dark on white
+             and light on the dark row surface, which no single colour can
+             satisfy, and the locked-row tint inverts the same way. The dark
+             variants are swapped in at runtime (see _apply_theme_brushes in
+             script.py); these stay as a working fallback if that never runs.
+             Referenced with DynamicResource so the swap takes effect. -->
+        <SolidColorBrush x:Key="DangerBrush"        Color="#C42B2F"/>
         <SolidColorBrush x:Key="LockedBgBrush"      Color="#FFF4CE"/>
-        <SolidColorBrush x:Key="DragOverBrush"      Color="#E8F0FE"/>
+        <SolidColorBrush x:Key="LockedFgBrush"      Color="#1E1E1E"/>
         <SolidColorBrush x:Key="UsedBadgeBgBrush"   Color="#E8F5E9"/>
         <SolidColorBrush x:Key="UsedBadgeFgBrush"   Color="#2E7D32"/>
-        <SolidColorBrush x:Key="CatBadgeBrush"      Color="#333333"/>
+        <!-- Category key badge. Must stay dark enough for its hardcoded white
+             text AND stay visible against BOTH row surfaces: #FFFFFF (light)
+             and pyRevitControlBackground #222933 (dark). #333333 was only
+             1.16:1 against the dark row, so the badge vanished. -->
+        <SolidColorBrush x:Key="CatBadgeBrush"      Color="#525E73"/>
         <SolidColorBrush x:Key="TypeElBgBrush"      Color="#E3F2FD"/>
         <SolidColorBrush x:Key="TypeElFgBrush"      Color="#1565C0"/>
         <SolidColorBrush x:Key="TypeMatBgBrush"     Color="#FFF3E0"/>
         <SolidColorBrush x:Key="TypeMatFgBrush"     Color="#E65100"/>
         <SolidColorBrush x:Key="TypeUsrBgBrush"     Color="#F3E5F5"/>
         <SolidColorBrush x:Key="TypeUsrFgBrush"     Color="#6A1B9A"/>
+
+        <!-- Row selection colours.
+             TreeItemContainer uses the STOCK TreeViewItem template, whose
+             internal "Bd" border repaints the row from SYSTEM brushes when
+             selected - and swaps to the INACTIVE variant (a light grey) the
+             moment the tree loses focus, which is exactly what happens when
+             the context menu opens. A Style setter cannot reach Bd, but these
+             window-level key overrides do. Active and inactive are mapped to
+             the SAME brush so the row does not change colour on right-click. -->
+        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}"
+                         Color="{DynamicResource pyRevitSelectionBackgroundColor}"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}"
+                         Color="{DynamicResource pyRevitSelectionForegroundColor}"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}"
+                         Color="{DynamicResource pyRevitSelectionBackgroundColor}"/>
+        <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}"
+                         Color="{DynamicResource pyRevitSelectionForegroundColor}"/>
 
         <!-- ============================================================ -->
         <!-- BASE BUTTON STYLES                                           -->
@@ -45,7 +65,7 @@
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Padding" Value="8,4"/>
             <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -62,10 +82,12 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#E8E8E8"/>
+                                <Setter TargetName="border" Property="Background"
+                                        Value="{DynamicResource pyRevitControlHoverBrush}"/>
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="border" Property="Background" Value="#D0D0D0"/>
+                                <Setter TargetName="border" Property="Background"
+                                        Value="{DynamicResource pyRevitControlPressedBrush}"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Opacity" Value="0.35"/>
@@ -115,18 +137,26 @@
         <Style x:Key="ToolbarSep" TargetType="Rectangle">
             <Setter Property="Width" Value="1"/>
             <Setter Property="Height" Value="20"/>
-            <Setter Property="Fill" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="Fill" Value="{DynamicResource pyRevitControlBorderBrush}"/>
             <Setter Property="Margin" Value="4,0"/>
         </Style>
 
+        <!-- A KEYED style is a local value, so it outranks the implicit
+             TargetType="TextBox" style pyRevit merges in from Theme.xaml -
+             which is what supplies Foreground/CaretBrush/SelectionBrush.
+             Without repeating them here the box themes its background but
+             keeps the stock black text: black on dark in dark mode. -->
         <Style x:Key="SearchBox" TargetType="TextBox">
             <Setter Property="Height" Value="30"/>
             <Setter Property="Padding" Value="28,0,28,0"/>
             <Setter Property="FontSize" Value="13"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
-            <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource pyRevitControlBorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Background" Value="{StaticResource BgWhiteBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource pyRevitControlBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
+            <Setter Property="CaretBrush" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
+            <Setter Property="SelectionBrush" Value="{DynamicResource pyRevitAccentBrush}"/>
         </Style>
 
         <!-- ============================================================ -->
@@ -141,24 +171,173 @@
             <Setter Property="AllowDrop" Value="True"/>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding locked}" Value="True">
-                    <Setter Property="Background" Value="{StaticResource LockedBgBrush}"/>
+                    <Setter Property="Background" Value="{DynamicResource LockedBgBrush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource LockedFgBrush}"/>
                 </DataTrigger>
                 <DataTrigger Binding="{Binding used}" Value="True">
                     <Setter Property="FontWeight" Value="Medium"/>
                 </DataTrigger>
                 <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="{StaticResource AccentLightBrush}"/>
+                    <Setter Property="Background" Value="{DynamicResource pyRevitSelectionBackgroundBrush}"/>
+                    <Setter Property="Foreground" Value="{DynamicResource pyRevitSelectionForegroundBrush}"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
 
         <!-- ============================================================ -->
-        <!-- HIERARCHICAL DATA TEMPLATE (the core visual for each node)   -->
-        <!-- ============================================================ -->
+        <!-- CONTEXT MENUS                                                -->
+        <!-- WPF's default ContextMenu/MenuItem templates paint a light
+             icon gutter that no Background setter can reach, so it stayed
+             white in dark mode. pyRevit ships no menu theming, so both
+             controls are retemplated here. These are IMPLICIT styles so
+             they also cover the unstyled `caseMenu` further down.
+             NOTE: no submenu (Popup) support - this window has no nested
+             MenuItems. Add the submenu parts if that ever changes. -->
+        <Style TargetType="ContextMenu">
+            <Setter Property="Background" Value="{DynamicResource pyRevitControlBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource pyRevitControlBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContextMenu">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="3" Padding="0,4"
+                                SnapsToDevicePixels="True">
+                            <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="MenuItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
+            <Setter Property="Padding" Value="12,5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Border x:Name="bg"
+                                Background="{TemplateBinding Background}"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <!-- Foreground is inherited from the MenuItem, so an
+                                     element-level Foreground (the red Delete) flows
+                                     through untouched. -->
+                                <ContentPresenter x:Name="hdr" Grid.Column="0"
+                                                  ContentSource="Header"
+                                                  VerticalAlignment="Center"
+                                                  RecognizesAccessKey="True"/>
+                                <TextBlock x:Name="gesture" Grid.Column="1"
+                                           Text="{TemplateBinding InputGestureText}"
+                                           Margin="28,0,0,0"
+                                           VerticalAlignment="Center"
+                                           Foreground="{DynamicResource pyRevitSubtleForegroundBrush}"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <!-- Collapse (not just blank) the gesture column, or its
+                                 margin is still measured for items with no shortcut. -->
+                            <Trigger Property="InputGestureText" Value="">
+                                <Setter TargetName="gesture" Property="Visibility" Value="Collapsed"/>
+                            </Trigger>
+                            <!-- Repaint the text too: the Delete item carries a local red
+                                 Foreground, which is unreadable on the selection fill. -->
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="bg" Property="Background"
+                                        Value="{DynamicResource pyRevitSelectionBackgroundBrush}"/>
+                                <Setter TargetName="hdr" Property="TextElement.Foreground"
+                                        Value="{DynamicResource pyRevitSelectionForegroundBrush}"/>
+                                <Setter TargetName="gesture" Property="Foreground"
+                                        Value="{DynamicResource pyRevitSelectionForegroundBrush}"/>
+                            </Trigger>
+                            <!-- Target the presenter, not the MenuItem: an element-level
+                                 Foreground outranks a template trigger, so disabling the
+                                 red Delete would otherwise leave it looking enabled. -->
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="hdr" Property="TextElement.Foreground"
+                                        Value="{DynamicResource pyRevitDisabledForegroundBrush}"/>
+                                <Setter TargetName="gesture" Property="Foreground"
+                                        Value="{DynamicResource pyRevitDisabledForegroundBrush}"/>
+                            </Trigger>
+                            <!-- A disabled item still reports IsHighlighted on hover, so
+                                 without this it would light up as if it were clickable.
+                                 Declared last: for the same target+property, last wins. -->
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsHighlighted" Value="True"/>
+                                    <Condition Property="IsEnabled" Value="False"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="bg" Property="Background" Value="Transparent"/>
+                                <Setter TargetName="hdr" Property="TextElement.Foreground"
+                                        Value="{DynamicResource pyRevitDisabledForegroundBrush}"/>
+                            </MultiTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Menu separators only; toolbar dividers use ToolbarSep (Rectangle).
+             MUST be keyed with MenuItem.SeparatorStyleKey: MenuItem.PrepareMenuItem
+             force-repoints a menu Separator's Style via SetResourceReference to that
+             key whenever the current style came from an implicit reference, so an
+             unkeyed TargetType="Separator" style is silently discarded and the OS
+             theme's light, gutter-indented rule is used instead. -->
+        <Style x:Key="{x:Static MenuItem.SeparatorStyleKey}" TargetType="Separator">
+            <Setter Property="Background" Value="{DynamicResource pyRevitControlBorderBrush}"/>
+            <Setter Property="Margin" Value="8,4"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Separator">
+                        <Rectangle Height="1" Fill="{TemplateBinding Background}"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="CtxMenuItem" TargetType="MenuItem"
+               BasedOn="{StaticResource {x:Type MenuItem}}"/>
+
+        <Style x:Key="CtxKeynoteMenuItem" TargetType="MenuItem"
+               BasedOn="{StaticResource CtxMenuItem}">
+            <Setter Property="IsEnabled" Value="False"/>
+            <Style.Triggers>
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding is_category}" Value="False"/>
+                        <Condition Binding="{Binding locked}" Value="False"/>
+                    </MultiDataTrigger.Conditions>
+                    <Setter Property="IsEnabled" Value="True"/>
+                </MultiDataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="CtxNotLockedMenuItem" TargetType="MenuItem"
+               BasedOn="{StaticResource CtxMenuItem}">
+            <Setter Property="IsEnabled" Value="True"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding locked}" Value="True">
+                    <Setter Property="IsEnabled" Value="False"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+
         <HierarchicalDataTemplate x:Key="KeynoteTreeItem"
                                   ItemsSource="{Binding children}">
+
             <Border x:Name="itemBorder" Padding="4,4" Margin="0,0,16,0"
                     CornerRadius="3"
+                    Background="Transparent"
                     AllowDrop="True"
                     HorizontalAlignment="Stretch"
                     MaxWidth="{Binding ActualWidth,
@@ -166,7 +345,46 @@
                                        Mode=OneWay}"
                     DragOver="tree_item_drag_over"
                     DragLeave="tree_item_drag_leave"
-                    Drop="tree_item_drop">
+                    Drop="tree_item_drop"
+                    PreviewMouseRightButtonDown="tree_item_right_click">
+
+                <Border.ContextMenu>
+                    <ContextMenu DataContext="{Binding PlacementTarget.DataContext,
+                                                       RelativeSource={RelativeSource Self}}">
+                        <MenuItem Header="Add Keynote" InputGestureText="Ctrl+N"
+                                  Style="{StaticResource CtxMenuItem}"
+                                  Click="add_keynote"/>
+                        <Separator/>
+                        <MenuItem Header="Place User Keynote"
+                                  Style="{StaticResource CtxKeynoteMenuItem}"
+                                  Click="place_user_keynote"/>
+                        <MenuItem Header="Place Element Keynote"
+                                  Style="{StaticResource CtxKeynoteMenuItem}"
+                                  Click="place_element_keynote"/>
+                        <MenuItem Header="Place Material Keynote"
+                                  Style="{StaticResource CtxKeynoteMenuItem}"
+                                  Click="place_material_keynote"/>
+                        <Separator/>
+                        <MenuItem Header="Edit" InputGestureText="F2"
+                                  Style="{StaticResource CtxNotLockedMenuItem}"
+                                  Click="edit_keynote"/>
+                        <MenuItem Header="Duplicate" InputGestureText="Ctrl+D"
+                                  Style="{StaticResource CtxKeynoteMenuItem}"
+                                  Click="duplicate_keynote"/>
+                        <MenuItem Header="Change Key"
+                                  Style="{StaticResource CtxNotLockedMenuItem}"
+                                  Click="rekey_keynote"/>
+                        <MenuItem Header="Find in Model"
+                                  Style="{StaticResource CtxKeynoteMenuItem}"
+                                  Click="show_keynote"/>
+                        <Separator/>
+                        <MenuItem Header="Delete" InputGestureText="Del"
+                                  Foreground="{DynamicResource DangerBrush}"
+                                  Style="{StaticResource CtxNotLockedMenuItem}"
+                                  Click="remove_keynote"/>
+                    </ContextMenu>
+                </Border.ContextMenu>
+
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -191,7 +409,7 @@
                     <!-- KEYNOTE TEXT -->
                     <TextBlock x:Name="textDisplay" Grid.Column="1"
                                Text="{Binding text}"
-                               Foreground="{StaticResource TextPrimaryBrush}"
+                               Foreground="{DynamicResource pyRevitWindowForegroundBrush}"
                                FontSize="13"
                                VerticalAlignment="Center"
                                TextWrapping="Wrap"/>
@@ -201,10 +419,10 @@
                                 VerticalAlignment="Center" Margin="8,0,0,0">
                         <!-- Child count -->
                         <Border x:Name="childCountBadge" Visibility="Collapsed"
-                                Background="{StaticResource BorderLightBrush}"
+                                Background="{DynamicResource pyRevitControlHoverBrush}"
                                 CornerRadius="8" Padding="5,1,5,2"
                                 Margin="0,0,4,0">
-                            <TextBlock Foreground="{StaticResource TextSecondaryBrush}"
+                            <TextBlock Foreground="{DynamicResource pyRevitSubtleForegroundBrush}"
                                        FontSize="10" FontWeight="SemiBold">
                                 <TextBlock.Text>
                                     <MultiBinding StringFormat="{}{0} items">
@@ -261,11 +479,8 @@
                                 CornerRadius="8" Padding="6,1,6,2">
                             <TextBlock Foreground="White"
                                        FontSize="10" FontWeight="SemiBold">
-                                <TextBlock.Text>
-                                    <MultiBinding StringFormat="&#x1F512; {0}">
-                                        <Binding Path="owner"/>
-                                    </MultiBinding>
-                                </TextBlock.Text>
+                                <Run FontFamily="Segoe MDL2 Assets" Text="&#xE72E;&#160;"/>
+                                <Run Text="{Binding owner}"/>
                             </TextBlock>
                         </Border>
                     </StackPanel>
@@ -286,8 +501,19 @@
                 <DataTrigger Binding="{Binding locked}" Value="True">
                     <Setter TargetName="lockBadge"  Property="Visibility" Value="Visible"/>
                     <Setter TargetName="textDisplay" Property="Foreground"
-                            Value="{StaticResource TextMutedBrush}"/>
+                            Value="{DynamicResource pyRevitDisabledForegroundBrush}"/>
                 </DataTrigger>
+                <!-- A locked row that is ALSO selected must keep the selection
+                     foreground; the locked setter above would otherwise leave
+                     low-contrast disabled-grey text on the selection fill. -->
+                <MultiDataTrigger>
+                    <MultiDataTrigger.Conditions>
+                        <Condition Binding="{Binding locked}" Value="True"/>
+                        <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=TreeViewItem}}" Value="True"/>
+                    </MultiDataTrigger.Conditions>
+                    <Setter TargetName="textDisplay" Property="Foreground"
+                            Value="{DynamicResource pyRevitSelectionForegroundBrush}"/>
+                </MultiDataTrigger>
                 <DataTrigger Binding="{Binding has_element_type}" Value="True">
                     <Setter TargetName="typElBadge" Property="Visibility" Value="Visible"/>
                 </DataTrigger>
@@ -305,7 +531,7 @@
     <!-- ================================================================ -->
     <!-- MAIN LAYOUT                                                      -->
     <!-- ================================================================ -->
-    <Grid Background="{StaticResource BgPanelBrush}">
+    <Grid Background="{DynamicResource pyRevitChromeBackgroundBrush}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -315,8 +541,8 @@
 
         <!-- ROW 0 — FILE TOOLBAR -->
         <Border Grid.Row="0"
-                Background="{StaticResource BgWhiteBrush}"
-                BorderBrush="{StaticResource BorderBrush}"
+                Background="{DynamicResource pyRevitControlBackgroundBrush}"
+                BorderBrush="{DynamicResource pyRevitControlBorderBrush}"
                 BorderThickness="0,0,0,1" Padding="8,4">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
@@ -331,7 +557,7 @@
                     <Button Style="{StaticResource FlatButton}"
                             Content="Change File" Click="change_keynote_file"/>
                     <Button Style="{StaticResource ToolbarButton}"
-                            Content="&#x1F4C2;" FontSize="14"
+                            Content="&#xE8B7;" FontSize="14" FontFamily="Segoe MDL2 Assets"
                             ToolTip="Show in Explorer" Click="show_keynote_file"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal">
@@ -347,8 +573,8 @@
 
         <!-- ROW 1 — SEARCH + TREE TOOLBAR -->
         <Border Grid.Row="1"
-                Background="{StaticResource BgWhiteBrush}"
-                BorderBrush="{StaticResource BorderBrush}"
+                Background="{DynamicResource pyRevitControlBackgroundBrush}"
+                BorderBrush="{DynamicResource pyRevitControlBorderBrush}"
                 BorderThickness="0,0,0,1" Padding="8,5">
             <Grid>
                 <Grid.RowDefinitions>
@@ -365,11 +591,14 @@
                     <Grid>
                         <TextBox x:Name="search_tb" Style="{StaticResource SearchBox}"
                                  TextChanged="search_txt_changed"/>
-                        <TextBlock Text="&#x1F50D;  Search keynotes..."
-                                   FontSize="12" IsHitTestVisible="False"
+                        <!-- Glyph and label need different fonts: MDL2 has no
+                             Latin glyphs, so only the icon Run uses it. -->
+                        <TextBlock FontSize="12" IsHitTestVisible="False"
                                    VerticalAlignment="Center" HorizontalAlignment="Left"
                                    Margin="8,0,0,0"
-                                   Foreground="{StaticResource TextMutedBrush}">
+                                   Foreground="{DynamicResource pyRevitDisabledForegroundBrush}">
+                            <Run FontFamily="Segoe MDL2 Assets" Text="&#xE721;&#160;&#160;"/>
+                            <Run Text="Search keynotes..."/>
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
                                     <Setter Property="Visibility" Value="Collapsed"/>
@@ -385,7 +614,7 @@
                                 Style="{StaticResource FlatButton}"
                                 HorizontalAlignment="Right" Width="24" Height="24"
                                 Content="&#x2715;" FontSize="10"
-                                Foreground="{StaticResource TextMutedBrush}"
+                                Foreground="{DynamicResource pyRevitDisabledForegroundBrush}"
                                 Click="clear_search"/>
                     </Grid>
                 </DockPanel>
@@ -395,7 +624,7 @@
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Margin="10,0,0,0">
                         <TextBlock Text="Place:" VerticalAlignment="Center"
                                    FontSize="11" Margin="0,0,6,0"
-                                   Foreground="{StaticResource TextSecondaryBrush}"/>
+                                   Foreground="{DynamicResource pyRevitSubtleForegroundBrush}"/>
                         <RadioButton x:Name="userknote_rb" Content="User"
                                      VerticalAlignment="Center" Margin="0,0,8,0" FontSize="11"/>
                         <RadioButton x:Name="elementknote_rb" Content="Element"
@@ -407,15 +636,13 @@
                     <StackPanel Orientation="Horizontal">
                         <Button x:Name="expandAllBtn" Style="{StaticResource ToolbarButton}" Width="28"
                                 ToolTip="Expand all" Click="expand_all_tree">
-                            <Image x:Name="expandAllIcon" Width="16" Height="16"
-                                   Stretch="Uniform" SnapsToDevicePixels="True"
-                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                            <TextBlock Text="&#x229E;" FontSize="14" FontFamily="Segoe UI Symbol"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Button>
                         <Button x:Name="collapseAllBtn" Style="{StaticResource ToolbarButton}" Width="28"
                                 ToolTip="Collapse all" Click="collapse_all_tree">
-                            <Image x:Name="collapseAllIcon" Width="16" Height="16"
-                                   Stretch="Uniform" SnapsToDevicePixels="True"
-                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                            <TextBlock Text="&#x229F;" FontSize="14" FontFamily="Segoe UI Symbol"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Button>
 
                         <Rectangle Style="{StaticResource ToolbarSep}"/>
@@ -427,7 +654,7 @@
                                 <TextBlock Text="+" FontSize="14" FontWeight="Bold" VerticalAlignment="Center"/>
                                 <TextBlock Text="Grp" FontSize="9" Margin="2,0,0,0"
                                            VerticalAlignment="Center" FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextSecondaryBrush}"/>
+                                           Foreground="{DynamicResource pyRevitSubtleForegroundBrush}"/>
                             </StackPanel>
                         </Button>
                         <Button x:Name="addKeynoteBtn" Style="{StaticResource ToolbarButton}"
@@ -436,7 +663,7 @@
                                 <TextBlock Text="+" FontSize="14" FontWeight="Bold" VerticalAlignment="Center"/>
                                 <TextBlock Text="Key" FontSize="9" Margin="2,0,0,0"
                                            VerticalAlignment="Center" FontWeight="SemiBold"
-                                           Foreground="{StaticResource TextSecondaryBrush}"/>
+                                           Foreground="{DynamicResource pyRevitSubtleForegroundBrush}"/>
                             </StackPanel>
                         </Button>
 
@@ -447,23 +674,23 @@
                                 ToolTip="Indent — make child of sibling above (Tab)"
                                 IsEnabled="False" Click="indent_keynote">
                             <TextBlock Text="&#x21E5;" FontSize="16" FontWeight="Bold"
-                                       Foreground="{StaticResource AccentBrush}"/>
+                                       Foreground="{DynamicResource pyRevitWindowForegroundBrush}"/>
                         </Button>
                         <Button x:Name="outdentBtn" Style="{StaticResource ToolbarButton}" Width="34"
                                 ToolTip="Outdent — promote up one level (Shift+Tab)"
                                 IsEnabled="False" Click="outdent_keynote">
                             <TextBlock Text="&#x21E4;" FontSize="16" FontWeight="Bold"
-                                       Foreground="{StaticResource AccentBrush}"/>
+                                       Foreground="{DynamicResource pyRevitWindowForegroundBrush}"/>
                         </Button>
                         <Button x:Name="moveUpBtn" Style="{StaticResource ToolbarButton}" Width="28"
                                 ToolTip="Move up (Ctrl+Up)" IsEnabled="False" Click="move_up">
                             <TextBlock Text="&#x25B2;" FontSize="10"
-                                       Foreground="{StaticResource TextSecondaryBrush}"/>
+                                       Foreground="{DynamicResource pyRevitSubtleForegroundBrush}"/>
                         </Button>
                         <Button x:Name="moveDownBtn" Style="{StaticResource ToolbarButton}" Width="28"
                                 ToolTip="Move down (Ctrl+Down)" IsEnabled="False" Click="move_down">
                             <TextBlock Text="&#x25BC;" FontSize="10"
-                                       Foreground="{StaticResource TextSecondaryBrush}"/>
+                                       Foreground="{DynamicResource pyRevitSubtleForegroundBrush}"/>
                         </Button>
 
                         <Rectangle Style="{StaticResource ToolbarSep}"/>
@@ -476,7 +703,7 @@
                                 Content="&#x2750;" FontSize="13"
                                 ToolTip="Duplicate (Ctrl+D)" IsEnabled="False" Click="duplicate_keynote"/>
                         <Button x:Name="rekeyBtn" Style="{StaticResource ToolbarButton}"
-                                Content="&#x1F511;" FontSize="12"
+                                Content="&#xE192;" FontSize="12" FontFamily="Segoe MDL2 Assets"
                                 ToolTip="Change key" IsEnabled="False" Click="rekey_keynote"/>
 
                         <Rectangle Style="{StaticResource ToolbarSep}"/>
@@ -486,7 +713,7 @@
                                 Width="36" ToolTip="Change text capitalization"
                                 IsEnabled="False" Click="show_case_menu">
                             <TextBlock Text="Aa" FontSize="12" FontWeight="SemiBold"
-                                       Foreground="{StaticResource TextSecondaryBrush}"/>
+                                       Foreground="{DynamicResource pyRevitSubtleForegroundBrush}"/>
                             <Button.ContextMenu>
                                 <ContextMenu x:Name="caseMenu">
                                     <MenuItem Header="UPPER CASE"   Click="to_upper"    InputGestureText="TT"/>
@@ -502,29 +729,30 @@
                         <!-- Delete -->
                         <Button x:Name="removeBtn" Style="{StaticResource ToolbarButton}"
                                 Content="&#x2715;" FontSize="12"
-                                Foreground="{StaticResource DangerBrush}"
+                                Foreground="{DynamicResource DangerBrush}"
                                 ToolTip="Delete (Del)" IsEnabled="False" Click="remove_keynote"/>
 
                         <Rectangle Style="{StaticResource ToolbarSep}"/>
 
                         <!-- Find / Place -->
                         <Button x:Name="findBtn" Style="{StaticResource ToolbarButton}"
-                                Content="&#x1F50D;" FontSize="12"
+                                Content="&#xE721;" FontSize="12" FontFamily="Segoe MDL2 Assets"
                                 ToolTip="Find in model" IsEnabled="False" Click="show_keynote"/>
                         <Button x:Name="placeBtn" Style="{StaticResource ToolbarButton}"
-                                Content="&#x1F4CC;" FontSize="12"
-                                ToolTip="Place in model" IsEnabled="False" Click="place_keynote"/>
+                                Content="&#xE718;" FontSize="12" FontFamily="Segoe MDL2 Assets"
+                                ToolTip="Place in model (or Shift+Click a keynote)"
+                                IsEnabled="False" Click="place_keynote"/>
                     </StackPanel>
                 </DockPanel>
             </Grid>
         </Border>
 
         <!-- ROW 2 — THE TREE -->
-        <Grid Grid.Row="2" Background="{StaticResource BgWhiteBrush}">
+        <Grid Grid.Row="2" Background="{DynamicResource pyRevitControlBackgroundBrush}">
             <TextBlock x:Name="emptyStateMsg"
                        Text="No keynotes loaded. Add a group to get started."
                        HorizontalAlignment="Center" VerticalAlignment="Center"
-                       FontSize="14" Foreground="{StaticResource TextMutedBrush}"
+                       FontSize="14" Foreground="{DynamicResource pyRevitDisabledForegroundBrush}"
                        Visibility="Collapsed"/>
 
             <TreeView x:Name="keynotes_tv"
@@ -536,6 +764,7 @@
                       ItemContainerStyle="{StaticResource TreeItemContainer}"
                       SelectedItemChanged="selected_keynote_changed"
                       PreviewMouseLeftButtonDown="tree_preview_mouse_down"
+                      PreviewMouseLeftButtonUp="tree_preview_mouse_up"
                       PreviewMouseMove="tree_preview_mouse_move"
                       PreviewMouseDoubleClick="tree_double_click"
                       AllowDrop="True"

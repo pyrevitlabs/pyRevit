@@ -5,8 +5,10 @@
     <system:String x:Key="Window.Title">Propriétés d'élément – Configurer les paramètres supplémentaires</system:String>
     <system:String x:Key="ChkEnableStartup">Charger le panneau au démarrage</system:String>
     <system:String x:Key="TbRestartHint">Un redémarrage de Revit est nécessaire pour que les modifications de démarrage prennent effet.</system:String>
-    <system:String x:Key="TbParamsHint">Entrez un nom de paramètre par ligne. Le panneau prend en compte les modifications au prochain changement de sélection — aucun redémarrage requis.</system:String>
-    <system:String x:Key="TbExamples">Exemples : Commentaires, Repère, Fabricant, Commentaires de type</system:String>
+    <system:String x:Key="ChkShowWorksharingInfo">Afficher les infos de worksharing (Créé par / Dernière modification par / Propriétaire)</system:String>
+    <system:String x:Key="ChkShowWorksharingInfo.Tooltip">Affiche ou masque les lignes Créé par, Dernière modification par et Propriétaire dans le panneau. Aucun redémarrage requis.</system:String>
+    <system:String x:Key="TbParamsHint">Entrez un nom de paramètre par ligne. Commencez une ligne par # pour insérer un en-tête de section (ex. « # Général ») — laissez juste "#" pour une simple ligne de séparation. Le panneau prend en compte les modifications au prochain changement de sélection — aucun redémarrage requis.</system:String>
+    <system:String x:Key="TbExamples">Exemples : Commentaires, Repère, # Général, Fabricant, Commentaires de type</system:String>
     <system:String x:Key="BtnCancel">Annuler</system:String>
     <system:String x:Key="BtnSave">Enregistrer</system:String>
 

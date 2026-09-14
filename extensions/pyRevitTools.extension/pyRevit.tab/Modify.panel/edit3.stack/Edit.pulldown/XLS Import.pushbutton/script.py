@@ -151,9 +151,15 @@ def main():
                                         if ws:
                                             param.Set(ws.Id.IntegerValue)
                                         else:
-                                            logger.warning("Workset {} not found".format(ws_name))
+                                            logger.warning(
+                                                "Workset {} not found".format(ws_name)
+                                            )
                                     except Exception:
-                                        logger.warning("Failed to set Workset for {}".format(el_id_val))
+                                        logger.warning(
+                                            "Failed to set Workset for {}".format(
+                                                el_id_val
+                                            )
+                                        )
                                 elif is_yesno_parameter(param.Definition):
                                     try:
                                         str_val = str(new_val).strip().lower()
@@ -230,8 +236,12 @@ def main():
                                 param.Set(float(new_val))
                         elif storage_type == DB.StorageType.ElementId:
                             try:
-                                bic = doc.GetElement(param.AsElementId()).Category.BuiltInCategory
-                                collector = revit.query.get_elements_by_categories([bic])
+                                bic = doc.GetElement(
+                                    param.AsElementId()
+                                ).Category.BuiltInCategory
+                                collector = revit.query.get_elements_by_categories(
+                                    [bic]
+                                )
                                 for bic_el in collector:
                                     if bic_el.Name == new_val:
                                         found_id = bic_el.Id

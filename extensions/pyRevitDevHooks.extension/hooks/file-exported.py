@@ -9,7 +9,8 @@ import hooks_logger as hl
 
 args = EXEC_PARAMS.event_args
 
-hl.log_hook(__file__,
+hl.log_hook(
+    __file__,
     {
         "cancellable?": str(args.Cancellable),
         "doc": str(revit.doc),
@@ -17,5 +18,5 @@ hl.log_hook(__file__,
         "path": str(args.Path),
         "status": str(args.Status),
     },
-    log_doc_access=True
+    log_doc_access=True,
 )

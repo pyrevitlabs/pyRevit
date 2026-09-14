@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Helper functions to query info and elements from Revit."""
+
 # pylint: disable=W0703,C0103,too-many-lines
 from collections import namedtuple
 from os.path import basename, splitext
@@ -12,6 +13,7 @@ from pyrevit.compat import PY3, safe_strtype, get_elementid_value_func
 from pyrevit import DB
 from pyrevit.revit import db
 from pyrevit.revit import features
+from pyrevit.revit import geom
 
 from Autodesk.Revit.DB import Element  # pylint: disable=E0401
 
@@ -40,9 +42,11 @@ GRAPHICAL_VIEWTYPES = [
     DB.ViewType.Walkthrough,
     DB.ViewType.Rendering,
 ]
-# PresureLossReport was removed in Revit 2027
+# PresureLossReport typo was corrected in Revit 2027
 if HOST_APP.is_older_than(2027):
     GRAPHICAL_VIEWTYPES.append(DB.ViewType.PresureLossReport)
+else:
+    GRAPHICAL_VIEWTYPES.append(DB.ViewType.PressureLossReport)
 
 
 DETAIL_CURVES = (DB.DetailLine, DB.DetailArc, DB.DetailEllipse, DB.DetailNurbSpline)
@@ -86,10 +90,7 @@ def get_name(element, title_on_sheet=False):
         if view_name:
             return view_name
         else:
-            if HOST_APP.is_newer_than("2019", or_equal=True):
-                return element.Name
-            else:
-                return element.ViewName
+            return element.Name
     if PY3:
         return element.Name
     try:
@@ -242,20 +243,14 @@ def get_param(element, param_identifier, default=None):
         return default
 
     try:
-        if isinstance(param_identifier, (str, unicode)):
-            return _param_or_default(
-                element.LookupParameter(param_identifier), default
-            )
+        if isinstance(param_identifier, str):
+            return _param_or_default(element.LookupParameter(param_identifier), default)
 
         if isinstance(param_identifier, DB.BuiltInParameter):
-            return _param_or_default(
-                element.get_Parameter(param_identifier), default
-            )
+            return _param_or_default(element.get_Parameter(param_identifier), default)
 
         if isinstance(param_identifier, framework.System.Guid):
-            return _param_or_default(
-                element.get_Parameter(param_identifier), default
-            )
+            return _param_or_default(element.get_Parameter(param_identifier), default)
 
         if isinstance(param_identifier, DB.ElementId):
             return _param_or_default(
@@ -443,7 +438,9 @@ def get_value_range(param_name, doc=None, elements=None):
     return values
 
 
-def get_elements_by_parameter(param_name, param_value, doc=None, partial=False, view_id=None):
+def get_elements_by_parameter(
+    param_name, param_value, doc=None, partial=False, view_id=None
+):
     """
     Finds elements by inspecting each element individually and comparing
     the value of a named parameter.
@@ -487,7 +484,9 @@ def get_elements_by_parameter(param_name, param_value, doc=None, partial=False, 
     return found_els
 
 
-def get_elements_by_param_value(param_name, param_value, inverse=False, doc=None, view_id=None):
+def get_elements_by_param_value(
+    param_name, param_value, inverse=False, doc=None, view_id=None
+):
     """
     Finds elements using a native Revit ElementParameterFilter.
 
@@ -1175,7 +1174,7 @@ def get_document_clean_name(doc=None):
     _CLOUD_URI_SCHEMES = ("BIM 360://", "ACC://", "Autodesk Docs://")
     for scheme in _CLOUD_URI_SCHEMES:
         if document_name.startswith(scheme):
-            document_name = document_name[len(scheme):]
+            document_name = document_name[len(scheme) :]
             break
 
     return splitext(basename(document_name))[0]
@@ -1526,7 +1525,7 @@ def get_all_schedules(doc=None):
         .WhereElementIsNotElementType()
         .ToElements()
     )
-    return filter(is_schedule, all_scheds)
+    return list(filter(is_schedule, all_scheds))
 
 
 def get_view_by_name(view_name, view_types=None, doc=None):
@@ -1770,7 +1769,7 @@ def get_category(cat_input, doc=None):
     if isinstance(cat_input, DB.BuiltInCategory):
         return doc.Settings.Categories.get_Item(cat_input)
 
-    if isinstance(cat_input, (str, unicode)):
+    if isinstance(cat_input, str):
         for cat in get_doc_categories(doc):
             if cat.Name == cat_input:
                 return cat
@@ -2000,10 +1999,9 @@ def get_gridpoints(grids=None, include_linked_models=False, doc=None):
     gints = {}
     for grid1 in source_grids:
         for grid2 in source_grids:
-            results = framework.clr.Reference[DB.IntersectionResultArray]()
-            intres = grid1.Curve.Intersect(grid2.Curve, results)
-            if intres == DB.SetComparisonResult.Overlap:
-                gints[db.XYZPoint(results.get_Item(0).XYZPoint)] = [grid1, grid2]
+            intres, results = geom.intersect_curves(grid1.Curve, grid2.Curve)
+            if intres == DB.SetComparisonResult.Overlap and results:
+                gints[db.XYZPoint(results[0])] = [grid1, grid2]
     return [GridPoint(point=k, grids=v) for k, v in gints.items()]
 
 
@@ -2110,22 +2108,12 @@ def get_connected_circuits(element, spare=False, space=False):
         circuit_types.append(DB.Electrical.CircuitType.Spare)
     if space:
         circuit_types.append(DB.Electrical.CircuitType.Space)
-    if HOST_APP.is_newer_than(
-        2021, or_equal=True
-    ):  # deprecation of ElectricalSystems in 2021
-        if element.MEPModel and element.MEPModel.GetElectricalSystems():
-            return [
-                x
-                for x in element.MEPModel.GetElectricalSystems()
-                if x.CircuitType in circuit_types
-            ]
-    else:
-        if element.MEPModel and element.MEPModel.ElectricalSystems:
-            return [
-                x
-                for x in element.MEPModel.ElectricalSystems
-                if x.CircuitType in circuit_types
-            ]
+    if element.MEPModel and element.MEPModel.GetElectricalSystems():
+        return [
+            x
+            for x in element.MEPModel.GetElectricalSystems()
+            if x.CircuitType in circuit_types
+        ]
 
 
 def get_element_categories(elements):
@@ -2372,9 +2360,7 @@ def get_solid_fillpattern_element(doc=None):
         pattern if found; otherwise ``None``.
     """
     doc = doc or DOCS.doc
-    patterns = get_all_fillpattern_elements(
-        DB.FillPatternTarget.Drafting, doc=doc
-    )
+    patterns = get_all_fillpattern_elements(DB.FillPatternTarget.Drafting, doc=doc)
     for fp in patterns:
         if fp.GetFillPattern().IsSolidFill:
             return fp
@@ -2397,14 +2383,7 @@ def get_fillpattern_from_element(element, background=True, doc=None):
     doc = doc or DOCS.doc
 
     def get_fpm_from_frtype(etype):
-        fp_id = None
-        if HOST_APP.is_newer_than(2018):
-            # return requested fill pattern (background or foreground)
-            fp_id = (
-                etype.BackgroundPatternId if background else etype.ForegroundPatternId
-            )
-        else:
-            fp_id = etype.FillPatternId
+        fp_id = etype.BackgroundPatternId if background else etype.ForegroundPatternId
         if fp_id:
             fillpat_element = doc.GetElement(fp_id)
             if fillpat_element:
@@ -3206,17 +3185,8 @@ def get_crop_region(view):
         (list[DB.CurveLoop]): list of curve loops
     """
     crsm = view.GetCropRegionShapeManager()
-    if HOST_APP.is_newer_than(2015):
-        crsm_valid = crsm.CanHaveShape
-    else:
-        crsm_valid = crsm.Valid
-
-    if crsm_valid:
-        if HOST_APP.is_newer_than(2015):
-            curve_loops = list(crsm.GetCropShape())
-        else:
-            curve_loops = [crsm.GetCropRegionShape()]
-
+    if crsm.CanHaveShape:
+        curve_loops = list(crsm.GetCropShape())
         if curve_loops:
             return curve_loops
 
@@ -3282,7 +3252,12 @@ def get_element_workset(element):
         return workset_table.GetWorkset(element.WorksetId)
 
 
-def get_geometry(element, include_invisible=False, compute_references=False, detail_level=DB.ViewDetailLevel.Medium):
+def get_geometry(
+    element,
+    include_invisible=False,
+    compute_references=False,
+    detail_level=DB.ViewDetailLevel.Medium,
+):
     """
     Retrieves the geometry of a given Revit element.
 

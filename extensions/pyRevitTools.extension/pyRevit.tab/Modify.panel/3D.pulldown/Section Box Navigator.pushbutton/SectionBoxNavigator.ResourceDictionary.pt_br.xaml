@@ -97,6 +97,7 @@
     <system:String x:Key="ConfirmSectionBox">Confirmar caixa de corte</system:String>
     <system:String x:Key="SectionBoxAlignedFormat">Caixa de corte alinhada à vista '{0}'</system:String>
     <system:String x:Key="CropBoxAlignedFormat">Região de recorte alinhada à vista '{0}'</system:String>
+    <system:String x:Key="ScopeBoxApplied">Caixa de escopo aplicada à vista</system:String>
     <system:String x:Key="UnsupportedViewType">Tipo de vista não suportado.</system:String>
     <system:String x:Key="Activated">ativado</system:String>
     <system:String x:Key="Deactivated">desativado</system:String>

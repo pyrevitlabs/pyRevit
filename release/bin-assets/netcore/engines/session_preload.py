@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#pylint: disable=C0103,W1401,E0401,E0602
+# pylint: disable=C0103,W1401,E0401,E0602
 """Pre-load entry point invoked by the C# session orchestrator.
 
 Runs the pre-load session setup after the C# orchestrator has initialized the

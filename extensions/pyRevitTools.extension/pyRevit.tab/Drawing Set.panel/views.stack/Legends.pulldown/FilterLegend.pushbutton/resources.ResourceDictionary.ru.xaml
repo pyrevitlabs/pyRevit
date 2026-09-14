@@ -21,6 +21,7 @@
     <system:String x:Key="Settings_Section_Behavior">Поведение</system:String>
     <system:String x:Key="Settings_SortAlpha">Сортировать фильтры по алфавиту</system:String>
     <system:String x:Key="Settings_OpenLegend">Открыть последнюю созданную легенду</system:String>
+    <system:String x:Key="Settings_TrackLegend">Отслеживать и обновлять существующие легенды</system:String>
 
     <system:String x:Key="Header_FilterName">Имя фильтра</system:String>
     <system:String x:Key="Header_Parameter">Параметр</system:String>
@@ -28,6 +29,8 @@
     <system:String x:Key="Value_NA">Н/Д</system:String>
 
     <system:String x:Key="Msg_Done">Создано видов легенды: {0}.</system:String>
+    <system:String x:Key="Msg_Updated">Обновлено видов легенды: {0}.</system:String>
+    <system:String x:Key="Msg_DoneMixed">Создано видов легенды: {0}, обновлено: {1}.</system:String>
     <system:String x:Key="Msg_Failed">Не удалось создать ни одного вида легенды. Подробности см. в журнале.</system:String>
 
 </ResourceDictionary>

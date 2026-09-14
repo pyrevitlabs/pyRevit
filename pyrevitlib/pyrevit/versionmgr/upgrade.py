@@ -1,5 +1,6 @@
 """Perform upgrades between version, e.g. adding a new config parameter."""
-#pylint: disable=W0611
+
+# pylint: disable=W0611
 import os
 import os.path as op
 import shutil
@@ -13,26 +14,26 @@ mlogger = get_logger(__name__)
 
 TELEMETRY_FIELD_MAX_LEN = 8192
 TELEMETRY_BLOAT_FIELDS = (
-    'telemetry_file_dir',
-    'telemetry_server_url',
-    'apptelemetry_server_url',
+    "telemetry_file_dir",
+    "telemetry_server_url",
+    "apptelemetry_server_url",
 )
 TELEMETRY_URL_FIELDS = (
-    'telemetry_server_url',
-    'apptelemetry_server_url',
+    "telemetry_server_url",
+    "apptelemetry_server_url",
 )
 
 
 def _strip_telemetry_corruption_markers(field_name, value):
     """Strip quote and escape artifacts left by the escape-doubling bug."""
     if not value:
-        return ''
+        return ""
 
-    normalized = ''.join(value.split())
-    for marker in ('"', "'", '\\'):
-        normalized = normalized.replace(marker, '')
+    normalized = "".join(value.split())
+    for marker in ('"', "'", "\\"):
+        normalized = normalized.replace(marker, "")
     if field_name in TELEMETRY_URL_FIELDS:
-        normalized = normalized.replace('/', '')
+        normalized = normalized.replace("/", "")
     return normalized
 
 
@@ -41,7 +42,7 @@ def _is_bloated_telemetry_value(field_name, raw_value):
     if len(raw_value) > TELEMETRY_FIELD_MAX_LEN:
         return True
 
-    compact_value = ''.join(raw_value.split())
+    compact_value = "".join(raw_value.split())
     if not compact_value or compact_value == '""':
         return False
 
@@ -59,7 +60,7 @@ def heal_bloated_telemetry_fields(user_config):
     Returns:
         list[str]: names of fields that were reset, empty list if none.
     """
-    if not user_config.has_section('telemetry'):
+    if not user_config.has_section("telemetry"):
         return []
 
     section = user_config.telemetry
@@ -68,12 +69,16 @@ def heal_bloated_telemetry_fields(user_config):
         if not section.has_option(field_name):
             continue
         try:
-            raw_value = section._parser.get(section._section_name,  #pylint: disable=W0212
-                                            field_name)
+            raw_value = section._parser.get(
+                section._section_name,  # pylint: disable=W0212
+                field_name,
+            )
         except Exception as read_err:
             mlogger.debug(
-                'Could not read telemetry field %r for bloat check | %s',
-                field_name, read_err)
+                "Could not read telemetry field %r for bloat check | %s",
+                field_name,
+                read_err,
+            )
             continue
         if _is_bloated_telemetry_value(field_name, raw_value):
             bloated.append((field_name, len(raw_value)))
@@ -87,39 +92,46 @@ def heal_bloated_telemetry_fields(user_config):
     # ACLs, etc.) is resolved.
     cfg_path = user_config.config_file
     if cfg_path and op.exists(cfg_path):
-        timestamp = time.strftime('%Y%m%d-%H%M%S')
-        backup_path = '{}.bloated.{}.bak'.format(cfg_path, timestamp)
+        timestamp = time.strftime("%Y%m%d-%H%M%S")
+        backup_path = "{}.bloated.{}.bak".format(cfg_path, timestamp)
         try:
             shutil.copy2(cfg_path, backup_path)
-            mlogger.info('Backed up bloated config to: %s', backup_path)
+            mlogger.info("Backed up bloated config to: %s", backup_path)
         except Exception as backup_err:
             mlogger.error(
-                'Could not back up bloated config to %s | %s. '
-                'Skipping heal to preserve recoverable copy on disk.',
-                backup_path, backup_err)
+                "Could not back up bloated config to %s | %s. "
+                "Skipping heal to preserve recoverable copy on disk.",
+                backup_path,
+                backup_err,
+            )
             return []
 
     healed = []
     for field_name, original_len in bloated:
         try:
-            setattr(section, field_name, '')
+            setattr(section, field_name, "")
             healed.append(field_name)
             mlogger.warning(
-                'Reset bloated telemetry config field %r '
-                '(was %d chars, known escape-doubling bug). '
-                'If telemetry was previously configured, reconfigure '
-                'via Settings > Telemetry.',
-                field_name, original_len)
+                "Reset bloated telemetry config field %r "
+                "(was %d chars, known escape-doubling bug). "
+                "If telemetry was previously configured, reconfigure "
+                "via Settings > Telemetry.",
+                field_name,
+                original_len,
+            )
         except Exception as set_err:
             mlogger.error(
-                'Detected bloated telemetry field %r (%d chars) '
-                'but could not reset it | %s',
-                field_name, original_len, set_err)
+                "Detected bloated telemetry field %r (%d chars) "
+                "but could not reset it | %s",
+                field_name,
+                original_len,
+                set_err,
+            )
 
     return healed
 
 
-def upgrade_user_config(user_config):   #pylint: disable=W0613
+def upgrade_user_config(user_config):  # pylint: disable=W0613
     """Upgarde user configurations.
 
     Args:
@@ -139,10 +151,10 @@ def remove_leftover_temp_files():
 
     This cleans them up.
     """
-    univ_path = op.dirname(appdata.get_universal_data_file("X", 'bak'))
+    univ_path = op.dirname(appdata.get_universal_data_file("X", "bak"))
     if op.exists(univ_path):
         for entry in os.listdir(univ_path):
-            if op.isfile(entry) and entry.lower().endswith('..bak'):
+            if op.isfile(entry) and entry.lower().endswith("..bak"):
                 appdata.garbage_data_file(op.join(univ_path, entry))
 
 

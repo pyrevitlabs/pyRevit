@@ -6,11 +6,11 @@ running the tool to colorize the group types in all of them at once
 Note:
 Groups with only 1 instance on views will be colored in gray
 """
+
 # pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 import itertools
 from collections import defaultdict
 
-from pyrevit import HOST_APP
 from pyrevit import forms
 from pyrevit import revit, DB
 from pyrevit import script
@@ -110,18 +110,14 @@ def filter_group_types(groups_dict):
     )
     if not picked_group_types:
         script.exit()
-    picked_group_type_ids = [
-        keys_map[group_name] for group_name in picked_group_types
-    ]
+    picked_group_type_ids = [keys_map[group_name] for group_name in picked_group_types]
     return {k: v for k, v in groups_dict.items() if k in picked_group_type_ids}
 
 
 def prepare_colors(groups_dict):
     """Prepare a list of vg overrides for each group type"""
     groups_colors = {}
-    count = sum(
-        [len(groups) for groups in groups_dict.values() if len(groups) > 1]
-    )
+    count = sum([len(groups) for groups in groups_dict.values() if len(groups) > 1])
     colors = [DB.Color(x[0], x[1], x[2]) for x in generate_colors(count)]
     color_gray = DB.Color(128, 128, 128)
     j = 0
@@ -131,26 +127,15 @@ def prepare_colors(groups_dict):
         else:
             color = colors[j]
             j += 1
-        if HOST_APP.is_newer_than(2019, or_equal=True):
-            groups_colors[gt_id] = (
-                DB.OverrideGraphicSettings()
-                .SetProjectionLineColor(color)
-                .SetProjectionLineWeight(6)
-                .SetSurfaceBackgroundPatternColor(color)
-                .SetCutLineColor(color)
-                .SetCutLineWeight(6)
-                .SetCutBackgroundPatternColor(color)
-            )
-        else:
-            groups_colors[gt_id] = (
-                DB.OverrideGraphicSettings()
-                .SetProjectionLineColor(color)
-                .SetProjectionLineWeight(6)
-                .SetProjectionFillColor(color)
-                .SetCutLineColor(color)
-                .SetCutLineWeight(6)
-                .SetCutFillColor(color)
-            )
+        groups_colors[gt_id] = (
+            DB.OverrideGraphicSettings()
+            .SetProjectionLineColor(color)
+            .SetProjectionLineWeight(6)
+            .SetSurfaceBackgroundPatternColor(color)
+            .SetCutLineColor(color)
+            .SetCutLineWeight(6)
+            .SetCutBackgroundPatternColor(color)
+        )
 
     return groups_colors
 
@@ -170,9 +155,8 @@ def colorize_grouptypes_in_view(view, groups_colors):
 def colorize_grouptypes_in_views(views):
     """Colorize groups by type in given views"""
     view_names = [x.Name for x in views]
-    text = (
-        "Do you want to colorize groups by type on these views:\n\n"
-        + "\n".join(view_names)
+    text = "Do you want to colorize groups by type on these views:\n\n" + "\n".join(
+        view_names
     )
 
     if not forms.alert(text, yes=True, cancel=True, no=False):
@@ -191,8 +175,7 @@ def colorize_grouptypes_in_views(views):
             colorize_grouptypes_in_view(view, groups_colors)
 
 
-target_views = [v for v in revit.get_selection().elements
-                if isinstance(v, DB.View)]
+target_views = [v for v in revit.get_selection().elements if isinstance(v, DB.View)]
 if not target_views:
     target_views = [revit.active_view]
 colorize_grouptypes_in_views(target_views)

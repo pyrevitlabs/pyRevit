@@ -11,17 +11,16 @@ from pyrevit import ROOT_BIN_DIR
 from pyrevit.coreutils.logger import get_logger
 
 
-#pylint: disable=W0703,C0302
-mlogger = get_logger(__name__)  #pylint: disable=C0103
+# pylint: disable=W0703,C0302
+mlogger = get_logger(__name__)  # pylint: disable=C0103
 
 
 def get_toaster():
     """Return full file path of the toast binary utility."""
-    return op.join(op.dirname(__file__), 'pyrevit-toast.exe')
+    return op.join(op.dirname(__file__), "pyrevit-toast.exe")
 
 
-def send_toast(message,
-               title=None, appid=None, icon=None, click=None, actions=None):
+def send_toast(message, title=None, appid=None, icon=None, click=None, actions=None):
     """Send toast notificaton.
 
     Args:
@@ -35,11 +34,11 @@ def send_toast(message,
     """
     # set defaults
     if not title:
-        title = 'pyRevit'
+        title = "pyRevit"
     if not appid:
         appid = title
     if not icon:
-        icon = op.join(ROOT_BIN_DIR, 'pyRevit.ico')
+        icon = op.join(ROOT_BIN_DIR, "pyRevit.ico")
     if not actions:
         actions = {}
 
@@ -57,5 +56,5 @@ def send_toast(message,
         toast_args += r' --action "{}" --action-arg "{}"'.format(action, args)
 
     # send the toast now
-    mlogger.debug('toasting: %s', toast_args)
+    mlogger.debug("toasting: %s", toast_args)
     subprocess.Popen(toast_args, shell=True)
