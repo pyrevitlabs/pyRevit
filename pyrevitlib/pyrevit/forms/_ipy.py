@@ -925,10 +925,15 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
     def setup_icon(self):
         """Setup default window icon, following the bundle icon convention.
 
-        Picks up pyrevit_settings.dark.png under a dark UI theme, the same
-        <name>.dark.png lookup that extension bundle icons use.
+        If required, picks up pyrevit_settings.dark.png under a dark UI theme,
+        the same <name>.dark.png lookup that extension bundle icons use.
         """
-        icon_file = revit.ui.resolve_icon_file(BIN_DIR, "pyrevit_settings.png")
+        if self.resolve_theme:
+            icon_file = revit.ui.resolve_icon_file(BIN_DIR, "pyrevit_settings.png")
+        else:
+            icon_file = op.join(BIN_DIR, "pyrevit_settings.png")
+            if not op.exists(icon_file):
+                icon_file = None
         if icon_file:
             self.set_icon(icon_file)
 
