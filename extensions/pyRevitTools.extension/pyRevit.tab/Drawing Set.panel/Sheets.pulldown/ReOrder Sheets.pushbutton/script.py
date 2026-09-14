@@ -30,6 +30,8 @@ class ListItem(object):
 
 
 class ReOrderWindow(forms.WPFWindow):
+    resolve_theme = True
+
     @staticmethod
     def ensure_orderable():
         sheets = revit.query.get_sheets()
@@ -55,7 +57,7 @@ class ReOrderWindow(forms.WPFWindow):
         return len(int_params)
 
     def __init__(self, xaml_file_name):
-        forms.WPFWindow.__init__(self, xaml_file_name, resolve_theme=True)
+        forms.WPFWindow.__init__(self, xaml_file_name)
 
         self._config = script.get_config()
 

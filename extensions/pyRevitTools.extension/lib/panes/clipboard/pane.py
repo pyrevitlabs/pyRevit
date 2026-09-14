@@ -474,9 +474,10 @@ class MatchHistoryClipboard(forms.WPFPanel):
     panel_title = "pyRevit MatchHistory Clipboard"
     panel_id = "0f3a0866-0123-4178-9f2c-121961bd292c"
     panel_source = _PAGE_XAML
+    resolve_theme = True
 
     def __init__(self):
-        forms.WPFPanel.__init__(self, resolve_theme=True)
+        forms.WPFPanel.__init__(self)
         self.Content = ClipboardContent(is_recall=False)
 
 
@@ -486,8 +487,10 @@ class MatchHistoryClipboard(forms.WPFPanel):
 
 
 class RecallWindow(forms.WPFWindow):
+    resolve_theme = True
+
     def __init__(self, target_type, initial_props, memfile):
-        forms.WPFWindow.__init__(self, _WINDOW_XAML, resolve_theme=True)
+        forms.WPFWindow.__init__(self, _WINDOW_XAML)
         self._content = ClipboardContent(
             is_recall=True,
             target_type=target_type,

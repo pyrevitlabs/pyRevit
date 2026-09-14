@@ -39,9 +39,11 @@ class ReValueItem(object):
 
 
 class ReValueWindow(forms.WPFWindow):
+    resolve_theme = True
+
     def __init__(self, xaml_file_name):
         # create pattern maker window and process options
-        forms.WPFWindow.__init__(self, xaml_file_name, resolve_theme=True)
+        forms.WPFWindow.__init__(self, xaml_file_name)
         self._target_elements = revit.get_selection().elements
         self._reset_preview()
         self._setup_params()

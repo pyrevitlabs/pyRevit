@@ -90,9 +90,11 @@ class RevitVersionCB:
 class SettingsWindow(forms.WPFWindow):
     """pyRevit Settings window that handles setting the pyRevit configs"""
 
+    resolve_theme = True
+
     def __init__(self, xaml_file_name):
         """Sets up the settings ui"""
-        forms.WPFWindow.__init__(self, xaml_file_name, resolve_theme=True)
+        forms.WPFWindow.__init__(self, xaml_file_name)
         try:
             self._setup_core_options()
         except Exception as setup_params_err:

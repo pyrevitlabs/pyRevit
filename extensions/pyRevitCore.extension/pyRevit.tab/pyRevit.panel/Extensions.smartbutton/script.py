@@ -181,8 +181,10 @@ class ExtensionPackageListItem:
 class ExtensionsWindow(forms.WPFWindow):
     """Extension window managing installation and removal of extensions"""
 
+    resolve_theme = True
+
     def __init__(self, xaml_file_name):
-        forms.WPFWindow.__init__(self, xaml_file_name, resolve_theme=True)
+        forms.WPFWindow.__init__(self, xaml_file_name)
         # Tracks whether install_custom_ext_b is acting as "Update" for an
         # already-installed custom extension.
         self._update_mode = False

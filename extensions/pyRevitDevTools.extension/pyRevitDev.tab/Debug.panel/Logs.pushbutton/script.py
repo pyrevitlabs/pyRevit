@@ -120,8 +120,10 @@ class LogMessageListItem(object):
 
 
 class LogViewerWindow(forms.WPFWindow):
+    resolve_theme = True
+
     def __init__(self, xaml_file_name):
-        forms.WPFWindow.__init__(self, xaml_file_name, resolve_theme=True)
+        forms.WPFWindow.__init__(self, xaml_file_name)
 
         self.hide_element(self.clrsearch_b)
         self._current_entry_list = []

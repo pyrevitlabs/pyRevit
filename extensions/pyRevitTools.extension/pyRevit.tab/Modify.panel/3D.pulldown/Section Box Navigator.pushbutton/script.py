@@ -222,8 +222,10 @@ def on_doc_closed(sender, args):
 class SectionBoxNavigatorForm(forms.WPFWindow):
     """Modeless form for section box navigation."""
 
+    resolve_theme = True
+
     def __init__(self, xaml_file_name):
-        forms.WPFWindow.__init__(self, xaml_file_name, handle_esc=False, resolve_theme=True)
+        forms.WPFWindow.__init__(self, xaml_file_name, handle_esc=False)
 
         self.chkIncludeLinks.IsChecked = my_config.get_option("chkLinks_state", False)
         self.chkPreview.IsChecked = my_config.get_option("chkPreview_state", True)

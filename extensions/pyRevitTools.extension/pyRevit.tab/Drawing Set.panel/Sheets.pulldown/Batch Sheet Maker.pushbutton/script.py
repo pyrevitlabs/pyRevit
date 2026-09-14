@@ -10,8 +10,10 @@ logger = script.get_logger()
 
 
 class BatchSheetMakerWindow(forms.WPFWindow):
+    resolve_theme = True
+
     def __init__(self, xaml_file_name):
-        forms.WPFWindow.__init__(self, xaml_file_name, resolve_theme=True)
+        forms.WPFWindow.__init__(self, xaml_file_name)
         self._sheet_dict = {}
         self._titleblock_id = None
         self.sheets_tb.Focus()

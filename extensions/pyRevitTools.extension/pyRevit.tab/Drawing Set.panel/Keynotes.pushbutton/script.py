@@ -419,10 +419,12 @@ def _find_parent_of(all_categories, all_keynotes, child):
 class EditRecordWindow(forms.WPFWindow):
     """Dialog for adding/editing a single keynote or category record."""
 
+    resolve_theme = True
+
     def __init__(
         self, owner, conn, mode, rkeynote=None, rkey=None, text=None, pkey=None
     ):
-        forms.WPFWindow.__init__(self, "EditRecord.xaml", resolve_theme=True)
+        forms.WPFWindow.__init__(self, "EditRecord.xaml")
         self.Owner = owner
         self._res = None
         self._commited = False
@@ -712,6 +714,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
     , retain the XAML defaults and center the window.
     """
 
+    resolve_theme = True
+
     def _apply_theme_brushes(self):
         """Swap in dark-theme values for the brushes that cannot be shared.
 
@@ -748,7 +752,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             logger.debug("Dark theme brush override failed | %s", ex)
 
     def __init__(self, xaml_file_name, reset_config=False, safe_mode=False):
-        forms.WPFWindow.__init__(self, xaml_file_name, resolve_theme=True)
+        forms.WPFWindow.__init__(self, xaml_file_name)
         self._apply_theme_brushes()
 
         self._modal_mode = safe_mode

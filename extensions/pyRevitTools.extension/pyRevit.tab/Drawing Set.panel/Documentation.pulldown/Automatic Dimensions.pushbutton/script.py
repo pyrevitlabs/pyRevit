@@ -63,8 +63,10 @@ class AutoDimWindow(forms.WPFWindow):
     """The Automatic Dimensions dialog. Every choice is remembered
     between runs in the tool's own pyRevit config section."""
 
+    resolve_theme = True
+
     def __init__(self, wall_count, fixture_count):
-        forms.WPFWindow.__init__(self, XAML, resolve_theme=True)
+        forms.WPFWindow.__init__(self, XAML)
         self.result = None
         self.wall_count = wall_count
         self.config = script.get_config()

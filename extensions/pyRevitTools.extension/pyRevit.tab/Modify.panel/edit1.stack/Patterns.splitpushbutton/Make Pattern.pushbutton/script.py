@@ -65,12 +65,14 @@ PICK_COORD_RESOLUTION = 16
 
 
 class MakePatternWindow(forms.WPFWindow):
+    resolve_theme = True
+
     def __init__(self, xaml_file_name, rvt_elements=None):
         self._selection = rvt_elements
         self._export_only = False
 
         # create pattern maker window and process options
-        forms.WPFWindow.__init__(self, xaml_file_name, resolve_theme=True)
+        forms.WPFWindow.__init__(self, xaml_file_name)
 
         if not self._selection:
             self.resolver_ops.IsEnabled = False

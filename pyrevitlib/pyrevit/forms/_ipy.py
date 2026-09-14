@@ -794,7 +794,10 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         literal_string (bool): xaml_source contains xaml content, not filepath
         handle_esc (bool): handle Escape button and close the window
         set_owner (bool): set the owner of window to host app window
-        resolve_theme (bool): resolve the palette from Revit's active UI theme. Defaults to False.
+
+    Optional class attributes:
+        resolve_theme (bool):
+            resolve the palette from Revit's active UI theme. Defaults to False.
 
     Examples:
         ```python
@@ -811,13 +814,14 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         ```
     """
 
+    resolve_theme = False
+
     def __init__(
         self,
         xaml_source,
         literal_string=False,
         handle_esc=True,
         set_owner=True,
-        resolve_theme=False,
     ):
         """Initialize WPF window and resources."""
         # load xaml
@@ -826,7 +830,6 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
             literal_string=literal_string,
             handle_esc=handle_esc,
             set_owner=set_owner,
-            resolve_theme=resolve_theme,
         )
 
     def load_xaml(
@@ -835,7 +838,6 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         literal_string=False,
         handle_esc=True,
         set_owner=True,
-        resolve_theme=False,
     ):
         """Load the window XAML file.
 
@@ -847,10 +849,7 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
                 Defaults to True.
             set_owner (bool, optional): Whether to set the window owner.
                 Defaults to True.
-            resolve_theme (bool): resolve the palette from Revit's active UI
-                theme. Defaults to False.
         """
-        self.resolve_theme = resolve_theme
         # create new id for this window
         self.window_id = coreutils.new_uuid()
 
@@ -974,6 +973,8 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
                 how the panel behaves while an editor is active.
             contextual_help (UI.ContextualHelp):
                 F1 help associated with the pane.
+            resolve_theme (bool):
+                resolve the palette from Revit's active UI theme. Defaults to False.
 
         Examples:
     ```python
@@ -1005,10 +1006,11 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
     initial_state = None
     editor_interaction = None
     contextual_help = None
+    resolve_theme = False
 
     _live_refresh_root_colors = True
 
-    def __init__(self, resolve_theme=False):
+    def __init__(self):
         """Initialize WPF panel and resources."""
         if not self.panel_id:
             raise PyRevitException('"panel_id" class attribute is not set')
@@ -1017,9 +1019,9 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
         if not self.panel_title:
             raise PyRevitException('"panel_title" class attribute is not set')
 
-        self.load_xaml(self.panel_source, resolve_theme=resolve_theme)
+        self.load_xaml(self.panel_source)
 
-    def load_xaml(self, xaml_source, literal_string=False, resolve_theme=False):
+    def load_xaml(self, xaml_source, literal_string=False):
         """Load the panel XAML file.
 
         Supports the full locale-fallback chain (see _resolve_xaml_source) and
@@ -1028,10 +1030,7 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
         Args:
             xaml_source (str): XAML content string or file path.
             literal_string (bool): True when xaml_source is raw content.
-            resolve_theme (bool): resolve the palette from Revit's active UI
-                theme. Defaults to False.
         """
-        self.resolve_theme = resolve_theme
         _WPFMixin.setup_resources(self, resolve_theme=self.resolve_theme)
         self.merge_resource_dict(THEME_XAML_FILE)
         if not literal_string:
