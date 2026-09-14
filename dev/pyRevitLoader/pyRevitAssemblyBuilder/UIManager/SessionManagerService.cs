@@ -570,7 +570,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
                 if (configureMethod == null)
                 {
-                    Debug.WriteLine(
+                    Trace.WriteLine(
                         "pyRevit: ScriptOutput.ConfigureLogging not found; loader logging is discarded.");
                     return;
                 }
@@ -579,7 +579,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"pyRevit: failed to route loader logging into the runtime: {ex}");
+                Trace.WriteLine($"pyRevit: failed to route loader logging into the runtime: {ex}");
             }
         }
 
