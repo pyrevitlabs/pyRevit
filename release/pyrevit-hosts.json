@@ -835,7 +835,7 @@
         },
         "notes": "https://help.autodesk.com/view/RVT/2025/ENU/?guid=RevitReleaseNotes_2025updates_2025_4_6_html",
         "product": "Autodesk Revit",
-        "release": "2025.4.6 Update",
+        "release": "2025.4.6",
         "target": "x64",
         "version": "25.4.60.9"
     },
