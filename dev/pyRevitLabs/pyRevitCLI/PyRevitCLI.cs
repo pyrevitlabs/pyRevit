@@ -168,7 +168,7 @@ namespace pyRevitCLI {
                     ProcessArguments();
                 }
                 catch (ConfigurationReadOnlyException ex) {
-                    logger.Error(ex.Message);
+                    System.Console.Error.WriteLine("Error: {0}", ex.Message);
                     Environment.ExitCode = -1;
                 }
                 catch (Exception ex) {
@@ -652,8 +652,12 @@ namespace pyRevitCLI {
                 }
 
                 else if (all("rocketmode")) {
-                    if (any("enable", "disable"))
+                    if (any("enable", "disable")) {
                         PyRevitConfigs.SetRocketMode(arguments["enable"].IsTrue);
+                        Console.WriteLine(
+                            "Rocket Mode {0}.",
+                            arguments["enable"].IsTrue ? "enabled" : "disabled");
+                    }
                     else
                         Console.WriteLine(string.Format("Rocket Mode is {0}",
                                                         PyRevitConfigs.GetRocketMode() ? "Enabled" : "Disabled"));
@@ -868,8 +872,21 @@ namespace pyRevitCLI {
                         PyRevitConfigs.SetOutputStyleSheet(cssPath);
                 }
 
-                else if (all("seed"))
-                    PyRevitConfigs.SeedConfig(lockSeedConfig: arguments["--lock"].IsTrue);
+                else if (all("seed")) {
+                    bool lockSeedConfig = arguments["--lock"].IsTrue;
+                    if (PyRevitConfigs.TrySeedConfig(lockSeedConfig)) {
+                        Console.WriteLine(
+                            "Configuration seeded to \"{0}\"{1}.",
+                            PyRevitConsts.AdminConfigFilePath,
+                            lockSeedConfig ? " and locked" : string.Empty);
+                    }
+                    else {
+                        System.Console.Error.WriteLine(
+                            "Error: No user configuration exists at \"{0}\"; nothing was seeded.",
+                            PyRevitConsts.ConfigFilePath);
+                        Environment.ExitCode = -1;
+                    }
+                }
 
                 else if (all("seedshippeddefaults"))
                     PyRevitConfigs.SeedShippedExtensionDefaults();

@@ -115,12 +115,22 @@ namespace pyRevitLabs.PyRevit {
 
         // copy config file into all users directory as seed config file
         public static void SeedConfig(bool lockSeedConfig = false) {
+            TrySeedConfig(lockSeedConfig);
+        }
+
+        /// <summary>
+        /// Copies the current user configuration to the machine-wide configuration
+        /// path and optionally marks that file read-only.
+        /// </summary>
+        /// <returns><see langword="true"/> when a user config was copied; otherwise, <see langword="false"/>.</returns>
+        /// <exception cref="PyRevitException">The configuration could not be seeded.</exception>
+        public static bool TrySeedConfig(bool lockSeedConfig = false) {
             string sourceFile = PyRevitConsts.ConfigFilePath;
             string targetFile = PyRevitConsts.AdminConfigFilePath;
 
             _logger.Debug("Seeding config file \"{@SourceFile}\" to \"{@TargetFile}\"", sourceFile, targetFile);
 
-            if (!File.Exists(sourceFile)) return;
+            if (!File.Exists(sourceFile)) return false;
 
             try {
                 File.Copy(sourceFile, targetFile, true);
@@ -137,6 +147,8 @@ namespace pyRevitLabs.PyRevit {
                             + "or it is not your user account.");
                     }
                 }
+
+                return true;
             }
             catch (Exception ex) {
                 throw new PyRevitException("Failed seeding config file.", ex);

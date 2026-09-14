@@ -308,7 +308,16 @@ public static class PyRevitConfigService {
     }
 
     private static void RunMigration(IConfigurationService service, string configPath) {
-        var migration = ConfigurationMigrator.Migrate(service);
+        ConfigurationMigrationResult migration;
+        try {
+            migration = ConfigurationMigrator.Migrate(service);
+        }
+        catch (Exception ex) {
+            ConfigurationDiagnostics.ReportWarning(
+                "Skipped config migration for " + configPath + ": " + ex.Message);
+            return;
+        }
+
         if (migration.BackupFailed) {
             ConfigurationDiagnostics.ReportWarning(
                 "Skipped config migration for " + configPath +

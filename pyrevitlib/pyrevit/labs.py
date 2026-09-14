@@ -92,7 +92,6 @@ def extract_build_from_exe(proc_path):
     )
 
 
-# activate binding resolver
 if HOST_APP.is_older_than(2019):
     PyRevit.PyRevitBindings.ActivateResolver()
 
