@@ -22,7 +22,6 @@ from pyrevit.coreutils import envvars
 from pyrevit.coreutils import logger
 from pyrevit.loader import sessioninfo
 from pyrevit.loader import hooks
-from pyrevit.labs import PyRevit
 from pyrevit.userconfig import user_config
 from pyrevit.versionmgr import updater
 from pyrevit.versionmgr import upgrade
@@ -173,11 +172,12 @@ def perform_preload():
 
     Invoked by the C# session orchestrator as the first step of a load. Sets up
     the session environment, output window, and pre-load services.
-    """
-    # must run before setup_runtime_vars(), the first attachment consumer, so a
-    # re-attached clone is picked up on reload
-    PyRevit.PyRevitAttachments.ClearAttachmentCache()
 
+    Note:
+        Relies on the Preload entry script having cleared the attachment cache
+        before importing this module, so every attachment lookup in the load
+        reads the current attachment once and then reuses it.
+    """
     sessioninfo.setup_runtime_vars()
 
     if EXEC_PARAMS.first_load:

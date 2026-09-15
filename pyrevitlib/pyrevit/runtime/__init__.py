@@ -254,9 +254,18 @@ def _get_reference_file(ref_name):
 def get_references():
     """Get list of all referenced assemblies.
 
+    Resolved once per host process and engine, then reused by later session
+    loads: the shipped assemblies that resolving loads stay loaded, and host
+    framework locations don't change while the host runs.
+
     Returns:
         (list): referenced assemblies
     """
+    cache_key = "PYREVITResolvedReferences{}".format(eng.EnginePrefix)
+    cached_refs = framework.AppDomain.CurrentDomain.GetData(cache_key)
+    if cached_refs:
+        return cached_refs.split(coreutils.DEFAULT_SEPARATOR)
+
     ref_list = [
         # system stuff
         "System",
@@ -319,7 +328,11 @@ def get_references():
     ref_list.extend(["Xceed.Wpf.AvalonDock"])
 
     refs = (_get_reference_file(ref_name) for ref_name in ref_list)
-    return [r for r in refs if r]
+    resolved_refs = [r for r in refs if r]
+    framework.AppDomain.CurrentDomain.SetData(
+        cache_key, coreutils.DEFAULT_SEPARATOR.join(resolved_refs)
+    )
+    return resolved_refs
 
 
 def _generate_runtime_asm():
