@@ -135,5 +135,34 @@ namespace pyRevitExtensionParserTest
             Assert.That(recorded.Parent, Is.SameAs(step));
             Assert.That(recorded.ElapsedMilliseconds, Is.EqualTo(1000.0).Within(0.001));
         }
+
+        [Test]
+        public void CurrentSpanIsInnermostOpenSpanUntilLoadEnds()
+        {
+            var timeline = LoadTimeline.Begin("load", Stopwatch.GetTimestamp());
+            Assert.That(timeline.CurrentSpan, Is.SameAs(timeline.Root));
+
+            var step = timeline.StartSpan("step");
+            Assert.That(timeline.CurrentSpan, Is.SameAs(step));
+
+            step.End();
+            Assert.That(timeline.CurrentSpan, Is.SameAs(timeline.Root));
+
+            timeline.End();
+            Assert.That(timeline.CurrentSpan, Is.Null);
+        }
+
+        [Test]
+        public void LapMeasuresFromSpanStartThenFromPreviousLap()
+        {
+            var ticksPerSecond = Stopwatch.Frequency;
+            var timeline = LoadTimeline.Begin("load", Stopwatch.GetTimestamp() - 5 * ticksPerSecond);
+
+            var firstLap = timeline.Root.Lap();
+            var secondLap = timeline.Root.Lap();
+
+            Assert.That(firstLap, Is.GreaterThanOrEqualTo(5000.0));
+            Assert.That(secondLap, Is.LessThan(1000.0));
+        }
     }
 }

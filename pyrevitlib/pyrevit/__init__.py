@@ -23,8 +23,8 @@ import re
 
 # Perf instrumentation must be the first pyrevit import so the first mark
 # below times as close to "pyrevit module load entry" as the import order
-# allows. Each mark is a no-op until the pyRevit logger is importable and
-# only surfaces when DEBUG logging is enabled.
+# allows. Marks record nothing outside a session load and only surface when
+# DEBUG logging is enabled.
 from pyrevit._perf import mark as _perfmark
 
 _perfmark("pyrevit.__init__:entry")
