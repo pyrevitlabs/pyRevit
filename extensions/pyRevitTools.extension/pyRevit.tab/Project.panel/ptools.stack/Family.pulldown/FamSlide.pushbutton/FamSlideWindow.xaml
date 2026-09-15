@@ -30,6 +30,8 @@
         </Style>
 
         <Style x:Key="ToolbarButton" TargetType="Button">
+            <Setter Property="AutomationProperties.Name"
+                    Value="{Binding ToolTip, RelativeSource={RelativeSource Self}}"/>
             <Setter Property="Width" Value="34"/>
             <Setter Property="Height" Value="30"/>
             <Setter Property="Margin" Value="2,0"/>

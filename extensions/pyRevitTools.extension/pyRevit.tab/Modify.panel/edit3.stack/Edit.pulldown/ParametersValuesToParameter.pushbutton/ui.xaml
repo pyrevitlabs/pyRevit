@@ -84,7 +84,9 @@
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button x:Name="executeButton" Content="{DynamicResource Execute}" Width="100" Height="35" 
                     Margin="0,0,10,0" FontSize="14" FontWeight="Bold" 
-                    Background="{DynamicResource pyRevitAccentBrush}" Click="execute_button_click"/>
+                    Background="{DynamicResource pyRevitAccentBrush}"
+                    Foreground="{DynamicResource pyRevitDarkerDarkBrush}"
+                    Click="execute_button_click"/>
             <Button x:Name="cancelButton" Content="{DynamicResource Cancel}" Width="100" Height="35" 
                     FontSize="14" Click="cancel_button_click"/>
         </StackPanel>

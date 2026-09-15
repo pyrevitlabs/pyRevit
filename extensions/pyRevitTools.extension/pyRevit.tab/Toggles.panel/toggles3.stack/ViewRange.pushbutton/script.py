@@ -616,6 +616,15 @@ class MainViewModel(forms.Reactive):
             Convert.ToByte(200),
         )
     )  # Light red
+    _DARK_ERROR_FIELD_BG = SolidColorBrush(
+        Color.FromRgb(Convert.ToByte(92), Convert.ToByte(46), Convert.ToByte(46))
+    )
+    _LIGHT_FIELD_FG = SolidColorBrush(
+        Color.FromRgb(Convert.ToByte(0), Convert.ToByte(0), Convert.ToByte(0))
+    )
+    _DARK_FIELD_FG = SolidColorBrush(
+        Color.FromRgb(Convert.ToByte(236), Convert.ToByte(240), Convert.ToByte(241))
+    )
 
     # Warning banner brushes
     _TRANSPARENT_BG = SolidColorBrush(
@@ -654,6 +663,7 @@ class MainViewModel(forms.Reactive):
         self._warning_fg = self._ERROR_BANNER_FG
         self._can_modify_view = False
         self._can_modify_bottom = False
+        self._field_error_prefixes = set()
 
         # Initialize level-related properties - use INTEGER values for WPF binding
         self._available_levels = []
@@ -673,18 +683,38 @@ class MainViewModel(forms.Reactive):
             )
             setattr(self, "_" + prefix + "_elevation", "-")
             setattr(self, "_" + prefix + "_new_value", "")
-            # Per-field error background (bound to TextBox/ComboBox Background)
-            setattr(self, "_" + prefix + "_field_bg", self._DEFAULT_FIELD_BG)
+            self._set_field_colors(prefix, False)
+
+    def _field_colors(self, has_error):
+        if forms.is_dark_theme():
+            return (
+                self._DARK_ERROR_FIELD_BG if has_error else self._DEFAULT_FIELD_BG,
+                self._DARK_FIELD_FG,
+            )
+        return (
+            self._ERROR_FIELD_BG if has_error else self._DEFAULT_FIELD_BG,
+            self._LIGHT_FIELD_FG,
+        )
+
+    def _set_field_colors(self, prefix, has_error):
+        background, foreground = self._field_colors(has_error)
+        setattr(self, prefix + "_field_bg", background)
+        setattr(self, prefix + "_field_fg", foreground)
+
+    def _refresh_field_colors(self):
+        for _, _, prefix in PLANES.values():
+            self._set_field_colors(prefix, prefix in self._field_error_prefixes)
 
     def clear_field_errors(self):
-        """Reset all field backgrounds to default (no error)."""
-        for _, _, prefix in PLANES.values():
-            setattr(self, prefix + "_field_bg", self._DEFAULT_FIELD_BG)
+        """Reset all field colors to their normal theme values."""
+        self._field_error_prefixes.clear()
+        self._refresh_field_colors()
 
     def set_field_error(self, *prefixes):
-        """Set the specified field(s) to error highlight."""
+        """Set the specified field(s) to error colors."""
         for prefix in prefixes:
-            setattr(self, prefix + "_field_bg", self._ERROR_FIELD_BG)
+            self._field_error_prefixes.add(prefix)
+            self._set_field_colors(prefix, True)
 
     def show_error(self, msg):
         """Show an error banner with warning icon."""
@@ -885,7 +915,6 @@ class MainViewModel(forms.Reactive):
     def viewdepth_new_value(self, value):
         self._viewdepth_new_value = value
 
-    # Per-field error background properties (bound to TextBox/ComboBox Background)
     @forms.reactive
     def topplane_field_bg(self):
         return self._topplane_field_bg
@@ -918,6 +947,38 @@ class MainViewModel(forms.Reactive):
     def viewdepth_field_bg(self, value):
         self._viewdepth_field_bg = value
 
+    @forms.reactive
+    def topplane_field_fg(self):
+        return self._topplane_field_fg
+
+    @topplane_field_fg.setter
+    def topplane_field_fg(self, value):
+        self._topplane_field_fg = value
+
+    @forms.reactive
+    def cutplane_field_fg(self):
+        return self._cutplane_field_fg
+
+    @cutplane_field_fg.setter
+    def cutplane_field_fg(self, value):
+        self._cutplane_field_fg = value
+
+    @forms.reactive
+    def bottomplane_field_fg(self):
+        return self._bottomplane_field_fg
+
+    @bottomplane_field_fg.setter
+    def bottomplane_field_fg(self, value):
+        self._bottomplane_field_fg = value
+
+    @forms.reactive
+    def viewdepth_field_fg(self):
+        return self._viewdepth_field_fg
+
+    @viewdepth_field_fg.setter
+    def viewdepth_field_fg(self, value):
+        self._viewdepth_field_fg = value
+
 
 class MainWindow(forms.WPFWindow):
     resolve_theme = True
@@ -928,6 +989,12 @@ class MainWindow(forms.WPFWindow):
         script.restore_window_position(self)
         # Events are now handled via @events.handle decorators
         server.add_server()
+
+    def _on_theme_refresh(self):
+        forms.WPFWindow._on_theme_refresh(self)
+        data_context = getattr(self, "DataContext", None)
+        if data_context is not None:
+            data_context._refresh_field_colors()
 
     def window_closed(self, sender, args):
         script.save_window_position(self)
