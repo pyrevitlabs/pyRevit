@@ -115,8 +115,8 @@
                   BorderThickness="1"
                   RowHeaderWidth="0"
                   CanUserSortColumns="True"
-                  HorizontalGridLinesBrush="#dedede"
-                  VerticalGridLinesBrush="#dedede"
+                  HorizontalGridLinesBrush="{DynamicResource pyRevitControlBorderBrush}"
+                  VerticalGridLinesBrush="{DynamicResource pyRevitControlBorderBrush}"
                   SelectionChanged="sheet_selection_changed"
                   Sorting="sorting_changed">
             <DataGrid.CellStyle>
