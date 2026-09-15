@@ -320,6 +320,8 @@ class VariablePaperPrintSettingListItem(PrintSettingListItem):
 
 
 class EditNamingFormatsWindow(forms.WPFWindow):
+    resolve_theme = True
+
     def __init__(self, xaml_file_name, start_with=None):
         forms.WPFWindow.__init__(self, xaml_file_name)
 
@@ -657,6 +659,8 @@ class UnlistedSheetsList(object):
 
 
 class PrintSheetsWindow(forms.WPFWindow):
+    resolve_theme = True
+
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name)
 

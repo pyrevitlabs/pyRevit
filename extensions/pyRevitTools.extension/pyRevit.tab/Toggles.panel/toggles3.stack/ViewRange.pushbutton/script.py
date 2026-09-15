@@ -920,6 +920,8 @@ class MainViewModel(forms.Reactive):
 
 
 class MainWindow(forms.WPFWindow):
+    resolve_theme = True
+
     def __init__(self):
         forms.WPFWindow.__init__(self, "MainWindow.xaml")
         self.Closed += self.window_closed

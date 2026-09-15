@@ -22,7 +22,7 @@
             </Grid.RowDefinitions>
             
             <!-- Header Row -->
-            <Rectangle Grid.Row="0" Grid.ColumnSpan="5" Fill="#F5F5F5" />
+            <Rectangle Grid.Row="0" Grid.ColumnSpan="5" Fill="{DynamicResource pyRevitChromeBackgroundBrush}" />
             <TextBlock Grid.Row="0" Grid.Column="1" Text="{DynamicResource Plane}" FontWeight="Bold" VerticalAlignment="Center" Margin="5,0"/>
             <TextBlock Grid.Row="0" Grid.Column="2" FontWeight="Bold" VerticalAlignment="Center" Margin="5,0" TextWrapping="Wrap">
                 <Run Text="{DynamicResource Elevation}"/>
@@ -64,7 +64,7 @@
                      Background="{Binding cutplane_field_bg}"/>
             <TextBlock Grid.Row="2" Grid.Column="4" Text="{Binding cutplane_level_name}" 
                        VerticalAlignment="Center" Margin="5,0" 
-                       Background="#E8E8E8" Padding="8,5" FontStyle="Italic" TextAlignment="Center"/>
+                       Background="{DynamicResource pyRevitControlHoverBrush}" Padding="8,5" FontStyle="Italic" TextAlignment="Center"/>
             
             <!-- Bottom Plane Row -->
             <Rectangle Grid.Row="3" Grid.Column="0" Width="5" Height="20" Fill="{Binding bottomplane_brush}" RadiusX="3" RadiusY="3"/>

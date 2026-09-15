@@ -3,31 +3,29 @@
         Title="FamSlide" Height="760" Width="420"
         WindowStartupLocation="CenterScreen"
         ResizeMode="CanResizeWithGrip"
-        Background="#FFF3F3F3">
+        Background="{DynamicResource pyRevitWindowBackgroundBrush}">
 
     <Window.Resources>
 
         <Style x:Key="PillTag" TargetType="Border">
             <Setter Property="CornerRadius" Value="9"/>
             <Setter Property="Padding" Value="6,1"/>
-            <Setter Property="Margin" Value="3,0,0,0"/>
-            <Setter Property="Background" Value="#FFB48A00"/>
+            <Setter Property="Margin" Value="0,0,3,3"/>
         </Style>
 
         <Style x:Key="PillTagText" TargetType="TextBlock">
-            <Setter Property="Foreground" Value="White"/>
             <Setter Property="FontSize" Value="10"/>
         </Style>
 
         <Style x:Key="NameCapsule" TargetType="Border">
             <Setter Property="CornerRadius" Value="14"/>
-            <Setter Property="Background" Value="White"/>
+            <Setter Property="Background" Value="{DynamicResource pyRevitControlBackgroundBrush}"/>
             <Setter Property="Padding" Value="10,4"/>
         </Style>
 
         <Style x:Key="ValueBox" TargetType="Border">
             <Setter Property="CornerRadius" Value="14"/>
-            <Setter Property="Background" Value="White"/>
+            <Setter Property="Background" Value="{DynamicResource pyRevitControlBackgroundBrush}"/>
             <Setter Property="Width" Value="72"/>
         </Style>
 
@@ -42,7 +40,7 @@
         </Style>
 
         <Style x:Key="ToggledToolbarButton" TargetType="Button" BasedOn="{StaticResource ToolbarButton}">
-            <Setter Property="BorderBrush" Value="#FF8A8A8A"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource pyRevitControlBorderBrush}"/>
         </Style>
 
     </Window.Resources>
@@ -64,7 +62,7 @@
                 <TextBlock Text="FamSlide" FontSize="18" FontWeight="Bold"
                            HorizontalAlignment="Center"/>
                 <TextBlock x:Name="FamilyNameLabel" Text="(no family loaded)"
-                           FontSize="11" Foreground="#FF666666"
+                           FontSize="11" Foreground="{DynamicResource pyRevitSubtleForegroundBrush}"
                            HorizontalAlignment="Center" Margin="0,2,0,0"/>
             </StackPanel>
             <Button x:Name="RefreshButton" Grid.Column="1"
@@ -80,7 +78,7 @@
         </ScrollViewer>
 
         <!-- Bottom toolbar -->
-        <Border Grid.Row="2" Background="#FFE9E9E9" BorderBrush="#FFD0D0D0"
+        <Border Grid.Row="2" Background="{DynamicResource pyRevitChromeBackgroundBrush}" BorderBrush="{DynamicResource pyRevitControlBorderBrush}"
                 BorderThickness="0,1,0,0">
             <Grid Margin="10,8">
                 <Grid.ColumnDefinitions>
@@ -91,23 +89,59 @@
 
                 <StackPanel Orientation="Horizontal" Grid.Column="0">
                     <Button x:Name="ShuffleButton" Style="{StaticResource ToolbarButton}"
-                            Content="&#8646;"
-                            ToolTip="Shuffle parameter values. Randomizes every editable parameter within its current slider range. Use with caution - this cannot be undone from FamSlide itself."/>
+                            ToolTip="Shuffle parameter values. Randomizes every editable parameter within its current slider range. Use with caution - this cannot be undone from FamSlide itself.">
+                        <Viewbox Width="16" Height="16">
+                            <Canvas Width="24" Height="24">
+                                <Path Data="M21,9L17,5V8H10V10H17V13M7,11L3,15L7,19V16H14V14H7V11Z"
+                                      Fill="{DynamicResource pyRevitIconBrush}"/>
+                            </Canvas>
+                        </Viewbox>
+                    </Button>
                     <Button x:Name="DeleteUnusedButton" Style="{StaticResource ToolbarButton}"
-                            Content="&#128465;"
-                            ToolTip="Delete all unused parameters. Removes family parameters that are not driving a dimension, not involved in a formula, and are not built-in. Use with caution."/>
+                            ToolTip="Delete all unused parameters. Removes family parameters that are not driving a dimension, not involved in a formula, and are not built-in. Use with caution.">
+                        <Viewbox Width="16" Height="16">
+                            <Canvas Width="24" Height="24">
+                                <Path Data="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"
+                                      Fill="{DynamicResource pyRevitIconBrush}"/>
+                            </Canvas>
+                        </Viewbox>
+                    </Button>
                     <Button x:Name="ToggleEditableButton" Style="{StaticResource ToolbarButton}"
-                            Content="&#128065;"
-                            ToolTip="Show/hide editable parameters. Toggles visibility of parameters whose slider or checkbox can be changed directly."/>
+                            ToolTip="Show/hide editable parameters. Toggles visibility of parameters whose slider or checkbox can be changed directly.">
+                        <Viewbox Width="16" Height="16">
+                            <Canvas Width="24" Height="24">
+                                <Path Data="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z"
+                                      Fill="{DynamicResource pyRevitIconBrush}"/>
+                            </Canvas>
+                        </Viewbox>
+                    </Button>
                     <Button x:Name="ToggleLabelsButton" Style="{StaticResource ToolbarButton}"
-                            Content="&#127991;"
-                            ToolTip="Show/hide labels. Toggles the small tag pills shown under each parameter name."/>
+                            ToolTip="Show/hide labels. Toggles the small tag pills shown under each parameter name.">
+                        <Viewbox Width="16" Height="16">
+                            <Canvas Width="24" Height="24">
+                                <Path Data="M5.5,7A1.5,1.5 0 0,1 4,5.5A1.5,1.5 0 0,1 5.5,4A1.5,1.5 0 0,1 7,5.5A1.5,1.5 0 0,1 5.5,7M21.41,11.58L12.41,2.58C12.05,2.22 11.55,2 11,2H4C2.89,2 2,2.89 2,4V11C2,11.55 2.22,12.05 2.59,12.41L11.58,21.41C11.95,21.77 12.45,22 13,22C13.55,22 14.05,21.77 14.41,21.41L21.41,14.41C21.78,14.05 22,13.55 22,13C22,12.44 21.77,11.94 21.41,11.58Z"
+                                      Fill="{DynamicResource pyRevitIconBrush}"/>
+                            </Canvas>
+                        </Viewbox>
+                    </Button>
                     <Button x:Name="SavePresetButton" Style="{StaticResource ToolbarButton}"
-                            Content="&#128190;"
-                            ToolTip="Save preset. Stores the current values of every editable parameter for this family, so you can quickly return to them later."/>
+                            ToolTip="Save preset. Stores the current values of every editable parameter for this family, so you can quickly return to them later.">
+                        <Viewbox Width="16" Height="16">
+                            <Canvas Width="24" Height="24">
+                                <Path Data="M15,9H5V5H15M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19M17,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V7L17,3Z"
+                                      Fill="{DynamicResource pyRevitIconBrush}"/>
+                            </Canvas>
+                        </Viewbox>
+                    </Button>
                     <Button x:Name="RestorePresetButton" Style="{StaticResource ToolbarButton}"
-                            Content="&#8617;"
-                            ToolTip="Restore preset. Re-applies the values last saved with Save Preset for this family. Does nothing if no preset has been saved yet."/>
+                            ToolTip="Restore preset. Re-applies the values last saved with Save Preset for this family. Does nothing if no preset has been saved yet.">
+                        <Viewbox Width="16" Height="16">
+                            <Canvas Width="24" Height="24">
+                                <Path Data="M13,3A9,9 0 0,0 4,12H1L4.89,15.89L4.96,16.03L9,12H6A7,7 0 0,1 13,5A7,7 0 0,1 20,12A7,7 0 0,1 13,19C11.07,19 9.32,18.21 8.06,16.94L6.64,18.36C8.27,20 10.5,21 13,21A9,9 0 0,0 22,12A9,9 0 0,0 13,3M12,8V13L16.28,15.54L17,14.33L13.5,12.25V8H12Z"
+                                      Fill="{DynamicResource pyRevitIconBrush}"/>
+                            </Canvas>
+                        </Viewbox>
+                    </Button>
                 </StackPanel>
 
                 <Button x:Name="CloseButton" Grid.Column="2" Content="Close"

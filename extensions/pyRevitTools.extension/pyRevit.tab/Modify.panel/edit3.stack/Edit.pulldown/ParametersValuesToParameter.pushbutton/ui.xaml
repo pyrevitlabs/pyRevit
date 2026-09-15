@@ -40,7 +40,7 @@
             
             <!-- Separator -->
             <GridSplitter Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                         Background="White" Width="3" ShowsPreview="True"/>
+                         Background="{DynamicResource pyRevitControlBorderBrush}" Width="3" ShowsPreview="True"/>
             
             <!-- Target Parameter (Right) -->
             <Grid Grid.Column="2">
@@ -60,7 +60,7 @@
                 <StackPanel Grid.Row="2" Margin="0,10,0,0">
 					<TextBlock TextWrapping="Wrap"
 							   FontWeight="Bold"
-							   Foreground="Black"
+							   Foreground="{DynamicResource pyRevitWindowForegroundBrush}"
 							   Margin="0,0,0,5"
 							   Text="{DynamicResource InsertSeparators}"/>
 					<TextBox x:Name="separatorTextBox"
@@ -84,7 +84,7 @@
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button x:Name="executeButton" Content="{DynamicResource Execute}" Width="100" Height="35" 
                     Margin="0,0,10,0" FontSize="14" FontWeight="Bold" 
-                    Background="LightBlue" Click="execute_button_click"/>
+                    Background="{DynamicResource pyRevitAccentBrush}" Click="execute_button_click"/>
             <Button x:Name="cancelButton" Content="{DynamicResource Cancel}" Width="100" Height="35" 
                     FontSize="14" Click="cancel_button_click"/>
         </StackPanel>
