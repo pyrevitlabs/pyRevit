@@ -179,7 +179,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 // Use direct API call - this is the same as the Python implementation.
                 var contextualHelp = new ContextualHelp(ContextualHelpType.Url, helpUrl);
                 ribbonItem.SetContextualHelp(contextualHelp);
-                _logger.Debug($"Successfully set contextual help for '{component.DisplayName}' to URL: {helpUrl}");
             }
             catch (Exception ex)
             {

@@ -70,8 +70,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                 .FirstOrDefault(p => p.Name == panelText)
                 ?? _uiApp.CreateRibbonPanel(tabName, panelText);
 
-            _logger.Debug($"Created or retrieved panel '{panelText}' in tab '{tabName}'.");
-
             try
             {
                 var adwPanel = _styleManager.GetAdWindowsPanel(panel, tabName);
@@ -167,8 +165,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Builders
                     if (slideoutBrush != null)
                         adwPanel.CustomSlideOutPanelBackground = slideoutBrush;
                 }
-
-                _logger.Debug($"Applied {(isDarkTheme ? "dark" : "light")} background colors to panel '{panelName}' in tab '{tabName}'.");
             }
             catch (Exception ex)
             {
