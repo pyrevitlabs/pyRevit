@@ -113,6 +113,8 @@ _PALETTE_LIGHT = {
     "SubtleForeground": (0xFF, 0x69, 0x69, 0x69),  # dim gray
     "DangerForeground": (0xFF, 0xB4, 0x23, 0x18),  # brick red
     "DangerBackground": (0xFF, 0xFB, 0xD5, 0xD5),  # misty rose
+    "WarningForeground": (0xFF, 0x9A, 0x63, 0x00),  # dark amber
+    "WarningBackground": (0xFF, 0xFD, 0xF0, 0xD5),  # pale amber
     "SuccessBackground": (0xFF, 0xD4, 0xEF, 0xD8),  # pale green
     "Icon": (0xFF, 0x00, 0x00, 0x00),  # black
     "SelectionBackground": (0xFF, 0xCC, 0xE4, 0xF7),  # pale blue
@@ -138,6 +140,8 @@ _PALETTE_DARK = {
     "SubtleForeground": (0xFF, 0x95, 0xA5, 0xA6),  # muted blue-gray
     "DangerForeground": (0xFF, 0xFF, 0x6B, 0x61),  # coral
     "DangerBackground": (0xFF, 0x5C, 0x2E, 0x2E),  # dark red
+    "WarningForeground": (0xFF, 0xF0, 0xAD, 0x4E),  # amber
+    "WarningBackground": (0xFF, 0x5C, 0x48, 0x2E),  # dark amber
     "SuccessBackground": (0xFF, 0x2C, 0x4C, 0x33),  # dark green
     "Icon": (0xFF, 0xEC, 0xF0, 0xF1),  # light gray
     "SelectionBackground": (0xFF, 0x33, 0x50, 0x6E),  # dark blue
@@ -1558,6 +1562,7 @@ class SelectFromList(TemplateUserInputWindow):
     in_uncheck = False
     xaml_source = "SelectFromList.xaml"
     default_title_key = "SelectFromList.DefaultTitle"
+    resolve_theme = True
 
     @property
     def use_regex(self):
@@ -2114,6 +2119,7 @@ class GetValueWindow(TemplateUserInputWindow):
     """
 
     xaml_source = "GetValueWindow.xaml"
+    resolve_theme = True
 
     def _setup(self, **kwargs):
         self.Width = 400
