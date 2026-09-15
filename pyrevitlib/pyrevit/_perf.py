@@ -7,16 +7,24 @@ that interleave with its `[PERF]` lines. Outside a session load there is no
 active timeline and every call does nothing, so checkpoints left in library
 modules cost nothing when commands import them.
 
-Self-contained on purpose: imports nothing at module load so it can be the first
+Self-contained on purpose: imports only sys at module load so it can be the first
 line of pyrevit/__init__.py without triggering circular loads. The timeline type
-and the pyRevit logger are both resolved lazily on first use.
+is resolved on first use. The pyRevit logger is never imported from here, since
+importing it before pyrevit/__init__.py finishes fails and costs time inside the
+very checkpoints being measured; it is used once another import has loaded it.
+Lines recorded before then are held and logged, in order, ahead of the first
+line after it.
 """
+
+import sys
 
 _UNRESOLVED = object()
 
 _TIMELINE_TYPE = [_UNRESOLVED]
 
 _LOGGER = [None]
+
+_PENDING_LINES = []
 
 
 def _timeline_type():
@@ -43,9 +51,11 @@ def _active_timeline():
 def _logger():
     if _LOGGER[0] is not None:
         return _LOGGER[0]
+    logger_module = sys.modules.get("pyrevit.coreutils.logger")
+    get_logger = getattr(logger_module, "get_logger", None)
+    if get_logger is None:
+        return None
     try:
-        from pyrevit.coreutils.logger import get_logger
-
         _LOGGER[0] = get_logger("pyrevit.perf")
     except Exception:
         return None
@@ -55,11 +65,15 @@ def _logger():
 def _log_debug(message, *args):
     lg = _logger()
     if lg is None:
+        _PENDING_LINES.append((message, args))
         return
-    try:
-        lg.debug(message, *args)
-    except Exception:
-        pass
+    lines = _PENDING_LINES[:] + [(message, args)]
+    del _PENDING_LINES[:]
+    for line_message, line_args in lines:
+        try:
+            lg.debug(line_message, *line_args)
+        except Exception:
+            pass
 
 
 def elapsed_load_seconds():
@@ -78,8 +92,9 @@ def mark(label):
     therefore never reach back into another script or loader step.
 
     Note:
-        The checkpoint is recorded even before the pyRevit logger is
-        importable, so the next checkpoint's delta starts from it.
+        Checkpoints taken before the pyRevit logger has been loaded are held
+        and logged, in order, once it has, so their log timestamps run late
+        but their deltas are exact.
     """
     timeline = _active_timeline()
     if timeline is None:
