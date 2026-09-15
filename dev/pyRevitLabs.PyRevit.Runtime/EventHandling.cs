@@ -1180,7 +1180,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             ).document.ToInt64();
         }
 
-        static long GetAPIDocumentId(Document doc) {
+        internal static long GetAPIDocumentId(Document doc) {
             MethodInfo getMFCDocMethod = doc.GetType().GetMethod("getMFCDoc", BindingFlags.Instance | BindingFlags.NonPublic);
             object mfcDoc = getMFCDocMethod.Invoke(doc, new object[] { });
             MethodInfo ptfValMethod = mfcDoc.GetType().GetMethod("GetPointerValue", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -1194,20 +1194,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             else
                 _lastTabState = newState;
 
-
-            // collect ids of family documents
-            var docIds = new List<long>();
-            var familyDocIds = new List<long>();
-            foreach (Document doc in uiApp.Application.Documents) {
-                // skip linked docs. they don't have tabs
-                if (doc.IsLinked)
-                    continue;
-
-                var docId = GetAPIDocumentId(doc);
-                docIds.Add(docId);
-                if (doc.IsFamilyDocument)
-                    familyDocIds.Add(docId);
-            }
+            var (docIds, familyDocIds) = DocumentTabEventUtils.GetCachedDocumentAndFamilyIds();
 
             // cleanup styling for docs that do no exists anymore
             // empty this before setting new styles so empty slots can be taken
@@ -1353,7 +1340,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public static bool IsUpdatingDocumentTabs { get; private set; }
 
-        static object UpdateLock = new object();
+        private static readonly object UpdateLock = new object();
+        private static readonly object CacheLock = new object();
+
+        private static readonly Dictionary<long, bool> _documentCache = new Dictionary<long, bool>();
+        private static readonly Dictionary<int, long> _closingDocumentIds = new Dictionary<int, long>();
 
         static TabColoringTheme _tabColoringTheme = null;
         public static TabColoringTheme TabColoringTheme {
@@ -1408,11 +1399,21 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return new List<TabItem>();
         }
 
+        /// <summary>
+        /// Starts document tab grouping and initializes the document cache while running in a valid Revit API context.
+        /// </summary>
+        /// <param name="uiapp">The active Revit UI application.</param>
         public static void StartGroupingDocumentTabs(UIApplication uiapp) {
             lock (UpdateLock) {
                 if (!IsUpdatingDocumentTabs) {
                     UIApp = uiapp;
                     IsUpdatingDocumentTabs = true;
+
+                    SeedDocumentCache(UIApp.Application.Documents);
+                    UIApp.Application.DocumentCreated += OnDocumentCreated;
+                    UIApp.Application.DocumentOpened += OnDocumentOpened;
+                    UIApp.Application.DocumentClosing += OnDocumentClosing;
+                    UIApp.Application.DocumentClosed += OnDocumentClosed;
 
                     var docMgr = GetDockingManager(UIApp);
                     docMgr.LayoutUpdated += UpdateDockingManagerLayout;
@@ -1423,10 +1424,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public static void StopGroupingDocumentTabs() {
             lock (UpdateLock) {
                 if (IsUpdatingDocumentTabs) {
+                    UIApp.Application.DocumentCreated -= OnDocumentCreated;
+                    UIApp.Application.DocumentOpened -= OnDocumentOpened;
+                    UIApp.Application.DocumentClosing -= OnDocumentClosing;
+                    UIApp.Application.DocumentClosed -= OnDocumentClosed;
+
                     var docMgr = GetDockingManager(UIApp);
                     docMgr.LayoutUpdated -= UpdateDockingManagerLayout;
 
                     ClearDocumentTabGroups();
+                    ClearDocumentCache();
 
                     IsUpdatingDocumentTabs = false;
                 }
@@ -1434,6 +1441,105 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public static void ResetGroupingDocumentTabs() => _tabColoringTheme?.ResetSlots();
+
+        internal static (List<long> DocIds, List<long> FamilyDocIds) GetCachedDocumentAndFamilyIds() {
+            lock (CacheLock) {
+                var docIds = _documentCache.Keys.ToList();
+                var familyDocIds = _documentCache.Where(x => x.Value).Select(x => x.Key).ToList();
+                return (docIds, familyDocIds);
+            }
+        }
+
+        internal static List<long> GetCachedDocumentIds() {
+            lock (CacheLock) {
+                return _documentCache.Keys.ToList();
+            }
+        }
+
+        internal static bool IsCachedDocumentFamily(long docId) {
+            lock (CacheLock) {
+                return _documentCache.TryGetValue(docId, out bool isFamily) && isFamily;
+            }
+        }
+
+        private static void CacheDocument(long docId, bool isFamily) {
+            lock (CacheLock) {
+                _documentCache[docId] = isFamily;
+            }
+        }
+
+        private static void SeedDocumentCache(DocumentSet documents) {
+            ClearDocumentCache();
+            foreach (Document doc in documents) {
+                if (!doc.IsLinked) {
+                    long docId = TabColoringTheme.GetAPIDocumentId(doc);
+                    CacheDocument(docId, doc.IsFamilyDocument);
+                }
+            }
+        }
+
+        private static void UncacheDocument(int closingDocId) {
+            lock (CacheLock) {
+
+                if (_closingDocumentIds.TryGetValue(closingDocId, out long docId)) {
+                    _closingDocumentIds.Remove(closingDocId);
+                    _documentCache.Remove(docId);
+                }
+            }
+        }
+
+        private static void ClearDocumentCache() {
+            lock (CacheLock) {
+                _documentCache.Clear();
+                _closingDocumentIds.Clear();
+            }
+        }
+
+        private static void CacheOpenDocument(Document doc) {
+            if (doc != null && !doc.IsLinked) {
+                long docId = TabColoringTheme.GetAPIDocumentId(doc);
+                bool isFamily = doc.IsFamilyDocument;
+                CacheDocument(docId, isFamily);
+            }
+        }
+
+        static void OnDocumentCreated(object sender, DocumentCreatedEventArgs e) {
+            try {
+                CacheOpenDocument(e.Document);
+            } catch (Exception ex) {
+                logger.Error($"Error caching created document: {ex.Message}");
+            }
+        }
+
+        static void OnDocumentOpened(object sender, DocumentOpenedEventArgs e) {
+            try {
+                CacheOpenDocument(e.Document);
+            } catch (Exception ex) {
+                logger.Error($"Error caching opened document: {ex.Message}");
+            }
+        }
+
+        static void OnDocumentClosing(object sender, DocumentClosingEventArgs e) {
+            try {
+                Document doc = e.Document;
+                if (doc != null && !doc.IsLinked) {
+                    long docId = TabColoringTheme.GetAPIDocumentId(doc);
+                    lock (CacheLock) {
+                        _closingDocumentIds[e.DocumentId] = docId;
+                    }
+                }
+            } catch (Exception ex) {
+                logger.Error($"Error caching closing document: {ex.Message}");
+            }
+        }
+
+        static void OnDocumentClosed(object sender, DocumentClosedEventArgs e) {
+            try {
+                UncacheDocument(e.DocumentId);
+            } catch (Exception ex) {
+                logger.Error($"Error processing closed document: {ex.Message}");
+            }
+        }
 
         static void UpdateDockingManagerLayout(object sender, EventArgs e) {
             UpdateDocumentTabGroups();
