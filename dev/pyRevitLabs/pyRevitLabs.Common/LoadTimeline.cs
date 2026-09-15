@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 
 namespace pyRevitLabs.Common {
     /// <summary>
@@ -52,6 +53,14 @@ namespace pyRevitLabs.Common {
 
         /// <summary>Milliseconds since the load started, or its total once ended.</summary>
         public double ElapsedMilliseconds => Root.ElapsedMilliseconds;
+
+        /// <summary>Innermost open span, or null once the load has ended.</summary>
+        public LoadSpan CurrentSpan {
+            get {
+                lock (_lock)
+                    return IsEnded ? null : _openSpans.Peek();
+            }
+        }
 
         /// <summary>
         /// How long the host process had been running when the load started. Set for the first
@@ -156,12 +165,14 @@ namespace pyRevitLabs.Common {
     public sealed class LoadSpan : IDisposable {
         private readonly LoadTimeline _timeline;
         private readonly List<LoadSpan> _children = new List<LoadSpan>();
+        private long _lastLapTimestamp;
 
         internal LoadSpan(LoadTimeline timeline, string name, long startTimestamp, LoadSpan parent = null) {
             _timeline = timeline;
             Name = name;
             StartTimestamp = startTimestamp;
             Parent = parent;
+            _lastLapTimestamp = startTimestamp;
             parent?._children.Add(this);
         }
 
@@ -176,6 +187,16 @@ namespace pyRevitLabs.Common {
         public long? EndTimestamp { get; internal set; }
 
         public bool IsEnded => EndTimestamp.HasValue;
+
+        /// <summary>
+        /// Milliseconds since the previous lap on this span, or since the span started for the first
+        /// lap. Python perf checkpoints use it so a delta never reaches back into another span.
+        /// </summary>
+        public double Lap() {
+            var now = Stopwatch.GetTimestamp();
+            var previous = Interlocked.Exchange(ref _lastLapTimestamp, now);
+            return (now - previous) * 1000.0 / Stopwatch.Frequency;
+        }
 
         /// <summary>Duration once ended; time since the span started while it is still open.</summary>
         public double ElapsedMilliseconds =>
