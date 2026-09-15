@@ -105,28 +105,34 @@ def _set_autoupdate_inprogress(state):
 
 def _perform_onsessionloadstart_ops():
     # clear the cached engines
-    if not _clear_running_engines():
-        mlogger.debug("No Engine Manager exists...")
+    with _perfblock("pyrevit.loader.sessionmgr:clear running engines"):
+        if not _clear_running_engines():
+            mlogger.debug("No Engine Manager exists...")
 
     # once pre-load is complete, report environment conditions
     uuid_str = sessioninfo.new_session_uuid()
-    sessioninfo.report_env()
+    with _perfblock("pyrevit.loader.sessionmgr:report env"):
+        sessioninfo.report_env()
 
     # reset the list of assemblies loaded under pyRevit session
     sessioninfo.set_loaded_pyrevit_assemblies([])
 
     # init routes
-    routes.init()
+    with _perfblock("pyrevit.loader.sessionmgr:routes init"):
+        routes.init()
 
     # asking telemetry module to setup the telemetry system
     # (active or not active)
-    telemetry.setup_telemetry(uuid_str)
+    with _perfblock("pyrevit.loader.sessionmgr:telemetry setup"):
+        telemetry.setup_telemetry(uuid_str)
 
     # apply Upgrades
-    upgrade.upgrade_existing_pyrevit()
+    with _perfblock("pyrevit.loader.sessionmgr:upgrade"):
+        upgrade.upgrade_existing_pyrevit()
 
     # setup hooks
-    hooks.setup_hooks()
+    with _perfblock("pyrevit.loader.sessionmgr:hooks setup"):
+        hooks.setup_hooks()
 
 
 def _perform_onsessionloadcomplete_ops():
@@ -178,7 +184,8 @@ def perform_preload():
     # re-attached clone is picked up on reload
     PyRevit.PyRevitAttachments.ClearAttachmentCache()
 
-    sessioninfo.setup_runtime_vars()
+    with _perfblock("pyrevit.loader.sessionmgr:setup runtime vars"):
+        sessioninfo.setup_runtime_vars()
 
     if EXEC_PARAMS.first_load:
         with _perfblock("pyrevit.loader.sessionmgr:output setup"):
