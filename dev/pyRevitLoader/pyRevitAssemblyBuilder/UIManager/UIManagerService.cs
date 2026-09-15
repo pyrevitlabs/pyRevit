@@ -496,7 +496,6 @@ namespace pyRevitAssemblyBuilder.UIManager
             // Skip adding separators during reload - they persist in the UI
             if (assemblyInfo?.IsReloading == true)
             {
-                _logger.Debug($"Skipping separator during reload for panel '{parentPanel?.Name}'.");
                 return;
             }
 
