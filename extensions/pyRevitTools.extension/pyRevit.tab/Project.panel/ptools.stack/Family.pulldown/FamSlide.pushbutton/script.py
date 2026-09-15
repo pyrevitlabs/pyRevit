@@ -602,7 +602,11 @@ class FamSlideWindow(forms.WPFWindow):
 
     def _do_save_preset(self):
         doc = revit.doc
-        if doc is None or not doc.IsFamilyDocument:
+        if (
+            doc is None
+            or not doc.IsFamilyDocument
+            or doc.FamilyManager.CurrentType is None
+        ):
             return
         preset = self._capture_preset(doc)
         self._presets[doc.Title] = preset
@@ -610,7 +614,11 @@ class FamSlideWindow(forms.WPFWindow):
 
     def _do_restore_preset(self):
         doc = revit.doc
-        if doc is None or not doc.IsFamilyDocument:
+        if (
+            doc is None
+            or not doc.IsFamilyDocument
+            or doc.FamilyManager.CurrentType is None
+        ):
             return
         preset = self._presets.get(doc.Title)
         if not preset:

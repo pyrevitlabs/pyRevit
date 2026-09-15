@@ -3,11 +3,11 @@
         Title="{DynamicResource Title}" Height="800" Width="1500" ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
     <Window.Resources>
-        <Style x:Key="IndexColumnStyle" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource {x:Type DataGridCell}}">
+        <Style x:Key="IndexColumnStyle" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource pyRevitDataGridCellStyle}">
             <Setter Property="Foreground" Value="{DynamicResource pyRevitAccentBrush}"/>
         </Style>
 
-        <Style x:Key="DefaultColumnStyle" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource {x:Type DataGridCell}}">
+        <Style x:Key="DefaultColumnStyle" TargetType="{x:Type DataGridCell}" BasedOn="{StaticResource pyRevitDataGridCellStyle}">
             <Setter Property="ToolTip" Value="{Binding tooltip}"/>
             <Setter Property="ContextMenu" Value="{DynamicResource ItemContextMenu}" />
             <Style.Triggers>
@@ -253,6 +253,7 @@
             </TextBlock>
         </StatusBar>
         <DataGrid x:Name="sheets_lb"
+                  Style="{StaticResource pyRevitDataGridStyle}"
                   AutoGenerateColumns="False"
                   Margin="10,0,10,10"
                   BorderThickness="1"
@@ -266,6 +267,10 @@
                   VirtualizingPanel.VirtualizationMode="Recycling"
                   SelectionChanged="sheet_selection_changed">
             <DataGrid.Resources>
+                <Style TargetType="DataGridRow" BasedOn="{StaticResource pyRevitDataGridRowStyle}"/>
+                <Style TargetType="DataGridCell" BasedOn="{StaticResource pyRevitDataGridCellStyle}"/>
+                <Style TargetType="DataGridColumnHeader" BasedOn="{StaticResource pyRevitDataGridColumnHeaderStyle}"/>
+                <Style TargetType="DataGridRowHeader" BasedOn="{StaticResource pyRevitDataGridRowHeaderStyle}"/>
                 <ContextMenu x:Key="ItemContextMenu">
                     <MenuItem  Header="{DynamicResource CopySheetFileNames}" Click="copy_filenames" />
                 </ContextMenu>

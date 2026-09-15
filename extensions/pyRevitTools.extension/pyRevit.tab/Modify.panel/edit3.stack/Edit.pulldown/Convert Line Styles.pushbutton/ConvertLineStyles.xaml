@@ -28,7 +28,7 @@
             <Control Template="{StaticResource styleOption}" />
         </DataTemplate>
 
-        <Style x:Key="treeItemStyle" TargetType="TreeViewItem" BasedOn="{StaticResource {x:Type TreeViewItem}}">
+        <Style x:Key="treeItemStyle" TargetType="TreeViewItem" BasedOn="{StaticResource pyRevitTreeViewItemStyle}">
             <Setter Property="IsExpanded" Value="True"/>
         </Style>
 
@@ -89,6 +89,7 @@
                 </Button>
             </StackPanel>-->
             <TreeView x:Name="convertList"
+                      Style="{StaticResource pyRevitTreeViewStyle}"
                       ItemTemplate="{DynamicResource treeViewItem}"
                       ItemContainerStyle="{DynamicResource treeItemStyle}"/>
         </DockPanel>
