@@ -16,7 +16,6 @@ from pyrevit.routes.server.base import Request, Response
 
 from pyrevit.routes.server import serverinfo
 from pyrevit.routes.server import router
-from pyrevit.routes.server import server
 
 
 __all__ = (
@@ -49,9 +48,20 @@ def init():
 
 
 def activate_server():
-    """Activate routes server for this host instance."""
+    """Activate routes server for this host instance.
+
+    The server module is imported on first activation, so that sessions with
+    the routes server disabled never import the HTTP stack.
+
+    Important:
+        That module creates a Revit external event as it is imported, and the
+        host prohibits creating one off its main thread. Activation must run
+        on the main thread.
+    """
     routes_server = envvars.get_pyrevit_env_var(envvars.ROUTES_SERVER)
     if not routes_server:
+        from pyrevit.routes.server import server
+
         try:
             rsinfo = serverinfo.register()
             routes_server = server.RoutesServer(
