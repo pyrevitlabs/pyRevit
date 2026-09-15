@@ -1132,6 +1132,7 @@
     </Style>
 
     <Style TargetType="TabItem">
+        <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
         <Setter Property="Padding" Value="8,4"/>
         <Setter Property="Template">
             <Setter.Value>
@@ -1141,14 +1142,17 @@
                             BorderBrush="{DynamicResource pyRevitControlBorderBrush}"
                             BorderThickness="1,1,1,0"
                             Padding="{TemplateBinding Padding}">
-                        <ContentPresenter ContentSource="Header" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <ContentPresenter x:Name="header" ContentSource="Header" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsSelected" Value="True">
                             <Setter TargetName="border" Property="Background" Value="{DynamicResource pyRevitControlHoverBrush}"/>
                         </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter Property="Foreground" Value="{DynamicResource pyRevitAccentBrush}"/>
+                            <Setter TargetName="header" Property="TextElement.Foreground" Value="{DynamicResource pyRevitAccentBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="header" Property="TextElement.Foreground" Value="{DynamicResource pyRevitDisabledForegroundBrush}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -1157,6 +1161,7 @@
     </Style>
     <Style TargetType="TabControl">
         <Setter Property="Background" Value="{DynamicResource pyRevitWindowBackgroundBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource pyRevitControlBorderBrush}"/>
     </Style>
 
