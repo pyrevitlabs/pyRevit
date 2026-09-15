@@ -168,14 +168,11 @@ namespace pyRevitAssemblyBuilder.SessionManager
             // step is named "ParseAllExtensions" rather than "GetLibraryExtensions".
             step = timeline.StartSpan("ParseAllExtensions");
             var libraryExtensions = _extensionManager?.GetInstalledLibraryExtensions()?.ToList() ?? new List<ParsedExtension>();
-            step.End();
-            var parseStats = ExtensionParser.ResetAndGetParseStats();
-            var uiParseCount = parseStats.Count(p => p.Kind == "ui");
-            var libParseCount = parseStats.Count(p => p.Kind == "lib");
-            LogStep(step, $"{uiParseCount} ui, {libParseCount} lib");
-            foreach (var (name, _, elapsedMs) in parseStats.OrderByDescending(p => p.ElapsedMs))
+            var libParseCount = step.Children.Count(p => p.Name.EndsWith(".lib", StringComparison.OrdinalIgnoreCase));
+            LogStep(step, $"{step.Children.Count - libParseCount} ui, {libParseCount} lib");
+            foreach (var parse in step.Children.OrderByDescending(p => p.ElapsedMilliseconds))
             {
-                _logger.Debug($"[PERF]   parse '{name}': {elapsedMs}ms");
+                _logger.Debug($"[PERF]   parse '{parse.Name}': {parse.ElapsedMilliseconds:0}ms");
             }
 
             _precomputedLibrarySearchPaths = LibraryExtensionSearchPaths.Collect(libraryExtensions);
@@ -246,8 +243,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 try
                 {
                     _uiManager?.BuildUI(ext, assmInfo);
-                    LogStep(buildStep);
+                    LogStep(buildStep, DescribeBuildUISpans(buildStep));
                     _uiManager?.EmitBuildUIPerfLines(ext.Name);
+                    foreach (var smartButton in buildStep.Children)
+                        _logger.Debug($"[PERF]   {ext.Name}/{smartButton.Name}: {smartButton.ElapsedMilliseconds:0}ms");
                     _logger.Info($"UI created for extension: {ext.Name}");
                 }
                 catch (Exception ex)
@@ -315,6 +314,19 @@ namespace pyRevitAssemblyBuilder.SessionManager
             if (step.Children.Count == 0)
                 return null;
             return string.Join(", ", step.Children.Select(child => $"{child.Name} {child.ElapsedMilliseconds:0}ms"));
+        }
+
+        /// <summary>
+        /// Splits a BuildUI step into ribbon layout and the SmartButton __selfinit__ spans that
+        /// <see cref="SmartButtonScriptInitializer"/> recorded under it.
+        /// </summary>
+        private static string? DescribeBuildUISpans(LoadSpan buildStep)
+        {
+            if (buildStep.Children.Count == 0)
+                return null;
+            var smartButtonMs = buildStep.Children.Sum(child => child.ElapsedMilliseconds);
+            return $"ribbon layout {buildStep.ElapsedMilliseconds - smartButtonMs:0}ms, " +
+                $"smartbuttons {smartButtonMs:0}ms (x{buildStep.Children.Count})";
         }
 
         /// <summary>
