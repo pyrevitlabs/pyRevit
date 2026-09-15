@@ -188,6 +188,7 @@
             </StackPanel>
         </DockPanel>
         <DataGrid x:Name="sheets_dg"
+                  Style="{StaticResource pyRevitDataGridStyle}"
                   Margin="0,10,0,0"
                   AutoGenerateColumns="False"
                   BorderThickness="1"
