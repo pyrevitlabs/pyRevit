@@ -110,12 +110,13 @@
             </Button>
         </Grid>
         <DataGrid x:Name="items_dg"
+                  Style="{StaticResource pyRevitDataGridStyle}"
                   AutoGenerateColumns="False"
                   BorderThickness="1"
                   RowHeaderWidth="0"
                   CanUserSortColumns="True"
-                  HorizontalGridLinesBrush="#dedede"
-                  VerticalGridLinesBrush="#dedede"
+                  HorizontalGridLinesBrush="{DynamicResource pyRevitControlBorderBrush}"
+                  VerticalGridLinesBrush="{DynamicResource pyRevitControlBorderBrush}"
                   SelectionChanged="sheet_selection_changed"
                   Sorting="sorting_changed">
             <DataGrid.CellStyle>

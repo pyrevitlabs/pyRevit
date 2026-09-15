@@ -3,7 +3,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     WindowStyle="None"
     AllowsTransparency="True"
-    Background="White"
+    Background="{DynamicResource pyRevitWindowBackgroundBrush}"
     Title="{DynamicResource Title}"
     MinHeight="400"
     MinWidth="380"
@@ -12,7 +12,7 @@
     ResizeMode="NoResize"
     ShowInTaskbar="False"
     ScrollViewer.VerticalScrollBarVisibility="Disabled"
-    BorderBrush="#FFA0A0A0"
+    BorderBrush="{DynamicResource pyRevitControlBorderBrush}"
     BorderThickness="1,1,1,1"
     MouseLeftButtonDown="move_window"
     WindowStartupLocation="Manual">
@@ -27,7 +27,7 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Grid Grid.Row="0" Background="#FF667EEA">
+        <Grid Grid.Row="0" Background="{DynamicResource pyRevitDarkBrush}">
             <TextBlock Text="{DynamicResource HeaderTitle}" FontSize="18" FontWeight="Bold"
                        HorizontalAlignment="Center" Margin="0,15,0,15"
                        Foreground="White" VerticalAlignment="Center"/>
@@ -39,20 +39,20 @@
 
         <!-- Operation Scope -->
         <GroupBox Grid.Row="1" Header="{DynamicResource OperationScopeHeader}" Margin="15,10,15,15"
-                  FontWeight="SemiBold" Foreground="#FF444444">
+                  FontWeight="SemiBold" Foreground="{DynamicResource pyRevitWindowForegroundBrush}">
             <StackPanel Margin="15">
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock x:Name="status_grids" Text="" FontSize="12" Margin="0,5,0,5" Foreground="#FF333333"/>
-                    <TextBlock x:Name="status_grids_active" Text="" FontSize="12" Margin="0,5,0,5" Foreground="#FFFF0000" FontWeight="Bold"/>
+                    <TextBlock x:Name="status_grids" Text="" FontSize="12" Margin="0,5,0,5" Foreground="{DynamicResource pyRevitWindowForegroundBrush}"/>
+                    <TextBlock x:Name="status_grids_active" Text="" FontSize="12" Margin="0,5,0,5" Foreground="{DynamicResource pyRevitDangerForegroundBrush}" FontWeight="Bold"/>
                 </StackPanel>
-                <TextBlock x:Name="status_coordinate_system" Text="" FontSize="12" Margin="0,5" Foreground="#FF333333"/>
-                <TextBlock x:Name="status_active_controls" Text="" FontSize="12" Margin="0,5" Foreground="#FFFF0000" FontWeight="Bold"/>
+                <TextBlock x:Name="status_coordinate_system" Text="" FontSize="12" Margin="0,5" Foreground="{DynamicResource pyRevitWindowForegroundBrush}"/>
+                <TextBlock x:Name="status_active_controls" Text="" FontSize="12" Margin="0,5" Foreground="{DynamicResource pyRevitDangerForegroundBrush}" FontWeight="Bold"/>
             </StackPanel>
         </GroupBox>
 
         <!-- Toggle All -->
         <GroupBox Grid.Row="2" Header="{DynamicResource ToggleAllHeader}" Margin="15,5,15,15"
-                  FontWeight="SemiBold" Foreground="#FF444444">
+                  FontWeight="SemiBold" Foreground="{DynamicResource pyRevitWindowForegroundBrush}">
             <Grid Margin="15">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -67,7 +67,7 @@
 
         <!-- Toggle by Direction -->
         <GroupBox Grid.Row="3" Header="{DynamicResource ToggleByDirectionHeader}" Margin="15,5,15,15"
-                  FontWeight="SemiBold" Foreground="#FF444444">
+                  FontWeight="SemiBold" Foreground="{DynamicResource pyRevitWindowForegroundBrush}">
             <Grid Margin="15">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -105,8 +105,8 @@
 
             <Button x:Name="back_button" Grid.Column="0" Click="go_back"
                     HorizontalAlignment="Stretch" VerticalAlignment="Center"
-                    Height="40" Margin="0,0,5,0" Background="#FFF8F9FA"
-                    BorderBrush="#FFDEE2E6" Foreground="#FF666666">
+                    Height="40" Margin="0,0,5,0" Background="{DynamicResource pyRevitButtonBackgroundBrush}"
+                    BorderBrush="{DynamicResource pyRevitControlBorderBrush}" Foreground="{DynamicResource pyRevitWindowForegroundBrush}">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="40"/>
@@ -120,13 +120,13 @@
 
             <Button Grid.Column="1" Content="{DynamicResource Cancel}" Click="cancel"
                     HorizontalAlignment="Stretch" VerticalAlignment="Center"
-                    Height="40" Margin="5,0,5,0" Background="#FFF8F9FA"
-                    BorderBrush="#FFDEE2E6" Foreground="#FF666666" FontSize="12"/>
+                    Height="40" Margin="5,0,5,0" Background="{DynamicResource pyRevitButtonBackgroundBrush}"
+                    BorderBrush="{DynamicResource pyRevitControlBorderBrush}" Foreground="{DynamicResource pyRevitWindowForegroundBrush}" FontSize="12"/>
 
             <Button Grid.Column="2" Content="{DynamicResource OK}" Click="confirm"
                     HorizontalAlignment="Stretch" VerticalAlignment="Center"
-                    Height="40" Margin="5,0,0,0" Background="#FF667EEA"
-                    BorderBrush="#FF667EEA" Foreground="White" FontWeight="SemiBold" FontSize="12"/>
+                    Height="40" Margin="5,0,0,0" Background="{DynamicResource pyRevitAccentBrush}"
+                    BorderBrush="{DynamicResource pyRevitAccentBrush}" Foreground="{DynamicResource pyRevitDarkBrush}" FontWeight="SemiBold" FontSize="12"/>
         </Grid>
     </Grid>
 </Window>

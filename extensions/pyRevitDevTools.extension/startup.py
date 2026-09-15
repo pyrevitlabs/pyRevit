@@ -132,6 +132,7 @@ class DockableExample(forms.WPFPanel):
     panel_title = "pyRevit Dockable Panel Title"
     panel_id = "3110e336-f81c-4927-87da-4e0d30d4d64a"
     panel_source = op.join(op.dirname(__file__), "DockableExample.xaml")
+    resolve_theme = True
 
     def do_something(self, sender, args):
         forms.alert("Voila!!!")

@@ -62,13 +62,14 @@
                     Click="mark_as_final"/>
         </Grid>
         <DataGrid x:Name="preview_dg"
+                  Style="{StaticResource pyRevitDataGridStyle}"
                   Margin="0,10,0,0"
                   AutoGenerateColumns="False"
                   BorderThickness="1"
                   RowHeaderWidth="0"
                   CanUserSortColumns="True"
-                  HorizontalGridLinesBrush="#dedede"
-                  VerticalGridLinesBrush="#dedede"
+                  HorizontalGridLinesBrush="{DynamicResource pyRevitControlBorderBrush}"
+                  VerticalGridLinesBrush="{DynamicResource pyRevitControlBorderBrush}"
                   SelectedCellsChanged="on_selection_change">
             <DataGrid.CellStyle>
                 <Style TargetType="DataGridCell" >
