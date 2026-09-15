@@ -56,9 +56,11 @@ class Revit(BaseObject):
 
     def __init__(self):
         try:
+            if __revit__ is None:
+                raise ValueError('__revit__ handle is not available')
             self.uiapp = __revit__
             self._host = Revit.HOSTS.RPS
-        except NameError:
+        except (NameError, ValueError):
             try:
                 # Try Getting handler from Dynamo RevitServices
                 self.uiapp = self.find_dynamo_uiapp()
