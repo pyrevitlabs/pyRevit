@@ -109,7 +109,7 @@ def _perform_onsessionloadstart_ops():
         mlogger.debug("No Engine Manager exists...")
 
     # once pre-load is complete, report environment conditions
-    uuid_str = sessioninfo.new_session_uuid()
+    uuid_str = sessioninfo.get_session_uuid() or sessioninfo.new_session_uuid()
     sessioninfo.report_env()
 
     # reset the list of assemblies loaded under pyRevit session
