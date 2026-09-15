@@ -238,9 +238,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
             ScriptEngineManager.EnterEngine(engine.TypeId);
             try {
                 // init the engine
-                engine.Start(ref runtime);
+                using (LoadTimeline.Active?.StartSpan(engine.RecoveredFromCache ? "cached engine" : "new engine"))
+                    engine.Start(ref runtime);
                 // execute
-                var result = engine.Execute(ref runtime);
+                int result;
+                using (LoadTimeline.Active?.StartSpan("execute"))
+                    result = engine.Execute(ref runtime);
                 // stop and cleanup the engine
                 engine.Stop(ref runtime);
 
