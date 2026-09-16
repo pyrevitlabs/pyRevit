@@ -205,17 +205,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
             string message,
             bool allowWindowCreation) {
             var output = ScriptOutput.GetForRuntime(runtime);
-            // File persistence is handled by the caller; a forwarded record must not be the
-            // reason an output window appears, so drop it when none is already open.
-            if (!allowWindowCreation && !output.IsWindowReady)
-                return;
             var rendered = FormatVisibleEntry(level, loggerName, message);
-            output.write_log_record(
-                rendered,
-                level == ScriptLogLevel.Error || level == ScriptLogLevel.Critical);
+            var isError = level == ScriptLogLevel.Error || level == ScriptLogLevel.Critical;
+
+            // File persistence is handled by the caller; a forwarded record must not be the
+            // reason an output window appears, so hand it to the output to hold until one does.
+            if (!allowWindowCreation && !output.IsWindowReady) {
+                output.hold_log_record(rendered, isError);
+                return;
+            }
+
+            output.write_log_record(rendered, isError);
         }
 
-        private static string FormatVisibleEntry(
+        internal static string FormatVisibleEntry(
             ScriptLogLevel level,
             string loggerName,
             string message) {

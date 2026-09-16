@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Text;
@@ -37,6 +38,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private string _appVersion;
         private bool _hasErrors;
         private bool _isSessionOutput;
+
+        private const int MaxHeldRecords = 4096;
+        private const string HeldRecordsLoggerName = "pyrevit.output";
+        private readonly HeldRecordBuffer _heldRecords = new HeldRecordBuffer(MaxHeldRecords);
         private int _tableCounter;
 
         private ScriptOutput(UIApplication uiApp = null, bool debugMode = false) {
@@ -316,9 +321,60 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return;
             }
 
+            release_held_records();
             if (markError)
                 mark_error();
             write_line(content);
+        }
+
+        /// <summary>
+        /// Buffers a log record that arrived before this output had a window, so it can be written
+        /// once one opens instead of being lost.
+        /// </summary>
+        /// <remarks>
+        /// The loader forwards its log records here, but a forwarded record must never be the
+        /// reason a window appears, and the session output window is only created part-way through
+        /// a session load. Everything logged before that point - on a first load, the whole preload
+        /// including its [PERF] checkpoints - would otherwise reach the runtime log file and
+        /// nothing else.
+        /// <para>
+        /// Held records belong to this output alone, so a window a later command opens starts with
+        /// an empty buffer and never inherits another output's backlog. If no window ever opens,
+        /// records age out oldest-first past <see cref="MaxHeldRecords"/> and the release says how
+        /// many were lost.
+        /// </para>
+        /// <para>
+        /// Invariant: released by <see cref="write_log_record"/> on the dispatcher thread, ahead of
+        /// the record that triggered the release, so held records keep their original order
+        /// relative to each other and to live output.
+        /// </para>
+        /// </remarks>
+        internal void hold_log_record(string content, bool markError) {
+            _heldRecords.Hold(content, markError);
+        }
+
+        private void release_held_records() {
+            int dropped;
+            var released = _heldRecords.Drain(out dropped);
+            if (released.Length == 0 && dropped == 0)
+                return;
+
+            if (dropped > 0) {
+                write_line(ScriptLoggerService.FormatVisibleEntry(
+                    ScriptLogLevel.Warning,
+                    HeldRecordsLoggerName,
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "{0} earlier records were dropped before the output window opened; "
+                            + "see the runtime log for the full session.",
+                        dropped)));
+            }
+
+            foreach (var record in released) {
+                if (record.MarkError)
+                    mark_error();
+                write_line(record.Content);
+            }
         }
 
         private void log_to_activity(Action<ScriptConsole> writeLog) {

@@ -314,13 +314,27 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// per extension. Results are collected into an index-aligned array rather than a shared
         /// list so no locking is needed across the parallel workers.
         /// </remarks>
+        /// <summary>
+        /// Builds and loads every UI extension's assembly in parallel.
+        /// </summary>
+        /// <remarks>
+        /// Each worker's log records are captured and replayed here in extension order rather than
+        /// written from the worker, so they reach the output window during the load instead of
+        /// after it and land in the runtime log in an order that does not depend on scheduling.
+        /// See <see cref="ParallelLogCapture"/>.
+        /// </remarks>
         private List<(ParsedExtension ext, ExtensionAssemblyInfo assmInfo)> BuildAndLoadAllAssemblies(
             List<ParsedExtension> uiExtensions, List<ParsedExtension> libraryExtensions)
         {
             var stepStopwatch = Stopwatch.StartNew();
             var buildResults = new (ParsedExtension ext, ExtensionAssemblyInfo assmInfo)?[uiExtensions.Count];
+            var pendingLogs = new List<(CapturedLogLevel Level, string Message)>?[uiExtensions.Count];
             System.Threading.Tasks.Parallel.For(0, uiExtensions.Count, i =>
             {
+                var captured = new List<(CapturedLogLevel Level, string Message)>();
+                pendingLogs[i] = captured;
+                using var capture = ParallelLogCapture.Begin(captured);
+
                 var ext = uiExtensions[i];
                 if (ext == null) { _logger.Warning("Skipping null extension."); return; }
                 try
@@ -348,7 +362,11 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     _logger.Error($"Error building/loading extension '{ext?.Name ?? "unknown"}': {ex}");
                 }
             });
-            _logger.Debug($"[PERF] BuildAndLoadAllAssemblies: {stepStopwatch.ElapsedMilliseconds}ms");
+
+            var stepMilliseconds = stepStopwatch.ElapsedMilliseconds;
+            foreach (var records in pendingLogs)
+                ParallelLogCapture.Replay(_logger, records);
+            _logger.Debug($"[PERF] BuildAndLoadAllAssemblies: {stepMilliseconds}ms");
 
             var assembledExtensions = new List<(ParsedExtension ext, ExtensionAssemblyInfo assmInfo)>();
             foreach (var result in buildResults)
