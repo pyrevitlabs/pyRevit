@@ -60,9 +60,9 @@ def activate_server():
     """
     routes_server = envvars.get_pyrevit_env_var(envvars.ROUTES_SERVER)
     if not routes_server:
-        from pyrevit.routes.server import server
-
         try:
+            from pyrevit.routes.server import server
+
             rsinfo = serverinfo.register()
             routes_server = server.RoutesServer(
                 host=rsinfo.server_host, port=rsinfo.server_port
