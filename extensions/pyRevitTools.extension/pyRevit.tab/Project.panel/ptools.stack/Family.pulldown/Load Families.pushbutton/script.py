@@ -125,6 +125,11 @@ def load_families(paths, loading_option, overwrite):
     A family only counts as overwritten once the loader confirms it was
     loaded, so a refused or cancelled reload is never reported as one.
 
+    The project is scanned for loaded families once and the result is kept
+    up to date as families load, so a large selection does not rescan per
+    family. A failed load rescans, because a cancelled selective load can
+    still have loaded some of its types.
+
     Args:
         paths (list[str]): absolute paths of the family files to load
         loading_option (str): name of the FamilyLoader method to call
@@ -138,6 +143,7 @@ def load_families(paths, loading_option, overwrite):
     overwritten = set()
     skipped = set()
     failed = set()
+    loaded_names = get_loaded_family_names()
     max_value = len(paths)
     with forms.ProgressBar(
         title="Loading Family {value} of {max_value}", cancellable=True
@@ -149,16 +155,19 @@ def load_families(paths, loading_option, overwrite):
 
             family = FamilyLoader(path, overwrite=overwrite)
             logger.debug("Loading family: {}".format(family.name))
-            was_loaded = family.is_loaded
+            was_loaded = family.name in loaded_names
             if was_loaded and not overwrite:
                 logger.debug("Family is already loaded: {}".format(family.path))
                 skipped.add(family)
                 continue
 
-            if not getattr(family, loading_option)():
+            if getattr(family, loading_option)():
+                loaded_names.add(family.name)
+                if was_loaded:
+                    overwritten.add(family)
+            else:
                 failed.add(family)
-            elif was_loaded:
-                overwritten.add(family)
+                loaded_names = get_loaded_family_names()
     return LoadOutcome(overwritten, skipped, failed)
 
 
