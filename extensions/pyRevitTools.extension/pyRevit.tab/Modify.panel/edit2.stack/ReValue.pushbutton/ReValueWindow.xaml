@@ -72,7 +72,7 @@
                   VerticalGridLinesBrush="{DynamicResource pyRevitControlBorderBrush}"
                   SelectedCellsChanged="on_selection_change">
             <DataGrid.CellStyle>
-                <Style TargetType="DataGridCell" >
+                <Style TargetType="DataGridCell" BasedOn="{StaticResource pyRevitDataGridCellStyle}">
                     <Setter Property="BorderThickness" Value="0"/>
                     <Setter Property="ToolTip" Value="{Binding tooltip}"/>
                 </Style>
@@ -83,11 +83,12 @@
                 <DataGridTextColumn Header="{DynamicResource NewValue}"
                                     Binding="{Binding newvalue}" MinWidth="50" Width="*" IsReadOnly="True">
                     <DataGridTextColumn.CellStyle>
-                        <Style TargetType="DataGridCell">
+                        <Style TargetType="DataGridCell" BasedOn="{StaticResource pyRevitDataGridCellStyle}">
                             <Setter Property="ToolTip" Value="{Binding tooltip}"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding final}" Value="True">
                                     <Setter Property="Background" Value="LightGreen"/>
+                                    <Setter Property="Foreground" Value="Black"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>

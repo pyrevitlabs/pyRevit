@@ -31,10 +31,11 @@
             <TextBlock Text="{DynamicResource HeaderTitle}" FontSize="18" FontWeight="Bold"
                        HorizontalAlignment="Center" Margin="0,15,0,15"
                        Foreground="White" VerticalAlignment="Center"/>
-            <Button Content="❌" Click="cancel" Background="Transparent" FontSize="14"
-                    FontWeight="Bold" Width="30" Height="30" HorizontalAlignment="Right"
-                    VerticalAlignment="Center" Margin="0,0,10,0" BorderBrush="White"
-                    Foreground="White" BorderThickness="1"/>
+            <Button Content="✕" Click="cancel" Background="Transparent" FontSize="13"
+                    Width="26" Height="26" HorizontalAlignment="Right"
+                    VerticalAlignment="Center" Margin="0,0,10,0" BorderBrush="Transparent"
+                    Foreground="White" BorderThickness="0" Padding="0"
+                    HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
         </Grid>
 
         <!-- Operation Scope -->

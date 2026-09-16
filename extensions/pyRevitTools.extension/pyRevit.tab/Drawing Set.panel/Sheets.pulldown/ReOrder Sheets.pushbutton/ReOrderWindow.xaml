@@ -3,15 +3,17 @@
         Title="{DynamicResource Title}" Height="700" Width="600" ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
     <Window.Resources>
-        <Style x:Key="IndexColumnStyle" TargetType="{x:Type DataGridCell}">
-            <Setter Property="Foreground" Value="Orange"/>
+        <Style x:Key="IndexColumnStyle" TargetType="{x:Type DataGridCell}"
+               BasedOn="{StaticResource pyRevitDataGridCellStyle}">
+            <Setter Property="Foreground" Value="{DynamicResource pyRevitAccentBrush}"/>
         </Style>
 
-        <Style x:Key="DefaultColumnStyle" TargetType="{x:Type DataGridCell}">
+        <Style x:Key="DefaultColumnStyle" TargetType="{x:Type DataGridCell}"
+               BasedOn="{StaticResource pyRevitDataGridCellStyle}">
             <Setter Property="ToolTip" Value="{Binding tooltip}"/>
             <Style.Triggers>
                 <DataTrigger Binding="{Binding printable}" Value="False">
-                    <Setter Property="Foreground" Value="#bdbdbd" />
+                    <Setter Property="Foreground" Value="{DynamicResource pyRevitDisabledForegroundBrush}" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
@@ -120,7 +122,7 @@
                   SelectionChanged="sheet_selection_changed"
                   Sorting="sorting_changed">
             <DataGrid.CellStyle>
-                <Style TargetType="DataGridCell" >
+                <Style TargetType="DataGridCell" BasedOn="{StaticResource pyRevitDataGridCellStyle}">
                     <Setter Property="BorderThickness" Value="0"/>
                 </Style>
             </DataGrid.CellStyle>

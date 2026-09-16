@@ -208,17 +208,20 @@
                     </Grid>
                 </DataTemplate>
 
-                <Style x:Key="SheetColumn" TargetType="{x:Type DataGridCell}">
+                <Style x:Key="SheetColumn" TargetType="{x:Type DataGridCell}"
+                       BasedOn="{StaticResource pyRevitDataGridCellStyle}">
                     <Setter Property="BorderThickness" Value="0,0,3,0"/>
                     <Setter Property="BorderBrush" Value="{StaticResource GridColor}"/>
                 </Style>
 
-                <Style x:Key="PackageCellStyle" TargetType="{x:Type DataGridCell}">
+                <Style x:Key="PackageCellStyle" TargetType="{x:Type DataGridCell}"
+                       BasedOn="{StaticResource pyRevitDataGridCellStyle}">
                     <Setter Property="BorderThickness" Value="0,0,1,0"/>
                     <Setter Property="BorderBrush" Value="{StaticResource GridColor}"/>
                 </Style>
 
-                <Style x:Key="RevisionCellStyle" TargetType="{x:Type DataGridCell}">
+                <Style x:Key="RevisionCellStyle" TargetType="{x:Type DataGridCell}"
+                       BasedOn="{StaticResource pyRevitDataGridCellStyle}">
                     <Setter Property="BorderThickness" Value="0,0,1,0"/>
                     <Setter Property="BorderBrush">
                         <Setter.Value>

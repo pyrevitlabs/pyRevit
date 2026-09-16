@@ -426,13 +426,6 @@
             </Setter.Value>
         </Setter>
     </Style>
-    <Style x:Key="pyRevitDataGridStyle" TargetType="DataGrid">
-        <Setter Property="Background" Value="{DynamicResource pyRevitControlBackgroundBrush}"/>
-        <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
-        <Setter Property="BorderBrush" Value="{DynamicResource pyRevitControlBorderBrush}"/>
-        <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource pyRevitControlBorderBrush}"/>
-        <Setter Property="VerticalGridLinesBrush" Value="{DynamicResource pyRevitControlBorderBrush}"/>
-    </Style>
     <Style x:Key="pyRevitDataGridRowStyle" TargetType="DataGridRow">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
@@ -534,6 +527,20 @@
         <Setter Property="Background" Value="{DynamicResource pyRevitChromeBackgroundBrush}"/>
         <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource pyRevitControlBorderBrush}"/>
+    </Style>
+
+    <Style x:Key="pyRevitDataGridStyle" TargetType="DataGrid">
+        <Setter Property="Background" Value="{DynamicResource pyRevitControlBackgroundBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource pyRevitControlBorderBrush}"/>
+        <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource pyRevitControlBorderBrush}"/>
+        <Setter Property="VerticalGridLinesBrush" Value="{DynamicResource pyRevitControlBorderBrush}"/>
+        <Setter Property="RowBackground" Value="Transparent"/>
+        <Setter Property="AlternatingRowBackground" Value="Transparent"/>
+        <Setter Property="RowStyle" Value="{StaticResource pyRevitDataGridRowStyle}"/>
+        <Setter Property="CellStyle" Value="{StaticResource pyRevitDataGridCellStyle}"/>
+        <Setter Property="ColumnHeaderStyle" Value="{StaticResource pyRevitDataGridColumnHeaderStyle}"/>
+        <Setter Property="RowHeaderStyle" Value="{StaticResource pyRevitDataGridRowHeaderStyle}"/>
     </Style>
 
     <Style TargetType="CheckBox">
@@ -1241,6 +1248,10 @@
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsHighlighted" Value="True">
                             <Setter TargetName="border" Property="Background" Value="{DynamicResource pyRevitControlHoverBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Foreground" Value="{DynamicResource pyRevitDisabledForegroundBrush}"/>
+                            <Setter TargetName="border" Property="Background" Value="Transparent"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
