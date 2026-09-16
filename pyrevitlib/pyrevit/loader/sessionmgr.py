@@ -16,6 +16,7 @@ import sys
 from pyrevit import EXEC_PARAMS, HOST_APP
 from pyrevit import framework
 from pyrevit._perf import elapsed_load_seconds
+from pyrevit._perf import flush as _perfflush
 from pyrevit._perf import time_block as _perfblock
 from pyrevit.coreutils import assmutils
 from pyrevit.coreutils import envvars
@@ -208,6 +209,8 @@ def perform_postload():
 
     # so find_pyrevitcmd can locate commands the C# loader compiled
     _register_loaded_pyrevit_assemblies()
+
+    _perfflush()
 
     load_time = elapsed_load_seconds()
     if load_time is not None:

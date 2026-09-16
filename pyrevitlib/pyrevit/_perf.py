@@ -7,6 +7,11 @@ that interleave with its `[PERF]` lines. Outside a session load there is no
 active timeline and every call does nothing, so checkpoints left in library
 modules cost nothing when commands import them.
 
+Every checkpoint is recorded on the timeline, but only those at or over
+`_ROLLUP_THRESHOLD_MS` get their own log line. Cheaper ones are counted into a
+per-module rollup line, so the log keeps the steps worth acting on and still
+says what the omitted ones cost in total.
+
 Self-contained on purpose: imports only sys at module load so it can be the first
 line of pyrevit/__init__.py without triggering circular loads. The timeline type
 is resolved on first use. The pyRevit logger is never imported from here, since
@@ -18,6 +23,8 @@ line after it.
 
 import sys
 
+_ROLLUP_THRESHOLD_MS = 10.0
+
 _UNRESOLVED = object()
 
 _TIMELINE_TYPE = [_UNRESOLVED]
@@ -25,6 +32,8 @@ _TIMELINE_TYPE = [_UNRESOLVED]
 _LOGGER = [None]
 
 _PENDING_LINES = []
+
+_ROLLUP = [None, 0, 0.0]
 
 
 def _timeline_type():
@@ -76,6 +85,47 @@ def _log_debug(message, *args):
             pass
 
 
+def _group_of(label):
+    return label.split(":", 1)[0]
+
+
+def _flush_rollup():
+    group, count, total = _ROLLUP
+    _ROLLUP[0] = None
+    _ROLLUP[1] = 0
+    _ROLLUP[2] = 0.0
+    if count:
+        _log_debug(
+            "[PERF:py] %s: %d steps under %.0fms: %.0fms",
+            group,
+            count,
+            _ROLLUP_THRESHOLD_MS,
+            total,
+        )
+
+
+def _record(label, elapsed_ms, indent=""):
+    group = _group_of(label)
+    if group != _ROLLUP[0]:
+        _flush_rollup()
+    if elapsed_ms < _ROLLUP_THRESHOLD_MS:
+        _ROLLUP[0] = group
+        _ROLLUP[1] += 1
+        _ROLLUP[2] += elapsed_ms
+        return
+    _log_debug("[PERF:py] %s%s: %.0fms", indent, label, elapsed_ms)
+
+
+def flush():
+    """Log the rollup line for any checkpoints still held.
+
+    A rollup line is held until a checkpoint from another module arrives, so the
+    last module of a load needs this to reach the log. Call once at the end of a
+    session load; harmless at any other time.
+    """
+    _flush_rollup()
+
+
 def elapsed_load_seconds():
     """Seconds since the current session load started, or None outside a load."""
     timeline = _active_timeline()
@@ -87,9 +137,13 @@ def elapsed_load_seconds():
 def mark(label):
     """Record a perf checkpoint.
 
-    Logs one DEBUG `[PERF:py]` line with the time since the previous checkpoint
-    in the innermost open timeline span, or since that span started. Deltas
-    therefore never reach back into another script or loader step.
+    Measures the time since the previous checkpoint in the innermost open
+    timeline span, or since that span started. Deltas therefore never reach
+    back into another script or loader step.
+
+    Checkpoints at or over `_ROLLUP_THRESHOLD_MS` get a DEBUG `[PERF:py]` line
+    of their own; cheaper ones are counted into the rollup line for the label's
+    module, the part before the first colon.
 
     Note:
         Checkpoints taken before the pyRevit logger has been loaded are held
@@ -102,15 +156,16 @@ def mark(label):
     span = timeline.CurrentSpan
     if span is None:
         return
-    _log_debug("[PERF:py] %s: %.0fms", label, span.Lap())
+    _record(label, span.Lap())
 
 
 class time_block(object):
     """Context manager: time a block as a child span of the innermost open span.
 
-    Logs one DEBUG `[PERF:py]` line at exit, indented two extra spaces past
-    `mark()` lines to mirror C# sub-item indentation (`[PERF]   <name>:`).
-    Does nothing outside a session load.
+    Thresholded and rolled up like `mark()`. A block that earns its own line is
+    logged at exit, indented two extra spaces past `mark()` lines to mirror C#
+    sub-item indentation (`[PERF]   <name>:`). Does nothing outside a session
+    load.
     """
 
     def __init__(self, label):
@@ -126,5 +181,5 @@ class time_block(object):
     def __exit__(self, exc_type, exc, tb):
         if self._span is None:
             return False
-        _log_debug("[PERF:py]   %s: %.0fms", self.label, self._span.End())
+        _record(self.label, self._span.End(), "  ")
         return False

@@ -19,6 +19,13 @@ namespace pyRevitAssemblyBuilder.SessionManager
     /// </summary>
     public class SessionManagerService : ISessionManagerService
     {
+        /// <summary>
+        /// Child spans cheaper than this are counted into a rollup line instead of each getting
+        /// a [PERF] line of their own. Matches the threshold <c>pyrevit/_perf.py</c> applies to
+        /// the Python checkpoints that interleave with these lines.
+        /// </summary>
+        private const double RollupThresholdMilliseconds = 10.0;
+
         private readonly IAssemblyBuilderService _assemblyBuilder;
         private readonly IExtensionManagerService _extensionManager;
         private readonly IHookManager _hookManager;
@@ -170,10 +177,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             var libraryExtensions = _extensionManager?.GetInstalledLibraryExtensions()?.ToList() ?? new List<ParsedExtension>();
             var libParseCount = step.Children.Count(p => p.Name.EndsWith(".lib", StringComparison.OrdinalIgnoreCase));
             LogStep(step, $"{step.Children.Count - libParseCount} ui, {libParseCount} lib");
-            foreach (var parse in step.Children.OrderByDescending(p => p.ElapsedMilliseconds))
-            {
-                _logger.Debug($"[PERF]   parse '{parse.Name}': {parse.ElapsedMilliseconds:0}ms");
-            }
+            LogChildSpans(step.Children.OrderByDescending(p => p.ElapsedMilliseconds), parse => $"parse '{parse.Name}'");
 
             _precomputedLibrarySearchPaths = LibraryExtensionSearchPaths.Collect(libraryExtensions);
             _logger.Debug($"Pre-computed {_precomputedLibrarySearchPaths.Count} library search paths");
@@ -245,8 +249,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     _uiManager?.BuildUI(ext, assmInfo);
                     LogStep(buildStep, DescribeBuildUISpans(buildStep));
                     _uiManager?.EmitBuildUIPerfLines(ext.Name);
-                    foreach (var smartButton in buildStep.Children)
-                        _logger.Debug($"[PERF]   {ext.Name}/{smartButton.Name}: {smartButton.ElapsedMilliseconds:0}ms");
+                    LogChildSpans(buildStep.Children, smartButton => $"{ext.Name}/{smartButton.Name}");
                     _logger.Info($"UI created for extension: {ext.Name}");
                 }
                 catch (Exception ex)
@@ -295,6 +298,31 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
             LogTimelineSummary(timeline, firstLoad ? stepsBeforeLogging : stepsBeforeSession);
             _logger.Info($"Session loaded in {timeline.ElapsedMilliseconds:0}ms");
+        }
+
+        /// <summary>
+        /// Logs one indented [PERF] line per child span that cost at least
+        /// <see cref="RollupThresholdMilliseconds"/>, then a single line counting the cheaper
+        /// ones and their total, so a step with many trivial children stays readable without
+        /// losing what they cost together.
+        /// </summary>
+        /// <param name="nameSelector">Renders the name a child span is logged under.</param>
+        private void LogChildSpans(IEnumerable<LoadSpan> children, Func<LoadSpan, string> nameSelector)
+        {
+            var rolledUpCount = 0;
+            var rolledUpMs = 0.0;
+            foreach (var child in children)
+            {
+                if (child.ElapsedMilliseconds < RollupThresholdMilliseconds)
+                {
+                    rolledUpCount++;
+                    rolledUpMs += child.ElapsedMilliseconds;
+                    continue;
+                }
+                _logger.Debug($"[PERF]   {nameSelector(child)}: {child.ElapsedMilliseconds:0}ms");
+            }
+            if (rolledUpCount > 0)
+                _logger.Debug($"[PERF]   {rolledUpCount} under {RollupThresholdMilliseconds:0}ms: {rolledUpMs:0}ms");
         }
 
         private void LogStep(LoadSpan step, string? detail = null)
