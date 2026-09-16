@@ -60,9 +60,9 @@ class FamilyLoader:
     get_symbols()
         Loads family in a fake transaction to return all symbols
     load_selective()
-        Loads the family and selected symbols
+        Loads the family and selected symbols, returns whether it worked
     load_all()
-        Loads family and all its symbols
+        Loads family and all its symbols, returns whether it worked
 
     Credit
     ------
@@ -120,16 +120,21 @@ class FamilyLoader:
 
         Args:
             symbol_name (str): name of the family type to load
+
+        Returns:
+            bool: False if Revit refused the type
         """
         if not self.overwrite:
-            revit.doc.LoadFamilySymbol(self.path, symbol_name)
-        elif IRONPY:
+            return revit.doc.LoadFamilySymbol(self.path, symbol_name)
+        if IRONPY:
             symbol_ref = clr.Reference[DB.FamilySymbol]()
-            revit.doc.LoadFamilySymbol(
+            return revit.doc.LoadFamilySymbol(
                 self.path, symbol_name, self._load_options, symbol_ref
             )
-        else:
-            revit.doc.LoadFamilySymbol(self.path, symbol_name, self._load_options, None)
+        loaded, _ = revit.doc.LoadFamilySymbol(
+            self.path, symbol_name, self._load_options, None
+        )
+        return loaded
 
     @property
     def is_loaded(self):
@@ -169,30 +174,43 @@ class FamilyLoader:
         return sorted(symbol_set)
 
     def load_selective(self):
-        """Loads the family and selected symbols."""
+        """Loads the family and selected symbols.
+
+        Returns:
+            bool: False if the user cancelled the type selection, or if
+                Revit refused any of the selected types. The family is
+                left untouched in the first case, partially loaded in the
+                second.
+        """
         symbols = self.get_symbols()
 
         # Dont prompt if only 1 symbol available
         if len(symbols) == 1:
-            self.load_all()
-            return
+            return self.load_all()
 
         # User input -> Select family symbols
         selected_symbols = forms.SelectFromList.show(
             symbols, title=self.name, button_name="Load type(s)", multiselect=True
         )
-        if selected_symbols is None:
+        if not selected_symbols:
             logger.debug("No family symbols selected.")
-            return
+            return False
         logger.debug("Selected symbols are: {}".format(selected_symbols))
 
         # Load family with selected symbols
         with revit.Transaction("Loaded {}".format(self.name)):
             try:
+                loaded = True
                 for symbol in selected_symbols:
                     logger.debug("Loading symbol: {}".format(symbol))
-                    self._load_symbol(symbol.symbol_name)
-                logger.debug("Successfully loaded all selected symbols")
+                    if not self._load_symbol(symbol.symbol_name):
+                        logger.error(
+                            "Revit refused to load symbol {} from {}".format(
+                                symbol, self.path
+                            )
+                        )
+                        loaded = False
+                return loaded
             except Exception as load_err:
                 logger.error(
                     "Error loading family symbol from {} | {}".format(
@@ -202,15 +220,20 @@ class FamilyLoader:
                 raise load_err
 
     def load_all(self):
-        """Loads family and all its symbols."""
+        """Loads family and all its symbols.
+
+        Returns:
+            bool: False if Revit refused the file
+        """
         with revit.Transaction("Loaded {}".format(self.name)):
             try:
                 if not self._load_family():
                     logger.error(
                         "Revit refused to load family from {}".format(self.path)
                     )
-                    return
+                    return False
                 logger.debug("Successfully loaded family: {}".format(self.name))
+                return True
             except Exception as load_err:
                 logger.error(
                     "Error loading family symbol from {} | {}".format(

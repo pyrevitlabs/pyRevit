@@ -8,6 +8,7 @@ skip them or to overwrite them.
 
 # pylint: disable=import-error,invalid-name,broad-except,superfluous-parens
 import os
+from collections import namedtuple
 
 from pyrevit import forms
 from pyrevit import script
@@ -28,6 +29,8 @@ LOADING_OPTIONS = {
 
 SKIP_EXISTING = "Skip Them"
 OVERWRITE_EXISTING = "Overwrite Them"
+
+LoadOutcome = namedtuple("LoadOutcome", ["overwritten", "skipped", "failed"])
 
 
 def collect_family_paths(directory):
@@ -119,6 +122,9 @@ def ask_loading_option():
 def load_families(paths, loading_option, overwrite):
     """Loads the given families, reporting progress and allowing cancellation.
 
+    A family only counts as overwritten once the loader confirms it was
+    loaded, so a refused or cancelled reload is never reported as one.
+
     Args:
         paths (list[str]): absolute paths of the family files to load
         loading_option (str): name of the FamilyLoader method to call
@@ -126,9 +132,12 @@ def load_families(paths, loading_option, overwrite):
             instead of skipping them
 
     Returns:
-        set[FamilyLoader]: families that were already in the project
+        LoadOutcome: families that were overwritten, left untouched, and
+            the ones Revit refused or the user cancelled
     """
-    already_loaded = set()
+    overwritten = set()
+    skipped = set()
+    failed = set()
     max_value = len(paths)
     with forms.ProgressBar(
         title="Loading Family {value} of {max_value}", cancellable=True
@@ -140,29 +149,43 @@ def load_families(paths, loading_option, overwrite):
 
             family = FamilyLoader(path, overwrite=overwrite)
             logger.debug("Loading family: {}".format(family.name))
-            if family.is_loaded:
+            was_loaded = family.is_loaded
+            if was_loaded and not overwrite:
                 logger.debug("Family is already loaded: {}".format(family.path))
-                already_loaded.add(family)
-                if not overwrite:
-                    continue
-            getattr(family, loading_option)()
-    return already_loaded
+                skipped.add(family)
+                continue
+
+            if not getattr(family, loading_option)():
+                failed.add(family)
+            elif was_loaded:
+                overwritten.add(family)
+    return LoadOutcome(overwritten, skipped, failed)
 
 
-def report_already_loaded(already_loaded, overwrite):
-    """Prints the families that were already in the project when the run started.
+def report_outcome(outcome):
+    """Prints what happened to the families that needed reporting.
 
     Args:
-        already_loaded (set[FamilyLoader]): families found in the project
-        overwrite (bool): whether those families were overwritten or skipped
+        outcome (LoadOutcome): result of load_families
     """
-    if not already_loaded:
+    print_family_paths("Families that were overwritten:", outcome.overwritten)
+    print_family_paths(
+        "Families that were already loaded and skipped:", outcome.skipped
+    )
+    print_family_paths("Families that were not loaded:", outcome.failed)
+
+
+def print_family_paths(title, families):
+    """Prints a titled list of family paths, or nothing when the set is empty.
+
+    Args:
+        title (str): heading printed above the paths
+        families (set[FamilyLoader]): families to list
+    """
+    if not families:
         return
-    if overwrite:
-        output.print_md("### Families that were overwritten:")
-    else:
-        output.print_md("### Families that were already loaded and skipped:")
-    for family in sorted(already_loaded):
+    output.print_md("### {}".format(title))
+    for family in sorted(families):
         print(family.path)
 
 
@@ -189,7 +212,7 @@ def main():
         logger.debug("No loading option selected.")
         return
 
-    report_already_loaded(load_families(paths, loading_option, overwrite), overwrite)
+    report_outcome(load_families(paths, loading_option, overwrite))
 
 
 if __name__ == "__main__":
