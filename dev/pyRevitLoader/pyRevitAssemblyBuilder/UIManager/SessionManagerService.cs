@@ -391,7 +391,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
         private List<(ParsedExtension ext, ExtensionAssemblyInfo assmInfo)> BuildAndLoadAllAssemblies(
             List<ParsedExtension> uiExtensions, List<ParsedExtension> libraryExtensions)
         {
-            var buildResults =new (ParsedExtension ext, ExtensionAssemblyInfo assmInfo)?[uiExtensions.Count];
+            var buildResults = new (ParsedExtension ext, ExtensionAssemblyInfo assmInfo)?[uiExtensions.Count];
             System.Threading.Tasks.Parallel.For(0, uiExtensions.Count, i =>
             {
                 var ext = uiExtensions[i];

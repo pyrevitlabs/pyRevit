@@ -26,6 +26,8 @@ namespace pyRevitLabs.Common {
         private readonly object _lock = new object();
         private readonly Stack<LoadSpan> _openSpans = new Stack<LoadSpan>();
 
+        private LoadTimeline _suspended;
+
         private LoadTimeline(string name, long startTimestamp) {
             Root = new LoadSpan(this, name, startTimestamp);
             _openSpans.Push(Root);
@@ -44,8 +46,8 @@ namespace pyRevitLabs.Common {
 
         /// <summary>
         /// True when another load began before this one ended, as when postload triggers a reload.
-        /// A replaced timeline still accepts spans from callers holding it, but is no longer
-        /// <see cref="Active"/>.
+        /// This load is suspended for the nested load's duration: it keeps accepting spans from
+        /// callers holding it, and becomes <see cref="Active"/> again once the nested load ends.
         /// </summary>
         public bool IsReplaced { get; private set; }
 
@@ -81,8 +83,8 @@ namespace pyRevitLabs.Common {
         }
 
         /// <summary>
-        /// Starts a new load and makes it <see cref="Active"/>, marking an unfinished active load as
-        /// replaced.
+        /// Starts a new load and makes it <see cref="Active"/>, suspending an unfinished active load
+        /// until this one ends.
         /// </summary>
         /// <param name="startTimestamp">
         /// <see cref="Stopwatch.GetTimestamp"/> value the load started at. It may predate this call
@@ -91,8 +93,10 @@ namespace pyRevitLabs.Common {
         public static LoadTimeline Begin(string name, long startTimestamp) {
             var timeline = new LoadTimeline(name, startTimestamp);
             lock (ActiveLock) {
-                if (_active != null && !_active.IsEnded)
+                if (_active != null && !_active.IsEnded) {
                     _active.IsReplaced = true;
+                    timeline._suspended = _active;
+                }
                 _active = timeline;
             }
             return timeline;
@@ -131,14 +135,21 @@ namespace pyRevitLabs.Common {
         }
 
         /// <summary>
-        /// Ends the load, closing any spans still open, and clears <see cref="Active"/> if this is
-        /// still the active load.
+        /// Ends the load, closing any spans still open. If this is the active load, the load it
+        /// suspended becomes <see cref="Active"/> again, so an outer load keeps recording once a
+        /// nested one finishes. Loads that ended meanwhile are skipped, leaving
+        /// <see cref="Active"/> null when none is still running.
         /// </summary>
         public void End() {
             Root.End();
             lock (ActiveLock) {
-                if (_active == this)
-                    _active = null;
+                if (_active != this)
+                    return;
+
+                var resumed = _suspended;
+                while (resumed != null && resumed.IsEnded)
+                    resumed = resumed._suspended;
+                _active = resumed;
             }
         }
 

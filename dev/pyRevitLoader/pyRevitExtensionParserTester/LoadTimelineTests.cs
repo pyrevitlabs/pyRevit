@@ -95,6 +95,30 @@ namespace pyRevitExtensionParserTest
         }
 
         [Test]
+        public void EndingNestedLoadResumesTheSuspendedOne()
+        {
+            var outer = LoadTimeline.Begin("outer", Stopwatch.GetTimestamp());
+            var inner = LoadTimeline.Begin("inner", Stopwatch.GetTimestamp());
+
+            inner.End();
+
+            Assert.That(LoadTimeline.Active, Is.SameAs(outer));
+            Assert.That(outer.CurrentSpan, Is.SameAs(outer.Root));
+        }
+
+        [Test]
+        public void EndingNestedLoadAfterTheSuspendedOneEndedClearsActive()
+        {
+            var outer = LoadTimeline.Begin("outer", Stopwatch.GetTimestamp());
+            var inner = LoadTimeline.Begin("inner", Stopwatch.GetTimestamp());
+
+            outer.End();
+            inner.End();
+
+            Assert.That(LoadTimeline.Active, Is.Null);
+        }
+
+        [Test]
         public void SpansStartedAfterEndAreNotAttached()
         {
             var timeline = LoadTimeline.Begin("load", Stopwatch.GetTimestamp());
