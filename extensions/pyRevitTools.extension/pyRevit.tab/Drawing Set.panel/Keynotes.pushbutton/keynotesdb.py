@@ -52,7 +52,10 @@ def normalize_keynote_text(value):
         return ""
 
     text = str(value)
-    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    # splitlines covers every break WPF and the keynote file recognise:
+    # CR, LF, vertical tab (Word's Shift+Enter), form feed, NEL, U+2028
+    # and U+2029
+    text = "\n".join(text.splitlines())
     text = re.sub(r"\s*\n\s*", " ", text)
     text = text.replace("\t", " ")
     return text.strip()

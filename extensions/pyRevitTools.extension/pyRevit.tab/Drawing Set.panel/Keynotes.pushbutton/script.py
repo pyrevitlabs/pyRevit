@@ -555,6 +555,7 @@ class EditRecordWindow(forms.WPFWindow):
         if self._pkey:
             self.active_parent_key = self._pkey
 
+        self._install_paste_filter()
         self.recordText.Focus()
         self.recordText.SelectAll()
 
@@ -569,7 +570,9 @@ class EditRecordWindow(forms.WPFWindow):
 
     @property
     def active_text(self):
-        return self.recordText.Text
+        # collapse on the way out too: drag-and-drop text bypasses the
+        # paste filter, and a keynote file stores one record per line
+        return kdb.normalize_keynote_text(self.recordText.Text)
 
     @active_text.setter
     def active_text(self, value):
@@ -582,6 +585,48 @@ class EditRecordWindow(forms.WPFWindow):
     @active_parent_key.setter
     def active_parent_key(self, value):
         self.recordParent.Content = value
+
+    def _install_paste_filter(self):
+        """Stop a multi-line paste from being cut down to its first line.
+
+        recordText is single-line on purpose — a keynote file stores one
+        record per line — and WPF throws away everything after the first
+        line break when it pastes into such a box.  Collapsing the
+        clipboard text the way the file writer does leaves no line break
+        to truncate at, so a wrapped paragraph out of Word, Excel or a
+        PDF lands whole.
+        """
+        try:
+            self._paste_filter = Windows.DataObjectPastingEventHandler(
+                self.filter_pasted_text
+            )
+            Windows.DataObject.AddPastingHandler(self.recordText, self._paste_filter)
+        except Exception as ex:
+            logger.debug("keynote paste filter unavailable | %s", ex)
+
+    def filter_pasted_text(self, sender, args):
+        """Swap the pasted payload for its single-line equivalent."""
+        try:
+            source = args.SourceDataObject
+            if source is None:
+                return
+            for text_format in (
+                Windows.DataFormats.UnicodeText,
+                Windows.DataFormats.Text,
+            ):
+                if not source.GetDataPresent(text_format):
+                    continue
+                cleaned = kdb.normalize_keynote_text(source.GetData(text_format))
+                if not cleaned:
+                    args.CancelCommand()
+                    return
+                # each setter validates against what the other one holds,
+                # so the format has to move to plain text first
+                args.FormatToApply = text_format
+                args.DataObject = Windows.DataObject(text_format, cleaned)
+                return
+        except Exception as ex:
+            logger.debug("pasted text left as-is | %s", ex)
 
     def commit(self):
         if self._mode == kdb.EDIT_MODE_ADD_CATEG:

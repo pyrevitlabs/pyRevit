@@ -71,7 +71,12 @@
                 <ColumnDefinition  Width="Auto"/>
             </Grid.ColumnDefinitions>
             <!-- enabling spell check on this textbox causes all sorts of issues -->
-            <TextBox x:Name="recordText" Grid.Column="0" FontSize="14" TextWrapping="Wrap" Margin="0,0,5,0" />
+            <!-- AcceptsReturn stays off: a keynote file holds one record per
+                 line.  EditRecordWindow.filter_pasted_text collapses pasted
+                 text so WPF has no line break to truncate the paste at. -->
+            <TextBox x:Name="recordText" Grid.Column="0" FontSize="14"
+                     TextWrapping="Wrap" Margin="0,0,5,0"
+                     VerticalScrollBarVisibility="Auto" />
             <StackPanel Grid.Column="1" Width="24">
                 <Button Height="24" Content="TT" FontWeight="Medium" ToolTip="{DynamicResource UpperInfo}" Click="to_upper"/>
                 <Button Height="24" Content="tt" Margin="0,5,0,0" FontWeight="Medium" ToolTip="{DynamicResource LowerInfo}" Click="to_lower"/>
