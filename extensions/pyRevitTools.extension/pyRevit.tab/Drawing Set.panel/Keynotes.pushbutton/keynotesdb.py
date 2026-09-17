@@ -147,6 +147,161 @@ class RKeynoteFilters(object):
         return cleaned
 
 
+class RKeynoteExpansion(object):
+    """Expansion state for the keynote tree, keyed by keynote key.
+
+    The manager rebuilds its tree from scratch on every refresh — new
+    RKeynote objects every time — and the TreeView is virtualized, so
+    off-screen rows have no container at all.  Expansion state can
+    therefore live neither on the node object nor on the WPF container.
+    It lives here, keyed on the one thing that survives a rebuild: the
+    key string.
+
+    Two layers:
+      saved   -- the user's own expand/collapse choices.  Durable.
+      overlay -- transient, alive only while a search term is active, so
+                 revealing a match can never rewrite what the user chose.
+    """
+
+    def __init__(self):
+        self.reset(None)
+
+    def reset(self, kfile, keys=None):
+        """Point the store at a keynote file.
+
+        Must run on window open and on Change Keynote File: this module
+        outlives the window on a persistent engine, and a key is only
+        meaningful within one keynote file.
+        """
+        self.kfile = kfile
+        self.saved = set(keys or [])
+        self.overlay = {}
+        self.search_active = False
+        self._term = None
+        self._missed = set()
+
+    def begin_render(self, search_term):
+        """Arm the search overlay — call once per rebuild, before render."""
+        term = search_term or None
+        if term != self._term:
+            # Keep the overlay only while the user is EXTENDING the term —
+            # the keystroke case — so a collapse made a moment ago survives
+            # the next character.  A genuinely different term (or the search
+            # ending) starts clean: a stale collapse carried across would
+            # silently hide the new term's matches, which reads as the
+            # search being broken.
+            if not (term and self._term and term.startswith(self._term)):
+                self.overlay = {}
+            self._term = term
+        self.search_active = bool(term)
+
+    def get(self, node):
+        """Read the rendered expansion state for a node."""
+        if self.search_active:
+            if node.key in self.overlay:
+                return self.overlay[node.key]
+            # Reveal whatever the filter left standing below this node.
+            # Reads the FILTERED children on purpose.
+            return bool(node.children)
+        return node.key in self.saved
+
+    def set(self, node, value):
+        """Record an expansion change made through the UI."""
+        if self.search_active:
+            self.overlay[node.key] = value
+            return
+        if value:
+            self.saved.add(node.key)
+        else:
+            self.saved.discard(node.key)
+
+    def set_all(self, keys, value):
+        """Apply Expand All / Collapse All to a whole key set.
+
+        Always writes the DURABLE layer.  These two buttons are explicit
+        global commands — "Collapse All" means collapse all, including
+        whatever a search is currently hiding — so unlike a chevron
+        gesture they are never diverted into the transient overlay.
+        Choosing the layer here would also mean trusting search_active,
+        which lags the search box by one render plus the 300ms debounce:
+        a press in that window would land in an overlay that the very
+        next render then discards, and the button would do nothing.
+        """
+        if value:
+            self.saved.update(keys)
+        else:
+            # Clear outright rather than subtracting `keys`: a node with no
+            # children right now contributes no key, so difference_update
+            # would leave its stale entry behind to re-open the moment it
+            # gained a child again.
+            self.saved.clear()
+        if self.search_active:
+            # Mirror into the overlay so the press is visible immediately
+            # against the filtered tree.  The overlay is dropped when the
+            # search ends, and the durable write above is what remains.
+            for key in keys:
+                self.overlay[key] = value
+
+    def expand(self, key):
+        """Reveal one node because the user just acted on it."""
+        if not key:
+            return
+        self.saved.add(key)
+        if self.search_active:
+            self.overlay[key] = True
+
+    def rekey(self, from_key, to_key):
+        """Follow a node whose key changed.  Children keep their own keys."""
+        if from_key in self.saved:
+            self.saved.discard(from_key)
+            self.saved.add(to_key)
+        # Mid-search the visible state comes from the overlay, so move that
+        # entry too — otherwise re-keying a group silently changes what
+        # looks expanded, which moving a record must never do.
+        if from_key in self.overlay:
+            self.overlay[to_key] = self.overlay.pop(from_key)
+
+    def swap(self, key_a, key_b):
+        """Follow a Move Up / Move Down.
+
+        swap_keys EXCHANGES the two records' keys and re-parents each
+        subtree onto the other key, so the content moves with the key —
+        exchange the entries so expansion follows what the user sees move.
+        """
+        if (key_a in self.saved) != (key_b in self.saved):
+            self.saved.symmetric_difference_update([key_a, key_b])
+        # Exchange the transient entries the same way, for the same reason
+        # as rekey(): mid-search the overlay is what the tree renders from.
+        if key_a in self.overlay or key_b in self.overlay:
+            val_a = self.overlay.pop(key_a, None)
+            val_b = self.overlay.pop(key_b, None)
+            if val_b is not None:
+                self.overlay[key_a] = val_b
+            if val_a is not None:
+                self.overlay[key_b] = val_a
+
+    def prune(self, live_keys):
+        """Drop entries for keys that no longer exist.
+
+        Two-strike: an entry goes only after it has been missing from two
+        CONSECUTIVE renders.  A render can be incomplete without being
+        empty — a record whose parent_key dangles is silently unreachable
+        from the roots and so never reaches live_keys, and a compensating
+        rollback that itself half-failed leaves exactly that — and a
+        one-strike prune would throw away state for records still in the
+        file.
+        """
+        if not live_keys:
+            # A failed or empty read must never wipe the user's state.
+            return
+        missing = self.saved - live_keys
+        self.saved -= (missing & self._missed)
+        self._missed = missing
+
+
+EXPANSION = RKeynoteExpansion()
+
+
 class RKeynote(object):
     """Object representing a keynote entry in the databaseself.
 
@@ -192,6 +347,17 @@ class RKeynote(object):
     @property
     def is_category(self):
         return not self.parent_key
+
+    @property
+    def is_expanded(self):
+        # Bound TwoWay from the TreeViewItem container style: WPF reads this
+        # when it realizes a container and writes it back when the user
+        # clicks a chevron or presses Left/Right on the row.
+        return EXPANSION.get(self)
+
+    @is_expanded.setter
+    def is_expanded(self, value):
+        EXPANSION.set(self, value)
 
     def has_children(self):
         return len(self.children)
