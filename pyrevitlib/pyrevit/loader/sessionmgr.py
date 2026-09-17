@@ -215,7 +215,7 @@ def perform_postload():
     load_time = elapsed_load_seconds()
     if load_time is not None:
         success_emoji = ":OK_hand:" if load_time < 3.00 else ":thumbs_up:"
-        mlogger.info("Load time: %s seconds %s", load_time, success_emoji)
+        mlogger.info("Load time: %.2f seconds %s", load_time, success_emoji)
 
     # if everything went well, self destruct
     try:
