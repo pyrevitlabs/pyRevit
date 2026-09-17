@@ -136,9 +136,6 @@ namespace PyRevitLoader
 
         // Shared entry for initial startup and reload. The C# SessionManagerService
         // drives the full load, including the residual Python pre/post-load services.
-        // The load's timeline starts at startTimestamp and ends when this returns.
-        // Never inlined: it uses pyRevitLabs.Common, which OnStartup can only resolve
-        // after LoadAssembliesInFolder has run.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static Result LoadSessionInternal(
             bool firstLoad,
