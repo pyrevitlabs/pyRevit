@@ -79,6 +79,7 @@
     <Compile Include="RevitThemeChangeMonitorTests.cs" />
     <Compile Include="RibbonThemeRegistryTests.cs" />
     <Compile Include="RevitThemeDetectorTests.cs" />
+    <Compile Include="LoadTimelineTests.cs" />
   </ItemGroup>
 
   <ItemGroup>

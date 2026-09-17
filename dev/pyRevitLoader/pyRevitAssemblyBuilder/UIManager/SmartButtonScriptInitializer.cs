@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Threading;
@@ -8,6 +7,7 @@ using Autodesk.Revit.UI;
 using pyRevitExtensionParser;
 using pyRevitAssemblyBuilder.SessionManager;
 using pyRevitAssemblyBuilder.UIManager.Icons;
+using pyRevitLabs.Common;
 
 namespace pyRevitAssemblyBuilder.UIManager
 {
@@ -300,30 +300,6 @@ namespace pyRevitAssemblyBuilder.UIManager
     }
 
     /// <summary>
-    /// Total __selfinit__ time for a single SmartButton, returned as part of
-    /// <see cref="SmartButtonStats.PerButton"/> so per-extension perf logs can attribute cost
-    /// to individual SmartButtons.
-    /// </summary>
-    public class PerSmartButtonStats
-    {
-        public string Name;
-        public long TotalMs;
-    }
-
-    /// <summary>
-    /// Aggregated SmartButton timing for a single per-extension batch.
-    /// Returned by <see cref="SmartButtonScriptInitializer.ResetAndGetStats"/> at the end of
-    /// each <c>BuildUI</c>. The first batch per session includes one-time engine init in its
-    /// total (the engine is reused/warm thereafter).
-    /// </summary>
-    public class SmartButtonStats
-    {
-        public long TotalMs;
-        public int Calls;
-        public List<PerSmartButtonStats> PerButton = new List<PerSmartButtonStats>();
-    }
-
-    /// <summary>
     /// Handles execution of SmartButton __selfinit__ scripts.
     /// Delegates to PyRevitLoader.SmartButtonExecutor for actual execution.
     /// </summary>
@@ -341,14 +317,6 @@ namespace pyRevitAssemblyBuilder.UIManager
         private MethodInfo _executeMethod;
         private bool _instanceInitialized;
         private bool _instanceInitializationFailed;
-
-        // Per-extension instrumentation. Total time is summed across all ExecuteSelfInit calls
-        // in the current batch; PerButton holds the per-button breakdown. Read+reset together by
-        // UIManagerService around each BuildUI via ResetAndGetStats.
-        private readonly object _statsLock = new object();
-        private long _totalMs;
-        private int _calls;
-        private List<PerSmartButtonStats> _perButton = new List<PerSmartButtonStats>();
 
         public SmartButtonScriptInitializer(UIApplication uiApp, ILogger logger)
         {
@@ -484,7 +452,7 @@ namespace pyRevitAssemblyBuilder.UIManager
                 }
             }
 
-            var sw = Stopwatch.StartNew();
+            var span = LoadTimeline.Active?.StartSpan($"SmartButton '{component?.Name ?? "<unknown>"}'");
             try
             {
                 // Call SmartButtonExecutor.ExecuteSelfInit(scriptPath, context, additionalPaths)
@@ -503,41 +471,7 @@ namespace pyRevitAssemblyBuilder.UIManager
             }
             finally
             {
-                sw.Stop();
-                lock (_statsLock)
-                {
-                    _totalMs += sw.ElapsedMilliseconds;
-                    _calls++;
-                    _perButton.Add(new PerSmartButtonStats
-                    {
-                        Name = component?.Name ?? "<unknown>",
-                        TotalMs = sw.ElapsedMilliseconds,
-                    });
-                }
-            }
-        }
-
-        /// <summary>
-        /// Returns the accumulated SmartButton stats collected since the last call and resets
-        /// the counters + per-button list. Used by per-extension instrumentation (one call per
-        /// BuildUI batch, drained by UIManagerService).
-        /// </summary>
-        public SmartButtonStats ResetAndGetStats()
-        {
-            lock (_statsLock)
-            {
-                var snapshot = new SmartButtonStats
-                {
-                    TotalMs = _totalMs,
-                    Calls = _calls,
-                    PerButton = _perButton,
-                };
-
-                _totalMs = 0;
-                _calls = 0;
-                _perButton = new List<PerSmartButtonStats>();
-
-                return snapshot;
+                span?.End();
             }
         }
     }

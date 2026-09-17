@@ -5,6 +5,7 @@ from collections import namedtuple
 
 from pyrevit import HOST_APP, HOME_DIR
 
+from pyrevit._perf import time_block as _perfblock
 from pyrevit import versionmgr
 from pyrevit.compat import safe_strtype
 from pyrevit.versionmgr import about
@@ -35,14 +36,17 @@ Args:
 def setup_runtime_vars():
     """Setup runtime environment variables with session information."""
     # set pyrevit version
-    pyrvt_ver = versionmgr.get_pyrevit_version().get_formatted()
+    with _perfblock("pyrevit.loader.sessioninfo:pyrevit version"):
+        pyrvt_ver = versionmgr.get_pyrevit_version().get_formatted()
     envvars.set_pyrevit_env_var(envvars.VERSION_ENVVAR, pyrvt_ver)
 
     # set app version env var
-    envvars.set_pyrevit_env_var(envvars.APPVERSION_ENVVAR, HOST_APP.subversion)
+    with _perfblock("pyrevit.loader.sessioninfo:host subversion"):
+        envvars.set_pyrevit_env_var(envvars.APPVERSION_ENVVAR, HOST_APP.subversion)
 
     # set ironpython engine version env var
-    attachment = user_config.get_current_attachment()
+    with _perfblock("pyrevit.loader.sessioninfo:attachment"):
+        attachment = user_config.get_current_attachment()
     if attachment and attachment.Clone:
         envvars.set_pyrevit_env_var(envvars.CLONENAME_ENVVAR, attachment.Clone.Name)
         envvars.set_pyrevit_env_var(
@@ -54,7 +58,8 @@ def setup_runtime_vars():
         envvars.set_pyrevit_env_var(envvars.IPYVERSION_ENVVAR, "0")
 
     # set cpython engine version env var
-    cpyengine = user_config.get_active_cpython_engine()
+    with _perfblock("pyrevit.loader.sessioninfo:active cpython engine"):
+        cpyengine = user_config.get_active_cpython_engine()
     if cpyengine:
         envvars.set_pyrevit_env_var(envvars.CPYVERSION_ENVVAR, str(cpyengine.Version))
     else:
@@ -62,7 +67,8 @@ def setup_runtime_vars():
 
     # set a list of important assemblies
     # this is required for dotnet script execution
-    set_loaded_pyrevit_referenced_modules(runtime.get_references())
+    with _perfblock("pyrevit.loader.sessioninfo:referenced assemblies"):
+        set_loaded_pyrevit_referenced_modules(runtime.get_references())
 
 
 def get_runtime_info():
