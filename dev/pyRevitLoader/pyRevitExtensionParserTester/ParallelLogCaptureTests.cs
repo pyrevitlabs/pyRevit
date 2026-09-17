@@ -88,7 +88,6 @@ namespace pyRevitExtensionParserTester
                 buffers[i] = captured;
                 using (ParallelLogCapture.Begin(captured))
                 {
-                    // Reverse the natural completion order so index order cannot be a coincidence.
                     System.Threading.Thread.Sleep((items - i) * 5);
                     ParallelLogCapture.TryCapture(CapturedLogLevel.Info, "created-" + i);
                     ParallelLogCapture.TryCapture(CapturedLogLevel.Debug, "timing-" + i);
