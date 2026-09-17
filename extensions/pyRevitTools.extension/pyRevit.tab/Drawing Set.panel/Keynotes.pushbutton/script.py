@@ -3079,6 +3079,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 self.caseBtn,
             ]:
                 btn.IsEnabled = False
+            self.caseBtn.IsEnabled = bool(self._sel_keys) and any(
+                not r.locked for r in self.selected_keynotes)
             return
 
         is_cat = sel.is_category  # top-level group (no parent_key)
@@ -4437,18 +4439,46 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self.caseMenu.IsOpen = True
 
     def _apply_case(self, transform_fn):
-        """Apply a text transformation to the selected keynote/category."""
-        sel = self.selected_keynote
-        if not sel or sel.locked:
+        """Apply a text transformation across the whole selection.
+
+        Important:
+            Reads `selected_keynotes`, never `selected_keynote`. The latter is
+            the TreeView's single focus row, so a shift/ctrl selection was
+            transformed one row at a time no matter how many were highlighted.
+
+        Note:
+            The selection is deliberately NOT run through `_prune_nested` the
+            way copy and delete run it. Those take whole subtrees; a case
+            change rewrites each selected row's own text and never descends,
+            so a keynote selected alongside its own group must still be
+            transformed in its own right.
+
+            Rows locked by another user are skipped and counted rather than
+            abandoning the batch, because a mixed selection is the normal case
+            on a shared keynote file.
+        """
+        recs = self.selected_keynotes
+        if not recs:
             return
-        new_text = transform_fn(sel.text)
-        if new_text == sel.text:
+
+        locked_count = 0
+        updates = []
+        for rec in recs:
+            if rec.locked:
+                locked_count += 1
+                continue
+            new_text = transform_fn(rec.text)
+            if new_text != rec.text:
+                updates.append((rec.key, rec.text, new_text, rec.is_category))
+
+        if not updates:
+            if locked_count:
+                self._hint("Nothing to change - %d row(s) locked by another "
+                           "user" % locked_count)
             return
+
         try:
-            if sel.is_category:
-                kdb.update_category_title(self._conn, sel.key, new_text)
-            else:
-                kdb.update_keynote_text(self._conn, sel.key, new_text)
+            kdb.update_texts(self._conn, updates)
             self._needs_update = True
         except System.TimeoutException as toutex:
             forms.alert(toutex.Message)
@@ -4456,7 +4486,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
         except Exception as ex:
             forms.alert("Case change failed: %s" % ex)
             return
+
         self._update_full_tree()
+        if locked_count:
+            self._hint("Changed %d row(s), skipped %d locked by another user"
+                       % (len(updates), locked_count))
+        else:
+            self._hint("Changed %d row(s)" % len(updates))
 
     def to_upper(self, sender, args):
         self._apply_case(lambda t: t.upper())

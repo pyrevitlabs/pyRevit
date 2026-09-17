@@ -628,6 +628,33 @@ def _run_with_compensation(conn, steps):
             raise
 
 
+def update_texts(conn, updates):
+    """Rewrite the text of several records as one compensated write.
+
+    Args:
+        conn: open keynote file connection.
+        updates: iterable of (key, old_text, new_text, is_category) tuples.
+            `old_text` is what the rollback restores, so it must be the value
+            read before the batch was built.
+
+    Important:
+        Every record goes inside a single BulkAction. Writing them one at a
+        time would leave the file half-transformed when a cloud-hosted
+        keynote file times out or locks part-way through a large selection,
+        which is harder to spot and undo than a change that did not happen.
+    """
+    steps = []
+    for key, old_text, new_text, is_category in updates:
+        write = update_category_title if is_category else update_keynote_text
+        steps.append(
+            (
+                lambda k=key, t=new_text, w=write: w(conn, k, t),
+                lambda k=key, t=old_text, w=write: w(conn, k, t),
+            )
+        )
+    _run_with_compensation(conn, steps)
+
+
 def swap_keys(conn, key_a, key_b, temp_key, category=False):
     """Atomically swap two record keys and re-parent their children."""
     upd = update_category_key if category else update_keynote_key
