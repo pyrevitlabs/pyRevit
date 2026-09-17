@@ -570,8 +570,13 @@ class EditRecordWindow(forms.WPFWindow):
 
     @property
     def active_text(self):
-        # collapse on the way out too: drag-and-drop text bypasses the
-        # paste filter, and a keynote file stores one record per line
+        """Keynote text reduced to the single line the keynote file can store.
+
+        Note:
+            Normalizing on read as well as on paste covers text that reaches
+            the box by another route, such as drag-and-drop, which the paste
+            filter never sees.
+        """
         return kdb.normalize_keynote_text(self.recordText.Text)
 
     @active_text.setter
@@ -605,7 +610,15 @@ class EditRecordWindow(forms.WPFWindow):
             logger.debug("keynote paste filter unavailable | %s", ex)
 
     def filter_pasted_text(self, sender, args):
-        """Swap the pasted payload for its single-line equivalent."""
+        """Swap the pasted payload for its single-line equivalent.
+
+        Important:
+            FormatToApply must be assigned before DataObject. Each setter
+            validates against the value the other one currently holds, so a
+            rich payload (Word, a browser) raises ArgumentException if the
+            plain-text DataObject is installed while FormatToApply still names
+            RTF or HTML.
+        """
         try:
             source = args.SourceDataObject
             if source is None:
@@ -620,8 +633,6 @@ class EditRecordWindow(forms.WPFWindow):
                 if not cleaned:
                     args.CancelCommand()
                     return
-                # each setter validates against what the other one holds,
-                # so the format has to move to plain text first
                 args.FormatToApply = text_format
                 args.DataObject = Windows.DataObject(text_format, cleaned)
                 return
