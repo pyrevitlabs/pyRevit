@@ -254,6 +254,10 @@ def _get_reference_file(ref_name):
 def get_references():
     """Get list of all referenced assemblies.
 
+    Resolved once per host process, then reused by later session loads: the
+    shipped assemblies that resolving loads stay loaded, and host framework
+    locations don't change while the host runs.
+
     Returns:
         (list): referenced assemblies
     """
@@ -318,8 +322,22 @@ def get_references():
     # another revit api
     ref_list.extend(["Xceed.Wpf.AvalonDock"])
 
+    cache_key = "PYREVITResolvedReferences{}{}".format(
+        eng.EnginePrefix,
+        coreutils.get_str_hash(BIN_DIR + "|" + "|".join(ref_list)),
+    )
+    cached_refs = framework.AppDomain.CurrentDomain.GetData(cache_key)
+    if cached_refs:
+        cached_ref_files = cached_refs.split(coreutils.DEFAULT_SEPARATOR)
+        if all(op.exists(ref_file) for ref_file in cached_ref_files):
+            return cached_ref_files
+
     refs = (_get_reference_file(ref_name) for ref_name in ref_list)
-    return [r for r in refs if r]
+    resolved_refs = [r for r in refs if r]
+    framework.AppDomain.CurrentDomain.SetData(
+        cache_key, coreutils.DEFAULT_SEPARATOR.join(resolved_refs)
+    )
+    return resolved_refs
 
 
 def _generate_runtime_asm():

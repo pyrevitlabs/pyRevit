@@ -23,7 +23,6 @@ from pyrevit.coreutils import envvars
 from pyrevit.coreutils import logger
 from pyrevit.loader import sessioninfo
 from pyrevit.loader import hooks
-from pyrevit.labs import PyRevit
 from pyrevit.userconfig import user_config
 from pyrevit.versionmgr import updater
 from pyrevit.versionmgr import upgrade
@@ -111,7 +110,7 @@ def _perform_onsessionloadstart_ops():
             mlogger.debug("No Engine Manager exists...")
 
     # once pre-load is complete, report environment conditions
-    uuid_str = sessioninfo.new_session_uuid()
+    uuid_str = sessioninfo.get_session_uuid() or sessioninfo.new_session_uuid()
     with _perfblock("pyrevit.loader.sessionmgr:report env"):
         sessioninfo.report_env()
 
@@ -180,11 +179,12 @@ def perform_preload():
 
     Invoked by the C# session orchestrator as the first step of a load. Sets up
     the session environment, output window, and pre-load services.
-    """
-    # must run before setup_runtime_vars(), the first attachment consumer, so a
-    # re-attached clone is picked up on reload
-    PyRevit.PyRevitAttachments.ClearAttachmentCache()
 
+    Note:
+        Relies on the Preload entry script having cleared the attachment cache
+        before importing this module, so every attachment lookup in the load
+        reads the current attachment once and then reuses it.
+    """
     with _perfblock("pyrevit.loader.sessionmgr:setup runtime vars"):
         sessioninfo.setup_runtime_vars()
 

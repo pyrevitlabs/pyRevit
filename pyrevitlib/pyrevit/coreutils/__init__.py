@@ -20,7 +20,6 @@ import random
 import stat
 import codecs
 import math
-import socket
 from collections import defaultdict
 
 # pylint: disable=E0401
@@ -1550,7 +1549,14 @@ def get_integer_length(number):
 
 
 def get_my_ip():
-    """Return local ip address of this machine."""
+    """Return local ip address of this machine.
+
+    Note:
+        socket is imported here so that a session that never asks for the
+        address does not pay to import it.
+    """
+    import socket
+
     return socket.gethostbyname(socket.gethostname())
 
 
