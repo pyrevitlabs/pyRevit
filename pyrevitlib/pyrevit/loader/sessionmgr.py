@@ -12,11 +12,12 @@ Everything else is private.
 """
 
 import sys
-import time
 
 from pyrevit import EXEC_PARAMS, HOST_APP
 from pyrevit import framework
-from pyrevit.coreutils import Timer
+from pyrevit._perf import elapsed_load_seconds
+from pyrevit._perf import flush as _perfflush
+from pyrevit._perf import time_block as _perfblock
 from pyrevit.coreutils import assmutils
 from pyrevit.coreutils import envvars
 from pyrevit.coreutils import logger
@@ -105,28 +106,34 @@ def _set_autoupdate_inprogress(state):
 
 def _perform_onsessionloadstart_ops():
     # clear the cached engines
-    if not _clear_running_engines():
-        mlogger.debug("No Engine Manager exists...")
+    with _perfblock("pyrevit.loader.sessionmgr:clear running engines"):
+        if not _clear_running_engines():
+            mlogger.debug("No Engine Manager exists...")
 
     # once pre-load is complete, report environment conditions
     uuid_str = sessioninfo.new_session_uuid()
-    sessioninfo.report_env()
+    with _perfblock("pyrevit.loader.sessionmgr:report env"):
+        sessioninfo.report_env()
 
     # reset the list of assemblies loaded under pyRevit session
     sessioninfo.set_loaded_pyrevit_assemblies([])
 
     # init routes
-    routes.init()
+    with _perfblock("pyrevit.loader.sessionmgr:routes init"):
+        routes.init()
 
     # asking telemetry module to setup the telemetry system
     # (active or not active)
-    telemetry.setup_telemetry(uuid_str)
+    with _perfblock("pyrevit.loader.sessionmgr:telemetry setup"):
+        telemetry.setup_telemetry(uuid_str)
 
     # apply Upgrades
-    upgrade.upgrade_existing_pyrevit()
+    with _perfblock("pyrevit.loader.sessionmgr:upgrade"):
+        upgrade.upgrade_existing_pyrevit()
 
     # setup hooks
-    hooks.setup_hooks()
+    with _perfblock("pyrevit.loader.sessionmgr:hooks setup"):
+        hooks.setup_hooks()
 
 
 def _perform_onsessionloadcomplete_ops():
@@ -172,26 +179,18 @@ def perform_preload():
     """Run pre-load session setup before the C# loader builds the UI.
 
     Invoked by the C# session orchestrator as the first step of a load. Sets up
-    the session environment, output window, and pre-load services, and records
-    the session start so perform_postload() can report load time.
+    the session environment, output window, and pre-load services.
     """
     # must run before setup_runtime_vars(), the first attachment consumer, so a
     # re-attached clone is picked up on reload
     PyRevit.PyRevitAttachments.ClearAttachmentCache()
 
-    sessioninfo.setup_runtime_vars()
+    with _perfblock("pyrevit.loader.sessionmgr:setup runtime vars"):
+        sessioninfo.setup_runtime_vars()
 
-    # time from before output setup so the reported load time reflects the full
-    # user wait, including first-load output window construction
-    session_timer = Timer()
-    envvars.set_pyrevit_env_var(envvars.SESSIONSTARTTIME_ENVVAR, session_timer.start)
-
-    # always written, so a reload never reports the previous load's breakdown
-    output_setup_time = None
     if EXEC_PARAMS.first_load:
-        _setup_output()
-        output_setup_time = session_timer.get_time()
-    envvars.set_pyrevit_env_var(envvars.OUTPUTSETUPTIME_ENVVAR, output_setup_time)
+        with _perfblock("pyrevit.loader.sessionmgr:output setup"):
+            _setup_output()
 
     _perform_onsessionloadstart_ops()
 
@@ -211,18 +210,12 @@ def perform_postload():
     # so find_pyrevitcmd can locate commands the C# loader compiled
     _register_loaded_pyrevit_assemblies()
 
-    starttime = envvars.get_pyrevit_env_var(envvars.SESSIONSTARTTIME_ENVVAR)
-    if starttime is not None:
-        endtime = time.time() - starttime
-        success_emoji = ":OK_hand:" if endtime < 3.00 else ":thumbs_up:"
-        mlogger.info("Load time: %s seconds %s", endtime, success_emoji)
-        output_setup_time = envvars.get_pyrevit_env_var(envvars.OUTPUTSETUPTIME_ENVVAR)
-        if output_setup_time is not None:
-            mlogger.debug(
-                "Load breakdown: output setup %.3fs | session build %.3fs",
-                output_setup_time,
-                endtime - output_setup_time,
-            )
+    _perfflush()
+
+    load_time = elapsed_load_seconds()
+    if load_time is not None:
+        success_emoji = ":OK_hand:" if load_time < 3.00 else ":thumbs_up:"
+        mlogger.info("Load time: %.2f seconds %s", load_time, success_emoji)
 
     # if everything went well, self destruct
     try:

@@ -288,10 +288,10 @@ namespace pyRevitLabs.TargetApps.Revit {
                 var uninstallKey =
                     Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall");
                 // loop thru subkeys and find matching
-                foreach (var key in uninstallKey.GetSubKeyNames()) {
+                var registeredAppKeys = uninstallKey.GetSubKeyNames();
+                foreach (var key in registeredAppKeys) {
                     var subkey = uninstallKey.OpenSubKey(key);
                     var appName = subkey.GetValue("DisplayName") as string;
-                    logger.Debug("Analysing registered app: {0} @ {1}", appName, subkey.Name);
                     if (appName != null && (revitFinder.IsMatch(appName) || previewFinder.IsMatch(appName))) {
                         logger.Debug("App is a Revit product: {0}", appName);
                         try {
@@ -361,6 +361,9 @@ namespace pyRevitLabs.TargetApps.Revit {
                         }
                     }
                 }
+
+                logger.Debug("Scanned {0} registered apps; found {1} installed Revit products",
+                             registeredAppKeys.Length, installedRevits.Count);
 
                 _installedProductsCache = installedRevits.ToList();
                 return _installedProductsCache.ToList();

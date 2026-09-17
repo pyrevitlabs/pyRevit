@@ -63,7 +63,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
 
             if (existingPdBtn != null)
             {
-                Logger.Debug($"Pulldown button '{component.DisplayName}' already exists - updating.");
                 UpdateExistingPulldownButton(existingPdBtn, component, visibleChildren, assemblyInfo);
                 return;
             }
@@ -146,8 +145,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
 
                 // Update children
                 AddChildrenToPulldown(pdBtn, component, assemblyInfo, visibleChildren);
-
-                Logger.Debug($"Updated existing pulldown button '{component.DisplayName}'.");
             }
             catch (Exception ex)
             {
@@ -219,7 +216,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
             var existingItems = GetExistingChildButtons(pdBtn);
             if (existingItems.Count > 0)
             {
-                Logger.Debug($"Pulldown button '{component.DisplayName}' already has {existingItems.Count} children - updating existing buttons.");
                 UpdateExistingChildren(pdBtn, component, visibleChildren, existingItems, assemblyInfo);
                 return;
             }
@@ -241,7 +237,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 // Skip adding separators during reload - they persist in the UI
                 if (assemblyInfo?.IsReloading == true)
                 {
-                    Logger.Debug($"Skipping separator during reload for pulldown button '{component.DisplayName}'.");
                     return;
                 }
                 try
@@ -345,7 +340,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 if (item is PushButton pb && !string.IsNullOrEmpty(pb.Name))
                 {
                     existingByName[pb.Name] = pb;
-                    Logger.Debug($"Found existing child in pulldown: Name='{pb.Name}', ItemText='{pb.ItemText}'");
                 }
             }
 
@@ -360,8 +354,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
 
                 touchedNames.Add(sub.DisplayName);
 
-                Logger.Debug($"Looking for child '{sub.DisplayName}' in pulldown '{component.DisplayName}'...");
-
                 // Try to find existing button by name
                 if (existingByName.TryGetValue(sub.DisplayName, out var existingBtn))
                 {
@@ -371,7 +363,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                         if (sub.Type == CommandComponentType.LinkButton)
                         {
                             _linkButtonBuilder.UpdateExistingLinkButton(existingBtn, sub, component, GetCompactIconMode(sub));
-                            Logger.Debug($"Updated existing link button '{sub.DisplayName}' in pulldown '{component.DisplayName}'.");
                             continue;
                         }
                         else
@@ -402,8 +393,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                                 Logger.Debug($"SmartButton '{sub.DisplayName}' in pulldown deactivated by __selfinit__ during update.");
                             }
                         }
-
-                        Logger.Debug($"Updated existing child button '{sub.DisplayName}' in pulldown '{component.DisplayName}'. New text: '{buttonText}'");
                     }
                     catch (Exception ex)
                     {
