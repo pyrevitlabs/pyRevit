@@ -222,6 +222,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
 
                 if (_window == null || _window.ClosedByUser) {
+                    _heldRecords.Close();
                     _window = new ScriptConsole(_debugMode, _uiApp);
                     if (string.IsNullOrEmpty(_window.OutputId))
                         _window.OutputId = "pyrevit-output";
@@ -230,6 +231,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     // protected from close_other_outputs
                     _window.IsSessionOutput = _isSessionOutput;
                     _outputStream = null;
+                    release_held_records();
                 }
                 return _window;
             }
@@ -321,59 +323,64 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return;
             }
 
-            release_held_records();
             if (markError)
                 mark_error();
             write_line(content);
         }
 
         /// <summary>
-        /// Buffers a log record that arrived before this output had a window, so it can be written
-        /// once one opens instead of being lost.
+        /// Writes a log record the loader forwarded, which must never be the reason a window
+        /// appears. The session output holds it until its window exists; any other output drops
+        /// it when it has no open window.
         /// </summary>
         /// <remarks>
-        /// The loader forwards its log records here, but a forwarded record must never be the
-        /// reason a window appears, and the session output window is only created part-way through
-        /// a session load. Everything logged before that point - on a first load, the whole preload
-        /// including its [PERF] checkpoints - would otherwise reach the runtime log file and
-        /// nothing else.
+        /// The session output window is created part-way through a session load. Everything
+        /// logged before that point - on a first load, the whole preload including its [PERF]
+        /// checkpoints - would otherwise reach the runtime log file and nothing else.
         /// <para>
-        /// Held records belong to this output alone, so a window a later command opens starts with
-        /// an empty buffer and never inherits another output's backlog. If no window ever opens,
-        /// records age out oldest-first past <see cref="MaxHeldRecords"/> and the release says how
-        /// many were lost.
+        /// Only the session output holds, because only it gets its window through the
+        /// <see cref="window"/> getter, where the backlog is released. A command's window is
+        /// created by its <see cref="ScriptRuntime"/> and written through the runtime's own stream,
+        /// so nothing here would ever see it open.
         /// </para>
         /// <para>
-        /// Invariant: released by <see cref="write_log_record"/> on the dispatcher thread, ahead of
-        /// the record that triggered the release, so held records keep their original order
-        /// relative to each other and to live output.
+        /// Invariant: held records are released when the window is created, whatever opened it -
+        /// a later log record, a startup script's <c>print()</c>, or a direct write - and before
+        /// anything else reaches it. Records forwarded during the release are held too and come
+        /// out after it. If no window ever opens, records age out oldest-first past
+        /// <see cref="MaxHeldRecords"/> and the release says how many were lost.
         /// </para>
         /// </remarks>
-        internal void hold_log_record(string content, bool markError) {
-            _heldRecords.Hold(content, markError);
+        internal void write_forwarded_log_record(string content, bool markError) {
+            if (BoundRuntime == null && _heldRecords.TryHold(content, markError))
+                return;
+            if (IsWindowReady)
+                write_log_record(content, markError);
         }
 
         private void release_held_records() {
-            int dropped;
-            var released = _heldRecords.Drain(out dropped);
-            if (released.Length == 0 && dropped == 0)
-                return;
+            while (true) {
+                int dropped;
+                var released = _heldRecords.DrainOrOpen(out dropped);
+                if (released.Length == 0 && dropped == 0)
+                    return;
 
-            if (dropped > 0) {
-                write_line(ScriptLoggerService.FormatVisibleEntry(
-                    ScriptLogLevel.Warning,
-                    HeldRecordsLoggerName,
-                    string.Format(
-                        CultureInfo.InvariantCulture,
-                        "{0} earlier records were dropped before the output window opened; "
-                            + "see the runtime log for the full session.",
-                        dropped)));
-            }
+                if (dropped > 0) {
+                    write_line(ScriptLoggerService.FormatVisibleEntry(
+                        ScriptLogLevel.Warning,
+                        HeldRecordsLoggerName,
+                        string.Format(
+                            CultureInfo.InvariantCulture,
+                            "{0} earlier records were dropped before the output window opened; "
+                                + "see the runtime log for the full session.",
+                            dropped)));
+                }
 
-            foreach (var record in released) {
-                if (record.MarkError)
-                    mark_error();
-                write_line(record.Content);
+                foreach (var record in released) {
+                    if (record.MarkError)
+                        mark_error();
+                    write_line(record.Content);
+                }
             }
         }
 

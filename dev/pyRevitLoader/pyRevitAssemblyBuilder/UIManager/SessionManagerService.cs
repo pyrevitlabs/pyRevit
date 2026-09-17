@@ -313,15 +313,12 @@ namespace pyRevitAssemblyBuilder.SessionManager
         /// extension) each miss pays full Roslyn compilation, which is CPU-bound and independent
         /// per extension. Results are collected into an index-aligned array rather than a shared
         /// list so no locking is needed across the parallel workers.
-        /// </remarks>
-        /// <summary>
-        /// Builds and loads every UI extension's assembly in parallel.
-        /// </summary>
-        /// <remarks>
-        /// Each worker's log records are captured and replayed here in extension order rather than
-        /// written from the worker, so they reach the output window during the load instead of
-        /// after it and land in the runtime log in an order that does not depend on scheduling.
-        /// See <see cref="ParallelLogCapture"/>.
+        /// <para>
+        /// Log records are collected the same way: each worker's are captured and replayed here in
+        /// extension order rather than written from the worker, so they reach the output window
+        /// during the load instead of after it and land in the runtime log in an order that does
+        /// not depend on scheduling. See <see cref="ParallelLogCapture"/>.
+        /// </para>
         /// </remarks>
         private List<(ParsedExtension ext, ExtensionAssemblyInfo assmInfo)> BuildAndLoadAllAssemblies(
             List<ParsedExtension> uiExtensions, List<ParsedExtension> libraryExtensions)

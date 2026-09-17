@@ -209,9 +209,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             var isError = level == ScriptLogLevel.Error || level == ScriptLogLevel.Critical;
 
             // File persistence is handled by the caller; a forwarded record must not be the
-            // reason an output window appears, so hand it to the output to hold until one does.
-            if (!allowWindowCreation && !output.IsWindowReady) {
-                output.hold_log_record(rendered, isError);
+            // reason an output window appears.
+            if (!allowWindowCreation) {
+                output.write_forwarded_log_record(rendered, isError);
                 return;
             }
 
