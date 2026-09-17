@@ -548,7 +548,7 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="CheckBox">
-                    <StackPanel Orientation="Horizontal">
+                    <StackPanel Orientation="Horizontal" Background="Transparent">
                         <Border x:Name="box" Width="14" Height="14" VerticalAlignment="Center"
                                 Background="{DynamicResource pyRevitControlBackgroundBrush}"
                                 BorderBrush="{DynamicResource pyRevitSubtleForegroundBrush}"
@@ -599,13 +599,13 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
-                    <StackPanel Orientation="Horizontal">
+                    <StackPanel Orientation="Horizontal" Background="Transparent">
                         <Grid Width="14" Height="14" VerticalAlignment="Center">
                             <Ellipse x:Name="circle"
                                      Fill="{DynamicResource pyRevitControlBackgroundBrush}"
                                      Stroke="{DynamicResource pyRevitSubtleForegroundBrush}"
                                      StrokeThickness="1"/>
-                            <Ellipse x:Name="dot" Width="7" Height="7"
+                            <Ellipse x:Name="dot" Width="6" Height="6"
                                      HorizontalAlignment="Center" VerticalAlignment="Center"
                                      Fill="{DynamicResource pyRevitAccentBrush}" Visibility="Collapsed"/>
                         </Grid>
@@ -1236,6 +1236,20 @@
         <Setter Property="Background" Value="{DynamicResource pyRevitControlBackgroundBrush}"/>
         <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource pyRevitControlBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ContextMenu">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Padding="2"
+                            SnapsToDevicePixels="True">
+                        <ItemsPresenter SnapsToDevicePixels="True"/>
+                    </Border>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
     <Style TargetType="MenuItem">
         <Setter Property="Foreground" Value="{DynamicResource pyRevitWindowForegroundBrush}"/>
