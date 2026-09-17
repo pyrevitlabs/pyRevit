@@ -224,6 +224,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 if (_window == null || _window.ClosedByUser) {
                     _heldRecords.Close();
                     _window = new ScriptConsole(_debugMode, _uiApp);
+                    _window.Closed += hold_records_while_closed;
                     if (string.IsNullOrEmpty(_window.OutputId))
                         _window.OutputId = "pyrevit-output";
                     ApplyWindowIdentity(_window);
@@ -356,6 +357,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return;
             if (IsWindowReady)
                 write_log_record(content, markError);
+        }
+
+        private void hold_records_while_closed(object sender, EventArgs e) {
+            if (ReferenceEquals(sender, _window))
+                _heldRecords.Close();
         }
 
         private void release_held_records() {
