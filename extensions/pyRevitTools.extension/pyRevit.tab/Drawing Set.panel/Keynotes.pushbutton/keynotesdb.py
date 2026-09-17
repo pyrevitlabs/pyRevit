@@ -47,12 +47,20 @@ CSI_REGEX = r" \d{2}(\s|[-_.])\d{2}(\s|[-_.])\d{2}"
 
 
 def normalize_keynote_text(value):
-    """Collapse embedded line breaks and tabs to a single space for legacy keynote storage."""
+    """Collapse embedded line breaks and tabs to a single space for legacy keynote storage.
+
+    Important:
+        Break coverage comes from str.splitlines(): CR, LF, vertical tab
+        (Word's Shift+Enter), form feed, NEL, U+2028 and U+2029. WPF truncates
+        a paste at any one of them, so EditRecordWindow's paste filter depends
+        on all of them collapsing here; narrowing this back to CR and LF
+        reintroduces the truncation bug.
+    """
     if value is None:
         return ""
 
     text = str(value)
-    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    text = "\n".join(text.splitlines())
     text = re.sub(r"\s*\n\s*", " ", text)
     text = text.replace("\t", " ")
     return text.strip()
