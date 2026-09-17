@@ -64,7 +64,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
 
             if (existingSplitBtn != null)
             {
-                Logger.Debug($"Split button '{component.DisplayName}' already exists - updating.");
                 UpdateExistingSplitButton(existingSplitBtn, component, visibleChildren, assemblyInfo);
                 return;
             }
@@ -137,8 +136,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
 
                 // Update children
                 AddChildrenToSplitButton(splitBtn, component, assemblyInfo, visibleChildren);
-
-                Logger.Debug($"Updated existing split button '{component.DisplayName}'.");
             }
             catch (Exception ex)
             {
@@ -205,7 +202,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
             {
                 bool shouldSync = component.Type == CommandComponentType.SplitButton;
                 splitBtn.IsSynchronizedWithCurrentItem = shouldSync;
-                Logger.Debug($"Set IsSynchronizedWithCurrentItem={shouldSync} for split button '{component.DisplayName}' before adding children.");
             }
             catch (Exception ex)
             {
@@ -216,7 +212,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
             var existingItems = GetExistingChildButtons(splitBtn);
             if (existingItems.Count > 0)
             {
-                Logger.Debug($"Split button '{component.DisplayName}' already has {existingItems.Count} children - updating existing buttons.");
                 UpdateExistingChildren(splitBtn, component, visibleChildren, existingItems, assemblyInfo);
                 return;
             }
@@ -243,7 +238,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 try
                 {
                     splitBtn.CurrentButton = firstButton;
-                    Logger.Debug($"Set current button for split button '{component.DisplayName}'.");
                 }
                 catch (Exception ex)
                 {
@@ -263,7 +257,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 // Skip adding separators during reload - they persist in the UI
                 if (assemblyInfo?.IsReloading == true)
                 {
-                    Logger.Debug($"Skipping separator during reload for split button '{component.DisplayName}'.");
                     return null;
                 }
                 try
@@ -298,7 +291,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                             }
                         }
 
-                        Logger.Debug($"Added SmartButton '{sub.DisplayName}' to split button '{component.DisplayName}'.");
                         return subBtn;
                     }
 
@@ -323,7 +315,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                     if (subBtn != null)
                     {
                         ButtonPostProcessor.Process(subBtn, sub, component, GetCompactIconMode(sub));
-                        Logger.Debug($"Added child button '{sub.DisplayName}' to split button '{component.DisplayName}'.");
                         return subBtn;
                     }
 
@@ -347,7 +338,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                         if (linkSubBtn != null)
                         {
                             ButtonPostProcessor.Process(linkSubBtn, sub, component, GetCompactIconMode(sub));
-                            Logger.Debug($"Added link button '{sub.DisplayName}' to split button '{component.DisplayName}'.");
                             return linkSubBtn;
                         }
 
@@ -412,7 +402,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 if (item is PushButton pb && !string.IsNullOrEmpty(pb.Name))
                 {
                     existingByName[pb.Name] = pb;
-                    Logger.Debug($"Found existing child in split button: Name='{pb.Name}', ItemText='{pb.ItemText}'");
                 }
             }
 
@@ -428,8 +417,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
 
                 touchedNames.Add(sub.DisplayName);
 
-                Logger.Debug($"Looking for child '{sub.DisplayName}' in split button '{component.DisplayName}'...");
-
                 // Try to find existing button by name
                 if (existingByName.TryGetValue(sub.DisplayName, out var existingBtn))
                 {
@@ -443,7 +430,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                             _linkButtonBuilder.UpdateExistingLinkButton(existingBtn, sub, component, GetCompactIconMode(sub));
                             if (!wasVisible && IsRibbonItemVisible(existingBtn, fallbackVisible: false))
                                 newlyVisibleNames.Add(sub.DisplayName);
-                            Logger.Debug($"Updated existing link button '{sub.DisplayName}' in split button '{component.DisplayName}'.");
                             continue;
                         }
                         else
@@ -476,8 +462,6 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                                 Logger.Debug($"SmartButton '{sub.DisplayName}' in split button deactivated by __selfinit__ during update.");
                             }
                         }
-
-                        Logger.Debug($"Updated existing child button '{sub.DisplayName}' in split button '{component.DisplayName}'. New text: '{buttonText}'");
                     }
                     catch (Exception ex)
                     {

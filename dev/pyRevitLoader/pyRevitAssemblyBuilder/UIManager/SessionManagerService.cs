@@ -10,6 +10,7 @@ using pyRevitAssemblyBuilder.AssemblyMaker;
 using pyRevitAssemblyBuilder.UIManager;
 using pyRevitAssemblyBuilder.UIManager.Icons;
 using pyRevitExtensionParser;
+using pyRevitLabs.Common;
 
 namespace pyRevitAssemblyBuilder.SessionManager
 {
@@ -18,6 +19,13 @@ namespace pyRevitAssemblyBuilder.SessionManager
     /// </summary>
     public class SessionManagerService : ISessionManagerService
     {
+        /// <summary>
+        /// Child spans cheaper than this are counted into a rollup line instead of each getting
+        /// a [PERF] line of their own. Matches the threshold <c>pyrevit/_perf.py</c> applies to
+        /// the Python checkpoints that interleave with these lines.
+        /// </summary>
+        private const double RollupThresholdMilliseconds = 10.0;
+
         private readonly IAssemblyBuilderService _assemblyBuilder;
         private readonly IExtensionManagerService _extensionManager;
         private readonly IHookManager _hookManager;
@@ -87,84 +95,97 @@ namespace pyRevitAssemblyBuilder.SessionManager
         ///    - Loads the assembly
         ///    - Executes startup scripts if present
         ///    - Creates the UI
+        ///
+        /// Each step is recorded on <see cref="LoadTimeline.Active"/>. When no load is active,
+        /// this call begins and ends its own timeline.
         /// </remarks>
         /// <param name="firstLoad">True during initial Revit startup; false during reload.
         /// Controls work that should only run once per Revit process, such as stale appdata cleanup.</param>
         public void LoadSession(bool firstLoad)
         {
-            var totalStopwatch = Stopwatch.StartNew();
-            var stepStopwatch = new Stopwatch();
+            var activeTimeline = LoadTimeline.Active;
+            var ownedTimeline = activeTimeline == null
+                ? LoadTimeline.Begin("pyRevit load", Stopwatch.GetTimestamp())
+                : null;
+            try
+            {
+                LoadSessionSteps(firstLoad, activeTimeline ?? ownedTimeline!);
+            }
+            finally
+            {
+                ownedTimeline?.End();
+            }
+        }
+
+        private void LoadSessionSteps(bool firstLoad, LoadTimeline timeline)
+        {
+            var stepsBeforeSession = timeline.Root.Children.Count;
 
             RibbonThemeRegistry.Clear();
 
             // STEP 1: Reset panel backgrounds before creating new UI
             // This matches Python's reset_backgrounds() behavior
-            stepStopwatch.Restart();
+            var step = timeline.StartSpan("ResetPanelBackgrounds");
             _ribbonScanner.ResetPanelBackgrounds();
-            _logger.Debug($"[PERF] ResetPanelBackgrounds: {stepStopwatch.ElapsedMilliseconds}ms");
+            LogStep(step);
 
             // STEP 2: Reset dirty flags on all existing pyRevit UI elements
             // This marks all existing elements as potentially orphaned
-            stepStopwatch.Restart();
+            step = timeline.StartSpan("ResetDirtyFlags");
             _ribbonScanner.ResetDirtyFlags();
-            _logger.Debug($"[PERF] ResetDirtyFlags: {stepStopwatch.ElapsedMilliseconds}ms");
+            LogStep(step);
 
             // Clear all caches to ensure newly installed/enabled extensions are discovered
             // This is critical for reload scenarios where extensions may have been added or toggled
-            stepStopwatch.Restart();
+            step = timeline.StartSpan("ClearParserCaches");
             _extensionManager?.ClearParserCaches();
-            _logger.Debug($"[PERF] ClearParserCaches: {stepStopwatch.ElapsedMilliseconds}ms");
+            LogStep(step);
 
             // Revit can change its UI theme without restarting the host process.
             RevitThemeDetector.ClearCache();
 
             // Initialize the ScriptExecutor before executing any scripts
-            stepStopwatch.Restart();
+            step = timeline.StartSpan("InitializeScriptExecutor");
             InitializeScriptExecutor();
-            _logger.Debug($"[PERF] InitializeScriptExecutor: {stepStopwatch.ElapsedMilliseconds}ms");
+            LogStep(step);
 
             // Give this service's logger somewhere to write. The first record written
             // after this point is swallowed by the runtime logging service; nothing is
             // logged here that would be worth losing.
             ConfigureRuntimeLogging();
+            var stepsBeforeLogging = timeline.Root.Children.Count;
 
             // Seed the AppDomain environment dictionary.  Must run after InitializeScriptExecutor()
             // (which loads _runtimeAssembly) and before any extension startup script (which may call
             // pyrevit.sessioninfo, pyrevit.telemetry, etc.).
-            stepStopwatch.Restart();
+            step = timeline.StartSpan("SeedEnvironmentDictionary");
             SeedEnvironmentDictionary();
-            _logger.Debug($"[PERF] SeedEnvironmentDictionary: {stepStopwatch.ElapsedMilliseconds}ms");
+            LogStep(step);
 
             // Drive the residual Python session services (env/session, telemetry,
             // routes, output window, hooks framework) that are not yet ported to C#.
-            stepStopwatch.Restart();
+            step = timeline.StartSpan("Preload");
             ExecuteEntryScript(Constants.PRELOAD_SCRIPT, "pyRevit Preload", firstLoad);
-            _logger.Debug($"[PERF] Preload: {stepStopwatch.ElapsedMilliseconds}ms");
+            LogStep(step, DescribeEngineSpans(step));
 
             // Get all library extensions first - they need to be available to all UI extensions.
             // First call also populates the shared ParseInstalledExtensions cache used by the
-            // later GetInstalledUIExtensions() call, so this Stopwatch is really measuring the
+            // later GetInstalledUIExtensions() call, so this step is really measuring the
             // full filesystem walk + bundle.yaml parse, not the lib-only filter. Hence the
-            // [PERF] label below is "ParseAllExtensions" rather than "GetLibraryExtensions".
-            stepStopwatch.Restart();
+            // step is named "ParseAllExtensions" rather than "GetLibraryExtensions".
+            step = timeline.StartSpan("ParseAllExtensions");
             var libraryExtensions = _extensionManager?.GetInstalledLibraryExtensions()?.ToList() ?? new List<ParsedExtension>();
-            var parseElapsed = stepStopwatch.ElapsedMilliseconds;
-            var parseStats = ExtensionParser.ResetAndGetParseStats();
-            var uiParseCount = parseStats.Count(p => p.Kind == "ui");
-            var libParseCount = parseStats.Count(p => p.Kind == "lib");
-            _logger.Debug($"[PERF] ParseAllExtensions: {parseElapsed}ms ({uiParseCount} ui, {libParseCount} lib)");
-            foreach (var (name, _, elapsedMs) in parseStats.OrderByDescending(p => p.ElapsedMs))
-            {
-                _logger.Debug($"[PERF]   parse '{name}': {elapsedMs}ms");
-            }
+            var libParseCount = step.Children.Count(p => p.Name.EndsWith(".lib", StringComparison.OrdinalIgnoreCase));
+            LogStep(step, $"{step.Children.Count - libParseCount} ui, {libParseCount} lib");
+            LogChildSpans(step.Children.OrderByDescending(p => p.ElapsedMilliseconds), parse => $"parse '{parse.Name}'");
 
             _precomputedLibrarySearchPaths = LibraryExtensionSearchPaths.Collect(libraryExtensions);
             _logger.Debug($"Pre-computed {_precomputedLibrarySearchPaths.Count} library search paths");
 
             // Get UI extensions
-            stepStopwatch.Restart();
+            step = timeline.StartSpan("GetUIExtensions");
             var uiExtensions = _extensionManager?.GetInstalledUIExtensions()?.ToList();
-            _logger.Debug($"[PERF] GetUIExtensions: {stepStopwatch.ElapsedMilliseconds}ms ({uiExtensions?.Count ?? 0} extensions)");
+            LogStep(step, $"{uiExtensions?.Count ?? 0} extensions");
 
             if (uiExtensions == null || uiExtensions.Count == 0)
             {
@@ -176,7 +197,9 @@ namespace pyRevitAssemblyBuilder.SessionManager
             // All extension assemblies must be loaded into the AppDomain before any
             // startup script runs (fix for #3108) - cross-extension imports in
             // startup scripts fail otherwise.
+            step = timeline.StartSpan("BuildAndLoadAllAssemblies");
             var assembledExtensions = BuildAndLoadAllAssemblies(uiExtensions, libraryExtensions);
+            LogStep(step);
 
             // ── PASS 2: Run ALL startup scripts ────────────────────────────────
             // All assemblies are now loaded, so cross-extension imports work.
@@ -184,15 +207,16 @@ namespace pyRevitAssemblyBuilder.SessionManager
             {
                 if (!string.IsNullOrEmpty(ext.StartupScript))
                 {
+                    _logger.Info($"Running startup tasks for {ext.Name}");
+                    var startupStep = timeline.StartSpan($"{ext.Name} - StartupScript");
                     try
                     {
-                        _logger.Info($"Running startup tasks for {ext.Name}");
-                        stepStopwatch.Restart();
                         ExecuteExtensionStartupScript(ext, libraryExtensions);
-                        _logger.Debug($"[PERF] {ext.Name} - StartupScript: {stepStopwatch.ElapsedMilliseconds}ms");
+                        LogStep(startupStep, DescribeEngineSpans(startupStep));
                     }
                     catch (Exception ex)
                     {
+                        startupStep.End();
                         _logger.Error($"Startup script error for '{ext.Name}': {ex}");
                     }
                 }
@@ -202,7 +226,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             // Hooks are registered here directly against the already-parsed extensions,
             // avoiding a redundant full extension re-parse (previously ~2-5s).
             // See: pyrevitlib/pyrevit/loader/hooks.py register_hooks()
-            stepStopwatch.Restart();
+            step = timeline.StartSpan("RegisterHooks (all extensions)");
             foreach (var (ext, _) in assembledExtensions)
             {
                 try
@@ -214,21 +238,23 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     _logger.Error($"Hook registration error for '{ext.Name}': {ex}");
                 }
             }
-            _logger.Debug($"[PERF] RegisterHooks (all extensions): {stepStopwatch.ElapsedMilliseconds}ms");
+            LogStep(step);
 
             // ── PASS 3: Build ALL UI ───────────────────────────────────────────
             foreach (var (ext, assmInfo) in assembledExtensions)
             {
+                var buildStep = timeline.StartSpan($"{ext?.Name ?? "unknown"} - BuildUI");
                 try
                 {
-                    stepStopwatch.Restart();
                     _uiManager?.BuildUI(ext, assmInfo);
-                    _logger.Debug($"[PERF] {ext.Name} - BuildUI: {stepStopwatch.ElapsedMilliseconds}ms");
+                    LogStep(buildStep, DescribeBuildUISpans(buildStep));
                     _uiManager?.EmitBuildUIPerfLines(ext.Name);
+                    LogChildSpans(buildStep.Children, smartButton => $"{ext.Name}/{smartButton.Name}");
                     _logger.Info($"UI created for extension: {ext.Name}");
                 }
                 catch (Exception ex)
                 {
+                    buildStep.End();
                     _logger.Error($"UI build error for '{ext?.Name ?? "unknown"}': {ex}");
                 }
             }
@@ -236,7 +262,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             // STEP 3: Apply external layout directives (panel reordering)
             // This applies directives that reference external targets (native Revit panels or panels from other extensions)
             // Must be called after ALL UI is built so all panels exist
-            stepStopwatch.Restart();
+            step = timeline.StartSpan("SortUI");
             var allExternalDirectives = uiExtensions
                 .Where(ext => ext?.ExternalLayoutDirectives != null)
                 .SelectMany(ext => ext.ExternalLayoutDirectives)
@@ -247,31 +273,107 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 _logger.Debug($"Applying {allExternalDirectives.Count} external layout directives...");
                 _ribbonScanner.SortUI(allExternalDirectives);
             }
-            _logger.Debug($"[PERF] SortUI: {stepStopwatch.ElapsedMilliseconds}ms");
+            LogStep(step);
 
             // STEP 4: Cleanup orphaned UI elements (those with dirty=false)
             // This deactivates tabs/panels that were deleted or disabled since last load
             // Matching Python's cleanup_pyrevit_ui() behavior
-            stepStopwatch.Restart();
+            step = timeline.StartSpan("CleanupOrphanedElements");
             _ribbonScanner.CleanupOrphanedElements();
-            _logger.Debug($"[PERF] CleanupOrphanedElements: {stepStopwatch.ElapsedMilliseconds}ms");
+            LogStep(step);
 
             QueueBackgroundCleanup(firstLoad);
 
             // Finalize via the residual Python post-load services (hook activation,
             // doc colorizer, routes server, output teardown).
-            stepStopwatch.Restart();
+            step = timeline.StartSpan("Postload");
             ExecuteEntryScript(Constants.POSTLOAD_SCRIPT, "pyRevit Postload", firstLoad);
-            _logger.Debug($"[PERF] Postload: {stepStopwatch.ElapsedMilliseconds}ms");
+            LogStep(step, DescribeEngineSpans(step));
 
             if (ReadAndClearSessionReplacedFlag())
             {
-                _logger.Debug("Postload triggered a nested reload; skipping this LoadSession's own final stopwatch/log.");
+                _logger.Debug("Postload triggered a nested reload; skipping this load's timing summary.");
                 return;
             }
 
-            totalStopwatch.Stop();
-            _logger.Info($"Session loaded in {totalStopwatch.ElapsedMilliseconds}ms");
+            LogTimelineSummary(timeline, firstLoad ? stepsBeforeLogging : stepsBeforeSession);
+            _logger.Info($"Session loaded in {timeline.ElapsedMilliseconds:0}ms");
+        }
+
+        /// <summary>
+        /// Logs one indented [PERF] line per child span that cost at least
+        /// <see cref="RollupThresholdMilliseconds"/>, then a single line counting the cheaper
+        /// ones and their total, so a step with many trivial children stays readable without
+        /// losing what they cost together.
+        /// </summary>
+        /// <param name="nameSelector">Renders the name a child span is logged under.</param>
+        private void LogChildSpans(IEnumerable<LoadSpan> children, Func<LoadSpan, string> nameSelector)
+        {
+            var rolledUpCount = 0;
+            var rolledUpMs = 0.0;
+            foreach (var child in children)
+            {
+                if (child.ElapsedMilliseconds < RollupThresholdMilliseconds)
+                {
+                    rolledUpCount++;
+                    rolledUpMs += child.ElapsedMilliseconds;
+                    continue;
+                }
+                _logger.Debug($"[PERF]   {nameSelector(child)}: {child.ElapsedMilliseconds:0}ms");
+            }
+            if (rolledUpCount > 0)
+                _logger.Debug($"[PERF]   {rolledUpCount} under {RollupThresholdMilliseconds:0}ms: {rolledUpMs:0}ms");
+        }
+
+        private void LogStep(LoadSpan step, string? detail = null)
+        {
+            var elapsedMs = step.End();
+            _logger.Debug(detail == null
+                ? $"[PERF] {step.Name}: {elapsedMs:0}ms"
+                : $"[PERF] {step.Name}: {elapsedMs:0}ms ({detail})");
+        }
+
+        /// <summary>
+        /// Summarizes the engine start and execute spans the script runtime recorded under
+        /// <paramref name="step"/>, so engine creation reads separately from script time.
+        /// </summary>
+        private static string? DescribeEngineSpans(LoadSpan step)
+        {
+            if (step.Children.Count == 0)
+                return null;
+            return string.Join(", ", step.Children.Select(child => $"{child.Name} {child.ElapsedMilliseconds:0}ms"));
+        }
+
+        /// <summary>
+        /// Splits a BuildUI step into ribbon layout and the SmartButton __selfinit__ spans that
+        /// <see cref="SmartButtonScriptInitializer"/> recorded under it.
+        /// </summary>
+        private static string? DescribeBuildUISpans(LoadSpan buildStep)
+        {
+            if (buildStep.Children.Count == 0)
+                return null;
+            var smartButtonMs = buildStep.Children.Sum(child => child.ElapsedMilliseconds);
+            return $"ribbon layout {buildStep.ElapsedMilliseconds - smartButtonMs:0}ms, " +
+                $"smartbuttons {smartButtonMs:0}ms (x{buildStep.Children.Count})";
+        }
+
+        /// <summary>
+        /// Logs what the per-step [PERF] lines leave out: time Revit ran before pyRevit started,
+        /// the first <paramref name="unloggedStepCount"/> top-level steps, and load time no step
+        /// covers.
+        /// </summary>
+        /// <param name="unloggedStepCount">
+        /// Leading top-level steps whose own [PERF] lines never reached the log: steps recorded
+        /// before this service took over the load and, on the first load of a process, steps that
+        /// ran before runtime logging was configured.
+        /// </param>
+        private void LogTimelineSummary(LoadTimeline timeline, int unloggedStepCount)
+        {
+            if (timeline.ProcessUptimeAtStartMilliseconds.HasValue)
+                _logger.Debug($"[PERF] Revit running before pyRevit startup: {timeline.ProcessUptimeAtStartMilliseconds.Value:0}ms (not in total)");
+            foreach (var step in timeline.Root.Children.Take(unloggedStepCount))
+                _logger.Debug($"[PERF] {step.Name}: {step.ElapsedMilliseconds:0}ms");
+            _logger.Debug($"[PERF] Unaccounted: {timeline.UnaccountedMilliseconds:0}ms");
         }
 
         /// <summary>
@@ -317,7 +419,6 @@ namespace pyRevitAssemblyBuilder.SessionManager
         private List<(ParsedExtension ext, ExtensionAssemblyInfo assmInfo)> BuildAndLoadAllAssemblies(
             List<ParsedExtension> uiExtensions, List<ParsedExtension> libraryExtensions)
         {
-            var stepStopwatch = Stopwatch.StartNew();
             var buildResults = new (ParsedExtension ext, ExtensionAssemblyInfo assmInfo)?[uiExtensions.Count];
             System.Threading.Tasks.Parallel.For(0, uiExtensions.Count, i =>
             {
@@ -348,7 +449,6 @@ namespace pyRevitAssemblyBuilder.SessionManager
                     _logger.Error($"Error building/loading extension '{ext?.Name ?? "unknown"}': {ex}");
                 }
             });
-            _logger.Debug($"[PERF] BuildAndLoadAllAssemblies: {stepStopwatch.ElapsedMilliseconds}ms");
 
             var assembledExtensions = new List<(ParsedExtension ext, ExtensionAssemblyInfo assmInfo)>();
             foreach (var result in buildResults)

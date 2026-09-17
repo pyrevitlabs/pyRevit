@@ -213,8 +213,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             IStackBuilder stackBuilder,
             IComboBoxBuilder comboBoxBuilder,
             BuildContext buildContext,
-            IUIRibbonScanner? ribbonScanner = null,
-            SmartButtonScriptInitializer? smartButtonScriptInitializer = null)
+            IUIRibbonScanner? ribbonScanner = null)
         {
             return new UIManagerService(
                 uiApplication,
@@ -226,8 +225,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 stackBuilder,
                 comboBoxBuilder,
                 buildContext,
-                ribbonScanner,
-                smartButtonScriptInitializer);
+                ribbonScanner);
         }
 
         /// <summary>
@@ -284,8 +282,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
                 stackBuilder,
                 comboBoxBuilder,
                 buildContext,
-                ribbonScanner,
-                smartButtonScriptInitializer);
+                ribbonScanner);
 
             return new SessionManagerService(
                 assemblyBuilder,
