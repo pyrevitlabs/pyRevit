@@ -156,6 +156,290 @@ class RKeynoteFilters(object):
         return cleaned
 
 
+class RKeynoteFileExpansion(object):
+    """The two expansion layers for ONE keynote file.
+
+    saved   -- the user's own expand/collapse choices.  Durable.
+    overlay -- transient, alive only while a search term is active, so
+               revealing a match can never rewrite what the user chose.
+    """
+
+    def __init__(self, keys=None, durable=True):
+        self.saved = set(keys or [])
+        self.overlay = {}
+        self.search_active = False
+        # False only for the scratch state handed out when no keynote file
+        # is bound (a project with no keynote file, or a dead connection).
+        # It renders and absorbs writes like any other state, and is never
+        # persisted -- see RKeynoteExpansion.iter_states.
+        self.durable = durable
+        self._term = None
+        self._missed = set()
+
+    def begin_render(self, search_term):
+        """Arm the search overlay -- call once per rebuild, before render."""
+        term = search_term or None
+        if term != self._term:
+            # Keep the overlay only while the user is EXTENDING the term --
+            # the keystroke case -- so a collapse made a moment ago survives
+            # the next character.  A genuinely different term (or the search
+            # ending) starts clean: a stale collapse carried across would
+            # silently hide the new term's matches, which reads as the
+            # search being broken.
+            if not (term and self._term and term.startswith(self._term)):
+                self.overlay = {}
+            self._term = term
+        self.search_active = bool(term)
+
+    def get(self, node):
+        """Read the rendered expansion state for a node."""
+        if self.search_active:
+            if node.key in self.overlay:
+                return self.overlay[node.key]
+            # Reveal whatever the filter left standing below this node.
+            # Reads the FILTERED children on purpose.
+            return bool(node.children)
+        return node.key in self.saved
+
+    def set(self, node, value):
+        """Record an expansion change made through the UI."""
+        if self.search_active:
+            self.overlay[node.key] = value
+            return
+        if value:
+            self.saved.add(node.key)
+        else:
+            self.saved.discard(node.key)
+
+    def set_all(self, keys, value):
+        """Apply Expand All / Collapse All to a whole key set.
+
+        Always writes the DURABLE layer.  These two buttons are explicit
+        global commands -- Collapse All means collapse all, including
+        whatever a search is currently hiding -- so unlike a chevron
+        gesture they are never diverted into the transient overlay.
+        Choosing the layer here would also mean trusting search_active,
+        which lags the search box by one render plus the 300ms debounce:
+        a press in that window would land in an overlay that the very
+        next render then discards, and the button would do nothing.
+        """
+        if value:
+            self.saved.update(keys)
+        else:
+            # Clear outright rather than subtracting `keys`: a node with no
+            # children right now contributes no key, so difference_update
+            # would leave its stale entry behind to re-open the moment it
+            # gained a child again.
+            self.saved.clear()
+        if self.search_active:
+            # Mirror into the overlay so the press is visible immediately
+            # against the filtered tree.  The overlay is dropped when the
+            # search ends, and the durable write above is what remains.
+            for key in keys:
+                self.overlay[key] = value
+
+    def expand(self, key):
+        """Reveal one node because the user just acted on it."""
+        if not key:
+            return
+        self.saved.add(key)
+        if self.search_active:
+            self.overlay[key] = True
+
+    def rekey(self, from_key, to_key):
+        """Follow a node whose key changed.  Children keep their own keys."""
+        if from_key in self.saved:
+            self.saved.discard(from_key)
+            self.saved.add(to_key)
+        # Mid-search the visible state comes from the overlay, so move that
+        # entry too -- otherwise re-keying a group silently changes what
+        # looks expanded, which moving a record must never do.
+        if from_key in self.overlay:
+            self.overlay[to_key] = self.overlay.pop(from_key)
+
+    def swap(self, key_a, key_b):
+        """Follow a Move Up / Move Down.
+
+        swap_keys EXCHANGES the two records' keys and re-parents each
+        subtree onto the other key, so the content moves with the key --
+        exchange the entries so expansion follows what the user sees move.
+        """
+        if (key_a in self.saved) != (key_b in self.saved):
+            self.saved.symmetric_difference_update([key_a, key_b])
+        # Exchange the transient entries the same way, for the same reason
+        # as rekey(): mid-search the overlay is what the tree renders from.
+        if key_a in self.overlay or key_b in self.overlay:
+            val_a = self.overlay.pop(key_a, None)
+            val_b = self.overlay.pop(key_b, None)
+            if val_b is not None:
+                self.overlay[key_a] = val_b
+            if val_a is not None:
+                self.overlay[key_b] = val_a
+
+    def prune(self, live_keys):
+        """Drop entries for keys that no longer exist.
+
+        Two-strike: an entry goes only after it has been missing from two
+        CONSECUTIVE renders.  A render can be incomplete without being
+        empty -- a record whose parent_key dangles is silently unreachable
+        from the roots and so never reaches live_keys, and a compensating
+        rollback that itself half-failed leaves exactly that -- and a
+        one-strike prune would throw away state for records still in the
+        file.
+        """
+        if not live_keys:
+            # A failed or empty read must never wipe the user's state.
+            return
+        missing = self.saved - live_keys
+        self.saved -= (missing & self._missed)
+        self._missed = missing
+
+
+class RKeynoteExpansion(object):
+    """Expansion state for the keynote tree, keyed by keynote key.
+
+    The manager rebuilds its tree from scratch on every refresh -- new
+    RKeynote objects every time -- and the TreeView is virtualized, so
+    off-screen rows have no container at all.  Expansion state can
+    therefore live neither on the node object nor on the WPF container.
+    It lives here, keyed on the one thing that survives a rebuild: the
+    key string.
+
+    Held per keynote FILE, because a key is only meaningful inside one:
+    every file opens with the same CSI division groups, so a single
+    shared set would spring unrelated groups open in the next project --
+    and prune(), which runs on every render, would then delete the other
+    file's state outright.  The manager follows the active project, so
+    the file under it changes on a view switch as well as on open and
+    Change Keynote File; bind() must run before any render that follows.
+
+    Two open projects on the SAME keynote file deliberately SHARE one
+    state: they are the same records through the same connection and the
+    same ADC lock, and the config holds one entry per file path, so
+    per-project state could not survive a restart anyway.
+    """
+
+    # A session that follows many projects would otherwise accumulate one
+    # state per keynote file for the life of the persistent engine.  Far
+    # more than any real session opens, and eviction loses nothing durable
+    # as long as it happens after a save.
+    # Deliberately far above any realistic session.  Eviction drops state
+    # that may not have been persisted yet -- the config is only written on
+    # close and on Change Keynote File -- and the payload is a few hundred
+    # short strings per file, so there is nothing to be gained by a tight
+    # cap and a session's work to be lost by one.
+    MAX_FILES = 32
+
+    def __init__(self):
+        self._states = {}      # kfile -> RKeynoteFileExpansion
+        self._order = []       # kfiles, least-recently-bound first
+        self.kfile = None
+        self._current = RKeynoteFileExpansion(durable=False)
+
+    # -- binding ----------------------------------------------------------
+
+    def bind(self, kfile, keys=None, force=False):
+        """Point the store at a keynote file and return its live state.
+
+        Seeds from `keys` only on first sight, so switching away to
+        another project and back keeps everything expanded this session.
+        `force` replaces the state outright -- window open, where the
+        persisted entry is authoritative and a config reset has to
+        actually reset.
+        """
+        if not kfile:
+            # An error binding, or a project with no keynote file: hand out
+            # an inert scratch state so a render can neither read another
+            # file's keys nor write into them.
+            self.kfile = None
+            self._current = RKeynoteFileExpansion(durable=False)
+            return self._current
+
+        state = self._states.get(kfile)
+        if state is None or force:
+            state = RKeynoteFileExpansion(keys)
+            self._states[kfile] = state
+        self.kfile = kfile
+        self._current = state
+        if kfile in self._order:
+            self._order.remove(kfile)
+        self._order.append(kfile)
+        self._evict()
+        return state
+
+    def reset_all(self):
+        """Forget every file's state, for a config reset.
+
+        Resetting only the bound file would leave every other project's
+        expansion in place, which is not what "reset settings" means.
+        """
+        self._states = {}
+        self._order = []
+        self.kfile = None
+        self._current = RKeynoteFileExpansion(durable=False)
+
+    def _evict(self):
+        while len(self._order) > self.MAX_FILES:
+            victim = None
+            for key in self._order:
+                if key != self.kfile:
+                    victim = key
+                    break
+            if victim is None:
+                return
+            self._order.remove(victim)
+            self._states.pop(victim, None)
+
+    def iter_states(self):
+        """(kfile, state) for every file worth persisting."""
+        for kfile in list(self._order):
+            state = self._states.get(kfile)
+            if state is not None and state.durable:
+                yield kfile, state
+
+    @property
+    def current(self):
+        return self._current
+
+    @property
+    def saved(self):
+        return self._current.saved
+
+    @property
+    def search_active(self):
+        return self._current.search_active
+
+    # -- the bound file's state -------------------------------------------
+
+    def begin_render(self, search_term):
+        self._current.begin_render(search_term)
+
+    def get(self, node):
+        return self._current.get(node)
+
+    def set(self, node, value):
+        self._current.set(node, value)
+
+    def set_all(self, keys, value):
+        self._current.set_all(keys, value)
+
+    def expand(self, key):
+        self._current.expand(key)
+
+    def rekey(self, from_key, to_key):
+        self._current.rekey(from_key, to_key)
+
+    def swap(self, key_a, key_b):
+        self._current.swap(key_a, key_b)
+
+    def prune(self, live_keys):
+        self._current.prune(live_keys)
+
+
+EXPANSION = RKeynoteExpansion()
+
+
+
 class RKeynote(forms.Reactive):
     """Object representing a keynote entry in the databaseself.
 
@@ -225,6 +509,25 @@ class RKeynote(forms.Reactive):
     @property
     def is_category(self):
         return not self.parent_key
+
+    @property
+    def is_expanded(self):
+        # Bound TwoWay from the TreeViewItem container style: WPF reads this
+        # when it realizes a container and writes it back when the user
+        # clicks a chevron or presses Left/Right on the row.
+        #
+        # A PLAIN property, deliberately, despite the Reactive base.
+        # Reactive builds one class-level PropertyChanged event shared by
+        # every instance, so notifying here would fan each write out to all
+        # ~400 bound rows -- Expand All would then cost 400 x 400 handler
+        # calls on the UI thread.  Expand/Collapse All re-render instead,
+        # which is one pass, and nothing else needs to hear about a change
+        # the user just made with their own mouse.
+        return EXPANSION.get(self)
+
+    @is_expanded.setter
+    def is_expanded(self, value):
+        EXPANSION.set(self, value)
 
     def has_children(self):
         return len(self.children)

@@ -426,6 +426,14 @@ class RevitActionHandler(UI.IExternalEventHandler):
 
 KEYNOTEMGR_WINDOW_ENVVAR = "KEYNOTEMGR_ACTIVE_WINDOW"
 MAX_KFILE_ATTEMPTS = 5
+# Expansion state is persisted onto ONE line of the shared global
+# pyRevit_config.ini that every other pyRevit tool rewrites -- cap it, per
+# keynote file.
+MAX_SAVED_EXPANDED = 500
+# How many receiving groups a paste may reveal before it stops revealing at
+# all.  A small paste should show where its rows went; a master-standard
+# paste touching dozens of groups must not blow the tree open.
+MAX_PASTE_REVEAL = 5
 USAGE_SCOPE_NOTE = (
     "Usage is checked against keynote tags in THIS project only — other "
     "projects sharing this keynote file, linked models and un-tagged "
@@ -1137,6 +1145,10 @@ class _DocBinding(object):
         self.used_viewsdict = defaultdict(list)
         self.usage_stale = True
         self.cache = []
+        # Whether `cache` was built under a search term.  filter() mutates
+        # the cached nodes in place, so a cache is only reusable by a later
+        # render in the same filtered/unfiltered state.
+        self.cache_filtered = False
         self.snapshot_categories = []
         self.snapshot_keynotes = []
         self.search_term = ""
@@ -1254,6 +1266,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._connect_kfile()
 
         self._cache = []
+        self._cache_filtered = False
         self._snapshot_categories = []
         self._snapshot_keynotes = []
         self._needs_update = False
@@ -1716,6 +1729,25 @@ class KeynoteManagerWindow(forms.WPFWindow):
         # every open project on THIS file now has a stale keynote table;
         # _capture_binding fans that out to the other bindings
         self._needs_update = True
+        if written:
+            # Reveal the groups that actually gained rows, and only those:
+            # pasting into a collapsed group otherwise looks like nothing
+            # happened.  paste_records only ADDs under row["parent"] or
+            # rewrites an existing record's text -- it never re-parents or
+            # re-keys -- so a reveal is all the bookkeeping a paste needs,
+            # and an overwrite put nothing new anywhere to reveal.
+            # ...but BOUNDED.  A master-standard paste can add rows under
+            # dozens of groups, and opening all of them at once is the very
+            # "400 notes expand each time" behaviour this change removes.
+            # A handful is a reveal; more than that is the user losing their
+            # place, so past the limit nothing is expanded and the hint below
+            # is the feedback that the paste landed.
+            _hit = set(_prow.get("parent") for _prow in approved
+                       if _prow.get("action") == "add")
+            _hit.discard(None)
+            if len(_hit) <= MAX_PASTE_REVEAL:
+                for _pkey in _hit:
+                    kdb.EXPANSION.expand(_pkey)
         self._hint("Pasted {} record(s)".format(written))
         self._update_full_tree()
         self._update_status_bar()
@@ -1752,6 +1784,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         MUST run in a valid Revit API context (it is queued through
         _revit_run): resolving the keynote file reads the KeynoteTable.
+
+        Deliberately does NOT re-point kdb.EXPANSION, natural as that
+        looks here: this runs on the Revit thread while the dispatcher is
+        still free, and the swap only happens later in _activate_binding.
+        A search-timer tick or a DocumentChanged refresh in between would
+        then render the project still ON SCREEN against the incoming
+        file's expansion state, and prune it against the wrong keys.
         """
         binding.error = None
         binding.kfile = None
@@ -1809,6 +1848,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         b.used_viewsdict = self._used_viewsdict
         b.usage_stale = self._usage_stale
         b.cache = self._cache
+        b.cache_filtered = self._cache_filtered
         b.snapshot_categories = self._snapshot_categories
         b.snapshot_keynotes = self._snapshot_keynotes
         b.error = self._bind_error
@@ -1829,6 +1869,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
             b.scroll_offset = self._get_scroll_offset()
         except Exception:
             b.scroll_offset = 0.0
+        # Expansion state is deliberately NOT captured here.  It is per
+        # keynote FILE, not per document -- kdb.EXPANSION keys it by kfile,
+        # so two open projects sharing a file share one set and cannot
+        # diverge.  The matching bind is in _activate_binding.
 
     def _activate_binding(self, binding):
         """Make `binding` the panel's view and redraw.
@@ -1845,6 +1889,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._doc = binding.doc
         self._kfile = binding.kfile
         self._bind_error = binding.error
+        # Re-point the expansion store BEFORE anything renders.  Two open
+        # projects routinely use different keynote files, and a key is only
+        # meaningful inside one -- every file opens with the same CSI
+        # groups, so rendering file B against file A's keys springs
+        # unrelated groups open, and the prune at the end of that render
+        # would then delete A's state outright.
+        self._bind_expansion_state()
         entry = self._files.get(binding.kfile) or {}
         self._conn = entry.get("conn")
         self._kfile_ext = entry.get("ext")
@@ -1855,6 +1906,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._used_viewsdict = binding.used_viewsdict
         self._usage_stale = binding.usage_stale
         self._cache = binding.cache
+        self._cache_filtered = binding.cache_filtered
         self._snapshot_categories = binding.snapshot_categories
         self._snapshot_keynotes = binding.snapshot_keynotes
 
@@ -2218,11 +2270,38 @@ class KeynoteManagerWindow(forms.WPFWindow):
             return
 
         def _do_select():
+            # Two different reasons the target may not resolve, and they
+            # need opposite handling.
+            #
+            # (1) An ancestor is COLLAPSED.  The row is hidden on purpose;
+            #     forcing it open would write through the TwoWay binding and
+            #     re-open that chain on every later rebuild.  Leave the
+            #     selection null -- that is the honest result.
+            # (2) The row is simply NOT REALIZED yet.  The tree virtualizes
+            #     with recycling, so a container exists only for rows near
+            #     the viewport.  That is not user intent and must not cost
+            #     the selection: scroll the ancestor in and ask again.
+            # Telling them apart is what stops a collapsed default from
+            # silently dropping the selection on every refresh.
+            for _anc in path[:-1]:
+                if not _anc.is_expanded:
+                    return
+
             container = None
             parent_container = self.keynotes_tv
             for node in path:
-                if container and hasattr(container, "IsExpanded"):
-                    container.IsExpanded = True
+                # Never force container.IsExpanded here.  It is bound TwoWay
+                # to RKeynote.is_expanded, so writing it would be recorded as
+                # a user expand and persist -- and the selection is restored
+                # on EVERY rebuild and on every project switch, which
+                # re-opened the selected node's whole ancestor chain every
+                # time anything changed.  A target inside a branch the user
+                # left collapsed is simply unreachable; the
+                # `if container is None: return` below handles that and the
+                # selection is left null.  UpdateLayout stays: it still has
+                # to materialize child containers inside branches that ARE
+                # open.
+                if container:
                     container.UpdateLayout()
                 idx = None
                 items = parent_container.ItemContainerGenerator
@@ -2241,6 +2320,15 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 else:
                     container = items.ContainerFromItem(node)
                 if container is None:
+                    # Case (2): force the virtualizing panel to build it.
+                    # BringIntoView on the realized ancestor is what makes
+                    # the retry worth anything; UpdateLayout alone does not
+                    # realize rows outside the viewport.
+                    if parent_container is not self.keynotes_tv:
+                        try:
+                            parent_container.BringIntoView()
+                        except Exception as ex:
+                            logger.debug("BringIntoView failed | %s", ex)
                     if hasattr(parent_container, "UpdateLayout"):
                         parent_container.UpdateLayout()
                     if idx is not None:
@@ -2274,83 +2362,61 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     return [root] + sub
         return None
 
-    def _set_all_tree_items_expanded(self, expanded, max_passes=2):
-        """Set IsExpanded on tree containers with bounded layout passes."""
-        tv = self.keynotes_tv
-        if not tv:
-            return False
+    def _all_parent_keys(self):
+        """Keys of every node that has children, independent of any filter.
 
-        def _safe_update_layout():
-            try:
-                tv.UpdateLayout()
-                return True
-            except Exception as ex:
-                logger.warning("Expand/collapse tree update failed | %s" % ex)
-                return False
+        Reads _children, never .children: while a search is active the
+        public property returns only the filtered subset, which would hide
+        whole branches from Expand/Collapse All.  Explicit stack, no
+        recursion -- _build_full_tree caps nesting at 64 levels precisely
+        because a native StackOverflow would kill the Revit process
+        uncatchably.
+        """
+        keys = set()
+        stack = list(self._cache)
+        while stack:
+            node = stack.pop()
+            if node._children:
+                keys.add(node.key)   # a leaf can never be expanded
+                stack.extend(node._children)
+        return keys
 
-        if not _safe_update_layout():
-            return False
+    def _can_apply_expand_all(self):
+        """Whether Expand/Collapse All may commit to the expansion store.
 
-        missing_any = False
-        for _ in range(max_passes):
-            missing_in_pass = False
-            root_gen = tv.ItemContainerGenerator
-            queue = []
-            for root in tv.Items:
-                root_container = root_gen.ContainerFromItem(root)
-                if root_container is None:
-                    missing_in_pass = True
-                    continue
-                queue.append(root_container)
+        Both handlers write the store BEFORE the render that shows the
+        result, so refuse whenever that render would not happen -- a write
+        with nothing to show for it is silent data loss.
 
-            while queue:
-                container = queue.pop()
-                if not container or not hasattr(container, "IsExpanded"):
-                    continue
-                container.IsExpanded = expanded
-                gen = container.ItemContainerGenerator
-                for child in container.Items:
-                    child_container = gen.ContainerFromItem(child)
-                    if child_container is None:
-                        missing_in_pass = True
-                        continue
-                    queue.append(child_container)
-
-            if not missing_in_pass:
-                _safe_update_layout()
-                return True
-
-            missing_any = True
-            if expanded:
-                if not _safe_update_layout():
-                    return False
-            else:
-                break
-
-        _safe_update_layout()
-        return not missing_any
+        _cache is empty only when the last _build_full_tree failed or the
+        file is genuinely empty; it is NOT empty merely because no node
+        currently has children, which is why this tests the cache and not
+        the parent-key set.  _tree_updating means a rebuild is already in
+        flight (a modal alert inside _update_full_tree_core can hold one
+        open) and _update_full_tree would return without rendering.  No
+        _kfile means the project on screen has no keynote file of its own
+        and the store is pointed at an inert scratch state, so both
+        buttons are an honest no-op rather than a write into nowhere.
+        """
+        return (bool(self._cache) and bool(self._kfile)
+                and not self._tree_updating)
 
     def expand_all_tree(self, sender, args):
-        def _do_expand():
-            self._set_all_tree_items_expanded(True, max_passes=3)
-
-        self.Dispatcher.BeginInvoke(
-            System.Action(ui_guard(_do_expand)),
-            Windows.Threading.DispatcherPriority.Loaded,
-        )
+        # Write the state for EVERY node, then re-render.  The old version
+        # walked ItemContainerGenerator, which under
+        # VirtualizingPanel.IsVirtualizing can only ever see on-screen rows
+        # -- ContainerFromItem returns None for the rest, so these buttons
+        # only affected what the user could already see.
+        if not self._can_apply_expand_all():
+            return
+        kdb.EXPANSION.set_all(self._all_parent_keys(), True)
+        self._update_full_tree(reuse_cache=True, keep_scroll=False)
 
     def collapse_all_tree(self, sender, args):
-        def _do_collapse():
-            collapsed = self._set_all_tree_items_expanded(False, max_passes=1)
-            if not collapsed:
-                # Some deep virtualized branches may not be realized on demand.
-                self._set_all_tree_items_expanded(True, max_passes=3)
-                self._set_all_tree_items_expanded(False, max_passes=1)
-
-        self.Dispatcher.BeginInvoke(
-            System.Action(ui_guard(_do_collapse)),
-            Windows.Threading.DispatcherPriority.Loaded,
-        )
+        if not self._can_apply_expand_all():
+            return
+        kdb.EXPANSION.set_all(self._all_parent_keys(), False)
+        self._update_full_tree(reuse_cache=True, keep_scroll=False)
 
     # =========================================================================
     # USED KEYNOTE TRACKING
@@ -2487,7 +2553,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
     # =========================================================================
 
     def save_config(self):
+        # Expansion is per keynote FILE and this window follows the active
+        # project, so one session routinely touches several of them.  Write
+        # them all, and write them BEFORE the guard below: self._kfile is
+        # None whenever the project on screen has no keynote file of its
+        # own, and returning there would drop every OTHER file's state.
+        self._save_expansion_state()
         if not self._kfile:
+            script.save_config()
             return
         wg = {}
         for k, v in self._config.get_option("last_window_geom", {}).items():
@@ -2503,12 +2576,106 @@ class KeynoteManagerWindow(forms.WPFWindow):
         pc[self._kfile] = self.postcmd_idx
         self._config.set_option("last_postcmd_idx", pc)
 
+        # Carry the other files' terms forward like every other map here.
+        # Rebuilding from {} discarded them, which went unnoticed while this
+        # ran only from window_closing -- it now also runs on Change Keynote
+        # File, so the loss would happen on every switch.
         st = {}
+        for k, v in self._config.get_option("last_search_term", {}).items():
+            if op.exists(k):
+                st[k] = v
         if self.search_term:
             st[self._kfile] = self.search_term
+        else:
+            st.pop(self._kfile, None)
         self._config.set_option("last_search_term", st)
 
         script.save_config()
+
+    def _save_expansion_state(self):
+        """Persist EVERY keynote file's expansion, not just the one on screen.
+
+        Deliberately NOT filtered by op.exists, unlike the maps in
+        save_config.  A cloud path (ACC, OneDrive) is routinely
+        unresolvable while offline or mid-sync, and dropping it here would
+        delete weeks of expansion state for a project the user merely was
+        not connected to when this window happened to close.  Losing window
+        geometry that way is a shrug; losing forty expanded groups is not.
+        """
+        try:
+            ex = dict(self._config.get_option("last_expanded", {}))
+        except Exception as ex_err:
+            logger.debug("Expansion state unreadable | %s", ex_err)
+            ex = {}
+        for kfile, state in kdb.EXPANSION.iter_states():
+            keys = sorted(state.saved)
+            if keys:
+                if len(keys) > MAX_SAVED_EXPANDED:
+                    # Truncation is alphabetical, so it always sacrifices
+                    # the same end of the file.  warning, not debug:
+                    # pyRevit hides debug output unless the user turned it
+                    # on, which would leave this as silent as no message.
+                    logger.warning(
+                        "Expansion state capped at %d of %d groups | %s",
+                        MAX_SAVED_EXPANDED, len(keys), kfile)
+                ex[kfile] = keys[:MAX_SAVED_EXPANDED]
+            else:
+                ex.pop(kfile, None)
+        self._config.set_option("last_expanded", ex)
+
+    def _bind_expansion_state(self, reset=False, force=False):
+        """Point the expansion store at the keynote file now on screen.
+
+        kdb.EXPANSION is module-level and outlives this window on a
+        persistent engine, and the panel FOLLOWS the active project, so the
+        keynote file under it changes on a view switch as well as on open
+        and Change Keynote File.  Every one of those has to re-point the
+        store before anything renders.
+
+        The store keeps one state per FILE, so two open projects sharing a
+        keynote file share its expansion.  That is deliberate: they are the
+        same records through the same connection and the same ADC lock, and
+        the config holds one entry per file path, so per-project state
+        could not survive a restart anyway.
+
+        First open of a file -- and every existing user's first open after
+        this ships -- has no stored entry, so the tree starts fully
+        COLLAPSED: root groups visible, nothing below them.  That is
+        deliberate too.  The previous behaviour expanded all 400-odd notes
+        on open and re-expanded them after every edit, which is the
+        complaint this change exists to answer; a user who wants everything
+        open has Expand All, and from then on their choice is what
+        persists.
+
+        Never raises.  _activate_binding calls this mid-swap, and an
+        exception there would abort the swap with the window's attributes
+        already naming the new project and the old one still drawn.
+        """
+        seed = []
+        if reset:
+            # Shift+Click reset must clear EVERY file, not just the one this
+            # window happens to have open: the store and the config entry
+            # both span every file the user has touched, so resetting one
+            # and leaving the rest is a reset that visibly did not work.
+            try:
+                kdb.EXPANSION.reset_all()
+                self._config.set_option("last_expanded", {})
+            except Exception as ex:
+                logger.debug("Expansion reset failed | %s", ex)
+        elif self._kfile:
+            try:
+                seed = self._config.get_option(
+                    "last_expanded", {}).get(self._kfile, [])
+            except Exception as ex:
+                logger.debug("Expansion state unreadable | %s", ex)
+                seed = []
+        try:
+            kdb.EXPANSION.bind(self._kfile, seed, force=force)
+        except Exception as ex:
+            # Docstring promises this never raises; a malformed config entry
+            # must not abort a project swap half-done.
+            logger.debug("Expansion bind failed | %s", ex)
+            kdb.EXPANSION.bind(self._kfile, [], force=True)
 
     def load_config(self, reset):
         wg = {} if reset else self._config.get_option("last_window_geom", {})
@@ -2527,6 +2694,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         pc = {} if reset else self._config.get_option("last_postcmd_idx", {})
         self.postcmd_idx = pc.get(self._kfile, 0)
+
+        # Seed the expansion store BEFORE the search term: assigning
+        # search_term writes search_tb.Text, which starts the 300ms debounce
+        # and so schedules a second rebuild shortly after the window
+        # appears.  force, and only here: on a persistent engine the store
+        # can still hold a previous window instance's copy of this file,
+        # and Reset Config has to actually reset.
+        self._bind_expansion_state(reset, force=True)
 
         st = {} if reset else self._config.get_option("last_search_term", {})
         self.search_term = st.get(self._kfile, "")
@@ -2962,7 +3137,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         return roots
 
-    def _update_full_tree(self, fast_filter=False):
+    def _update_full_tree(self, fast_filter=False, reuse_cache=False,
+                          keep_scroll=True):
         """Re-entrancy-safe tree refresh.
 
         A DispatcherTimer tick or DocumentChanged dispatch can fire while
@@ -2972,11 +3148,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
             return
         self._tree_updating = True
         try:
-            self._update_full_tree_core(fast_filter=fast_filter)
+            self._update_full_tree_core(fast_filter=fast_filter,
+                                        reuse_cache=reuse_cache,
+                                        keep_scroll=keep_scroll)
         finally:
             self._tree_updating = False
 
-    def _update_full_tree_core(self, fast_filter=False):
+    def _update_full_tree_core(self, fast_filter=False, reuse_cache=False,
+                               keep_scroll=True):
         """Refresh the single unified tree, applying search filter."""
         # Save current state before rebuild
         saved_key = None
@@ -2984,9 +3163,22 @@ class KeynoteManagerWindow(forms.WPFWindow):
         sel = self.selected_keynote
         if sel:
             saved_key = sel.key
-        saved_scroll = self._get_scroll_offset()
+        # Expand/Collapse All pass keep_scroll=False: the offset is in
+        # PIXELS against the old tree height, and those buttons change that
+        # height by a large factor, so restoring it lands somewhere
+        # unrelated to what the user was looking at.  Skipping the restore
+        # leaves the final position to WPF's item-anchored reset, plus the
+        # BringIntoView that the selection restore below performs when a
+        # selection survives.
+        saved_scroll = self._get_scroll_offset() if keep_scroll else None
 
         keynote_filter = self.search_term if self.search_term else None
+
+        # Arm the search overlay exactly once per rebuild, before any node
+        # is built, filtered or handed to WPF.  The store was pointed at
+        # self._kfile before this render (see _bind_expansion_state), so
+        # everything below only ever touches THIS file's state.
+        kdb.EXPANSION.begin_render(keynote_filter)
 
         # Update view-only filter keys.
         # NOTE: this runs on the WPF/dispatcher side, outside a Revit API
@@ -3002,10 +3194,20 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 logger.debug("View filter unavailable | %s", ex)
                 kdb.RKeynoteFilters.ViewOnly.set_keys([])
 
-        if fast_filter and keynote_filter:
+        # reuse_cache lets Expand/Collapse All re-render without re-reading
+        # the keynote file, which may sit on a cloud drive.  Only reuse while
+        # the cache still matches the search box: filter() mutates the cached
+        # nodes in place, so a cache built under a term keeps returning
+        # _filtered_children after the box was emptied and before the 300ms
+        # debounce has ticked.
+        cache_usable = (self._cache
+                        and self._cache_filtered == bool(keynote_filter))
+        if (fast_filter and keynote_filter) or (reuse_cache and cache_usable):
             tree = list(self._cache)
+            fresh_read = False
         else:
             tree = self._build_full_tree()
+            fresh_read = True
 
         # Mark used (pre-resolved view names — no Revit API access here)
         for node in tree:
@@ -3015,8 +3217,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 view_names=self._used_viewsdict,
             )
 
-        # Cache for fast re-filter
+        # Cache for fast re-filter.  Track whether this render filters it:
+        # filter() mutates the nodes, so a cache is only reusable by a later
+        # render that is in the same filtered/unfiltered state.
         self._cache = list(tree)
+        self._cache_filtered = bool(keynote_filter)
 
         # Rows are rebuilt from the file on every refresh, so re-apply the
         # highlight to the NEW objects, dropping keys that no longer exist.
@@ -3038,6 +3243,22 @@ class KeynoteManagerWindow(forms.WPFWindow):
             _flatten(_root)
         self._snapshot_categories = list(self._cache)
         self._snapshot_keynotes = flat_knotes
+
+        # Drop expansion entries for keys that no longer exist -- removed or
+        # re-keyed.  The flat snapshots were just built above, so this costs
+        # no extra traversal on the 300ms search-keystroke path.  Only this
+        # file's state is touched: the store was bound to self._kfile before
+        # this render began.
+        #
+        # Only on a FRESH read.  prune is deliberately two-strike, but a
+        # re-render off the cache carries no new information about what
+        # exists -- and some paths render twice in a row from the same
+        # cache (a project switch does), which would spend both strikes
+        # without the file ever being re-read and evict live keys.
+        if fresh_read:
+            live_keys = set(n.key for n in self._snapshot_categories)
+            live_keys.update(n.key for n in self._snapshot_keynotes)
+            kdb.EXPANSION.prune(live_keys)
 
         # Apply search filter
         if keynote_filter:
@@ -3143,6 +3364,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         new_parent = siblings[idx - 1]
         try:
             kdb.move_keynote(self._conn, sel.key, new_parent.key)
+            kdb.EXPANSION.expand(new_parent.key)
             self._needs_update = True
         except System.TimeoutException as toutex:
             forms.alert(toutex.Message)
@@ -3188,6 +3410,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         try:
             kdb.move_keynote(self._conn, sel.key, grandparent_key)
+            kdb.EXPANSION.expand(grandparent_key)
             self._needs_update = True
         except System.TimeoutException as toutex:
             forms.alert(toutex.Message)
@@ -3246,6 +3469,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         try:
             kdb.swap_keys(self._conn, sel_key, other_key, temp_key, category=is_cat)
+
+            # swap_keys exchanges the two keys and re-parents each subtree
+            # onto the other key, so the content moves with the key --
+            # exchange the entries so expansion follows what the user sees
+            # moving, not the row slot it left behind.
+            kdb.EXPANSION.swap(sel_key, other_key)
 
             # Update references in Revit model (async via ExternalEvent)
             sk, ok = sel_key, other_key
@@ -4043,6 +4272,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         try:
             kdb.move_keynote(self._conn, dragged.key, new_parent_key)
+            kdb.EXPANSION.expand(new_parent_key)
             self._needs_update = True
         except System.TimeoutException as toutex:
             forms.alert(toutex.Message)
@@ -4115,9 +4345,21 @@ class KeynoteManagerWindow(forms.WPFWindow):
             parent_key = self._pick_parent()
         if parent_key:
             try:
-                EditRecordWindow(
+                new_kn = EditRecordWindow(
                     self, self._conn, kdb.EDIT_MODE_ADD_KEYNOTE, pkey=parent_key
                 ).show()
+                # Reveal the group only if a record was actually added.
+                # show() returns None on Cancel, and expanding regardless
+                # re-opened a group the user had deliberately collapsed --
+                # the very complaint this change exists to fix.
+                if new_kn:
+                    # Reveal where the record actually LANDED.  The dialog
+                    # has its own Parent picker, so the committed parent can
+                    # differ from the pkey we passed in -- expanding the
+                    # latter would open a group the record is not even in,
+                    # and leave the one it IS in still closed.
+                    kdb.EXPANSION.expand(
+                        getattr(new_kn, "parent_key", None) or parent_key)
                 self._needs_update = True
             except Exception as ex:
                 forms.alert(str(ex))
@@ -4129,13 +4371,16 @@ class KeynoteManagerWindow(forms.WPFWindow):
         sel = self.selected_keynote
         if sel and sel.parent_key:
             try:
-                EditRecordWindow(
+                new_kn = EditRecordWindow(
                     self,
                     self._conn,
                     kdb.EDIT_MODE_ADD_KEYNOTE,
                     text=sel.text,
                     pkey=sel.parent_key,
                 ).show()
+                if new_kn:
+                    kdb.EXPANSION.expand(
+                        getattr(new_kn, "parent_key", None) or sel.parent_key)
                 self._needs_update = True
             except Exception as ex:
                 forms.alert(str(ex))
@@ -4150,10 +4395,19 @@ class KeynoteManagerWindow(forms.WPFWindow):
         if sel.is_category:
             self.edit_category_inline(sender, args)
             return
+        was_parent = sel.parent_key
         try:
-            EditRecordWindow(
+            edited = EditRecordWindow(
                 self, self._conn, kdb.EDIT_MODE_EDIT_KEYNOTE, rkeynote=sel
             ).show()
+            # The edit dialog can RE-PARENT the record.  Every other
+            # re-parent route reveals its destination (indent, outdent,
+            # drag-drop), and without it here the note moves into a
+            # collapsed group and simply appears to vanish.
+            if edited:
+                now_parent = getattr(edited, "parent_key", None)
+                if now_parent and now_parent != was_parent:
+                    kdb.EXPANSION.expand(now_parent)
             self._needs_update = True
         except Exception as ex:
             forms.alert(str(ex))
@@ -4376,6 +4630,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 kdb.rekey_with_children(
                     self._conn, from_key, to_key, category=sel.is_category
                 )
+                # The node's key changed; move its expansion entry with it.
+                # Children keep their own keys, so only this one entry moves.
+                # Without this, re-keying a group silently collapses it.
+                kdb.EXPANSION.rekey(from_key, to_key)
                 # Update Revit element refs (async via ExternalEvent)
                 fk, tk = from_key, to_key
                 self._revit_run(lambda: self._rekey_refs(fk, tk))
@@ -4641,16 +4899,43 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     "the Keynote Manager."
                 )
                 return
+            # Persist the OUTGOING file's state first: _bind_expansion_state
+            # replaces what the store is pointed at, and save_config
+            # otherwise runs only from window_closing -- so everything the
+            # user expanded since opening this file would be dropped here.
+            # self._kfile still names the outgoing file at this point.
+            self.save_config()
             try:
                 self._determine_kfile()
+                # The whole key namespace changes with the file.  Bind before
+                # _connect_kfile so the KeynoteSetupError branch -- which
+                # also rebuilds the tree -- never renders the old file's
+                # state.
+                self._bind_expansion_state()
                 self._connect_kfile()
             except KeynoteSetupError as kex:
                 self._drop_file_entry(self._kfile, str(kex))
                 forms.alert(str(kex))
+                # _connect_kfile's retry loop can have moved self._kfile on
+                # before it gave up; re-bind against wherever it stopped.
+                # _drop_file_entry deliberately leaves the expansion state
+                # alone -- a cloud drive offline for a minute is not the
+                # user asking to forget forty expanded groups.
+                self._bind_expansion_state()
                 self._update_full_tree()
                 self._update_status_bar()
                 self._update_title()
                 return
+            # _connect_kfile's "Select Other" retry can land on yet another
+            # file -- re-bind against whatever it settled on.
+            self._bind_expansion_state()
+            # Carry the incoming file's own search term, not the outgoing
+            # one's.  Leaving the old term applied renders the new file
+            # filtered by a string that means nothing in it -- which, because
+            # a search reveals matches, also hides the expansion state that
+            # was just restored.
+            st = self._config.get_option("last_search_term", {})
+            self.search_term = st.get(self._kfile, "")
             self._needs_update = True
             self._refresh_used_keynotes()
             self._update_full_tree()
@@ -4993,6 +5278,7 @@ _GUARDED_ENTRY_POINTS = (
             "change_keynote_file",
             "clear_search",
             "collapse_all_tree",
+            "copy_keynote",
             "custom_filter",
             "duplicate_keynote",
             "edit_keynote",
@@ -5005,6 +5291,7 @@ _GUARDED_ENTRY_POINTS = (
             "outdent_keynote",
             "move_up",
             "move_down",
+            "paste_keynote",
             "place_keynote",
             "place_user_keynote",
             "place_element_keynote",
