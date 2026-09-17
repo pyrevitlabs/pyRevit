@@ -548,9 +548,8 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="CheckBox">
-                    <BulletDecorator Background="Transparent">
-                        <BulletDecorator.Bullet>
-                        <Border x:Name="box" Width="14" Height="14"
+                    <StackPanel Orientation="Horizontal">
+                        <Border x:Name="box" Width="14" Height="14" VerticalAlignment="Center"
                                 Background="{DynamicResource pyRevitControlBackgroundBrush}"
                                 BorderBrush="{DynamicResource pyRevitSubtleForegroundBrush}"
                                 BorderThickness="1">
@@ -570,10 +569,9 @@
                                       Visibility="Collapsed" Margin="2"/>
                             </Grid>
                         </Border>
-                        </BulletDecorator.Bullet>
                         <ContentPresenter Margin="6,0,0,0" VerticalAlignment="Center"
                                           RecognizesAccessKey="True"/>
-                    </BulletDecorator>
+                    </StackPanel>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="check" Property="Visibility" Value="Visible"/>
@@ -601,9 +599,8 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
-                    <BulletDecorator Background="Transparent">
-                        <BulletDecorator.Bullet>
-                        <Grid Width="14" Height="14">
+                    <StackPanel Orientation="Horizontal">
+                        <Grid Width="14" Height="14" VerticalAlignment="Center">
                             <Ellipse x:Name="circle"
                                      Fill="{DynamicResource pyRevitControlBackgroundBrush}"
                                      Stroke="{DynamicResource pyRevitSubtleForegroundBrush}"
@@ -612,9 +609,8 @@
                                      HorizontalAlignment="Center" VerticalAlignment="Center"
                                      Fill="{DynamicResource pyRevitAccentBrush}" Visibility="Collapsed"/>
                         </Grid>
-                        </BulletDecorator.Bullet>
                         <ContentPresenter Margin="6,0,0,0" VerticalAlignment="Center"/>
-                    </BulletDecorator>
+                    </StackPanel>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="dot" Property="Visibility" Value="Visible"/>
