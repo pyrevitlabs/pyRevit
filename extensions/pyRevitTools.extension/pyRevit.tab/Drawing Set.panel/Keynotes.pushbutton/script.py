@@ -1431,25 +1431,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
     # =========================================================================
 
     def _flat_display_rows(self, filtered=True, expanded_only=False):
-        """Every row in tree order.
+        """Every row in tree order, walked from the cache, not the database.
 
-        Walks the cached tree rather than the database: this runs on every
-        Ctrl/Shift click, and selecting rows must never touch the keynote
-        file.
-
-        filtered=True follows `children`, the search-aware view.
-        filtered=False follows the raw `_children`, which is what the
-        SELECTION itself has to be read through: a row stays selected while
-        a search hides it, and Copy must still take it rather than quietly
-        dropping it.
-
-        Important:
-            expanded_only=True also stops at a collapsed row, and a range
-            gesture needs it.  Filtering alone used to be enough because the
-            tree was always fully expanded; now that a collapse survives a
-            rebuild, a Shift+Click spanning a shut group would otherwise
-            reach the children inside it and hand them to Copy, Delete or a
-            case change without the user ever seeing them.
+        Selection reads pass filtered=False so a row hidden by a search
+        stays selected; range gestures pass expanded_only=True so they
+        cannot reach inside a collapsed group.
         """
         rows = []
 
