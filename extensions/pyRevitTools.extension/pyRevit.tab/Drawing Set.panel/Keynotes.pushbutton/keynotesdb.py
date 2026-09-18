@@ -190,27 +190,35 @@ class RKeynoteExpansion(object):
         self._missed = set()
 
     def begin_render(self, search_term):
-        """Arm the search overlay — call once per rebuild, before render."""
+        """Arm the search overlay — call once per rebuild, before render.
+
+        Note:
+            The overlay is kept only while the user is EXTENDING the term —
+            the keystroke case — so a collapse made a moment ago survives
+            the next character.  A genuinely different term, or the search
+            ending, starts clean: a stale collapse carried across would
+            silently hide the new term's matches, which reads as the search
+            being broken.
+        """
         term = search_term or None
         if term != self._term:
-            # Keep the overlay only while the user is EXTENDING the term —
-            # the keystroke case — so a collapse made a moment ago survives
-            # the next character.  A genuinely different term (or the search
-            # ending) starts clean: a stale collapse carried across would
-            # silently hide the new term's matches, which reads as the
-            # search being broken.
             if not (term and self._term and term.startswith(self._term)):
                 self.overlay = {}
             self._term = term
         self.search_active = bool(term)
 
     def get(self, node):
-        """Read the rendered expansion state for a node."""
+        """Read the rendered expansion state for a node.
+
+        Note:
+            Mid-search, a node the overlay says nothing about reveals
+            whatever the filter left standing below it.  That reads
+            `children`, the FILTERED view, on purpose: the hits show
+            without anything being written to what the user saved.
+        """
         if self.search_active:
             if node.key in self.overlay:
                 return self.overlay[node.key]
-            # Reveal whatever the filter left standing below this node.
-            # Reads the FILTERED children on purpose.
             return bool(node.children)
         return node.key in self.saved
 
@@ -235,19 +243,23 @@ class RKeynoteExpansion(object):
         which lags the search box by one render plus the 300ms debounce:
         a press in that window would land in an overlay that the very
         next render then discards, and the button would do nothing.
+
+        Important:
+            Collapse All clears the set outright rather than subtracting
+            `keys`.  A node with no children right now contributes no key,
+            so a difference would leave its stale entry behind to re-open
+            the moment it gained a child again.
+
+        Note:
+            Mid-search the change is mirrored into the overlay so the press
+            shows immediately against the filtered tree.  That mirror is
+            dropped when the search ends; the durable write is what remains.
         """
         if value:
             self.saved.update(keys)
         else:
-            # Clear outright rather than subtracting `keys`: a node with no
-            # children right now contributes no key, so difference_update
-            # would leave its stale entry behind to re-open the moment it
-            # gained a child again.
             self.saved.clear()
         if self.search_active:
-            # Mirror into the overlay so the press is visible immediately
-            # against the filtered tree.  The overlay is dropped when the
-            # search ends, and the durable write above is what remains.
             for key in keys:
                 self.overlay[key] = value
 
@@ -260,13 +272,16 @@ class RKeynoteExpansion(object):
             self.overlay[key] = True
 
     def rekey(self, from_key, to_key):
-        """Follow a node whose key changed.  Children keep their own keys."""
+        """Follow a node whose key changed.  Children keep their own keys.
+
+        Note:
+            Mid-search the visible state comes from the overlay, so that
+            entry moves too — otherwise re-keying a group silently changes
+            what looks expanded, which moving a record must never do.
+        """
         if from_key in self.saved:
             self.saved.discard(from_key)
             self.saved.add(to_key)
-        # Mid-search the visible state comes from the overlay, so move that
-        # entry too — otherwise re-keying a group silently changes what
-        # looks expanded, which moving a record must never do.
         if from_key in self.overlay:
             self.overlay[to_key] = self.overlay.pop(from_key)
 
@@ -276,11 +291,14 @@ class RKeynoteExpansion(object):
         swap_keys EXCHANGES the two records' keys and re-parents each
         subtree onto the other key, so the content moves with the key —
         exchange the entries so expansion follows what the user sees move.
+
+        Note:
+            The transient entries are exchanged the same way and for the
+            same reason as in `rekey`: mid-search the overlay is what the
+            tree renders from.
         """
         if (key_a in self.saved) != (key_b in self.saved):
             self.saved.symmetric_difference_update([key_a, key_b])
-        # Exchange the transient entries the same way, for the same reason
-        # as rekey(): mid-search the overlay is what the tree renders from.
         if key_a in self.overlay or key_b in self.overlay:
             val_a = self.overlay.pop(key_a, None)
             val_b = self.overlay.pop(key_b, None)
@@ -299,9 +317,13 @@ class RKeynoteExpansion(object):
         rollback that itself half-failed leaves exactly that — and a
         one-strike prune would throw away state for records still in the
         file.
+
+        Important:
+            An empty `live_keys` means the read failed — a locked or
+            renamed keynote file returns no rows — and must never wipe the
+            user's state, so it prunes nothing at all.
         """
         if not live_keys:
-            # A failed or empty read must never wipe the user's state.
             return
         missing = self.saved - live_keys
         self.saved -= (missing & self._missed)
@@ -383,9 +405,19 @@ class RKeynote(forms.Reactive):
 
     @property
     def is_expanded(self):
-        # Bound TwoWay from the TreeViewItem container style: WPF reads this
-        # when it realizes a container and writes it back when the user
-        # clicks a chevron or presses Left/Right on the row.
+        """Whether this row renders expanded, read from the EXPANSION store.
+
+        Bound TwoWay from the TreeViewItem container style: WPF reads it
+        when it realizes a container and writes it back when the user
+        clicks a chevron or presses Left/Right on the row, so a gesture
+        reaches the store with no handler code.
+
+        Important:
+            The style must bind this, never set a constant.  A constant True
+            re-expanded every container the instant WPF created or recycled
+            one, so no user collapse survived a refresh — and every
+            add, edit and remove reassigns ItemsSource.
+        """
         return EXPANSION.get(self)
 
     @is_expanded.setter

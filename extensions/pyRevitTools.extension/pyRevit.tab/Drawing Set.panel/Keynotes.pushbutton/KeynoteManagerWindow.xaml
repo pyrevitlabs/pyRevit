@@ -163,12 +163,6 @@
         <!-- TREEVIEW ITEM CONTAINER                                      -->
         <!-- ============================================================ -->
         <Style x:Key="TreeItemContainer" TargetType="TreeViewItem">
-            <!-- Bound, never a constant.  A constant True re-expanded every
-                 container the instant WPF created or recycled one, so no user
-                 collapse survived a refresh - and every add/edit/remove
-                 reassigns ItemsSource.  TwoWay so the user's own chevron and
-                 arrow-key gestures write straight back into kdb.EXPANSION
-                 with no handler code. -->
             <Setter Property="IsExpanded" Value="{Binding is_expanded, Mode=TwoWay}"/>
             <Setter Property="Padding" Value="0"/>
             <Setter Property="Margin" Value="0"/>
