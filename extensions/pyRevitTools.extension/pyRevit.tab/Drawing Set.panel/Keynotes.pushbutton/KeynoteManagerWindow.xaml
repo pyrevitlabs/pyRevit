@@ -786,6 +786,7 @@
                        Visibility="Collapsed"/>
 
             <TreeView x:Name="keynotes_tv"
+                      Style="{StaticResource pyRevitTreeViewStyle}"
                       BorderThickness="0" Background="Transparent" Padding="6,4"
                       ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                       VirtualizingPanel.IsVirtualizing="True"

@@ -22,7 +22,7 @@
             </Grid.RowDefinitions>
             
             <!-- Header Row -->
-            <Rectangle Grid.Row="0" Grid.ColumnSpan="5" Fill="#F5F5F5" />
+            <Rectangle Grid.Row="0" Grid.ColumnSpan="5" Fill="{DynamicResource pyRevitChromeBackgroundBrush}" />
             <TextBlock Grid.Row="0" Grid.Column="1" Text="{DynamicResource Plane}" FontWeight="Bold" VerticalAlignment="Center" Margin="5,0"/>
             <TextBlock Grid.Row="0" Grid.Column="2" FontWeight="Bold" VerticalAlignment="Center" Margin="5,0" TextWrapping="Wrap">
                 <Run Text="{DynamicResource Elevation}"/>
@@ -42,7 +42,8 @@
                      Width="100" Height="25" Margin="5,0"
                      HorizontalContentAlignment="Right" VerticalContentAlignment="Center"
                      IsEnabled="{Binding can_modify_view}"
-                     Background="{Binding topplane_field_bg}"/>
+                     Background="{Binding topplane_field_bg}"
+                     Foreground="{Binding topplane_field_fg}"/>
             <ComboBox Grid.Row="1" Grid.Column="4" x:Name="topplane_level_combo" 
                       ItemsSource="{Binding available_levels}" 
                       SelectedValue="{Binding topplane_level_id, Mode=TwoWay}"
@@ -50,7 +51,8 @@
                       SelectedValuePath="IdValue"
                       Height="25" Margin="5,0" VerticalContentAlignment="Center"
                       IsEnabled="{Binding can_modify_view}"
-                      Background="{Binding topplane_field_bg}"/>
+                      Background="{Binding topplane_field_bg}"
+                      Foreground="{Binding topplane_field_fg}"/>
             
             <!-- Cut Plane Row -->
             <Rectangle Grid.Row="2" Grid.Column="0" Width="5" Height="20" Fill="{Binding cutplane_brush}" RadiusX="3" RadiusY="3"/>
@@ -61,10 +63,11 @@
                      Width="100" Height="25" Margin="5,0"
                      HorizontalContentAlignment="Right" VerticalContentAlignment="Center"
                      IsEnabled="{Binding can_modify_view}"
-                     Background="{Binding cutplane_field_bg}"/>
+                     Background="{Binding cutplane_field_bg}"
+                     Foreground="{Binding cutplane_field_fg}"/>
             <TextBlock Grid.Row="2" Grid.Column="4" Text="{Binding cutplane_level_name}" 
                        VerticalAlignment="Center" Margin="5,0" 
-                       Background="#E8E8E8" Padding="8,5" FontStyle="Italic" TextAlignment="Center"/>
+                       Background="{DynamicResource pyRevitControlHoverBrush}" Padding="8,5" FontStyle="Italic" TextAlignment="Center"/>
             
             <!-- Bottom Plane Row -->
             <Rectangle Grid.Row="3" Grid.Column="0" Width="5" Height="20" Fill="{Binding bottomplane_brush}" RadiusX="3" RadiusY="3"/>
@@ -75,7 +78,8 @@
                      Width="100" Height="25" Margin="5,0"
                      HorizontalContentAlignment="Right" VerticalContentAlignment="Center"
                      IsEnabled="{Binding can_modify_bottom}"
-                     Background="{Binding bottomplane_field_bg}"/>
+                     Background="{Binding bottomplane_field_bg}"
+                     Foreground="{Binding bottomplane_field_fg}"/>
             <ComboBox Grid.Row="3" Grid.Column="4" x:Name="bottomplane_level_combo" 
                       ItemsSource="{Binding available_levels}" 
                       SelectedValue="{Binding bottomplane_level_id, Mode=TwoWay}"
@@ -83,7 +87,8 @@
                       SelectedValuePath="IdValue"
                       Height="25" Margin="5,0" VerticalContentAlignment="Center"
                       IsEnabled="{Binding can_modify_bottom}"
-                      Background="{Binding bottomplane_field_bg}"/>
+                      Background="{Binding bottomplane_field_bg}"
+                      Foreground="{Binding bottomplane_field_fg}"/>
             
             <!-- View Depth Row -->
             <Rectangle Grid.Row="4" Grid.Column="0" Width="5" Height="20" Fill="{Binding viewdepth_brush}" RadiusX="3" RadiusY="3"/>
@@ -94,7 +99,8 @@
                      Width="100" Height="25" Margin="5,0"
                      HorizontalContentAlignment="Right" VerticalContentAlignment="Center"
                      IsEnabled="{Binding can_modify_view}"
-                     Background="{Binding viewdepth_field_bg}"/>
+                     Background="{Binding viewdepth_field_bg}"
+                     Foreground="{Binding viewdepth_field_fg}"/>
             <ComboBox Grid.Row="4" Grid.Column="4" x:Name="viewdepth_level_combo" 
                       ItemsSource="{Binding available_levels}" 
                       SelectedValue="{Binding viewdepth_level_id, Mode=TwoWay}"
@@ -102,7 +108,8 @@
                       SelectedValuePath="IdValue"
                       Height="25" Margin="5,0" VerticalContentAlignment="Center"
                       IsEnabled="{Binding can_modify_view}"
-                      Background="{Binding viewdepth_field_bg}"/>
+                      Background="{Binding viewdepth_field_bg}"
+                      Foreground="{Binding viewdepth_field_fg}"/>
         </Grid>
         
         <Separator Margin="0,10"/>
