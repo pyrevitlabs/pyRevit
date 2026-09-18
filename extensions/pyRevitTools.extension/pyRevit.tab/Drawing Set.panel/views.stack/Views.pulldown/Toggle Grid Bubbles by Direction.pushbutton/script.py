@@ -588,6 +588,8 @@ class CustomGrids:
 
 
 class ToggleGridWindow(forms.WPFWindow):
+    resolve_theme = True
+
     def __init__(
         self,
         xaml_source,

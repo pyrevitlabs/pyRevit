@@ -16,7 +16,6 @@ from pyrevit.revit.db import create as revit_create
 from pyrevit.userconfig import user_config
 from pyrevit.compat import get_elementid_value_func
 from pyrevit.coreutils import applocales, unique_name
-from pyrevit.framework import SolidColorBrush, Color, Media
 
 from match.match_utils import PropKeyValue
 from match import filter_utils
@@ -27,10 +26,6 @@ CONFIG_SECTION = "custom_properties_pane"
 
 _SEL_CB_TAG = "sel_checkbox"
 _RAW_INT_TAG = "_raw_int"
-
-# LemonChiffon (#FFFACD) — dirty / pending-apply highlight
-_DIRTY_BRUSH = SolidColorBrush(Color.FromArgb(255, 255, 250, 205))
-
 
 # ---------------------------------------------------------------------------
 # Config helpers
@@ -244,23 +239,6 @@ def _set_elementid_param(doc, element, param_name, new_val, ref_class, bic=None)
 # ---------------------------------------------------------------------------
 # Other helpers
 # ---------------------------------------------------------------------------
-
-
-def _find_visual_child(parent, child_type, name=None):
-    """Return the first descendant of child_type in the visual tree.
-
-    If name is given, only matches elements whose Name property equals it.
-    """
-    count = Media.VisualTreeHelper.GetChildrenCount(parent)
-    for i in range(count):
-        child = Media.VisualTreeHelper.GetChild(parent, i)
-        if isinstance(child, child_type):
-            if name is None or getattr(child, "Name", "") == name:
-                return child
-        result = _find_visual_child(child, child_type, name)
-        if result is not None:
-            return result
-    return None
 
 
 # ---------------------------------------------------------------------------
@@ -937,7 +915,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
         if not self._is_field_changed(field):
             self._clear_field_dirty(field)
             return
-        self._set_background(field, _DIRTY_BRUSH)
+        self._set_resource_background(field, "pyRevitSelectionBackgroundBrush")
         try:
             if field is self.workset_combo:
                 self.workset_undo_btn.Visibility = forms.WPF_VISIBLE
@@ -986,15 +964,14 @@ class CustomPropertiesPanel(forms.WPFPanel):
             control.Background = brush
         except Exception:
             pass
-        if isinstance(control, framework.Controls.ComboBox) and control.IsEditable:
-            try:
-                border = _find_visual_child(
-                    control, framework.Controls.Border, name="Border"
-                )
-                if border is not None:
-                    border.Background = brush
-            except Exception:
-                pass
+
+    def _set_resource_background(self, control, resource_key):
+        try:
+            control.SetResourceReference(
+                framework.Controls.Control.BackgroundProperty, resource_key
+            )
+        except Exception:
+            pass
 
     def _clear_background(self, control):
         self._set_background(control, None)

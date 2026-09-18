@@ -21,6 +21,8 @@ output = script.get_output()
 
 
 class UI(forms.WPFWindow, forms.Reactive):
+    resolve_theme = True
+
     def __init__(self):
         pass
 

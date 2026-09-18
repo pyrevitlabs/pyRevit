@@ -27,6 +27,8 @@ logger = script.get_logger()
 
 
 class NonModalWindow(forms.WPFWindow):
+    resolve_theme = True
+
     def __init__(self, ext_event_handler):
         self.ext_event_handler = ext_event_handler
         self.ext_event = UI.ExternalEvent.Create(self.ext_event_handler)
