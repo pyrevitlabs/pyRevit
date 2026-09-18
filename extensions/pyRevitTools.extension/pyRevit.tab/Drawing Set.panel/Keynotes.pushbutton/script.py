@@ -1839,6 +1839,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         # one file means nothing in another
         self._sel_keys = set()
         self._sel_anchor = None
+        outgoing_kfile = self._kfile
         self._binding = binding
         self._doc = binding.doc
         self._kfile = binding.kfile
@@ -1855,6 +1856,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._cache = binding.cache
         self._snapshot_categories = binding.snapshot_categories
         self._snapshot_keynotes = binding.snapshot_keynotes
+
+        if binding.kfile != outgoing_kfile:
+            self._store_expansion_state(outgoing_kfile)
+            self._bind_expansion_state()
 
         try:
             self.search_tb.Text = binding.search_term or ""
@@ -2470,19 +2475,25 @@ class KeynoteManagerWindow(forms.WPFWindow):
             st.pop(self._kfile, None)
         self._config.set_option("last_search_term", st)
 
+        self._store_expansion_state(self._kfile)
+
+        script.save_config()
+
+    def _store_expansion_state(self, kfile):
+        """Record the live expansion set against `kfile`."""
+        if not kfile:
+            return
         ex = dict(self._config.get_option("last_expanded", {}))
         keys = sorted(kdb.EXPANSION.saved)
         if keys:
             if len(keys) > MAX_SAVED_EXPANDED:
                 logger.warning(
                     "Expansion state capped at %d of %d groups | %s",
-                    MAX_SAVED_EXPANDED, len(keys), self._kfile)
-            ex[self._kfile] = keys[:MAX_SAVED_EXPANDED]
+                    MAX_SAVED_EXPANDED, len(keys), kfile)
+            ex[kfile] = keys[:MAX_SAVED_EXPANDED]
         else:
-            ex.pop(self._kfile, None)
+            ex.pop(kfile, None)
         self._config.set_option("last_expanded", ex)
-
-        script.save_config()
 
     def _bind_expansion_state(self, reset=False):
         """Point the expansion store at the current keynote file."""
