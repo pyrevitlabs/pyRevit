@@ -163,7 +163,7 @@
         <!-- TREEVIEW ITEM CONTAINER                                      -->
         <!-- ============================================================ -->
         <Style x:Key="TreeItemContainer" TargetType="TreeViewItem">
-            <Setter Property="IsExpanded" Value="True"/>
+            <Setter Property="IsExpanded" Value="{Binding is_expanded, Mode=TwoWay}"/>
             <Setter Property="Padding" Value="0"/>
             <Setter Property="Margin" Value="0"/>
             <Setter Property="BorderThickness" Value="0"/>
