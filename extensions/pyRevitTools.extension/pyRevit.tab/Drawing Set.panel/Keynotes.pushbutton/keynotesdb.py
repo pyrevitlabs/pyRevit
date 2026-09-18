@@ -634,8 +634,10 @@ def update_texts(conn, updates):
     Args:
         conn: open keynote file connection.
         updates: iterable of (key, old_text, new_text, is_category) tuples.
-            `old_text` is what the rollback restores, so it must be the value
-            read before the batch was built.
+            `old_text` is what the rollback restores, so it must be the
+            record's own text as read before the batch was built. Record text
+            is normalized on construction, so restoring it through the same
+            writers is value-preserving.
 
     Important:
         Every record goes inside a single BulkAction. Writing them one at a
