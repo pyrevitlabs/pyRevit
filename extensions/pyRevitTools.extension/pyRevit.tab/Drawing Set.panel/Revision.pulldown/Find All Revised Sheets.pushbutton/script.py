@@ -5,22 +5,26 @@ from pyrevit import script
 
 output = script.get_output()
 
-output.print_md('**LIST OF REVISIONS:**')
+output.print_md("**LIST OF REVISIONS:**")
 
 
-revs = DB.FilteredElementCollector(revit.doc)\
-         .OfCategory(DB.BuiltInCategory.OST_Revisions)\
-         .WhereElementIsNotElementType()
+revs = (
+    DB.FilteredElementCollector(revit.doc)
+    .OfCategory(DB.BuiltInCategory.OST_Revisions)
+    .WhereElementIsNotElementType()
+)
 
 for rev in revs:
     revit.report.print_revision(rev)
 
-output.print_md('*****\n\n\n###REVISED SHEETS:\n')
+output.print_md("*****\n\n\n###REVISED SHEETS:\n")
 
-sheetsnotsorted = DB.FilteredElementCollector(revit.doc)\
-                    .OfCategory(DB.BuiltInCategory.OST_Sheets)\
-                    .WhereElementIsNotElementType()\
-                    .ToElements()
+sheetsnotsorted = (
+    DB.FilteredElementCollector(revit.doc)
+    .OfCategory(DB.BuiltInCategory.OST_Sheets)
+    .WhereElementIsNotElementType()
+    .ToElements()
+)
 
 sheets = sorted(sheetsnotsorted, key=lambda x: x.SheetNumber)
 
@@ -32,4 +36,4 @@ for sht in sheets:
 
         for rev in srevs:
             rev = revit.doc.GetElement(rev)
-            revit.report.print_revision(rev, prefix='\t\t', print_id=False)
+            revit.report.print_revision(rev, prefix="\t\t", print_id=False)

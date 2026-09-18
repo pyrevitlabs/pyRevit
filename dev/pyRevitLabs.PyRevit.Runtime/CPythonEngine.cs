@@ -34,24 +34,24 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 // initialize
                 PythonEngine.ProgramName = "pyrevit";
                 if (!PythonEngine.IsInitialized) {
-                        try {
-                            PythonEngine.Initialize();
+                    try {
+                        PythonEngine.Initialize();
+                    }
+                    catch (Exception ex) when (
+                        ex.ToString().IndexOf("DesktopConnector", StringComparison.OrdinalIgnoreCase) >= 0) {
+                        // Pythonnet scans all AppDomain assemblies during Initialize().
+                        // If a Revit document was opened, ADC assemblies are loaded but
+                        // DesktopConnectorInterop may be missing (ADC not installed).
+                        // Pythonnet may still have initialized successfully despite this.
+                        logger.Warn("CPython init encountered missing DesktopConnector assembly: {0}", ex.Message);
+                        if (!PythonEngine.IsInitialized) {
+                            throw new Exception(
+                                "CPython engine failed to initialize. "
+                                + "DesktopConnectorInterop assembly could not be loaded. "
+                                + "Install Autodesk Desktop Connector or retry before opening a document.",
+                                ex);
                         }
-                        catch (Exception ex) when (
-                            ex.ToString().IndexOf("DesktopConnector", StringComparison.OrdinalIgnoreCase) >= 0) {
-                            // Pythonnet scans all AppDomain assemblies during Initialize().
-                            // If a Revit document was opened, ADC assemblies are loaded but
-                            // DesktopConnectorInterop may be missing (ADC not installed).
-                            // Pythonnet may still have initialized successfully despite this.
-                            logger.Warn("CPython init encountered missing DesktopConnector assembly: {0}", ex.Message);
-                            if (!PythonEngine.IsInitialized) {
-                                throw new Exception(
-                                    "CPython engine failed to initialize. "
-                                    + "DesktopConnectorInterop assembly could not be loaded. "
-                                    + "Install Autodesk Desktop Connector or retry before opening a document.",
-                                    ex);
-                            }
-                        }
+                    }
                 }
                 // if this is a new engine, save the syspaths
                 StoreSearchPaths();
@@ -150,7 +150,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // Add timestamp and executuin uuid
             SetVariable(builtins, "__execid__", runtime.ExecId);
             SetVariable(builtins, "__timestamp__", runtime.ExecTimestamp);
-            
+
             // set builtins
             SetVariable(builtins, "__cachedengine__", RecoveredFromCache);
             SetVariable(builtins, "__cachedengineid__", TypeId);
@@ -224,21 +224,17 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             // manually add each path in PYTHONPATH since we are overwriting the sys paths
             var pythonPath = Environment.GetEnvironmentVariable("PYTHONPATH");
-            if (!string.IsNullOrEmpty(pythonPath))
-            {
+            if (!string.IsNullOrEmpty(pythonPath)) {
                 var paths = pythonPath.Split(Path.PathSeparator);
-                foreach (var path in paths)
-                {
-                    if (!string.IsNullOrWhiteSpace(path) && Directory.Exists(path)) 
-                    {
-                        sysPaths.Append(new PyString(path)); 
+                foreach (var path in paths) {
+                    if (!string.IsNullOrWhiteSpace(path) && Directory.Exists(path)) {
+                        sysPaths.Append(new PyString(path));
                     }
                 }
             }
 
             // now add the search paths for the script bundle
-            foreach (string searchPath in runtime.ScriptRuntimeConfigs.SearchPaths)
-            {
+            foreach (string searchPath in runtime.ScriptRuntimeConfigs.SearchPaths) {
                 sysPaths.Append(new PyString(searchPath));
             }
         }
@@ -273,8 +269,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private void StoreSearchPaths() {
             var currentSysPath = GetSysPaths();
             _sysPaths = new List<string>();
-            foreach (var path in currentSysPath)
-            {
+            foreach (var path in currentSysPath) {
                 _sysPaths.Add(path.As<string>());
             }
         }
@@ -304,8 +299,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             container.SetItem(key.ToPython(), value.ToPython());
         }
 
-        private string GetPythonDll(ScriptRuntime runtime)
-        {
+        private string GetPythonDll(ScriptRuntime runtime) {
             // PyRevitConfigs.GetCPythonEngineVersion()
             var engineVersion = new PyRevitEngineVersion(int.Parse(runtime.EngineVersion));
             var attachment = PyRevitAttachments.GetAttachedCached(int.Parse(runtime.App.VersionNumber));
@@ -314,8 +308,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             var clone = attachment.Clone;
             var engine = clone.GetCPythonEngine(engineVersion);
             var dllPath = engine.AssemblyPath;
-            if (!File.Exists(dllPath))
-            {
+            if (!File.Exists(dllPath)) {
                 throw new Exception(string.Format("Python DLL not found at {0}", dllPath));
             }
             return dllPath;

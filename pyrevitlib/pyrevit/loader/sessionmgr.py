@@ -10,17 +10,19 @@ Everything starts from `sessionmgr.load_session()` function...
 The only public function is `load_session()` that loads a new session.
 Everything else is private.
 """
+
 import sys
 
 from pyrevit import EXEC_PARAMS, HOST_APP
 from pyrevit import framework
-from pyrevit.coreutils import Timer
+from pyrevit._perf import elapsed_load_seconds
+from pyrevit._perf import flush as _perfflush
+from pyrevit._perf import time_block as _perfblock
 from pyrevit.coreutils import assmutils
 from pyrevit.coreutils import envvars
 from pyrevit.coreutils import logger
 from pyrevit.loader import sessioninfo
 from pyrevit.loader import hooks
-from pyrevit.labs import PyRevit
 from pyrevit.userconfig import user_config
 from pyrevit.versionmgr import updater
 from pyrevit.versionmgr import upgrade
@@ -39,13 +41,6 @@ from pyrevit import DB, UI, revit
 
 # pylint: disable=W0703,C0302,C0103,no-member
 mlogger = logger.get_logger(__name__)
-
-# Session timing and output state shared between perform_preload() and
-# perform_postload(). The C# loader invokes these as two separate steps, so the
-# state is carried on the persistent engine module rather than a call stack.
-_SESSION_TIMER = None
-_SESSION_OUTPUT = None
-_OUTPUT_SETUP_TIME = None
 
 
 def _clear_running_engines():
@@ -88,9 +83,6 @@ def _setup_output():
     sys.stdout = outstr
     # sys.stderr = outstr
 
-    # return the runtime wrapper so self_destruct works on first load too
-    return out
-
 
 def _cleanup_output():
     try:
@@ -113,28 +105,34 @@ def _set_autoupdate_inprogress(state):
 
 def _perform_onsessionloadstart_ops():
     # clear the cached engines
-    if not _clear_running_engines():
-        mlogger.debug("No Engine Manager exists...")
+    with _perfblock("pyrevit.loader.sessionmgr:clear running engines"):
+        if not _clear_running_engines():
+            mlogger.debug("No Engine Manager exists...")
 
     # once pre-load is complete, report environment conditions
-    uuid_str = sessioninfo.new_session_uuid()
-    sessioninfo.report_env()
+    uuid_str = sessioninfo.get_session_uuid() or sessioninfo.new_session_uuid()
+    with _perfblock("pyrevit.loader.sessionmgr:report env"):
+        sessioninfo.report_env()
 
     # reset the list of assemblies loaded under pyRevit session
     sessioninfo.set_loaded_pyrevit_assemblies([])
 
     # init routes
-    routes.init()
+    with _perfblock("pyrevit.loader.sessionmgr:routes init"):
+        routes.init()
 
     # asking telemetry module to setup the telemetry system
     # (active or not active)
-    telemetry.setup_telemetry(uuid_str)
+    with _perfblock("pyrevit.loader.sessionmgr:telemetry setup"):
+        telemetry.setup_telemetry(uuid_str)
 
     # apply Upgrades
-    upgrade.upgrade_existing_pyrevit()
+    with _perfblock("pyrevit.loader.sessionmgr:upgrade"):
+        upgrade.upgrade_existing_pyrevit()
 
     # setup hooks
-    hooks.setup_hooks()
+    with _perfblock("pyrevit.loader.sessionmgr:hooks setup"):
+        hooks.setup_hooks()
 
 
 def _perform_onsessionloadcomplete_ops():
@@ -180,29 +178,19 @@ def perform_preload():
     """Run pre-load session setup before the C# loader builds the UI.
 
     Invoked by the C# session orchestrator as the first step of a load. Sets up
-    the session environment, output window, and pre-load services, and records
-    the session timer so perform_postload() can report load time.
+    the session environment, output window, and pre-load services.
+
+    Note:
+        Relies on the Preload entry script having cleared the attachment cache
+        before importing this module, so every attachment lookup in the load
+        reads the current attachment once and then reuses it.
     """
-    global _SESSION_TIMER, _SESSION_OUTPUT, _OUTPUT_SETUP_TIME
-
-    # must run before setup_runtime_vars(), the first attachment consumer, so a
-    # re-attached clone is picked up on reload
-    PyRevit.PyRevitAttachments.ClearAttachmentCache()
-
-    sessioninfo.setup_runtime_vars()
-
-    # time from before output setup so the reported load time reflects the full
-    # user wait, including first-load output window construction
-    _SESSION_TIMER = Timer()
+    with _perfblock("pyrevit.loader.sessionmgr:setup runtime vars"):
+        sessioninfo.setup_runtime_vars()
 
     if EXEC_PARAMS.first_load:
-        _SESSION_OUTPUT = _setup_output()
-        _OUTPUT_SETUP_TIME = _SESSION_TIMER.get_time()
-    else:
-        from pyrevit import script
-
-        _SESSION_OUTPUT = script.get_output()
-        _OUTPUT_SETUP_TIME = None
+        with _perfblock("pyrevit.loader.sessionmgr:output setup"):
+            _setup_output()
 
     _perform_onsessionloadstart_ops()
 
@@ -222,26 +210,23 @@ def perform_postload():
     # so find_pyrevitcmd can locate commands the C# loader compiled
     _register_loaded_pyrevit_assemblies()
 
-    if _SESSION_TIMER is not None:
-        endtime = _SESSION_TIMER.get_time()
-        success_emoji = ":OK_hand:" if endtime < 3.00 else ":thumbs_up:"
-        mlogger.info("Load time: %s seconds %s", endtime, success_emoji)
-        if _OUTPUT_SETUP_TIME is not None:
-            mlogger.debug(
-                "Load breakdown: output setup %.3fs | session build %.3fs",
-                _OUTPUT_SETUP_TIME,
-                endtime - _OUTPUT_SETUP_TIME,
-            )
+    _perfflush()
+
+    load_time = elapsed_load_seconds()
+    if load_time is not None:
+        success_emoji = ":OK_hand:" if load_time < 3.00 else ":thumbs_up:"
+        mlogger.info("Load time: %.2f seconds %s", load_time, success_emoji)
 
     # if everything went well, self destruct
     try:
         timeout = user_config.startuplog_timeout
+        session_output = runtime_types.ScriptOutput.GetDefault()
         if (
             timeout > 0
             and not logger.loggers_have_errors()
-            and _SESSION_OUTPUT is not None
+            and session_output.IsWindowReady
         ):
-            _SESSION_OUTPUT.self_destruct(timeout)
+            session_output.self_destruct(timeout)
     except Exception as imp_err:
         mlogger.error("Error setting up self_destruct on output window | %s", imp_err)
 
@@ -511,6 +496,7 @@ def find_pyrevitcmd(pyrevitcmd_unique_id):
     Returns:
         (type):Type for the command with matching unique name
     """
+
     def _normalize_lookup_id(value):
         if not value:
             return ""
@@ -536,10 +522,12 @@ def find_pyrevitcmd(pyrevitcmd_unique_id):
             mlogger.debug("Found assm: %s", loaded_assm_name)
             for pyrvt_type in loaded_assm[0].GetTypes():
                 mlogger.debug("Found Type: %s", pyrvt_type)
-                if pyrvt_type.FullName == pyrevitcmd_unique_id \
-                        or pyrvt_type.Name == pyrevitcmd_unique_id \
-                        or _normalize_lookup_id(pyrvt_type.FullName) == lookup_id \
-                        or _normalize_lookup_id(pyrvt_type.Name) == lookup_id:
+                if (
+                    pyrvt_type.FullName == pyrevitcmd_unique_id
+                    or pyrvt_type.Name == pyrevitcmd_unique_id
+                    or _normalize_lookup_id(pyrvt_type.FullName) == lookup_id
+                    or _normalize_lookup_id(pyrvt_type.Name) == lookup_id
+                ):
                     mlogger.debug("Found pyRevit command in %s", loaded_assm_name)
                     return pyrvt_type
             mlogger.debug("Could not find pyRevit command.")

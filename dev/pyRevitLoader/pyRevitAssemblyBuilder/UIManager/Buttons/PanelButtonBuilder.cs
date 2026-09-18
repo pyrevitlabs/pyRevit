@@ -58,13 +58,11 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
                 {
                     ButtonPostProcessor.Process(panelBtn, component);
                     ModifyToPanelButton(tabName, parentPanel, panelBtn);
-                    
+
                     // Note: We cannot re-apply contextual help after conversion because
                     // the DialogLauncher is a RibbonButton (Autodesk.Windows) which doesn't
                     // have the SetContextualHelp method. The contextual help applied
                     // in ButtonPostProcessor.Process() before conversion should remain.
-                    
-                    Logger.Debug($"Created panel button '{component.DisplayName}'.");
                 }
             }
             catch (Exception ex)
@@ -113,12 +111,10 @@ namespace pyRevitAssemblyBuilder.UIManager.Buttons
 
                 // Ensure it is set as dialog launcher if needed
                 ModifyToPanelButton(tabName, parentPanel, panelBtn);
-
-                Logger.Debug($"Updated existing panel button '{component.DisplayName}'.");
             }
             catch (Exception ex)
             {
-                Logger.Debug($"Failed to update panel button '{component.DisplayName}': {ex.Message}");
+                Logger.Warning($"Failed to update panel button '{component.DisplayName}': {ex.Message}");
             }
         }
 

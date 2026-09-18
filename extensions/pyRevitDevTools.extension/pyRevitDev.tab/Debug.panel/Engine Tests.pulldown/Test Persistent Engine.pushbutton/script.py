@@ -3,13 +3,13 @@
 Shift-Click:
 Run window as Modal
 """
+
 # pylint: skip-file
 from pyrevit import HOST_APP, framework, EXEC_PARAMS
 from pyrevit import forms
 from pyrevit import revit, DB, UI
 from pyrevit.runtime import types as runtime_types
 from pyrevit import script
-
 
 
 logger = script.get_logger()
@@ -29,14 +29,13 @@ logger = script.get_logger()
 class NonModalWindow(forms.WPFWindow):
     def __init__(self, ext_event_handler):
         self.ext_event_handler = ext_event_handler
-        self.ext_event = \
-            UI.ExternalEvent.Create(self.ext_event_handler)
+        self.ext_event = UI.ExternalEvent.Create(self.ext_event_handler)
         self.prev_title = "Title Changed..."
 
     def setup(self):
         self.update_ui()
 
-    @revit.events.handle('doc-changed', 'doc-closed', 'doc-opened', 'view-activated')
+    @revit.events.handle("doc-changed", "doc-closed", "doc-opened", "view-activated")
     def uiupdator_eventhandler(sender, args):
         # the decorator captures the function from the class and not from the
         # instance. so the capture function is not bound thus no 'self'
@@ -56,26 +55,24 @@ class NonModalWindow(forms.WPFWindow):
 
     def update_ui(self):
         if revit.doc:
-            self.doc_tb.Text = 'Document: {}'.format(revit.doc.Title)
+            self.doc_tb.Text = "Document: {}".format(revit.doc.Title)
             elements = revit.query.get_all_elements(doc=revit.doc)
-            self.elements_tb.Text = 'Element Count: {}'.format(len(elements))
+            self.elements_tb.Text = "Element Count: {}".format(len(elements))
         else:
-            self.doc_tb.Text = 'No Documents'
-            self.elements_tb.Text = 'N/A'
-        logger.dev_log("update_ui", message="{} / {}".format(
-            self.doc_tb.Text,
-            self.elements_tb.Text
-        ))
+            self.doc_tb.Text = "No Documents"
+            self.elements_tb.Text = "N/A"
+        logger.dev_log(
+            "update_ui",
+            message="{} / {}".format(self.doc_tb.Text, self.elements_tb.Text),
+        )
 
-    def window_closing(self, sender, args): #pylint: disable=unused-argument
+    def window_closing(self, sender, args):  # pylint: disable=unused-argument
         revit.events.stop_events()
 
 
 ui = script.load_ui(
-    NonModalWindow(
-        ext_event_handler=runtime_types.PlaceKeynoteExternalEventHandler()
-        ),
-    ui_file='NonModalWindow.xaml'
-    )
+    NonModalWindow(ext_event_handler=runtime_types.PlaceKeynoteExternalEventHandler()),
+    ui_file="NonModalWindow.xaml",
+)
 
 ui.show(modal=__shiftclick__)

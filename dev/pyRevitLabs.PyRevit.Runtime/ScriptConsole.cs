@@ -502,7 +502,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 fontSize > 0 ? fontSize : 10f);
             InjectHtmlElement("head", "style", css, null);
         }
-
         private void ApplyCloseOthersConfig() {
             if (PyRevitConfigs.GetCloseOtherOutputs()) {
                 var mode = PyRevitConfigs.GetCloseOutputMode();

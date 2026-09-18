@@ -152,6 +152,7 @@ class DeveloperSamplePanel(forms.WPFPanel):
     panel_id = "759a2751-290a-4f7a-8f2d-9d900b2547b8"
     panel_source = op.join(op.dirname(__file__), "SamplePanel.xaml")
     panel_title = "pyRevit Sample Panel"
+    resolve_theme = True
 
     def __init__(self):
         forms.WPFPanel.__init__(self)

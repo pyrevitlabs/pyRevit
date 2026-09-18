@@ -16,9 +16,10 @@ boilerplate behind two things:
       SchemaBuilder, Entity, or Get[T]/Set[T] directly.
 
 Only "simple" fields (a single value per field -- str, int, float,
-bool, DB.ElementId, System.Guid, etc.) are covered directly. A schema
-that also needs SchemaBuilder.AddArrayField / AddMapField can add them
-via the BaseSchema.extend_builder hook (see below).
+bool, DB.ElementId, System.Guid, etc.) and "array" fields (an ordered
+list of one of those types -- e.g. every ElementId a tool generated)
+are covered directly. A schema that also needs SchemaBuilder.AddMapField
+can add it via the BaseSchema.extend_builder hook (see below).
 
 Example:
 
@@ -39,10 +40,25 @@ Example:
     data = storage.get_data(some_element)
     if data:
         linked_id = data["LinkedId"]
+
+    # A list-valued field works the same way, just declared under
+    # array_fields instead of fields:
+
+    class MyToolManagedElementsSchema(extensible_storage.BaseSchema):
+        guid = "a1b2c3d4-e5f6-4a7b-8c9d-0123456789ab"
+        schema_name = "MyToolManagedElements"
+        vendor_id = "mytool"
+        array_fields = {"ManagedIds": DB.ElementId}
+
+    managed = extensible_storage.ElementDataStorage(MyToolManagedElementsSchema)
+    managed.set_data(some_view, ManagedIds=[a.Id, b.Id, c.Id])
+    data = managed.get_data(some_view)
+    if data:
+        ids = data["ManagedIds"]   # list of ElementId
 """
 
 from pyrevit import DB
-from pyrevit.framework import Guid
+from pyrevit.framework import Guid, List, IList
 
 
 class BaseSchema(object):
@@ -64,8 +80,11 @@ class BaseSchema(object):
             that wrote it)
         fields (dict): {field_name: field_type}, e.g.
             {"LinkedId": DB.ElementId, "Note": str}. Only simple
-            (non-array, non-map) fields are supported directly -- see
-            extend_builder() for anything beyond that.
+            (single-value) fields.
+        array_fields (dict): {field_name: element_type}, e.g.
+            {"ManagedIds": DB.ElementId} -- each is stored/read as an
+            ordered list of that type. A field name must not appear in
+            both `fields` and `array_fields`.
         documentation (str or None): optional overall schema doc string
     """
 
@@ -75,16 +94,17 @@ class BaseSchema(object):
     application_guid = None
     read_access_level = DB.ExtensibleStorage.AccessLevel.Public
     write_access_level = DB.ExtensibleStorage.AccessLevel.Public
-    fields = None
+    fields = {}
+    array_fields = {}
     documentation = None
 
     @classmethod
     def extend_builder(cls, builder):
         """Override to add anything SchemaBuilder supports beyond
-        simple fields -- e.g. builder.AddArrayField(...) or
-        builder.AddMapField(...) -- before the schema is finished.
-        Called once, right before Finish(), only when the schema is
-        being newly registered. No-op by default.
+        simple and array fields -- i.e. builder.AddMapField(...) --
+        before the schema is finished. Called once, right before
+        Finish(), only when the schema is being newly registered.
+        No-op by default.
 
         Args:
             builder: DB.ExtensibleStorage.SchemaBuilder being built
@@ -109,9 +129,16 @@ class ElementDataStorage(object):
                     schema_cls.__name__
                 )
             )
-        if not schema_cls.fields:
+        if not schema_cls.fields and not schema_cls.array_fields:
             raise ValueError(
                 "{0} must define at least one field".format(schema_cls.__name__)
+            )
+        overlap = set(schema_cls.fields) & set(schema_cls.array_fields)
+        if overlap:
+            raise ValueError(
+                "{0} declares {1} in both 'fields' and 'array_fields'".format(
+                    schema_cls.__name__, sorted(overlap)
+                )
             )
         self._schema_cls = schema_cls
         self._schema = None
@@ -158,6 +185,9 @@ class ElementDataStorage(object):
         data = {}
         for field_name, field_type in self._schema_cls.fields.items():
             data[field_name] = entity.Get[field_type](field_name)
+        for field_name, field_type in self._schema_cls.array_fields.items():
+            values = entity.Get[IList[field_type]](field_name)
+            data[field_name] = list(values) if values is not None else []
         return data
 
     def set_data(self, element, **field_values):
@@ -172,13 +202,17 @@ class ElementDataStorage(object):
         Args:
             element: DB.Element to write to
             **field_values: value for each field name declared in the
-                schema's `fields`; passing a name that isn't a declared
+                schema's `fields` (a single value) or `array_fields`
+                (an iterable); passing a name that isn't a declared
                 field raises KeyError
 
         Must be called inside an open transaction.
         """
+        known_fields = set(self._schema_cls.fields) | set(
+            self._schema_cls.array_fields
+        )
         for field_name in field_values:
-            if field_name not in self._schema_cls.fields:
+            if field_name not in known_fields:
                 raise KeyError(
                     "'{0}' is not a field on schema '{1}'".format(
                         field_name, self._schema_cls.schema_name
@@ -189,6 +223,11 @@ class ElementDataStorage(object):
         for field_name, field_type in self._schema_cls.fields.items():
             if field_name in field_values:
                 entity.Set[field_type](field_name, field_values[field_name])
+        for field_name, field_type in self._schema_cls.array_fields.items():
+            if field_name in field_values:
+                entity.Set[IList[field_type]](
+                    field_name, List[field_type](field_values[field_name])
+                )
         element.SetEntity(entity)
 
     def clear_data(self, element):
@@ -233,5 +272,7 @@ class ElementDataStorage(object):
             builder.SetDocumentation(self._schema_cls.documentation)
         for field_name, field_type in self._schema_cls.fields.items():
             builder.AddSimpleField(field_name, field_type)
+        for field_name, field_type in self._schema_cls.array_fields.items():
+            builder.AddArrayField(field_name, field_type)
         self._schema_cls.extend_builder(builder)
         return builder.Finish()

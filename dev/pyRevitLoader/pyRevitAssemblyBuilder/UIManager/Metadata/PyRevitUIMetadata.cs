@@ -15,31 +15,31 @@ namespace pyRevitAssemblyBuilder.UIManager.Metadata
         /// True = element was created or updated in current session
         /// </summary>
         public bool IsDirty { get; set; } = false;
-        
+
         /// <summary>
         /// Name of the extension that created this UI element.
         /// Used to track which extension owns which UI elements.
         /// </summary>
         public string ExtensionName { get; set; } = string.Empty;
-        
+
         /// <summary>
         /// Path to the assembly that provides this UI element.
         /// Used to verify assembly changes during updates.
         /// </summary>
         public string AssemblyPath { get; set; } = string.Empty;
-        
+
         /// <summary>
         /// Component unique identifier from ParsedComponent.UniqueId.
         /// Used for precise element matching.
         /// </summary>
         public string ComponentUniqueId { get; set; } = string.Empty;
-        
+
         /// <summary>
         /// Timestamp when this element was created or last updated.
         /// </summary>
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
-    
+
     /// <summary>
     /// Metadata specifically for ribbon tabs.
     /// </summary>
@@ -51,7 +51,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Metadata
         /// </summary>
         public const string PyRevitIdentifier = "pyrevit_tab";
     }
-    
+
     /// <summary>
     /// Metadata for ribbon panels.
     /// </summary>
@@ -62,7 +62,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Metadata
         /// </summary>
         public string TabName { get; set; } = string.Empty;
     }
-    
+
     /// <summary>
     /// Metadata for ribbon buttons and other items.
     /// </summary>
@@ -72,7 +72,7 @@ namespace pyRevitAssemblyBuilder.UIManager.Metadata
         /// Parent tab name for this button.
         /// </summary>
         public string TabName { get; set; } = string.Empty;
-        
+
         /// <summary>
         /// Parent panel name for this button.
         /// </summary>

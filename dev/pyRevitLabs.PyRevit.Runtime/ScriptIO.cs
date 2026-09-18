@@ -619,7 +619,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return readline(size);
         }
 
-        public string readline(int size=-1) {
+        public string readline(int size = -1) {
             var buffer = new byte[1024];
             var _ = Read(buffer, 0, 1024);
             _ = Read(buffer, 0, 1024);

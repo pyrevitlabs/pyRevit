@@ -11,3 +11,4 @@ layout:
   - ButtonA
 
 background: '#BB005591'
+background_dark: '#BB1E3A5F'

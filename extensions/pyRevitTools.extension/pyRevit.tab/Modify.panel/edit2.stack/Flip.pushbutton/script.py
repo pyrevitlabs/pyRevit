@@ -5,29 +5,31 @@ from pyrevit import forms
 
 
 def flip_facing():
-    with revit.Transaction('Flip Facing Selected'):
+    with revit.Transaction("Flip Facing Selected"):
         for el in revit.get_selection():
-            if hasattr(el, 'flipFacing'):
+            if hasattr(el, "flipFacing"):
                 el.flipFacing()
-            elif hasattr(el, 'Flip'):
+            elif hasattr(el, "Flip"):
                 el.Flip()
 
 
 def flip_hand():
-    with revit.Transaction('Flip Hand Selected'):
+    with revit.Transaction("Flip Hand Selected"):
         for el in revit.get_selection():
-            if hasattr(el, 'flipHand'):
+            if hasattr(el, "flipHand"):
                 el.flipHand()
-            elif hasattr(el, 'Flip'):
+            elif hasattr(el, "Flip"):
                 el.Flip()
 
 
-location_line_values = {'Wall Centerline': (0, 0),
-                        'Core Centerline': (1, 1),
-                        'Finish Face: Exterior': (2, 3),
-                        'Finish Face: Interior': (3, 2),
-                        'Core Face: Exterior': (4, 5),
-                        'Core Face: Interior': (5, 4)}
+location_line_values = {
+    "Wall Centerline": (0, 0),
+    "Core Centerline": (1, 1),
+    "Finish Face: Exterior": (2, 3),
+    "Finish Face: Interior": (3, 2),
+    "Core Face: Exterior": (4, 5),
+    "Core Face: Interior": (5, 4),
+}
 
 
 def flip_wall_location():
@@ -36,10 +38,10 @@ def flip_wall_location():
             if isinstance(el, DB.Wall):
                 param = el.Parameter[DB.BuiltInParameter.WALL_KEY_REF_PARAM]
                 current_value = param.AsInteger()
-                with revit.Transaction('Change Wall Location Line'):
-                    param.Set(location_line_values['Core Centerline'][0])
+                with revit.Transaction("Change Wall Location Line"):
+                    param.Set(location_line_values["Core Centerline"][0])
 
-                with revit.Transaction('Flip Selected Wall'):
+                with revit.Transaction("Flip Selected Wall"):
                     el.Flip()
                     param.Set(current_value)
 
@@ -51,19 +53,19 @@ def flip_wall_location_line():
             current_value = param.AsInteger()
             for pair in location_line_values.values():
                 if pair[0] == current_value:
-                    with revit.Transaction('Flip Wall Location Line'):
+                    with revit.Transaction("Flip Wall Location Line"):
                         param.Set(pair[1])
                     return
 
 
+options_dict = {
+    "Flip Facing": flip_facing,
+    "Flip Hand": flip_hand,
+    "Flip Wall On CenterLine": flip_wall_location,
+    "Flip Wall Location Line": flip_wall_location_line,
+}
 
-options_dict = {'Flip Facing': flip_facing,
-                'Flip Hand': flip_hand,
-                'Flip Wall On CenterLine': flip_wall_location,
-                'Flip Wall Location Line': flip_wall_location_line}
-
-selected_switch = \
-    forms.CommandSwitchWindow.show(options_dict.keys())
+selected_switch = forms.CommandSwitchWindow.show(options_dict.keys())
 
 option_func = options_dict.get(selected_switch, None)
 

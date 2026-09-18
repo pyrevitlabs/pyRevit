@@ -27,6 +27,8 @@ def update_element_comment(element, comment_text):
 class ExampleUI(forms.WPFWindow):
     """Example modeless window showing execute_in_revit_context usage."""
 
+    resolve_theme = True
+
     def __init__(self):
         xaml_layout = """
         <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -96,7 +98,9 @@ class ExampleUI(forms.WPFWindow):
         if not self.chk_context.IsChecked:
             self._do_pick_element("Without External Event Context")
         else:
-            execute_in_revit_context(self._do_pick_element, "With External Event Content")
+            execute_in_revit_context(
+                self._do_pick_element, "With External Event Content"
+            )
 
     def _do_pick_element(self, message):
         """Actually pick the element (runs in Revit context)."""

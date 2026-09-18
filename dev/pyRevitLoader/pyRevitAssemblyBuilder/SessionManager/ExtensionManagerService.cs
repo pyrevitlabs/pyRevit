@@ -55,7 +55,7 @@ namespace pyRevitAssemblyBuilder.SessionManager
             _authorizedExtensions.Clear();
             _unauthorizedExtensions.Clear();
         }
-        
+
         /// <summary>
         /// Clears all parser caches including the static caches in ExtensionParser.
         /// This ensures newly installed or enabled extensions are discovered on reload.
