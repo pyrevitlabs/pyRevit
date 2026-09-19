@@ -118,4 +118,6 @@ This is different from the entry an extension gets in `extensions/extensions.jso
 
 A `hooks/` folder (at the bundle, tab, panel, or extension level) can hold Python scripts named after a Revit/pyRevit event, e.g. `doc-opened.py`, `view-activated.py`, `command-before-exec[ID_INPLACE_COMPONENT].py` (the bracketed suffix scopes the hook to one command id). Each script runs whenever that event fires while the extension is loaded.
 
+Hook scripts receive `__revit__` as an `Autodesk.Revit.UI.UIApplication`, including application-level events without a document. The original Revit event sender and its arguments are available as `__eventsender__` and `__eventargs__`; use these when a hook needs event-specific data rather than treating `__revit__` as the sender.
+
 There is no exhaustive published list of event names — `extensions/pyRevitDevHooks.extension/hooks/` has one example script per supported event and is the most complete reference. Hook registration is handled by `pyrevitlib/pyrevit/loader/hooks.py`.

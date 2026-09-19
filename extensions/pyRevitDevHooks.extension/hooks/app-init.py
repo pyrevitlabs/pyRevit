@@ -17,10 +17,19 @@ def _write_record(record_str):
         f.write(record_str + "\n")
 
 
+def _handle_typename():
+    try:
+        return type(__revit__).__name__
+    except NameError:
+        return "undefined"
+
+
 def log_hook():
     # collect document element count as doc access test if requested
     # write log record with data
-    record_str = "{} [app-init] cpython".format(_timestamp())
+    record_str = '{} [app-init] cpython handle: "{}"'.format(
+        _timestamp(), _handle_typename()
+    )
     _write_record(record_str)
 
 
