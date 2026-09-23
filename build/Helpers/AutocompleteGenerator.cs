@@ -6,6 +6,12 @@ namespace Build.Helpers;
 /// <summary>
 /// Generates shell autocomplete data for CLI builds.
 /// </summary>
+/// <remarks>
+/// Invariant: the committed <c>pyrevit-autocomplete.go</c> must equal this generator's output
+/// for the current <c>UsagePatterns.txt</c>. Every <c>ci</c> run regenerates it, so a hand
+/// edit to the Go file shows up as a working-tree change after the next build. Fix the
+/// generator or the usage patterns instead.
+/// </remarks>
 public static partial class AutocompleteGenerator
 {
     public static void Generate(string usagePatternsPath, string outputPath)
@@ -44,8 +50,8 @@ public static partial class AutocompleteGenerator
 
         line = TagPattern().Replace(line, string.Empty).Trim();
 
-        var flags = FlagPattern().Matches(line).Select(match => match.Groups[1].Value).ToList();
-        foreach (var flag in flags)
+        var flags = FlagPattern().Matches(line).Select(match => match.Groups[1].Value).Distinct().ToList();
+        foreach (var flag in flags.OrderByDescending(flag => flag.Length))
         {
             line = line.Replace("--" + flag, string.Empty, StringComparison.Ordinal);
         }
@@ -91,7 +97,7 @@ public static partial class AutocompleteGenerator
     [GeneratedRegex(@"<[a-zA-Z_]+?>")]
     private static partial Regex TagPattern();
 
-    [GeneratedRegex(@"\s--(\w+)\s?")]
+    [GeneratedRegex(@"(?<![\w-])--(\w[\w-]*)")]
     private static partial Regex FlagPattern();
 
     [GeneratedRegex(@"-(\w+)\s?")]
