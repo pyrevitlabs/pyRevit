@@ -52,6 +52,8 @@ DEFAULT_MAX_HEIGHT = 560
 class SettingsWindow(forms.WPFWindow):
     """Dynamic settings window that generates UI from schema."""
 
+    resolve_theme = True
+
     def __init__(
         self,
         settings_schema,
