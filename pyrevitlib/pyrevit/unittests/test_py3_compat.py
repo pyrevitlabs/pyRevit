@@ -330,7 +330,7 @@ class OutParamMarshalingTests(unittest.TestCase):
         return txn
 
     def test_load_family_out_param(self):
-        """create.load_family marshals the out-param family reference."""
+        """create.load_family_with_result marshals the out-param family reference."""
         import os.path as op
 
         from pyrevit.revit import create
@@ -339,7 +339,8 @@ class OutParamMarshalingTests(unittest.TestCase):
             self.skipTest("No family file fixture provided")
         txn = self._rollback_transaction("py3compat-load-family")
         try:
-            symbols = create.load_family(FAMILY_FILE, doc=self.doc)
+            loaded, symbols = create.load_family_with_result(FAMILY_FILE, doc=self.doc)
+            self.assertIsInstance(loaded, bool)
             self.assertIsInstance(symbols, list)
         finally:
             txn.RollBack()

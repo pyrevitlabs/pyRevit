@@ -91,7 +91,8 @@ class FamilyLoader:
         """
         if not self.overwrite:
             return revit.doc.LoadFamily(self.path)
-        return bool(revit.create.load_family(self.path))
+        loaded, _ = revit.create.load_family_with_result(self.path)
+        return loaded
 
     def _load_symbol(self, symbol_name):
         """Loads a single family symbol, honoring self.overwrite.
