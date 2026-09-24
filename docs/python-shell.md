@@ -38,8 +38,10 @@ It also copies the launching engine's `sys.path` into the console, so
 imports resolve the same way they do in a normal script.
 
 That means it is **IronPython only**. The shell assembly is deployed to `IPY2712PR` and `IPY342`,
-not to the CPython engines. If pyRevit is running on a CPython engine, the button reports that the
-shell is not installed for the active engine.
+not to the CPython engines. For the non-docked modes, if pyRevit is running on a CPython engine, the
+button reports that the shell is not installed for the active engine.
+For Docked and Docked Editor modes, if the pane is unavailable, the button
+reports that the Python Shell pane is not registered for this session.
 
 ## Theming
 
