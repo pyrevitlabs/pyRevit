@@ -18,7 +18,7 @@ Static counterpart: ``dev/scripts/check_py3_compat.py`` (no Revit needed).
 import importlib
 import unittest
 
-from pyrevit.compat import IRONPY, NETCORE
+from pyrevit.compat import IRONPY, IRONPY3, NETCORE
 
 # Path to a loadable .rfa for the out/ref-marshaling test; injected by the
 # invoking tool because the fixture ships with the DevTools extension, not
@@ -37,6 +37,12 @@ CORE_MODULES = [
     "pyrevit.output",
     "pyrevit.revit",
     "pyrevit.script",
+]
+
+RPW_MODULES = [
+    "rpw",
+    "rpw.db",
+    "rpw.ui.forms",
 ]
 
 # Modules that load managed CLR assemblies at import time via
@@ -177,6 +183,55 @@ class Py2IdiomTests(unittest.TestCase):
             "engines without a __bool__ alias",
         )
         self.assertTrue(bool(checked))
+
+
+class RpwCompatibilityTests(unittest.TestCase):
+    """The bundled RevitPythonWrapper imports and forms work on IronPython."""
+
+    @unittest.skipUnless(IRONPY, "RPW requires an IronPython Revit host")
+    def test_rpw_module_imports(self):
+        """RPW's public namespaces import under the selected IronPython engine."""
+        failures = _import_failures(RPW_MODULES)
+        self.assertEqual(
+            [], failures, "import failures:\n{}".format("\n".join(failures))
+        )
+
+    @unittest.skipUnless(IRONPY3, "RPW IPY3 coverage requires IronPython 3")
+    def test_rpw_combobox_sorts_dictionary_options(self):
+        """Dictionary options materialize before sorting on Python 3 engines."""
+        from rpw.ui.forms import ComboBox
+
+        combobox = ComboBox("choice", {"zulu": 2, "alpha": 1})
+        self.assertEqual("alpha", combobox.SelectedItem)
+        self.assertEqual(1, combobox.value)
+
+    @unittest.skipUnless(IRONPY3, "RPW IPY3 coverage requires IronPython 3")
+    def test_rpw_ipy3_wpf_loader(self):
+        """RPW exposes the WPF LoadComponent helper through the IPY3 engine."""
+        from rpw.ui.forms import resources
+
+        self.assertTrue(hasattr(resources.wpf, "LoadComponent"))
+
+    @unittest.skipUnless(IRONPY3, "RPW IPY3 coverage requires IronPython 3")
+    def test_rpw_ipy3_wraps_project_information(self):
+        """RPW wraps a live Revit element without Python 2 conversion paths."""
+        from pyrevit import revit as pyrevit_revit
+        from pyrevit.compat import get_elementid_value_func
+
+        if not pyrevit_revit.doc or pyrevit_revit.doc.IsFamilyDocument:
+            self.skipTest("Requires an open project document")
+
+        from rpw import db, revit
+
+        project_info = pyrevit_revit.doc.ProjectInformation
+        self.assertEqual(pyrevit_revit.doc, revit.doc)
+        wrapped = db.Element(project_info)
+        get_elementid_value = get_elementid_value_func()
+        self.assertEqual(
+            get_elementid_value(project_info.Id),
+            get_elementid_value(wrapped.unwrap().Id),
+        )
+        self.assertIn("id:", repr(wrapped))
 
 
 class SortingTests(unittest.TestCase):

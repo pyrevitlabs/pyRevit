@@ -57,6 +57,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 DEFAULT_SCAN_ROOTS = [
     "pyrevitlib/pyrevit",
+    "pyrevitlib/rpw",
     "pyrevitlib/rjm",
     "pyrevitlib/rpws",
     "pyrevitlib/rsparam",
@@ -64,21 +65,21 @@ DEFAULT_SCAN_ROOTS = [
 ]
 
 # Excluded from the Python-3-supported surface:
-# - rpw: frozen legacy, IronPython-WPF-locked (analysis doc section 4.7)
 # - coreutils/markdown: vendored python-markdown with no first-party runtime
 #   consumers (output.print_md renders via C#); a deprecated, unbundling
 #   candidate that scripts should replace with pip `markdown`, so it is not
 #   maintained against this checker
 EXCLUDED_DIRS = [
-    "pyrevitlib/rpw",
     "pyrevitlib/pyrevit/coreutils/markdown",
 ]
 
 # Files allowed to use IronPython-only CLR loading:
 # - framework.py is the designated shim site; its calls are engine-gated
+# - rpw's WPF bootstrap dispatches to the engine-local assemblies
 # - the DevTools compile test exercises the IronPython engine by design
 IPY_CLR_EXEMPT = [
     "pyrevitlib/pyrevit/framework.py",
+    "pyrevitlib/rpw/ui/forms/resources.py",
     "extensions/pyRevitDevTools.extension/pyRevitDev.tab/Debug.panel/"
     "Engine Tests.pulldown/Test IronPython Compile.pushbutton/script.py",
 ]
