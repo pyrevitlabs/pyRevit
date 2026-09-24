@@ -426,6 +426,29 @@ def load_family(family_file, doc=None):
     return fam_symbols
 
 
+def load_family_symbol(family_file, symbol_name, doc=None):
+    """Load one family symbol through the engine-specific out-param bridge.
+
+    Args:
+        family_file (str): Fully qualified path to the family file.
+        symbol_name (str): Family type name to load.
+        doc (DB.Document): Target document. Defaults to the active document.
+
+    Returns:
+        bool: True when Revit loads the requested symbol.
+
+    Important:
+        The caller must have an open Revit transaction.
+    """
+    doc = doc or DOCS.doc
+    load_options = FamilyLoaderOptionsHandler()
+    if IRONPY:
+        symbol_ref = clr.Reference[DB.FamilySymbol]()
+        return doc.LoadFamilySymbol(family_file, symbol_name, load_options, symbol_ref)
+    loaded, _ = doc.LoadFamilySymbol(family_file, symbol_name, load_options, None)
+    return loaded
+
+
 def enable_worksharing(
     levels_workset_name="Shared Levels and Grids",
     default_workset_name="Workset1",

@@ -319,6 +319,25 @@ class OutParamMarshalingTests(unittest.TestCase):
         finally:
             txn.RollBack()
 
+    def test_load_family_symbol_out_param(self):
+        """create.load_family_symbol marshals the out-param symbol reference."""
+        import os.path as op
+
+        from pyrevit.revit import create
+
+        if not FAMILY_FILE or not op.isfile(FAMILY_FILE):
+            self.skipTest("No family file fixture provided")
+        txn = self._rollback_transaction("py3compat-load-family-symbol")
+        try:
+            symbols = create.load_family(FAMILY_FILE, doc=self.doc)
+            if not symbols:
+                self.skipTest("Family fixture contains no loadable symbols")
+            self.assertTrue(
+                create.load_family_symbol(FAMILY_FILE, symbols[0].Name, doc=self.doc)
+            )
+        finally:
+            txn.RollBack()
+
     def test_curve_intersect_out_param(self):
         """geom.intersect_curves marshals intersection results.
 

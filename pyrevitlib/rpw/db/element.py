@@ -90,17 +90,17 @@ class Element(BaseObjectWrapper, CategoryMixin):
 
         # If explicit constructor was called, use that and skip discovery
         if type(element) is _revit_object_class:
-            return super(Element, cls).__new__(cls, element, **kwargs)
+            return super(Element, cls).__new__(cls)
 
         for wrapper_class in defined_wrapper_classes:
             class_name = wrapper_class.__name__
             if type(element) is getattr(wrapper_class, '_revit_object_class', None):
                 # Found Mathing Class, Use Wrapper
                 # print('Found Mathing Class, Use Wrapper: {}'.format(class_name))
-                return super(Element, cls).__new__(wrapper_class, element, **kwargs)
+                return super(Element, cls).__new__(wrapper_class)
         else:
             # Could Not find a Matching Class, Use Element if related
-            return super(Element, cls).__new__(cls, element, **kwargs)
+            return super(Element, cls).__new__(cls)
 
         # No early return. Should not reach this point
         element_class_name = element.__class__.__name__

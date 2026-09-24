@@ -5,8 +5,6 @@ import os
 import re
 
 from pyrevit import forms, revit, DB, script
-from pyrevit.compat import IRONPY
-from pyrevit.framework import clr
 
 logger = script.get_logger()
 
@@ -84,22 +82,8 @@ class FamilyLoader:
         self.name = get_family_name(path)
         self.overwrite = overwrite
 
-    @property
-    def _load_options(self):
-        """Family load options handler used when overwriting is enabled.
-
-        Returns:
-            DB.IFamilyLoadOptions: handler answering the "family already
-                exists" prompt with overwrite, so loading stays silent.
-        """
-        return revit.create.FamilyLoaderOptionsHandler()
-
     def _load_family(self):
         """Loads the whole family, honoring self.overwrite.
-
-        The overload taking load options has an out parameter, which needs
-        engine specific marshaling: a clr.Reference under IronPython and a
-        None placeholder under pythonnet.
 
         Returns:
             bool: False if Revit refused the file, e.g. because the family
@@ -107,16 +91,10 @@ class FamilyLoader:
         """
         if not self.overwrite:
             return revit.doc.LoadFamily(self.path)
-        if IRONPY:
-            family_ref = clr.Reference[DB.Family]()
-            return revit.doc.LoadFamily(self.path, self._load_options, family_ref)
-        loaded, _ = revit.doc.LoadFamily(self.path, self._load_options, None)
-        return loaded
+        return bool(revit.create.load_family(self.path))
 
     def _load_symbol(self, symbol_name):
         """Loads a single family symbol, honoring self.overwrite.
-
-        See _load_family for the out parameter marshaling.
 
         Args:
             symbol_name (str): name of the family type to load
@@ -126,15 +104,7 @@ class FamilyLoader:
         """
         if not self.overwrite:
             return revit.doc.LoadFamilySymbol(self.path, symbol_name)
-        if IRONPY:
-            symbol_ref = clr.Reference[DB.FamilySymbol]()
-            return revit.doc.LoadFamilySymbol(
-                self.path, symbol_name, self._load_options, symbol_ref
-            )
-        loaded, _ = revit.doc.LoadFamilySymbol(
-            self.path, symbol_name, self._load_options, None
-        )
-        return loaded
+        return revit.create.load_family_symbol(self.path, symbol_name)
 
     @property
     def is_loaded(self):
