@@ -104,9 +104,9 @@ pyRevit's own dialogs (`SelectFromList`, `GetValueWindow`, the settings window, 
 ### Title bar
 
 `WPFWindow` recolours the native OS title bar to match, via a `DwmApi` wrapper that toggles
-`DWMWA_USE_IMMERSIVE_DARK_MODE`. On Windows 11 build 22000+ it additionally sets the exact caption
-and caption-text colours. Both calls are no-ops on older Windows, where the title bar stays in the
-system colour.
+`DWMWA_USE_IMMERSIVE_DARK_MODE` on Windows 10 20H1 and later. On Windows 11 build 22000+ it
+additionally sets the exact caption and caption-text colours. The exact-colour operation is a
+no-op on older Windows. Before Windows 10 20H1, the title bar stays in the system colour.
 
 ## Writing theme-aware forms
 
