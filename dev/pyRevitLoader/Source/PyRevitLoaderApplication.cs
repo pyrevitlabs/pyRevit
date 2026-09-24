@@ -22,10 +22,12 @@ using pyRevitAssemblyBuilder.AssemblyMaker;
 using pyRevitAssemblyBuilder.SessionManager;
 using pyRevitAssemblyBuilder.UIManager;
 using pyRevitExtensionParser;
+using pyRevitLabs.Common;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 /* Note:
  * It is necessary that this code object do not have any references to IronPython.
@@ -64,11 +66,14 @@ namespace PyRevitLoader
         // Hook into Revit to allow starting a command.
         Result IExternalApplication.OnStartup(UIControlledApplication application)
         {
+            var startupTimestamp = Stopwatch.GetTimestamp();
+            var processUptimeMilliseconds = GetProcessUptimeMilliseconds();
             _uiControlledApplication = application;
             LoadAssembliesInFolder(LoaderPath);
             // We also need to load dlls from two folders up
             var commonFolder = Path.GetDirectoryName(Path.GetDirectoryName(LoaderPath));
             LoadAssembliesInFolder(commonFolder);
+            var assembliesLoadedTimestamp = Stopwatch.GetTimestamp();
 
             try
             {
@@ -83,7 +88,11 @@ namespace PyRevitLoader
                 // Load the session directly through the C# session manager. The Python
                 // pre/post-load services are driven from within LoadSession, so Revit
                 // startup no longer bootstraps an IronPython engine to reach the loader.
-                var result = LoadSessionInternal(firstLoad: true);
+                var result = LoadSessionInternal(
+                    firstLoad: true,
+                    startTimestamp: startupTimestamp,
+                    assembliesLoadedTimestamp: assembliesLoadedTimestamp,
+                    processUptimeMilliseconds: processUptimeMilliseconds);
                 if (result == Result.Succeeded)
                 {
                     _themeChangeMonitor.SetSessionReady();
@@ -123,12 +132,22 @@ namespace PyRevitLoader
         // Reload entry invoked by the Python session manager via reflection
         // (GetMethod("LoadSession")). Must stay the only static method named LoadSession
         // so that lookup remains unambiguous. A reload is never the first load.
-        public static Result LoadSession() => LoadSessionInternal(firstLoad: false);
+        public static Result LoadSession() => LoadSessionInternal(firstLoad: false, startTimestamp: Stopwatch.GetTimestamp());
 
         // Shared entry for initial startup and reload. The C# SessionManagerService
         // drives the full load, including the residual Python pre/post-load services.
-        private static Result LoadSessionInternal(bool firstLoad)
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static Result LoadSessionInternal(
+            bool firstLoad,
+            long startTimestamp,
+            long? assembliesLoadedTimestamp = null,
+            double? processUptimeMilliseconds = null)
         {
+            var timeline = LoadTimeline.Begin(firstLoad ? "pyRevit startup" : "pyRevit reload", startTimestamp);
+            timeline.ProcessUptimeAtStartMilliseconds = processUptimeMilliseconds;
+            if (assembliesLoadedTimestamp.HasValue)
+                timeline.RecordSpan("LoadAssembliesInFolder", startTimestamp, assembliesLoadedTimestamp.Value);
+
             try
             {
                 if (_uiControlledApplication == null)
@@ -155,6 +174,23 @@ namespace PyRevitLoader
                     $"An error occurred while loading the pyRevit session:\n\n{ex.Message}\n\n" +
                     $"Check the output window for details.");
                 return Result.Failed;
+            }
+            finally
+            {
+                timeline.End();
+            }
+        }
+
+        private static double? GetProcessUptimeMilliseconds()
+        {
+            try
+            {
+                using (var process = Process.GetCurrentProcess())
+                    return (DateTime.Now - process.StartTime).TotalMilliseconds;
+            }
+            catch (Exception)
+            {
+                return null;
             }
         }
 

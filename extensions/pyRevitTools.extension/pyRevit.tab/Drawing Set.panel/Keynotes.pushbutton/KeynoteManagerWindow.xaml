@@ -163,7 +163,7 @@
         <!-- TREEVIEW ITEM CONTAINER                                      -->
         <!-- ============================================================ -->
         <Style x:Key="TreeItemContainer" TargetType="TreeViewItem">
-            <Setter Property="IsExpanded" Value="True"/>
+            <Setter Property="IsExpanded" Value="{Binding is_expanded, Mode=TwoWay}"/>
             <Setter Property="Padding" Value="0"/>
             <Setter Property="Margin" Value="0"/>
             <Setter Property="BorderThickness" Value="0"/>
@@ -786,6 +786,7 @@
                        Visibility="Collapsed"/>
 
             <TreeView x:Name="keynotes_tv"
+                      Style="{StaticResource pyRevitTreeViewStyle}"
                       BorderThickness="0" Background="Transparent" Padding="6,4"
                       ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                       VirtualizingPanel.IsVirtualizing="True"

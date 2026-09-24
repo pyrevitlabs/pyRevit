@@ -6,6 +6,8 @@ from pyrevit import forms, script
 class CoordinateSystemSelector(forms.WPFWindow):
     """Custom window for selecting coordinate system and angle tolerance."""
 
+    resolve_theme = True
+
     def __init__(self, xaml_source):
         super(CoordinateSystemSelector, self).__init__(xaml_source)
 

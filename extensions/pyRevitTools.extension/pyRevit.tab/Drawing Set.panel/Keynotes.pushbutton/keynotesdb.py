@@ -47,12 +47,20 @@ CSI_REGEX = r" \d{2}(\s|[-_.])\d{2}(\s|[-_.])\d{2}"
 
 
 def normalize_keynote_text(value):
-    """Collapse embedded line breaks and tabs to a single space for legacy keynote storage."""
+    """Collapse embedded line breaks and tabs to a single space for legacy keynote storage.
+
+    Important:
+        Break coverage comes from str.splitlines(): CR, LF, vertical tab
+        (Word's Shift+Enter), form feed, NEL, U+2028 and U+2029. WPF truncates
+        a paste at any one of them, so EditRecordWindow's paste filter depends
+        on all of them collapsing here; narrowing this back to CR and LF
+        reintroduces the truncation bug.
+    """
     if value is None:
         return ""
 
     text = str(value)
-    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    text = "\n".join(text.splitlines())
     text = re.sub(r"\s*\n\s*", " ", text)
     text = text.replace("\t", " ")
     return text.strip()
@@ -148,6 +156,98 @@ class RKeynoteFilters(object):
         return cleaned
 
 
+class RKeynoteExpansion(object):
+    """Expansion state for the keynote tree, keyed by keynote key."""
+
+    def __init__(self):
+        self.reset(None)
+
+    def reset(self, kfile, keys=None):
+        """Point the store at a keynote file."""
+        self.kfile = kfile
+        self.saved = set(keys or [])
+        self.overlay = {}
+        self.search_active = False
+        self._term = None
+        self._missed = set()
+
+    def begin_render(self, search_term):
+        """Arm the search overlay — call once per rebuild, before render."""
+        term = search_term or None
+        if term != self._term:
+            if not (term and self._term and term.startswith(self._term)):
+                self.overlay = {}
+            self._term = term
+        self.search_active = bool(term)
+
+    def get(self, node):
+        """Read the rendered expansion state for a node."""
+        if self.search_active:
+            if node.key in self.overlay:
+                return self.overlay[node.key]
+            return bool(node.children)
+        return node.key in self.saved
+
+    def set(self, node, value):
+        """Record an expansion change made through the UI."""
+        if self.search_active:
+            self.overlay[node.key] = value
+            return
+        if value:
+            self.saved.add(node.key)
+        else:
+            self.saved.discard(node.key)
+
+    def set_all(self, keys, value):
+        """Apply Expand All / Collapse All to a whole key set."""
+        if value:
+            self.saved.update(keys)
+        else:
+            self.saved.clear()
+        if self.search_active:
+            for key in keys:
+                self.overlay[key] = value
+
+    def expand(self, key):
+        """Reveal one node because the user just acted on it."""
+        if not key:
+            return
+        self.saved.add(key)
+        if self.search_active:
+            self.overlay[key] = True
+
+    def rekey(self, from_key, to_key):
+        """Follow a node whose key changed.  Children keep their own keys."""
+        if from_key in self.saved:
+            self.saved.discard(from_key)
+            self.saved.add(to_key)
+        if from_key in self.overlay:
+            self.overlay[to_key] = self.overlay.pop(from_key)
+
+    def swap(self, key_a, key_b):
+        """Follow a Move Up / Move Down."""
+        if (key_a in self.saved) != (key_b in self.saved):
+            self.saved.symmetric_difference_update([key_a, key_b])
+        if key_a in self.overlay or key_b in self.overlay:
+            val_a = self.overlay.pop(key_a, None)
+            val_b = self.overlay.pop(key_b, None)
+            if val_b is not None:
+                self.overlay[key_a] = val_b
+            if val_a is not None:
+                self.overlay[key_b] = val_a
+
+    def prune(self, live_keys):
+        """Drop entries for keys that no longer exist."""
+        if not live_keys:
+            return
+        missing = self.saved - live_keys
+        self.saved -= (missing & self._missed)
+        self._missed = missing
+
+
+EXPANSION = RKeynoteExpansion()
+
+
 class RKeynote(forms.Reactive):
     """Object representing a keynote entry in the databaseself.
 
@@ -217,6 +317,15 @@ class RKeynote(forms.Reactive):
     @property
     def is_category(self):
         return not self.parent_key
+
+    @property
+    def is_expanded(self):
+        """Whether this row renders expanded, read from the EXPANSION store."""
+        return EXPANSION.get(self)
+
+    @is_expanded.setter
+    def is_expanded(self, value):
+        EXPANSION.set(self, value)
 
     def has_children(self):
         return len(self.children)
@@ -618,6 +727,20 @@ def _run_with_compensation(conn, steps):
                         "check the keynote file for consistency."
                     )
             raise
+
+
+def update_texts(conn, updates):
+    """Rewrite the text of several records as one compensated write."""
+    steps = []
+    for key, old_text, new_text, is_category in updates:
+        write = update_category_title if is_category else update_keynote_text
+        steps.append(
+            (
+                lambda k=key, t=new_text, w=write: w(conn, k, t),
+                lambda k=key, t=old_text, w=write: w(conn, k, t),
+            )
+        )
+    _run_with_compensation(conn, steps)
 
 
 def swap_keys(conn, key_a, key_b, temp_key, category=False):

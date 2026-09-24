@@ -23,6 +23,10 @@ public sealed class BuildAutocompModule : Module
             },
             cancellationToken: cancellationToken);
 
+        var committedSource = File.Exists(PyRevitPaths.AutocompSource)
+            ? File.ReadAllText(PyRevitPaths.AutocompSource)
+            : null;
+
         AutocompleteGenerator.Generate(PyRevitPaths.UsagePatterns, PyRevitPaths.AutocompSource);
 
         await context.Shell.Command.ExecuteCommandLineTool(
@@ -31,6 +35,8 @@ public sealed class BuildAutocompModule : Module
                 Arguments = ["fmt", PyRevitPaths.AutocompSource],
             },
             cancellationToken: cancellationToken);
+
+        AutocompleteGenerator.KeepLineEndingsWhenUnchanged(PyRevitPaths.AutocompSource, committedSource);
 
         await context.Shell.Command.ExecuteCommandLineTool(
             new GenericCommandLineToolOptions("go")

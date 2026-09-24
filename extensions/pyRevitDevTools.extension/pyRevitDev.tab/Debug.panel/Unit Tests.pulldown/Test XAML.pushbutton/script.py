@@ -159,6 +159,8 @@ class ViewModel(forms.Reactive):
 
 # code-behind for the window
 class UI(forms.WPFWindow, forms.Reactive):
+    resolve_theme = True
+
     def __init__(self):
         self.vm = ViewModel()
 

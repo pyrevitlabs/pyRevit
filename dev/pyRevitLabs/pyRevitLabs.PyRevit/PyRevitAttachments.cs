@@ -96,53 +96,79 @@ namespace pyRevitLabs.PyRevit {
             }
         }
 
-        // get all attached revit versions
-        // @handled @logs
+        private static PyRevitAttachment FindAttachment(RevitProduct revit) {
+            logger.Debug("Checking attachment to Revit \"{0}\"", revit.Version);
+
+            var allUsersManifest = RevitAddons.GetAttachedManifest(PyRevitConsts.AddinName, revit.ProductYear, allUsers: true);
+            if (allUsersManifest != null) {
+                logger.Debug("pyRevit (All Users) is attached to Revit \"{0}\"", revit.Version);
+                return new PyRevitAttachment(allUsersManifest, revit, PyRevitAttachmentType.AllUsers);
+            }
+
+            var userManifest = RevitAddons.GetAttachedManifest(PyRevitConsts.AddinName, revit.ProductYear, allUsers: false);
+            if (userManifest != null) {
+                logger.Debug("pyRevit (Current User) is attached to Revit \"{0}\"", revit.Version);
+                return new PyRevitAttachment(userManifest, revit, PyRevitAttachmentType.CurrentUser);
+            }
+
+            logger.Debug("No attachment found for Revit \"{0}\"", revit.Version);
+            return null;
+        }
+
+        private static void ResolveRegisteredClone(PyRevitAttachment attachment, IEnumerable<PyRevitClone> registeredClones) {
+            foreach (var clone in registeredClones) {
+                if (attachment.Clone != null && attachment.Clone.ClonePath.Contains(clone.ClonePath)) {
+                    attachment.SetClone(clone);
+                    return;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Enumerate the pyRevit attachment of every installed Revit.
+        /// </summary>
+        /// <remarks>
+        /// Reads the addin manifests of every installed Revit year and the clones
+        /// registry from disk on every enumeration. Use <see cref="GetAllAttached(int)"/>
+        /// when only one year is of interest.
+        /// </remarks>
         public static IEnumerable<PyRevitAttachment> GetAttachments() {
             var registeredClones = PyRevitClones.GetRegisteredClones();
 
             foreach (var revit in RevitProduct.ListInstalledProducts()) {
-                logger.Debug("Checking attachment to Revit \"{0}\"", revit.Version);
-
-                PyRevitAttachment attachment = null;
-                var allUsersManifest = RevitAddons.GetAttachedManifest(PyRevitConsts.AddinName, revit.ProductYear, allUsers: true);
-                if (allUsersManifest != null) {
-                    logger.Debug("pyRevit (All Users) is attached to Revit \"{0}\"", revit.Version);
-                    attachment = new PyRevitAttachment(allUsersManifest, revit, PyRevitAttachmentType.AllUsers);
-
-                }
-                else {
-                    var userManifest = RevitAddons.GetAttachedManifest(PyRevitConsts.AddinName, revit.ProductYear, allUsers: false);
-                    if (userManifest != null) {
-                        logger.Debug("pyRevit (Current User) is attached to Revit \"{0}\"", revit.Version);
-                        attachment = new PyRevitAttachment(userManifest, revit, PyRevitAttachmentType.CurrentUser);
-                    }
-                }
-                // verify attachment has found
-                if (attachment is null) {
-                    logger.Debug("No attachment found for Revit \"{0}\"", revit.Version);
+                var attachment = FindAttachment(revit);
+                if (attachment is null)
                     continue;
-                }
-                // try to find clone in registered clones
-                foreach (var clone in registeredClones) {
-                    if (attachment.Clone != null && attachment.Clone.ClonePath.Contains(clone.ClonePath)) {
-                        attachment.SetClone(clone);
-                        break;
-                    }
-                }
+                ResolveRegisteredClone(attachment, registeredClones);
                 yield return attachment;
             }
         }
 
-        // get all attachments for a revit version
-        // @handled @logs
+        /// <summary>
+        /// Get the pyRevit attachments of one Revit year.
+        /// </summary>
+        /// <remarks>
+        /// Reads only that year's addin manifests, and reads the clones registry
+        /// only once an attachment is found, so a year with no pyRevit attached
+        /// costs no clone validation.
+        /// </remarks>
         public static List<PyRevitAttachment> GetAllAttached(int revitYear) {
-            // enumerate once; GetAttachments() re-reads manifests and the clones
-            // registry from disk on every enumeration
-            return GetAttachments()
-                .Where(x => x.Product.ProductYear == revitYear)
-                .OrderBy(x => x.AllUsers)
-                .ToList();
+            var attachments = new List<PyRevitAttachment>();
+            foreach (var revit in RevitProduct.ListInstalledProducts()) {
+                if (revit.ProductYear != revitYear)
+                    continue;
+                var attachment = FindAttachment(revit);
+                if (attachment != null)
+                    attachments.Add(attachment);
+            }
+
+            if (attachments.Count > 0) {
+                var registeredClones = PyRevitClones.GetRegisteredClones();
+                foreach (var attachment in attachments)
+                    ResolveRegisteredClone(attachment, registeredClones);
+            }
+
+            return attachments.OrderBy(x => x.AllUsers).ToList();
         }
 
         // get attachment for a revit version
