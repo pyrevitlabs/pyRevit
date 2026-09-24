@@ -59,10 +59,10 @@ Registering the dockable pane does not load the shell:
 - The pane defaults to hidden, and is re-hidden on the first Idling tick after startup. Revit
   persists dockable pane visibility across sessions, so without this a pane you opened once would
   reappear in every later session.
-- The console itself is built on an Idling handler once the pane is actually shown, so
-  `pyRevitLabs.PyRevit.Shell.dll` loads on demand instead of during session load.
+- `pyRevitLabs.PyRevit.Shell.dll` loads during session startup so the dockable pane can be
+  registered. The console itself is built later, on an Idling handler once the pane is shown.
 
-A shell you never open costs nothing beyond the pane registration.
+A shell you never open still incurs assembly loading and pane registration, but not console construction.
 
 ## Troubleshooting
 
