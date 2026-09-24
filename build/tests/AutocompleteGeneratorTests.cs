@@ -1,5 +1,5 @@
 using System.Diagnostics;
-using System.Text.RegularExpressions;
+using System.Text;
 using Build.Helpers;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -29,9 +29,48 @@ public sealed class AutocompleteGeneratorTests
         return output;
     }
 
-    private static string WithoutWhitespace(string text)
+    private static string WithoutFormattingWhitespace(string goSource)
     {
-        return Regex.Replace(text, @"\s+", string.Empty);
+        var builder = new StringBuilder(goSource.Length);
+        var inString = false;
+        for (var index = 0; index < goSource.Length; index++)
+        {
+            var character = goSource[index];
+            if (inString)
+            {
+                builder.Append(character);
+                if (character == '\\' && index + 1 < goSource.Length)
+                {
+                    builder.Append(goSource[++index]);
+                }
+                else if (character == '"')
+                {
+                    inString = false;
+                }
+            }
+            else if (character == '"')
+            {
+                inString = true;
+                builder.Append(character);
+            }
+            else if (!char.IsWhiteSpace(character))
+            {
+                builder.Append(character);
+            }
+        }
+
+        return builder.ToString();
+    }
+
+    [TestMethod]
+    public void WithoutFormattingWhitespace_ignoresAlignmentButNotStringContents()
+    {
+        const string generated = "\"--skip-bin\": complete.PredictNothing,\n";
+        const string goFormatted = "\t\"--skip-bin\":    complete.PredictNothing,\r\n";
+        const string editedFlag = "\"--skip- bin\": complete.PredictNothing,\n";
+
+        Assert.AreEqual(WithoutFormattingWhitespace(generated), WithoutFormattingWhitespace(goFormatted));
+        Assert.AreNotEqual(WithoutFormattingWhitespace(generated), WithoutFormattingWhitespace(editedFlag));
     }
 
     [TestMethod]
@@ -44,8 +83,8 @@ public sealed class AutocompleteGeneratorTests
             AutocompleteGenerator.Generate(PyRevitPaths.UsagePatterns, generatedPath);
 
             Assert.AreEqual(
-                WithoutWhitespace(committed),
-                WithoutWhitespace(File.ReadAllText(generatedPath)),
+                WithoutFormattingWhitespace(committed),
+                WithoutFormattingWhitespace(File.ReadAllText(generatedPath)),
                 $"{AutocompSourceRepoPath} is out of date with UsagePatterns.txt or the generator. "
                     + "Run the ci pipeline and commit the regenerated file.");
         }
