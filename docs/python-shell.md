@@ -48,7 +48,7 @@ surface, the completion popups, and the dockable pane's own background all switc
 
 ## Keeping Revit responsive
 
-Each statement is marshalled through a Revit `ExternalEvent`. Revit stays interactive while a
+Statements in modeless and docked shells are marshalled through a Revit `ExternalEvent`. Revit stays interactive while a
 modeless or docked shell is open, and the statement runs in a valid API context, so model
 modifications behave the same as they would from a button.
 
