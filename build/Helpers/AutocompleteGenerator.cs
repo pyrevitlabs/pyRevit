@@ -10,21 +10,14 @@ namespace Build.Helpers;
 /// Invariant: the committed <c>pyrevit-autocomplete.go</c> must equal this generator's output
 /// for the current <c>UsagePatterns.txt</c>. Every <c>ci</c> run regenerates it, so a hand
 /// edit to the Go file shows up as a working-tree change after the next build. Fix the
-/// generator or the usage patterns instead.
+/// generator or the usage patterns instead. <c>AutocompleteGeneratorTests</c> fails when the
+/// generated output differs from the committed file.
 /// </remarks>
 public static partial class AutocompleteGenerator
 {
     public static void Generate(string usagePatternsPath, string outputPath)
     {
-        var lines = File.ReadAllLines(usagePatternsPath).Skip(1);
-        var app = new GoCommand("pyrevit");
-        app.Flags.Add("verbose");
-        app.Flags.Add("debug");
-
-        foreach (var line in lines)
-        {
-            ParseDocoptLine(line, app);
-        }
+        var app = BuildCommandTree(File.ReadAllLines(usagePatternsPath).Skip(1));
 
         var builder = new StringBuilder();
         builder.AppendLine("package main");
@@ -38,6 +31,66 @@ public static partial class AutocompleteGenerator
 
         Directory.CreateDirectory(Path.GetDirectoryName(outputPath)!);
         File.WriteAllText(outputPath, builder.ToString());
+    }
+
+    /// <summary>
+    /// Puts <paramref name="previousSource"/> back when the formatted output differs from it only
+    /// in line endings.
+    /// </summary>
+    /// <remarks>
+    /// <c>go fmt</c> always writes LF, while a Windows checkout with <c>core.autocrlf</c> has CRLF,
+    /// so an unchanged regeneration would still rewrite the file and show it as modified.
+    /// </remarks>
+    public static void KeepLineEndingsWhenUnchanged(string sourcePath, string? previousSource)
+    {
+        if (previousSource is null)
+        {
+            return;
+        }
+
+        var generated = File.ReadAllText(sourcePath);
+        if (!string.Equals(NormalizeLineEndings(generated), NormalizeLineEndings(previousSource), StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (!string.Equals(generated, previousSource, StringComparison.Ordinal))
+        {
+            File.WriteAllText(sourcePath, previousSource);
+        }
+    }
+
+    private static string NormalizeLineEndings(string text)
+    {
+        return text.Replace("\r\n", "\n", StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Parses docopt usage lines into the flags completion offers for each command.
+    /// </summary>
+    /// <returns>
+    /// Space-joined command path (empty for the root <c>pyrevit</c> command) mapped to its flag
+    /// names without the leading <c>--</c>, in ordinal order.
+    /// </returns>
+    internal static IReadOnlyDictionary<string, IReadOnlyList<string>> CollectCommandFlags(IEnumerable<string> usageLines)
+    {
+        var result = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+        BuildCommandTree(usageLines).CollectFlags(string.Empty, result);
+        return result;
+    }
+
+    private static GoCommand BuildCommandTree(IEnumerable<string> usageLines)
+    {
+        var app = new GoCommand("pyrevit");
+        app.Flags.Add("verbose");
+        app.Flags.Add("debug");
+
+        foreach (var line in usageLines)
+        {
+            ParseDocoptLine(line, app);
+        }
+
+        return app;
     }
 
     private static void ParseDocoptLine(string line, GoCommand app)
@@ -138,6 +191,15 @@ public static partial class AutocompleteGenerator
             }
 
             command.UpdateFlags(commandPaths.Skip(1).ToList(), flags);
+        }
+
+        public void CollectFlags(string path, Dictionary<string, IReadOnlyList<string>> result)
+        {
+            result[path] = Flags.OrderBy(flag => flag, StringComparer.Ordinal).ToList();
+            foreach (var node in Nodes)
+            {
+                node.CollectFlags(path.Length == 0 ? node.Token : path + " " + node.Token, result);
+            }
         }
 
         public string WriteGo(int indent)
