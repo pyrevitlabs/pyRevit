@@ -426,6 +426,7 @@ class RevitActionHandler(UI.IExternalEventHandler):
 
 KEYNOTEMGR_WINDOW_ENVVAR = "KEYNOTEMGR_ACTIVE_WINDOW"
 MAX_KFILE_ATTEMPTS = 5
+MAX_SAVED_EXPANDED = 500
 USAGE_SCOPE_NOTE = (
     "Usage is checked against keynote tags in THIS project only — other "
     "projects sharing this keynote file, linked models and un-tagged "
@@ -555,6 +556,7 @@ class EditRecordWindow(forms.WPFWindow):
         if self._pkey:
             self.active_parent_key = self._pkey
 
+        self._install_paste_filter()
         self.recordText.Focus()
         self.recordText.SelectAll()
 
@@ -569,7 +571,14 @@ class EditRecordWindow(forms.WPFWindow):
 
     @property
     def active_text(self):
-        return self.recordText.Text
+        """Keynote text reduced to the single line the keynote file can store.
+
+        Note:
+            Normalizing on read as well as on paste covers text that reaches
+            the box by another route, such as drag-and-drop, which the paste
+            filter never sees.
+        """
+        return kdb.normalize_keynote_text(self.recordText.Text)
 
     @active_text.setter
     def active_text(self, value):
@@ -582,6 +591,54 @@ class EditRecordWindow(forms.WPFWindow):
     @active_parent_key.setter
     def active_parent_key(self, value):
         self.recordParent.Content = value
+
+    def _install_paste_filter(self):
+        """Stop a multi-line paste from being cut down to its first line.
+
+        recordText is single-line on purpose — a keynote file stores one
+        record per line — and WPF throws away everything after the first
+        line break when it pastes into such a box.  Collapsing the
+        clipboard text the way the file writer does leaves no line break
+        to truncate at, so a wrapped paragraph out of Word, Excel or a
+        PDF lands whole.
+        """
+        try:
+            self._paste_filter = Windows.DataObjectPastingEventHandler(
+                self.filter_pasted_text
+            )
+            Windows.DataObject.AddPastingHandler(self.recordText, self._paste_filter)
+        except Exception as ex:
+            logger.debug("keynote paste filter unavailable | %s", ex)
+
+    def filter_pasted_text(self, sender, args):
+        """Swap the pasted payload for its single-line equivalent.
+
+        Important:
+            FormatToApply must be assigned before DataObject. Each setter
+            validates against the value the other one currently holds, so a
+            rich payload (Word, a browser) raises ArgumentException if the
+            plain-text DataObject is installed while FormatToApply still names
+            RTF or HTML.
+        """
+        try:
+            source = args.SourceDataObject
+            if source is None:
+                return
+            for text_format in (
+                Windows.DataFormats.UnicodeText,
+                Windows.DataFormats.Text,
+            ):
+                if not source.GetDataPresent(text_format):
+                    continue
+                cleaned = kdb.normalize_keynote_text(source.GetData(text_format))
+                if not cleaned:
+                    args.CancelCommand()
+                    return
+                args.FormatToApply = text_format
+                args.DataObject = Windows.DataObject(text_format, cleaned)
+                return
+        except Exception as ex:
+            logger.debug("pasted text left as-is | %s", ex)
 
     def commit(self):
         if self._mode == kdb.EDIT_MODE_ADD_CATEG:
@@ -1198,6 +1255,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._connect_kfile()
 
         self._cache = []
+        self._cache_filtered = False
         self._snapshot_categories = []
         self._snapshot_keynotes = []
         self._needs_update = False
@@ -1372,24 +1430,20 @@ class KeynoteManagerWindow(forms.WPFWindow):
     # MULTI-SELECTION
     # =========================================================================
 
-    def _flat_display_rows(self, filtered=True):
-        """Every row in tree order.
+    def _flat_display_rows(self, filtered=True, expanded_only=False):
+        """Every row in tree order, walked from the cache, not the database.
 
-        Walks the cached tree rather than the database: this runs on every
-        Ctrl/Shift click, and selecting rows must never touch the keynote
-        file.
-
-        filtered=True follows `children`, the search-aware view, so a
-        Shift+Click range covers exactly what is on screen.  filtered=False
-        follows the raw `_children`, which is what the SELECTION itself has
-        to be read through: a row stays selected while a search hides it,
-        and Copy must still take it rather than quietly dropping it.
+        Selection reads pass filtered=False so a row hidden by a search
+        stays selected; range gestures pass expanded_only=True so they
+        cannot reach inside a collapsed group.
         """
         rows = []
 
         def _walk(nodes):
             for rec in nodes or []:
                 rows.append(rec)
+                if expanded_only and not rec.is_expanded:
+                    continue
                 _walk(rec.children if filtered else rec._children)
 
         _walk(self._cache)
@@ -1434,7 +1488,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         The anchor deliberately stays put, so a second Shift+Click
         re-ranges from the same origin instead of creeping down the tree.
         """
-        rows = self._flat_display_rows()
+        rows = self._flat_display_rows(expanded_only=True)
         order = dict((r.key, i) for i, r in enumerate(rows))
         anchor = self._sel_anchor
         if anchor not in order:
@@ -1785,6 +1839,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         # one file means nothing in another
         self._sel_keys = set()
         self._sel_anchor = None
+        outgoing_kfile = self._kfile
         self._binding = binding
         self._doc = binding.doc
         self._kfile = binding.kfile
@@ -1801,6 +1856,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._cache = binding.cache
         self._snapshot_categories = binding.snapshot_categories
         self._snapshot_keynotes = binding.snapshot_keynotes
+
+        if binding.kfile != outgoing_kfile:
+            self._store_expansion_state(outgoing_kfile)
+            self._bind_expansion_state()
 
         try:
             self.search_tb.Text = binding.search_term or ""
@@ -2162,11 +2221,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
             return
 
         def _do_select():
+            for _anc in path[:-1]:
+                if not _anc.is_expanded:
+                    return
+
             container = None
             parent_container = self.keynotes_tv
             for node in path:
-                if container and hasattr(container, "IsExpanded"):
-                    container.IsExpanded = True
+                if container:
                     container.UpdateLayout()
                 idx = None
                 items = parent_container.ItemContainerGenerator
@@ -2185,6 +2247,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 else:
                     container = items.ContainerFromItem(node)
                 if container is None:
+                    if parent_container is not self.keynotes_tv:
+                        try:
+                            parent_container.BringIntoView()
+                        except Exception as ex:
+                            logger.debug("BringIntoView failed | %s", ex)
                     if hasattr(parent_container, "UpdateLayout"):
                         parent_container.UpdateLayout()
                     if idx is not None:
@@ -2218,83 +2285,33 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     return [root] + sub
         return None
 
-    def _set_all_tree_items_expanded(self, expanded, max_passes=2):
-        """Set IsExpanded on tree containers with bounded layout passes."""
-        tv = self.keynotes_tv
-        if not tv:
-            return False
+    def _all_parent_keys(self):
+        """Keys of every node that has children, independent of any filter."""
+        keys = set()
+        stack = list(self._cache)
+        while stack:
+            node = stack.pop()
+            if node._children:
+                keys.add(node.key)   # a leaf can never be expanded
+                stack.extend(node._children)
+        return keys
 
-        def _safe_update_layout():
-            try:
-                tv.UpdateLayout()
-                return True
-            except Exception as ex:
-                logger.warning("Expand/collapse tree update failed | %s" % ex)
-                return False
-
-        if not _safe_update_layout():
-            return False
-
-        missing_any = False
-        for _ in range(max_passes):
-            missing_in_pass = False
-            root_gen = tv.ItemContainerGenerator
-            queue = []
-            for root in tv.Items:
-                root_container = root_gen.ContainerFromItem(root)
-                if root_container is None:
-                    missing_in_pass = True
-                    continue
-                queue.append(root_container)
-
-            while queue:
-                container = queue.pop()
-                if not container or not hasattr(container, "IsExpanded"):
-                    continue
-                container.IsExpanded = expanded
-                gen = container.ItemContainerGenerator
-                for child in container.Items:
-                    child_container = gen.ContainerFromItem(child)
-                    if child_container is None:
-                        missing_in_pass = True
-                        continue
-                    queue.append(child_container)
-
-            if not missing_in_pass:
-                _safe_update_layout()
-                return True
-
-            missing_any = True
-            if expanded:
-                if not _safe_update_layout():
-                    return False
-            else:
-                break
-
-        _safe_update_layout()
-        return not missing_any
+    def _can_apply_expand_all(self):
+        """Whether Expand/Collapse All may commit to the expansion store."""
+        return bool(self._cache) and not self._tree_updating
 
     def expand_all_tree(self, sender, args):
-        def _do_expand():
-            self._set_all_tree_items_expanded(True, max_passes=3)
-
-        self.Dispatcher.BeginInvoke(
-            System.Action(ui_guard(_do_expand)),
-            Windows.Threading.DispatcherPriority.Loaded,
-        )
+        """Expand every group in the file, then re-render."""
+        if not self._can_apply_expand_all():
+            return
+        kdb.EXPANSION.set_all(self._all_parent_keys(), True)
+        self._update_full_tree(reuse_cache=True, keep_scroll=False)
 
     def collapse_all_tree(self, sender, args):
-        def _do_collapse():
-            collapsed = self._set_all_tree_items_expanded(False, max_passes=1)
-            if not collapsed:
-                # Some deep virtualized branches may not be realized on demand.
-                self._set_all_tree_items_expanded(True, max_passes=3)
-                self._set_all_tree_items_expanded(False, max_passes=1)
-
-        self.Dispatcher.BeginInvoke(
-            System.Action(ui_guard(_do_collapse)),
-            Windows.Threading.DispatcherPriority.Loaded,
-        )
+        if not self._can_apply_expand_all():
+            return
+        kdb.EXPANSION.set_all(self._all_parent_keys(), False)
+        self._update_full_tree(reuse_cache=True, keep_scroll=False)
 
     # =========================================================================
     # USED KEYNOTE TRACKING
@@ -2431,6 +2448,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
     # =========================================================================
 
     def save_config(self):
+        """Persist this window's per-keynote-file settings."""
         if not self._kfile:
             return
         wg = {}
@@ -2448,13 +2466,42 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self._config.set_option("last_postcmd_idx", pc)
 
         st = {}
+        for k, v in self._config.get_option("last_search_term", {}).items():
+            if op.exists(k):
+                st[k] = v
         if self.search_term:
             st[self._kfile] = self.search_term
+        else:
+            st.pop(self._kfile, None)
         self._config.set_option("last_search_term", st)
+
+        self._store_expansion_state(self._kfile)
 
         script.save_config()
 
+    def _store_expansion_state(self, kfile):
+        """Record the live expansion set against `kfile`."""
+        if not kfile:
+            return
+        ex = dict(self._config.get_option("last_expanded", {}))
+        keys = sorted(kdb.EXPANSION.saved)
+        if keys:
+            if len(keys) > MAX_SAVED_EXPANDED:
+                logger.warning(
+                    "Expansion state capped at %d of %d groups | %s",
+                    MAX_SAVED_EXPANDED, len(keys), kfile)
+            ex[kfile] = keys[:MAX_SAVED_EXPANDED]
+        else:
+            ex.pop(kfile, None)
+        self._config.set_option("last_expanded", ex)
+
+    def _bind_expansion_state(self, reset=False):
+        """Point the expansion store at the current keynote file."""
+        saved = {} if reset else self._config.get_option("last_expanded", {})
+        kdb.EXPANSION.reset(self._kfile, saved.get(self._kfile, []))
+
     def load_config(self, reset):
+        """Restore this window's per-keynote-file settings."""
         wg = {} if reset else self._config.get_option("last_window_geom", {})
         if wg and self._kfile in wg:
             w, h, t, l = wg[self._kfile]
@@ -2471,6 +2518,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         pc = {} if reset else self._config.get_option("last_postcmd_idx", {})
         self.postcmd_idx = pc.get(self._kfile, 0)
+
+        self._bind_expansion_state(reset)
 
         st = {} if reset else self._config.get_option("last_search_term", {})
         self.search_term = st.get(self._kfile, "")
@@ -2906,7 +2955,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         return roots
 
-    def _update_full_tree(self, fast_filter=False):
+    def _update_full_tree(self, fast_filter=False, reuse_cache=False, keep_scroll=True):
         """Re-entrancy-safe tree refresh.
 
         A DispatcherTimer tick or DocumentChanged dispatch can fire while
@@ -2916,11 +2965,17 @@ class KeynoteManagerWindow(forms.WPFWindow):
             return
         self._tree_updating = True
         try:
-            self._update_full_tree_core(fast_filter=fast_filter)
+            self._update_full_tree_core(
+                fast_filter=fast_filter,
+                reuse_cache=reuse_cache,
+                keep_scroll=keep_scroll,
+            )
         finally:
             self._tree_updating = False
 
-    def _update_full_tree_core(self, fast_filter=False):
+    def _update_full_tree_core(
+        self, fast_filter=False, reuse_cache=False, keep_scroll=True
+    ):
         """Refresh the single unified tree, applying search filter."""
         # Save current state before rebuild
         saved_key = None
@@ -2928,9 +2983,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
         sel = self.selected_keynote
         if sel:
             saved_key = sel.key
-        saved_scroll = self._get_scroll_offset()
+        saved_scroll = self._get_scroll_offset() if keep_scroll else None
 
         keynote_filter = self.search_term if self.search_term else None
+
+        kdb.EXPANSION.begin_render(keynote_filter)
 
         # Update view-only filter keys.
         # NOTE: this runs on the WPF/dispatcher side, outside a Revit API
@@ -2946,10 +3003,14 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 logger.debug("View filter unavailable | %s", ex)
                 kdb.RKeynoteFilters.ViewOnly.set_keys([])
 
-        if fast_filter and keynote_filter:
+        cache_usable = (self._cache
+                        and self._cache_filtered == bool(keynote_filter))
+        if (fast_filter and keynote_filter) or (reuse_cache and cache_usable):
             tree = list(self._cache)
+            fresh_read = False
         else:
             tree = self._build_full_tree()
+            fresh_read = True
 
         # Mark used (pre-resolved view names — no Revit API access here)
         for node in tree:
@@ -2961,6 +3022,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         # Cache for fast re-filter
         self._cache = list(tree)
+        self._cache_filtered = bool(keynote_filter)
 
         # Rows are rebuilt from the file on every refresh, so re-apply the
         # highlight to the NEW objects, dropping keys that no longer exist.
@@ -2982,6 +3044,11 @@ class KeynoteManagerWindow(forms.WPFWindow):
             _flatten(_root)
         self._snapshot_categories = list(self._cache)
         self._snapshot_keynotes = flat_knotes
+
+        if fresh_read:
+            live_keys = set(n.key for n in self._snapshot_categories)
+            live_keys.update(n.key for n in self._snapshot_keynotes)
+            kdb.EXPANSION.prune(live_keys)
 
         # Apply search filter
         if keynote_filter:
@@ -3023,6 +3090,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 self.caseBtn,
             ]:
                 btn.IsEnabled = False
+            self.caseBtn.IsEnabled = bool(self._sel_keys) and any(
+                not r.locked for r in self.selected_keynotes)
             return
 
         is_cat = sel.is_category  # top-level group (no parent_key)
@@ -3087,6 +3156,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         new_parent = siblings[idx - 1]
         try:
             kdb.move_keynote(self._conn, sel.key, new_parent.key)
+            kdb.EXPANSION.expand(new_parent.key)
             self._needs_update = True
         except System.TimeoutException as toutex:
             forms.alert(toutex.Message)
@@ -3132,6 +3202,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         try:
             kdb.move_keynote(self._conn, sel.key, grandparent_key)
+            kdb.EXPANSION.expand(grandparent_key)
             self._needs_update = True
         except System.TimeoutException as toutex:
             forms.alert(toutex.Message)
@@ -3190,6 +3261,8 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         try:
             kdb.swap_keys(self._conn, sel_key, other_key, temp_key, category=is_cat)
+
+            kdb.EXPANSION.swap(sel_key, other_key)
 
             # Update references in Revit model (async via ExternalEvent)
             sk, ok = sel_key, other_key
@@ -3987,6 +4060,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
 
         try:
             kdb.move_keynote(self._conn, dragged.key, new_parent_key)
+            kdb.EXPANSION.expand(new_parent_key)
             self._needs_update = True
         except System.TimeoutException as toutex:
             forms.alert(toutex.Message)
@@ -4051,6 +4125,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
     # =========================================================================
 
     def add_keynote(self, sender, args):
+        """Add a keynote under the selected group, and reveal where it landed."""
         parent_key = None
         sel = self.selected_keynote
         if sel:
@@ -4059,9 +4134,12 @@ class KeynoteManagerWindow(forms.WPFWindow):
             parent_key = self._pick_parent()
         if parent_key:
             try:
-                EditRecordWindow(
+                new_kn = EditRecordWindow(
                     self, self._conn, kdb.EDIT_MODE_ADD_KEYNOTE, pkey=parent_key
                 ).show()
+                if new_kn:
+                    kdb.EXPANSION.expand(
+                        getattr(new_kn, "parent_key", None) or parent_key)
                 self._needs_update = True
             except Exception as ex:
                 forms.alert(str(ex))
@@ -4073,13 +4151,16 @@ class KeynoteManagerWindow(forms.WPFWindow):
         sel = self.selected_keynote
         if sel and sel.parent_key:
             try:
-                EditRecordWindow(
+                new_kn = EditRecordWindow(
                     self,
                     self._conn,
                     kdb.EDIT_MODE_ADD_KEYNOTE,
                     text=sel.text,
                     pkey=sel.parent_key,
                 ).show()
+                if new_kn:
+                    kdb.EXPANSION.expand(
+                        getattr(new_kn, "parent_key", None) or sel.parent_key)
                 self._needs_update = True
             except Exception as ex:
                 forms.alert(str(ex))
@@ -4088,16 +4169,22 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 self._update_status_bar()
 
     def edit_keynote(self, sender, args):
+        """Edit the selected keynote, revealing it if the dialog moved it."""
         sel = self.selected_keynote
         if not sel:
             return
         if sel.is_category:
             self.edit_category_inline(sender, args)
             return
+        was_parent = sel.parent_key
         try:
-            EditRecordWindow(
+            edited = EditRecordWindow(
                 self, self._conn, kdb.EDIT_MODE_EDIT_KEYNOTE, rkeynote=sel
             ).show()
+            if edited:
+                now_parent = getattr(edited, "parent_key", None)
+                if now_parent and now_parent != was_parent:
+                    kdb.EXPANSION.expand(now_parent)
             self._needs_update = True
         except Exception as ex:
             forms.alert(str(ex))
@@ -4320,6 +4407,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 kdb.rekey_with_children(
                     self._conn, from_key, to_key, category=sel.is_category
                 )
+                kdb.EXPANSION.rekey(from_key, to_key)
                 # Update Revit element refs (async via ExternalEvent)
                 fk, tk = from_key, to_key
                 self._revit_run(lambda: self._rekey_refs(fk, tk))
@@ -4381,18 +4469,29 @@ class KeynoteManagerWindow(forms.WPFWindow):
         self.caseMenu.IsOpen = True
 
     def _apply_case(self, transform_fn):
-        """Apply a text transformation to the selected keynote/category."""
-        sel = self.selected_keynote
-        if not sel or sel.locked:
+        """Apply a text transformation across the whole selection."""
+        recs = self.selected_keynotes
+        if not recs:
             return
-        new_text = transform_fn(sel.text)
-        if new_text == sel.text:
+
+        locked_count = 0
+        updates = []
+        for rec in recs:
+            if rec.locked:
+                locked_count += 1
+                continue
+            new_text = transform_fn(rec.text)
+            if new_text != rec.text:
+                updates.append((rec.key, rec.text, new_text, rec.is_category))
+
+        if not updates:
+            if locked_count:
+                self._hint("Nothing to change - %d row(s) locked by another "
+                           "user" % locked_count)
             return
+
         try:
-            if sel.is_category:
-                kdb.update_category_title(self._conn, sel.key, new_text)
-            else:
-                kdb.update_keynote_text(self._conn, sel.key, new_text)
+            kdb.update_texts(self._conn, updates)
             self._needs_update = True
         except System.TimeoutException as toutex:
             forms.alert(toutex.Message)
@@ -4400,7 +4499,13 @@ class KeynoteManagerWindow(forms.WPFWindow):
         except Exception as ex:
             forms.alert("Case change failed: %s" % ex)
             return
+
         self._update_full_tree()
+        if locked_count:
+            self._hint("Changed %d row(s), skipped %d locked by another user"
+                       % (len(updates), locked_count))
+        else:
+            self._hint("Changed %d row(s)" % len(updates))
 
     def to_upper(self, sender, args):
         self._apply_case(lambda t: t.upper())
@@ -4577,6 +4682,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 revit.update.set_keynote_file(kfile, doc=revit.doc)
 
         def _reload():
+            """Re-point the window at the newly chosen keynote file."""
             if not self._is_owned_doc_active():
                 # never re-resolve against a foreign document
                 forms.alert(
@@ -4585,8 +4691,10 @@ class KeynoteManagerWindow(forms.WPFWindow):
                     "the Keynote Manager."
                 )
                 return
+            self.save_config()
             try:
                 self._determine_kfile()
+                self._bind_expansion_state()
                 self._connect_kfile()
             except KeynoteSetupError as kex:
                 self._drop_file_entry(self._kfile, str(kex))
@@ -4595,6 +4703,9 @@ class KeynoteManagerWindow(forms.WPFWindow):
                 self._update_status_bar()
                 self._update_title()
                 return
+            self._bind_expansion_state()
+            st = self._config.get_option("last_search_term", {})
+            self.search_term = st.get(self._kfile, "")
             self._needs_update = True
             self._refresh_used_keynotes()
             self._update_full_tree()

@@ -3,64 +3,11 @@
         Title="pyRevit log viewer" Height="700" Width="1000" MinHeight="400" MinWidth="1000" ShowInTaskbar="False" ResizeMode="CanResizeWithGrip"
         WindowStartupLocation="CenterScreen" HorizontalContentAlignment="Center">
         <Window.Resources>
-            <Style x:Key="ClearButton" TargetType="Button">
-                <Setter Property="Background" Value="White"/>
+            <Style x:Key="ClearButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                <Setter Property="Background" Value="{DynamicResource pyRevitControlBackgroundBrush}"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="Padding" Value="0"/>
             </Style>
-
-            <DataTemplate x:Key="LogEntryStyle">
-                <TextBlock Foreground="Gray" Text="{Binding level}"/>
-            </DataTemplate>
-
-            <ControlTemplate x:Key="Default" TargetType='{x:Type ListViewItem}'>
-                <StackPanel Background="White">
-                  <GridViewRowPresenter Content="{TemplateBinding Content}"
-                                        Columns="{TemplateBinding GridView.ColumnCollection}"/>
-                </StackPanel>
-            </ControlTemplate>
-
-            <ControlTemplate x:Key="Selected" TargetType='{x:Type ListViewItem}'>
-                <StackPanel Background="Black">
-                  <GridViewRowPresenter Content="{TemplateBinding Content}"
-                                        Columns="{TemplateBinding GridView.ColumnCollection}"/>
-                </StackPanel>
-            </ControlTemplate>
-
-            <ControlTemplate x:Key="CriticalEntry" TargetType='{x:Type ListViewItem}'>
-                  <StackPanel Background="#c7254e">
-                      <GridViewRowPresenter Content="{TemplateBinding Content}"
-                                            Columns="{TemplateBinding GridView.ColumnCollection}"/>
-                  </StackPanel>
-            </ControlTemplate>
-
-            <ControlTemplate x:Key="ErrorEntry" TargetType='{x:Type ListViewItem}'>
-                  <StackPanel Background="#f9f2f4">
-                      <GridViewRowPresenter Content="{TemplateBinding Content}"
-                                            Columns="{TemplateBinding GridView.ColumnCollection}"/>
-                  </StackPanel>
-            </ControlTemplate>
-
-            <ControlTemplate x:Key="WarningEntry" TargetType='{x:Type ListViewItem}'>
-                  <StackPanel Background="#F7F3F2">
-                      <GridViewRowPresenter Content="{TemplateBinding Content}"
-                                            Columns="{TemplateBinding GridView.ColumnCollection}"/>
-                  </StackPanel>
-            </ControlTemplate>
-
-            <ControlTemplate x:Key="InfoEntry" TargetType='{x:Type ListViewItem}'>
-                  <StackPanel Background="White">
-                      <GridViewRowPresenter Content="{TemplateBinding Content}"
-                                            Columns="{TemplateBinding GridView.ColumnCollection}"/>
-                  </StackPanel>
-            </ControlTemplate>
-
-            <ControlTemplate x:Key="DebugEntry" TargetType='{x:Type ListViewItem}'>
-                  <StackPanel Background="#f6f6f6">
-                      <GridViewRowPresenter Content="{TemplateBinding Content}"
-                                            Columns="{TemplateBinding GridView.ColumnCollection}"/>
-                  </StackPanel>
-            </ControlTemplate>
-
-
         </Window.Resources>
 
         <DockPanel>
@@ -75,7 +22,7 @@
                     <TextBlock FontSize="14" Margin="20,5,10,5">Search:</TextBlock>
                     <TextBox x:Name="search_tb" Width="150px" Height="25px" TextChanged="search_txt_changed"/>
                     <Button Style="{StaticResource ClearButton}"
-                            x:Name="clrsearch_b" Content="x" Margin="-25,0,0,0" Padding="0,-4,0,0"
+                            x:Name="clrsearch_b" Content="x" Margin="-25,0,0,0"
                             Click="clear_search" Width="15px" Height="15px"/>
 
                     <TextBlock FontSize="14" Margin="20,5,10,5">Filter:</TextBlock>
@@ -111,32 +58,25 @@
                    </GridView>
                 </ListView.View>
                 <ListView.ItemContainerStyle>
-                    <Style TargetType="ListViewItem">
-                        <Setter Property="Template" Value="{StaticResource Default}"/>
+                    <Style TargetType="ListViewItem" BasedOn="{StaticResource {x:Type ListViewItem}}">
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding level}" Value="CRITICAL">
-                                <Setter Property="Template" Value="{StaticResource CriticalEntry}"/>
-                                <Setter Property="Foreground" Value="White" />
+                                <Setter Property="Background" Value="{DynamicResource pyRevitDangerForegroundBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource pyRevitContrastForegroundBrush}"/>
                             </DataTrigger>
                             <DataTrigger Binding="{Binding level}" Value="ERROR">
-                                <Setter Property="Template" Value="{StaticResource ErrorEntry}"/>
-                                <Setter Property="Foreground" Value="#c7254e" />
+                                <Setter Property="Background" Value="{DynamicResource pyRevitDangerBackgroundBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource pyRevitDangerForegroundBrush}"/>
                             </DataTrigger>
                             <DataTrigger Binding="{Binding level}" Value="WARNING">
-                                <Setter Property="Template" Value="{StaticResource WarningEntry}"/>
-                                <Setter Property="Foreground" Value="#d47a10" />
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding level}" Value="INFO">
-                                <Setter Property="Template" Value="{StaticResource InfoEntry}"/>
-                                <Setter Property="Foreground" Value="Black" />
+                                <Setter Property="Background" Value="{DynamicResource pyRevitWarningBackgroundBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource pyRevitWarningForegroundBrush}"/>
                             </DataTrigger>
                             <DataTrigger Binding="{Binding level}" Value="DEBUG">
-                                <Setter Property="Template" Value="{StaticResource DebugEntry}"/>
-                                <Setter Property="Foreground" Value="#878787" />
+                                <Setter Property="Foreground" Value="{DynamicResource pyRevitSubtleForegroundBrush}"/>
                             </DataTrigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Template" Value="{StaticResource Selected}" />
-                                <Setter Property="Foreground" Value="White" />
+                                <Setter Property="Foreground" Value="{DynamicResource pyRevitSelectionForegroundBrush}"/>
                             </Trigger>
                         </Style.Triggers>
                     </Style>

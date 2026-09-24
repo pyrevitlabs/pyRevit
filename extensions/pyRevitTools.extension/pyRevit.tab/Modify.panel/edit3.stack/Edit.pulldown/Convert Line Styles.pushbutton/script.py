@@ -129,6 +129,8 @@ class StyleConvert(object):
 
 
 class ConvertLineStylesWindow(forms.WPFWindow):
+    resolve_theme = True
+
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name)
         self.Closing += self.Close_Click

@@ -122,17 +122,32 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 activeDict.Remove(engineTypeId);
         }
 
+        /// <summary>
+        /// Shuts down every cached engine except <paramref name="excludeEngine"/> and engines that are
+        /// mid-execution, then replaces the cache with one holding only the excluded engine.
+        /// </summary>
+        /// <param name="excludeEngine">
+        /// Type id of the caller's own engine. The session preload script passes its shared session
+        /// engine here, so it stays cached for the startup scripts and postload that resolve to the
+        /// same type id.
+        /// </param>
+        /// <returns>The new engine cache.</returns>
+        /// <remarks>
+        /// Invariant: the excluded engine must remain in the returned cache. Dropping it makes every
+        /// later caller with the same type id start a new engine and re-import its modules.
+        /// </remarks>
         public static Dictionary<string, object> ClearEngines(string excludeEngine = null) {
-            // shutdown all existing engines
+            object excludedEngine = null;
             foreach (KeyValuePair<string, object> engineRecord in EngineDict) {
-                if (engineRecord.Key == excludeEngine || IsEngineActive(engineRecord.Key))
-                    continue;
-                else
+                if (engineRecord.Key == excludeEngine)
+                    excludedEngine = engineRecord.Value;
+                else if (!IsEngineActive(engineRecord.Key))
                     engineRecord.Value.GetType().GetMethod("Shutdown").Invoke(engineRecord.Value, new object[] { });
             }
 
-            // create a new list
             var newEngineDict = new Dictionary<string, object>();
+            if (excludedEngine != null)
+                newEngineDict[excludeEngine] = excludedEngine;
             AppDomain.CurrentDomain.SetData(DomainStorageKeys.EnginesDictKey, newEngineDict);
             return newEngineDict;
         }

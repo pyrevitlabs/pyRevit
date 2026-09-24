@@ -196,21 +196,16 @@ namespace pyRevitLabs.PyRevit {
             }
 
             var normClonePath = clonePath.NormalizeAsPath();
-            logger.Debug("Checking pyRevit clone validity \"{0}\"", normClonePath);
             if (!CommonUtils.VerifyPath(normClonePath)) {
                 throw new pyRevitResourceMissingException(normClonePath);
             }
 
             // determine clone validity based on directory availability
-            logger.Debug("Checking clone validity by directory structure...");
             var pyrevitDir = GetPyRevitPath(normClonePath);
-            logger.Debug("Checking pyRevit path \"{0}\"", pyrevitDir);
             if (!CommonUtils.VerifyPath(pyrevitDir)) {
                 throw new pyRevitInvalidPyRevitCloneException(normClonePath);
             }
-            logger.Debug("Clone directory structure is valid.");
             // if is a repo, and repo is NOT valid, throw an exception
-            logger.Debug("Checking clone validity by git repo...");
             if (IsDeployedWithRepo(normClonePath) && !GitInstaller.IsValidRepo(normClonePath)) {
                 throw new pyRevitInvalidGitCloneException(normClonePath);
             }

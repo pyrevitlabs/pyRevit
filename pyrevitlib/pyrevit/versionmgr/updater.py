@@ -10,7 +10,6 @@ from pyrevit.versionmgr import upgrade
 from pyrevit.userconfig import user_config
 from pyrevit.extensions import extensionmgr
 
-import socket
 import time
 
 # pylint: disable=C0103,W0703
@@ -33,6 +32,14 @@ COREUPDATE_MESSAGE = (
 
 
 def _check_connection(host="8.8.8.8", port=53, timeout=3):
+    """Check for internet access by opening a socket to the given host.
+
+    Note:
+        socket is imported here so that a session that never checks for
+        updates does not pay to import it.
+    """
+    import socket
+
     try:
         socket.setdefaulttimeout(timeout)
         socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))

@@ -31,7 +31,7 @@ Usage:
 
 from pyrevit import script, forms, op
 from pyrevit.framework import Color, SolidColorBrush
-from pyrevit.coreutils.configparser import PyRevitConfigParser
+from pyrevit.coreutils.configparser import open_config_file
 from pyrevit.coreutils import appdata
 
 # Setting types that are purely visual and carry no config value.
@@ -51,6 +51,8 @@ DEFAULT_MAX_HEIGHT = 560
 
 class SettingsWindow(forms.WPFWindow):
     """Dynamic settings window that generates UI from schema."""
+
+    resolve_theme = True
 
     def __init__(
         self,
@@ -81,7 +83,7 @@ class SettingsWindow(forms.WPFWindow):
             )
             if not op.exists(CONFIG_FILE):
                 open(CONFIG_FILE, "w").close()
-            self.configparser = PyRevitConfigParser(cfg_file_path=CONFIG_FILE)
+            self.configparser = open_config_file(CONFIG_FILE)
             try:
                 self.config = self.configparser.get_section(section)
             except AttributeError:

@@ -252,6 +252,8 @@ def create_parameter_value(
 class Params2ParamWindow(forms.WPFWindow):
     """Main window class for the ParametersValuesToParameter tool."""
 
+    resolve_theme = True
+
     def __init__(self):
         try:
             # find the path of ui.xaml

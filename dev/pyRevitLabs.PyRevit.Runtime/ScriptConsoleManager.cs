@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 
+using pyRevitLabs.PyRevit;
 
 namespace PyRevitLabs.PyRevit.Runtime {
     public static class ScriptConsoleManager {
@@ -96,7 +97,29 @@ namespace PyRevitLabs.PyRevit.Runtime {
             ActiveOutputWindows = newOutputWindowList;
         }
 
+        internal static bool KeepOutputWindowsOpen {
+            get {
+                try {
+                    return PyRevitConfigs.GetLoggingLevel() == PyRevitLogLevels.Debug;
+                }
+                catch {
+                    return false;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Closes open output windows other than session outputs, optionally sparing one window
+        /// and limiting the sweep to windows with a given output id.
+        /// </summary>
+        /// <remarks>
+        /// Does nothing while the Debug log level is set, so no window is closed on anyone's
+        /// behalf while debugging. Windows the user closes still close.
+        /// </remarks>
         public static void CloseActiveOutputWindows(Object excludeOutputWindow = null, string filterOutputWindowId = null) {
+            if (KeepOutputWindowsOpen)
+                return;
+
             if (excludeOutputWindow != null) {
                 foreach (Object activeOutputWindow in GetAllActiveOutputWindows(filterOutputWindowId))
                     if (GetOutputWindowUniqueId(excludeOutputWindow) != GetOutputWindowUniqueId(activeOutputWindow)
