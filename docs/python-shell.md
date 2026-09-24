@@ -31,9 +31,10 @@ itself is `context: zero-doc`, so it stays enabled either way.
 
 ## Which engine it runs on
 
-The shell attaches to the engine pyRevit is **already** loaded with — it locates the loaded
-`pyRevitLoader` assembly and loads `pyRevitLabs.PyRevit.Shell.dll` from beside it, which preserves
-the active engine fork. It also copies the launching engine's `sys.path` into the console, so
+The shell creates a new IronPython host that uses the same deployment/runtime family as the
+engine pyRevit is **already** loaded with. It locates the loaded `pyRevitLoader` assembly and
+loads `pyRevitLabs.PyRevit.Shell.dll` from beside it, which preserves the active engine fork.
+It also copies the launching engine's `sys.path` into the console, so
 imports resolve the same way they do in a normal script.
 
 That means it is **IronPython only**. The shell assembly is deployed to `IPY2712PR` and `IPY342`,
