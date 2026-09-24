@@ -91,6 +91,18 @@ class ImportTests(unittest.TestCase):
             [], failures, "import failures:\n{}".format("\n".join(failures))
         )
 
+    def test_tool_dependency_imports(self):
+        """Bundled packages used by Keynotes, Excel tools, and Revit Server import."""
+        failures = _import_failures(["natsort", "pyrevit.interop.xl", "rpws"])
+        self.assertEqual(
+            [], failures, "import failures:\n{}".format("\n".join(failures))
+        )
+        from natsort import natsorted
+
+        self.assertEqual(
+            ["Sheet1", "Sheet2", "Sheet10"], natsorted(["Sheet10", "Sheet2", "Sheet1"])
+        )
+
     def test_vendored_requests_wraps_invalid_json(self):
         """Malformed JSON raises the documented Requests exception."""
         import requests
@@ -213,6 +225,17 @@ class RpwCompatibilityTests(unittest.TestCase):
         self.assertTrue(hasattr(resources.wpf, "LoadComponent"))
 
     @unittest.skipUnless(IRONPY3, "RPW IPY3 coverage requires IronPython 3")
+    def test_rpw_ipy3_flexform_construction(self):
+        """RPW forms used by shipped tools can instantiate without showing UI."""
+        from rpw.ui.forms import Button, FlexForm, Label
+
+        form = FlexForm("py3compat", [Label("Check"), Button("OK")])
+        try:
+            self.assertEqual(2, form.MainGrid.Children.Count)
+        finally:
+            form.Close()
+
+    @unittest.skipUnless(IRONPY3, "RPW IPY3 coverage requires IronPython 3")
     def test_rpw_ipy3_wraps_project_information(self):
         """RPW wraps a live Revit element without Python 2 conversion paths."""
         from pyrevit import revit as pyrevit_revit
@@ -250,6 +273,7 @@ class QueryStringLookupTests(unittest.TestCase):
     """String-identifier lookups in revit.db.query (isinstance str checks)."""
 
     def setUp(self):
+        """Require an open project document for name-based Revit queries."""
         from pyrevit import revit
 
         if not revit.doc:
@@ -289,6 +313,7 @@ class OutParamMarshalingTests(unittest.TestCase):
     """The two clr.Reference out/ref sites (sections 4.5 / 6.1)."""
 
     def setUp(self):
+        """Require an open project document for Revit API marshaling tests."""
         from pyrevit import revit
 
         if not revit.doc:
@@ -323,20 +348,34 @@ class OutParamMarshalingTests(unittest.TestCase):
         """create.load_family_symbol marshals the out-param symbol reference."""
         import os.path as op
 
-        from pyrevit.revit import create
+        from pyrevit.revit import create, query
+        from pyrevit import coreutils
 
         if not FAMILY_FILE or not op.isfile(FAMILY_FILE):
             self.skipTest("No family file fixture provided")
-        txn = self._rollback_transaction("py3compat-load-family-symbol")
+        family_name = coreutils.get_file_name(FAMILY_FILE)
+        if query.get_family(family_name, doc=self.doc):
+            self.skipTest("Family fixture is already loaded in this document")
+        discovery_txn = self._rollback_transaction("py3compat-discover-family-symbol")
         try:
             symbols = create.load_family(FAMILY_FILE, doc=self.doc)
             if not symbols:
                 self.skipTest("Family fixture contains no loadable symbols")
+            if IRONPY:
+                from rpw import db
+
+                self.assertIsInstance(db.Element(symbols[0]), db.FamilySymbol)
+            symbol_name = symbols[0].Name
+        finally:
+            discovery_txn.RollBack()
+
+        load_txn = self._rollback_transaction("py3compat-load-family-symbol")
+        try:
             self.assertTrue(
-                create.load_family_symbol(FAMILY_FILE, symbols[0].Name, doc=self.doc)
+                create.load_family_symbol(FAMILY_FILE, symbol_name, doc=self.doc)
             )
         finally:
-            txn.RollBack()
+            load_txn.RollBack()
 
     def test_curve_intersect_out_param(self):
         """geom.intersect_curves marshals intersection results.
