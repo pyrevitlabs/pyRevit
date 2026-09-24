@@ -9,8 +9,9 @@ bundle key or form attribute needs removing to build for those versions.
 ## How the theme is detected
 
 `RevitThemeDetector` reads Revit's active `UITheme` through reflection rather than a compile-time
-reference, so one assembly targets every supported Revit version. When the API is missing the
-detector reports light.
+reference, so the same detector logic supports every supported Revit version. The loader uses
+the `net48` assembly for Revit 2021–2024 and the `net8.0` assembly for Revit 2025 and later.
+When the API is missing the detector reports light.
 
 Two consumers sit on top of it:
 
