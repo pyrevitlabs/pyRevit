@@ -632,7 +632,8 @@ namespace pyRevitAssemblyBuilder.SessionManager
         {
             // Cache runtime assembly lookup - it's used by every extension
             _runtimeAssembly = FindRuntimeAssembly()
-                ?? throw new InvalidOperationException("Could not find PyRevit runtime assembly");
+                ?? throw new InvalidOperationException(
+                    $"Could not find pyRevitLabs.PyRevit.Runtime.{_uiApp.Application.VersionNumber}");
 
             var scriptExecutorType = _runtimeAssembly.GetType("PyRevitLabs.PyRevit.Runtime.ScriptExecutor")
                 ?? throw new InvalidOperationException("Could not find ScriptExecutor type");
@@ -697,27 +698,35 @@ namespace pyRevitAssemblyBuilder.SessionManager
             }
         }
 
+        /// <summary>
+        /// Resolves the runtime assembly built for the host Revit version, loading it from the
+        /// bin directory when it is not loaded yet.
+        /// </summary>
+        /// <remarks>
+        /// Invariant: only <c>pyRevitLabs.PyRevit.Runtime.&lt;host version&gt;</c> is acceptable.
+        /// The Python session setup loads that same assembly by name, and the runtime keeps its
+        /// session output and log forwarding in static state. A second runtime copy in the process
+        /// splits the session across two output windows and writes every forwarded record twice.
+        /// </remarks>
         private Assembly? FindRuntimeAssembly()
         {
-            // Use cached assembly lookup - much faster than scanning AppDomain every time
-            var assembly = AssemblyCache.GetByPrefix("pyRevitLabs.PyRevit.Runtime");
+            var runtimeName = $"pyRevitLabs.PyRevit.Runtime.{_uiApp.Application.VersionNumber}";
+
+            var assembly = AssemblyCache.GetByName(runtimeName);
             if (assembly != null)
                 return assembly;
 
-            // If not found in cache, try to load from the bin directory
             var binDir = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            if (!string.IsNullOrEmpty(binDir))
-            {
-                var runtimeDlls = System.IO.Directory.GetFiles(binDir, "pyRevitLabs.PyRevit.Runtime*.dll");
-                if (runtimeDlls.Length > 0)
-                {
-                    var loaded = Assembly.LoadFrom(runtimeDlls[0]);
-                    AssemblyCache.Add(loaded); // Add to cache for future lookups
-                    return loaded;
-                }
-            }
+            if (string.IsNullOrEmpty(binDir))
+                return null;
 
-            return null;
+            var runtimePath = System.IO.Path.Combine(binDir, runtimeName + ".dll");
+            if (!System.IO.File.Exists(runtimePath))
+                return null;
+
+            var loaded = Assembly.LoadFrom(runtimePath);
+            AssemblyCache.Add(loaded);
+            return loaded;
         }
 
         /// <summary>
