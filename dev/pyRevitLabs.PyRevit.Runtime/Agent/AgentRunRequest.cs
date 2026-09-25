@@ -2,6 +2,7 @@ using System;
 
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
+using pyRevitLabs.PyRevit;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     internal enum AgentRunMode {
@@ -73,7 +74,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private static AgentEngine ParseEngine(string engine) {
-            switch ((engine ?? "ironpython").ToLowerInvariant()) {
+            switch ((engine ?? PyRevitConfigs.GetAgentEngine()).ToLowerInvariant()) {
                 case "ironpython": return AgentEngine.IronPython;
                 case "cpython": return AgentEngine.CPython;
                 default:

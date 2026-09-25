@@ -33,7 +33,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public string ErrorMessage { get; private set; }
         public string ErrorTraceback { get; private set; }
 
+        public string EngineImplementation { get; private set; }
+        public string EnginePythonVersion { get; private set; }
+        public string EngineVersionText { get; private set; }
+
         public bool HasError => ErrorType != null;
+
+        public void SetEngine(string implementation, string pythonVersion, string versionText) {
+            EngineImplementation = implementation;
+            EnginePythonVersion = pythonVersion;
+            EngineVersionText = versionText;
+        }
 
         public void SetResult(string json) {
             ResultJson = json;

@@ -5,6 +5,7 @@ using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 
 using pyRevitLabs.Json.Linq;
+using pyRevitLabs.PyRevit;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <summary>
@@ -26,9 +27,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ["pyrevit"] = new JObject {
                     ["version"] = env.PyRevitVersion,
                     ["clone"] = env.PyRevitClone,
-                    ["ironpython"] = env.PyRevitIPYVersion,
-                    ["cpython"] = env.PyRevitCPYVersion,
                 },
+                ["agent"] = new JObject {
+                    ["policy"] = PyRevitConfigs.GetAgentPolicy(),
+                },
+                ["scripting"] = AgentScripting.Describe(env),
                 ["document"] = null,
                 ["active_view"] = null,
                 ["selection"] = null,
@@ -87,6 +90,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             return id.IntegerValue;
 #else
             return id.Value;
+#endif
+        }
+
+        public static ElementId FromValue(long value) {
+#if REVIT2021 || REVIT2022 || REVIT2023
+            return new ElementId(checked((int)value));
+#else
+            return new ElementId(value);
 #endif
         }
     }
