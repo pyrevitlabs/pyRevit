@@ -97,11 +97,24 @@ class ImportTests(unittest.TestCase):
         self.assertEqual(
             [], failures, "import failures:\n{}".format("\n".join(failures))
         )
-        from natsort import natsorted
+        from natsort import natsorted, ns
 
         self.assertEqual(
             ["Sheet1", "Sheet2", "Sheet10"], natsorted(["Sheet10", "Sheet2", "Sheet1"])
         )
+        self.assertEqual(
+            ["apple", "Apple", "Banana", "banana"],
+            natsorted(["Banana", "apple", "banana", "Apple"], alg=ns.IGNORECASE),
+        )
+        self.assertEqual(
+            ["Apple", "apple", "Banana", "banana"],
+            natsorted(["Banana", "apple", "banana", "Apple"], alg=ns.GROUPLETTERS),
+        )
+        if hasattr(str, "casefold"):
+            self.assertEqual(
+                [u"\u00df", u"ss"],
+                natsorted([u"\u00df", u"ss"], alg=ns.IGNORECASE),
+            )
 
     def test_vendored_requests_wraps_invalid_json(self):
         """Malformed JSON raises the documented Requests exception."""
@@ -333,10 +346,14 @@ class OutParamMarshalingTests(unittest.TestCase):
         """create.load_family_with_result marshals the out-param family reference."""
         import os.path as op
 
-        from pyrevit.revit import create
+        from pyrevit.revit import create, query
+        from pyrevit import coreutils
 
         if not FAMILY_FILE or not op.isfile(FAMILY_FILE):
             self.skipTest("No family file fixture provided")
+        family_name = coreutils.get_file_name(FAMILY_FILE)
+        if query.get_family(family_name, doc=self.doc):
+            self.skipTest("Family fixture is already loaded in this document")
         txn = self._rollback_transaction("py3compat-load-family")
         try:
             loaded, symbols = create.load_family_with_result(FAMILY_FILE, doc=self.doc)
