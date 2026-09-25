@@ -54,9 +54,6 @@ EXPORT_ENCODING = 'utf_8'
 
 IS_REVIT_2022_OR_NEWER = HOST_APP.is_newer_than(2021)
 
-# Standard paper formats that PDF export is able to represent. A print
-# setting may name any size its print driver offers, so a size outside this
-# set has no equivalent and the export falls back to the sheet's own size.
 STANDARD_PAPER_FORMATS = (
     'ANSI_A', 'ANSI_B', 'ANSI_C', 'ANSI_D', 'ANSI_E',
     'ARCH_A', 'ARCH_B', 'ARCH_C', 'ARCH_D',
@@ -65,7 +62,6 @@ STANDARD_PAPER_FORMATS = (
     'ISO_B1', 'ISO_B2', 'ISO_B3', 'ISO_B4',
     )
 
-# Driver names for sizes that do have a standard equivalent.
 PAPER_FORMAT_ALIASES = {
     'LETTER': 'ANSI_A',
     'TABLOID': 'ANSI_B',
@@ -73,11 +69,8 @@ PAPER_FORMAT_ALIASES = {
     }
 
 MM_PER_INCH = 25.4
+CM_TO_MM = 10.0
 
-# Nominal short and long edge of each standard format in millimeters, for
-# drivers that name a size by its measurements instead of by its standard.
-# Metric formats are defined in millimeters and imperial ones in inches, so
-# both are normalized here to a single unit.
 STANDARD_PAPER_SIZES_MM = {
     'ANSI_A': (215.9, 279.4),
     'ANSI_B': (279.4, 431.8),
@@ -103,13 +96,8 @@ STANDARD_PAPER_SIZES_MM = {
     'ISO_B4': (250.0, 353.0),
     }
 
-# Driver names round their measurements, so a match cannot demand exact
-# equality. The closest pair of standard formats differs by more than 11mm
-# on at least one edge, which this stays well inside of.
 PAPER_SIZE_TOLERANCE_MM = 3.0
 
-# Sizes already reported as unsupported, so that the warning is issued once
-# per size rather than once per sheet.
 WARNED_PAPER_SIZES = set()
 
 
@@ -159,48 +147,61 @@ class PrintUtils:
     def paper_dimensions_mm(name):
         """Read a paper size's measurements out of its name, in millimeters.
 
-        Print drivers routinely name a size by its measurements rather than
-        by a standard, in either inches or millimeters. Returns None when the
-        name carries no usable pair of measurements.
+        Print drivers may include units after either dimension. Returns None
+        when the name carries no usable pair of measurements.
         """
-        text = name.lower().replace(u'\u00d7', 'x')
-        # only a measurement pair is trustworthy; a bare number could be part
-        # of the standard's name, as in 'ARCH E1'. Drivers separate the pair
-        # with spaces or underscores, as in 'ARCH_D_(24.00_x_36.00_Inches)'.
+        text = (name or '').lower().replace(u'\u00d7', 'x').replace(',', '.')
+        unit = (
+            u'(mm[.]?|cm[.]?|millimet(?:er|re)s?[.]?|'
+            u'centimet(?:er|re)s?[.]?|in(?:ch(?:es)?)?[.]?|["\u2033])?'
+            )
         found = re.search(
-            r'(\d+(?:\.\d+)?)[\s_]*x[\s_]*(\d+(?:\.\d+)?)', text)
+            r'(\d+(?:\.\d+)?)[\s_]*' + unit + r'[\s_]*x[\s_]*'
+            r'(\d+(?:\.\d+)?)[\s_]*' + unit,
+            text)
         if not found:
             return None
-        width, height = float(found.group(1)), float(found.group(2))
+        width, height = float(found.group(1)), float(found.group(3))
         if width <= 0 or height <= 0:
             return None
-        if 'mm' in text or 'millim' in text:
-            metric = True
-        elif re.search(r'"|inch|\bin\b', text):
-            metric = False
+        recognized_units = [
+            found.group(2), found.group(4)
+            ]
+        recognized_units = [item for item in recognized_units if item]
+        if recognized_units:
+            scales = [
+                PrintUtils._paper_unit_scale(item)
+                for item in recognized_units
+                ]
+            if any(value != scales[0] for value in scales):
+                return None
+            scale = scales[0]
         else:
-            # imperial measurements stop at 48, metric ones start at 210
-            metric = max(width, height) >= 100
-        if not metric:
-            width, height = width * MM_PER_INCH, height * MM_PER_INCH
-        return min(width, height), max(width, height)
+            scale = 1.0 if max(width, height) >= 100 else MM_PER_INCH
+        scaled_width, scaled_height = width * scale, height * scale
+        return min(scaled_width, scaled_height), max(scaled_width, scaled_height)
+
+    @staticmethod
+    def _paper_unit_scale(unit):
+        if unit.startswith('mm') or unit.startswith('millim'):
+            return 1.0
+        if unit.startswith('cm') or unit.startswith('centim'):
+            return CM_TO_MM
+        return MM_PER_INCH
 
     @staticmethod
     def paper_format_name(name):
         """Return the standard format a paper size's name refers to."""
-        key = re.sub(r'[^A-Z0-9]', '', name.upper())
+        key = re.sub(r'[^A-Z0-9]', '', (name or '').upper())
         if not key:
             return None
-        # some drivers spell the standard out and label it a sheet, as in
-        # Microsoft's 'Architecture DSheet'
         key = key.replace('ARCHITECTURE', 'ARCH')
         if key.endswith('SHEET'):
             key = key[:-len('SHEET')]
-        # aliases name their standard in full, while matching is done
-        # against names with the separator removed
         key = PAPER_FORMAT_ALIASES.get(key, key).replace('_', '')
-        # print drivers often drop the standard's prefix, e.g. 'A1' or 'D'
-        keys = {key, 'ISO' + key, 'ANSI' + key, 'ARCH' + key}
+        keys = {key}
+        if key not in {'A', 'B', 'C', 'D', 'E'}:
+            keys.update(('ISO' + key, 'ANSI' + key, 'ARCH' + key))
         for member in STANDARD_PAPER_FORMATS:
             if member.replace('_', '') in keys:
                 return member
@@ -229,7 +230,6 @@ class PrintUtils:
         paper has no standard format that PDF export can represent.
         """
         name = getattr(paper_size, 'Name', None) or ''
-        # a standard name is definitive; measurements only stand in for it
         member = PrintUtils.paper_format_name(name) \
             or PrintUtils.paper_format_size(name)
         if member:
@@ -246,58 +246,57 @@ class PrintUtils:
 
     @staticmethod
     def pdf_opts(hcb=True, hsb=True, hrp=True, hvt=True, mcl=True, print_params=None):
+        """Build PDF export options and map compatible print settings."""
         opts = DB.PDFExportOptions()
         opts.HideCropBoundaries = hcb
         opts.HideScopeBoxes = hsb
         opts.HideReferencePlane = hrp
         opts.HideUnreferencedViewTags = hvt
         opts.MaskCoincidentLines = mcl
-        # Without a print setting the sheet's own size is the only page size
-        # available; a variable paper setting resolves per sheet instead.
         opts.PaperFormat = DB.ExportPaperFormat.Default
         if print_params:
             try:
                 opts.ColorDepth = print_params.ColorDepth
-            except Exception:
-                pass
+            except Exception as ex:
+                logger.debug('Could not map ColorDepth: %s', ex)
             try:
                 opts.RasterQuality = print_params.RasterQuality
-            except Exception:
-                pass
-            # PDF export has no hidden line views option of its own; asking
-            # for raster processing rasterizes the whole view instead.
+            except Exception as ex:
+                logger.debug('Could not map RasterQuality: %s', ex)
             try:
                 opts.AlwaysUseRaster = (
                     print_params.HiddenLineViews
                     == DB.HiddenLineViewsType.RasterProcessing
                     )
-            except Exception:
-                pass
-            # Paper size, placement and zoom decide whether the page follows
-            # the print setting or collapses onto the sheet's own extents.
+            except Exception as ex:
+                logger.debug('Could not map HiddenLineViews: %s', ex)
             try:
-                opts.PaperFormat = \
-                    PrintUtils.paper_format(print_params.PaperSize)
-            except Exception:
-                pass
-            try:
-                opts.PaperOrientation = print_params.PageOrientation
-            except Exception:
-                pass
-            try:
-                opts.PaperPlacement = print_params.PaperPlacement
-            except Exception:
-                pass
-            try:
-                opts.OriginOffsetX = print_params.OriginOffsetX
-                opts.OriginOffsetY = print_params.OriginOffsetY
-            except Exception:
-                pass
-            try:
-                opts.ZoomType = print_params.ZoomType
-                opts.ZoomPercentage = print_params.Zoom
-            except Exception:
-                pass
+                paper_format = PrintUtils.paper_format(print_params.PaperSize)
+                opts.PaperFormat = paper_format
+            except Exception as ex:
+                logger.debug('Could not map PaperSize: %s', ex)
+                paper_format = DB.ExportPaperFormat.Default
+            if paper_format == DB.ExportPaperFormat.Default:
+                opts.PaperPlacement = DB.PaperPlacementType.Center
+            else:
+                try:
+                    opts.PaperOrientation = print_params.PageOrientation
+                except Exception as ex:
+                    logger.debug('Could not map PageOrientation: %s', ex)
+                try:
+                    opts.PaperPlacement = print_params.PaperPlacement
+                except Exception as ex:
+                    logger.debug('Could not map PaperPlacement: %s', ex)
+                try:
+                    opts.OriginOffsetX = print_params.OriginOffsetX
+                    opts.OriginOffsetY = print_params.OriginOffsetY
+                except Exception as ex:
+                    logger.debug('Could not map OriginOffset: %s', ex)
+                try:
+                    opts.ZoomType = print_params.ZoomType
+                    opts.ZoomPercentage = int(print_params.Zoom)
+                except Exception as ex:
+                    logger.debug('Could not map Zoom: %s', ex)
         return opts
 
     @staticmethod
@@ -309,24 +308,29 @@ class PrintUtils:
 
     @staticmethod
     def export_sheet_pdf(dir_path, sheet, opt, doc, filename):
+        """Export one sheet to PDF and raise if Revit reports a failure."""
         pdf_doc_name = op.splitext(filename)[0]
         opt.FileName = pdf_doc_name
         export_sheet = List[DB.ElementId]()
         export_sheet.Add(sheet.Id)
-        doc.Export(dir_path, export_sheet, opt)
+        if not doc.Export(dir_path, export_sheet, opt):
+            raise RuntimeError('Revit reported an incomplete PDF export.')
         return True
 
     @staticmethod
     def export_combined_pdf(dir_path, sheet_ids, opt, doc, filename):
-        # Combine=True merges every exported sheet into a single PDF named
-        # by FileName, rather than one file per sheet.
+        """Export ordered sheets into one PDF and return Revit's result.
+
+        The export writes a single file in ``dir_path`` using ``filename``
+        without its extension. A false return means at least one sheet was
+        not exported successfully.
+        """
         opt.FileName = op.splitext(filename)[0]
         opt.Combine = True
         export_sheets = List[DB.ElementId]()
         for sheet_id in sheet_ids:
             export_sheets.Add(sheet_id)
-        doc.Export(dir_path, export_sheets, opt)
-        return True
+        return doc.Export(dir_path, export_sheets, opt)
 
     @staticmethod
     def export_sheet_dwg(dir_path, sheet, opt, doc, filename):
@@ -1155,9 +1159,13 @@ class PrintSheetsWindow(forms.WPFWindow):
         return True
 
     def _print_combined_sheets_in_order(self, target_sheets):
-        # The synthetic "Revit Internal Printer" is not a real print driver,
-        # so the print manager cannot combine to it. Export the ordered sheet
-        # set directly so combined output honors the print parameters.
+        if self.selected_print_setting is not None \
+                and self.selected_print_setting.allows_variable_paper:
+            forms.alert(
+                "Combined export is unavailable when paper sizes vary "
+                "by sheet."
+                )
+            return
         if IS_REVIT_2022_OR_NEWER \
                 and self.selected_printer == "Revit Internal Printer":
             self._export_combined_pdf_internal(target_sheets)
@@ -1287,15 +1295,13 @@ class PrintSheetsWindow(forms.WPFWindow):
             self._reset_psettings()
 
     def _export_combined_pdf_internal(self, target_sheets):
+        WARNED_PAPER_SIZES.clear()
         doc = self.selected_doc
         dirPath = os.path.join(PrintUtils.get_dir(),
                                PrintUtils.get_folder("_PRINT"))
         PrintUtils.ensure_dir(dirPath)
         PrintUtils.open_dir(dirPath)
 
-        # target_sheets already reflects the user's chosen order, including
-        # the reverse-print toggle. doc.Export honors the order of the viewIds
-        # list, so the sheets are exported as-is with no renumbering.
         sheet_ids = [x.revit_sheet.Id for x in target_sheets if x.printable]
         if not sheet_ids:
             return
@@ -1306,12 +1312,22 @@ class PrintSheetsWindow(forms.WPFWindow):
         optspdf = PrintUtils.pdf_opts(
             print_params=self.selected_print_setting.print_params)
         try:
-            PrintUtils.export_combined_pdf(
-                dirPath, sheet_ids, optspdf, doc, "Combined Sheet Set")
+            exported = PrintUtils.export_combined_pdf(
+                dirPath, sheet_ids, optspdf, doc, "Ordered Sheet Set")
         except Exception as e:
             logger.error('Failed to export combined PDF: %s', e)
+            forms.alert('Failed to export combined PDF: {}'.format(e))
+        else:
+            if not exported:
+                message = (
+                    'Combined PDF export was incomplete; some sheets may be '
+                    'missing.'
+                    )
+                logger.error(message)
+                forms.alert(message)
 
     def _print_sheets_in_order(self, target_sheets):
+        WARNED_PAPER_SIZES.clear()
         # make sure we can access the print config
         print_mgr = self._get_printmanager()
         print_mgr.PrintToFile = True
@@ -1443,6 +1459,7 @@ class PrintSheetsWindow(forms.WPFWindow):
                                     logger.debug('Sheet %s is not printable. Skipping print.', sheet.number)
 
     def _print_linked_sheets_in_order(self, target_sheets, target_doc):
+        WARNED_PAPER_SIZES.clear()
         # make sure we can access the print config
         print_mgr = self._get_printmanager()
         print_mgr.PrintToFile = True
