@@ -340,10 +340,51 @@ class OutParamMarshalingTests(unittest.TestCase):
         txn = self._rollback_transaction("py3compat-load-family")
         try:
             loaded, symbols = create.load_family_with_result(FAMILY_FILE, doc=self.doc)
-            self.assertIsInstance(loaded, bool)
+            self.assertTrue(loaded)
             self.assertIsInstance(symbols, list)
         finally:
             txn.RollBack()
+
+    @unittest.skipUnless(IRONPY, "Requires IronPython out-param marshaling")
+    def test_load_family_result_preserves_refusal_status(self):
+        """Existing symbols do not turn a refused family load into success."""
+        from pyrevit.revit import create
+
+        class Reference(object):
+            Value = None
+
+        class ReferenceFactory(object):
+            def __getitem__(self, _):
+                return Reference
+
+        class Clr(object):
+            Reference = ReferenceFactory()
+
+        class Family(object):
+            pass
+
+        class RefusedLoadDocument(object):
+            def LoadFamily(self, *_):
+                return False
+
+        original_clr = create.clr
+        original_db = create.DB
+        original_get_family = create.query.get_family
+        existing_symbol = object()
+        create.clr = Clr()
+        create.DB = type("DBStub", (object,), {"Family": Family})
+        create.query.get_family = lambda *_args, **_kwargs: [existing_symbol]
+        try:
+            loaded, symbols = create.load_family_with_result(
+                "existing.rfa", doc=RefusedLoadDocument()
+            )
+        finally:
+            create.clr = original_clr
+            create.DB = original_db
+            create.query.get_family = original_get_family
+
+        self.assertFalse(loaded)
+        self.assertEqual([existing_symbol], symbols)
 
     def test_load_family_symbol_out_param(self):
         """create.load_family_symbol marshals the out-param symbol reference."""

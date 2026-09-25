@@ -13,7 +13,7 @@ from pyrevit.unittests.runner import run_module_tests
 
 
 print("Python engine: {}".format(sys.version))
-print("Py3 compatibility suite revision: 5")
+print("Py3 compatibility suite revision: 6")
 
 test_py3_compat.FAMILY_FILE = op.normpath(
     op.join(EXEC_PARAMS.command_path, "..", "..", "Bundle Tests.pulldown", "A.rfa")

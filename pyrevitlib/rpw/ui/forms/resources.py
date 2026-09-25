@@ -57,8 +57,8 @@ try:
     else:
         import wpf
 except Exception:
-    if PY3:
-        raise ImportError("Unable to load the IronPython WPF assembly")
     clr.AddReferenceToFileAndPath(wpf_dllpath)
-    import wpf
-
+    if PY3:
+        wpf = IronPython.Modules.Wpf
+    else:
+        import wpf
