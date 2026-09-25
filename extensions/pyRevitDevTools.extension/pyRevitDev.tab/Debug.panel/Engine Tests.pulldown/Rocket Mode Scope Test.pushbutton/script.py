@@ -1,7 +1,7 @@
 """Exercise ExternalEvent callback scope with and without Rocket Mode.
 
-Run this modeless test with Rocket Mode both enabled and disabled. Its buttons
-reproduce the direct callback pattern reported in issue #3538.
+Run Rocket Mode Cache Warmup before this modeless test. Its buttons reproduce
+the direct callback pattern reported in issue #3538 against a cached engine.
 """
 
 from pyrevit import DB, UI, forms, script
@@ -47,7 +47,7 @@ class ScopeTestWindow(forms.WPFWindow):
                 ResizeMode="CanMinimize">
             <StackPanel Margin="18">
                 <TextBlock TextWrapping="Wrap" Margin="0,0,0,10"
-                    Text="Each Direct button invokes a custom IExternalEventHandler. Run every probe with Rocket Mode on, then off. Results are written to the pyRevit output window." />
+                    Text="Run Rocket Mode Cache Warmup first. Each Direct button invokes a custom IExternalEventHandler. Results are written to the pyRevit output window." />
                 <Button Height="30" Margin="0,3" Content="Direct: imported CLR type" Click="direct_imported_type" />
                 <Button Height="30" Margin="0,3" Content="Direct: pyRevit module" Click="direct_module" />
                 <Button Height="30" Margin="0,3" Content="Direct: script global" Click="direct_global" />
@@ -59,6 +59,7 @@ class ScopeTestWindow(forms.WPFWindow):
         forms.WPFWindow.__init__(self, layout, literal_string=True)
         self.output = script.get_output()
         self.output.set_title("Rocket Mode Scope Test")
+        self._reused_cached_engine = __cachedengine__
         self._events = []
         self.Closed += self._dispose_events
         self._register_event("Direct imported CLR type", self._probe_imported_type)
@@ -66,15 +67,19 @@ class ScopeTestWindow(forms.WPFWindow):
         self._register_event("Direct script global", self._probe_global)
         self.output.print_md("# Rocket Mode Scope Test")
         self.output.print_md(
-            "Use this dialog without reloading between clicks. Compare normal "
-            "runs with a Ctrl+Alt+Shift-click clean-engine run."
+            "Cached engine reused: {}".format(self._reused_cached_engine)
         )
+        if not self._reused_cached_engine:
+            self.result.Text = "Run Rocket Mode Cache Warmup, then reopen this test."
 
     def _register_event(self, label, callback):
         handler = DirectEventHandler(self, label, callback)
         self._events.append((label, UI.ExternalEvent.Create(handler)))
 
     def _raise_event(self, label):
+        if not self._reused_cached_engine:
+            self.result.Text = "Run Rocket Mode Cache Warmup, then reopen this test."
+            return
         for event_label, external_event in self._events:
             if event_label == label:
                 response = external_event.Raise()
