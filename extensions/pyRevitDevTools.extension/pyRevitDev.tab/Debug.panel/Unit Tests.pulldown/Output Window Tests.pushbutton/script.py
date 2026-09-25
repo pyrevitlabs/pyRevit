@@ -1,6 +1,6 @@
 """Run output window unit tests from pyrevit.unittests."""
 
 from pyrevit.unittests import test_output_window
-from pyrevit.unittests.runner import run_module_tests
+from pyrevit.unittests.runner import assert_module_tests_successful
 
-run_module_tests(test_output_window)
+assert_module_tests_successful(test_output_window)

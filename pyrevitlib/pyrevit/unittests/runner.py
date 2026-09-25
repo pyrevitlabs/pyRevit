@@ -261,3 +261,34 @@ def run_test_case(test_case):
     suite = TestLoader().loadTestsFromTestCase(test_case)
     OutputWriter().write(RESULT_TEST_SUITE_START.format(suite=suite.__class__.__name__))
     return test_runner.run(suite)
+
+
+def assert_module_tests_successful(test_module):
+    """Runs a module's unit tests and fails the command if any of them failed.
+
+    `run_module_tests` only reports; discarding its result makes a red suite
+    look like a green button, so command scripts must go through this instead.
+
+    Args:
+        test_module (module): module with tests
+
+    Returns:
+        (PyRevitTestResult): tests results.
+
+    Raises:
+        AssertionError: if the module has failures or errors. The traceback of
+            each offending test is already in the output window, so the message
+            only needs to name the module and the counts.
+    """
+    result = run_module_tests(test_module)
+    if result.wasSuccessful():
+        return result
+
+    counts = [
+        "{}={}".format(label, len(issues))
+        for label, issues in (("failures", result.failures), ("errors", result.errors))
+        if issues
+    ]
+    raise AssertionError(
+        "Unit test failures in {}: {}".format(test_module.__name__, ", ".join(counts))
+    )
