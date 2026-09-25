@@ -6,10 +6,8 @@ using System.Windows.Media;
 using pyRevitLabs.NLog;
 using pyRevitLabs.Common;
 
-namespace pyRevitLabs.PyRevit
-{
-    public static class PyRevitConsts
-    {
+namespace pyRevitLabs.PyRevit {
+    public static class PyRevitConsts {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         // repo info
@@ -122,6 +120,10 @@ namespace pyRevitLabs.PyRevit
         public const string ConfigsLoadCoreAPIKey = "core_api";
         public const bool ConfigsConfigsLoadCoreAPIDefault = false;
 
+        public const string ConfigsAgentSection = "agent";
+        public const string ConfigsAgentEnabledKey = "enabled";
+        public const bool ConfigsAgentEnabledDefault = false;
+
         public const string ConfigsTelemetrySection = "telemetry";
         public const string ConfigsTelemetryUTCTimestampsKey = "utc_timestamps";
         public const bool ConfigsTelemetryUTCTimestampsDefault = true;
@@ -201,8 +203,7 @@ namespace pyRevitLabs.PyRevit
         public static bool IsInstallAllUsers() => PyRevitInstallScope.IsAllUsersInstall();
 
         // methods
-        public static string FindConfigFileInDirectory(string sourcePath)
-        {
+        public static string FindConfigFileInDirectory(string sourcePath) {
             return PyRevitInstallScope.FindConfigIniInDirectory(sourcePath);
         }
 
@@ -218,10 +219,8 @@ namespace pyRevitLabs.PyRevit
 
         // pyRevit config file path
         // @reviewed
-        public static string AdminConfigFilePath
-        {
-            get
-            {
+        public static string AdminConfigFilePath {
+            get {
                 var cfgFile = FindConfigFileInDirectory(PyRevitLabsConsts.PyRevitProgramDataPath);
                 return cfgFile != null ? cfgFile : Path.Combine(PyRevitLabsConsts.PyRevitProgramDataPath, DefaultConfigsFileName);
             }

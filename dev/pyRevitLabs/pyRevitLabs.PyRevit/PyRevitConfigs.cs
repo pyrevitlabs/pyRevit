@@ -276,6 +276,22 @@ namespace pyRevitLabs.PyRevit {
             cfg.SaveSection(new RoutesSection() { LoadCoreApi = state });
         }
 
+        // agent
+        public static bool GetAgentEnabled() {
+            IConfigurationService cfg = GetConfigFile();
+            return cfg.GetSectionKeyValueOrDefault(
+                PyRevitConsts.ConfigsAgentSection,
+                PyRevitConsts.ConfigsAgentEnabledKey,
+                PyRevitConsts.ConfigsAgentEnabledDefault);
+        }
+
+        public static void SetAgentEnabled(bool state) {
+            _logger.Debug("Setting agent host status to {@Status}...", state);
+
+            IConfigurationService cfg = GetConfigFile();
+            cfg.SetSectionKeyValue(PyRevitConsts.ConfigsAgentSection, PyRevitConsts.ConfigsAgentEnabledKey, state);
+        }
+
         // telemetry
         public static bool GetTelemetryStatus() {
             IConfigurationService cfg = GetConfigFile();

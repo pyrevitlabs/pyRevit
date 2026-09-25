@@ -284,6 +284,10 @@ namespace pyRevitAssemblyBuilder.SessionManager
 
             QueueBackgroundCleanup(firstLoad);
 
+            step = timeline.StartSpan("ConfigureAgentHost");
+            ConfigureAgentHost();
+            LogStep(step);
+
             // Finalize via the residual Python post-load services (hook activation,
             // doc colorizer, routes server, output teardown).
             step = timeline.StartSpan("Postload");
@@ -695,6 +699,39 @@ namespace pyRevitAssemblyBuilder.SessionManager
             catch (Exception ex)
             {
                 Trace.WriteLine($"pyRevit: failed to route loader logging into the runtime: {ex}");
+            }
+        }
+
+        /// <summary>
+        /// Starts, refreshes, or stops the runtime's agent host (<c>AgentHost.Configure</c>) to
+        /// match the <c>[agent]</c> config. Runs on every load so a reload picks up config changes.
+        /// Failures are logged and never abort the load.
+        /// </summary>
+        private void ConfigureAgentHost()
+        {
+            if (_runtimeAssembly == null)
+                return;
+
+            try
+            {
+                var configure = _runtimeAssembly
+                    .GetType("PyRevitLabs.PyRevit.Runtime.Agent.AgentHost")
+                    ?.GetMethod("Configure", BindingFlags.Public | BindingFlags.Static);
+                if (configure == null)
+                {
+                    _logger.Debug("Agent host is not available in this runtime.");
+                    return;
+                }
+
+                configure.Invoke(null, new object[] { _uiApp, BuildCoreSearchPaths() });
+            }
+            catch (TargetInvocationException tie)
+            {
+                _logger.Warning($"Agent host configuration failed: {(tie.InnerException ?? tie).Message}");
+            }
+            catch (Exception ex)
+            {
+                _logger.Warning($"Agent host configuration failed: {ex.Message}");
             }
         }
 
