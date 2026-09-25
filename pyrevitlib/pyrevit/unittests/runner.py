@@ -276,9 +276,17 @@ def assert_module_tests_successful(test_module):
         (PyRevitTestResult): tests results.
 
     Raises:
-        AssertionError: if the module has failures or errors. The traceback of
-            each offending test is already in the output window, so the message
-            only needs to name the module and the counts.
+        AssertionError: if the module has failures, errors, or unexpected
+            successes. The traceback of each offending test is already in the
+            output window, so the message only needs to name the module and the
+            counts.
+
+    Note:
+        IronPython 2.7's `TestResult.wasSuccessful` ignores
+        `unexpectedSuccesses` (`unittest/result.py` returns
+        `len(self.failures) == len(self.errors) == 0`), so on the default engine
+        an `@expectedFailure` that starts passing does not fail the command.
+        CPython does count them, which is why the third count is listed.
     """
     result = run_module_tests(test_module)
     if result.wasSuccessful():
@@ -286,7 +294,11 @@ def assert_module_tests_successful(test_module):
 
     counts = [
         "{}={}".format(label, len(issues))
-        for label, issues in (("failures", result.failures), ("errors", result.errors))
+        for label, issues in (
+            ("failures", result.failures),
+            ("errors", result.errors),
+            ("unexpected successes", result.unexpectedSuccesses),
+        )
         if issues
     ]
     raise AssertionError(
