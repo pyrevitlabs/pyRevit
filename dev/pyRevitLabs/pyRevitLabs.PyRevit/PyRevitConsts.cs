@@ -121,6 +121,10 @@ namespace pyRevitLabs.PyRevit {
         public const string ConfigsLoadCoreAPIKey = "core_api";
         public const bool ConfigsConfigsLoadCoreAPIDefault = false;
 
+        public const string ConfigsAgentSection = "agent";
+        public const string ConfigsAgentEnabledKey = "enabled";
+        public const bool ConfigsAgentEnabledDefault = false;
+
         public const string ConfigsTelemetrySection = "telemetry";
         public const string ConfigsTelemetryUTCTimestampsKey = "utc_timestamps";
         public const bool ConfigsTelemetryUTCTimestampsDefault = true;
