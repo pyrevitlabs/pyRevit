@@ -7,9 +7,8 @@ choose the mode.
 """
 
 import sys
-import clr
 
-from pyrevit import script, forms
+from pyrevit import script, forms, framework
 from System import AppDomain
 from System.IO import File, Path
 from System.Collections.Generic import List
@@ -46,7 +45,7 @@ def _load_shell():
         )
 
     try:
-        clr.AddReferenceToFileAndPath(shell_path)
+        framework.add_reference_to_file(shell_path)
     except Exception as load_error:
         mlogger.exception("Failed to load Python Shell assembly")
         forms.alert(
