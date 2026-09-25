@@ -65,6 +65,7 @@ STANDARD_PAPER_FORMATS = (
 
 PAPER_FORMAT_ALIASES = {
     'LETTER': 'ANSI_A',
+    'USLETTER': 'ANSI_A',
     'TABLOID': 'ANSI_B',
     'LEDGER': 'ANSI_B',
     }
@@ -1316,8 +1317,11 @@ class PrintSheetsWindow(forms.WPFWindow):
         optspdf = PrintUtils.pdf_opts(
             print_params=self.selected_print_setting.print_params)
         try:
-            exported = PrintUtils.export_combined_pdf(
-                dirPath, sheet_ids, optspdf, doc, "Ordered Sheet Set")
+            with forms.ProgressBar(
+                    title="Exporting combined PDF...",
+                    indeterminate=True):
+                exported = PrintUtils.export_combined_pdf(
+                    dirPath, sheet_ids, optspdf, doc, "Ordered Sheet Set")
         except Exception as e:
             logger.error('Failed to export combined PDF: %s', e)
             forms.alert('Failed to export combined PDF: {}'.format(e))
