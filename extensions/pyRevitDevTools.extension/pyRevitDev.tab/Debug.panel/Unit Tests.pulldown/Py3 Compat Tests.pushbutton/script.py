@@ -13,7 +13,7 @@ from pyrevit.unittests.runner import run_module_tests
 
 
 print("Python engine: {}".format(sys.version))
-print("Py3 compatibility suite revision: 7")
+print("Py3 compatibility suite revision: 8")
 
 test_py3_compat.FAMILY_FILE = op.normpath(
     op.join(
@@ -32,6 +32,8 @@ test_py3_compat.FAMILY_UTILS_FILE = op.normpath(
         "..",
         "..",
         "..",
+        "..",
+        "pyRevitTools.extension",
         "pyRevit.tab",
         "Project.panel",
         "ptools.stack",
