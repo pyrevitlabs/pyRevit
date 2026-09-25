@@ -8,6 +8,7 @@ using pyRevitLabs.Configurations.Ini;
 using pyRevitLabs.PyRevit;
 
 namespace pyRevitLabs.UnitTests {
+    /// <summary>Tests seeding the machine-wide configuration from the active configuration.</summary>
     [TestClass]
     [DoNotParallelize]
     public class PyRevitConfigsSeedTests {
