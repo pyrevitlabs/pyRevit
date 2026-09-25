@@ -29,7 +29,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
             base.Init(ref runtime);
 
             try {
-                ExecEngineConfigs = JsonConvert.DeserializeObject<CPythonEngineConfigs>(runtime.ScriptRuntimeConfigs.EngineConfigs);
+                ExecEngineConfigs = JsonConvert.DeserializeObject<CPythonEngineConfigs>(
+                    runtime.ScriptRuntimeConfigs.EngineConfigs
+                ) ?? ExecEngineConfigs;
             }
             catch { }
 
