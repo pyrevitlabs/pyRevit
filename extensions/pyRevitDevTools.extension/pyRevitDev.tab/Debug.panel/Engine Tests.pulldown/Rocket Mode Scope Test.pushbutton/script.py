@@ -60,6 +60,7 @@ class ScopeTestWindow(forms.WPFWindow):
         self.output = script.get_output()
         self.output.set_title("Rocket Mode Scope Test")
         self._events = []
+        self.Closed += self._dispose_events
         self._register_event("Direct imported CLR type", self._probe_imported_type)
         self._register_event("Direct pyRevit module", self._probe_module)
         self._register_event("Direct script global", self._probe_global)
@@ -80,6 +81,13 @@ class ScopeTestWindow(forms.WPFWindow):
                 self.result.Text = "{} raised: {}".format(label, response)
                 return
 
+    def _dispose_events(self, sender, args):
+        try:
+            for _, external_event in self._events:
+                external_event.Dispose()
+        finally:
+            self._events = []
+
     def _probe_imported_type(self):
         self.record_success(
             "Direct imported CLR type", FilteredElementCollector.__name__
@@ -99,7 +107,7 @@ class ScopeTestWindow(forms.WPFWindow):
 
     def record_failure(self, label, error):
         """Record a probe result that raised while Revit ran the event."""
-        message = "FAIL | {} | {}: {}".format(label, error.GetType().Name, error)
+        message = "FAIL | {} | {}: {}".format(label, type(error).__name__, error)
         self.result.Text = message
         self.output.print_md("- **{}**".format(message))
 
