@@ -69,6 +69,16 @@ Usage:
 	pyrevit run <script_or_command_name> [--revit=<revit_year>] [--purge] [--allowdialogs] [--import=<import_path>]
 	pyrevit run <script_or_command_name> --models=<model_list_file> --revit=<revit_year> [--purge] [--allowdialogs] [--import=<import_path>]
 	pyrevit run <script_or_command_name> <model_file> [--revit=<revit_year>] [--purge] [--allowdialogs] [--import=<import_path>]
+	pyrevit agent (-h | --help)
+	pyrevit agent status [--json]
+	pyrevit agent context [--revit=<revit_year>]
+	pyrevit agent run <script_file> [--mode=<run_mode>] [--engine=<engine_name>] [--title=<run_title>] [--inputs=<inputs_json>] [--revit=<revit_year>]
+	pyrevit agent runs [--limit=<count>]
+	pyrevit agent show <run_id>
+	pyrevit mcp (-h | --help)
+	pyrevit mcp [--revit=<revit_year>]
+	pyrevit mcp install (claude | codex | cursor | vscode | opencode) [--project] [--log=<log_file>]
+	pyrevit mcp uninstall (claude | codex | cursor | vscode | opencode) [--project] [--log=<log_file>]
 	pyrevit caches (-h | --help)
 	pyrevit caches [bim360] clear (--all | <revit_year>) [--log=<log_file>]
 	pyrevit config (-h | --help)
@@ -92,6 +102,10 @@ Usage:
 	pyrevit configs routes [(enable | disable)] [--log=<log_file>]
 	pyrevit configs routes port [<port_number>] [--log=<log_file>]
 	pyrevit configs routes coreapi [(enable | disable)] [--log=<log_file>]
+	pyrevit configs agent [(-h | --help)]
+	pyrevit configs agent [(enable | disable)] [--log=<log_file>]
+	pyrevit configs agent policy [(readonly | ask)] [--log=<log_file>]
+	pyrevit configs agent engine [(ironpython | cpython)] [--log=<log_file>]
 	pyrevit configs telemetry [(-h | --help)]
 	pyrevit configs telemetry [(enable | disable)] [--log=<log_file>]
 	pyrevit configs telemetry utc [(yes | no)] [--log=<log_file>]
