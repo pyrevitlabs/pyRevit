@@ -1343,8 +1343,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private static readonly object UpdateLock = new object();
         private static readonly object CacheLock = new object();
 
-        private static readonly Dictionary<long, bool> _documentCache = new Dictionary<long, bool>();
-        private static readonly Dictionary<int, long> _closingDocumentIds = new Dictionary<int, long>();
+        private static Dictionary<long, bool> _documentCache = new Dictionary<long, bool>();
 
         static TabColoringTheme _tabColoringTheme = null;
         public static TabColoringTheme TabColoringTheme {
@@ -1400,7 +1399,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         /// <summary>
-        /// Starts document tab grouping and initializes the document cache while running in a valid Revit API context.
+        /// Starts document tab grouping, seeds cached document identities, and tracks document lifecycle changes.
         /// </summary>
         /// <param name="uiapp">The active Revit UI application.</param>
         public static void StartGroupingDocumentTabs(UIApplication uiapp) {
@@ -1412,7 +1411,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     SeedDocumentCache(UIApp.Application.Documents);
                     UIApp.Application.DocumentCreated += OnDocumentCreated;
                     UIApp.Application.DocumentOpened += OnDocumentOpened;
-                    UIApp.Application.DocumentClosing += OnDocumentClosing;
                     UIApp.Application.DocumentClosed += OnDocumentClosed;
 
                     var docMgr = GetDockingManager(UIApp);
@@ -1421,12 +1419,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
+        /// <summary>
+        /// Stops document tab grouping, unsubscribes document lifecycle handlers, and clears cached document identities.
+        /// </summary>
         public static void StopGroupingDocumentTabs() {
             lock (UpdateLock) {
                 if (IsUpdatingDocumentTabs) {
                     UIApp.Application.DocumentCreated -= OnDocumentCreated;
                     UIApp.Application.DocumentOpened -= OnDocumentOpened;
-                    UIApp.Application.DocumentClosing -= OnDocumentClosing;
                     UIApp.Application.DocumentClosed -= OnDocumentClosed;
 
                     var docMgr = GetDockingManager(UIApp);
@@ -1450,95 +1450,59 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
-        internal static List<long> GetCachedDocumentIds() {
-            lock (CacheLock) {
-                return _documentCache.Keys.ToList();
-            }
-        }
-
-        internal static bool IsCachedDocumentFamily(long docId) {
-            lock (CacheLock) {
-                return _documentCache.TryGetValue(docId, out bool isFamily) && isFamily;
-            }
-        }
-
-        private static void CacheDocument(long docId, bool isFamily) {
-            lock (CacheLock) {
-                _documentCache[docId] = isFamily;
-            }
-        }
-
         private static void SeedDocumentCache(DocumentSet documents) {
-            ClearDocumentCache();
-            foreach (Document doc in documents) {
-                if (!doc.IsLinked) {
-                    long docId = TabColoringTheme.GetAPIDocumentId(doc);
-                    CacheDocument(docId, doc.IsFamilyDocument);
+            var documentCache = new Dictionary<long, bool>();
+            bool cacheComplete = true;
+            try {
+                foreach (Document doc in documents) {
+                    try {
+                        if (!doc.IsLinked) {
+                            long docId = global::PyRevitLabs.PyRevit.Runtime.TabColoringTheme.GetAPIDocumentId(doc);
+                            documentCache[docId] = doc.IsFamilyDocument;
+                        }
+                    }
+                    catch (Exception ex) {
+                        cacheComplete = false;
+                        logger.Error($"Error seeding document cache: {ex.Message}");
+                    }
                 }
             }
-        }
-
-        private static void UncacheDocument(int closingDocId) {
-            lock (CacheLock) {
-
-                if (_closingDocumentIds.TryGetValue(closingDocId, out long docId)) {
-                    _closingDocumentIds.Remove(closingDocId);
-                    _documentCache.Remove(docId);
+            catch (Exception ex) {
+                cacheComplete = false;
+                logger.Error($"Error enumerating documents for cache: {ex.Message}");
+            }
+            if (cacheComplete) {
+                lock (CacheLock) {
+                    _documentCache = documentCache;
                 }
             }
         }
 
         private static void ClearDocumentCache() {
             lock (CacheLock) {
-                _documentCache.Clear();
-                _closingDocumentIds.Clear();
+                _documentCache = new Dictionary<long, bool>();
             }
         }
 
-        private static void CacheOpenDocument(Document doc) {
-            if (doc != null && !doc.IsLinked) {
-                long docId = TabColoringTheme.GetAPIDocumentId(doc);
-                bool isFamily = doc.IsFamilyDocument;
-                CacheDocument(docId, isFamily);
+        private static void RefreshDocumentCache() {
+            try {
+                SeedDocumentCache(UIApp.Application.Documents);
+            }
+            catch (Exception ex) {
+                logger.Error($"Error refreshing document cache: {ex.Message}");
             }
         }
 
         static void OnDocumentCreated(object sender, DocumentCreatedEventArgs e) {
-            try {
-                CacheOpenDocument(e.Document);
-            } catch (Exception ex) {
-                logger.Error($"Error caching created document: {ex.Message}");
-            }
+            RefreshDocumentCache();
         }
 
         static void OnDocumentOpened(object sender, DocumentOpenedEventArgs e) {
-            try {
-                CacheOpenDocument(e.Document);
-            } catch (Exception ex) {
-                logger.Error($"Error caching opened document: {ex.Message}");
-            }
-        }
-
-        static void OnDocumentClosing(object sender, DocumentClosingEventArgs e) {
-            try {
-                Document doc = e.Document;
-                if (doc != null && !doc.IsLinked) {
-                    long docId = TabColoringTheme.GetAPIDocumentId(doc);
-                    lock (CacheLock) {
-                        _closingDocumentIds[e.DocumentId] = docId;
-                    }
-                }
-            } catch (Exception ex) {
-                logger.Error($"Error caching closing document: {ex.Message}");
-            }
+            RefreshDocumentCache();
         }
 
         static void OnDocumentClosed(object sender, DocumentClosedEventArgs e) {
-            try {
-                UncacheDocument(e.DocumentId);
-            } catch (Exception ex) {
-                logger.Error($"Error processing closed document: {ex.Message}");
-            }
+            RefreshDocumentCache();
         }
 
         static void UpdateDockingManagerLayout(object sender, EventArgs e) {
