@@ -31,6 +31,10 @@ Whether you want to create tools, troubleshoot issues, or contribute code, under
     - A small server (written in Go) that tracks usage data of pyRevit tools.
     - Stores data in MongoDB or PostgreSQL for business intelligence.
 
+6. **Agent runtime** (experimental) — `dev/pyRevitLabs.PyRevit.Runtime/Agent/`, `pyrevitlib/pyrevit/agent/`, `pyrevit mcp`
+    - Lets MCP-capable coding agents run Python in a live Revit session through a local named pipe, with every model change approved in Revit.
+    - See [Agent runtime](agent-runtime.md).
+
 Command execution itself lives in a separate component, **PyRevit.Runtime** (`dev/pyRevitLabs.PyRevit.Runtime/`) — see [How pyRevit Commands run](#how-pyrevit-commands-run).
 
 ## How pyRevit Loads in Revit
