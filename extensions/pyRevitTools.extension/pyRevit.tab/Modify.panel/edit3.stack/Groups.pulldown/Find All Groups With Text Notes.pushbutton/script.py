@@ -2,9 +2,11 @@ from pyrevit import framework
 from pyrevit import revit, DB
 
 
-grps = list(DB.FilteredElementCollector(revit.doc)
-              .OfClass(framework.get_type(DB.Group))
-              .ToElements())
+grps = list(
+    DB.FilteredElementCollector(revit.doc)
+    .OfClass(framework.get_type(DB.Group))
+    .ToElements()
+)
 
 grpTypes = set()
 

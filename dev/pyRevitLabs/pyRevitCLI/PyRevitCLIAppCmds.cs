@@ -232,7 +232,7 @@ namespace pyRevitCLI {
         internal static void
         RunDoctor(string args, bool dryRun = false) {
             if (dryRun) args += " --dryrun";
-            
+
             string doctorExe = Path.Combine(GetProcessPath(), "pyrevit-doctor.exe");
             ProcessStartInfo cpyProcessInfo = new ProcessStartInfo(doctorExe) {
                 WorkingDirectory = GetProcessPath(),

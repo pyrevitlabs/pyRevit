@@ -1,4 +1,5 @@
 """Ordered dictionary."""
+
 from __future__ import unicode_literals
 from __future__ import absolute_import
 from . import util
@@ -10,6 +11,7 @@ class OrderedDict(dict):
 
     Copied from Django's SortedDict with some modifications.
     """
+
     def __new__(cls, *args, **kwargs):
         instance = super(OrderedDict, cls).__new__(cls, *args, **kwargs)
         instance.keyOrder = []
@@ -31,8 +33,9 @@ class OrderedDict(dict):
                 super_set(key, value)
 
     def __deepcopy__(self, memo):
-        return self.__class__([(key, deepcopy(value, memo))
-                               for key, value in self.items()])
+        return self.__class__(
+            [(key, deepcopy(value, memo)) for key, value in self.items()]
+        )
 
     def __copy__(self):
         # The Python's default copy implementation will alter the state
@@ -129,9 +132,7 @@ class OrderedDict(dict):
 
     def __repr__(self):
         """Returns the keys in their Ordered order."""
-        return '{%s}' % ', '.join(
-            ['%r: %r' % (k, v) for k, v in self._iteritems()]
-        )
+        return "{%s}" % ", ".join(["%r: %r" % (k, v) for k, v in self._iteritems()])
 
     def clear(self):
         super(OrderedDict, self).clear()
@@ -146,21 +147,23 @@ class OrderedDict(dict):
 
     def index_for_location(self, location):
         """Return index or None for a given location."""
-        if location == '_begin':
+        if location == "_begin":
             i = 0
-        elif location == '_end':
+        elif location == "_end":
             i = None
-        elif location.startswith('<') or location.startswith('>'):
+        elif location.startswith("<") or location.startswith(">"):
             i = self.index(location[1:])
-            if location.startswith('>'):
+            if location.startswith(">"):
                 if i >= len(self):
                     # last item
                     i = None
                 else:
                     i += 1
         else:
-            raise ValueError('Not a valid location: "%s". Location key '
-                             'must start with a ">" or "<".' % location)
+            raise ValueError(
+                'Not a valid location: "%s". Location key '
+                'must start with a ">" or "<".' % location
+            )
         return i
 
     def add(self, key, value, location):

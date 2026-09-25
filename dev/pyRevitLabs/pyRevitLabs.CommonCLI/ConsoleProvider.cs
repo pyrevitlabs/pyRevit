@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -7,10 +7,8 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace pyRevitLabs.CommonCLI
-{
-    public class ConsoleProvider
-    {
+namespace pyRevitLabs.CommonCLI {
+    public class ConsoleProvider {
         private enum StandardHandle : uint {
             Input = unchecked((uint)-10),
             Output = unchecked((uint)-11),
@@ -24,8 +22,8 @@ namespace pyRevitLabs.CommonCLI
             Pipe = 0x0003
         }
 
-        private const string    KEREL32_DLLNAME = "kernel32.dll";
-        private const int       ATTACH_PARENT_PROCESS = -1;
+        private const string KEREL32_DLLNAME = "kernel32.dll";
+        private const int ATTACH_PARENT_PROCESS = -1;
 
         [DllImport(KEREL32_DLLNAME)]
         private static extern bool AllocConsole();
@@ -51,19 +49,16 @@ namespace pyRevitLabs.CommonCLI
         [DllImport(KEREL32_DLLNAME, SetLastError = true)]
         private static extern FileType GetFileType(IntPtr handle);
 
-        public static bool HasConsole
-        {
+        public static bool HasConsole {
             get { return GetConsoleWindow() != IntPtr.Zero; }
         }
 
         /// <summary>
         /// Creates a new console instance if the process is not attached to a console already.
         /// </summary>
-        public static void Show()
-        {
+        public static void Show() {
             //#if DEBUG
-            if (!HasConsole)
-            {
+            if (!HasConsole) {
                 AllocConsole();
                 InvalidateOutAndError();
             }
@@ -73,11 +68,9 @@ namespace pyRevitLabs.CommonCLI
         /// <summary>
         /// If the process has a console attached to it, it will be detached and no longer visible. Writing to the System.Console is still possible, but no output will be shown.
         /// </summary>
-        public static void Hide()
-        {
+        public static void Hide() {
             //#if DEBUG
-            if (HasConsole)
-            {
+            if (HasConsole) {
                 SetOutAndErrorNull();
                 FreeConsole();
             }
@@ -87,11 +80,9 @@ namespace pyRevitLabs.CommonCLI
         /// <summary>
         /// Attach to existing console. This is helpful when running program from existing console.
         /// </summary>
-        public static void Attach()
-        {
+        public static void Attach() {
             //#if DEBUG
-            if (!HasConsole)
-            {
+            if (!HasConsole) {
                 AttachConsole(ATTACH_PARENT_PROCESS);
             }
             //#endif
@@ -100,25 +91,20 @@ namespace pyRevitLabs.CommonCLI
         /// <summary>
         /// Detach from existing console. This is helpful when running program from existing console.
         /// </summary>
-        public static void Detach()
-        {
+        public static void Detach() {
             Hide();
         }
 
-        public static void Toggle()
-        {
-            if (HasConsole)
-            {
+        public static void Toggle() {
+            if (HasConsole) {
                 Hide();
             }
-            else
-            {
+            else {
                 Show();
             }
         }
 
-        public static void InvalidateOutAndError()
-        {
+        public static void InvalidateOutAndError() {
             Type type = typeof(System.Console);
 
             System.Reflection.FieldInfo _out = type.GetField("_out",
@@ -141,8 +127,7 @@ namespace pyRevitLabs.CommonCLI
             _InitializeStdOutError.Invoke(null, new object[] { true });
         }
 
-        public static void SetOutAndErrorNull()
-        {
+        public static void SetOutAndErrorNull() {
             Console.SetOut(TextWriter.Null);
             Console.SetError(TextWriter.Null);
         }

@@ -18,10 +18,20 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <InternalsVisibleTo Include="pyRevitExtensionParserTest" />
+      <InternalsVisibleTo Include="pyRevitLabs.UnitTests" />
+    </ItemGroup>
+
+    <ItemGroup>
       <PackageReference Include="YamlDotNet" Version="16.3.0" />
       <ProjectReference Include="..\..\pyRevitLabs\pyRevitLabs.Common\pyRevitLabs.Common.csproj" />
       <Reference Include="pyRevitLabs.Json" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.Json.dll" Private="false" />
       <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.NLog.dll" Private="false" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\pyRevitLabs\pyRevitLabs.Configurations\pyRevitLabs.Configurations.csproj" />
+      <ProjectReference Include="..\..\pyRevitLabs\pyRevitLabs.Configurations.Ini\pyRevitLabs.Configurations.Ini.csproj" />
     </ItemGroup>
 
     <ItemGroup>
@@ -37,7 +47,6 @@
       <Compile Include="PyRevitConfig.cs" />
       <Compile Include="ExtensionParser.cs" />
       <Compile Include="ExtensionRegistryAuth.cs" />
-      <Compile Include="IniFile.cs" />
     </ItemGroup>
 
 </Project>

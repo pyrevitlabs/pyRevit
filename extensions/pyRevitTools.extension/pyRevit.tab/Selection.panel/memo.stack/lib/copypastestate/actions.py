@@ -685,8 +685,10 @@ class FilterOverridesAction(basetypes.CopyPasteStateAction):
             view_template = view.Document.GetElement(view.ViewTemplateId)
             non_controlled_params = view_template.GetNonControlledTemplateParameterIds()
             # check if filters are controlled by template
-            if DB.ElementId(DB.BuiltInParameter.VIS_GRAPHICS_FILTERS) \
-                    not in non_controlled_params:
+            if (
+                DB.ElementId(DB.BuiltInParameter.VIS_GRAPHICS_FILTERS)
+                not in non_controlled_params
+            ):
                 return True
         return False
 

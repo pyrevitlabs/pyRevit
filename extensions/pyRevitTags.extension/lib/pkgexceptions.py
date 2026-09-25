@@ -1,5 +1,6 @@
 """Package module exceptions."""
-#pylint: disable=E0401,C0111
+
+# pylint: disable=E0401,C0111
 from pyrevit import PyRevitException
 
 
@@ -41,6 +42,7 @@ class CanNotUnsetNonExisting(PyRevitException):
 
 class CanNotRemoveNonUser(PyRevitException):
     pass
+
 
 class DoesNotAllowOverride(PyRevitException):
     pass

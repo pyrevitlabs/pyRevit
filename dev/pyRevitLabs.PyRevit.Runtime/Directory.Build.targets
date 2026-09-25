@@ -28,6 +28,9 @@
         <Reference Include="pyRevitLabs.NLog" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.NLog.dll" Private="false" />
         <Reference Include="pyRevitLabs.MahAppsMetro" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.MahAppsMetro.dll" Private="false" />
         <Reference Include="pyRevitLabs.Python.Net" HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.PythonNet.dll" Private="false" />
+        <Reference Include="Microsoft.Web.WebView2.Core" HintPath="$(PyRevitDevLibsDir)\Microsoft.Web.WebView2.Core.dll" Private="false" />
+        <Reference Include="Microsoft.Web.WebView2.WinForms" HintPath="$(PyRevitDevLibsDir)\Microsoft.Web.WebView2.WinForms.dll" Private="false" />
+        <Reference Include="Microsoft.Web.WebView2.Wpf" HintPath="$(PyRevitDevLibsDir)\Microsoft.Web.WebView2.Wpf.dll" Private="false" />
     </ItemGroup>
 
     <ItemGroup>

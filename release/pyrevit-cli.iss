@@ -107,6 +107,8 @@ end;
 
 function InitializeSetup: Boolean;
 begin
+  // WebView2 Runtime for the output window renderer
+  Dependency_AddWebView2;
   Dependency_AddDotNet80;
   Dependency_AddDotNet80Desktop;
   Result := True;

@@ -21,6 +21,7 @@
     <system:String x:Key="Settings_Section_Behavior">行为</system:String>
     <system:String x:Key="Settings_SortAlpha">按字母顺序排序过滤器</system:String>
     <system:String x:Key="Settings_OpenLegend">打开最近创建的图例</system:String>
+    <system:String x:Key="Settings_TrackLegend">跟踪并更新现有图例</system:String>
 
     <system:String x:Key="Header_FilterName">过滤器名称</system:String>
     <system:String x:Key="Header_Parameter">参数</system:String>
@@ -28,6 +29,8 @@
     <system:String x:Key="Value_NA">不适用</system:String>
 
     <system:String x:Key="Msg_Done">已创建 {0} 个图例视图。</system:String>
+    <system:String x:Key="Msg_Updated">已更新 {0} 个图例视图。</system:String>
+    <system:String x:Key="Msg_DoneMixed">已创建 {0} 个图例视图，更新 {1} 个。</system:String>
     <system:String x:Key="Msg_Failed">未能创建任何图例视图，请查看日志了解详情。</system:String>
 
 </ResourceDictionary>

@@ -1,4 +1,5 @@
 """Markdown Treeprocessors."""
+
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
@@ -32,6 +33,7 @@ class Treeprocessor(util.Processor):
     Treeprocessors must extend markdown.Treeprocessor.
 
     """
+
     def run(self, root):
         """Main treeprocessor method.
 
@@ -49,8 +51,9 @@ class InlineProcessor(Treeprocessor):
     def __init__(self, md):
         self.__placeholder_prefix = util.INLINE_PLACEHOLDER_PREFIX
         self.__placeholder_suffix = util.ETX
-        self.__placeholder_length = 4 + len(self.__placeholder_prefix) \
-                                      + len(self.__placeholder_suffix)
+        self.__placeholder_length = (
+            4 + len(self.__placeholder_prefix) + len(self.__placeholder_suffix)
+        )
         self.__placeholder_re = util.INLINE_PLACEHOLDER_RE
         self.markdown = md
         self.inlinePatterns = md.inlinePatterns
@@ -98,7 +101,10 @@ class InlineProcessor(Treeprocessor):
             while patternIndex < len(self.inlinePatterns):
                 data, matched, startIndex = self.__applyPattern(
                     self.inlinePatterns.value_for_index(patternIndex),
-                    data, patternIndex, startIndex)
+                    data,
+                    patternIndex,
+                    startIndex,
+                )
                 if not matched:
                     patternIndex += 1
         return data
@@ -140,6 +146,7 @@ class InlineProcessor(Treeprocessor):
         Returns:
             (list[ElementTree]): elements with applied inline patterns.
         """
+
         def linkText(text):
             if text:
                 if result:
@@ -157,6 +164,7 @@ class InlineProcessor(Treeprocessor):
                         parent.text += text
                     else:
                         parent.text = text
+
         result = []
         strartIndex = 0
         while data:
@@ -175,9 +183,7 @@ class InlineProcessor(Treeprocessor):
                         for child in [node] + list(node):
                             if child.tail:
                                 if child.tail.strip():
-                                    self.__processElementText(
-                                        node, child, False
-                                    )
+                                    self.__processElementText(node, child, False)
                             if child.text:
                                 if child.text.strip():
                                     self.__processElementText(child, child)
@@ -227,7 +233,7 @@ class InlineProcessor(Treeprocessor):
         node = pattern.handleMatch(match)
 
         if node is None:
-            return data, True, len(leftData)+match.span(len(match.groups()))[0]
+            return data, True, len(leftData) + match.span(len(match.groups()))[0]
 
         if not isString(node):
             if not isinstance(node.text, util.AtomicString):
@@ -239,15 +245,15 @@ class InlineProcessor(Treeprocessor):
                                 child.text, patternIndex + 1
                             )
                         if child.tail:
-                            child.tail = self.__handleInline(
-                                child.tail, patternIndex
-                            )
+                            child.tail = self.__handleInline(child.tail, patternIndex)
 
         placeholder = self.__stashNode(node, pattern.type())
 
-        return "%s%s%s%s" % (leftData,
-                             match.group(1),
-                             placeholder, match.groups()[-1]), True, 0
+        return (
+            "%s%s%s%s" % (leftData, match.group(1), placeholder, match.groups()[-1]),
+            True,
+            0,
+        )
 
     def run(self, tree):
         """Apply inline patterns to a parsed Markdown tree.
@@ -273,19 +279,15 @@ class InlineProcessor(Treeprocessor):
             currElement = stack.pop()
             insertQueue = []
             for child in currElement:
-                if child.text and not isinstance(
-                    child.text, util.AtomicString
-                ):
+                if child.text and not isinstance(child.text, util.AtomicString):
                     text = child.text
                     child.text = None
-                    lst = self.__processPlaceholders(
-                        self.__handleInline(text), child
-                    )
+                    lst = self.__processPlaceholders(self.__handleInline(text), child)
                     stack += lst
                     insertQueue.append((child, lst))
                 if child.tail:
                     tail = self.__handleInline(child.tail)
-                    dumby = util.etree.Element('d')
+                    dumby = util.etree.Element("d")
                     child.tail = None
                     tailResult = self.__processPlaceholders(tail, dumby, False)
                     if dumby.tail:
@@ -326,9 +328,12 @@ class PrettifyTreeprocessor(Treeprocessor):
     def _prettifyETree(self, elem):
         """Recursively add linebreaks to ElementTree children."""
         i = "\n"
-        if util.isBlockLevel(elem.tag) and elem.tag not in ['code', 'pre']:
-            if (not elem.text or not elem.text.strip()) \
-                    and len(elem) and util.isBlockLevel(elem[0].tag):
+        if util.isBlockLevel(elem.tag) and elem.tag not in ["code", "pre"]:
+            if (
+                (not elem.text or not elem.text.strip())
+                and len(elem)
+                and util.isBlockLevel(elem[0].tag)
+            ):
                 elem.text = i
             for e in elem:
                 if util.isBlockLevel(e.tag):
@@ -343,14 +348,14 @@ class PrettifyTreeprocessor(Treeprocessor):
         self._prettifyETree(root)
         # Do <br />'s seperately as they are often in the middle of
         # inline content and missed by _prettifyETree.
-        brs = root.iter('br')
+        brs = root.iter("br")
         for br in brs:
             if not br.tail or not br.tail.strip():
-                br.tail = '\n'
+                br.tail = "\n"
             else:
-                br.tail = '\n%s' % br.tail
+                br.tail = "\n%s" % br.tail
         # Clean up extra empty lines at end of code blocks.
-        pres = root.iter('pre')
+        pres = root.iter("pre")
         for pre in pres:
-            if len(pre) and pre[0].tag == 'code':
-                pre[0].text = util.AtomicString(pre[0].text.rstrip() + '\n')
+            if len(pre) and pre[0].tag == "code":
+                pre[0].text = util.AtomicString(pre[0].text.rstrip() + "\n")

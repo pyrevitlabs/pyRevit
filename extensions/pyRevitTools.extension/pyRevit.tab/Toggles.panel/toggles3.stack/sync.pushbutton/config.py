@@ -4,6 +4,7 @@ from pyrevit import script, forms, revit
 my_config = script.get_config()
 doc = revit.doc
 
+
 def close_inactive_views():
 
     try:
@@ -13,20 +14,20 @@ def close_inactive_views():
     options = {
         "nothing": "Don't touch my views",
         "reopen": "Close them, but reopen them right after",
-        "close": "Close them, and call it a day"
+        "close": "Close them, and call it a day",
     }
 
     selection = forms.ask_for_one_item(
         items=options.values(),
         default=options.get(current_setting),
         title="View Handling",
-        prompt="Specify what to do with open views"
+        prompt="Specify what to do with open views",
     )
 
     setattr(
         my_config,
         "view_handling",
-        next((k for k in options if options[k] == selection), None)
+        next((k for k in options if options[k] == selection), None),
     )
     script.save_config()
 

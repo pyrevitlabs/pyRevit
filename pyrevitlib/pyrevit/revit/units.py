@@ -2,6 +2,37 @@
 
 from pyrevit import DOCS, HOST_APP
 from pyrevit import DB
+from pyrevit import PyRevitException
+
+
+def get_unit_info(spec_type_id, doc=None):
+    """Return unit information for a spec in document units.
+
+    Args:
+        spec_type_id (DB.SpecTypeId): spec type identifier
+        doc (DB.Document, optional): Revit document, defaults to current
+
+    Returns:
+        (tuple): unit, unit label, symbol, symbol label
+    """
+    if HOST_APP.is_older_than(2022):
+        raise PyRevitException(
+            "get_unit_info() requires Revit 2022 or newer."
+        )
+
+    doc = doc or DOCS.doc
+
+    format_options = doc.GetUnits().GetFormatOptions(spec_type_id)
+
+    unit = format_options.GetUnitTypeId()
+    unit_label = DB.LabelUtils.GetLabelForUnit(unit)
+
+    symbol = format_options.GetSymbolTypeId()
+    symbol_label = None
+    if not symbol.Empty():
+        symbol_label = DB.LabelUtils.GetLabelForSymbol(symbol)
+
+    return unit, unit_label, symbol, symbol_label
 
 
 def format_area(area_value, doc=None):
@@ -16,23 +47,27 @@ def format_area(area_value, doc=None):
     """
     doc = doc or DOCS.doc
     if HOST_APP.is_newer_than(2021):
-        return DB.UnitFormatUtils.Format(units=doc.GetUnits(),
-                                         specTypeId=DB.SpecTypeId.Area,
-                                         value=area_value,
-                                         forEditing=False)
+        return DB.UnitFormatUtils.Format(
+            units=doc.GetUnits(),
+            specTypeId=DB.SpecTypeId.Area,
+            value=area_value,
+            forEditing=False,
+        )
     else:
-        return DB.UnitFormatUtils.Format(units=doc.GetUnits(),
-                                         unitType=DB.UnitType.UT_Area,
-                                         value=area_value,
-                                         maxAccuracy=False,
-                                         forEditing=False)
+        return DB.UnitFormatUtils.Format(
+            units=doc.GetUnits(),
+            unitType=DB.UnitType.UT_Area,
+            value=area_value,
+            maxAccuracy=False,
+            forEditing=False,
+        )
 
 
 def format_length(length_value, doc=None):
     """Return formatted length value in document units.
 
     Args:
-        area_value (float): area value
+        length_value (float): length value
         doc (DB.Document, optional): Revit document, defaults to current
 
     Returns:
@@ -40,16 +75,20 @@ def format_length(length_value, doc=None):
     """
     doc = doc or DOCS.doc
     if HOST_APP.is_newer_than(2021):
-        return DB.UnitFormatUtils.Format(units=doc.GetUnits(),
-                                         specTypeId=DB.SpecTypeId.Length,
-                                         value=length_value,
-                                         forEditing=False)
+        return DB.UnitFormatUtils.Format(
+            units=doc.GetUnits(),
+            specTypeId=DB.SpecTypeId.Length,
+            value=length_value,
+            forEditing=False,
+        )
     else:
-        return DB.UnitFormatUtils.Format(units=doc.GetUnits(),
-                                         unitType=DB.UnitType.UT_Length,
-                                         value=length_value,
-                                         maxAccuracy=False,
-                                         forEditing=False)
+        return DB.UnitFormatUtils.Format(
+            units=doc.GetUnits(),
+            unitType=DB.UnitType.UT_Length,
+            value=length_value,
+            maxAccuracy=False,
+            forEditing=False,
+        )
 
 
 def format_slope(slope_value, doc=None):
@@ -64,16 +103,20 @@ def format_slope(slope_value, doc=None):
     """
     doc = doc or DOCS.doc
     if HOST_APP.is_newer_than(2021):
-        return DB.UnitFormatUtils.Format(units=doc.GetUnits(),
-                                         specTypeId=DB.SpecTypeId.Slope,
-                                         value=slope_value,
-                                         forEditing=False)
+        return DB.UnitFormatUtils.Format(
+            units=doc.GetUnits(),
+            specTypeId=DB.SpecTypeId.Slope,
+            value=slope_value,
+            forEditing=False,
+        )
     else:
-        return DB.UnitFormatUtils.Format(units=doc.GetUnits(),
-                                         unitType=DB.UnitType.UT_Slope,
-                                         value=slope_value,
-                                         maxAccuracy=False,
-                                         forEditing=False)
+        return DB.UnitFormatUtils.Format(
+            units=doc.GetUnits(),
+            unitType=DB.UnitType.UT_Slope,
+            value=slope_value,
+            maxAccuracy=False,
+            forEditing=False,
+        )
 
 
 def _create_view_plane(view):
@@ -86,7 +129,8 @@ def _create_view_plane(view):
         DB.Plane: result plane
     """
     return DB.Plane.CreateByOriginAndBasis(
-        view.Origin, view.RightDirection, view.UpDirection)
+        view.Origin, view.RightDirection, view.UpDirection
+    )
 
 
 def project_to_viewport(xyz, view):
@@ -132,8 +176,7 @@ def get_spec_name(forge_id):
     Returns:
         (str): Spec name
     """
-    if HOST_APP.is_newer_than(2021) \
-            and DB.UnitUtils.IsMeasurableSpec(forge_id):
+    if HOST_APP.is_newer_than(2021) and DB.UnitUtils.IsMeasurableSpec(forge_id):
         return DB.UnitUtils.GetTypeCatalogStringForSpec(forge_id)
     return ""
 
@@ -147,7 +190,6 @@ def get_unit_name(forge_id):
     Returns:
         (str): Unit name
     """
-    if HOST_APP.is_newer_than(2021) \
-            and DB.UnitUtils.IsUnit(forge_id):
+    if HOST_APP.is_newer_than(2021) and DB.UnitUtils.IsUnit(forge_id):
         return DB.UnitUtils.GetTypeCatalogStringForUnit(forge_id)
     return ""

@@ -31,7 +31,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // extract engine configuration from runtime data
             try {
                 ExecEngineConfigs = JsonConvert.DeserializeObject<DynamoBIMEngineConfigs>(runtime.ScriptRuntimeConfigs.EngineConfigs);
-            } catch {}
+            }
+            catch { }
         }
 
         public override int Execute(ref ScriptRuntime runtime) {

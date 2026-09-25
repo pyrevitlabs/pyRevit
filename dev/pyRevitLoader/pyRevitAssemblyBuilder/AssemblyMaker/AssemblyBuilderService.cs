@@ -223,7 +223,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                 {
                     // Find the module DLL using binary paths
                     var modulePath = extension.FindModuleDll(moduleName, cmd);
-                    
+
                     if (string.IsNullOrEmpty(modulePath))
                         continue;
 
@@ -329,7 +329,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 
             using var fs = new FileStream(outputPath, FileMode.Create);
             var result = compilation.Emit(fs);
-            
+
             if (!result.Success)
             {
                 _logger.Error($"Roslyn compilation failed for: {extension.Name}");

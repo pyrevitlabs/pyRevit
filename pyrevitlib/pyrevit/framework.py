@@ -6,10 +6,11 @@ Examples:
     ```
 """
 
-#pylint: disable=W0703,C0302,C0103,W0614,E0401,W0611,C0413,ungrouped-imports
+# pylint: disable=W0703,C0302,C0103,W0614,E0401,W0611,C0413,ungrouped-imports
 import os.path as op
 from pyrevit.compat import IRONPY, NETCORE, PY2
 from pyrevit._perf import mark as _perfmark
+
 _perfmark("pyrevit.framework:entry")
 
 import clr
@@ -17,27 +18,27 @@ import System
 
 # netcore init
 if NETCORE:
-    clr.AddReference('System.Runtime')
-    clr.AddReference('System.Text.RegularExpressions')
-    clr.AddReference('System.Diagnostics.Process')
-    clr.AddReference('System.IO.FileSystem.DriveInfo')
-    clr.AddReference('System.Net.WebClient')
-    clr.AddReference('System.Net.Requests')
-    clr.AddReference('System.Net.WebProxy')
-    clr.AddReference('System.Runtime.Serialization.Formatters')
-    clr.AddReference('System.Reflection.Emit')
-    clr.AddReference('System.ComponentModel')
-    clr.AddReference('System.ObjectModel')
-    clr.AddReference('System.Diagnostics.FileVersionInfo')
+    clr.AddReference("System.Runtime")
+    clr.AddReference("System.Text.RegularExpressions")
+    clr.AddReference("System.Diagnostics.Process")
+    clr.AddReference("System.IO.FileSystem.DriveInfo")
+    clr.AddReference("System.Net.WebClient")
+    clr.AddReference("System.Net.Requests")
+    clr.AddReference("System.Net.WebProxy")
+    clr.AddReference("System.Runtime.Serialization.Formatters")
+    clr.AddReference("System.Reflection.Emit")
+    clr.AddReference("System.ComponentModel")
+    clr.AddReference("System.ObjectModel")
+    clr.AddReference("System.Diagnostics.FileVersionInfo")
 
-clr.AddReference('System.Core')
-clr.AddReference('System.Management')
-clr.AddReference('System.Windows.Forms')
-clr.AddReference('System.Drawing')
-clr.AddReference('PresentationCore')
-clr.AddReference('PresentationFramework')
-clr.AddReference('System.Xml.Linq')
-clr.AddReference('WindowsBase')
+clr.AddReference("System.Core")
+clr.AddReference("System.Management")
+clr.AddReference("System.Windows.Forms")
+clr.AddReference("System.Drawing")
+clr.AddReference("PresentationCore")
+clr.AddReference("PresentationFramework")
+clr.AddReference("System.Xml.Linq")
+clr.AddReference("WindowsBase")
 _perfmark("pyrevit.framework:after clr.AddReference (System+WPF)")
 
 from System import AppDomain, Version
@@ -92,16 +93,17 @@ from System import Math
 from System.Management import ManagementObjectSearcher
 from System.Runtime.Serialization import FormatterServices
 from System.Linq import Enumerable
+
 _perfmark("pyrevit.framework:after `from System.* import` block")
 
 import pyrevit.engine as eng
 
 
-ASSEMBLY_FILE_TYPE = 'dll'
-ASSEMBLY_FILE_EXT = '.dll'
+ASSEMBLY_FILE_TYPE = "dll"
+ASSEMBLY_FILE_EXT = ".dll"
 
 
-ipy_assmname = '{prefix}IronPython'.format(prefix=eng.EnginePrefix)
+ipy_assmname = "{prefix}IronPython".format(prefix=eng.EnginePrefix)
 ipy_dllpath = op.join(eng.EnginePath, ipy_assmname + ASSEMBLY_FILE_EXT)
 if IRONPY:
     clr.AddReferenceToFileAndPath(ipy_dllpath)
@@ -113,7 +115,7 @@ import IronPython
 # WPF
 wpf = None
 if IRONPY:
-    wpf_assmname = '{prefix}IronPython.Wpf'.format(prefix=eng.EnginePrefix)
+    wpf_assmname = "{prefix}IronPython.Wpf".format(prefix=eng.EnginePrefix)
     wpf_dllpath = op.join(eng.EnginePath, wpf_assmname + ASSEMBLY_FILE_EXT)
     clr.AddReferenceToFileAndPath(wpf_dllpath)
     import wpf
@@ -121,7 +123,7 @@ if IRONPY:
 
 # SQLite
 sqlite3 = None
-sqlite3_assmname = '{prefix}IronPython.SQLite'.format(prefix=eng.EnginePrefix)
+sqlite3_assmname = "{prefix}IronPython.SQLite".format(prefix=eng.EnginePrefix)
 sqlite3_dllpath = op.join(eng.EnginePath, sqlite3_assmname + ASSEMBLY_FILE_EXT)
 if IRONPY:
     clr.AddReferenceToFileAndPath(sqlite3_dllpath)
@@ -130,12 +132,11 @@ else:
 import sqlite3
 
 
-
 CPDialogs = None
 try:
-    clr.AddReference('Microsoft.WindowsAPICodePack')
-    clr.AddReference('Microsoft.WindowsAPICodePack.Shell')
-    import Microsoft.WindowsAPICodePack.Dialogs as CPDialogs #pylint: disable=ungrouped-imports
+    clr.AddReference("Microsoft.WindowsAPICodePack")
+    clr.AddReference("Microsoft.WindowsAPICodePack.Shell")
+    import Microsoft.WindowsAPICodePack.Dialogs as CPDialogs  # pylint: disable=ungrouped-imports
 except Exception:
     pass
 
@@ -143,13 +144,14 @@ except Exception:
 # try loading some utility modules shipped with revit
 NSJson = None
 try:
-    clr.AddReference('pyRevitLabs.Json')
+    clr.AddReference("pyRevitLabs.Json")
     import pyRevitLabs.Json as NSJson
 except Exception:
     pass
 
-clr.AddReference('pyRevitLabs.Emojis')
+clr.AddReference("pyRevitLabs.Emojis")
 import pyRevitLabs.Emojis as Emojis
+
 _perfmark("pyrevit.framework:after IronPython+WPF+SQLite+CPDialogs+Emojis refs")
 
 
@@ -164,7 +166,7 @@ def get_type(fw_object):
 
 def get_dll_file(assembly_name):
     """Return path to given assembly name."""
-    addin_file = op.join(BIN_DIR, assembly_name + '.dll')
+    addin_file = op.join(BIN_DIR, assembly_name + ".dll")
     if op.exists(addin_file):
         return addin_file
 
@@ -187,8 +189,7 @@ def add_reference_to_file(asm_file):
         return clr.AddReferenceToFileAndPath(asm_file)
     # assembly names can contain dots (IxMilia.Dxf), so detect the
     # extension by suffix, not by splitext
-    if not op.isfile(asm_file) \
-            and not asm_file.lower().endswith(ASSEMBLY_FILE_EXT):
+    if not op.isfile(asm_file) and not asm_file.lower().endswith(ASSEMBLY_FILE_EXT):
         asm_file += ASSEMBLY_FILE_EXT
     return Assembly.LoadFrom(asm_file)
 

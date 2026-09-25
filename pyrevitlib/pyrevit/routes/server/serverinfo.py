@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """Defines the basic server management api."""
-#pylint: disable=invalid-name,broad-except,useless-object-inheritance
-#pylint: disable=too-few-public-methods,too-many-arguments
+
+# pylint: disable=invalid-name,broad-except,useless-object-inheritance
+# pylint: disable=too-few-public-methods,too-many-arguments
 import os.path as op
 import pickle
 from collections import OrderedDict
@@ -13,7 +14,7 @@ from pyrevit.coreutils import appdata
 from pyrevit.userconfig import user_config
 
 
-DATAFILE_ID = 'serverinfo'
+DATAFILE_ID = "serverinfo"
 
 
 mlogger = get_logger(__name__)
@@ -21,9 +22,8 @@ mlogger = get_logger(__name__)
 
 class RoutesServerInfo(object):
     """Routes server info."""
-    def __init__(self,
-                 host, version, process_id,
-                 server_host, server_port):
+
+    def __init__(self, host, version, process_id, server_host, server_port):
         # host app info
         self.host = host
         self.version = version
@@ -41,22 +41,19 @@ class RoutesServerInfo(object):
 
 
 def _get_host_serverinfo_file():
-    return appdata.get_instance_data_file(
-        file_id=DATAFILE_ID,
-        file_ext='pickle'
-        )
+    return appdata.get_instance_data_file(file_id=DATAFILE_ID, file_ext="pickle")
 
 
 def _read_serverinfo(data_file):
     try:
-        with open(data_file, 'rb') as df:
+        with open(data_file, "rb") as df:
             return pickle.load(df)
     except Exception as readEx:
-        mlogger.debug('Failed reading serverinfo file | %s', str(readEx))
+        mlogger.debug("Failed reading serverinfo file | %s", str(readEx))
 
 
 def _write_serverinfo(data_file, rsinfo):
-    with open(data_file, 'wb') as df:
+    with open(data_file, "wb") as df:
         pickle.dump(rsinfo, df)
 
 
@@ -64,8 +61,8 @@ def _get_all_serverinfo():
     rsinfo_list = []
     for revit_inst in TargetApps.Revit.RevitController.ListRunningRevits():
         for dfile in appdata.find_instance_data_files(
-                file_ext='pickle',
-                instance_id=revit_inst.ProcessId):
+            file_ext="pickle", instance_id=revit_inst.ProcessId
+        ):
             if DATAFILE_ID in dfile:
                 rsinfo = _read_serverinfo(dfile)
                 if rsinfo:
@@ -93,8 +90,8 @@ def _get_new_serverinfo(data_file):
         version=HOST_APP.version,
         process_id=HOST_APP.proc_id,
         server_host=user_config.routes_host,
-        server_port=new_port
-        )
+        server_port=new_port,
+    )
     # store server info
     _write_serverinfo(data_file, rsinfo)
     return rsinfo

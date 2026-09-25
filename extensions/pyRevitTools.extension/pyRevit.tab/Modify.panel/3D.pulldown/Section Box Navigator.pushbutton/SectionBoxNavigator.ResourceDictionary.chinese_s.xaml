@@ -97,6 +97,7 @@
     <system:String x:Key="ConfirmSectionBox">确认剖面框</system:String>
     <system:String x:Key="SectionBoxAlignedFormat">剖面框已与视图 '{0}' 对齐</system:String>
     <system:String x:Key="CropBoxAlignedFormat">裁剪框已与视图 '{0}' 对齐</system:String>
+    <system:String x:Key="ScopeBoxApplied">范围框已应用于视图</system:String>
     <system:String x:Key="UnsupportedViewType">不支持的视图类型。</system:String>
     <system:String x:Key="Activated">已激活</system:String>
     <system:String x:Key="Deactivated">已停用</system:String>

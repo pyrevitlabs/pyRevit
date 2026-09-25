@@ -1,7 +1,7 @@
-
 # -*- coding: utf-8 -*-
 """Handles http api routing and serving with usage similar to flask."""
-#pylint: disable=import-error,invalid-name,broad-except,dangerous-default-value,missing-docstring
+
+# pylint: disable=import-error,invalid-name,broad-except,dangerous-default-value,missing-docstring
 from pyrevit import HOST_APP, PyRevitException
 from pyrevit.api import DB, UI
 from pyrevit.labs import TargetApps
@@ -11,21 +11,29 @@ from pyrevit.userconfig import user_config
 from pyrevit.loader import sessioninfo
 
 # types to be exported
-from pyrevit.routes.server.base import \
-    OK, ACCEPTED, INTERNAL_SERVER_ERROR, NO_CONTENT
+from pyrevit.routes.server.base import OK, ACCEPTED, INTERNAL_SERVER_ERROR, NO_CONTENT
 from pyrevit.routes.server.base import Request, Response
 
 from pyrevit.routes.server import serverinfo
 from pyrevit.routes.server import router
-from pyrevit.routes.server import server
 
 
 __all__ = (
-    'OK', 'ACCEPTED', 'INTERNAL_SERVER_ERROR', 'NO_CONTENT',
-    'Request', 'Response',
-    'init', 'activate_server', 'deactivate_server', 'get_active_server',
-    'make_response', 'get_routes', 'add_route', 'remove_route',
-    )
+    "OK",
+    "ACCEPTED",
+    "INTERNAL_SERVER_ERROR",
+    "NO_CONTENT",
+    "Request",
+    "Response",
+    "init",
+    "activate_server",
+    "deactivate_server",
+    "get_active_server",
+    "make_response",
+    "get_routes",
+    "add_route",
+    "remove_route",
+)
 
 
 mlogger = get_logger(__name__)
@@ -40,17 +48,25 @@ def init():
 
 
 def activate_server():
-    """Activate routes server for this host instance."""
+    """Activate routes server for this host instance.
+
+    The server module is imported on first activation, so that sessions with
+    the routes server disabled never import the HTTP stack.
+
+    Important:
+        That module creates a Revit external event as it is imported, and the
+        host prohibits creating one off its main thread. Activation must run
+        on the main thread.
+    """
     routes_server = envvars.get_pyrevit_env_var(envvars.ROUTES_SERVER)
     if not routes_server:
         try:
+            from pyrevit.routes.server import server
+
             rsinfo = serverinfo.register()
-            routes_server = \
-                server.RoutesServer(
-                    host=rsinfo.server_host,
-                    port=rsinfo.server_port
-                    )
-            routes_server.start()
+            routes_server = server.RoutesServer(
+                host=rsinfo.server_host, port=rsinfo.server_port
+            )
             envvars.set_pyrevit_env_var(envvars.ROUTES_SERVER, routes_server)
             return routes_server
         except Exception as rs_ex:
