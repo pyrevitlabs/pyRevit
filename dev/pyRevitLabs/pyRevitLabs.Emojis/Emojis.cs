@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.IO.Compression;
 using System.Drawing;
@@ -16,7 +16,7 @@ namespace pyRevitLabs.Emojis {
         private static ImageConverter _converter = new ImageConverter();
         private static Dictionary<string, string> _encodedEmoji = new Dictionary<string, string>();
         private static Dictionary<string, string> _normalizedEmojiAliases = null;
-        
+
         public const string EmojiSpanTemplate = "<span><img src=\"data:image/png;base64,{0}\" class=\"emoji\" title=\"{1}\"></span>";
 
         public static Dictionary<string, string> EmojiDict = new Dictionary<string, string>() {
@@ -2645,17 +2645,51 @@ namespace pyRevitLabs.Emojis {
             { "Åland_Islands", "1F1E6-1F1FD" }
         };
 
+        private static readonly Regex ShortCodePattern = new Regex(@":(?<code>[^:]+):");
+
+        /// <summary>
+        /// Replaces <c>:shortcode:</c> sequences with inline emoji images, leaving anything that
+        /// does not resolve to an emoji unchanged.
+        /// </summary>
+        /// <remarks>
+        /// A colon pair that is not an emoji gives its closing colon back, so that colon can open
+        /// the next shortcode. Text such as <c>Load time: 1.2 seconds :thumbs_up:</c> would
+        /// otherwise pair the label's colon with the shortcode's opening one and leave the emoji
+        /// as literal text.
+        /// </remarks>
         public static string Emojize(string input) {
+            if (string.IsNullOrEmpty(input))
+                return input;
+
             if (_emojiZip is null)
                 ExtractEmojis();
 
-            return Regex.Replace(input, @"\:(?<code>[^:]+)\:", ReplaceEmojiShortCode);
+            var output = new StringBuilder(input.Length);
+            var position = 0;
+            while (position < input.Length) {
+                var match = ShortCodePattern.Match(input, position);
+                if (!match.Success)
+                    break;
+
+                output.Append(input, position, match.Index - position);
+                var emoji = RenderEmojiShortCode(match.Groups["code"].Value);
+                if (emoji != null) {
+                    output.Append(emoji);
+                    position = match.Index + match.Length;
+                }
+                else {
+                    output.Append(input, match.Index, match.Length - 1);
+                    position = match.Index + match.Length - 1;
+                }
+            }
+            output.Append(input, position, input.Length - position);
+            return output.ToString();
         }
 
-        private static string ReplaceEmojiShortCode(Match match) {
-            var emojiShortCode = ResolveEmojiShortCode(match.Groups["code"].Value);
+        private static string RenderEmojiShortCode(string code) {
+            var emojiShortCode = ResolveEmojiShortCode(code);
             if (emojiShortCode == null || !EmojiDict.ContainsKey(emojiShortCode))
-                return match.Value;
+                return null;
 
             var shortHand = string.Format(":{0}:", emojiShortCode);
             var emojiFile = string.Format("{0}.png", EmojiDict[emojiShortCode].ToLower());
@@ -2669,7 +2703,7 @@ namespace pyRevitLabs.Emojis {
                 return string.Format(EmojiSpanTemplate, encodedEmoji, shortHand);
             }
             catch {
-                return match.Value;
+                return null;
             }
         }
 

@@ -38,9 +38,7 @@ class FamilyLoaderOptionsHandler(DB.IFamilyLoadOptions):
     def __init__(self, overwriteParameterValues=True):
         self._overwriteParameterValues = overwriteParameterValues
 
-    def OnFamilyFound(
-        self, familyInUse, overwriteParameterValues
-    ):  # pylint: disable=W0613
+    def OnFamilyFound(self, familyInUse, overwriteParameterValues):  # pylint: disable=W0613
         """A method called when the family was found in the target document.
 
         The interface declares ref parameters: IronPython passes a
@@ -358,13 +356,11 @@ def load_family(family_file, doc=None):
 
     WARNING! This function MUST be used within a transaction!
 
-    Changed:
-        Previously returned bool (True on success, False on failure).
-        Now returns list[DB.FamilySymbol] (non-empty list on success, empty list on failure).
-        The return value is still truthy/falsy compatible for boolean checks.
-
-        Improved behavior: If family is already loaded, the function now retrieves and returns
-        the existing family's symbols instead of returning an empty list.
+    Important:
+        A non-empty list does not prove Revit loaded the file; it can contain
+        symbols from a matching family already in the document. Call
+        :func:`load_family_with_result` when the direct Revit load result is
+        required.
 
     Example:
         from pyrevit.revit.db import create, transaction
@@ -380,21 +376,40 @@ def load_family(family_file, doc=None):
                 print("Family file not found or failed to load")
 
     """
+    _, fam_symbols = load_family_with_result(family_file, doc=doc)
+    return fam_symbols
+
+
+def load_family_with_result(family_file, doc=None):
+    """Load a family and return Revit's result with its available symbols.
+
+    Args:
+        family_file (str): Fully qualified path to the family file.
+        doc (DB.Document): Target document. Defaults to the active document.
+
+    Returns:
+        tuple[bool, list[DB.FamilySymbol]]: The direct Revit load result and
+        symbols from the loaded or matching existing family.
+
+    Important:
+        A false result can still include symbols when Revit refuses the file
+        because a matching family is already present. Callers that report an
+        overwrite must use the boolean result rather than symbol-list truthiness.
+    """
     doc = doc or DOCS.doc
     mlogger.debug("Loading family from: %s", family_file)
 
     fam_symbols = []
-
     # LoadFamily's out-param needs engine-specific marshaling: an explicit
     # clr.Reference under IronPython, a return tuple under pythonnet
     if IRONPY:
         ret_ref = clr.Reference[DB.Family]()
-        res = doc.LoadFamily(family_file, FamilyLoaderOptionsHandler(), ret_ref)
+        loaded = doc.LoadFamily(family_file, FamilyLoaderOptionsHandler(), ret_ref)
         fam = ret_ref.Value
     else:
-        res, fam = doc.LoadFamily(family_file, FamilyLoaderOptionsHandler(), None)
+        loaded, fam = doc.LoadFamily(family_file, FamilyLoaderOptionsHandler(), None)
 
-    if not res:
+    if not loaded:
         # Family may already be loaded - check if the out-param has it
         if fam:
             mlogger.debug(
@@ -410,22 +425,43 @@ def load_family(family_file, doc=None):
             )
             existing_families = query.get_family(family_name, doc=doc)
             if existing_families:
-                # Get symbols from the first matching family
                 # get_family returns FamilySymbol elements, which is what we need
-                return list(existing_families)
-            else:
-                mlogger.debug(
-                    "Cannot load Family from file=%s and family not found in document.",
-                    family_file,
-                )
-                return fam_symbols
+                return False, list(existing_families)
+            mlogger.debug(
+                "Cannot load Family from file=%s and family not found in document.",
+                family_file,
+            )
+            return False, fam_symbols
 
     # Collect symbols from the family
     for fam_symbol_id in fam.GetFamilySymbolIds():
         fam_symbol = doc.GetElement(fam_symbol_id)
         if fam_symbol:
             fam_symbols.append(fam_symbol)
-    return fam_symbols
+    return bool(loaded), fam_symbols
+
+
+def load_family_symbol(family_file, symbol_name, doc=None):
+    """Load one family symbol through the engine-specific out-param bridge.
+
+    Args:
+        family_file (str): Fully qualified path to the family file.
+        symbol_name (str): Family type name to load.
+        doc (DB.Document): Target document. Defaults to the active document.
+
+    Returns:
+        bool: True when Revit loads the requested symbol.
+
+    Important:
+        The caller must have an open Revit transaction.
+    """
+    doc = doc or DOCS.doc
+    load_options = FamilyLoaderOptionsHandler()
+    if IRONPY:
+        symbol_ref = clr.Reference[DB.FamilySymbol]()
+        return doc.LoadFamilySymbol(family_file, symbol_name, load_options, symbol_ref)
+    loaded, _ = doc.LoadFamilySymbol(family_file, symbol_name, load_options, None)
+    return loaded
 
 
 def enable_worksharing(
@@ -439,7 +475,7 @@ def enable_worksharing(
             doc.EnableWorksharing(levels_workset_name, default_workset_name)
         else:
             raise PyRevitException(
-                "Worksharing can not be enabled. " "(CanEnableWorksharing is False)"
+                "Worksharing can not be enabled. (CanEnableWorksharing is False)"
             )
 
 
@@ -457,8 +493,7 @@ def create_filledregion(filledregion_name, fillpattern_element, doc=None):
     for filledregion_type in filledregion_types:
         if query.get_name(filledregion_type) == filledregion_name:
             raise PyRevitException(
-                'Filled Region matching "{}" already '
-                "exists.".format(filledregion_name)
+                'Filled Region matching "{}" already exists.'.format(filledregion_name)
             )
     source_filledregion = filledregion_types.FirstElement()
     new_filledregion = source_filledregion.Duplicate(filledregion_name)

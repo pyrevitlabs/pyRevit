@@ -1,4 +1,4 @@
-"""Static checker for Python-3 / engine-portability issues in first-party code.
+r"""Static checker for Python-3 / engine-portability issues in first-party code.
 
 Scans pyrevitlib and the shipped extensions for the Python-2-only idioms and
 IronPython-only CLR APIs cataloged in IRONPYTHON_TO_PYTHON3_ANALYSIS.md
@@ -40,9 +40,8 @@ Checks:
                 to an attribute; these are non-indexable lazy views in
                 Python 3 but were lists in Python 2 (wrap in list())
 
-A finding is not flagged when it is guarded by a compat pattern the codebase
-already uses: an ``if`` test, an enclosing function's decorator, or a
-module-level conditional that references PY2/PY3/IRONPY*, or a try/except
+A finding is not flagged when its branch is unreachable on IronPython 3,
+its enclosing test is skipped on that engine, or it is inside a try/except
 NameError/ImportError fallback (the name-shim and import-fallback patterns).
 """
 
@@ -57,6 +56,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 DEFAULT_SCAN_ROOTS = [
     "pyrevitlib/pyrevit",
+    "pyrevitlib/rpw",
     "pyrevitlib/rjm",
     "pyrevitlib/rpws",
     "pyrevitlib/rsparam",
@@ -64,21 +64,21 @@ DEFAULT_SCAN_ROOTS = [
 ]
 
 # Excluded from the Python-3-supported surface:
-# - rpw: frozen legacy, IronPython-WPF-locked (analysis doc section 4.7)
 # - coreutils/markdown: vendored python-markdown with no first-party runtime
 #   consumers (output.print_md renders via C#); a deprecated, unbundling
 #   candidate that scripts should replace with pip `markdown`, so it is not
 #   maintained against this checker
 EXCLUDED_DIRS = [
-    "pyrevitlib/rpw",
     "pyrevitlib/pyrevit/coreutils/markdown",
 ]
 
 # Files allowed to use IronPython-only CLR loading:
 # - framework.py is the designated shim site; its calls are engine-gated
+# - rpw's WPF bootstrap dispatches to the engine-local assemblies
 # - the DevTools compile test exercises the IronPython engine by design
 IPY_CLR_EXEMPT = [
     "pyrevitlib/pyrevit/framework.py",
+    "pyrevitlib/rpw/ui/forms/resources.py",
     "extensions/pyRevitDevTools.extension/pyRevitDev.tab/Debug.panel/"
     "Engine Tests.pulldown/Test IronPython Compile.pushbutton/script.py",
 ]
@@ -94,28 +94,73 @@ CLR_REF_EXEMPT = [
 PY2_ONLY_ITER_METHODS = {"iteritems", "iterkeys", "itervalues"}
 PY2_ONLY_ITERTOOLS = {"ifilter", "ifilterfalse", "imap", "izip", "izip_longest"}
 PY2_ONLY_NAMES = {
-    "xrange", "basestring", "unicode", "unichr", "long", "StandardError",
+    "xrange",
+    "basestring",
+    "unicode",
+    "unichr",
+    "long",
+    "StandardError",
 } | PY2_ONLY_ITERTOOLS
-ENGINE_GUARD_NAMES = {"PY2", "PY3", "IRONPY", "IRONPY2", "IRONPY3"}
+IPY3_FLAG_VALUES = {
+    "PY2": False,
+    "PY3": True,
+    "IRONPY": True,
+    "IRONPY2": False,
+    "IRONPY3": True,
+}
 
 # Builtins removed in Python 3. Flagged only when CALLED, and skipped when the
 # name is imported (reduce/reload/intern have functools/importlib/sys homes) or
 # engine-guarded.
 PY2_REMOVED_BUILTIN_CALLS = {
-    "raw_input", "execfile", "apply", "coerce", "intern", "buffer",
-    "cmp", "reduce", "reload", "file",
+    "raw_input",
+    "execfile",
+    "apply",
+    "coerce",
+    "intern",
+    "buffer",
+    "cmp",
+    "reduce",
+    "reload",
+    "file",
 }
 
 # Stdlib modules renamed/removed in Python 3 (2to3 fix_imports). Matched on the
 # top-level import name; engine-guarded imports (compat shims) are skipped.
 PY2_ONLY_MODULES = {
-    "StringIO", "cStringIO", "Queue", "cPickle", "ConfigParser", "copy_reg",
-    "__builtin__", "HTMLParser", "htmlentitydefs", "urllib2", "urlparse",
-    "robotparser", "httplib", "cookielib", "Cookie", "BaseHTTPServer",
-    "SimpleHTTPServer", "CGIHTTPServer", "SocketServer", "xmlrpclib",
-    "SimpleXMLRPCServer", "Tkinter", "tkFileDialog", "tkMessageBox",
-    "thread", "dummy_thread", "UserDict", "UserList", "UserString",
-    "anydbm", "commands", "_winreg", "markupbase",
+    "StringIO",
+    "cStringIO",
+    "Queue",
+    "cPickle",
+    "ConfigParser",
+    "copy_reg",
+    "__builtin__",
+    "HTMLParser",
+    "htmlentitydefs",
+    "urllib2",
+    "urlparse",
+    "robotparser",
+    "httplib",
+    "cookielib",
+    "Cookie",
+    "BaseHTTPServer",
+    "SimpleHTTPServer",
+    "CGIHTTPServer",
+    "SocketServer",
+    "xmlrpclib",
+    "SimpleXMLRPCServer",
+    "Tkinter",
+    "tkFileDialog",
+    "tkMessageBox",
+    "thread",
+    "dummy_thread",
+    "UserDict",
+    "UserList",
+    "UserString",
+    "anydbm",
+    "commands",
+    "_winreg",
+    "markupbase",
 }
 
 # Python-3 lazy views/iterators that were lists in Python 2. Indexing or
@@ -125,6 +170,8 @@ PY3_LAZY_BUILTINS = {"map", "filter", "zip"}
 
 
 class Finding:
+    """A source finding emitted by the Python 3 compatibility scan."""
+
     def __init__(self, path, lineno, code, message):
         self.path = path
         self.lineno = lineno
@@ -161,25 +208,49 @@ def _receiver_name(node):
     return None
 
 
-def _is_engine_guarded(node, parents):
-    """Return True if node sits under an engine-version guard.
+def _ipy3_condition_value(node):
+    """Resolve an engine condition when its value is certain on IronPython 3."""
+    if isinstance(node, ast.Name):
+        return IPY3_FLAG_VALUES.get(node.id)
+    if isinstance(node, ast.Constant) and isinstance(node.value, bool):
+        return node.value
+    if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Not):
+        value = _ipy3_condition_value(node.operand)
+        return None if value is None else not value
+    if isinstance(node, ast.BoolOp):
+        values = [_ipy3_condition_value(value) for value in node.values]
+        if isinstance(node.op, ast.And):
+            if False in values:
+                return False
+            return True if all(value is True for value in values) else None
+        if isinstance(node.op, ast.Or):
+            if True in values:
+                return True
+            return False if all(value is False for value in values) else None
+    return None
 
-    Recognized guards: an ``if`` whose test references an engine flag, a
-    function whose decorators reference one (e.g. skipUnless(PY2, ...)), or a
-    try/except NameError/ImportError (the shim-definition and import-fallback
-    patterns, e.g. `try: from StringIO import StringIO / except ImportError:
-    from io import StringIO`).
-    """
+
+def _is_engine_guarded(node, parents):
+    """Return True when a branch cannot execute on IronPython 3."""
     current = node
     while current in parents:
         parent = parents[current]
         if isinstance(parent, ast.If):
-            if ENGINE_GUARD_NAMES & set(_names_in(parent.test)):
+            value = _ipy3_condition_value(parent.test)
+            if value is False and current in parent.body:
+                return True
+            if value is True and current in parent.orelse:
                 return True
         elif isinstance(parent, (ast.FunctionDef, ast.AsyncFunctionDef)):
             for decorator in parent.decorator_list:
-                if ENGINE_GUARD_NAMES & set(_names_in(decorator)):
-                    return True
+                if not isinstance(decorator, ast.Call) or not decorator.args:
+                    continue
+                value = _ipy3_condition_value(decorator.args[0])
+                if isinstance(decorator.func, ast.Attribute):
+                    if decorator.func.attr == "skipIf" and value is True:
+                        return True
+                    if decorator.func.attr == "skipUnless" and value is False:
+                        return True
         elif isinstance(parent, ast.Try):
             for handler in parent.handlers:
                 if handler.type is not None and (
@@ -247,6 +318,7 @@ def _bare_py3_view(node):
 
 
 def check_file(path):
+    """Return compatibility findings for one Python source file."""
     findings = []
     try:
         with tokenize.open(path) as fp:
@@ -415,8 +487,9 @@ def check_file(path):
                                 path,
                                 node.lineno,
                                 "PY2-MODULE",
-                                "module `{}` was renamed/removed in "
-                                "Python 3".format(alias.name),
+                                "module `{}` was renamed/removed in Python 3".format(
+                                    alias.name
+                                ),
                             )
                         )
 
@@ -430,8 +503,9 @@ def check_file(path):
                                     path,
                                     node.lineno,
                                     "PY2-ITER",
-                                    "itertools.{} does not exist in "
-                                    "Python 3".format(alias.name),
+                                    "itertools.{} does not exist in Python 3".format(
+                                        alias.name
+                                    ),
                                 )
                             )
                 if (
@@ -444,8 +518,9 @@ def check_file(path):
                             path,
                             node.lineno,
                             "PY2-MODULE",
-                            "module `{}` was renamed/removed in "
-                            "Python 3".format(node.module),
+                            "module `{}` was renamed/removed in Python 3".format(
+                                node.module
+                            ),
                         )
                     )
 
@@ -536,6 +611,7 @@ def check_file(path):
 
 
 def iter_python_files(roots, resolve_against):
+    """Yield source files under the requested roots, excluding unsupported trees."""
     excluded = [REPO_ROOT.joinpath(*d.split("/")) for d in EXCLUDED_DIRS]
     for root in roots:
         root_path = root if root.is_absolute() else resolve_against / root
@@ -554,6 +630,7 @@ def iter_python_files(roots, resolve_against):
 
 
 def main():
+    """Run the checker CLI and return its process exit code."""
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
         "paths",
@@ -586,9 +663,7 @@ def main():
 
     if file_count == 0:
         print(
-            "error: scanned 0 files from {}".format(
-                ", ".join(str(r) for r in roots)
-            ),
+            "error: scanned 0 files from {}".format(", ".join(str(r) for r in roots)),
             file=sys.stderr,
         )
         return 2

@@ -1,0 +1,27 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">키노트 붙여넣기</system:String>
+    <system:String x:Key="TakeAllFromSource">원본에서 모두 가져오기</system:String>
+    <system:String x:Key="OnlyNew">새 항목만</system:String>
+    <system:String x:Key="TakeNone">선택 없음</system:String>
+    <system:String x:Key="ColKey">키</system:String>
+    <system:String x:Key="ColSource">원본</system:String>
+    <system:String x:Key="ColTarget">현재 대상</system:String>
+    <system:String x:Key="ColResult">결과</system:String>
+    <system:String x:Key="PasteAction">붙여넣기</system:String>
+    <system:String x:Key="CancelAction">취소</system:String>
+    <system:String x:Key="HeaderInto">“{1}”에서 “{2}”(으)로 {0}개 항목.</system:String>
+    <system:String x:Key="HeaderNote">선택한 행은 대상 키노트 파일에 기록되며, 나머지는 그대로 유지됩니다.</system:String>
+    <system:String x:Key="FooterNote">충돌 행을 가져오면 대상의 텍스트만 바뀌며 — 트리에서의 위치는 유지됩니다.</system:String>
+    <system:String x:Key="SummaryCounts">추가 {0}개 · 교체 {1}개 · 유지 {2}개</system:String>
+    <system:String x:Key="GroupTag">(그룹)</system:String>
+    <system:String x:Key="ResultAdd">추가</system:String>
+    <system:String x:Key="ResultReplace">텍스트 교체</system:String>
+    <system:String x:Key="ResultIdentical">이미 있음</system:String>
+    <system:String x:Key="ResultLocked">{0} 님이 잠금</system:String>
+    <system:String x:Key="ResultNoParent">상위 그룹 없음</system:String>
+    <system:String x:Key="UnknownSource">다른 프로젝트</system:String>
+    <system:String x:Key="SameFileNote">(같은 키노트 파일)</system:String>
+    <system:String x:Key="UnknownUser">다른 사용자</system:String>
+</ResourceDictionary>

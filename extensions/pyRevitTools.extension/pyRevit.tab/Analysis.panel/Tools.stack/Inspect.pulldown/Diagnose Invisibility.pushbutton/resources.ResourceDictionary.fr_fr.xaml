@@ -1,0 +1,33 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="pick_prompt">Sélectionner le(s) élément(s) à diagnostiquer</sys:String>
+    <sys:String x:Key="select_view_title">Sélectionner une vue</sys:String>
+    <sys:String x:Key="select_view_button">Diagnostiquer dans cette vue</sys:String>
+    <sys:String x:Key="no_elements_error">Aucun élément sélectionné ou choisi.</sys:String>
+    <sys:String x:Key="no_view_error">Aucune vue sélectionnée.</sys:String>
+    <sys:String x:Key="report_title">Diagnostic de visibilité</sys:String>
+    <sys:String x:Key="status_visible">Visible dans cette vue.</sys:String>
+    <sys:String x:Key="status_hidden">NON visible dans cette vue :</sys:String>
+    <sys:String x:Key="status_error">Erreur lors du diagnostic de l'élément</sys:String>
+    <sys:String x:Key="summary_line">{} visible(s), {} non visible(s).</sys:String>
+    <sys:String x:Key="reason_workset_hidden">Le sous-projet '{}' est explicitement masqué dans cette vue</sys:String>
+    <sys:String x:Key="reason_workset_closed">Le sous-projet '{}' est fermé (paramètre global)</sys:String>
+    <sys:String x:Key="reason_workset_default_hidden">Le sous-projet '{}' est masqué par le paramètre de visibilité par défaut du modèle</sys:String>
+    <sys:String x:Key="reason_phase_filter">Masqué par le filtre de phase (statut de phase de l'élément : '{}')</sys:String>
+    <sys:String x:Key="reason_design_option">L'élément appartient à l'option de conception '{}', différente de celle affichée par cette vue</sys:String>
+    <sys:String x:Key="reason_category_hidden">La catégorie '{}' est masquée dans cette vue</sys:String>
+    <sys:String x:Key="reason_subcategory_hidden">La sous-catégorie '{}' de '{}' est masquée dans cette vue (l'élément peut en faire partie)</sys:String>
+    <sys:String x:Key="reason_element_hidden">L'élément est explicitement masqué dans cette vue (Masquer/Isoler)</sys:String>
+    <sys:String x:Key="reason_view_filter">Masqué par le filtre de vue '{}'</sys:String>
+    <sys:String x:Key="reason_section_box">La boîte englobante de l'élément est entièrement en dehors de la boîte de coupe 3D active de la vue</sys:String>
+    <sys:String x:Key="reason_crop_box">La boîte englobante de l'élément est entièrement en dehors de la zone de recadrage de la vue</sys:String>
+    <sys:String x:Key="reason_viewrange_above">L'élément est au-dessus du plan de coupe supérieur de l'étendue de la vue (Z min. de l'élément {:.3f} ft &gt; haut {:.3f} ft)</sys:String>
+    <sys:String x:Key="reason_viewrange_below">L'élément est en dessous de la limite inférieure de l'étendue de la vue (plan de coupe inférieur / profondeur de vue) (Z max. de l'élément {:.3f} ft &lt; limite inférieure {:.3f} ft)</sys:String>
+    <sys:String x:Key="reason_view_template">Le gabarit de vue '{}' est appliqué - certains paramètres de visibilité peuvent être verrouillés et doivent être modifiés dans le gabarit</sys:String>
+    <sys:String x:Key="reason_view_specific">L'élément est spécifique à une vue et appartient à une autre vue ('{}'), il ne peut donc pas apparaître ici</sys:String>
+    <sys:String x:Key="reason_view_discipline">La discipline de la vue est définie sur '{}' - certaines catégories sont automatiquement affichées ou masquées selon la discipline, indépendamment des paramètres de visibilité/graphisme</sys:String>
+    <sys:String x:Key="reason_unknown">L'élément n'est pas visible, mais aucune cause précise n'a pu être déterminée. Causes possibles : type d'élément spécifique à une vue (ex. annotation d'une autre vue), visibilité dans un modèle lié, ou niveau de détail.</sys:String>
+
+</ResourceDictionary>

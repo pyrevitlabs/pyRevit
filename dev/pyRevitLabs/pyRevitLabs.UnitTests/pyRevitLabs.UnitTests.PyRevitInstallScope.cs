@@ -1,14 +1,13 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using pyRevitLabs.Common;
+using pyRevitLabs.Configurations.Ini;
 using pyRevitLabs.PyRevit;
 using pyRevitExtensionParser;
-using ExtensionParserConfig = pyRevitExtensionParser.PyRevitConfig;
 
 namespace pyRevitLabs.UnitTests {
     [TestClass]
@@ -33,10 +32,19 @@ namespace pyRevitLabs.UnitTests {
                 Path.Combine(_tempRoot, "ProgramDataPyRevit"));
             PyRevitInstallScope.ClearCachedInstallScope();
             PyRevitInstallScope.SetRuntimeInstallRoot(null);
+            PyRevitConfigService.Reload();
+        }
+
+        private static void SetUserExtensions(string configPath, params string[] extensionPaths) {
+            string encodedPaths = string.Join(
+                ",",
+                extensionPaths.Select(path => "\"" + path.Replace("\\", "\\\\") + "\""));
+            File.WriteAllText(configPath, "[core]\r\nuserextensions = [" + encodedPaths + "]\r\n");
         }
 
         [TestCleanup]
         public void Cleanup() {
+            PyRevitConfigService.Reload();
             PyRevitInstallScope.ClearCachedInstallScope();
             PyRevitInstallScope.SetRuntimeInstallRoot(null);
             Environment.SetEnvironmentVariable(
@@ -372,6 +380,9 @@ namespace pyRevitLabs.UnitTests {
 
         [TestMethod]
         public void MigrateSplitAdminConfig_MergesClonesAndExtensionSections() {
+            if (!PyRevitInstallScope.IsElevatedProcess())
+                Assert.Inconclusive("Split-admin migration requires an elevated process.");
+
             Environment.SetEnvironmentVariable(
                 PyRevitInstallScope.ConfigScopeEnvVar,
                 PyRevitInstallScope.ConfigScopeAllUsers);
@@ -392,6 +403,7 @@ namespace pyRevitLabs.UnitTests {
                     "[pyRevitTemplates.extension]\r\ndisabled = true\r\n");
 
                 PyRevitInstallScope.ClearCachedInstallScope();
+                PyRevitConfigService.Reload();
                 PyRevitConfigs.GetConfigFile();
 
                 string merged = File.ReadAllText(programDataConfig);
@@ -464,8 +476,8 @@ namespace pyRevitLabs.UnitTests {
             Directory.CreateDirectory(userExtDir);
 
             try {
-                new ExtensionParserConfig(machineConfigPath).UserExtensionsList = new List<string> { machineExtDir };
-                new ExtensionParserConfig(userConfigPath).UserExtensionsList = new List<string> { userExtDir };
+                SetUserExtensions(machineConfigPath, machineExtDir);
+                SetUserExtensions(userConfigPath, userExtDir);
 
                 var roots = ExtensionParser.GetExtensionRoots();
 
@@ -499,8 +511,8 @@ namespace pyRevitLabs.UnitTests {
             Directory.CreateDirectory(userExtDir);
 
             try {
-                new ExtensionParserConfig(machineConfigPath).UserExtensionsList = new List<string> { machineExtDir };
-                new ExtensionParserConfig(userConfigPath).UserExtensionsList = new List<string> { userExtDir };
+                SetUserExtensions(machineConfigPath, machineExtDir);
+                SetUserExtensions(userConfigPath, userExtDir);
                 File.SetAttributes(machineConfigPath, FileAttributes.ReadOnly);
 
                 var roots = ExtensionParser.GetExtensionRoots();
@@ -541,7 +553,7 @@ namespace pyRevitLabs.UnitTests {
             Directory.CreateDirectory(userExtDir);
 
             try {
-                new ExtensionParserConfig(machineConfigPath).UserExtensionsList = new List<string> { machineExtDir };
+                SetUserExtensions(machineConfigPath, machineExtDir);
                 File.WriteAllText(userConfigPath, "[core]\r\n");
                 File.SetAttributes(userConfigPath, FileAttributes.Normal);
 
@@ -578,12 +590,8 @@ namespace pyRevitLabs.UnitTests {
             Directory.CreateDirectory(machineOnlyExtDir);
 
             try {
-                new ExtensionParserConfig(machineConfigPath).UserExtensionsList = new List<string> {
-                    sharedExtDir, machineOnlyExtDir
-                };
-                new ExtensionParserConfig(userConfigPath).UserExtensionsList = new List<string> {
-                    sharedExtDir.ToUpperInvariant(), sharedExtDir
-                };
+                SetUserExtensions(machineConfigPath, sharedExtDir, machineOnlyExtDir);
+                SetUserExtensions(userConfigPath, sharedExtDir.ToUpperInvariant(), sharedExtDir);
 
                 var roots = ExtensionParser.GetExtensionRoots();
 
@@ -614,8 +622,8 @@ namespace pyRevitLabs.UnitTests {
             Directory.CreateDirectory(userExtDir);
 
             try {
-                new ExtensionParserConfig(machineConfigPath).UserExtensionsList = new List<string> { machineExtDir };
-                new ExtensionParserConfig(userConfigPath).UserExtensionsList = new List<string> { userExtDir };
+                SetUserExtensions(machineConfigPath, machineExtDir);
+                SetUserExtensions(userConfigPath, userExtDir);
                 PyRevitInstallScope.ClearCachedInstallScope();
                 ExtensionParser.ClearAllCaches();
 
@@ -655,8 +663,8 @@ namespace pyRevitLabs.UnitTests {
             Directory.CreateDirectory(userExtDir);
 
             try {
-                new ExtensionParserConfig(machineConfigPath).UserExtensionsList = new List<string> { machineExtDir };
-                new ExtensionParserConfig(userConfigPath).UserExtensionsList = new List<string> { userExtDir };
+                SetUserExtensions(machineConfigPath, machineExtDir);
+                SetUserExtensions(userConfigPath, userExtDir);
 
                 using (File.Open(machineConfigPath, FileMode.Open, FileAccess.Read, FileShare.Read))
                 using (File.Open(userConfigPath, FileMode.Open, FileAccess.Read, FileShare.Read)) {
@@ -696,7 +704,7 @@ namespace pyRevitLabs.UnitTests {
 
             try {
                 File.WriteAllText(machineConfigPath, "[core]\r\n");
-                new ExtensionParserConfig(userConfigPath).UserExtensionsList = new List<string> { userExtDir };
+                SetUserExtensions(userConfigPath, userExtDir);
 
                 using (File.Open(machineConfigPath, FileMode.Open, FileAccess.Read, FileShare.Read)) {
                     var roots = ExtensionParser.GetExtensionRoots();

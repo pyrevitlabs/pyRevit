@@ -20,6 +20,27 @@ NETFRAMEWORK = not NETCORE  # Revit 2024 and earlier
 NO_REVIT = -1
 REVIT_NETCORE_VERSION = 2025
 
+
+class _LazyModule(object):
+    """Stand-in for a module, imported on first attribute access.
+
+    Note:
+        A failed import surfaces at first attribute access rather than at
+        the point this placeholder is created.
+    """
+
+    def __init__(self, module_name):
+        self.__dict__["_module_name"] = module_name
+        self.__dict__["_module"] = None
+
+    def __getattr__(self, attr):
+        module = self.__dict__["_module"]
+        if module is None:
+            module = __import__(self.__dict__["_module_name"])
+            self.__dict__["_module"] = module
+        return getattr(module, attr)
+
+
 # pylint: disable=import-error,unused-import
 if PY3:
     __builtins__["unicode"] = str
@@ -28,8 +49,9 @@ if PY2:
     import _winreg as winreg
     import ConfigParser as configparser
     from collections import Iterable, Callable
-    import urllib2
     from urlparse import urlparse
+
+    urllib2 = _LazyModule("urllib2")
 
 elif PY3:
     import winreg as winreg

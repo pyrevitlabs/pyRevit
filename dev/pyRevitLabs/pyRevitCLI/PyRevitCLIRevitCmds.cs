@@ -53,7 +53,7 @@ namespace pyRevitCLI {
 
         internal static void
         ProcessFileInfo(string targetPath, string outputCSV,
-                        bool IncludeRVT=true, bool includeRTE=false, bool includeRFA=false, bool includeRFT=false) {
+                        bool IncludeRVT = true, bool includeRTE = false, bool includeRFA = false, bool includeRFT = false) {
             // if targetpath is a single model print the model info
             if (File.Exists(targetPath))
                 if (outputCSV != null)
@@ -85,7 +85,7 @@ namespace pyRevitCLI {
                 logger.Info(string.Format("Searching for revit files under \"{0}\"", targetPath));
                 FileAttributes attr = File.GetAttributes(targetPath);
                 if ((attr & FileAttributes.Directory) == FileAttributes.Directory) {
-                    foreach(string searchPattern in fileSearchPatterns) {
+                    foreach (string searchPattern in fileSearchPatterns) {
                         var files = Directory.EnumerateFiles(targetPath, searchPattern, SearchOption.AllDirectories);
                         logger.Info(string.Format(" {0} revit files found under \"{1}\"", files.Count(), targetPath));
                         foreach (var file in files) {
@@ -140,7 +140,7 @@ namespace pyRevitCLI {
         ListAvailableCommands() {
             foreach (PyRevitClone clone in PyRevitClones.GetRegisteredClones()) {
                 PyRevitCLIAppCmds.PrintHeader($"Commands in Clone \"{clone.Name}\"");
-                foreach ( PyRevitExtension ext in clone.GetExtensions()) {
+                foreach (PyRevitExtension ext in clone.GetExtensions()) {
                     if (ext.Type == PyRevitExtensionTypes.UIExtension) {
                         foreach (PyRevitRunnerCommand cmd in ext.GetCommands())
                             Console.WriteLine(cmd);
@@ -329,7 +329,7 @@ namespace pyRevitCLI {
 
             // print project information properties
             Console.WriteLine("Project Information (Properties):");
-            foreach(var item in model.ProjectInfoProperties.OrderBy(x => x.Key)) {
+            foreach (var item in model.ProjectInfoProperties.OrderBy(x => x.Key)) {
                 Console.WriteLine("\t{0} = {1}", item.Key, item.Value.ToEscaped());
             }
 

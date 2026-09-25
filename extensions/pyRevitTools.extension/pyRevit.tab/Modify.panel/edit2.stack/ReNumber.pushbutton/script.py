@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """ReNumber numbered elements in order of selection."""
-#pylint: disable=import-error,invalid-name,broad-except
+
+# pylint: disable=import-error,invalid-name,broad-except
 from collections import OrderedDict
 
 from pyrevit.coreutils import applocales
@@ -31,6 +32,7 @@ DUPE_MODE_SKIP = "Skip (already numbered)"
 
 class RNOpts(object):
     """Renumber tool option"""
+
     def __init__(self, cat, by_bicat=None):
         self.bicat = cat
         self._cat = revit.query.get_category(self.bicat)
@@ -42,9 +44,9 @@ class RNOpts(object):
         """Renumber option name derived from option categories."""
         if self.by_bicat:
             applocale = applocales.get_host_applocale()
-            if 'english' in applocale.lang_name.lower():
-                return '{} by {}'.format(self._cat.Name, self._by_cat.Name)
-            return '{} <- {}'.format(self._cat.Name, self._by_cat.Name)
+            if "english" in applocale.lang_name.lower():
+                return "{} by {}".format(self._cat.Name, self._by_cat.Name)
+            return "{} <- {}".format(self._cat.Name, self._by_cat.Name)
         return self._cat.Name
 
 
@@ -68,8 +70,8 @@ def toggle_element_selection_handles(target_views, bicat, state=True):
     """Toggle handles for spatial elements"""
 
     with revit.Transaction("Toggle handles"):
-        rr_cat = revit.query.get_subcategory(bicat, 'Reference')
-        rr_int = revit.query.get_subcategory(bicat, 'Interior Fill')
+        rr_cat = revit.query.get_subcategory(bicat, "Reference")
+        rr_int = revit.query.get_subcategory(bicat, "Interior Fill")
         # if view has template, toggle temp VG overrides
         if state and bicat != BIC.OST_Viewports:
             for target_view in target_views:
@@ -79,69 +81,60 @@ def toggle_element_selection_handles(target_views, bicat, state=True):
                     rr_cat.Visible[target_view] = state
                 except Exception as vex:
                     logger.debug(
-                        'Failed changing category visibility for \"%s\" '
-                        'to \"%s\" on view \"%s\" | %s',
+                        'Failed changing category visibility for "%s" '
+                        'to "%s" on view "%s" | %s',
                         bicat,
                         state,
                         target_view.Name,
-                        str(vex)
-                        )
+                        str(vex),
+                    )
 
                 try:
                     rr_int.Visible[target_view] = state
                 except Exception as vex:
                     logger.debug(
-                        'Failed changing interior fill visibility for \"%s\" '
-                        'to \"%s\" on view \"%s\" | %s',
+                        'Failed changing interior fill visibility for "%s" '
+                        'to "%s" on view "%s" | %s',
                         bicat,
                         state,
                         target_view.Name,
-                        str(vex)
-                        )
+                        str(vex),
+                    )
             # disable the temp VG overrides after making changes to categories
         if not state:
             for target_view in target_views:
                 target_view.DisableTemporaryViewMode(
-                    DB.TemporaryViewMode.TemporaryViewProperties)
+                    DB.TemporaryViewMode.TemporaryViewProperties
+                )
                 try:
                     rr_int.Visible[target_view] = state
                 except Exception as vex:
                     logger.debug(
-                        'Failed changing interior fill visibility for \"%s\" '
-                        'to \"%s\" on view \"%s\" | %s',
+                        'Failed changing interior fill visibility for "%s" '
+                        'to "%s" on view "%s" | %s',
                         bicat,
                         state,
                         target_view.Name,
-                        str(vex)
-                        )
+                        str(vex),
+                    )
 
 
 class EasilySelectableElements(object):
     """Toggle spatial element handles for easy selection."""
+
     def __init__(self, target_views, bicat):
-        self.supported_categories = [
-            BIC.OST_Rooms,
-            BIC.OST_Areas,
-            BIC.OST_MEPSpaces
-            ]
+        self.supported_categories = [BIC.OST_Rooms, BIC.OST_Areas, BIC.OST_MEPSpaces]
         self.target_views = target_views
         self.bicat = bicat
 
     def __enter__(self):
         if self.bicat in self.supported_categories:
-            toggle_element_selection_handles(
-                self.target_views,
-                self.bicat
-                )
+            toggle_element_selection_handles(self.target_views, self.bicat)
         return self
 
     def __exit__(self, exception, exception_value, traceback):
         if self.bicat in self.supported_categories:
-            toggle_element_selection_handles(
-                self.target_views,
-                self.bicat,
-                state=False
-                )
+            toggle_element_selection_handles(self.target_views, self.bicat, state=False)
 
 
 def increment(number):
@@ -159,7 +152,9 @@ def get_number(target_element):
     if isinstance(target_element, (DB.Level, DB.Grid)):
         mark_param = target_element.Parameter[DB.BuiltInParameter.DATUM_TEXT]
     if isinstance(target_element, DB.Viewport):
-        mark_param = target_element.Parameter[DB.BuiltInParameter.VIEWPORT_DETAIL_NUMBER]
+        mark_param = target_element.Parameter[
+            DB.BuiltInParameter.VIEWPORT_DETAIL_NUMBER
+        ]
     # get now
     if mark_param:
         return mark_param.AsString()
@@ -176,7 +171,9 @@ def set_number(target_element, new_number):
     if isinstance(target_element, (DB.Level, DB.Grid)):
         mark_param = target_element.Parameter[DB.BuiltInParameter.DATUM_TEXT]
     if isinstance(target_element, DB.Viewport):
-        mark_param = target_element.Parameter[DB.BuiltInParameter.VIEWPORT_DETAIL_NUMBER]
+        mark_param = target_element.Parameter[
+            DB.BuiltInParameter.VIEWPORT_DETAIL_NUMBER
+        ]
     # set now
     if mark_param:
         mark_param.Set(new_number)
@@ -231,24 +228,25 @@ def find_replacement_number(existing_number, elements_dict):
     return replaced_number
 
 
-def renumber_element(target_views, target_element, new_number,
-                     elements_dict, dupe_mode=DUPE_MODE_SWEEP):
+def renumber_element(
+    target_views, target_element, new_number, elements_dict, dupe_mode=DUPE_MODE_SWEEP
+):
     """Renumber given element, respecting the chosen duplicate-handling mode."""
 
     # ── duplicate check ───────────────────────────────────────────────────────
     if new_number in elements_dict:
         element_with_same_number = revit.doc.GetElement(elements_dict[new_number])
 
-        if element_with_same_number \
-                and element_with_same_number.Id != target_element.Id:
-
+        if (
+            element_with_same_number
+            and element_with_same_number.Id != target_element.Id
+        ):
             if dupe_mode == DUPE_MODE_ALERT:
                 forms.alert(
-                    "Duplicate number \"{}\" found.\n"
-                    "Element skipped.".format(new_number),
-                    title="Duplicate Element Found"
+                    'Duplicate number "{}" found.\nElement skipped.'.format(new_number),
+                    title="Duplicate Element Found",
                 )
-                return   # abort – do not renumber this element
+                return  # abort – do not renumber this element
 
             elif dupe_mode == DUPE_MODE_SKIP:
                 # silently skip if the target itself is already numbered
@@ -274,7 +272,7 @@ def renumber_element(target_views, target_element, new_number,
         elements_dict.pop(existing_number)
 
     # ── apply the new number ──────────────────────────────────────────────────
-    logger.debug('applying %s', new_number)
+    logger.debug("applying %s", new_number)
     set_number(target_element, new_number)
     elements_dict[new_number] = target_element.Id
     mark_element_as_renumbered(target_views, target_element)
@@ -283,9 +281,8 @@ def renumber_element(target_views, target_element, new_number,
 def ask_for_starting_number(category_name):
     """Ask user for starting number."""
     return forms.ask_for_string(
-        prompt="Enter starting number",
-        title="ReNumber {}".format(category_name)
-        )
+        prompt="Enter starting number", title="ReNumber {}".format(category_name)
+    )
 
 
 def _unmark_collected(category_name, target_views, renumbered_element_ids):
@@ -306,8 +303,8 @@ def pick_and_renumber(rnopts, starting_index, pb, dupe_mode=DUPE_MODE_SWEEP):
             existing_elements_data = get_elements_dict(open_views, rnopts.bicat)
             renumbered_element_ids = {}
             for picked_element in revit.get_picked_elements_by_category(
-                    rnopts.bicat,
-                    message="Select {} in order".format(rnopts.name.lower())):
+                rnopts.bicat, message="Select {} in order".format(rnopts.name.lower())
+            ):
                 try:
                     pb.update_progress(int(index), int(starting_index))
                 except (ValueError, TypeError):
@@ -316,11 +313,16 @@ def pick_and_renumber(rnopts, starting_index, pb, dupe_mode=DUPE_MODE_SWEEP):
                     if picked_element.Id not in renumbered_element_ids:
                         renumbered_element_ids[picked_element.Id] = {}
                         for v in open_views:
-                            renumbered_element_ids[picked_element.Id][v.Id] = \
+                            renumbered_element_ids[picked_element.Id][v.Id] = (
                                 v.GetElementOverrides(picked_element.Id)
-                    renumber_element(open_views, picked_element,
-                                     index, existing_elements_data,
-                                     dupe_mode=dupe_mode)
+                            )
+                    renumber_element(
+                        open_views,
+                        picked_element,
+                        index,
+                        existing_elements_data,
+                        dupe_mode=dupe_mode,
+                    )
                 index = increment(index)
             _unmark_collected(rnopts.name, open_views, renumbered_element_ids)
 
@@ -334,13 +336,14 @@ def door_by_room_renumber(rnopts):
         existing_doors_data = get_elements_dict(open_views, rnopts.bicat)
         renumbered_door_ids = {}
         # make sure target elements are easily selectable
-        with EasilySelectableElements(open_views, rnopts.bicat) \
-                and EasilySelectableElements(open_views, rnopts.by_bicat):
+        with EasilySelectableElements(
+            open_views, rnopts.bicat
+        ) and EasilySelectableElements(open_views, rnopts.by_bicat):
             while True:
                 # pick door
-                picked_door = \
-                    revit.pick_element_by_category(rnopts.bicat,
-                                                   message="Select a door")
+                picked_door = revit.pick_element_by_category(
+                    rnopts.bicat, message="Select a door"
+                )
                 if not picked_door:
                     # user cancelled
                     return _unmark_collected("Doors", open_views, renumbered_door_ids)
@@ -350,12 +353,14 @@ def door_by_room_renumber(rnopts):
                 # if more than one option for room, ask to pick
                 if all([from_room, to_room]) or not any([from_room, to_room]):
                     # pick room
-                    picked_room = \
-                        revit.pick_element_by_category(rnopts.by_bicat,
-                                                       message="Select a room")
+                    picked_room = revit.pick_element_by_category(
+                        rnopts.by_bicat, message="Select a room"
+                    )
                     if not picked_room:
                         # user cancelled
-                        return _unmark_collected("Rooms", open_views, renumbered_door_ids)
+                        return _unmark_collected(
+                            "Rooms", open_views, renumbered_door_ids
+                        )
                 else:
                     picked_room = from_room or to_room
 
@@ -368,16 +373,20 @@ def door_by_room_renumber(rnopts):
                         if picked_door.Id not in renumbered_door_ids:
                             renumbered_door_ids[picked_door.Id] = {}
                             for v in open_views:
-                                renumbered_door_ids[picked_door.Id][v.Id] = v.GetElementOverrides(picked_door.Id)
+                                renumbered_door_ids[picked_door.Id][v.Id] = (
+                                    v.GetElementOverrides(picked_door.Id)
+                                )
                         # match door number to room number
-                        renumber_element(open_views, picked_door,
-                                         room_number,
-                                         existing_doors_data)
+                        renumber_element(
+                            open_views, picked_door, room_number, existing_doors_data
+                        )
                     elif door_count > 1:
                         if picked_door.Id not in renumbered_door_ids:
                             renumbered_door_ids[picked_door.Id] = {}
                             for v in open_views:
-                                renumbered_door_ids[picked_door.Id][v.Id] = v.GetElementOverrides(picked_door.Id)
+                                renumbered_door_ids[picked_door.Id][v.Id] = (
+                                    v.GetElementOverrides(picked_door.Id)
+                                )
                         # match door number to extended room number e.g. 100A
                         # check numbers of existing room doors and pick the next
                         room_door_numbers = [get_number(x) for x in room_doors]
@@ -386,9 +395,9 @@ def door_by_room_renumber(rnopts):
                         # max_attempts =len([x for x in room_door_numbers if x])
                         while new_number in room_door_numbers:
                             new_number = increment(new_number)
-                        renumber_element(open_views, picked_door,
-                                         new_number,
-                                         existing_doors_data)
+                        renumber_element(
+                            open_views, picked_door, new_number, existing_doors_data
+                        )
 
 
 # [X] enable room reference lines on view
@@ -404,8 +413,10 @@ def door_by_room_renumber(rnopts):
 # [X] renumber room
 # [X] renumber doors by room
 
+
 class _NoOpPB(object):
     """No-op progress bar stub for non-integer starting numbers."""
+
     def update_progress(self, value, max_value):
         pass
 
@@ -417,8 +428,7 @@ if isinstance(revit.active_view, ALLOWED_VIEW_CLASSES):
             RNOpts(cat=BIC.OST_Rooms),
             RNOpts(cat=BIC.OST_MEPSpaces),
             RNOpts(cat=BIC.OST_Doors),
-            RNOpts(cat=BIC.OST_Doors,
-                   by_bicat=BIC.OST_Rooms),
+            RNOpts(cat=BIC.OST_Doors, by_bicat=BIC.OST_Rooms),
             RNOpts(cat=BIC.OST_Walls),
             RNOpts(cat=BIC.OST_Windows),
             RNOpts(cat=BIC.OST_Parking),
@@ -434,22 +444,21 @@ if isinstance(revit.active_view, ALLOWED_VIEW_CLASSES):
     options_dict = OrderedDict()
     for renumber_option in renumber_options:
         options_dict[renumber_option.name] = renumber_option
-    selected_option_name = \
-        forms.CommandSwitchWindow.show(
-            options_dict,
-            message='Pick element type to renumber:',
-            title='Pick element type to renumber:',
-            width=400
-        )
+    selected_option_name = forms.CommandSwitchWindow.show(
+        options_dict,
+        message="Pick element type to renumber:",
+        title="Pick element type to renumber:",
+        width=400,
+    )
 
     if selected_option_name:
-        dupe_mode = DUPE_MODE_SWEEP   # normal click → original behaviour
+        dupe_mode = DUPE_MODE_SWEEP  # normal click → original behaviour
         if EXEC_PARAMS.config_mode:
             chosen = forms.CommandSwitchWindow.show(
                 [DUPE_MODE_ALERT, DUPE_MODE_SKIP, DUPE_MODE_SWEEP],
                 message="How should duplicate numbers be handled?",
                 title="Advanced: Duplicate Handling",
-                width=420
+                width=420,
             )
             if not chosen:
                 script.exit()
@@ -457,8 +466,10 @@ if isinstance(revit.active_view, ALLOWED_VIEW_CLASSES):
         selected_option = options_dict[selected_option_name]
         if selected_option.by_bicat:
             # if renumber doors by room
-            if selected_option.bicat == BIC.OST_Doors \
-                    and selected_option.by_bicat == BIC.OST_Rooms:
+            if (
+                selected_option.bicat == BIC.OST_Doors
+                and selected_option.by_bicat == BIC.OST_Rooms
+            ):
                 with forms.WarningBar(
                     title="Pick Pairs of Door and Room. ESCAPE to end."
                 ):
@@ -485,9 +496,18 @@ if isinstance(revit.active_view, ALLOWED_VIEW_CLASSES):
                         )
                     ) as pb:
                         pb.update_progress(_start_int, _start_int)
-                        pick_and_renumber(selected_option, starting_number, pb, dupe_mode=dupe_mode)
+                        pick_and_renumber(
+                            selected_option, starting_number, pb, dupe_mode=dupe_mode
+                        )
                 else:
                     with forms.WarningBar(
-                        title="Pick {} One by One. ESCAPE to end.".format(selected_option.name)
+                        title="Pick {} One by One. ESCAPE to end.".format(
+                            selected_option.name
+                        )
                     ):
-                        pick_and_renumber(selected_option, starting_number, _NoOpPB(), dupe_mode=dupe_mode)
+                        pick_and_renumber(
+                            selected_option,
+                            starting_number,
+                            _NoOpPB(),
+                            dupe_mode=dupe_mode,
+                        )

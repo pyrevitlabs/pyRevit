@@ -1,26 +1,28 @@
 # -*- coding: utf-8 -*-
-"""Utility functions and types."""
-#pylint: disable=import-error,invalid-name,broad-except
-#pylint: disable=unused-import,useless-object-inheritance
-from pyrevit.compat import IRONPY3, PY3
+"""Utility functions and types.
 
-if IRONPY3:
-    from http.client import OK, ACCEPTED, INTERNAL_SERVER_ERROR, NO_CONTENT
-elif PY3:
-    from http import HTTPStatus as _s
-    OK = _s.OK
-    ACCEPTED = _s.ACCEPTED
-    INTERNAL_SERVER_ERROR = _s.INTERNAL_SERVER_ERROR
-    NO_CONTENT = _s.NO_CONTENT
-else:
-    from httplib import OK, ACCEPTED, INTERNAL_SERVER_ERROR, NO_CONTENT
+The HTTP status codes exported here are spelled out rather than imported from
+the standard library http client, which is expensive to import under IronPython
+and is not otherwise needed to describe a request or a response.
+"""
+
+# pylint: disable=import-error,invalid-name,broad-except
+# pylint: disable=unused-import,useless-object-inheritance
+
+OK = 200
+ACCEPTED = 202
+NO_CONTENT = 204
+INTERNAL_SERVER_ERROR = 500
 
 DEFAULT_SOURCE = "pyrevit.routes"
 
 
 class Request(object):
     """Request wrapper object."""
-    def __init__(self, path='/', method='GET', data=None, params=None, query_params=None):
+
+    def __init__(
+        self, path="/", method="GET", data=None, params=None, query_params=None
+    ):
         self.path = path
         self.method = method
         self.data = data
@@ -57,6 +59,7 @@ class Request(object):
 
 class Response(object):
     """Response wrapper object."""
+
     def __init__(self, status=200, data=None, headers=None):
         self.status = status
         self.data = data

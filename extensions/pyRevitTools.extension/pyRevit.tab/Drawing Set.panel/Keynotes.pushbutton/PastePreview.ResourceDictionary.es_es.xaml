@@ -1,0 +1,27 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="clr-namespace:System;assembly=mscorlib">
+    <system:String x:Key="Title">Pegar notas clave</system:String>
+    <system:String x:Key="TakeAllFromSource">Tomar todo del origen</system:String>
+    <system:String x:Key="OnlyNew">Solo nuevas</system:String>
+    <system:String x:Key="TakeNone">Ninguna</system:String>
+    <system:String x:Key="ColKey">Clave</system:String>
+    <system:String x:Key="ColSource">Del origen</system:String>
+    <system:String x:Key="ColTarget">Actualmente en el destino</system:String>
+    <system:String x:Key="ColResult">Resultado</system:String>
+    <system:String x:Key="PasteAction">Pegar</system:String>
+    <system:String x:Key="CancelAction">Cancelar</system:String>
+    <system:String x:Key="HeaderInto">{0} registro(s) de «{1}» a «{2}».</system:String>
+    <system:String x:Key="HeaderNote">Las filas marcadas se escriben en el archivo de notas clave de destino; todo lo demás se deja tal cual.</system:String>
+    <system:String x:Key="FooterNote">Tomar una fila en conflicto sustituye solo el TEXTO del destino — se mantiene su lugar en el árbol.</system:String>
+    <system:String x:Key="SummaryCounts">{0} para añadir · {1} para sustituir · {2} sin cambios</system:String>
+    <system:String x:Key="GroupTag">(grupo)</system:String>
+    <system:String x:Key="ResultAdd">Añadir</system:String>
+    <system:String x:Key="ResultReplace">Sustituir texto</system:String>
+    <system:String x:Key="ResultIdentical">Ya existe</system:String>
+    <system:String x:Key="ResultLocked">Bloqueada por {0}</system:String>
+    <system:String x:Key="ResultNoParent">Sin grupo principal</system:String>
+    <system:String x:Key="UnknownSource">otro proyecto</system:String>
+    <system:String x:Key="SameFileNote">(mismo archivo de notas clave)</system:String>
+    <system:String x:Key="UnknownUser">otro usuario</system:String>
+</ResourceDictionary>

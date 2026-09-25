@@ -63,7 +63,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // extract engine configuration from runtime data
             try {
                 ExecEngineConfigs = JsonConvert.DeserializeObject<IronPythonEngineConfigs>(runtime.ScriptRuntimeConfigs.EngineConfigs);
-            } catch {}
+            }
+            catch { }
 
             // If the command required a fullframe engine
             // or if the command required a clean engine
@@ -320,8 +321,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 #endif
             // for python make sure the first argument is the script
             pythonArgv.append(runtime.ScriptSourceFile);
-            foreach (var obj in runtime.ScriptRuntimeConfigs.Arguments)
-            {
+            foreach (var obj in runtime.ScriptRuntimeConfigs.Arguments) {
                 pythonArgv.append(obj);
             }
             sysmodule.SetVariable("argv", pythonArgv);

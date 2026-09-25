@@ -17,17 +17,18 @@ if revit.doc.IsWorkshared:
         for vportid in vportids:
             views.append(revit.doc.GetElement(vportid).ViewId)
     for view in views:
-        curviewelements = DB.FilteredElementCollector(revit.doc, view)\
-                            .WhereElementIsNotElementType()\
-                            .ToElements()
+        curviewelements = (
+            DB.FilteredElementCollector(revit.doc, view)
+            .WhereElementIsNotElementType()
+            .ToElements()
+        )
 
         if len(curviewelements) > 0:
             for el in curviewelements:
-                wti = DB.WorksharingUtils.GetWorksharingTooltipInfo(revit.doc,
-                                                                    el.Id)
+                wti = DB.WorksharingUtils.GetWorksharingTooltipInfo(revit.doc, el.Id)
                 # wti.Creator, wti.Owner, wti.LastChangedBy
                 if wti.Owner.lower() == HOST_APP.username.lower():
                     owned_by_me.append(el.Id)
             selection.set_to(owned_by_me)
 else:
-    forms.alert('Model is not workshared.')
+    forms.alert("Model is not workshared.")

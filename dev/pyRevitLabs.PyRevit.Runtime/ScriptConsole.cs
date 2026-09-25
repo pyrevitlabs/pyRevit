@@ -502,7 +502,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 fontSize > 0 ? fontSize : 10f);
             InjectHtmlElement("head", "style", css, null);
         }
-
         private void ApplyCloseOthersConfig() {
             if (PyRevitConfigs.GetCloseOtherOutputs()) {
                 var mode = PyRevitConfigs.GetCloseOutputMode();
@@ -1127,7 +1126,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
             PostScriptWhenReady(BuildInlineWaitJs(ToJsString(waitText)));
         }
 
+        /// <summary>Closes this window after <paramref name="seconds"/>, unless the Debug log level is set.</summary>
         public void SelfDestructTimer(int seconds) {
+            if (ScriptConsoleManager.KeepOutputWindowsOpen)
+                return;
+
             var dispatcherTimer = new DispatcherTimer();
             dispatcherTimer.Tick += (sender, e) => {
                 var dt = (DispatcherTimer)sender;

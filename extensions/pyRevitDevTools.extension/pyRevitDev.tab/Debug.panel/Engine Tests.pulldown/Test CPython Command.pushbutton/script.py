@@ -3,95 +3,103 @@
 # pylint: skip-file
 # set PYTHONPATH to ....\Lib\site-packages correctly
 def print_html(output_str):
-    print(output_str.replace('<', '&clt;').replace('>', '&cgt;'))
+    print(output_str.replace("<", "&clt;").replace(">", "&cgt;"))
 
 
 import sys
+
 print(sys.version)
 print("\n## sys.path:")
-print('\n'.join(sys.path))
+print("\n".join(sys.path))
 
 # print globals
-print('\n## This file (__file__):')
-print('__file__ = %s' % __file__)
-print('\n## This scope (__name__):')
-print('__name__ = %s' % __name__)
+print("\n## This file (__file__):")
+print("__file__ = %s" % __file__)
+print("\n## This scope (__name__):")
+print("__name__ = %s" % __name__)
 
-print('\n## UIApplication: (__revit__)')
-print('__revit__ = %s' % __revit__)
+print("\n## UIApplication: (__revit__)")
+print("__revit__ = %s" % __revit__)
 
-print('\n## pyRevit globals:')
-print('__execid__ = %s' % __execid__)
-print('__timestamp__ = %s' % __timestamp__)
-print('__cachedengine__ = %s' % __cachedengine__)
-print('__cachedengineid__ = %s' % __cachedengineid__)
-print('__scriptruntime__ = %s' % __scriptruntime__)
-print('__commanddata__ = %s' % __commanddata__)
-print('__elements__ = %s' % __elements__)
-print('__commandpath__ = %s' % __commandpath__)
-print('__configcommandpath__ = %s' % __configcommandpath__)
-print('__commandname__ = %s' % __commandname__)
-print('__commandbundle__ = %s' % __commandbundle__)
-print('__commandextension__ = %s' % __commandextension__)
-print('__commanduniqueid__ = %s' % __commanduniqueid__)
-print('__forceddebugmode__ = %s' % __forceddebugmode__)
-print('__shiftclick__ = %s' % __shiftclick__)
+print("\n## pyRevit globals:")
+print("__execid__ = %s" % __execid__)
+print("__timestamp__ = %s" % __timestamp__)
+print("__cachedengine__ = %s" % __cachedengine__)
+print("__cachedengineid__ = %s" % __cachedengineid__)
+print("__scriptruntime__ = %s" % __scriptruntime__)
+print("__commanddata__ = %s" % __commanddata__)
+print("__elements__ = %s" % __elements__)
+print("__commandpath__ = %s" % __commandpath__)
+print("__configcommandpath__ = %s" % __configcommandpath__)
+print("__commandname__ = %s" % __commandname__)
+print("__commandbundle__ = %s" % __commandbundle__)
+print("__commandextension__ = %s" % __commandextension__)
+print("__commanduniqueid__ = %s" % __commanduniqueid__)
+print("__forceddebugmode__ = %s" % __forceddebugmode__)
+print("__shiftclick__ = %s" % __shiftclick__)
 
-print('__result__ = %s' % __result__)
+print("__result__ = %s" % __result__)
 
-print('__eventsender__ = %s' % __eventsender__)
-print('__eventargs__ = %s' % __eventargs__)
+print("__eventsender__ = %s" % __eventsender__)
+print("__eventargs__ = %s" % __eventargs__)
 
 
-print('\n## Module Tests:')
+print("\n## Module Tests:")
 import os
-pythonpath=os.environ.get('PYTHONPATH')
+
+pythonpath = os.environ.get("PYTHONPATH")
 # this fails on cpy 3.7 (= was added on 3.8)
-print(f'{pythonpath=}')
+print(f"{pythonpath=}")
 
 # try tkinter
 try:
     import tkinter
-    print('tkinter is included')
+
+    print("tkinter is included")
 except Exception as ex:
-    print('tkinter load error: {}'.format(ex))
+    print("tkinter load error: {}".format(ex))
 
 # test numpy
 try:
     import numpy as np
+
     print("\n## numpy array:")
     print(repr(np.arange(15).reshape(3, 5)))
 except Exception as ex:
-    print('numpy load error: {}'.format(ex))
+    print("numpy load error: {}".format(ex))
 
 # test pandas
 try:
     import pandas as pd
 
-    df_dict = {'key 1': 1, 'key 2': 2, 'key 3': 3}
+    df_dict = {"key 1": 1, "key 2": 2, "key 3": 3}
     df = pd.DataFrame([df_dict])
 
     print("\n## pandas DataFrame:")
-    print_html(df.to_html().replace('\n', ''))
+    print_html(df.to_html().replace("\n", ""))
 except Exception as ex:
-    print(f'pandas load error: {ex}')
+    print(f"pandas load error: {ex}")
 
 
-print('\n## Revit Document Tests:')
+print("\n## Revit Document Tests:")
 import clr
+
 # clr.AddReference('Autodesk.Revit.DB')
 import Autodesk.Revit.DB as DB
 
-cl = DB.FilteredElementCollector(__revit__.ActiveUIDocument.Document)\
-       .OfClass(DB.Wall)\
-       .WhereElementIsNotElementType()\
-       .ToElements()
+cl = (
+    DB.FilteredElementCollector(__revit__.ActiveUIDocument.Document)
+    .OfClass(DB.Wall)
+    .WhereElementIsNotElementType()
+    .ToElements()
+)
 
-print('\n## list of DB.Walls:')
+print("\n## list of DB.Walls:")
 from pyrevit.compat import get_elementid_value_func
+
 get_elementid_value = get_elementid_value_func()
 for wall in cl:
-    print(f'{wall} id:{get_elementid_value(wall.Id)}')
+    print(f"{wall} id:{get_elementid_value(wall.Id)}")
 
 # test unicode
 print("""
@@ -101,7 +109,7 @@ print("""
 import pyrevit
 from pyrevit import revit
 
-print('\n## pyrevit.revit:')
+print("\n## pyrevit.revit:")
 
 for el in revit.get_selection():
     print(el)
@@ -138,8 +146,10 @@ for eid in selected_ids:
     selected_ids_list.Add(eid)
 
 if selected_ids:
-    collector = DB.FilteredElementCollector(revit.doc, selected_ids_list)\
-                .OfClass(DB.Wall)\
-                .WhereElementIsNotElementType()
+    collector = (
+        DB.FilteredElementCollector(revit.doc, selected_ids_list)
+        .OfClass(DB.Wall)
+        .WhereElementIsNotElementType()
+    )
     for w in collector:
         print(w)

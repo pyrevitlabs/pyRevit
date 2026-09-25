@@ -1,0 +1,33 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
+
+    <sys:String x:Key="pick_prompt">Select element(s) to diagnose</sys:String>
+    <sys:String x:Key="select_view_title">Select View</sys:String>
+    <sys:String x:Key="select_view_button">Diagnose in this View</sys:String>
+    <sys:String x:Key="no_elements_error">No elements selected or picked.</sys:String>
+    <sys:String x:Key="no_view_error">No view selected.</sys:String>
+    <sys:String x:Key="report_title">Visibility Diagnosis</sys:String>
+    <sys:String x:Key="status_visible">Visible in this view.</sys:String>
+    <sys:String x:Key="status_hidden">NOT visible in this view:</sys:String>
+    <sys:String x:Key="status_error">Error diagnosing element</sys:String>
+    <sys:String x:Key="summary_line">{} visible, {} not visible.</sys:String>
+    <sys:String x:Key="reason_workset_hidden">Workset '{}' is explicitly hidden in this view</sys:String>
+    <sys:String x:Key="reason_workset_closed">Workset '{}' is closed (global setting)</sys:String>
+    <sys:String x:Key="reason_workset_default_hidden">Workset '{}' is hidden by the model's default workset visibility setting</sys:String>
+    <sys:String x:Key="reason_phase_filter">Hidden by phase filter (element phase status: '{}')</sys:String>
+    <sys:String x:Key="reason_design_option">Element belongs to design option '{}', which differs from the option this view is displaying</sys:String>
+    <sys:String x:Key="reason_category_hidden">Category '{}' is hidden in this view</sys:String>
+    <sys:String x:Key="reason_subcategory_hidden">Subcategory '{}' of '{}' is hidden in this view (element may belong to it)</sys:String>
+    <sys:String x:Key="reason_element_hidden">Element is explicitly hidden in this view (Hide/Isolate)</sys:String>
+    <sys:String x:Key="reason_view_filter">Hidden by view filter '{}'</sys:String>
+    <sys:String x:Key="reason_section_box">Element bounding box is entirely outside the view's active 3D section box</sys:String>
+    <sys:String x:Key="reason_crop_box">Element bounding box is entirely outside the view crop region</sys:String>
+    <sys:String x:Key="reason_viewrange_above">Element is above the view range top clip plane (element min Z {:.3f} ft &gt; top {:.3f} ft)</sys:String>
+    <sys:String x:Key="reason_viewrange_below">Element is below the view range's lower bound (bottom clip / view depth) (element max Z {:.3f} ft &lt; lower bound {:.3f} ft)</sys:String>
+    <sys:String x:Key="reason_view_template">View template '{}' is applied - some visibility settings may be locked and must be changed in the template</sys:String>
+    <sys:String x:Key="reason_view_specific">Element is view-specific and belongs to another view ('{}'), so it cannot appear here</sys:String>
+    <sys:String x:Key="reason_view_discipline">View discipline is set to '{}' - some categories are shown or hidden automatically based on discipline, independent of Visibility/Graphics settings</sys:String>
+    <sys:String x:Key="reason_unknown">Element is not visible but no specific cause could be determined. Possible causes: view-specific element type (e.g. annotation from another view), linked model visibility, or detail level.</sys:String>
+
+</ResourceDictionary>

@@ -51,6 +51,7 @@ PLANES = OrderedDict(
 get_elementid_value = get_elementid_value_func()
 INVALID_ID_VALUE = get_elementid_value(DB.ElementId.InvalidElementId)
 
+
 class Context(object):
     def __new__(cls, *args, **kwargs):
         if not hasattr(cls, "instance"):
@@ -158,9 +159,7 @@ class Context(object):
         try:
             view_range = self.source_view.GetViewRange()
         except Exception as e:
-            self.view_model.show_error(
-                "Error reading view range: {}".format(e)
-            )
+            self.view_model.show_error("Error reading view range: {}".format(e))
             return False
 
         # Update levels
@@ -172,9 +171,7 @@ class Context(object):
                 if new_level_id == DB.ElementId.InvalidElementId:
                     if current_level_id != DB.ElementId.InvalidElementId:
                         try:
-                            view_range.SetLevelId(
-                                plane, DB.ElementId.InvalidElementId
-                            )
+                            view_range.SetLevelId(plane, DB.ElementId.InvalidElementId)
                         except Exception:
                             pass
                 elif new_level_id and current_level_id != new_level_id:
@@ -208,9 +205,7 @@ class Context(object):
                     _, _, prefix = PLANES[plane]
                     self.view_model.set_field_error(prefix)
                     self.view_model.show_error(
-                        "Invalid number format in {} field".format(
-                            PLANES[plane][1]
-                        )
+                        "Invalid number format in {} field".format(PLANES[plane][1])
                     )
                     return False
 
@@ -602,31 +597,63 @@ class Context(object):
                 )
             return True
 
+
 class MainViewModel(forms.Reactive):
     # Brushes for field error highlighting
-    _DEFAULT_FIELD_BG = SolidColorBrush(Color.FromArgb(
-        Convert.ToByte(0), Convert.ToByte(255),
-        Convert.ToByte(255), Convert.ToByte(255)))  # Transparent
-    _ERROR_FIELD_BG = SolidColorBrush(Color.FromArgb(
-        Convert.ToByte(255), Convert.ToByte(255),
-        Convert.ToByte(200), Convert.ToByte(200)))  # Light red
+    _DEFAULT_FIELD_BG = SolidColorBrush(
+        Color.FromArgb(
+            Convert.ToByte(0),
+            Convert.ToByte(255),
+            Convert.ToByte(255),
+            Convert.ToByte(255),
+        )
+    )  # Transparent
+    _ERROR_FIELD_BG = SolidColorBrush(
+        Color.FromArgb(
+            Convert.ToByte(255),
+            Convert.ToByte(255),
+            Convert.ToByte(200),
+            Convert.ToByte(200),
+        )
+    )  # Light red
+    _DARK_ERROR_FIELD_BG = SolidColorBrush(
+        Color.FromRgb(Convert.ToByte(92), Convert.ToByte(46), Convert.ToByte(46))
+    )
+    _LIGHT_FIELD_FG = SolidColorBrush(
+        Color.FromRgb(Convert.ToByte(0), Convert.ToByte(0), Convert.ToByte(0))
+    )
+    _DARK_FIELD_FG = SolidColorBrush(
+        Color.FromRgb(Convert.ToByte(236), Convert.ToByte(240), Convert.ToByte(241))
+    )
 
     # Warning banner brushes
-    _TRANSPARENT_BG = SolidColorBrush(Color.FromArgb(
-        Convert.ToByte(0), Convert.ToByte(0),
-        Convert.ToByte(0), Convert.ToByte(0)))
-    _ERROR_BANNER_BG = SolidColorBrush(Color.FromArgb(
-        Convert.ToByte(255), Convert.ToByte(254),
-        Convert.ToByte(235), Convert.ToByte(235)))  # Soft red bg
-    _ERROR_BANNER_FG = SolidColorBrush(Color.FromRgb(
-        Convert.ToByte(180), Convert.ToByte(30),
-        Convert.ToByte(30)))  # Dark red text
-    _SUCCESS_BANNER_BG = SolidColorBrush(Color.FromArgb(
-        Convert.ToByte(255), Convert.ToByte(235),
-        Convert.ToByte(250), Convert.ToByte(235)))  # Soft green bg
-    _SUCCESS_BANNER_FG = SolidColorBrush(Color.FromRgb(
-        Convert.ToByte(30), Convert.ToByte(120),
-        Convert.ToByte(30)))  # Dark green text
+    _TRANSPARENT_BG = SolidColorBrush(
+        Color.FromArgb(
+            Convert.ToByte(0), Convert.ToByte(0), Convert.ToByte(0), Convert.ToByte(0)
+        )
+    )
+    _ERROR_BANNER_BG = SolidColorBrush(
+        Color.FromArgb(
+            Convert.ToByte(255),
+            Convert.ToByte(254),
+            Convert.ToByte(235),
+            Convert.ToByte(235),
+        )
+    )  # Soft red bg
+    _ERROR_BANNER_FG = SolidColorBrush(
+        Color.FromRgb(Convert.ToByte(180), Convert.ToByte(30), Convert.ToByte(30))
+    )  # Dark red text
+    _SUCCESS_BANNER_BG = SolidColorBrush(
+        Color.FromArgb(
+            Convert.ToByte(255),
+            Convert.ToByte(235),
+            Convert.ToByte(250),
+            Convert.ToByte(235),
+        )
+    )  # Soft green bg
+    _SUCCESS_BANNER_FG = SolidColorBrush(
+        Color.FromRgb(Convert.ToByte(30), Convert.ToByte(120), Convert.ToByte(30))
+    )  # Dark green text
 
     def __init__(self):
         self._message = None
@@ -636,6 +663,7 @@ class MainViewModel(forms.Reactive):
         self._warning_fg = self._ERROR_BANNER_FG
         self._can_modify_view = False
         self._can_modify_bottom = False
+        self._field_error_prefixes = set()
 
         # Initialize level-related properties - use INTEGER values for WPF binding
         self._available_levels = []
@@ -655,22 +683,42 @@ class MainViewModel(forms.Reactive):
             )
             setattr(self, "_" + prefix + "_elevation", "-")
             setattr(self, "_" + prefix + "_new_value", "")
-            # Per-field error background (bound to TextBox/ComboBox Background)
-            setattr(self, "_" + prefix + "_field_bg", self._DEFAULT_FIELD_BG)
+            self._set_field_colors(prefix, False)
+
+    def _field_colors(self, has_error):
+        if forms.is_dark_theme():
+            return (
+                self._DARK_ERROR_FIELD_BG if has_error else self._DEFAULT_FIELD_BG,
+                self._DARK_FIELD_FG,
+            )
+        return (
+            self._ERROR_FIELD_BG if has_error else self._DEFAULT_FIELD_BG,
+            self._LIGHT_FIELD_FG,
+        )
+
+    def _set_field_colors(self, prefix, has_error):
+        background, foreground = self._field_colors(has_error)
+        setattr(self, prefix + "_field_bg", background)
+        setattr(self, prefix + "_field_fg", foreground)
+
+    def _refresh_field_colors(self):
+        for _, _, prefix in PLANES.values():
+            self._set_field_colors(prefix, prefix in self._field_error_prefixes)
 
     def clear_field_errors(self):
-        """Reset all field backgrounds to default (no error)."""
-        for _, _, prefix in PLANES.values():
-            setattr(self, prefix + "_field_bg", self._DEFAULT_FIELD_BG)
+        """Reset all field colors to their normal theme values."""
+        self._field_error_prefixes.clear()
+        self._refresh_field_colors()
 
     def set_field_error(self, *prefixes):
-        """Set the specified field(s) to error highlight."""
+        """Set the specified field(s) to error colors."""
         for prefix in prefixes:
-            setattr(self, prefix + "_field_bg", self._ERROR_FIELD_BG)
+            self._field_error_prefixes.add(prefix)
+            self._set_field_colors(prefix, True)
 
     def show_error(self, msg):
         """Show an error banner with warning icon."""
-        self._warning_icon = "\u26A0"  # ⚠
+        self._warning_icon = "\u26a0"  # ⚠
         self._warning_bg = self._ERROR_BANNER_BG
         self._warning_fg = self._ERROR_BANNER_FG
         # Trigger all bindings
@@ -867,7 +915,6 @@ class MainViewModel(forms.Reactive):
     def viewdepth_new_value(self, value):
         self._viewdepth_new_value = value
 
-    # Per-field error background properties (bound to TextBox/ComboBox Background)
     @forms.reactive
     def topplane_field_bg(self):
         return self._topplane_field_bg
@@ -900,13 +947,54 @@ class MainViewModel(forms.Reactive):
     def viewdepth_field_bg(self, value):
         self._viewdepth_field_bg = value
 
+    @forms.reactive
+    def topplane_field_fg(self):
+        return self._topplane_field_fg
+
+    @topplane_field_fg.setter
+    def topplane_field_fg(self, value):
+        self._topplane_field_fg = value
+
+    @forms.reactive
+    def cutplane_field_fg(self):
+        return self._cutplane_field_fg
+
+    @cutplane_field_fg.setter
+    def cutplane_field_fg(self, value):
+        self._cutplane_field_fg = value
+
+    @forms.reactive
+    def bottomplane_field_fg(self):
+        return self._bottomplane_field_fg
+
+    @bottomplane_field_fg.setter
+    def bottomplane_field_fg(self, value):
+        self._bottomplane_field_fg = value
+
+    @forms.reactive
+    def viewdepth_field_fg(self):
+        return self._viewdepth_field_fg
+
+    @viewdepth_field_fg.setter
+    def viewdepth_field_fg(self, value):
+        self._viewdepth_field_fg = value
+
+
 class MainWindow(forms.WPFWindow):
+    resolve_theme = True
+
     def __init__(self):
         forms.WPFWindow.__init__(self, "MainWindow.xaml")
         self.Closed += self.window_closed
         script.restore_window_position(self)
         # Events are now handled via @events.handle decorators
         server.add_server()
+
+    def _on_theme_refresh(self):
+        forms.WPFWindow._on_theme_refresh(self)
+        data_context = getattr(self, "DataContext", None)
+        if data_context is not None:
+            data_context._refresh_field_colors()
 
     def window_closed(self, sender, args):
         script.save_window_position(self)
@@ -958,9 +1046,7 @@ class MainWindow(forms.WPFWindow):
 
             context.update_view_range(new_values, new_levels)
         except Exception as ex:
-            self.DataContext.show_error("Error applying changes: {}".format(
-                str(ex))
-            )
+            self.DataContext.show_error("Error applying changes: {}".format(str(ex)))
 
     def reset_values_click(self, sender, e):
         try:
@@ -1040,11 +1126,11 @@ class MainWindow(forms.WPFWindow):
 
             self.DataContext.clear_warning()
         except Exception as ex:
-            self.DataContext.show_error("Error resetting values: {}".format(
-                str(ex))
-            )
+            self.DataContext.show_error("Error resetting values: {}".format(str(ex)))
+
 
 # ── Helper functions ────────────────────────────────────────────────
+
 
 def compare_views(view1, view2):
     if not view1 and not view2:
@@ -1056,8 +1142,10 @@ def compare_views(view1, view2):
         and view1.Id == view2.Id
     )
 
+
 def can_use_view_as_source(view):
     return isinstance(view, (DB.ViewPlan, DB.ViewSection))
+
 
 def corners_from_bb(bbox):
     transform = bbox.Transform
@@ -1071,11 +1159,13 @@ def corners_from_bb(bbox):
     ]
     return [transform.OfPoint(c) for c in corners]
 
+
 def create_edges(vertices, color):
     return [
         revit.dc3dserver.Edge(vertices[i - 1], vertices[i], color)
         for i in range(len(vertices))
     ]
+
 
 def create_triangles(vertices, color):
     return [
@@ -1099,9 +1189,11 @@ def create_triangles(vertices, color):
         ),
     ]
 
+
 def get_color_from_plane(plane):
     rgb = PLANES[plane][0]
     return DB.ColorWithTransparency(rgb[0], rgb[1], rgb[2], 180)
+
 
 def refresh_active_view():
     try:
@@ -1110,11 +1202,10 @@ def refresh_active_view():
             uidoc.ActiveView = context.active_view
         uidoc.RefreshActiveView()
         if context.source_view:
-            uidoc.Selection.SetElementIds(
-                List[DB.ElementId]([context.source_view.Id])
-            )
+            uidoc.Selection.SetElementIds(List[DB.ElementId]([context.source_view.Id]))
     except Exception as ex:
         logger.exception(ex)
+
 
 def _on_close_cleanup():
     """Deferred cleanup in valid Revit API context.
@@ -1145,11 +1236,13 @@ def _on_close_cleanup():
     # blocks re-entry until the server is fully removed.
     script.set_envvar(VIEWRANGE_WINDOW_KEY, None)
 
+
 # ── Event handlers & initialization ─────────────────────────────────
 # This code is ONLY reached on the first click. Subsequent clicks
 # hit script.exit() at the top of the file before even importing
 # pyrevit.revit.events, so no .NET ExternalEvent objects are created
 # and no event handlers are re-registered.
+
 
 @events.handle("view-activated")
 def view_activated(sender, args):
@@ -1157,6 +1250,7 @@ def view_activated(sender, args):
         context.active_view = args.CurrentActiveView
     except Exception as ex:
         logger.exception(ex)
+
 
 @events.handle("selection-changed")
 def selection_changed(sender, args):
@@ -1174,6 +1268,7 @@ def selection_changed(sender, args):
     except Exception as ex:
         logger.exception(ex)
 
+
 @events.handle("doc-changed")
 def doc_changed(sender, args):
     try:
@@ -1189,6 +1284,7 @@ def doc_changed(sender, args):
         context.context_changed()
     except Exception as ex:
         logger.exception(ex)
+
 
 # Initialize
 server = revit.dc3dserver.Server(register=False)

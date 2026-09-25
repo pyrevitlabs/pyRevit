@@ -4,29 +4,36 @@ from pyrevit.compat import get_elementid_value_func
 get_elementid_value = get_elementid_value_func()
 
 # Collecting all revisions
-revclouds = DB.FilteredElementCollector(revit.doc)\
-              .OfCategory(DB.BuiltInCategory.OST_RevisionClouds)\
-              .WhereElementIsNotElementType()
+revclouds = (
+    DB.FilteredElementCollector(revit.doc)
+    .OfCategory(DB.BuiltInCategory.OST_RevisionClouds)
+    .WhereElementIsNotElementType()
+)
 
 # Collecting all sheets
-shts = DB.FilteredElementCollector(revit.doc)\
-         .OfCategory(DB.BuiltInCategory.OST_Sheets)\
-         .WhereElementIsNotElementType()\
-         .ToElements()
+shts = (
+    DB.FilteredElementCollector(revit.doc)
+    .OfCategory(DB.BuiltInCategory.OST_Sheets)
+    .WhereElementIsNotElementType()
+    .ToElements()
+)
 
 sheets = sorted(shts, key=lambda x: x.SheetNumber)
 
 # make a dictionary of all viewports on each sheet
-sheetvpdict = {get_elementid_value(sh.Id): [revit.doc.GetElement(x).ViewId
-                                    for x in sh.GetAllViewports()]
-               for sh in sheets}
+sheetvpdict = {
+    get_elementid_value(sh.Id): [
+        revit.doc.GetElement(x).ViewId for x in sh.GetAllViewports()
+    ]
+    for sh in sheets
+}
 
 # make a dictionary of all revisions and the associated sheets
 sheetrevs = {get_elementid_value(sh.Id): [] for sh in sheets}
 
 atleastonecrazysheetwasfound = False
 
-print('SEARCHING...\n')
+print("SEARCHING...\n")
 
 for revcloud in revclouds:
     # get revision info
@@ -37,7 +44,7 @@ for revcloud in revclouds:
     parentvp = revit.doc.GetElement(parentvpid)
 
     if isinstance(parentvp, DB.ViewSheet):
-        continue    # nevermind if parent view is a sheet
+        continue  # nevermind if parent view is a sheet
     else:
         # find the sheets showing the parent view
         for sheetid in sheetvpdict:
@@ -56,16 +63,19 @@ for sheetid, revids in sheetrevs.items():
             missedrevids.append(revid)
             atleastonecrazysheetwasfound = True
     if len(missedrevids) > 0:
-        print('SHEET:  {0}\t{1}\nDOES NOT LIST THESE REVISIONS:\n'
-              .format(sheet.Parameter[DB.BuiltInParameter.SHEET_NUMBER].AsString(),
-                      sheet.Parameter[DB.BuiltInParameter.SHEET_NAME].AsString()))
+        print(
+            "SHEET:  {0}\t{1}\nDOES NOT LIST THESE REVISIONS:\n".format(
+                sheet.Parameter[DB.BuiltInParameter.SHEET_NUMBER].AsString(),
+                sheet.Parameter[DB.BuiltInParameter.SHEET_NAME].AsString(),
+            )
+        )
 
         for revid in missedrevids:
             if revid not in listedrevids:
                 rev = revit.doc.GetElement(DB.ElementId(revid))
-                revit.report.print_revision(rev, prefix='\t', print_id=False)
+                revit.report.print_revision(rev, prefix="\t", print_id=False)
 
 if atleastonecrazysheetwasfound:
-    print('\nSEARCH COMPLETED.')
+    print("\nSEARCH COMPLETED.")
 else:
-    print('SEARCH COMPLETED.\nALL REVISION SCHEDULES ARE CORRECT.')
+    print("SEARCH COMPLETED.\nALL REVISION SCHEDULES ARE CORRECT.")

@@ -1,11 +1,13 @@
 """pyRevit core startup script"""
-#pylint: disable=import-error,unused-import,invalid-name
+
+# pylint: disable=import-error,unused-import,invalid-name
 from pyrevit._perf import mark as _perfmark, time_block as _perfblock
+
 _perfmark("startup.pyRevitCore:entry")
 
 import sys
 
-from pyrevit import HOST_APP
+from pyrevit import HOST_APP, framework
 from pyrevit.coreutils.logger import get_logger
 from pyrevit.userconfig import user_config
 
@@ -34,7 +36,6 @@ def _get_shell_mode():
 
 try:
     with _perfblock("startup.pyRevitCore:shell imports"):
-        import clr
         from System import AppDomain
         from System.IO import File, Path
         from System.Collections.Generic import List
@@ -51,7 +52,7 @@ try:
             else None
         )
         if shell_dll and File.Exists(shell_dll):
-            clr.AddReferenceToFileAndPath(shell_dll)
+            framework.add_reference_to_file(shell_dll)
             from PyRevitLabs.PyRevit.Shell import Shell
         else:
             Shell = None

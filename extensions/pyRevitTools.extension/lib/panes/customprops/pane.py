@@ -16,7 +16,6 @@ from pyrevit.revit.db import create as revit_create
 from pyrevit.userconfig import user_config
 from pyrevit.compat import get_elementid_value_func
 from pyrevit.coreutils import applocales, unique_name
-from pyrevit.framework import SolidColorBrush, Color, Media
 
 from match.match_utils import PropKeyValue
 from match import filter_utils
@@ -27,10 +26,6 @@ CONFIG_SECTION = "custom_properties_pane"
 
 _SEL_CB_TAG = "sel_checkbox"
 _RAW_INT_TAG = "_raw_int"
-
-# LemonChiffon (#FFFACD) — dirty / pending-apply highlight
-_DIRTY_BRUSH = SolidColorBrush(Color.FromArgb(255, 255, 250, 205))
-
 
 # ---------------------------------------------------------------------------
 # Config helpers
@@ -51,7 +46,7 @@ def get_pane_config():
     line renders as a plain separator if nothing follows it.
     """
     raw = script.get_envvar(CONFIG_SECTION)
-    show_worksharing = bool(script.get_envvar(CONFIG_SECTION+"_ws_info"))
+    show_worksharing = bool(script.get_envvar(CONFIG_SECTION + "_ws_info"))
     if not raw:
         try:
             user_config.reload()
@@ -61,7 +56,7 @@ def get_pane_config():
             raw = section.get_option("additional_parameters", "")
             show_worksharing = bool(section.get_option("show_worksharing_info", True))
             script.set_envvar(CONFIG_SECTION, raw)
-            script.set_envvar(CONFIG_SECTION+"_ws_info", show_worksharing)
+            script.set_envvar(CONFIG_SECTION + "_ws_info", show_worksharing)
         except Exception:
             return [], True
 
@@ -71,7 +66,7 @@ def get_pane_config():
         if not line:
             continue
         if line.startswith(_HEADER_PREFIX):
-            entries.append(("header", line[len(_HEADER_PREFIX):].strip()))
+            entries.append(("header", line[len(_HEADER_PREFIX) :].strip()))
         else:
             entries.append(("param", line))
     return entries, show_worksharing
@@ -101,7 +96,9 @@ def _get_design_option_name(element, main_model_label="Main Model"):
             return main_model_label
         doc = element.Document
         try:
-            option_filter = DB.ElementCategoryFilter(DB.BuiltInCategory.OST_DesignOptions)
+            option_filter = DB.ElementCategoryFilter(
+                DB.BuiltInCategory.OST_DesignOptions
+            )
             sets = (
                 DB.FilteredElementCollector(doc)
                 .OfCategory(DB.BuiltInCategory.OST_DesignOptionSets)
@@ -244,40 +241,26 @@ def _set_elementid_param(doc, element, param_name, new_val, ref_class, bic=None)
 # ---------------------------------------------------------------------------
 
 
-def _find_visual_child(parent, child_type, name=None):
-    """Return the first descendant of child_type in the visual tree.
-
-    If name is given, only matches elements whose Name property equals it.
-    """
-    count = Media.VisualTreeHelper.GetChildrenCount(parent)
-    for i in range(count):
-        child = Media.VisualTreeHelper.GetChild(parent, i)
-        if isinstance(child, child_type):
-            if name is None or getattr(child, "Name", "") == name:
-                return child
-        result = _find_visual_child(child, child_type, name)
-        if result is not None:
-            return result
-    return None
-
-
 # ---------------------------------------------------------------------------
 # Dockable panel
 # ---------------------------------------------------------------------------
 
 
 class CustomPropertiesPanel(forms.WPFPanel):
-    panel_title = applocales.get_locale_string({
-        "en_us": "Custom Properties",
-        "de_de": "Benutzerdefinierte Eigenschaften",
-        "fr_fr": "Propriétés personnalisées",
-        "es_es": "Propiedades personalizadas",
-        "pt_br": "Propriedades personalizadas",
-        "ru": "Свойства элемента",
-        "chinese_s": "自定义属性",
-    })
+    panel_title = applocales.get_locale_string(
+        {
+            "en_us": "Custom Properties",
+            "de_de": "Benutzerdefinierte Eigenschaften",
+            "fr_fr": "Propriétés personnalisées",
+            "es_es": "Propiedades personalizadas",
+            "pt_br": "Propriedades personalizadas",
+            "ru": "Свойства элемента",
+            "chinese_s": "自定义属性",
+        }
+    )
     panel_id = "d3a7f2c1-8e45-4b9a-a312-0f6b7c8d9e10"
     panel_source = op.join(op.dirname(__file__), "pane_ui.xaml")
+    resolve_theme = True
 
     def __init__(self):
         forms.WPFPanel.__init__(self)
@@ -451,7 +434,8 @@ class CustomPropertiesPanel(forms.WPFPanel):
                 self._clear_fields()
             else:
                 self._set_status(
-                    self.get_locale_string("StatusOneElement") if count == 1
+                    self.get_locale_string("StatusOneElement")
+                    if count == 1
                     else self.get_locale_string("StatusElements").format(count)
                 )
                 self._param_entries, self._show_worksharing_info = get_pane_config()
@@ -509,20 +493,16 @@ class CustomPropertiesPanel(forms.WPFPanel):
         self.fixed_params_grid.Visibility = forms.WPF_VISIBLE
 
         design_option_visibility = (
-            forms.WPF_VISIBLE
-            if has_design_options
-            else forms.WPF_COLLAPSED
+            forms.WPF_VISIBLE if has_design_options else forms.WPF_COLLAPSED
         )
         self.design_option_lbl.Visibility = design_option_visibility
         self.design_option_tb.Visibility = design_option_visibility
-        do_names = [_get_design_option_name(e, self._main_model) for e in self._elements]
+        do_names = [
+            _get_design_option_name(e, self._main_model) for e in self._elements
+        ]
         self.design_option_tb.Text = self._summarize_values(do_names)
 
-        workset_visibility = (
-            forms.WPF_VISIBLE
-            if has_worksets
-            else forms.WPF_COLLAPSED
-        )
+        workset_visibility = forms.WPF_VISIBLE if has_worksets else forms.WPF_COLLAPSED
         self.workset_cb.Visibility = workset_visibility
         self.workset_lbl.Visibility = workset_visibility
         self.workset_combo.Visibility = workset_visibility
@@ -539,9 +519,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
 
         show_worksharing = has_worksets and self._show_worksharing_info
         worksharing_visibility = (
-            forms.WPF_VISIBLE
-            if show_worksharing
-            else forms.WPF_COLLAPSED
+            forms.WPF_VISIBLE if show_worksharing else forms.WPF_COLLAPSED
         )
         self.worksharing_separator.Visibility = worksharing_visibility
         self.worksharing_creator_lbl.Visibility = worksharing_visibility
@@ -552,10 +530,14 @@ class CustomPropertiesPanel(forms.WPFPanel):
         self.worksharing_owner_tb.Visibility = worksharing_visibility
 
         if show_worksharing:
-            creators, last_changed, owners = zip(*[_get_ws_info(doc, e) for e in self._elements])
+            creators, last_changed, owners = zip(
+                *[_get_ws_info(doc, e) for e in self._elements]
+            )
 
             self.worksharing_creator_tb.Text = self._summarize_values(creators)
-            self.worksharing_last_changed_by_tb.Text = self._summarize_values(last_changed)
+            self.worksharing_last_changed_by_tb.Text = self._summarize_values(
+                last_changed
+            )
             self.worksharing_owner_tb.Text = self._summarize_values(owners)
 
     def _summarize_values(self, values):
@@ -668,7 +650,11 @@ class CustomPropertiesPanel(forms.WPFPanel):
         text = "" if missing_param else self._summarize_values(vals)
         sel_readonly = readonly_param or missing_param
         return self._build_text_row(
-            param_name, text, readonly=readonly, tooltip=tooltip, sel_readonly=sel_readonly
+            param_name,
+            text,
+            readonly=readonly,
+            tooltip=tooltip,
+            sel_readonly=sel_readonly,
         )
 
     def _make_yesno_row(self, param_name, int_vals, readonly):
@@ -681,8 +667,10 @@ class CustomPropertiesPanel(forms.WPFPanel):
         cb.IsChecked = original_checked
         cb.IsEnabled = not readonly and not mixed
         cb.ToolTip = (
-            self.get_locale_string("TooltipParamReadOnly") if readonly
-            else self.get_locale_string("TooltipMixedValues") if mixed
+            self.get_locale_string("TooltipParamReadOnly")
+            if readonly
+            else self.get_locale_string("TooltipMixedValues")
+            if mixed
             else None
         )
 
@@ -714,9 +702,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
 
                 if eid == DB.ElementId.InvalidElementId:
                     has_invalid = True
-                    current_names.append(
-                        e.Name if hasattr(e, "Name") else ""
-                    )
+                    current_names.append(e.Name if hasattr(e, "Name") else "")
                     continue
 
                 ref_el = doc.GetElement(eid)
@@ -822,12 +808,18 @@ class CustomPropertiesPanel(forms.WPFPanel):
             lbl.Text = text
             lbl.FontSize = 11
             lbl.FontWeight = framework.Windows.FontWeights.SemiBold
-            lbl.Foreground = SolidColorBrush(Color.FromArgb(255, 0x55, 0x55, 0x55))
+            lbl.SetResourceReference(
+                framework.Controls.TextBlock.ForegroundProperty,
+                "pyRevitWindowForegroundBrush",
+            )
             lbl.Margin = framework.Windows.Thickness(0, 0, 0, 3)
             panel.Children.Add(lbl)
         line = framework.Controls.Border()
         line.Height = 1
-        line.Background = SolidColorBrush(Color.FromArgb(255, 0xDD, 0xDD, 0xDD))
+        line.SetResourceReference(
+            framework.Controls.Border.BackgroundProperty,
+            "pyRevitControlBorderBrush",
+        )
         panel.Children.Add(line)
         return panel
 
@@ -887,8 +879,12 @@ class CustomPropertiesPanel(forms.WPFPanel):
 
         return grid, lbl, sel_cb, undo_btn
 
-    def _build_text_row(self, param_name, text, readonly=False, tooltip=None, sel_readonly=None):
-        grid, _, sel_cb, undo_btn = self._make_row_grid(param_name, readonly=readonly, sel_readonly=sel_readonly)
+    def _build_text_row(
+        self, param_name, text, readonly=False, tooltip=None, sel_readonly=None
+    ):
+        grid, _, sel_cb, undo_btn = self._make_row_grid(
+            param_name, readonly=readonly, sel_readonly=sel_readonly
+        )
         tb = framework.Controls.TextBox()
         tb.Height = 22
         tb.FontSize = 11
@@ -919,7 +915,7 @@ class CustomPropertiesPanel(forms.WPFPanel):
         if not self._is_field_changed(field):
             self._clear_field_dirty(field)
             return
-        self._set_background(field, _DIRTY_BRUSH)
+        self._set_resource_background(field, "pyRevitSelectionBackgroundBrush")
         try:
             if field is self.workset_combo:
                 self.workset_undo_btn.Visibility = forms.WPF_VISIBLE
@@ -968,15 +964,14 @@ class CustomPropertiesPanel(forms.WPFPanel):
             control.Background = brush
         except Exception:
             pass
-        if isinstance(control, framework.Controls.ComboBox) and control.IsEditable:
-            try:
-                border = _find_visual_child(
-                    control, framework.Controls.Border, name="Border"
-                )
-                if border is not None:
-                    border.Background = brush
-            except Exception:
-                pass
+
+    def _set_resource_background(self, control, resource_key):
+        try:
+            control.SetResourceReference(
+                framework.Controls.Control.BackgroundProperty, resource_key
+            )
+        except Exception:
+            pass
 
     def _clear_background(self, control):
         self._set_background(control, None)
@@ -1062,7 +1057,8 @@ class CustomPropertiesPanel(forms.WPFPanel):
 
         self.copy_btn.IsEnabled = has_elements and has_checked
         self.filter_btn.IsEnabled = (
-            has_elements and has_checked
+            has_elements
+            and has_checked
             and self._all_checked_filterable(checked_names, workset_checked)
         )
         self.paste_btn.IsEnabled = bool(self._copy_clipboard)
@@ -1349,7 +1345,9 @@ class CustomPropertiesPanel(forms.WPFPanel):
 
         def _do_filters():
             try:
-                solid_fill_id = getattr(revit.query.get_solid_fillpattern_element(doc), "Id", None)
+                solid_fill_id = getattr(
+                    revit.query.get_solid_fillpattern_element(doc), "Id", None
+                )
                 with revit.Transaction("Custom Properties Pane - Filters", doc=doc):
                     for pkv, revit_color in work_items:
                         self._apply_one_filter(
@@ -1571,7 +1569,10 @@ class CustomPropertiesPanel(forms.WPFPanel):
                             and tag[0] == _RAW_INT_TAG
                             else None
                         )
-                        if isinstance(field, framework.Controls.TextBox) and field.IsReadOnly:
+                        if (
+                            isinstance(field, framework.Controls.TextBox)
+                            and field.IsReadOnly
+                        ):
                             if raw_int is None:
                                 continue  # opaque int not pasted — nothing to apply
                             val = str(raw_int)
@@ -1584,7 +1585,9 @@ class CustomPropertiesPanel(forms.WPFPanel):
                                 val = str(raw_int)
                                 ref_class, bic = None, None
                             else:
-                                ref_class, bic = tag if isinstance(tag, tuple) else (None, None)
+                                ref_class, bic = (
+                                    tag if isinstance(tag, tuple) else (None, None)
+                                )
                     p["additional"][lbl.Text] = (val, ref_class, bic)
             except Exception:
                 pass

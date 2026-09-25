@@ -32,4 +32,5 @@ allow_prereleases = false
 docs = "mkdocs build"
 check-docstrings = "ruff check --fix pyrevitlib/pyrevit"
 check-py3 = "python ./dev/scripts/check_py3_compat.py"
+test-py3-compat = "python -m unittest discover -s . -p test_check_py3_compat.py"
 install-hooks = "pre-commit install"

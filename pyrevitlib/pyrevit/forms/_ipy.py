@@ -92,52 +92,62 @@ XAML_FILES_DIR = op.dirname(__file__)
 THEME_XAML_FILE = op.join(XAML_FILES_DIR, "Theme.xaml")
 
 
-_BRAND_DARK = (0xFF, 0x2C, 0x3E, 0x50)
-_BRAND_DARKER_DARK = (0xFF, 0x23, 0x30, 0x3D)
-_BRAND_ACCENT = (0xFF, 0xF3, 0x9C, 0x12)
+_BRAND_DARK = (0xFF, 0x2C, 0x3E, 0x50)  # dark blue-gray
+_BRAND_DARKER_DARK = (0xFF, 0x23, 0x30, 0x3D)  # darker blue-gray
+_BRAND_ACCENT = (0xFF, 0xF3, 0x9C, 0x12)  # amber
 
 _PALETTE_LIGHT = {
-    "WindowBackground": (0xFF, 0xFF, 0xFF, 0xFF),
-    "WindowForeground": (0xFF, 0x00, 0x00, 0x00),
-    "ChromeBackground": (0xFF, 0xE8, 0xE8, 0xE8),
-    "ControlBackground": (0xFF, 0xFF, 0xFF, 0xFF),
-    "ButtonBackground": (0xFF, 0xF0, 0xF0, 0xF0),
-    "ControlBorder": (0xFF, 0xCC, 0xCC, 0xCC),
-    "ControlHover": (0xFF, 0xE5, 0xE5, 0xE5),
-    "ControlPressed": (0xFF, 0xD9, 0xD9, 0xD9),
-    "ControlOverlayHover": (0x0C, 0x00, 0x00, 0x00),
-    "ControlOverlayPressed": (0x18, 0x00, 0x00, 0x00),
-    "DisabledForeground": (0xFF, 0xA0, 0xA0, 0xA0),
-    "SubtleForeground": (0xFF, 0x69, 0x69, 0x69),
-    "DangerBackground": (0xFF, 0xFB, 0xD5, 0xD5),
-    "SuccessBackground": (0xFF, 0xD4, 0xEF, 0xD8),
-    "Icon": (0xFF, 0x00, 0x00, 0x00),
-    "SelectionBackground": (0xFF, 0xCC, 0xE4, 0xF7),
-    "SelectionForeground": (0xFF, 0x00, 0x00, 0x00),
-    "ScrollBarThumb": (0xFF, 0xCC, 0xCC, 0xCC),
-    "ScrollBarThumbHover": (0xFF, 0xAA, 0xAA, 0xAA),
+    "WindowBackground": (0xFF, 0xF3, 0xF4, 0xF6),  # off white
+    "WindowForeground": (0xFF, 0x00, 0x00, 0x00),  # black
+    "ChromeBackground": (0xFF, 0xE8, 0xE8, 0xE8),  # light gray
+    "ControlBackground": (0xFF, 0xFF, 0xFF, 0xFF),  # white
+    "ButtonBackground": (0xFF, 0xF0, 0xF0, 0xF0),  # whitesmoke
+    "ContrastBackground": (0xFF, 0x2C, 0x3E, 0x50),  # dark blue-gray
+    "ContrastForeground": (0xFF, 0xFF, 0xFF, 0xFF),  # white
+    "ControlBorder": (0xFF, 0xCC, 0xCC, 0xCC),  # light gray
+    "ControlHover": (0xFF, 0xE5, 0xE5, 0xE5),  # light gray
+    "ControlPressed": (0xFF, 0xD9, 0xD9, 0xD9),  # light gray
+    "ControlOverlayHover": (0x0C, 0x00, 0x00, 0x00),  # translucent black
+    "ControlOverlayPressed": (0x18, 0x00, 0x00, 0x00),  # translucent black
+    "DisabledForeground": (0xFF, 0xA0, 0xA0, 0xA0),  # gray
+    "SubtleForeground": (0xFF, 0x69, 0x69, 0x69),  # dim gray
+    "DangerForeground": (0xFF, 0xB4, 0x23, 0x18),  # brick red
+    "DangerBackground": (0xFF, 0xFB, 0xD5, 0xD5),  # misty rose
+    "WarningForeground": (0xFF, 0x9A, 0x63, 0x00),  # dark amber
+    "WarningBackground": (0xFF, 0xFD, 0xF0, 0xD5),  # pale amber
+    "SuccessBackground": (0xFF, 0xD4, 0xEF, 0xD8),  # pale green
+    "Icon": (0xFF, 0x00, 0x00, 0x00),  # black
+    "SelectionBackground": (0xFF, 0xCC, 0xE4, 0xF7),  # pale blue
+    "SelectionForeground": (0xFF, 0x00, 0x00, 0x00),  # black
+    "ScrollBarThumb": (0xFF, 0xCC, 0xCC, 0xCC),  # light gray
+    "ScrollBarThumbHover": (0xFF, 0xAA, 0xAA, 0xAA),  # dark gray
 }
 
 _PALETTE_DARK = {
-    "WindowBackground": (0xFF, 0x2E, 0x34, 0x40),
-    "WindowForeground": (0xFF, 0xEC, 0xF0, 0xF1),
-    "ChromeBackground": (0xFF, 0x22, 0x29, 0x33),
-    "ControlBackground": (0xFF, 0x22, 0x29, 0x33),
-    "ButtonBackground": (0xFF, 0x22, 0x29, 0x33),
-    "ControlBorder": (0xFF, 0x45, 0x4F, 0x61),
-    "ControlHover": (0xFF, 0x45, 0x4F, 0x61),
-    "ControlPressed": (0xFF, 0x52, 0x5E, 0x73),
-    "ControlOverlayHover": (0x28, 0xFF, 0xFF, 0xFF),
-    "ControlOverlayPressed": (0x37, 0xFF, 0xFF, 0xFF),
-    "DisabledForeground": (0xFF, 0x7F, 0x8C, 0x8D),
-    "SubtleForeground": (0xFF, 0x95, 0xA5, 0xA6),
-    "DangerBackground": (0xFF, 0x5C, 0x2E, 0x2E),
-    "SuccessBackground": (0xFF, 0x2C, 0x4C, 0x33),
-    "Icon": (0xFF, 0xEC, 0xF0, 0xF1),
-    "SelectionBackground": (0xFF, 0x33, 0x50, 0x6E),
-    "SelectionForeground": (0xFF, 0xEC, 0xF0, 0xF1),
-    "ScrollBarThumb": (0xFF, 0x45, 0x4F, 0x61),
-    "ScrollBarThumbHover": (0xFF, 0x52, 0x5E, 0x73),
+    "WindowBackground": (0xFF, 0x2E, 0x34, 0x40),  # charcoal blue
+    "WindowForeground": (0xFF, 0xEC, 0xF0, 0xF1),  # light gray
+    "ChromeBackground": (0xFF, 0x39, 0x42, 0x4F),  # dark slate
+    "ControlBackground": (0xFF, 0x22, 0x29, 0x33),  # charcoal
+    "ButtonBackground": (0xFF, 0x22, 0x29, 0x33),  # charcoal
+    "ContrastBackground": (0xFF, 0xEC, 0xF0, 0xF1),  # light gray
+    "ContrastForeground": (0xFF, 0x2C, 0x3E, 0x50),  # dark blue-gray
+    "ControlBorder": (0xFF, 0x45, 0x4F, 0x61),  # slate blue
+    "ControlHover": (0xFF, 0x45, 0x4F, 0x61),  # slate blue
+    "ControlPressed": (0xFF, 0x52, 0x5E, 0x73),  # steel blue
+    "ControlOverlayHover": (0x28, 0xFF, 0xFF, 0xFF),  # translucent white
+    "ControlOverlayPressed": (0x37, 0xFF, 0xFF, 0xFF),  # translucent white
+    "DisabledForeground": (0xFF, 0x7F, 0x8C, 0x8D),  # gray
+    "SubtleForeground": (0xFF, 0x95, 0xA5, 0xA6),  # muted blue-gray
+    "DangerForeground": (0xFF, 0xFF, 0x6B, 0x61),  # coral
+    "DangerBackground": (0xFF, 0x5C, 0x2E, 0x2E),  # dark red
+    "WarningForeground": (0xFF, 0xF0, 0xAD, 0x4E),  # amber
+    "WarningBackground": (0xFF, 0x5C, 0x48, 0x2E),  # dark amber
+    "SuccessBackground": (0xFF, 0x2C, 0x4C, 0x33),  # dark green
+    "Icon": (0xFF, 0xEC, 0xF0, 0xF1),  # light gray
+    "SelectionBackground": (0xFF, 0x33, 0x50, 0x6E),  # dark blue
+    "SelectionForeground": (0xFF, 0xEC, 0xF0, 0xF1),  # light gray
+    "ScrollBarThumb": (0xFF, 0x45, 0x4F, 0x61),  # slate blue
+    "ScrollBarThumbHover": (0xFF, 0x52, 0x5E, 0x73),  # steel blue
 }
 
 
@@ -254,7 +264,7 @@ def _walk_logical_tree(root):
                 pending.append(child)
 
 
-def _is_dark_theme():
+def is_dark_theme():
     """Return True if Revit's active UI theme is Dark.
 
     Always False on Revit <2024, which has no UITheme concept.
@@ -262,6 +272,7 @@ def _is_dark_theme():
     try:
         if HOST_APP.is_newer_than(2024, True):
             from Autodesk.Revit.UI import UITheme
+
             return revit.ui.get_current_theme() == UITheme.Dark
     except Exception:
         pass
@@ -405,13 +416,12 @@ class _WPFMixin(object):
     # ------------------------------------------------------------------ resources
 
     @staticmethod
-    def setup_resources(wpf_ctrl, set_root_colors=True):
+    def setup_resources(wpf_ctrl, set_root_colors=True, resolve_theme=False):
         """Set pyRevit colour resources on any WPF control.
 
         Injects the brand palette (constant, used by HUD-style overlays)
-        and the semantic light/dark palette (resolved from Revit's active
-        UI theme) as DynamicResource-able brushes. Safe to call again on
-        an already-loaded control to re-theme it in place.
+        and the semantic light/dark palette as DynamicResource-able brushes.
+        Theme resolution is opt-in so forms default to the light palette.
 
         Args:
             wpf_ctrl: any WPF FrameworkElement with a Resources dict.
@@ -421,6 +431,8 @@ class _WPFMixin(object):
                 transparent HUD-style overlays) must be able to override this
                 afterwards. Live theme-change refreshes pass False so an
                 already-open HUD window is not forced opaque.
+            resolve_theme (bool): resolve the palette from Revit's active UI
+                theme. Defaults to False.
 
         Note:
             The root colours are assigned directly rather than left to the
@@ -444,7 +456,7 @@ class _WPFMixin(object):
             res["pyRevitButtonColor"]
         )
 
-        is_dark = _is_dark_theme()
+        is_dark = resolve_theme and is_dark_theme()
         palette = _PALETTE_DARK if is_dark else _PALETTE_LIGHT
         for name, argb in palette.items():
             _set_color("pyRevit" + name, argb)
@@ -468,7 +480,7 @@ class _WPFMixin(object):
         Args:
             wpf_ctrl: any WPF FrameworkElement with a Resources dict.
         """
-        _WPFMixin.setup_resources(wpf_ctrl, set_root_colors=False)
+        _WPFMixin.setup_resources(wpf_ctrl, set_root_colors=False, resolve_theme=True)
 
     def apply_contrast_foregrounds(self):
         """Give every custom-background element a readable text color.
@@ -540,7 +552,11 @@ class _WPFMixin(object):
 
     def _on_theme_refresh(self):
         """Re-theme resources and, for windows, the native title bar."""
-        _WPFMixin.setup_resources(self, set_root_colors=self._live_refresh_root_colors)
+        _WPFMixin.setup_resources(
+            self,
+            set_root_colors=self._live_refresh_root_colors,
+            resolve_theme=True,
+        )
         self.apply_contrast_foregrounds()
         self._apply_dark_titlebar()
         self._refresh_icon()
@@ -558,9 +574,7 @@ class _WPFMixin(object):
         except Exception:
             self._on_theme_changed = None
 
-    def _unsubscribe_theme_changed(
-        self, sender=None, args=None
-    ):  # pylint: disable=unused-argument
+    def _unsubscribe_theme_changed(self, sender=None, args=None):  # pylint: disable=unused-argument
         """Detach the ThemeChanged subscription set up by _subscribe_theme_changed."""
         handler = getattr(self, "_on_theme_changed", None)
         if handler is None:
@@ -787,6 +801,10 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         handle_esc (bool): handle Escape button and close the window
         set_owner (bool): set the owner of window to host app window
 
+    Optional class attributes:
+        resolve_theme (bool):
+            resolve the palette from Revit's active UI theme. Defaults to False.
+
     Examples:
         ```python
         from pyrevit import forms
@@ -802,8 +820,14 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         ```
     """
 
+    resolve_theme = False
+
     def __init__(
-        self, xaml_source, literal_string=False, handle_esc=True, set_owner=True
+        self,
+        xaml_source,
+        literal_string=False,
+        handle_esc=True,
+        set_owner=True,
     ):
         """Initialize WPF window and resources."""
         # load xaml
@@ -815,7 +839,11 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         )
 
     def load_xaml(
-        self, xaml_source, literal_string=False, handle_esc=True, set_owner=True
+        self,
+        xaml_source,
+        literal_string=False,
+        handle_esc=True,
+        set_owner=True,
     ):
         """Load the window XAML file.
 
@@ -831,7 +859,7 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         # create new id for this window
         self.window_id = coreutils.new_uuid()
 
-        _WPFMixin.setup_resources(self)
+        _WPFMixin.setup_resources(self, resolve_theme=self.resolve_theme)
         self.merge_resource_dict(THEME_XAML_FILE)
         if not literal_string:
             xaml_path, pending_resource_merge = _resolve_xaml_source(xaml_source)
@@ -850,8 +878,9 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         self.setup_icon()
         if handle_esc:
             self.setup_default_handlers()
-        self._apply_dark_titlebar()
-        self._subscribe_theme_changed()
+        if self.resolve_theme:
+            self._apply_dark_titlebar()
+            self._subscribe_theme_changed()
         self.Closed += self._unsubscribe_theme_changed
 
     def setup_owner(self):
@@ -882,7 +911,7 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
         try:
             wih = Interop.WindowInteropHelper(self)
             hwnd = wih.EnsureHandle()
-            is_dark = _is_dark_theme()
+            is_dark = is_dark_theme()
             Common.DwmApi.SetImmersiveDarkMode(hwnd, is_dark)
             palette = _PALETTE_DARK if is_dark else _PALETTE_LIGHT
             caption_color = _colorref(palette["ChromeBackground"])
@@ -902,10 +931,15 @@ class WPFWindow(_WPFMixin, framework.Windows.Window):
     def setup_icon(self):
         """Setup default window icon, following the bundle icon convention.
 
-        Picks up pyrevit_settings.dark.png under a dark UI theme, the same
-        <name>.dark.png lookup that extension bundle icons use.
+        If required, picks up pyrevit_settings.dark.png under a dark UI theme,
+        the same <name>.dark.png lookup that extension bundle icons use.
         """
-        icon_file = revit.ui.resolve_icon_file(BIN_DIR, "pyrevit_settings.png")
+        if self.resolve_theme:
+            icon_file = revit.ui.resolve_icon_file(BIN_DIR, "pyrevit_settings.png")
+        else:
+            icon_file = op.join(BIN_DIR, "pyrevit_settings.png")
+            if not op.exists(icon_file):
+                icon_file = None
         if icon_file:
             self.set_icon(icon_file)
 
@@ -950,6 +984,8 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
                 how the panel behaves while an editor is active.
             contextual_help (UI.ContextualHelp):
                 F1 help associated with the pane.
+            resolve_theme (bool):
+                resolve the palette from Revit's active UI theme. Defaults to False.
 
         Examples:
     ```python
@@ -981,6 +1017,7 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
     initial_state = None
     editor_interaction = None
     contextual_help = None
+    resolve_theme = False
 
     _live_refresh_root_colors = True
 
@@ -1005,7 +1042,7 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
             xaml_source (str): XAML content string or file path.
             literal_string (bool): True when xaml_source is raw content.
         """
-        _WPFMixin.setup_resources(self)
+        _WPFMixin.setup_resources(self, resolve_theme=self.resolve_theme)
         self.merge_resource_dict(THEME_XAML_FILE)
         if not literal_string:
             xaml_path, pending_resource_merge = _resolve_xaml_source(xaml_source)
@@ -1017,7 +1054,8 @@ class WPFPanel(_WPFMixin, framework.Windows.Controls.Page):
             wpf.LoadComponent(self, framework.StringReader(xaml_source))
         self.apply_contrast_foregrounds()
         self.thread_id = framework.get_current_thread_id()
-        self._subscribe_theme_changed()
+        if self.resolve_theme:
+            self._subscribe_theme_changed()
 
     def _get_panel_output(self):
         """Get current output window and keep its title in sync with panel_title."""
@@ -1524,6 +1562,7 @@ class SelectFromList(TemplateUserInputWindow):
     in_uncheck = False
     xaml_source = "SelectFromList.xaml"
     default_title_key = "SelectFromList.DefaultTitle"
+    resolve_theme = True
 
     @property
     def use_regex(self):
@@ -2080,6 +2119,7 @@ class GetValueWindow(TemplateUserInputWindow):
     """
 
     xaml_source = "GetValueWindow.xaml"
+    resolve_theme = True
 
     def _setup(self, **kwargs):
         self.Width = 400
@@ -3732,7 +3772,7 @@ def alert(
         key = icon.lower()
         if key not in icon_map:
             mlogger.warning(
-                "Unknown icon %r; falling back to no icon. " "Valid icons: %s",
+                "Unknown icon %r; falling back to no icon. Valid icons: %s",
                 icon,
                 ", ".join(sorted(icon_map)),
             )
@@ -4040,7 +4080,7 @@ def pick_excel_file(save=False, title=None):
     if save:
         return save_file(file_ext="xlsx")
     return pick_file(
-        files_filter="Excel Workbook (*.xlsx)|*.xlsx|" "Excel 97-2003 Workbook|*.xls",
+        files_filter="Excel Workbook (*.xlsx)|*.xlsx|Excel 97-2003 Workbook|*.xls",
         title=title,
     )
 

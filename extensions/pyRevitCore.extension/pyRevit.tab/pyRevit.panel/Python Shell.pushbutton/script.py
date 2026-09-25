@@ -5,10 +5,10 @@ How the shell opens (modal window, modeless window, dockable pane, or the same
 windows with a built-in code editor) is configurable: Shift+Click this button to
 choose the mode.
 """
-import sys
-import clr
 
-from pyrevit import script, forms
+import sys
+
+from pyrevit import script, forms, framework
 from System import AppDomain
 from System.IO import File, Path
 from System.Collections.Generic import List
@@ -34,9 +34,7 @@ def _load_shell():
             exitscript=True,
         )
 
-    shell_path = Path.Combine(
-        engine_dir, "pyRevitLabs.PyRevit.Shell.dll"
-    )
+    shell_path = Path.Combine(engine_dir, "pyRevitLabs.PyRevit.Shell.dll")
     if not File.Exists(shell_path):
         forms.alert(
             "Python Shell is not installed for the active engine:\n\n"
@@ -47,14 +45,11 @@ def _load_shell():
         )
 
     try:
-        clr.AddReferenceToFileAndPath(shell_path)
+        framework.add_reference_to_file(shell_path)
     except Exception as load_error:
         mlogger.exception("Failed to load Python Shell assembly")
         forms.alert(
-            "Python Shell could not load:\n\n"
-            + shell_path
-            + "\n\n"
-            + str(load_error),
+            "Python Shell could not load:\n\n" + shell_path + "\n\n" + str(load_error),
             title="Python Shell",
             exitscript=True,
         )

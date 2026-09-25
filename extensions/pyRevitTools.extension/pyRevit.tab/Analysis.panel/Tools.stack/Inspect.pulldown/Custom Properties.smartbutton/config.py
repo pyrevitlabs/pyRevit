@@ -3,12 +3,15 @@
 
 Shift-click the button to open this dialog.
 """
+
 from pyrevit import forms, script
 
 from panes.customprops.pane import CONFIG_SECTION
 
 
 class ConfigWindow(forms.WPFWindow):
+    resolve_theme = True
+
     def __init__(self, xaml_path):
         forms.WPFWindow.__init__(self, xaml_path)
         self.my_config = script.get_config(CONFIG_SECTION)
@@ -32,7 +35,9 @@ class ConfigWindow(forms.WPFWindow):
         )
         script.save_config()
         script.set_envvar(CONFIG_SECTION, self.params_tb.Text)
-        script.set_envvar(CONFIG_SECTION+"_ws_info", bool(self.worksharing_cb.IsChecked))
+        script.set_envvar(
+            CONFIG_SECTION + "_ws_info", bool(self.worksharing_cb.IsChecked)
+        )
         startup_changed = new_enabled != self._original_enabled
         self.Close()
         if startup_changed:

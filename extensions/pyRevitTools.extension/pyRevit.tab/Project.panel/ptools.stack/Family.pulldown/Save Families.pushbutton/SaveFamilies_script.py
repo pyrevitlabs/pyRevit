@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Saves chosen families from the project"""
+
 # pylint: disable=import-error,invalid-name,broad-except
 import os
 import os.path as op
@@ -15,9 +16,7 @@ output = script.get_output()
 family_dict = {}
 for family in revit.query.get_families(revit.doc, only_editable=True):
     if family.FamilyCategory:
-        family_dict[
-            "%s: %s" % (family.FamilyCategory.Name, family.Name)
-        ] = family
+        family_dict["%s: %s" % (family.FamilyCategory.Name, family.Name)] = family
 
 if family_dict:
     selected_families = forms.SelectFromList.show(
@@ -49,9 +48,7 @@ if family_dict:
             save_opts = DB.SaveAsOptions()
             save_opts.OverwriteExistingFile = overwrite_exst
             total_work = len(selected_families)
-            for idx, family in enumerate(
-                    [family_dict[x] for x in selected_families]
-                ):
+            for idx, family in enumerate([family_dict[x] for x in selected_families]):
                 target_dir = dest_folder
                 if create_subfolders:
                     category_name = family.FamilyCategory.Name or "Unknown"
@@ -61,13 +58,13 @@ if family_dict:
                             os.makedirs(target_dir)
                         except OSError as ex:
                             target_dir = dest_folder
-                            logger.error("Failed to create directory %s | %s", target_dir, ex)
+                            logger.error(
+                                "Failed to create directory %s | %s", target_dir, ex
+                            )
                             continue
                 family_filepath = op.join(target_dir, family.Name + ".rfa")
                 if not overwrite_exst and op.exists(family_filepath):
-                    logger.info(
-                        "Skipping existing family %s ...", family_filepath
-                    )
+                    logger.info("Skipping existing family %s ...", family_filepath)
                 else:
                     logger.info(
                         "%s %s ...",
@@ -79,9 +76,7 @@ if family_dict:
                         family_doc.SaveAs(family_filepath, save_opts)
                         family_doc.Close(False)
                     except Exception as ex:
-                        logger.error(
-                            "Error saving family %s | %s", family_filepath, ex
-                        )
+                        logger.error("Error saving family %s | %s", family_filepath, ex)
                 output.update_progress(idx + 1, total_work)
 else:
     forms.alert("Can not find any families that can be saved in this model.")

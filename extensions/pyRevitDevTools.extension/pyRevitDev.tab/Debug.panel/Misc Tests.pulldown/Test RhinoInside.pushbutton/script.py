@@ -1,14 +1,15 @@
 """Testing Rhino.Inside modules"""
-#pylint: disable=import-error,invalid-name,broad-except,wrong-import-position
-#pylint: disable=global-statement,unused-import,bare-except
+
+# pylint: disable=import-error,invalid-name,broad-except,wrong-import-position
+# pylint: disable=global-statement,unused-import,bare-except
 from pyrevit import clr, revit, DB
 from pyrevit import forms
 from pyrevit.framework import Enumerable
 from pyrevit import script
 
 
-clr.AddReference('RhinoCommon')
-clr.AddReference('RhinoInside.Revit')
+clr.AddReference("RhinoCommon")
+clr.AddReference("RhinoInside.Revit")
 
 
 import Rhino
@@ -37,8 +38,7 @@ ensure_rir()
 with revit.Transaction("Rhino.Inside Sample7"):
     sphere = Geometry.Sphere(Geometry.Point3d.Origin, GD.ToModelLength(12))
     brep = sphere.ToBrep()
-    meshes = \
-        Geometry.Mesh.CreateFromBrep(brep, Geometry.MeshingParameters.Default)
+    meshes = Geometry.Mesh.CreateFromBrep(brep, Geometry.MeshingParameters.Default)
 
     category = DB.ElementId(DB.BuiltInCategory.OST_GenericModel)
     ds = DB.DirectShape.CreateElement(revit.doc, category)

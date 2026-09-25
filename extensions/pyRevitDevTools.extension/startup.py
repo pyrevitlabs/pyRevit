@@ -132,6 +132,7 @@ class DockableExample(forms.WPFPanel):
     panel_title = "pyRevit Dockable Panel Title"
     panel_id = "3110e336-f81c-4927-87da-4e0d30d4d64a"
     panel_source = op.join(op.dirname(__file__), "DockableExample.xaml")
+    resolve_theme = True
 
     def do_something(self, sender, args):
         forms.alert("Voila!!!")
@@ -152,6 +153,7 @@ class DeveloperSamplePanel(forms.WPFPanel):
     panel_id = "759a2751-290a-4f7a-8f2d-9d900b2547b8"
     panel_source = op.join(op.dirname(__file__), "SamplePanel.xaml")
     panel_title = "pyRevit Sample Panel"
+    resolve_theme = True
 
     def __init__(self):
         forms.WPFPanel.__init__(self)
