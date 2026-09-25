@@ -104,7 +104,7 @@ Usage:
 	pyrevit configs routes coreapi [(enable | disable)] [--log=<log_file>]
 	pyrevit configs agent [(-h | --help)]
 	pyrevit configs agent [(enable | disable)] [--log=<log_file>]
-	pyrevit configs agent policy [(readonly | ask)] [--log=<log_file>]
+	pyrevit configs agent policy [(readonly | ask | auto)] [--log=<log_file>]
 	pyrevit configs agent engine [(ironpython | cpython)] [--log=<log_file>]
 	pyrevit configs telemetry [(-h | --help)]
 	pyrevit configs telemetry [(enable | disable)] [--log=<log_file>]

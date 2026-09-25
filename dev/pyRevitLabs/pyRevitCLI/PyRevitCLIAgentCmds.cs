@@ -284,12 +284,32 @@ namespace pyRevitCLI {
             Console.WriteLine("Updated " + path);
         }
 
+        /// <summary>
+        /// Runs a client's own CLI (<c>claude</c>, <c>codex</c>) by full path.
+        /// </summary>
+        /// <remarks>
+        /// This command is often launched from Revit (Settings → Agent Runtime), and Revit's
+        /// environment keeps the PATH from when Revit started, which misses tools installed since.
+        /// So the tool is located on the PATH freshly read from the registry plus the usual install
+        /// folders, and the child process gets that fresh PATH too.
+        /// </remarks>
         private static void RunClientCli(string tool, string arguments, bool ignoreFailure = false) {
-            var startInfo = new ProcessStartInfo("cmd.exe", $"/d /s /c \"{tool} {arguments}\"") {
+            var executable = ResolveClientTool(tool);
+            if (executable == null) {
+                if (ignoreFailure)
+                    return;
+                throw new PyRevitException(
+                    $"Could not find the '{tool}' command on PATH or in its usual install folders. "
+                    + $"Install it or add its folder to PATH, then retry. To register by hand, run: {tool} {arguments}");
+            }
+
+            var startInfo = new ProcessStartInfo("cmd.exe", $"/d /s /c \"\"{executable}\" {arguments}\"") {
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
+                CreateNoWindow = true,
             };
+            startInfo.Environment["PATH"] = FreshPath();
 
             Process process;
             try {
@@ -331,6 +351,44 @@ namespace pyRevitCLI {
                     return true;
             }
             return false;
+        }
+
+        private static string ResolveClientTool(string tool) {
+            foreach (var directory in ToolSearchDirectories())
+                foreach (var extension in new[] { ".exe", ".cmd", ".bat" }) {
+                    var candidate = Path.Combine(directory, tool + extension);
+                    if (File.Exists(candidate))
+                        return candidate;
+                }
+            return null;
+        }
+
+        private static IEnumerable<string> ToolSearchDirectories() {
+            var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+            var knownInstallFolders = new[] {
+                Path.Combine(home, ".local", "bin"),
+                Path.Combine(appData, "npm"),
+                Path.Combine(home, "scoop", "shims"),
+            };
+            return FreshPath().Split(Path.PathSeparator)
+                .Concat(knownInstallFolders)
+                .Where(directory => !string.IsNullOrWhiteSpace(directory))
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static string FreshPath() {
+            var entries = new[] {
+                    Environment.GetEnvironmentVariable("PATH"),
+                    Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.Machine),
+                    Environment.GetEnvironmentVariable("PATH", EnvironmentVariableTarget.User),
+                }
+                .Where(value => !string.IsNullOrEmpty(value))
+                .SelectMany(value => value.Split(Path.PathSeparator))
+                .Select(entry => Environment.ExpandEnvironmentVariables(entry.Trim()))
+                .Where(entry => entry.Length > 0)
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+            return string.Join(Path.PathSeparator.ToString(), entries);
         }
 
         private static JObject TryReadJson(string path) {

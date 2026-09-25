@@ -294,8 +294,9 @@ namespace pyRevitLabs.PyRevit {
 
         /// <summary>
         /// What agent runs may do: <c>readonly</c> allows queries and dry runs only;
-        /// <c>ask</c> also allows modify runs, each approved by the user in Revit.
-        /// Unknown values read as <c>ask</c>.
+        /// <c>ask</c> also allows modify runs, each approved by the user in Revit;
+        /// <c>auto</c> commits modify runs without the approval prompt.
+        /// Unknown values read as <c>ask</c>, so a typo never loosens the policy.
         /// </summary>
         public static string GetAgentPolicy() {
             IConfigurationService cfg = GetConfigFile();
@@ -303,13 +304,17 @@ namespace pyRevitLabs.PyRevit {
                 PyRevitConsts.ConfigsAgentSection,
                 PyRevitConsts.ConfigsAgentPolicyKey,
                 PyRevitConsts.ConfigsAgentPolicyDefault);
-            return string.Equals(policy, PyRevitConsts.ConfigsAgentPolicyReadOnly, StringComparison.OrdinalIgnoreCase)
-                ? PyRevitConsts.ConfigsAgentPolicyReadOnly
-                : PyRevitConsts.ConfigsAgentPolicyAsk;
+            if (string.Equals(policy, PyRevitConsts.ConfigsAgentPolicyReadOnly, StringComparison.OrdinalIgnoreCase))
+                return PyRevitConsts.ConfigsAgentPolicyReadOnly;
+            if (string.Equals(policy, PyRevitConsts.ConfigsAgentPolicyAuto, StringComparison.OrdinalIgnoreCase))
+                return PyRevitConsts.ConfigsAgentPolicyAuto;
+            return PyRevitConsts.ConfigsAgentPolicyAsk;
         }
 
         public static void SetAgentPolicy(string policy) {
-            if (policy != PyRevitConsts.ConfigsAgentPolicyReadOnly && policy != PyRevitConsts.ConfigsAgentPolicyAsk)
+            if (policy != PyRevitConsts.ConfigsAgentPolicyReadOnly
+                && policy != PyRevitConsts.ConfigsAgentPolicyAsk
+                && policy != PyRevitConsts.ConfigsAgentPolicyAuto)
                 throw new PyRevitException($"Unknown agent policy \"{policy}\"");
 
             IConfigurationService cfg = GetConfigFile();

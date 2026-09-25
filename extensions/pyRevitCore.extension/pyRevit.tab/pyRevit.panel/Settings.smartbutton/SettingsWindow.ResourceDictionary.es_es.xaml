@@ -399,11 +399,12 @@
     <system:String x:Key="pyRevit.AdminInstall">La configuración de pyRevit está establecida por tu administrador.</system:String>
 
     <system:String x:Key="Agent.Title">Entorno de agentes (MCP)</system:String>
-    <system:String x:Key="Agent.Description">Permite que agentes de programación MCP como Claude Code, Codex, Cursor, VS Code y OpenCode lean y modifiquen el modelo abierto ejecutando Python dentro de Revit. Los agentes se conectan mediante una canalización con nombre local que solo tu usuario de Windows puede abrir; a diferencia del servidor Routes, nada es accesible desde la red. Cada cambio en el modelo requiere tu aprobación en Revit.</system:String>
+    <system:String x:Key="Agent.Description">Permite que agentes de programación MCP como Claude Code, Codex, Cursor, VS Code y OpenCode lean y modifiquen el modelo abierto ejecutando Python dentro de Revit. Los agentes se conectan mediante una canalización con nombre local que solo tu usuario de Windows puede abrir; a diferencia del servidor Routes, nada es accesible desde la red. De forma predeterminada, cada cambio en el modelo requiere tu aprobación en Revit.</system:String>
     <system:String x:Key="Agent.Privacy">Todo lo que el agente lee (nombres de elementos, valores de parámetros, resultados) se envía al proveedor del modelo del agente.</system:String>
     <system:String x:Key="Agent.Check">Host de agentes (beta)</system:String>
     <system:String x:Key="Agent.Policy">Cambios en el modelo</system:String>
     <system:String x:Key="Agent.Policy.Ask">Pedir mi aprobación en Revit antes de cada cambio</system:String>
+    <system:String x:Key="Agent.Policy.Auto">Automático: aplicar los cambios sin preguntar (cada cambio sigue siendo un solo paso de deshacer)</system:String>
     <system:String x:Key="Agent.Policy.ReadOnly">Solo lectura: permitir solo consultas y ejecuciones de prueba</system:String>
     <system:String x:Key="Agent.Engine">Motor de scripts predeterminado</system:String>
     <system:String x:Key="Agent.Engine.IronPython">IronPython (motor vinculado)</system:String>

@@ -647,7 +647,11 @@ class PyRevitConfig(object):
 
     @property
     def agent_policy(self):
-        """What agent runs may do: ``readonly`` or ``ask`` (approve each change)."""
+        """What agent runs may do.
+
+        ``readonly`` allows queries and dry runs only, ``ask`` needs approval in
+        Revit for every change, and ``auto`` commits changes without the prompt.
+        """
         return PyRevit.PyRevitConfigs.GetAgentPolicy()
 
     @agent_policy.setter

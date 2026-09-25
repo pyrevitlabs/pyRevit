@@ -11,6 +11,7 @@ using Autodesk.Revit.UI;
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
 using pyRevitLabs.NLog;
+using pyRevitLabs.PyRevit;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <summary>
@@ -21,7 +22,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// Invariants:
     /// <list type="bullet">
     /// <item>A query or dry run never leaves a change in the model.</item>
-    /// <item>A modify run changes the model only after the user approves it in Revit.</item>
+    /// <item>A modify run changes the model only after the user approves it in Revit, unless the
+    /// <c>[agent] policy</c> is <c>auto</c>, the user's explicit opt-in to skip the prompt.</item>
     /// <item>A script error always rolls back.</item>
     /// </list>
     /// Every run writes <c>script.py</c>, <c>request.json</c> and <c>response.json</c> under
@@ -102,9 +104,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         decision = guard.Changes.IsEmpty ? "no_changes" : "rolled_back";
                         guard.RollBack();
                     }
+                    else if (PyRevitConfigs.GetAgentPolicy() == PyRevitConsts.ConfigsAgentPolicyAuto) {
+                        guard.Assimilate();
+                        decision = "committed";
+                        response["approval"] = "auto";
+                    }
                     else {
                         guard.DisarmDialogCapture();
                         var approved = AgentApproval.Ask(uidoc, request.Title, guard.Changes, changes, guard.Failures);
+                        response["approval"] = "user";
                         if (approved) {
                             guard.Assimilate();
                             decision = "committed";

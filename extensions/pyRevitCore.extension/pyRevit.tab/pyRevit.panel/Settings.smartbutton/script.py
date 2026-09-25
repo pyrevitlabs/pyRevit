@@ -445,9 +445,10 @@ class SettingsWindow(forms.WPFWindow):
 
     def _setup_agent(self):
         self.agent_cb.IsChecked = user_config.agent_enabled
-        readonly = user_config.agent_policy == "readonly"
-        self.agent_policy_readonly_rb.IsChecked = readonly
-        self.agent_policy_ask_rb.IsChecked = not readonly
+        policy = user_config.agent_policy
+        self.agent_policy_readonly_rb.IsChecked = policy == "readonly"
+        self.agent_policy_auto_rb.IsChecked = policy == "auto"
+        self.agent_policy_ask_rb.IsChecked = policy not in ("readonly", "auto")
         cpython = user_config.agent_engine == "cpython"
         self.agent_engine_cpython_rb.IsChecked = cpython
         self.agent_engine_ironpython_rb.IsChecked = not cpython
@@ -1056,9 +1057,12 @@ class SettingsWindow(forms.WPFWindow):
             )
 
         user_config.agent_enabled = enabled
-        user_config.agent_policy = (
-            "readonly" if self.agent_policy_readonly_rb.IsChecked else "ask"
-        )
+        if self.agent_policy_readonly_rb.IsChecked:
+            user_config.agent_policy = "readonly"
+        elif self.agent_policy_auto_rb.IsChecked:
+            user_config.agent_policy = "auto"
+        else:
+            user_config.agent_policy = "ask"
         user_config.agent_engine = (
             "cpython" if self.agent_engine_cpython_rb.IsChecked else "ironpython"
         )

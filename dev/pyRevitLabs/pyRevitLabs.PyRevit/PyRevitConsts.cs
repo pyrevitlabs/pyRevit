@@ -126,6 +126,7 @@ namespace pyRevitLabs.PyRevit {
         public const string ConfigsAgentPolicyKey = "policy";
         public const string ConfigsAgentPolicyReadOnly = "readonly";
         public const string ConfigsAgentPolicyAsk = "ask";
+        public const string ConfigsAgentPolicyAuto = "auto";
         public const string ConfigsAgentPolicyDefault = ConfigsAgentPolicyAsk;
         public const string ConfigsAgentEngineKey = "engine";
         public const string ConfigsAgentEngineIronPython = "ironpython";

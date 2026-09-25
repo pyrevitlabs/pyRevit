@@ -841,6 +841,7 @@ namespace pyRevitCLI {
                         PyRevitCLIAgentCmds.ConfigurePolicy(
                             arguments["readonly"].IsTrue ? PyRevitConsts.ConfigsAgentPolicyReadOnly
                             : arguments["ask"].IsTrue ? PyRevitConsts.ConfigsAgentPolicyAsk
+                            : arguments["auto"].IsTrue ? PyRevitConsts.ConfigsAgentPolicyAuto
                             : null);
 
                     else if (all("engine"))

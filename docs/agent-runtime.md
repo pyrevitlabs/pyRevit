@@ -63,7 +63,7 @@ To remove the server: `pyrevit mcp uninstall <client>`. To turn the host off:
 | Setting | Command | Values |
 |---|---|---|
 | `[agent] enabled` | `pyrevit configs agent (enable \| disable)` | Starts the in-Revit host on the next pyRevit load. Default `false`. |
-| `[agent] policy` | `pyrevit configs agent policy (readonly \| ask)` | `readonly`: queries and dry runs only. `ask` (default): modify runs are allowed and each one needs approval in Revit. |
+| `[agent] policy` | `pyrevit configs agent policy (readonly \| ask \| auto)` | `readonly`: queries and dry runs only. `ask` (default): each modify run needs approval in Revit. `auto`: modify runs are committed without the prompt; each is still one undo entry, guarded and recorded. |
 | `[agent] engine` | `pyrevit configs agent engine (ironpython \| cpython)` | Engine for runs that don't name one. Default `ironpython` (the attached IronPython). |
 
 Run any of these commands without a value to print the current setting.
@@ -301,8 +301,10 @@ Every run executes in one ExternalEvent callback on the Revit main thread:
 4. **Decide:**
     - **query**: always roll back. A recorded change becomes a `query_modified_model` error.
     - **dry_run**: roll back and return the change set.
-    - **modify**: while the group is still open, select and temporarily isolate the
-      changed elements, and show the approval prompt. The isolation is switched off
+    - **modify** with policy `auto`: `Assimilate()` straight away. The response says
+      `approval: auto`.
+    - **modify** with policy `ask`: while the group is still open, select and temporarily
+      isolate the changed elements, and show the approval prompt. The isolation is switched off
       again inside the group before deciding. Keep → `Assimilate()`, one undo entry.
       Discard → `RollBack()`.
 5. **Disarm guards** and write the run record.
