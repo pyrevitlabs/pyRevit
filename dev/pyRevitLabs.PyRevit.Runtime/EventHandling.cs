@@ -1180,7 +1180,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             ).document.ToInt64();
         }
 
-        static long GetAPIDocumentId(Document doc) {
+        internal static long GetAPIDocumentId(Document doc) {
             MethodInfo getMFCDocMethod = doc.GetType().GetMethod("getMFCDoc", BindingFlags.Instance | BindingFlags.NonPublic);
             object mfcDoc = getMFCDocMethod.Invoke(doc, new object[] { });
             MethodInfo ptfValMethod = mfcDoc.GetType().GetMethod("GetPointerValue", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -1194,20 +1194,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             else
                 _lastTabState = newState;
 
-
-            // collect ids of family documents
-            var docIds = new List<long>();
-            var familyDocIds = new List<long>();
-            foreach (Document doc in uiApp.Application.Documents) {
-                // skip linked docs. they don't have tabs
-                if (doc.IsLinked)
-                    continue;
-
-                var docId = GetAPIDocumentId(doc);
-                docIds.Add(docId);
-                if (doc.IsFamilyDocument)
-                    familyDocIds.Add(docId);
-            }
+            var (docIds, familyDocIds) = DocumentTabEventUtils.GetCachedDocumentAndFamilyIds();
 
             // cleanup styling for docs that do no exists anymore
             // empty this before setting new styles so empty slots can be taken
@@ -1325,6 +1312,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             _lastTabState = string.Empty;
         }
 
+        internal void InvalidateTabState() => _lastTabState = string.Empty;
+
         internal void InitSlots(TabColoringTheme theme) {
             // copy the reserved slots in previous theme to new one
             int ruleCount = TabOrderRules.Count();
@@ -1353,7 +1342,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public static bool IsUpdatingDocumentTabs { get; private set; }
 
-        static object UpdateLock = new object();
+        private static readonly object UpdateLock = new object();
+        private static readonly object CacheLock = new object();
+
+        private static Dictionary<long, bool> _documentCache = new Dictionary<long, bool>();
 
         static TabColoringTheme _tabColoringTheme = null;
         public static TabColoringTheme TabColoringTheme {
@@ -1408,11 +1400,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return new List<TabItem>();
         }
 
+        /// <summary>
+        /// Starts document tab grouping, seeds cached document identities, and tracks document lifecycle changes.
+        /// </summary>
+        /// <param name="uiapp">The active Revit UI application.</param>
         public static void StartGroupingDocumentTabs(UIApplication uiapp) {
             lock (UpdateLock) {
                 if (!IsUpdatingDocumentTabs) {
                     UIApp = uiapp;
                     IsUpdatingDocumentTabs = true;
+
+                    SeedDocumentCache(UIApp.Application.Documents);
+                    UIApp.Application.DocumentCreated += OnDocumentCreated;
+                    UIApp.Application.DocumentOpened += OnDocumentOpened;
+                    UIApp.Application.DocumentClosed += OnDocumentClosed;
 
                     var docMgr = GetDockingManager(UIApp);
                     docMgr.LayoutUpdated += UpdateDockingManagerLayout;
@@ -1420,13 +1421,21 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
+        /// <summary>
+        /// Stops document tab grouping, unsubscribes document lifecycle handlers, and clears cached document identities.
+        /// </summary>
         public static void StopGroupingDocumentTabs() {
             lock (UpdateLock) {
                 if (IsUpdatingDocumentTabs) {
+                    UIApp.Application.DocumentCreated -= OnDocumentCreated;
+                    UIApp.Application.DocumentOpened -= OnDocumentOpened;
+                    UIApp.Application.DocumentClosed -= OnDocumentClosed;
+
                     var docMgr = GetDockingManager(UIApp);
                     docMgr.LayoutUpdated -= UpdateDockingManagerLayout;
 
                     ClearDocumentTabGroups();
+                    ClearDocumentCache();
 
                     IsUpdatingDocumentTabs = false;
                 }
@@ -1434,6 +1443,74 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public static void ResetGroupingDocumentTabs() => _tabColoringTheme?.ResetSlots();
+
+        internal static (List<long> DocIds, List<long> FamilyDocIds) GetCachedDocumentAndFamilyIds() {
+            lock (CacheLock) {
+                var docIds = _documentCache.Keys.ToList();
+                var familyDocIds = _documentCache.Where(x => x.Value).Select(x => x.Key).ToList();
+                return (docIds, familyDocIds);
+            }
+        }
+
+        private static void SeedDocumentCache(DocumentSet documents) {
+            var documentCache = new Dictionary<long, bool>();
+            bool cacheComplete = true;
+            try {
+                foreach (Document doc in documents) {
+                    try {
+                        if (!doc.IsLinked) {
+                            long docId = global::PyRevitLabs.PyRevit.Runtime.TabColoringTheme.GetAPIDocumentId(doc);
+                            documentCache[docId] = doc.IsFamilyDocument;
+                        }
+                    }
+                    catch (Exception ex) {
+                        cacheComplete = false;
+                        logger.Error($"Error seeding document cache: {ex.Message}");
+                    }
+                }
+            }
+            catch (Exception ex) {
+                cacheComplete = false;
+                logger.Error($"Error enumerating documents for cache: {ex.Message}");
+            }
+            lock (CacheLock) {
+                if (cacheComplete) {
+                    _documentCache = documentCache;
+                }
+                else {
+                    foreach (KeyValuePair<long, bool> entry in documentCache)
+                        _documentCache[entry.Key] = entry.Value;
+                }
+            }
+            _tabColoringTheme?.InvalidateTabState();
+        }
+
+        private static void ClearDocumentCache() {
+            lock (CacheLock) {
+                _documentCache = new Dictionary<long, bool>();
+            }
+        }
+
+        private static void RefreshDocumentCache() {
+            try {
+                SeedDocumentCache(UIApp.Application.Documents);
+            }
+            catch (Exception ex) {
+                logger.Error($"Error refreshing document cache: {ex.Message}");
+            }
+        }
+
+        static void OnDocumentCreated(object sender, DocumentCreatedEventArgs e) {
+            RefreshDocumentCache();
+        }
+
+        static void OnDocumentOpened(object sender, DocumentOpenedEventArgs e) {
+            RefreshDocumentCache();
+        }
+
+        static void OnDocumentClosed(object sender, DocumentClosedEventArgs e) {
+            RefreshDocumentCache();
+        }
 
         static void UpdateDockingManagerLayout(object sender, EventArgs e) {
             UpdateDocumentTabGroups();
