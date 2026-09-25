@@ -113,16 +113,19 @@ namespace pyRevitLabs.PyRevit {
             }
         }
 
-        // copy config file into all users directory as seed config file
+        /// <summary>
+        /// Seeds the machine-wide config from the current config and optionally marks it read-only.
+        /// </summary>
+        /// <exception cref="PyRevitException">The configuration could not be seeded.</exception>
         public static void SeedConfig(bool lockSeedConfig = false) {
             TrySeedConfig(lockSeedConfig);
         }
 
         /// <summary>
-        /// Copies the current user configuration to the machine-wide configuration
-        /// path and optionally marks that file read-only.
+        /// Seeds the machine-wide config when the current config resolves to a different path.
+        /// If both paths resolve to the same file, the machine config is treated as already seeded.
         /// </summary>
-        /// <returns><see langword="true"/> when a user config was copied; otherwise, <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> when the machine config exists after the operation; otherwise, <see langword="false"/>.</returns>
         /// <exception cref="PyRevitException">The configuration could not be seeded.</exception>
         public static bool TrySeedConfig(bool lockSeedConfig = false) {
             string sourceFile = PyRevitConsts.ConfigFilePath;
@@ -133,25 +136,47 @@ namespace pyRevitLabs.PyRevit {
             if (!File.Exists(sourceFile)) return false;
 
             try {
+                if (PathsMatch(sourceFile, targetFile)) {
+                    _logger.Debug("Machine config {@ConfigPath} is already seeded", targetFile);
+                    if (lockSeedConfig)
+                        ApplySeedConfigLock(targetFile);
+                    return true;
+                }
+
+                string targetDir = Path.GetDirectoryName(targetFile);
+                if (!string.IsNullOrEmpty(targetDir))
+                    CommonUtils.EnsurePath(targetDir);
+
                 File.Copy(sourceFile, targetFile, true);
 
-                if (lockSeedConfig) {
-                    try {
-                        File.SetAttributes(targetFile, FileAttributes.ReadOnly);
-                    }
-                    catch (InvalidOperationException ex) {
-                        var currentUser = WindowsIdentity.GetCurrent();
-                        _logger.Error(ex,
-                            $"You cannot assign ownership to user \"{currentUser.Name}\"."
-                            + "Either you don't have TakeOwnership permissions, "
-                            + "or it is not your user account.");
-                    }
-                }
+                if (lockSeedConfig)
+                    ApplySeedConfigLock(targetFile);
 
                 return true;
             }
             catch (Exception ex) {
                 throw new PyRevitException("Failed seeding config file.", ex);
+            }
+        }
+
+        private static bool PathsMatch(string firstPath, string secondPath) =>
+            NormalizePath(firstPath).Equals(NormalizePath(secondPath), StringComparison.OrdinalIgnoreCase);
+
+        private static string NormalizePath(string path) =>
+            Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+        private static void ApplySeedConfigLock(string targetFile) {
+            try {
+                FileAttributes attributes = File.GetAttributes(targetFile);
+                File.SetAttributes(targetFile, attributes | FileAttributes.ReadOnly);
+            }
+            catch (InvalidOperationException ex) {
+                using (var currentUser = WindowsIdentity.GetCurrent()) {
+                    _logger.Error(ex,
+                        $"You cannot assign ownership to user \"{currentUser.Name}\". "
+                        + "Either you don't have TakeOwnership permissions, "
+                        + "or it is not your user account.");
+                }
             }
         }
 
