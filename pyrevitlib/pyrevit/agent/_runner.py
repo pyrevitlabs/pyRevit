@@ -73,7 +73,8 @@ def run(context):
         pass
     except Exception as ex:
         failed = True
-        context.SetError(type(ex).__name__, _safe_text(ex), _format_script_traceback())
+        error_type, message = _describe_error(ex)
+        context.SetError(error_type, message, _format_script_traceback())
     finally:
         sys.stdout = saved_stdout
         sys.stderr = saved_stderr
@@ -148,6 +149,53 @@ def _describe_element(element):
         "name": name,
         "class": type(element).__name__,
     }
+
+
+_GENERIC_ERROR_TYPES = ("Exception", "SystemError", "EnvironmentError", "OSError")
+_MAX_INNER_EXCEPTIONS = 4
+
+
+def _describe_error(ex):
+    """Return (type, message) for a script error, surfacing the .NET exception.
+
+    Revit API failures often reach Python as a generic "A managed exception
+    was thrown..." whose real cause sits on the underlying .NET exception and
+    its InnerException chain. The agent can only fix what it can read.
+    """
+    error_type = type(ex).__name__
+    message = _safe_text(ex)
+    clr_exception = _clr_exception(ex)
+    if clr_exception is None:
+        return error_type, message
+
+    chain = []
+    current = clr_exception
+    while current is not None and len(chain) < _MAX_INNER_EXCEPTIONS:
+        chain.append(
+            "%s: %s" % (current.GetType().FullName, _safe_text(current.Message))
+        )
+        current = current.InnerException
+
+    if error_type in _GENERIC_ERROR_TYPES:
+        error_type = clr_exception.GetType().Name
+    details = " <- ".join(chain)
+    if details and details not in message:
+        message = "%s [.NET: %s]" % (message, details)
+    return error_type, message
+
+
+def _clr_exception(ex):
+    clr_exception = getattr(ex, "clsException", None)
+    if clr_exception is not None:
+        return clr_exception
+    if hasattr(ex, "GetType") and hasattr(ex, "InnerException"):
+        return ex
+    try:
+        import clr
+
+        return clr.GetClrException(ex)
+    except Exception:
+        return None
 
 
 def _format_script_traceback():

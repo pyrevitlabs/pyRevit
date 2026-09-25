@@ -53,6 +53,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public JArray Blocked => blocked;
         public bool HasOpenGroup => group != null && group.HasStarted() && !group.HasEnded();
 
+        /// <summary>
+        /// Transactions Revit rolled back during the run because of error-level failures.
+        /// The script's own Commit() still returns, so without this the run would look successful.
+        /// </summary>
+        public int ErrorRollbacks { get; private set; }
+        public string FirstErrorDescription { get; private set; }
+
         public void Arm(string groupName) {
             app.DocumentChanged += OnDocumentChanged;
             app.FailuresProcessing += OnFailuresProcessing;
@@ -141,9 +148,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
                 if (severity == FailureSeverity.Warning)
                     accessor.DeleteWarning(message);
-                else
+                else {
                     hasErrors = true;
+                    if (FirstErrorDescription == null)
+                        FirstErrorDescription = message.GetDescriptionText();
+                }
             }
+
+            if (hasErrors)
+                ErrorRollbacks++;
 
             e.SetProcessingResult(
                 hasErrors ? FailureProcessingResult.ProceedWithRollBack : FailureProcessingResult.Continue);

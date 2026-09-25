@@ -64,6 +64,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     var exitCode = AgentScriptRunner.Execute(context, request, runDir, AgentHost.SearchPaths);
 
                     var transactionLeftOpen = doc.IsModifiable;
+                    if (guard.ErrorRollbacks > 0 && !context.HasError)
+                        context.SetError(
+                            "revit_failure",
+                            $"Revit rolled back {guard.ErrorRollbacks} transaction(s) because of errors: "
+                            + $"{guard.FirstErrorDescription} See 'failures' for every message. Fix the cause "
+                            + "(for example an opening wider than its host wall) and run again.",
+                            null);
                     var changes = guard.Changes.Describe(doc, MaxChangeSamples);
                     var status = "ok";
                     string decision;

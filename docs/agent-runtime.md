@@ -70,7 +70,7 @@ Run any of these commands without a value to print the current setting.
 | `list_revit_instances` | no | Running Revit sessions with the agent host |
 | `get_context` | no | Revit and pyRevit versions, agent policy, `scripting` (engine and Python version scripts run on), document, active view, selection, levels |
 | `inspect_elements` | no | Class, category, type, level, location, bounding box and parameters of up to 50 elements |
-| `lookup_revit_api` | no | Signatures of a Revit API type or member, reflected from the running Revit |
+| `lookup_revit_api` | no | Signatures of a Revit API type or member, reflected from the running Revit. Also its namespace and Python import line, and a `creation` list: static factories and the `doc.Create.New…` methods that return the type |
 | `show_elements` | no | Select, zoom to, or temporarily isolate / hide elements (by id or category) in the active view, or reset the temporary mode. No approval prompt. |
 | `run_query` | never | Run a read-only script; always rolled back |
 | `run_modify` | after approval | Run a changing script; `dry_run=true` previews the change set and rolls back |
@@ -135,6 +135,11 @@ Rules the host enforces:
 
 - A query that changes the model fails with `query_modified_model` and is rolled back.
 - A script error rolls back everything, and the traceback points at the script's own lines.
+  When a Revit call throws, the message carries the underlying .NET exception and its
+  inner exceptions (`[.NET: Autodesk.Revit.Exceptions.… <- …]`), not only the generic
+  "A managed exception was thrown".
+- When Revit rolls back one of the script's transactions because of an error-level
+  failure, the run fails with `revit_failure`, even if the script itself didn't raise.
 - A transaction left open fails the run with `transaction_left_open`.
 - Revit dialogs are closed automatically and reported in `dialogs`. Warnings are removed
   and reported in `failures`, and errors roll back the failing transaction.
