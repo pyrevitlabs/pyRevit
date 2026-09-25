@@ -51,6 +51,7 @@ def run(context):
         ``result``, are reported through ``context.SetError`` so the host can
         roll the run back.
     """
+    context.SetEngine(_implementation(), sys.version.split()[0], sys.version)
     source = context.Source
     linecache.cache[SOURCE_NAME] = (
         len(source),
@@ -87,6 +88,13 @@ def run(context):
         context.SetError(
             "ResultSerializationError", _safe_text(ex), _format_script_traceback()
         )
+
+
+def _implementation():
+    implementation = getattr(sys, "implementation", None)
+    if implementation is not None:
+        return implementation.name
+    return "ironpython" if "IronPython" in sys.version else "cpython"
 
 
 def _build_namespace(context):

@@ -128,7 +128,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 }
             }
 
-            AddScriptOutcome(response, context, runDir);
+            AddScriptOutcome(response, context, runDir, request.Engine == AgentEngine.CPython ? "cpython" : "ironpython");
             response["elapsed_ms"] = stopwatch.ElapsedMilliseconds;
 
             try {
@@ -146,7 +146,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 context.SetError(type, message, null);
         }
 
-        private static void AddScriptOutcome(JObject response, AgentScriptContext context, string runDir) {
+        private static void AddScriptOutcome(JObject response, AgentScriptContext context, string runDir, string requestedEngine) {
             var output = context.Output ?? string.Empty;
             response["output_truncated"] = output.Length > MaxOutputChars;
             response["output"] = output.Length > MaxOutputChars ? output.Substring(0, MaxOutputChars) : output;
@@ -164,6 +164,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     response["result"] = JToken.Parse(context.ResultJson);
                 }
             }
+
+            response["engine"] = new JObject {
+                ["requested"] = requestedEngine,
+                ["implementation"] = context.EngineImplementation,
+                ["python"] = context.EnginePythonVersion,
+                ["sys_version"] = context.EngineVersionText,
+            };
 
             response["error"] = context.HasError
                 ? new JObject {
