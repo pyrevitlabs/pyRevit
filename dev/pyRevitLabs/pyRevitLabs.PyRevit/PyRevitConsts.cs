@@ -123,6 +123,14 @@ namespace pyRevitLabs.PyRevit {
         public const string ConfigsAgentSection = "agent";
         public const string ConfigsAgentEnabledKey = "enabled";
         public const bool ConfigsAgentEnabledDefault = false;
+        public const string ConfigsAgentPolicyKey = "policy";
+        public const string ConfigsAgentPolicyReadOnly = "readonly";
+        public const string ConfigsAgentPolicyAsk = "ask";
+        public const string ConfigsAgentPolicyDefault = ConfigsAgentPolicyAsk;
+        public const string ConfigsAgentEngineKey = "engine";
+        public const string ConfigsAgentEngineIronPython = "ironpython";
+        public const string ConfigsAgentEngineCPython = "cpython";
+        public const string ConfigsAgentEngineDefault = ConfigsAgentEngineIronPython;
 
         public const string ConfigsTelemetrySection = "telemetry";
         public const string ConfigsTelemetryUTCTimestampsKey = "utc_timestamps";
