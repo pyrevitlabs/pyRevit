@@ -1,7 +1,7 @@
 """Run query.get_name unit tests (requires open project document)."""
 
 from pyrevit.unittests import test_query_get_name
-from pyrevit.unittests.runner import run_module_tests
+from pyrevit.unittests.runner import assert_module_tests_successful
 
 
-run_module_tests(test_query_get_name)
+assert_module_tests_successful(test_query_get_name)

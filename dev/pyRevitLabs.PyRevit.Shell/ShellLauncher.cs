@@ -239,10 +239,10 @@ namespace PyRevitLabs.PyRevit.Shell {
 
         // Resolve configuration dynamically to stay compatible with the loaded runtime version.
         internal static void ConfigureEngineViaRuntime(ScriptEngine engine, UIApplication uiapp, IList<string> searchPaths) {
+            var runtimeName = "pyRevitLabs.PyRevit.Runtime." + uiapp.Application.VersionNumber;
             var runtimeAsm = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => {
                 var name = a.GetName().Name;
-                return name.StartsWith("pyRevitLabs.PyRevit.Runtime", StringComparison.Ordinal)
-                       && !name.Contains("Shared");
+                return string.Equals(name, runtimeName, StringComparison.OrdinalIgnoreCase);
             });
             var configure = runtimeAsm
                 ?.GetType("PyRevitLabs.PyRevit.Runtime.InteractiveEngine")

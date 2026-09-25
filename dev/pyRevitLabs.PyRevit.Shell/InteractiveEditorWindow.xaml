@@ -22,12 +22,14 @@
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Window.Resources>
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-        <shell:ShellTitleBar Grid.Row="0" />
-        <shell:EditorView x:Name="editorView" Grid.Row="1" />
-    </Grid>
+    <Border BorderBrush="{DynamicResource ShellWindowBorder}" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            <shell:ShellTitleBar Grid.Row="0" />
+            <shell:EditorView x:Name="editorView" Grid.Row="1" />
+        </Grid>
+    </Border>
 </Window>
