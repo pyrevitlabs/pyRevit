@@ -122,7 +122,9 @@ namespace pyRevitCLI {
                 try {
                     var payload = Dispatch(name, arguments);
                     var isError = payload is JObject run && run.Value<string>("status") == "error";
-                    result = ToolResult(payload.ToString(Formatting.None), isError);
+                    result = payload is JObject captured && captured["image_base64"] != null
+                        ? ImageResult(captured)
+                        : ToolResult(payload.ToString(Formatting.None), isError);
                 }
                 catch (AgentClientException ex) {
                     result = ToolResult(new JObject { ["error"] = ex.Code, ["message"] = ex.Message }.ToString(Formatting.None), true);
@@ -154,18 +156,46 @@ namespace pyRevitCLI {
                         ["categories"] = arguments["categories"],
                         ["zoom"] = arguments["zoom"] ?? false,
                     });
+                case "capture_view":
+                    return CallRevit(arguments, "capture", new JObject {
+                        ["view"] = arguments["view"],
+                        ["mode"] = arguments["mode"],
+                        ["width"] = arguments["width"],
+                    });
                 case "run_query":
-                    return PyRevitMcpRunResults.Compact(
-                        (JObject)CallRevit(arguments, "run", RunParameters(arguments, "query")));
+                    return ResolveMissingApiName(arguments, PyRevitMcpRunResults.Compact(
+                        (JObject)CallRevit(arguments, "run", RunParameters(arguments, "query"))));
                 case "run_modify":
                     var dryRun = arguments.Value<bool?>("dry_run") ?? false;
-                    return PyRevitMcpRunResults.Compact(
-                        (JObject)CallRevit(arguments, "run", RunParameters(arguments, dryRun ? "dry_run" : "modify")));
+                    return ResolveMissingApiName(arguments, PyRevitMcpRunResults.Compact(
+                        (JObject)CallRevit(arguments, "run", RunParameters(arguments, dryRun ? "dry_run" : "modify"))));
                 case "get_run":
                     return GetRun(arguments);
                 default:
                     throw new AgentClientException("unknown_tool", "Unknown tool: " + name);
             }
+        }
+
+        /// <summary>
+        /// When a run failed on <c>DB.X</c> or <c>UI.X</c> that doesn't exist, look X up in the
+        /// running Revit and put the answer in the hint: agents rarely act on "call
+        /// lookup_revit_api", but they do act on "use DB.Architecture.Room".
+        /// </summary>
+        private JObject ResolveMissingApiName(JObject arguments, JObject run) {
+            var error = run["error"] as JObject;
+            var missing = error == null ? null : PyRevitMcpRunResults.MissingRevitApiName(error);
+            if (missing == null)
+                return run;
+
+            try {
+                var lookup = CallRevit(arguments, "lookup_api", new JObject { ["name"] = missing }) as JObject;
+                var hint = PyRevitMcpRunResults.HintFromLookup(missing, lookup);
+                if (hint != null)
+                    error["hint"] = hint;
+            }
+            catch (AgentClientException) {
+            }
+            return run;
         }
 
         private JToken ListInstances() {
@@ -284,6 +314,21 @@ namespace pyRevitCLI {
             };
         }
 
+        /// <summary>
+        /// Returns a capture as an MCP image block (what the model looks at) plus a short text
+        /// block with the view and the saved file path; the base64 data is not repeated in text.
+        /// </summary>
+        private static JObject ImageResult(JObject captured) {
+            var data = captured.Value<string>("image_base64");
+            captured.Remove("image_base64");
+            return new JObject {
+                ["content"] = new JArray(
+                    new JObject { ["type"] = "image", ["data"] = data, ["mimeType"] = "image/png" },
+                    new JObject { ["type"] = "text", ["text"] = captured.ToString(Formatting.None) }),
+                ["isError"] = false,
+            };
+        }
+
         private static JObject ToolResult(string text, bool isError) {
             return new JObject {
                 ["content"] = new JArray(new JObject { ["type"] = "text", ["text"] = text }),
@@ -320,6 +365,8 @@ Revit API idioms (common mistakes):
 - DB.Category.GetCategory(doc, DB.BuiltInCategory.OST_Walls) needs the document as its first argument.
 - Element type: doc.GetElement(element.GetTypeId()). Parameters: element.LookupParameter('Mark') by name, element.get_Parameter(DB.BuiltInParameter.ALL_MODEL_MARK) for built-ins.
 - Collector counts: collector.GetElementCount() is cheaper than len(collector.ToElements()).
+- OfClass only accepts classes that exist in Revit's native object model. For rooms, areas, spaces, family symbols of a category and similar API-only classes use OfCategory(DB.BuiltInCategory.OST_Rooms) (or OfClass(DB.SpatialElement)) and filter with isinstance().
+- There is no DB.Roof: roofs are DB.RoofBase (FootPrintRoof, ExtrusionRoof); rooms are DB.Architecture.Room.
 - Methods typed ICollection<ElementId> or IList<...> need a .NET collection, not a Python list: from System.Collections.Generic import List; ids = List[DB.ElementId](python_ids).
 - Anything that changes the document needs a transaction and run_modify, including persistent view changes such as graphic overrides and view properties. For selecting, zooming, and temporary hide/isolate use show_elements instead.
 - Enum values differ from UI names (TemporaryViewMode.TemporaryHideIsolate, not .Isolate). Look up the enum with lookup_revit_api before using a value you haven't seen.
@@ -334,6 +381,7 @@ Modeling idioms:
 - Prefer native elements (walls, floors, roofs, families) over DirectShape. Native elements carry their type's materials and stay editable.
 - Gable roof: one rectangular footprint through doc.Create.NewFootPrintRoof(curve_array, level, roof_type), which returns the roof and its footprint ModelCurveArray. Call roof.set_DefinesSlope(curve, True) and roof.set_SlopeAngle(curve, slope) on the two eave edges only; the gable-end edges keep DefinesSlope False. Check the member names with lookup_revit_api(name='FootPrintRoof').
 - DirectShape materials: build the solid with GeometryCreationUtilities.CreateExtrusionGeometry(loops, direction, distance, DB.SolidOptions(material_id, DB.ElementId.InvalidElementId)).
+- Check your work visually: after a modeling step, capture_view(view='3d') shows the whole model, and capture_view(view='<plan name>') shows a plan. Compare it with what you intended before moving on.
 - Build large models in steps (shell, openings, roofs, rooms) with a dry run for each. A failed or rejected step leaves the earlier steps intact, and each committed step is its own undo entry.";
 
         private static JArray ToolDefinitions() {
@@ -400,6 +448,29 @@ Modeling idioms:
                             ["description"] = "BuiltInCategory names such as OST_Windows or OST_Doors.",
                         },
                         ["zoom"] = new JObject { ["type"] = "boolean", ["description"] = "Also zoom the view to the elements." },
+                        ["revit"] = revitProperty,
+                    }, new string[0], readOnly: true),
+
+                Tool("capture_view",
+                    "Take a PNG of a Revit view to check your work visually. mode 'export' (default) renders the view "
+                    + "through Revit and works for any view by name or id. mode 'screen' captures the active view's window "
+                    + "exactly as the user sees it, including selection and temporary isolate. view '3d' renders a temporary "
+                    + "isometric 3D view of the whole model (never saved). The image is also saved under "
+                    + "%APPDATA%\\pyRevit\\agent\\captures for the user.",
+                    new JObject {
+                        ["view"] = new JObject {
+                            ["type"] = "string",
+                            ["description"] = "'active' (default), '3d', a view name, or a view id.",
+                        },
+                        ["mode"] = new JObject {
+                            ["type"] = "string",
+                            ["enum"] = new JArray("export", "screen"),
+                            ["description"] = "export (default) or screen.",
+                        },
+                        ["width"] = new JObject {
+                            ["type"] = "integer",
+                            ["description"] = "Image width in pixels, 320-2400 (default 1280). Larger images cost more tokens.",
+                        },
                         ["revit"] = revitProperty,
                     }, new string[0], readOnly: true),
 

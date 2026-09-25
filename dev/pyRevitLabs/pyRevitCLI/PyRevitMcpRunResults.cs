@@ -125,6 +125,11 @@ namespace pyRevitCLI {
                     + $"lookup_revit_api(name='{owner}') lists the 'creation' methods that take it (for example doc.Create.NewRoom(level, uv)).";
             }
 
+            if (message.Contains("not in Revit's native object model"))
+                return "FilteredElementCollector.OfClass can't filter by this API-only class. Use OfCategory with the matching "
+                    + "BuiltInCategory (for rooms: OfCategory(DB.BuiltInCategory.OST_Rooms)), or OfClass on its native base "
+                    + "class (DB.SpatialElement for rooms, areas and spaces), then filter with isinstance().";
+
             if (message.Contains("A managed exception was thrown"))
                 return "Revit rejected the input of a call on the failing line; read the [.NET: ...] details in the message. "
                     + "Common causes: open or self-intersecting curve loops, zero-length lines, objects passed where ElementIds are expected, "
@@ -181,6 +186,58 @@ namespace pyRevitCLI {
             }
 
             return "Check the Revit API names and signatures used on the failing line with lookup_revit_api before retrying.";
+        }
+
+        /// <summary>
+        /// The name an AttributeError on the injected DB or UI namespace was looking for, or null.
+        /// </summary>
+        internal static string MissingRevitApiName(JObject error) {
+            if (error.Value<string>("type") != "AttributeError")
+                return null;
+            var missing = MissingAttribute.Match(error.Value<string>("message") ?? string.Empty);
+            if (!missing.Success)
+                return null;
+            var owner = missing.Groups["owner"].Value;
+            return owner == "Autodesk.Revit.DB" || owner == "Autodesk.Revit.UI"
+                ? missing.Groups["member"].Value
+                : null;
+        }
+
+        /// <summary>
+        /// Turns a <c>lookup_api</c> answer for a missing name into a concrete replacement.
+        /// </summary>
+        internal static string HintFromLookup(string missing, JObject lookup) {
+            if (lookup == null)
+                return null;
+
+            if (lookup.Value<bool?>("ambiguous") == true) {
+                var matches = (lookup["matches"] as JArray)?.Select(match => ScriptName(match.ToString())).Take(6);
+                return matches == null ? null
+                    : $"'{missing}' is not directly in DB. Types with that name: {string.Join(", ", matches)}.";
+            }
+
+            if (lookup.Value<bool?>("found") == true && lookup["full_name"] != null) {
+                var fullName = lookup.Value<string>("full_name");
+                return $"'{missing}' is {fullName}: use {ScriptName(fullName)} in the script.";
+            }
+
+            var suggestions = (lookup["suggestions"] as JArray)?
+                .Select(match => match.ToString())
+                .Where(name => name.StartsWith("Autodesk.Revit.") && !name.Contains("+"))
+                .Select(ScriptName)
+                .Take(8)
+                .ToList();
+            return suggestions != null && suggestions.Count > 0
+                ? $"There is no Revit API type named '{missing}'. Similar types: {string.Join(", ", suggestions)}."
+                : $"There is no Revit API type named '{missing}'.";
+        }
+
+        private static string ScriptName(string fullName) {
+            if (fullName.StartsWith("Autodesk.Revit.DB."))
+                return "DB." + fullName.Substring("Autodesk.Revit.DB.".Length);
+            if (fullName.StartsWith("Autodesk.Revit.UI."))
+                return "UI." + fullName.Substring("Autodesk.Revit.UI.".Length);
+            return fullName;
         }
 
         private static string OwnerOnLine(string line, string member) {
