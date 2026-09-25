@@ -3,6 +3,7 @@ layout:
   - Test Cached Engines
   - Test FullFrame Engine
   - Test Persistent Engine
+  - Rocket Mode Scope Test
   - Test IronPython Compile
   - Test IronPython Search Paths
   - Test IronPython Threading

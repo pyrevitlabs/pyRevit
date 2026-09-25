@@ -60,11 +60,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public override void Init(ref ScriptRuntime runtime) {
             base.Init(ref runtime);
 
-            // extract engine configuration from runtime data
-            try {
-                ExecEngineConfigs = JsonConvert.DeserializeObject<IronPythonEngineConfigs>(runtime.ScriptRuntimeConfigs.EngineConfigs);
-            }
-            catch { }
+            LoadExecutionConfigs(ref runtime);
 
             // If the command required a fullframe engine
             // or if the command required a clean engine
@@ -73,6 +69,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public override void Start(ref ScriptRuntime runtime) {
+            LoadExecutionConfigs(ref runtime);
+
             if (!RecoveredFromCache) {
                 var flags = new Dictionary<string, object>();
 
@@ -201,6 +199,23 @@ namespace PyRevitLabs.PyRevit.Runtime {
             // standard library to this engine
             var tempExec = new PyRevitLoader.ScriptExecutor();
             tempExec.AddEmbeddedLib(engine);
+        }
+
+        private void LoadExecutionConfigs(ref ScriptRuntime runtime) {
+            var configs = new IronPythonEngineConfigs();
+            try {
+                configs = JsonConvert.DeserializeObject<IronPythonEngineConfigs>(
+                    runtime.ScriptRuntimeConfigs.EngineConfigs
+                ) ?? configs;
+            }
+            catch (Exception ex) {
+                logger.Warn(
+                    ex,
+                    "Failed to parse IronPython engine configuration: {0}",
+                    runtime.ScriptRuntimeConfigs.EngineConfigs
+                );
+            }
+            ExecEngineConfigs = configs;
         }
 
         private void SetupStreams(ref ScriptRuntime runtime) {
