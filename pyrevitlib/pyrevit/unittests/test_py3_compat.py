@@ -24,6 +24,7 @@ from pyrevit.compat import IRONPY, IRONPY3, NETCORE
 # invoking tool because the fixture ships with the DevTools extension, not
 # with pyrevitlib. Tests skip when unset.
 FAMILY_FILE = None
+FAMILY_UTILS_FILE = None
 
 # Modules every engine must import cleanly today.
 CORE_MODULES = [
@@ -111,9 +112,10 @@ class ImportTests(unittest.TestCase):
             natsorted(["Banana", "apple", "banana", "Apple"], alg=ns.GROUPLETTERS),
         )
         if hasattr(str, "casefold"):
+            sharp_s = chr(0xDF)
             self.assertEqual(
-                [u"\u00df", u"ss"],
-                natsorted([u"\u00df", u"ss"], alg=ns.IGNORECASE),
+                [sharp_s, "ss"],
+                natsorted([sharp_s, "ss"], alg=ns.IGNORECASE),
             )
 
     def test_vendored_requests_wraps_invalid_json(self):
@@ -320,6 +322,36 @@ class QueryStringLookupTests(unittest.TestCase):
         found = query.get_category(category.Name, doc=self.doc)
         self.assertIsNotNone(found)
         self.assertEqual(found.Name, category.Name)
+
+
+class FamilyLoaderTests(unittest.TestCase):
+    """The Load Families tool preserves Revit's direct load result."""
+
+    def test_overwrite_result_is_not_derived_from_symbols(self):
+        """FamilyLoader returns the helper's result for overwrite loads."""
+        import os.path as op
+        import runpy
+
+        from pyrevit import revit
+
+        if not FAMILY_UTILS_FILE or not op.isfile(FAMILY_UTILS_FILE):
+            self.skipTest("Family loader fixture not provided")
+        family_utils = runpy.run_path(FAMILY_UTILS_FILE)
+        calls = []
+        original_load = revit.create.load_family_with_result
+
+        def refuse_load(path):
+            calls.append(path)
+            return False, [object()]
+
+        try:
+            revit.create.load_family_with_result = refuse_load
+            loader = family_utils["FamilyLoader"]("existing.rfa", overwrite=True)
+            self.assertFalse(loader._load_family())
+        finally:
+            revit.create.load_family_with_result = original_load
+
+        self.assertEqual(["existing.rfa"], calls)
 
 
 class OutParamMarshalingTests(unittest.TestCase):
