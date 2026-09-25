@@ -299,7 +299,7 @@ Workflow:
 1. Call get_context first. It reports the Revit version, the open document, the active view, the selection, levels, the agent policy, and `scripting`: which engine runs your scripts and its exact Python version and syntax limits.
 2. Explore with run_query, inspect_elements and lookup_revit_api. Filter and aggregate inside the script; return only what you need.
 3. To show the user elements (select, zoom, temporarily isolate or hide them in the active view), call show_elements. It needs no approval and changes no model elements; don't write run_modify scripts for this.
-4. To change the model, call run_modify with dry_run=true first and review the change set. Then call run_modify without dry_run. The user must approve it in Revit; status 'rejected' means they discarded it, so don't retry without asking them.
+4. To change the model, call run_modify with dry_run=true first and review the change set. Then call run_modify without dry_run. With agent policy 'ask' the user approves it in Revit, and status 'rejected' means they discarded it, so don't retry without asking them. With policy 'auto' (see get_context.agent.policy) the change is committed without a prompt, so dry-run first and keep each change focused. With 'readonly', modify runs are refused.
 
 Script conventions:
 - The script is Python executed in Revit. Injected names: doc, uidoc, app, uiapp, DB (Autodesk.Revit.DB), UI (Autodesk.Revit.UI), inputs (dict from the 'inputs' argument).
@@ -414,7 +414,7 @@ Modeling idioms:
                     }, new[] { "script" }, readOnly: true),
 
                 Tool("run_modify",
-                    "Run a Python script that changes the model. With dry_run=true the change set is returned and everything is rolled back. Otherwise Revit shows the user an approval prompt with the changed elements isolated; kept changes become one undo entry named 'Agent: <title>'. Status 'rejected' means the user discarded the changes.",
+                    "Run a Python script that changes the model. With dry_run=true the change set is returned and everything is rolled back. Otherwise, under agent policy 'ask', Revit shows the user an approval prompt with the changed elements isolated; under policy 'auto' the change is committed directly. Kept changes become one undo entry named 'Agent: <title>'. Status 'rejected' means the user discarded the changes.",
                     new JObject {
                         ["script"] = new JObject { ["type"] = "string", ["description"] = "Python source. Open transactions with DB.Transaction; assign `result` to return data." },
                         ["title"] = new JObject { ["type"] = "string", ["description"] = "What the change does; shown to the user and used as the undo name." },

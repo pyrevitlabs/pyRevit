@@ -399,11 +399,12 @@
     <system:String x:Key="pyRevit.AdminInstall">As configurações do pyRevit são definidas pelo seu administrador.</system:String>
 
     <system:String x:Key="Agent.Title">Runtime de agentes (MCP)</system:String>
-    <system:String x:Key="Agent.Description">Permite que agentes de programação MCP como Claude Code, Codex, Cursor, VS Code e OpenCode leiam e alterem o modelo aberto executando Python dentro do Revit. Os agentes se conectam por um pipe nomeado local que só o seu usuário do Windows pode abrir; ao contrário do servidor Routes, nada fica acessível pela rede. Cada alteração no modelo precisa da sua aprovação no Revit.</system:String>
+    <system:String x:Key="Agent.Description">Permite que agentes de programação MCP como Claude Code, Codex, Cursor, VS Code e OpenCode leiam e alterem o modelo aberto executando Python dentro do Revit. Os agentes se conectam por um pipe nomeado local que só o seu usuário do Windows pode abrir; ao contrário do servidor Routes, nada fica acessível pela rede. Por padrão, cada alteração no modelo precisa da sua aprovação no Revit.</system:String>
     <system:String x:Key="Agent.Privacy">Tudo o que o agente lê (nomes de elementos, valores de parâmetros, resultados) é enviado ao provedor do modelo do agente.</system:String>
     <system:String x:Key="Agent.Check">Host de agentes (beta)</system:String>
     <system:String x:Key="Agent.Policy">Alterações no modelo</system:String>
     <system:String x:Key="Agent.Policy.Ask">Pedir minha aprovação no Revit antes de cada alteração</system:String>
+    <system:String x:Key="Agent.Policy.Auto">Automático: aplicar as alterações sem perguntar (cada alteração continua sendo um único passo de desfazer)</system:String>
     <system:String x:Key="Agent.Policy.ReadOnly">Somente leitura: permitir apenas consultas e execuções de teste</system:String>
     <system:String x:Key="Agent.Engine">Mecanismo de script padrão</system:String>
     <system:String x:Key="Agent.Engine.IronPython">IronPython (mecanismo anexado)</system:String>

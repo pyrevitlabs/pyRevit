@@ -53,6 +53,8 @@ namespace pyRevitCLI {
 
             if (run.Value<string>("mode") != "query")
                 compact["decision"] = run["decision"];
+            if (run["approval"] != null)
+                compact["approval"] = run["approval"];
 
             if (run["result"] != null && run["result"].Type != JTokenType.Null)
                 compact["result"] = run["result"];
