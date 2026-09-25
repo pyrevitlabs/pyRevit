@@ -14,11 +14,13 @@ description: Core rules for every pyRevit agent task. Covers the script contract
    - Policy `ask`: the user approves the change in Revit. Status `rejected` means they discarded it; ask them before retrying.
    - Policy `auto`: the change is committed without a prompt. Dry-run first and keep each change focused.
    - Policy `readonly`: modify runs are refused.
-5. **Check.** `capture_view` returns a PNG of a view (`"3d"` for the whole model). Look at it before you report success.
+5. **Check.** `capture_view` returns a PNG of a view: `view="3d"` frames the whole model, `elements=[...]` frames part of it, `direction` picks the side. Look at it, and read back a number (a height, an area, a count), before you report success.
 
 ## Script contract
 
-- **Injected names:** `doc`, `uidoc`, `app`, `uiapp`, `DB` (Autodesk.Revit.DB), `UI` (Autodesk.Revit.UI), and `inputs` (the dict you pass as `inputs`). Don't `import DB` or `import UI`.
+- **Injected names:** `doc`, `uidoc`, `app`, `uiapp`, `DB` (Autodesk.Revit.DB), `UI` (Autodesk.Revit.UI), `inputs` (the dict you pass as `inputs`), and `kit`. Don't `import DB` or `import UI`.
+- **`kit`** is a tested helper library for the steps agents get wrong most: type and level lookups that raise with the available names, walls, floors, roofs, openings, rooms, parameters, views and navigation. `result = kit.help()` lists every helper with its signature. Prefer a `kit` helper over writing the raw API yourself; the `modeling` and `views` skills show them in use.
+- **Shared helpers across runs:** put plan data and your own helpers in a `.py` file in the workspace and call `lib = kit.load(r"C:\path\file.py")`. It is read fresh on every run and sees `doc`, `uidoc`, `DB` and `kit`. Don't paste the same library into every script.
 - **Returning data:** assign `result`. It must be JSON-serializable. `ElementId`, `Element` and `XYZ` are converted for you, and so are .NET numbers and collections. Use `print()` for short notes only.
 - **Large results:** results over 256 KB are saved to the run record. Page through them with `get_run(run_id, offset, length)`.
 
@@ -81,25 +83,48 @@ The `engine` field of every run response confirms what actually ran. `"{}".forma
   ids = List[DB.ElementId](python_ids)
   ```
 
-- **Out parameters:** many Revit methods reject a null out argument with `ArgumentNullException`, so the usual "omit it and get a tuple back" doesn't work for them. Pass a pre-filled reference and read `.Value`:
+- **Out parameters:** IronPython 3.4 passes null for out arguments, whether you omit them, pass a value, or pass a `StrongBox`, and many Revit methods reject null with `ArgumentNullException`. The recipe that works on every engine is reflection with a pre-filled `System.Array[System.Object]`; the out value is written back into the array:
 
   ```python
-  import clr
-  mapping = clr.Reference[DB.ModelCurveArray](DB.ModelCurveArray())
-  roof = doc.Create.NewFootPrintRoof(footprint, level, roof_type, mapping)
-  model_curves = mapping.Value
+  import System
+  method = doc.Create.GetType().GetMethod("NewFootPrintRoof")
+  arguments = System.Array[System.Object]([footprint, level, roof_type, DB.ModelCurveArray()])
+  roof = method.Invoke(doc.Create, arguments)
+  model_curves = arguments[3]
   ```
+
+  A plain Python list fails; it must be `System.Array[System.Object]`. `kit` roofs already do this.
 
 - **No LINQ:** collectors have no `FirstOrDefault` or `Where`. Use `.FirstElement()`, `.ToElements()` and list comprehensions.
 - **No `import *`:** `from Autodesk.Revit.DB import *` skips enums on IronPython (`ViewType`, `StructuralType`). Use the injected `DB.` prefix. `Autodesk` itself isn't a name in the script; write `DB.GeometryObject`, not `Autodesk.Revit.DB.GeometryObject`.
 - **Fail loudly.** When a lookup by name finds nothing, `raise` with the names that do exist; don't carry on with `None`. When a filter matches no elements, raise too. Silent no-ops look like success in the change set.
+- **Never `except Exception: pass`.** Collect the error text and return it. A swallowed exception in a loop reports "0 changed" as if it were a result.
+- **Read numbers back.** After creating geometry, compare a measured value (a bounding box height, an area, a count) with what you intended. Plausible-looking geometry is the error that screenshots don't catch.
 - **Never hardcode type names.** They differ between templates ("Generic - 300mm" wall, "Generic 300mm" floor, metric vs imperial). Query the types first and pick by name from that list.
 - **Enum values** differ from UI names. For example it's `TemporaryViewMode.TemporaryHideIsolate`, not `.Isolate`. Look the enum up first.
-- **pyrevitlib** is importable and has tested helpers: `from pyrevit import revit`, with `revit.query` and `revit.create`.
+- **pyrevitlib** has more lookups: `from pyrevit.revit.db import query` gives `query.get_family_symbol`, `query.get_types_by_class`, `query.get_view_by_name`, `query.get_elements_bounding_box` and many more. `kit` covers modeling and views, which `query` doesn't.
+- **Names that don't exist,** which agents often guess:
+
+  | Guess | Use |
+  |---|---|
+  | `doc.WallTypes`, `doc.Families`, `doc.GetViews()` | `DB.FilteredElementCollector(doc).OfClass(DB.WallType)` (or `kit.type_names`, `kit.views`) |
+  | `doc.FilteredElementCollector` | `DB.FilteredElementCollector(doc)` |
+  | `Family.GetSymbols()` | `family.GetFamilySymbolIds()` |
+  | `Parameter.Value` | `AsDouble()`, `AsString()`, `AsInteger()`, `AsElementId()`, or `kit.get` |
+  | `doc.NewDirectShape`, `DirectShape.Create` | `DB.DirectShape.CreateElement(doc, category_id)` + `SetShape` |
+  | `doc.Create.NewCeiling` | `DB.Ceiling.Create` or `kit.ceiling` |
+  | `Plane.Create(origin, normal)` | `DB.Plane.CreateByNormalAndOrigin(normal, origin)` |
+  | `CurveLoop.Create(curve_array)` | `DB.CurveLoop.Create(List[DB.Curve](curves))`, or append to `DB.CurveLoop()` |
+  | `Edge.Curve`, `face.Surface` | `edge.AsCurve()`; for a `PlanarFace`, `face.Origin` and `face.FaceNormal` |
+  | `BooleanOperationType.BoolCut` | `DB.BooleanOperationsUtils.ExecuteBooleanOperation(a, b, DB.BooleanOperationsType.Difference)` |
+  | `BuiltInParameter.WALL_HEIGHT`, `TYPE_MARK`, `ALL_MODEL_COMMENTS` | `WALL_USER_HEIGHT_PARAM`, `ALL_MODEL_TYPE_MARK`, `ALL_MODEL_INSTANCE_COMMENTS` |
+  | `view.SetCategoryHidden(category, True)` | `view.SetCategoryHidden(category.Id, True)` |
+  | wall top constraint "Roof" through `WALL_HEIGHT_TYPE` | `wall.AddAttachment(roof.Id, DB.AttachmentLocation.Top)`, or `kit.attach_top` |
 
 ## Finding the right API
 
 - **`lookup_revit_api(name)`** reflects the exact Revit version that is running. Use it instead of guessing.
+  - `found: false` means the name doesn't exist, even when the type does (`type_found: true`). Read `suggestions`, and for enums `in_other_enums`: a guessed `BuiltInCategory.LEVEL_PARAM_ROOF_OFFSET` suggests `BuiltInParameter.ROOF_LEVEL_OFFSET_PARAM`.
   - `lookup_revit_api("Wall")` gives signatures, the `namespace`, the `python_import` line, and a `creation` list (static factories and `doc.Create.New...` methods).
   - `lookup_revit_api("FootPrintRoof.DefinesSlope")` looks up one member.
 - **Declared members only:** it lists a type's own members. For inherited ones, look up its `base_type`.

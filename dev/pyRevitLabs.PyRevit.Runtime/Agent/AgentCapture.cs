@@ -25,7 +25,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// covered.</item>
     /// </list>
     /// The <c>3d</c> view is a temporary isometric view created inside a transaction group that is
-    /// always rolled back.
+    /// always rolled back. It shows model categories only, looks from <c>direction</c>, and has a
+    /// section box around the requested elements or, by default, the whole model, so the image
+    /// frames the building instead of level and grid extents.
     /// Invariant: capturing never leaves a change in the model.
     /// </remarks>
     internal static class AgentCapture {
@@ -33,10 +35,26 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private const int MinWidth = 320;
         private const int MaxWidth = 2400;
 
+        private const double SectionBoxPadding = 2.0;
+
+        private static readonly Dictionary<string, XYZ> Directions = new Dictionary<string, XYZ>(StringComparer.OrdinalIgnoreCase) {
+            ["southeast"] = new XYZ(-1, 1, -1),
+            ["southwest"] = new XYZ(1, 1, -1),
+            ["northeast"] = new XYZ(-1, -1, -1),
+            ["northwest"] = new XYZ(1, -1, -1),
+            ["south"] = new XYZ(0, 1, -0.6),
+            ["north"] = new XYZ(0, -1, -0.6),
+            ["east"] = new XYZ(-1, 0, -0.6),
+            ["west"] = new XYZ(1, 0, -0.6),
+            ["top"] = new XYZ(0, 0.0001, -1),
+        };
+
         public sealed class Request {
             public string View;
             public string Mode;
             public int Width;
+            public string Direction;
+            public List<ElementId> Elements;
         }
 
         public static Request Parse(JObject parameters) {
@@ -45,10 +63,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 throw new AgentException("invalid_params", "'mode' must be export or screen.");
 
             var width = parameters.Value<int?>("width") ?? DefaultWidth;
+            var direction = parameters.Value<string>("direction") ?? "southeast";
+            if (!Directions.ContainsKey(direction))
+                throw new AgentException("invalid_params", "'direction' must be one of: " + string.Join(", ", Directions.Keys) + ".");
             return new Request {
                 View = string.IsNullOrWhiteSpace(parameters.Value<string>("view")) ? "active" : parameters.Value<string>("view").Trim(),
                 Mode = mode,
                 Width = Math.Max(MinWidth, Math.Min(MaxWidth, width)),
+                Direction = direction,
+                Elements = (parameters["elements"] as JArray)?.Select(id => AgentIds.FromValue(id.Value<long>())).ToList(),
             };
         }
 
@@ -71,7 +94,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
             else if (string.Equals(request.View, "3d", StringComparison.OrdinalIgnoreCase)) {
                 captured = null;
-                path = ExportTemporary3D(doc, directory, baseName, request.Width);
+                path = ExportTemporary3D(doc, directory, baseName, request);
             }
             else {
                 captured = ResolveView(doc, uidoc, request.View);
@@ -82,7 +105,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             return new JObject {
                 ["mode"] = request.Mode,
                 ["view"] = captured == null
-                    ? new JObject { ["name"] = "temporary isometric 3D view", ["type"] = "ThreeD" }
+                    ? new JObject { ["name"] = "temporary isometric 3D view", ["type"] = "ThreeD", ["direction"] = request.Direction }
                     : new JObject {
                         ["id"] = AgentIds.ToValue(captured.Id),
                         ["name"] = captured.Name,
@@ -138,7 +161,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ?? throw new AgentException("capture_failed", $"Revit did not write an image for view '{view.Name}'.");
         }
 
-        private static string ExportTemporary3D(Document doc, string directory, string baseName, int width) {
+        private static string ExportTemporary3D(Document doc, string directory, string baseName, Request request) {
             if (doc.IsReadOnly)
                 throw new AgentException("document_read_only", "A temporary 3D view can't be created in a read-only document.");
 
@@ -157,15 +180,77 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         view = View3D.CreateIsometric(doc, viewType.Id);
                         view.DisplayStyle = DisplayStyle.ShadingWithEdges;
                         view.DetailLevel = ViewDetailLevel.Medium;
+                        ShowModelOnly(doc, view);
+                        view.SetOrientation(Orientation(Directions[request.Direction]));
+                        var box = ModelBox(doc, view, request.Elements);
+                        if (box != null) {
+                            view.SetSectionBox(box);
+                            view.IsSectionBoxActive = true;
+                            HideSectionBox(doc, view);
+                        }
                         transaction.Commit();
                     }
-                    return ExportView(doc, view, directory, baseName, width);
+                    return ExportView(doc, view, directory, baseName, request.Width);
                 }
                 finally {
                     if (group.HasStarted() && !group.HasEnded())
                         group.RollBack();
                 }
             }
+        }
+
+        private static void ShowModelOnly(Document doc, View view) {
+            foreach (Category category in doc.Settings.Categories) {
+                if (category.CategoryType != CategoryType.Model && view.CanCategoryBeHidden(category.Id))
+                    view.SetCategoryHidden(category.Id, true);
+            }
+        }
+
+        private static void HideSectionBox(Document doc, View view) {
+            var sectionBoxes = Category.GetCategory(doc, BuiltInCategory.OST_SectionBox);
+            if (sectionBoxes != null && view.CanCategoryBeHidden(sectionBoxes.Id))
+                view.SetCategoryHidden(sectionBoxes.Id, true);
+        }
+
+        private static ViewOrientation3D Orientation(XYZ direction) {
+            var forward = direction.Normalize();
+            var right = forward.CrossProduct(XYZ.BasisZ);
+            if (right.IsZeroLength())
+                right = XYZ.BasisX;
+            var up = right.Normalize().CrossProduct(forward).Normalize();
+            return new ViewOrientation3D(forward.Negate().Multiply(1000), up, forward);
+        }
+
+        private static BoundingBoxXYZ ModelBox(Document doc, View view, List<ElementId> ids) {
+            IEnumerable<Element> elements = ids != null && ids.Count > 0
+                ? ids.Select(doc.GetElement).Where(element => element != null)
+                : new FilteredElementCollector(doc, view.Id)
+                    .WhereElementIsNotElementType()
+                    .Where(element => element.Category != null
+                                      && element.Category.CategoryType == CategoryType.Model
+                                      && !(element is Level));
+
+            double minX = double.MaxValue, minY = double.MaxValue, minZ = double.MaxValue;
+            double maxX = double.MinValue, maxY = double.MinValue, maxZ = double.MinValue;
+            var any = false;
+            foreach (var element in elements) {
+                var box = element.get_BoundingBox(null);
+                if (box == null)
+                    continue;
+                any = true;
+                minX = Math.Min(minX, box.Min.X);
+                minY = Math.Min(minY, box.Min.Y);
+                minZ = Math.Min(minZ, box.Min.Z);
+                maxX = Math.Max(maxX, box.Max.X);
+                maxY = Math.Max(maxY, box.Max.Y);
+                maxZ = Math.Max(maxZ, box.Max.Z);
+            }
+            if (!any)
+                return null;
+            return new BoundingBoxXYZ {
+                Min = new XYZ(minX - SectionBoxPadding, minY - SectionBoxPadding, minZ - SectionBoxPadding),
+                Max = new XYZ(maxX + SectionBoxPadding, maxY + SectionBoxPadding, maxZ + SectionBoxPadding),
+            };
         }
 
         private static string CaptureScreen(UIDocument uidoc, View view, string path) {

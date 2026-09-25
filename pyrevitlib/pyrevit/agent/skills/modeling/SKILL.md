@@ -1,143 +1,116 @@
 ---
 name: modeling
-description: Building and changing model geometry. Covers levels, walls, floors, roofs (including gable roofs), doors and windows, columns, rooms, and when DirectShape is acceptable. Use it for "model this house", "add walls", "put windows in" and similar tasks.
+description: Building and changing model geometry. Covers levels, walls, floors, ceilings, roofs (gable, hip, shed), doors and windows, columns, rooms, re-runnable build stages, and when DirectShape is acceptable. Use it for "model this house", "add walls", "put windows in" and similar tasks.
 ---
 
 # Modeling
 
-Read `revit-scripting` first. Every API name here can be checked with `lookup_revit_api`.
+Read `revit-scripting` first. Use the `kit` helpers below: each one is a tested recipe for a step agents often get wrong, and each raises a `KitError` that says what to fix. Fall back to the raw API only for what `kit` doesn't cover.
 
 ## Plan before you build
 
-- **Build in steps, one `run_modify` each, with a dry run first:**
-  1. levels and grids
-  2. walls
-  3. floors
-  4. openings
-  5. roofs
-  6. rooms
-
-  A failed or rejected step leaves the earlier steps intact, and each committed step is its own undo entry.
-- **Find the types to use first** with a query: `FilteredElementCollector(doc).OfClass(DB.WallType)`, `DB.FloorType`, `DB.RoofType`, and `OfClass(DB.FamilySymbol)` filtered by category for doors and windows. Prefer the project's own types to generic ones.
 - **Check the drawing adds up.** Sum the room dimensions along each band and compare them with the overall dimensions. If they conflict, tell the user what doesn't fit and ask which to keep before you build.
-- **Coordinates are in feet.** Keep one consistent origin and write positions as named constants. Convert drawing dimensions (feet and inches) carefully.
-- **Check after each step** with `capture_view(view="3d")`, plus a plan, before moving on.
+- **Find the types first** with one query:
+
+  ```python
+  result = {
+      "walls": kit.type_names(DB.WallType),
+      "floors": kit.type_names(DB.FloorType),
+      "roofs": kit.type_names(DB.RoofType),
+      "doors": kit.symbols(category="OST_Doors"),
+      "windows": kit.symbols(category="OST_Windows"),
+      "levels": [(l.Name, l.Elevation) for l in kit.levels()],
+  }
+  ```
+
+  Names differ between templates; use the names this returns, never names from memory.
+- **Keep plan data in one file in the workspace** (dimensions, wall lines, openings, rooms) and load it in each script with `plan = kit.load(r"C:\path\house_plan.py")`. It is read fresh on every run and sees `doc`, `DB` and `kit`. Don't paste the same helpers into every script.
+- **Coordinates are in feet**, with one origin. Convert drawing dimensions with `kit.ft("32'-6\"")` or `kit.ft("900mm")`.
+
+## Build in stages
+
+One `run_modify` per stage, dry run first:
+
+1. levels
+2. walls
+3. rooms (they check the walls: see below)
+4. floors and ceilings
+5. openings
+6. roofs, then attach the walls to them
+
+Make each stage re-runnable: clear what it made last time, then tag what it makes now.
+
+```python
+with kit.transaction("Stage 2 - walls"):
+    kit.clear("walls")
+    made = kit.walls(kit.rect(0, 0, 65, 32), "Generic - 8\"", level="Level 1", height=9)
+    kit.mark(made, "walls")
+result = {"walls": len(made)}
+```
+
+A failed or rejected stage leaves the earlier ones intact, and each committed stage is one undo entry.
+
+**Check after each stage** with `capture_view(view="3d")`, or `capture_view(view="3d", elements=[...])` to frame part of the model, plus a plan.
 
 ## Levels
 
 - **Create:** `DB.Level.Create(doc, elevation_ft)`, then set `level.Name`.
-- **Existing levels:** `get_context` lists them.
+- **Look up:** `kit.level("Level 1")`, or `kit.level()` for the active plan's level.
 
 ## Walls
 
-```python
-line = DB.Line.CreateBound(DB.XYZ(x1, y1, 0), DB.XYZ(x2, y2, 0))
-wall = DB.Wall.Create(doc, line, wall_type.Id, level.Id, height_ft, 0.0, False, False)
-```
+- `kit.wall(start, end, wall_type, level=None, height=10, top_level=None, base_offset=0)` places one wall on its location line (usually the centerline).
+- `kit.walls(points, wall_type, ...)` walls a closed outline; pass `closed=False` for an open run.
+- **Joins:** end walls exactly on each other's endpoints so Revit joins them. Wall thickness is `wall_type.Width` (feet).
+- **Openings:** leave room for them. An opening wider than its host segment fails with `revit_failure` ("can't cut instance").
 
-- **Centerlines:** walls are placed on their location line, usually the centerline. Wall thickness is `wall_type.Width` (in feet).
-- **Joins:** end walls exactly on each other's endpoints so Revit joins them.
-- **Openings:** leave room for them. An opening wider than its host wall segment fails with `revit_failure` ("can't cut instance").
-- **Check enclosure early.** Place rooms right after the walls: a room that reports "not in a properly enclosed region" in `failures`, or spills into its neighbour, shows a gap in the walls.
-- **Gable ends and walls under roofs:** walls don't trim to a roof by themselves. Keep the wall at eave height or taller and attach its top to the roof after the roof exists:
+## Rooms: the layout check
 
-  ```python
-  wall.AddAttachment(roof.Id, DB.AttachmentLocation.Top)
-  ```
+- `kit.room(x, y, name, number=None, level=None)` places a room and **raises when the point isn't enclosed**. Place rooms right after the walls: a raise names the room whose walls have a gap.
+- `kit.room_separation(points, level=None)` separates rooms in an open plan without a wall.
+- **Tags:** `doc.Create.NewRoomTag(DB.LinkElementId(room.Id), DB.UV(x, y), plan_view.Id)`.
 
-  Don't fill gables with DirectShape.
+## Floors and ceilings
 
-## Floors (Revit 2022 and later)
-
-```python
-from System.Collections.Generic import List
-loop = DB.CurveLoop()
-for a, b in edges:
-    loop.Append(DB.Line.CreateBound(a, b))
-floor = DB.Floor.Create(doc, List[DB.CurveLoop]([loop]), floor_type.Id, level.Id)
-```
-
-- **Loops must be closed:** each line ends where the next begins, and nothing self-intersects.
-- **Ids, not objects:** the type and level arguments are ElementIds.
-- **Offset from the level:** `floor.get_Parameter(DB.BuiltInParameter.FLOOR_HEIGHTABOVELEVEL_PARAM).Set(offset_ft)`.
-- **Ceilings** use the same loops: `DB.Ceiling.Create(doc, loops, ceiling_type.Id, level.Id)`. There is no `doc.Create.NewCeiling`.
+- `kit.floor(points, floor_type, level=None, offset=0)`: points are the closed outline; `offset` is feet above the level.
+- `kit.ceiling(points, ceiling_type, level=None, offset=8)`.
 
 ## Roofs
 
-- **Native roofs first.** They carry the roof type's layers and materials, and stay editable.
-- **Footprint roof:** a closed `CurveArray` footprint on the eave outline, including the overhang. `NewFootPrintRoof` has an out parameter that must not be null, and it gives back the `ModelCurve` for each footprint edge. The slope methods take those model curves, not your `Line`s:
+- **Native roofs only.** They carry the roof type's layers and materials, stay editable, and walls can attach to them.
+- `kit.gable_roof(x1, y1, x2, y2, roof_type, pitch="8:12", ridge="x", level=None, offset=9)`: the rectangle is the eave outline, overhangs included; `ridge="x"` runs the ridge along X; `offset` is the eave height above the level.
+- `kit.hip_roof(...)`, and `kit.shed_roof(..., low_side="south")`.
+- `kit.footprint_roof(points, roof_type, level, slopes={0: "8:12", 2: "8:12"}, offset=9)` for any other outline: edge `i` runs from `points[i]` to `points[i+1]`.
+- **Pitch** is `"8:12"`, `"30deg"`, or a rise/run number. The raw API `set_SlopeAngle` takes rise over run: not degrees, not radians.
+- The gable, hip and shed helpers **measure the built roof and raise** when its rise doesn't match the pitch, which catches slopes on the wrong edges.
+- **Cross gables** are a second roof. A footprint can't contain internal ridge lines.
+- **Gable end walls:** build the end walls to eave height or taller, then attach them so they follow the rake: `kit.attach_top(end_walls, roof)`. Don't fill gables with DirectShape.
 
-  ```python
-  import clr
-  footprint = DB.CurveArray()
-  for a, b in edges:
-      footprint.Append(DB.Line.CreateBound(a, b))
-  mapping = clr.Reference[DB.ModelCurveArray](DB.ModelCurveArray())
-  roof = doc.Create.NewFootPrintRoof(footprint, level, roof_type, mapping)
+## Doors, windows, columns and other families
 
-  ridge_along_x = True
-  for model_curve in mapping.Value:
-      curve = model_curve.GeometryCurve
-      direction = curve.GetEndPoint(1) - curve.GetEndPoint(0)
-      runs_along_x = abs(direction.X) > abs(direction.Y)
-      is_eave = runs_along_x == ridge_along_x
-      roof.set_DefinesSlope(model_curve, is_eave)
-      if is_eave:
-          roof.set_SlopeAngle(model_curve, 0.5)
-  ```
+- `kit.opening(symbol, wall, x, y, sill=None)` hosts a door or window on `wall` at plan point (x, y). `symbol` is a type name, or pass `kit.symbol("36\" x 84\"", family="Single-Flush")`.
+- `kit.place(symbol, x, y, level=None, rotation=0)` places furniture, fixtures and other level-based families.
+- `kit.column(symbol, x, y, level, top_level, structural=True)`.
+- `kit.symbol` activates the type, so call it inside the transaction.
+- Keep openings clear of wall ends and of each other.
 
-- **Gable roof:** slope the two edges parallel to the ridge (the eaves) only; the gable-end edges keep `DefinesSlope` False. Slope is rise over run: `0.5` is 6:12.
-- **Hip roof:** set `DefinesSlope` on all four edges.
-- **Shed roof:** set `DefinesSlope` on one edge.
-- **Check the orientation.** Compute the expected ridge height (eave height + half the span × slope) and compare it with `roof.get_BoundingBox(None).Max.Z`. A mismatch means the slopes are on the wrong edges.
-- **There is no `FootPrintRoof.Create`,** and a footprint can't contain internal ridge lines. Build a cross gable as a second roof.
-- **Height:** raise the whole roof with its level offset parameter (`DB.BuiltInParameter.ROOF_LEVEL_OFFSET_PARAM`), and the overhang with the footprint position.
+## Parameters
 
-## Doors, windows and other hosted families
-
-```python
-symbol = ...  # DB.FamilySymbol of the right category
-if not symbol.IsActive:
-    symbol.Activate()
-    doc.Regenerate()
-inst = doc.Create.NewFamilyInstance(DB.XYZ(x, y, 0), symbol, host_wall, level, DB.Structure.StructuralType.NonStructural)
-```
-
-- **Activate inside the transaction.** `symbol.Activate()` changes the document, so it fails with `ModificationOutsideTransactionException` before `t.Start()`.
-- **Sill height:** set it with the instance's sill height parameter after placement. Use `inspect_elements` to find its name.
-- **Placement:** keep openings clear of wall ends and of each other.
-
-## Columns
-
-- **Structural columns** use `DB.Structure.StructuralType.Column`.
-- **Architectural columns** use `NonStructural`, with the level as the host.
-
-## Rooms
-
-```python
-room = doc.Create.NewRoom(level, DB.UV(x, y))
-room.Name = "Kitchen"
-```
-
-- **Placement:** the point must be inside an area enclosed by room-bounding walls. `room.Location` is read-only.
-- **Tags:** `doc.Create.NewRoomTag(DB.LinkElementId(room.Id), DB.UV(x, y), plan_view.Id)`.
+- `kit.get(element, "Comments")`, `kit.set(element, "FLOOR_HEIGHTABOVELEVEL_PARAM", 0.5)`. Names can be UI names or `BuiltInParameter` names; a missing name raises with the element's parameter names. Length strings such as `'6"'` are converted.
 
 ## DirectShape (last resort)
 
-- **Only when native elements can't express the geometry.** It isn't editable, and it doesn't take part in joins, roof attachment or schedules the way native elements do.
-- **Create it empty, then set the shape.** There is no `DirectShape.Create`:
+- **Only when native elements can't express the geometry.** It isn't editable, and it doesn't take part in joins, roof attachment or schedules.
+- Create it empty, then set the shape, with a material or it will have none:
 
   ```python
   from System.Collections.Generic import List
+  options = DB.SolidOptions(material_id, DB.ElementId.InvalidElementId)
+  solid = DB.GeometryCreationUtilities.CreateExtrusionGeometry(loops, DB.XYZ.BasisZ, height, options)
   shape = DB.DirectShape.CreateElement(doc, DB.ElementId(DB.BuiltInCategory.OST_GenericModel))
   shape.SetShape(List[DB.GeometryObject]([solid]))
   ```
-- **Material:** build the solid with a material, or it will have none:
 
-  ```python
-  solid = DB.GeometryCreationUtilities.CreateExtrusionGeometry(loops, direction, distance, DB.SolidOptions(material_id, DB.ElementId.InvalidElementId))
-  ```
+## Materials
 
-## Materials and appearance
-
-- **Materials:** `FilteredElementCollector(doc).OfClass(DB.Material)`. Assign them through the element type's compound structure (`wall_type.GetCompoundStructure()`, change a layer's `MaterialId`, then `SetCompoundStructure`), or through material parameters.
+- `FilteredElementCollector(doc).OfClass(DB.Material)`. Assign them through the element type's compound structure (`wall_type.GetCompoundStructure()`, change a layer's `MaterialId`, then `SetCompoundStructure`), or through material parameters.

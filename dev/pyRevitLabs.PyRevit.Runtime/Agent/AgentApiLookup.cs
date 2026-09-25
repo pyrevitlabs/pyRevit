@@ -22,6 +22,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private const int MaxMembers = 400;
         private const int MaxMatches = 40;
         private const int MaxEnumValues = 600;
+        private const int MaxSuggestions = 10;
 
         private static readonly Lazy<Type[]> PublicTypes = new Lazy<Type[]>(LoadPublicTypes);
 
@@ -105,6 +106,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 return description;
             }
 
+            if (type.IsEnum) {
+                var value = Enum.GetNames(type).FirstOrDefault(name => string.Equals(name, memberName, StringComparison.OrdinalIgnoreCase));
+                if (value != null) {
+                    description["member"] = value;
+                    description["members"] = new JArray(FormatType(type) + "." + value);
+                    return description;
+                }
+                return MemberNotFound(description, type, memberName, Enum.GetNames(type));
+            }
+
             var flags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static;
             if (memberName == null)
                 flags |= BindingFlags.DeclaredOnly;
@@ -119,9 +130,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 .ToList();
 
             if (memberName != null) {
-                description["member"] = memberName;
                 if (members.Count == 0)
-                    description["member_found"] = false;
+                    return MemberNotFound(description, type, memberName,
+                        type.GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static)
+                            .Where(IsListed)
+                            .Select(member => member.Name)
+                            .Distinct());
+                description["member"] = memberName;
             }
             else {
                 description["members_note"] = "Declared members only; see base_type for inherited ones.";
@@ -130,6 +145,69 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             description["members_truncated"] = members.Count > MaxMembers;
             description["members"] = new JArray(members.Take(MaxMembers));
             return description;
+        }
+
+        /// <summary>
+        /// A lookup whose type exists but whose member doesn't. <c>found</c> is false so the
+        /// answer can't be mistaken for a hit, and the closest names are suggested; for enums
+        /// the other Revit enums are searched too, because agents often guess the wrong enum
+        /// (<c>BuiltInCategory.X</c> for a <c>BuiltInParameter</c>).
+        /// </summary>
+        private static JObject MemberNotFound(JObject description, Type type, string memberName, IEnumerable<string> candidates) {
+            var tokens = NameTokens(memberName);
+            var sameType = RankByTokens(candidates, tokens)
+                .Select(name => FormatType(type) + "." + name)
+                .Take(MaxSuggestions)
+                .ToList();
+
+            var result = new JObject {
+                ["found"] = false,
+                ["type_found"] = true,
+                ["full_name"] = type.FullName,
+                ["member"] = memberName,
+                ["message"] = $"{FormatType(type)} has no member named '{memberName}'.",
+                ["suggestions"] = new JArray(sameType),
+            };
+
+            if (type.IsEnum) {
+                var otherEnums = PublicTypes.Value
+                    .Where(other => other.IsEnum && other != type && other.Namespace != null && other.Namespace.StartsWith("Autodesk.Revit"))
+                    .SelectMany(other => Enum.GetNames(other).Select(name => new { Type = other, Name = name }))
+                    .Select(entry => new { entry.Type, entry.Name, Score = TokenScore(entry.Name, tokens) })
+                    .Where(entry => entry.Score > 0)
+                    .OrderByDescending(entry => entry.Score)
+                    .ThenBy(entry => entry.Name.Length)
+                    .Take(MaxSuggestions)
+                    .Select(entry => FormatType(entry.Type) + "." + entry.Name)
+                    .ToList();
+                if (otherEnums.Count > 0)
+                    result["in_other_enums"] = new JArray(otherEnums);
+            }
+            return result;
+        }
+
+        private static IEnumerable<string> RankByTokens(IEnumerable<string> candidates, List<string> tokens) {
+            return candidates
+                .Select(name => new { Name = name, Score = TokenScore(name, tokens) })
+                .Where(entry => entry.Score > 0)
+                .OrderByDescending(entry => entry.Score)
+                .ThenBy(entry => entry.Name.Length)
+                .Select(entry => entry.Name);
+        }
+
+        private static int TokenScore(string name, List<string> tokens) {
+            var nameTokens = NameTokens(name);
+            return tokens.Count(token => nameTokens.Contains(token)) * 10
+                + tokens.Count(token => name.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
+        private static List<string> NameTokens(string name) {
+            var spaced = System.Text.RegularExpressions.Regex.Replace(name ?? string.Empty, "([a-z0-9])([A-Z])", "$1_$2");
+            return spaced.Split(new[] { '_', '.' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(token => token.ToLowerInvariant())
+                .Where(token => token.Length > 1 && token != "param" && token != "get" && token != "set")
+                .Distinct()
+                .ToList();
         }
 
         private static bool IsListed(MemberInfo member) {
@@ -201,7 +279,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
 
             if (found.Any(signature => signature.Contains("out ")))
-                found.Add("Note: from Python, omit out parameters; the call returns a tuple (result, out values...).");
+                found.Add("Note: Revit rejects a null out argument on many of these; from Python pass a pre-filled clr.Reference[T](T()) and read .Value (see the revit-scripting skill), or use the kit helper.");
             return found.Distinct().Take(40).ToList();
         }
 
