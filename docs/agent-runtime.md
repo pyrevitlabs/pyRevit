@@ -13,6 +13,11 @@ protocol. The human stays in control: every model change is approved inside Revi
 
 ## Getting started
 
+Everything below is also available in Revit under **pyRevit → Settings → Agent Runtime
+(MCP)**. That section enables the host, sets the policy and default engine, shows whether
+the host is listening, and has one button per MCP client to register the server. The agent
+runtime is independent of the Routes server and doesn't need it enabled.
+
 1. **Register the MCP server with your client.** Run it with the `pyrevit.exe` of the
    clone you want the agent to use. The command also turns the agent host on.
 

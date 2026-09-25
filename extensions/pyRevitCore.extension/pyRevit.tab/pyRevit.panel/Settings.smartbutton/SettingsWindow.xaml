@@ -330,6 +330,44 @@
                         </StackPanel>
                     </StackPanel>
                 </Expander>
+                <Expander Header="{DynamicResource Agent.Title}" IsExpanded="False" Margin="10,0">
+                    <StackPanel Margin="10px">
+                        <TextBlock TextWrapping="WrapWithOverflow" Text="{DynamicResource Agent.Description}"/>
+                        <TextBlock TextWrapping="WrapWithOverflow" Margin="0,5,0,0" FontStyle="Italic" Text="{DynamicResource Agent.Privacy}"/>
+                        <StackPanel>
+                            <WrapPanel Margin="0,15,0,0">
+                                <CheckBox x:Name="agent_cb" IsChecked="False" FontWeight="Medium" Content="{DynamicResource Agent.Check}"/>
+                            </WrapPanel>
+                            <GroupBox Header="{DynamicResource Agent.Policy}" Padding="10" Margin="0,10,0,0">
+                                <StackPanel>
+                                    <RadioButton x:Name="agent_policy_ask_rb" GroupName="agent_policy" Content="{DynamicResource Agent.Policy.Ask}"/>
+                                    <RadioButton x:Name="agent_policy_readonly_rb" GroupName="agent_policy" Margin="0,5,0,0" Content="{DynamicResource Agent.Policy.ReadOnly}"/>
+                                </StackPanel>
+                            </GroupBox>
+                            <GroupBox Header="{DynamicResource Agent.Engine}" Padding="10" Margin="0,10,0,0">
+                                <StackPanel>
+                                    <RadioButton x:Name="agent_engine_ironpython_rb" GroupName="agent_engine" Content="{DynamicResource Agent.Engine.IronPython}"/>
+                                    <RadioButton x:Name="agent_engine_cpython_rb" GroupName="agent_engine" Margin="0,5,0,0" Content="{DynamicResource Agent.Engine.CPython}"/>
+                                </StackPanel>
+                            </GroupBox>
+                            <GroupBox Header="{DynamicResource Agent.Connect}" Padding="10" Margin="0,10,0,0">
+                                <StackPanel>
+                                    <TextBlock TextWrapping="WrapWithOverflow" Text="{DynamicResource Agent.Connect.Description}"/>
+                                    <WrapPanel Margin="0,10,0,0">
+                                        <Button Content="Claude Code" Tag="claude" Padding="10,2" Margin="0,0,5,5" Click="agent_install_client"/>
+                                        <Button Content="Codex" Tag="codex" Padding="10,2" Margin="0,0,5,5" Click="agent_install_client"/>
+                                        <Button Content="Cursor" Tag="cursor" Padding="10,2" Margin="0,0,5,5" Click="agent_install_client"/>
+                                        <Button Content="VS Code" Tag="vscode" Padding="10,2" Margin="0,0,5,5" Click="agent_install_client"/>
+                                        <Button Content="OpenCode" Tag="opencode" Padding="10,2" Margin="0,0,5,5" Click="agent_install_client"/>
+                                    </WrapPanel>
+                                </StackPanel>
+                            </GroupBox>
+                            <Border x:Name="agent_statusbox" Height="25" DockPanel.Dock="Top" Padding="10,0,10,0" Margin="0,10,0,0" Background="LightGray">
+                                <TextBlock x:Name="agent_statusmsg" Foreground="White" VerticalAlignment="Center"/>
+                            </Border>
+                        </StackPanel>
+                    </StackPanel>
+                </Expander>
                 <Expander Header="{DynamicResource Telemetry.Title}" IsExpanded="False" Margin="10,0" Expanded="update_telemetry_status_lights">
                     <StackPanel Margin="10px">
                         <TextBlock TextWrapping="WrapWithOverflow" Text="{DynamicResource Telemetry.Description}"/>

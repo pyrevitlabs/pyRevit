@@ -392,4 +392,21 @@
 
     <system:String x:Key="pyRevit.AdminInstall">pyRevit 설정이 관리자에 의해 설정되어 있습니다.</system:String>
 
+    <system:String x:Key="Agent.Title">에이전트 런타임 (MCP)</system:String>
+    <system:String x:Key="Agent.Description">Claude Code, Codex, Cursor, VS Code, OpenCode 같은 MCP 코딩 에이전트가 Revit 안에서 Python을 실행하여 열려 있는 모델을 읽고 수정할 수 있게 합니다. 에이전트는 현재 Windows 사용자만 열 수 있는 로컬 명명된 파이프로 연결되며, Routes 서버와 달리 네트워크에서는 접근할 수 없습니다. 모델을 변경할 때마다 Revit에서 승인이 필요합니다.</system:String>
+    <system:String x:Key="Agent.Privacy">에이전트가 읽는 모든 내용(요소 이름, 매개변수 값, 결과)은 에이전트의 모델 제공업체로 전송됩니다.</system:String>
+    <system:String x:Key="Agent.Check">에이전트 호스트 (베타)</system:String>
+    <system:String x:Key="Agent.Policy">모델 변경</system:String>
+    <system:String x:Key="Agent.Policy.Ask">변경할 때마다 Revit에서 승인 요청</system:String>
+    <system:String x:Key="Agent.Policy.ReadOnly">읽기 전용: 조회와 테스트 실행만 허용</system:String>
+    <system:String x:Key="Agent.Engine">기본 스크립트 엔진</system:String>
+    <system:String x:Key="Agent.Engine.IronPython">IronPython (연결된 엔진)</system:String>
+    <system:String x:Key="Agent.Engine.CPython">CPython</system:String>
+    <system:String x:Key="Agent.Connect">에이전트 연결</system:String>
+    <system:String x:Key="Agent.Connect.Description">선택한 클라이언트에 pyRevit MCP 서버를 등록하고 에이전트 호스트를 활성화합니다. 그런 다음 클라이언트를 다시 시작하세요.</system:String>
+    <system:String x:Key="Agent.Running">에이전트 호스트가 파이프 {}에서 대기 중입니다</system:String>
+    <system:String x:Key="Agent.NotRunning">에이전트 호스트가 실행되고 있지 않습니다</system:String>
+    <system:String x:Key="Agent.Changed">에이전트 호스트 설정이 변경되었습니다. 변경 사항을 적용하려면 pyRevit을 다시 로드해야 합니다. 지금 다시 로드하시겠습니까?</system:String>
+    <system:String x:Key="Agent.InstallDone">pyRevit MCP 서버를 {}에 등록했습니다. pyRevit 도구를 사용하려면 다시 시작하세요.</system:String>
+    <system:String x:Key="Agent.InstallFailed">pyRevit MCP 서버를 {}에 등록하지 못했습니다.</system:String>
 </ResourceDictionary>

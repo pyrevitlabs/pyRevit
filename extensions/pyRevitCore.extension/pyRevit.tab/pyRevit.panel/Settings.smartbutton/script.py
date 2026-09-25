@@ -5,7 +5,7 @@ import os
 import os.path as op
 import re
 
-from pyrevit import HOST_APP, EXEC_PARAMS
+from pyrevit import HOST_APP, EXEC_PARAMS, HOME_DIR
 from pyrevit.compat import NETCORE
 from pyrevit.framework import System, Windows, Controls, Documents
 from pyrevit.runtime.types import EventType, EventUtils
@@ -87,6 +87,39 @@ class RevitVersionCB:
         self.IsEnabled = is_enabled  # Whether the checkbox is enabled
 
 
+def _get_agent_pipe_name():
+    """Return the agent host's pipe name when it runs in this Revit, else None."""
+    try:
+        from PyRevitLabs.PyRevit.Runtime.Agent import AgentHost
+
+        return AgentHost.PipeName if AgentHost.IsRunning else None
+    except Exception as agent_err:
+        logger.debug("Agent host status unavailable | %s", agent_err)
+        return None
+
+
+def _run_pyrevit_cli(arguments):
+    """Run this clone's pyrevit CLI and return (exit code, combined output).
+
+    Uses the clone's own bin/pyrevit.exe, so the MCP server a client registers
+    belongs to the pyRevit that is loaded in this Revit.
+    """
+    cli_path = op.join(HOME_DIR, "bin", "pyrevit.exe")
+    if not op.isfile(cli_path):
+        return -1, "pyRevit CLI not found at {}".format(cli_path)
+
+    start_info = System.Diagnostics.ProcessStartInfo(cli_path)
+    start_info.Arguments = " ".join(arguments)
+    start_info.UseShellExecute = False
+    start_info.CreateNoWindow = True
+    start_info.RedirectStandardOutput = True
+    start_info.RedirectStandardError = True
+    process = System.Diagnostics.Process.Start(start_info)
+    output_text = process.StandardOutput.ReadToEnd() + process.StandardError.ReadToEnd()
+    process.WaitForExit()
+    return process.ExitCode, output_text.strip()
+
+
 class SettingsWindow(forms.WPFWindow):
     """pyRevit Settings window that handles setting the pyRevit configs"""
 
@@ -123,6 +156,7 @@ class SettingsWindow(forms.WPFWindow):
 
         self._setup_uiux()
         self._setup_routes()
+        self._setup_agent()
         self._setup_telemetry()
         self._setup_addinfiles()
 
@@ -407,6 +441,48 @@ class SettingsWindow(forms.WPFWindow):
             self.show_element(self.routes_exampleblock)
             self.routes_example.Text = "GET http://{}:{}/routes/status".format(
                 coreutils.get_my_ip(), user_config.routes_port
+            )
+
+    def _setup_agent(self):
+        self.agent_cb.IsChecked = user_config.agent_enabled
+        readonly = user_config.agent_policy == "readonly"
+        self.agent_policy_readonly_rb.IsChecked = readonly
+        self.agent_policy_ask_rb.IsChecked = not readonly
+        cpython = user_config.agent_engine == "cpython"
+        self.agent_engine_cpython_rb.IsChecked = cpython
+        self.agent_engine_ironpython_rb.IsChecked = not cpython
+
+        pipe_name = _get_agent_pipe_name()
+        if pipe_name:
+            self.update_status_lights(
+                {
+                    "status": "pass",
+                    "message": self.get_locale_string("Agent.Running").format(
+                        pipe_name
+                    ),
+                },
+                self.agent_statusbox,
+                self.agent_statusmsg,
+            )
+        else:
+            self.agent_statusbox.Background = self.Resources["pyRevitDarkBrush"]
+            self.agent_statusmsg.Text = self.get_locale_string("Agent.NotRunning")
+
+    def agent_install_client(self, sender, args):
+        """Register the pyRevit MCP server with the MCP client named by the button tag."""
+        client = sender.Tag
+        exit_code, output_text = _run_pyrevit_cli(["mcp", "install", client])
+        if exit_code == 0:
+            forms.alert(
+                self.get_locale_string("Agent.InstallDone").format(sender.Content),
+                sub_msg=output_text,
+                warn_icon=False,
+            )
+            self.agent_cb.IsChecked = True
+        else:
+            forms.alert(
+                self.get_locale_string("Agent.InstallFailed").format(sender.Content),
+                sub_msg=output_text,
             )
 
     def _setup_telemetry(self):
@@ -971,6 +1047,23 @@ class SettingsWindow(forms.WPFWindow):
 
         return request_reload
 
+    def _save_agent(self):
+        request_reload = False
+        enabled = bool(self.agent_cb.IsChecked)
+        if enabled != user_config.agent_enabled:
+            request_reload = forms.alert(
+                self.get_locale_string("Agent.Changed"), yes=True, no=True
+            )
+
+        user_config.agent_enabled = enabled
+        user_config.agent_policy = (
+            "readonly" if self.agent_policy_readonly_rb.IsChecked else "ask"
+        )
+        user_config.agent_engine = (
+            "cpython" if self.agent_engine_cpython_rb.IsChecked else "ironpython"
+        )
+        return request_reload
+
     def _save_telemetry(self):
         # set telemetry configs
         # pyrevit telemetry
@@ -1015,6 +1108,7 @@ class SettingsWindow(forms.WPFWindow):
         )
         self.reload_requested = self._save_uiux() or self.reload_requested
         self.reload_requested = self._save_routes() or self.reload_requested
+        self.reload_requested = self._save_agent() or self.reload_requested
         self.reload_requested = self._save_telemetry() or self.reload_requested
 
         # save all new values into config file

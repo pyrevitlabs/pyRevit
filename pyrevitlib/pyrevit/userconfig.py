@@ -628,6 +628,41 @@ class PyRevitConfig(object):
     def routes_server(self, state):
         self.routes.Status = state
 
+    @property
+    def agent_enabled(self):
+        """Whether the agent host (MCP) starts on the next pyRevit load.
+
+        The agent host is independent of the routes server: it listens on a
+        current-user named pipe, never on the network.
+
+        Note:
+            The setters write the config file immediately, through the same
+            accessors the agent host and the ``pyrevit`` CLI use.
+        """
+        return PyRevit.PyRevitConfigs.GetAgentEnabled()
+
+    @agent_enabled.setter
+    def agent_enabled(self, state):
+        PyRevit.PyRevitConfigs.SetAgentEnabled(bool(state))
+
+    @property
+    def agent_policy(self):
+        """What agent runs may do: ``readonly`` or ``ask`` (approve each change)."""
+        return PyRevit.PyRevitConfigs.GetAgentPolicy()
+
+    @agent_policy.setter
+    def agent_policy(self, policy):
+        PyRevit.PyRevitConfigs.SetAgentPolicy(policy)
+
+    @property
+    def agent_engine(self):
+        """Script engine for agent runs that don't name one: ``ironpython`` or ``cpython``."""
+        return PyRevit.PyRevitConfigs.GetAgentEngine()
+
+    @agent_engine.setter
+    def agent_engine(self, engine):
+        PyRevit.PyRevitConfigs.SetAgentEngine(engine)
+
     def get_thirdparty_ext_root_dirs(self, include_default=True):
         """Return a list of external extension directories set by the user.
 

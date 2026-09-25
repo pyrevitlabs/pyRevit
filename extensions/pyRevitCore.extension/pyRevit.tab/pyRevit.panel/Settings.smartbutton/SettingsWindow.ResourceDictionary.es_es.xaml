@@ -398,4 +398,21 @@
 
     <system:String x:Key="pyRevit.AdminInstall">La configuración de pyRevit está establecida por tu administrador.</system:String>
 
+    <system:String x:Key="Agent.Title">Entorno de agentes (MCP)</system:String>
+    <system:String x:Key="Agent.Description">Permite que agentes de programación MCP como Claude Code, Codex, Cursor, VS Code y OpenCode lean y modifiquen el modelo abierto ejecutando Python dentro de Revit. Los agentes se conectan mediante una canalización con nombre local que solo tu usuario de Windows puede abrir; a diferencia del servidor Routes, nada es accesible desde la red. Cada cambio en el modelo requiere tu aprobación en Revit.</system:String>
+    <system:String x:Key="Agent.Privacy">Todo lo que el agente lee (nombres de elementos, valores de parámetros, resultados) se envía al proveedor del modelo del agente.</system:String>
+    <system:String x:Key="Agent.Check">Host de agentes (beta)</system:String>
+    <system:String x:Key="Agent.Policy">Cambios en el modelo</system:String>
+    <system:String x:Key="Agent.Policy.Ask">Pedir mi aprobación en Revit antes de cada cambio</system:String>
+    <system:String x:Key="Agent.Policy.ReadOnly">Solo lectura: permitir solo consultas y ejecuciones de prueba</system:String>
+    <system:String x:Key="Agent.Engine">Motor de scripts predeterminado</system:String>
+    <system:String x:Key="Agent.Engine.IronPython">IronPython (motor vinculado)</system:String>
+    <system:String x:Key="Agent.Engine.CPython">CPython</system:String>
+    <system:String x:Key="Agent.Connect">Conectar un agente</system:String>
+    <system:String x:Key="Agent.Connect.Description">Registra el servidor MCP de pyRevit en el cliente seleccionado y activa el host de agentes. Reinicia el cliente después.</system:String>
+    <system:String x:Key="Agent.Running">El host de agentes escucha en la canalización {}</system:String>
+    <system:String x:Key="Agent.NotRunning">El host de agentes no se está ejecutando</system:String>
+    <system:String x:Key="Agent.Changed">La configuración del host de agentes ha cambiado. Es necesario recargar pyRevit para que el cambio surta efecto. ¿Quieres recargar ahora?</system:String>
+    <system:String x:Key="Agent.InstallDone">Se registró el servidor MCP de pyRevit en {}. Reinícialo para empezar a usar las herramientas de pyRevit.</system:String>
+    <system:String x:Key="Agent.InstallFailed">No se pudo registrar el servidor MCP de pyRevit en {}.</system:String>
 </ResourceDictionary>
