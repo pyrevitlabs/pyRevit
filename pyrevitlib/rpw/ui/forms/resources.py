@@ -58,5 +58,7 @@ try:
         import wpf
 except Exception:
     clr.AddReferenceToFileAndPath(wpf_dllpath)
-    import wpf
-
+    if PY3:
+        wpf = IronPython.Modules.Wpf
+    else:
+        import wpf
