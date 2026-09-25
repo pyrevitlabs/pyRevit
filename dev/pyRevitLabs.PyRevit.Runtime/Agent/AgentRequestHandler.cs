@@ -4,6 +4,7 @@ using System.Diagnostics;
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
 using pyRevitLabs.NLog;
+using pyRevitLabs.PyRevit;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <summary>
@@ -40,6 +41,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private static JToken Dispatch(string method, JObject parameters) {
+            AgentHost.RefreshConfigIfChanged();
             switch (method) {
                 case "ping":
                     return new JObject {
@@ -52,10 +54,29 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     return InvokeOnMainThread(AgentContext.Describe, parameters);
                 case "run":
                     var runRequest = AgentRunRequest.FromJson(parameters);
+                    EnforcePolicy(runRequest);
                     return InvokeOnMainThread(app => AgentRunService.Execute(app, runRequest), parameters);
+                case "inspect_elements":
+                    var ids = AgentInspector.ParseIds(parameters);
+                    var includeParameters = parameters.Value<bool?>("parameters") ?? true;
+                    return InvokeOnMainThread(app => AgentInspector.Inspect(app, ids, includeParameters), parameters);
+                case "show":
+                    var showRequest = AgentPresenter.Parse(parameters);
+                    return InvokeOnMainThread(app => AgentPresenter.Show(app, showRequest), parameters);
+                case "lookup_api":
+                    var query = parameters.Value<string>("name");
+                    return AgentApiLookup.Lookup(query);
                 default:
                     throw new AgentException("method_not_found", "Unknown method: " + method);
             }
+        }
+
+        private static void EnforcePolicy(AgentRunRequest request) {
+            if (request.Mode == AgentRunMode.Modify
+                && PyRevitConfigs.GetAgentPolicy() == PyRevitConsts.ConfigsAgentPolicyReadOnly)
+                throw new AgentException(
+                    "policy_readonly",
+                    "The pyRevit agent policy is 'readonly': modify runs are disabled. Use query or dry_run.");
         }
 
         private static JToken InvokeOnMainThread(
