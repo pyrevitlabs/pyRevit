@@ -50,6 +50,7 @@ namespace PythonConsoleControl
             this.completionDataProvider = textEditor.CompletionProvider;
             this.textEditor = textEditor;
             this.CloseAutomatically = true;
+            this.ResizeMode = ResizeMode.NoResize;
             this.SizeToContent = SizeToContent.Height;
             this.MaxHeight = 300;
             this.Width = 175;
