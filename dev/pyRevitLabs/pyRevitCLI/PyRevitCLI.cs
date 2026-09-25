@@ -978,6 +978,18 @@ namespace pyRevitCLI {
             return arguments[key] != null ? arguments[key].Value as string : defaultValue;
         }
 
+        /// <summary>
+        /// Options whose value is a credential. Kept next to the factory that reads
+        /// them so a new secret option cannot be added to one and forgotten in the other.
+        /// </summary>
+        private static readonly HashSet<string> SecretArgumentKeys = new HashSet<string> {
+            "--token",
+            "--password",
+            "--username"
+        };
+
+        private const string SecretRedactedPlaceholder = "***redacted***";
+
         internal static GitInstallerCredentials TryGetCredentials() {
             GitInstallerCredentials credentials = null;
             if (TryGetValue("--password") is string password)
@@ -994,10 +1006,20 @@ namespace pyRevitCLI {
         }
 
         // private:
+        /// <summary>
+        /// Echoes the active arguments for --debug. Secret-bearing options are
+        /// replaced with a placeholder: the argument list is the one place a
+        /// --token or --password would otherwise reach the console, a redirected
+        /// log, and a CI job's build log.
+        /// </summary>
         private static void PrintArguments(IDictionary<string, ValueObject> arguments) {
             var activeArgs = arguments.Where(x => x.Value != null && (x.Value.IsTrue || x.Value.IsString));
-            foreach (var arg in activeArgs)
-                Console.WriteLine("{0} = {1}", arg.Key, arg.Value.ToString());
+            foreach (var arg in activeArgs) {
+                if (SecretArgumentKeys.Contains(arg.Key))
+                    Console.WriteLine("{0} = {1}", arg.Key, SecretRedactedPlaceholder);
+                else
+                    Console.WriteLine("{0} = {1}", arg.Key, arg.Value.ToString());
+            }
         }
 
         private static void LogException(Exception ex, PyRevitCLILogLevel logLevel) {

@@ -2,6 +2,7 @@
 
 import pyrevit.coreutils.git as libgit
 from pyrevit.compat import safe_strtype
+from pyrevit.coreutils import credentials
 from pyrevit.coreutils import envvars
 from pyrevit.coreutils.logger import get_logger
 from pyrevit import versionmgr
@@ -51,13 +52,40 @@ def _check_connection(host="8.8.8.8", port=53, timeout=3):
 
 
 def _get_extension_credentials(repo_info):
+    """Resolve the stored credential for a repository.
+
+    The gate is whether a credential is actually stored, not the
+    ``private_repo`` flag. pyRevit sets that flag for every shipped extension
+    that has no credential at all, so treating it as "needs auth" sends public
+    repos down an authenticated path and says nothing about a real credential
+    that is present.
+
+    Args:
+        repo_info (RepoInfo): repository to authenticate against. For an
+            installed extension its ``name`` is the extension folder name
+            including the postfix, which is the config section name.
+
+    Returns:
+        tuple: ``(username, secret)``, or ``(None, None)`` when no credential is
+        stored.
+    """
     try:
-        repo_config = user_config.get_section(repo_info.name)
-        if repo_config.private_repo:
-            return repo_config.username, repo_config.password
+        stored = credentials.get_credential(repo_info.name)
+    except credentials.PyRevitCredentialUnavailable:
+        # Stored but unreadable. Returning (None, None) here would make libgit2
+        # attempt an anonymous fetch and report a missing authentication
+        # callback, naming the wrong problem. Propagate so the caller can tell
+        # the user to re-enter their token.
+        raise
+    except Exception as cred_err:
+        logger.debug(
+            "Could not read a stored credential for %s: %s", repo_info.name, cred_err
+        )
         return None, None
-    except Exception:
+
+    if stored is None:
         return None, None
+    return stored.username, stored.secret
 
 
 def _fetch_remote(remote, repo_info):
@@ -161,6 +189,19 @@ def get_updates(repo_info):
             logger.debug(
                 "Failed fetching updates. Can not login to repo to get updates: %s",
                 repo_info,
+            )
+            continue
+
+        except credentials.PyRevitCredentialUnavailable as cred_err:
+            # Not a network problem and not a "no updates" answer: the token is
+            # stored but unreadable, and only the user can fix it. Logged at
+            # warning so an update check that silently never authenticates is
+            # still diagnosable.
+            logger.warning(
+                "Can not authenticate with %s: %s Re-enter the token in the "
+                "extension manager.",
+                repo_info.name,
+                cred_err,
             )
             continue
 

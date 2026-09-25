@@ -109,6 +109,61 @@ def _repo_name_from_git_url(git_url):
     return url.strip() or ""
 
 
+def _read_stored_token(section_name):
+    """Recover the saved token for an extension.
+
+    Args:
+        section_name (str): extension config section name
+
+    Returns:
+        tuple: ``(token, problem)``. ``token`` is "" when none is stored.
+        ``problem`` is a user-facing explanation when a token *is* stored but
+        cannot be read - a blank field would otherwise be indistinguishable from
+        "never saved", leaving the user no reason to re-enter anything.
+    """
+    from pyrevit.coreutils import credentials
+
+    try:
+        stored = credentials.get_credential(section_name)
+    except credentials.PyRevitCredentialUnavailable as cred_err:
+        return "", str(cred_err)
+    except Exception as cred_err:
+        logger.debug(
+            "Could not read the stored token for [%s]: %s", section_name, cred_err
+        )
+        return "", ""
+
+    if stored is None:
+        return "", ""
+    return stored.secret, ""
+
+
+def _store_token(section_name, token):
+    """Seal and store a token, or clear the stored one when it is empty.
+
+    Args:
+        section_name (str): extension config section name
+        token (str): token typed by the user, or "" to clear
+
+    Returns:
+        bool: whether the extension is now marked private
+
+    Raises:
+        Exception: on a read-only config or an encryption failure, so the caller
+            reports the failure instead of telling the user the token was saved
+    """
+    from pyrevit.coreutils import credentials
+
+    if token:
+        credentials.set_credential(
+            section_name, credentials.DEFAULT_TOKEN_USERNAME, token
+        )
+        return True
+
+    credentials.delete_credential(section_name)
+    return False
+
+
 class ExtensionPackageListItem:
     """Extension object that is used in Extensions list ui.
 
@@ -439,13 +494,20 @@ class ExtensionsWindow(forms.WPFWindow):
                 )
             self.custom_ext_install_path_tb.Text = ext_pkg_item.ext_pkg.is_installed
             self.path_custom_ext_b.IsEnabled = False
-            # Pre-fill token from stored config if available
-            stored_token = ""
-            try:
-                stored_token = ext_pkg_item.ext_pkg.config.token or ""
-            except Exception:
-                pass
+            stored_token, token_problem = _read_stored_token(
+                ext_pkg_item.ext_pkg.config_section_name
+            )
             self.custom_token_pb.Password = stored_token
+            if token_problem:
+                # Saying nothing here is what makes this confusing: the field
+                # comes up empty, the user assumes the token was never saved, and
+                # the update then fails with a libgit2 error naming a missing
+                # authentication callback. Name the actual cause instead.
+                forms.warning(
+                    "The saved token for this extension could not be decrypted:\n\n"
+                    "{}\n\nEnter the token again to re-save it.".format(token_problem),
+                    exitscript=False,
+                )
             self.show_element(self.install_custom_ext_b)
             self.install_custom_ext_b.Content = self.get_locale_string(
                 "Buttons.UpdateExtension"
@@ -605,16 +667,12 @@ class ExtensionsWindow(forms.WPFWindow):
                     pkg.config.url = new_url
                 except Exception as e:
                     logger.debug("Could not set config.url for pkg: %s", e)
-                if token:
-                    pkg.config.private_repo = True
-                    pkg.config.token = token
-                else:
-                    # Clear stored token if field is empty
-                    try:
-                        pkg.config.private_repo = False
-                        pkg.config.token = ""
-                    except Exception:
-                        pass
+                # An empty field clears the stored token, matching the intent of
+                # the old `config.token = ""`. Going through the credential store
+                # rather than assigning the key is what keeps the secret out of
+                # the config file, and what makes the clear actually remove the
+                # entry instead of leaving a blank one behind.
+                _store_token(pkg.config_section_name, token)
                 # TODO this reimport is necessary, otherwise it crashes
                 # with 'referenced before assignment'. Investigate.
                 from pyrevit.userconfig import user_config
@@ -639,8 +697,9 @@ class ExtensionsWindow(forms.WPFWindow):
                     dest_path = _get_default_ext_dir()
                 token = self.custom_token_pb.Password.strip()
                 if token:
-                    self.selected_pkg.ext_pkg.config.private_repo = True
-                    self.selected_pkg.ext_pkg.config.token = token
+                    _store_token(
+                        self.selected_pkg.ext_pkg.config_section_name, token
+                    )
                 extpkgs.install(self.selected_pkg.ext_pkg, dest_path)
                 _ensure_path_registered(dest_path)
                 self._refresh_extension_list()
@@ -715,12 +774,12 @@ class ExtensionsWindow(forms.WPFWindow):
             temp_pkg.url = git_url
             temp_pkg.type = exts.ExtensionTypes.UI_EXTENSION
 
-            # If token was provided, store it in config
+            # Store the token before the clone, because that is what the clone
+            # reads. The section name resolves to the same value before and after
+            # install: the package is not installed yet, so config_section_name
+            # falls back to the extension folder name it will be cloned into.
             if token:
-                temp_pkg.config.private_repo = True
-                temp_pkg.config.token = token
-                temp_pkg.config.username = "oauth2"  # for backwards compat - drop later
-                temp_pkg.config.password = token  # for backwards compat - drop later
+                _store_token(temp_pkg.config_section_name, token)
                 user_config.save_changes()  # i don't like it - drop this later
 
             extpkgs.install(temp_pkg, dest_path)

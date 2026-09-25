@@ -1,6 +1,7 @@
 using pyRevitLabs.Common;
 using pyRevitLabs.Configurations.Abstractions;
 using pyRevitLabs.Configurations.Ini.Extensions;
+using pyRevitLabs.Configurations.Security;
 
 namespace pyRevitLabs.Configurations.Ini;
 
@@ -262,6 +263,15 @@ public static class PyRevitConfigService {
                     continue;
 
                 foreach (string key in source.GetSectionOptionNames(section)) {
+                    // A stored extension credential is sealed with DPAPI against the
+                    // Windows user who saved it. Copying it into the machine config
+                    // would park an unreadable blob in a file every user of the
+                    // machine can read, so it is never merged; the owning user's own
+                    // config keeps it and is where the in-Revit extension manager
+                    // looks first.
+                    if (key == ExtensionCredentialProtector.ConfigKeyName)
+                        continue;
+
                     string? raw = source.GetRawValueOrDefault(section, key, null);
                     if (raw != null) {
                         target.SetRawValue(section, key, raw);

@@ -5,11 +5,10 @@ using System.Windows.Media;
 
 using pyRevitLabs.NLog;
 using pyRevitLabs.Common;
+using pyRevitLabs.Configurations.Security;
 
-namespace pyRevitLabs.PyRevit
-{
-    public static class PyRevitConsts
-    {
+namespace pyRevitLabs.PyRevit {
+    public static class PyRevitConsts {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
         // repo info
@@ -147,13 +146,21 @@ namespace pyRevitLabs.PyRevit
         public const string DefaultExtensionRepoDefaultBranch = "master";
         public const string ExtensionsDefaultDirName = "Extensions";
         public const string ExtensionDisabledKey = "disabled";
-        // per-extension credential keys; must match what the in-Revit
-        // extension manager and updater read from the config file
+        // The only key a credential is stored under. Its value is a DPAPI-sealed
+        // blob, never the secret itself. Aliased from the protector so the key and
+        // the format it holds cannot drift apart; mirrored in
+        // pyrevit.coreutils.credentials.
+        public const string ExtensionCredentialKey = ExtensionCredentialProtector.ConfigKeyName;
         public const string ExtensionPrivateRepoKey = "private_repo";
+        // Username the in-Revit updater authenticates a GitHub token with. GitHub
+        // ignores it and only checks the token, but libgit2 requires a username
+        // to build a credential pair at all.
+        public const string ExtensionTokenDefaultUsername = "oauth2";
+        // Legacy plaintext credential keys. Only read, by the one-time migration
+        // in pyrevit.versionmgr.upgrade; nothing writes them any more.
         public const string ExtensionUsernameKey = "username";
         public const string ExtensionPasswordKey = "password";
         public const string ExtensionTokenKey = "token";
-        public const string ExtensionTokenDefaultUsername = "oauth2";
         public const string ExtensionUIPostfix = ".extension";
         public const string ExtensionLibraryPostfix = ".lib";
         public const string ExtensionUIBinDirName = "bin";
@@ -201,8 +208,7 @@ namespace pyRevitLabs.PyRevit
         public static bool IsInstallAllUsers() => PyRevitInstallScope.IsAllUsersInstall();
 
         // methods
-        public static string FindConfigFileInDirectory(string sourcePath)
-        {
+        public static string FindConfigFileInDirectory(string sourcePath) {
             return PyRevitInstallScope.FindConfigIniInDirectory(sourcePath);
         }
 
@@ -218,10 +224,8 @@ namespace pyRevitLabs.PyRevit
 
         // pyRevit config file path
         // @reviewed
-        public static string AdminConfigFilePath
-        {
-            get
-            {
+        public static string AdminConfigFilePath {
+            get {
                 var cfgFile = FindConfigFileInDirectory(PyRevitLabsConsts.PyRevitProgramDataPath);
                 return cfgFile != null ? cfgFile : Path.Combine(PyRevitLabsConsts.PyRevitProgramDataPath, DefaultConfigsFileName);
             }
