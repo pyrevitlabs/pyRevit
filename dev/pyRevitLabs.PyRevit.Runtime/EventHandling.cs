@@ -1471,9 +1471,13 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 cacheComplete = false;
                 logger.Error($"Error enumerating documents for cache: {ex.Message}");
             }
-            if (cacheComplete) {
-                lock (CacheLock) {
+            lock (CacheLock) {
+                if (cacheComplete) {
                     _documentCache = documentCache;
+                }
+                else {
+                    foreach (KeyValuePair<long, bool> entry in documentCache)
+                        _documentCache[entry.Key] = entry.Value;
                 }
             }
         }
