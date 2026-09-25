@@ -3,7 +3,10 @@
 import ast
 import unittest
 
-from check_py3_compat import _is_engine_guarded
+try:
+    from .check_py3_compat import _is_engine_guarded
+except ImportError:
+    from check_py3_compat import _is_engine_guarded
 
 
 def _unicode_reachability(source):
