@@ -25,6 +25,14 @@ import System
 from pyrevit.api import DB, UI
 from pyrevit.compat import get_elementid_value_func
 
+try:
+    from pyrevit.agent.kit import Kit
+
+    _KIT_IMPORT_ERROR = None
+except Exception as kit_import_error:
+    Kit = None
+    _KIT_IMPORT_ERROR = str(kit_import_error)
+
 SOURCE_NAME = "<agent-script>"
 
 _elementid_value_raw = get_elementid_value_func()
@@ -110,7 +118,17 @@ def _build_namespace(context):
         "DB": DB,
         "UI": UI,
         "inputs": json.loads(context.InputsJson or "{}"),
+        "kit": Kit(uidoc)
+        if Kit is not None and uidoc is not None
+        else _UnavailableKit(),
     }
+
+
+class _UnavailableKit(object):
+    def __getattr__(self, name):
+        raise RuntimeError(
+            "kit is unavailable: %s" % (_KIT_IMPORT_ERROR or "no document is open")
+        )
 
 
 def _elementid_value(element_id):

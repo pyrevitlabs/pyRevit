@@ -1,6 +1,6 @@
 ---
 name: drawings
-description: Producing drawings and blueprints. Covers plan, section and elevation views, view templates and scale, sheets with title blocks, viewports, tags, dimensions, text, and PDF export. Use it for "set up sheets", "make a floor plan drawing", "tag all doors", "dimension the walls", "export to PDF" and similar tasks.
+description: Producing drawings and blueprints. Covers sheets with title blocks, viewports, tags, dimensions, text, and PDF export. Use it for "set up sheets", "make a floor plan drawing", "tag all doors", "dimension the walls", "export to PDF" and similar tasks.
 ---
 
 # Drawings (views, sheets, annotation)
@@ -9,21 +9,10 @@ Read `revit-scripting` first. Check API names with `lookup_revit_api`.
 
 ## Views
 
-- **View types:** views are created from a `ViewFamilyType`. Find one by family:
+Create, frame and find views with the `views` skill and its `kit` helpers: `kit.plan`, `kit.section`, `kit.elevation`, `kit.view3d`, `kit.crop_to`, `kit.apply_template`.
 
-  ```python
-  def view_type(family):
-      for vft in DB.FilteredElementCollector(doc).OfClass(DB.ViewFamilyType):
-          if vft.ViewFamily == family:
-              return vft
-  ```
-
-- **Floor plan:** `DB.ViewPlan.Create(doc, view_type(DB.ViewFamily.FloorPlan).Id, level.Id)`. Ceiling plans use `DB.ViewFamily.CeilingPlan`.
-- **Section:** `DB.ViewSection.CreateSection(doc, view_type(DB.ViewFamily.Section).Id, box)`, where `box` is a `DB.BoundingBoxXYZ` whose `Transform` sets the view direction.
-- **Elevations:** `marker = DB.ElevationMarker.CreateElevationMarker(doc, view_type(DB.ViewFamily.Elevation).Id, origin, scale)`, then `marker.CreateElevation(doc, plan.Id, index)`. Index 0 to 3 is the direction.
-- **3D:** `DB.View3D.CreateIsometric(doc, view_type(DB.ViewFamily.ThreeDimensional).Id)`.
-- **Settings:** `view.Name`, `view.Scale` (for example 100 for 1:100), `view.DetailLevel`, `view.CropBoxActive`.
-- **Templates:** apply one with `view.ViewTemplateId = template.Id`. Templates are views with `IsTemplate` true. Prefer the project's templates to setting graphics by hand.
+- **Settings:** `view.Scale` (for example 100 for 1:100), `view.DetailLevel`, `view.CropBoxActive`.
+- **Templates:** prefer the project's templates to setting graphics by hand.
 
 ## Sheets
 

@@ -107,7 +107,7 @@ namespace pyRevitCLI {
                     ["title"] = "pyRevit",
                     ["version"] = PyRevitCLI.CLIInfoVersion,
                 },
-                ["instructions"] = Instructions,
+                ["instructions"] = PyRevitAgentSkills.Instructions(PyRevitAgentSkills.Load()),
             };
         }
 
@@ -124,7 +124,7 @@ namespace pyRevitCLI {
                     var isError = payload is JObject run && run.Value<string>("status") == "error";
                     result = payload is JObject captured && captured["image_base64"] != null
                         ? ImageResult(captured)
-                        : ToolResult(payload.ToString(Formatting.None), isError);
+                        : ToolResult(payload.Type == JTokenType.String ? payload.ToString() : payload.ToString(Formatting.None), isError);
                 }
                 catch (AgentClientException ex) {
                     result = ToolResult(new JObject { ["error"] = ex.Code, ["message"] = ex.Message }.ToString(Formatting.None), true);
@@ -138,6 +138,8 @@ namespace pyRevitCLI {
 
         private JToken Dispatch(string name, JObject arguments) {
             switch (name) {
+                case "get_skill":
+                    return new JValue(PyRevitAgentSkills.Read(arguments.Value<string>("name"), arguments.Value<string>("file")));
                 case "list_revit_instances":
                     return ListInstances();
                 case "get_context":
@@ -161,6 +163,8 @@ namespace pyRevitCLI {
                         ["view"] = arguments["view"],
                         ["mode"] = arguments["mode"],
                         ["width"] = arguments["width"],
+                        ["direction"] = arguments["direction"],
+                        ["elements"] = arguments["elements"],
                     });
                 case "run_query":
                     return ResolveMissingApiName(arguments, PyRevitMcpRunResults.Compact(
@@ -337,53 +341,6 @@ namespace pyRevitCLI {
         }
 
         // tool catalog =====================================================================================
-        private const string Instructions =
-@"pyRevit MCP server: read and change live Revit models by running Python inside Revit.
-
-Workflow:
-1. Call get_context first. It reports the Revit version, the open document, the active view, the selection, levels, the agent policy, and `scripting`: which engine runs your scripts and its exact Python version and syntax limits.
-2. Explore with run_query, inspect_elements and lookup_revit_api. Filter and aggregate inside the script; return only what you need.
-3. To show the user elements (select, zoom, temporarily isolate or hide them in the active view), call show_elements. It needs no approval and changes no model elements; don't write run_modify scripts for this.
-4. To change the model, call run_modify with dry_run=true first and review the change set. Then call run_modify without dry_run. With agent policy 'ask' the user approves it in Revit, and status 'rejected' means they discarded it, so don't retry without asking them. With policy 'auto' (see get_context.agent.policy) the change is committed without a prompt, so dry-run first and keep each change focused. With 'readonly', modify runs are refused.
-
-Script conventions:
-- The script is Python executed in Revit. Injected names: doc, uidoc, app, uiapp, DB (Autodesk.Revit.DB), UI (Autodesk.Revit.UI), inputs (dict from the 'inputs' argument).
-- Return data by assigning `result` (JSON-serializable; ElementId, Element and XYZ are converted automatically). print() output is returned too but is for short notes.
-- Before writing code, read get_context.scripting. Scripts run on scripting.default_engine unless you pass engine; write for that engine's `python` version and respect its `syntax` notes (IronPython 2.7 is Python 2 syntax; IronPython 3.4 has f-strings but no walrus, async or 1_000 literals). Pass engine='cpython' only when scripting.engines.cpython.available is true and you need modern Python. Each run response's `engine` field confirms what actually ran.
-- run_query must not open transactions; if the model changes, the run fails with query_modified_model and is rolled back.
-- In run_modify, open your own transactions: t = DB.Transaction(doc, 'name'); t.Start(); ...; t.Commit(). The whole run becomes one undo entry.
-- Revit internal units are feet and radians. Use DB.UnitUtils to convert when reporting values.
-- ElementId: use .Value on Revit 2024+ (IntegerValue before). Build ids with DB.ElementId(value).
-- Revit shows no dialogs during a run: they are closed automatically and reported in 'dialogs'. Warnings are removed and reported in 'failures'.
-- If unsure about a class or method, call lookup_revit_api instead of guessing; it reflects the exact Revit version that is running.
-- When a run fails with AttributeError or TypeError on a Revit object, call lookup_revit_api before the next attempt. The error's `hint` names the lookup to make.
-
-Revit API idioms (common mistakes):
-- Collect elements with DB.FilteredElementCollector(doc); there is no DB.Collector. Instances of a class: .OfClass(DB.Wall). Instances in a category: .OfCategory(DB.BuiltInCategory.OST_Doors).WhereElementIsNotElementType().
-- OfCategory takes a BuiltInCategory, not a Category object.
-- A category can hold several element classes (OST_Walls also returns in-place walls as FamilyInstance). Use OfClass(...) or isinstance() when you need members of one class, such as Wall.WallType.
-- DB.Category.GetCategory(doc, DB.BuiltInCategory.OST_Walls) needs the document as its first argument.
-- Element type: doc.GetElement(element.GetTypeId()). Parameters: element.LookupParameter('Mark') by name, element.get_Parameter(DB.BuiltInParameter.ALL_MODEL_MARK) for built-ins.
-- Collector counts: collector.GetElementCount() is cheaper than len(collector.ToElements()).
-- OfClass only accepts classes that exist in Revit's native object model. For rooms, areas, spaces, family symbols of a category and similar API-only classes use OfCategory(DB.BuiltInCategory.OST_Rooms) (or OfClass(DB.SpatialElement)) and filter with isinstance().
-- There is no DB.Roof: roofs are DB.RoofBase (FootPrintRoof, ExtrusionRoof); rooms are DB.Architecture.Room.
-- Methods typed ICollection<ElementId> or IList<...> need a .NET collection, not a Python list: from System.Collections.Generic import List; ids = List[DB.ElementId](python_ids).
-- Anything that changes the document needs a transaction and run_modify, including persistent view changes such as graphic overrides and view properties. For selecting, zooming, and temporary hide/isolate use show_elements instead.
-- Enum values differ from UI names (TemporaryViewMode.TemporaryHideIsolate, not .Isolate). Look up the enum with lookup_revit_api before using a value you haven't seen.
-- lookup_revit_api lists a type's declared members only; for inherited members, look up its base_type.
-- A status 'error' with type revit_failure means Revit rolled back a transaction because of an error; 'failures' lists the messages (for example an opening that can't cut its host wall).
-
-Modeling idioms:
-- DB and UI are injected; don't import them. Types outside Autodesk.Revit.DB live in sub-namespaces (DB.Structure.StructuralType, DB.Architecture.Room); lookup_revit_api returns each type's python_import line.
-- To create an element, read lookup_revit_api(name='<Type>').creation first. Some types have static factories (Wall.Create, Floor.Create, Point.Create); others are created through doc.Create.New... (NewFootPrintRoof, NewRoom(level, uv), NewFamilyInstance).
-- Out parameters: omit them from Python calls; the call returns a tuple (result, out values...).
-- Geometry: Line.CreateBound(XYZ, XYZ); Floor.Create(doc, List[DB.CurveLoop]([loop]), floor_type.Id, level.Id) takes ElementIds and closed CurveLoops.
-- Prefer native elements (walls, floors, roofs, families) over DirectShape. Native elements carry their type's materials and stay editable.
-- Gable roof: one rectangular footprint through doc.Create.NewFootPrintRoof(curve_array, level, roof_type), which returns the roof and its footprint ModelCurveArray. Call roof.set_DefinesSlope(curve, True) and roof.set_SlopeAngle(curve, slope) on the two eave edges only; the gable-end edges keep DefinesSlope False. Check the member names with lookup_revit_api(name='FootPrintRoof').
-- DirectShape materials: build the solid with GeometryCreationUtilities.CreateExtrusionGeometry(loops, direction, distance, DB.SolidOptions(material_id, DB.ElementId.InvalidElementId)).
-- Check your work visually: after a modeling step, capture_view(view='3d') shows the whole model, and capture_view(view='<plan name>') shows a plan. Compare it with what you intended before moving on.
-- Build large models in steps (shell, openings, roofs, rooms) with a dry run for each. A failed or rejected step leaves the earlier steps intact, and each committed step is its own undo entry.";
-
         private static JArray ToolDefinitions() {
             var revitProperty = new JObject {
                 ["type"] = "string",
@@ -399,7 +356,22 @@ Modeling idioms:
                 ["description"] = "Values exposed to the script as the `inputs` dict.",
             };
 
+            var skills = PyRevitAgentSkills.Load();
             return new JArray(
+                Tool("get_skill",
+                    "Read a skill: task guidance for Revit scripting. Read revit-scripting before your first script, then the skill for your task. "
+                    + "Skills: " + string.Join("; ", skills.Select(skill => skill.Name + " - " + skill.Description)),
+                    new JObject {
+                        ["name"] = new JObject {
+                            ["type"] = "string",
+                            ["enum"] = new JArray(skills.Select(skill => skill.Name)),
+                        },
+                        ["file"] = new JObject {
+                            ["type"] = "string",
+                            ["description"] = "Another markdown file in the skill folder, as listed at the end of the skill (default SKILL.md).",
+                        },
+                    }, new[] { "name" }, readOnly: true),
+
                 Tool("list_revit_instances",
                     "List running Revit sessions that have the pyRevit agent host, with their version and process id.",
                     new JObject(), new string[0], readOnly: true),
@@ -455,7 +427,8 @@ Modeling idioms:
                     "Take a PNG of a Revit view to check your work visually. mode 'export' (default) renders the view "
                     + "through Revit and works for any view by name or id. mode 'screen' captures the active view's window "
                     + "exactly as the user sees it, including selection and temporary isolate. view '3d' renders a temporary "
-                    + "isometric 3D view of the whole model (never saved). The image is also saved under "
+                    + "3D view of model categories only, framed by a section box around the whole model or around 'elements', "
+                    + "seen from 'direction' (never saved). The image is also saved under "
                     + "%APPDATA%\\pyRevit\\agent\\captures for the user.",
                     new JObject {
                         ["view"] = new JObject {
@@ -470,6 +443,16 @@ Modeling idioms:
                         ["width"] = new JObject {
                             ["type"] = "integer",
                             ["description"] = "Image width in pixels, 320-2400 (default 1280). Larger images cost more tokens.",
+                        },
+                        ["direction"] = new JObject {
+                            ["type"] = "string",
+                            ["enum"] = new JArray("southeast", "southwest", "northeast", "northwest", "south", "north", "east", "west", "top"),
+                            ["description"] = "view '3d' only: where the viewer stands (default southeast, looking down at 35 degrees).",
+                        },
+                        ["elements"] = new JObject {
+                            ["type"] = "array",
+                            ["items"] = new JObject { ["type"] = "integer" },
+                            ["description"] = "view '3d' only: element ids to frame; default is the whole model.",
                         },
                         ["revit"] = revitProperty,
                     }, new string[0], readOnly: true),
