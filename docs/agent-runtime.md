@@ -320,8 +320,9 @@ Honest limits:
 - ExternalEvents only fire while Revit is idle, so a busy Revit returns `revit_busy`
   after 30 seconds.
 - Revit regeneration inflates change sets: two new walls can report 100+ modified
-  elements (rooms, tags, paths of travel, schedules). Phase 2 will rank the elements the
-  script touched ahead of these side effects.
+  elements (rooms, tags, paths of travel, schedules). The MCP tools therefore return only
+  counts, categories and the first added ids; the element list is in `get_run`. Phase 2
+  will rank the elements the script touched ahead of these side effects.
 
 ### pyRevit commands as agent tools (Phase 3)
 

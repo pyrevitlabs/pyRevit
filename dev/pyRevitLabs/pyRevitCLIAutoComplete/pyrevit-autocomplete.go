@@ -427,6 +427,139 @@ func main() {
 					"--revit":        complete.PredictNothing,
 				},
 			},
+			"agent": complete.Command{
+				Sub: complete.Commands{
+					"status": complete.Command{
+						Sub: complete.Commands{},
+						Flags: complete.Flags{
+							"--json": complete.PredictNothing,
+						},
+					},
+					"context": complete.Command{
+						Sub: complete.Commands{},
+						Flags: complete.Flags{
+							"--revit": complete.PredictNothing,
+						},
+					},
+					"run": complete.Command{
+						Sub: complete.Commands{},
+						Flags: complete.Flags{
+							"--engine": complete.PredictNothing,
+							"--inputs": complete.PredictNothing,
+							"--mode":   complete.PredictNothing,
+							"--revit":  complete.PredictNothing,
+							"--title":  complete.PredictNothing,
+						},
+					},
+					"runs": complete.Command{
+						Sub: complete.Commands{},
+						Flags: complete.Flags{
+							"--limit": complete.PredictNothing,
+						},
+					},
+					"show": complete.Command{
+						Sub:   complete.Commands{},
+						Flags: complete.Flags{},
+					},
+				},
+				Flags: complete.Flags{
+					"--help": complete.PredictNothing,
+				},
+			},
+			"mcp": complete.Command{
+				Sub: complete.Commands{
+					"install": complete.Command{
+						Sub: complete.Commands{
+							"claude": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--log":     complete.PredictNothing,
+									"--project": complete.PredictNothing,
+								},
+							},
+							"codex": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--log":     complete.PredictNothing,
+									"--project": complete.PredictNothing,
+								},
+							},
+							"cursor": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--log":     complete.PredictNothing,
+									"--project": complete.PredictNothing,
+								},
+							},
+							"vscode": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--log":     complete.PredictNothing,
+									"--project": complete.PredictNothing,
+								},
+							},
+							"opencode": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--log":     complete.PredictNothing,
+									"--project": complete.PredictNothing,
+								},
+							},
+						},
+						Flags: complete.Flags{
+							"--log":     complete.PredictNothing,
+							"--project": complete.PredictNothing,
+						},
+					},
+					"uninstall": complete.Command{
+						Sub: complete.Commands{
+							"claude": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--log":     complete.PredictNothing,
+									"--project": complete.PredictNothing,
+								},
+							},
+							"codex": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--log":     complete.PredictNothing,
+									"--project": complete.PredictNothing,
+								},
+							},
+							"cursor": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--log":     complete.PredictNothing,
+									"--project": complete.PredictNothing,
+								},
+							},
+							"vscode": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--log":     complete.PredictNothing,
+									"--project": complete.PredictNothing,
+								},
+							},
+							"opencode": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--log":     complete.PredictNothing,
+									"--project": complete.PredictNothing,
+								},
+							},
+						},
+						Flags: complete.Flags{
+							"--log":     complete.PredictNothing,
+							"--project": complete.PredictNothing,
+						},
+					},
+				},
+				Flags: complete.Flags{
+					"--help":  complete.PredictNothing,
+					"--revit": complete.PredictNothing,
+				},
+			},
 			"caches": complete.Command{
 				Sub: complete.Commands{
 					"bim360": complete.Command{
@@ -731,6 +864,70 @@ func main() {
 										},
 									},
 									"disable": complete.Command{
+										Sub: complete.Commands{},
+										Flags: complete.Flags{
+											"--log": complete.PredictNothing,
+										},
+									},
+								},
+								Flags: complete.Flags{
+									"--log": complete.PredictNothing,
+								},
+							},
+						},
+						Flags: complete.Flags{
+							"--help": complete.PredictNothing,
+							"--log":  complete.PredictNothing,
+						},
+					},
+					"agent": complete.Command{
+						Sub: complete.Commands{
+							"enable": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--log": complete.PredictNothing,
+								},
+							},
+							"disable": complete.Command{
+								Sub: complete.Commands{},
+								Flags: complete.Flags{
+									"--log": complete.PredictNothing,
+								},
+							},
+							"policy": complete.Command{
+								Sub: complete.Commands{
+									"readonly": complete.Command{
+										Sub: complete.Commands{},
+										Flags: complete.Flags{
+											"--log": complete.PredictNothing,
+										},
+									},
+									"ask": complete.Command{
+										Sub: complete.Commands{},
+										Flags: complete.Flags{
+											"--log": complete.PredictNothing,
+										},
+									},
+									"auto": complete.Command{
+										Sub: complete.Commands{},
+										Flags: complete.Flags{
+											"--log": complete.PredictNothing,
+										},
+									},
+								},
+								Flags: complete.Flags{
+									"--log": complete.PredictNothing,
+								},
+							},
+							"engine": complete.Command{
+								Sub: complete.Commands{
+									"ironpython": complete.Command{
+										Sub: complete.Commands{},
+										Flags: complete.Flags{
+											"--log": complete.PredictNothing,
+										},
+									},
+									"cpython": complete.Command{
 										Sub: complete.Commands{},
 										Flags: complete.Flags{
 											"--log": complete.PredictNothing,

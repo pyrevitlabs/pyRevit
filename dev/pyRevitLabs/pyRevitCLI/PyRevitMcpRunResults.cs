@@ -13,6 +13,7 @@ namespace pyRevitCLI {
     /// The full record stays available through <c>get_run</c>, so nothing dropped here is lost.
     /// </remarks>
     internal static class PyRevitMcpRunResults {
+        private const int MaxChangeIds = 20;
         private static readonly Regex MissingAttribute =
             new Regex(@"'(?<owner>[\w.]+)' object has no attribute '(?<member>\w+)'", RegexOptions.Compiled);
         private static readonly Regex WrongArgumentCount =
@@ -71,7 +72,7 @@ namespace pyRevitCLI {
             }
 
             if (run["changes"] is JObject changes && HasChanges(changes))
-                compact["changes"] = changes;
+                compact["changes"] = CompactChanges(changes);
             CopyIfNotEmpty(run, compact, "failures");
             CopyIfNotEmpty(run, compact, "dialogs");
             CopyIfNotEmpty(run, compact, "blocked");
@@ -273,6 +274,21 @@ namespace pyRevitCLI {
                 if (lines[i - 1].TrimStart().StartsWith("File \"<agent-script>\""))
                     return lines[i].Trim();
             return null;
+        }
+
+        private static JObject CompactChanges(JObject changes) {
+            var compact = new JObject {
+                ["added_count"] = changes["added_count"],
+                ["modified_count"] = changes["modified_count"],
+                ["deleted_count"] = changes["deleted_count"],
+            };
+            if (changes["by_category"] is JObject byCategory && byCategory.Count > 0)
+                compact["by_category"] = byCategory;
+            if (changes["added"] is JArray added && added.Count > 0)
+                compact["added_ids"] = new JArray(added.Take(MaxChangeIds).Select(element => element["id"]));
+            if (changes.Value<int>("added_count") > MaxChangeIds || changes.Value<int>("modified_count") > 0 || changes.Value<int>("deleted_count") > 0)
+                compact["details"] = "Element names, classes and modified or deleted ids are in get_run(run_id).";
+            return compact;
         }
 
         private static bool HasChanges(JObject changes) {
