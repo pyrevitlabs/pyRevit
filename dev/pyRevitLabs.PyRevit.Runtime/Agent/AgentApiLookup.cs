@@ -88,8 +88,17 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     ? type.BaseType.FullName
                     : null,
                 ["assembly"] = type.Assembly.GetName().Name,
+                ["namespace"] = type.Namespace,
+                ["python_import"] = type.IsNested ? null : $"from {type.Namespace} import {type.Name}",
                 ["obsolete"] = ObsoleteMessage(type),
             };
+
+            if (!type.IsEnum && !type.IsInterface) {
+                var creation = CreationMethods(type);
+                description["creation"] = creation.Count > 0
+                    ? new JArray(creation)
+                    : (JToken)"No factory found on the type or on doc.Create; look for constructors below or for methods on related types.";
+            }
 
             if (type.IsEnum && memberName == null) {
                 description["values"] = new JArray(Enum.GetNames(type).Take(MaxEnumValues));
@@ -144,6 +153,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         + (property.CanWrite && property.GetSetMethod() != null ? "set; " : string.Empty);
                     var isStatic = (property.GetGetMethod() ?? property.GetSetMethod())?.IsStatic == true;
                     var indexParameters = property.GetIndexParameters();
+                    if (indexParameters.Length > 0 && property.Name != "Item") {
+                        var index = string.Join(", ", indexParameters.Select(FormatParameter));
+                        var calls = new List<string>();
+                        if (property.GetGetMethod() != null)
+                            calls.Add($"get_{property.Name}({index})");
+                        if (property.GetSetMethod() != null)
+                            calls.Add($"set_{property.Name}({index}, {FormatType(property.PropertyType)} value)");
+                        return prefix + FormatType(property.PropertyType) + " " + property.Name + "[" + index + "] { " + accessors
+                            + "} (indexed property; from Python call " + string.Join(" / ", calls) + ")";
+                    }
                     var name = indexParameters.Length > 0
                         ? "this[" + string.Join(", ", indexParameters.Select(FormatParameter)) + "]"
                         : property.Name;
@@ -153,6 +172,48 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     return prefix + (field.IsStatic ? "static " : string.Empty) + FormatType(field.FieldType) + " " + field.Name;
                 case EventInfo eventInfo:
                     return prefix + "event " + FormatType(eventInfo.EventHandlerType) + " " + eventInfo.Name;
+                default:
+                    return null;
+            }
+        }
+
+        /// <summary>
+        /// Ways to create <paramref name="type"/>: its own static factories (Wall.Create,
+        /// Point.Create) and the <c>doc.Create</c> / <c>doc.FamilyCreate</c> / <c>app.Create</c>
+        /// methods that return it (NewFootPrintRoof, NewRoom), which agents otherwise miss.
+        /// </summary>
+        private static List<string> CreationMethods(Type type) {
+            var found = new List<string>();
+            var flags = BindingFlags.Public | BindingFlags.Static;
+            foreach (var method in type.GetMethods(flags)) {
+                if (!method.IsSpecialName && type.IsAssignableFrom(method.ReturnType))
+                    found.Add(type.Name + "." + method.Name + "(" + FormatParameters(method) + ")");
+            }
+
+            foreach (var factory in PublicTypes.Value.Where(t => t.Namespace == "Autodesk.Revit.Creation")) {
+                var receiver = CreationReceiver(factory);
+                if (receiver == null)
+                    continue;
+                foreach (var method in factory.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)) {
+                    if (!method.IsSpecialName && method.ReturnType != typeof(object) && type.IsAssignableFrom(method.ReturnType))
+                        found.Add(receiver + "." + method.Name + "(" + FormatParameters(method) + ")");
+                }
+            }
+
+            if (found.Any(signature => signature.Contains("out ")))
+                found.Add("Note: from Python, omit out parameters; the call returns a tuple (result, out values...).");
+            return found.Distinct().Take(40).ToList();
+        }
+
+        private static string CreationReceiver(Type factory) {
+            switch (factory.Name) {
+                case "Document":
+                case "ItemFactoryBase":
+                    return "doc.Create";
+                case "FamilyItemFactory":
+                    return "doc.FamilyCreate";
+                case "Application":
+                    return "app.Create";
                 default:
                     return null;
             }

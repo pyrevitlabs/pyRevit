@@ -19,6 +19,12 @@ namespace pyRevitCLI {
             new Regex(@"(?<member>\w+)\(\) takes (exactly|at least|at most|no) ", RegexOptions.Compiled);
         private static readonly Regex WrongArgumentType =
             new Regex(@"expected (?<expected>[\w\[\]., ]+?), got (?<got>[\w\[\]]+)", RegexOptions.Compiled);
+        private static readonly Regex CannotImportName =
+            new Regex(@"[Cc]annot import name '?(?<name>\w+)'?", RegexOptions.Compiled);
+        private static readonly Regex NoPublicConstructor =
+            new Regex(@"[Cc]annot create instances of (?<type>\w+) because it has no public constructors", RegexOptions.Compiled);
+        private static readonly Regex ReadOnlyAttribute =
+            new Regex(@"attribute '(?<member>\w+)' of '(?<owner>\w+)' object is read-only", RegexOptions.Compiled);
         private static readonly Regex NetCollectionType =
             new Regex(@"^(I?Collection|IList|IEnumerable|ISet|List)\b", RegexOptions.Compiled);
         private static readonly Regex StaticCall =
@@ -92,6 +98,36 @@ namespace pyRevitCLI {
                     + "isolate or hide elements, use the show_elements tool instead (no approval needed). For other changes, "
                     + "wrap the call in t = DB.Transaction(doc, 'name'); t.Start(); ...; t.Commit() and use run_modify.";
 
+            if (type == "ImportError") {
+                if (message.Contains("No module named") && (message.Contains("'DB'") || message.Contains("'UI'") || message.EndsWith(" DB") || message.EndsWith(" UI")))
+                    return "DB and UI are already injected into the script; use them directly instead of importing. "
+                        + "Types in sub-namespaces are DB.Structure.StructuralType, DB.Architecture.Room, and so on.";
+                var importName = CannotImportName.Match(message);
+                if (importName.Success)
+                    return $"'{importName.Groups["name"].Value}' is not in that namespace. lookup_revit_api(name='{importName.Groups["name"].Value}') "
+                        + "returns its namespace and the exact python_import line.";
+                return null;
+            }
+
+            var noConstructor = NoPublicConstructor.Match(message);
+            if (noConstructor.Success) {
+                var created = noConstructor.Groups["type"].Value;
+                return $"{created} has no public constructor. lookup_revit_api(name='{created}') lists its 'creation' methods "
+                    + $"(a static factory such as {created}.Create, or doc.Create.New{created}).";
+            }
+
+            var readOnly = ReadOnlyAttribute.Match(message);
+            if (readOnly.Success) {
+                var owner = readOnly.Groups["owner"].Value;
+                return $"{owner}.{readOnly.Groups["member"].Value} is read-only; it is usually set when the element is created. "
+                    + $"lookup_revit_api(name='{owner}') lists the 'creation' methods that take it (for example doc.Create.NewRoom(level, uv)).";
+            }
+
+            if (message.Contains("A managed exception was thrown"))
+                return "Revit rejected the input of a call on the failing line; read the [.NET: ...] details in the message. "
+                    + "Common causes: open or self-intersecting curve loops, zero-length lines, objects passed where ElementIds are expected, "
+                    + "or elements placed outside their host.";
+
             if (type != "AttributeError" && type != "TypeError")
                 return null;
 
@@ -101,6 +137,11 @@ namespace pyRevitCLI {
                 var member = missing.Groups["member"].Value;
                 if (owner.StartsWith("Autodesk.Revit"))
                     return $"'{member}' does not exist in {owner}. Find the right name with lookup_revit_api(name='{member}') before retrying.";
+                if (owner == "type" && (member.StartsWith("Create") || member.StartsWith("New"))) {
+                    var creating = OwnerOnLine(failingLine, member) ?? "the type";
+                    return $"{creating} has no {member}. lookup_revit_api(name='{creating}') lists its 'creation' methods: "
+                        + "many elements are made through doc.Create.New... (NewFootPrintRoof, NewRoom, NewFamilyInstance).";
+                }
                 if (owner == "type") {
                     var named = OwnerOnLine(failingLine, member);
                     return named != null

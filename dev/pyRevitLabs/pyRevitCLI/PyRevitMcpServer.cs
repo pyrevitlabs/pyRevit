@@ -323,7 +323,18 @@ Revit API idioms (common mistakes):
 - Methods typed ICollection<ElementId> or IList<...> need a .NET collection, not a Python list: from System.Collections.Generic import List; ids = List[DB.ElementId](python_ids).
 - Anything that changes the document needs a transaction and run_modify, including persistent view changes such as graphic overrides and view properties. For selecting, zooming, and temporary hide/isolate use show_elements instead.
 - Enum values differ from UI names (TemporaryViewMode.TemporaryHideIsolate, not .Isolate). Look up the enum with lookup_revit_api before using a value you haven't seen.
-- lookup_revit_api lists a type's declared members only; for inherited members, look up its base_type.";
+- lookup_revit_api lists a type's declared members only; for inherited members, look up its base_type.
+- A status 'error' with type revit_failure means Revit rolled back a transaction because of an error; 'failures' lists the messages (for example an opening that can't cut its host wall).
+
+Modeling idioms:
+- DB and UI are injected; don't import them. Types outside Autodesk.Revit.DB live in sub-namespaces (DB.Structure.StructuralType, DB.Architecture.Room); lookup_revit_api returns each type's python_import line.
+- To create an element, read lookup_revit_api(name='<Type>').creation first. Some types have static factories (Wall.Create, Floor.Create, Point.Create); others are created through doc.Create.New... (NewFootPrintRoof, NewRoom(level, uv), NewFamilyInstance).
+- Out parameters: omit them from Python calls; the call returns a tuple (result, out values...).
+- Geometry: Line.CreateBound(XYZ, XYZ); Floor.Create(doc, List[DB.CurveLoop]([loop]), floor_type.Id, level.Id) takes ElementIds and closed CurveLoops.
+- Prefer native elements (walls, floors, roofs, families) over DirectShape. Native elements carry their type's materials and stay editable.
+- Gable roof: one rectangular footprint through doc.Create.NewFootPrintRoof(curve_array, level, roof_type), which returns the roof and its footprint ModelCurveArray. Call roof.set_DefinesSlope(curve, True) and roof.set_SlopeAngle(curve, slope) on the two eave edges only; the gable-end edges keep DefinesSlope False. Check the member names with lookup_revit_api(name='FootPrintRoof').
+- DirectShape materials: build the solid with GeometryCreationUtilities.CreateExtrusionGeometry(loops, direction, distance, DB.SolidOptions(material_id, DB.ElementId.InvalidElementId)).
+- Build large models in steps (shell, openings, roofs, rooms) with a dry run for each. A failed or rejected step leaves the earlier steps intact, and each committed step is its own undo entry.";
 
         private static JArray ToolDefinitions() {
             var revitProperty = new JObject {
