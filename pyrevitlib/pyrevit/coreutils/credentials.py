@@ -86,6 +86,11 @@ EXTENSION_SECTION_POSTFIXES = (".extension", ".lib")
 
 DEFAULT_TOKEN_USERNAME = "oauth2"
 
+#: The credential shapes this module can store. Mirrors
+#: ``ExtensionCredentialKind`` on the C# side; anything else is rejected on write
+#: rather than coerced, so a password can never be recorded as a token.
+CREDENTIAL_KINDS = ("token", "password")
+
 #: The C# protector and the types it needs, resolved once.
 _CRYPTO_HANDLES = None
 _CRYPTO_LOAD_FAILED = False
@@ -269,6 +274,15 @@ def _seal(username, secret, kind):
             "stored one instead."
         )
 
+    if kind not in CREDENTIAL_KINDS:
+        # Silently defaulting to a token would store a password labelled as a
+        # token, which is exactly the mislabelling the field exists to prevent.
+        raise PyRevitCredentialError(
+            "Unknown credential kind {!r}; expected one of {}.".format(
+                kind, ", ".join(sorted(CREDENTIAL_KINDS))
+            )
+        )
+
     kind_enum = (
         getattr(kind_type, "Password")
         if kind == "password"
@@ -302,7 +316,7 @@ def _unseal(stored_value):
             "Windows DPAPI is not available on this runtime, so the stored "
             "extension credential cannot be read. Re-enter the access token."
         )
-    protector = handles[0]
+    protector, _net_credential, kind_type = handles
 
     if not stored_value or not str(stored_value).strip():
         raise PyRevitCredentialUnavailable(
@@ -319,10 +333,14 @@ def _unseal(stored_value):
             "for this extension. ({})".format(seal_err)
         )
 
+    # Compare against the resolved enum member, not a substring of the CLR value's
+    # string form. Some interop paths stringify an enum numerically, and a
+    # substring test would then read every credential back as a token with nothing
+    # failing.
     return ExtensionCredential(
         recovered.Username,
         recovered.Secret,
-        "password" if "Password" in str(recovered.Kind) else "token",
+        "password" if recovered.Kind == kind_type.Password else "token",
     )
 
 
@@ -368,6 +386,67 @@ def _save():
     from pyrevit.userconfig import user_config
 
     user_config.save_changes()
+
+
+def _config_file_path():
+    """Path of the config file the user config writes to, or None."""
+    try:
+        from pyrevit.userconfig import user_config
+
+        return user_config.config_file
+    except Exception:
+        return None
+
+
+def _read_from_disk(section_name):
+    """Read the stored credential back off disk, bypassing the in-memory store.
+
+    ``user_config.save_changes`` deliberately swallows a write failure and only
+    logs it, so reading through the same in-memory ``ConfigSection`` that wrote
+    the value proves nothing about durability: it would return the value even
+    after the flush was dropped. Reopening the file is the only way to know the
+    bytes actually landed, and that is the question a credential write has to
+    answer before any plaintext is removed.
+
+    Args:
+        section_name (str): extension config section name
+
+    Returns:
+        str or None: the raw stored value, or None when the file definitively
+        does not hold one.
+
+    Raises:
+        PyRevitCredentialError: the file could not be reopened at all. That is
+            reported separately from "absent" on purpose: treating an unreadable
+            config as an absent credential would make a working write look like a
+            failed one, and a caller unable to verify would refuse every store.
+    """
+    from pyrevit.coreutils.configparser import open_config_file
+
+    config_path = _config_file_path()
+    if not config_path:
+        raise PyRevitCredentialError(
+            "The pyRevit config file path could not be resolved, so the stored "
+            "credential cannot be verified against the file."
+        )
+    try:
+        sections = open_config_file(config_path, read_only=True)
+    except Exception as open_err:
+        raise PyRevitCredentialError(
+            "The pyRevit config file {} could not be reopened to verify the "
+            "stored credential: {}".format(config_path, open_err)
+        )
+
+    try:
+        section = sections.get_section(section_name)
+    except AttributeError:
+        # No such section in the file, which is a definite answer rather than a
+        # failure to look: get_section raises for a missing section.
+        return None
+
+    if not section.has_option(CONFIG_KEY):
+        return None
+    return section.get_option(CONFIG_KEY, None)
 
 
 def _read_raw(section_name):
@@ -488,11 +567,15 @@ def set_credential(section_name, username, secret, kind="token"):
             "Can not store the credential for [{}]: {}".format(section_name, write_err)
         )
 
-    stored = _read_raw(section_name)
+    # Verify against the file, not the in-memory store: save_changes swallows a
+    # failed flush, so only a re-read of the file can tell a stored credential
+    # from an accepted-and-dropped one. Nothing is removed until this passes.
+    stored = _read_from_disk(section_name)
     if stored is None:
         raise PyRevitCredentialUnavailable(
-            "The credential for [{}] was written but is not there on read-back. "
-            "The config may be read-only; nothing was changed.".format(section_name)
+            "The credential for [{}] was written but is not in the config file. "
+            "The file may be read-only or the write may have been refused, so any "
+            "existing credential was left in place.".format(section_name)
         )
     _unseal(stored)
 
@@ -579,6 +662,16 @@ def migrate_legacy_credentials():
     if user_config is None:
         return 0
 
+    # Checked once, up front: on an admin-locked config nothing can be sealed, and
+    # walking every section first would emit the same refusal per extension.
+    if _is_readonly():
+        mlogger.warning(
+            "credentials: the pyRevit config is admin-locked (read-only), so "
+            "plaintext extension credentials can not be encrypted. They are left "
+            "as they are."
+        )
+        return 0
+
     try:
         section_names = list(user_config)
     except Exception as iter_err:
@@ -656,7 +749,23 @@ def _migrate_legacy_section(section_name):
         # Both legacy writers stored the token against the oauth2 username, so a
         # token without one is that case.
         username = DEFAULT_TOKEN_USERNAME
-    kind = "password" if "password" in legacy else "token"
+
+    # A `token` key means a token, even when `password` also holds the same value.
+    # Every legacy writer mirrored the token into `password` "for backwards compat",
+    # so preferring `password` would label every migrated GitHub token as a
+    # password. A section with only `password` is a real username/password pair.
+    if legacy.get("token"):
+        secret = legacy["token"]
+        kind = "token"
+        if legacy.get("password") and legacy["password"] != legacy["token"]:
+            mlogger.warning(
+                "credentials: [%s] held different token and password values; "
+                "keeping the token and removing both",
+                section_name,
+            )
+    else:
+        secret = legacy["password"]
+        kind = "password"
 
     set_credential(section_name, username, secret, kind)
     mlogger.info(

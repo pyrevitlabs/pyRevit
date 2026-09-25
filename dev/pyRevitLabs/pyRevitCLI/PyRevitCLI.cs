@@ -1008,9 +1008,15 @@ namespace pyRevitCLI {
         // private:
         /// <summary>
         /// Echoes the active arguments for --debug. Secret-bearing options are
-        /// replaced with a placeholder: the argument list is the one place a
-        /// --token or --password would otherwise reach the console, a redirected
-        /// log, and a CI job's build log.
+        /// replaced with a placeholder: this is the one place a --token or
+        /// --password would otherwise be printed, and --debug output is routinely
+        /// captured into a CI job's build log.
+        /// <para>
+        /// Only the named options are covered. A credential embedded in a
+        /// positional argument - a repo URL of the form
+        /// https://user:token@host/... - is still printed verbatim, because
+        /// redaction of arbitrary values would hide the argument being diagnosed.
+        /// </para>
         /// </summary>
         private static void PrintArguments(IDictionary<string, ValueObject> arguments) {
             var activeArgs = arguments.Where(x => x.Value != null && (x.Value.IsTrue || x.Value.IsString));

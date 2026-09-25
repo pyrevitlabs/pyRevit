@@ -44,4 +44,18 @@ public sealed record ExtensionCredential {
 
     /// <summary>Which of the two credential shapes <see cref="Secret"/> is.</summary>
     public ExtensionCredentialKind Kind { get; set; }
+
+    /// <summary>
+    /// Describes the credential without the secret.
+    /// </summary>
+    /// <remarks>
+    /// A <c>record</c> synthesizes <c>ToString</c> over every readable property,
+    /// which would print the token into any log line, exception message or debug
+    /// output that ever interpolates this type. Overriding it is the only thing
+    /// standing between a routine diagnostic and a credential in a log file, and
+    /// the Python counterpart's <c>__repr__</c> hides the secret for the same
+    /// reason.
+    /// </remarks>
+    public override string ToString() =>
+        $"ExtensionCredential {{ Username = {Username}, Secret = <hidden>, Kind = {Kind} }}";
 }

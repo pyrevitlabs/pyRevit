@@ -60,6 +60,34 @@ public static class ExtensionCredentialProtector {
     /// </summary>
     public const string ConfigKeyName = "credential";
 
+    /// <summary>
+    /// Every config key that can hold extension credential material, the sealed
+    /// one plus the plaintext keys written before sealing existed.
+    /// </summary>
+    /// <remarks>
+    /// Declared here so that every place which has to treat credential material
+    /// as one set - the CLI clearing plaintext after a re-persist, and the
+    /// admin-config promotion stripping it from a machine-scope file - works from
+    /// the same list. A new key added to only one of them is how a secret ends up
+    /// in a file every local user can read.
+    /// </remarks>
+    public static readonly IReadOnlyList<string> AllConfigKeyNames = new[]
+    {
+        ConfigKeyName,
+        LegacyTokenKeyName,
+        LegacyPasswordKeyName,
+        LegacyUsernameKeyName
+    };
+
+    /// <summary>Legacy plaintext key holding a token. Read only, then removed, by the migration.</summary>
+    public const string LegacyTokenKeyName = "token";
+
+    /// <summary>Legacy plaintext key holding a password. Read only, then removed, by the migration.</summary>
+    public const string LegacyPasswordKeyName = "password";
+
+    /// <summary>Legacy plaintext key holding the username. Read only, then removed, by the migration.</summary>
+    public const string LegacyUsernameKeyName = "username";
+
     private const string FieldSeparator = ".";
     private const string KindTokenTag = "t";
     private const string KindPasswordTag = "p";

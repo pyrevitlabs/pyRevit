@@ -44,9 +44,10 @@ public sealed record ExtensionSection {
     /// Account name used against a private extension repository. No default:
     /// unset means no credential is supplied.
     /// <para>
-    /// Legacy. Read only by the one-time migration in
-    /// <c>pyrevit.versionmgr.upgrade</c>, which seals the credential it belongs
-    /// to and then removes this key.
+    /// Legacy. The one-time migration in <c>pyrevit.versionmgr.upgrade</c> reads
+    /// it to seal the credential it belongs to, then removes the key. The loader's
+    /// <c>PyRevitConfig.ParseExtensionByName</c> also still projects it into its
+    /// extension DTO, where nothing consumes it.
     /// </para>
     /// </summary>
     [KeyName("username")]
@@ -57,9 +58,10 @@ public sealed record ExtensionSection {
     /// unset means no credential is supplied.
     /// <para>
     /// Legacy, and a real secret in the clear for any config that still has it.
-    /// Read only by the one-time migration in
-    /// <c>pyrevit.versionmgr.upgrade</c>, which seals it and then removes this
-    /// key. Nothing writes it.
+    /// The one-time migration in <c>pyrevit.versionmgr.upgrade</c> reads it to
+    /// seal a credential, then removes the key, and nothing writes it. The
+    /// loader's <c>PyRevitConfig.ParseExtensionByName</c> still projects it into
+    /// its extension DTO, where nothing consumes it.
     /// </para>
     /// </summary>
     [KeyName("password")]

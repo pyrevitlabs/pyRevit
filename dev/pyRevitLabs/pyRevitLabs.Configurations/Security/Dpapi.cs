@@ -16,8 +16,8 @@ namespace pyRevitLabs.Configurations.Security;
 /// target - inbox <c>System.Security</c> on .NET Framework, a NuGet package on
 /// .NET Core - and the package's assembly is not part of the .NET shared
 /// framework. pyRevit stages its assemblies explicitly, so a managed reference
-/// here means shipping one more file, and any build path that forgets it fails at
-/// runtime with a <see cref="FileNotFoundException"/> while every unit test
+/// here means shipping one more file, and any build path that forgets it fails
+/// at runtime with a <see cref="FileNotFoundException"/> while every unit test
 /// still passes. <c>crypt32</c> is part of Windows, so there is nothing to ship
 /// and nothing to forget.
 /// </para>
@@ -26,7 +26,7 @@ namespace pyRevitLabs.Configurations.Security;
 /// <c>ProtectedData.Protect</c> for the same inputs and flags, so a value
 /// written by either is readable by the other. That matters because
 /// <c>pyrevit.coreutils.credentials</c> seals the same way from Python, where no
-/// <c>clr.AddReference</c> is involved at all.
+/// assembly reference is involved at all.
 /// </para>
 /// <para>
 /// Scope is the current Windows user: <c>CRYPTPROTECT_LOCAL_MACHINE</c> is
@@ -34,6 +34,15 @@ namespace pyRevitLabs.Configurations.Security;
 /// is unreadable under another account, on another machine, and after a profile
 /// rebuild without a backup.
 /// </para>
+/// <para><b>Two kinds of memory, two owners.</b> Buffers this type rents go
+/// through <see cref="Rent"/> and <see cref="Return"/>, which pair
+/// <c>Marshal.AllocHGlobal</c> with <c>Marshal.FreeHGlobal</c>.
+/// Buffers the OS returns through an out-parameter are released with
+/// <c>LocalFree</c>, because <c>LocalAlloc</c> is what produced them. The two
+/// must never be mixed: <c>Marshal.ZeroFreeGlobalAllocUnicode</c> pairs with
+/// <c>Marshal.StringToHGlobalUni</c> and writes <c>GlobalSize(p) * 2</c> bytes,
+/// so used on an <c>AllocHGlobal</c> block it overruns the allocation by its own
+/// length on every call.</para>
 /// </remarks>
 internal static class Dpapi {
     private const string Crypt32 = "crypt32.dll";
@@ -78,26 +87,25 @@ internal static class Dpapi {
     /// <param name="entropy">Additional entropy mixed into the seal.</param>
     /// <param name="description">
     /// Optional label stored inside the blob, or null to omit it. Omitting it
-    /// keeps the blob byte-for-byte the shape
-    /// <c>ProtectedData.Protect</c> produces, which is what lets a value written
-    /// by either implementation be read by the other.
+    /// keeps the blob byte-for-byte the shape <c>ProtectedData.Protect</c>
+    /// produces, which is what lets a value written by either implementation be
+    /// read by the other.
     /// </param>
     /// <returns>The sealed bytes.</returns>
     /// <exception cref="Win32Exception">The API call failed.</exception>
     public static byte[] Protect(string plaintext, byte[] entropy, string? description) {
-        byte[] plainBytes = Encoding.UTF8.GetBytes(plaintext);
         IntPtr plainBuffer = IntPtr.Zero;
         IntPtr entropyBuffer = IntPtr.Zero;
         IntPtr outBuffer = IntPtr.Zero;
+        byte[] plainBytes = Encoding.UTF8.GetBytes(plaintext);
         try {
-            plainBuffer = CopyToUnmanaged(plainBytes);
-            entropyBuffer = CopyToUnmanaged(entropy);
+            plainBuffer = Rent(plainBytes);
+            entropyBuffer = Rent(entropy);
 
-            var input = new DataBlob { CbData = plainBytes.Length, PbData = plainBuffer };
-            var entropyBlob = new DataBlob { CbData = entropy.Length, PbData = entropyBuffer };
-
+            DataBlob plainBlob = Blob(plainBytes, plainBuffer);
+            DataBlob entropyBlob = Blob(entropy, entropyBuffer);
             if (!CryptProtectData(
-                    ref input, description, ref entropyBlob, IntPtr.Zero, IntPtr.Zero,
+                    ref plainBlob, description, ref entropyBlob, IntPtr.Zero, IntPtr.Zero,
                     CryptProtectUiForbidden, out var output))
                 throw new Win32Exception(
                     Marshal.GetLastWin32Error(), "CryptProtectData failed.");
@@ -106,15 +114,12 @@ internal static class Dpapi {
             return CopyFromUnmanaged(output);
         }
         finally {
+            // OS-owned first, then everything this type rented.
             if (outBuffer != IntPtr.Zero)
                 LocalFree(outBuffer);
-            if (entropyBuffer != IntPtr.Zero) {
-                // The entropy is not a secret, but it is caller-supplied and
-                // there is no reason to leave it in the heap.
-                Marshal.ZeroFreeGlobalAllocUnicode(entropyBuffer);
-            }
-            if (plainBuffer != IntPtr.Zero)
-                ZeroAndFree(plainBuffer, plainBytes.Length);
+            Return(plainBuffer, plainBytes);
+            Return(entropyBuffer, entropy);
+            Array.Clear(plainBytes, 0, plainBytes.Length);
         }
     }
 
@@ -136,14 +141,13 @@ internal static class Dpapi {
         IntPtr outBuffer = IntPtr.Zero;
         IntPtr descriptionBuffer = IntPtr.Zero;
         try {
-            sealedBuffer = CopyToUnmanaged(sealedBytes);
-            entropyBuffer = CopyToUnmanaged(entropy);
+            sealedBuffer = Rent(sealedBytes);
+            entropyBuffer = Rent(entropy);
 
-            var input = new DataBlob { CbData = sealedBytes.Length, PbData = sealedBuffer };
-            var entropyBlob = new DataBlob { CbData = entropy.Length, PbData = entropyBuffer };
-
+            DataBlob sealedBlob = Blob(sealedBytes, sealedBuffer);
+            DataBlob entropyBlob = Blob(entropy, entropyBuffer);
             if (!CryptUnprotectData(
-                    ref input, out descriptionBuffer, ref entropyBlob, IntPtr.Zero,
+                    ref sealedBlob, out descriptionBuffer, ref entropyBlob, IntPtr.Zero,
                     IntPtr.Zero, CryptProtectUiForbidden, out var output))
                 throw new Win32Exception(
                     Marshal.GetLastWin32Error(), "CryptUnprotectData failed.");
@@ -152,36 +156,55 @@ internal static class Dpapi {
                 ? null
                 : Marshal.PtrToStringUni(descriptionBuffer);
             outBuffer = output.PbData;
-            return Encoding.UTF8.GetString(CopyFromUnmanaged(output));
+
+            byte[] recovered = CopyFromUnmanaged(output);
+            try {
+                return Encoding.UTF8.GetString(recovered);
+            }
+            finally {
+                Array.Clear(recovered, 0, recovered.Length);
+            }
         }
         finally {
             if (descriptionBuffer != IntPtr.Zero)
                 LocalFree(descriptionBuffer);
             if (outBuffer != IntPtr.Zero)
                 LocalFree(outBuffer);
-            if (entropyBuffer != IntPtr.Zero)
-                Marshal.ZeroFreeGlobalAllocUnicode(entropyBuffer);
-            if (sealedBuffer != IntPtr.Zero)
-                ZeroAndFree(sealedBuffer, sealedBytes.Length);
+            Return(sealedBuffer, sealedBytes);
+            Return(entropyBuffer, entropy);
         }
     }
 
-    private static IntPtr CopyToUnmanaged(byte[] bytes) {
+    /// <summary>
+    /// Copies bytes into a rented unmanaged block, paired with <see cref="Return"/>.
+    /// </summary>
+    private static IntPtr Rent(byte[] bytes) {
         IntPtr buffer = Marshal.AllocHGlobal(Math.Max(bytes.Length, 1));
-        Marshal.Copy(bytes, 0, buffer, bytes.Length);
+        if (bytes.Length > 0)
+            Marshal.Copy(bytes, 0, buffer, bytes.Length);
         return buffer;
     }
+
+    /// <summary>
+    /// Scrubs and frees a block from <see cref="Rent"/>, or does nothing for a
+    /// null handle so the caller's <c>finally</c> needs no guard.
+    /// </summary>
+    private static void Return(IntPtr buffer, byte[] lengthSource) {
+        if (buffer == IntPtr.Zero)
+            return;
+
+        for (int i = 0; i < lengthSource.Length; i++)
+            Marshal.WriteByte(buffer, i, 0);
+        Marshal.FreeHGlobal(buffer);
+    }
+
+    private static DataBlob Blob(byte[] lengthSource, IntPtr buffer) =>
+        new() { CbData = lengthSource.Length, PbData = buffer };
 
     private static byte[] CopyFromUnmanaged(DataBlob blob) {
         var bytes = new byte[blob.CbData];
         if (bytes.Length > 0)
             Marshal.Copy(blob.PbData, bytes, 0, bytes.Length);
         return bytes;
-    }
-
-    private static void ZeroAndFree(IntPtr buffer, int length) {
-        for (int i = 0; i < length; i++)
-            Marshal.WriteByte(buffer, i, 0);
-        Marshal.FreeHGlobal(buffer);
     }
 }

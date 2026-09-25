@@ -26,10 +26,34 @@ Run from Revit via the pyRevit DevTools "Credentials Module Tests" button.
 """
 
 import json
+import os
+import shutil
+import tempfile
 import unittest
 
 from pyrevit.coreutils import credentials
 from pyrevit.coreutils.configparser import ConfigSections
+
+
+def _load_ini_backend():
+    """Return the real INI backend type, or None when it cannot be loaded.
+
+    ``set_credential`` verifies a write by re-reading the config file, so the
+    config tests that depend on the write path need the real backend. An
+    unavailable one skips those rather than erroring the whole module on import.
+    """
+    try:
+        from pyrevit.framework import clr
+
+        clr.AddReference("pyRevitLabs.Configurations.Ini")
+        from pyRevitLabs.Configurations.Ini import IniConfiguration
+
+        return IniConfiguration
+    except Exception:
+        return None
+
+
+_INI_BACKEND = _load_ini_backend()
 
 
 class _FakeConfiguration(object):
@@ -98,17 +122,35 @@ class _FakeUserConfig(object):
     Only the surface ``credentials`` actually touches, backed by the real
     ``ConfigSections`` so the section access semantics - notably that
     ``get_section`` raises for a missing section - are the production ones.
+
+    Writes are also flushed to a real temp INI file, because
+    ``set_credential`` verifies by re-reading the value from disk rather than
+    from the in-memory store. A fake with no file behind it would make that
+    verification unsatisfiable and the sealing tests would prove nothing.
+
+    ``fail_saves`` models the two ways the real ``save_changes`` can drop a
+    write: it swallows the error, and it no-ops entirely on a read-only config.
     """
 
-    def __init__(self, read_only=False):
+    def __init__(self, read_only=False, fail_saves=False):
         self._config = _FakeConfiguration()
         self._service = _FakeConfigurationService(self._config, read_only=read_only)
         self.config_sections = ConfigSections(self._service)
         self.save_count = 0
+        self.fail_saves = fail_saves
+        self._config_file = None
+        self._temp_dir = None
+        if _INI_BACKEND is not None:
+            self._temp_dir = tempfile.mkdtemp(prefix="pyrevit-credtest-")
+            self._config_file = os.path.join(self._temp_dir, "pyRevit_config.ini")
 
     @property
     def is_readonly(self):
         return self._service.ReadOnly
+
+    @property
+    def config_file(self):
+        return self._config_file
 
     def __iter__(self):
         return self.config_sections.__iter__()
@@ -123,7 +165,36 @@ class _FakeUserConfig(object):
         return self.config_sections.get_section(name)
 
     def save_changes(self):
+        """Flush to the temp file the way the real config service does.
+
+        The real ``save_changes`` logs and swallows a write failure rather than
+        raising, so ``fail_saves`` does the same: a caller that assumes a raise
+        would get a false pass here and a real failure in production.
+        """
+        if self.is_readonly:
+            return
         self.save_count += 1
+        if self.fail_saves or not self._config_file:
+            return
+        try:
+            with open(self._config_file, "w") as handle:
+                for section in self._config.GetSectionNames():
+                    handle.write("[{}]\n".format(section))
+                    for key in self._config.GetSectionOptionNames(section):
+                        handle.write(
+                            "{} = {}\n".format(
+                                key, self._config.GetRawValueOrDefault(section, key)
+                            )
+                        )
+                    handle.write("\n")
+        except Exception:
+            pass
+
+    def close(self):
+        if self._temp_dir and os.path.isdir(self._temp_dir):
+            shutil.rmtree(self._temp_dir, ignore_errors=True)
+            self._temp_dir = None
+            self._config_file = None
 
     # test helpers
     def raw(self, section, key):
@@ -147,6 +218,7 @@ class _CredentialsTestCase(unittest.TestCase):
         import pyrevit.userconfig as userconfig
 
         userconfig.user_config = self._real_user_config
+        self.user_config.close()
 
     def seed_plaintext(self, section, **keys):
         """Write keys the way a pre-sealing pyRevit would have."""
@@ -179,6 +251,21 @@ class AbsentCredentialTests(_CredentialsTestCase):
         self.user_config.put_raw("pyRevitCore.extension", "private_repo", "true")
         self.assertIsNone(credentials.get_credential("pyRevitCore.extension"))
         self.assertFalse(credentials.has_credential("pyRevitCore.extension"))
+
+    def test_migration_ignores_non_extension_sections(self):
+        """A non-extension section is not an extension credential.
+
+        Deliberately not in MigrationTests: that class skips wholesale without
+        DPAPI, and this case needs none.
+        """
+        self.seed_plaintext("core", token="ghp_abc123")
+        self.assertEqual(0, credentials.migrate_legacy_credentials())
+        self.assertEqual('"ghp_abc123"', self.user_config.raw("core", "token"))
+
+    def test_migration_ignores_a_library_section_with_no_secret(self):
+        self.seed_plaintext("Some.lib", username="alex")
+        self.assertEqual(0, credentials.migrate_legacy_credentials())
+        self.assertIsNone(self.user_config.raw("Some.lib", credentials.CONFIG_KEY))
 
 
 class SealingTests(_CredentialsTestCase):
@@ -433,11 +520,6 @@ class MigrationTests(_CredentialsTestCase):
             first, self.user_config.raw("MyTool.extension", credentials.CONFIG_KEY)
         )
 
-    def test_non_extension_sections_are_ignored(self):
-        self.seed_plaintext("core", token="ghp_abc123")
-        self.assertEqual(0, credentials.migrate_legacy_credentials())
-        self.assertEqual('"ghp_abc123"', self.user_config.raw("core", "token"))
-
     def test_migration_covers_a_section_for_an_uninstalled_extension(self):
         """The migration walks the config, not the installed packages.
 
@@ -463,6 +545,8 @@ class MigrationNoDataLossTests(_CredentialsTestCase):
 
     def setUp(self):
         _CredentialsTestCase.setUp(self)
+        if not credentials.is_available():
+            self.skipTest("Windows DPAPI is not available on this runtime")
         self._real_seal = credentials._seal
         self._seal_fails = True
 
@@ -518,3 +602,143 @@ class MigrationNoDataLossTests(_CredentialsTestCase):
             "ghp_good", credentials.get_credential("Good.extension").secret
         )
         self.assertEqual('"ghp_bad"', self.user_config.raw("Bad.extension", "token"))
+
+
+class DroppedFlushTests(_CredentialsTestCase):
+    """A write that is accepted into memory but never reaches the file.
+
+    ``save_changes`` swallows the failure, so the only way to notice is to read
+    the file. The legacy keys must survive that case, which is the entire point
+    of verifying before removing them.
+    """
+
+    def setUp(self):
+        _CredentialsTestCase.setUp(self)
+        if not credentials.is_available():
+            self.skipTest("Windows DPAPI is not available on this runtime")
+
+    def test_dropped_flush_keeps_the_legacy_token(self):
+        self.seed_plaintext("MyTool.extension", token="ghp_abc123")
+        self.user_config.fail_saves = True
+
+        self.assertRaises(
+            credentials.PyRevitCredentialUnavailable,
+            credentials.migrate_legacy_credentials,
+        )
+        self.assertEqual(
+            '"ghp_abc123"', self.user_config.raw("MyTool.extension", "token")
+        )
+
+    def test_dropped_flush_is_reported_not_silently_accepted(self):
+        """set_credential must not claim success for a value that is not on disk."""
+        self.user_config.fail_saves = True
+        self.assertRaises(
+            credentials.PyRevitCredentialUnavailable,
+            credentials.set_credential,
+            "MyTool.extension",
+            "oauth2",
+            "ghp_abc123",
+        )
+        self.assertFalse(credentials.has_credential("MyTool.extension"))
+
+
+class CredentialKindTests(_CredentialsTestCase):
+    """A password must never be recorded as a token, and vice versa."""
+
+    def setUp(self):
+        _CredentialsTestCase.setUp(self)
+        if not credentials.is_available():
+            self.skipTest("Windows DPAPI is not available on this runtime")
+
+    def test_password_kind_survives_the_round_trip(self):
+        credentials.set_credential("MyTool.extension", "alex", "pw", kind="password")
+        self.assertEqual(
+            "password", credentials.get_credential("MyTool.extension").kind
+        )
+
+    def test_token_kind_survives_the_round_trip(self):
+        credentials.set_credential("MyTool.extension", "oauth2", "ghp_abc123")
+        self.assertEqual("token", credentials.get_credential("MyTool.extension").kind)
+
+    def test_unknown_kind_is_rejected_rather_than_coerced(self):
+        """Defaulting to a token would store a password mislabelled, silently."""
+        self.assertRaises(
+            credentials.PyRevitCredentialError,
+            credentials.set_credential,
+            "MyTool.extension",
+            "alex",
+            "pw",
+            "passwd",
+        )
+
+    def test_cli_style_migration_records_a_token_not_a_password(self):
+        """A mirrored token is still a token, not a password.
+
+        Every legacy writer mirrored the token into password "for backwards
+        compat", so preferring password labels every migrated token as one.
+        """
+        self.seed_plaintext(
+            "MyTool.extension",
+            token="ghp_abc123",
+            username="oauth2",
+            password="ghp_abc123",
+        )
+        self.assertEqual(1, credentials.migrate_legacy_credentials())
+        self.assertEqual("token", credentials.get_credential("MyTool.extension").kind)
+
+    def test_username_password_migration_records_a_password(self):
+        self.seed_plaintext("MyTool.extension", username="alex", password="pw")
+        self.assertEqual(1, credentials.migrate_legacy_credentials())
+        self.assertEqual(
+            "password", credentials.get_credential("MyTool.extension").kind
+        )
+
+
+class StoredFormatContractTests(_CredentialsTestCase):
+    """Pins the stored format, which is a C#/Python contract nothing else guards.
+
+    Both sides' docstrings say the format has to change together. Without these,
+    changing the separator or a kind tag on the C# side alone would leave every
+    test in both suites green while orphaning every credential on every disk.
+    """
+
+    def setUp(self):
+        _CredentialsTestCase.setUp(self)
+        if not credentials.is_available():
+            self.skipTest("Windows DPAPI is not available on this runtime")
+
+    def test_config_key_is_the_documented_name(self):
+        """Mirrors ExtensionCredentialProtector.ConfigKeyName."""
+        self.assertEqual("credential", credentials.CONFIG_KEY)
+
+    def test_legacy_keys_are_the_documented_names(self):
+        self.assertEqual(
+            ("token", "password", "username"), credentials.LEGACY_CREDENTIAL_KEYS
+        )
+
+    def test_extension_section_postfixes_cover_both_extension_kinds(self):
+        self.assertEqual(
+            (".extension", ".lib"), credentials.EXTENSION_SECTION_POSTFIXES
+        )
+
+    def test_separator_cannot_corrupt_a_secret(self):
+        """A secret full of separator characters must not shift the fields.
+
+        The '.' separator is only unambiguous because base64 cannot contain it.
+        """
+        awkward_secret = "a.b+c/d=e"
+        credentials.set_credential("T.extension", "a.b", awkward_secret)
+        self.assertEqual(
+            awkward_secret, credentials.get_credential("T.extension").secret
+        )
+
+    def test_username_containing_the_separator_does_not_shift_fields(self):
+        credentials.set_credential("T.extension", "user.name", "pw")
+        self.assertEqual(
+            "user.name", credentials.get_credential("T.extension").username
+        )
+
+    def test_non_ascii_secret_survives(self):
+        secret = "café-töken-日本語"
+        credentials.set_credential("T.extension", "oauth2", secret)
+        self.assertEqual(secret, credentials.get_credential("T.extension").secret)

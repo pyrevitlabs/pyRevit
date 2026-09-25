@@ -202,12 +202,38 @@ public static class PyRevitConfigService {
                 return;
             }
 
-            RetireSplitUserConfig(userConfigPath);
+            // The promote path copies the whole file, so a credential came with it.
+            StripCredentialKeysFromFile(machineConfigPath);
+            RetireSplitUserConfigIfSuperseded(userConfigPath, ContainsCredentialKeys(userConfigPath));
             return;
         }
 
-        if (MergeAdminConfigFiles(userConfigPath, machineConfigPath))
-            RetireSplitUserConfig(userConfigPath);
+        if (MergeAdminConfigFiles(userConfigPath, machineConfigPath, out bool credentialsLeftBehind))
+            RetireSplitUserConfigIfSuperseded(userConfigPath, credentialsLeftBehind);
+    }
+
+    /// <summary>
+    /// Renames the per-user config aside once the machine config has superseded
+    /// everything in it.
+    /// </summary>
+    /// <remarks>
+    /// <paramref name="stillHoldsCredentials"/> suppresses the rename. Credential
+    /// material is never copied to a machine-scope config, so while the per-user
+    /// file still holds one it is the only copy - retiring it would destroy a
+    /// working token and leave the user re-entering it. The split layout simply
+    /// persists one round longer for those users, which is the correct trade.
+    /// </remarks>
+    private static void RetireSplitUserConfigIfSuperseded(
+        string userConfigPath, bool stillHoldsCredentials) {
+        if (stillHoldsCredentials) {
+            ConfigurationDiagnostics.ReportInfo(
+                "Kept the per-user config at " + userConfigPath
+                + " because it still holds an extension credential. Credentials are never "
+                + "copied to the machine config, so that file is the only remaining copy.");
+            return;
+        }
+
+        RetireSplitUserConfig(userConfigPath);
     }
 
     /// <summary>
@@ -238,13 +264,27 @@ public static class PyRevitConfigService {
 
     /// <summary>
     /// Copies the clone registry (when absent) and any per-extension sections the
-    /// machine config is missing from the split per-user config. Returns whether any
-    /// setting was actually moved: only the source of a real copy has been superseded
-    /// and may be retired. The merge carries the clone registry and extension
-    /// sections alone, so a source that contributed nothing still holds the only copy
-    /// of its other sections.
+    /// machine config is missing from the split per-user config. Credential keys
+    /// are never copied and are stripped from the machine config, because a
+    /// user-scope DPAPI blob is unreadable to every other user of the machine and
+    /// a legacy plaintext token is readable by all of them.
     /// </summary>
-    internal static bool MergeAdminConfigFiles(string sourcePath, string targetPath) {
+    /// <param name="sourcePath">The split per-user config.</param>
+    /// <param name="targetPath">The machine config.</param>
+    /// <param name="credentialsLeftBehind">
+    /// Set when the source held credential material that was deliberately not
+    /// copied, which means the source is still the only place that credential
+    /// exists and must not be retired.
+    /// </param>
+    /// <returns>
+    /// Whether any setting was actually moved: only the source of a real copy has
+    /// been superseded and may be retired. The merge carries the clone registry and
+    /// extension sections alone, so a source that contributed nothing still holds
+    /// the only copy of its other sections.
+    /// </returns>
+    internal static bool MergeAdminConfigFiles(
+        string sourcePath, string targetPath, out bool credentialsLeftBehind) {
+        credentialsLeftBehind = false;
         try {
             var source = IniConfiguration.Create(sourcePath);
             var target = IniConfiguration.Create(targetPath);
@@ -259,17 +299,18 @@ public static class PyRevitConfigService {
             }
 
             foreach (string section in source.GetSectionNames()) {
-                if (!IsExtensionConfigSection(section) || target.HasSection(section))
+                if (!IsExtensionConfigSection(section))
                     continue;
 
+                bool copyingSection = !target.HasSection(section);
                 foreach (string key in source.GetSectionOptionNames(section)) {
-                    // A stored extension credential is sealed with DPAPI against the
-                    // Windows user who saved it. Copying it into the machine config
-                    // would park an unreadable blob in a file every user of the
-                    // machine can read, so it is never merged; the owning user's own
-                    // config keeps it and is where the in-Revit extension manager
-                    // looks first.
-                    if (key == ExtensionCredentialProtector.ConfigKeyName)
+                    if (IsCredentialKey(key)) {
+                        if (source.GetRawValueOrDefault(section, key, null) is not null)
+                            credentialsLeftBehind = true;
+                        continue;
+                    }
+
+                    if (!copyingSection)
                         continue;
 
                     string? raw = source.GetRawValueOrDefault(section, key, null);
@@ -279,6 +320,9 @@ public static class PyRevitConfigService {
                     }
                 }
             }
+
+            if (StripCredentialKeys(target))
+                changed = true;
 
             if (changed)
                 target.SaveConfiguration();
@@ -290,6 +334,93 @@ public static class PyRevitConfigService {
                 "Could not merge split machine config: " + ex.Message);
             return false;
         }
+    }
+
+    /// <summary>
+    /// Whether a config key can hold extension credential material, sealed or
+    /// plaintext.
+    /// </summary>
+    private static bool IsCredentialKey(string keyName) {
+        foreach (string credentialKey in ExtensionCredentialProtector.AllConfigKeyNames) {
+            if (string.Equals(keyName, credentialKey, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Removes every credential key from every extension section of a config.
+    /// </summary>
+    /// <remarks>
+    /// Applied to the machine config because the promote path copies the whole
+    /// per-user file verbatim, and because a machine config merged from an older
+    /// build may already carry a plaintext token.
+    /// </remarks>
+    /// <returns>Whether anything was removed.</returns>
+    private static bool StripCredentialKeys(IConfiguration configuration) {
+        bool removed = false;
+        foreach (string section in configuration.GetSectionNames()) {
+            if (!IsExtensionConfigSection(section))
+                continue;
+
+            foreach (string key in configuration.GetSectionOptionNames(section)) {
+                if (IsCredentialKey(key) && configuration.RemoveOption(section, key)) {
+                    removed = true;
+                    ConfigurationDiagnostics.ReportWarning(
+                        "Removed extension credential key \"" + key + "\" from the machine config "
+                        + "section \"" + section + "\". A machine-scope config is readable by every "
+                        + "user of this machine, so it must not hold credential material.");
+                }
+            }
+        }
+        return removed;
+    }
+
+    /// <summary>
+    /// Removes credential keys from a config file, if it has any.
+    /// </summary>
+    private static bool StripCredentialKeysFromFile(string configPath) {
+        if (!File.Exists(configPath))
+            return false;
+
+        try {
+            var configuration = IniConfiguration.Create(configPath);
+            if (!StripCredentialKeys(configuration))
+                return false;
+            configuration.SaveConfiguration();
+            return true;
+        }
+        catch (Exception ex) {
+            ConfigurationDiagnostics.ReportWarning(
+                "Could not strip credential keys from the machine config: " + ex.Message);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Whether a per-user config holds extension credential material.
+    /// </summary>
+    private static bool ContainsCredentialKeys(string configPath) {
+        if (!File.Exists(configPath))
+            return false;
+
+        try {
+            var configuration = IniConfiguration.Create(configPath);
+            foreach (string section in configuration.GetSectionNames()) {
+                if (!IsExtensionConfigSection(section))
+                    continue;
+                foreach (string key in configuration.GetSectionOptionNames(section)) {
+                    if (IsCredentialKey(key) && configuration.GetRawValueOrDefault(section, key, null) is not null)
+                        return true;
+                }
+            }
+        }
+        catch (Exception ex) {
+            ConfigurationDiagnostics.ReportWarning(
+                "Could not inspect the per-user config for credentials: " + ex.Message);
+        }
+
+        return false;
     }
 
     /// <summary>
