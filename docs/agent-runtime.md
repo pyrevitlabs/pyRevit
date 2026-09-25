@@ -77,6 +77,7 @@ Run any of these commands without a value to print the current setting.
 | `inspect_elements` | no | Class, category, type, level, location, bounding box and parameters of up to 50 elements |
 | `lookup_revit_api` | no | Signatures of a Revit API type or member, reflected from the running Revit. Also its namespace and Python import line, and a `creation` list: static factories and the `doc.Create.New…` methods that return the type |
 | `show_elements` | no | Select, zoom to, or temporarily isolate / hide elements (by id or category) in the active view, or reset the temporary mode. No approval prompt. |
+| `capture_view` | no | PNG of a view for visual checks. `export` renders any view through Revit; `screen` captures the active view window as the user sees it (selection, temporary isolate); view `3d` renders a temporary isometric view of the whole model, which is rolled back. Saved under `%APPDATA%\pyRevit\agent\captures`. |
 | `run_query` | never | Run a read-only script; always rolled back |
 | `run_modify` | after approval | Run a changing script; `dry_run=true` previews the change set and rolls back |
 | `get_run` | no | A recorded run: response, script, and pages of a large result |

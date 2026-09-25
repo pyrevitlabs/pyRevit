@@ -63,6 +63,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 case "show":
                     var showRequest = AgentPresenter.Parse(parameters);
                     return InvokeOnMainThread(app => AgentPresenter.Show(app, showRequest), parameters);
+                case "capture":
+                    var captureRequest = AgentCapture.Parse(parameters);
+                    return InvokeOnMainThread(app => AgentCapture.Capture(app, captureRequest), parameters);
                 case "lookup_api":
                     var query = parameters.Value<string>("name");
                     return AgentApiLookup.Lookup(query);
