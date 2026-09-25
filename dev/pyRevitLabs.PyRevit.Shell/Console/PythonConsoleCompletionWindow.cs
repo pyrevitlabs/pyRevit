@@ -12,6 +12,7 @@ using ICSharpCode.AvalonEdit.Editing;
 using ICSharpCode.AvalonEdit.Rendering;
 using ICSharpCode.AvalonEdit.CodeCompletion;
 using System.Reflection;
+using PyRevitLabs.PyRevit.Shell;
 
 namespace PythonConsoleControl
 {
@@ -22,6 +23,9 @@ namespace PythonConsoleControl
     /// </summary>
     public class PythonConsoleCompletionWindow : CompletionWindowBase
     {
+        static readonly Uri ShellThemeSource =
+            new Uri("/pyRevitLabs.PyRevit.Shell;component/Themes/ShellTheme.xaml", UriKind.Relative);
+
         readonly CompletionList completionList = new CompletionList();
         ToolTip toolTip = new ToolTip();
         DispatcherTimer updateDescription;
@@ -46,6 +50,7 @@ namespace PythonConsoleControl
             this.completionDataProvider = textEditor.CompletionProvider;
             this.textEditor = textEditor;
             this.CloseAutomatically = true;
+            this.ResizeMode = ResizeMode.NoResize;
             this.SizeToContent = SizeToContent.Height;
             this.MaxHeight = 300;
             this.Width = 175;
@@ -71,17 +76,22 @@ namespace PythonConsoleControl
         }
 
         /// <summary>
-        /// Applies dark-theme colors to the completion list and description tooltip.
+        /// Applies the shell light or dark palette to the completion list, its scrollbars and
+        /// the description tooltip.
         /// </summary>
+        /// <remarks>
+        /// The popup is a separate top-level window, so it does not inherit the host window's
+        /// shell resources; the shell theme dictionary is merged into it here.
+        /// </remarks>
         public void ApplyTheme(bool useDarkTheme)
         {
-            if (!useDarkTheme)
-                return;
+            Resources.MergedDictionaries.Add(new ResourceDictionary { Source = ShellThemeSource });
+            ShellTheme.Apply(this, useDarkTheme);
 
-            var background = new SolidColorBrush(Color.FromRgb(0x25, 0x25, 0x26));
-            var foreground = new SolidColorBrush(Color.FromRgb(0xD4, 0xD4, 0xD4));
-            var border = new SolidColorBrush(Color.FromRgb(0x3F, 0x3F, 0x46));
-            var selection = new SolidColorBrush(Color.FromRgb(0x09, 0x4A, 0x77));
+            var background = (Brush)Resources["ShellPopupBackground"];
+            var foreground = (Brush)Resources["ShellPopupForeground"];
+            var border = (Brush)Resources["ShellWindowBorder"];
+            var selection = (Brush)Resources["ShellPopupSelection"];
 
             this.Background = background;
             this.Foreground = foreground;
@@ -111,8 +121,6 @@ namespace PythonConsoleControl
             listBox.Background = background;
             listBox.Foreground = foreground;
             listBox.BorderBrush = border;
-            // Override the system selection brushes so the highlighted item stays readable on a
-            // dark background instead of using the default light-blue selection.
             listBox.Resources[SystemColors.HighlightBrushKey] = selection;
             listBox.Resources[SystemColors.HighlightTextBrushKey] = foreground;
             listBox.Resources[SystemColors.InactiveSelectionHighlightBrushKey] = selection;
