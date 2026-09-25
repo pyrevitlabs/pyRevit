@@ -10,20 +10,33 @@ using CpyRuntime = Python.Runtime.Runtime;
 
 using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
+using pyRevitLabs.Json;
 using pyRevitLabs.NLog;
 using pyRevitLabs.PyRevit;
 
 namespace PyRevitLabs.PyRevit.Runtime {
+    public class CPythonEngineConfigs : ScriptEngineConfigs {
+        public bool clean = false;
+    }
+
     public class CPythonEngine : ScriptEngine {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
+        public CPythonEngineConfigs ExecEngineConfigs = new CPythonEngineConfigs();
         private List<string> _sysPaths = new List<string>();
 
         public override void Init(ref ScriptRuntime runtime) {
             base.Init(ref runtime);
 
+            try {
+                ExecEngineConfigs = JsonConvert.DeserializeObject<CPythonEngineConfigs>(
+                    runtime.ScriptRuntimeConfigs.EngineConfigs
+                ) ?? ExecEngineConfigs;
+            }
+            catch { }
+
             // If the user is asking to refresh the cached engine for the command,
-            UseNewEngine = runtime.ScriptRuntimeConfigs.RefreshEngine;
+            UseNewEngine = ExecEngineConfigs.clean || runtime.ScriptRuntimeConfigs.RefreshEngine;
         }
 
         public override void Start(ref ScriptRuntime runtime) {
