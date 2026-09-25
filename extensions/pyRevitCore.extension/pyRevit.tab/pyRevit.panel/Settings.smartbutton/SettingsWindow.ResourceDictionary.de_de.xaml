@@ -398,4 +398,21 @@
 
     <system:String x:Key="pyRevit.AdminInstall">Die pyRevit-Einstellungen werden von Ihrem Administrator festgelegt.</system:String>
 
+    <system:String x:Key="Agent.Title">Agent-Laufzeit (MCP)</system:String>
+    <system:String x:Key="Agent.Description">Ermöglicht MCP-Coding-Agenten wie Claude Code, Codex, Cursor, VS Code und OpenCode, das geöffnete Modell zu lesen und zu ändern, indem sie Python in Revit ausführen. Agenten verbinden sich über eine lokale Named Pipe, die nur Ihr Windows-Benutzer öffnen kann; anders als der Routes-Server ist nichts über das Netzwerk erreichbar. Jede Modelländerung erfordert Ihre Freigabe in Revit.</system:String>
+    <system:String x:Key="Agent.Privacy">Alles, was der Agent liest (Elementnamen, Parameterwerte, Ergebnisse), wird an den Modellanbieter des Agenten gesendet.</system:String>
+    <system:String x:Key="Agent.Check">Agent-Host (Beta)</system:String>
+    <system:String x:Key="Agent.Policy">Modelländerungen</system:String>
+    <system:String x:Key="Agent.Policy.Ask">Vor jeder Änderung meine Freigabe in Revit anfordern</system:String>
+    <system:String x:Key="Agent.Policy.ReadOnly">Nur lesen: nur Abfragen und Testläufe erlauben</system:String>
+    <system:String x:Key="Agent.Engine">Standard-Skript-Engine</system:String>
+    <system:String x:Key="Agent.Engine.IronPython">IronPython (angehängte Engine)</system:String>
+    <system:String x:Key="Agent.Engine.CPython">CPython</system:String>
+    <system:String x:Key="Agent.Connect">Agent verbinden</system:String>
+    <system:String x:Key="Agent.Connect.Description">Registriert den pyRevit-MCP-Server beim ausgewählten Client und aktiviert den Agent-Host. Starten Sie den Client danach neu.</system:String>
+    <system:String x:Key="Agent.Running">Agent-Host lauscht auf Pipe {}</system:String>
+    <system:String x:Key="Agent.NotRunning">Agent-Host läuft nicht</system:String>
+    <system:String x:Key="Agent.Changed">Die Agent-Host-Einstellung wurde geändert. pyRevit muss neu geladen werden, damit die Änderung wirksam wird. Möchten Sie jetzt neu laden?</system:String>
+    <system:String x:Key="Agent.InstallDone">Der pyRevit-MCP-Server wurde bei {} registriert. Starten Sie den Client neu, um die pyRevit-Werkzeuge zu verwenden.</system:String>
+    <system:String x:Key="Agent.InstallFailed">Der pyRevit-MCP-Server konnte nicht bei {} registriert werden.</system:String>
 </ResourceDictionary>

@@ -396,4 +396,21 @@
 
     <system:String x:Key="pyRevit.AdminInstall">pyRevit 设置由您的管理员设置。</system:String>
 
+    <system:String x:Key="Agent.Title">智能体运行时 (MCP)</system:String>
+    <system:String x:Key="Agent.Description">允许 Claude Code、Codex、Cursor、VS Code 和 OpenCode 等 MCP 编程智能体在 Revit 中运行 Python，以读取和修改当前打开的模型。智能体通过只有您的 Windows 用户才能打开的本地命名管道连接；与 Routes 服务器不同，它不会通过网络对外开放。每次修改模型都需要您在 Revit 中批准。</system:String>
+    <system:String x:Key="Agent.Privacy">智能体读取的所有内容（图元名称、参数值、结果）都会发送给智能体的模型提供商。</system:String>
+    <system:String x:Key="Agent.Check">智能体主机（测试版）</system:String>
+    <system:String x:Key="Agent.Policy">模型修改</system:String>
+    <system:String x:Key="Agent.Policy.Ask">每次修改前在 Revit 中请求我的批准</system:String>
+    <system:String x:Key="Agent.Policy.ReadOnly">只读：仅允许查询和试运行</system:String>
+    <system:String x:Key="Agent.Engine">默认脚本引擎</system:String>
+    <system:String x:Key="Agent.Engine.IronPython">IronPython（已附加的引擎）</system:String>
+    <system:String x:Key="Agent.Engine.CPython">CPython</system:String>
+    <system:String x:Key="Agent.Connect">连接智能体</system:String>
+    <system:String x:Key="Agent.Connect.Description">在所选客户端中注册 pyRevit MCP 服务器并启用智能体主机。之后请重新启动客户端。</system:String>
+    <system:String x:Key="Agent.Running">智能体主机正在管道 {} 上监听</system:String>
+    <system:String x:Key="Agent.NotRunning">智能体主机未运行</system:String>
+    <system:String x:Key="Agent.Changed">智能体主机设置已更改。需要重新加载 pyRevit 才能使更改生效。是否立即重新加载？</system:String>
+    <system:String x:Key="Agent.InstallDone">已在 {} 中注册 pyRevit MCP 服务器。请重新启动它以开始使用 pyRevit 工具。</system:String>
+    <system:String x:Key="Agent.InstallFailed">无法在 {} 中注册 pyRevit MCP 服务器。</system:String>
 </ResourceDictionary>
