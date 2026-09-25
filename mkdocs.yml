@@ -93,7 +93,7 @@ nav:
     - Extensions: extensions.md
     - Theming and dark mode: theming.md
     - Interactive Python shell: python-shell.md
-    - Agent runtime (design): agent-runtime.md
+    - Agent runtime: agent-runtime.md
     - CI/CD and releases: ci-cd.md
     - Adding support for new Revit version: adding-revit-version.md
     - Propose your own custom extension: custom_extension.md
