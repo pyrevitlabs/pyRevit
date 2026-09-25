@@ -34,6 +34,20 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
             [],
             cancellationToken);
 
+        foreach (string framework in new[] { "net48", "net8.0-windows" })
+            await RunTestsAsync(
+                context,
+                PyRevitPaths.PyRevitUnitTestProject,
+                configuration,
+                [
+                    "--no-build",
+                    "-f",
+                    framework,
+                    "--filter",
+                    "FullyQualifiedName~PyRevitConfigsSeedTests",
+                ],
+                cancellationToken);
+
         await RunTestsAsync(
             context,
             PyRevitPaths.ExtensionParserTestProject,
