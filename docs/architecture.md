@@ -72,7 +72,7 @@ There are multiple versions of `pyRevitLoader.dll` to support:
 
 They share the same source code, but are _compiled against_ the different .net runtimes and IronPython versions.
 
-The legacy pure-Python loader (which supported pre-2021 Revit versions) has been removed; the C# loader requires Revit 2021+.
+The legacy pure-Python loader (which supported pre-2021 Revit versions) has been removed; the C# loader requires Revit 2021+. That floor is also why `release/pyrevit-hosts.json` carries no pre-2021 record — see [Which Revit versions are listed](adding-revit-version.md#which-revit-versions-are-listed).
 
 !!! note
 
