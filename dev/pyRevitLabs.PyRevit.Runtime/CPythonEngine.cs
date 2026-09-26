@@ -47,6 +47,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public CPythonEngineConfigs ExecEngineConfigs = new CPythonEngineConfigs();
         private List<string> _sysPaths = new List<string>();
 
+        private static List<string> _interpreterSearchPaths;
+
         public override void Init(ref ScriptRuntime runtime) {
             base.Init(ref runtime);
 
@@ -93,6 +95,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         "CPython engine {0} re-attaching to the interpreter already up in this process.",
                         Id
                         );
+                    WarnOnPythonVersionChange(ref runtime);
+                    DropStaleSessionModules();
                 }
                 // if this is a new engine, save the syspaths
                 StoreSearchPaths();
@@ -339,12 +343,64 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         }
 
-        private void StoreSearchPaths() {
-            var currentSysPath = GetSysPaths();
-            _sysPaths = new List<string>();
-            foreach (var path in currentSysPath) {
-                _sysPaths.Add(path.As<string>());
+        /// <summary>
+        /// Warn when the configured CPython version is not the one this process is running.
+        /// </summary>
+        /// <remarks>
+        /// The interpreter is initialized once per process, so a version change only takes effect
+        /// after Revit restarts. Silently keeping the old interpreter would run every tool on a
+        /// version the user no longer asked for.
+        /// </remarks>
+        private void WarnOnPythonVersionChange(ref ScriptRuntime runtime) {
+            try {
+                var configured = GetPythonDll(runtime);
+                if (!string.IsNullOrEmpty(CpyRuntime.PythonDLL)
+                        && !string.Equals(configured, CpyRuntime.PythonDLL, StringComparison.OrdinalIgnoreCase)) {
+                    logger.Warn(
+                        "CPython is configured for \"{0}\" but this Revit process is running \"{1}\". "
+                            + "The change takes effect the next time Revit starts.",
+                        configured, CpyRuntime.PythonDLL);
+                }
             }
+            catch (Exception ex) {
+                logger.Debug(ex, "Could not compare the configured CPython version with the running one");
+            }
+        }
+
+        /// <summary>
+        /// Forget the pyRevit modules this interpreter imported for a previous session.
+        /// </summary>
+        /// <remarks>
+        /// A re-attaching engine reuses the interpreter, so a module imported before a session
+        /// reload is still cached in <c>sys.modules</c> and keeps whatever host objects it bound
+        /// then - a reloaded session would otherwise run against the previous session's handles.
+        /// Only pyRevit's own modules are dropped; site-packages and the standard library stay.
+        /// </remarks>
+        private static void DropStaleSessionModules() {
+            using (Py.GIL()) {
+                try {
+                    var scope = Py.CreateScope();
+                    scope.Exec(
+                        "import sys, importlib\n"
+                            + "for _pyrevit_name in [_n for _n in list(sys.modules) "
+                            + "if _n == 'pyrevit' or _n.startswith('pyrevit.')]:\n"
+                            + "    del sys.modules[_pyrevit_name]\n"
+                            + "importlib.invalidate_caches()\n");
+                }
+                catch (Exception ex) {
+                    logger.Warn(ex, "Could not drop the pyRevit modules cached by the previous session");
+                }
+            }
+        }
+
+        private void StoreSearchPaths() {            if (_interpreterSearchPaths == null) {
+                _interpreterSearchPaths = new List<string>();
+                foreach (var path in GetSysPaths()) {
+                    _interpreterSearchPaths.Add(path.As<string>());
+                }
+            }
+
+            _sysPaths = new List<string>(_interpreterSearchPaths);
         }
 
         private PyList RestoreSearchPaths() {
