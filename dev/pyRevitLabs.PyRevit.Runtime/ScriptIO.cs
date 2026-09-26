@@ -11,6 +11,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
     /// Writes are buffered and rendered in batches; only the minimal stream
     /// surface used by the script engines is implemented.
     /// </summary>
+    /// <remarks>
+    /// Threading contract: any thread may write. Text produced on a thread that may not touch
+    /// output WPF - the Routes HTTP workers, script-spawned threads, a session reload - is
+    /// buffered here and handed to the host UI thread, which is the only thread that resolves the
+    /// window. <see cref="GetOutput"/> never constructs one, so a producer on the wrong thread
+    /// degrades to the runtime log instead of raising <c>InvalidOperationException: The calling
+    /// thread must be STA</c> out of a worker thread, which unhandled terminates Revit (#3473).
+    /// </remarks>
     public class ScriptIO : Stream, IDisposable {
         // A buffered output entry carries the error state captured when it was
         // enqueued, so normal output drained after an error is not retroactively
@@ -29,6 +37,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private WeakReference<ScriptRuntime> _runtime;
         private WeakReference<ScriptConsole> _gui;
+        private WeakReference<ScriptOutput> _outputService;
+        private int _uiHandOffQueued;
+        private int _uiHandOffUnavailableReported;
         // A linked list (not a queue) so a failed render can re-queue its entry
         // at the front and be retried once the renderer becomes ready.
         private readonly LinkedList<PendingEntry> _pending = new LinkedList<PendingEntry>();
@@ -77,6 +88,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
             _gui = new WeakReference<ScriptConsole>(gui);
         }
 
+        /// <summary>
+        /// Bind to a scripting output service rather than to a window, so the window is resolved
+        /// per write and only on a thread allowed to create it.
+        /// </summary>
+        public ScriptIO(ScriptOutput outputService) {
+            _runtime = new WeakReference<ScriptRuntime>(null);
+            _gui = new WeakReference<ScriptConsole>(null);
+            _outputService = new WeakReference<ScriptOutput>(outputService);
+        }
+
         private ScriptRuntime GetRuntime() {
             if (_runtime == null)
                 return null;
@@ -84,6 +105,15 @@ namespace PyRevitLabs.PyRevit.Runtime {
             ScriptRuntime runtime;
             var re = _runtime.TryGetTarget(out runtime);
             return re ? runtime : null;
+        }
+
+        private ScriptOutput GetOutputService() {
+            if (_outputService == null)
+                return null;
+
+            ScriptOutput outputService;
+            var re = _outputService.TryGetTarget(out outputService);
+            return re ? outputService : null;
         }
 
         private string GetLogFilePath() {
@@ -138,13 +168,36 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return output.ToString();
         }
 
+        /// <summary>
+        /// The window this stream renders into right now, or null when there is none this caller
+        /// may have.
+        /// </summary>
+        /// <remarks>
+        /// Null has two causes, and they are not the same to the caller: the calling thread may
+        /// not touch output WPF, versus there is no window because output is suppressed, the
+        /// window was closed by the user, or the binding is gone. The write paths tell them apart
+        /// through <see cref="ScriptOutputUi.MayCreateOutputUi"/> and only hand off in the first
+        /// case, so a suppressed or closed output is not paid for with a dispatcher hand-off on
+        /// every write.
+        /// <para>
+        /// The returned window is safe to use: a non-null result means the caller may construct and
+        /// drive WPF, which is exactly what a window needs.
+        /// </para>
+        /// </remarks>
         public ScriptConsole GetOutput() {
+            if (!ScriptOutputUi.MayCreateOutputUi)
+                return null;
+
             var runtime = GetRuntime();
             if (runtime != null) {
                 if (runtime.ScriptRuntimeConfigs != null && runtime.ScriptRuntimeConfigs.SuppressOutput)
                     return null;
                 return runtime.OutputWindow;
             }
+
+            var outputService = GetOutputService();
+            if (outputService != null)
+                return outputService.window;
 
             if (_gui == null)
                 return null;
@@ -184,17 +237,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
             AppendLog(content);
 
             var output = GetOutput();
-            if (output == null)
-                return;
-
-            if (output.ClosedByUser) {
-                _gui = new WeakReference<ScriptConsole>(null);
+            if (output != null && output.ClosedByUser) {
+                ForgetOutput();
                 ClearPending();
                 StopFlushTimer();
                 return;
             }
 
-            bool needShow = !output.IsVisible;
+            bool needShow = output != null && !output.IsVisible;
             int pendingChars;
 
             lock (this) {
@@ -202,12 +252,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 _partial.Append(content);
                 FinalizePendingEntry(splitLargeEntries: false);
 
-                while (_pendingChars > MaxPendingChars && _pending.Count > 1) {
-                    _pendingChars -= _pending.First.Value.Text.Length;
-                    _pending.RemoveFirst();
-                }
+                pendingChars = BufferPending();
+            }
 
-                pendingChars = _pendingChars;
+            if (output == null) {
+                HandOffToUiThread();
+                return;
             }
 
             PumpAfterWrite(output, needShow, pendingChars, forceSyncFlush: true);
@@ -217,16 +267,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (string.IsNullOrEmpty(error_msg))
                 return;
 
-            var output = GetOutput();
-
             AppendLog(error_msg);
+
+            var output = GetOutput();
 
             bool needShow;
             lock (this) {
                 FinalizePendingEntry(keepIncompleteShortcode: false);
 
                 if (output != null && output.ClosedByUser) {
-                    _gui = new WeakReference<ScriptConsole>(null);
+                    ForgetOutput();
                     ClearPending();
                     StopFlushTimer();
                     return;
@@ -241,9 +291,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 needShow = output != null && !output.IsVisible;
             }
 
-            if (output != null)
-                PumpAfterWrite(output, needShow, _pendingChars,
-                    forceSyncFlush: true);
+            if (output == null) {
+                HandOffToUiThread();
+                return;
+            }
+
+            PumpAfterWrite(output, needShow, _pendingChars, forceSyncFlush: true);
         }
 
         public override void Write(byte[] buffer, int offset, int count) {
@@ -255,22 +308,18 @@ namespace PyRevitLabs.PyRevit.Runtime {
             AppendLog(outputText);
 
             var output = GetOutput();
-            if (output == null) {
-                return;
-            }
-
-            if (output.ClosedByUser) {
-                _gui = new WeakReference<ScriptConsole>(null);
+            if (output != null && output.ClosedByUser) {
+                ForgetOutput();
                 ClearPending();
                 StopFlushTimer();
                 return;
             }
 
-            bool needShow = outputText.Length > 0 && !output.IsVisible;
+            bool needShow = outputText.Length > 0 && output != null && !output.IsVisible;
             int pendingChars;
 
             lock (this) {
-                if (PrintDebugInfo) {
+                if (PrintDebugInfo && output != null) {
                     try {
                         output.AppendText(
                             string.Format("<---- W offset: {0} count: {1} ---->", offset, count),
@@ -290,15 +339,123 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 if (count < StreamChunkSize || _partial.Length >= MaxStreamEntryChars)
                     FinalizePendingEntry();
 
-                while (_pendingChars > MaxPendingChars && _pending.Count > 1) {
-                    _pendingChars -= _pending.First.Value.Text.Length;
-                    _pending.RemoveFirst();
-                }
+                pendingChars = BufferPending();
+            }
 
-                pendingChars = _pendingChars;
+            if (output == null) {
+                HandOffToUiThread();
+                return;
             }
 
             PumpAfterWrite(output, needShow, pendingChars);
+        }
+
+        /// <summary>
+        /// Drop the oldest buffered entries once the buffer is over its cap, and report its size.
+        /// Caller holds <c>this</c>.
+        /// </summary>
+        private int BufferPending() {
+            while (_pendingChars > MaxPendingChars && _pending.Count > 1) {
+                _pendingChars -= _pending.First.Value.Text.Length;
+                _pending.RemoveFirst();
+            }
+
+            return _pendingChars;
+        }
+
+        private void ForgetOutput() {
+            _gui = new WeakReference<ScriptConsole>(null);
+        }
+
+        /// <summary>Whether a host UI thread still has something here it could render into.</summary>
+        private bool HasRenderTarget() {
+            if (GetRuntime() != null || GetOutputService() != null)
+                return true;
+            if (_gui == null)
+                return false;
+
+            ScriptConsole output;
+            return _gui.TryGetTarget(out output) && output != null;
+        }
+
+        /// <summary>
+        /// The caller may not touch output WPF, so hand everything buffered to the host UI thread,
+        /// which resolves the window and renders it there. Fire and forget, so a busy host UI
+        /// cannot stall the producer.
+        /// </summary>
+        /// <remarks>
+        /// One hand-off covers every write until it runs: a background producer is unbounded, and
+        /// one dispatcher operation per write would be a queue of its own. The drain clears the
+        /// flag before it starts, so a write that lands mid-drain schedules the next one, and it
+        /// leaves the flush timer running so anything still buffered keeps draining.
+        /// </remarks>
+        private void HandOffToUiThread() {
+            if (!HasRenderTarget()) {
+                lock (this) {
+                    ClearPending();
+                }
+                return;
+            }
+
+            if (System.Threading.Interlocked.CompareExchange(ref _uiHandOffQueued, 1, 0) != 0)
+                return;
+
+            if (ScriptOutputUi.TryBeginInvoke(DrainOnUiThread, DispatcherPriority.Background))
+                return;
+
+            System.Threading.Interlocked.Exchange(ref _uiHandOffQueued, 0);
+            ReportUiUnavailable();
+        }
+
+        private void ReportUiUnavailable() {
+            if (System.Threading.Interlocked.Exchange(ref _uiHandOffUnavailableReported, 1) != 0)
+                return;
+
+            int dropped;
+            lock (this) {
+                dropped = _pendingChars;
+                ClearPending();
+            }
+
+            ScriptOutputUiLog.Warn(
+                "{0} characters of output produced on {1} were discarded: no host UI thread was "
+                    + "available to show them in an output window.",
+                dropped,
+                ScriptOutputUi.DescribeCallingThread());
+        }
+
+        /// <summary>Runs on the host UI thread: bring the window up if needed, then drain.</summary>
+        private void DrainOnUiThread() {
+            System.Threading.Interlocked.Exchange(ref _uiHandOffQueued, 0);
+
+            var output = GetOutput();
+            if (output == null) {
+                lock (this) {
+                    ClearPending();
+                }
+                StopFlushTimer();
+                return;
+            }
+
+            if (output.ClosedByUser) {
+                ForgetOutput();
+                lock (this) {
+                    ClearPending();
+                }
+                StopFlushTimer();
+                return;
+            }
+
+            try {
+                if (!output.IsVisible)
+                    output.Show();
+            }
+            catch (Exception ex) {
+                ScriptOutputUiLog.Debug("output hand-off could not show the window | {0}", ex);
+            }
+
+            EnsureFlushTimer(output);
+            FlushUpToBudget();
         }
 
         private void PumpAfterWrite(ScriptConsole output, bool needShow, int pendingChars, bool forceSyncFlush = false) {
@@ -727,6 +884,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             StopFlushTimer();
             _runtime = null;
             _gui = null;
+            _outputService = null;
             Dispose(true);
         }
 

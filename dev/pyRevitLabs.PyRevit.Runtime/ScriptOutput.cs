@@ -249,7 +249,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
 
                 if (_outputStream == null) {
-                    _outputStream = new ScriptIO(window);
+                    // bound to this service, not to a window: resolving the window is the write's
+                    // job, and it may not happen on the calling thread
+                    _outputStream = new ScriptIO(this);
                     _outputStream.PrintDebugInfo = _debugMode;
                 }
                 return _outputStream;
@@ -313,20 +315,22 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         internal void write_log_record(string content, bool markError) {
-            var dispatcher = System.Windows.Application.Current?.Dispatcher;
-            if (dispatcher != null
-                    && !dispatcher.HasShutdownStarted
-                    && !dispatcher.HasShutdownFinished
-                    && !dispatcher.CheckAccess()) {
-                dispatcher.BeginInvoke(
-                    new Action(() => write_log_record(content, markError)),
-                    DispatcherPriority.Background);
+            if (markError)
+                mark_error();
+
+            if (ScriptOutputUi.MayCreateOutputUi) {
+                write_line(content);
                 return;
             }
 
-            if (markError)
-                mark_error();
-            write_line(content);
+            if (ScriptOutputUi.TryBeginInvoke(
+                    () => write_log_record(content, markError), DispatcherPriority.Background))
+                return;
+
+            ScriptOutputUiLog.Warn(
+                "A log record was produced on {0} and discarded: no host UI thread was available "
+                    + "to show it in an output window.",
+                ScriptOutputUi.DescribeCallingThread());
         }
 
         /// <summary>
@@ -391,19 +395,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private void log_to_activity(Action<ScriptConsole> writeLog) {
-            var dispatcher = System.Windows.Application.Current?.Dispatcher;
-            if (dispatcher != null
-                    && !dispatcher.HasShutdownStarted
-                    && !dispatcher.HasShutdownFinished
-                    && !dispatcher.CheckAccess()) {
-                dispatcher.BeginInvoke(
-                    new Action(() => log_to_activity(writeLog)),
-                    DispatcherPriority.Background);
+            if (ScriptOutputUi.TryBeginInvoke(
+                    () => log_to_activity(writeLog), DispatcherPriority.Background))
                 return;
-            }
 
-            show_logpanel();
-            writeLog(window);
+            ScriptOutputUiLog.Warn(
+                "An activity-bar log record was produced on {0} and discarded: no host UI thread "
+                    + "was available to show it.",
+                ScriptOutputUi.DescribeCallingThread());
         }
 
         public void log_debug(string message) {

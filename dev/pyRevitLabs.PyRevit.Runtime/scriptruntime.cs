@@ -102,6 +102,10 @@ namespace PyRevitLabs.PyRevit.Runtime {
             ExecId = CommonUtils.NewShortUUID();
             ExecTimestamp = Telemetry.GetTelemetryTimeStamp();
 
+            // a runtime is only ever built on the host's UI thread (directly by the executor, or
+            // through its external event), so this is where the output UI gate learns that thread
+            ScriptOutputUi.CaptureHostUiThread();
+
             // set data
             ScriptData = scriptData;
             ScriptRuntimeConfigs = scriptRuntimeCfg;
@@ -379,8 +383,30 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         // output
+        /// <summary>
+        /// This runtime's output window, created on first use.
+        /// </summary>
+        /// <remarks>
+        /// Warning: returns null on any thread but the host's UI thread, whatever the state of the
+        /// window. A <see cref="ScriptConsole"/> is WPF, so both constructing one and calling into
+        /// one is illegal off that thread, and unhandled there it takes Revit down. Callers that
+        /// run on background threads - the Routes HTTP workers, script-spawned threads - must treat
+        /// null as "no window" and let <see cref="ScriptIO"/> buffer and hand the text over.
+        /// <para>
+        /// <see cref="ScriptOutputUiGate.CaptureHostUiThread"/> runs in this runtime's constructor
+        /// because a runtime is only ever constructed on the host's UI thread; that is what lets
+        /// the gate tell the UI thread apart from a worker.
+        /// </para>
+        /// </remarks>
         public ScriptConsole OutputWindow {
             get {
+                // ahead of the startup branch too: that branch reaches the shared session window,
+                // which is the window a background producer is most likely to ask for
+                if (!ScriptOutputUi.MayCreateOutputUi) {
+                    ReportOutputUiUnavailable();
+                    return null;
+                }
+
                 if (ScriptOutput.IsStartupRuntime(this)) {
                     ScriptOutput.ConfigureForRuntime(this);
                     return ScriptOutput.GetDefault(UIApp, ScriptRuntimeConfigs.DebugMode).window;
@@ -404,6 +430,26 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 _scriptOutput = new WeakReference<ScriptConsole>(newOutput);
                 return newOutput;
             }
+        }
+
+        private int _outputUiUnavailableReported;
+
+        /// <summary>
+        /// Record, once per runtime, that output arrived from a thread that may not touch the
+        /// output window. Goes to the runtime log only: the record is about the output path
+        /// failing, so it must not try to use it.
+        /// </summary>
+        private void ReportOutputUiUnavailable() {
+            if (System.Threading.Interlocked.Exchange(ref _outputUiUnavailableReported, 1) != 0)
+                return;
+
+            ScriptOutputUiLog.Warn(
+                "Output for runtime {0} ('{1}') was produced on {2} and is not shown in an output "
+                    + "window; it is written to the runtime log instead. The output console is WPF "
+                    + "and can only be created on the host UI thread.",
+                ExecId,
+                ScriptData?.CommandName,
+                ScriptOutputUi.DescribeCallingThread());
         }
 
         public ScriptIO OutputStream {
