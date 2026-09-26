@@ -95,8 +95,9 @@ namespace pyRevitCLI {
                 else {
                     try {
                         PyRevitExtensions.SaveExtensionCredentials(extName, extType, credentials);
-                        logger.Warn("Credentials are stored as plain-text in the pyRevit config file. " +
-                                    "Anyone with access to this file can read them.");
+                        logger.Debug("Credentials for \"{0}\" are sealed with Windows DPAPI and stored in the "
+                                     + "pyRevit config file. They are readable only by this Windows user, and "
+                                     + "are lost if the user profile is rebuilt without a backup.", extName);
                     }
                     catch (Exception ex) {
                         logger.Warn(ex, "Failed to save credentials to the pyRevit config file. Extension was installed but credentials were not persisted.");

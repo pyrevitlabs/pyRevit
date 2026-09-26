@@ -185,7 +185,7 @@ namespace pyRevitCLI {
                             { "--username=<username>",  "Username to access private repo. Must be specified with --password" },
                             { "--password=<password>",  "Password to access private repo. Must be specified with --username" },
                             { "--token=<auth_token>",   "Access token to access private repo" },
-                            { "--persist-credentials",  "Save credentials to the pyRevit config file (as plain-text) so the extension can be updated later e.g. by the in-Revit extension manager" }
+                            { "--persist-credentials",  "Save credentials to the pyRevit config file (encrypted with Windows DPAPI, readable only by your Windows user) so the extension can be updated later e.g. by the in-Revit extension manager" }
                         }
                     );
                     break;
