@@ -91,6 +91,7 @@ nav:
     - Developer Guide: dev-guide.md
     - Architecture: architecture.md
     - Extensions: extensions.md
+    - Python config API: config-api.md
     - Theming and dark mode: theming.md
     - Interactive Python shell: python-shell.md
     - CI/CD and releases: ci-cd.md
