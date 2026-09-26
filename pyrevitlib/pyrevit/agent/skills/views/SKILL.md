@@ -39,7 +39,7 @@ Run these in `run_modify`, inside `with revit.Transaction("..."):`. Names are ma
   - `elements` frames the section box on those elements; the default frames the whole model.
   - `model_only` hides levels, grids and annotation. Leave it on: level and grid extents otherwise ruin the framing.
 - **Section:** `create.create_section_view(start, end, view_name=None, bottom=None, top=None, depth=10)`. It looks to the left of start → end: a line drawn west to east looks north. `depth` is the far clip in feet.
-- **Elevation:** `create.create_elevation_view(side="south", view_name=None)` looks at the whole model from that side.
+- **Elevation:** `create.create_elevation_view(side="south", view_name=None)` looks at the whole model from that side. It works with elevation marker types that have one view slot, by rotating the marker. Templates often already have South/North/East/West elevations; reuse them (`query.find_view("South")`) when they show the model.
 - **Template:** pass `template="<template name>"` to any of these. Prefer the project's templates to setting graphics by hand.
 - **Sheets:** `create.create_sheet(...)`; see the `drawings` skill.
 

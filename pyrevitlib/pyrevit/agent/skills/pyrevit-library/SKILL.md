@@ -33,7 +33,8 @@ from pyrevit.revit import units, ui
 | Other lookups (return None or a list when nothing matches) | `query.get_types_by_class`, `query.get_family_symbol`, `query.get_all_views`, `query.get_view_by_name`, `query.get_category("OST_Walls")`, `query.get_elements_by_categories`, `query.get_param`, `query.get_sheets`, `query.get_elements_by_parameter`… |
 | Extents | `query.get_elements_bounding_box(elements)`, `query.get_model_elements()` |
 | Walls, floors, ceilings, rooms, room separation, model lines | `create.create_wall(s)`, `create.create_floor`, `create.create_ceiling`, `create.create_room`, `create.create_room_separation_lines`, `create.create_model_lines` |
-| Roofs | `create.create_gable_roof`, `create_hip_roof`, `create_shed_roof`, `create_footprint_roof`; `update.attach_wall_tops(walls, roof)` |
+| Roofs | `create.create_gable_roof`, `create_hip_roof`, `create_shed_roof`, `create_footprint_roof`; gable end walls with `create.create_gable_wall`, or `update.attach_wall_tops(walls, roof)` where Revit supports wall attachment |
+| Non-rectangular walls | `create.create_profile_wall(points)` from an outline in the wall's vertical plane |
 | Doors, windows, furniture, columns | `create.place_hosted_instance`, `create.place_family_instance`, `create.create_column` |
 | Views | `create.create_plan_view`, `create_model_3d_view`, `create_section_view`, `create_elevation_view` |
 | Drawings | `query.get_face_references(element, direction)`, `create.create_dimension`, `create.tag_elements`, `create.create_room_tags`, `create.create_schedule`, `create.create_sheet`, `create.place_on_sheet` |

@@ -142,7 +142,7 @@ authors too.
 | Module | Added |
 |---|---|
 | `pyrevit.revit.db.query` | `find_level`, `find_type`, `find_family_symbol`, `find_view`, `find_plan_view` (raise with the valid names instead of returning None), `get_model_elements`, `get_face_references`; `get_category` accepts `"OST_..."` names |
-| `pyrevit.revit.db.create` | `create_wall(s)`, `create_floor`, `create_ceiling`, `create_footprint_roof`, `create_gable_roof`, `create_hip_roof`, `create_shed_roof`, `place_hosted_instance`, `place_family_instance`, `create_column`, `create_room`, `create_room_separation_lines`, `create_model_lines`, `create_plan_view`, `create_model_3d_view`, `create_section_view`, `create_elevation_view`, `create_dimension`, `tag_elements`, `create_room_tags`, `create_schedule`, `place_on_sheet` |
+| `pyrevit.revit.db.create` | `create_wall(s)`, `create_profile_wall`, `create_gable_wall`, `create_floor`, `create_ceiling`, `create_footprint_roof`, `create_gable_roof`, `create_hip_roof`, `create_shed_roof`, `place_hosted_instance`, `place_family_instance`, `create_column`, `create_room`, `create_room_separation_lines`, `create_model_lines`, `create_plan_view`, `create_model_3d_view`, `create_section_view`, `create_elevation_view`, `create_dimension`, `tag_elements`, `create_room_tags`, `create_schedule`, `place_on_sheet` |
 | `pyrevit.revit.db.update` | `attach_wall_tops`, `orient_3d_view`, `set_3d_view_camera`, `set_section_box`, `crop_view_to_elements`, `hide_non_model_categories`, `hide_categories` |
 | `pyrevit.revit.units` | `parse_length` (`32'-6"`, `900mm`), `parse_slope` (`8:12`, `30deg`) |
 | `pyrevit.revit.ui` | `request_view_change`, `get_active_ui_view`, `zoom_to_elements`, `zoom_fit` |
@@ -367,7 +367,14 @@ Honest limits:
 
 - Rollback protects the model, not the file system or the network. There is no sandbox.
 - ExternalEvents only fire while Revit is idle, so a busy Revit returns `revit_busy`
-  after 30 seconds.
+  after 30 seconds. The error names Revit's open windows and whether an earlier agent
+  request is still running: a modal dialog Revit shows while idle, such as the save
+  reminder, isn't part of any run and blocks every request until the user answers it.
+- A rollback must not touch committed work, but rolling back a dry run once undid the
+  previous committed run as well (that run used `StairsEditScope`; Revit's journal logged
+  `UndoElement::simplify PROBLEMS`). The host remembers a sample of the elements each
+  committed run created and checks them after every rollback and before every run; a
+  loss comes back as `warnings` in the run result.
 - Revit regeneration inflates change sets: two new walls can report 100+ modified
   elements (rooms, tags, paths of travel, schedules). The MCP tools therefore return only
   counts, categories and the first added ids; the element list is in `get_run`. Phase 2

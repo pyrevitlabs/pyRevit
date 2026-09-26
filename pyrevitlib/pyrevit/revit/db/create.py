@@ -1,5 +1,6 @@
 """Database objects creation functions."""
 
+import math
 import sys
 
 from pyrevit import HOST_APP, DOCS, PyRevitException
@@ -785,6 +786,109 @@ def create_walls(
     ]
 
 
+def create_profile_wall(
+    profile_points, wall_type, level=None, structural=False, doc=None
+):
+    """Create a wall from a closed outline drawn in its vertical plane.
+
+    For walls that aren't rectangles in elevation, such as gable ends,
+    stepped parapets or walls under a sloped ceiling. The wall is native, so
+    it keeps its type's layers and materials, joins, and hosts openings.
+
+    Args:
+        profile_points (list): (x, y, z) points of the outline, in order, not
+            repeating the first; all in one vertical plane. The first two
+            points should be the bottom edge.
+        wall_type (DB.WallType | str): wall type or its name.
+        level (DB.Level | str, optional): level the wall is associated with,
+            defaults as in create_wall. Elevations in the points are absolute.
+        structural (bool, optional): structural wall.
+        doc (DB.Document, optional): document, defaults to the active one.
+
+    Returns:
+        (DB.Wall): the wall.
+
+    Raises:
+        PyRevitException: when the points aren't in one vertical plane.
+    """
+    doc = doc or DOCS.doc
+    _require_transaction(doc, "create walls")
+    level = query.find_level(level, doc=doc)
+    wall_type = query.find_type(DB.WallType, wall_type, doc=doc)
+    points = [to_xyz(point) for point in profile_points]
+    if len(points) < 3:
+        raise PyRevitException("A wall profile needs at least three points.")
+    base = points[1] - points[0]
+    if abs(base.Z) > 1e-6 or base.IsZeroLength():
+        raise PyRevitException(
+            "The first two profile points must be a horizontal bottom edge."
+        )
+    normal = base.Normalize().CrossProduct(DB.XYZ.BasisZ)
+    if any(abs((point - points[0]).DotProduct(normal)) > 1e-6 for point in points):
+        raise PyRevitException("All profile points must lie in one vertical plane.")
+    curves = framework.List[DB.Curve]()
+    for start, end in _point_pairs(points, closed=True):
+        curves.Add(DB.Line.CreateBound(start, end))
+    return DB.Wall.Create(doc, curves, wall_type.Id, level.Id, structural)
+
+
+def create_gable_wall(
+    start,
+    end,
+    wall_type,
+    eave_height,
+    pitch=None,
+    ridge_height=None,
+    level=None,
+    doc=None,
+):
+    """Create a gable end wall: rectangular to the eave, triangular above it.
+
+    Use it for the end walls under a gable roof on Revit versions where walls
+    can't attach to roofs (update.attach_wall_tops), instead of filling the
+    gable with DirectShape.
+
+    Args:
+        start (DB.XYZ | tuple): plan point at one eave end of the wall.
+        end (DB.XYZ | tuple): plan point at the other eave end.
+        wall_type (DB.WallType | str): wall type or its name.
+        eave_height (float | str): height of the wall's two eave corners
+            above the level.
+        pitch (float | str, optional): roof pitch (``"8:12"``); the ridge is
+            at the wall's midpoint, half its length times the pitch above the
+            eave. Give this or ``ridge_height``.
+        ridge_height (float | str, optional): height of the peak above the
+            level, at the wall's midpoint.
+        level (DB.Level | str, optional): base level, defaults as in create_wall.
+        doc (DB.Document, optional): document, defaults to the active one.
+
+    Returns:
+        (DB.Wall): the wall.
+
+    Note:
+        The rake follows the roof's slope from the wall's own ends. A roof
+        whose eave outline overhangs the wall sits higher over the wall by
+        ``overhang * pitch``; add that to ``eave_height`` to close the gap.
+    """
+    doc = doc or DOCS.doc
+    level = query.find_level(level, doc=doc)
+    a, b = to_xyz(start, level.Elevation), to_xyz(end, level.Elevation)
+    eave = level.Elevation + units.parse_length(eave_height)
+    if ridge_height is not None:
+        ridge = level.Elevation + units.parse_length(ridge_height)
+    elif pitch is not None:
+        ridge = eave + a.DistanceTo(b) / 2.0 * units.parse_slope(pitch)
+    else:
+        raise PyRevitException("Give the gable's pitch or its ridge_height.")
+    middle = DB.XYZ((a.X + b.X) / 2.0, (a.Y + b.Y) / 2.0, ridge)
+    return create_profile_wall(
+        [a, b, DB.XYZ(b.X, b.Y, eave), middle, DB.XYZ(a.X, a.Y, eave)],
+        wall_type,
+        level,
+        doc=doc,
+    )
+
+
 def create_floor(
     points, floor_type, level=None, offset=0.0, structural=False, doc=None
 ):
@@ -1093,8 +1197,36 @@ def place_family_instance(
 
 
 def create_column(symbol, point, level=None, top_level=None, structural=True, doc=None):
-    """Place a column from ``level`` up to ``top_level``; see place_family_instance."""
+    """Place a column from ``level`` up to ``top_level``.
+
+    Args:
+        symbol (DB.FamilySymbol | str): column type or its name.
+        point (DB.XYZ | tuple): plan insertion point.
+        level (DB.Level | str, optional): base level, defaults as in create_wall.
+        top_level (DB.Level | str, optional): top level; must be above the
+            base. Adjust heights afterwards with FAMILY_BASE_LEVEL_OFFSET_PARAM
+            and FAMILY_TOP_LEVEL_OFFSET_PARAM.
+        structural (bool, optional): structural column (else architectural).
+        doc (DB.Document, optional): document, defaults to the active one.
+
+    Returns:
+        (DB.FamilyInstance): the column.
+
+    Raises:
+        PyRevitException: when the top level isn't above the base level,
+            which would make a zero-height column.
+    """
     doc = doc or DOCS.doc
+    if top_level is not None:
+        base = query.find_level(level, doc=doc)
+        top = query.find_level(top_level, doc=doc)
+        if top.Elevation <= base.Elevation:
+            raise PyRevitException(
+                "top_level {!r} is not above level {!r}; a column needs height. "
+                "Use a higher top level, or set the top offset afterwards.".format(
+                    top.Name, base.Name
+                )
+            )
     column = place_family_instance(
         symbol,
         point,
@@ -1407,22 +1539,39 @@ def create_elevation_view(
         abs(box.Max.X - box.Min.X) * abs(dx) + abs(box.Max.Y - box.Min.Y) * abs(dy)
     ) / 2.0 + units.parse_length(offset)
     center_x, center_y = (box.Min.X + box.Max.X) / 2.0, (box.Min.Y + box.Max.Y) / 2.0
+    location = DB.XYZ(center_x + dx * reach, center_y + dy * reach, 0.0)
     marker = DB.ElevationMarker.CreateElevationMarker(
         doc,
         _view_family_type(DB.ViewFamily.Elevation, doc).Id,
-        DB.XYZ(center_x + dx * reach, center_y + dy * reach, 0.0),
+        location,
         plan.Scale,
     )
     wanted = DB.XYZ(dx, dy, 0.0)
-    for index in range(4):
+    name = view_name or "{} Elevation".format(side.title())
+    for index in range(marker.MaximumViewCount):
+        if not marker.IsAvailableIndex(index):
+            continue
         view = marker.CreateElevation(doc, plan.Id, index)
-        if view.ViewDirection.IsAlmostEqualTo(wanted):
-            _name_view(
-                view, view_name or "{} Elevation".format(side.title()), template, doc
+        if (
+            not view.ViewDirection.IsAlmostEqualTo(wanted)
+            and marker.MaximumViewCount == 1
+        ):
+            current = view.ViewDirection
+            angle = math.atan2(
+                current.X * wanted.Y - current.Y * wanted.X,
+                current.X * wanted.X + current.Y * wanted.Y,
             )
+            axis = DB.Line.CreateBound(location, location + DB.XYZ.BasisZ)
+            DB.ElementTransformUtils.RotateElement(doc, marker.Id, axis, angle)
+            doc.Regenerate()
+        if view.ViewDirection.IsAlmostEqualTo(wanted):
+            _name_view(view, name, template, doc)
             return view
         doc.Delete(view.Id)
-    raise PyRevitException("Couldn't create a {}-facing elevation.".format(side))
+    raise PyRevitException(
+        "Couldn't create a {}-facing elevation: the elevation marker type offers "
+        "no view slot facing that way.".format(side)
+    )
 
 
 # drawings --------------------------------------------------------------------

@@ -77,6 +77,7 @@ namespace pyRevitCLI {
 
             if (run["changes"] is JObject changes && HasChanges(changes))
                 compact["changes"] = CompactChanges(changes);
+            CopyIfNotEmpty(run, compact, "warnings");
             CopyIfNotEmpty(run, compact, "failures");
             CopyIfNotEmpty(run, compact, "dialogs");
             CopyIfNotEmpty(run, compact, "blocked");
