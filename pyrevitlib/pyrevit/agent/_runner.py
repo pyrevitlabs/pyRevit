@@ -60,15 +60,16 @@ def run(context):
         source.splitlines(True),
         SOURCE_NAME,
     )
-    namespace = _build_namespace(context)
-    workspace = _enter_workspace(context.Workspace)
     captured = StringIO()
     saved_stdout = sys.stdout
     saved_stderr = sys.stderr
     sys.stdout = captured
     sys.stderr = captured
     failed = False
+    workspace = None
     try:
+        workspace = _enter_workspace(context.Workspace)
+        namespace = _build_namespace(context)
         code = compile(source, SOURCE_NAME, "exec")
         exec(code, namespace)
     except SystemExit:
@@ -126,11 +127,13 @@ def _enter_workspace(workspace):
     """
     if not workspace:
         return None
-    root = op.normcase(op.abspath(workspace))
+    root = op.normcase(op.abspath(workspace)).rstrip("/\\") + op.sep
     for name, module in list(sys.modules.items()):
         module_file = getattr(module, "__file__", None)
-        if module_file and op.normcase(op.abspath(module_file)).startswith(root):
-            del sys.modules[name]
+        if module_file:
+            module_path = op.normcase(op.abspath(module_file)) + op.sep
+            if module_path.startswith(root):
+                del sys.modules[name]
     added = workspace not in sys.path
     if added:
         sys.path.insert(0, workspace)

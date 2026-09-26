@@ -29,7 +29,7 @@ from pyrevit.revit import units, ui
 |---|---|
 | Transaction | `with revit.Transaction("name"):` rolls back and re-raises on an exception |
 | Current document, view, selection | `revit.doc`, `revit.uidoc`, `revit.active_view`, `revit.get_selection()` |
-| Levels, types, family types, views by name; raises with the valid names | `query.find_level`, `query.find_type(DB.WallType, "name")`, `query.find_family_symbol("36\" x 84\"", family_name=..., category="OST_Doors")`, `query.find_view`, `query.find_plan_view(level)` |
+| Levels, types, family types, views by name; raises with the valid names | `query.find_level`, `query.find_type(DB.WallType, "name")`, `query.find_family_symbol("36\" x 84\"", family_name=..., category="OST_Doors")` or `query.find_family_symbol("Family : 36\" x 84\"")`, `query.find_view`, `query.find_plan_view(level)` |
 | Other lookups (return None or a list when nothing matches) | `query.get_types_by_class`, `query.get_family_symbol`, `query.get_all_views`, `query.get_view_by_name`, `query.get_category("OST_Walls")`, `query.get_elements_by_categories`, `query.get_param`, `query.get_sheets`, `query.get_elements_by_parameter`… |
 | Extents | `query.get_elements_bounding_box(elements)`, `query.get_model_elements()` |
 | Walls, floors, ceilings, rooms, room separation, model lines | `create.create_wall(s)`, `create.create_floor`, `create.create_ceiling`, `create.create_room`, `create.create_room_separation_lines`, `create.create_model_lines` |
