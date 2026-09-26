@@ -226,9 +226,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 LogCacheState(engineTypeId, typeof(T), cachedEngine, "hit");
                 return cachedEngine;
             }
-
-            // The engine cached under this key is not one of ours: no engine created by this
-            // copy of the runtime can ever be cast from it, so the key can never be served again.
             LogCacheState(engineTypeId, typeof(T), cached, "miss, cached engine has a stale type");
             EvictStaleEntry(engineTypeId, cached);
             return null;
@@ -240,14 +237,15 @@ namespace PyRevitLabs.PyRevit.Runtime {
             object displaced;
             if (EngineDict.TryGetValue(engine.TypeId, out displaced)) {
                 if (displaced is T) {
-                    // A mid-execution engine keeps running to completion; it just stops being the
-                    // one a later caller gets back.
-                    if (IsEngineActive(engine.TypeId))
-                        LogCacheState(engine.TypeId, typeof(T), displaced, "replaced by a new engine, replaced engine is still running");
-                    else {
-                        LogCacheState(engine.TypeId, typeof(T), displaced, "replaced by a new engine, shutting replaced engine down");
-                        ShutdownEngine(displaced);
+                    if (IsEngineActive(engine.TypeId)) {
+                        LogCacheState(
+                            engine.TypeId, typeof(T), displaced,
+                            "kept the running engine cached, the new engine is not cached");
+                        return;
                     }
+
+                    LogCacheState(engine.TypeId, typeof(T), displaced, "replaced by a new engine, shutting replaced engine down");
+                    ShutdownEngine(displaced);
                 }
                 else if (!EvictStaleEntry(engine.TypeId, displaced)) {
                     return;
@@ -328,10 +326,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             if (cachedEngine == null)
                 return null;
-
-            // A second copy of the runtime assembly in the process (a new load context, or the
-            // same assembly loaded twice) brings its own ScriptEngine type, so nothing created by
-            // this copy can ever be cast from that engine.
             if (!(cachedEngine is ScriptEngine))
                 return "created by a different copy of the runtime assembly";
 

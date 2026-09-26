@@ -21,11 +21,13 @@ namespace pyRevitExtensionParserTester
         private string _sessionId;
         private string _scriptPath;
 
+        /// <summary>
+        /// Gives the test its own session and an empty cache: both live in process-wide AppDomain
+        /// data, so they are shared with every other test in the run.
+        /// </summary>
         [SetUp]
         public void SetUp()
         {
-            // The cache and the session uuid live in process-wide AppDomain data, so every test
-            // needs its own session and an empty cache.
             _sessionId = "session-" + Guid.NewGuid().ToString("N");
             _scriptPath = CreateFile("MyExtension.extension/script.py", "__revit__\n");
 
