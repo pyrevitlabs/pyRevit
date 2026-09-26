@@ -192,13 +192,21 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
                 }
             }
 
-            return new DynamoCommandResult(DynamoCommandStatus.Succeeded, string.Empty, diagnostics.ToString());
+            return new DynamoCommandResult(
+                DynamoCommandStatus.Succeeded,
+                "Dynamo reported that it ran the graph. A headless run cannot be confirmed from "
+                    + "Dynamo's answer alone - check the model for the graph's effect.",
+                diagnostics.ToString());
         }
 
         /// <summary>
         /// Locates the Dynamo add-in type, preferring an already loaded assembly over one loaded
         /// from the add-in manifest of the host Revit version.
         /// </summary>
+        /// <remarks>
+        /// The host can load the add-in into a context of its own, where the assembly is not named
+        /// after the add-in, so the type is also looked for across every loaded assembly.
+        /// </remarks>
         /// <param name="addinsFolders">Revit add-in manifest folders to fall back to.</param>
         /// <param name="resolvedFrom">Assembly name or path the type was resolved from.</param>
         /// <returns>The app type, or null when no Dynamo installation can be found.</returns>
@@ -214,9 +222,6 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
                     }
                 }
             }
-
-            // the host can load the add-in into a context of its own, where the assembly is not
-            // named after the add-in
             foreach (var assembly in loadedAssemblies) {
                 var appType = assembly.GetType(AppTypeName, throwOnError: false);
                 if (appType != null) {
@@ -305,9 +310,11 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
         /// everything the graph path is needed for, which is how a prepare call tells Dynamo to only
         /// bring up or replace its model.
         /// </summary>
+        /// <remarks>
+        /// <c>dynShowUI</c> is always present: Dynamo falls back to showing its splash screen when
+        /// the key is missing, which would block the caller with a modal window.
+        /// </remarks>
         public static IDictionary<string, string> BuildJournalData(DynamoExecutionOptions options, bool includeGraph) {
-            // dynShowUI must always be present: Dynamo falls back to showing its splash screen when
-            // the key is missing, which would block the caller with a modal window.
             var journalData = new Dictionary<string, string>() {
                 { DynamoJournalKeys.ShowUI, options.ShowUI.ToString() },
                 { DynamoJournalKeys.Automation, options.Automate.ToString() },
@@ -357,11 +364,20 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
             }
         }
 
+        /// <summary>
+        /// The journal data as a readable line, with node values left out.
+        /// </summary>
+        /// <remarks>
+        /// <c>dynModelNodesInfo</c> carries the caller's own values, and diagnostics end up in the
+        /// debug log and in the failure dialog, so only its presence is reported.
+        /// </remarks>
         private static string DescribeJournalData(IDictionary<string, string> journalData) {
             return string.Join(
                 " ",
-                journalData.Select(entry => entry.Key + "=" + entry.Value)
-                );
+                journalData.Select(
+                    entry => entry.Key == DynamoJournalKeys.NodesInfo
+                        ? entry.Key + "=<" + entry.Value.Length + " chars>"
+                        : entry.Key + "=" + entry.Value));
         }
 
         private static DynamoCommandResult Failed(DynamoCommandStatus status,

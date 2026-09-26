@@ -52,8 +52,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
                 logger.Debug("Dynamo script run: {0}\n{1}", execResult.Status, execResult.Details);
 
-                if (execResult.Succeeded)
+                if (execResult.Succeeded) {
+                    if (!string.IsNullOrEmpty(execResult.Message))
+                        logger.Info(execResult.Message);
                     return ScriptExecutorResultCodes.Succeeded;
+                }
 
                 var dialog = new TaskDialog(PyRevitLabsConsts.ProductName);
                 dialog.MainInstruction = execResult.Message;
