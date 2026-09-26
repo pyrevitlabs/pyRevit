@@ -14,8 +14,8 @@ against the source tree, so the decisions recorded there cannot drift:
   would mint a second spelling for every setting.
 
 Nothing here imports pyrevit: the check is pure source analysis so it runs
-under any stock CPython 3 and needs no Revit, no labs assemblies, and no
-user config.
+under CPython 3.9 or newer - `ast.unparse` sets that floor - and needs no
+Revit, no labs assemblies, and no user config.
 
 Usage::
 
@@ -62,23 +62,12 @@ SECTIONS_REL = "dev/pyRevitLabs/pyRevitLabs.Configurations/Sections"
 
 TYPED_SECTIONS = ("core", "routes", "telemetry")
 
-# Every section accessor PyRevitConfig exposes, including the ones that are
-# not flat aliases. A missing one means the Python surface no longer mirrors
-# the C# service.
 SECTION_ACCESSORS = ("core", "routes", "telemetry", "environment")
 
-# Properties that expose the config object's own identity and state rather
-# than a setting, so they are neither a flat alias nor a section accessor.
 IDENTITY_PROPERTIES = ("config_service", "is_readonly")
 
-# The sanctioned way to reach a key the typed schema does not declare. These
-# are snake_case by necessity - they mirror ConfigSection's own API - so the
-# SECTION-SNAKE check must not read them as a mis-spelled setting.
 SECTION_MEMBER_EXEMPT = ("get_option", "set_option", "has_option", "remove_option")
 
-# The 31 flat aliases whose getter is a bare read of one typed property,
-# mapped to that (section, property) pair. The check derives the same mapping
-# from userconfig.py and compares, so a retargeted alias is a finding.
 BARE_DELEGATIONS = {
     "apptelemetry_event_flags": ("telemetry", "AppTelemetryEventFlags"),
     "apptelemetry_server_url": ("telemetry", "AppTelemetryServerUrl"),
@@ -113,12 +102,8 @@ BARE_DELEGATIONS = {
     "user_locale": ("core", "UserLocale"),
 }
 
-# The two remaining aliases that read a typed section but are not a bare
-# delegation: log_level derives from two properties, output_close_mode_enum
-# converts through PyRevitConfigs. They are documented as derived, not renamed.
 SECTION_DERIVED_ALIASES = ("log_level", "output_close_mode_enum")
 
-# The two aliases that touch no section property at all.
 NON_SECTION_ALIASES = ("config_file", "config_type")
 
 FLAT_ALIASES = (
@@ -127,10 +112,6 @@ FLAT_ALIASES = (
     | set(NON_SECTION_ALIASES)
 )
 
-# Aliases whose typed property is not the mechanical snake_case->PascalCase
-# conversion of the alias name. These are renames, not namings, so any scheme
-# that derives property names from alias names needs an explicit entry for
-# each; documenting them here is what makes that table reviewable.
 RENAMED_ALIASES = frozenset(
     {
         "apptelemetry_event_flags",
@@ -147,7 +128,6 @@ RENAMED_ALIASES = frozenset(
     }
 )
 
-# The documented way to reach anything the typed schema does not declare.
 ESCAPE_HATCHES = (
     (
         USERCONFIG_REL,
