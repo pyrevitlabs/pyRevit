@@ -285,10 +285,10 @@ class ThreadedHttpServer(ThreadingMixIn, HTTPServer):
     """
 
     allow_reuse_address = True
-    # A request in flight when the session is reloaded must not hold the host:
-    # these threads are abandoned with the process, and ``server_close()`` must
-    # not join them - it runs on whatever thread collects the server, including
-    # a session reload that is waiting on it.
+
+    # A request in flight when the session is reloaded must not hold the host: these threads are
+    # abandoned with the process, and ``server_close()`` must not join them - it runs on whatever
+    # thread collects the server, including a session reload that is waiting on it.
     daemon_threads = True
     block_on_close = False
 

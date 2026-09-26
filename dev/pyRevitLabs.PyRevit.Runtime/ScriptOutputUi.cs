@@ -161,6 +161,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
             get { return Gate.MayCreateOutputUi; }
         }
 
+        /// <summary>Whether the caller is the recorded host UI thread and its pump is alive.</summary>
+        internal static bool IsHostUiThread {
+            get { return Gate.IsHostUiThread; }
+        }
+
         internal static bool TryBeginInvoke(Action action, DispatcherPriority priority = DispatcherPriority.Background) {
             return Gate.TryBeginInvoke(action, priority);
         }

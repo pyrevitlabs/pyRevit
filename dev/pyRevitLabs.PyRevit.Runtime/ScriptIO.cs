@@ -197,7 +197,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
             var outputService = GetOutputService();
             if (outputService != null)
-                return outputService.window;
+                return outputService.open_window;
 
             if (_gui == null)
                 return null;

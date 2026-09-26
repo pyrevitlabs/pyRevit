@@ -102,8 +102,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
             ExecId = CommonUtils.NewShortUUID();
             ExecTimestamp = Telemetry.GetTelemetryTimeStamp();
 
-            // a runtime is only ever built on the host's UI thread (directly by the executor, or
-            // through its external event), so this is where the output UI gate learns that thread
             ScriptOutputUi.CaptureHostUiThread();
 
             // set data
@@ -400,8 +398,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// </remarks>
         public ScriptConsole OutputWindow {
             get {
-                // ahead of the startup branch too: that branch reaches the shared session window,
-                // which is the window a background producer is most likely to ask for
                 if (!ScriptOutputUi.MayCreateOutputUi) {
                     ReportOutputUiUnavailable();
                     return null;

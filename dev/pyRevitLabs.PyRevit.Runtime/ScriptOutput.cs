@@ -240,6 +240,20 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         internal Dispatcher WindowDispatcher => _window?.Dispatcher;
 
+        /// <summary>
+        /// The window output may currently be rendered into, without resurrecting one the user
+        /// closed: the <see cref="window"/> getter replaces a closed window, which would reopen it
+        /// on the next background write.
+        /// </summary>
+        /// <returns>The window to render into, or null when the user closed it.</returns>
+        internal ScriptConsole open_window {
+            get {
+                if (_window != null && _window.ClosedByUser)
+                    return null;
+                return window;
+            }
+        }
+
         public ScriptIO output_stream {
             get {
                 var runtime = BoundRuntime;
@@ -249,8 +263,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
 
                 if (_outputStream == null) {
-                    // bound to this service, not to a window: resolving the window is the write's
-                    // job, and it may not happen on the calling thread
                     _outputStream = new ScriptIO(this);
                     _outputStream.PrintDebugInfo = _debugMode;
                 }
@@ -395,14 +407,24 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         private void log_to_activity(Action<ScriptConsole> writeLog) {
+            if (ScriptOutputUi.IsHostUiThread) {
+                write_activity_log(writeLog);
+                return;
+            }
+
             if (ScriptOutputUi.TryBeginInvoke(
-                    () => log_to_activity(writeLog), DispatcherPriority.Background))
+                    () => write_activity_log(writeLog), DispatcherPriority.Background))
                 return;
 
             ScriptOutputUiLog.Warn(
                 "An activity-bar log record was produced on {0} and discarded: no host UI thread "
                     + "was available to show it.",
                 ScriptOutputUi.DescribeCallingThread());
+        }
+
+        private void write_activity_log(Action<ScriptConsole> writeLog) {
+            show_logpanel();
+            writeLog(window);
         }
 
         public void log_debug(string message) {
