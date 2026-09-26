@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0-windows</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+
+        <IsPackable>false</IsPackable>
+        <IsTestProject>true</IsTestProject>
+
+        <!-- Keep test assemblies out of the product bin, which is signed and
+             shipped wholesale by the installer. -->
+        <PermitDeploy>true</PermitDeploy>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="coverlet.collector" Version="6.0.0"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0"/>
+        <PackageReference Include="xunit" Version="2.5.3"/>
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Using Include="Xunit"/>
+    </ItemGroup>
+
+    <!-- The vendored pythonnet that pyRevit ships, not a NuGet package: the lifecycle contract
+         asserted here is specific to pyRevitLabs.PythonNet 3.0.3. -->
+    <ItemGroup>
+        <Reference Include="pyRevitLabs.PythonNet"
+                   HintPath="$(PyRevitDevLibsDir)\pyRevitLabs.PythonNet.dll"
+                   Private="true"/>
+    </ItemGroup>
+
+    <!-- pyRevitLabs.PyRevit.Runtime cannot be loaded outside a Revit host, so the engine-side
+         invariants are asserted against its source. -->
+    <ItemGroup>
+        <None Include="..\..\..\pyRevitLabs.PyRevit.Runtime\CPythonEngine.cs"
+              Link="Sources\CPythonEngine.cs"
+              CopyToOutputDirectory="PreserveNewest"/>
+    </ItemGroup>
+
+    <!-- The tracked CPython engine pyRevit deploys, staged so the tests need no local Python
+         install and no Revit session. -->
+    <ItemGroup>
+        <Content Include="..\..\..\..\release\cengines\CPY3123\**\*"
+                 LinkBase="CPY3123"
+                 CopyToOutputDirectory="PreserveNewest"/>
+    </ItemGroup>
+
+</Project>
