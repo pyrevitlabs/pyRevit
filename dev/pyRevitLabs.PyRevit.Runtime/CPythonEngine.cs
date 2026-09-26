@@ -96,7 +96,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
                         Id
                         );
                     WarnOnPythonVersionChange(ref runtime);
-                    DropStaleSessionModules();
                 }
                 // if this is a new engine, save the syspaths
                 StoreSearchPaths();
@@ -364,32 +363,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
             catch (Exception ex) {
                 logger.Debug(ex, "Could not compare the configured CPython version with the running one");
-            }
-        }
-
-        /// <summary>
-        /// Forget the pyRevit modules this interpreter imported for a previous session.
-        /// </summary>
-        /// <remarks>
-        /// A re-attaching engine reuses the interpreter, so a module imported before a session
-        /// reload is still cached in <c>sys.modules</c> and keeps whatever host objects it bound
-        /// then - a reloaded session would otherwise run against the previous session's handles.
-        /// Only pyRevit's own modules are dropped; site-packages and the standard library stay.
-        /// </remarks>
-        private static void DropStaleSessionModules() {
-            using (Py.GIL()) {
-                try {
-                    var scope = Py.CreateScope();
-                    scope.Exec(
-                        "import sys, importlib\n"
-                            + "for _pyrevit_name in [_n for _n in list(sys.modules) "
-                            + "if _n == 'pyrevit' or _n.startswith('pyrevit.')]:\n"
-                            + "    del sys.modules[_pyrevit_name]\n"
-                            + "importlib.invalidate_caches()\n");
-                }
-                catch (Exception ex) {
-                    logger.Warn(ex, "Could not drop the pyRevit modules cached by the previous session");
-                }
             }
         }
 
