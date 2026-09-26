@@ -126,7 +126,8 @@ namespace pyRevitExtensionParserTester
                 "ThirdExtension.extension"
             };
 
-            for (int load = 0; load < 5; load++) {
+            for (int load = 0; load < 5; load++)
+            {
                 _sessionId = "session-" + load;
                 EnvDictionary.Seed(new Dictionary<string, object>
                 {
@@ -146,7 +147,8 @@ namespace pyRevitExtensionParserTester
         {
             var running = GetEngine();
             ScriptEngineManager.EnterEngine(running.TypeId);
-            try {
+            try
+            {
                 var engine = GetEngine();
 
                 Assert.That(engine, Is.SameAs(running),
@@ -154,7 +156,8 @@ namespace pyRevitExtensionParserTester
                 Assert.That(running.ShutdownCount, Is.EqualTo(0));
                 Assert.That(ScriptEngineManager.EngineDict[running.TypeId], Is.SameAs(running));
             }
-            finally {
+            finally
+            {
                 ScriptEngineManager.ExitEngine(running.TypeId);
             }
         }
@@ -166,7 +169,8 @@ namespace pyRevitExtensionParserTester
             var unusableEngine = new UnusableEngine();
             ScriptEngineManager.EngineDict[key] = unusableEngine;
             ScriptEngineManager.EnterEngine(key);
-            try {
+            try
+            {
                 var engine = GetEngine();
 
                 Assert.That(unusableEngine.ShutdownCount, Is.EqualTo(0));
@@ -174,7 +178,8 @@ namespace pyRevitExtensionParserTester
                     "an engine that is still running must not be dropped from the cache");
                 Assert.That(engine.RecoveredFromCache, Is.False);
             }
-            finally {
+            finally
+            {
                 ScriptEngineManager.ExitEngine(key);
             }
         }
@@ -186,14 +191,16 @@ namespace pyRevitExtensionParserTester
             var previousSessionEngine = new RecordingEngine();
             ScriptEngineManager.EngineDict[previousSessionKey] = previousSessionEngine;
             ScriptEngineManager.EnterEngine(previousSessionKey);
-            try {
+            try
+            {
                 GetEngine("MyExtension.extension");
 
                 Assert.That(previousSessionEngine.ShutdownCount, Is.EqualTo(0));
                 Assert.That(ScriptEngineManager.EngineDict[previousSessionKey],
                     Is.SameAs(previousSessionEngine));
             }
-            finally {
+            finally
+            {
                 ScriptEngineManager.ExitEngine(previousSessionKey);
             }
         }
@@ -205,7 +212,8 @@ namespace pyRevitExtensionParserTester
             var cached = GetEngine("CachedExtension.extension");
             var running = GetEngine("RunningExtension.extension");
             ScriptEngineManager.EnterEngine(running.TypeId);
-            try {
+            try
+            {
                 var newCache = ScriptEngineManager.ClearEngines(excluded.TypeId);
 
                 Assert.That(cached.ShutdownCount, Is.EqualTo(1));
@@ -214,7 +222,8 @@ namespace pyRevitExtensionParserTester
                 Assert.That(newCache[excluded.TypeId], Is.SameAs(excluded));
                 Assert.That(ScriptEngineManager.EngineDict, Is.SameAs(newCache));
             }
-            finally {
+            finally
+            {
                 ScriptEngineManager.ExitEngine(running.TypeId);
             }
         }
@@ -248,11 +257,13 @@ namespace pyRevitExtensionParserTester
 #endif
 
             ScriptEngineManager.EnterEngine("an-engine-id");
-            try {
+            try
+            {
                 Assert.That(ScriptEngineManager.DescribeEngine(engine, "an-engine-id"),
                     Does.Contain("active: True"));
             }
-            finally {
+            finally
+            {
                 ScriptEngineManager.ExitEngine("an-engine-id");
             }
 
@@ -307,7 +318,8 @@ namespace pyRevitExtensionParserTester
         {
             public int ShutdownCount { get; private set; }
 
-            public override void Shutdown() {
+            public override void Shutdown()
+            {
                 ShutdownCount++;
             }
         }
@@ -320,7 +332,8 @@ namespace pyRevitExtensionParserTester
         {
             public int ShutdownCount { get; private set; }
 
-            public void Shutdown() {
+            public void Shutdown()
+            {
                 ShutdownCount++;
             }
         }
@@ -328,7 +341,8 @@ namespace pyRevitExtensionParserTester
         /// <summary>Stands in for a cached engine whose shutdown blows up.</summary>
         public class ThrowingEngine
         {
-            public void Shutdown() {
+            public void Shutdown()
+            {
                 throw new InvalidOperationException("engine is already gone");
             }
         }
