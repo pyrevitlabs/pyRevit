@@ -405,7 +405,22 @@ def _check_aliases(schema, bare, static_properties, derived, dynamic_dispatch, l
                     "RENAMED_ALIASES".format(alias, section, prop),
                 )
             )
-        elif prop != expected and alias not in RENAMED_ALIASES:
+        elif alias in RENAMED_ALIASES:
+            recorded = BARE_DELEGATIONS.get(alias)
+            if recorded is not None and recorded != (section, prop):
+                findings.append(
+                    Finding(
+                        "ALIAS-RENAME",
+                        rel,
+                        line_of.get(alias, 0),
+                        "user_config.{} is recorded as a rename to {}.{}, but now "
+                        "targets {}.{}; a rename is a documented decision, so moving "
+                        "its target needs one".format(
+                            alias, recorded[0], recorded[1], section, prop
+                        ),
+                    )
+                )
+        elif prop != expected:
             findings.append(
                 Finding(
                     "ALIAS-RENAME",
