@@ -1265,7 +1265,7 @@ def create_plan_view(
     return view
 
 
-def create_3d_view(
+def create_model_3d_view(
     view_name=None,
     direction="southeast",
     elements=None,
@@ -1273,7 +1273,11 @@ def create_3d_view(
     template=None,
     doc=None,
 ):
-    """Create an isometric 3D view framed on elements or the whole model.
+    """Create a new isometric 3D view framed on elements or the whole model.
+
+    Unlike create_3d_view, which reuses a view with the same name, this
+    always creates a view (with a unique name), hides annotation and fits a
+    section box.
 
     Args:
         view_name (str, optional): name, made unique; defaults to "3D".
@@ -1419,3 +1423,301 @@ def create_elevation_view(
             return view
         doc.Delete(view.Id)
     raise PyRevitException("Couldn't create a {}-facing elevation.".format(side))
+
+
+# drawings --------------------------------------------------------------------
+
+SHEET_ANCHORS = ("top_left", "top_right", "bottom_left", "bottom_right", "center")
+
+
+def create_dimension(view, references, axis="x", position=0.0, doc=None):
+    """Create a linear dimension through references in a plan view.
+
+    Args:
+        view (DB.View): view to draw the dimension in.
+        references (list[DB.Reference]): at least two references, such as
+            face references from query.get_face_references.
+        axis (str, optional): ``"x"`` measures along X with the dimension line
+            at ``Y = position``; ``"y"`` measures along Y at ``X = position``.
+        position (float | str, optional): where the dimension line sits.
+        doc (DB.Document, optional): document, defaults to the active one.
+
+    Returns:
+        (DB.Dimension): the dimension.
+
+    Raises:
+        PyRevitException: with fewer than two references, or an unknown axis.
+    """
+    doc = doc or DOCS.doc
+    _require_transaction(doc, "create dimensions")
+    if len(references) < 2:
+        raise PyRevitException("A dimension needs at least two references.")
+    if axis not in ("x", "y"):
+        raise PyRevitException("axis must be 'x' or 'y', not {!r}.".format(axis))
+    box = query.get_elements_bounding_box(
+        query.get_model_elements(doc=doc), padding=20.0
+    )
+    position = units.parse_length(position)
+    if axis == "x":
+        line = DB.Line.CreateBound(
+            DB.XYZ(box.Min.X, position, 0), DB.XYZ(box.Max.X, position, 0)
+        )
+    else:
+        line = DB.Line.CreateBound(
+            DB.XYZ(position, box.Min.Y, 0), DB.XYZ(position, box.Max.Y, 0)
+        )
+    reference_array = DB.ReferenceArray()
+    for reference in references:
+        reference_array.Append(reference)
+    return doc.Create.NewDimension(view, line, reference_array)
+
+
+def _tag_point(element, offset):
+    location = element.Location
+    if isinstance(location, DB.LocationPoint):
+        point = location.Point
+    elif isinstance(location, DB.LocationCurve):
+        point = location.Curve.Evaluate(0.5, True)
+    else:
+        box = element.get_BoundingBox(None)
+        point = (box.Min + box.Max).Divide(2.0)
+    facing = getattr(element, "FacingOrientation", None)
+    if offset and facing is not None:
+        point = point + facing.Multiply(offset)
+    return point
+
+
+def tag_elements(view, elements, offset=0.0, tag_type=None, leader=False, doc=None):
+    """Tag elements by category in a view.
+
+    Args:
+        view (DB.View): view to tag in.
+        elements (list[DB.Element]): elements to tag.
+        offset (float | str, optional): move each tag this far along the
+            element's facing direction (doors and windows); negative moves
+            it the other way, into the room.
+        tag_type (DB.FamilySymbol | str, optional): tag type or its name;
+            defaults to the category's default tag.
+        leader (bool, optional): draw a leader.
+        doc (DB.Document, optional): document, defaults to the active one.
+
+    Returns:
+        (list[DB.IndependentTag]): the tags.
+    """
+    doc = doc or DOCS.doc
+    _require_transaction(doc, "tag elements")
+    tag_type = (
+        query.find_family_symbol(tag_type, doc=doc) if tag_type is not None else None
+    )
+    offset = units.parse_length(offset)
+    tags = []
+    for element in elements:
+        tag = DB.IndependentTag.Create(
+            doc,
+            view.Id,
+            DB.Reference(element),
+            leader,
+            DB.TagMode.TM_ADDBY_CATEGORY,
+            DB.TagOrientation.Horizontal,
+            _tag_point(element, offset),
+        )
+        if tag_type is not None:
+            tag.ChangeTypeId(tag_type.Id)
+        tags.append(tag)
+    return tags
+
+
+def create_room_tags(view, rooms=None, tag_type=None, doc=None):
+    """Tag rooms at their location points in a plan view.
+
+    Args:
+        view (DB.ViewPlan): plan view.
+        rooms (list[DB.Architecture.Room], optional): rooms to tag, defaults
+            to the placed rooms visible in the view.
+        tag_type (DB.FamilySymbol | str, optional): room tag type or its name,
+            such as ``"Room Tag With Area"``.
+        doc (DB.Document, optional): document, defaults to the active one.
+
+    Returns:
+        (list[DB.Architecture.RoomTag]): the tags.
+    """
+    doc = doc or DOCS.doc
+    _require_transaction(doc, "tag rooms")
+    if rooms is None:
+        rooms = [
+            room
+            for room in DB.FilteredElementCollector(doc, view.Id).OfCategory(
+                DB.BuiltInCategory.OST_Rooms
+            )
+            if room.Location is not None
+        ]
+    tag_type = (
+        query.find_family_symbol(tag_type, category="OST_RoomTags", doc=doc)
+        if tag_type is not None
+        else None
+    )
+    tags = []
+    for room in rooms:
+        point = room.Location.Point
+        tag = doc.Create.NewRoomTag(
+            DB.LinkElementId(room.Id), DB.UV(point.X, point.Y), view.Id
+        )
+        if tag_type is not None:
+            tag.ChangeTypeId(tag_type.Id)
+        tags.append(tag)
+    return tags
+
+
+def create_schedule(
+    category,
+    fields,
+    view_name=None,
+    sort_by=None,
+    totals=None,
+    itemized=True,
+    grand_total=True,
+    doc=None,
+):
+    """Create a schedule of a category with the named fields.
+
+    Args:
+        category (str | DB.BuiltInCategory | DB.Category): category, such as
+            ``"OST_Rooms"``.
+        fields (list[str]): field names in column order, as shown in Revit's
+            schedule properties (``"Number"``, ``"Name"``, ``"Area"``).
+        view_name (str, optional): schedule name, made unique.
+        sort_by (list[str], optional): field names to sort by, in order.
+        totals (list[str], optional): numeric fields to total.
+        itemized (bool, optional): list every element instead of grouping.
+        grand_total (bool, optional): show a grand total row with a count.
+        doc (DB.Document, optional): document, defaults to the active one.
+
+    Returns:
+        (DB.ViewSchedule): the schedule.
+
+    Raises:
+        PyRevitException: when a field name isn't schedulable for the
+            category; the message lists the available fields.
+    """
+    doc = doc or DOCS.doc
+    _require_transaction(doc, "create schedules")
+    category = query.get_category(category, doc=doc)
+    if category is None:
+        raise PyRevitException("No such category.")
+    schedule = DB.ViewSchedule.CreateSchedule(doc, category.Id)
+    if view_name:
+        schedule.Name = unique_view_name(view_name, doc=doc)
+    definition = schedule.Definition
+    available = dict(
+        (field.GetName(doc), field) for field in definition.GetSchedulableFields()
+    )
+    wanted = list(fields) + [
+        name for name in (sort_by or []) + (totals or []) if name not in fields
+    ]
+    missing = [name for name in wanted if name not in available]
+    if missing:
+        raise PyRevitException(
+            "Fields not schedulable for {}: {}. Available: {}.".format(
+                category.Name, ", ".join(missing), ", ".join(sorted(available))
+            )
+        )
+    added = {}
+    for name in fields:
+        added[name] = definition.AddField(available[name])
+    for name in sort_by or []:
+        definition.AddSortGroupField(DB.ScheduleSortGroupField(added[name].FieldId))
+    for name in totals or []:
+        added[name].DisplayType = DB.ScheduleFieldDisplayType.Totals
+    definition.IsItemized = itemized
+    definition.ShowGrandTotal = grand_total
+    definition.ShowGrandTotalTitle = grand_total
+    definition.ShowGrandTotalCount = grand_total
+    return schedule
+
+
+def _sheet_area(sheet, doc):
+    titleblock = (
+        DB.FilteredElementCollector(doc, sheet.Id)
+        .OfCategory(DB.BuiltInCategory.OST_TitleBlocks)
+        .FirstElement()
+    )
+    if titleblock is not None:
+        box = titleblock.get_BoundingBox(sheet)
+        return box.Min, box.Max
+    outline = sheet.Outline
+    return (
+        DB.XYZ(outline.Min.U, outline.Min.V, 0),
+        DB.XYZ(outline.Max.U, outline.Max.V, 0),
+    )
+
+
+def place_on_sheet(sheet, view, anchor="top_left", margin=0.1, doc=None):
+    """Place a view or schedule on a sheet, aligned to a corner of the title block.
+
+    Args:
+        sheet (DB.ViewSheet): sheet.
+        view (DB.View | DB.ViewSchedule): view or schedule to place. A view
+            can be on one sheet only; schedules can repeat.
+        anchor (str, optional): top_left, top_right, bottom_left,
+            bottom_right or center of the title block (the sheet outline
+            when it has none).
+        margin (float | str, optional): gap between the placed box and the
+            title block edge, in sheet feet (0.1 ft is 1.2 in).
+        doc (DB.Document, optional): document, defaults to the active one.
+
+    Returns:
+        (DB.Viewport | DB.ScheduleSheetInstance): the placed viewport or
+        schedule instance.
+
+    Raises:
+        PyRevitException: when the view can't be added to the sheet, for
+            example because it is already on another sheet.
+    """
+    doc = doc or DOCS.doc
+    _require_transaction(doc, "place views on sheets")
+    if anchor not in SHEET_ANCHORS:
+        raise PyRevitException(
+            "anchor must be one of {}.".format(", ".join(SHEET_ANCHORS))
+        )
+    margin = units.parse_length(margin)
+    is_schedule = isinstance(view, DB.ViewSchedule)
+    if is_schedule:
+        placed = DB.ScheduleSheetInstance.Create(doc, sheet.Id, view.Id, DB.XYZ.Zero)
+    else:
+        if not DB.Viewport.CanAddViewToSheet(doc, sheet.Id, view.Id):
+            raise PyRevitException(
+                "View {!r} can't be placed on sheet {}; it may already be on a sheet.".format(
+                    view.Name, sheet.SheetNumber
+                )
+            )
+        placed = DB.Viewport.Create(doc, sheet.Id, view.Id, DB.XYZ.Zero)
+    doc.Regenerate()
+    if is_schedule:
+        box = placed.get_BoundingBox(sheet)
+        low, high = box.Min, box.Max
+    else:
+        outline = placed.GetBoxOutline()
+        low, high = outline.MinimumPoint, outline.MaximumPoint
+    area_low, area_high = _sheet_area(sheet, doc)
+    width, height = high.X - low.X, high.Y - low.Y
+    if anchor == "center":
+        target_x = (area_low.X + area_high.X - width) / 2.0
+        target_y = (area_low.Y + area_high.Y - height) / 2.0
+    else:
+        target_x = (
+            area_low.X + margin
+            if anchor.endswith("left")
+            else area_high.X - margin - width
+        )
+        target_y = (
+            area_high.Y - margin - height
+            if anchor.startswith("top")
+            else area_low.Y + margin
+        )
+    move = DB.XYZ(target_x - low.X, target_y - low.Y, 0)
+    if is_schedule:
+        placed.Point = placed.Point + move
+    else:
+        placed.SetBoxCenter(placed.GetBoxCenter() + move)
+    doc.Regenerate()
+    return placed

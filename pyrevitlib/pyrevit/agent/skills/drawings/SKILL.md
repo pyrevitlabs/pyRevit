@@ -1,58 +1,56 @@
 ---
 name: drawings
-description: Producing drawings and blueprints. Covers sheets with title blocks, viewports, tags, dimensions, text, and PDF export. Use it for "set up sheets", "make a floor plan drawing", "tag all doors", "dimension the walls", "export to PDF" and similar tasks.
+description: Producing drawings and blueprints. Covers sheets with title blocks, placing views and schedules on sheets, tags, room tags, dimensions, text, and PDF export. Use it for "set up sheets", "make a floor plan drawing", "tag all doors", "dimension the walls", "export to PDF" and similar tasks.
 ---
 
 # Drawings (views, sheets, annotation)
 
-Read `revit-scripting` first. Check API names with `lookup_revit_api`.
+Read `revit-scripting` and `pyrevit-library` first. The functions below are in pyrevitlib; check any of them with `lookup_pyrevit_api`.
+
+```python
+from pyrevit import revit
+from pyrevit.revit.db import query, create, update
+```
 
 ## Views
 
-Create, frame and find views with the `views` skill: `create.create_plan_view`, `create_section_view`, `create_elevation_view`, `create_3d_view`, `update.crop_view_to_elements`, all in pyrevitlib.
+Create, frame and find views with the `views` skill: `create.create_plan_view`, `create_section_view`, `create_elevation_view`, `create_model_3d_view`, `update.crop_view_to_elements`.
 
-- **Settings:** `view.Scale` (for example 100 for 1:100), `view.DetailLevel`, `view.CropBoxActive`.
+- **Settings:** `view.Scale` (for example 48 for 1/4" = 1'-0", 100 for 1:100), `view.DetailLevel`, `view.CropBoxActive`.
+- **Annotation crop:** `view.get_Parameter(DB.BuiltInParameter.VIEWER_ANNOTATION_CROP_ACTIVE).Set(1)` keeps tags and dimensions inside the crop.
+- **Hide what the drawing doesn't need:** `update.hide_categories(view, ["OST_Levels", "OST_Grids", "OST_Elev", "OST_Sections"])`.
 - **Templates:** prefer the project's templates to setting graphics by hand.
+
+## Annotation
+
+Annotation belongs to a view. Pass the plan, not the sheet.
+
+- **Dimensions:** `create.create_dimension(view, references, axis="x", position=y)` draws a chain through the references; `axis="x"` measures along X with the line at `Y = position`.
+  - Face references: `query.get_face_references(wall, DB.XYZ.BasisX.Negate())[0]` is the wall's outer face looking west. It works for walls, floors and other host elements.
+  - Doors and windows: `instance.GetReferences(DB.FamilyInstanceReferenceType.CenterLeftRight)`.
+  - Keep dimension chains in lists of (references, axis, position) and build them in one loop; place the lines outside the model with room between chains.
+- **Tags:** `create.tag_elements(view, elements, offset=1.8, tag_type=None)` tags by category. `offset` moves each tag along the element's facing direction, so window tags sit outside and door tags (negative offset) inside.
+- **Room tags:** `create.create_room_tags(view, rooms=None, tag_type="Room Tag With Area")`; without `rooms` it tags every room visible in the view.
+- **Text:** `DB.TextNote.Create(doc, view.Id, DB.XYZ(x, y, 0), "text", text_type.Id)`, with a type from `OfClass(DB.TextNoteType)`.
+
+## Schedules
+
+`create.create_schedule("OST_Rooms", ["Number", "Name", "Level", "Area"], view_name="Room Schedule", sort_by=["Number"], totals=["Area"])`. A field name that doesn't exist raises with the available names. For filters, grouping and formatting, see the `scheduling` skill.
 
 ## Sheets
 
 ```python
-titleblock = DB.FilteredElementCollector(doc).OfCategory(DB.BuiltInCategory.OST_TitleBlocks).WhereElementIsElementType().FirstElement()
-sheet = DB.ViewSheet.Create(doc, titleblock.Id)
-sheet.SheetNumber = "A101"
-sheet.Name = "Floor Plan"
+titleblock = query.find_family_symbol("D 22 x 34 Horizontal", family_name="D 22 x 34 Horizontal", category="OST_TitleBlocks")
+sheet = create.create_sheet("A101", "Floor Plan", titleblock.Id)
+create.place_on_sheet(sheet, plan_view, anchor="top_left")
+create.place_on_sheet(sheet, schedule, anchor="top_right")
 ```
 
-- **Helper:** pyRevit has `from pyrevit.revit.db.create import create_sheet`.
+- **Placing:** `create.place_on_sheet(sheet, view_or_schedule, anchor, margin=0.1)` aligns the viewport or schedule to a corner (`top_left`, `top_right`, `bottom_left`, `bottom_right`) or the `center` of the title block. `margin` is in sheet feet (0.1 ft = 1.2 in).
+- **One sheet per view:** a view can be placed on only one sheet; `place_on_sheet` raises when it's already on one. Duplicate it (`view.Duplicate(DB.ViewDuplicateOption.WithDetailing)`) for another. Schedules can repeat.
+- **Fit:** if the viewport is bigger than the sheet, raise `view.Scale` or tighten the crop.
 - **Title block parameters** such as drawn by and date are parameters on the title block instance on the sheet.
-
-## Viewports
-
-```python
-if DB.Viewport.CanAddViewToSheet(doc, sheet.Id, plan.Id):
-    DB.Viewport.Create(doc, sheet.Id, plan.Id, DB.XYZ(x, y, 0))
-```
-
-- **One sheet per view:** a view can be placed on only one sheet. Duplicate it (`view.Duplicate(DB.ViewDuplicateOption.WithDetailing)`) for another.
-- **Position:** the point is the viewport center in sheet coordinates (feet). Read the title block's bounding box on the sheet to fit the viewport inside it.
-- **Schedules** are placed with `DB.ScheduleSheetInstance.Create`; see the `scheduling` skill.
-
-## Annotation
-
-Annotation belongs to a view. Pass the plan's id, not the sheet's.
-
-- **Tags:**
-
-  ```python
-  DB.IndependentTag.Create(doc, view.Id, DB.Reference(element), False, DB.TagMode.TM_ADDBY_CATEGORY, DB.TagOrientation.Horizontal, point)
-  ```
-
-  Tag each element at a point near its location.
-- **Room tags:** `doc.Create.NewRoomTag(DB.LinkElementId(room.Id), DB.UV(x, y), view.Id)`.
-- **Text:** `DB.TextNote.Create(doc, view.Id, DB.XYZ(x, y, 0), "text", text_type.Id)`, with a type from `OfClass(DB.TextNoteType)`.
-- **Dimensions:** `doc.Create.NewDimension(view, line, reference_array)`.
-  - `reference_array` is a `DB.ReferenceArray` of references, for example wall faces. Get face references from the wall's geometry with `DB.Options()` and `ComputeReferences = True`, or use `DB.HostObjectUtils.GetSideFaces(wall, DB.ShellLayerType.Exterior)`.
-  - The line gives the dimension's position and direction.
+- **Re-runnable:** delete the previous sheet, view and schedule by number and name before creating them again.
 
 ## Exporting to PDF (Revit 2022 and later)
 
