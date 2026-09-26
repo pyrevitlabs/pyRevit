@@ -13,10 +13,11 @@ namespace pyRevitLabs.Common {
         public const string ProductName = "pyRevit";
 
         // urls
-        public const string RouterUrl = @".pyrevitlabs.io";
+        public const string RootDomain = @"pyrevitlabs.io";
+        public const string RouterUrl = @"." + RootDomain;
 
         public const string WikiUrl = "wiki" + RouterUrl;
-        public const string BlogsUrl = "https://pyrevitlabs.io/posts/";
+        public const string BlogsUrl = "https://" + RootDomain + "/posts/";
         public const string DocsUrl = "docs" + RouterUrl;
         public const string YoutubeUrl = "videos" + RouterUrl;
         public const string SupportUrl = "support" + RouterUrl;
