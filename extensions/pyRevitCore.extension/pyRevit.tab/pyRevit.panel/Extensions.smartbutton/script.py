@@ -141,27 +141,38 @@ def _read_stored_token(section_name):
 def _store_token(section_name, token):
     """Seal and store a token, or clear the stored one when it is empty.
 
+    Keeps the ``private_repo`` flag in step, which the credential store
+    deliberately leaves alone: it is extension state, not credential material.
+    The flag is set only once the credential is verified on disk, so a failed
+    write cannot leave an extension marked private with nothing behind it.
+    Clearing goes through ``delete_credential``, which clears the flag too.
+
     Args:
         section_name (str): extension config section name
         token (str): token typed by the user, or "" to clear
 
     Returns:
-        bool: whether the extension is now marked private
+        bool: whether a credential is now stored for the section
 
     Raises:
-        Exception: on a read-only config or an encryption failure, so the caller
-            reports the failure instead of telling the user the token was saved
+        Exception: on a read-only config, an encryption failure, or a write that
+            did not reach the file, so the caller reports the failure instead of
+            telling the user the token was saved
     """
     from pyrevit.coreutils import credentials
 
-    if token:
-        credentials.set_credential(
-            section_name, credentials.DEFAULT_TOKEN_USERNAME, token
-        )
-        return True
+    if not token:
+        credentials.delete_credential(section_name)
+        return False
 
-    credentials.delete_credential(section_name)
-    return False
+    credentials.set_credential(
+        section_name, credentials.DEFAULT_TOKEN_USERNAME, token
+    )
+
+    from pyrevit.userconfig import user_config
+
+    user_config.get_section(section_name).set_option("private_repo", True)
+    return True
 
 
 class ExtensionPackageListItem:

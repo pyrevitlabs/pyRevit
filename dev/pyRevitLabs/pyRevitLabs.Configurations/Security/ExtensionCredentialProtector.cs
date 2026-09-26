@@ -74,9 +74,12 @@ public static class ExtensionCredentialProtector {
     /// <see cref="Unprotect"/> to recover the credential.
     /// </returns>
     /// <exception cref="ArgumentNullException">
-    /// <paramref name="credential"/> is null, or its username or secret is null or
-    /// blank. A blank username is rejected because every forge needs one, and
-    /// sealing a half-filled credential only defers the failure to the first fetch.
+    /// <paramref name="credential"/> is null.
+    /// </exception>
+    /// <exception cref="ArgumentException">
+    /// The username or secret is null or blank. A blank username is rejected
+    /// because every forge needs one, and sealing a half-filled credential only
+    /// defers the failure to the first fetch.
     /// </exception>
     public static string Protect(ExtensionCredential credential) {
         if (credential is null)
