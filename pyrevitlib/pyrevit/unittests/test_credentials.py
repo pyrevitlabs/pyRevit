@@ -601,6 +601,11 @@ class MigrationNoDataLossTests(_CredentialsTestCase):
                 raise credentials.PyRevitCredentialError("sealing is unavailable")
             return real_set(section_name, username, secret, kind)
 
+        # This class patches _seal to always fail, which would fail the good
+        # section too and make the test pass for the wrong reason. The failure
+        # under test is per-section, so put the working seal back and inject only
+        # that. tearDown restores the failing one.
+        credentials._seal = self._real_seal
         credentials.set_credential = selective_set
         self.seed_plaintext("Bad.extension", token="ghp_bad")
 
@@ -787,10 +792,17 @@ class StoredFormatContractTests(_CredentialsTestCase):
         )
 
     def test_accepted_kinds_match_the_csharp_enum(self):
+        """The accepted kind names must be the C# enum's, as a set.
+
+        Order is not part of the contract - nothing looks a kind up by position -
+        and it is not even stable across hosts: ``dir()`` sorts alphabetically
+        under IronPython 2 but follows declaration order under CPython 3, so an
+        ordered comparison passes on one engine and fails on the other.
+        """
         kind_type = credentials._load_crypto()[2]
         self.assertEqual(
-            ("token", "password"),
-            tuple(
+            set(("token", "password")),
+            set(
                 name.lower()
                 for name in dir(kind_type)
                 if not name.startswith("_") and name.lower() in ("token", "password")

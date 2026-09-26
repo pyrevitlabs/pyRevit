@@ -485,6 +485,60 @@ def _remove_key(section, key):
         return False
 
 
+def _is_stored_credential(stored_value, username, secret, kind):
+    """Whether a raw config value decrypts to exactly this credential.
+
+    Compares the recovered fields rather than the stored text: the INI backend is
+    free to re-encode a value on the way through, and a credential that decrypts
+    to what the caller asked for is stored no matter how it is spelled in the file.
+
+    Args:
+        stored_value (str): the raw value read back from the config file, or None
+        username (str): account name that was written
+        secret (str): token or password that was written
+        kind (str): ``"token"`` or ``"password"``
+
+    Returns:
+        bool: whether the file holds this credential
+    """
+    if stored_value is None:
+        return False
+    try:
+        recovered = _unseal(stored_value)
+    except PyRevitCredentialUnavailable:
+        return False
+    return (
+        recovered.username == username
+        and recovered.secret == secret
+        and recovered.kind == kind
+    )
+
+
+def _restore_stored_value(section, stored_value):
+    """Roll the in-memory credential back to what the config file holds.
+
+    A write that never reached the file must not leave the store advertising a
+    credential that only exists until Revit restarts, or ``get_credential``
+    answers with a value the next session will not have.
+
+    Args:
+        section (ConfigSection): the section the failed write went to
+        stored_value (str): the raw value the file holds, or None when it holds
+            no credential for this section
+    """
+    if stored_value is None:
+        _remove_key(section, CONFIG_KEY)
+        return
+    try:
+        section.set_option(CONFIG_KEY, stored_value)
+    except Exception as restore_err:
+        mlogger.warning(
+            "credentials: could not restore the stored credential after a failed "
+            "write: %s",
+            restore_err,
+        )
+
+
 # -----------------------------------------------------------------------------
 # public API
 # -----------------------------------------------------------------------------
@@ -529,11 +583,17 @@ def get_credential(section_name):
 def set_credential(section_name, username, secret, kind="token"):
     """Seal a credential and store it in the extension's config section.
 
-    The new value is read back and decrypted before the legacy plaintext keys are
-    removed, so a failure part-way through leaves the working credential in place
-    instead of deleting it. That is the one ordering that cannot lose a token:
-    the alternative - clearing the old keys first - destroys the only usable copy
-    whenever sealing then fails.
+    The new value is read back from the config file and matched against what was
+    written before anything else is touched, so a failure part-way through leaves
+    the working credential in place instead of deleting it. That is the one
+    ordering that cannot lose a token: the alternative - clearing the old keys
+    first - destroys the only usable copy whenever sealing then fails.
+
+    Note:
+        A flush that does not land is reported as a failure even when the section
+        already held a credential, because the file would then still hold the old
+        one. The in-memory value is rolled back to match the file, so what
+        ``get_credential`` reports is what the next session will see.
 
     Args:
         section_name (str): extension config section name
@@ -576,15 +636,19 @@ def set_credential(section_name, username, secret, kind="token"):
 
     # Verify against the file, not the in-memory store: save_changes swallows a
     # failed flush, so only a re-read of the file can tell a stored credential
-    # from an accepted-and-dropped one. Nothing is removed until this passes.
+    # from an accepted-and-dropped one. The file has to hold *this* value, not
+    # merely some value: a rotation whose flush was dropped still leaves the
+    # previous credential readable, and accepting that would report success while
+    # a restart goes on using the old token. Nothing is removed until this passes.
     stored = _read_from_disk(section_name)
-    if stored is None:
+    if not _is_stored_credential(stored, username, secret, kind):
+        _restore_stored_value(section, stored)
         raise PyRevitCredentialUnavailable(
-            "The credential for [{}] was written but is not in the config file. "
-            "The file may be read-only or the write may have been refused, so any "
-            "existing credential was left in place.".format(section_name)
+            "The credential for [{}] was not stored: the config file does not "
+            "hold the value that was just written. The file may be read-only or "
+            "the write may have been refused, so the credential that was already "
+            "in place has been kept.".format(section_name)
         )
-    _unseal(stored)
 
     if _remove_legacy_keys(section):
         _save()
