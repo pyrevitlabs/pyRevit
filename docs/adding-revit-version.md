@@ -157,7 +157,7 @@ to the binary's own version info.
 Binding an install to the wrong record is not cosmetic: it reports the wrong
 product year, which is what makes pyRevit load runtime assemblies built for a
 different Revit and fail at load time with a `TypeLoadException`. When a build is
-genuinely shared, a `Ambiguous host product` warning in the log names the records
+genuinely shared, an `Ambiguous host product` warning in the log names the records
 involved; add the missing record to the registry rather than relying on a guess.
 
 ---

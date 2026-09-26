@@ -547,10 +547,6 @@ namespace pyRevitLabs.TargetApps.Revit {
                                 continue;
                             }
                             logger.Debug("Revit Product is : {0}", revitProduct);
-                            if (!revitProduct.IsSupported)
-                                logger.Warn("Installed Revit \"{0}\" at \"{1}\" is product year {2}, which this version of pyRevit does not support " +
-                                            "(requires Revit {3} or newer). Use a pyRevit release that supports Revit {2} to run pyRevit here.",
-                                            regName, regInstallPath, revitProduct.ProductYear, RevitProductData.MinimumSupportedProductYear);
                             // grab the registry name if it doesn't have a name
                             if (revitProduct.Name is null || revitProduct.Name == string.Empty)
                                 revitProduct.Name = regName;
