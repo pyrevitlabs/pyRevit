@@ -15,11 +15,8 @@ namespace pyRevitLabs.UnitTests.RevitProducts {
     /// </remarks>
     [TestClass()]
     public class RevitProductDataTests {
-        // 2020.2.9 and 2021.1.7 both ship build 20220517_1515 (issue #3573)
         private const string Shared2020_2021Build = "20220517_1515";
-        // 2021.1.6 and 2022.1.2 both ship build 20220123_1515
         private const string Shared2021_2022Build = "20220123_1515";
-        // 2023.1.1 and 2023.1.1.1 both ship build 20221122_1550
         private const string Shared2023Build = "20221122_1550";
 
         private static HostProductInfo Record(string release, string version, string build) {
@@ -89,8 +86,6 @@ namespace pyRevitLabs.UnitTests.RevitProducts {
 
         [TestMethod()]
         public void FindProductInfo_UniqueBuildMatch_ContradictingProductYear_IsRejected() {
-            // the 7.0 host database has no 2020 record, so the build alone looks
-            // unique; it still must not claim a Revit 2020 install is Revit 2021
             var found = RevitProductData.FindProductInfo(CollidingRecordWithout2020(), Shared2020_2021Build,
                                                           installPath: @"C:\Program Files\Autodesk\Revit 2020\",
                                                           productVersion: new Version(20, 2, 90, 12));
@@ -124,7 +119,6 @@ namespace pyRevitLabs.UnitTests.RevitProducts {
 
         [TestMethod()]
         public void FindProductInfo_RevitExeProductVersionString_ResolvesNamedRelease() {
-            // what a running Revit 2022.1.2 hands to the resolver
             var found = RevitProductData.FindProductInfo(Colliding2021And2022Records(),
                                                           "Revit 2022.1.2 (20220123_1515(x64))");
             Assert.IsNotNull(found);
@@ -133,15 +127,12 @@ namespace pyRevitLabs.UnitTests.RevitProducts {
 
         [TestMethod()]
         public void FindProductInfo_RegistryDisplayVersionNotInDatabase_DoesNotMatch() {
-            // Revit 2020.2 registers "2020.2", which no record is named after
             var found = RevitProductData.FindProductInfo(Colliding2020And2021Records(), "2020.2");
             Assert.IsNull(found);
         }
 
         [TestMethod()]
         public void FindProductInfo_RegistryVersionOfAnotherProductYear_IsRejected() {
-            // registry data naming a release the install path contradicts must
-            // not bind the install to that release
             var found = RevitProductData.FindProductInfo(Colliding2020And2021Records(), "2021.1.7",
                                                           installPath: @"C:\Program Files\Autodesk\Revit 2020\");
             Assert.IsNull(found);

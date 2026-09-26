@@ -160,8 +160,6 @@ namespace pyRevitLabs.TargetApps.Revit {
             // check if the string has build number e.g. "20110309_2315"
             var buildNumber = ExtractBuildNumberFromString(identifier);
             var key = (buildNumber != string.Empty ? buildNumber : identifier).ToLower();
-
-            // release, version, and build identify a host, but build is shared across releases
             var matches = products.Where(prodInfo => prodInfo != null
                                                        && prodInfo.meta?.schema == "1.0"
                                                        && (prodInfo.release?.ToLower() == key
@@ -172,9 +170,6 @@ namespace pyRevitLabs.TargetApps.Revit {
                 logger.Debug("No host product matches \"{0}\"", identifier);
                 return null;
             }
-
-            // a build shared with another product year is not this host, whether or
-            // not the build alone happened to match a single record
             var hostYear = productVersion != null ? GetProductYear(productVersion) : 0;
             if (hostYear == 0)
                 hostYear = GetProductYearFromPath(installPath);
@@ -187,18 +182,12 @@ namespace pyRevitLabs.TargetApps.Revit {
                 logger.Debug("Host product \"{0}\" (product year {1}) has no record matching \"{2}\"", identifier, hostYear, key);
                 return null;
             }
-
-            // the identifier may also name the release or file version of the host,
-            // which pins the candidate set down even when the build does not
             var namedIdentifier = identifier.ToLower();
             var named = matches.Where(prodInfo => (prodInfo.release != null && namedIdentifier.Contains(prodInfo.release.ToLower()))
                                                  || (prodInfo.version != null && namedIdentifier.Contains(prodInfo.version.ToLower())))
                                .ToList();
             if (named.Count == 1)
                 return named[0];
-
-            // candidates that all report the same product year describe the same
-            // host, so only the build number itself is left to differ
             if (named.Count == 0 && matches.Select(prodInfo => GetProductYearFromVersionString(prodInfo.version)).Distinct().Count() == 1)
                 return matches[0];
 
@@ -373,6 +362,53 @@ namespace pyRevitLabs.TargetApps.Revit {
             return null;
         }
 
+        /// <summary>
+        /// Re-resolve a product found from an identifier against the host binary's own version.
+        /// </summary>
+        /// <remarks>
+        /// A build number on its own is not an identity: it is shared across releases, and the
+        /// catalog may hold only one side of such a pair. When the identifier is nothing but a
+        /// build number, the executable's file version is the only remaining evidence of which
+        /// release this install is, so it gets to confirm or overturn the match. A lookup that
+        /// names a release or a version is already specific and is left alone.
+        /// </remarks>
+        /// <param name="matched">The record the identifier resolved to.</param>
+        /// <param name="identifier">The identifier the record was resolved from.</param>
+        /// <param name="binaryFilePath">Path of the host binary.</param>
+        /// <param name="pathHint">Install path used for the first lookup.</param>
+        /// <returns>
+        /// The confirmed record, the original when the binary agrees or cannot be read, or null when
+        /// the binary contradicts the match.
+        /// </returns>
+        private static RevitProduct ConfirmAgainstBinary(RevitProduct matched, string identifier, string binaryFilePath, string pathHint) {
+            if (RevitProductData.ExtractBuildNumberFromString(identifier) == string.Empty)
+                return matched;
+
+            Version binaryVersion;
+            try {
+                var binaryInfo = RevitProductData.GetBinaryProductInfo(binaryFilePath);
+                if (!Version.TryParse(binaryInfo.version, out binaryVersion))
+                    return matched;
+                if (RevitProductData.GetProductYear(binaryVersion) == matched.ProductYear)
+                    return matched;
+            }
+            catch (Exception readEx) {
+                logger.Debug("Could not read the host binary at \"{0}\": {1}", binaryFilePath, readEx.Message);
+                return matched;
+            }
+
+            var confirmed = LookupRevitProduct(identifier, pathHint, binaryVersion);
+            if (confirmed != null)
+                return confirmed;
+
+            logger.Warn(
+                "Revit build \"{0}\" resolves to \"{1}\" in the host database, but the binary at \"{2}\" reports a "
+                    + "different product year. Not trusting either; report this to pyRevitLabs so the host database "
+                    + "can be corrected.",
+                identifier, matched.Name, binaryFilePath);
+            return null;
+        }
+
         public static RevitProduct LookupRevitProduct(Version version) {
             return LookupRevitProduct(version.ToString());
         }
@@ -401,10 +437,10 @@ namespace pyRevitLabs.TargetApps.Revit {
         /// </returns>
         public static RevitProduct ResolveProduct(string identifier, string binaryFilePath = null, string installPath = null) {
             logger.Debug("Looking up Revit Product in database...");
-            // the path of the install or of its binary is the identity that tells
-            // apart releases shipping the same build number
             var pathHint = installPath ?? binaryFilePath;
             var revitProduct = LookupRevitProduct(identifier, pathHint);
+            if (revitProduct != null && binaryFilePath != null)
+                revitProduct = ConfirmAgainstBinary(revitProduct, identifier, binaryFilePath, pathHint);
             if (revitProduct != null) {
                 if (!revitProduct.IsSupported)
                     logger.Warn("Host database record \"{0}\" (product year {1}) is below the minimum supported Revit year ({2}). " +
@@ -424,8 +460,6 @@ namespace pyRevitLabs.TargetApps.Revit {
                 logger.Debug("Read build number \"{0}\" from binary at \"{1}\"", prodInfo.build, binaryFilePath);
                 Version binaryVersion;
                 Version.TryParse(prodInfo.version, out binaryVersion);
-                // the binary's own full version outranks the build number when
-                // the two of them point at different releases
                 revitProduct = LookupRevitProduct(prodInfo.build, pathHint, binaryVersion);
                 if (revitProduct is null) {
                     var binaryYear = RevitProductData.GetProductYearFromVersionString(prodInfo.version);
