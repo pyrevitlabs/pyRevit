@@ -138,6 +138,7 @@ class _FakeUserConfig(object):
         self.config_sections = ConfigSections(self._service)
         self.save_count = 0
         self.fail_saves = fail_saves
+        self.fail_from_save = None
         self._config_file = None
         self._temp_dir = None
         if _INI_BACKEND is not None:
@@ -170,11 +171,15 @@ class _FakeUserConfig(object):
         The real ``save_changes`` logs and swallows a write failure rather than
         raising, so ``fail_saves`` does the same: a caller that assumes a raise
         would get a false pass here and a real failure in production.
+        ``fail_from_save`` drops one numbered save instead of all of them, which
+        is what a write that lands followed by a cleanup that does not looks like.
         """
         if self.is_readonly:
             return
         self.save_count += 1
         if self.fail_saves or not self._config_file:
+            return
+        if self.fail_from_save is not None and self.save_count >= self.fail_from_save:
             return
         try:
             with open(self._config_file, "w") as handle:
@@ -225,6 +230,27 @@ class _CredentialsTestCase(unittest.TestCase):
         self.user_config.add_section(section)
         for key, value in keys.items():
             self.user_config.put_raw(section, key, json.dumps(value))
+
+    def _on_disk(self, section, key):
+        """Read a key back out of the temp config file, bypassing memory.
+
+        ``user_config.raw`` reports the in-memory store, which keeps values a
+        dropped flush accepted, so it cannot answer "is this still in the file".
+        """
+        config_path = self.user_config.config_file
+        if not config_path or not os.path.isfile(config_path):
+            return None
+        with open(config_path) as handle:
+            in_section = False
+            for line in handle:
+                line = line.strip()
+                if line.startswith("[") and line.endswith("]"):
+                    in_section = line[1:-1] == section
+                elif in_section and "=" in line:
+                    name, _, value = line.partition("=")
+                    if name.strip() == key:
+                        return value.strip()
+        return None
 
     def _require_crypto(self):
         """Skip unless the write path can actually be exercised here.
@@ -696,6 +722,75 @@ class DroppedFlushTests(_CredentialsTestCase):
         self.assertEqual(
             "ghp_abc123", credentials.get_credential("MyTool.extension").secret
         )
+
+    def test_dropped_cleanup_save_reports_the_plaintext_left_behind(self):
+        """A sealed value that lands while the cleanup does not is not success.
+
+        The plaintext is the thing this change exists to remove, so reporting the
+        write as done while the token is still readable in the file is the one
+        outcome that must not pass silently.
+        """
+        self.seed_plaintext("MyTool.extension", token="ghp_abc123")
+        self.user_config.fail_from_save = 2
+
+        self.assertRaises(
+            credentials.PyRevitCredentialUnavailable,
+            credentials.set_credential,
+            "MyTool.extension",
+            "oauth2",
+            "ghp_abc123",
+        )
+
+    def test_landing_cleanup_save_removes_the_plaintext(self):
+        """The control case for the check above: nothing is left behind."""
+        self.seed_plaintext("MyTool.extension", token="ghp_abc123")
+        credentials.set_credential("MyTool.extension", "oauth2", "ghp_abc123")
+
+        self.assertIsNone(self._on_disk("MyTool.extension", "token"))
+        self.assertEqual(
+            "ghp_abc123", credentials.get_credential("MyTool.extension").secret
+        )
+
+    def test_delete_reports_a_credential_it_could_not_persist_as_removed(self):
+        """delete_credential must not claim success for a dropped flush.
+
+        The Extensions dialog says the settings were saved on the strength of this
+        return value, and a credential still in the file comes back on the next
+        start.
+        """
+        credentials.set_credential("MyTool.extension", "oauth2", "ghp_abc123")
+        self.user_config.fail_saves = True
+
+        self.assertRaises(
+            credentials.PyRevitCredentialUnavailable,
+            credentials.delete_credential,
+            "MyTool.extension",
+        )
+
+    def test_delete_that_lands_reports_removed(self):
+        credentials.set_credential("MyTool.extension", "oauth2", "ghp_abc123")
+
+        self.assertTrue(credentials.delete_credential("MyTool.extension"))
+        self.assertFalse(credentials.has_credential("MyTool.extension"))
+        self.assertIsNone(credentials.get_credential("MyTool.extension"))
+
+    def test_unverifiable_config_does_not_leave_a_credential_in_memory(self):
+        """A verification that cannot run must not leave the write in place.
+
+        get_credential reads the in-memory store, so a value left there after an
+        unverifiable write is one a restart will not have.
+        """
+        credentials.set_credential("MyTool.extension", "oauth2", "ghp_abc123")
+        self.user_config._config_file = ""
+
+        self.assertRaises(
+            credentials.PyRevitCredentialError,
+            credentials.set_credential,
+            "MyTool.extension",
+            "oauth2",
+            "ghp_rotated",
+        )
+        self.assertIsNone(credentials.get_credential("MyTool.extension"))
 
 
 class CredentialKindTests(_CredentialsTestCase):

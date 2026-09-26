@@ -182,15 +182,17 @@ public static class PyRevitConfigService {
     /// actually moved out of it, which is what makes the repair run once rather
     /// than on every load. A config with nothing left to contribute is left alone.
     /// </summary>
+    /// <remarks>
+    /// Promotion copies minus the credential keys rather than copying and then
+    /// stripping, because copy-then-strip would publish a plaintext token to a
+    /// file every local user can read for as long as the strip takes, and
+    /// indefinitely if the strip fails.
+    /// </remarks>
     internal static void RepairSplitAdminConfig(string userConfigPath, string machineConfigPath) {
         if (!File.Exists(userConfigPath))
             return;
 
         if (!File.Exists(machineConfigPath)) {
-            // Promoted by copying, minus credential material, rather than by
-            // File.Copy followed by a strip. Copy-then-strip would publish the
-            // plaintext token to a file every local user can read for as long as
-            // the strip takes, and indefinitely if it fails.
             if (!CopyConfigWithoutCredentialKeys(userConfigPath, machineConfigPath)) {
                 ConfigurationDiagnostics.ReportWarning(
                     "Could not promote per-user config to the machine config: "
@@ -288,12 +290,13 @@ public static class PyRevitConfigService {
             var source = IniConfiguration.Create(sourcePath);
             var target = IniConfiguration.Create(targetPath);
             bool changed = false;
+            bool moved = false;
 
             if (CountRegisteredClones(target) == 0 && CountRegisteredClones(source) > 0) {
                 string? clones = source.GetRawValueOrDefault(EnvironmentSectionName, ClonesKeyName, null);
                 if (!string.IsNullOrEmpty(clones)) {
                     target.SetRawValue(EnvironmentSectionName, ClonesKeyName, clones!);
-                    changed = true;
+                    changed = moved = true;
                 }
             }
 
@@ -315,7 +318,7 @@ public static class PyRevitConfigService {
                     string? raw = source.GetRawValueOrDefault(section, key, null);
                     if (raw != null) {
                         target.SetRawValue(section, key, raw);
-                        changed = true;
+                        changed = moved = true;
                     }
                 }
             }
@@ -326,7 +329,7 @@ public static class PyRevitConfigService {
             if (changed)
                 target.SaveConfiguration();
 
-            return changed;
+            return moved;
         }
         catch (Exception ex) {
             ConfigurationDiagnostics.ReportWarning(
@@ -466,6 +469,10 @@ public static class PyRevitConfigService {
     /// <summary>
     /// Whether a per-user config holds extension credential material of any kind.
     /// </summary>
+    /// <remarks>
+    /// A config that cannot be inspected counts as holding one: retiring a file
+    /// we merely failed to read risks destroying a token we did not see.
+    /// </remarks>
     private static bool ContainsCredentialKeys(string configPath) {
         if (!File.Exists(configPath))
             return false;
@@ -482,8 +489,6 @@ public static class PyRevitConfigService {
             }
         }
         catch (Exception ex) {
-            // Assume it holds one: retiring a file we could not inspect risks
-            // destroying a token we simply failed to see.
             ConfigurationDiagnostics.ReportWarning(
                 "Could not inspect " + configPath + " for credentials: " + ex.Message);
             return true;
@@ -544,6 +549,16 @@ public static class PyRevitConfigService {
         }
     }
 
+    /// <summary>
+    /// Copy the machine config to a per-user location, then drop the plaintext
+    /// credential keys.
+    /// </summary>
+    /// <remarks>
+    /// A machine config written by a pre-sealing build can still hold a plaintext
+    /// token, which the copy would carry verbatim into this user's config. The
+    /// sealed key is left alone: it is bound to the profile that wrote it and
+    /// means nothing here, and it is the admin's own copy to remove, not ours.
+    /// </remarks>
     private static void SeedToUserConfig(string sourceFile, string targetFile) {
         try {
             string? dir = Path.GetDirectoryName(targetFile);
@@ -557,11 +572,6 @@ public static class PyRevitConfigService {
             return;
         }
 
-        // A machine config written by a pre-sealing build can still hold a
-        // plaintext token, and seeding copies it verbatim into this user's config.
-        // The sealed key is left alone: it is bound to the profile that wrote it
-        // and is meaningless here, but it is the admin's own copy, not ours to
-        // delete from their file.
         StripPlaintextCredentialKeysFromFile(targetFile);
     }
 

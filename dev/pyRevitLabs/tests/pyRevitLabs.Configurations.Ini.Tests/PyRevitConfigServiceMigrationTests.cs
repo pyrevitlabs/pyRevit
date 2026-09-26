@@ -210,12 +210,9 @@ public class PyRevitConfigServiceMigrationTests {
             PyRevitConfigService.RepairSplitAdminConfig(userConfig, machineConfig);
 
             var promoted = File.ReadAllText(machineConfig);
-            // Everything credential-shaped is omitted, sealed or not: this copy is
-            // promoted for every user of the machine.
             Assert.DoesNotContain("SEALED-BLOB", promoted);
             Assert.DoesNotContain("ghp_plaintext", promoted);
             Assert.DoesNotContain("username", promoted);
-            // Non-credential settings are still carried across.
             Assert.Contains("Private.extension", promoted);
             Assert.Contains("disabled", promoted);
         }
@@ -303,6 +300,41 @@ public class PyRevitConfigServiceMigrationTests {
             Assert.DoesNotContain("ghp_legacy", merged);
             Assert.DoesNotContain("username", merged);
             Assert.Contains("Legacy.extension", merged);
+        }
+        finally {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    /// <summary>
+    /// Stripping a plaintext token out of the machine config is not a setting being
+    /// moved. When the source contributes nothing - it holds only settings the
+    /// merge never carries, and the target already has the clone registry and every
+    /// extension section - the source still holds the only copy of those settings
+    /// and must survive. Reporting the strip as a move retired it, and its
+    /// [core] settings stopped taking effect.
+    /// </summary>
+    [Fact]
+    public void RepairSplitAdminConfig_KeepsUserConfig_WhenOnlyTheTargetWasStripped() {
+        var dir = NewTempDir();
+        try {
+            var userConfig = Path.Combine(dir, "user.ini");
+            var machineConfig = Path.Combine(dir, "machine.ini");
+
+            File.WriteAllText(userConfig, "[core]\r\ncheckupdates = true\r\n");
+            File.WriteAllText(machineConfig,
+                "[environment]\r\nclones = {\"master\":\"C:\\\\Clone\"}\r\n" +
+                "[Legacy.extension]\r\nprivate_repo = true\r\ntoken = \"ghp_legacy\"\r\n");
+
+            PyRevitConfigService.RepairSplitAdminConfig(userConfig, machineConfig);
+
+            Assert.True(File.Exists(userConfig));
+            Assert.Empty(RetiredCopies(userConfig));
+            Assert.Contains("checkupdates", File.ReadAllText(userConfig));
+
+            var machine = File.ReadAllText(machineConfig);
+            Assert.DoesNotContain("ghp_legacy", machine);
+            Assert.Contains("Legacy.extension", machine);
         }
         finally {
             Directory.Delete(dir, recursive: true);

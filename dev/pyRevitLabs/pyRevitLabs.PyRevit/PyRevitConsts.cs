@@ -146,20 +146,26 @@ namespace pyRevitLabs.PyRevit {
         public const string DefaultExtensionRepoDefaultBranch = "master";
         public const string ExtensionsDefaultDirName = "Extensions";
         public const string ExtensionDisabledKey = "disabled";
-        // The only key a credential is stored under. Its value is a DPAPI-sealed
-        // blob, never the secret itself. Aliased from the protector so the key and
-        // the format it holds cannot drift apart; mirrored in
-        // pyrevit.coreutils.credentials.
+        /// <summary>
+        /// The only key a credential is stored under; its value is a DPAPI-sealed
+        /// blob, never the secret. Aliased from the protector so the key and the
+        /// format it holds cannot drift apart, and mirrored in
+        /// pyrevit.coreutils.credentials.
+        /// </summary>
         public const string ExtensionCredentialKey = ExtensionCredentialProtector.ConfigKeyName;
         public const string ExtensionPrivateRepoKey = "private_repo";
-        // Username the in-Revit updater authenticates a GitHub token with. GitHub
-        // ignores it and only checks the token, but libgit2 requires a username
-        // to build a credential pair at all.
+        /// <summary>
+        /// Username the in-Revit updater authenticates a GitHub token with. GitHub
+        /// ignores it and only checks the token, but libgit2 needs a username to
+        /// build a credential pair at all.
+        /// </summary>
         public const string ExtensionTokenDefaultUsername = "oauth2";
-        // Legacy plaintext credential keys. Only read, by the one-time migration
-        // in pyrevit.versionmgr.upgrade, and by RemoveLegacyCredentialKeys on a
-        // re-persist; nothing writes them any more. Aliased from the protector so
-        // a new legacy key cannot be added here without the CLI clearing it.
+        /// <summary>
+        /// Legacy plaintext credential keys, read only by the one-time migration in
+        /// pyrevit.versionmgr.upgrade and by RemoveLegacyCredentialKeys on a
+        /// re-persist. Aliased from the protector so a new legacy key cannot be
+        /// added here without the CLI clearing it too.
+        /// </summary>
         public const string ExtensionUsernameKey = ExtensionCredentialProtector.LegacyUsernameKeyName;
         public const string ExtensionPasswordKey = ExtensionCredentialProtector.LegacyPasswordKeyName;
         public const string ExtensionTokenKey = ExtensionCredentialProtector.LegacyTokenKeyName;

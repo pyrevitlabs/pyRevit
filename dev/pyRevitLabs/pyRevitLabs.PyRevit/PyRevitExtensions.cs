@@ -221,13 +221,23 @@ namespace pyRevitLabs.PyRevit {
 
         }
 
-        // save extension credentials to config file so the extension can be updated later,
-        // by the in-Revit extension manager or the cli, without asking for credentials again.
-        //
-        // the secret is sealed with DPAPI before it reaches the config file, and the username
-        // travels inside the same blob so that clearing a credential is always a single-key
-        // removal. The in-Revit extension manager writes the same key via
-        // pyrevit.coreutils.credentials, which is what lets either side read the other's value.
+        /// <summary>
+        /// Seal the credentials an extension was installed with, so a later update
+        /// by the in-Revit extension manager or the CLI does not have to ask again.
+        /// </summary>
+        /// <remarks>
+        /// The secret is sealed with DPAPI before it reaches the config file, and
+        /// the username travels inside the same blob, so clearing a credential is
+        /// always a single-key removal. The in-Revit extension manager writes the
+        /// same key through pyrevit.coreutils.credentials, which is what lets
+        /// either side read the other's value.
+        /// <para>
+        /// A token is stored against PyRevitConsts.ExtensionTokenDefaultUsername
+        /// rather than the username the clone used: that one defaults to
+        /// "pyrevit-cli", this process' own identity, and no CLI flag overrides
+        /// what the in-Revit updater will authenticate with.
+        /// </para>
+        /// </remarks>
         // @handled @logs
         public static void SaveExtensionCredentials(string extensionName,
                                                     PyRevitExtensionTypes extensionType,
@@ -248,10 +258,6 @@ namespace pyRevitLabs.PyRevit {
                     ? new ExtensionCredential(userpass.Username,
                                               userpass.Password,
                                               ExtensionCredentialKind.Password)
-                    // Deliberately not tokenCreds.Username: that defaults to "pyrevit-cli",
-                    // which is this process' own identity for the clone. The stored value has
-                    // to be what the in-Revit updater authenticates with, and no CLI flag
-                    // overrides it.
                     : new ExtensionCredential(PyRevitConsts.ExtensionTokenDefaultUsername,
                                               ((GitInstallerAccessTokenCredentials)credentials).AccessToken,
                                               ExtensionCredentialKind.Token);
@@ -259,8 +265,6 @@ namespace pyRevitLabs.PyRevit {
             _logger.Debug("Sealing credentials for extension \"{0}\" into config section \"{1}\"",
                           extensionName, extSection);
 
-            // Seal before writing anything, so a DPAPI failure cannot leave the
-            // section flagged private with no usable credential behind it.
             string sealedCredential;
             try {
                 sealedCredential = ExtensionCredentialProtector.Protect(toStore);
@@ -274,16 +278,20 @@ namespace pyRevitLabs.PyRevit {
             cfg.SetSectionKeyValue(extSection, PyRevitConsts.ExtensionPrivateRepoKey, true);
             cfg.SetSectionKeyValue(extSection, PyRevitConsts.ExtensionCredentialKey, sealedCredential);
 
-            // A re-persist has to clear whatever a previous run left behind, or a
-            // user who rotates their token keeps the old one usable from the file.
             RemoveLegacyCredentialKeys(cfg, extSection);
         }
 
-        // Drops the plaintext credential keys written by pyRevit before they were
-        // sealed. A no-op on a config that never had them, which is every config
-        // written since the blob format landed. Driven by the protector's list so
-        // this and the admin-config merge cannot disagree about which keys are
-        // credential material.
+        /// <summary>
+        /// Drop the plaintext credential keys pyRevit wrote before they were sealed.
+        /// </summary>
+        /// <remarks>
+        /// A re-persist has to clear whatever a previous run left behind, or a user
+        /// who rotates their token keeps the old one usable from the file. Driven by
+        /// the protector's key list so this and the admin-config merge cannot
+        /// disagree about which keys are credential material. A key that cannot be
+        /// removed is not fatal: the sealed blob is already stored, and the in-Revit
+        /// migration clears leftovers on the next load.
+        /// </remarks>
         private static void RemoveLegacyCredentialKeys(IConfigurationService cfg, string extSection) {
             bool removedAny = false;
             foreach (string credentialKey in ExtensionCredentialProtector.AllConfigKeyNames) {
@@ -300,8 +308,6 @@ namespace pyRevitLabs.PyRevit {
                                   credentialKey, extSection);
                 }
                 catch (Exception removeError) {
-                    // Not fatal: the sealed blob is already stored, and a leftover
-                    // plaintext key is cleared by the in-Revit migration on next load.
                     _logger.Warn(removeError,
                                  "Could not remove legacy credential key \"{0}\" from config section \"{1}\"",
                                  credentialKey, extSection);

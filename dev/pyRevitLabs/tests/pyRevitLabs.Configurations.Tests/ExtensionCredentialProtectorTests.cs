@@ -76,6 +76,10 @@ public class ExtensionCredentialProtectorTests {
             StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// DPAPI uses a fresh IV per call, so two seals of the same input differ. A
+    /// stored value is therefore not a stable identifier for a credential.
+    /// </summary>
     [Fact]
     public void Protect_SameInput_ProducesDifferentStoredValues() {
         var credential = new ExtensionCredential(Username, Token, ExtensionCredentialKind.Token);
@@ -83,8 +87,6 @@ public class ExtensionCredentialProtectorTests {
         string first = ExtensionCredentialProtector.Protect(credential);
         string second = ExtensionCredentialProtector.Protect(credential);
 
-        // DPAPI uses a fresh IV per call, so two seals of the same input differ.
-        // This also means a value in the config is not a stable identifier.
         Assert.NotEqual(first, second);
     }
 
@@ -174,12 +176,14 @@ public class ExtensionCredentialProtectorTests {
     /// as if it had been sealed with a different one, which is what a blob
     /// copied between profiles amounts to at the DPAPI boundary.
     /// </summary>
+    /// <summary>
+    /// Re-seals the same plaintext under the same scope but a foreign entropy, so
+    /// a passing test proves the entropy really is part of what is authenticated.
+    /// </summary>
     [Fact]
     public void Unprotect_BlobSealedForOtherEntropy_ThrowsUnavailable() {
         string stored = ExtensionCredentialProtector.Protect(
             new ExtensionCredential(Username, Token, ExtensionCredentialKind.Token));
-        // Re-seal the same plaintext under the same scope but a foreign entropy,
-        // proving the entropy really is part of what is authenticated.
         string foreign = ResealUnderForeignEntropy(stored, "someone-elses-app.v1");
 
         Assert.Throws<ExtensionCredentialUnavailableException>(

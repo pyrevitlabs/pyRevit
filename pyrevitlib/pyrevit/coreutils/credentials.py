@@ -398,18 +398,19 @@ def _config_file_path():
         return None
 
 
-def _read_from_disk(section_name):
-    """Read the stored credential back off disk, bypassing the in-memory store.
+def _read_from_disk(section_name, key=CONFIG_KEY):
+    """Read a config value back off disk, bypassing the in-memory store.
 
     ``user_config.save_changes`` deliberately swallows a write failure and only
     logs it, so reading through the same in-memory ``ConfigSection`` that wrote
     the value proves nothing about durability: it would return the value even
     after the flush was dropped. Reopening the file is the only way to know the
     bytes actually landed, and that is the question a credential write has to
-    answer before any plaintext is removed.
+    answer both when storing a sealed value and when removing plaintext.
 
     Args:
         section_name (str): extension config section name
+        key (str): config key to read
 
     Returns:
         str or None: the raw stored value, or None when the file definitively
@@ -447,13 +448,11 @@ def _read_from_disk(section_name):
     try:
         section = sections.get_section(section_name)
     except AttributeError:
-        # No such section in the file, which is a definite answer rather than a
-        # failure to look: get_section raises for a missing section.
         return None
 
-    if not section.has_option(CONFIG_KEY):
+    if not section.has_option(key):
         return None
-    return section.get_option(CONFIG_KEY, None)
+    return section.get_option(key, None)
 
 
 def _read_raw(section_name):
@@ -640,7 +639,16 @@ def set_credential(section_name, username, secret, kind="token"):
     # merely some value: a rotation whose flush was dropped still leaves the
     # previous credential readable, and accepting that would report success while
     # a restart goes on using the old token. Nothing is removed until this passes.
-    stored = _read_from_disk(section_name)
+    #
+    # A verification that cannot be performed leaves the outcome unknown, so the
+    # in-memory value is dropped rather than kept: get_credential reads memory,
+    # and a credential that only exists in memory is one a restart will not have.
+    try:
+        stored = _read_from_disk(section_name)
+    except Exception:
+        _restore_stored_value(section, None)
+        raise
+
     if not _is_stored_credential(stored, username, secret, kind):
         _restore_stored_value(section, stored)
         raise PyRevitCredentialUnavailable(
@@ -652,6 +660,19 @@ def set_credential(section_name, username, secret, kind="token"):
 
     if _remove_legacy_keys(section):
         _save()
+        remaining = [
+            key
+            for key in LEGACY_CREDENTIAL_KEYS
+            if _read_from_disk(section_name, key) is not None
+        ]
+        if remaining:
+            raise PyRevitCredentialUnavailable(
+                "The credential for [{}] was encrypted, but the plaintext {} "
+                "could not be removed from the config file. Delete those keys by "
+                "hand: until then the secret is still readable on disk.".format(
+                    section_name, ", ".join(remaining)
+                )
+            )
 
     mlogger.info("credentials: stored an encrypted credential for [%s]", section_name)
 
@@ -662,11 +683,22 @@ def delete_credential(section_name):
     Also clears ``private_repo``, which would otherwise be left claiming a
     credential that no longer exists.
 
+    The removal is read back off disk before it is reported, for the same reason
+    :func:`set_credential` verifies its write: ``save_changes`` swallows a failed
+    flush, so the in-memory store would report a cleared credential that a
+    restart brings straight back.
+
     Args:
         section_name (str): extension config section name
 
     Returns:
-        (bool): whether anything was removed
+        (bool): whether a credential was there to remove, and is now gone from
+        the config file
+
+    Raises:
+        PyRevitCredentialStoreReadOnly: the config is admin-locked
+        PyRevitCredentialUnavailable: the credential was removed in memory but
+            is still in the config file, so it will return on the next start
     """
     if _is_readonly():
         raise PyRevitCredentialStoreReadOnly(
@@ -680,21 +712,33 @@ def delete_credential(section_name):
 
     removed = _remove_key(section, CONFIG_KEY)
     removed = _remove_legacy_keys(section) or removed
-    if removed:
-        try:
-            section.set_option("private_repo", False)
-            _save()
-        except Exception as flag_err:
-            mlogger.warning(
-                "credentials: removed the credential for [%s] but could not clear "
-                "its private_repo flag: %s",
-                section_name,
-                flag_err,
-            )
-            return True
+    if not removed:
+        return False
+
+    try:
+        section.set_option("private_repo", False)
+        _save()
+    except Exception as flag_err:
+        mlogger.warning(
+            "credentials: removed the credential for [%s] but could not clear "
+            "its private_repo flag: %s",
+            section_name,
+            flag_err,
+        )
+
+    still_stored = _read_from_disk(section_name) is not None
+    still_plaintext = any(
+        _read_from_disk(section_name, key) is not None for key in LEGACY_CREDENTIAL_KEYS
+    )
+    if still_stored or still_plaintext:
+        raise PyRevitCredentialUnavailable(
+            "The credential for [{}] was cleared in memory but is still in the "
+            "config file, so it will come back on the next start. The file may "
+            "be read-only or the write may have been refused.".format(section_name)
+        )
 
     mlogger.info("credentials: cleared the stored credential for [%s]", section_name)
-    return removed
+    return True
 
 
 def _remove_legacy_keys(section):
