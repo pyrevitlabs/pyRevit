@@ -19,6 +19,28 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public bool clean = false;
     }
 
+    /// <summary>
+    /// Runs <c>#! python3</c> commands on the process-wide CPython interpreter via pythonnet.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The interpreter and its pythonnet metatype are a process-wide singleton that outlives the
+    /// engine object: a Reload drops the engine from the session cache and the next CPython command
+    /// re-attaches to the still-running interpreter instead of starting a new one. See
+    /// <see cref="Shutdown"/> for why the interpreter is never torn down mid-session.
+    /// </para>
+    /// <para>
+    /// Invariant: <see cref="PythonEngine.Initialize"/> is only ever called on the first CPython
+    /// command of the Revit process. Everything pythonnet treats as initialize-only configuration
+    /// (<see cref="CpyRuntime.PythonDLL"/>, <see cref="PythonEngine.ProgramName"/>) must stay
+    /// behind the same guard, because pythonnet rejects those assignments once the runtime is up.
+    /// </para>
+    /// <para>
+    /// Consequence: the <c>clean</c> engine config yields a fresh engine object but not a fresh
+    /// interpreter, so <c>sys.modules</c> entries imported before a Reload survive it, as do the
+    /// CLR type wrappers the metatype holds for the pre-Reload runtime assembly.
+    /// </para>
+    /// </remarks>
     public class CPythonEngine : ScriptEngine {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
 
@@ -42,11 +64,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public override void Start(ref ScriptRuntime runtime) {
             // if this is the first run
             if (!RecoveredFromCache) {
-                // load Python DLL
-                CpyRuntime.PythonDLL = GetPythonDll(runtime);
-                // initialize
-                PythonEngine.ProgramName = "pyrevit";
                 if (!PythonEngine.IsInitialized) {
+                    // load Python DLL
+                    CpyRuntime.PythonDLL = GetPythonDll(runtime);
+                    // initialize
+                    PythonEngine.ProgramName = "pyrevit";
                     try {
                         PythonEngine.Initialize();
                     }
@@ -65,6 +87,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
                                 ex);
                         }
                     }
+                }
+                else {
+                    logger.Debug(
+                        "CPython engine {0} re-attaching to the interpreter already up in this process.",
+                        Id
+                        );
                 }
                 // if this is a new engine, save the syspaths
                 StoreSearchPaths();
@@ -151,10 +179,42 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public override void Stop(ref ScriptRuntime runtime) {
         }
 
+        /// <summary>
+        /// Releases the engine back to the session cache, on Reload or on Refresh Engine.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The CPython interpreter is deliberately left running. pythonnet's
+        /// <c>PythonEngine.Shutdown</c> is a soft shutdown: it disposes the CLR metatype, import
+        /// hook and managed type wrappers while the interpreter stays alive, and stashes that state
+        /// as a <c>BinaryFormatter</c> blob in <c>sys.clr_data</c> for the next
+        /// <c>PythonEngine.Initialize</c> to read back. Reload duplicates assemblies into Revit's
+        /// assembly load context, so deserializing that blob fails with "Invalid BinaryFormatter
+        /// stream" and leaves pythonnet flagged as initialized but missing the metatype it skipped
+        /// re-creating, wedging every later CPython command for the rest of the Revit session.
+        /// </para>
+        /// <para>
+        /// Leaving the interpreter up skips the stash entirely, so post-Reload commands reuse the
+        /// live runtime. Final process shutdown is unaffected: pythonnet subscribes to
+        /// <see cref="AppDomain"/>'s process-exit notification on initialize and tears the runtime
+        /// down there with <c>Runtime.ProcessIsTerminating</c> set, so nothing is stashed at Revit
+        /// exit. That hook is also the reason this path must not call
+        /// <c>PythonEngine.Shutdown</c>: doing so unsubscribes it.
+        /// </para>
+        /// <para>
+        /// Invariant: never call <c>PythonEngine.Shutdown</c> from this path. It is the single
+        /// funnel for both Reload (<c>ScriptEngineManager.ClearEngines</c>) and Refresh Engine
+        /// (<c>ScriptEngineManager.SetCachedEngine</c>), so a single call here would break every
+        /// post-Reload CPython command, not just the reloaded one.
+        /// </para>
+        /// </remarks>
         public override void Shutdown() {
             CleanupBuiltins();
             CleanupStreams();
-            PythonEngine.Shutdown();
+            logger.Debug(
+                "CPython engine {0} released; interpreter left up for the lifetime of the Revit process.",
+                Id
+                );
         }
 
         private void SetupBuiltins(ref ScriptRuntime runtime, PyModule module) {
