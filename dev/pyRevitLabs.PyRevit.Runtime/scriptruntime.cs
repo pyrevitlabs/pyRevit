@@ -133,6 +133,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     App = (Application)ScriptRuntimeConfigs.EventSender;
             }
 
+            RevitAppResolver.SeedSessionUIApplication(
+                ScriptRuntimeConfigs.CommandData != null
+                    ? ScriptRuntimeConfigs.CommandData.Application
+                    : _uiApp);
+
             // prepare results
             ExecutionResult = ScriptExecutorResultCodes.Succeeded;
             TraceMessage = string.Empty;
@@ -328,8 +333,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
         // revit
         public string DocumentName {
             get {
-                if (UIApp != null && UIApp.ActiveUIDocument != null)
-                    return UIApp.ActiveUIDocument.Document.Title;
+                var uidoc = ActiveUIDocument;
+                if (uidoc != null)
+                    return uidoc.Document.Title;
                 else
                     return string.Empty;
             }
@@ -337,8 +343,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public string DocumentPath {
             get {
-                if (UIApp != null && UIApp.ActiveUIDocument != null)
-                    return UIApp.ActiveUIDocument.Document.PathName;
+                var uidoc = ActiveUIDocument;
+                if (uidoc != null)
+                    return uidoc.Document.PathName;
                 else
                     return string.Empty;
             }
@@ -364,13 +371,61 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public UIControlledApplication UIControlledApp { get; set; }
 
+        /// <summary>
+        /// The active <see cref="UIDocument"/> behind <see cref="UIApp"/>, or
+        /// <c>null</c> when there is no usable UI document.
+        /// </summary>
+        /// <remarks>
+        /// <b>Invariant:</b> never throws. Because <see cref="UIApp"/> is resolved
+        /// for DB-only event hooks too, <c>UIApp.ActiveUIDocument</c> can now raise
+        /// there where it used to be unreachable behind a null handle. Revit
+        /// refusing an active document is the same condition as there not being
+        /// one, so every consumer goes through here instead of reading
+        /// <c>UIApp.ActiveUIDocument</c> directly.
+        /// </remarks>
+        public UIDocument ActiveUIDocument {
+            get {
+                try {
+                    return UIApp != null ? UIApp.ActiveUIDocument : null;
+                }
+                catch (Exception ex) {
+                    logger.Debug("No active UIDocument available | {0}", ex.Message);
+                    return null;
+                }
+            }
+        }
+
+        /// <summary>
+        /// UI application handle for this runtime, resolved from whichever
+        /// application handle the runtime was handed. This is the value the
+        /// <c>__revit__</c> builtin carries, so it is always a
+        /// <see cref="UIApplication"/> or <c>null</c> - never a bare
+        /// <see cref="Application"/>, <see cref="ControlledApplication"/> or
+        /// <see cref="UIControlledApplication"/>.
+        /// </summary>
+        /// <remarks>
+        /// <b>Warning:</b> in a DB-only <c>Application_*</c> event hook the handle
+        /// is resolved by wrapping the event's <see cref="Application"/>, which
+        /// Revit may leave without an <c>ActiveUIDocument</c> for the duration of
+        /// the event. The handle is live regardless, and
+        /// <see cref="ScriptRuntimeConfigs.EventSender"/> still holds the raw
+        /// sender.
+        ///
+        /// <para>The resolved handle is cached for the lifetime of the runtime and
+        /// is not re-resolved once the runtime is disposed. Null when no UI
+        /// application can be reached at all, which only happens outside a Revit
+        /// host.</para>
+        /// </remarks>
         public UIApplication UIApp {
             get {
                 if (ScriptRuntimeConfigs.CommandData != null)
                     return ScriptRuntimeConfigs.CommandData.Application;
-                else if (_uiApp != null)
-                    return _uiApp;
-                return null;
+
+                if (_uiApp == null && !IsDisposed)
+                    _uiApp = RevitAppResolver.GetUIApplication(
+                        (object)UIControlledApp ?? (object)ControlledApp ?? _app);
+
+                return _uiApp;
             }
 
             set {
