@@ -77,13 +77,9 @@ internal static class InterpreterLifecycleProbe {
     }
 
     private static int? ReadMarker() {
-        using PyObject? value = Eval(MarkerRead);
-        return value is null ? null : Convert.ToInt32(value);
-    }
-
-    private static PyObject? Eval(string code) {
         using Py.GILState gil = Py.GIL();
-        return PythonEngine.Eval(code);
+        using PyObject? value = PythonEngine.Eval(MarkerRead);
+        return value is null ? null : Convert.ToInt32(value);
     }
 
     private static void Exec(string code) {
