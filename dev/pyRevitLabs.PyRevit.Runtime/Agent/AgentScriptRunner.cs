@@ -13,8 +13,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// Public because both IronPython and pythonnet only bind public members.
     /// </remarks>
     public sealed class AgentScriptContext {
-        public AgentScriptContext(UIApplication uiApp, string runId, string mode, string source, string inputsJson) {
+        public AgentScriptContext(UIApplication uiApp, string runId, string mode, string source, string inputsJson, string workspace) {
             UIApp = uiApp;
+            Workspace = workspace;
             RunId = runId;
             Mode = mode;
             Source = source;
@@ -26,6 +27,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public string Mode { get; }
         public string Source { get; }
         public string InputsJson { get; }
+
+        /// <summary>
+        /// Folder the agent keeps shared modules in, or null. The runner puts it on
+        /// <c>sys.path</c> for the run and re-imports its modules fresh.
+        /// </summary>
+        public string Workspace { get; }
 
         public string ResultJson { get; private set; }
         public string Output { get; private set; } = string.Empty;

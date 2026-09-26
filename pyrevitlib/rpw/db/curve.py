@@ -20,7 +20,7 @@ class Curve(BaseObjectWrapper):
 
     _revit_object_class = DB.Curve
 
-    def create_detail(self, view=None, doc=revit.doc):
+    def create_detail(self, view=None, doc=None):
         """
         Args:
             view (``DB.View``): Optional View. Default: ``uidoc.ActiveView``
@@ -28,9 +28,10 @@ class Curve(BaseObjectWrapper):
         """
         # TODO: Accept Detail Type (GraphicStyle)
         view = view or revit.active_view.unwrap()
+        doc = doc or revit.doc
         return doc.Create.NewDetailCurve(view, self._revit_object)
 
-    def create_model(self, view=None, doc=revit.doc):
+    def create_model(self, view=None, doc=None):
         # http://www.revitapidocs.com/2017.1/b880c4d7-9841-e44e-2a1c-36fefe274e2e.htm
         raise NotImplemented
 

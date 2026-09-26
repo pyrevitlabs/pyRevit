@@ -9,7 +9,7 @@ Read `revit-scripting` first. Check API names with `lookup_revit_api`.
 
 ## Views
 
-Create, frame and find views with the `views` skill and its `kit` helpers: `kit.plan`, `kit.section`, `kit.elevation`, `kit.view3d`, `kit.crop_to`, `kit.apply_template`.
+Create, frame and find views with the `views` skill: `create.create_plan_view`, `create_section_view`, `create_elevation_view`, `create_3d_view`, `update.crop_view_to_elements`, all in pyrevitlib.
 
 - **Settings:** `view.Scale` (for example 100 for 1:100), `view.DetailLevel`, `view.CropBoxActive`.
 - **Templates:** prefer the project's templates to setting graphics by hand.

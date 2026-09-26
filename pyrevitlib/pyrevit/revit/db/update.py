@@ -2,7 +2,7 @@
 
 import os.path as op
 
-from pyrevit import DOCS
+from pyrevit import DOCS, PyRevitException
 from pyrevit.framework import List
 from pyrevit import DB
 from pyrevit.revit.db import query
@@ -133,3 +133,165 @@ def set_active_workset(workset_id, doc=None):
     if doc.IsWorkshared:
         workset_table = doc.GetWorksetTable()
         workset_table.SetActiveWorksetId(workset_id)
+
+
+VIEW_DIRECTIONS = {
+    "southeast": (-1.0, 1.0, -1.0),
+    "southwest": (1.0, 1.0, -1.0),
+    "northeast": (-1.0, -1.0, -1.0),
+    "northwest": (1.0, -1.0, -1.0),
+    "south": (0.0, 1.0, -0.6),
+    "north": (0.0, -1.0, -0.6),
+    "east": (-1.0, 0.0, -0.6),
+    "west": (1.0, 0.0, -0.6),
+    "top": (0.0, 0.0001, -1.0),
+}
+
+
+def attach_wall_tops(walls, target):
+    """Attach the tops of walls to a roof, floor or ceiling (Revit 2024 and later).
+
+    Gable end walls attached to a roof follow its rake, so the gable needs
+    no separate infill.
+
+    Args:
+        walls (DB.Wall | list[DB.Wall]): walls to attach.
+        target (DB.Element): roof, floor or ceiling above the walls.
+
+    Raises:
+        PyRevitException: on Revit versions without Wall.AddAttachment.
+    """
+    if not hasattr(DB.Wall, "AddAttachment"):
+        raise PyRevitException("Wall.AddAttachment needs Revit 2024 or later.")
+    if isinstance(walls, DB.Wall):
+        walls = [walls]
+    for wall in walls:
+        wall.AddAttachment(target.Id, DB.AttachmentLocation.Top)
+    target.Document.Regenerate()
+
+
+def _view_orientation(forward, eye=None):
+    forward = forward.Normalize()
+    right = forward.CrossProduct(DB.XYZ.BasisZ)
+    if right.IsZeroLength():
+        right = DB.XYZ.BasisX
+    up = right.Normalize().CrossProduct(forward).Normalize()
+    return DB.ViewOrientation3D(eye or forward.Negate().Multiply(1000.0), up, forward)
+
+
+def orient_3d_view(view3d, direction="southeast"):
+    """Point a 3D view from a named direction.
+
+    Args:
+        view3d (DB.View3D): 3D view.
+        direction (str, optional): where the viewer stands: southeast,
+            southwest, northeast, northwest, south, north, east, west, top.
+            Sides look down at about 35 degrees.
+    """
+    if direction not in VIEW_DIRECTIONS:
+        raise PyRevitException(
+            "direction must be one of {}.".format(", ".join(sorted(VIEW_DIRECTIONS)))
+        )
+    view3d.SetOrientation(_view_orientation(DB.XYZ(*VIEW_DIRECTIONS[direction])))
+
+
+def set_3d_view_camera(view3d, eye, target):
+    """Point a 3D view from ``eye`` toward ``target`` (points as DB.XYZ)."""
+    view3d.SetOrientation(_view_orientation(target - eye, eye))
+
+
+def set_section_box(view3d, elements=None, padding=2.0, doc=None):
+    """Fit a 3D view's section box around elements and turn it on.
+
+    Args:
+        view3d (DB.View3D): 3D view.
+        elements (list[DB.Element], optional): elements to frame, defaults to
+            query.get_model_elements().
+        padding (float, optional): clearance around the elements, in feet.
+        doc (DB.Document, optional): document, defaults to the view's.
+
+    Raises:
+        PyRevitException: when none of the elements has a bounding box.
+    """
+    doc = doc or view3d.Document
+    box = query.get_elements_bounding_box(
+        elements or query.get_model_elements(doc=doc), padding=padding
+    )
+    if box is None:
+        raise PyRevitException("Nothing to frame: no elements with a bounding box.")
+    view3d.SetSectionBox(box)
+    view3d.IsSectionBoxActive = True
+
+
+def crop_view_to_elements(view, elements=None, padding=3.0, doc=None):
+    """Crop a plan, section or elevation to elements and turn the crop on.
+
+    Args:
+        view (DB.View): view with a crop box.
+        elements (list[DB.Element], optional): elements to show, defaults to
+            query.get_model_elements().
+        padding (float, optional): clearance around the elements, in feet.
+        doc (DB.Document, optional): document, defaults to the view's.
+    """
+    doc = doc or view.Document
+    box = query.get_elements_bounding_box(elements or query.get_model_elements(doc=doc))
+    if box is None:
+        raise PyRevitException("Nothing to crop to: no elements with a bounding box.")
+    to_view = view.CropBox.Transform.Inverse
+    corners = [
+        to_view.OfPoint(DB.XYZ(x, y, z))
+        for x in (box.Min.X, box.Max.X)
+        for y in (box.Min.Y, box.Max.Y)
+        for z in (box.Min.Z, box.Max.Z)
+    ]
+    crop = view.CropBox
+    crop.Min = DB.XYZ(
+        min(c.X for c in corners) - padding,
+        min(c.Y for c in corners) - padding,
+        crop.Min.Z,
+    )
+    crop.Max = DB.XYZ(
+        max(c.X for c in corners) + padding,
+        max(c.Y for c in corners) + padding,
+        crop.Max.Z,
+    )
+    view.CropBox = crop
+    view.CropBoxActive = True
+    view.CropBoxVisible = False
+
+
+def hide_non_model_categories(view, doc=None):
+    """Hide every non-model category (levels, grids, annotation) in a view."""
+    doc = doc or view.Document
+    for category in doc.Settings.Categories:
+        if category.CategoryType != DB.CategoryType.Model and view.CanCategoryBeHidden(
+            category.Id
+        ):
+            view.SetCategoryHidden(category.Id, True)
+
+
+def hide_categories(view, categories, doc=None):
+    """Hide categories in a view.
+
+    Args:
+        view (DB.View): view.
+        categories (list): categories as names, BuiltInCategory values or
+            ``"OST_..."`` strings; anything query.get_category accepts.
+        doc (DB.Document, optional): document, defaults to the view's.
+
+    Raises:
+        PyRevitException: when a category doesn't exist or can't be hidden
+            in the view.
+    """
+    doc = doc or view.Document
+    for value in categories:
+        category = query.get_category(value, doc=doc)
+        if category is None:
+            raise PyRevitException("No category {!r}.".format(value))
+        if not view.CanCategoryBeHidden(category.Id):
+            raise PyRevitException(
+                "Category {!r} can't be hidden in view {!r}.".format(
+                    category.Name, view.Name
+                )
+            )
+        view.SetCategoryHidden(category.Id, True)

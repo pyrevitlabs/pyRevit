@@ -60,8 +60,9 @@ def to_element_ids(element_references):
     return [to_element_id(e_ref) for e_ref in element_references]
 
 # TODO: Add case to unwrap rpw elements
-def to_element(element_reference, doc=revit.doc):
+def to_element(element_reference, doc=None):
     """ Same as to_elements but for a single object """
+    doc = doc or revit.doc
     if isinstance(element_reference, DB.Element):
         element = element_reference
     elif isinstance(element_reference, DB.ElementId):
@@ -77,7 +78,7 @@ def to_element(element_reference, doc=revit.doc):
     return element
 
 
-def to_elements(element_references, doc=revit.doc):
+def to_elements(element_references, doc=None):
     """
     Coerces element reference (``int``, or ``ElementId``) into ``DB.Element``.
     Remains unchanged if it's already ``DB.Element``.
@@ -99,7 +100,7 @@ def to_elements(element_references, doc=revit.doc):
         [``DB.Element``]: Elements
     """
     element_references = to_iterable(element_references)
-    return [to_element(e_ref) for e_ref in element_references]
+    return [to_element(e_ref, doc=doc) for e_ref in element_references]
 
 
 def to_class(class_reference):

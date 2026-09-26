@@ -5,7 +5,13 @@ description: Building and changing model geometry. Covers levels, walls, floors,
 
 # Modeling
 
-Read `revit-scripting` first. Use the `kit` helpers below: each one is a tested recipe for a step agents often get wrong, and each raises a `KitError` that says what to fix. Fall back to the raw API only for what `kit` doesn't cover.
+Read `revit-scripting` and `pyrevit-library` first. The functions below are in pyrevitlib; check any of them with `lookup_pyrevit_api`. Fall back to the raw API only for what they don't cover.
+
+```python
+from pyrevit import revit
+from pyrevit.revit.db import query, create, update
+from pyrevit.revit import units
+```
 
 ## Plan before you build
 
@@ -13,19 +19,21 @@ Read `revit-scripting` first. Use the `kit` helpers below: each one is a tested 
 - **Find the types first** with one query:
 
   ```python
+  def names(elements):
+      return sorted(query.get_name(e) for e in elements)
+
   result = {
-      "walls": kit.type_names(DB.WallType),
-      "floors": kit.type_names(DB.FloorType),
-      "roofs": kit.type_names(DB.RoofType),
-      "doors": kit.symbols(category="OST_Doors"),
-      "windows": kit.symbols(category="OST_Windows"),
-      "levels": [(l.Name, l.Elevation) for l in kit.levels()],
+      "walls": names(query.get_types_by_class(DB.WallType)),
+      "floors": names(query.get_types_by_class(DB.FloorType)),
+      "roofs": names(query.get_types_by_class(DB.RoofType)),
+      "doors": sorted("%s : %s" % (s.FamilyName, query.get_name(s)) for s in DB.FilteredElementCollector(doc).OfClass(DB.FamilySymbol).OfCategory(DB.BuiltInCategory.OST_Doors)),
+      "levels": [(l.Name, l.Elevation) for l in DB.FilteredElementCollector(doc).OfClass(DB.Level)],
   }
   ```
 
   Names differ between templates; use the names this returns, never names from memory.
-- **Keep plan data in one file in the workspace** (dimensions, wall lines, openings, rooms) and load it in each script with `plan = kit.load(r"C:\path\house_plan.py")`. It is read fresh on every run and sees `doc`, `DB` and `kit`. Don't paste the same helpers into every script.
-- **Coordinates are in feet**, with one origin. Convert drawing dimensions with `kit.ft("32'-6\"")` or `kit.ft("900mm")`.
+- **Keep plan data in the workspace.** Put dimensions, wall lines, openings and rooms in a module such as `house_plan.py` in a folder, pass that folder as `workspace` to `run_query` and `run_modify`, and `import house_plan`. It is re-imported fresh on every run. Don't paste the same data into every script.
+- **Coordinates are in feet**, with one origin. The create functions accept drawing strings (`"32'-6\""`, `"900mm"`); for your own arithmetic, convert with `units.parse_length`.
 
 ## Build in stages
 
@@ -36,67 +44,74 @@ One `run_modify` per stage, dry run first:
 3. rooms (they check the walls: see below)
 4. floors and ceilings
 5. openings
-6. roofs, then attach the walls to them
+6. roofs, then attach the gable walls to them
 
-Make each stage re-runnable: clear what it made last time, then tag what it makes now.
+Make each stage re-runnable: tag what it makes in Comments, and delete last run's output first.
 
 ```python
-with kit.transaction("Stage 2 - walls"):
-    kit.clear("walls")
-    made = kit.walls(kit.rect(0, 0, 65, 32), "Generic - 8\"", level="Level 1", height=9)
-    kit.mark(made, "walls")
-result = {"walls": len(made)}
+from pyrevit.revit.db import delete
+
+STAGE = "agent:walls"
+with revit.Transaction("Stage 2 - walls"):
+    stale = query.get_elements_by_parameter("Comments", STAGE)
+    if stale:
+        delete.delete_elements(stale)
+    walls = create.create_walls(create.rectangle_points(0, 0, 65, 32), "Generic - 8\"", level="Level 1", height=9)
+    for wall in walls:
+        wall.get_Parameter(DB.BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS).Set(STAGE)
+result = {"walls": len(walls)}
 ```
 
 A failed or rejected stage leaves the earlier ones intact, and each committed stage is one undo entry.
 
-**Check after each stage** with `capture_view(view="3d")`, or `capture_view(view="3d", elements=[...])` to frame part of the model, plus a plan.
+**Check after each stage** with `capture_view(view="3d")`, or `capture_view(view="3d", elements=[...])` to frame part of the model, plus a plan. Read back a number too: a height, an area, a count.
 
 ## Levels
 
 - **Create:** `DB.Level.Create(doc, elevation_ft)`, then set `level.Name`.
-- **Look up:** `kit.level("Level 1")`, or `kit.level()` for the active plan's level.
+- **Look up:** `query.find_level("Level 1")`, or `query.find_level()` for the active plan's level.
 
 ## Walls
 
-- `kit.wall(start, end, wall_type, level=None, height=10, top_level=None, base_offset=0)` places one wall on its location line (usually the centerline).
-- `kit.walls(points, wall_type, ...)` walls a closed outline; pass `closed=False` for an open run.
+- `create.create_wall(start, end, wall_type, level=None, height=10, top_level=None, base_offset=0)` places one wall on its location line (usually the centerline).
+- `create.create_walls(points, wall_type, ...)` walls a closed outline; `closed=False` for an open run. `create.rectangle_points(x1, y1, x2, y2)` gives the corners of a rectangle.
 - **Joins:** end walls exactly on each other's endpoints so Revit joins them. Wall thickness is `wall_type.Width` (feet).
 - **Openings:** leave room for them. An opening wider than its host segment fails with `revit_failure` ("can't cut instance").
 
 ## Rooms: the layout check
 
-- `kit.room(x, y, name, number=None, level=None)` places a room and **raises when the point isn't enclosed**. Place rooms right after the walls: a raise names the room whose walls have a gap.
-- `kit.room_separation(points, level=None)` separates rooms in an open plan without a wall.
+- `create.create_room((x, y), level=None, name=None, number=None)` places a room and **raises when the point isn't enclosed**. Place rooms right after the walls: a raise names the room whose walls have a gap.
+- `create.create_room_separation_lines(points, level=None)` separates rooms in an open plan without a wall.
 - **Tags:** `doc.Create.NewRoomTag(DB.LinkElementId(room.Id), DB.UV(x, y), plan_view.Id)`.
 
 ## Floors and ceilings
 
-- `kit.floor(points, floor_type, level=None, offset=0)`: points are the closed outline; `offset` is feet above the level.
-- `kit.ceiling(points, ceiling_type, level=None, offset=8)`.
+- `create.create_floor(points, floor_type, level=None, offset=0)`: `points` is the closed outline; `offset` is the height above the level.
+- `create.create_ceiling(points, ceiling_type, level=None, offset=8)`.
 
 ## Roofs
 
 - **Native roofs only.** They carry the roof type's layers and materials, stay editable, and walls can attach to them.
-- `kit.gable_roof(x1, y1, x2, y2, roof_type, pitch="8:12", ridge="x", level=None, offset=9)`: the rectangle is the eave outline, overhangs included; `ridge="x"` runs the ridge along X; `offset` is the eave height above the level.
-- `kit.hip_roof(...)`, and `kit.shed_roof(..., low_side="south")`.
-- `kit.footprint_roof(points, roof_type, level, slopes={0: "8:12", 2: "8:12"}, offset=9)` for any other outline: edge `i` runs from `points[i]` to `points[i+1]`.
-- **Pitch** is `"8:12"`, `"30deg"`, or a rise/run number. The raw API `set_SlopeAngle` takes rise over run: not degrees, not radians.
-- The gable, hip and shed helpers **measure the built roof and raise** when its rise doesn't match the pitch, which catches slopes on the wrong edges.
+- `create.create_gable_roof(x1, y1, x2, y2, roof_type, "8:12", ridge="x", level=None, offset=9)`: the rectangle is the eave outline, overhangs included; `ridge="x"` runs the ridge along X; `offset` is the eave height above the level.
+- `create.create_hip_roof(...)`, and `create.create_shed_roof(..., low_side="south")`.
+- `create.create_footprint_roof(points, roof_type, level, slopes={0: "8:12", 2: "8:12"}, offset=9)` for any other outline: edge `i` runs from `points[i]` to `points[i+1]`.
+- **Pitch** is `"8:12"`, `"30deg"`, or a rise/run number. The raw `set_SlopeAngle` takes rise over run: not degrees, not radians.
+- The gable, hip and shed functions **measure the built roof and raise** when its rise doesn't match the pitch, which catches slopes on the wrong edges.
 - **Cross gables** are a second roof. A footprint can't contain internal ridge lines.
-- **Gable end walls:** build the end walls to eave height or taller, then attach them so they follow the rake: `kit.attach_top(end_walls, roof)`. Don't fill gables with DirectShape.
+- **Gable end walls:** build them to eave height or taller, then `update.attach_wall_tops(end_walls, roof)` so they follow the rake. Don't fill gables with DirectShape.
 
 ## Doors, windows, columns and other families
 
-- `kit.opening(symbol, wall, x, y, sill=None)` hosts a door or window on `wall` at plan point (x, y). `symbol` is a type name, or pass `kit.symbol("36\" x 84\"", family="Single-Flush")`.
-- `kit.place(symbol, x, y, level=None, rotation=0)` places furniture, fixtures and other level-based families.
-- `kit.column(symbol, x, y, level, top_level, structural=True)`.
-- `kit.symbol` activates the type, so call it inside the transaction.
+- `create.place_hosted_instance(symbol, wall, (x, y), sill_height=None)` hosts a door or window on a wall at a plan point on its location line.
+- `create.place_family_instance(symbol, (x, y), level=None, rotation=0)` places furniture, fixtures and other level-based families.
+- `create.create_column(symbol, (x, y), level, top_level, structural=True)`.
+- `symbol` is a `FamilySymbol` or its type name; pass `query.find_family_symbol('36" x 84"', family_name="Single-Flush")` when several families share the type name. These functions activate the type.
 - Keep openings clear of wall ends and of each other.
 
 ## Parameters
 
-- `kit.get(element, "Comments")`, `kit.set(element, "FLOOR_HEIGHTABOVELEVEL_PARAM", 0.5)`. Names can be UI names or `BuiltInParameter` names; a missing name raises with the element's parameter names. Length strings such as `'6"'` are converted.
+- Read: `query.get_param(element, "Comments")`, then `AsString()`, `AsDouble()` and so on; or rpw: `db.Element(element).parameters["Comments"].value`.
+- Write: `element.get_Parameter(DB.BuiltInParameter.X).Set(value)` or `update.update_param_value(param, value)`. Prefer built-in parameters to UI names, which are localized.
 
 ## DirectShape (last resort)
 
@@ -113,4 +128,4 @@ A failed or rejected stage leaves the earlier ones intact, and each committed st
 
 ## Materials
 
-- `FilteredElementCollector(doc).OfClass(DB.Material)`. Assign them through the element type's compound structure (`wall_type.GetCompoundStructure()`, change a layer's `MaterialId`, then `SetCompoundStructure`), or through material parameters.
+- `query.get_types_by_class(DB.Material)`. Assign them through the element type's compound structure (`wall_type.GetCompoundStructure()`, change a layer's `MaterialId`, then `SetCompoundStructure`), or through material parameters.

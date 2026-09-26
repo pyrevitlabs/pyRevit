@@ -5,8 +5,8 @@ Python source from a coding agent over a local named pipe and runs it through
 the regular pyRevit script engines. ``pyrevit.agent._runner`` is the
 in-engine half of that contract.
 
-Agent scripts get ``doc``, ``uidoc``, ``app``, ``uiapp``, ``DB``, ``UI``,
-``inputs`` and ``kit`` (:mod:`pyrevit.agent.kit`) injected, and return data by
-assigning ``result``.
+Agent scripts get ``doc``, ``uidoc``, ``app``, ``uiapp``, ``DB``, ``UI`` and
+``inputs`` injected, and return data by assigning ``result``. They are meant to
+use pyrevitlib (``pyrevit.revit``) and rpw rather than re-derive Revit API recipes.
 See ``docs/agent-runtime.md`` for the design.
 """

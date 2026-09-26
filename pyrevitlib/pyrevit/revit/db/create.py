@@ -9,6 +9,7 @@ from pyrevit import coreutils
 from pyrevit.coreutils.logger import get_logger
 from pyrevit import DB
 from pyrevit.revit.db import query
+from pyrevit.revit import units
 from pyrevit.compat import IRONPY, get_elementid_value_func
 
 # pylint: disable=W0703,C0302,C0103
@@ -620,3 +621,801 @@ def create_param_value_filter(
     return DB.ParameterFilterElement.Create(
         doc, filter_name, framework.List[DB.ElementId](filter_cats), rules
     )
+
+
+# model and view creation ----------------------------------------------------
+# Points may be DB.XYZ or (x, y[, z]) tuples; lengths may be feet or strings
+# that units.parse_length reads, such as 32'-6" or 900mm. Every function here
+# changes the document, so call it inside a transaction.
+
+ELEVATION_SIDES = {
+    "south": (0.0, -1.0),
+    "north": (0.0, 1.0),
+    "east": (1.0, 0.0),
+    "west": (-1.0, 0.0),
+}
+
+_PLAN_VIEW_FAMILIES = {
+    "floor": DB.ViewFamily.FloorPlan,
+    "ceiling": DB.ViewFamily.CeilingPlan,
+    "structural": DB.ViewFamily.StructuralPlan,
+}
+
+
+def to_xyz(point, z=None):
+    """Return a DB.XYZ from an XYZ or an (x, y[, z]) tuple.
+
+    Args:
+        point (DB.XYZ | tuple): point; tuple values may be length strings.
+        z (float, optional): elevation that replaces the point's own Z.
+
+    Returns:
+        (DB.XYZ): the point.
+    """
+    if isinstance(point, DB.XYZ):
+        return point if z is None else DB.XYZ(point.X, point.Y, z)
+    values = [units.parse_length(value) for value in point]
+    own_z = values[2] if len(values) > 2 else 0.0
+    return DB.XYZ(values[0], values[1], own_z if z is None else z)
+
+
+def rectangle_points(x1, y1, x2, y2):
+    """Return the corners of an axis-aligned rectangle, counter-clockwise from (x1, y1).
+
+    Edge 0 runs along X at y1, edge 1 along Y at x2, edge 2 along X at y2
+    and edge 3 along Y at x1; the roof functions refer to edges by index.
+    """
+    x1, y1, x2, y2 = [units.parse_length(v) for v in (x1, y1, x2, y2)]
+    return [(x1, y1), (x2, y1), (x2, y2), (x1, y2)]
+
+
+def _point_pairs(points, closed):
+    points = list(points)
+    count = len(points) if closed else len(points) - 1
+    return [(points[i], points[(i + 1) % len(points)]) for i in range(count)]
+
+
+def create_curve_loop(points, z=0.0):
+    """Return a closed DB.CurveLoop of lines through ``points`` at elevation ``z``."""
+    loop = DB.CurveLoop()
+    for start, end in _point_pairs(points, closed=True):
+        loop.Append(DB.Line.CreateBound(to_xyz(start, z), to_xyz(end, z)))
+    return loop
+
+
+def create_curve_array(points, z=0.0, closed=True):
+    """Return a DB.CurveArray of lines through ``points`` at elevation ``z``."""
+    curves = DB.CurveArray()
+    for start, end in _point_pairs(points, closed):
+        curves.Append(DB.Line.CreateBound(to_xyz(start, z), to_xyz(end, z)))
+    return curves
+
+
+def _require_transaction(doc, action):
+    if not doc.IsModifiable:
+        raise PyRevitException(
+            "To {}, start a transaction first "
+            "(with revit.Transaction('name'): ...).".format(action)
+        )
+
+
+def _activate(symbol, doc):
+    if not symbol.IsActive:
+        symbol.Activate()
+        doc.Regenerate()
+    return symbol
+
+
+def create_wall(
+    start,
+    end,
+    wall_type,
+    level=None,
+    height=10.0,
+    top_level=None,
+    base_offset=0.0,
+    structural=False,
+    doc=None,
+):
+    """Create a straight wall along its location line.
+
+    Args:
+        start (DB.XYZ | tuple): location line start (plan point).
+        end (DB.XYZ | tuple): location line end.
+        wall_type (DB.WallType | str): wall type or its name.
+        level (DB.Level | str, optional): base level, defaults to the active
+            plan's level or the lowest level.
+        height (float | str, optional): unconnected height.
+        top_level (DB.Level | str, optional): make the top follow this level
+            instead of an unconnected height.
+        base_offset (float | str, optional): offset from the base level.
+        structural (bool, optional): structural wall.
+        doc (DB.Document, optional): document, defaults to the active one.
+
+    Returns:
+        (DB.Wall): the wall.
+
+    Raises:
+        PyRevitException: when no transaction is open, or a name doesn't
+            match (the message lists the valid names).
+    """
+    doc = doc or DOCS.doc
+    _require_transaction(doc, "create walls")
+    level = query.find_level(level, doc=doc)
+    wall_type = query.find_type(DB.WallType, wall_type, doc=doc)
+    wall = DB.Wall.Create(
+        doc,
+        DB.Line.CreateBound(
+            to_xyz(start, level.Elevation), to_xyz(end, level.Elevation)
+        ),
+        wall_type.Id,
+        level.Id,
+        units.parse_length(height),
+        units.parse_length(base_offset),
+        False,
+        structural,
+    )
+    if top_level is not None:
+        wall.get_Parameter(DB.BuiltInParameter.WALL_HEIGHT_TYPE).Set(
+            query.find_level(top_level, doc=doc).Id
+        )
+    return wall
+
+
+def create_walls(
+    points, wall_type, level=None, height=10.0, closed=True, top_level=None, doc=None
+):
+    """Create walls along a polyline, one wall per pair of consecutive points.
+
+    Args:
+        points (list): plan points as DB.XYZ or (x, y) tuples.
+        wall_type (DB.WallType | str): wall type or its name.
+        level (DB.Level | str, optional): base level, defaults as in create_wall.
+        height (float | str, optional): unconnected height.
+        closed (bool, optional): also join the last point to the first.
+        top_level (DB.Level | str, optional): make the tops follow this level.
+        doc (DB.Document, optional): document, defaults to the active one.
+
+    Returns:
+        (list[DB.Wall]): walls, in the order of the points.
+    """
+    return [
+        create_wall(start, end, wall_type, level, height, top_level, doc=doc)
+        for start, end in _point_pairs(points, closed)
+    ]
+
+
+def create_floor(
+    points, floor_type, level=None, offset=0.0, structural=False, doc=None
+):
+    """Create a floor on a closed outline.
+
+    Args:
+        points (list): outline plan points, in order, not repeating the first.
+        floor_type (DB.FloorType | str): floor type or its name.
+        level (DB.Level | str, optional): level, defaults as in create_wall.
+        offset (float | str, optional): height above the level.
+        structural (bool, optional): structural floor.
+        doc (DB.Document, optional): document, defaults to the active one.
+
+    Returns:
+        (DB.Floor): the floor.
+    """
+    doc = doc or DOCS.doc
+    _require_transaction(doc, "create floors")
+    level = query.find_level(level, doc=doc)
+    floor_type = query.find_type(DB.FloorType, floor_type, doc=doc)
+    if hasattr(DB.Floor, "Create"):
+        loops = framework.List[DB.CurveLoop](
+            [create_curve_loop(points, level.Elevation)]
+        )
+        floor = DB.Floor.Create(doc, loops, floor_type.Id, level.Id)
+    else:
+        floor = doc.Create.NewFloor(
+            create_curve_array(points, level.Elevation), floor_type, level, structural
+        )
+    if offset:
+        floor.get_Parameter(DB.BuiltInParameter.FLOOR_HEIGHTABOVELEVEL_PARAM).Set(
+            units.parse_length(offset)
+        )
+    return floor
+
+
+def create_ceiling(points, ceiling_type, level=None, offset=8.0, doc=None):
+    """Create a ceiling on a closed outline (Revit 2022 and later).
+
+    Args:
+        points (list): outline plan points.
+        ceiling_type (DB.CeilingType | str): ceiling type or its name.
+        level (DB.Level | str, optional): level, defaults as in create_wall.
+        offset (float | str, optional): height above the level.
+        doc (DB.Document, optional): document, defaults to the active one.
+
+    Returns:
+        (DB.Ceiling): the ceiling.
+    """
+    doc = doc or DOCS.doc
+    _require_transaction(doc, "create ceilings")
+    level = query.find_level(level, doc=doc)
+    ceiling_type = query.find_type(DB.CeilingType, ceiling_type, doc=doc)
+    loops = framework.List[DB.CurveLoop]([create_curve_loop(points, level.Elevation)])
+    ceiling = DB.Ceiling.Create(doc, loops, ceiling_type.Id, level.Id)
+    ceiling.get_Parameter(DB.BuiltInParameter.CEILING_HEIGHTABOVELEVEL_PARAM).Set(
+        units.parse_length(offset)
+    )
+    return ceiling
+
+
+def _new_footprint_roof(footprint, level, roof_type, doc):
+    method = doc.Create.GetType().GetMethod("NewFootPrintRoof")
+    arguments = framework.Array[framework.System.Object](
+        [footprint, level, roof_type, DB.ModelCurveArray()]
+    )
+    roof = method.Invoke(doc.Create, arguments)
+    return roof, arguments[3]
+
+
+def _nearest_edge(curve, edges):
+    start, end = curve.GetEndPoint(0), curve.GetEndPoint(1)
+
+    def distance(p, q):
+        return ((p.X - q.X) ** 2 + (p.Y - q.Y) ** 2) ** 0.5
+
+    best, best_distance = None, None
+    for index, (a, b) in enumerate(edges):
+        a, b = to_xyz(a), to_xyz(b)
+        gap = min(
+            distance(start, a) + distance(end, b), distance(start, b) + distance(end, a)
+        )
+        if best_distance is None or gap < best_distance:
+            best, best_distance = index, gap
+    return best
+
+
+def create_footprint_roof(
+    points, roof_type, level=None, slopes=None, offset=0.0, doc=None
+):
+    """Create a footprint roof with slopes on chosen edges.
+
+    Args:
+        points (list): eave outline plan points, overhangs included.
+        roof_type (DB.RoofType | str): roof type or its name.
+        level (DB.Level | str, optional): level, defaults as in create_wall.
+        slopes (dict, optional): edge index to pitch, where edge ``i`` runs
+            from ``points[i]`` to ``points[i + 1]``. A pitch is anything
+            units.parse_slope reads (``"8:12"``, ``"30deg"``, rise/run).
+            Edges not listed don't define a slope.
+        offset (float | str, optional): eave height above the level.
+        doc (DB.Document, optional): document, defaults to the active one.
+
+    Returns:
+        (tuple[DB.FootPrintRoof, list[DB.ModelCurve]]): the roof and the
+        model curve of each footprint edge.
+
+    Note:
+        Calls NewFootPrintRoof through reflection with a pre-filled
+        argument array, because IronPython 3.4 passes null for its out
+        parameter and Revit rejects null.
+    """
+    doc = doc or DOCS.doc
+    _require_transaction(doc, "create roofs")
+    level = query.find_level(level, doc=doc)
+    roof_type = query.find_type(DB.RoofType, roof_type, doc=doc)
+    footprint = create_curve_array(points, level.Elevation)
+    roof, model_curves = _new_footprint_roof(footprint, level, roof_type, doc)
+    if offset:
+        roof.get_Parameter(DB.BuiltInParameter.ROOF_LEVEL_OFFSET_PARAM).Set(
+            units.parse_length(offset)
+        )
+    edges = _point_pairs(points, closed=True)
+    slopes = slopes or {}
+    for model_curve in model_curves:
+        pitch = slopes.get(_nearest_edge(model_curve.GeometryCurve, edges))
+        roof.set_DefinesSlope(model_curve, pitch is not None)
+        if pitch is not None:
+            roof.set_SlopeAngle(model_curve, units.parse_slope(pitch))
+    doc.Regenerate()
+    return roof, list(model_curves)
+
+
+def _check_roof_rise(roof, level, offset, expected_rise, doc):
+    base = query.find_level(level, doc=doc).Elevation + units.parse_length(offset)
+    measured = roof.get_BoundingBox(None).Max.Z - base
+    if measured < expected_rise * 0.8 - 0.5 or measured > expected_rise * 1.25 + 2.5:
+        raise PyRevitException(
+            "Roof rise is {:.2f} ft but the pitch and span give {:.2f} ft: the "
+            "slopes are on the wrong edges or the pitch is wrong.".format(
+                measured, expected_rise
+            )
+        )
+
+
+def create_gable_roof(
+    x1, y1, x2, y2, roof_type, pitch, ridge="x", level=None, offset=0.0, doc=None
+):
+    """Create a rectangular gable roof and check its rise.
+
+    Args:
+        x1 (float | str): eave outline corner X, overhangs included.
+        y1 (float | str): eave outline corner Y.
+        x2 (float | str): opposite corner X.
+        y2 (float | str): opposite corner Y.
+        roof_type (DB.RoofType | str): roof type or its name.
+        pitch (float | str): ``"8:12"``, ``"30deg"`` or rise/run.
+        ridge (str, optional): ``"x"`` runs the ridge along X (the edges
+            parallel to X are the eaves), ``"y"`` along Y.
+        level (DB.Level | str, optional): level, defaults as in create_wall.
+        offset (float | str, optional): eave height above the level.
+        doc (DB.Document, optional): document, defaults to the active one.
+
+    Returns:
+        (DB.FootPrintRoof): the roof.
+
+    Raises:
+        PyRevitException: when the built roof's rise doesn't match the
+            pitch, which means the slopes landed on the wrong edges.
+    """
+    doc = doc or DOCS.doc
+    points = rectangle_points(x1, y1, x2, y2)
+    eaves = (0, 2) if ridge == "x" else (1, 3)
+    roof, _ = create_footprint_roof(
+        points, roof_type, level, dict((edge, pitch) for edge in eaves), offset, doc=doc
+    )
+    (ax, ay), (bx, by) = points[0], points[2]
+    span = abs(by - ay) if ridge == "x" else abs(bx - ax)
+    _check_roof_rise(roof, level, offset, span / 2.0 * units.parse_slope(pitch), doc)
+    return roof
+
+
+def create_hip_roof(x1, y1, x2, y2, roof_type, pitch, level=None, offset=0.0, doc=None):
+    """Create a rectangular hip roof, the same pitch on all four edges; see create_gable_roof."""
+    doc = doc or DOCS.doc
+    points = rectangle_points(x1, y1, x2, y2)
+    roof, _ = create_footprint_roof(
+        points,
+        roof_type,
+        level,
+        dict((edge, pitch) for edge in range(4)),
+        offset,
+        doc=doc,
+    )
+    (ax, ay), (bx, by) = points[0], points[2]
+    span = min(abs(by - ay), abs(bx - ax))
+    _check_roof_rise(roof, level, offset, span / 2.0 * units.parse_slope(pitch), doc)
+    return roof
+
+
+def create_shed_roof(
+    x1, y1, x2, y2, roof_type, pitch, low_side="south", level=None, offset=0.0, doc=None
+):
+    """Create a rectangular shed roof sloping down toward one side, and check its rise.
+
+    Args:
+        x1 (float | str): eave outline corner X, overhangs included.
+        y1 (float | str): eave outline corner Y.
+        x2 (float | str): opposite corner X.
+        y2 (float | str): opposite corner Y.
+        roof_type (DB.RoofType | str): roof type or its name.
+        pitch (float | str): ``"4:12"``, ``"15deg"`` or rise/run.
+        low_side (str, optional): south, east, north or west.
+        level (DB.Level | str, optional): level, defaults as in create_wall.
+        offset (float | str, optional): height of the low eave above the level.
+        doc (DB.Document, optional): document, defaults to the active one.
+
+    Returns:
+        (DB.FootPrintRoof): the roof.
+    """
+    doc = doc or DOCS.doc
+    edge = {"south": 0, "east": 1, "north": 2, "west": 3}[low_side]
+    points = rectangle_points(x1, y1, x2, y2)
+    roof, _ = create_footprint_roof(
+        points, roof_type, level, {edge: pitch}, offset, doc=doc
+    )
+    (ax, ay), (bx, by) = points[0], points[2]
+    span = abs(by - ay) if low_side in ("south", "north") else abs(bx - ax)
+    _check_roof_rise(roof, level, offset, span * units.parse_slope(pitch), doc)
+    return roof
+
+
+def place_hosted_instance(symbol, host, point, level=None, sill_height=None, doc=None):
+    """Place a door, window or other hosted family on a host such as a wall.
+
+    Args:
+        symbol (DB.FamilySymbol | str): family type or its name; activated
+            when needed.
+        host (DB.Element): host element, usually a wall.
+        point (DB.XYZ | tuple): plan point on the host's location line.
+        level (DB.Level | str, optional): level, defaults to the host's level.
+        sill_height (float | str, optional): sill height for windows.
+        doc (DB.Document, optional): document, defaults to the active one.
+
+    Returns:
+        (DB.FamilyInstance): the instance.
+    """
+    doc = doc or DOCS.doc
+    _require_transaction(doc, "place doors and windows")
+    symbol = _activate(query.find_family_symbol(symbol, doc=doc), doc)
+    level = (
+        query.find_level(level, doc=doc)
+        if level is not None
+        else doc.GetElement(host.LevelId)
+    )
+    instance = doc.Create.NewFamilyInstance(
+        to_xyz(point, level.Elevation),
+        symbol,
+        host,
+        level,
+        DB.Structure.StructuralType.NonStructural,
+    )
+    if sill_height is not None:
+        instance.get_Parameter(DB.BuiltInParameter.INSTANCE_SILL_HEIGHT_PARAM).Set(
+            units.parse_length(sill_height)
+        )
+    return instance
+
+
+def place_family_instance(
+    symbol, point, level=None, structural_type=None, rotation=0.0, doc=None
+):
+    """Place a level-based family instance such as furniture, fixtures or columns.
+
+    Args:
+        symbol (DB.FamilySymbol | str): family type or its name; activated
+            when needed.
+        point (DB.XYZ | tuple): plan insertion point.
+        level (DB.Level | str, optional): level, defaults as in create_wall.
+        structural_type (DB.Structure.StructuralType, optional): defaults to
+            NonStructural.
+        rotation (float, optional): rotation in degrees around the insertion
+            point.
+        doc (DB.Document, optional): document, defaults to the active one.
+
+    Returns:
+        (DB.FamilyInstance): the instance.
+    """
+    doc = doc or DOCS.doc
+    _require_transaction(doc, "place family instances")
+    symbol = _activate(query.find_family_symbol(symbol, doc=doc), doc)
+    level = query.find_level(level, doc=doc)
+    location = to_xyz(point, level.Elevation)
+    instance = doc.Create.NewFamilyInstance(
+        location,
+        symbol,
+        level,
+        structural_type or DB.Structure.StructuralType.NonStructural,
+    )
+    if rotation:
+        axis = DB.Line.CreateBound(location, location + DB.XYZ.BasisZ)
+        DB.ElementTransformUtils.RotateElement(
+            doc, instance.Id, axis, rotation * 3.141592653589793 / 180.0
+        )
+    return instance
+
+
+def create_column(symbol, point, level=None, top_level=None, structural=True, doc=None):
+    """Place a column from ``level`` up to ``top_level``; see place_family_instance."""
+    doc = doc or DOCS.doc
+    column = place_family_instance(
+        symbol,
+        point,
+        level,
+        DB.Structure.StructuralType.Column
+        if structural
+        else DB.Structure.StructuralType.NonStructural,
+        doc=doc,
+    )
+    if top_level is not None:
+        column.get_Parameter(DB.BuiltInParameter.FAMILY_TOP_LEVEL_PARAM).Set(
+            query.find_level(top_level, doc=doc).Id
+        )
+    return column
+
+
+def create_room(
+    point, level=None, name=None, number=None, require_enclosed=True, doc=None
+):
+    """Place a room at a plan point.
+
+    Args:
+        point (DB.XYZ | DB.UV | tuple): plan point inside the room.
+        level (DB.Level | str, optional): level, defaults as in create_wall.
+        name (str, optional): room name.
+        number (str, optional): room number.
+        require_enclosed (bool, optional): raise when the room isn't
+            enclosed. Placing rooms right after the walls is a cheap check
+            for gaps in a layout.
+        doc (DB.Document, optional): document, defaults to the active one.
+
+    Returns:
+        (DB.Architecture.Room): the room.
+
+    Raises:
+        PyRevitException: when ``require_enclosed`` and the point isn't
+            enclosed by room-bounding elements.
+    """
+    doc = doc or DOCS.doc
+    _require_transaction(doc, "create rooms")
+    level = query.find_level(level, doc=doc)
+    if isinstance(point, DB.UV):
+        uv = point
+    else:
+        xyz = to_xyz(point)
+        uv = DB.UV(xyz.X, xyz.Y)
+    room = doc.Create.NewRoom(level, uv)
+    if name:
+        room.Name = name
+    if number:
+        room.Number = str(number)
+    doc.Regenerate()
+    if require_enclosed and room.Area <= 0:
+        raise PyRevitException(
+            "Room {!r} at ({:.2f}, {:.2f}) is not enclosed: a wall or separation "
+            "line around it is missing or doesn't meet its neighbour.".format(
+                name or "", uv.U, uv.V
+            )
+        )
+    return room
+
+
+def create_room_separation_lines(points, level=None, view=None, closed=False, doc=None):
+    """Create room separation lines, to divide an open plan without walls.
+
+    Args:
+        points (list): plan points of the polyline.
+        level (DB.Level | str, optional): level, defaults as in create_wall.
+        view (DB.ViewPlan, optional): plan view to create them in, defaults
+            to a floor plan of the level.
+        closed (bool, optional): also join the last point to the first.
+        doc (DB.Document, optional): document, defaults to the active one.
+
+    Returns:
+        (list[DB.ModelCurve]): the separation lines.
+    """
+    doc = doc or DOCS.doc
+    _require_transaction(doc, "create room separation lines")
+    level = query.find_level(level, doc=doc)
+    view = view or query.find_plan_view(level, doc=doc)
+    plane = DB.Plane.CreateByNormalAndOrigin(
+        DB.XYZ.BasisZ, DB.XYZ(0, 0, level.Elevation)
+    )
+    sketch_plane = DB.SketchPlane.Create(doc, plane)
+    curves = create_curve_array(points, level.Elevation, closed)
+    return list(doc.Create.NewRoomBoundaryLines(sketch_plane, curves, view))
+
+
+def create_model_lines(points, level=None, closed=False, doc=None):
+    """Create model lines along a polyline at a level's elevation.
+
+    Returns:
+        (list[DB.ModelCurve]): the model lines.
+    """
+    doc = doc or DOCS.doc
+    _require_transaction(doc, "create model lines")
+    level = query.find_level(level, doc=doc)
+    plane = DB.Plane.CreateByNormalAndOrigin(
+        DB.XYZ.BasisZ, DB.XYZ(0, 0, level.Elevation)
+    )
+    sketch_plane = DB.SketchPlane.Create(doc, plane)
+    return [
+        doc.Create.NewModelCurve(
+            DB.Line.CreateBound(
+                to_xyz(start, level.Elevation), to_xyz(end, level.Elevation)
+            ),
+            sketch_plane,
+        )
+        for start, end in _point_pairs(points, closed)
+    ]
+
+
+def _view_family_type(family, doc):
+    for view_type in DB.FilteredElementCollector(doc).OfClass(DB.ViewFamilyType):
+        if view_type.ViewFamily == family:
+            return view_type
+    raise PyRevitException("The document has no {} view type.".format(family))
+
+
+def unique_view_name(view_name, doc=None):
+    """Return ``view_name``, or ``"view_name (2)"`` and so on if it is taken."""
+    doc = doc or DOCS.doc
+    taken = set(view.Name for view in DB.FilteredElementCollector(doc).OfClass(DB.View))
+    candidate, counter = view_name, 2
+    while candidate in taken:
+        candidate = "{} ({})".format(view_name, counter)
+        counter += 1
+    return candidate
+
+
+def _name_view(view, view_name, template, doc):
+    view.Name = unique_view_name(view_name, doc=doc)
+    if template:
+        view.ViewTemplateId = query.find_view(template, doc=doc).Id
+
+
+def create_plan_view(
+    level=None, view_name=None, plan_type="floor", template=None, doc=None
+):
+    """Create a floor, ceiling or structural plan of a level.
+
+    Args:
+        level (DB.Level | str, optional): level, defaults as in create_wall.
+        view_name (str, optional): name, made unique; defaults to
+            ``"<level> - <plan_type>"``.
+        plan_type (str, optional): floor, ceiling or structural.
+        template (str | DB.View, optional): view template to apply.
+        doc (DB.Document, optional): document, defaults to the active one.
+
+    Returns:
+        (DB.ViewPlan): the view.
+    """
+    doc = doc or DOCS.doc
+    _require_transaction(doc, "create views")
+    level = query.find_level(level, doc=doc)
+    if plan_type not in _PLAN_VIEW_FAMILIES:
+        raise PyRevitException(
+            "plan_type must be floor, ceiling or structural, not {!r}.".format(
+                plan_type
+            )
+        )
+    view = DB.ViewPlan.Create(
+        doc, _view_family_type(_PLAN_VIEW_FAMILIES[plan_type], doc).Id, level.Id
+    )
+    _name_view(
+        view, view_name or "{} - {}".format(level.Name, plan_type), template, doc
+    )
+    return view
+
+
+def create_3d_view(
+    view_name=None,
+    direction="southeast",
+    elements=None,
+    model_only=True,
+    template=None,
+    doc=None,
+):
+    """Create an isometric 3D view framed on elements or the whole model.
+
+    Args:
+        view_name (str, optional): name, made unique; defaults to "3D".
+        direction (str, optional): where the viewer stands: southeast,
+            southwest, northeast, northwest, south, north, east, west, top.
+        elements (list, optional): elements to frame with the section box;
+            defaults to query.get_model_elements().
+        model_only (bool, optional): hide levels, grids and annotation,
+            whose extents otherwise dwarf the model in the view.
+        template (str | DB.View, optional): view template to apply.
+        doc (DB.Document, optional): document, defaults to the active one.
+
+    Returns:
+        (DB.View3D): the view.
+    """
+    from pyrevit.revit.db import update
+
+    doc = doc or DOCS.doc
+    _require_transaction(doc, "create views")
+    view = DB.View3D.CreateIsometric(
+        doc, _view_family_type(DB.ViewFamily.ThreeDimensional, doc).Id
+    )
+    _name_view(view, view_name or "3D", template, doc)
+    if model_only:
+        update.hide_non_model_categories(view, doc=doc)
+    update.orient_3d_view(view, direction)
+    update.set_section_box(view, elements, doc=doc)
+    return view
+
+
+def create_section_view(
+    start,
+    end,
+    view_name=None,
+    bottom=None,
+    top=None,
+    depth=10.0,
+    template=None,
+    doc=None,
+):
+    """Create a section along a plan line, looking to the left of start -> end.
+
+    A line drawn west to east looks north.
+
+    Args:
+        start (DB.XYZ | tuple): section line start.
+        end (DB.XYZ | tuple): section line end.
+        view_name (str, optional): name, made unique; defaults to "Section".
+        bottom (float | str, optional): bottom elevation, defaults to 1 ft
+            below the lowest level.
+        top (float | str, optional): top elevation, defaults to 10 ft above
+            the highest level.
+        depth (float | str, optional): far clip distance.
+        template (str | DB.View, optional): view template to apply.
+        doc (DB.Document, optional): document, defaults to the active one.
+
+    Returns:
+        (DB.ViewSection): the view.
+    """
+    doc = doc or DOCS.doc
+    _require_transaction(doc, "create views")
+    start, end = to_xyz(start), to_xyz(end)
+    elevations = sorted(
+        level.Elevation for level in DB.FilteredElementCollector(doc).OfClass(DB.Level)
+    ) or [0.0]
+    bottom = units.parse_length(bottom) if bottom is not None else elevations[0] - 1.0
+    top = units.parse_length(top) if top is not None else elevations[-1] + 10.0
+    along = DB.XYZ(end.X - start.X, end.Y - start.Y, 0.0)
+    if along.IsZeroLength():
+        raise PyRevitException("The section's start and end are the same point.")
+    half_length = along.GetLength() / 2.0
+    direction = along.Normalize()
+    transform = DB.Transform.Identity
+    transform.Origin = DB.XYZ((start.X + end.X) / 2.0, (start.Y + end.Y) / 2.0, 0.0)
+    transform.BasisX = direction
+    transform.BasisY = DB.XYZ.BasisZ
+    transform.BasisZ = direction.CrossProduct(DB.XYZ.BasisZ)
+    box = DB.BoundingBoxXYZ()
+    box.Transform = transform
+    box.Min = DB.XYZ(-half_length, bottom, -units.parse_length(depth))
+    box.Max = DB.XYZ(half_length, top, 0.0)
+    view = DB.ViewSection.CreateSection(
+        doc, _view_family_type(DB.ViewFamily.Section, doc).Id, box
+    )
+    _name_view(view, view_name or "Section", template, doc)
+    return view
+
+
+def create_elevation_view(
+    side="south", view_name=None, plan=None, offset=10.0, template=None, doc=None
+):
+    """Create an exterior elevation of the whole model seen from one side.
+
+    Args:
+        side (str, optional): south, north, east or west.
+        view_name (str, optional): name, made unique; defaults to
+            ``"<Side> Elevation"``.
+        plan (DB.ViewPlan | str, optional): plan to host the marker, defaults
+            to a floor plan of the lowest level.
+        offset (float | str, optional): distance of the marker outside the
+            model's extents.
+        template (str | DB.View, optional): view template to apply.
+        doc (DB.Document, optional): document, defaults to the active one.
+
+    Returns:
+        (DB.ViewSection): the elevation view.
+    """
+    doc = doc or DOCS.doc
+    _require_transaction(doc, "create views")
+    if side not in ELEVATION_SIDES:
+        raise PyRevitException(
+            "side must be one of {}.".format(", ".join(sorted(ELEVATION_SIDES)))
+        )
+    if plan is None:
+        lowest = sorted(
+            DB.FilteredElementCollector(doc).OfClass(DB.Level),
+            key=lambda l: l.Elevation,
+        )[0]
+        plan = query.find_plan_view(lowest, doc=doc)
+    else:
+        plan = query.find_view(plan, doc=doc)
+    box = query.get_elements_bounding_box(query.get_model_elements(doc=doc))
+    if box is None:
+        raise PyRevitException("The model has no elements to elevate.")
+    dx, dy = ELEVATION_SIDES[side]
+    reach = (
+        abs(box.Max.X - box.Min.X) * abs(dx) + abs(box.Max.Y - box.Min.Y) * abs(dy)
+    ) / 2.0 + units.parse_length(offset)
+    center_x, center_y = (box.Min.X + box.Max.X) / 2.0, (box.Min.Y + box.Max.Y) / 2.0
+    marker = DB.ElevationMarker.CreateElevationMarker(
+        doc,
+        _view_family_type(DB.ViewFamily.Elevation, doc).Id,
+        DB.XYZ(center_x + dx * reach, center_y + dy * reach, 0.0),
+        plan.Scale,
+    )
+    wanted = DB.XYZ(dx, dy, 0.0)
+    for index in range(4):
+        view = marker.CreateElevation(doc, plan.Id, index)
+        if view.ViewDirection.IsAlmostEqualTo(wanted):
+            _name_view(
+                view, view_name or "{} Elevation".format(side.title()), template, doc
+            )
+            return view
+        doc.Delete(view.Id)
+    raise PyRevitException("Couldn't create a {}-facing elevation.".format(side))

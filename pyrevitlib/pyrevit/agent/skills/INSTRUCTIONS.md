@@ -4,7 +4,8 @@ Start every task like this:
 
 1. Call get_context. It reports the Revit version, the open document, the active view, the selection, the agent policy, and the Python engine your scripts run on.
 2. Call get_skill("revit-scripting"). It covers the script contract, transactions, units and the Revit API mistakes agents make most often. Read it before your first script.
-3. Call get_skill for the skill that matches your task, and follow it.
+3. Call get_skill("pyrevit-library"). pyrevitlib and rpw already implement most of what you would otherwise write against the raw Revit API; search them with lookup_pyrevit_api.
+4. Call get_skill for the skill that matches your task, and follow it.
 
 Available skills:
 {skills}
