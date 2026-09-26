@@ -12,6 +12,7 @@ Invariant:
 
 import json
 import linecache
+import os.path as op
 import sys
 import traceback
 
@@ -24,14 +25,6 @@ import System
 
 from pyrevit.api import DB, UI
 from pyrevit.compat import get_elementid_value_func
-
-try:
-    from pyrevit.agent.kit import Kit
-
-    _KIT_IMPORT_ERROR = None
-except Exception as kit_import_error:
-    Kit = None
-    _KIT_IMPORT_ERROR = str(kit_import_error)
 
 SOURCE_NAME = "<agent-script>"
 
@@ -68,6 +61,7 @@ def run(context):
         SOURCE_NAME,
     )
     namespace = _build_namespace(context)
+    workspace = _enter_workspace(context.Workspace)
     captured = StringIO()
     saved_stdout = sys.stdout
     saved_stderr = sys.stderr
@@ -86,6 +80,7 @@ def run(context):
     finally:
         sys.stdout = saved_stdout
         sys.stderr = saved_stderr
+        _leave_workspace(workspace)
         context.SetOutput(captured.getvalue())
 
     if failed or "result" not in namespace:
@@ -118,17 +113,33 @@ def _build_namespace(context):
         "DB": DB,
         "UI": UI,
         "inputs": json.loads(context.InputsJson or "{}"),
-        "kit": Kit(uidoc)
-        if Kit is not None and uidoc is not None
-        else _UnavailableKit(),
     }
 
 
-class _UnavailableKit(object):
-    def __getattr__(self, name):
-        raise RuntimeError(
-            "kit is unavailable: %s" % (_KIT_IMPORT_ERROR or "no document is open")
-        )
+def _enter_workspace(workspace):
+    """Put the agent's workspace folder on sys.path with its modules unloaded.
+
+    The script engine is reused between runs, so a module imported from the
+    workspace would otherwise keep the code of the first run that imported
+    it. Dropping those modules makes every run import the files as they are
+    on disk now.
+    """
+    if not workspace:
+        return None
+    root = op.normcase(op.abspath(workspace))
+    for name, module in list(sys.modules.items()):
+        module_file = getattr(module, "__file__", None)
+        if module_file and op.normcase(op.abspath(module_file)).startswith(root):
+            del sys.modules[name]
+    added = workspace not in sys.path
+    if added:
+        sys.path.insert(0, workspace)
+    return workspace if added else None
+
+
+def _leave_workspace(workspace):
+    if workspace and workspace in sys.path:
+        sys.path.remove(workspace)
 
 
 def _elementid_value(element_id):

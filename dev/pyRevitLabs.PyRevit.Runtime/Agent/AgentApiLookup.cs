@@ -279,7 +279,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
 
             if (found.Any(signature => signature.Contains("out ")))
-                found.Add("Note: Revit rejects a null out argument on many of these; from Python pass a pre-filled clr.Reference[T](T()) and read .Value (see the revit-scripting skill), or use the kit helper.");
+                found.Add("Note: Revit rejects a null out argument on many of these; from Python pass a pre-filled clr.Reference[T](T()) and read .Value (see the revit-scripting skill), or look for a pyrevitlib function with lookup_pyrevit_api.");
             return found.Distinct().Take(40).ToList();
         }
 

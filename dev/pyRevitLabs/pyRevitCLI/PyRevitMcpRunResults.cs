@@ -16,6 +16,10 @@ namespace pyRevitCLI {
         private const int MaxChangeIds = 20;
         private static readonly Regex MissingAttribute =
             new Regex(@"'(?<owner>[\w.]+)' object has no attribute '(?<member>\w+)'", RegexOptions.Compiled);
+        private static readonly Regex MissingModuleAttribute =
+            new Regex(@"module '(?<module>[\w.]+)' has no attribute '(?<member>\w+)'", RegexOptions.Compiled);
+        private static readonly Regex LibraryReference =
+            new Regex(@"\b(pyrevit|rpw|revit|query|create|update|units|ensure|delete|select|db|ui|coerce)\.(?<member>\w+)\b", RegexOptions.Compiled);
         private static readonly Regex WrongArgumentCount =
             new Regex(@"(?<member>\w+)\(\) takes (exactly|at least|at most|no) ", RegexOptions.Compiled);
         private static readonly Regex WrongArgumentType =
@@ -187,6 +191,37 @@ namespace pyRevitCLI {
             }
 
             return "Check the Revit API names and signatures used on the failing line with lookup_revit_api before retrying.";
+        }
+
+        /// <summary>
+        /// The pyrevitlib or rpw name an AttributeError was looking for, as (module or null, member),
+        /// or null when the error isn't about those libraries.
+        /// </summary>
+        /// <remarks>
+        /// CPython and IronPython 3 name the module in the message. IronPython 2 only says
+        /// "'module' object", so the failing line must reference a library module.
+        /// </remarks>
+        internal static (string Module, string Member)? MissingLibraryName(JObject error) {
+            if (error.Value<string>("type") != "AttributeError")
+                return null;
+            var message = error.Value<string>("message") ?? string.Empty;
+
+            var named = MissingModuleAttribute.Match(message);
+            if (named.Success) {
+                var module = named.Groups["module"].Value;
+                return module.StartsWith("pyrevit") || module.StartsWith("rpw")
+                    ? (module, named.Groups["member"].Value)
+                    : ((string, string)?)null;
+            }
+
+            var missing = MissingAttribute.Match(message);
+            if (!missing.Success || missing.Groups["owner"].Value != "module")
+                return null;
+            var member = missing.Groups["member"].Value;
+            var line = LastSourceLine(error.Value<string>("traceback")) ?? string.Empty;
+            return LibraryReference.Matches(line).Cast<Match>().Any(match => match.Groups["member"].Value == member)
+                ? (null, member)
+                : ((string, string)?)null;
         }
 
         /// <summary>

@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 
 using pyRevitLabs.Json;
 using pyRevitLabs.Json.Linq;
@@ -26,6 +27,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public AgentRunMode Mode { get; private set; }
         public AgentEngine Engine { get; private set; }
         public string InputsJson { get; private set; }
+        public string Workspace { get; private set; }
 
         public string ModeName {
             get {
@@ -43,6 +45,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 throw new AgentException("invalid_params", "'script' is required.");
 
             var inputs = parameters["inputs"];
+            var workspace = parameters.Value<string>("workspace");
+            if (!string.IsNullOrWhiteSpace(workspace) && (!Path.IsPathRooted(workspace) || !Directory.Exists(workspace)))
+                throw new AgentException("invalid_params", "'workspace' must be the absolute path of an existing folder.");
             return new AgentRunRequest {
                 Script = script,
                 Title = parameters.Value<string>("title") ?? "Agent run",
@@ -51,6 +56,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 InputsJson = inputs == null || inputs.Type == JTokenType.Null
                     ? "{}"
                     : inputs.ToString(Formatting.None),
+                Workspace = string.IsNullOrWhiteSpace(workspace) ? null : Path.GetFullPath(workspace),
             };
         }
 
@@ -60,6 +66,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ["mode"] = ModeName,
                 ["engine"] = Engine == AgentEngine.CPython ? "cpython" : "ironpython",
                 ["inputs"] = JToken.Parse(InputsJson),
+                ["workspace"] = Workspace,
             };
         }
 

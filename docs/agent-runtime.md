@@ -76,10 +76,11 @@ Run any of these commands without a value to print the current setting.
 | `list_revit_instances` | no | Running Revit sessions with the agent host |
 | `get_context` | no | Revit and pyRevit versions, agent policy, `scripting` (engine and Python version scripts run on), document, active view, selection, levels |
 | `inspect_elements` | no | Class, category, type, level, location, bounding box and parameters of up to 50 elements |
+| `lookup_pyrevit_api` | no | Functions and classes of pyrevitlib and rpw, with signatures and docstrings, from the clone's source (see [Shared libraries](#shared-libraries)) |
 | `lookup_revit_api` | no | Signatures of a Revit API type or member, reflected from the running Revit. Also its namespace and Python import line, and a `creation` list: static factories and the `doc.Create.New…` methods that return the type. A missing member returns `found: false` with the closest names, including matching values of other enums |
 | `show_elements` | no | Select, zoom to, or temporarily isolate / hide elements (by id or category) in the active view, or reset the temporary mode. No approval prompt. |
 | `capture_view` | no | PNG of a view for visual checks. `export` renders any view through Revit; `screen` captures the active view window as the user sees it (selection, temporary isolate); view `3d` renders a temporary 3D view of model categories only, framed by a section box around the model (or `elements`) and seen from `direction`, which is rolled back. Saved under `%APPDATA%\pyRevit\agent\captures`. |
-| `run_query` | never | Run a read-only script; always rolled back |
+| `run_query` | never | Run a read-only script; always rolled back. `workspace` puts a folder of the agent's own modules on `sys.path`, re-imported fresh every run |
 | `run_modify` | after approval | Run a changing script; `dry_run=true` previews the change set and rolls back |
 | `get_run` | no | A recorded run: response, script, and pages of a large result |
 
@@ -116,41 +117,50 @@ rebuild:
   server sends on `initialize`. `{skills}` is replaced with the list of skills.
 - Each skill is a folder with a `SKILL.md` that starts with `name` and `description`
   front matter (the Agent Skills layout). `revit-scripting` covers the rules every
-  script needs; `modeling`, `family-editing`, `scheduling` and `drawings` cover tasks.
+  script needs, and `pyrevit-library` maps the shared libraries; `modeling`, `views`,
+  `family-editing`, `scheduling` and `drawings` cover tasks.
 - Skills in `%APPDATA%\pyRevit\agent\skills\<name>\SKILL.md` are added, and replace a
   shipped skill with the same name, so a firm can add its own standards.
 
 Agents read a skill with `get_skill(name)`, and other markdown files in its folder with
 `get_skill(name, file)`.
 
-### The kit
+### Shared libraries
 
-`kit` is a tested helper library injected into every script
-(`pyrevitlib/pyrevit/agent/kit.py`). Each helper is a Revit API recipe that agents kept
-getting wrong, and it raises a `KitError` that says what to change instead of failing
-silently. `kit.help()` lists them all.
+Agents are pointed at pyrevitlib (`pyrevit.revit`) and rpw first, and at the raw Revit
+API only for what those don't cover. The libraries are large and maintained, handle
+differences between Revit versions and engines, and every addition helps pyRevit tool
+authors too.
 
-| Area | Helpers |
+- `lookup_pyrevit_api` indexes the public functions, classes and docstrings of
+  `pyrevit.revit`, `pyrevit.compat`, `rpw.db` and parts of `rpw.ui` and `rpw.utils` from the
+  clone's source. It needs no Revit and follows edits to the source. A failed script that
+  used a missing library name gets similar names in its hint.
+- The `pyrevit-library` skill maps tasks to modules.
+- Where agents kept failing and the libraries had nothing, functions were added to them:
+
+| Module | Added |
 |---|---|
-| Units | `kit.ft("32'-6\"")`, `kit.ft("900mm")`, `kit.pitch("8:12")` (rise over run, which `set_SlopeAngle` takes) |
-| Lookups | `kit.level(name)`, `kit.wall_type(name)` and the other `*_type` helpers, `kit.symbol(type, family=, category=)`, `kit.category("OST_Walls")`. A missing name raises with the names that exist |
-| Modeling | `kit.wall`, `kit.walls`, `kit.floor`, `kit.ceiling`, `kit.gable_roof`, `kit.hip_roof`, `kit.shed_roof`, `kit.footprint_roof`, `kit.attach_top`, `kit.opening`, `kit.place`, `kit.column`, `kit.room`, `kit.room_separation`, `kit.model_lines` |
-| Parameters | `kit.param`, `kit.get`, `kit.set` |
-| Re-runnable stages | `kit.mark(elements, label)`, `kit.clear(label)`, `kit.load(path)` to run a helper file from the workspace fresh on each run |
-| Views | `kit.views(kind)`, `kit.view(name)`, `kit.plan`, `kit.view3d`, `kit.section`, `kit.elevation`, `kit.orient`, `kit.look_at`, `kit.section_box`, `kit.crop_to`, `kit.model_only`, `kit.hide`, `kit.apply_template` |
-| Navigation | `kit.open(view)`, `kit.zoom_to(elements)`, `kit.zoom_fit()` |
+| `pyrevit.revit.db.query` | `find_level`, `find_type`, `find_family_symbol`, `find_view`, `find_plan_view` (raise with the valid names instead of returning None), `get_model_elements`; `get_category` accepts `"OST_..."` names |
+| `pyrevit.revit.db.create` | `create_wall(s)`, `create_floor`, `create_ceiling`, `create_footprint_roof`, `create_gable_roof`, `create_hip_roof`, `create_shed_roof`, `place_hosted_instance`, `place_family_instance`, `create_column`, `create_room`, `create_room_separation_lines`, `create_model_lines`, `create_plan_view`, `create_3d_view`, `create_section_view`, `create_elevation_view` |
+| `pyrevit.revit.db.update` | `attach_wall_tops`, `orient_3d_view`, `set_3d_view_camera`, `set_section_box`, `crop_view_to_elements`, `hide_non_model_categories`, `hide_categories` |
+| `pyrevit.revit.units` | `parse_length` (`32'-6"`, `900mm`), `parse_slope` (`8:12`, `30deg`) |
+| `pyrevit.revit.ui` | `request_view_change`, `get_active_ui_view`, `zoom_to_elements`, `zoom_fit` |
 
-The roof helpers call `NewFootPrintRoof` through reflection, because IronPython 3.4
-doesn't marshal its out parameter, and the gable, hip and shed helpers measure the built
-roof and raise when its rise doesn't match the pitch. `kit.room` raises when the point
+The roof functions call `NewFootPrintRoof` through reflection, because IronPython 3.4
+doesn't marshal its out parameter, and the gable, hip and shed variants measure the built
+roof and raise when its rise doesn't match the pitch. `create_room` raises when the point
 isn't enclosed, which turns rooms into a check for gaps in a layout.
+
+rpw methods that defaulted to `doc=revit.doc` bound the document once, at import. Agent
+runs reuse the script engine, so those defaults now resolve the document on each call.
 
 ### Script contract
 
 Scripts are Python, executed inside Revit by the regular pyRevit engines. The runner
 injects `doc`, `uidoc`, `app`, `uiapp`, `DB` (`Autodesk.Revit.DB`), `UI`
-(`Autodesk.Revit.UI`), `inputs` (the `inputs` argument as a dict) and `kit` (see
-[The kit](#the-kit)). Assign `result` to return data. It is serialized to JSON:
+(`Autodesk.Revit.UI`) and `inputs` (the `inputs` argument as a dict). Assign `result`
+to return data. It is serialized to JSON:
 
 - `ElementId` becomes an integer.
 - `Element` becomes `{id, category, name, class}`.

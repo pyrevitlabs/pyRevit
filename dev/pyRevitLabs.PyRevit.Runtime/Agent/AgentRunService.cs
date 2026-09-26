@@ -52,7 +52,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             File.WriteAllText(Path.Combine(runDir, "request.json"), request.ToJson().ToString(Formatting.Indented), Utf8);
 
             var stopwatch = Stopwatch.StartNew();
-            var context = new AgentScriptContext(app, runId, request.ModeName, request.Script, request.InputsJson);
+            var context = new AgentScriptContext(app, runId, request.ModeName, request.Script, request.InputsJson, request.Workspace);
             var response = new JObject {
                 ["run_id"] = runId,
                 ["run_dir"] = runDir,

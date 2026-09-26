@@ -18,9 +18,9 @@ description: Core rules for every pyRevit agent task. Covers the script contract
 
 ## Script contract
 
-- **Injected names:** `doc`, `uidoc`, `app`, `uiapp`, `DB` (Autodesk.Revit.DB), `UI` (Autodesk.Revit.UI), `inputs` (the dict you pass as `inputs`), and `kit`. Don't `import DB` or `import UI`.
-- **`kit`** is a tested helper library for the steps agents get wrong most: type and level lookups that raise with the available names, walls, floors, roofs, openings, rooms, parameters, views and navigation. `result = kit.help()` lists every helper with its signature. Prefer a `kit` helper over writing the raw API yourself; the `modeling` and `views` skills show them in use.
-- **Shared helpers across runs:** put plan data and your own helpers in a `.py` file in the workspace and call `lib = kit.load(r"C:\path\file.py")`. It is read fresh on every run and sees `doc`, `uidoc`, `DB` and `kit`. Don't paste the same library into every script.
+- **Injected names:** `doc`, `uidoc`, `app`, `uiapp`, `DB` (Autodesk.Revit.DB), `UI` (Autodesk.Revit.UI), and `inputs` (the dict you pass as `inputs`). Don't `import DB` or `import UI`.
+- **Use the shared libraries first.** pyrevitlib (`from pyrevit import revit`; `from pyrevit.revit.db import query, create, update`) and rpw (`from rpw import db`) cover lookups, element and view creation, parameters, units, transactions and navigation, and they handle the API traps below. Find functions with `lookup_pyrevit_api`; the `pyrevit-library` skill maps them. Write raw `DB.` code only for what they don't cover.
+- **Your own helpers across runs:** put plan data and helper functions in modules in a folder, and pass the folder as `workspace` to `run_query` and `run_modify`. Then `import my_module` works, and it is re-imported fresh every run, so edits apply. Don't paste the same library into every script.
 - **Returning data:** assign `result`. It must be JSON-serializable. `ElementId`, `Element` and `XYZ` are converted for you, and so are .NET numbers and collections. Use `print()` for short notes only.
 - **Large results:** results over 256 KB are saved to the run record. Page through them with `get_run(run_id, offset, length)`.
 
@@ -40,11 +40,12 @@ The `engine` field of every run response confirms what actually ran. `"{}".forma
 - **`run_modify` scripts open their own transactions.** The host wraps the whole run in one group, so a committed run is one undo entry named "Agent: title".
 
   ```python
-  t = DB.Transaction(doc, "Set comments")
-  t.Start()
-  # ... changes ...
-  t.Commit()
+  from pyrevit import revit
+  with revit.Transaction("Set comments"):
+      ...
   ```
+
+  It rolls back and re-raises when the block raises. `DB.Transaction` with `Start()`/`Commit()` works too.
 
 - **Leave nothing open.** A transaction left open fails the run with `transaction_left_open`.
 - **View state counts as a change.** Graphic overrides and view properties change the document, so they need a transaction. Temporary hide/isolate does too, but `show_elements` does it for you without approval.
@@ -93,33 +94,32 @@ The `engine` field of every run response confirms what actually ran. `"{}".forma
   model_curves = arguments[3]
   ```
 
-  A plain Python list fails; it must be `System.Array[System.Object]`. `kit` roofs already do this.
+  A plain Python list fails; it must be `System.Array[System.Object]`. The pyrevitlib roof functions (`create.create_footprint_roof` and the gable, hip and shed variants) already do this.
 
 - **No LINQ:** collectors have no `FirstOrDefault` or `Where`. Use `.FirstElement()`, `.ToElements()` and list comprehensions.
 - **No `import *`:** `from Autodesk.Revit.DB import *` skips enums on IronPython (`ViewType`, `StructuralType`). Use the injected `DB.` prefix. `Autodesk` itself isn't a name in the script; write `DB.GeometryObject`, not `Autodesk.Revit.DB.GeometryObject`.
-- **Fail loudly.** When a lookup by name finds nothing, `raise` with the names that do exist; don't carry on with `None`. When a filter matches no elements, raise too. Silent no-ops look like success in the change set.
+- **Fail loudly.** Use the `query.find_*` functions, which raise with the names that exist. In your own code, when a lookup by name finds nothing, `raise` with the names that do exist; don't carry on with `None`. When a filter matches no elements, raise too. Silent no-ops look like success in the change set.
 - **Never `except Exception: pass`.** Collect the error text and return it. A swallowed exception in a loop reports "0 changed" as if it were a result.
 - **Read numbers back.** After creating geometry, compare a measured value (a bounding box height, an area, a count) with what you intended. Plausible-looking geometry is the error that screenshots don't catch.
 - **Never hardcode type names.** They differ between templates ("Generic - 300mm" wall, "Generic 300mm" floor, metric vs imperial). Query the types first and pick by name from that list.
 - **Enum values** differ from UI names. For example it's `TemporaryViewMode.TemporaryHideIsolate`, not `.Isolate`. Look the enum up first.
-- **pyrevitlib** has more lookups: `from pyrevit.revit.db import query` gives `query.get_family_symbol`, `query.get_types_by_class`, `query.get_view_by_name`, `query.get_elements_bounding_box` and many more. `kit` covers modeling and views, which `query` doesn't.
 - **Names that don't exist,** which agents often guess:
 
   | Guess | Use |
   |---|---|
-  | `doc.WallTypes`, `doc.Families`, `doc.GetViews()` | `DB.FilteredElementCollector(doc).OfClass(DB.WallType)` (or `kit.type_names`, `kit.views`) |
+  | `doc.WallTypes`, `doc.Families`, `doc.GetViews()` | `DB.FilteredElementCollector(doc).OfClass(DB.WallType)` (or `query.get_types_by_class`, `query.get_all_views`) |
   | `doc.FilteredElementCollector` | `DB.FilteredElementCollector(doc)` |
   | `Family.GetSymbols()` | `family.GetFamilySymbolIds()` |
-  | `Parameter.Value` | `AsDouble()`, `AsString()`, `AsInteger()`, `AsElementId()`, or `kit.get` |
+  | `Parameter.Value` | `AsDouble()`, `AsString()`, `AsInteger()`, `AsElementId()`; rpw's `db.Element(e).parameters["Name"].value` |
   | `doc.NewDirectShape`, `DirectShape.Create` | `DB.DirectShape.CreateElement(doc, category_id)` + `SetShape` |
-  | `doc.Create.NewCeiling` | `DB.Ceiling.Create` or `kit.ceiling` |
+  | `doc.Create.NewCeiling` | `DB.Ceiling.Create` or `create.create_ceiling` |
   | `Plane.Create(origin, normal)` | `DB.Plane.CreateByNormalAndOrigin(normal, origin)` |
   | `CurveLoop.Create(curve_array)` | `DB.CurveLoop.Create(List[DB.Curve](curves))`, or append to `DB.CurveLoop()` |
   | `Edge.Curve`, `face.Surface` | `edge.AsCurve()`; for a `PlanarFace`, `face.Origin` and `face.FaceNormal` |
   | `BooleanOperationType.BoolCut` | `DB.BooleanOperationsUtils.ExecuteBooleanOperation(a, b, DB.BooleanOperationsType.Difference)` |
   | `BuiltInParameter.WALL_HEIGHT`, `TYPE_MARK`, `ALL_MODEL_COMMENTS` | `WALL_USER_HEIGHT_PARAM`, `ALL_MODEL_TYPE_MARK`, `ALL_MODEL_INSTANCE_COMMENTS` |
   | `view.SetCategoryHidden(category, True)` | `view.SetCategoryHidden(category.Id, True)` |
-  | wall top constraint "Roof" through `WALL_HEIGHT_TYPE` | `wall.AddAttachment(roof.Id, DB.AttachmentLocation.Top)`, or `kit.attach_top` |
+  | wall top constraint "Roof" through `WALL_HEIGHT_TYPE` | `wall.AddAttachment(roof.Id, DB.AttachmentLocation.Top)`, or `update.attach_wall_tops` |
 
 ## Finding the right API
 
