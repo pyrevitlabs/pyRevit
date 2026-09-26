@@ -11,6 +11,7 @@ using pyRevitLabs.Common;
 using pyRevitLabs.Common.Extensions;
 using pyRevitLabs.Configurations.Abstractions;
 using pyRevitLabs.Configurations.Sections;
+using pyRevitLabs.Configurations.Security;
 using pyRevitLabs.Json.Linq;
 using pyRevitLabs.NLog;
 using Environment = System.Environment;
@@ -220,9 +221,23 @@ namespace pyRevitLabs.PyRevit {
 
         }
 
-        // save extension credentials to config file so the extension can be updated later,
-        // by the in-Revit extension manager or the cli, without asking for credentials again.
-        // this writes the same config section and keys as the in-Revit extension manager
+        /// <summary>
+        /// Seal the credentials an extension was installed with, so a later update
+        /// by the in-Revit extension manager or the CLI does not have to ask again.
+        /// </summary>
+        /// <remarks>
+        /// The secret is sealed with DPAPI before it reaches the config file, and
+        /// the username travels inside the same blob, so clearing a credential is
+        /// always a single-key removal. The in-Revit extension manager writes the
+        /// same key through pyrevit.coreutils.credentials, which is what lets
+        /// either side read the other's value.
+        /// <para>
+        /// A token is stored against PyRevitConsts.ExtensionTokenDefaultUsername
+        /// rather than the username the clone used: that one defaults to
+        /// "pyrevit-cli", this process' own identity, and no CLI flag overrides
+        /// what the in-Revit updater will authenticate with.
+        /// </para>
+        /// </remarks>
         // @handled @logs
         public static void SaveExtensionCredentials(string extensionName,
                                                     PyRevitExtensionTypes extensionType,
@@ -238,21 +253,69 @@ namespace pyRevitLabs.PyRevit {
             var cfg = PyRevitConfigs.GetConfigFile();
             string extSection = PyRevitExtension.MakeConfigName(extensionName, extensionType);
 
-            _logger.Debug("Saving credentials for extension \"{0}\" to config section \"{1}\"",
+            ExtensionCredential toStore =
+                credentials is GitInstallerUsernamePasswordCredentials userpass
+                    ? new ExtensionCredential(userpass.Username,
+                                              userpass.Password,
+                                              ExtensionCredentialKind.Password)
+                    : new ExtensionCredential(PyRevitConsts.ExtensionTokenDefaultUsername,
+                                              ((GitInstallerAccessTokenCredentials)credentials).AccessToken,
+                                              ExtensionCredentialKind.Token);
+
+            _logger.Debug("Sealing credentials for extension \"{0}\" into config section \"{1}\"",
                           extensionName, extSection);
 
+            string sealedCredential;
+            try {
+                sealedCredential = ExtensionCredentialProtector.Protect(toStore);
+            }
+            catch (Exception sealError) {
+                throw new PyRevitException(
+                    "Can not encrypt the credentials for this extension. They were not saved, so "
+                    + "re-run with the credentials on the command line.", sealError);
+            }
+
             cfg.SetSectionKeyValue(extSection, PyRevitConsts.ExtensionPrivateRepoKey, true);
-            if (credentials is GitInstallerUsernamePasswordCredentials userpassCreds) {
-                cfg.SetSectionKeyValue(extSection, PyRevitConsts.ExtensionUsernameKey, userpassCreds.Username);
-                cfg.SetSectionKeyValue(extSection, PyRevitConsts.ExtensionPasswordKey, userpassCreds.Password);
+            cfg.SetSectionKeyValue(extSection, PyRevitConsts.ExtensionCredentialKey, sealedCredential);
+
+            RemoveLegacyCredentialKeys(cfg, extSection);
+        }
+
+        /// <summary>
+        /// Drop the plaintext credential keys pyRevit wrote before they were sealed.
+        /// </summary>
+        /// <remarks>
+        /// A re-persist has to clear whatever a previous run left behind, or a user
+        /// who rotates their token keeps the old one usable from the file. Driven by
+        /// the protector's key list so this and the admin-config merge cannot
+        /// disagree about which keys are credential material. A key that cannot be
+        /// removed is not fatal: the sealed blob is already stored, and the in-Revit
+        /// migration clears leftovers on the next load.
+        /// </remarks>
+        private static void RemoveLegacyCredentialKeys(IConfigurationService cfg, string extSection) {
+            bool removedAny = false;
+            foreach (string credentialKey in ExtensionCredentialProtector.AllConfigKeyNames) {
+                if (credentialKey == ExtensionCredentialProtector.ConfigKeyName)
+                    continue;
+
+                try {
+                    if (cfg.GetSectionKeyValueOrDefault<string>(extSection, credentialKey, null) is null)
+                        continue;
+
+                    cfg.Configuration.RemoveOption(extSection, credentialKey);
+                    removedAny = true;
+                    _logger.Debug("Removed legacy plaintext key \"{0}\" from config section \"{1}\"",
+                                  credentialKey, extSection);
+                }
+                catch (Exception removeError) {
+                    _logger.Warn(removeError,
+                                 "Could not remove legacy credential key \"{0}\" from config section \"{1}\"",
+                                 credentialKey, extSection);
+                }
             }
-            else if (credentials is GitInstallerAccessTokenCredentials tokenCreds) {
-                cfg.SetSectionKeyValue(extSection, PyRevitConsts.ExtensionTokenKey, tokenCreds.AccessToken);
-                // the in-Revit updater authenticates with the username/password pair
-                // so store the token in that format as well
-                cfg.SetSectionKeyValue(extSection, PyRevitConsts.ExtensionUsernameKey, PyRevitConsts.ExtensionTokenDefaultUsername);
-                cfg.SetSectionKeyValue(extSection, PyRevitConsts.ExtensionPasswordKey, tokenCreds.AccessToken);
-            }
+
+            if (removedAny)
+                cfg.Configuration.SaveConfiguration();
         }
 
         // installs extension

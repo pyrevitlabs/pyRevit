@@ -352,6 +352,41 @@ def _update_extpkgs(ext_def_file, loaded_pkgs):
             loaded_pkgs.append(extpkg)
 
 
+def _get_stored_credential(extpkg):
+    """Return the sealed credential stored for a package, or None.
+
+    Args:
+        extpkg (ExtensionPackage): package being installed
+
+    Returns:
+        ExtensionCredential or None: the stored credential, or None when there
+        is none or it cannot be decrypted.
+
+    Note:
+        A credential that is stored but unreadable is reported as no credential
+        here. The clone is the user's own action with the token in hand, so an
+        anonymous attempt produces the libgit2 authentication error naming the
+        right fix; raising instead would abort an install the user can complete
+        by re-entering the token.
+    """
+    from pyrevit.coreutils import credentials
+
+    try:
+        return credentials.get_credential(extpkg.config_section_name)
+    except credentials.PyRevitCredentialUnavailable as cred_err:
+        mlogger.warning(
+            "The stored credential for %s could not be read and will be ignored: %s",
+            extpkg.name,
+            cred_err,
+        )
+        return None
+    except Exception as cred_err:
+        mlogger.debug(
+            "Could not read a stored credential for %s: %s", extpkg.name, cred_err
+        )
+        return None
+
+
 def _install_extpkg(extpkg, install_dir, install_dependencies=True):
     is_installed_path = extpkg.is_installed
     if is_installed_path:
@@ -362,15 +397,21 @@ def _install_extpkg(extpkg, install_dir, install_dependencies=True):
         clone_path = op.join(install_dir, extpkg.ext_dirname)
         mlogger.info("Installing %s to %s", extpkg.name, clone_path)
 
-        # Only pass username/password when URL has no embedded credentials
-        # (script may inject oauth2:TOKEN@ into URL; double credentials cause
-        # "too many redirects or authentication replays")
-        token = getattr(extpkg.config, "token", None)
+        # Only pass credentials when the URL has no embedded ones. The
+        # extension manager strips any userinfo before it gets here, but a URL
+        # that arrived from elsewhere can still carry it, and supplying both
+        # makes libgit2 fail with "too many redirects or authentication replays".
         url_has_creds = (
             "://" in extpkg.url and "@" in extpkg.url.split("://", 1)[1].split("/")[0]
         )
-        if token and not url_has_creds:
-            git.git_clone(extpkg.url, clone_path, username="oauth2", password=token)
+        stored_credential = _get_stored_credential(extpkg)
+        if stored_credential and not url_has_creds:
+            git.git_clone(
+                extpkg.url,
+                clone_path,
+                username=stored_credential.username,
+                password=stored_credential.secret,
+            )
         else:
             git.git_clone(extpkg.url, clone_path)
         mlogger.info("Extension successfully installed :thumbs_up:")
