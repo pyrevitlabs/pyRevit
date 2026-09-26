@@ -1,23 +1,62 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+
+using pyRevitLabs.NLog;
+
+#if !NETFRAMEWORK
+using System.Runtime.Loader;
+#endif
 
 namespace PyRevitLabs.PyRevit.Runtime {
+    /// <summary>
+    /// Owns the process-wide cache of live script engines, keyed by <see cref="ScriptEngine.TypeId"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The cache and the active-engine bookkeeping live in AppDomain data instead of in statics
+    /// because every session load brings its own copy of this assembly. The dictionaries are
+    /// <see cref="Dictionary{TKey,TValue}"/> from the shared framework, so every copy in the
+    /// process reads and writes the same instances.
+    /// </para>
+    /// <para>
+    /// Invariant: a cached engine is only handed to a caller that can cast it to the requested
+    /// engine type, and an engine that is mid-execution is never shut down or dropped. A cached
+    /// engine that can no longer be served - it belongs to a previous session load, or to a
+    /// different copy of the runtime assembly - is shut down and dropped instead of silently
+    /// overwritten, so engines don't pile up in the cache across session reloads. See
+    /// <see cref="GetStaleReason"/>.
+    /// </para>
+    /// </remarks>
     public static class ScriptEngineManager {
+        private static readonly Logger logger = LogManager.GetCurrentClassLogger();
+
+        private static string _lastEvictedSessionId;
+
+        /// <summary>
+        /// Returns the cached engine for this command, or a new one when the cache cannot serve it.
+        /// </summary>
+        /// <remarks>
+        /// A new engine is only cached when a later call can get it back: an engine that is
+        /// mid-execution keeps its place in the cache, so a new engine created while one is
+        /// running is handed to the caller but stays out of the cache. Callers only ever use
+        /// the engine they are given.
+        /// </remarks>
         public static T GetEngine<T>(ref ScriptRuntime runtime) where T : ScriptEngine, new() {
             T engine = new T();
             engine.Init(ref runtime);
 
             if (engine.UseNewEngine) {
-                SetCachedEngine<T>(engine.TypeId, engine);
+                SetCachedEngine<T>(runtime.SessionUUID, engine);
             }
             else {
-                var cachedEngine = GetCachedEngine<T>(engine.TypeId);
+                var cachedEngine = GetCachedEngine<T>(runtime.SessionUUID, engine.TypeId);
                 if (cachedEngine != null) {
                     engine = cachedEngine;
                     engine.RecoveredFromCache = true;
                 }
                 else
-                    SetCachedEngine<T>(engine.TypeId, engine);
+                    SetCachedEngine<T>(runtime.SessionUUID, engine);
             }
             return engine;
         }
@@ -45,9 +84,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// <remarks>
         /// <para>
         /// Shutting down an active engine clears the builtins and disposes the output stream the
-        /// suspended script resumes into, so <see cref="ClearEngines"/> and cached-engine
-        /// replacement skip active engines. This is what lets a running command request a session
-        /// reload without crashing when it resumes.
+        /// suspended script resumes into, so <see cref="ClearEngines"/>, cached-engine
+        /// replacement and stale-engine eviction all skip active engines. This is what lets a
+        /// running command request a session reload without crashing when it resumes.
         /// </para>
         /// <para>
         /// Invariant: only touched from the Revit main thread, so the dictionary is not
@@ -142,7 +181,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 if (engineRecord.Key == excludeEngine)
                     excludedEngine = engineRecord.Value;
                 else if (!IsEngineActive(engineRecord.Key))
-                    engineRecord.Value.GetType().GetMethod("Shutdown").Invoke(engineRecord.Value, new object[] { });
+                    ShutdownEngine(engineRecord.Value);
             }
 
             var newEngineDict = new Dictionary<string, object>();
@@ -152,23 +191,196 @@ namespace PyRevitLabs.PyRevit.Runtime {
             return newEngineDict;
         }
 
-        private static T GetCachedEngine<T>(string engineTypeId) where T : ScriptEngine, new() {
-            if (EngineDict.ContainsKey(engineTypeId)) {
-                try {
-                    return (T)EngineDict[engineTypeId];
-                }
-                catch (InvalidCastException) {
-                    return null;
-                }
+        /// <summary>
+        /// Identity of a cached engine - its type, the assembly that owns that type, the load
+        /// context that assembly lives in, and whether it is mid-execution - for cache logs and
+        /// for diagnosing a cache that stopped serving engines.
+        /// </summary>
+        /// <param name="engine">Cached engine, or null when nothing is cached.</param>
+        /// <param name="engineTypeId">
+        /// Key the engine is cached under, used to resolve its active state. Null when unknown.
+        /// </param>
+        internal static string DescribeEngine(object engine, string engineTypeId) {
+            if (engine == null)
+                return "no engine";
+
+            Type engineType = engine.GetType();
+            return string.Format(
+                "{0} from {1}{2} (active: {3})",
+                engineType.FullName,
+                engineType.Assembly.FullName,
+                DescribeLoadContext(engineType.Assembly),
+                IsEngineActive(engineTypeId));
+        }
+
+        private static T GetCachedEngine<T>(string sessionId, string engineTypeId) where T : ScriptEngine, new() {
+            EvictStaleEngines(sessionId);
+
+            object cached;
+            if (!EngineDict.TryGetValue(engineTypeId, out cached)) {
+                LogCacheState(engineTypeId, typeof(T), null, "miss, nothing cached under this key");
+                return null;
             }
+
+            if (cached is T cachedEngine) {
+                LogCacheState(engineTypeId, typeof(T), cachedEngine, "hit");
+                return cachedEngine;
+            }
+
+            // The engine cached under this key is not one of ours: no engine created by this
+            // copy of the runtime can ever be cast from it, so the key can never be served again.
+            LogCacheState(engineTypeId, typeof(T), cached, "miss, cached engine has a stale type");
+            EvictStaleEntry(engineTypeId, cached);
             return null;
         }
 
-        private static void SetCachedEngine<T>(string engineTypeId, T engine) where T : ScriptEngine, new() {
-            var cachedEngine = GetCachedEngine<T>(engine.TypeId);
-            if (cachedEngine != null && !IsEngineActive(engine.TypeId))
-                cachedEngine.Shutdown();
-            EngineDict[engineTypeId] = engine;
+        private static void SetCachedEngine<T>(string sessionId, T engine) where T : ScriptEngine, new() {
+            EvictStaleEngines(sessionId);
+
+            object displaced;
+            if (EngineDict.TryGetValue(engine.TypeId, out displaced)) {
+                if (displaced is T) {
+                    // A mid-execution engine keeps running to completion; it just stops being the
+                    // one a later caller gets back.
+                    if (IsEngineActive(engine.TypeId))
+                        LogCacheState(engine.TypeId, typeof(T), displaced, "replaced by a new engine, replaced engine is still running");
+                    else {
+                        LogCacheState(engine.TypeId, typeof(T), displaced, "replaced by a new engine, shutting replaced engine down");
+                        ShutdownEngine(displaced);
+                    }
+                }
+                else if (!EvictStaleEntry(engine.TypeId, displaced)) {
+                    return;
+                }
+            }
+
+            EngineDict[engine.TypeId] = engine;
+            LogCacheState(engine.TypeId, typeof(T), engine, "cached a new engine");
+        }
+
+        /// <summary>
+        /// Shuts down and drops the engine cached under <paramref name="engineTypeId"/>, unless it
+        /// is mid-execution.
+        /// </summary>
+        /// <returns>
+        /// True when the key is now free for a new engine. False when the engine is still running
+        /// and must keep its place in the cache.
+        /// </returns>
+        private static bool EvictStaleEntry(string engineTypeId, object cachedEngine) {
+            if (IsEngineActive(engineTypeId)) {
+                logger.Warn(
+                    "Engine cache keeps the stale engine '{0}' until it finishes: {1}",
+                    engineTypeId,
+                    DescribeEngine(cachedEngine, engineTypeId));
+                return false;
+            }
+
+            logger.Warn(
+                "Engine cache drops the stale engine '{0}': {1}",
+                engineTypeId,
+                DescribeEngine(cachedEngine, engineTypeId));
+            ShutdownEngine(cachedEngine);
+            EngineDict.Remove(engineTypeId);
+            return true;
+        }
+
+        /// <summary>
+        /// Drops every cached engine that the given session can never receive, once per session.
+        /// </summary>
+        /// <remarks>
+        /// A session load seeds a new session uuid, so the engines a previous load left behind are
+        /// keyed under ids no later caller can produce. Nothing else would ever look at them again,
+        /// and each one keeps a whole interpreter (with its imported modules) alive for the rest of
+        /// the Revit session, which is what turns repeated reloads into a multi-gigabyte heap.
+        /// </remarks>
+        private static void EvictStaleEngines(string sessionId) {
+            if (string.IsNullOrEmpty(sessionId) || sessionId == _lastEvictedSessionId)
+                return;
+
+            _lastEvictedSessionId = sessionId;
+
+            var staleEntries = new List<KeyValuePair<string, string>>();
+            foreach (KeyValuePair<string, object> engineRecord in EngineDict) {
+                string reason = GetStaleReason(sessionId, engineRecord.Key, engineRecord.Value);
+                if (reason != null && !IsEngineActive(engineRecord.Key))
+                    staleEntries.Add(new KeyValuePair<string, string>(engineRecord.Key, reason));
+            }
+
+            foreach (KeyValuePair<string, string> staleEntry in staleEntries) {
+                object staleEngine = EngineDict[staleEntry.Key];
+                logger.Debug(
+                    "Engine cache drops '{0}' ({1}): {2}",
+                    staleEntry.Key,
+                    staleEntry.Value,
+                    DescribeEngine(staleEngine, staleEntry.Key));
+                ShutdownEngine(staleEngine);
+                EngineDict.Remove(staleEntry.Key);
+            }
+        }
+
+        /// <summary>
+        /// Why a cached engine is dead weight for the given session, or null while the engine is
+        /// still the one this session would cache under that key.
+        /// </summary>
+        private static string GetStaleReason(string sessionId, string engineTypeId, object cachedEngine) {
+            if (!engineTypeId.StartsWith(sessionId + ":", StringComparison.Ordinal))
+                return "cached by a previous session load";
+
+            if (cachedEngine == null)
+                return null;
+
+            // A second copy of the runtime assembly in the process (a new load context, or the
+            // same assembly loaded twice) brings its own ScriptEngine type, so nothing created by
+            // this copy can ever be cast from that engine.
+            if (!(cachedEngine is ScriptEngine))
+                return "created by a different copy of the runtime assembly";
+
+            return null;
+        }
+
+        /// <summary>
+        /// Shuts an engine down through its own type, which is the only way to reach an engine
+        /// whose type this copy of the runtime cannot cast to.
+        /// </summary>
+        private static void ShutdownEngine(object engine) {
+            if (engine == null)
+                return;
+
+            MethodInfo shutdown = engine.GetType().GetMethod("Shutdown", BindingFlags.Instance | BindingFlags.Public);
+            if (shutdown == null) {
+                logger.Warn("Cannot shut down {0}: it has no public Shutdown()", DescribeEngine(engine, null));
+                return;
+            }
+
+            try {
+                shutdown.Invoke(engine, null);
+            }
+            catch (Exception ex) {
+                logger.Warn(ex, "Shutdown of {0} failed", DescribeEngine(engine, null));
+            }
+        }
+
+        private static void LogCacheState(string engineTypeId, Type requestedEngineType, object cachedEngine, string outcome) {
+            if (!logger.IsDebugEnabled)
+                return;
+
+            logger.Debug(
+                "Engine cache {0} for '{1}': asked for {2}, holds {3}",
+                outcome,
+                engineTypeId,
+                requestedEngineType.Name,
+                DescribeEngine(cachedEngine, engineTypeId));
+        }
+
+        private static string DescribeLoadContext(Assembly assembly) {
+#if !NETFRAMEWORK
+            AssemblyLoadContext context = AssemblyLoadContext.GetLoadContext(assembly);
+            return context == null
+                ? string.Empty
+                : string.Format(" loaded into load context '{0}'", context.Name);
+#else
+            return string.Empty;
+#endif
         }
     }
 }
