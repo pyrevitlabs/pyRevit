@@ -222,6 +222,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
                     }
                 }
             }
+
             foreach (var assembly in loadedAssemblies) {
                 var appType = assembly.GetType(AppTypeName, throwOnError: false);
                 if (appType != null) {
