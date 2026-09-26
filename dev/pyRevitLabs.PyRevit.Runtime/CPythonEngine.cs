@@ -169,14 +169,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
             SetVariable(builtins, "__cachedengineid__", TypeId);
             SetVariable(builtins, "__scriptruntime__", runtime);
 
-            if (runtime.UIApp != null)
-                SetVariable(builtins, "__revit__", runtime.UIApp);
-            else if (runtime.UIControlledApp != null)
-                SetVariable(builtins, "__revit__", runtime.UIControlledApp);
-            else if (runtime.App != null)
-                SetVariable(builtins, "__revit__", runtime.App);
-            else
-                builtins.SetItem("__revit__".ToPython(), PyObject.FromManagedObject(null));
+            SetVariable(builtins, "__revit__", runtime.UIApp);
 
             // Adding data provided by IExternalCommand.Execute
             SetVariable(builtins, "__commanddata__", runtime.ScriptRuntimeConfigs.CommandData);
@@ -205,11 +198,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
             SetVariable(builtins, "__eventsender__", runtime.ScriptRuntimeConfigs.EventSender);
             SetVariable(builtins, "__eventargs__", runtime.ScriptRuntimeConfigs.EventArgs);
 
-            if (runtime.ScriptRuntimeConfigs?.Variables != null) {
-                foreach (var variable in runtime.ScriptRuntimeConfigs.Variables) {
-                    SetVariable(builtins, variable.Key, variable.Value);
-                }
-            }
+            foreach (var variable in ScriptBuiltins.FilterUserVariables(runtime.ScriptRuntimeConfigs?.Variables))
+                SetVariable(builtins, variable.Key, variable.Value);
 
             module.SetBuiltins(builtins);
         }

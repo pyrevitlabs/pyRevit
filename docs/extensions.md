@@ -119,3 +119,38 @@ This is different from the entry an extension gets in `extensions/extensions.jso
 A `hooks/` folder (at the bundle, tab, panel, or extension level) can hold Python scripts named after a Revit/pyRevit event, e.g. `doc-opened.py`, `view-activated.py`, `command-before-exec[ID_INPLACE_COMPONENT].py` (the bracketed suffix scopes the hook to one command id). Each script runs whenever that event fires while the extension is loaded.
 
 There is no exhaustive published list of event names — `extensions/pyRevitDevHooks.extension/hooks/` has one example script per supported event and is the most complete reference. Hook registration is handled by `pyrevitlib/pyrevit/loader/hooks.py`.
+
+## The `__revit__` host handle
+
+Every script pyRevit runs — commands, event hooks, smart buttons, combo boxes — gets a `__revit__` builtin. The contract is:
+
+> `__revit__` is an `Autodesk.Revit.UI.UIApplication` wherever a usable session handle exists, and `None` only outside a Revit host.
+
+Revit hands subscribers four unrelated application types depending on the event that fired: `UIApplication`, `Application`, `UIControlledApplication` and `ControlledApplication`. Every `Application_*` hook is registered on `uiApp.Application`, so its sender is DB-only. Before the handle was normalized, `__revit__` was simply whatever Revit sent, which made it polymorphic — and because the whole pyrevit library resolves the host application through it, `HOST_APP.uiapp`, `HOST_APP.uidoc` and `HOST_APP.doc` silently read `None` inside those hooks instead of failing.
+
+`PyRevitLabs.PyRevit.Runtime.RevitAppResolver` now funnels every handle into one shape before it reaches a script:
+
+| `__eventsender__` type | How `__revit__` is derived |
+|---|---|
+| `UIApplication` | used as-is, and remembered as the session handle |
+| `Application` | wrapped in a new `UIApplication` |
+| `UIControlledApplication` | unwrapped from its private `m_uiapplication` field, same one the session loader reflects at startup |
+| `ControlledApplication`, anything else, `None` | the session handle recorded at session load |
+
+The session handle is seeded first-write-wins, so a handle Revit may invalidate when its event returns can never displace the one that stays valid for the whole process.
+
+`__revit__` is not going away — too much third-party code depends on it. New code should prefer `HOST_APP.uiapp` / `HOST_APP.app`, which are the same object behind a named accessor.
+
+### DB-only event hooks
+
+`__revit__` is always live in an `Application_*` hook, but "live" is not "fully usable": Revit does not guarantee `UIApplication.ActiveUIDocument` while a DB-only event is still running. The documented behaviour, which the pyrevit accessors implement, is:
+
+| Accessor | DB-only `Application_*` hook | Where to get the document instead |
+|---|---|---|
+| `HOST_APP.uiapp`, `HOST_APP.app` | a working `UIApplication` / `Application` | — |
+| `HOST_APP.uidoc`, `HOST_APP.doc` | `None` | `EXEC_PARAMS.event_doc`, or `revit.doc` (which falls back to it) |
+| `__eventsender__` | the raw sender, exactly as Revit sent it | — |
+
+Scripts that type-switch on `__revit__` to discover what fired the hook should switch on `__eventsender__` instead — that is the value normalization never touches.
+
+`extensions/pyRevitDevTools.extension/pyRevitDev.tab/Debug.panel/Engine Tests.pulldown/lib/revithandle.py` reports all of the above for a live run; the two *Test … Revit Handle* buttons run it under each engine. `extensions/pyRevitDevHooks.extension/lib/hooks_logger.py` records the handle and sender type on every development-hook log line, so `hooks.log` shows the same thing for all hook contexts.

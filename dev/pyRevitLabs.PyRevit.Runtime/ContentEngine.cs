@@ -15,9 +15,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public override int Execute(ref ScriptRuntime runtime) {
-            if (runtime.UIApp != null && runtime.UIApp.ActiveUIDocument != null) {
+            UIDocument uidoc = runtime.ActiveUIDocument;
+            if (uidoc != null) {
                 string familySourceFile = runtime.ScriptSourceFile;
-                UIDocument uidoc = runtime.UIApp.ActiveUIDocument;
                 Document doc = uidoc.Document;
 
                 // find or load family first

@@ -192,6 +192,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         public void ActivateEventHooks(UIApplication uiApp) {
+            RevitAppResolver.SeedSessionUIApplication(uiApp);
             foreach (var eventHook in GetAllEventHooks())
                 if (eventHook.EventType != null)
                     ActivateEventType(uiApp, (EventType)eventHook.EventType, eventHook.EventTarget);

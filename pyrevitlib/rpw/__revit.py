@@ -55,16 +55,7 @@ class Revit(BaseObject):
         DYNAMO = 'Dynamo'
 
     def __init__(self):
-        try:
-            self.uiapp = __revit__
-            self._host = Revit.HOSTS.RPS
-        except NameError:
-            try:
-                # Try Getting handler from Dynamo RevitServices
-                self.uiapp = self.find_dynamo_uiapp()
-                self._host = Revit.HOSTS.DYNAMO
-            except Exception as errmsg:
-                logger.warning('Revit Application handle could not be found')
+        self.uiapp = self.find_uiapp()
 
         try:
             # Add DB UI Import to globals so it can be imported by rpw
@@ -80,6 +71,40 @@ class Revit(BaseObject):
                               'UI': MockObject(fullname='Autodesk.Revit.DB')})
             self.uiapp = MockObject(fullname='Autodesk.Revit.UI.UIApplication')
             self._host = None
+
+    def find_uiapp(self):
+        """ Return the host application handle, preferring pyRevit's builtin.
+
+        Returns:
+            uiapp: A UIApplication, or None if no host handle is reachable.
+
+        Note:
+            pyRevit injects ``__revit__`` as a UIApplication wherever a Revit
+            session exists, so a present handle means we are hosted by pyRevit
+            even when a cached engine re-runs a script outside its own execution.
+            A defined-but-null handle counts as absent: that is what a non-pyRevit
+            host leaves behind, and treating it as live would make the Dynamo
+            fallback below unreachable.
+        """
+        try:
+            pyrevit_uiapp = __revit__
+        except NameError:
+            pyrevit_uiapp = None
+
+        if pyrevit_uiapp is not None:
+            self._host = Revit.HOSTS.RPS
+            return pyrevit_uiapp
+
+        try:
+            # Try Getting handler from Dynamo RevitServices
+            uiapp = self.find_dynamo_uiapp()
+        except Exception:
+            logger.warning('Revit Application handle could not be found')
+            self._host = None
+            return None
+
+        self._host = Revit.HOSTS.DYNAMO
+        return uiapp
 
     def find_dynamo_uiapp(self):
         clr.AddReference("RevitServices")
@@ -104,13 +129,16 @@ class Revit(BaseObject):
 
     @property
     def doc(self):
-        """ Returns: uiapp.ActiveUIDocument.Document """
-        return getattr(self.uiapp.ActiveUIDocument, 'Document', None)
+        """ Returns: uiapp.ActiveUIDocument.Document, or None """
+        return getattr(self.uidoc, 'Document', None)
 
     @property
     def uidoc(self):
-        """ Returns: uiapp.ActiveUIDocument """
-        return getattr(self.uiapp, 'ActiveUIDocument', None)
+        """ Returns: uiapp.ActiveUIDocument, or None """
+        try:
+            return getattr(self.uiapp, 'ActiveUIDocument', None)
+        except Exception:
+            return None
 
     @property
     def active_view(self):

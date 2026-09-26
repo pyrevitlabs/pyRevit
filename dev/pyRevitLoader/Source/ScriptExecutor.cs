@@ -20,10 +20,23 @@ namespace PyRevitLoader
         private bool _fullframe = false;
         private readonly UIApplication _revit = null;
 
+        /// <summary>
+        /// Creates an executor with no host application handle, usable only for
+        /// <see cref="AddEmbeddedLib(ScriptEngine)"/>.
+        /// </summary>
+        /// <remarks>
+        /// <b>Warning:</b> <see cref="SetupEnvironment(ScriptEngine, ScriptScope)"/>
+        /// rejects an instance built this way, because it could only inject a null
+        /// <c>__revit__</c>.
+        /// </remarks>
         public ScriptExecutor()
         {
         }
 
+        /// <summary>
+        /// Creates an executor bound to a host application handle. This is the only
+        /// overload that can run a script.
+        /// </summary>
         public ScriptExecutor(UIApplication uiApplication, bool fullFrame = false)
         {
             _revit = uiApplication;
@@ -187,9 +200,31 @@ namespace PyRevitLoader
             return scope;
         }
 
+        /// <summary>
+        /// Injects pyRevit's reserved builtins into the scope of
+        /// <paramref name="engine"/>.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        /// This executor was built without a host application handle, so the only
+        /// <c>__revit__</c> it could inject would be null.
+        /// </exception>
+        /// <remarks>
+        /// <b>Invariant:</b> <c>__revit__</c> injected here is always a non-null
+        /// <c>UIApplication</c>. This is the second place that builtin is injected
+        /// - smart buttons and combo boxes run through here rather than through the
+        /// runtime engines - and the pyrevit library resolves the host application
+        /// through it, so a null or differently typed handle degrades every consumer
+        /// silently instead of failing. Keep the contract in step with
+        /// <c>PyRevitLabs.PyRevit.Runtime.RevitAppResolver</c>, which normalizes
+        /// handles for command and event-hook execution.
+        /// </remarks>
         public void SetupEnvironment(ScriptEngine engine, ScriptScope scope)
         {
-            // add two special variables: __revit__ and __vars__ to be globally visible everywhere:            
+            if (_revit == null)
+                throw new InvalidOperationException(
+                    "ScriptExecutor was created without a UIApplication handle and cannot set up a " +
+                    "script environment. Construct it with the host UIApplication.");
+
             var builtin = IronPython.Hosting.Python.GetBuiltinModule(engine);
             builtin.SetVariable("__revit__", _revit);
 
