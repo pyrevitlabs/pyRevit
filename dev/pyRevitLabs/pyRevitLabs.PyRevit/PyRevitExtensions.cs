@@ -281,28 +281,30 @@ namespace pyRevitLabs.PyRevit {
 
         // Drops the plaintext credential keys written by pyRevit before they were
         // sealed. A no-op on a config that never had them, which is every config
-        // written since the blob format landed.
+        // written since the blob format landed. Driven by the protector's list so
+        // this and the admin-config merge cannot disagree about which keys are
+        // credential material.
         private static void RemoveLegacyCredentialKeys(IConfigurationService cfg, string extSection) {
             bool removedAny = false;
-            foreach (string legacyKey in new[] {
-                         PyRevitConsts.ExtensionTokenKey,
-                         PyRevitConsts.ExtensionPasswordKey,
-                         PyRevitConsts.ExtensionUsernameKey }) {
+            foreach (string credentialKey in ExtensionCredentialProtector.AllConfigKeyNames) {
+                if (credentialKey == ExtensionCredentialProtector.ConfigKeyName)
+                    continue;
+
                 try {
-                    if (cfg.GetSectionKeyValueOrDefault<string>(extSection, legacyKey, null) is null)
+                    if (cfg.GetSectionKeyValueOrDefault<string>(extSection, credentialKey, null) is null)
                         continue;
 
-                    cfg.Configuration.RemoveOption(extSection, legacyKey);
+                    cfg.Configuration.RemoveOption(extSection, credentialKey);
                     removedAny = true;
                     _logger.Debug("Removed legacy plaintext key \"{0}\" from config section \"{1}\"",
-                                  legacyKey, extSection);
+                                  credentialKey, extSection);
                 }
                 catch (Exception removeError) {
                     // Not fatal: the sealed blob is already stored, and a leftover
                     // plaintext key is cleared by the in-Revit migration on next load.
                     _logger.Warn(removeError,
                                  "Could not remove legacy credential key \"{0}\" from config section \"{1}\"",
-                                 legacyKey, extSection);
+                                 credentialKey, extSection);
                 }
             }
 

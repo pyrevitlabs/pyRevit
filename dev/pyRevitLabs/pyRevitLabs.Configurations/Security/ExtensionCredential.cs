@@ -50,11 +50,19 @@ public sealed record ExtensionCredential {
     /// </summary>
     /// <remarks>
     /// A <c>record</c> synthesizes <c>ToString</c> over every readable property,
-    /// which would print the token into any log line, exception message or debug
-    /// output that ever interpolates this type. Overriding it is the only thing
-    /// standing between a routine diagnostic and a credential in a log file, and
-    /// the Python counterpart's <c>__repr__</c> hides the secret for the same
-    /// reason.
+    /// which would print the token into any log line, exception message or
+    /// interpolated string that ever touches this type. The Python counterpart's
+    /// <c>__repr__</c> hides the secret for the same reason.
+    /// <para>
+    /// The record's own <c>PrintMembers</c> is left alone: on a record without a
+    /// primary constructor it is <c>private</c> and not overridable, and because
+    /// this type is <c>sealed</c> the only member that can reach it is the
+    /// synthesized <c>ToString</c> - which is overridden here. What this does not
+    /// cover is a debugger's value display or reflection over
+    /// <see cref="Secret"/>; a type that cannot expose a secret to a debugger has
+    /// to stop being a record with a public property, which would cost the value
+    /// equality this type is here for.
+    /// </para>
     /// </remarks>
     public override string ToString() =>
         $"ExtensionCredential {{ Username = {Username}, Secret = <hidden>, Kind = {Kind} }}";

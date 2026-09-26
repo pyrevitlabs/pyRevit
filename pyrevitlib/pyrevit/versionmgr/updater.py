@@ -145,16 +145,30 @@ def update_repo(repo_info):
     repo = repo_info.repo
     logger.debug("Updating repo: %s", repo_info.directory)
     head_msg = safe_strtype(repo.Head.Tip.Message).replace("\n", "")
-    logger.debug("Current head is: %s > %s", repo.Head.Tip.Id.Sha, head_msg)
-    username, password = _get_extension_credentials(repo_info)
-    if username and password:
-        repo_info.username = username
-        repo_info.password = password
+    logger.debug("Current head is: %s > %s", repo_info.head_name, head_msg)
 
+    # Credential resolution is inside the try so an unreadable stored token is
+    # reported as the credential problem it is. Left outside, it would escape as a
+    # bare exception and the caller would collapse it into a generic
+    # "can not update repo", losing the only message that says what to do.
     try:
+        username, password = _get_extension_credentials(repo_info)
+        if username and password:
+            repo_info.username = username
+            repo_info.password = password
+
         updated_repo_info = libgit.git_pull(repo_info)
         logger.debug("Successfully updated repo: %s", updated_repo_info.directory)
         return updated_repo_info
+
+    except credentials.PyRevitCredentialUnavailable as cred_err:
+        logger.warning(
+            "Can not authenticate with %s: %s Re-enter the token in the "
+            "extension manager.",
+            repo_info.name,
+            cred_err,
+        )
+        raise
 
     except libgit.PyRevitGitAuthenticationError as auth_err:
         logger.debug(

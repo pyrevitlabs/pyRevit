@@ -416,10 +416,17 @@ def _read_from_disk(section_name):
         does not hold one.
 
     Raises:
-        PyRevitCredentialError: the file could not be reopened at all. That is
-            reported separately from "absent" on purpose: treating an unreadable
-            config as an absent credential would make a working write look like a
-            failed one, and a caller unable to verify would refuse every store.
+        PyRevitCredentialError: the config file path could not be resolved or
+            the file could not be opened. Reported separately from "absent" so an
+            unreadable config is never mistaken for a missing credential, which
+            would make a working write look like a failed one.
+
+    Note:
+        This cannot distinguish a file that does not exist from one that exists
+        and holds nothing, because the INI backend yields an empty config rather
+        than failing for a missing or unparsable file. Both come back as None.
+        That is the safe direction: the caller treats it as "not stored", keeps
+        the legacy keys, and surfaces a write-failure message.
     """
     from pyrevit.coreutils.configparser import open_config_file
 
@@ -745,11 +752,6 @@ def _migrate_legacy_section(section_name):
         )
         return False
 
-    if not username:
-        # Both legacy writers stored the token against the oauth2 username, so a
-        # token without one is that case.
-        username = DEFAULT_TOKEN_USERNAME
-
     # A `token` key means a token, even when `password` also holds the same value.
     # Every legacy writer mirrored the token into `password` "for backwards compat",
     # so preferring `password` would label every migrated GitHub token as a
@@ -766,6 +768,12 @@ def _migrate_legacy_section(section_name):
     else:
         secret = legacy["password"]
         kind = "password"
+
+    if not username and kind == "token":
+        # Both legacy writers stored a token against the oauth2 username. A
+        # password without one is not that case, and defaulting it to oauth2 would
+        # seal a basic-auth credential that can never authenticate.
+        username = DEFAULT_TOKEN_USERNAME
 
     set_credential(section_name, username, secret, kind)
     mlogger.info(

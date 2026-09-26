@@ -187,23 +187,21 @@ public static class PyRevitConfigService {
             return;
 
         if (!File.Exists(machineConfigPath)) {
-            try {
-                string? dir = Path.GetDirectoryName(machineConfigPath);
-                if (!string.IsNullOrEmpty(dir))
-                    Directory.CreateDirectory(dir);
-                File.Copy(userConfigPath, machineConfigPath);
-                FileAttributes attributes = File.GetAttributes(machineConfigPath);
-                if ((attributes & FileAttributes.ReadOnly) != 0)
-                    File.SetAttributes(machineConfigPath, attributes & ~FileAttributes.ReadOnly);
-            }
-            catch (Exception ex) {
+            // Promoted by copying, minus credential material, rather than by
+            // File.Copy followed by a strip. Copy-then-strip would publish the
+            // plaintext token to a file every local user can read for as long as
+            // the strip takes, and indefinitely if it fails.
+            if (!CopyConfigWithoutCredentialKeys(userConfigPath, machineConfigPath)) {
                 ConfigurationDiagnostics.ReportWarning(
-                    "Could not promote per-user config to the machine config: " + ex.Message);
+                    "Could not promote per-user config to the machine config: "
+                    + userConfigPath);
                 return;
             }
 
-            // The promote path copies the whole file, so a credential came with it.
-            StripCredentialKeysFromFile(machineConfigPath);
+            FileAttributes attributes = File.GetAttributes(machineConfigPath);
+            if ((attributes & FileAttributes.ReadOnly) != 0)
+                File.SetAttributes(machineConfigPath, attributes & ~FileAttributes.ReadOnly);
+
             RetireSplitUserConfigIfSuperseded(userConfigPath, ContainsCredentialKeys(userConfigPath));
             return;
         }
@@ -217,11 +215,12 @@ public static class PyRevitConfigService {
     /// everything in it.
     /// </summary>
     /// <remarks>
-    /// <paramref name="stillHoldsCredentials"/> suppresses the rename. Credential
-    /// material is never copied to a machine-scope config, so while the per-user
-    /// file still holds one it is the only copy - retiring it would destroy a
-    /// working token and leave the user re-entering it. The split layout simply
-    /// persists one round longer for those users, which is the correct trade.
+    /// <paramref name="stillHoldsCredentials"/> suppresses the rename. The
+    /// per-user file is the only copy of a credential that is scoped to that
+    /// user, so retiring it would destroy a working token and leave the user
+    /// re-entering it. For those users the split layout stays, which is the
+    /// correct trade and is not temporary: the credential outlives every
+    /// subsequent merge.
     /// </remarks>
     private static void RetireSplitUserConfigIfSuperseded(
         string userConfigPath, bool stillHoldsCredentials) {
@@ -321,7 +320,7 @@ public static class PyRevitConfigService {
                 }
             }
 
-            if (StripCredentialKeys(target))
+            if (StripPlaintextCredentialKeys(target))
                 changed = true;
 
             if (changed)
@@ -332,6 +331,46 @@ public static class PyRevitConfigService {
         catch (Exception ex) {
             ConfigurationDiagnostics.ReportWarning(
                 "Could not merge split machine config: " + ex.Message);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Copies a config file, omitting every key that can hold extension credential
+    /// material.
+    /// </summary>
+    /// <remarks>
+    /// Used by the promote path so a machine-scope file is never, even briefly,
+    /// holding credential material. The sealed key is omitted here even though it
+    /// is unreadable to other users: an elevated <c>--persist-credentials</c> run
+    /// on a machine install writes the token to ProgramData, so that file is the
+    /// only copy and dropping it would silently break the extension.
+    /// </remarks>
+    /// <returns>Whether the copy was written.</returns>
+    private static bool CopyConfigWithoutCredentialKeys(string sourcePath, string targetPath) {
+        try {
+            var source = IniConfiguration.Create(sourcePath);
+            var target = IniConfiguration.Create(targetPath);
+
+            foreach (string section in source.GetSectionNames()) {
+                if (IsExtensionConfigSection(section))
+                    target.AddSection(section);
+
+                foreach (string key in source.GetSectionOptionNames(section)) {
+                    if (IsCredentialKey(key))
+                        continue;
+                    string? raw = source.GetRawValueOrDefault(section, key, null);
+                    if (raw != null)
+                        target.SetRawValue(section, key, raw);
+                }
+            }
+
+            target.SaveConfiguration();
+            return true;
+        }
+        catch (Exception ex) {
+            ConfigurationDiagnostics.ReportWarning(
+                "Could not copy the per-user config to the machine config: " + ex.Message);
             return false;
         }
     }
@@ -349,27 +388,54 @@ public static class PyRevitConfigService {
     }
 
     /// <summary>
-    /// Removes every credential key from every extension section of a config.
+    /// Whether a config key holds a *plaintext* extension credential, i.e. one a
+    /// machine-scope file must never carry.
     /// </summary>
     /// <remarks>
-    /// Applied to the machine config because the promote path copies the whole
-    /// per-user file verbatim, and because a machine config merged from an older
-    /// build may already carry a plaintext token.
+    /// Deliberately excludes the sealed key. A sealed blob is bound to the Windows
+    /// profile that wrote it, so other users of the machine cannot read it, and
+    /// for a machine install it is the only copy of the token.
+    /// </remarks>
+    private static bool IsPlaintextCredentialKey(string keyName) {
+        if (string.Equals(
+                keyName,
+                ExtensionCredentialProtector.LegacyTokenKeyName,
+                StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (string.Equals(
+                keyName,
+                ExtensionCredentialProtector.LegacyPasswordKeyName,
+                StringComparison.OrdinalIgnoreCase))
+            return true;
+        return string.Equals(
+            keyName,
+            ExtensionCredentialProtector.LegacyUsernameKeyName,
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Removes every plaintext credential key from every extension section of a
+    /// config.
+    /// </summary>
+    /// <remarks>
+    /// Applied to the machine config, and to the per-user config that a fresh
+    /// install seeds itself from, so a token that a pre-sealing build wrote in the
+    /// clear does not keep being handed between the two.
     /// </remarks>
     /// <returns>Whether anything was removed.</returns>
-    private static bool StripCredentialKeys(IConfiguration configuration) {
+    private static bool StripPlaintextCredentialKeys(IConfiguration configuration) {
         bool removed = false;
         foreach (string section in configuration.GetSectionNames()) {
             if (!IsExtensionConfigSection(section))
                 continue;
 
             foreach (string key in configuration.GetSectionOptionNames(section)) {
-                if (IsCredentialKey(key) && configuration.RemoveOption(section, key)) {
+                if (IsPlaintextCredentialKey(key) && configuration.RemoveOption(section, key)) {
                     removed = true;
                     ConfigurationDiagnostics.ReportWarning(
-                        "Removed extension credential key \"" + key + "\" from the machine config "
-                        + "section \"" + section + "\". A machine-scope config is readable by every "
-                        + "user of this machine, so it must not hold credential material.");
+                        "Removed plaintext extension credential key \"" + key + "\" from the \""
+                        + section + "\" config section. A config file is not a safe place for a "
+                        + "token; it is sealed instead.");
                 }
             }
         }
@@ -377,28 +443,28 @@ public static class PyRevitConfigService {
     }
 
     /// <summary>
-    /// Removes credential keys from a config file, if it has any.
+    /// Removes plaintext credential keys from a config file, if it has any.
     /// </summary>
-    private static bool StripCredentialKeysFromFile(string configPath) {
+    private static bool StripPlaintextCredentialKeysFromFile(string configPath) {
         if (!File.Exists(configPath))
             return false;
 
         try {
             var configuration = IniConfiguration.Create(configPath);
-            if (!StripCredentialKeys(configuration))
+            if (!StripPlaintextCredentialKeys(configuration))
                 return false;
             configuration.SaveConfiguration();
             return true;
         }
         catch (Exception ex) {
             ConfigurationDiagnostics.ReportWarning(
-                "Could not strip credential keys from the machine config: " + ex.Message);
+                "Could not strip plaintext credential keys from " + configPath + ": " + ex.Message);
             return false;
         }
     }
 
     /// <summary>
-    /// Whether a per-user config holds extension credential material.
+    /// Whether a per-user config holds extension credential material of any kind.
     /// </summary>
     private static bool ContainsCredentialKeys(string configPath) {
         if (!File.Exists(configPath))
@@ -416,8 +482,11 @@ public static class PyRevitConfigService {
             }
         }
         catch (Exception ex) {
+            // Assume it holds one: retiring a file we could not inspect risks
+            // destroying a token we simply failed to see.
             ConfigurationDiagnostics.ReportWarning(
-                "Could not inspect the per-user config for credentials: " + ex.Message);
+                "Could not inspect " + configPath + " for credentials: " + ex.Message);
+            return true;
         }
 
         return false;
@@ -485,7 +554,15 @@ public static class PyRevitConfigService {
         catch (Exception ex) {
             ConfigurationDiagnostics.ReportWarning(
                 "Could not seed admin config to user config: " + ex.Message);
+            return;
         }
+
+        // A machine config written by a pre-sealing build can still hold a
+        // plaintext token, and seeding copies it verbatim into this user's config.
+        // The sealed key is left alone: it is bound to the profile that wrote it
+        // and is meaningless here, but it is the admin's own copy, not ours to
+        // delete from their file.
+        StripPlaintextCredentialKeysFromFile(targetFile);
     }
 
     private static IConfigurationService CreateConfiguration(string configPath, bool readOnly) {

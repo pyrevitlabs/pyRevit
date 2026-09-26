@@ -210,12 +210,42 @@ public class PyRevitConfigServiceMigrationTests {
             PyRevitConfigService.RepairSplitAdminConfig(userConfig, machineConfig);
 
             var promoted = File.ReadAllText(machineConfig);
+            // Everything credential-shaped is omitted, sealed or not: this copy is
+            // promoted for every user of the machine.
             Assert.DoesNotContain("SEALED-BLOB", promoted);
             Assert.DoesNotContain("ghp_plaintext", promoted);
             Assert.DoesNotContain("username", promoted);
             // Non-credential settings are still carried across.
             Assert.Contains("Private.extension", promoted);
             Assert.Contains("disabled", promoted);
+        }
+        finally {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    /// <summary>
+    /// A sealed credential ALREADY in the machine config must survive a merge.
+    /// An elevated --persist-credentials on a machine install writes the token
+    /// there, so that file is the only copy; stripping it on the next load would
+    /// silently break the extension with nothing left anywhere.
+    /// </summary>
+    [Fact]
+    public void MergeAdminConfigFiles_KeepsASealedCredentialAlreadyInTheMachineConfig() {
+        var dir = NewTempDir();
+        try {
+            var source = Path.Combine(dir, "source.ini");
+            var target = Path.Combine(dir, "target.ini");
+
+            File.WriteAllText(source,
+                "[environment]\r\nclones = {\"master\":\"C:\\\\Source\"}\r\n");
+            File.WriteAllText(target,
+                "[Machine.extension]\r\ndisabled = false\r\n" +
+                "credential = \"MACHINE-SCOPED-BLOB\"\r\n");
+
+            PyRevitConfigService.MergeAdminConfigFiles(source, target, out _);
+
+            Assert.Contains("MACHINE-SCOPED-BLOB", File.ReadAllText(target));
         }
         finally {
             Directory.Delete(dir, recursive: true);

@@ -157,10 +157,12 @@ namespace pyRevitLabs.PyRevit {
         // to build a credential pair at all.
         public const string ExtensionTokenDefaultUsername = "oauth2";
         // Legacy plaintext credential keys. Only read, by the one-time migration
-        // in pyrevit.versionmgr.upgrade; nothing writes them any more.
-        public const string ExtensionUsernameKey = "username";
-        public const string ExtensionPasswordKey = "password";
-        public const string ExtensionTokenKey = "token";
+        // in pyrevit.versionmgr.upgrade, and by RemoveLegacyCredentialKeys on a
+        // re-persist; nothing writes them any more. Aliased from the protector so
+        // a new legacy key cannot be added here without the CLI clearing it.
+        public const string ExtensionUsernameKey = ExtensionCredentialProtector.LegacyUsernameKeyName;
+        public const string ExtensionPasswordKey = ExtensionCredentialProtector.LegacyPasswordKeyName;
+        public const string ExtensionTokenKey = ExtensionCredentialProtector.LegacyTokenKeyName;
         public const string ExtensionUIPostfix = ".extension";
         public const string ExtensionLibraryPostfix = ".lib";
         public const string ExtensionUIBinDirName = "bin";

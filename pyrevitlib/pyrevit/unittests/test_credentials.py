@@ -226,6 +226,20 @@ class _CredentialsTestCase(unittest.TestCase):
         for key, value in keys.items():
             self.user_config.put_raw(section, key, json.dumps(value))
 
+    def _require_crypto(self):
+        """Skip unless the write path can actually be exercised here.
+
+        Storing a credential needs two things: DPAPI to seal with, and the INI
+        backend behind ``save_changes`` so the result can be re-read from the
+        file. Without the second, the fake's ``config_file`` is None and
+        ``set_credential`` raises instead of storing - which would surface as an
+        error in every write test rather than an honest skip.
+        """
+        if not credentials.is_available():
+            self.skipTest("Windows DPAPI is not available on this runtime")
+        if _INI_BACKEND is None:
+            self.skipTest("The INI config backend is not available on this runtime")
+
 
 class AbsentCredentialTests(_CredentialsTestCase):
     """No stored credential is a normal state, not a failure."""
@@ -273,8 +287,7 @@ class SealingTests(_CredentialsTestCase):
 
     def setUp(self):
         _CredentialsTestCase.setUp(self)
-        if not credentials.is_available():
-            self.skipTest("Windows DPAPI is not available on this runtime")
+        self._require_crypto()
 
     def test_round_trip_restores_the_credential(self):
         credentials.set_credential("MyTool.extension", "oauth2", "ghp_abc123")
@@ -342,8 +355,7 @@ class UnreadableCredentialTests(_CredentialsTestCase):
 
     def setUp(self):
         _CredentialsTestCase.setUp(self)
-        if not credentials.is_available():
-            self.skipTest("Windows DPAPI is not available on this runtime")
+        self._require_crypto()
 
     def _store_garbage(self, section="MyTool.extension"):
         self.user_config.add_section(section)
@@ -389,8 +401,7 @@ class DeleteCredentialTests(_CredentialsTestCase):
 
     def setUp(self):
         _CredentialsTestCase.setUp(self)
-        if not credentials.is_available():
-            self.skipTest("Windows DPAPI is not available on this runtime")
+        self._require_crypto()
 
     def test_delete_removes_the_credential_key(self):
         credentials.set_credential("MyTool.extension", "oauth2", "ghp_abc123")
@@ -452,8 +463,7 @@ class MigrationTests(_CredentialsTestCase):
 
     def setUp(self):
         _CredentialsTestCase.setUp(self)
-        if not credentials.is_available():
-            self.skipTest("Windows DPAPI is not available on this runtime")
+        self._require_crypto()
 
     def test_token_only_section_is_migrated(self):
         self.seed_plaintext("MyTool.extension", token="ghp_abc123")
@@ -545,8 +555,7 @@ class MigrationNoDataLossTests(_CredentialsTestCase):
 
     def setUp(self):
         _CredentialsTestCase.setUp(self)
-        if not credentials.is_available():
-            self.skipTest("Windows DPAPI is not available on this runtime")
+        self._require_crypto()
         self._real_seal = credentials._seal
         self._seal_fails = True
 
@@ -614,22 +623,28 @@ class DroppedFlushTests(_CredentialsTestCase):
 
     def setUp(self):
         _CredentialsTestCase.setUp(self)
-        if not credentials.is_available():
-            self.skipTest("Windows DPAPI is not available on this runtime")
+        self._require_crypto()
 
     def test_dropped_flush_keeps_the_legacy_token(self):
+        """A flush that never lands must not cost the user their only token.
+
+        migrate_legacy_credentials catches per-section failures so one bad
+        extension cannot strand the rest, so it reports zero migrated rather
+        than propagating; the guarantee that matters is that the plaintext
+        survives.
+        """
         self.seed_plaintext("MyTool.extension", token="ghp_abc123")
         self.user_config.fail_saves = True
 
-        self.assertRaises(
-            credentials.PyRevitCredentialUnavailable,
-            credentials.migrate_legacy_credentials,
-        )
+        self.assertEqual(0, credentials.migrate_legacy_credentials())
         self.assertEqual(
             '"ghp_abc123"', self.user_config.raw("MyTool.extension", "token")
         )
+        self.assertIsNone(
+            self.user_config.raw("MyTool.extension", credentials.CONFIG_KEY)
+        )
 
-    def test_dropped_flush_is_reported_not_silently_accepted(self):
+    def test_dropped_flush_raises_rather_than_reporting_success(self):
         """set_credential must not claim success for a value that is not on disk."""
         self.user_config.fail_saves = True
         self.assertRaises(
@@ -639,7 +654,43 @@ class DroppedFlushTests(_CredentialsTestCase):
             "oauth2",
             "ghp_abc123",
         )
-        self.assertFalse(credentials.has_credential("MyTool.extension"))
+
+    def test_dropped_flush_never_removes_a_working_credential(self):
+        """A dropped flush must not cost the user a working credential.
+
+        This is the whole point of verifying before clearing anything.
+        """
+        self.seed_plaintext("MyTool.extension", token="ghp_abc123")
+        credentials.migrate_legacy_credentials()
+        working = self.user_config.raw("MyTool.extension", credentials.CONFIG_KEY)
+        self.assertIsNotNone(working)
+
+        self.user_config.fail_saves = True
+        self.assertRaises(
+            credentials.PyRevitCredentialUnavailable,
+            credentials.set_credential,
+            "MyTool.extension",
+            "oauth2",
+            "ghp_rotated",
+        )
+        self.assertEqual(
+            working,
+            self.user_config.raw("MyTool.extension", credentials.CONFIG_KEY),
+        )
+
+    def test_a_landing_flush_stores_the_credential(self):
+        """The control case: with the file actually written, the store succeeds.
+
+        Without this, the three tests above would also pass against a
+        verification that rejected every write.
+        """
+        credentials.set_credential("MyTool.extension", "oauth2", "ghp_abc123")
+        self.assertIsNotNone(
+            self.user_config.raw("MyTool.extension", credentials.CONFIG_KEY)
+        )
+        self.assertEqual(
+            "ghp_abc123", credentials.get_credential("MyTool.extension").secret
+        )
 
 
 class CredentialKindTests(_CredentialsTestCase):
@@ -647,8 +698,7 @@ class CredentialKindTests(_CredentialsTestCase):
 
     def setUp(self):
         _CredentialsTestCase.setUp(self)
-        if not credentials.is_available():
-            self.skipTest("Windows DPAPI is not available on this runtime")
+        self._require_crypto()
 
     def test_password_kind_survives_the_round_trip(self):
         credentials.set_credential("MyTool.extension", "alex", "pw", kind="password")
@@ -697,28 +747,54 @@ class CredentialKindTests(_CredentialsTestCase):
 class StoredFormatContractTests(_CredentialsTestCase):
     """Pins the stored format, which is a C#/Python contract nothing else guards.
 
-    Both sides' docstrings say the format has to change together. Without these,
-    changing the separator or a kind tag on the C# side alone would leave every
-    test in both suites green while orphaning every credential on every disk.
+    Both sides' docstrings say the format has to change together. The point of
+    these is that the Python side is compared against the *C#* values rather
+    than against a second copy of the same string: a Python literal equalling a
+    Python literal still passes after the C# side changed, which is exactly the
+    orphaning scenario this exists to catch.
     """
 
     def setUp(self):
         _CredentialsTestCase.setUp(self)
-        if not credentials.is_available():
-            self.skipTest("Windows DPAPI is not available on this runtime")
+        self._require_crypto()
 
-    def test_config_key_is_the_documented_name(self):
-        """Mirrors ExtensionCredentialProtector.ConfigKeyName."""
-        self.assertEqual("credential", credentials.CONFIG_KEY)
+    def _protector(self):
+        return credentials._load_crypto()[0]
 
-    def test_legacy_keys_are_the_documented_names(self):
+    def test_config_key_matches_the_csharp_constant(self):
+        self.assertEqual(self._protector().ConfigKeyName, credentials.CONFIG_KEY)
+
+    def test_legacy_keys_match_the_csharp_constants(self):
+        protector = self._protector()
         self.assertEqual(
-            ("token", "password", "username"), credentials.LEGACY_CREDENTIAL_KEYS
+            (
+                protector.LegacyTokenKeyName,
+                protector.LegacyPasswordKeyName,
+                protector.LegacyUsernameKeyName,
+            ),
+            credentials.LEGACY_CREDENTIAL_KEYS,
         )
 
-    def test_extension_section_postfixes_cover_both_extension_kinds(self):
+    def test_credential_key_set_matches_the_csharp_list(self):
+        """The Python key list must match the C# one.
+
+        The C# side keeps a single list for the admin-config merge and the CLI,
+        so a key added there and not here would be cleared in only one of them.
+        """
         self.assertEqual(
-            (".extension", ".lib"), credentials.EXTENSION_SECTION_POSTFIXES
+            list(self._protector().AllConfigKeyNames),
+            [credentials.CONFIG_KEY] + list(credentials.LEGACY_CREDENTIAL_KEYS),
+        )
+
+    def test_accepted_kinds_match_the_csharp_enum(self):
+        kind_type = credentials._load_crypto()[2]
+        self.assertEqual(
+            ("token", "password"),
+            tuple(
+                name.lower()
+                for name in dir(kind_type)
+                if not name.startswith("_") and name.lower() in ("token", "password")
+            ),
         )
 
     def test_separator_cannot_corrupt_a_secret(self):

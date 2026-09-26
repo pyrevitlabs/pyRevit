@@ -209,7 +209,13 @@ public static class ExtensionCredentialProtector {
     /// through <see cref="ConfigurationDiagnostics.Warn"/> so a silently
     /// anonymous fetch is still attributable in the log.
     /// </returns>
-    public static bool TryUnprotect(string? storedValue, out ExtensionCredential? credential) {
+    /// <remarks>
+    /// Internal on purpose. This is the one entry point that downgrades an
+    /// unreadable credential to "absent" - the confusion this design exists to
+    /// avoid - so it is not offered to production callers, which should catch
+    /// <see cref="ExtensionCredentialUnavailableException"/> and act on it.
+    /// </remarks>
+    internal static bool TryUnprotect(string? storedValue, out ExtensionCredential? credential) {
         try {
             credential = Unprotect(storedValue);
             return true;
