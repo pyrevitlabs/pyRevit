@@ -15,62 +15,35 @@ namespace pyRevitLabs.Configurations.Security;
 /// base64( DPAPI.Protect( utf8( b64(kind) + "." + b64(username) + "." + b64(secret) ) ) )
 /// </code>
 /// <para>
-/// The <c>'.'</c> separator is unambiguous because the standard base64 alphabet
-/// does not contain it, which is what lets the split be done identically from
-/// C# and from Python without either side carrying a JSON dependency. A JSON
-/// payload was rejected for the same reason: it would have meant taking a
-/// serializer dependency in <c>pyRevitLabs.Configurations</c>, which
-/// deliberately has none.
+/// Base64 never contains <c>'.'</c>, so the split is unambiguous on both sides
+/// without either carrying a serializer dependency.
 /// </para>
-/// <para><b>Scope.</b> The blob is sealed against the current Windows user
-/// only, binding it to the Windows user profile that created it. It survives
-/// pyRevit upgrades and config backups, and it is unreadable after an OS
-/// reinstall without a profile backup, on another machine, or under another
-/// account. That is the trade for a secret that is not sitting in a
-/// world-readable INI: a lost profile means re-entering the token, which is why
+/// <para><b>Scope.</b> Sealed against the current Windows user only. Survives
+/// pyRevit upgrades and config backups; unreadable after an OS reinstall without a
+/// profile backup, on another machine, or under another account. That is why
 /// <see cref="Unprotect"/> reports that case as its own exception instead of
 /// returning nothing.</para>
-/// <para><b>Coupling.</b> <see cref="Entropy"/> and the stored format are a
-/// cross-language contract. <c>pyrevit.coreutils.credentials</c> implements the
-/// same format so that a credential written by the out-of-Revit CLI can be read
-/// by the in-Revit extension manager, and the reverse. Changing either side
-/// without the other orphans every stored credential, so the two must change
-/// together.</para>
-/// <para><b>Machine-scope configs.</b> The admin-locked config lives in
-/// ProgramData and is readable by every user of the machine, so a user-scope
-/// blob copied into it is both useless to them and worse than useless to its
-/// owner. Nothing in this assembly writes one; the merge that would copy it is
-/// responsible for skipping the credential key.</para>
+/// <para><b>Coupling.</b> This format and <see cref="Entropy"/> are a
+/// cross-language contract with <c>pyrevit.coreutils.credentials</c>, so a
+/// credential written by the out-of-Revit CLI is readable by the in-Revit
+/// extension manager. Changing either side alone orphans every stored
+/// credential.</para>
 /// </remarks>
 public static class ExtensionCredentialProtector {
     /// <summary>
-    /// Additional entropy mixed into the DPAPI call. Fixed, and not a secret:
-    /// its job is to bind a blob to pyRevit so an unrelated DPAPI ciphertext
-    /// cannot be dropped into the config key and read back as a credential.
+    /// Fixed entropy mixed into the DPAPI call. Not a secret: it binds a blob to
+    /// pyRevit so an unrelated DPAPI ciphertext cannot be read back as a credential.
     /// </summary>
     public const string Entropy = "pyRevitLabs.ExtensionCredential.v1";
 
-    /// <summary>
-    /// Config key a sealed credential is stored under, inside its own extension's
-    /// section. Declared here rather than in a constants class so the key and the
-    /// format it holds stay one contract across every assembly that touches it:
-    /// the CLI writes it, the in-Revit extension manager writes and reads it, the
-    /// admin-config merge refuses to copy it, and
-    /// <c>pyrevit.coreutils.credentials</c> reads and writes it.
-    /// </summary>
+    /// <summary>Config key a sealed credential is stored under, inside its own extension's section.</summary>
     public const string ConfigKeyName = "credential";
 
     /// <summary>
-    /// Every config key that can hold extension credential material, the sealed
-    /// one plus the plaintext keys written before sealing existed.
+    /// Every config key that can hold credential material: the sealed one plus the
+    /// plaintext keys written before sealing existed. Kept as one list so that
+    /// clearing plaintext and stripping a machine-scope config cannot drift apart.
     /// </summary>
-    /// <remarks>
-    /// Declared here so that every place which has to treat credential material
-    /// as one set - the CLI clearing plaintext after a re-persist, and the
-    /// admin-config promotion stripping it from a machine-scope file - works from
-    /// the same list. A new key added to only one of them is how a secret ends up
-    /// in a file every local user can read.
-    /// </remarks>
     public static readonly IReadOnlyList<string> AllConfigKeyNames = new[]
     {
         ConfigKeyName,
@@ -79,13 +52,13 @@ public static class ExtensionCredentialProtector {
         LegacyUsernameKeyName
     };
 
-    /// <summary>Legacy plaintext key holding a token. Read only, then removed, by the migration.</summary>
+    /// <summary>Legacy plaintext key holding a token. Read then removed by the migration.</summary>
     public const string LegacyTokenKeyName = "token";
 
-    /// <summary>Legacy plaintext key holding a password. Read only, then removed, by the migration.</summary>
+    /// <summary>Legacy plaintext key holding a password. Read then removed by the migration.</summary>
     public const string LegacyPasswordKeyName = "password";
 
-    /// <summary>Legacy plaintext key holding the username. Read only, then removed, by the migration.</summary>
+    /// <summary>Legacy plaintext key holding the username. Read then removed by the migration.</summary>
     public const string LegacyUsernameKeyName = "username";
 
     private const string FieldSeparator = ".";
@@ -94,21 +67,16 @@ public static class ExtensionCredentialProtector {
 
     private static readonly byte[] EntropyBytes = Encoding.UTF8.GetBytes(Entropy);
 
-    /// <summary>
-    /// Seals a credential for storage in a config value.
-    /// </summary>
+    /// <summary>Seals a credential for storage in a config value.</summary>
     /// <param name="credential">The credential to protect.</param>
     /// <returns>
     /// A base64 string safe to store as a config value. Pass it to
     /// <see cref="Unprotect"/> to recover the credential.
     /// </returns>
     /// <exception cref="ArgumentNullException">
-    /// <paramref name="credential"/> is null, or its
-    /// <see cref="ExtensionCredential.Username"/> or
-    /// <see cref="ExtensionCredential.Secret"/> is null or blank. An empty
-    /// username is rejected because every forge needs one, and rejecting it
-    /// here keeps a half-filled credential from being sealed and then failing
-    /// every fetch.
+    /// <paramref name="credential"/> is null, or its username or secret is null or
+    /// blank. A blank username is rejected because every forge needs one, and
+    /// sealing a half-filled credential only defers the failure to the first fetch.
     /// </exception>
     public static string Protect(ExtensionCredential credential) {
         if (credential is null)
@@ -132,16 +100,14 @@ public static class ExtensionCredentialProtector {
             Dpapi.Protect(payload, EntropyBytes, description: null));
     }
 
-    /// <summary>
-    /// Recovers a credential sealed by <see cref="Protect"/>.
-    /// </summary>
+    /// <summary>Recovers a credential sealed by <see cref="Protect"/>.</summary>
     /// <param name="storedValue">The base64 value read from the config file.</param>
     /// <returns>The recovered credential.</returns>
     /// <exception cref="ExtensionCredentialUnavailableException">
-    /// The value is not a readable pyRevit credential: it was sealed under a
-    /// different profile or app version, it was truncated or tampered with, or
-    /// it is not a credential at all. The caller must ask the user to re-enter
-    /// the token rather than falling back to an anonymous fetch.
+    /// The value is not a readable pyRevit credential: sealed under a different
+    /// profile or app version, truncated, tampered with, or not a credential at
+    /// all. Ask the user to re-enter the token; do not fall back to an anonymous
+    /// fetch.
     /// </exception>
     public static ExtensionCredential Unprotect(string? storedValue) {
         if (string.IsNullOrWhiteSpace(storedValue))
@@ -161,8 +127,6 @@ public static class ExtensionCredentialProtector {
                 + "access token for this extension.");
         }
 
-        // The payload came out of a successful DPAPI unseal, so it is well-formed
-        // text here; only the field count can be wrong.
         string[] fields = payload.Split(FieldSeparator[0]);
         if (fields.Length != 3) {
             throw new ExtensionCredentialUnavailableException(
@@ -197,22 +161,18 @@ public static class ExtensionCredentialProtector {
         return new ExtensionCredential(username, secret, kind);
     }
 
-    /// <summary>
-    /// Recovers a credential without throwing, for call sites that need to
-    /// degrade rather than fail.
-    /// </summary>
+    /// <summary>Recovers a credential without throwing, for call sites that must degrade.</summary>
     /// <param name="storedValue">The base64 value read from the config file.</param>
-    /// <param name="credential">The recovered credential, or null when it could
-    /// not be decrypted.</param>
+    /// <param name="credential">The recovered credential, or null when it could not be decrypted.</param>
     /// <returns>
     /// True when <paramref name="credential"/> was recovered. False is reported
-    /// through <see cref="ConfigurationDiagnostics.Warn"/> so a silently
-    /// anonymous fetch is still attributable in the log.
+    /// through <see cref="ConfigurationDiagnostics.ReportWarning"/> so a silently
+    /// anonymous fetch stays attributable in the log.
     /// </returns>
     /// <remarks>
     /// Internal on purpose. This is the one entry point that downgrades an
     /// unreadable credential to "absent" - the confusion this design exists to
-    /// avoid - so it is not offered to production callers, which should catch
+    /// avoid - so production callers should catch
     /// <see cref="ExtensionCredentialUnavailableException"/> and act on it.
     /// </remarks>
     internal static bool TryUnprotect(string? storedValue, out ExtensionCredential? credential) {
@@ -232,9 +192,6 @@ public static class ExtensionCredentialProtector {
     private static string EncodeField(string value) =>
         Convert.ToBase64String(Encoding.UTF8.GetBytes(value));
 
-    private static string DecodeField(string field) {
-        // A malformed field is the only way to get here, since the bytes came
-        // out of a successful DPAPI unseal.
-        return Encoding.UTF8.GetString(Convert.FromBase64String(field));
-    }
+    private static string DecodeField(string field) =>
+        Encoding.UTF8.GetString(Convert.FromBase64String(field));
 }

@@ -6,43 +6,30 @@ namespace pyRevitLabs.Configurations.Security;
 
 /// <summary>
 /// Thin wrapper over the Windows Data Protection API (<c>crypt32</c>'s
-/// <c>CryptProtectData</c> / <c>CryptUnprotectData</c>), which is what
-/// <c>System.Security.Cryptography.ProtectedData</c> calls.
+/// <c>CryptProtectData</c> / <c>CryptUnprotectData</c>).
 /// </summary>
 /// <remarks>
 /// <para>
-/// It calls the Win32 API directly rather than using
-/// <c>ProtectedData</c> because that type lives in a different assembly on each
-/// target - inbox <c>System.Security</c> on .NET Framework, a NuGet package on
-/// .NET Core - and the package's assembly is not part of the .NET shared
-/// framework. pyRevit stages its assemblies explicitly, so a managed reference
-/// here means shipping one more file, and any build path that forgets it fails
-/// at runtime with a <see cref="FileNotFoundException"/> while every unit test
-/// still passes. <c>crypt32</c> is part of Windows, so there is nothing to ship
-/// and nothing to forget.
-/// </para>
-/// <para>
-/// The blobs produced are byte-compatible with
-/// <c>ProtectedData.Protect</c> for the same inputs and flags, so a value
-/// written by either is readable by the other. That matters because
-/// <c>pyrevit.coreutils.credentials</c> seals the same way from Python, where no
-/// assembly reference is involved at all.
+/// Calls Win32 directly rather than <c>ProtectedData</c>, which lives in inbox
+/// <c>System.Security</c> on .NET Framework and in a NuGet package on .NET Core.
+/// pyRevit stages its assemblies explicitly, so a managed reference here means one
+/// more file to ship plus a runtime <see cref="FileNotFoundException"/> for any
+/// build path that forgets it. The blobs stay byte-compatible with
+/// <c>ProtectedData</c>, so <c>pyrevit.coreutils.credentials</c> can seal the same
+/// way from Python with no assembly reference at all.
 /// </para>
 /// <para>
 /// Scope is the current Windows user: <c>CRYPTPROTECT_LOCAL_MACHINE</c> is
-/// deliberately not passed, so a blob is bound to the calling user's profile and
-/// is unreadable under another account, on another machine, and after a profile
-/// rebuild without a backup.
+/// deliberately not passed, so a blob is unreadable under another account or
+/// machine, and after a profile rebuild without a backup.
 /// </para>
-/// <para><b>Two kinds of memory, two owners.</b> Buffers this type rents go
-/// through <see cref="Rent"/> and <see cref="Return"/>, which pair
-/// <c>Marshal.AllocHGlobal</c> with <c>Marshal.FreeHGlobal</c>.
-/// Buffers the OS returns through an out-parameter are released with
-/// <c>LocalFree</c>, because <c>LocalAlloc</c> is what produced them. The two
-/// must never be mixed: <c>Marshal.ZeroFreeGlobalAllocUnicode</c> pairs with
-/// <c>Marshal.StringToHGlobalUni</c> and writes <c>GlobalSize(p) * 2</c> bytes,
-/// so used on an <c>AllocHGlobal</c> block it overruns the allocation by its own
-/// length on every call.</para>
+/// <para><b>Two kinds of memory, two owners.</b> Buffers from <see cref="Rent"/>
+/// pair with <c>Marshal.FreeHGlobal</c>; buffers the OS returns through an
+/// out-parameter are released with <c>LocalFree</c>. Never mix them:
+/// <c>Marshal.ZeroFreeGlobalAllocUnicode</c> pairs with
+/// <c>StringToHGlobalUni</c> and writes <c>GlobalSize(p) * 2</c> bytes, so on an
+/// <c>AllocHGlobal</c> block it overruns the allocation by its own length on every
+/// call.</para>
 /// </remarks>
 internal static class Dpapi {
     private const string Crypt32 = "crypt32.dll";
@@ -80,16 +67,12 @@ internal static class Dpapi {
     [DllImport(Kernel32, SetLastError = true)]
     private static extern IntPtr LocalFree(IntPtr handle);
 
-    /// <summary>
-    /// Seals a UTF-8 string against the current Windows user.
-    /// </summary>
+    /// <summary>Seals a UTF-8 string against the current Windows user.</summary>
     /// <param name="plaintext">Text to protect.</param>
     /// <param name="entropy">Additional entropy mixed into the seal.</param>
     /// <param name="description">
-    /// Optional label stored inside the blob, or null to omit it. Omitting it
-    /// keeps the blob byte-for-byte the shape <c>ProtectedData.Protect</c>
-    /// produces, which is what lets a value written by either implementation be
-    /// read by the other.
+    /// Optional label stored inside the blob. Omit it to keep the blob
+    /// byte-identical to what <c>ProtectedData.Protect</c> produces.
     /// </param>
     /// <returns>The sealed bytes.</returns>
     /// <exception cref="Win32Exception">The API call failed.</exception>
@@ -114,7 +97,6 @@ internal static class Dpapi {
             return CopyFromUnmanaged(output);
         }
         finally {
-            // OS-owned first, then everything this type rented.
             if (outBuffer != IntPtr.Zero)
                 LocalFree(outBuffer);
             Return(plainBuffer, plainBytes);
@@ -123,16 +105,14 @@ internal static class Dpapi {
         }
     }
 
-    /// <summary>
-    /// Unseals bytes produced by <see cref="Protect"/>.
-    /// </summary>
+    /// <summary>Unseals bytes produced by <see cref="Protect"/>.</summary>
     /// <param name="sealedBytes">The sealed bytes.</param>
     /// <param name="entropy">The same entropy passed to <see cref="Protect"/>.</param>
     /// <param name="description">Receives the blob's label, or null.</param>
     /// <returns>The recovered UTF-8 text.</returns>
     /// <exception cref="Win32Exception">
-    /// The API call failed, which for DPAPI means the blob was sealed by another
-    /// user or machine, the profile changed, or the bytes were altered.
+    /// The API call failed: the blob was sealed by another user or machine, the
+    /// profile changed, or the bytes were altered.
     /// </exception>
     public static string Unprotect(
         byte[] sealedBytes, byte[] entropy, out string? description) {
@@ -175,9 +155,7 @@ internal static class Dpapi {
         }
     }
 
-    /// <summary>
-    /// Copies bytes into a rented unmanaged block, paired with <see cref="Return"/>.
-    /// </summary>
+    /// <summary>Copies bytes into a rented unmanaged block, paired with <see cref="Return"/>.</summary>
     private static IntPtr Rent(byte[] bytes) {
         IntPtr buffer = Marshal.AllocHGlobal(Math.Max(bytes.Length, 1));
         if (bytes.Length > 0)
@@ -185,10 +163,7 @@ internal static class Dpapi {
         return buffer;
     }
 
-    /// <summary>
-    /// Scrubs and frees a block from <see cref="Rent"/>, or does nothing for a
-    /// null handle so the caller's <c>finally</c> needs no guard.
-    /// </summary>
+    /// <summary>Scrubs and frees a block from <see cref="Rent"/>, tolerating a null handle.</summary>
     private static void Return(IntPtr buffer, byte[] lengthSource) {
         if (buffer == IntPtr.Zero)
             return;
