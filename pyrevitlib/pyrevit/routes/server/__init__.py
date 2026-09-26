@@ -58,15 +58,16 @@ def activate_server():
         host prohibits creating one off its main thread. Activation must run
         on the main thread.
 
+        Activation is idempotent within a session: an already active server
+        serves the routes that are registered now, so handing it back is
+        correct. It is not how a server survives a reload - init() still stops
+        the old one on every session load.
+
     Returns:
         (RoutesServer): the active server, or None if it could not be started.
     """
     routes_server = envvars.get_pyrevit_env_var(envvars.ROUTES_SERVER)
     if routes_server:
-        # Activation is idempotent within a session: an already active server
-        # serves the routes that are registered now, so handing it back is
-        # correct and is not how a server survives a reload - init() still
-        # stops the old one on every session load.
         mlogger.debug("Routes server already active | %s", routes_server)
         return routes_server
     try:
@@ -91,7 +92,13 @@ def activate_server():
 
 
 def deactivate_server():
-    """Deactivate the active routes server for this host instance."""
+    """Deactivate the active routes server for this host instance.
+
+    Deregisters whether or not the stop succeeded (#3473). A server that is no
+    longer listening but is still in the env var made the next activation hand
+    that dead server back instead of binding the port, so a reload silently
+    lost routes.
+    """
     routes_server = envvars.get_pyrevit_env_var(envvars.ROUTES_SERVER)
     if not routes_server:
         return
@@ -100,10 +107,6 @@ def deactivate_server():
     except Exception as rs_ex:
         mlogger.error("Error stopping Routes server | %s", str(rs_ex), exc_info=True)
     finally:
-        # Deregister whether or not the stop succeeded. A server that is no
-        # longer listening but is still in the env var made the next activation
-        # hand that dead server back instead of binding the port, so a reload
-        # silently lost routes - see #3473.
         envvars.set_pyrevit_env_var(envvars.ROUTES_SERVER, None)
         try:
             serverinfo.unregister()

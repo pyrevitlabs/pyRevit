@@ -282,14 +282,15 @@ class ThreadedHttpServer(ThreadingMixIn, HTTPServer):
     be created on Revit's STA UI thread. An exception escaping one of these
     threads is printed there and terminates the Revit process, so nothing here
     may write to stderr and no exception may leave a thread.
+
+    Request threads are daemons and are not joined on close, because a request
+    in flight when the session is reloaded must not hold the host: they are
+    abandoned with the process, and ``server_close()`` runs on whatever thread
+    collects the server, including a session reload that is waiting on it.
     """
 
     allow_reuse_address = True
 
-    # A request in flight when the session is reloaded must not hold the host: these threads are
-    # abandoned with the process, and ``server_close()`` must not join them - it runs on whatever
-    # thread collects the server, including a session reload that is waiting on it.
-    daemon_threads = True
     block_on_close = False
 
     def handle_error(self, request, client_address):

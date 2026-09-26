@@ -412,7 +412,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 var re = _scriptOutput.TryGetTarget(out output);
                 if (re && output != null && !output.ClosedByUser)
                     return output;
-
                 var newOutput = new ScriptConsole(ScriptRuntimeConfigs.DebugMode, UIApp);
                 newOutput.OutputTitle = ScriptData.CommandName;
                 newOutput.OutputId = ScriptData.CommandUniqueId;
@@ -425,6 +424,27 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
                 _scriptOutput = new WeakReference<ScriptConsole>(newOutput);
                 return newOutput;
+            }
+        }
+
+        /// <summary>
+        /// The window a background hand-off may render into, without resurrecting one the user
+        /// closed: <see cref="OutputWindow"/> builds a replacement, which would reopen it on the
+        /// next write from a thread that is not the host UI thread.
+        /// </summary>
+        /// <returns>The window to render into, or null when the user closed it.</returns>
+        public ScriptConsole OpenOutputWindow {
+            get {
+                if (!ScriptOutputUi.MayCreateOutputUi) {
+                    ReportOutputUiUnavailable();
+                    return null;
+                }
+
+                ScriptConsole output;
+                var re = _scriptOutput.TryGetTarget(out output);
+                if (!re || output == null)
+                    return OutputWindow;
+                return output.ClosedByUser ? null : output;
             }
         }
 

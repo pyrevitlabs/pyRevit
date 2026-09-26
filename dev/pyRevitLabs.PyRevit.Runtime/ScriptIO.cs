@@ -185,6 +185,29 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// </para>
         /// </remarks>
         public ScriptConsole GetOutput() {
+            return GetOutput(resurrectClosedWindow: true);
+        }
+
+        /// <summary>
+        /// The window this stream renders into right now, or null when there is none this caller
+        /// may have.
+        /// </summary>
+        /// <param name="resurrectClosedWindow">
+        /// False for a background hand-off, which must not reopen a window the user closed.
+        /// </param>
+        /// <remarks>
+        /// Null has two causes, and they are not the same to the caller: the calling thread may
+        /// not touch output WPF, versus there is no window because output is suppressed, the
+        /// window was closed by the user, or the binding is gone. The write paths tell them apart
+        /// through <see cref="ScriptOutputUi.MayCreateOutputUi"/> and only hand off in the first
+        /// case, so a suppressed or closed output is not paid for with a dispatcher hand-off on
+        /// every write.
+        /// <para>
+        /// The returned window is safe to use: a non-null result means the caller may construct and
+        /// drive WPF, which is exactly what a window needs.
+        /// </para>
+        /// </remarks>
+        private ScriptConsole GetOutput(bool resurrectClosedWindow) {
             if (!ScriptOutputUi.MayCreateOutputUi)
                 return null;
 
@@ -192,12 +215,12 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (runtime != null) {
                 if (runtime.ScriptRuntimeConfigs != null && runtime.ScriptRuntimeConfigs.SuppressOutput)
                     return null;
-                return runtime.OutputWindow;
+                return resurrectClosedWindow ? runtime.OutputWindow : runtime.OpenOutputWindow;
             }
 
             var outputService = GetOutputService();
             if (outputService != null)
-                return outputService.open_window;
+                return resurrectClosedWindow ? outputService.window : outputService.open_window;
 
             if (_gui == null)
                 return null;
@@ -428,7 +451,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private void DrainOnUiThread() {
             System.Threading.Interlocked.Exchange(ref _uiHandOffQueued, 0);
 
-            var output = GetOutput();
+            var output = GetOutput(resurrectClosedWindow: false);
             if (output == null) {
                 lock (this) {
                     ClearPending();
