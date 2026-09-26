@@ -119,7 +119,7 @@ The `engine` field of every run response confirms what actually ran. `"{}".forma
   | `BooleanOperationType.BoolCut` | `DB.BooleanOperationsUtils.ExecuteBooleanOperation(a, b, DB.BooleanOperationsType.Difference)` |
   | `BuiltInParameter.WALL_HEIGHT`, `TYPE_MARK`, `ALL_MODEL_COMMENTS` | `WALL_USER_HEIGHT_PARAM`, `ALL_MODEL_TYPE_MARK`, `ALL_MODEL_INSTANCE_COMMENTS` |
   | `view.SetCategoryHidden(category, True)` | `view.SetCategoryHidden(category.Id, True)` |
-  | wall top constraint "Roof" through `WALL_HEIGHT_TYPE` | `wall.AddAttachment(roof.Id, DB.AttachmentLocation.Top)`, or `update.attach_wall_tops` |
+  | wall top constraint "Roof" through `WALL_HEIGHT_TYPE` | `update.attach_wall_tops(walls, roof)` when the running Revit API supports wall attachment; otherwise model the gable end explicitly |
 
 ## Finding the right API
 

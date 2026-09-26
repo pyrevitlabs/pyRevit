@@ -3482,7 +3482,8 @@ def find_family_symbol(symbol_name, family_name=None, category=None, doc=None):
 
     Args:
         symbol_name (str | DB.FamilySymbol): family type name, such as
-            ``36" x 84"``.
+            ``36" x 84"``, or ``"Family : Type"`` when ``family_name``
+            is omitted.
         family_name (str, optional): family name, required when several
             families have a type with that name.
         category (str | DB.BuiltInCategory | DB.Category, optional): limit
@@ -3500,6 +3501,8 @@ def find_family_symbol(symbol_name, family_name=None, category=None, doc=None):
     """
     if isinstance(symbol_name, DB.FamilySymbol):
         return symbol_name
+    if family_name is None and " : " in symbol_name:
+        family_name, symbol_name = symbol_name.split(" : ", 1)
     doc = doc or DOCS.doc
     collector = DB.FilteredElementCollector(doc).OfClass(DB.FamilySymbol)
     if category is not None:

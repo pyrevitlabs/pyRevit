@@ -149,7 +149,7 @@ VIEW_DIRECTIONS = {
 
 
 def attach_wall_tops(walls, target):
-    """Attach the tops of walls to a roof, floor or ceiling (Revit 2024 and later).
+    """Attach the tops of walls to a roof, floor or ceiling when supported.
 
     Gable end walls attached to a roof follow its rake, so the gable needs
     no separate infill.
@@ -159,14 +159,19 @@ def attach_wall_tops(walls, target):
         target (DB.Element): roof, floor or ceiling above the walls.
 
     Raises:
-        PyRevitException: on Revit versions without Wall.AddAttachment.
+        PyRevitException: when the active Revit API does not expose wall
+            attachment.
     """
-    if not hasattr(DB.Wall, "AddAttachment"):
-        raise PyRevitException("Wall.AddAttachment needs Revit 2024 or later.")
     if isinstance(walls, DB.Wall):
         walls = [walls]
     for wall in walls:
-        wall.AddAttachment(target.Id, DB.AttachmentLocation.Top)
+        attach = getattr(wall, "AddAttachment", None)
+        if attach is None:
+            raise PyRevitException(
+                "Wall attachment is unavailable in this Revit version. "
+                "Use an untrimmed wall or model the gable end explicitly."
+            )
+        attach(target.Id, DB.AttachmentLocation.Top)
     target.Document.Regenerate()
 
 
