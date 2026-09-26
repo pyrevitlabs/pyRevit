@@ -16,7 +16,7 @@ namespace pyRevitLabs.Common {
         public const string RouterUrl = @".pyrevitlabs.io";
 
         public const string WikiUrl = "wiki" + RouterUrl;
-        public const string BlogsUrl = "blog" + RouterUrl;
+        public const string BlogsUrl = "https://pyrevitlabs.io/posts/";
         public const string DocsUrl = "docs" + RouterUrl;
         public const string YoutubeUrl = "videos" + RouterUrl;
         public const string SupportUrl = "support" + RouterUrl;
