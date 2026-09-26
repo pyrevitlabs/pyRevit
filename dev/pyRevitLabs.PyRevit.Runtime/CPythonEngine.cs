@@ -47,7 +47,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         public CPythonEngineConfigs ExecEngineConfigs = new CPythonEngineConfigs();
         private List<string> _sysPaths = new List<string>();
 
-        private static List<string> _interpreterSearchPaths;
+        private const string InterpreterSearchPathsKey = "PyRevitCPythonInterpreterSearchPaths";
 
         public override void Init(ref ScriptRuntime runtime) {
             base.Init(ref runtime);
@@ -351,8 +351,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// version the user no longer asked for.
         /// </remarks>
         private void WarnOnPythonVersionChange(ref ScriptRuntime runtime) {
+            string configured = null;
             try {
-                var configured = GetPythonDll(runtime);
+                configured = GetPythonDll(runtime);
                 if (!string.IsNullOrEmpty(CpyRuntime.PythonDLL)
                         && !string.Equals(configured, CpyRuntime.PythonDLL, StringComparison.OrdinalIgnoreCase)) {
                     logger.Warn(
@@ -362,18 +363,38 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
             }
             catch (Exception ex) {
-                logger.Debug(ex, "Could not compare the configured CPython version with the running one");
+                logger.Warn(ex, "Could not resolve the configured CPython version \"{0}\"; this process keeps running the interpreter it started with", configured);
             }
         }
 
-        private void StoreSearchPaths() {            if (_interpreterSearchPaths == null) {
-                _interpreterSearchPaths = new List<string>();
+        /// <summary>
+        /// The interpreter's own <c>sys.path</c>, captured once and kept where a session reload
+        /// cannot replace it.
+        /// </summary>
+        /// <remarks>
+        /// A reload brings a new copy of this assembly, so a field or a static on it starts empty
+        /// while the interpreter it describes keeps running. The baseline therefore lives in
+        /// AppDomain data, which every copy of this assembly reads and writes alike; capturing it
+        /// per engine would snapshot the live <c>sys.path</c> and let each session inherit the
+        /// previous one's bundle paths.
+        /// </remarks>
+        private static List<string> InterpreterSearchPaths {
+            get { return AppDomain.CurrentDomain.GetData(InterpreterSearchPathsKey) as List<string>; }
+            set { AppDomain.CurrentDomain.SetData(InterpreterSearchPathsKey, value); }
+        }
+
+        private void StoreSearchPaths() {
+            var baseline = InterpreterSearchPaths;
+            if (baseline == null) {
+                baseline = new List<string>();
                 foreach (var path in GetSysPaths()) {
-                    _interpreterSearchPaths.Add(path.As<string>());
+                    baseline.Add(path.As<string>());
                 }
+
+                InterpreterSearchPaths = baseline;
             }
 
-            _sysPaths = new List<string>(_interpreterSearchPaths);
+            _sysPaths = new List<string>(baseline);
         }
 
         private PyList RestoreSearchPaths() {
