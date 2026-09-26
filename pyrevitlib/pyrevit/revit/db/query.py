@@ -3634,3 +3634,53 @@ def get_model_elements(doc=None):
         and element.Category.Name not in unframed
         and element.get_BoundingBox(None) is not None
     ]
+
+
+def get_face_references(element, direction):
+    """Return references to an element's planar faces that face a direction.
+
+    For dimensioning walls, floors and other host elements to their faces.
+
+    Args:
+        element (DB.Element): element whose faces to find.
+        direction (DB.XYZ): outward face normal to match, such as
+            ``DB.XYZ.BasisX`` for faces looking east or ``-DB.XYZ.BasisY``
+            for faces looking south.
+
+    Returns:
+        (list[DB.Reference]): references of the matching faces, outermost
+        first (furthest along ``direction``), so ``[0]`` is the outer face.
+
+    Raises:
+        PyRevitException: when the element has no planar face facing that
+            way.
+
+    Note:
+        Family instances such as doors return instance geometry, whose
+        references can't be dimensioned; use
+        ``instance.GetReferences(DB.FamilyInstanceReferenceType.CenterLeftRight)``
+        for them instead.
+    """
+    direction = direction.Normalize()
+    faces = []
+    for geometry in get_geometry(element, compute_references=True) or []:
+        if not isinstance(geometry, DB.Solid) or geometry.Volume == 0:
+            continue
+        for face in geometry.Faces:
+            if (
+                isinstance(face, DB.PlanarFace)
+                and face.Reference is not None
+                and face.FaceNormal.IsAlmostEqualTo(direction)
+            ):
+                faces.append(face)
+    if not faces:
+        raise PyRevitException(
+            "Element {} has no planar face facing ({:.2f}, {:.2f}, {:.2f}).".format(
+                get_elementid_value_func()(element.Id),
+                direction.X,
+                direction.Y,
+                direction.Z,
+            )
+        )
+    faces.sort(key=lambda face: face.Origin.DotProduct(direction), reverse=True)
+    return [face.Reference for face in faces]

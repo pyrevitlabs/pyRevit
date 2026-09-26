@@ -34,7 +34,7 @@ Don't create a view only to look at something: `capture_view(view="3d", elements
 Run these in `run_modify`, inside `with revit.Transaction("..."):`. Names are made unique automatically (`"Name (2)"`).
 
 - **Plan:** `create.create_plan_view(level="Level 1", view_name="L1 - Furniture", plan_type="floor")`. Plan types: floor, ceiling, structural.
-- **3D:** `create.create_3d_view(view_name="House 3D", direction="southeast", elements=None, model_only=True)`.
+- **3D:** `create.create_model_3d_view(view_name="House 3D", direction="southeast", elements=None, model_only=True)`.
   - `direction`: southeast, southwest, northeast, northwest, south, north, east, west, top.
   - `elements` frames the section box on those elements; the default frames the whole model.
   - `model_only` hides levels, grids and annotation. Leave it on: level and grid extents otherwise ruin the framing.

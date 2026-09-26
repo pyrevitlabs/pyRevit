@@ -319,7 +319,7 @@ namespace pyRevitCLI {
                     if (character == ')') depth--;
                     builder.Append(character);
                     if (depth == 0)
-                        return Regex.Replace(builder.ToString(), @"\s+", " ").Replace("( ", "(").Replace(", )", ")").Replace(",)", ")");
+                        return Regex.Replace(builder.ToString(), @"\s+", " ").Replace("( ", "(").Replace(", )", ")").Replace(",)", ")").Replace(" )", ")");
                 }
                 if (index + 1 >= lines.Length)
                     return builder.ToString();
