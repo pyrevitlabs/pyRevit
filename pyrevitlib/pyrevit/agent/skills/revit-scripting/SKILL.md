@@ -16,6 +16,12 @@ description: Core rules for every pyRevit agent task. Covers the script contract
    - Policy `readonly`: modify runs are refused.
 5. **Check.** `capture_view` returns a PNG of a view: `view="3d"` frames the whole model, `elements=[...]` frames part of it, `direction` picks the side. Look at it, and read back a number (a height, an area, a count), before you report success.
 
+## Before you change a model
+
+- **Unsaved document:** when `get_context` shows an empty `document.path`, ask the user to save the project before you build. Everything else lives only in memory, and Revit's save reminder will interrupt the session.
+- **Revit busy for a long time:** a `revit_busy` error names the open Revit windows. A modal dialog such as the save reminder blocks every request until it is answered. Ask the user to answer it. Never close Revit windows yourself (for example with WM_CLOSE): closing one cancels whatever it was asking about.
+- **`warnings` in a run result** say that elements from an earlier commit have disappeared, either because the user undid them or because Revit undid that commit together with a rolled-back run. Rebuild that stage and check it before building on it.
+
 ## Script contract
 
 - **Injected names:** `doc`, `uidoc`, `app`, `uiapp`, `DB` (Autodesk.Revit.DB), `UI` (Autodesk.Revit.UI), and `inputs` (the dict you pass as `inputs`). Don't `import DB` or `import UI`.
@@ -119,6 +125,10 @@ The `engine` field of every run response confirms what actually ran. `"{}".forma
   | `BooleanOperationType.BoolCut` | `DB.BooleanOperationsUtils.ExecuteBooleanOperation(a, b, DB.BooleanOperationsType.Difference)` |
   | `BuiltInParameter.WALL_HEIGHT`, `TYPE_MARK`, `ALL_MODEL_COMMENTS` | `WALL_USER_HEIGHT_PARAM`, `ALL_MODEL_TYPE_MARK`, `ALL_MODEL_INSTANCE_COMMENTS` |
   | `view.SetCategoryHidden(category, True)` | `view.SetCategoryHidden(category.Id, True)` |
+  | `DB.RoomTagType`, `DB.StairsType`, `DB.StairsRun` | `DB.Architecture.RoomTagType`, `DB.Architecture.StairsType`, `DB.Architecture.StairsRun` |
+  | `floor_type.Width`, `layer.LayerWidth` | `floor_type.GetCompoundStructure().GetWidth()`, `structure.GetLayerWidth(index)` |
+  | `.OfCategory(category)` or `.OfCategory(element_id)` | `.OfCategory(DB.BuiltInCategory.OST_X)`, or `.OfCategoryId(category.Id)` |
+  | `query.get_family_symbol(..., category=...)` | `query.find_family_symbol(type_name, family_name=..., category="OST_Doors")` |
   | wall top constraint "Roof" through `WALL_HEIGHT_TYPE` | `update.attach_wall_tops(walls, roof)` when the running Revit API supports wall attachment; otherwise model the gable end explicitly |
 
 ## Finding the right API

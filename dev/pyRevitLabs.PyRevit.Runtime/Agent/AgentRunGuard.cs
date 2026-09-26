@@ -229,6 +229,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         public bool IsEmpty => added.Count == 0 && modified.Count == 0 && deleted.Count == 0;
 
+        public ICollection<ElementId> Added => added.ToList();
+
         public ICollection<ElementId> Touched =>
             added.Concat(modified).Distinct().ToList();
 

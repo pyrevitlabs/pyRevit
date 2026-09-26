@@ -51,6 +51,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             File.WriteAllText(Path.Combine(runDir, "script.py"), request.Script, Utf8);
             File.WriteAllText(Path.Combine(runDir, "request.json"), request.ToJson().ToString(Formatting.Indented), Utf8);
 
+            var warnings = new JArray();
+            var lostBefore = AgentCommitSentinel.Check(doc, afterRollback: false);
+            if (lostBefore != null)
+                warnings.Add(lostBefore);
+
             var stopwatch = Stopwatch.StartNew();
             var context = new AgentScriptContext(app, runId, request.ModeName, request.Script, request.InputsJson, request.Workspace);
             var response = new JObject {
@@ -106,6 +111,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     }
                     else if (PyRevitConfigs.GetAgentPolicy() == PyRevitConsts.ConfigsAgentPolicyAuto) {
                         guard.Assimilate();
+                        AgentCommitSentinel.Remember(doc, runId, request.Title, guard.Changes.Added);
                         decision = "committed";
                         response["approval"] = "auto";
                     }
@@ -115,6 +121,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         response["approval"] = "user";
                         if (approved) {
                             guard.Assimilate();
+                            AgentCommitSentinel.Remember(doc, runId, request.Title, guard.Changes.Added);
                             decision = "committed";
                         }
                         else {
@@ -142,6 +149,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     response["blocked"] = guard.Blocked;
                 }
             }
+
+            if (response.Value<string>("decision") != "committed") {
+                var lostByRollback = AgentCommitSentinel.Check(doc, afterRollback: true);
+                if (lostByRollback != null) {
+                    logger.Error("Agent run {0}: {1}", runId, lostByRollback);
+                    warnings.Add(lostByRollback);
+                }
+            }
+            response["warnings"] = warnings;
 
             AddScriptOutcome(response, context, runDir, request.Engine == AgentEngine.CPython ? "cpython" : "ironpython");
             response["elapsed_ms"] = stopwatch.ElapsedMilliseconds;

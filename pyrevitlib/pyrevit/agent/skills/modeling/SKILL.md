@@ -46,7 +46,7 @@ One `run_modify` per stage, dry run first:
 5. openings
 6. roofs, then attach the gable walls to them
 
-Make each stage re-runnable: tag what it makes in Comments, and delete last run's output first.
+Make each stage re-runnable: tag what it makes in Comments, and delete last run's output first. Delete with the same match you tag with: if tags carry a suffix (`agent:walls:front`), find them with `get_elements_by_parameter(..., partial=True)` and check the prefix; an exact match on `agent:walls` finds nothing and leaves duplicates.
 
 ```python
 from pyrevit.revit.db import delete
@@ -98,7 +98,7 @@ A failed or rejected stage leaves the earlier ones intact, and each committed st
 - **Pitch** is `"8:12"`, `"30deg"`, or a rise/run number. The raw `set_SlopeAngle` takes rise over run: not degrees, not radians.
 - The gable, hip and shed functions **measure the built roof and raise** when its rise doesn't match the pitch, which catches slopes on the wrong edges.
 - **Cross gables** are a second roof. A footprint can't contain internal ridge lines.
-- **Gable end walls:** build them to eave height or taller, then `update.attach_wall_tops(end_walls, roof)` so they follow the rake. Don't fill gables with DirectShape.
+- **Gable end walls:** build them as native gable walls with `create.create_gable_wall(start, end, wall_type, eave_height, pitch="8:12")`, which follows the rake from a wall profile. On Revit versions with wall attachment you can instead attach ordinary walls with `update.attach_wall_tops(end_walls, roof)`. Don't fill gables with DirectShape. Other non-rectangular walls: `create.create_profile_wall(points)`.
 
 ## Doors, windows, columns and other families
 
@@ -106,7 +106,14 @@ A failed or rejected stage leaves the earlier ones intact, and each committed st
 - `create.place_family_instance(symbol, (x, y), level=None, rotation=0)` places furniture, fixtures and other level-based families.
 - `create.create_column(symbol, (x, y), level, top_level, structural=True)`.
 - `symbol` is a `FamilySymbol` or its type name; pass `query.find_family_symbol('36" x 84"', family_name="Single-Flush")` when several families share the type name. These functions activate the type.
-- Keep openings clear of wall ends and of each other.
+- **Keep openings clear of wall junctions:** at least half the opening's width plus 6" from any wall that meets the host, or Revit warns and the opening can't cut cleanly. Check the positions against the wall lines in your plan data before placing.
+
+## Stairs
+
+- Revit derives the tread count from the run length and the riser height from the riser count, so they must agree: `risers = ceil(floor_to_floor / max_riser)`, `riser_height = floor_to_floor / risers`, `run_length = (risers - 1) * tread_depth`. A 9'-0" rise with a 7" maximum riser is 16 risers of 6.75", and 15 treads of 11" make a 13'-9" run.
+- Stairs are created in a `StairsEditScope` (check its namespace with `lookup_revit_api("StairsEditScope")`), not a plain transaction: `scope.Start(base_level.Id, top_level.Id)`, then a transaction with `DB.Architecture.StairsRun.CreateStraightRun`, then `scope.Commit(failures_preprocessor)`. Set the stairs' `DesiredRisersNumber` to the count above.
+- Check the result: the top of the stair must equal the upper level; read the stair's `ActualRisersNumber` and `ActualRiserHeight` back.
+- A floor-to-floor height sets the whole stair. For a 1-1/2 storey house, check the upper level's elevation before building a stair to it.
 
 ## Parameters
 

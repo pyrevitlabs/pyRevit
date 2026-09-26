@@ -21,6 +21,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private readonly object queueLock = new object();
         private readonly Queue<AgentWorkItem> queue = new Queue<AgentWorkItem>();
         private ExternalEvent externalEvent;
+        private DateTime? runningSince;
 
         public void Attach(ExternalEvent ev) {
             externalEvent = ev;
@@ -47,10 +48,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
             if (!item.Started.Wait(startTimeout)) {
                 if (TryRemove(item))
-                    throw new AgentException(
-                        "revit_busy",
-                        string.Format("Revit did not become idle within {0:0}s.", startTimeout.TotalSeconds)
-                    );
+                    throw new AgentException("revit_busy", BusyMessage(startTimeout));
             }
 
             return item.Completion.Task.GetAwaiter().GetResult();
@@ -60,13 +58,32 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             AgentWorkItem item;
             while (TryDequeue(out item)) {
                 item.Started.Set();
+                runningSince = DateTime.UtcNow;
                 try {
                     item.Completion.TrySetResult(item.Work(app));
                 }
                 catch (Exception ex) {
                     item.Completion.TrySetException(ex);
                 }
+                finally {
+                    runningSince = null;
+                }
             }
+        }
+
+        private string BusyMessage(TimeSpan startTimeout) {
+            var message = string.Format("Revit did not become idle within {0:0}s.", startTimeout.TotalSeconds);
+            var since = runningSince;
+            if (since.HasValue)
+                message += string.Format(
+                    " An earlier agent request has been running for {0:0}s; it may be waiting on a dialog.",
+                    (DateTime.UtcNow - since.Value).TotalSeconds);
+            var dialogs = AgentWindows.OpenDialogs();
+            if (dialogs.Count > 0)
+                message += " Open Revit windows: " + string.Join(", ", dialogs)
+                    + ". A modal dialog (for example Revit's save reminder) blocks every request until it is answered: "
+                    + "ask the user to answer it. Don't close Revit windows yourself; closing one can cancel work.";
+            return message;
         }
 
         public string GetName() {

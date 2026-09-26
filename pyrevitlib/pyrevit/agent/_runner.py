@@ -129,15 +129,27 @@ def _enter_workspace(workspace):
         return None
     root = op.normcase(op.abspath(workspace)).rstrip("/\\") + op.sep
     for name, module in list(sys.modules.items()):
-        module_file = getattr(module, "__file__", None)
-        if module_file:
-            module_path = op.normcase(op.abspath(module_file)) + op.sep
-            if module_path.startswith(root):
-                del sys.modules[name]
+        if _is_under(getattr(module, "__file__", None), root):
+            del sys.modules[name]
     added = workspace not in sys.path
     if added:
         sys.path.insert(0, workspace)
     return workspace if added else None
+
+
+def _is_under(module_file, root):
+    """True when a module's file is inside ``root``.
+
+    Loaded modules can have a ``__file__`` that isn't a file path (built-in
+    and dynamically created modules, assemblies); ``op.abspath`` raises on
+    those in IronPython, so they are treated as outside the workspace.
+    """
+    if not isinstance(module_file, str) or not module_file:
+        return False
+    try:
+        return (op.normcase(op.abspath(module_file)) + op.sep).startswith(root)
+    except Exception:
+        return False
 
 
 def _leave_workspace(workspace):

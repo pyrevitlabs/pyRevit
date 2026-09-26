@@ -3416,8 +3416,9 @@ def find_level(level_name=None, doc=None):
     instead of passing None on.
 
     Args:
-        level_name (str | DB.Level, optional): level name. When omitted, the
-            active plan's level, else the lowest level.
+        level_name (str | DB.Level | DB.ElementId, optional): level name, level
+            or level id. When omitted, the active plan's level, else the
+            lowest level.
         doc (DB.Document, optional): document, defaults to the active one.
 
     Returns:
@@ -3430,6 +3431,11 @@ def find_level(level_name=None, doc=None):
     if isinstance(level_name, DB.Level):
         return level_name
     doc = doc or DOCS.doc
+    if isinstance(level_name, DB.ElementId):
+        level = doc.GetElement(level_name)
+        if isinstance(level, DB.Level):
+            return level
+        raise PyRevitException("Element {} is not a level.".format(level_name))
     levels = sorted(
         DB.FilteredElementCollector(doc).OfClass(DB.Level).ToElements(),
         key=lambda level: level.Elevation,
