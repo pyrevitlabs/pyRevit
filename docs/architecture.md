@@ -136,3 +136,21 @@ In turn, the code in `ScriptExecutor.cs` calls the appropriate script engine bas
     - `CLREngine.cs` — C#/VB.NET execution.
     - `DynamoBIMEngine.cs` — Dynamo graphs.
     - `GrasshopperEngine.cs` — Grasshopper definitions.
+
+### Engine cache and Reload
+
+Engines are cached per session in AppDomain data, keyed by engine type id, and a Reload clears that
+cache through `ScriptEngineManager.ClearEngines`. `ScriptEngine.Shutdown()` is therefore a
+*cache eviction*, not a process teardown: it runs on Reload and on Refresh Engine, and it must
+leave anything process-wide alone.
+
+`CPythonEngine` is the one engine whose host is a process-wide singleton. The CPython interpreter
+and its pythonnet metatype are started on the first CPython command of the process and stay up
+until Revit exits, so a Reload just drops the engine object and the next `#! python3` command
+re-attaches to the live interpreter. pythonnet's own `PythonEngine.Shutdown` is deliberately never
+called mid-session: it is a soft shutdown that stashes the CLR metatype state into the still-running
+interpreter as a `BinaryFormatter` blob, and that blob cannot be read back once Revit's Reload has
+duplicated assemblies into its assembly load context. A side effect is that `engine: clean` on a
+`python3` bundle yields a fresh engine object but not a fresh interpreter, so `sys.modules` entries
+imported before a Reload survive it. The contract is asserted by the tests in
+`dev/pyRevitLabs/tests/pyRevitLabs.PyRevit.Runtime.CPython.Tests/`.
