@@ -291,6 +291,7 @@ class ThreadedHttpServer(ThreadingMixIn, HTTPServer):
 
     allow_reuse_address = True
 
+    daemon_threads = True
     block_on_close = False
 
     def handle_error(self, request, client_address):
@@ -298,13 +299,24 @@ class ThreadedHttpServer(ThreadingMixIn, HTTPServer):
 
         See the class docstring for why stderr is unsafe here.
 
+        Note:
+            Called outside an ``except`` block there is no exception to format,
+            and IronPython 3's ``traceback.format_exc()`` raises on that instead
+            of returning a placeholder, so the traceback is only formatted when
+            one is active.
+
         Args:
             request: The request being processed.
             client_address (tuple): Client address the request came from.
         """
-        mlogger.debug(
-            "Routes request error | %s | %s", client_address, traceback.format_exc()
-        )
+        error_type, error, error_traceback = sys.exc_info()
+        if error_type is None:
+            details = "no active exception"
+        else:
+            details = "".join(
+                traceback.format_exception(error_type, error, error_traceback)
+            )
+        mlogger.debug("Routes request error | %s | %s", client_address, details)
 
     def process_request_thread(self, request, client_address):
         """Serve a request, letting no exception escape the thread.
@@ -446,9 +458,7 @@ class RoutesServer(object):
             if self.is_running:
                 self.server.shutdown()
         except Exception:
-            mlogger.error(
-                "Routes server shutdown failed | %s", traceback.format_exc()
-            )
+            mlogger.error("Routes server shutdown failed | %s", traceback.format_exc())
 
         try:
             self.server.server_close()

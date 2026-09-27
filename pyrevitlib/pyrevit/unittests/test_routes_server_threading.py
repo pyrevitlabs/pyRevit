@@ -317,7 +317,10 @@ class LogMessageTests(_LoggerPatchedTestCase):
 
         request_handler.log_message('"%s" %s', "GET /status HTTP/1.1", 200)
 
-        self.assertEqual(['"GET /status HTTP/1.1" 200'], self.logger.messages)
+        self.assertEqual(
+            ['Routes request from 127.0.0.1 | "GET /status HTTP/1.1" 200'],
+            self.logger.messages,
+        )
 
     def test_does_not_write_to_stderr(self):
         """log_message must not reach the script output console."""

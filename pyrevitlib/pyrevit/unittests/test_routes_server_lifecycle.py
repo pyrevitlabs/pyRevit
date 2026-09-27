@@ -143,7 +143,6 @@ class RoutesServerStopTests(unittest.TestCase):
             http_server=_StubHttpServer(shutdown_error=OSError("bad file descriptor"))
         )
 
-        # must not raise
         instance.stop()
 
         self.assertEqual(1, instance.server.close_calls)
@@ -159,15 +158,12 @@ class RoutesServerStopTests(unittest.TestCase):
                 http_server=_StubHttpServer(shutdown_error=error, close_error=error)
             )
 
-            # must not raise
             instance.stop()
 
     def test_stop_does_not_wait_on_a_dead_accept_loop(self):
         """An exited accept loop can never acknowledge, so the stop must skip the wait."""
         instance = self._make_routes_server(server_thread="dead")
 
-        # must not raise, and must not block waiting for a shutdown
-        # acknowledgement that a dead loop can never send
         instance.stop()
 
         self.assertEqual(0, instance.server.shutdown_calls)
@@ -177,7 +173,6 @@ class RoutesServerStopTests(unittest.TestCase):
         """A server whose accept loop never started must still be releasable."""
         instance = self._make_routes_server(server_thread="never-started")
 
-        # must not raise
         instance.stop()
 
         self.assertEqual(0, instance.server.shutdown_calls)
@@ -189,7 +184,6 @@ class RoutesServerStopTests(unittest.TestCase):
 
         instance.stop()
         shutdown_calls = instance.server.shutdown_calls
-        # must not raise
         instance.stop()
 
         self.assertEqual(
@@ -269,8 +263,6 @@ class RoutesServerStartTests(unittest.TestCase):
 
     def test_request_threads_are_not_joined_on_close(self):
         """A request in flight during a reload must not hold the host."""
-        # A request in flight when the session reloads must not hold the host:
-        # server_close() runs on whichever thread collects the server.
         self.assertTrue(routes_server.ThreadedHttpServer.daemon_threads)
         self.assertFalse(routes_server.ThreadedHttpServer.block_on_close)
 
@@ -358,7 +350,6 @@ class DeactivateServerTests(_LifecycleTestCase):
         """A dead server must not stay registered: the next activation would skip binding."""
         self._activate(_StubRoutesServer(stop_error=RuntimeError("socket is closed")))
 
-        # must not raise
         routes.deactivate_server()
 
         self.assertIsNone(self.env_vars.get(envvars.ROUTES_SERVER))
@@ -369,7 +360,6 @@ class DeactivateServerTests(_LifecycleTestCase):
         self._activate(_StubRoutesServer())
         serverinfo.unregister = self._raise_unregister
 
-        # must not raise
         routes.deactivate_server()
 
         self.assertIsNone(self.env_vars.get(envvars.ROUTES_SERVER))
@@ -434,7 +424,6 @@ class ActivateServerTests(_LifecycleTestCase):
         """A server that cannot bind the port is reported."""
         serverinfo.register = self._raise_register
 
-        # must not raise
         self.assertIsNone(routes.activate_server())
 
         self.assertTrue(self.logger.has_errors())
@@ -445,7 +434,6 @@ class ActivateServerTests(_LifecycleTestCase):
         serverinfo.register = self._raise_register
         serverinfo.unregister = self._raise_unregister
 
-        # must not raise
         self.assertIsNone(routes.activate_server())
 
         self.assertTrue(self.logger.has_errors())
