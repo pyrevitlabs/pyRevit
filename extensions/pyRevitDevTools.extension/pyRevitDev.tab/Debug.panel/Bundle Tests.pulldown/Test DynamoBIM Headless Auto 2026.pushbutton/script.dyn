@@ -2,7 +2,7 @@
   "Uuid": "928264a2-1a7c-4e7b-b91d-9a60a091048f",
   "IsCustomNode": false,
   "Description": null,
-  "Name": "Test_Manual_Run_script",
+  "Name": "script",
   "ElementResolver": {
     "ResolutionMap": {}
   },
@@ -11,7 +11,7 @@
   "Nodes": [
     {
       "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
-      "Code": "import datetime, os\nroot = os.path.join(os.environ.get('TEMP', os.environ.get('TMP', '/tmp')), 'pyrevit-headless-proof', '2026')\nos.makedirs(root, exist_ok=True)\nlog = os.path.join(root, 'headless-auto.log')\nstamp = datetime.datetime.now().strftime('%H:%M:%S.%f')[:-3]\nwith open(log, 'a') as marker_file:\n    marker_file.write(stamp + ' graph ran' + os.linesep)\n\nimport traceback\nimport clr\nclr.AddReference('RevitAPI')\nclr.AddReference('RevitServices')\nfrom Autodesk.Revit.DB import (BuiltInCategory, DirectShape, DirectShapeExtrusionMode,\n    DirectShapeOptions, ElementTransformUtils, FilteredElementCollector, TextBoundingBox,\n    TextCurve, View3D, XYZ)\nfrom RevitServices.Persistence import DocumentManager\nfrom RevitServices.Transactions import TransactionManager\n\nNAME = 'pyRevit headless proof 2026'\nlabel = 'HEADLESS 2026  ' + stamp\nerror_log = os.path.join(root, 'headless-auto-error.log')\ndoc = DocumentManager.Instance.CurrentDBDocument\nuidoc = DocumentManager.Instance.CurrentUIDocument\nview = uidoc.ActiveView\n\n# A headless run swallows node exceptions, so a throw in the model step used to look\n        \ntry:\n    TransactionManager.Instance.EnsureInTransaction(doc)\n    try:\n        for existing in FilteredElementCollector(doc).OfCategory(BuiltInCategory.OST_DirectShapes).WhereElementIsNotElementType():\n            if existing.Name == NAME:\n                doc.Delete(existing.Id)\n        box = TextBoundingBox()\n        box.Width = 6.0\n        text = TextCurve.Create(label, box)\n        options = DirectShapeOptions()\n        options.ExtrusionMode = DirectShapeExtrusionMode.Text\n        shape = DirectShape.CreateElement(doc, text)\n        shape.Name = NAME\n        z = 0.0\n        level = getattr(view, 'AssociatedLevel', None)\n        if level is not None:\n            z = level.Elevation\n        x, y = 0.0, 0.0\n        if isinstance(view, View3D):\n            x, y, z = view.Origin.X, view.Origin.Y, view.Origin.Z\n        ElementTransformUtils.MoveElement(doc, shape.Id, XYZ(x, y, z))\n    finally:\n        TransactionManager.Instance.TransactionTaskDone()\nexcept Exception:\n    with open(error_log, 'a') as err:\n        err.write(stamp + ' model step failed' + os.linesep + traceback.format_exc())",
+      "Code": "import clr\nimport os\nimport subprocess\nimport traceback\nfrom datetime import datetime\n\n# --------------------------------------------------\n# Revit API\n# --------------------------------------------------\n\nclr.AddReference(\"RevitAPI\")\nfrom Autodesk.Revit.DB import *\n\n# Dynamo / Revit services\nclr.AddReference(\"RevitServices\")\nfrom RevitServices.Persistence import DocumentManager\n\n# --------------------------------------------------\n# Configuration\n# --------------------------------------------------\n\nfolder = r\"C:\\Temp\"\n\nif not os.path.exists(folder):\n    os.makedirs(folder)\n\nnow = datetime.now()\n\ntimestamp_text = now.strftime(\"%Y-%m-%d %H:%M:%S\")\ntimestamp_filename = now.strftime(\"%Y-%m-%d_%H-%M-%S\")\n\ndoc = None\ntransaction = None\nrevit_version = \"UNKNOWN\"\nrevit_version_name = \"UNKNOWN\"\n\ntry:\n    # --------------------------------------------------\n    # Get current Revit document\n    # --------------------------------------------------\n\n    doc = DocumentManager.Instance.CurrentDBDocument\n\n    if doc is None:\n        raise Exception(\"No active Revit document was found.\")\n\n    # --------------------------------------------------\n    # Get actual Revit version from Revit API\n    # --------------------------------------------------\n\n    revit_version = doc.Application.VersionNumber\n    revit_version_name = doc.Application.VersionName\n\n    # --------------------------------------------------\n    # Get wall type\n    # --------------------------------------------------\n\n    wall_type = (\n        FilteredElementCollector(doc)\n        .OfClass(WallType)\n        .FirstElement()\n    )\n\n    if wall_type is None:\n        raise Exception(\"No WallType was found in the current document.\")\n\n    # --------------------------------------------------\n    # Get level\n    # --------------------------------------------------\n\n    level = (\n        FilteredElementCollector(doc)\n        .OfClass(Level)\n        .FirstElement()\n    )\n\n    if level is None:\n        raise Exception(\"No Level was found in the current document.\")\n\n    # --------------------------------------------------\n    # Wall dimensions\n    # Revit internal units are feet\n    # --------------------------------------------------\n\n    height = 10.0\n\n    # Wall 1\n    p1 = XYZ(0, 0, 0)\n    p2 = XYZ(20, 0, 0)\n\n    # Wall 2\n    p3 = XYZ(0, 10, 0)\n    p4 = XYZ(20, 10, 0)\n\n    line1 = Line.CreateBound(p1, p2)\n    line2 = Line.CreateBound(p3, p4)\n\n    # --------------------------------------------------\n    # Create walls\n    # --------------------------------------------------\n\n    transaction = Transaction(doc, \"Dynamo Wall Test\")\n    transaction.Start()\n\n    wall1 = Wall.Create(\n        doc,\n        line1,\n        wall_type.Id,\n        level.Id,\n        height,\n        0.0,\n        False,\n        False\n    )\n\n    wall2 = Wall.Create(\n        doc,\n        line2,\n        wall_type.Id,\n        level.Id,\n        height,\n        0.0,\n        False,\n        False\n    )\n\n    transaction.Commit()\n    transaction = None\n\n    # --------------------------------------------------\n    # Create success marker file\n    # --------------------------------------------------\n\n    filename = \"Dynamo_Wall_Test_{}_SUCCESS_{}.txt\".format(\n        revit_version,\n        timestamp_filename\n    )\n\n    marker_path = os.path.join(folder, filename)\n\n    # --------------------------------------------------\n    # Get ElementIds\n    # --------------------------------------------------\n\n    wall1_id = wall1.Id.Value\n    wall2_id = wall2.Id.Value\n\n    # --------------------------------------------------\n    # Write success marker\n    # --------------------------------------------------\n\n    with open(marker_path, \"w\") as f:\n        f.write(\"DYNAMO WALL TEST SUCCESSFUL\\n\")\n        f.write(\"=\" * 60)\n        f.write(\"\\n\\n\")\n\n        f.write(\"Execution date and time: {}\\n\".format(timestamp_text))\n        f.write(\"Revit version: {}\\n\".format(revit_version))\n        f.write(\"Revit version name: {}\\n\".format(revit_version_name))\n        f.write(\"Revit document: {}\\n\".format(doc.Title))\n\n        f.write(\"\\n\")\n        f.write(\"RESULT:\\n\")\n        f.write(\"Walls created: 2\\n\")\n        f.write(\"Wall 1 ElementId: {}\\n\".format(wall1_id))\n        f.write(\"Wall 2 ElementId: {}\\n\".format(wall2_id))\n\n        f.write(\"\\n\")\n        f.write(\"Marker file: {}\\n\".format(marker_path))\n\n    # --------------------------------------------------\n    # Open success file in Notepad\n    # --------------------------------------------------\n\n    subprocess.Popen([\"notepad.exe\", marker_path])\n\n    # --------------------------------------------------\n    # Dynamo output\n    # --------------------------------------------------\n\n    OUT = [\n        wall1,\n        wall2,\n        revit_version,\n        timestamp_text,\n        marker_path\n    ]\n\nexcept Exception as ex:\n\n    # --------------------------------------------------\n    # Roll back transaction if something failed\n    # --------------------------------------------------\n\n    if transaction is not None:\n        try:\n            if transaction.GetStatus() == TransactionStatus.Started:\n                transaction.RollBack()\n        except:\n            pass\n\n    # --------------------------------------------------\n    # Try to retrieve Revit version if possible\n    # --------------------------------------------------\n\n    if doc is not None:\n        try:\n            revit_version = doc.Application.VersionNumber\n            revit_version_name = doc.Application.VersionName\n        except:\n            pass\n\n    # --------------------------------------------------\n    # Create error log\n    # --------------------------------------------------\n\n    error_filename = \"Dynamo_Wall_Test_{}_ERROR_{}.txt\".format(\n        revit_version,\n        timestamp_filename\n    )\n\n    error_path = os.path.join(folder, error_filename)\n\n    error_trace = traceback.format_exc()\n\n    with open(error_path, \"w\") as f:\n        f.write(\"DYNAMO WALL TEST FAILED\\n\")\n        f.write(\"=\" * 60)\n        f.write(\"\\n\\n\")\n\n        f.write(\"Execution date and time: {}\\n\".format(timestamp_text))\n        f.write(\"Revit version: {}\\n\".format(revit_version))\n        f.write(\"Revit version name: {}\\n\".format(revit_version_name))\n\n        if doc is not None:\n            try:\n                f.write(\"Revit document: {}\\n\".format(doc.Title))\n            except:\n                pass\n\n        f.write(\"\\n\")\n        f.write(\"ERROR:\\n\")\n        f.write(str(ex))\n        f.write(\"\\n\\n\")\n\n        f.write(\"FULL STACK TRACE:\\n\")\n        f.write(\"-\" * 60)\n        f.write(\"\\n\")\n        f.write(error_trace)\n        f.write(\"\\n\")\n\n        f.write(\"-\" * 60)\n        f.write(\"\\n\")\n        f.write(\"Error log: {}\\n\".format(error_path))\n\n    # --------------------------------------------------\n    # Open error file in Notepad\n    # --------------------------------------------------\n\n    try:\n        subprocess.Popen([\"notepad.exe\", error_path])\n    except:\n        pass\n\n    # --------------------------------------------------\n    # Still report the run as failed in Dynamo\n    # --------------------------------------------------\n\n    raise",
       "Engine": "CPython3",
       "VariableInputPorts": true,
       "Id": "a55eb79556c44983a4b860ff72a93318",
@@ -21,24 +21,6 @@
           "Id": "17c1238687ef4061b6934a9a920efc04",
           "Name": "IN[0]",
           "Description": "Input #0",
-          "UsingDefaultValue": false,
-          "Level": 2,
-          "UseLevels": false,
-          "KeepListStructure": false
-        },
-        {
-          "Id": "dd2d0c647cf446de8ad72f5b5d37dbdf",
-          "Name": "IN[1]",
-          "Description": "Input #1",
-          "UsingDefaultValue": false,
-          "Level": 2,
-          "UseLevels": false,
-          "KeepListStructure": false
-        },
-        {
-          "Id": "0a7af50b256941d3ae2b48c9260bbf7c",
-          "Name": "IN[2]",
-          "Description": "Input #2",
           "UsingDefaultValue": false,
           "Level": 2,
           "UseLevels": false,
@@ -58,126 +40,9 @@
       ],
       "Replication": "Disabled",
       "Description": "Runs an embedded Python script."
-    },
-    {
-      "ConcreteType": "Dynamo.Graph.Nodes.CodeBlockNodeModel, DynamoCore",
-      "Id": "50e37079378c4060a5165982c6b10477",
-      "NodeType": "CodeBlockNode",
-      "Inputs": [],
-      "Outputs": [
-        {
-          "Id": "67ab279aea1b450d8914c70da0f1ff7b",
-          "Name": "string",
-          "Description": "\"PyRevit Notification\"",
-          "UsingDefaultValue": false,
-          "Level": 2,
-          "UseLevels": false,
-          "KeepListStructure": false
-        }
-      ],
-      "Replication": "Disabled",
-      "Description": "Allows for DesignScript code to be authored directly",
-      "Code": "\"PyRevit Notification\";"
-    },
-    {
-      "ConcreteType": "Dynamo.Graph.Nodes.CodeBlockNodeModel, DynamoCore",
-      "Id": "dc46839d610b4945b57c291b9e58ba5f",
-      "NodeType": "CodeBlockNode",
-      "Inputs": [],
-      "Outputs": [
-        {
-          "Id": "ae1223506f4344e8b1f2481db9b3461d",
-          "Name": "string",
-          "Description": "\"Manual Mode\"",
-          "UsingDefaultValue": false,
-          "Level": 2,
-          "UseLevels": false,
-          "KeepListStructure": false
-        }
-      ],
-      "Replication": "Disabled",
-      "Description": "Allows for DesignScript code to be authored directly",
-      "Code": "\"Manual Mode\";"
-    },
-    {
-      "ConcreteType": "Dynamo.Graph.Nodes.CodeBlockNodeModel, DynamoCore",
-      "Id": "3295b0eea907425fb9427e428d8476f6",
-      "NodeType": "CodeBlockNode",
-      "Inputs": [
-        {
-          "Id": "317561a27d0842d2b0c6e959b9e7218a",
-          "Name": "Code",
-          "Description": "Code",
-          "UsingDefaultValue": false,
-          "Level": 2,
-          "UseLevels": false,
-          "KeepListStructure": false
-        }
-      ],
-      "Outputs": [
-        {
-          "Id": "7635fe2b8e8949aa85b684c54aa34327",
-          "Name": "Input",
-          "Description": "Input = Code",
-          "UsingDefaultValue": false,
-          "Level": 2,
-          "UseLevels": false,
-          "KeepListStructure": false
-        }
-      ],
-      "Replication": "Disabled",
-      "Description": "Allows for DesignScript code to be authored directly",
-      "Code": "Input = Code;"
-    },
-    {
-      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
-      "SerializedWidth": 0.0,
-      "SerializedHeight": 0.0,
-      "Id": "377499cde1a24c2bb10ce2762b90df70",
-      "NodeType": "StringInputNode",
-      "Inputs": [],
-      "Outputs": [
-        {
-          "Id": "3403988274ce476098c9f82ebdda914e",
-          "Name": "",
-          "Description": "String",
-          "UsingDefaultValue": false,
-          "Level": 2,
-          "UseLevels": false,
-          "KeepListStructure": false
-        }
-      ],
-      "Replication": "Disabled",
-      "Description": "Creates a string.",
-      "InputValue": "This message confirms that dynami works"
     }
   ],
-  "Connectors": [
-    {
-      "Start": "67ab279aea1b450d8914c70da0f1ff7b",
-      "End": "17c1238687ef4061b6934a9a920efc04",
-      "Id": "72540893468d4758a90e804fb5861598",
-      "IsHidden": "False"
-    },
-    {
-      "Start": "ae1223506f4344e8b1f2481db9b3461d",
-      "End": "dd2d0c647cf446de8ad72f5b5d37dbdf",
-      "Id": "6d0687538d8a4ca4a9807e9fed079033",
-      "IsHidden": "False"
-    },
-    {
-      "Start": "7635fe2b8e8949aa85b684c54aa34327",
-      "End": "0a7af50b256941d3ae2b48c9260bbf7c",
-      "Id": "37a571e907914a4d8a974f51eb60ebc4",
-      "IsHidden": "False"
-    },
-    {
-      "Start": "3403988274ce476098c9f82ebdda914e",
-      "End": "317561a27d0842d2b0c6e959b9e7218a",
-      "Id": "4cda088bad204009a204359fbf2843c3",
-      "IsHidden": "False"
-    }
-  ],
+  "Connectors": [],
   "Dependencies": [],
   "NodeLibraryDependencies": [],
   "EnableLegacyPolyCurveBehavior": true,
@@ -210,7 +75,7 @@
       "ScaleFactor": 1.0,
       "HasRunWithoutCrash": true,
       "IsVisibleInDynamoLibrary": true,
-      "Version": "4.0.2.3852",
+      "Version": "3.7.0.11777",
       "RunType": "Automatic",
       "RunPeriod": "1000"
     },
@@ -235,83 +100,11 @@
         "IsSetAsOutput": false,
         "Excluded": false,
         "ShowGeometry": true,
-        "X": 1484.662948911934,
+        "X": 1485.4098644529945,
         "Y": 465.77340268564296
-      },
-      {
-        "Id": "50e37079378c4060a5165982c6b10477",
-        "Name": "Header Text",
-        "IsSetAsInput": false,
-        "IsSetAsOutput": false,
-        "Excluded": false,
-        "ShowGeometry": true,
-        "X": 1107.8146415689343,
-        "Y": 468.1955564481267
-      },
-      {
-        "Id": "dc46839d610b4945b57c291b9e58ba5f",
-        "Name": "Balloon Text",
-        "IsSetAsInput": false,
-        "IsSetAsOutput": false,
-        "Excluded": false,
-        "ShowGeometry": true,
-        "X": 1099.8221621356392,
-        "Y": 590.9952532111985
-      },
-      {
-        "Id": "3295b0eea907425fb9427e428d8476f6",
-        "Name": "Last Script Node",
-        "IsSetAsInput": false,
-        "IsSetAsOutput": false,
-        "Excluded": false,
-        "ShowGeometry": true,
-        "X": 1095.6389320876233,
-        "Y": 728.4369101082203
-      },
-      {
-        "Id": "377499cde1a24c2bb10ce2762b90df70",
-        "Name": "String",
-        "IsSetAsInput": false,
-        "IsSetAsOutput": false,
-        "Excluded": false,
-        "ShowGeometry": true,
-        "X": 778.1952224443141,
-        "Y": 728.1403531509544
       }
     ],
-    "Annotations": [
-      {
-        "Id": "4e6894a8cbc04b62b032942a26d8f744",
-        "Title": "Attach this node to the end of your script to get a balloon notification when it is done",
-        "DescriptionText": "Description <Double click here to edit group description>",
-        "IsExpanded": true,
-        "WidthAdjustment": 0.0,
-        "HeightAdjustment": 0.0,
-        "UserSetWidth": 0.0,
-        "UserSetHeight": 0.0,
-        "Nodes": [
-          "a55eb79556c44983a4b860ff72a93318",
-          "50e37079378c4060a5165982c6b10477",
-          "dc46839d610b4945b57c291b9e58ba5f",
-          "3295b0eea907425fb9427e428d8476f6"
-        ],
-        "HasNestedGroups": false,
-        "Left": 1085.6389320876233,
-        "Top": 305.77340268564296,
-        "Width": 632.0240168243108,
-        "Height": 554.6635074225774,
-        "FontSize": 36.0,
-        "GroupStyleId": "00000000-0000-0000-0000-000000000000",
-        "InitialTop": 465.77340268564296,
-        "InitialHeight": 407.66350742257737,
-        "TextblockHeight": 150.0,
-        "IsOptionalInPortsCollapsed": false,
-        "IsUnconnectedOutPortsCollapsed": false,
-        "HasToggledOptionalInPorts": false,
-        "HasToggledUnconnectedOutPorts": false,
-        "Background": "#FFB5B5B5"
-      }
-    ],
+    "Annotations": [],
     "X": -1007.1412677963642,
     "Y": -399.58494267758374,
     "Zoom": 1.3388394604567788

@@ -1,10 +1,8 @@
 title: Test DynamoBIM Headless Auto 2027
-tooltip: "Balloon test for running a Dynamo graph headless, pinned to Revit 2027. Click the button in non debug mode and pyRevIt must run the graph without showing the Dynamo UI. The graph runs Automatic. It first appends a timestamped line to pyrevit-headless-proof/2027/headless-auto.log, which is the evidence that survives a headless run, and then creates a 3D text element named 'pyRevit headless proof 2027' in the current model, so the recording shows the run happened. Uses the PythonNet3 graph engine, which is what Dynamo 4.x ships, and writes the marker through System.IO. Generated from one template; do not hand-edit."
+tooltip: 'Balloon test for running a Dynamo graph headless, pinned to Revit 2027. Click the button in non debug mode and pyRevIt must run the graph without showing the Dynamo UI. The graph runs automatic, creates two walls in the current model, and writes a timestamped Dynamo_Wall_Test_2027_*.txt marker file, which is the evidence that survives a headless run. Uses the PythonNet3 graph engine and nothing beyond the standard library and clr interop.'
 author: "{{author}}"
 highlight: new
 min_revit_version: '2027'
 max_revit_version: '2027'
-references:
-engine:
-  clean: false
-  automate: false
+clean: false
+automate: true
