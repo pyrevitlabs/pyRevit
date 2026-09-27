@@ -4,5 +4,6 @@ author: "{{author}}"
 highlight: new
 min_revit_version: '2025'
 max_revit_version: '2025'
-clean: false
-automate: true
+engine:
+  clean: false
+  automate: true
