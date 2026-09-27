@@ -20,6 +20,9 @@ layout:
   - Test DynamoBIM Headless Auto 2026
   - Test DynamoBIM Headless Auto 2027
   - Test DynamoBIM Headless Manual
+  - Test DynamoBIM Headless Forced Manual
+  - Test DynamoBIM Headless Execute CPython3
+  - Test DynamoBIM Headless Execute PythonNet3
   - Test Grasshopper
   - Test Content Bundle
   - Test Content Bundle - no rfa in folder nor specifed in bundle

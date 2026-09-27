@@ -325,6 +325,89 @@ namespace pyRevitLabs.UnitTests.DynamoRevit {
             Assert.AreEqual(graphPath, Dynamo.Applications.DynamoRevitApp.ReceivedJournalData[1][DynamoJournalKeys.GraphPath]);
         }
 
+        [DataTestMethod]
+        [DataRow("Manual")]
+        [DataRow("Automatic")]
+        public void HeadlessRunWithoutAutomation_RunsTheGraphWhateverItsRunSetting(string runType) {
+            Dynamo.Applications.DynamoRevit.RevitDynamoModel = new Dynamo.Applications.FakeRevitDynamoModel();
+            var graphPath = WriteGraph(runType.ToLowerInvariant() + ".dyn", runType, hasRunWithoutCrash: true);
+
+            var result = DynamoRevitInterop.Run(
+                new DynamoExecutionOptions {
+                    GraphPath = graphPath,
+                    ShowUI = false,
+                    Automate = false,
+                    ExecuteGraph = true
+                },
+                new Dynamo.Applications.FakeRevitUIApplication(),
+                new string[0]
+                );
+
+            Assert.AreEqual(
+                DynamoCommandStatus.Succeeded,
+                result.Status,
+                "without automation Dynamo honours dynPathExecute and runs the graph whatever its own "
+                    + "Run setting, so the run-setting check must not block it"
+                );
+            Assert.AreEqual(2, Dynamo.Applications.DynamoRevitApp.ReceivedJournalData.Count);
+            var runCall = Dynamo.Applications.DynamoRevitApp.ReceivedJournalData[1];
+            Assert.AreEqual(graphPath, runCall[DynamoJournalKeys.GraphPath]);
+            Assert.AreEqual("True", runCall[DynamoJournalKeys.ExecuteGraph]);
+            Assert.AreEqual("False", runCall[DynamoJournalKeys.Automation]);
+        }
+
+        [TestMethod]
+        public void HeadlessAutomationRun_WithForcedManualRun_ReportsNotRunWithoutCallingDynamo() {
+            Dynamo.Applications.DynamoRevit.RevitDynamoModel = new Dynamo.Applications.FakeRevitDynamoModel();
+            var graphPath = WriteGraph("automatic.dyn", runType: "Automatic", hasRunWithoutCrash: true);
+
+            var result = DynamoRevitInterop.Run(
+                new DynamoExecutionOptions {
+                    GraphPath = graphPath,
+                    ShowUI = false,
+                    Automate = true,
+                    ExecuteGraph = true,
+                    ForceManualRun = true
+                },
+                new Dynamo.Applications.FakeRevitUIApplication(),
+                new string[0]
+                );
+
+            Assert.AreEqual(
+                DynamoCommandStatus.NotRun,
+                result.Status,
+                "dynForceManualRun opens even an Automatic graph on Manual, which automation mode "
+                    + "never executes"
+                );
+            StringAssert.Contains(result.Message, "dynamo_force_manual_run");
+            Assert.AreEqual(0, Dynamo.Applications.DynamoRevitApp.ReceivedJournalData.Count);
+        }
+
+        [TestMethod]
+        public void AutomationRunShowingUI_OfManualGraph_StillOpensItInDynamo() {
+            var graphPath = WriteGraph("manual.dyn", runType: "Manual", hasRunWithoutCrash: true);
+
+            var result = DynamoRevitInterop.Run(
+                new DynamoExecutionOptions {
+                    GraphPath = graphPath,
+                    ShowUI = true,
+                    Automate = true,
+                    ExecuteGraph = true
+                },
+                new Dynamo.Applications.FakeRevitUIApplication(),
+                new string[0]
+                );
+
+            Assert.AreEqual(
+                DynamoCommandStatus.Succeeded,
+                result.Status,
+                "with the Dynamo UI shown the user can press Run, so a Manual graph must still be "
+                    + "opened rather than reported as not run"
+                );
+            Assert.AreEqual(1, Dynamo.Applications.DynamoRevitApp.ReceivedJournalData.Count);
+            Assert.AreEqual(graphPath, Dynamo.Applications.DynamoRevitApp.ReceivedJournalData[0][DynamoJournalKeys.GraphPath]);
+        }
+
         [TestMethod]
         public void GraphRunMode_FollowsDynamoLoadRules() {
             Assert.AreEqual(
