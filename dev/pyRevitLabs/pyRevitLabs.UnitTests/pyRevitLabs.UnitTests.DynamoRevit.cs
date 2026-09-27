@@ -17,6 +17,17 @@ namespace Dynamo.Applications {
     public class FakeRevitUIApplication {
     }
 
+    public class FakeRevitDynamoModel {
+    }
+
+    /// <summary>
+    /// Stands in for Dynamo's per-Revit state holder. The interop reads
+    /// <c>RevitDynamoModel</c> to tell whether a UIless call can run the graph.
+    /// </summary>
+    public static class DynamoRevit {
+        public static FakeRevitDynamoModel RevitDynamoModel { get; set; }
+    }
+
     /// <summary>
     /// Stands in for the Dynamo add-in type. It must keep this exact name so that the interop
     /// resolution finds it the same way it finds the real add-in.
@@ -64,6 +75,7 @@ namespace pyRevitLabs.UnitTests.DynamoRevit {
             _tempRoot = Path.Combine(Path.GetTempPath(), "pyrevit-dynamo-tests-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(_tempRoot);
             Dynamo.Applications.DynamoRevitApp.Reset();
+            Dynamo.Applications.DynamoRevit.RevitDynamoModel = null;
         }
 
         [TestCleanup]
@@ -73,7 +85,8 @@ namespace pyRevitLabs.UnitTests.DynamoRevit {
         }
 
         [TestMethod]
-        public void HeadlessRun_IssuesSingleCallCarryingGraphAndReportsNotRun() {
+        public void HeadlessRun_BeforeDynamoModelIsUp_ReportsNotRun() {
+            Dynamo.Applications.DynamoRevit.RevitDynamoModel = null;
             var application = new Dynamo.Applications.FakeRevitUIApplication();
             var options = new DynamoExecutionOptions {
                 GraphPath = GraphPath,
@@ -90,8 +103,8 @@ namespace pyRevitLabs.UnitTests.DynamoRevit {
             Assert.AreEqual(
                 DynamoCommandStatus.NotRun,
                 result.Status,
-                "Dynamo reports success for a UIless run without executing anything, so the "
-                    + "result must not claim the graph ran"
+                "Dynamo reports success for a UIless run issued before its model is up without "
+                    + "executing anything, so the result must not claim the graph ran"
                 );
             StringAssert.Contains(result.Message, "debug mode");
 
@@ -111,6 +124,32 @@ namespace pyRevitLabs.UnitTests.DynamoRevit {
 
             Assert.AreEqual(1, Dynamo.Applications.DynamoRevitApp.ReceivedApplications.Count);
             Assert.AreSame(application, Dynamo.Applications.DynamoRevitApp.ReceivedApplications[0]);
+        }
+
+        [TestMethod]
+        public void HeadlessRun_OnceDynamoModelIsUp_ReportsSucceeded() {
+            Dynamo.Applications.DynamoRevit.RevitDynamoModel = new Dynamo.Applications.FakeRevitDynamoModel();
+
+            var result = DynamoRevitInterop.Run(
+                new DynamoExecutionOptions { GraphPath = GraphPath, ShowUI = false },
+                new Dynamo.Applications.FakeRevitUIApplication(),
+                new string[0]
+                );
+
+            Assert.AreEqual(
+                DynamoCommandStatus.Succeeded,
+                result.Status,
+                "a UIless call does run the graph once the Dynamo model is up, so reporting "
+                    + "NotRun here would be a false failure for a run that changed the model"
+                );
+        }
+
+        [TestMethod]
+        public void ModelUpDetection_ReportsUnavailableForAnUnrelatedAddin() {
+            var detected = DynamoRevitInterop.TryGetModelUp(typeof(string), out var modelUp);
+
+            Assert.IsFalse(detected, "a type outside the add-in assembly has no Dynamo state to read");
+            Assert.IsFalse(modelUp);
         }
 
         [TestMethod]
