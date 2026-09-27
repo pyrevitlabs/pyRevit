@@ -1,9 +1,0 @@
-title: Test DynamoBIM Headless Auto
-tooltip: "Balloon test for running a Dynamo graph headless. Click the button in non debug mode and pyRevit must run the graph without showing the Dynamo UI. The graph appends a timestamped line to pyrevit-dynamo-headless-auto.log in Dynamo's temp folder, so the run is observable from outside Revit."
-author: "{{author}}"
-highlight: new
-min_revit_version: '2027'
-references:
-engine:
-  clean: false
-  automate: false
