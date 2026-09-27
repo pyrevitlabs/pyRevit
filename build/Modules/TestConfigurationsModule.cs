@@ -44,7 +44,7 @@ public sealed class TestConfigurationsModule(IOptions<BuildOptions> buildOptions
                     "-f",
                     framework,
                     "--filter",
-                    "FullyQualifiedName~PyRevitConfigsSeedTests",
+                    "FullyQualifiedName~PyRevitConfigsSeedTests|FullyQualifiedName~RevitProductDataTests",
                 ],
                 cancellationToken);
 
