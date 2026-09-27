@@ -37,7 +37,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
         /// <summary>JSON payload with node values to push after the graph is opened.</summary>
         public string NodesInfo { get; set; }
 
-        /// <summary>Bring up the Dynamo UI. Forces a single Dynamo call, see the interop remarks.</summary>
+        /// <summary>Bring up the Dynamo UI.</summary>
         public bool ShowUI { get; set; }
 
         /// <summary>Run on the main thread without the idle loop.</summary>
@@ -50,19 +50,6 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
         public bool ReuseOpenGraph { get; set; }
 
         public bool ForceManualRun { get; set; }
-
-        public DynamoExecutionOptions WithShutdownModel(bool shutdownModel) {
-            return new DynamoExecutionOptions {
-                GraphPath = GraphPath,
-                NodesInfo = NodesInfo,
-                ShowUI = ShowUI,
-                Automate = Automate,
-                ExecuteGraph = ExecuteGraph,
-                ShutdownModel = shutdownModel,
-                ReuseOpenGraph = ReuseOpenGraph,
-                ForceManualRun = ForceManualRun
-            };
-        }
     }
 
     public enum DynamoCommandStatus {
@@ -70,6 +57,9 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
         DynamoUnavailable,
         IncompatibleDynamo,
         Rejected,
+
+        /// <summary>Dynamo accepted the command but never executed the graph.</summary>
+        NotRun,
         Failed
     }
 
@@ -94,14 +84,17 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
     /// Resolves and drives <c>Dynamo.Applications.DynamoRevitApp.ExecuteDynamoCommand</c>, the
     /// entry point Dynamo for Revit exposes to add-ins that run a graph outside the Dynamo UI.
     ///
-    /// Important: Dynamo only reads the graph path (<c>dynPath</c>) when it already has a UIless
-    /// model up and is not being asked to replace that model in the same call. On a cold session
-    /// <c>DynamoRevit.ExecuteCommand</c> only initializes the model and returns without touching
-    /// the path, and a call that requests <c>dynModelShutDown</c> tears the model down and starts
-    /// over. Both cases report <c>Result.Succeeded</c> while running nothing, which is why a
-    /// UIless run is issued as a prepare call without the path followed by a call that carries
-    /// the path and keeps the model. Showing the UI is left to a single call because Dynamo opens
-    /// the graph itself on that path.
+    /// Important: the journal data must always carry the graph path. A call that omits
+    /// <c>dynPath</c> makes <c>DynamoRevit.ExecuteCommand</c> throw
+    /// <see cref="NullReferenceException"/>, and Dynamo answers that with its own modal error
+    /// dialog, which blocks the calling API thread. A run is therefore always issued as a single
+    /// call.
+    ///
+    /// Important: measured against Dynamo for Revit 2027, a call with <c>dynShowUI</c> off never
+    /// executes the graph and reports <c>Result.Succeeded</c> anyway, no matter how many times it
+    /// is repeated. The graph only runs once the Dynamo UI has been brought up at least once -
+    /// a call with <c>dynShowUI</c> on, or any later call once that has happened. A UIless run is
+    /// therefore reported as <see cref="DynamoCommandStatus.NotRun"/> instead of as a run.
     ///
     /// Invariant: this type must stay free of Revit API types so it can be exercised outside of a
     /// Revit host. The active <c>UIApplication</c> is passed in as a plain object.
@@ -138,7 +131,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
             if (uiApplication == null)
                 throw new ArgumentNullException(nameof(uiApplication));
 
-            var journalData = BuildJournalDataPhases(options);
+            var journalData = BuildJournalData(options, includeGraph: true);
             var diagnostics = new StringBuilder();
 
             Type appType;
@@ -153,7 +146,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
             if (appType == null)
                 return Failed(DynamoCommandStatus.DynamoUnavailable, DynamoNotAvailableMessage, null, diagnostics);
 
-            var executeCommand = ResolveExecuteDynamoCommandMethod(appType, journalData[0], uiApplication);
+            var executeCommand = ResolveExecuteDynamoCommandMethod(appType, journalData, uiApplication);
             if (executeCommand == null)
                 return Failed(
                     DynamoCommandStatus.IncompatibleDynamo,
@@ -171,31 +164,40 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
                 return Failed(DynamoCommandStatus.IncompatibleDynamo, "Error initializing Dynamo.", createEx, diagnostics);
             }
 
-            foreach (var data in journalData) {
-                diagnostics.AppendLine("Dynamo call: " + DescribeJournalData(data));
-                object invokeResult;
-                try {
-                    invokeResult = executeCommand.Invoke(app, new object[] { data, uiApplication });
-                }
-                catch (Exception invokeEx) {
-                    return Failed(DynamoCommandStatus.Failed, "Error executing Dynamo script.", invokeEx, diagnostics);
-                }
+            diagnostics.AppendLine("Dynamo call: " + DescribeJournalData(journalData));
+            object invokeResult;
+            try {
+                invokeResult = executeCommand.Invoke(app, new object[] { journalData, uiApplication });
+            }
+            catch (Exception invokeEx) {
+                return Failed(DynamoCommandStatus.Failed, "Error executing Dynamo script.", invokeEx, diagnostics);
+            }
 
-                if (IsRejectedResult(invokeResult)) {
-                    diagnostics.AppendLine("Dynamo result: " + invokeResult);
-                    return Failed(
-                        DynamoCommandStatus.Rejected,
-                        "Dynamo did not run the graph.\n\nDynamo returned: " + invokeResult,
-                        null,
-                        diagnostics
-                        );
-                }
+            if (IsRejectedResult(invokeResult)) {
+                diagnostics.AppendLine("Dynamo result: " + invokeResult);
+                return Failed(
+                    DynamoCommandStatus.Rejected,
+                    "Dynamo did not run the graph.\n\nDynamo returned: " + invokeResult,
+                    null,
+                    diagnostics
+                    );
+            }
+
+            if (!options.ShowUI) {
+                return new DynamoCommandResult(
+                    DynamoCommandStatus.NotRun,
+                    "Dynamo did not run the graph.\n\nDynamo for Revit only executes a graph while "
+                        + "its UI is up, and this run was issued without it, so nothing was "
+                        + "executed even though Dynamo reported success. Run the tool in debug "
+                        + "mode to open Dynamo and run the graph.",
+                    diagnostics.ToString()
+                    );
             }
 
             return new DynamoCommandResult(
                 DynamoCommandStatus.Succeeded,
-                "Dynamo reported that it ran the graph. A headless run cannot be confirmed from "
-                    + "Dynamo's answer alone - check the model for the graph's effect.",
+                "Dynamo opened the graph in the Dynamo UI. It was executed if the graph's own Run "
+                    + "setting is on Automatic - check the model for the graph's effect.",
                 diagnostics.ToString());
         }
 
@@ -333,20 +335,6 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
             }
 
             return journalData;
-        }
-
-        /// <summary>
-        /// The ordered journal data sets a run is issued with. Showing the UI needs a single call,
-        /// a headless run needs a prepare call before the one that carries the graph.
-        /// </summary>
-        private static IList<IDictionary<string, string>> BuildJournalDataPhases(DynamoExecutionOptions options) {
-            if (options.ShowUI)
-                return new List<IDictionary<string, string>> { BuildJournalData(options, includeGraph: true) };
-
-            return new List<IDictionary<string, string>> {
-                BuildJournalData(options, includeGraph: false),
-                BuildJournalData(options.WithShutdownModel(false), includeGraph: true)
-            };
         }
 
         private static bool Accepts(Type parameterType, object argument) {

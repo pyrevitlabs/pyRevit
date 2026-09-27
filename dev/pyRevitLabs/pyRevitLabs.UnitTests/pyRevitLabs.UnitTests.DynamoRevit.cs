@@ -73,7 +73,7 @@ namespace pyRevitLabs.UnitTests.DynamoRevit {
         }
 
         [TestMethod]
-        public void HeadlessRun_PreparesModelBeforeHandingOverGraph() {
+        public void HeadlessRun_IssuesSingleCallCarryingGraphAndReportsNotRun() {
             var application = new Dynamo.Applications.FakeRevitUIApplication();
             var options = new DynamoExecutionOptions {
                 GraphPath = GraphPath,
@@ -87,26 +87,30 @@ namespace pyRevitLabs.UnitTests.DynamoRevit {
 
             var result = DynamoRevitInterop.Run(options, application, new string[0]);
 
-            Assert.IsTrue(result.Succeeded, result.Details);
-            Assert.AreEqual(2, Dynamo.Applications.DynamoRevitApp.ReceivedJournalData.Count);
-
-            var prepareCall = Dynamo.Applications.DynamoRevitApp.ReceivedJournalData[0];
-            Assert.IsFalse(prepareCall.ContainsKey(DynamoJournalKeys.GraphPath), "prepare call must not carry the graph path");
-            Assert.AreEqual("True", prepareCall[DynamoJournalKeys.ShutdownModel]);
-
-            var runCall = Dynamo.Applications.DynamoRevitApp.ReceivedJournalData[1];
-            Assert.AreEqual(GraphPath, runCall[DynamoJournalKeys.GraphPath]);
-            Assert.AreEqual("True", runCall[DynamoJournalKeys.ExecuteGraph]);
             Assert.AreEqual(
-                "False",
-                runCall[DynamoJournalKeys.ShutdownModel],
-                "the graph only runs on a call that keeps the model Dynamo just prepared"
+                DynamoCommandStatus.NotRun,
+                result.Status,
+                "Dynamo reports success for a UIless run without executing anything, so the "
+                    + "result must not claim the graph ran"
                 );
-            Assert.AreEqual("True", runCall[DynamoJournalKeys.ForceManualRun]);
-            Assert.AreEqual("False", runCall[DynamoJournalKeys.ShowUI]);
+            StringAssert.Contains(result.Message, "debug mode");
 
-            Assert.AreEqual(2, Dynamo.Applications.DynamoRevitApp.ReceivedApplications.Count);
-            Assert.AreSame(application, Dynamo.Applications.DynamoRevitApp.ReceivedApplications[1]);
+            Assert.AreEqual(
+                1,
+                Dynamo.Applications.DynamoRevitApp.ReceivedJournalData.Count,
+                "a run must be a single Dynamo call: a call without the graph path makes Dynamo "
+                    + "throw and raise a modal error dialog"
+                );
+
+            var call = Dynamo.Applications.DynamoRevitApp.ReceivedJournalData[0];
+            Assert.AreEqual(GraphPath, call[DynamoJournalKeys.GraphPath]);
+            Assert.AreEqual("True", call[DynamoJournalKeys.ExecuteGraph]);
+            Assert.AreEqual("True", call[DynamoJournalKeys.ShutdownModel]);
+            Assert.AreEqual("True", call[DynamoJournalKeys.ForceManualRun]);
+            Assert.AreEqual("False", call[DynamoJournalKeys.ShowUI]);
+
+            Assert.AreEqual(1, Dynamo.Applications.DynamoRevitApp.ReceivedApplications.Count);
+            Assert.AreSame(application, Dynamo.Applications.DynamoRevitApp.ReceivedApplications[0]);
         }
 
         [TestMethod]
