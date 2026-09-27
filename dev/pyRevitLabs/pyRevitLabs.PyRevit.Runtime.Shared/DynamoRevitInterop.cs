@@ -95,8 +95,12 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
     /// <c>Result.Succeeded</c> whether or not it ran anything. A call with <c>dynShowUI</c> on
     /// brings the model up and runs the graph. A UIless run is therefore reported as
     /// <see cref="DynamoCommandStatus.NotRun"/> unless a started model was already there, instead
-    /// of being reported as a run. A run that asks for a model shutdown, or that does not ask for
-    /// the graph to be executed, is reported as <see cref="DynamoCommandStatus.NotRun"/> as well.
+    /// of being reported as a run. A run that asks for neither automation nor graph execution is
+    /// reported as <see cref="DynamoCommandStatus.NotRun"/> as well.
+    ///
+    /// Note: a model shutdown is not by itself evidence that nothing ran - Dynamo can execute the
+    /// graph before it handles that flag - so the requested run decides the result, not the
+    /// shutdown.
     ///
     /// Important: <c>DynamoRevit.ExecuteCommand</c> throws <see cref="NullReferenceException"/>
     /// when it is called with no Revit document open, and Dynamo answers that with its own modal
@@ -204,21 +208,11 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
                     );
             }
 
-            if (options.ShutdownModel) {
-                return new DynamoCommandResult(
-                    DynamoCommandStatus.NotRun,
-                    "Dynamo did not run the graph.\n\nThis run asked Dynamo to close its model, "
-                        + "which discards the graph instead of executing it, even though Dynamo "
-                        + "reported success.",
-                    diagnostics.ToString()
-                    );
-            }
-
-            if (!options.ExecuteGraph) {
+            if (!options.Automate && !options.ExecuteGraph) {
                 return new DynamoCommandResult(
                     DynamoCommandStatus.NotRun,
                     "Dynamo did not run the graph.\n\nThis run asked Dynamo to open the graph "
-                        + "without executing it.",
+                        + "with neither automation nor graph execution, so nothing was executed.",
                     diagnostics.ToString()
                     );
             }

@@ -174,7 +174,7 @@ namespace pyRevitLabs.UnitTests.DynamoRevit {
         }
 
         [TestMethod]
-        public void RunAskingForShutdown_ReportsNotRun() {
+        public void RunAskingForShutdown_StillDecidesByModelState() {
             Dynamo.Applications.DynamoRevit.RevitDynamoModel = new Dynamo.Applications.FakeRevitDynamoModel();
 
             var result = DynamoRevitInterop.Run(
@@ -189,18 +189,24 @@ namespace pyRevitLabs.UnitTests.DynamoRevit {
                 );
 
             Assert.AreEqual(
-                DynamoCommandStatus.NotRun,
+                DynamoCommandStatus.Succeeded,
                 result.Status,
-                "asking Dynamo to close its model discards the graph instead of running it"
+                "Dynamo can execute the graph before it handles the shutdown flag, so a shutdown "
+                    + "request must not by itself be reported as a run that did not happen"
                 );
         }
 
         [TestMethod]
-        public void RunNotAskingForExecution_ReportsNotRun() {
+        public void RunRequestingNeitherAutomationNorExecution_ReportsNotRun() {
             Dynamo.Applications.DynamoRevit.RevitDynamoModel = new Dynamo.Applications.FakeRevitDynamoModel();
 
             var result = DynamoRevitInterop.Run(
-                new DynamoExecutionOptions { GraphPath = GraphPath, ShowUI = false, ExecuteGraph = false },
+                new DynamoExecutionOptions {
+                    GraphPath = GraphPath,
+                    ShowUI = false,
+                    Automate = false,
+                    ExecuteGraph = false
+                },
                 new Dynamo.Applications.FakeRevitUIApplication(),
                 new string[0]
                 );
@@ -208,7 +214,31 @@ namespace pyRevitLabs.UnitTests.DynamoRevit {
             Assert.AreEqual(
                 DynamoCommandStatus.NotRun,
                 result.Status,
-                "the tool never asked Dynamo to execute the graph, so it must not report a run"
+                "the tool asked Dynamo for neither automation nor graph execution, so it must not "
+                    + "report a run even when a model is up"
+                );
+        }
+
+        [TestMethod]
+        public void RunRequestingAutomationOnly_StillReportsByModelState() {
+            Dynamo.Applications.DynamoRevit.RevitDynamoModel = new Dynamo.Applications.FakeRevitDynamoModel();
+
+            var result = DynamoRevitInterop.Run(
+                new DynamoExecutionOptions {
+                    GraphPath = GraphPath,
+                    ShowUI = false,
+                    Automate = true,
+                    ExecuteGraph = false
+                },
+                new Dynamo.Applications.FakeRevitUIApplication(),
+                new string[0]
+                );
+
+            Assert.AreEqual(
+                DynamoCommandStatus.Succeeded,
+                result.Status,
+                "automation on its own still asks Dynamo to run, so the result follows the model "
+                    + "state rather than the ExecuteGraph flag alone"
                 );
         }
 
