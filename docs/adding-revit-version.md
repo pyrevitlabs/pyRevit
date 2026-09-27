@@ -124,6 +124,42 @@ Example entry:
 !!! note
     Build numbers are released by Autodesk with each update. Add new entries as updates are released.
 
+### Which Revit versions are listed
+
+The host registry lists exactly the Revits the current pyRevit line supports, and
+that floor is **Revit 2021** (`RevitProductData.MinimumSupportedProductYear`).
+The C# loader replaced the legacy pure-Python loader, which was the only runtime
+that ran on Revit 2020 and earlier, so those releases are not supported and are
+deliberately absent from the file — the 6.5 line was the last to carry them.
+
+Do not add a record below that floor to "fix" an install reporting the wrong
+product. An older install is still detected, and reported as unsupported, so it
+shows up in `pyrevit env` with a `not supported by this version of pyRevit` note
+instead of silently standing in for a supported Revit.
+
+### Build numbers are not unique
+
+Autodesk reuses a build number across product years, so `build` alone does not
+identify a host. Both of these ship build `20220517_1515`:
+
+| release | version | build |
+|---|---|---|
+| 2020.2.9 | 20.2.90.12 | 20220517_1515 |
+| 2021.1.7 | 21.1.70.21 | 20220517_1515 |
+
+`RevitProductData.FindProductInfo` therefore treats a build match as a candidate
+set and narrows it with the host's own identity — full file version first, then
+install path, then the release named in the identifier. A candidate whose product
+year contradicts the host's is dropped, and a candidate set that stays ambiguous
+resolves to nothing rather than to an arbitrary record, so the caller falls back
+to the binary's own version info.
+
+Binding an install to the wrong record is not cosmetic: it reports the wrong
+product year, which is what makes pyRevit load runtime assemblies built for a
+different Revit and fail at load time with a `TypeLoadException`. When a build is
+genuinely shared, an `Ambiguous host product` warning in the log names the records
+involved; add the missing record to the registry rather than relying on a guess.
+
 ---
 
 ## Step 5: CI/CD Updates (New .NET Version Only)

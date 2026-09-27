@@ -10,7 +10,7 @@ import sys
 
 from pyrevit import EXEC_PARAMS
 from pyrevit.unittests import test_py3_compat
-from pyrevit.unittests.runner import run_module_tests
+from pyrevit.unittests.runner import assert_module_tests_successful
 
 
 print("Python engine: {}".format(sys.version))
@@ -44,4 +44,4 @@ test_py3_compat.FAMILY_UTILS_FILE = op.normpath(
         "family_utils.py",
     )
 )
-run_module_tests(test_py3_compat)
+assert_module_tests_successful(test_py3_compat)
