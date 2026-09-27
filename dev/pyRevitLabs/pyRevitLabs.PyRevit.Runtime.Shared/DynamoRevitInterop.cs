@@ -107,25 +107,19 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
     /// Resolves and drives <c>Dynamo.Applications.DynamoRevitApp.ExecuteDynamoCommand</c>, the
     /// entry point Dynamo for Revit exposes to add-ins that run a graph outside the Dynamo UI.
     ///
-    /// Important: the journal data must always carry the graph path. A call that omits
-    /// <c>dynPath</c> makes <c>DynamoRevit.ExecuteCommand</c> throw
-    /// <see cref="NullReferenceException"/>, and Dynamo answers that with its own modal error
-    /// dialog, which blocks the calling API thread. A run is therefore always issued as a single
-    /// call.
+    /// Important: a UIless run is two calls. On a cold session
+    /// <c>DynamoRevit.ExecuteCommand</c> only starts the Dynamo model and returns without opening
+    /// the graph, and it only opens and runs the graph handed to it by a later call. The first call
+    /// therefore only starts the model and carries no graph path, and the second one carries it.
+    /// The warm-up is a no-op once the model is up, so the pair is safe to always issue.
     ///
-    /// Important: a UIless run needs two calls. On a cold session
-    /// <c>DynamoRevit.ExecuteCommand</c> only starts the Dynamo model and returns, and it only
-    /// opens and runs the graph handed to it by a later call. A call that also asks for the model
-    /// to be shut down never gets to run anything, so the shutdown is dropped for a UIless run.
-    /// The warm-up call is a no-op once the model is up, which makes the pair safe to always issue.
+    /// Important: a call that asks for the model to be shut down never runs anything - Dynamo
+    /// tears the model down instead - so the shutdown is dropped for a UIless run.
     ///
-    /// Important: <c>ExecuteCommand</c> throws <see cref="NullReferenceException"/> when it is
-    /// called with no Revit document open, because it dereferences the active document, and Dynamo
-    /// answers that with its own modal error dialog, which blocks the calling API thread.
-    ///
-    /// Important: <c>DynamoRevit.ExecuteCommand</c> throws <see cref="NullReferenceException"/>
-    /// when it is called with no Revit document open, and Dynamo answers that with its own modal
-    /// error dialog, which blocks the calling API thread.
+    /// Important: the graph-carrying call must carry <c>dynPath</c>, and
+    /// <c>ExecuteCommand</c> throws <see cref="NullReferenceException"/> when it is called with no
+    /// Revit document open, because it dereferences the active document. Dynamo answers that with
+    /// its own modal error dialog, which blocks the calling API thread.
     ///
     /// Invariant: this type must stay free of Revit API types so it can be exercised outside of a
     /// Revit host. The active <c>UIApplication</c> is passed in as a plain object.
