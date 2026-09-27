@@ -274,6 +274,79 @@ namespace pyRevitLabs.UnitTests.DynamoRevit {
         }
 
         [TestMethod]
+        public void HeadlessAutomationRun_OfManualGraph_ReportsNotRunWithoutCallingDynamo() {
+            Dynamo.Applications.DynamoRevit.RevitDynamoModel = new Dynamo.Applications.FakeRevitDynamoModel();
+            var graphPath = WriteGraph("manual.dyn", runType: "Manual", hasRunWithoutCrash: true);
+
+            var result = DynamoRevitInterop.Run(
+                new DynamoExecutionOptions {
+                    GraphPath = graphPath,
+                    ShowUI = false,
+                    Automate = true,
+                    ExecuteGraph = true
+                },
+                new Dynamo.Applications.FakeRevitUIApplication(),
+                new string[0]
+                );
+
+            Assert.AreEqual(
+                DynamoCommandStatus.NotRun,
+                result.Status,
+                "in automation mode Dynamo ignores dynPathExecute and only opens the graph, so a "
+                    + "graph saved on Manual is never executed and must not be reported as a run"
+                );
+            StringAssert.Contains(result.Message, "Manual");
+            StringAssert.Contains(result.Message, graphPath);
+            Assert.AreEqual(
+                0,
+                Dynamo.Applications.DynamoRevitApp.ReceivedJournalData.Count,
+                "a run known not to execute must not open the graph in Dynamo"
+                );
+        }
+
+        [TestMethod]
+        public void HeadlessAutomationRun_OfAutomaticGraph_RunsIt() {
+            Dynamo.Applications.DynamoRevit.RevitDynamoModel = new Dynamo.Applications.FakeRevitDynamoModel();
+            var graphPath = WriteGraph("automatic.dyn", runType: "Automatic", hasRunWithoutCrash: true);
+
+            var result = DynamoRevitInterop.Run(
+                new DynamoExecutionOptions {
+                    GraphPath = graphPath,
+                    ShowUI = false,
+                    Automate = true,
+                    ExecuteGraph = true
+                },
+                new Dynamo.Applications.FakeRevitUIApplication(),
+                new string[0]
+                );
+
+            Assert.AreEqual(DynamoCommandStatus.Succeeded, result.Status, result.Details);
+            Assert.AreEqual(2, Dynamo.Applications.DynamoRevitApp.ReceivedJournalData.Count);
+            Assert.AreEqual(graphPath, Dynamo.Applications.DynamoRevitApp.ReceivedJournalData[1][DynamoJournalKeys.GraphPath]);
+        }
+
+        [TestMethod]
+        public void GraphRunMode_FollowsDynamoLoadRules() {
+            Assert.AreEqual(
+                DynamoGraphRunMode.Automatic,
+                DynamoRevitInterop.ReadGraphRunMode(WriteGraph("auto.dyn", "Automatic", true))
+                );
+            Assert.AreEqual(
+                DynamoGraphRunMode.Manual,
+                DynamoRevitInterop.ReadGraphRunMode(WriteGraph("crashed.dyn", "Automatic", false)),
+                "Dynamo reopens a graph that has not run without a crash on Manual"
+                );
+            Assert.AreEqual(
+                DynamoGraphRunMode.Manual,
+                DynamoRevitInterop.ReadGraphRunMode(WriteXmlGraph("legacy.dyn", "Manual"))
+                );
+            Assert.AreEqual(
+                DynamoGraphRunMode.Unknown,
+                DynamoRevitInterop.ReadGraphRunMode(Path.Combine(_tempRoot, "missing.dyn"))
+                );
+        }
+
+        [TestMethod]
         public void RunShowingUI_IssuesSingleCallCarryingGraph() {
             var options = new DynamoExecutionOptions {
                 GraphPath = GraphPath,
@@ -431,6 +504,33 @@ namespace pyRevitLabs.UnitTests.DynamoRevit {
             Assert.IsNull(DynamoRevitInterop.FindDynamoRevitAssemblyFile(new[] { addinsFolder }));
             Assert.IsNull(DynamoRevitInterop.FindDynamoRevitAssemblyFile(new[] { Path.Combine(_tempRoot, "missing") }));
             Assert.IsNull(DynamoRevitInterop.FindDynamoRevitAssemblyFile(new[] { addinsFolder, null, string.Empty }));
+        }
+
+        private string WriteGraph(string fileName, string runType, bool hasRunWithoutCrash) {
+            var graphPath = Path.Combine(_tempRoot, fileName);
+            File.WriteAllText(
+                graphPath,
+                "{\r\n"
+                    + "  \"Uuid\": \"3c9d0464-8643-5ffe-96e5-ab1769818209\",\r\n"
+                    + "  \"Nodes\": [ { \"Code\": \"x = \\\"RunType\\\": \\\"Automatic\\\"\" } ],\r\n"
+                    + "  \"View\": {\r\n"
+                    + "    \"Dynamo\": {\r\n"
+                    + "      \"RunType\": \"" + runType + "\",\r\n"
+                    + "      \"HasRunWithoutCrash\": " + (hasRunWithoutCrash ? "true" : "false") + "\r\n"
+                    + "    }\r\n"
+                    + "  }\r\n"
+                    + "}\r\n"
+                );
+            return graphPath;
+        }
+
+        private string WriteXmlGraph(string fileName, string runType) {
+            var graphPath = Path.Combine(_tempRoot, fileName);
+            File.WriteAllText(
+                graphPath,
+                "<Workspace Version=\"1.3.0.0\" RunType=\"" + runType + "\" HasRunWithoutCrash=\"True\" />\r\n"
+                );
+            return graphPath;
         }
 
         private string CreateFakeDynamoInstall() {

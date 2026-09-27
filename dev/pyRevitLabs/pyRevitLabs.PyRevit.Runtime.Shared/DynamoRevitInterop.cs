@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Xml;
+using System.Xml.Linq;
 
 namespace pyRevitLabs.PyRevit.Runtime.Shared {
     /// <summary>
@@ -20,7 +22,7 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
         public const string ShutdownModel = "dynModelShutDown";
         public const string NodesInfo = "dynModelNodesInfo";
 
-        /// <summary>Run the graph even when its own "Run" setting is on manual.</summary>
+        /// <summary>Open the graph with its "Run" setting forced to manual.</summary>
         public const string ForceManualRun = "dynForceManualRun";
 
         /// <summary>Reuse the currently open workspace when it is already the requested graph.</summary>
@@ -75,6 +77,14 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
         }
     }
 
+    /// <summary>Run setting a graph opens with, as Dynamo decides it when loading the file.</summary>
+    public enum DynamoGraphRunMode {
+        /// <summary>The graph file could not be read, or its run setting is one Dynamo may still execute.</summary>
+        Unknown,
+        Automatic,
+        Manual
+    }
+
     public enum DynamoCommandStatus {
         Succeeded,
         DynamoUnavailable,
@@ -120,6 +130,11 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
     /// <c>ExecuteCommand</c> throws <see cref="NullReferenceException"/> when it is called with no
     /// Revit document open, because it dereferences the active document. Dynamo answers that with
     /// its own modal error dialog, which blocks the calling API thread.
+    ///
+    /// Important: with <c>dynAutomation</c> on, Dynamo ignores <c>dynPathExecute</c> and only
+    /// opens the graph, so a graph that opens with its run setting on manual is never executed.
+    /// A UIless automation run of such a graph is reported as <see cref="DynamoCommandStatus.NotRun"/>
+    /// before Dynamo is called.
     ///
     /// Invariant: this type must stay free of Revit API types so it can be exercised outside of a
     /// Revit host. The active <c>UIApplication</c> is passed in as a plain object.
@@ -204,6 +219,22 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
             var modelStateKnown = TryGetModelUp(appType, out var modelUpAtStart);
             diagnostics.AppendLine("Dynamo model up at start: " + (modelStateKnown ? modelUpAtStart.ToString() : "unknown"));
 
+            if (!options.ShowUI && options.Automate) {
+                var graphRunMode = options.ForceManualRun
+                    ? DynamoGraphRunMode.Manual
+                    : ReadGraphRunMode(options.GraphPath);
+                diagnostics.AppendLine("Graph run mode: " + graphRunMode + (options.ForceManualRun ? " (forced)" : string.Empty));
+
+                if (graphRunMode == DynamoGraphRunMode.Manual) {
+                    return new DynamoCommandResult(
+                        DynamoCommandStatus.NotRun,
+                        "Dynamo would not run the graph.\n\n"
+                            + DescribeManualGraphInAutomation(options),
+                        diagnostics.ToString()
+                        );
+                }
+            }
+
             // Dynamo only runs a graph from a model that is already started, and only while the
             // call does not ask for the model to be shut down. A UIless run is therefore a warm-up
             // call that starts the model, followed by the call that carries the graph. The warm-up
@@ -270,6 +301,32 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
                 "Dynamo ran the graph without showing its UI. Dynamo does not report whether the "
                     + "graph itself succeeded, so check the model for the graph's effect.",
                 diagnostics.ToString());
+        }
+
+        /// <summary>
+        /// Reads the run setting a graph opens with, following the rules Dynamo applies on load: a
+        /// graph that is not marked as having run without a crash is opened on manual.
+        /// </summary>
+        /// <remarks>
+        /// Reads both the JSON format of Dynamo 2 and later and the XML format of Dynamo 1.
+        /// </remarks>
+        /// <returns>
+        /// <see cref="DynamoGraphRunMode.Unknown"/> when the file is missing or unreadable, so the
+        /// caller does not block a run on a guess.
+        /// </returns>
+        public static DynamoGraphRunMode ReadGraphRunMode(string graphPath) {
+            if (string.IsNullOrEmpty(graphPath) || !File.Exists(graphPath))
+                return DynamoGraphRunMode.Unknown;
+
+            try {
+                var content = File.ReadAllText(graphPath).TrimStart();
+                return content.StartsWith("<")
+                    ? ReadXmlGraphRunMode(content)
+                    : ReadJsonGraphRunMode(content);
+            }
+            catch (Exception) {
+                return DynamoGraphRunMode.Unknown;
+            }
         }
 
         /// <summary>
@@ -459,6 +516,47 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
             }
 
             return journalData;
+        }
+
+        private static DynamoGraphRunMode ReadJsonGraphRunMode(string content) {
+            using (var reader = JsonReaderWriterFactory.CreateJsonReader(
+                       Encoding.UTF8.GetBytes(content),
+                       XmlDictionaryReaderQuotas.Max)) {
+                var dynamoView = XElement.Load(reader).Element("View")?.Element("Dynamo");
+                return ToGraphRunMode(
+                    dynamoView?.Element("RunType")?.Value,
+                    dynamoView?.Element("HasRunWithoutCrash")?.Value
+                    );
+            }
+        }
+
+        private static DynamoGraphRunMode ReadXmlGraphRunMode(string content) {
+            var workspace = XElement.Parse(content);
+            return ToGraphRunMode(
+                workspace.Attribute("RunType")?.Value,
+                workspace.Attribute("HasRunWithoutCrash")?.Value
+                );
+        }
+
+        private static DynamoGraphRunMode ToGraphRunMode(string runType, string hasRunWithoutCrash) {
+            if (string.Equals(hasRunWithoutCrash, bool.FalseString, StringComparison.OrdinalIgnoreCase))
+                return DynamoGraphRunMode.Manual;
+            if (runType == nameof(DynamoGraphRunMode.Manual))
+                return DynamoGraphRunMode.Manual;
+            if (runType == nameof(DynamoGraphRunMode.Automatic))
+                return DynamoGraphRunMode.Automatic;
+            return DynamoGraphRunMode.Unknown;
+        }
+
+        private static string DescribeManualGraphInAutomation(DynamoExecutionOptions options) {
+            var cause = options.ForceManualRun
+                ? "This tool sets dynamo_force_manual_run, which opens the graph with its Run setting on Manual."
+                : "The graph opens with its Run setting on Manual: it is saved that way, or it has not "
+                    + "yet run without a crash.";
+            return cause
+                + "\n\nIn automation mode Dynamo only runs a graph whose Run setting is Automatic. "
+                + "Set the graph to Automatic in Dynamo and save it, or remove automate from the "
+                + "bundle's engine settings.\n\nGraph: " + options.GraphPath;
         }
 
         private static bool Accepts(Type parameterType, object argument) {
