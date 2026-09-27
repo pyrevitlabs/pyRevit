@@ -15,6 +15,7 @@ layout:
   - Test DynamoBIM_cpy2.5
   - Test DynamoBIM_Cpython
   - Test DynamoBIM_Pythonnet
+  - Test DynamoBIM Headless Auto
   - Test Grasshopper
   - Test Content Bundle
   - Test Content Bundle - no rfa in folder nor specifed in bundle

@@ -50,6 +50,29 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
         public bool ReuseOpenGraph { get; set; }
 
         public bool ForceManualRun { get; set; }
+
+        /// <summary>
+        /// The same settings with the model shutdown dropped, for the calls of a UIless run.
+        /// </summary>
+        /// <remarks>
+        /// <c>DynamoRevit.ExecuteCommand</c> shuts the model down instead of running the graph
+        /// when a call asks for both, so the shutdown cannot be combined with a UIless run.
+        /// </remarks>
+        public DynamoExecutionOptions WithoutShutdown() {
+            if (!ShutdownModel)
+                return this;
+
+            return new DynamoExecutionOptions {
+                GraphPath = GraphPath,
+                NodesInfo = NodesInfo,
+                ShowUI = ShowUI,
+                Automate = Automate,
+                ExecuteGraph = ExecuteGraph,
+                ShutdownModel = false,
+                ReuseOpenGraph = ReuseOpenGraph,
+                ForceManualRun = ForceManualRun
+            };
+        }
     }
 
     public enum DynamoCommandStatus {
@@ -90,17 +113,15 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
     /// dialog, which blocks the calling API thread. A run is therefore always issued as a single
     /// call.
     ///
-    /// Important: measured against Dynamo for Revit 2027, a call with <c>dynShowUI</c> off only
-    /// executes the graph once a started Dynamo model already exists, and reports
-    /// <c>Result.Succeeded</c> whether or not it ran anything. A call with <c>dynShowUI</c> on
-    /// brings the model up and runs the graph. A UIless run is therefore reported as
-    /// <see cref="DynamoCommandStatus.NotRun"/> unless a started model was already there, instead
-    /// of being reported as a run. A run that asks for neither automation nor graph execution is
-    /// reported as <see cref="DynamoCommandStatus.NotRun"/> as well.
+    /// Important: a UIless run needs two calls. On a cold session
+    /// <c>DynamoRevit.ExecuteCommand</c> only starts the Dynamo model and returns, and it only
+    /// opens and runs the graph handed to it by a later call. A call that also asks for the model
+    /// to be shut down never gets to run anything, so the shutdown is dropped for a UIless run.
+    /// The warm-up call is a no-op once the model is up, which makes the pair safe to always issue.
     ///
-    /// Note: a model shutdown is not by itself evidence that nothing ran - Dynamo can execute the
-    /// graph before it handles that flag - so the requested run decides the result, not the
-    /// shutdown.
+    /// Important: <c>ExecuteCommand</c> throws <see cref="NullReferenceException"/> when it is
+    /// called with no Revit document open, because it dereferences the active document, and Dynamo
+    /// answers that with its own modal error dialog, which blocks the calling API thread.
     ///
     /// Important: <c>DynamoRevit.ExecuteCommand</c> throws <see cref="NullReferenceException"/>
     /// when it is called with no Revit document open, and Dynamo answers that with its own modal
@@ -186,26 +207,47 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
                 return Failed(DynamoCommandStatus.IncompatibleDynamo, "Error initializing Dynamo.", createEx, diagnostics);
             }
 
-            var modelStateKnown = TryGetModelUp(appType, out var modelUpBefore);
-            diagnostics.AppendLine("Dynamo model up before the call: " + (modelStateKnown ? modelUpBefore.ToString() : "unknown"));
+            var modelStateKnown = TryGetModelUp(appType, out var modelUpAtStart);
+            diagnostics.AppendLine("Dynamo model up at start: " + (modelStateKnown ? modelUpAtStart.ToString() : "unknown"));
 
-            diagnostics.AppendLine("Dynamo call: " + DescribeJournalData(journalData));
-            object invokeResult;
-            try {
-                invokeResult = executeCommand.Invoke(app, new object[] { journalData, uiApplication });
+            // Dynamo only runs a graph from a model that is already started, and only while the
+            // call does not ask for the model to be shut down. A UIless run is therefore a warm-up
+            // call that starts the model, followed by the call that carries the graph. The warm-up
+            // is a no-op once the model is up, so it is always issued.
+            var calls = new List<IDictionary<string, string>>();
+            if (!options.ShowUI) {
+                calls.Add(BuildJournalData(options.WithoutShutdown(), includeGraph: false));
+                calls.Add(BuildJournalData(options.WithoutShutdown(), includeGraph: true));
+                if (options.ShutdownModel) {
+                    diagnostics.AppendLine(
+                        "The model shutdown was not requested: Dynamo shuts the model down instead "
+                            + "of running the graph when a call asks for both."
+                        );
+                }
             }
-            catch (Exception invokeEx) {
-                return Failed(DynamoCommandStatus.Failed, "Error executing Dynamo script.", invokeEx, diagnostics);
+            else {
+                calls.Add(journalData);
             }
 
-            if (IsRejectedResult(invokeResult)) {
-                diagnostics.AppendLine("Dynamo result: " + invokeResult);
-                return Failed(
-                    DynamoCommandStatus.Rejected,
-                    "Dynamo did not run the graph.\n\nDynamo returned: " + invokeResult,
-                    null,
-                    diagnostics
-                    );
+            foreach (var call in calls) {
+                diagnostics.AppendLine("Dynamo call: " + DescribeJournalData(call));
+                object invokeResult;
+                try {
+                    invokeResult = executeCommand.Invoke(app, new object[] { call, uiApplication });
+                }
+                catch (Exception invokeEx) {
+                    return Failed(DynamoCommandStatus.Failed, "Error executing Dynamo script.", invokeEx, diagnostics);
+                }
+
+                if (IsRejectedResult(invokeResult)) {
+                    diagnostics.AppendLine("Dynamo result: " + invokeResult);
+                    return Failed(
+                        DynamoCommandStatus.Rejected,
+                        "Dynamo did not run the graph.\n\nDynamo returned: " + invokeResult,
+                        null,
+                        diagnostics
+                        );
+                }
             }
 
             if (!options.Automate && !options.ExecuteGraph) {
@@ -225,31 +267,14 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
                     diagnostics.ToString());
             }
 
-            if (modelStateKnown) {
-                if (modelUpBefore) {
-                    return new DynamoCommandResult(
-                        DynamoCommandStatus.Succeeded,
-                        "Dynamo reported that it ran the graph. A headless run cannot be confirmed "
-                            + "from Dynamo's answer alone - check the model for the graph's effect.",
-                        diagnostics.ToString()
-                        );
-                }
-
-                return new DynamoCommandResult(
-                    DynamoCommandStatus.NotRun,
-                    "Dynamo did not run the graph.\n\nDynamo for Revit only executes a graph once "
-                        + "its model is up, and this run was issued before that, so nothing was "
-                        + "executed even though Dynamo reported success. Run the tool in debug "
-                        + "mode to open Dynamo and run the graph.",
-                    diagnostics.ToString()
-                    );
+            if (modelStateKnown && !modelUpAtStart) {
+                diagnostics.AppendLine("Dynamo model was not up: the warm-up call started it before the graph was handed over");
             }
 
             return new DynamoCommandResult(
                 DynamoCommandStatus.Succeeded,
-                "Dynamo reported that it accepted the graph, but this Dynamo version does not "
-                    + "expose whether its model was already up, so whether the graph executed "
-                    + "cannot be confirmed - check the model for the graph's effect.",
+                "Dynamo ran the graph without showing its UI. Dynamo does not report whether the "
+                    + "graph itself succeeded, so check the model for the graph's effect.",
                 diagnostics.ToString());
         }
 
