@@ -91,11 +91,12 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
     /// call.
     ///
     /// Important: measured against Dynamo for Revit 2027, a call with <c>dynShowUI</c> off only
-    /// executes the graph once a Dynamo model already exists, and reports
+    /// executes the graph once a started Dynamo model already exists, and reports
     /// <c>Result.Succeeded</c> whether or not it ran anything. A call with <c>dynShowUI</c> on
     /// brings the model up and runs the graph. A UIless run is therefore reported as
-    /// <see cref="DynamoCommandStatus.NotRun"/> when the model is not up yet, instead of being
-    /// reported as a run.
+    /// <see cref="DynamoCommandStatus.NotRun"/> unless a started model was already there, instead
+    /// of being reported as a run. A run that asks for a model shutdown, or that does not ask for
+    /// the graph to be executed, is reported as <see cref="DynamoCommandStatus.NotRun"/> as well.
     ///
     /// Important: <c>DynamoRevit.ExecuteCommand</c> throws <see cref="NullReferenceException"/>
     /// when it is called with no Revit document open, and Dynamo answers that with its own modal
@@ -119,6 +120,12 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
 
         /// <summary>Property on that type that is set once a Dynamo model is loaded.</summary>
         public const string DynamoModelPropertyName = "RevitDynamoModel";
+
+        /// <summary>Property on the model that carries its run state, e.g. <c>StartedUI</c>.</summary>
+        public const string DynamoModelStatePropertyName = "State";
+
+        /// <summary>Prefix of every model state in which a graph can be executed.</summary>
+        public const string DynamoModelStartedStatePrefix = "Started";
 
         private const string DynamoNotAvailableMessage =
             "Can not find Dynamo installation or determine which Dynamo version to Run.\n\n"
@@ -194,6 +201,25 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
                     "Dynamo did not run the graph.\n\nDynamo returned: " + invokeResult,
                     null,
                     diagnostics
+                    );
+            }
+
+            if (options.ShutdownModel) {
+                return new DynamoCommandResult(
+                    DynamoCommandStatus.NotRun,
+                    "Dynamo did not run the graph.\n\nThis run asked Dynamo to close its model, "
+                        + "which discards the graph instead of executing it, even though Dynamo "
+                        + "reported success.",
+                    diagnostics.ToString()
+                    );
+            }
+
+            if (!options.ExecuteGraph) {
+                return new DynamoCommandResult(
+                    DynamoCommandStatus.NotRun,
+                    "Dynamo did not run the graph.\n\nThis run asked Dynamo to open the graph "
+                        + "without executing it.",
+                    diagnostics.ToString()
                     );
             }
 
@@ -325,16 +351,21 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
         }
 
         /// <summary>
-        /// Whether Dynamo's model is already up, which is what decides if a UIless call runs the
-        /// graph. Read from <c>DynamoRevit.RevitDynamoModel</c> on the add-in assembly.
+        /// Whether Dynamo's model is up and can run a graph, which is what decides if a UIless
+        /// call runs the graph. Read from <c>DynamoRevit.RevitDynamoModel</c> on the add-in
+        /// assembly.
         /// </summary>
         /// <remarks>
+        /// A model reference on its own is not enough: Dynamo keeps it after a shutdown, so the
+        /// model's own state is read as well and only a started state counts as up.
+        ///
         /// This is a Dynamo implementation detail, so it is read on a best-effort basis: when the
-        /// type or the property is not there, or reading it fails, <paramref name="modelUp"/> is
-        /// false and the caller reports the run as unconfirmed rather than as a failure.
+        /// type, the property or the state is not there, or reading any of them fails,
+        /// <paramref name="modelUp"/> is false and the caller reports the run as unconfirmed
+        /// rather than as a failure.
         /// </remarks>
         /// <param name="addinType">The resolved <c>DynamoRevitApp</c> type.</param>
-        /// <param name="modelUp">Whether a Dynamo model is loaded.</param>
+        /// <param name="modelUp">Whether a started Dynamo model is loaded.</param>
         /// <returns>True when the state could be read.</returns>
         public static bool TryGetModelUp(Type addinType, out bool modelUp) {
             modelUp = false;
@@ -348,7 +379,23 @@ namespace pyRevitLabs.PyRevit.Runtime.Shared {
                 if (modelProperty == null)
                     return false;
 
-                modelUp = modelProperty.GetValue(null, null) != null;
+                var model = modelProperty.GetValue(null, null);
+                if (model == null)
+                    return true;
+
+                var stateProperty = model.GetType()
+                                        .GetProperty(
+                                            DynamoModelStatePropertyName,
+                                            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic
+                                            );
+                if (stateProperty == null)
+                    return false;
+
+                var state = stateProperty.GetValue(model, null)?.ToString();
+                if (state == null)
+                    return false;
+
+                modelUp = state.StartsWith(DynamoModelStartedStatePrefix, StringComparison.Ordinal);
                 return true;
             }
             catch (Exception) {

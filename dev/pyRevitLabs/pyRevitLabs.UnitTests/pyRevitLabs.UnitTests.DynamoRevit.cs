@@ -18,6 +18,7 @@ namespace Dynamo.Applications {
     }
 
     public class FakeRevitDynamoModel {
+        public string State { get; set; } = "StartedUI";
     }
 
     /// <summary>
@@ -93,7 +94,7 @@ namespace pyRevitLabs.UnitTests.DynamoRevit {
                 ShowUI = false,
                 Automate = false,
                 ExecuteGraph = true,
-                ShutdownModel = true,
+                ShutdownModel = false,
                 ReuseOpenGraph = false,
                 ForceManualRun = true
             };
@@ -118,7 +119,7 @@ namespace pyRevitLabs.UnitTests.DynamoRevit {
             var call = Dynamo.Applications.DynamoRevitApp.ReceivedJournalData[0];
             Assert.AreEqual(GraphPath, call[DynamoJournalKeys.GraphPath]);
             Assert.AreEqual("True", call[DynamoJournalKeys.ExecuteGraph]);
-            Assert.AreEqual("True", call[DynamoJournalKeys.ShutdownModel]);
+            Assert.AreEqual("False", call[DynamoJournalKeys.ShutdownModel]);
             Assert.AreEqual("True", call[DynamoJournalKeys.ForceManualRun]);
             Assert.AreEqual("False", call[DynamoJournalKeys.ShowUI]);
 
@@ -131,7 +132,7 @@ namespace pyRevitLabs.UnitTests.DynamoRevit {
             Dynamo.Applications.DynamoRevit.RevitDynamoModel = new Dynamo.Applications.FakeRevitDynamoModel();
 
             var result = DynamoRevitInterop.Run(
-                new DynamoExecutionOptions { GraphPath = GraphPath, ShowUI = false },
+                new DynamoExecutionOptions { GraphPath = GraphPath, ShowUI = false, ExecuteGraph = true },
                 new Dynamo.Applications.FakeRevitUIApplication(),
                 new string[0]
                 );
@@ -153,11 +154,70 @@ namespace pyRevitLabs.UnitTests.DynamoRevit {
         }
 
         [TestMethod]
+        public void ModelUpDetection_TreatsAStoppedModelAsDown() {
+            Dynamo.Applications.DynamoRevit.RevitDynamoModel = new Dynamo.Applications.FakeRevitDynamoModel {
+                State = "NotStarted"
+            };
+
+            var result = DynamoRevitInterop.Run(
+                new DynamoExecutionOptions { GraphPath = GraphPath, ShowUI = false },
+                new Dynamo.Applications.FakeRevitUIApplication(),
+                new string[0]
+                );
+
+            Assert.AreEqual(
+                DynamoCommandStatus.NotRun,
+                result.Status,
+                "Dynamo keeps the model reference after a shutdown, so a model that is not in a "
+                    + "started state must not be read as up"
+                );
+        }
+
+        [TestMethod]
+        public void RunAskingForShutdown_ReportsNotRun() {
+            Dynamo.Applications.DynamoRevit.RevitDynamoModel = new Dynamo.Applications.FakeRevitDynamoModel();
+
+            var result = DynamoRevitInterop.Run(
+                new DynamoExecutionOptions {
+                    GraphPath = GraphPath,
+                    ShowUI = false,
+                    ShutdownModel = true,
+                    ExecuteGraph = true
+                },
+                new Dynamo.Applications.FakeRevitUIApplication(),
+                new string[0]
+                );
+
+            Assert.AreEqual(
+                DynamoCommandStatus.NotRun,
+                result.Status,
+                "asking Dynamo to close its model discards the graph instead of running it"
+                );
+        }
+
+        [TestMethod]
+        public void RunNotAskingForExecution_ReportsNotRun() {
+            Dynamo.Applications.DynamoRevit.RevitDynamoModel = new Dynamo.Applications.FakeRevitDynamoModel();
+
+            var result = DynamoRevitInterop.Run(
+                new DynamoExecutionOptions { GraphPath = GraphPath, ShowUI = false, ExecuteGraph = false },
+                new Dynamo.Applications.FakeRevitUIApplication(),
+                new string[0]
+                );
+
+            Assert.AreEqual(
+                DynamoCommandStatus.NotRun,
+                result.Status,
+                "the tool never asked Dynamo to execute the graph, so it must not report a run"
+                );
+        }
+
+        [TestMethod]
         public void RunShowingUI_IssuesSingleCallCarryingGraph() {
             var options = new DynamoExecutionOptions {
                 GraphPath = GraphPath,
                 ShowUI = true,
-                ShutdownModel = true,
+                ShutdownModel = false,
                 ExecuteGraph = true
             };
 
@@ -171,7 +231,7 @@ namespace pyRevitLabs.UnitTests.DynamoRevit {
             Assert.AreEqual(1, Dynamo.Applications.DynamoRevitApp.ReceivedJournalData.Count);
             Assert.AreEqual(GraphPath, Dynamo.Applications.DynamoRevitApp.ReceivedJournalData[0][DynamoJournalKeys.GraphPath]);
             Assert.AreEqual("True", Dynamo.Applications.DynamoRevitApp.ReceivedJournalData[0][DynamoJournalKeys.ShowUI]);
-            Assert.AreEqual("True", Dynamo.Applications.DynamoRevitApp.ReceivedJournalData[0][DynamoJournalKeys.ShutdownModel]);
+            Assert.AreEqual("False", Dynamo.Applications.DynamoRevitApp.ReceivedJournalData[0][DynamoJournalKeys.ShutdownModel]);
         }
 
         [TestMethod]
