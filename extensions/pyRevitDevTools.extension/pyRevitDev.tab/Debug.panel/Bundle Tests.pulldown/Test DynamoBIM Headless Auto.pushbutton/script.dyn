@@ -11,7 +11,7 @@
   "Nodes": [
     {
       "ConcreteType": "PythonNodeModels.PythonNode, PythonNodeModels",
-      "Code": "import clr\nfrom System import DateTime, Environment\nfrom System.IO import File\nFile.AppendAllText(r'C:\\temp\\dyn-headless-auto.log', DateTime.Now.ToString('HH:mm:ss.fff') + ' graph ran' + Environment.NewLine)",
+      "Code": "import clr\nfrom System import DateTime, Environment\nfrom System.IO import File, Path\nlog = Path.Combine(Path.GetTempPath(), 'pyrevit-dynamo-headless-auto.log')\nFile.AppendAllText(log, DateTime.Now.ToString('HH:mm:ss.fff') + ' graph ran' + Environment.NewLine)",
       "Engine": "PythonNet3",
       "VariableInputPorts": true,
       "Id": "a55eb79556c44983a4b860ff72a93318",
