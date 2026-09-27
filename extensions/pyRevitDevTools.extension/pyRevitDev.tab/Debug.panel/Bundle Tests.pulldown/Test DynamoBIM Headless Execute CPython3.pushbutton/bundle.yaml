@@ -1,0 +1,9 @@
+title: Test DynamoBIM Headless Execute CPython3
+tooltip: 'Balloon test for a headless Dynamo run without automation, for Revit 2024 to 2026. The graph is saved on Automatic, so Dynamo runs it when it opens it, and pyRevit also asks Dynamo to execute it. Click the button in non debug mode: the graph must run exactly once per click, adding two walls and one Dynamo_Wall_Test_*.txt marker file. Four walls from one click means the graph ran twice.'
+author: "{{author}}"
+highlight: new
+min_revit_version: '2024'
+max_revit_version: '2026'
+engine:
+  clean: false
+  automate: false
