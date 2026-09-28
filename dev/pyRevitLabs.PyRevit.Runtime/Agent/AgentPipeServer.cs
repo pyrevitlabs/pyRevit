@@ -5,6 +5,7 @@ using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 using pyRevitLabs.NLog;
 
@@ -16,10 +17,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <remarks>
     /// Invariant: the pipe DACL allows the current user and denies network logons. Since
     /// agent requests execute arbitrary code in Revit, this ACL is the access control.
+    /// Invariant: a connection that sends no line for <see cref="IdleTimeout"/> is closed, so a
+    /// stalled client can't hold the only server instance and lock every other client out.
+    /// The timeout covers waiting for a request only, never the time a request takes to run.
     /// </remarks>
     internal sealed class AgentPipeServer : IDisposable {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
         private static readonly Encoding Utf8 = new UTF8Encoding(false);
+        private static readonly TimeSpan IdleTimeout = TimeSpan.FromSeconds(30);
 
         private readonly string pipeName;
         private readonly Func<string, string> handleLine;
@@ -82,11 +87,23 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var reader = new StreamReader(pipe, Utf8);
             var writer = new StreamWriter(pipe, Utf8) { AutoFlush = true, NewLine = "\n" };
             string line;
-            while (!stopping.IsCancellationRequested && (line = reader.ReadLine()) != null) {
+            while (!stopping.IsCancellationRequested && (line = ReadLineUnlessIdle(reader)) != null) {
                 if (string.IsNullOrWhiteSpace(line))
                     continue;
                 writer.WriteLine(handleLine(line));
             }
+        }
+
+        private string ReadLineUnlessIdle(StreamReader reader) {
+            var read = reader.ReadLineAsync();
+            var finished = Task.WhenAny(read, Task.Delay(IdleTimeout, stopping.Token)).GetAwaiter().GetResult();
+            if (finished == read)
+                return read.GetAwaiter().GetResult();
+
+            read.ContinueWith(abandoned => abandoned.Exception, TaskContinuationOptions.OnlyOnFaulted);
+            if (!stopping.IsCancellationRequested)
+                logger.Debug("Closing an agent pipe connection idle for {0} seconds", IdleTimeout.TotalSeconds);
+            return null;
         }
 
         private NamedPipeServerStream CreatePipe() {

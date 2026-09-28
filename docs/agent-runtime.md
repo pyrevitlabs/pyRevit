@@ -335,7 +335,8 @@ Deliberately **not** reused:
 
 ### Pipe protocol
 
-Newline-delimited JSON-RPC 2.0, one request per connection. Methods: `ping`,
+Newline-delimited JSON-RPC 2.0, one request per connection. Revit serves one connection
+at a time and closes one that sends nothing for 30 seconds. Methods: `ping`,
 `get_context`, `run`, `inspect_elements`, `lookup_api`. Errors carry a stable
 `data.type`, such as `revit_busy`, `no_active_document`, `policy_readonly` or
 `invalid_params`.
