@@ -57,33 +57,64 @@ def activate_server():
         That module creates a Revit external event as it is imported, and the
         host prohibits creating one off its main thread. Activation must run
         on the main thread.
+
+        Activation is idempotent within a session: an already active server
+        serves the routes that are registered now, so handing it back is
+        correct. It is not how a server survives a reload - init() still stops
+        the old one on every session load.
+
+    Returns:
+        (RoutesServer): the active server, or None if it could not be started.
     """
     routes_server = envvars.get_pyrevit_env_var(envvars.ROUTES_SERVER)
-    if not routes_server:
-        try:
-            from pyrevit.routes.server import server
+    if routes_server:
+        mlogger.debug("Routes server already active | %s", routes_server)
+        return routes_server
+    try:
+        from pyrevit.routes.server import server
 
-            rsinfo = serverinfo.register()
-            routes_server = server.RoutesServer(
-                host=rsinfo.server_host, port=rsinfo.server_port
-            )
-            envvars.set_pyrevit_env_var(envvars.ROUTES_SERVER, routes_server)
-            return routes_server
-        except Exception as rs_ex:
+        rsinfo = serverinfo.register()
+        routes_server = server.RoutesServer(
+            host=rsinfo.server_host, port=rsinfo.server_port
+        )
+        envvars.set_pyrevit_env_var(envvars.ROUTES_SERVER, routes_server)
+        mlogger.debug("Routes server activated | %s", routes_server)
+        return routes_server
+    except Exception as rs_ex:
+        mlogger.error("Error starting Routes server | %s", str(rs_ex), exc_info=True)
+        try:
             serverinfo.unregister()
-            mlogger.error("Error starting Routes server | %s", str(rs_ex))
+        except Exception as unreg_ex:
+            mlogger.error(
+                "Error unregistering Routes server | %s", str(unreg_ex), exc_info=True
+            )
+        return None
 
 
 def deactivate_server():
-    """Deactivate the active routes server for this host instance."""
+    """Deactivate the active routes server for this host instance.
+
+    Deregisters whether or not the stop succeeded (#3473). A server that is no
+    longer listening but is still in the env var made the next activation hand
+    that dead server back instead of binding the port, so a reload silently
+    lost routes.
+    """
     routes_server = envvars.get_pyrevit_env_var(envvars.ROUTES_SERVER)
-    if routes_server:
+    if not routes_server:
+        return
+    try:
+        routes_server.stop()
+    except Exception as rs_ex:
+        mlogger.error("Error stopping Routes server | %s", str(rs_ex), exc_info=True)
+    finally:
+        envvars.set_pyrevit_env_var(envvars.ROUTES_SERVER, None)
         try:
-            routes_server.stop()
-            envvars.set_pyrevit_env_var(envvars.ROUTES_SERVER, None)
             serverinfo.unregister()
-        except Exception as rs_ex:
-            mlogger.error("Error stopping Routes server | %s", str(rs_ex))
+        except Exception as unreg_ex:
+            mlogger.error(
+                "Error unregistering Routes server | %s", str(unreg_ex), exc_info=True
+            )
+    mlogger.debug("Routes server deactivated | %s", routes_server)
 
 
 def get_active_server():
