@@ -51,7 +51,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         ["revit_version"] = AgentHost.RevitVersion,
                     };
                 case "get_context":
-                    return InvokeOnMainThread(AgentContext.Describe, parameters);
+                    return InvokeCapturingDialogs((app, _) => AgentContext.Describe(app), parameters);
                 case "run":
                     var runRequest = AgentRunRequest.FromJson(parameters);
                     EnforcePolicy(runRequest);
@@ -59,13 +59,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 case "inspect_elements":
                     var ids = AgentInspector.ParseIds(parameters);
                     var includeParameters = parameters.Value<bool?>("parameters") ?? true;
-                    return InvokeOnMainThread(app => AgentInspector.Inspect(app, ids, includeParameters), parameters);
+                    return InvokeCapturingDialogs((app, _) => AgentInspector.Inspect(app, ids, includeParameters), parameters);
                 case "show":
                     var showRequest = AgentPresenter.Parse(parameters);
-                    return InvokeOnMainThread(app => AgentPresenter.Show(app, showRequest), parameters);
+                    return InvokeCapturingDialogs((app, dialogs) => AgentPresenter.Show(app, showRequest, dialogs), parameters);
                 case "capture":
                     var captureRequest = AgentCapture.Parse(parameters);
-                    return InvokeOnMainThread(app => AgentCapture.Capture(app, captureRequest), parameters);
+                    return InvokeCapturingDialogs((app, _) => AgentCapture.Capture(app, captureRequest), parameters);
                 case "lookup_api":
                     var query = parameters.Value<string>("name");
                     return AgentApiLookup.Lookup(query);
@@ -80,6 +80,26 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 throw new AgentException(
                     "policy_readonly",
                     "The pyRevit agent policy is 'readonly': modify runs are disabled. Use query or dry_run.");
+        }
+
+        /// <summary>
+        /// Runs a fixed, non-script request on the main thread with Revit dialogs closed and
+        /// reported, so a dialog Revit opens mid-request can't hang the call.
+        /// </summary>
+        /// <remarks>
+        /// Dismissed dialogs are added to an object result as <c>dialogs</c>. <c>run</c> doesn't
+        /// use this: its guard captures dialogs itself and must disarm for the approval prompt.
+        /// </remarks>
+        private static JToken InvokeCapturingDialogs(
+            Func<Autodesk.Revit.UI.UIApplication, AgentDialogCapture, JToken> work, JObject parameters) {
+            return InvokeOnMainThread(app => {
+                using (var dialogs = new AgentDialogCapture(app)) {
+                    var result = work(app, dialogs);
+                    if (dialogs.Dialogs.Count > 0 && result is JObject response)
+                        response["dialogs"] = dialogs.Dialogs;
+                    return result;
+                }
+            }, parameters);
         }
 
         private static JToken InvokeOnMainThread(

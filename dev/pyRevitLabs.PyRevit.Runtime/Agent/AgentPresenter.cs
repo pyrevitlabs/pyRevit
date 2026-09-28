@@ -65,7 +65,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             return request;
         }
 
-        public static JToken Show(UIApplication app, Request request) {
+        /// <summary>
+        /// Applies the request to the active view.
+        /// </summary>
+        /// <remarks>
+        /// Zooming can make Revit open a dialog, such as "Unable to find a suitable view" when
+        /// no open view can show the elements. <paramref name="dialogs"/> closes it; the response
+        /// then carries <c>zoomed: false</c> and a <c>zoom_failed</c> error with Revit's message,
+        /// while the selection or isolation already applied stays in place.
+        /// </remarks>
+        public static JToken Show(UIApplication app, Request request, AgentDialogCapture dialogs) {
             var uidoc = app.ActiveUIDocument
                 ?? throw new AgentException("no_active_document", "Revit has no active document.");
             var doc = uidoc.Document;
@@ -122,9 +131,23 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             }
 
             if (request.Zoom)
-                uidoc.ShowElements(targets);
+                Zoom(uidoc, targets, dialogs, response);
             uidoc.RefreshActiveView();
             return response;
+        }
+
+        private static void Zoom(UIDocument uidoc, ICollection<ElementId> targets, AgentDialogCapture dialogs, JObject response) {
+            var dialogsBefore = dialogs.Dialogs.Count;
+            uidoc.ShowElements(targets);
+            var zoomed = dialogs.Dialogs.Count == dialogsBefore;
+            response["zoomed"] = zoomed;
+            if (!zoomed)
+                response["zoom_error"] = new JObject {
+                    ["type"] = "zoom_failed",
+                    ["message"] = "Revit could not zoom to the elements: "
+                        + (dialogs.Dialogs[dialogsBefore].Value<string>("message") ?? "it showed a dialog, which was closed.")
+                        + " Open a view that shows them, then call again.",
+                };
         }
 
         private static List<ElementId> ResolveTargets(Document doc, View view, Request request, List<long> missing) {

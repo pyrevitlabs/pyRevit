@@ -6,7 +6,6 @@ using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.DB.Events;
 using Autodesk.Revit.UI;
-using Autodesk.Revit.UI.Events;
 
 using pyRevitLabs.Json.Linq;
 
@@ -42,12 +41,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private readonly Document doc;
         private readonly AgentChangeSet changes = new AgentChangeSet();
         private readonly JArray failures = new JArray();
-        private readonly JArray dialogs = new JArray();
         private readonly JArray blocked = new JArray();
         private readonly List<AgentOtherDocument> others = new List<AgentOtherDocument>();
         private TransactionGroup group;
         private bool documentEventsArmed;
-        private bool dialogCaptureArmed;
+        private AgentDialogCapture dialogCapture;
 
         public AgentRunGuard(UIApplication uiApp, Document doc) {
             this.uiApp = uiApp;
@@ -57,7 +55,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         public AgentChangeSet Changes => changes;
         public JArray Failures => failures;
-        public JArray Dialogs => dialogs;
+        public JArray Dialogs => dialogCapture?.Dialogs ?? new JArray();
         public JArray Blocked => blocked;
         public bool HasOpenGroup => group != null && group.HasStarted() && !group.HasEnded();
 
@@ -85,8 +83,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             app.DocumentSynchronizingWithCentral += OnDocumentSynchronizingWithCentral;
             documentEventsArmed = true;
 
-            uiApp.DialogBoxShowing += OnDialogBoxShowing;
-            dialogCaptureArmed = true;
+            dialogCapture = new AgentDialogCapture(uiApp);
 
             foreach (Document other in app.Documents) {
                 if (other.IsLinked || IsWatchedDocument(other))
@@ -108,10 +105,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// visible.
         /// </summary>
         public void DisarmDialogCapture() {
-            if (!dialogCaptureArmed)
-                return;
-            uiApp.DialogBoxShowing -= OnDialogBoxShowing;
-            dialogCaptureArmed = false;
+            dialogCapture?.Disarm();
         }
 
         public void RollBack() {
@@ -211,30 +205,6 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
             e.SetProcessingResult(
                 hasErrors ? FailureProcessingResult.ProceedWithRollBack : FailureProcessingResult.Continue);
-        }
-
-        private void OnDialogBoxShowing(object sender, DialogBoxShowingEventArgs e) {
-            var entry = new JObject { ["dialog_id"] = e.DialogId };
-            if (e is TaskDialogShowingEventArgs taskDialog)
-                entry["message"] = taskDialog.Message;
-            else if (e is MessageBoxShowingEventArgs messageBox)
-                entry["message"] = messageBox.Message;
-
-            entry["dismissed"] = TryDismiss(e);
-            if (dialogs.Count < MaxRecordedEntries)
-                dialogs.Add(entry);
-        }
-
-        private static bool TryDismiss(DialogBoxShowingEventArgs e) {
-            foreach (var result in new[] { TaskDialogResult.Cancel, TaskDialogResult.Close, TaskDialogResult.Ok }) {
-                try {
-                    if (e.OverrideResult((int)result))
-                        return true;
-                }
-                catch (Exception) {
-                }
-            }
-            return false;
         }
 
         private void OnDocumentSaving(object sender, DocumentSavingEventArgs e) {

@@ -78,11 +78,14 @@ Run any of these commands without a value to print the current setting.
 | `inspect_elements` | no | Class, category, type, level, location, bounding box and parameters of up to 50 elements |
 | `lookup_pyrevit_api` | no | Functions and classes of pyrevitlib and rpw, with signatures and docstrings, from the clone's source (see [Shared libraries](#shared-libraries)) |
 | `lookup_revit_api` | no | Signatures of a Revit API type or member, reflected from the running Revit. Also its namespace and Python import line, and a `creation` list: static factories and the `doc.Create.New…` methods that return the type. A missing member returns `found: false` with the closest names, including matching values of other enums |
-| `show_elements` | no | Select, zoom to, or temporarily isolate / hide elements (by id or category) in the active view, or reset the temporary mode. No approval prompt. |
+| `show_elements` | no | Select, zoom to, or temporarily isolate / hide elements (by id or category) in the active view, or reset the temporary mode. No approval prompt. If Revit can't zoom, the response has `zoomed: false` and a `zoom_failed` error instead of a dialog blocking Revit. |
 | `capture_view` | no | PNG of a view for visual checks. `export` renders any view through Revit; `screen` captures the active view window as the user sees it (selection, temporary isolate), and fails with `view_obscured` when another application's window covers it; view `3d` renders a temporary 3D view of model categories only, framed by a section box around the model (or `elements`) and seen from `direction`, which is rolled back. Saved under `%APPDATA%\pyRevit\agent\captures`. |
 | `run_query` | never | Run a read-only script; always rolled back. `workspace` puts a folder of the agent's own modules on `sys.path`, re-imported fresh every run |
 | `run_modify` | after approval | Run a changing script; `dry_run=true` previews the change set and rolls back |
 | `get_run` | no | A recorded run: response, script, and pages of a large result |
+
+Every request that runs on Revit's main thread closes the dialogs Revit opens during it and
+reports them in `dialogs`, so a dialog can't leave the call hanging.
 
 Only agent-written code needs approval. `show_elements` is a fixed host operation that
 changes presentation, never model elements. Temporary hide/isolate runs in its own small

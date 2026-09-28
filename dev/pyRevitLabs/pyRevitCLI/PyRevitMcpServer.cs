@@ -427,7 +427,8 @@ namespace pyRevitCLI {
                 Tool("show_elements",
                     "Show elements to the user in the active view, without an approval prompt and without changing model elements: "
                     + "select them, temporarily isolate or hide them (Revit's temporary hide/isolate), or reset that mode. "
-                    + "Target element ids and/or whole categories (resolved to the elements visible in the active view).",
+                    + "Target element ids and/or whole categories (resolved to the elements visible in the active view). "
+                    + "When zoom fails, the response has zoomed=false and a zoom_failed error with Revit's message.",
                     new JObject {
                         ["action"] = new JObject {
                             ["type"] = "string",
