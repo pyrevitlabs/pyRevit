@@ -8,6 +8,12 @@ and reports all of it back through the context.
 Invariant:
     This module must stay parseable by IronPython 2.7, IronPython 3.4 and
     CPython 3, because the host picks the engine per request.
+
+Invariant:
+    pyrevitlib is loaded live while the host is a compiled DLL that only
+    changes after a rebuild and a Revit restart, so this module can meet an
+    older ``AgentScriptContext``. Read any context member added after the
+    first release with ``getattr`` and a default that keeps the old behavior.
 """
 
 import json
@@ -102,11 +108,14 @@ def run(context):
         workspace = _enter_workspace(context.Workspace)
         namespace = _build_namespace(context)
         code = compile(source, SOURCE_NAME, "exec")
-        sys.settrace(_deadline_tracer(context.TimeoutSeconds))
+        timeout_s = getattr(context, "TimeoutSeconds", None)
+        if timeout_s:
+            sys.settrace(_deadline_tracer(timeout_s))
         try:
             exec(code, namespace)
         finally:
-            sys.settrace(None)
+            if timeout_s:
+                sys.settrace(None)
     except SystemExit:
         pass
     except RunTimedOut:
@@ -115,7 +124,7 @@ def run(context):
             "timeout",
             "The script ran longer than its {:g} second limit and was stopped; its "
             "changes were rolled back. Pass a larger timeout_s if the work needs "
-            "more time.".format(context.TimeoutSeconds),
+            "more time.".format(timeout_s),
             _format_script_traceback(),
         )
     except Exception as ex:
