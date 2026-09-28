@@ -310,9 +310,13 @@ Why two processes:
 - **Client support**: every MCP client supports stdio.
 
 Why a named pipe: no TCP port, no firewall prompt, and nothing on the network. The pipe's
-access list allows only the current Windows user, and Revit disconnects any client that
-connects from another machine; together they are the authentication. The logon type doesn't
-matter, so `pyrevit mcp` started over SSH under the same account on the Revit machine works.
+access list allows only the current Windows user and denies network logons, and that is
+the authentication.
+
+Remote use is through Remote Desktop only. An RDP session is an interactive logon, so
+`pyrevit mcp` started inside it reaches Revit. SSH is refused on purpose: an SSH logon
+carries the Network SID, so connecting fails with `UnauthorizedAccessException`, even
+under the same account.
 
 Discovery: each host writes `%APPDATA%\pyRevit\agent\instances\<pid>.json` with the pipe
 name, the Revit version and the process id, and removes it when Revit exits.
