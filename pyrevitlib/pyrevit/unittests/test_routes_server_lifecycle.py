@@ -18,6 +18,7 @@ printed off a worker thread is what terminated the process.
 
 import sys
 import threading
+import time
 import unittest
 
 from pyrevit.coreutils import envvars
@@ -102,7 +103,13 @@ class _StubHttpServer(object):
 
 
 class _UnacknowledgedHttpServer(_StubHttpServer):
-    """ThreadedHttpServer stand-in whose shutdown never returns on its own."""
+    """ThreadedHttpServer stand-in whose shutdown only returns when released.
+
+    The wait is short and bounded so that a stop which does not bound its own
+    wait shows up as a slow test rather than as a hung suite.
+    """
+
+    release_after = 2.0
 
     def __init__(self):
         _StubHttpServer.__init__(self)
@@ -110,7 +117,7 @@ class _UnacknowledgedHttpServer(_StubHttpServer):
 
     def shutdown(self):
         _StubHttpServer.shutdown(self)
-        self.release.wait(30)
+        self.release.wait(self.release_after)
 
 
 class RoutesServerStopTests(unittest.TestCase):
@@ -194,8 +201,15 @@ class RoutesServerStopTests(unittest.TestCase):
         instance = self._make_routes_server(http_server=http_server)
 
         try:
+            started = time.time()
             instance.stop(timeout=0.05)
+            elapsed = time.time() - started
 
+            self.assertLess(
+                elapsed,
+                _UnacknowledgedHttpServer.release_after / 2,
+                "the stop waited for the shutdown instead of bounding it",
+            )
             self.assertEqual(1, http_server.close_calls)
             self.assertIsNone(instance.server_thread)
             self.assertTrue(

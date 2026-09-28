@@ -455,10 +455,22 @@ class RoutesServer(object):
         is closed on the way out either way, which is what stops a wedged loop
         in the end.
 
+        A failure is contained inside the thread, because an exception leaving a
+        thread is printed to stderr by the runtime, which this class may not do.
+
         Args:
             timeout (float): seconds to wait for the loop to acknowledge.
         """
-        requester = threading.Thread(target=self.server.shutdown)
+
+        def request_stop():
+            try:
+                self.server.shutdown()
+            except Exception:
+                mlogger.error(
+                    "Routes server shutdown failed | %s", traceback.format_exc()
+                )
+
+        requester = threading.Thread(target=request_stop)
         requester.daemon = True
         requester.start()
         requester.join(timeout)
@@ -487,7 +499,9 @@ class RoutesServer(object):
             if self.is_running:
                 self.request_shutdown(timeout)
         except Exception:
-            mlogger.error("Routes server shutdown failed | %s", traceback.format_exc())
+            mlogger.error(
+                "Routes server shutdown request failed | %s", traceback.format_exc()
+            )
 
         try:
             self.server.server_close()
