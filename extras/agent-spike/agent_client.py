@@ -8,6 +8,7 @@ Examples:
     python agent_client.py instances
     python agent_client.py ping
     python agent_client.py context
+    python agent_client.py engines
     python agent_client.py run scenarios/01_query_walls.py
     python agent_client.py run scenarios/03_set_comments.py --mode dry_run
 """
@@ -21,6 +22,8 @@ import sys
 INSTANCES_DIR = os.path.join(
     os.environ.get("APPDATA", ""), "pyRevit", "agent", "instances"
 )
+
+ENGINE_PROBE = "import sys\nresult = {'version': sys.version.split()[0]}\n"
 
 
 def list_instances():
@@ -52,6 +55,63 @@ def call(pipe_name, method, params=None):
         return json.loads(pipe.readline().decode("utf-8"))
 
 
+def check_engines(pipe_name):
+    """Run a probe on every engine get_context lists and check it keeps its word.
+
+    An engine reported available must run the probe with status ok, on the
+    implementation it names, at the Python version it advertises. An engine
+    reported unavailable must refuse the run with ``engine_unavailable``.
+
+    Returns:
+        (bool): True when every engine behaved as advertised.
+    """
+    context = call(pipe_name, "get_context")["result"]
+    all_passed = True
+    for name, engine in sorted(context["scripting"]["engines"].items()):
+        response = call(
+            pipe_name,
+            "run",
+            {
+                "script": ENGINE_PROBE,
+                "mode": "query",
+                "engine": name,
+                "title": "engine probe",
+            },
+        )
+        if engine["available"]:
+            passed, detail = _check_available(engine, response)
+        else:
+            error = response.get("error") or {}
+            error_type = (error.get("data") or {}).get("type")
+            passed = error_type == "engine_unavailable"
+            detail = "refused: " + str(error_type)
+        all_passed = all_passed and passed
+        print(
+            "{:<11} {:<4} available={!s:<5} {}".format(
+                name, "PASS" if passed else "FAIL", engine["available"], detail
+            )
+        )
+    return all_passed
+
+
+def _check_available(engine, response):
+    run = response.get("result")
+    if run is None:
+        return False, "request failed: " + json.dumps(response.get("error"))
+    if run["status"] != "ok":
+        return False, "status {}: {}".format(run["status"], json.dumps(run["error"]))
+    implementation = (run["engine"]["implementation"] or "").lower()
+    ran = (run["result"] or {}).get("version")
+    advertised = engine["python"]
+    if implementation != engine["implementation"].lower():
+        return False, "ran on {}, advertised {}".format(
+            implementation, engine["implementation"]
+        )
+    if advertised and not ran.startswith(advertised):
+        return False, "ran Python {}, advertised {}".format(ran, advertised)
+    return True, "ran Python {}".format(ran)
+
+
 def _main():
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -61,6 +121,7 @@ def _main():
     commands.add_parser("instances")
     commands.add_parser("ping")
     commands.add_parser("context")
+    commands.add_parser("engines")
     run_parser = commands.add_parser("run")
     run_parser.add_argument("script")
     run_parser.add_argument(
@@ -70,6 +131,9 @@ def _main():
         "--engine", default="ironpython", choices=["ironpython", "cpython"]
     )
     run_parser.add_argument("--title")
+    run_parser.add_argument(
+        "--timeout", type=float, help="seconds before the host stops the script"
+    )
     run_parser.add_argument(
         "--inputs", default="{}", help="JSON object passed to the script as `inputs`"
     )
@@ -84,20 +148,21 @@ def _main():
         response = call(pipe_name, "ping")
     elif args.command == "context":
         response = call(pipe_name, "get_context")
+    elif args.command == "engines":
+        sys.exit(0 if check_engines(pipe_name) else 1)
     else:
         with open(args.script, encoding="utf-8") as handle:
             script = handle.read()
-        response = call(
-            pipe_name,
-            "run",
-            {
-                "script": script,
-                "mode": args.mode,
-                "engine": args.engine,
-                "title": args.title or os.path.basename(args.script),
-                "inputs": json.loads(args.inputs),
-            },
-        )
+        params = {
+            "script": script,
+            "mode": args.mode,
+            "engine": args.engine,
+            "title": args.title or os.path.basename(args.script),
+            "inputs": json.loads(args.inputs),
+        }
+        if args.timeout is not None:
+            params["timeout_s"] = args.timeout
+        response = call(pipe_name, "run", params)
     print(json.dumps(response, indent=2, ensure_ascii=False))
 
 
