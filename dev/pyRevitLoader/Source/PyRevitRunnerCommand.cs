@@ -252,7 +252,6 @@ namespace PyRevitRunner
 
         private static void SeedEnvDictionary(UIApplication uiApp)
         {
-            EnvDictionary.ResetCustomEnvVars();
             var envData = AppDomain.CurrentDomain.GetData(DomainStorageKeys.EnvVarsDictKey) as PythonDictionary;
             if (envData == null)
                 envData = new PythonDictionary();

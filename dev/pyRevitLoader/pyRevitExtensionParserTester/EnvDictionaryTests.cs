@@ -12,12 +12,13 @@ namespace pyRevitExtensionParserTester
     [NonParallelizable]
     public class EnvDictionaryTests
     {
-        private object _originalEnvData;
+        private object? _originalEnvData;
 
         [SetUp]
         public void SetUp()
         {
             _originalEnvData = AppDomain.CurrentDomain.GetData(DomainStorageKeys.EnvVarsDictKey);
+            AppDomain.CurrentDomain.SetData(DomainStorageKeys.EnvVarsDictKey, null);
         }
 
         [TearDown]
@@ -35,7 +36,7 @@ namespace pyRevitExtensionParserTester
                 { EnvDictionaryKeys.RevitVersion, "2025.4" }
             });
 
-            var envData = (IDictionary)AppDomain.CurrentDomain.GetData(DomainStorageKeys.EnvVarsDictKey);
+            var envData = (IDictionary)AppDomain.CurrentDomain.GetData(DomainStorageKeys.EnvVarsDictKey)!;
             envData["CUSTOM_ENVVAR"] = "stale-value";
 
             EnvDictionary.Seed(new Dictionary<string, object>
