@@ -12,9 +12,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// </summary>
     /// <remarks>
     /// Invariant: an engine is reported <c>available</c> only when a run on it can start.
-    /// CPython resolves its DLL through the pyRevit attachment for this Revit version, the
-    /// same way <c>CPythonEngine</c> does, so without an attachment it is unavailable and
-    /// <c>unavailable_reason</c> says why. A run on an unavailable engine fails with
+    /// CPython resolves its DLL from the same clone <c>CPythonEngine</c> uses (the attached
+    /// clone, else the running one), so it is unavailable only when that clone has no engine
+    /// DLL, and <c>unavailable_reason</c> says why. A run on an unavailable engine fails with
     /// <c>engine_unavailable</c> before any code runs.
     /// Version values from the session env are not trusted blindly: an unattached session
     /// seeds <c>0</c> or <c>Unknown</c>, which are reported as null, never as a version.
@@ -146,14 +146,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 return false;
             }
             try {
-                var clone = PyRevitAttachments.GetAttachedCached(revitYear)?.Clone;
-                if (clone == null) {
-                    reason = $"pyRevit is not attached to Revit {revitYear} (run 'pyrevit attach'), and CPython finds its engine through the attachment.";
+                var clonePath = CPythonEngine.ResolveEngineClonePath(revitYear);
+                if (clonePath == null) {
+                    reason = $"pyRevit is not attached to Revit {revitYear} (run 'pyrevit attach') and the running clone could not be found.";
                     return false;
                 }
-                var engine = clone.GetCPythonEngine(new PyRevitEngineVersion(int.Parse(code)));
+                var engine = PyRevitClone.GetCPythonEngine(clonePath, new PyRevitEngineVersion(int.Parse(code)));
                 if (engine == null || !File.Exists(engine.AssemblyPath)) {
-                    reason = $"the CPython {FormatCPythonVersion(code)} engine DLL is missing from clone '{clone.Name}'.";
+                    reason = $"the CPython {FormatCPythonVersion(code)} engine DLL is missing from '{clonePath}'.";
                     return false;
                 }
                 return true;
