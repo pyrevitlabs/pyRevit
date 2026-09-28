@@ -43,6 +43,7 @@ The `engine` field of every run response confirms what actually ran. `"{}".forma
 ## Transactions
 
 - **`run_query` never opens a transaction.** If the model changes, the run fails with `query_modified_model` and is rolled back.
+- **Runs stop after `timeout_s` seconds** (default 300) with error `timeout` and are rolled back. Pass a larger `timeout_s` for long batch work rather than splitting it into many runs.
 - **`run_modify` scripts open their own transactions.** The host wraps the whole run in one group, so a committed run is one undo entry named "Agent: title".
 
   ```python

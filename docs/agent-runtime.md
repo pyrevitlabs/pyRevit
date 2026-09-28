@@ -80,7 +80,7 @@ Run any of these commands without a value to print the current setting.
 | `lookup_revit_api` | no | Signatures of a Revit API type or member, reflected from the running Revit. Also its namespace and Python import line, and a `creation` list: static factories and the `doc.Create.New…` methods that return the type. A missing member returns `found: false` with the closest names, including matching values of other enums |
 | `show_elements` | no | Select, zoom to, or temporarily isolate / hide elements (by id or category) in the active view, or reset the temporary mode. No approval prompt. If Revit can't zoom, the response has `zoomed: false` and a `zoom_failed` error instead of a dialog blocking Revit. |
 | `capture_view` | no | PNG of a view for visual checks. `export` renders any view through Revit; `screen` captures the active view window as the user sees it (selection, temporary isolate), and fails with `view_obscured` when another application's window covers it; view `3d` renders a temporary 3D view of model categories only, framed by a section box around the model (or `elements`) and seen from `direction`, which is rolled back. Saved under `%APPDATA%\pyRevit\agent\captures`. |
-| `run_query` | never | Run a read-only script; always rolled back. `workspace` puts a folder of the agent's own modules on `sys.path`, re-imported fresh every run |
+| `run_query` | never | Run a read-only script; always rolled back. `workspace` puts a folder of the agent's own modules on `sys.path`, re-imported fresh every run. `timeout_s` (default 300) stops a script that runs too long |
 | `run_modify` | after approval | Run a changing script; `dry_run=true` previews the change set and rolls back |
 | `get_run` | no | A recorded run: response, script, and pages of a large result |
 
@@ -203,6 +203,10 @@ Rules the host enforces:
 - When Revit rolls back one of the script's transactions because of an error-level
   failure, the run fails with `revit_failure`, even if the script itself didn't raise.
 - A transaction left open fails the run with `transaction_left_open`.
+- A script that runs past `timeout_s` (default 300 seconds, at most 3600) is stopped and
+  fails with `timeout`. The runner checks the deadline between Python lines, so it stops
+  loops, but a single blocking call, such as a long Revit API call or `time.sleep`, runs to
+  its end first.
 - Revit dialogs are closed automatically and reported in `dialogs`. Warnings are removed
   and reported in `failures`, and errors roll back the failing transaction.
 - The document can't be saved, closed or synchronized during a run.

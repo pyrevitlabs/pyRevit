@@ -14,6 +14,7 @@ import json
 import linecache
 import os.path as op
 import sys
+import time
 import traceback
 
 try:
@@ -28,6 +29,8 @@ from pyrevit.compat import get_elementid_value_func
 
 SOURCE_NAME = "<agent-script>"
 
+_DEADLINE_CHECK_INTERVAL = 100
+
 _elementid_value_raw = get_elementid_value_func()
 
 _NET_INTEGER_TYPES = (
@@ -41,6 +44,28 @@ _NET_INTEGER_TYPES = (
 _NET_FLOAT_TYPES = (System.Single, System.Double, System.Decimal)
 
 
+class RunTimedOut(BaseException):
+    """Raised inside the agent script once its time limit has passed.
+
+    Derives from ``BaseException`` so a script's ``except Exception`` can't
+    swallow it. A bare ``except`` can, but the deadline tracer raises it
+    again on the next check, so the script can't keep running.
+    """
+
+
+def _deadline_tracer(timeout_s):
+    deadline = time.time() + timeout_s
+    events = [0]
+
+    def trace(frame, event, arg):
+        events[0] += 1
+        if events[0] % _DEADLINE_CHECK_INTERVAL == 0 and time.time() > deadline:
+            raise RunTimedOut(timeout_s)
+        return trace
+
+    return trace
+
+
 def run(context):
     """Execute ``context.Source`` and report the outcome on ``context``.
 
@@ -51,6 +76,12 @@ def run(context):
         Never raises. Script errors, including a failure to serialize
         ``result``, are reported through ``context.SetError`` so the host can
         roll the run back.
+
+    Note:
+        ``context.TimeoutSeconds`` is enforced with ``sys.settrace``, so it
+        stops Python code, including loops, but not a single blocking call
+        such as a long Revit API call or ``time.sleep``; the run fails with
+        ``timeout`` once that call returns.
     """
     context.SetEngine(_implementation(), sys.version.split()[0], sys.version)
     source = context.Source
@@ -71,9 +102,22 @@ def run(context):
         workspace = _enter_workspace(context.Workspace)
         namespace = _build_namespace(context)
         code = compile(source, SOURCE_NAME, "exec")
-        exec(code, namespace)
+        sys.settrace(_deadline_tracer(context.TimeoutSeconds))
+        try:
+            exec(code, namespace)
+        finally:
+            sys.settrace(None)
     except SystemExit:
         pass
+    except RunTimedOut:
+        failed = True
+        context.SetError(
+            "timeout",
+            "The script ran longer than its {:g} second limit and was stopped; its "
+            "changes were rolled back. Pass a larger timeout_s if the work needs "
+            "more time.".format(context.TimeoutSeconds),
+            _format_script_traceback(),
+        )
     except Exception as ex:
         failed = True
         error_type, message = _describe_error(ex)

@@ -29,6 +29,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public string InputsJson { get; private set; }
         public string Workspace { get; private set; }
 
+        /// <summary>
+        /// Seconds the script may run before the runner stops it. Covers script execution
+        /// only, not waiting to start or the approval prompt.
+        /// </summary>
+        public double TimeoutSeconds { get; private set; }
+
+        public const double DefaultTimeoutSeconds = 300;
+        public const double MaxTimeoutSeconds = 3600;
+
         public string ModeName {
             get {
                 switch (Mode) {
@@ -48,6 +57,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var workspace = parameters.Value<string>("workspace");
             if (!string.IsNullOrWhiteSpace(workspace) && (!Path.IsPathRooted(workspace) || !Directory.Exists(workspace)))
                 throw new AgentException("invalid_params", "'workspace' must be the absolute path of an existing folder.");
+            var timeoutSeconds = parameters.Value<double?>("timeout_s") ?? DefaultTimeoutSeconds;
+            if (timeoutSeconds <= 0 || timeoutSeconds > MaxTimeoutSeconds)
+                throw new AgentException("invalid_params", $"'timeout_s' must be more than 0 and at most {MaxTimeoutSeconds}.");
             return new AgentRunRequest {
                 Script = script,
                 Title = parameters.Value<string>("title") ?? "Agent run",
@@ -57,6 +69,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     ? "{}"
                     : inputs.ToString(Formatting.None),
                 Workspace = string.IsNullOrWhiteSpace(workspace) ? null : Path.GetFullPath(workspace),
+                TimeoutSeconds = timeoutSeconds,
             };
         }
 
@@ -67,6 +80,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ["engine"] = Engine == AgentEngine.CPython ? "cpython" : "ironpython",
                 ["inputs"] = JToken.Parse(InputsJson),
                 ["workspace"] = Workspace,
+                ["timeout_s"] = TimeoutSeconds,
             };
         }
 

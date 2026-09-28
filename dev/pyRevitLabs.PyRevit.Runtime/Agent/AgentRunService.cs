@@ -61,7 +61,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 warnings.Add(lostBefore);
 
             var stopwatch = Stopwatch.StartNew();
-            var context = new AgentScriptContext(app, runId, request.ModeName, request.Script, request.InputsJson, request.Workspace);
+            var context = new AgentScriptContext(app, runId, request.ModeName, request.Script, request.InputsJson, request.Workspace, request.TimeoutSeconds);
             var response = new JObject {
                 ["run_id"] = runId,
                 ["run_dir"] = runDir,

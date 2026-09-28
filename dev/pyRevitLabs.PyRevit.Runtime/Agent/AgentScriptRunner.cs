@@ -13,8 +13,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// Public because both IronPython and pythonnet only bind public members.
     /// </remarks>
     public sealed class AgentScriptContext {
-        public AgentScriptContext(UIApplication uiApp, string runId, string mode, string source, string inputsJson, string workspace) {
+        public AgentScriptContext(
+            UIApplication uiApp, string runId, string mode, string source, string inputsJson, string workspace,
+            double timeoutSeconds) {
             UIApp = uiApp;
+            TimeoutSeconds = timeoutSeconds;
             Workspace = workspace;
             RunId = runId;
             Mode = mode;
@@ -33,6 +36,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// <c>sys.path</c> for the run and re-imports its modules fresh.
         /// </summary>
         public string Workspace { get; }
+
+        /// <summary>
+        /// Seconds the runner lets the script run before raising a timeout inside it.
+        /// </summary>
+        public double TimeoutSeconds { get; }
 
         public string ResultJson { get; private set; }
         public string Output { get; private set; } = string.Empty;

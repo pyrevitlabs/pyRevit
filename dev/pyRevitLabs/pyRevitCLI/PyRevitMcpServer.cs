@@ -266,6 +266,8 @@ namespace pyRevitCLI {
                 parameters["engine"] = arguments["engine"];
             if (arguments["workspace"] != null)
                 parameters["workspace"] = arguments["workspace"];
+            if (arguments["timeout_s"] != null)
+                parameters["timeout_s"] = arguments["timeout_s"];
             return parameters;
         }
 
@@ -370,6 +372,11 @@ namespace pyRevitCLI {
             var inputsProperty = new JObject {
                 ["type"] = "object",
                 ["description"] = "Values exposed to the script as the `inputs` dict.",
+            };
+            var timeoutProperty = new JObject {
+                ["type"] = "number",
+                ["description"] = "Seconds the script may run before it is stopped and rolled back with error 'timeout' (default 300, max 3600). "
+                    + "Stops Python code, not a single long Revit API call.",
             };
 
             var skills = PyRevitAgentSkills.Load();
@@ -491,6 +498,7 @@ namespace pyRevitCLI {
                         ["title"] = new JObject { ["type"] = "string", ["description"] = "Short label for the run record." },
                         ["inputs"] = inputsProperty,
                         ["engine"] = engineProperty,
+                        ["timeout_s"] = timeoutProperty,
                         ["workspace"] = new JObject {
                             ["type"] = "string",
                             ["description"] = "Absolute path of a folder with your own helper modules (plan data, functions). It is on sys.path for the run and its modules are re-imported fresh every run, so `import house_plan` sees your latest edits.",
@@ -506,6 +514,7 @@ namespace pyRevitCLI {
                         ["dry_run"] = new JObject { ["type"] = "boolean", ["description"] = "Preview only: run, report the change set, roll back." },
                         ["inputs"] = inputsProperty,
                         ["engine"] = engineProperty,
+                        ["timeout_s"] = timeoutProperty,
                         ["workspace"] = new JObject {
                             ["type"] = "string",
                             ["description"] = "Absolute path of a folder with your own helper modules (plan data, functions). It is on sys.path for the run and its modules are re-imported fresh every run, so `import house_plan` sees your latest edits.",
