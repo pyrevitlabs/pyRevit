@@ -207,7 +207,7 @@
         "build": "20220503_1030",
         "meta": {
             "schema": "1.0",
-            "source": "https://knowledge.autodesk.com/support/revit/learn-explore/caas/sfdcarticles/sfdcarticles/How-to-tie-the-Build-number-with-the-Revit-update.html"
+            "source": "https://help.autodesk.com/view/RVT/2023/ENU/?guid=RevitReleaseNotes_2023updates_2023_0_1_html"
         },
         "notes": "https://help.autodesk.com/view/RVT/2023/ENU/?guid=RevitReleaseNotes_2023updates_2023_0_1_html",
         "product": "Autodesk Revit",
@@ -219,7 +219,7 @@
         "build": "20220429_1500",
         "meta": {
             "schema": "1.0",
-            "source": "https://knowledge.autodesk.com/support/revit/learn-explore/caas/sfdcarticles/sfdcarticles/How-to-tie-the-Build-number-with-the-Revit-update.html"
+            "source": "https://help.autodesk.com/view/RVT/2023/ENU/?guid=RevitReleaseNotes_2023updates_2023_0_1_html"
         },
         "notes": "https://help.autodesk.com/view/RVT/2023/ENU/?guid=RevitReleaseNotes_2023updates_2023_0_1_html",
         "product": "Autodesk Revit",
@@ -339,7 +339,7 @@
         "build": "20240704_1515",
         "meta": {
             "schema": "1.0",
-            "source": "https://help.autodesk.com/view/RVT/2022/ENU/?guid=RevitReleaseNotes_2022updates_2022_1_7_htmll"
+            "source": "https://help.autodesk.com/view/RVT/2022/ENU/?guid=RevitReleaseNotes_2022updates_2022_1_7_html"
         },
         "notes": "https://help.autodesk.com/view/RVT/2022/ENU/?guid=RevitReleaseNotes_2022updates_2022_1_7_html",
         "product": "Autodesk Revit",
@@ -351,7 +351,7 @@
         "build": "20241107_1515",
         "meta": {
             "schema": "1.0",
-            "source": "https://help.autodesk.com/view/RVT/2022/ENU/?guid=RevitReleaseNotes_2022updates_2022_1_8_htmll"
+            "source": "https://help.autodesk.com/view/RVT/2022/ENU/?guid=RevitReleaseNotes_2022updates_2022_1_8_html"
         },
         "notes": "https://help.autodesk.com/view/RVT/2022/ENU/?guid=RevitReleaseNotes_2022updates_2022_1_8_html",
         "product": "Autodesk Revit",
