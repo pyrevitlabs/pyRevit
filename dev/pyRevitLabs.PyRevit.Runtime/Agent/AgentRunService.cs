@@ -24,6 +24,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <item>A query or dry run never leaves a change in the model.</item>
     /// <item>A modify run changes the model only after the user approves it in Revit, unless the
     /// <c>[agent] policy</c> is <c>auto</c>, the user's explicit opt-in to skip the prompt.</item>
+    /// <item>The policy is re-read after the script finishes, right before the decision, so a
+    /// switch to <c>readonly</c> while a run was queued or running still stops its commit.</item>
     /// <item>A script error always rolls back.</item>
     /// <item>A run that changes any document other than the active one fails and rolls back,
     /// whatever its mode and the policy.</item>
@@ -84,6 +86,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     var otherDocuments = guard.DescribeOtherDocuments();
                     if (otherDocuments.Count > 0)
                         changes["other_documents"] = otherDocuments;
+                    AgentHost.RefreshConfigIfChanged();
+                    var policy = PyRevitConfigs.GetAgentPolicy();
                     var status = "ok";
                     string decision;
 
@@ -123,7 +127,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         decision = guard.Changes.IsEmpty ? "no_changes" : "rolled_back";
                         guard.RollBack();
                     }
-                    else if (PyRevitConfigs.GetAgentPolicy() == PyRevitConsts.ConfigsAgentPolicyAuto) {
+                    else if (policy == PyRevitConsts.ConfigsAgentPolicyReadOnly) {
+                        status = "rejected";
+                        decision = "rolled_back";
+                        context.SetError("policy_readonly",
+                            "The pyRevit agent policy changed to 'readonly' during the run; its changes were rolled back.",
+                            null);
+                        guard.RollBack();
+                    }
+                    else if (policy == PyRevitConsts.ConfigsAgentPolicyAuto) {
                         guard.Assimilate();
                         AgentCommitSentinel.Remember(doc, runId, request.Title, guard.Changes.Added);
                         decision = "committed";

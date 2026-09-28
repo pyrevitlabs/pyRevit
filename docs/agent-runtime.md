@@ -358,6 +358,8 @@ Every run executes in one ExternalEvent callback on the Revit main thread:
       with `other_document_modified`. Only the active document's group is ever assimilated.
     - **query**: always roll back. A recorded change becomes a `query_modified_model` error.
     - **dry_run**: roll back and return the change set.
+    - **modify** with policy `readonly`: the policy is re-read here, so a run queued before
+      the switch to `readonly` rolls back with `policy_readonly` instead of committing.
     - **modify** with policy `auto`: `Assimilate()` straight away. The response says
       `approval: auto`.
     - **modify** with policy `ask`: while the group is still open, select and temporarily
