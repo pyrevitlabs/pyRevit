@@ -1735,8 +1735,10 @@ def create_schedule(
         fields (list[str]): field names in column order, as shown in Revit's
             schedule properties (``"Number"``, ``"Name"``, ``"Area"``).
         view_name (str, optional): schedule name, made unique.
-        sort_by (list[str], optional): field names to sort by, in order.
-        totals (list[str], optional): numeric fields to total.
+        sort_by (list[str], optional): field names to sort by, in order. A
+            field missing from ``fields`` is added as a hidden column.
+        totals (list[str], optional): numeric fields to total. A field
+            missing from ``fields`` is added as a column after them.
         itemized (bool, optional): list every element instead of grouping.
         grand_total (bool, optional): show a grand total row with a count.
         doc (DB.Document, optional): document, defaults to the active one.
@@ -1770,10 +1772,15 @@ def create_schedule(
                 category.Name, ", ".join(missing), ", ".join(sorted(available))
             )
         )
+    columns = list(fields) + [total for total in totals or [] if total not in fields]
     added = {}
-    for name in fields:
-        added[name] = definition.AddField(available[name])
+    for name in columns:
+        if name not in added:
+            added[name] = definition.AddField(available[name])
     for name in sort_by or []:
+        if name not in added:
+            added[name] = definition.AddField(available[name])
+            added[name].IsHidden = True
         definition.AddSortGroupField(DB.ScheduleSortGroupField(added[name].FieldId))
     for name in totals or []:
         added[name].DisplayType = DB.ScheduleFieldDisplayType.Totals
