@@ -18,10 +18,13 @@ import glob
 import json
 import os
 import sys
+import time
 
 INSTANCES_DIR = os.path.join(
     os.environ.get("APPDATA", ""), "pyRevit", "agent", "instances"
 )
+
+CONNECT_TIMEOUT_S = 10
 
 ENGINE_PROBE = "import sys\nresult = {'version': sys.version.split()[0]}\n"
 
@@ -50,9 +53,25 @@ def pick_pipe(pid):
 def call(pipe_name, method, params=None):
     """Send one JSON-RPC request and return the decoded response."""
     request = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params or {}}
-    with open("\\\\.\\pipe\\" + pipe_name, "r+b", buffering=0) as pipe:
+    with _open_pipe(pipe_name) as pipe:
         pipe.write((json.dumps(request) + "\n").encode("utf-8"))
         return json.loads(pipe.readline().decode("utf-8"))
+
+
+def _open_pipe(pipe_name):
+    """Open the host pipe, waiting while it is busy.
+
+    The host serves one connection at a time and re-creates the pipe after
+    each one, so a call right after another can find it busy or briefly gone.
+    """
+    deadline = time.time() + CONNECT_TIMEOUT_S
+    while True:
+        try:
+            return open("\\\\.\\pipe\\" + pipe_name, "r+b", buffering=0)
+        except OSError:
+            if time.time() > deadline:
+                raise
+            time.sleep(0.05)
 
 
 def check_engines(pipe_name):
