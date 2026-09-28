@@ -120,6 +120,25 @@ class _UnacknowledgedHttpServer(_StubHttpServer):
         self.release.wait(self.release_after)
 
 
+class _UnstoppableThread(_LiveThread):
+    """Thread stand-in for an accept loop that never ends, whatever the timeout.
+
+    A real join spends the timeout it is given, so this one records what it was
+    asked for and spends it. Returning instantly instead would make a second
+    full-length wait look free, which is the very thing under test.
+    """
+
+    def __init__(self):
+        _LiveThread.__init__(self)
+        self.join_timeouts = []
+
+    def join(self, timeout=None):
+        self.join_timeouts.append(timeout)
+        if timeout:
+            time.sleep(timeout)
+        return None
+
+
 class RoutesServerStopTests(unittest.TestCase):
     """Tests for RoutesServer.stop, which runs on the session reload thread."""
 
@@ -141,6 +160,8 @@ class RoutesServerStopTests(unittest.TestCase):
         instance.server = http_server or _StubHttpServer()
         if server_thread == "live":
             instance.server_thread = _LiveThread()
+        elif server_thread == "unstoppable":
+            instance.server_thread = _UnstoppableThread()
         elif server_thread == "dead":
             instance.server_thread = _DeadThread()
         else:
@@ -215,6 +236,31 @@ class RoutesServerStopTests(unittest.TestCase):
             self.assertTrue(
                 self.logger.has_errors(),
                 "a loop that outlives the wait is reported, not silently dropped",
+            )
+        finally:
+            http_server.release.set()
+
+    def test_stop_spends_one_budget_across_both_waits(self):
+        """A wedged loop must not cost the reload one timeout per wait.
+
+        The shutdown request and the join that follows each get a timeout, so
+        taken separately they let a reload wait twice what it was promised. The
+        second wait has to be given only what the first one left over.
+        """
+        http_server = _UnacknowledgedHttpServer()
+        instance = self._make_routes_server(
+            http_server=http_server, server_thread="unstoppable"
+        )
+        accept_loop = instance.server_thread
+
+        try:
+            instance.stop(timeout=0.05)
+
+            self.assertEqual(1, len(accept_loop.join_timeouts))
+            self.assertLess(
+                accept_loop.join_timeouts[0],
+                0.05,
+                "the join repeated a budget the shutdown request had already spent",
             )
         finally:
             http_server.release.set()

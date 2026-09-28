@@ -7,6 +7,7 @@ import sys
 import traceback
 import json
 import threading
+import time
 
 from pyrevit.api import UI
 from pyrevit.coreutils.logger import get_logger
@@ -483,18 +484,22 @@ class RoutesServer(object):
             )
 
     def stop(self, timeout=5.0):
-        """Stop serving and release the port. Never raises, never waits forever.
+        """Stop serving and release the port. Never raises, never waits longer than ``timeout``.
 
         This runs while a session is being reloaded or torn down, so a failure
         here would be reported through the output console and, unhandled on a
         worker thread, terminate Revit (see ``ThreadedHttpServer``). Every
-        failure is logged instead, and every wait is bounded - the shutdown
-        request, then the join - so a wedged accept loop delays the reload by at
-        most ``timeout`` instead of hanging it.
+        failure is logged instead.
+
+        The two waits share one budget. The shutdown request and the join that
+        follows are given the time the first one did not use, so a wedged accept
+        loop delays the reload by at most ``timeout`` in total rather than once
+        per wait.
 
         Args:
-            timeout (float): seconds to wait for the accept loop to finish.
+            timeout (float): seconds to wait, in total, for the accept loop to finish.
         """
+        deadline = time.time() + timeout
         try:
             if self.is_running:
                 self.request_shutdown(timeout)
@@ -508,6 +513,6 @@ class RoutesServer(object):
         except Exception:
             mlogger.error("Routes server close failed | %s", traceback.format_exc())
 
-        self.waitForThread(timeout)
+        self.waitForThread(max(0.0, deadline - time.time()))
         self.server_thread = None
         mlogger.debug("Routes server stopped | %s", self)
