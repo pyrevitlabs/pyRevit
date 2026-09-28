@@ -189,6 +189,10 @@ t.Commit()
 Rules the host enforces:
 
 - A query that changes the model fails with `query_modified_model` and is rolled back.
+- A run in any mode that changes another open document fails with `other_document_modified`
+  and is rolled back. `changes.other_documents` lists what changed. Documents the script opens
+  itself during the run, such as a family from `EditFamily`, are reported there but don't fail
+  the run, and aren't rolled back.
 - A script error rolls back everything, and the traceback points at the script's own lines.
   When a Revit call throws, the message carries the underlying .NET exception and its
   inner exceptions (`[.NET: Autodesk.Revit.Exceptions.… <- …]`), not only the generic
@@ -345,10 +349,13 @@ Every run executes in one ExternalEvent callback on the Revit main thread:
       `DocumentSynchronizingWithCentral` are cancelled.
     - `DialogBoxShowing` is captured and dismissed.
     - `FailuresProcessing` warnings are recorded and deleted.
-    - `DocumentChanged` collects added, modified and deleted ids.
-2. **`TransactionGroup.Start("Agent: <title>")`**.
+    - `DocumentChanged` collects added, modified and deleted ids, per document.
+2. **`TransactionGroup.Start("Agent: <title>")`** on the active document and on every other
+   open, editable, non-linked document.
 3. **Run the script.** Its own transactions nest inside the group.
 4. **Decide:**
+    - **any mode**, another open document changed: roll back every group. The run fails
+      with `other_document_modified`. Only the active document's group is ever assimilated.
     - **query**: always roll back. A recorded change becomes a `query_modified_model` error.
     - **dry_run**: roll back and return the change set.
     - **modify** with policy `auto`: `Assimilate()` straight away. The response says

@@ -12,20 +12,27 @@ using pyRevitLabs.Json.Linq;
 
 namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <summary>
-    /// Wraps one agent run in a <see cref="TransactionGroup"/> and watches the document while
-    /// the script runs.
+    /// Wraps one agent run in a <see cref="TransactionGroup"/> per open document and watches
+    /// every document while the script runs.
     /// </summary>
     /// <remarks>
     /// While armed, the guard:
     /// <list type="bullet">
-    /// <item>records added, modified and deleted element ids from <c>DocumentChanged</c>;</item>
+    /// <item>records added, modified and deleted element ids from <c>DocumentChanged</c>, for the
+    /// active document and, separately, for every other document;</item>
+    /// <item>holds a group on every other open, editable, non-linked document, so changes a
+    /// script makes there through <c>app.Documents</c> can be rolled back;</item>
     /// <item>records failure messages, deletes warnings, and rolls back pending transactions that have errors;</item>
     /// <item>closes Revit dialogs instead of letting them block the main thread;</item>
     /// <item>cancels save, save-as, close and synchronize requests.</item>
     /// </list>
-    /// Invariant: the group must be closed before the ExternalEvent callback returns;
+    /// Invariant: only the active document's group may ever be assimilated. The groups on other
+    /// documents are always rolled back, so a run can never keep a change outside the document
+    /// the user sees and approves.
+    /// Invariant: every group must be closed before the ExternalEvent callback returns;
     /// Revit doesn't allow an open group to outlive the callback. <see cref="Dispose"/> rolls back
     /// anything still open and always unsubscribes every handler.
+    /// Documents the script opens during the run have no group; their changes are only reported.
     /// </remarks>
     internal sealed class AgentRunGuard : IDisposable {
         private const int MaxRecordedEntries = 200;
@@ -37,6 +44,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private readonly JArray failures = new JArray();
         private readonly JArray dialogs = new JArray();
         private readonly JArray blocked = new JArray();
+        private readonly List<AgentOtherDocument> others = new List<AgentOtherDocument>();
         private TransactionGroup group;
         private bool documentEventsArmed;
         private bool dialogCaptureArmed;
@@ -52,6 +60,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public JArray Dialogs => dialogs;
         public JArray Blocked => blocked;
         public bool HasOpenGroup => group != null && group.HasStarted() && !group.HasEnded();
+
+        /// <summary>
+        /// True when the script changed a document that was already open when the run started.
+        /// Those changes are outside what the run may keep, so the run must fail.
+        /// </summary>
+        public bool ChangedOtherOpenDocument => others.Any(other => !other.OpenedDuringRun && !other.Changes.IsEmpty);
+
+        public bool LeftTransactionOpenInOtherDocument => others.Any(other => other.HasOpenTransaction);
 
         /// <summary>
         /// Transactions Revit rolled back during the run because of error-level failures.
@@ -71,6 +87,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
             uiApp.DialogBoxShowing += OnDialogBoxShowing;
             dialogCaptureArmed = true;
+
+            foreach (Document other in app.Documents) {
+                if (other.IsLinked || IsWatchedDocument(other))
+                    continue;
+                var tracked = new AgentOtherDocument(other, openedDuringRun: false);
+                tracked.StartGroup(groupName);
+                others.Add(tracked);
+            }
 
             if (doc.IsReadOnly)
                 return;
@@ -93,11 +117,25 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public void RollBack() {
             if (HasOpenGroup)
                 group.RollBack();
+            RollBackOtherDocuments();
         }
 
         public void Assimilate() {
             if (HasOpenGroup)
                 group.Assimilate();
+            RollBackOtherDocuments();
+        }
+
+        /// <summary>
+        /// Describes every other document the script changed. Call it before rolling back.
+        /// </summary>
+        public JArray DescribeOtherDocuments() {
+            return new JArray(others.Where(other => !other.Changes.IsEmpty).Select(other => other.Describe()));
+        }
+
+        private void RollBackOtherDocuments() {
+            foreach (var other in others)
+                other.RollBack();
         }
 
         public void Dispose() {
@@ -110,6 +148,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             finally {
                 group?.Dispose();
                 group = null;
+                foreach (var other in others)
+                    other.Dispose();
                 DisarmDialogCapture();
                 if (documentEventsArmed) {
                     app.DocumentChanged -= OnDocumentChanged;
@@ -124,9 +164,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private void OnDocumentChanged(object sender, DocumentChangedEventArgs e) {
-            if (!IsWatchedDocument(e.GetDocument()))
-                return;
-            changes.Record(e);
+            var changed = e.GetDocument();
+            if (IsWatchedDocument(changed))
+                changes.Record(e);
+            else if (changed != null)
+                TrackOther(changed).Changes.Record(e);
+        }
+
+        private AgentOtherDocument TrackOther(Document other) {
+            var tracked = others.FirstOrDefault(candidate => candidate.Document.Equals(other));
+            if (tracked == null) {
+                tracked = new AgentOtherDocument(other, openedDuringRun: true);
+                others.Add(tracked);
+            }
+            return tracked;
         }
 
         private void OnFailuresProcessing(object sender, FailuresProcessingEventArgs e) {
@@ -218,6 +269,70 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     }
 
     /// <summary>
+    /// A document other than the active one, watched for the length of one agent run.
+    /// </summary>
+    internal sealed class AgentOtherDocument : IDisposable {
+        private TransactionGroup group;
+
+        public AgentOtherDocument(Document document, bool openedDuringRun) {
+            Document = document;
+            OpenedDuringRun = openedDuringRun;
+            Title = document.Title;
+        }
+
+        public Document Document { get; }
+        public bool OpenedDuringRun { get; }
+        public string Title { get; }
+        public AgentChangeSet Changes { get; } = new AgentChangeSet();
+
+        public bool HasOpenTransaction => Document.IsValidObject && Document.IsModifiable;
+
+        private bool HasOpenGroup => group != null && group.HasStarted() && !group.HasEnded();
+
+        /// <summary>
+        /// Opens a group when the document can take one; a read-only document or one with a
+        /// transaction already open is left unguarded.
+        /// </summary>
+        public void StartGroup(string groupName) {
+            if (Document.IsReadOnly || Document.IsModifiable)
+                return;
+            try {
+                group = new TransactionGroup(Document, groupName);
+                group.Start();
+            }
+            catch (Exception) {
+                group?.Dispose();
+                group = null;
+            }
+        }
+
+        public void RollBack() {
+            if (HasOpenGroup)
+                group.RollBack();
+        }
+
+        public JObject Describe() {
+            var description = Changes.Summarize();
+            description["document"] = Title;
+            description["opened_during_run"] = OpenedDuringRun;
+            description["rolled_back"] = group != null;
+            return description;
+        }
+
+        public void Dispose() {
+            try {
+                RollBack();
+            }
+            catch (Exception) {
+            }
+            finally {
+                group?.Dispose();
+                group = null;
+            }
+        }
+    }
+
+    /// <summary>
     /// Element ids touched during one agent run, accumulated across every transaction the
     /// script commits inside the run's group.
     /// </summary>
@@ -253,15 +368,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// added and modified elements no longer exist in their changed form after a rollback.
         /// </summary>
         public JObject Describe(Document doc, int maxSamples) {
+            var description = Summarize();
+            description["by_category"] = CountByCategory(doc);
+            description["added"] = DescribeElements(doc, added, maxSamples);
+            description["modified"] = DescribeElements(doc, modified, maxSamples);
+            description["deleted"] = new JArray(deleted.Take(maxSamples).Select(AgentIds.ToValue));
+            return description;
+        }
+
+        public JObject Summarize() {
             return new JObject {
                 ["added_count"] = added.Count,
                 ["modified_count"] = modified.Count,
                 ["deleted_count"] = deleted.Count,
                 ["transactions"] = new JArray(transactions.Distinct()),
-                ["by_category"] = CountByCategory(doc),
-                ["added"] = DescribeElements(doc, added, maxSamples),
-                ["modified"] = DescribeElements(doc, modified, maxSamples),
-                ["deleted"] = new JArray(deleted.Take(maxSamples).Select(AgentIds.ToValue)),
             };
         }
 

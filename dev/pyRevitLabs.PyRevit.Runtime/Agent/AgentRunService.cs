@@ -25,6 +25,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <item>A modify run changes the model only after the user approves it in Revit, unless the
     /// <c>[agent] policy</c> is <c>auto</c>, the user's explicit opt-in to skip the prompt.</item>
     /// <item>A script error always rolls back.</item>
+    /// <item>A run that changes any document other than the active one fails and rolls back,
+    /// whatever its mode and the policy.</item>
     /// </list>
     /// Every run writes <c>script.py</c>, <c>request.json</c> and <c>response.json</c> under
     /// <c>%APPDATA%\pyRevit\agent\runs\</c>.
@@ -70,7 +72,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     guard.Arm("Agent: " + request.Title);
                     var exitCode = AgentScriptRunner.Execute(context, request, runDir, AgentHost.SearchPaths);
 
-                    var transactionLeftOpen = doc.IsModifiable;
+                    var transactionLeftOpen = doc.IsModifiable || guard.LeftTransactionOpenInOtherDocument;
                     if (guard.ErrorRollbacks > 0 && !context.HasError)
                         context.SetError(
                             "revit_failure",
@@ -79,6 +81,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                             + "(for example an opening wider than its host wall) and run again.",
                             null);
                     var changes = guard.Changes.Describe(doc, MaxChangeSamples);
+                    var otherDocuments = guard.DescribeOtherDocuments();
+                    if (otherDocuments.Count > 0)
+                        changes["other_documents"] = otherDocuments;
                     var status = "ok";
                     string decision;
 
@@ -93,6 +98,15 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         decision = "rolled_back";
                         SetErrorIfMissing(context, "engine_error",
                             "The script engine failed with exit code " + exitCode + ". Check the pyRevit log.");
+                        guard.RollBack();
+                    }
+                    else if (guard.ChangedOtherOpenDocument) {
+                        status = "error";
+                        decision = "rolled_back";
+                        context.SetError("other_document_modified",
+                            "The script changed another open document. Agent runs may change only the active "
+                            + "document; every change was rolled back. See 'changes.other_documents'.",
+                            null);
                         guard.RollBack();
                     }
                     else if (request.Mode == AgentRunMode.Query) {
