@@ -52,6 +52,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         [DllImport("user32.dll")]
         private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
 
+        [StructLayout(LayoutKind.Sequential)]
+        private struct NativeRect {
+            public int Left;
+            public int Top;
+            public int Right;
+            public int Bottom;
+        }
+
+        [DllImport("user32.dll")]
+        private static extern bool GetWindowRect(IntPtr window, out NativeRect rect);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr SetThreadDpiAwarenessContext(IntPtr dpiContext);
+
         private static readonly Dictionary<string, XYZ> Directions = new Dictionary<string, XYZ>(StringComparer.OrdinalIgnoreCase) {
             ["southeast"] = new XYZ(-1, 1, -1),
             ["southwest"] = new XYZ(1, 1, -1),
@@ -274,21 +288,89 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
             uidoc.RefreshActiveView();
             var rectangle = uiView.GetWindowRectangle();
-            var width = rectangle.Right - rectangle.Left;
-            var height = rectangle.Bottom - rectangle.Top;
-            if (width <= 0 || height <= 0)
+            if (rectangle.Right <= rectangle.Left || rectangle.Bottom <= rectangle.Top)
                 throw new AgentException("capture_failed", "The view window has no visible area; is Revit minimized?");
-            if (IsCoveredByOtherProcess(rectangle.Left, rectangle.Top, rectangle.Right, rectangle.Bottom))
-                throw new AgentException("view_obscured",
-                    $"Another application's window covers view '{view.Name}', so a screen capture would show it "
-                    + "instead of the model; use mode 'export', or ask the user to bring Revit to the front.");
 
-            using (var bitmap = new Bitmap(width, height, PixelFormat.Format24bppRgb))
-            using (var graphics = Graphics.FromImage(bitmap)) {
-                graphics.CopyFromScreen(rectangle.Left, rectangle.Top, 0, 0, new Size(width, height));
-                bitmap.Save(path, ImageFormat.Png);
+            using (var screen = PhysicalScreen.Enter(uidoc.Application.MainWindowHandle)) {
+                var left = screen.X(rectangle.Left);
+                var top = screen.Y(rectangle.Top);
+                var right = screen.X(rectangle.Right);
+                var bottom = screen.Y(rectangle.Bottom);
+                if (IsCoveredByOtherProcess(left, top, right, bottom))
+                    throw new AgentException("view_obscured",
+                        $"Another application's window covers view '{view.Name}', so a screen capture would show it "
+                        + "instead of the model; use mode 'export', or ask the user to bring Revit to the front.");
+
+                using (var bitmap = new Bitmap(right - left, bottom - top, PixelFormat.Format24bppRgb))
+                using (var graphics = Graphics.FromImage(bitmap)) {
+                    graphics.CopyFromScreen(left, top, 0, 0, new Size(right - left, bottom - top));
+                    bitmap.Save(path, ImageFormat.Png);
+                }
             }
             return path;
+        }
+
+        /// <summary>
+        /// Switches the calling thread to per-monitor DPI awareness and maps Revit's window
+        /// coordinates to physical screen pixels until disposed.
+        /// </summary>
+        /// <remarks>
+        /// Revit is system-DPI aware, so on a monitor scaled differently from the primary one
+        /// Windows stretches its window and the Revit API reports coordinates in the stretched,
+        /// logical space. Screen copies and <c>WindowFromPoint</c> need physical pixels, or they
+        /// read the wrong part of the screen. The mapping is the affine one between the main
+        /// window's rectangle measured in both modes, so it holds while Revit sits on one monitor.
+        /// Invariant: the thread's previous DPI awareness is restored on dispose; Revit's main
+        /// thread must not keep per-monitor awareness after the capture.
+        /// On Windows builds without per-thread DPI awareness, coordinates pass through unchanged.
+        /// </remarks>
+        private sealed class PhysicalScreen : IDisposable {
+            private static readonly IntPtr PerMonitorAwareV2 = new IntPtr(-4);
+
+            private readonly IntPtr previousContext;
+            private readonly NativeRect logical;
+            private readonly NativeRect physical;
+
+            private PhysicalScreen(IntPtr previousContext, NativeRect logical, NativeRect physical) {
+                this.previousContext = previousContext;
+                this.logical = logical;
+                this.physical = physical;
+            }
+
+            public static PhysicalScreen Enter(IntPtr mainWindow) {
+                GetWindowRect(mainWindow, out var logical);
+                IntPtr previous;
+                try {
+                    previous = SetThreadDpiAwarenessContext(PerMonitorAwareV2);
+                }
+                catch (EntryPointNotFoundException) {
+                    previous = IntPtr.Zero;
+                }
+                if (previous == IntPtr.Zero)
+                    return new PhysicalScreen(IntPtr.Zero, logical, logical);
+
+                GetWindowRect(mainWindow, out var physical);
+                return new PhysicalScreen(previous, logical, physical);
+            }
+
+            public int X(int logicalX) =>
+                Map(logicalX, logical.Left, logical.Right, physical.Left, physical.Right);
+
+            public int Y(int logicalY) =>
+                Map(logicalY, logical.Top, logical.Bottom, physical.Top, physical.Bottom);
+
+            public void Dispose() {
+                if (previousContext != IntPtr.Zero)
+                    SetThreadDpiAwarenessContext(previousContext);
+            }
+
+            private static int Map(int value, int logicalStart, int logicalEnd, int physicalStart, int physicalEnd) {
+                var logicalSpan = logicalEnd - logicalStart;
+                if (logicalSpan <= 0)
+                    return value;
+                var scale = (physicalEnd - physicalStart) / (double)logicalSpan;
+                return physicalStart + (int)Math.Round((value - logicalStart) * scale);
+            }
         }
 
         private static bool IsCoveredByOtherProcess(int left, int top, int right, int bottom) {
