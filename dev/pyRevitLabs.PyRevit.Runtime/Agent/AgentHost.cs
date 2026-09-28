@@ -36,6 +36,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private static List<string> searchPaths = new List<string>();
         private static string revitVersion = string.Empty;
         private static bool exitHandlerRegistered;
+        private static string configWatchedPath;
         private static DateTime configLastWrite = DateTime.MinValue;
 
         public static string PipeName => "pyrevit-agent-" + Process.GetCurrentProcess().Id;
@@ -69,8 +70,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         /// <summary>
-        /// Drops the process-wide config cache when the config file changed on disk since the
-        /// last check, so settings changed from outside Revit (<c>pyrevit configs agent policy</c>)
+        /// Drops the process-wide config cache when the loaded config file changed on disk since
+        /// the last check, so settings changed from outside Revit (<c>pyrevit configs agent policy</c>)
         /// apply to the next agent request instead of the next pyRevit reload.
         /// </summary>
         /// <remarks>
@@ -79,11 +80,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         /// </remarks>
         internal static void RefreshConfigIfChanged() {
             try {
-                var configPath = PyRevitConsts.ConfigFilePath;
+                var configPath = PyRevitConfigs.GetLoadedConfigFilePath();
                 var lastWrite = File.Exists(configPath) ? File.GetLastWriteTimeUtc(configPath) : DateTime.MinValue;
                 lock (sync) {
-                    if (lastWrite == configLastWrite)
+                    if (configPath == configWatchedPath && lastWrite == configLastWrite)
                         return;
+                    configWatchedPath = configPath;
                     configLastWrite = lastWrite;
                 }
                 PyRevitConfigs.ReloadConfig();

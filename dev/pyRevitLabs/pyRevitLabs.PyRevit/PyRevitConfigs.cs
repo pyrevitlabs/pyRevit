@@ -49,6 +49,16 @@ namespace pyRevitLabs.PyRevit {
         public static void ReloadConfig() => PyRevitConfigService.Reload();
 
         /// <summary>
+        /// Returns the file the shared config service reads, building the service first if
+        /// needed. Unlike <see cref="PyRevitConsts.ConfigFilePath"/>, this is the local clone
+        /// config when one is active, so it is the file to watch for outside edits.
+        /// </summary>
+        public static string GetLoadedConfigFilePath() {
+            GetConfigFile();
+            return PyRevitConfigService.LoadedConfigPath ?? PyRevitConsts.ConfigFilePath;
+        }
+
+        /// <summary>
         /// Writes the disabled flag for shipped extensions whose definition sets
         /// default_enabled=false, so freshly installed clones honor the shipped
         /// default. An existing entry is never overwritten, preserving any explicit
