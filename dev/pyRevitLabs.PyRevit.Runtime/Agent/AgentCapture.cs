@@ -5,6 +5,7 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
@@ -21,8 +22,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <item><c>export</c> renders a view through <see cref="Document.ExportImage"/>. It works for any
     /// view, open or not, and doesn't depend on the Revit window.</item>
     /// <item><c>screen</c> copies the active view's window from the screen: exactly what the user
-    /// sees, including selection and temporary hide/isolate, and blank if Revit is minimized or
-    /// covered.</item>
+    /// sees, including selection and temporary hide/isolate. It fails with <c>view_obscured</c>
+    /// when another application's window covers the view, so it never returns that
+    /// application's pixels. Revit's own floating windows over the view are captured as seen.</item>
     /// </list>
     /// The <c>3d</c> view is a temporary isometric view created inside a transaction group that is
     /// always rolled back. It shows model categories only, looks from <c>direction</c>, and has a
@@ -36,6 +38,19 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private const int MaxWidth = 2400;
 
         private const double SectionBoxPadding = 2.0;
+        private const int CoverageProbeInset = 4;
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct NativePoint {
+            public int X;
+            public int Y;
+        }
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr WindowFromPoint(NativePoint point);
+
+        [DllImport("user32.dll")]
+        private static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
 
         private static readonly Dictionary<string, XYZ> Directions = new Dictionary<string, XYZ>(StringComparer.OrdinalIgnoreCase) {
             ["southeast"] = new XYZ(-1, 1, -1),
@@ -263,6 +278,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var height = rectangle.Bottom - rectangle.Top;
             if (width <= 0 || height <= 0)
                 throw new AgentException("capture_failed", "The view window has no visible area; is Revit minimized?");
+            if (IsCoveredByOtherProcess(rectangle.Left, rectangle.Top, rectangle.Right, rectangle.Bottom))
+                throw new AgentException("view_obscured",
+                    $"Another application's window covers view '{view.Name}', so a screen capture would show it "
+                    + "instead of the model; use mode 'export', or ask the user to bring Revit to the front.");
 
             using (var bitmap = new Bitmap(width, height, PixelFormat.Format24bppRgb))
             using (var graphics = Graphics.FromImage(bitmap)) {
@@ -270,6 +289,23 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 bitmap.Save(path, ImageFormat.Png);
             }
             return path;
+        }
+
+        private static bool IsCoveredByOtherProcess(int left, int top, int right, int bottom) {
+            var revitProcessId = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
+            var centerX = (left + right) / 2;
+            var centerY = (top + bottom) / 2;
+            var probes = new[] {
+                new NativePoint { X = centerX, Y = centerY },
+                new NativePoint { X = left + CoverageProbeInset, Y = top + CoverageProbeInset },
+                new NativePoint { X = right - CoverageProbeInset, Y = top + CoverageProbeInset },
+                new NativePoint { X = left + CoverageProbeInset, Y = bottom - CoverageProbeInset },
+                new NativePoint { X = right - CoverageProbeInset, Y = bottom - CoverageProbeInset },
+            };
+            return probes.Any(probe => {
+                GetWindowThreadProcessId(WindowFromPoint(probe), out var owner);
+                return owner != revitProcessId;
+            });
         }
 
         private static void ScaleDown(string path, int maxWidth, out int width, out int height) {

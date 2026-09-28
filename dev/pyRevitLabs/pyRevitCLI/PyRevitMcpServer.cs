@@ -455,7 +455,8 @@ namespace pyRevitCLI {
                 Tool("capture_view",
                     "Take a PNG of a Revit view to check your work visually. mode 'export' (default) renders the view "
                     + "through Revit and works for any view by name or id. mode 'screen' captures the active view's window "
-                    + "exactly as the user sees it, including selection and temporary isolate. view '3d' renders a temporary "
+                    + "exactly as the user sees it, including selection and temporary isolate; it fails with view_obscured "
+                    + "when another application covers the view. view '3d' renders a temporary "
                     + "3D view of model categories only, framed by a section box around the whole model or around 'elements', "
                     + "seen from 'direction' (never saved). The image is also saved under "
                     + "%APPDATA%\\pyRevit\\agent\\captures for the user.",
