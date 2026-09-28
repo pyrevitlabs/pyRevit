@@ -17,6 +17,7 @@ printed off a worker thread is what terminated the process.
 """
 
 import sys
+import threading
 import unittest
 
 from pyrevit.coreutils import envvars
@@ -100,6 +101,18 @@ class _StubHttpServer(object):
             raise self.close_error
 
 
+class _UnacknowledgedHttpServer(_StubHttpServer):
+    """ThreadedHttpServer stand-in whose shutdown never returns on its own."""
+
+    def __init__(self):
+        _StubHttpServer.__init__(self)
+        self.release = threading.Event()
+
+    def shutdown(self):
+        _StubHttpServer.shutdown(self)
+        self.release.wait(30)
+
+
 class RoutesServerStopTests(unittest.TestCase):
     """Tests for RoutesServer.stop, which runs on the session reload thread."""
 
@@ -168,6 +181,29 @@ class RoutesServerStopTests(unittest.TestCase):
 
         self.assertEqual(0, instance.server.shutdown_calls)
         self.assertEqual(1, instance.server.close_calls)
+
+    def test_stop_gives_up_on_a_loop_that_never_acknowledges(self):
+        """A shutdown that never returns must not hold the reload.
+
+        BaseServer.shutdown blocks until the accept loop acknowledges, with no
+        timeout of its own, so a wedged loop would keep the port bound and the
+        registration alive - the reload would never finish. The wait is bounded
+        instead, and the port is released on the way out either way.
+        """
+        http_server = _UnacknowledgedHttpServer()
+        instance = self._make_routes_server(http_server=http_server)
+
+        try:
+            instance.stop(timeout=0.05)
+
+            self.assertEqual(1, http_server.close_calls)
+            self.assertIsNone(instance.server_thread)
+            self.assertTrue(
+                self.logger.has_errors(),
+                "a loop that outlives the wait is reported, not silently dropped",
+            )
+        finally:
+            http_server.release.set()
 
     def test_stop_does_not_wait_on_a_server_that_never_started(self):
         """A server whose accept loop never started must still be releasable."""

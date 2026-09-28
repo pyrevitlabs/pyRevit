@@ -443,20 +443,49 @@ class RoutesServer(object):
                 timeout,
             )
 
+    def request_shutdown(self, timeout):
+        """Ask the accept loop to stop, without waiting on it indefinitely.
+
+        ``BaseServer.shutdown`` sets the shutdown flag and then blocks until the
+        accept loop acknowledges it, with no timeout of its own. That wait is
+        the one unbounded step left in a teardown the host runs on a worker
+        thread, so it is issued on its own daemon thread and given the same
+        bound as the join that follows. A loop that never acknowledges is
+        abandoned rather than waited for: the thread is a daemon, and the socket
+        is closed on the way out either way, which is what stops a wedged loop
+        in the end.
+
+        Args:
+            timeout (float): seconds to wait for the loop to acknowledge.
+        """
+        requester = threading.Thread(target=self.server.shutdown)
+        requester.daemon = True
+        requester.start()
+        requester.join(timeout)
+        if requester.is_alive():
+            mlogger.error(
+                "Routes accept loop on port %s did not acknowledge shutdown within "
+                "%s seconds",
+                self.port,
+                timeout,
+            )
+
     def stop(self, timeout=5.0):
-        """Stop serving and release the port. Never raises.
+        """Stop serving and release the port. Never raises, never waits forever.
 
         This runs while a session is being reloaded or torn down, so a failure
         here would be reported through the output console and, unhandled on a
         worker thread, terminate Revit (see ``ThreadedHttpServer``). Every
-        failure is logged instead.
+        failure is logged instead, and every wait is bounded - the shutdown
+        request, then the join - so a wedged accept loop delays the reload by at
+        most ``timeout`` instead of hanging it.
 
         Args:
             timeout (float): seconds to wait for the accept loop to finish.
         """
         try:
             if self.is_running:
-                self.server.shutdown()
+                self.request_shutdown(timeout)
         except Exception:
             mlogger.error("Routes server shutdown failed | %s", traceback.format_exc())
 
