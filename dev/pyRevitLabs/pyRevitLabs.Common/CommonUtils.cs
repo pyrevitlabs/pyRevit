@@ -291,7 +291,7 @@ namespace pyRevitLabs.Common {
 
         public static void OpenUrl(string url, string logErrMsg = null) {
             if (CheckInternetConnection()) {
-                if (!Regex.IsMatch(url, @"'^https*://'"))
+                if (!Regex.IsMatch(url, @"^https?://"))
                     url = "http://" + url;
                 logger.Debug("Opening {0}", url);
                 Process.Start(url);

@@ -22,5 +22,6 @@
     <ProjectReference Include="..\pyRevitLabs.Common\pyRevitLabs.Common.csproj" />
     <ProjectReference Include="..\pyRevitLabs.pyRevit\pyRevitLabs.PyRevit.csproj" />
     <ProjectReference Include="..\pyRevitLabs.TargetApps.Revit\pyRevitLabs.TargetApps.Revit.csproj" />
+    <ProjectReference Include="..\pyRevitLabs.PyRevit.Runtime.Shared\pyRevitLabs.PyRevit.Runtime.Shared.csproj" />
   </ItemGroup>
 </Project>

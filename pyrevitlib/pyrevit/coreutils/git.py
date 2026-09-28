@@ -153,7 +153,19 @@ def _make_pull_signature():
 
 def _process_git_error(exception_err):
     exception_msg = safe_strtype(exception_err)
-    if "401" in exception_msg:
+    # libgit2 reports a missing or rejected authentication callback with its own
+    # wording rather than a 401. Left untranslated it reads like a libgit2
+    # internal, sends the user looking at the wrong thing, and hides the real
+    # cause: a token that is absent, expired, or stored under a different
+    # Windows profile. Map every authentication-shaped message onto the one
+    # exception the callers already know how to report.
+    auth_markers = (
+        "401",
+        "remote authentication required but no callback set",
+        "too many redirects or authentication replays",
+        "credentials could not be read",
+    )
+    if any(marker in exception_msg for marker in auth_markers):
         raise PyRevitGitAuthenticationError(exception_msg)
     else:
         raise PyRevitException(exception_msg)
