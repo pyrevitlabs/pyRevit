@@ -286,7 +286,6 @@ namespace pyRevitLabs.PyRevit {
             cfg.SaveSection(new RoutesSection() { LoadCoreApi = state });
         }
 
-        // agent
         public static bool GetAgentEnabled() {
             IConfigurationService cfg = GetConfigFile();
             return cfg.GetSectionKeyValueOrDefault(

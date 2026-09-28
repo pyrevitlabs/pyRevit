@@ -28,7 +28,6 @@ namespace pyRevitCLI {
         public const string McpServerName = "pyrevit";
         private static readonly Encoding Utf8 = new UTF8Encoding(false);
 
-        // pyrevit agent ================================================================================
         public static void PrintStatus(bool json) {
             var instances = PyRevitAgentClient.GetInstances();
             if (json) {
@@ -123,7 +122,6 @@ namespace pyRevitCLI {
             }
         }
 
-        // pyrevit configs agent ========================================================================
         public static void ConfigureEnabled(bool? enable) {
             if (enable.HasValue) {
                 PyRevitConfigs.SetAgentEnabled(enable.Value);
@@ -148,7 +146,6 @@ namespace pyRevitCLI {
                 Console.WriteLine("Agent default engine: " + PyRevitConfigs.GetAgentEngine());
         }
 
-        // pyrevit mcp install / uninstall =============================================================
         /// <summary>
         /// Registers <c>pyrevit mcp</c> with an MCP client and enables the agent host.
         /// </summary>

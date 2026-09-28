@@ -111,7 +111,6 @@ namespace pyRevitCLI {
             };
         }
 
-        // tools ============================================================================================
         private void CallTool(JToken id, JObject parameters) {
             var name = parameters.Value<string>("name");
             var arguments = parameters["arguments"] as JObject ?? new JObject();
@@ -299,7 +298,6 @@ namespace pyRevitCLI {
             return File.Exists(path) ? File.ReadAllText(path) : null;
         }
 
-        // progress =========================================================================================
         private IDisposable StartProgress(JToken progressToken) {
             if (progressToken == null)
                 return null;
@@ -319,7 +317,6 @@ namespace pyRevitCLI {
             }, null, ProgressInterval, ProgressInterval);
         }
 
-        // protocol helpers =================================================================================
         private void Write(JObject message) {
             var text = message.ToString(Formatting.None);
             lock (writeLock)
@@ -360,7 +357,6 @@ namespace pyRevitCLI {
             };
         }
 
-        // tool catalog =====================================================================================
         private static JArray ToolDefinitions() {
             var revitProperty = new JObject {
                 ["type"] = "string",

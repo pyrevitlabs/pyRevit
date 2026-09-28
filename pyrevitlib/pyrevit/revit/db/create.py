@@ -1,4 +1,13 @@
-"""Database objects creation functions."""
+"""Database objects creation functions.
+
+The model, view and drawing helpers accept points as ``DB.XYZ`` or
+``(x, y[, z])`` tuples, and lengths as feet or as strings that
+``units.parse_length`` reads, such as ``32'-6"`` or ``900mm``.
+
+Note:
+    Every helper that changes the document must be called inside a
+    transaction.
+"""
 
 import math
 import sys
@@ -623,11 +632,6 @@ def create_param_value_filter(
         doc, filter_name, framework.to_clr_list(DB.ElementId, filter_cats), rules
     )
 
-
-# model and view creation ----------------------------------------------------
-# Points may be DB.XYZ or (x, y[, z]) tuples; lengths may be feet or strings
-# that units.parse_length reads, such as 32'-6" or 900mm. Every function here
-# changes the document, so call it inside a transaction.
 
 ELEVATION_SIDES = {
     "south": (0.0, -1.0),
@@ -1573,8 +1577,6 @@ def create_elevation_view(
         "no view slot facing that way.".format(side)
     )
 
-
-# drawings --------------------------------------------------------------------
 
 SHEET_ANCHORS = ("top_left", "top_right", "bottom_left", "bottom_right", "center")
 
