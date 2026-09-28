@@ -17,10 +17,14 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// Serves <c>capture</c>: a PNG of a view, so an agent can check what it built.
     /// </summary>
     /// <remarks>
-    /// Two modes:
+    /// Three modes:
     /// <list type="bullet">
     /// <item><c>export</c> renders a view through <see cref="Document.ExportImage"/>. It works for any
     /// view, open or not, and doesn't depend on the Revit window.</item>
+    /// <item><c>viewport</c> renders an open view through the same export, cropped to the region
+    /// its window shows right now, so the image matches the user's zoom and pan without reading
+    /// the screen. The crop happens in a transaction group that is always rolled back. It shows
+    /// no selection highlight.</item>
     /// <item><c>screen</c> copies the active view's window from the screen: exactly what the user
     /// sees, including selection and temporary hide/isolate. It fails with <c>view_obscured</c>
     /// when another application's window covers the view, so it never returns that
@@ -88,8 +92,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         public static Request Parse(JObject parameters) {
             var mode = (parameters.Value<string>("mode") ?? "export").ToLowerInvariant();
-            if (mode != "export" && mode != "screen")
-                throw new AgentException("invalid_params", "'mode' must be export or screen.");
+            if (mode != "export" && mode != "viewport" && mode != "screen")
+                throw new AgentException("invalid_params", "'mode' must be export, viewport or screen.");
 
             var width = parameters.Value<int?>("width") ?? DefaultWidth;
             var direction = parameters.Value<string>("direction") ?? "southeast";
@@ -120,6 +124,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (request.Mode == "screen") {
                 captured = ResolveView(doc, uidoc, request.View);
                 path = CaptureScreen(uidoc, captured, Path.Combine(directory, baseName + ".png"));
+            }
+            else if (request.Mode == "viewport") {
+                captured = ResolveView(doc, uidoc, request.View);
+                path = ExportViewport(uidoc, captured, directory, baseName, request.Width);
             }
             else if (string.Equals(request.View, "3d", StringComparison.OrdinalIgnoreCase)) {
                 captured = null;
@@ -188,6 +196,65 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 .OrderByDescending(File.GetLastWriteTimeUtc)
                 .FirstOrDefault()
                 ?? throw new AgentException("capture_failed", $"Revit did not write an image for view '{view.Name}'.");
+        }
+
+        private static string ExportViewport(UIDocument uidoc, View view, string directory, string baseName, int width) {
+            var doc = uidoc.Document;
+            if (view is ViewSheet || view is ViewSchedule || (view is View3D view3D && view3D.IsPerspective))
+                throw new AgentException("view_not_supported",
+                    $"View '{view.Name}' ({view.ViewType}) can't be cropped to its on-screen region; use mode 'export' or 'screen'.");
+            if (doc.IsReadOnly)
+                throw new AgentException("document_read_only", "Mode 'viewport' crops the view temporarily, which a read-only document doesn't allow.");
+            var uiView = uidoc.GetOpenUIViews().FirstOrDefault(open => open.ViewId == view.Id)
+                ?? throw new AgentException("view_not_open", $"View '{view.Name}' is not open in Revit; use mode 'export' or open the view.");
+
+            var corners = uiView.GetZoomCorners();
+            using (var group = new TransactionGroup(doc, "pyRevit Agent capture")) {
+                group.Start();
+                try {
+                    using (var transaction = new Transaction(doc, "pyRevit Agent crop to viewport")) {
+                        transaction.Start();
+                        CropToCorners(view, corners[0], corners[1]);
+                        transaction.Commit();
+                    }
+                    return ExportView(doc, view, directory, baseName, width);
+                }
+                catch (Autodesk.Revit.Exceptions.ApplicationException ex) {
+                    throw new AgentException("capture_failed",
+                        $"View '{view.Name}' could not be cropped to its on-screen region: {ex.Message} Use mode 'export' or 'screen'.");
+                }
+                finally {
+                    if (group.HasStarted() && !group.HasEnded())
+                        group.RollBack();
+                }
+            }
+        }
+
+        /// <remarks>
+        /// The zoom corners are model points; the crop box lives in its own coordinate system,
+        /// so they are mapped through the inverse of its transform. A scope box or a
+        /// non-rectangular crop would override or reject the new box, so both are released
+        /// first; the caller's rollback restores them.
+        /// </remarks>
+        private static void CropToCorners(View view, XYZ first, XYZ second) {
+            var scopeBox = view.get_Parameter(BuiltInParameter.VIEWER_VOLUME_OF_INTEREST_CROP);
+            if (scopeBox != null && !scopeBox.IsReadOnly && scopeBox.AsElementId() != ElementId.InvalidElementId)
+                scopeBox.Set(ElementId.InvalidElementId);
+            var shapes = view.GetCropRegionShapeManager();
+            if (shapes != null && shapes.ShapeSet)
+                shapes.RemoveCropRegionShape();
+
+            var crop = view.CropBox;
+            var toCrop = crop.Transform.Inverse;
+            var a = toCrop.OfPoint(first);
+            var b = toCrop.OfPoint(second);
+            view.CropBoxActive = true;
+            view.CropBoxVisible = false;
+            view.CropBox = new BoundingBoxXYZ {
+                Transform = crop.Transform,
+                Min = new XYZ(Math.Min(a.X, b.X), Math.Min(a.Y, b.Y), crop.Min.Z),
+                Max = new XYZ(Math.Max(a.X, b.X), Math.Max(a.Y, b.Y), crop.Max.Z),
+            };
         }
 
         private static string ExportTemporary3D(Document doc, string directory, string baseName, Request request) {

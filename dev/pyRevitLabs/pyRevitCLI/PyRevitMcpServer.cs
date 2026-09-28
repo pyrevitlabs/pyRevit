@@ -458,7 +458,9 @@ namespace pyRevitCLI {
 
                 Tool("capture_view",
                     "Take a PNG of a Revit view to check your work visually. mode 'export' (default) renders the view "
-                    + "through Revit and works for any view by name or id. mode 'screen' captures the active view's window "
+                    + "through Revit and works for any view by name or id. mode 'viewport' renders an open view through Revit "
+                    + "cropped to the region its window shows now: the user's zoom, pan and temporary isolate, without "
+                    + "selection highlight, and unaffected by other windows. mode 'screen' captures the active view's window "
                     + "exactly as the user sees it, including selection and temporary isolate; it fails with view_obscured "
                     + "when another application covers the view. view '3d' renders a temporary "
                     + "3D view of model categories only, framed by a section box around the whole model or around 'elements', "
@@ -471,8 +473,8 @@ namespace pyRevitCLI {
                         },
                         ["mode"] = new JObject {
                             ["type"] = "string",
-                            ["enum"] = new JArray("export", "screen"),
-                            ["description"] = "export (default) or screen.",
+                            ["enum"] = new JArray("export", "viewport", "screen"),
+                            ["description"] = "export (default), viewport or screen.",
                         },
                         ["width"] = new JObject {
                             ["type"] = "integer",

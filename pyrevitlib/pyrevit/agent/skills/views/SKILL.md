@@ -24,6 +24,8 @@ from pyrevit.revit import ui
 
 Don't create a view only to look at something: `capture_view(view="3d", elements=[...], direction="southwest")` renders a temporary 3D view of model categories, framed on those elements, and leaves nothing behind.
 
+To see what you just showed the user, call `show_elements` and then `capture_view(mode="viewport")`: it renders the active view exactly as zoomed and panned, with the temporary isolate, without depending on the Revit window. Use `mode="screen"` only when you need the selection highlight, and expect `view_obscured` if another window covers Revit.
+
 ## Finding views
 
 - `query.get_all_views(view_types=[DB.ViewType.FloorPlan])` lists views. Filter by type or name; projects have hundreds of views.
