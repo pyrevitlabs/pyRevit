@@ -270,13 +270,16 @@ class RoutesServerStartTests(unittest.TestCase):
 class _EnvVarStore(object):
     """Stand-in for the session env var holding the active routes server."""
 
-    def __init__(self):
+    def __init__(self, set_error=None):
         self.values = {}
+        self.set_error = set_error
 
     def get(self, name):
         return self.values.get(name)
 
     def set(self, name, value):
+        if self.set_error is not None:
+            raise self.set_error
         if value is None:
             self.values.pop(name, None)
         else:
@@ -286,8 +289,9 @@ class _EnvVarStore(object):
 class _StubRoutesServer(object):
     """RoutesServer stand-in whose stop can be made to fail."""
 
-    def __init__(self, stop_error=None):
+    def __init__(self, stop_error=None, is_running=True):
         self.stop_error = stop_error
+        self.is_running = is_running
         self.stop_calls = 0
 
     def stop(self):
@@ -297,6 +301,13 @@ class _StubRoutesServer(object):
 
     def __str__(self):
         return "<stub routes server>"
+
+
+class _StubServerInfo(object):
+    """serverinfo.register() result stand-in."""
+
+    server_host = "127.0.0.1"
+    server_port = 21244
 
 
 class _LifecycleTestCase(unittest.TestCase):
@@ -309,12 +320,14 @@ class _LifecycleTestCase(unittest.TestCase):
         routes.mlogger = self.logger
         self.env_vars = _EnvVarStore()
         self.unregister_calls = []
+        self.register_calls = []
         self._original_get = envvars.get_pyrevit_env_var
         self._original_set = envvars.set_pyrevit_env_var
         self._original_register = serverinfo.register
         self._original_unregister = serverinfo.unregister
         envvars.get_pyrevit_env_var = self.env_vars.get
         envvars.set_pyrevit_env_var = self.env_vars.set
+        serverinfo.register = self._register
         serverinfo.unregister = self._count_unregister
 
     def tearDown(self):
@@ -328,8 +341,19 @@ class _LifecycleTestCase(unittest.TestCase):
     def _count_unregister(self):
         self.unregister_calls.append(True)
 
+    def _register(self):
+        self.register_calls.append(True)
+        return _StubServerInfo()
+
     def _activate(self, stub_server):
         self.env_vars.set(envvars.ROUTES_SERVER, stub_server)
+
+    def _patch_routes_server_class(self, replacement):
+        """Make activate_server build `replacement` instead of a real server."""
+        original = routes_server.RoutesServer
+        routes_server.RoutesServer = lambda host, port: replacement
+        self.addCleanup(setattr, routes_server, "RoutesServer", original)
+        return replacement
 
 
 class DeactivateServerTests(_LifecycleTestCase):
@@ -363,6 +387,20 @@ class DeactivateServerTests(_LifecycleTestCase):
         routes.deactivate_server()
 
         self.assertIsNone(self.env_vars.get(envvars.ROUTES_SERVER))
+
+    def test_deactivation_deregisters_when_clearing_the_env_var_fails(self):
+        """A failing env var write must not skip the deregistration.
+
+        The deregistration is what keeps the next session from being handed this
+        server, so it cannot be the step that an earlier failure takes out.
+        """
+        self._activate(_StubRoutesServer())
+        self.env_vars.set_error = RuntimeError("the session is already gone")
+
+        routes.deactivate_server()
+
+        self.assertEqual(1, len(self.unregister_calls))
+        self.assertTrue(self.logger.has_errors())
 
     @staticmethod
     def _raise_unregister():
@@ -409,6 +447,21 @@ class ActivateServerTests(_LifecycleTestCase):
 
         self.assertIs(stub_server, routes.activate_server())
         self.assertEqual(0, stub_server.stop_calls)
+
+    def test_activation_replaces_a_server_whose_accept_loop_exited(self):
+        """A registered server that no longer accepts is torn down, not handed back.
+
+        Handing it back is the dead registration #3473 was reported for, reached
+        from the other end: the server is in the env var but nothing is listening.
+        """
+        dead_server = _StubRoutesServer(is_running=False)
+        replacement = self._patch_routes_server_class(_StubRoutesServer())
+        self._activate(dead_server)
+
+        self.assertIs(replacement, routes.activate_server())
+        self.assertEqual(1, dead_server.stop_calls)
+        self.assertEqual(1, len(self.register_calls))
+        self.assertIs(replacement, self.env_vars.get(envvars.ROUTES_SERVER))
 
     def test_init_stops_the_active_server_before_activating_again(self):
         """Every session load still stops the previous server."""

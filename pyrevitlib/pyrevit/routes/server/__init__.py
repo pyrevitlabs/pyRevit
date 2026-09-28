@@ -63,13 +63,21 @@ def activate_server():
         correct. It is not how a server survives a reload - init() still stops
         the old one on every session load.
 
+        Idempotency is only claimed of a server that is still accepting. A
+        server whose accept loop has exited is torn down and replaced, because
+        handing that one back is the same dead registration that #3473 was
+        reported for, reached from the other end.
+
     Returns:
         (RoutesServer): the active server, or None if it could not be started.
     """
     routes_server = envvars.get_pyrevit_env_var(envvars.ROUTES_SERVER)
     if routes_server:
-        mlogger.debug("Routes server already active | %s", routes_server)
-        return routes_server
+        if routes_server.is_running:
+            mlogger.debug("Routes server already active | %s", routes_server)
+            return routes_server
+        mlogger.debug("Routes server registered but not accepting | %s", routes_server)
+        deactivate_server()
     try:
         from pyrevit.routes.server import server
 
@@ -98,6 +106,10 @@ def deactivate_server():
     longer listening but is still in the env var made the next activation hand
     that dead server back instead of binding the port, so a reload silently
     lost routes.
+
+    Every step is contained, including the one that clears the env var: a
+    failure there must not skip the deregistration, which is the step that keeps
+    the next session from being handed this server.
     """
     routes_server = envvars.get_pyrevit_env_var(envvars.ROUTES_SERVER)
     if not routes_server:
@@ -107,7 +119,12 @@ def deactivate_server():
     except Exception as rs_ex:
         mlogger.error("Error stopping Routes server | %s", str(rs_ex), exc_info=True)
     finally:
-        envvars.set_pyrevit_env_var(envvars.ROUTES_SERVER, None)
+        try:
+            envvars.set_pyrevit_env_var(envvars.ROUTES_SERVER, None)
+        except Exception as env_ex:
+            mlogger.error(
+                "Error clearing Routes server env var | %s", str(env_ex), exc_info=True
+            )
         try:
             serverinfo.unregister()
         except Exception as unreg_ex:
