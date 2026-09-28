@@ -724,9 +724,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 output = GetOutput();
                 if (output == null) {
                     if (ScriptOutputUi.MayCreateOutputUi) {
-                        _pending.Clear();
-                        _pendingChars = 0;
-                        StopFlushTimer();
+                        HandOffToUiThread();
                     }
                     return false;
                 }
