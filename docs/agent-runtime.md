@@ -235,6 +235,13 @@ run on `default_engine` (the `[agent] engine` setting) unless a run passes `engi
 run response carries an `engine` field with the interpreter's own `sys.version`, which
 confirms what actually executed.
 
+`available` means a run on that engine can start. CPython finds its engine through the
+pyRevit attachment for the Revit version, so in a session pyRevit isn't attached to
+(`pyrevit attach`), CPython is `available: false` with an `unavailable_reason`, and a run
+that asks for it fails with `engine_unavailable` before any code runs. `get_context.pyrevit`
+reports `attached`, and `clone` and the IronPython `python` are null when the session
+doesn't know them, instead of `Unknown` or `0`.
+
 Syntax measured in Revit on IronPython 3.4.2:
 
 | Syntax | IronPython 3.4.2 |

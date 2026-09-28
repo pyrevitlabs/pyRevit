@@ -55,6 +55,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 case "run":
                     var runRequest = AgentRunRequest.FromJson(parameters);
                     EnforcePolicy(runRequest);
+                    AgentScripting.EnsureAvailable(runRequest.Engine, AgentHost.RevitVersion);
                     return InvokeOnMainThread(app => AgentRunService.Execute(app, runRequest), parameters);
                 case "inspect_elements":
                     var ids = AgentInspector.ParseIds(parameters);

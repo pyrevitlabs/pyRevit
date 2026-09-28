@@ -15,6 +15,30 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private const int MaxSelectionIds = 200;
         private const int MaxLevels = 200;
 
+        /// <remarks>
+        /// <c>clone</c> comes from the attachment when the session env doesn't know it, and is
+        /// null rather than <c>Unknown</c> when neither does; <c>attached</c> tells the agent
+        /// why engine details may be missing.
+        /// </remarks>
+        private static JObject DescribePyRevit(EnvDictionary env, string revitVersion) {
+            PyRevitAttachment attachment = null;
+            try {
+                if (int.TryParse(revitVersion, out var revitYear))
+                    attachment = PyRevitAttachments.GetAttachedCached(revitYear);
+            }
+            catch (Exception) {
+            }
+
+            var clone = env.PyRevitClone;
+            if (string.IsNullOrEmpty(clone) || clone == "Unknown")
+                clone = attachment?.Clone?.Name;
+            return new JObject {
+                ["version"] = env.PyRevitVersion,
+                ["clone"] = clone,
+                ["attached"] = attachment != null,
+            };
+        }
+
         public static JToken Describe(UIApplication app) {
             var env = new EnvDictionary();
             var context = new JObject {
@@ -24,14 +48,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     ["language"] = app.Application.Language.ToString(),
                     ["username"] = app.Application.Username,
                 },
-                ["pyrevit"] = new JObject {
-                    ["version"] = env.PyRevitVersion,
-                    ["clone"] = env.PyRevitClone,
-                },
+                ["pyrevit"] = DescribePyRevit(env, app.Application.VersionNumber),
                 ["agent"] = new JObject {
                     ["policy"] = PyRevitConfigs.GetAgentPolicy(),
                 },
-                ["scripting"] = AgentScripting.Describe(env),
+                ["scripting"] = AgentScripting.Describe(env, app.Application.VersionNumber),
                 ["document"] = null,
                 ["active_view"] = null,
                 ["selection"] = null,
