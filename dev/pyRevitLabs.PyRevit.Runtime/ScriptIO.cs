@@ -699,6 +699,18 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         private int _lastEntryChars;
 
+        /// <summary>
+        /// Render the next buffered entry into a window this thread may use, and report whether
+        /// the caller should keep draining.
+        /// </summary>
+        /// <remarks>
+        /// Important: a null window means two different things here, as in <see cref="GetOutput"/>.
+        /// A thread that may not touch output WPF gets null even though a window is waiting there
+        /// for the hand-off that its own write already queued, so the buffer is left for that
+        /// hand-off to render. Only a thread that could have had a window and has none discards
+        /// the buffer, because nothing is going to show it. Without that distinction a
+        /// background <see cref="Flush"/> drops output the host UI thread is about to render.
+        /// </remarks>
         private bool FlushOneEntry() {
             ScriptConsole output;
             PendingEntry entry;
@@ -710,7 +722,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 }
 
                 output = GetOutput();
-                if (output == null || output.ClosedByUser) {
+                if (output == null) {
+                    if (ScriptOutputUi.MayCreateOutputUi) {
+                        _pending.Clear();
+                        _pendingChars = 0;
+                        StopFlushTimer();
+                    }
+                    return false;
+                }
+
+                if (output.ClosedByUser) {
                     _pending.Clear();
                     _pendingChars = 0;
                     StopFlushTimer();
@@ -767,9 +788,14 @@ namespace PyRevitLabs.PyRevit.Runtime {
         }
 
         /// <summary>
-        /// Synchronously render everything buffered so far. Callers that
-        /// inspect or modify the rendered document must flush first.
+        /// Render everything buffered so far. Callers that inspect or modify the rendered
+        /// document must flush first.
         /// </summary>
+        /// <remarks>
+        /// Off the host UI thread this cannot render, because it may not touch output WPF, so it
+        /// leaves the buffer for the hand-off its writes queued. Those callers get the text when
+        /// the host UI thread drains, not before this returns.
+        /// </remarks>
         public override void Flush() {
             StopFlushTimer();
             lock (this) {
