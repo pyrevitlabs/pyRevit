@@ -176,6 +176,44 @@ namespace pyRevitExtensionParserTester
         }
 
         [Test]
+        public void Readline_HandlesALineLongerThanOneChunk()
+        {
+            string longLine = new string('x', 5000);
+            var io = new ScriptIoWithQueuedInput(longLine, "after");
+
+            Assert.Multiple(() => {
+                Assert.That(io.readline(), Is.EqualTo(longLine));
+                Assert.That(io.readline(), Is.EqualTo("after"));
+            });
+        }
+
+        [Test]
+        public void Readline_LongLineKeepsWorkingAfterASizeLimitedRead()
+        {
+            string longLine = new string('y', 3000);
+            var io = new ScriptIoWithQueuedInput(longLine, "after");
+
+            Assert.Multiple(() => {
+                Assert.That(io.readline(10), Is.EqualTo(new string('y', 10)));
+                Assert.That(io.readline(10), Is.EqualTo(new string('y', 10)));
+                Assert.That(io.readline(), Is.EqualTo(new string('y', 2980)));
+                Assert.That(io.readline(), Is.EqualTo("after"));
+            });
+        }
+
+        [Test]
+        public void Read_ThenReadline_PreserveTheUnreadBytesExactly()
+        {
+            var io = new ScriptIoWithQueuedInput("héllo wörld");
+            var oneByte = new byte[1];
+
+            io.Read(oneByte, 0, 1);
+
+            Assert.That(io.readline(), Is.EqualTo("éllo wörld"),
+                "the byte consumed by Read was lost from the line");
+        }
+
+        [Test]
         public void Read_IsReadline()
         {
             var io = new ScriptIoWithQueuedInput("input()");

@@ -36,7 +36,9 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private readonly StringBuilder _partial = new StringBuilder();
         private readonly object _logLock = new object();
         private bool _inputReceived = false;
-        private string _bufferedInput = string.Empty;
+        private static readonly byte[] EmptyBuffer = new byte[0];
+
+        private byte[] _bufferedInput = EmptyBuffer;
         private bool _errored = false;
         private ScriptEngineType _erroredEngine;
         private bool _prefixAtLineStart = true;
@@ -629,23 +631,15 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// continues it instead of consuming a new line. Mixing this with <see cref="Read(byte[], int, int)"/>
         /// is safe: both draw from the same buffer.
         ///
-        /// A non-positive <paramref name="size"/> returns nothing and consumes no input, which is
-        /// what a zero-length read means to a caller.
+        /// A <paramref name="size"/> of zero returns nothing and consumes no input, which is what
+        /// a zero-length read means to a caller. A negative size is the unbounded case.
         /// </remarks>
         public string readline(int size = -1) {
             if (size == 0)
                 return string.Empty;
 
-            var buffer = new byte[StreamChunkSize];
-            bool hadBufferedInput = HasBufferedInput;
-            int read = Read(buffer, 0, buffer.Length);
-            ConsumeHandshake(hadBufferedInput);
-
-            if (read <= 0)
-                return string.Empty;
-
-            string line = OutputEncoding.GetString(buffer, 0, Math.Min(read, buffer.Length));
-            return TakeCharacters(line, size);
+            string line = TakeWholeLine();
+            return line == null ? string.Empty : TakeCharacters(line, size);
         }
 
         /// <summary>
@@ -654,6 +648,36 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// </summary>
         public string read(int size = -1) {
             return readline(size);
+        }
+
+        /// <summary>
+        /// Returns the next complete line decoded in full, or <c>null</c> at end of input.
+        /// </summary>
+        /// <remarks>
+        /// Decoding happens over whole lines only, so a multi-byte character is never split
+        /// between what this call returns and what a later one resumes from. The line is
+        /// assembled in <see cref="_bufferedInput"/> first, which is what keeps a line longer
+        /// than one read chunk intact.
+        /// </remarks>
+        private string TakeWholeLine() {
+            if (!HasBufferedInput) {
+                bool flagConsumed = false;
+                string line = ReadNextLine();
+                if (line == null)
+                    return null;
+
+                AppendToBuffer(OutputEncoding.GetBytes(line));
+                flagConsumed = true;
+                ConsumeHandshake(flagConsumed);
+            }
+
+            string decoded;
+            lock (this) {
+                decoded = OutputEncoding.GetString(_bufferedInput, 0, _bufferedInput.Length);
+                _bufferedInput = EmptyBuffer;
+            }
+
+            return decoded;
         }
 
         private bool HasBufferedInput {
@@ -676,16 +700,31 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 return line;
 
             string head = line.Substring(0, size);
-            PrependToBuffer(line.Substring(size));
+            PrependToBuffer(OutputEncoding.GetBytes(line.Substring(size)));
             return head;
         }
 
-        private void PrependToBuffer(string text) {
-            if (string.IsNullOrEmpty(text))
+        private void PrependToBuffer(byte[] text) {
+            if (text == null || text.Length == 0)
                 return;
 
             lock (this) {
-                _bufferedInput = text + _bufferedInput;
+                byte[] merged = new byte[text.Length + _bufferedInput.Length];
+                Buffer.BlockCopy(text, 0, merged, 0, text.Length);
+                Buffer.BlockCopy(_bufferedInput, 0, merged, text.Length, _bufferedInput.Length);
+                _bufferedInput = merged;
+            }
+        }
+
+        private void AppendToBuffer(byte[] text) {
+            if (text == null || text.Length == 0)
+                return;
+
+            lock (this) {
+                byte[] merged = new byte[text.Length + _bufferedInput.Length];
+                Buffer.BlockCopy(_bufferedInput, 0, merged, 0, _bufferedInput.Length);
+                Buffer.BlockCopy(text, 0, merged, _bufferedInput.Length, text.Length);
+                _bufferedInput = merged;
             }
         }
 
@@ -720,9 +759,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 if (copyCount > 0)
                     Buffer.BlockCopy(inputBytes, 0, buffer, offset, copyCount);
 
-                if (copyCount < inputBytes.Length)
-                    _bufferedInput = OutputEncoding.GetString(
-                        inputBytes, copyCount, inputBytes.Length - copyCount) + _bufferedInput;
+                if (copyCount < inputBytes.Length) {
+                    byte[] leftover = new byte[inputBytes.Length - copyCount];
+                    Buffer.BlockCopy(inputBytes, copyCount, leftover, 0, leftover.Length);
+                    PrependToBuffer(leftover);
+                }
 
                 ReportReadDiagnostics(buffer, offset, count, input, copyCount);
 
@@ -804,10 +845,11 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// fit for the next caller. Callers hold <c>this</c>.
         /// </summary>
         private int DrainBufferedInput(byte[] buffer, int offset, int count) {
-            byte[] pending = OutputEncoding.GetBytes(_bufferedInput);
-            int copyCount = Math.Min(pending.Length, count);
-            Buffer.BlockCopy(pending, 0, buffer, offset, copyCount);
-            _bufferedInput = OutputEncoding.GetString(pending, copyCount, pending.Length - copyCount);
+            int copyCount = Math.Min(_bufferedInput.Length, count);
+            Buffer.BlockCopy(_bufferedInput, 0, buffer, offset, copyCount);
+            byte[] leftover = new byte[_bufferedInput.Length - copyCount];
+            Buffer.BlockCopy(_bufferedInput, copyCount, leftover, 0, leftover.Length);
+            _bufferedInput = leftover;
             return copyCount;
         }
 
