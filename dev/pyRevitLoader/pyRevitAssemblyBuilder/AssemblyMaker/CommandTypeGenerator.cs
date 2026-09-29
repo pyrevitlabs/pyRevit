@@ -147,7 +147,14 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                     searchPathsList.Add(sitePackagesDir);
                 }
 
-                string searchPaths = string.Join(";", searchPathsList);
+                // The sources above overlap: the collected binary paths end with the bundle's own
+                // folder, which is also the script's directory, and a bundle can contribute the
+                // same lib/ folder twice through the hierarchy. Keep the first occurrence so the
+                // order the search relies on survives, and drop the repeats.
+                var orderedSearchPaths = searchPathsList
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                string searchPaths = string.Join(";", orderedSearchPaths);
                 string tooltip = cmd.Tooltip ?? string.Empty;
                 string bundle = string.IsNullOrEmpty(scriptDir) ? string.Empty : Path.GetFileName(scriptDir);
                 string extName = extension.Name;
