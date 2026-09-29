@@ -98,6 +98,70 @@ walls_with_comments = (
 - **`CreateHasValueParameterRule` isn't "not empty".** An empty text value counts as a value. For text, use `CreateNotEqualsRule(parameter_id, "")`.
 - **Filters change the collector itself.** `walls = everything.OfClass(DB.Wall)` returns the same object, so `everything` now holds only walls too. Start a new `FilteredElementCollector` for each query.
 
+## Performance rules (strict)
+
+A script runs on Revit's main thread, and Revit is frozen until it returns. Models hold tens of thousands of elements, so a quadratic script that takes a second on a test model takes hours on a real one, and the run is stopped at `timeout_s`. These rules are not optional:
+
+1. **No O(n²): never compare every element with every other one.** No nested loops over two collections of elements, and no `for a in walls: for b in walls:`. Let Revit's spatial index find the neighbours of each element (below), or group elements by a key in a dict first.
+2. **No O(2ⁿ) or O(n!): never search combinations, subsets, permutations or layouts by trying them.** No `itertools.combinations`/`permutations` over elements, and no recursion that branches per element. Compute the answer directly from the geometry. If you can't, stop and ask the user.
+3. **Look up in a dict or a set, never in a list inside a loop.** Build `{room.Number: room for room in rooms}` or a set of id values once; `x in some_list` inside a loop is O(n²).
+4. **Nothing expensive inside a loop over elements:** no collector whose result doesn't depend on the loop variable (collect once before the loop), no transaction per element (one transaction per stage), and no `doc.Regenerate()` per element.
+5. **Walking connected elements needs a visited set.** Connectors reference each other in both directions, and joins and hosts can form cycles, so a walk without `seen` never ends.
+6. **Every `while` loop has a bound.** Count iterations and raise with a clear message past a limit you can justify.
+
+Neighbours through Revit's spatial index instead of pairwise checks:
+
+```python
+from System.Collections.Generic import List
+
+walls = list(DB.FilteredElementCollector(doc).OfClass(DB.Wall))
+touching = {}
+for wall in walls:
+    box = wall.get_BoundingBox(None)
+    if box is None:
+        continue
+    others = List[DB.ElementId]()
+    others.Add(wall.Id)
+    touching[wall.Id] = (
+        DB.FilteredElementCollector(doc)
+        .OfClass(DB.Wall)
+        .WherePasses(DB.BoundingBoxIntersectsFilter(DB.Outline(box.Min, box.Max)))
+        .Excluding(others)
+        .ToElementIds()
+    )
+```
+
+`DB.ElementIntersectsElementFilter(element)` and `DB.ElementIntersectsSolidFilter(solid)` narrow the bounding-box hits to real geometry overlaps.
+
+Walking a connected network, each element visited once:
+
+```python
+from collections import deque
+
+
+def id_value(element):
+    return element.Id.Value if hasattr(element.Id, "Value") else element.Id.IntegerValue
+
+
+def connected(first, limit=10000):
+    seen = {id_value(first)}
+    queue = deque([first])
+    members = []
+    while queue:
+        if len(members) >= limit:
+            raise RuntimeError("More than {} connected elements; narrow the search.".format(limit))
+        element = queue.popleft()
+        members.append(element)
+        manager = getattr(element, "ConnectorManager", None) or getattr(getattr(element, "MEPModel", None), "ConnectorManager", None)
+        for connector in (manager.Connectors if manager else []):
+            for other in connector.AllRefs:
+                owner = other.Owner
+                if id_value(owner) not in seen:
+                    seen.add(id_value(owner))
+                    queue.append(owner)
+    return members
+```
+
 ## Revit API essentials
 
 - **`OfCategory` takes a `BuiltInCategory`**, not a `Category` object.
@@ -121,8 +185,12 @@ walls_with_comments = (
 
   ```python
   from System.Collections.Generic import List
-  ids = List[DB.ElementId](python_ids)
+  ids = List[DB.ElementId]()
+  for element_id in python_ids:
+      ids.Add(element_id)
   ```
+
+  Build it with `Add`. `List[DB.ElementId](python_ids)` and `AddRange(python_ids)` work on IronPython but raise `TypeError` on CPython.
 
 - **Out parameters:** IronPython 3.4 passes null for out arguments, whether you omit them, pass a value, or pass a `StrongBox`, and many Revit methods reject null with `ArgumentNullException`. The recipe that works on every engine is reflection with a pre-filled `System.Array[System.Object]`; the out value is written back into the array:
 
@@ -143,33 +211,7 @@ walls_with_comments = (
 - **Read numbers back.** After creating geometry, compare a measured value (a bounding box height, an area, a count) with what you intended. Plausible-looking geometry is the error that screenshots don't catch.
 - **Never hardcode type names.** They differ between templates ("Generic - 300mm" wall, "Generic 300mm" floor, metric vs imperial). Query the types first and pick by name from that list.
 - **Enum values** differ from UI names. For example it's `TemporaryViewMode.TemporaryHideIsolate`, not `.Isolate`. Look the enum up first.
-- **Names that don't exist,** which agents often guess:
-
-  | Guess | Use |
-  |---|---|
-  | `doc.WallTypes`, `doc.Families`, `doc.GetViews()` | `DB.FilteredElementCollector(doc).OfClass(DB.WallType)` (or `query.get_types_by_class`, `query.get_all_views`) |
-  | `doc.FilteredElementCollector` | `DB.FilteredElementCollector(doc)` |
-  | `Family.GetSymbols()` | `family.GetFamilySymbolIds()` |
-  | `Parameter.Value` | `AsDouble()`, `AsString()`, `AsInteger()`, `AsElementId()`; rpw's `db.Element(e).parameters["Name"].value` |
-  | `doc.NewDirectShape`, `DirectShape.Create` | `DB.DirectShape.CreateElement(doc, category_id)` + `SetShape` |
-  | `doc.Create.NewCeiling` | `DB.Ceiling.Create` or `create.create_ceiling` |
-  | `Plane.Create(origin, normal)` | `DB.Plane.CreateByNormalAndOrigin(normal, origin)` |
-  | `CurveLoop.Create(curve_array)` | `DB.CurveLoop.Create(List[DB.Curve](curves))`, or append to `DB.CurveLoop()` |
-  | `Edge.Curve`, `face.Surface` | `edge.AsCurve()`; for a `PlanarFace`, `face.Origin` and `face.FaceNormal` |
-  | `BooleanOperationType.BoolCut` | `DB.BooleanOperationsUtils.ExecuteBooleanOperation(a, b, DB.BooleanOperationsType.Difference)` |
-  | `BuiltInParameter.WALL_HEIGHT`, `TYPE_MARK`, `ALL_MODEL_COMMENTS` | `WALL_USER_HEIGHT_PARAM`, `ALL_MODEL_TYPE_MARK`, `ALL_MODEL_INSTANCE_COMMENTS` |
-  | `view.SetCategoryHidden(category, True)` | `view.SetCategoryHidden(category.Id, True)` |
-  | `DB.RoomTagType`, `DB.StairsType`, `DB.StairsRun` | `DB.Architecture.RoomTagType`, `DB.Architecture.StairsType`, `DB.Architecture.StairsRun` |
-  | `symbol.FamilyPlacementType` | `symbol.Family.FamilyPlacementType` |
-  | `DB.Category.GetAllCategories()`, `OfClass(DB.Category)` | `doc.Settings.Categories` (categories aren't elements) |
-  | `floor.Symbol` | `floor.FloorType`, or `doc.GetElement(floor.GetTypeId())` for any element |
-  | `duct.MEPModel`, `pipe.MEPModel` | `duct.ConnectorManager` |
-  | `connector.Direction.X`, `connector.Diameter` | `connector.CoordinateSystem.BasisZ.X`, `connector.Radius * 2` |
-  | `BuiltInParameter.FAMILY_SYMBOL_WIDTH_PARAM`, `FLOOR_PARAM_STRUCTURE` | `FAMILY_WIDTH_PARAM`, `FLOOR_STRUCTURE_ID_PARAM` |
-  | `floor_type.Width`, `layer.LayerWidth` | `floor_type.GetCompoundStructure().GetWidth()`, `structure.GetLayerWidth(index)` |
-  | `.OfCategory(category)` or `.OfCategory(element_id)` | `.OfCategory(DB.BuiltInCategory.OST_X)`, or `.OfCategoryId(category.Id)` |
-  | `query.get_family_symbol(..., category=...)` | `query.find_family_symbol(type_name, family_name=..., category="OST_Doors")` |
-  | wall top constraint "Roof" through `WALL_HEIGHT_TYPE` | `update.attach_wall_tops(walls, roof)` when the running Revit API supports wall attachment; otherwise model the gable end explicitly |
+- **Names that don't exist:** agents often guess API names from other libraries or older Revit versions. Before writing a name you haven't seen work, and whenever one fails, read `get_skill("revit-scripting", "api-names.md")`: it maps the common wrong guesses to the real names.
 
 ## Finding the right API
 

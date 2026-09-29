@@ -10,4 +10,6 @@ Start every task like this:
 Available skills:
 {skills}
 
+Scripts run on Revit's main thread and freeze Revit until they return. Never write O(n^2) or O(2^n) logic: no nested loops comparing elements pairwise, no searching combinations or layouts, no list lookups inside loops, no unbounded while loops. revit-scripting's "Performance rules" section gives the linear replacements.
+
 Model changes go through run_modify: dry-run first, then run it for real. Under agent policy "ask" the user approves each change in Revit.
