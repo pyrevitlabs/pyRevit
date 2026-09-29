@@ -284,5 +284,46 @@ namespace pyRevitExtensionParserTester
 
             Assert.That(io.read(), Is.EqualTo("input()"));
         }
+
+        /// <summary>
+        /// A line taken by <c>readline</c> settles the pending raw-read handshake. If the flag
+        /// survived, the next raw read would report end of input and the line after it would
+        /// never be delivered.
+        /// </summary>
+        [Test]
+        public void Read_AfterReadline_DeliversTheFollowingLine()
+        {
+            var io = new ScriptIoWithQueuedInput("first", "second", "third");
+            var buffer = new byte[64];
+
+            int firstRead = io.Read(buffer, 0, buffer.Length);
+
+            Assert.Multiple(() => {
+                Assert.That(Encoding.UTF8.GetString(buffer, 0, firstRead), Is.EqualTo("first"));
+                Assert.That(io.readline(), Is.EqualTo("second"));
+                Assert.That(io.Read(buffer, 0, buffer.Length), Is.EqualTo(6),
+                    "the handshake swallowed a line the user had already entered");
+                Assert.That(Encoding.UTF8.GetString(buffer, 0, 6), Is.EqualTo("third"));
+            });
+        }
+
+        /// <summary>
+        /// The reverse order: <c>readline</c> takes a line, and the raw read that follows
+        /// reports end of input rather than skipping the line behind it.
+        /// </summary>
+        [Test]
+        public void Read_AfterReadline_WithoutARawReadFirst_EndsCleanly()
+        {
+            var io = new ScriptIoWithQueuedInput("first", "second");
+            var buffer = new byte[64];
+
+            string first = io.readline();
+
+            Assert.Multiple(() => {
+                Assert.That(first, Is.EqualTo("first"));
+                Assert.That(io.Read(buffer, 0, buffer.Length), Is.EqualTo(6));
+                Assert.That(Encoding.UTF8.GetString(buffer, 0, 6), Is.EqualTo("second"));
+            });
+        }
     }
 }

@@ -659,17 +659,23 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// assembled in <see cref="_bufferedInput"/> first, which is what keeps a line longer
         /// than one read chunk intact, and <see cref="AlignToCharacterBoundary"/> is what keeps
         /// a raw read from leaving this buffer starting mid-character.
+        ///
+        /// A line is fetched through <see cref="ReadNextLine"/> rather than
+        /// <see cref="Read(byte[], int, int)"/>, so the output window is prepared here and the
+        /// pending raw-read handshake is cleared. Leaving that flag set would make the next raw
+        /// read report end of input and skip a line the user had already entered.
         /// </remarks>
         private string TakeWholeLine() {
             if (!HasBufferedInput) {
-                bool flagConsumed = false;
+                if (PrepareOutputForRead())
+                    return null;
+
                 string line = ReadNextLine();
                 if (line == null)
                     return null;
 
+                _inputReceived = false;
                 AppendToBuffer(OutputEncoding.GetBytes(line));
-                flagConsumed = true;
-                ConsumeHandshake(flagConsumed);
             }
 
             string decoded;
@@ -687,13 +693,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
                     return _bufferedInput.Length > 0;
                 }
             }
-        }
-
-        private void ConsumeHandshake(bool drainedBufferedInput) {
-            if (drainedBufferedInput)
-                return;
-
-            _ = Read(new byte[0], 0, 0);
         }
 
         private string TakeCharacters(string line, int size) {
