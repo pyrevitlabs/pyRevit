@@ -124,7 +124,8 @@ rebuild:
   `family-editing`, `scheduling` and `drawings` cover tasks. `extension-authoring` turns a
   working script into a ribbon button once the user agrees: it writes the bundle, registers
   its folder as an extension search path when needed, reloads pyRevit from a run, and checks
-  the tab loaded.
+  the tab loaded. `revit-files` explains `.rvt`, `.rte`, `.rfa` and `.rft` files, and
+  creating a family from a family template and a project from a project template.
 - Skills in `%APPDATA%\pyRevit\agent\skills\<name>\SKILL.md` are added, and replace a
   shipped skill with the same name, so a firm can add its own standards.
 
