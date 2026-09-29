@@ -1,6 +1,6 @@
 ---
 name: extension-authoring
-description: Turning a working script into a pyRevit button the user keeps. Covers where agent-made extensions live, the bundle folder layout, bundle.yaml, converting an agent script into a button script, reloading pyRevit, and checking the button loaded. Use it for "make this a button", "add a tool to the ribbon", "create a pyRevit extension for this" and similar tasks.
+description: Turning a working script into a pyRevit button the user keeps. Covers where agent-made extensions live, adding and removing extension search paths, the bundle folder layout, bundle.yaml, converting an agent script into a button script, reloading pyRevit, and checking the button loaded. Use it for "make this a button", "add a tool to the ribbon", "create a pyRevit extension for this", "load the extension in this folder", "remove that tab" and similar tasks.
 ---
 
 # Extension authoring
@@ -12,14 +12,52 @@ A button outlives the conversation: it runs whenever the user clicks it, without
 1. **Prove the logic first.** Develop it with `run_query`, or `run_modify` with `dry_run=true`, until it does the job on the user's model.
 2. **Agree on the button.** Before writing anything to disk, tell the user the extension, tab, panel and button names, the folder you will write to, and what the button does. Write files only after they agree.
 3. **Write the bundle** in the layout below, with your own file tools. If you have none, write the files from a `run_query` script with `open()`; file writes aren't rolled back.
-4. **Reload.** Ask the user to click **pyRevit → Reload**. Don't reload pyRevit from a run: it rebuilds the session, including the agent host serving your request.
-5. **Check it loaded** (see [Check the button](#check-the-button)), then ask the user to try it.
+4. **Register the folder** if it isn't `%APPDATA%\pyRevit\Extensions` (see [Extension search paths](#extension-search-paths)).
+5. **Reload pyRevit** (see [Reload](#reload)).
+6. **Check it loaded** (see [Check the button](#check-the-button)), then ask the user to try it.
 
 ## Where agent-made extensions live
 
-- Put them in `%APPDATA%\pyRevit\Extensions\`. pyRevit loads every `*.extension` folder there without any configuration.
+- By default, put them in `%APPDATA%\pyRevit\Extensions\`. pyRevit loads every `*.extension` folder there without any configuration.
+- When the user wants them somewhere else, such as next to their scripts or in a repository, put them there and register that folder as a search path.
 - Keep everything you make in one extension, for example `AgentTools.extension`, unless the user asks for another. Ask the user what to call it the first time.
 - Never edit extensions you didn't create: not the ones shipped with pyRevit (`pyRevitTools`, `pyRevitCore`, ...) and not the user's own. Updates overwrite the shipped ones, and the user's own belong to them.
+
+## Extension search paths
+
+A search path is a folder that *contains* `*.extension` folders, not an extension folder itself. Changing the list changes the user's pyRevit config, so do it only when the user asked for it or agreed to it. Run this with `run_query`, passing `inputs={"path": ..., "action": "add"}` or `"remove"`:
+
+```python
+import os
+from pyrevit.userconfig import user_config
+
+path = inputs.get("path") or ""
+if not os.path.isabs(path) or (inputs["action"] == "add" and not os.path.isdir(path)):
+    raise ValueError("Extension search path must be an absolute, existing folder: {!r}".format(path))
+path = os.path.normpath(path)
+paths = user_config.get_thirdparty_ext_root_dirs(include_default=False)
+others = [p for p in paths if os.path.normcase(os.path.normpath(p)) != os.path.normcase(path)]
+user_config.set_thirdparty_ext_root_dirs(others + [path] if inputs["action"] == "add" else others)
+user_config.save_changes()
+result = user_config.get_thirdparty_ext_root_dirs(include_default=False)
+```
+
+- Always pass an absolute path. A relative or empty one would register Revit's working folder.
+- Removing a path takes its tabs off the ribbon after the reload; the folder stays on disk. Say so, and delete files only if the user asks.
+- With a shell, `pyrevit extensions paths add <path>` and `pyrevit extensions paths forget <path>` do the same.
+
+## Reload
+
+Reload pyRevit with `run_query`, so the new or removed extensions take effect:
+
+```python
+from pyrevit.loader import sessionmgr
+result = {"session": str(sessionmgr.reload_pyrevit())}
+```
+
+- Tell the user first: the ribbon rebuilds, which takes about 10-20 seconds, and any open pyRevit window closes.
+- The agent host keeps serving during and after the reload; your next request works as usual.
+- Don't reload while the user is in the middle of a pyRevit tool.
 
 ## Layout
 
@@ -64,6 +102,12 @@ The names an agent run injects don't exist in a button script. Replace them:
 | `run_modify` approval | one `with revit.Transaction("Number rooms"):` block; the user undoes it with Ctrl+Z |
 
 - **Engine:** a `script.py` runs on the session's IronPython (`get_context.scripting.engines.ironpython.python`), not on the agent run engine. Write for that version. `#! python3` on the first line switches the button to CPython, only when `scripting.engines.cpython.available` is true.
+- **Modules in `lib\`:** pyRevit may reuse a button's engine between clicks, and with it the modules it already imported. A module that reads `revit.doc` at import time would then keep the document of the first click. Read `revit.doc` inside functions, or set a clean engine in the button's `bundle.yaml`:
+
+  ```yaml
+  engine:
+    clean: true
+  ```
 - **Selection:** `revit.get_selection()` returns the selected elements. Check it's not empty and tell the user what to select when it is.
 - **Failures:** let the button tell the user what went wrong with `forms.alert(...)` instead of raising, and keep every model change inside the transaction so a failure changes nothing.
 - **No `print` for results the user must act on:** printed text goes to the pyRevit output window, which the user may close without reading.
@@ -89,23 +133,33 @@ forms.alert("Numbered {} rooms.".format(len(rooms)))
 
 ## Check the button
 
-After the user reloads, confirm the command exists with `run_query`:
+After the reload, check the ribbon and the commands with `run_query`, passing the extension folder and the tab title as `inputs`:
 
 ```python
 import os
+import clr
+clr.AddReference("AdWindows")
+from Autodesk.Windows import ComponentManager
 from pyrevit.loader import sessionmgr
 
-extension = os.path.join(os.environ["APPDATA"], "pyRevit", "Extensions", "AgentTools.extension")
-result = [
-    {"command": command.typename, "script": command.script}
-    for command in sessionmgr.find_all_commands(cache=False)
-    if (command.script or "").lower().startswith(extension.lower())
-]
+extension = os.path.normcase(os.path.normpath(inputs["extension"]))
+tabs = [tab for tab in ComponentManager.Ribbon.Tabs if tab.Title == inputs["tab"]]
+result = {
+    "tab_visible": bool(tabs) and bool(tabs[0].IsVisible),
+    "panels": [panel.Source.Title for panel in tabs[0].Panels] if tabs else [],
+    "commands": [
+        command.typename
+        for command in sessionmgr.find_all_commands(cache=False)
+        if os.path.normcase(command.script or "").startswith(extension)
+    ],
+}
 ```
 
-An empty list means pyRevit didn't load the bundle: check the folder suffixes, then ask the user whether the pyRevit output window showed a load error. Then ask the user to click the button and tell you what happened.
+- **New button:** `tab_visible` is true and its command is listed. Nothing listed means pyRevit didn't load the bundle: check the folder suffixes and that its parent folder is a search path, then ask the user whether the pyRevit output window showed a load error.
+- **Removed tab:** `tab_visible` is false. Its commands can stay listed until Revit restarts, because Revit can't unload the assembly pyRevit built for them; that's expected.
+- Then ask the user to click the button and tell you what happened. Don't click it for them with a script: the button has no run guard.
 
 ## Changing or removing a button
 
-- **Change:** edit the files, then ask for another Reload. Keep the folder names unless the user wants the button renamed.
-- **Remove:** delete the button folder, or the whole extension folder, after the user agrees, then ask for a Reload.
+- **Change:** edit the files, then reload. Keep the folder names unless the user wants the button renamed.
+- **Remove:** after the user agrees, delete the button folder, or the whole extension folder, or remove its search path to keep the files. Then reload.
