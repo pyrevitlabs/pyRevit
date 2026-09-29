@@ -130,7 +130,10 @@ rebuild:
   shipped skill with the same name, so a firm can add its own standards.
 
 Agents read a skill with `get_skill(name)`, and other markdown files in its folder with
-`get_skill(name, file)`.
+`get_skill(name, file)`. `pyrevit-library/revit-utilities.md` maps Revit's static `...Utils` classes by task;
+its domains were checked against the map in
+[Nice3point/revit-skills](https://github.com/Nice3point/revit-skills) (MIT), and every entry
+was read from Revit's own API.
 
 ### Shared libraries
 

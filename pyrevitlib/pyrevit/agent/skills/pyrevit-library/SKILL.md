@@ -47,6 +47,10 @@ from pyrevit.revit import units, ui
 
 Functions that create elements take points as `DB.XYZ` or `(x, y[, z])` tuples, and lengths as feet or strings such as `32'-6"` and `900mm`. Types, levels and family types can be passed by name.
 
+## Revit's own utility classes
+
+When the libraries don't cover a step, Revit may still have it in a static `...Utils` class that isn't reachable from the element: wall joins, face references for hosting, solid booleans, MEP caps and terminal connections, beam end joins, unit formatting, worksharing. Read `get_skill("pyrevit-library", "revit-utilities.md")` before writing the geometry or connection logic yourself, and before concluding that the API can't do something.
+
 ## Rules
 
 - **Libraries first, raw API second.** Look the task up with `lookup_pyrevit_api` before writing `DB.` code for it.
