@@ -209,7 +209,7 @@ def copy_elements(element_ids, src_doc, dest_doc, return_ids=False):
     if element_ids:
         copied_ids = DB.ElementTransformUtils.CopyElements(
             src_doc,
-            framework.to_clr_list(DB.ElementId, element_ids),
+            framework.to_net_list(DB.ElementId, element_ids),
             dest_doc,
             None,
             cp_options,
@@ -623,13 +623,13 @@ def create_param_value_filter(
     filter_cats = []
     for cat in category_set:
         if DB.ParameterFilterElement.AllRuleParametersApplicable(
-            doc, framework.to_clr_list(DB.ElementId, [cat.Id]), rules
+            doc, framework.to_net_list(DB.ElementId, [cat.Id]), rules
         ):
             filter_cats.append(cat.Id)
 
     # create filter
     return DB.ParameterFilterElement.Create(
-        doc, filter_name, framework.to_clr_list(DB.ElementId, filter_cats), rules
+        doc, filter_name, framework.to_net_list(DB.ElementId, filter_cats), rules
     )
 
 
@@ -665,13 +665,17 @@ def to_xyz(point, z=None):
 
 
 def rectangle_points(x1, y1, x2, y2):
-    """Return the corners of an axis-aligned rectangle, counter-clockwise from (x1, y1).
+    """Return the corners of an axis-aligned rectangle, counter-clockwise.
 
-    Edge 0 runs along X at y1, edge 1 along Y at x2, edge 2 along X at y2
-    and edge 3 along Y at x1; the roof functions refer to edges by index.
+    The two points may be any pair of opposite corners; the corners are
+    returned from the south-west one. Edge 0 is the south edge, edge 1 the
+    east, edge 2 the north and edge 3 the west; the roof functions refer to
+    edges by index.
     """
     x1, y1, x2, y2 = [units.parse_length(v) for v in (x1, y1, x2, y2)]
-    return [(x1, y1), (x2, y1), (x2, y2), (x1, y2)]
+    west, east = min(x1, x2), max(x1, x2)
+    south, north = min(y1, y2), max(y1, y2)
+    return [(west, south), (east, south), (east, north), (west, north)]
 
 
 def _point_pairs(points, closed):
@@ -914,10 +918,12 @@ def create_floor(
     level = query.find_level(level, doc=doc)
     floor_type = query.find_type(DB.FloorType, floor_type, doc=doc)
     if hasattr(DB.Floor, "Create"):
-        loops = framework.List[DB.CurveLoop](
-            [create_curve_loop(points, level.Elevation)]
+        loops = framework.to_net_list(
+            DB.CurveLoop, [create_curve_loop(points, level.Elevation)]
         )
-        floor = DB.Floor.Create(doc, loops, floor_type.Id, level.Id)
+        floor = DB.Floor.Create(
+            doc, loops, floor_type.Id, level.Id, bool(structural), None, 0.0
+        )
     else:
         floor = doc.Create.NewFloor(
             create_curve_array(points, level.Elevation), floor_type, level, structural
@@ -946,7 +952,9 @@ def create_ceiling(points, ceiling_type, level=None, offset=8.0, doc=None):
     _require_transaction(doc, "create ceilings")
     level = query.find_level(level, doc=doc)
     ceiling_type = query.find_type(DB.CeilingType, ceiling_type, doc=doc)
-    loops = framework.List[DB.CurveLoop]([create_curve_loop(points, level.Elevation)])
+    loops = framework.to_net_list(
+        DB.CurveLoop, [create_curve_loop(points, level.Elevation)]
+    )
     ceiling = DB.Ceiling.Create(doc, loops, ceiling_type.Id, level.Id)
     ceiling.get_Parameter(DB.BuiltInParameter.CEILING_HEIGHTABOVELEVEL_PARAM).Set(
         units.parse_length(offset)
@@ -1597,7 +1605,8 @@ def create_dimension(view, references, axis="x", position=0.0, doc=None):
         (DB.Dimension): the dimension.
 
     Raises:
-        PyRevitException: with fewer than two references, or an unknown axis.
+        PyRevitException: with fewer than two references, an unknown axis, or
+            a model with no elements to span.
     """
     doc = doc or DOCS.doc
     _require_transaction(doc, "create dimensions")
@@ -1608,6 +1617,10 @@ def create_dimension(view, references, axis="x", position=0.0, doc=None):
     box = query.get_elements_bounding_box(
         query.get_model_elements(doc=doc), padding=20.0
     )
+    if box is None:
+        raise PyRevitException(
+            "Nothing to dimension across: the model has no elements with a bounding box."
+        )
     position = units.parse_length(position)
     if axis == "x":
         line = DB.Line.CreateBound(
