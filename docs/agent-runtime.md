@@ -369,12 +369,14 @@ at a time and closes one that sends nothing for 30 seconds. Methods: `ping`,
 Every run executes in one ExternalEvent callback on the Revit main thread:
 
 1. **Arm guards** (only while the run is active):
-    - `DocumentSaving`, `DocumentSavingAs` and `DocumentSynchronizingWithCentral` are
-      cancelled, and so is `DocumentClosing` for every document open when the run started.
-      A document the script opened or created itself, such as a family from `EditFamily`,
-      may close.
+    - `DocumentSynchronizingWithCentral` is cancelled, and so are `DocumentSaving`,
+      `DocumentSavingAs` and `DocumentClosing` for every document open when the run started.
+      A document the script opened or created itself, such as a family from `EditFamily` or a
+      new project, may be saved and closed.
     - `DialogBoxShowing` is captured and dismissed.
-    - `FailuresProcessing` warnings are recorded and deleted.
+    - `FailuresProcessing` warnings are recorded and deleted, and errors roll back the
+      failing transaction, in every non-linked document. A failure in a family or a new
+      document fails the run with `revit_failure` instead of raising a dialog.
     - `DocumentChanged` collects added, modified and deleted ids, per document.
 2. **`TransactionGroup.Start("Agent: <title>")`** on the active document and on every other
    open, editable, non-linked document.

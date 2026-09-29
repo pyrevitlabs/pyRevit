@@ -21,11 +21,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// active document and, separately, for every other document;</item>
     /// <item>holds a group on every other open, editable, non-linked document, so changes a
     /// script makes there through <c>app.Documents</c> can be rolled back;</item>
-    /// <item>records failure messages, deletes warnings, and rolls back pending transactions that have errors;</item>
+    /// <item>records failure messages, deletes warnings, and rolls back pending transactions that
+    /// have errors, in every non-linked document, so a failure in a family or a new document
+    /// fails the run with Revit's message instead of raising a dialog;</item>
     /// <item>closes Revit dialogs instead of letting them block the main thread;</item>
-    /// <item>cancels save, save-as and synchronize requests, and closing any document that was
+    /// <item>cancels synchronize requests, and saving, saving as or closing any document that was
     /// open when the run started. A document the script opened or created itself, such as a
-    /// family from <c>EditFamily</c>, may close, so the script can discard it.</item>
+    /// family from <c>EditFamily</c> or a new project, may be saved and closed.</item>
     /// </list>
     /// Invariant: only the active document's group may ever be assimilated. The groups on other
     /// documents are always rolled back, so a run can never keep a change outside the document
@@ -180,7 +182,8 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
 
         private void OnFailuresProcessing(object sender, FailuresProcessingEventArgs e) {
             var accessor = e.GetFailuresAccessor();
-            if (!IsWatchedDocument(accessor.GetDocument()))
+            var failing = accessor.GetDocument();
+            if (failing == null || failing.IsLinked)
                 return;
 
             var hasErrors = false;
@@ -192,6 +195,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                         ["description"] = message.GetDescriptionText(),
                         ["element_ids"] = new JArray(message.GetFailingElementIds().Select(AgentIds.ToValue)),
                         ["transaction"] = accessor.GetTransactionName(),
+                        ["document"] = failing.Title,
                     });
                 }
 
@@ -212,11 +216,13 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private void OnDocumentSaving(object sender, DocumentSavingEventArgs e) {
-            Block(e, e.Document, "save");
+            if (WasOpenAtStart(e.Document))
+                Block(e, e.Document, "save");
         }
 
         private void OnDocumentSavingAs(object sender, DocumentSavingAsEventArgs e) {
-            Block(e, e.Document, "save_as");
+            if (WasOpenAtStart(e.Document))
+                Block(e, e.Document, "save_as");
         }
 
         private void OnDocumentClosing(object sender, DocumentClosingEventArgs e) {
