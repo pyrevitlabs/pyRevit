@@ -23,7 +23,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// script makes there through <c>app.Documents</c> can be rolled back;</item>
     /// <item>records failure messages, deletes warnings, and rolls back pending transactions that have errors;</item>
     /// <item>closes Revit dialogs instead of letting them block the main thread;</item>
-    /// <item>cancels save, save-as, close and synchronize requests.</item>
+    /// <item>cancels save, save-as and synchronize requests, and closing any document that was
+    /// open when the run started. A document the script opened or created itself, such as a
+    /// family from <c>EditFamily</c>, may close, so the script can discard it.</item>
     /// </list>
     /// Invariant: only the active document's group may ever be assimilated. The groups on other
     /// documents are always rolled back, so a run can never keep a change outside the document
@@ -43,6 +45,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private readonly JArray failures = new JArray();
         private readonly JArray blocked = new JArray();
         private readonly List<AgentOtherDocument> others = new List<AgentOtherDocument>();
+        private readonly List<Document> openAtStart = new List<Document>();
         private TransactionGroup group;
         private bool documentEventsArmed;
         private AgentDialogCapture dialogCapture;
@@ -86,6 +89,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             dialogCapture = new AgentDialogCapture(uiApp);
 
             foreach (Document other in app.Documents) {
+                openAtStart.Add(other);
                 if (other.IsLinked || IsWatchedDocument(other))
                     continue;
                 var tracked = new AgentOtherDocument(other, openedDuringRun: false);
@@ -216,7 +220,12 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
 
         private void OnDocumentClosing(object sender, DocumentClosingEventArgs e) {
-            Block(e, e.Document, "close");
+            if (WasOpenAtStart(e.Document))
+                Block(e, e.Document, "close");
+        }
+
+        private bool WasOpenAtStart(Document target) {
+            return target != null && openAtStart.Any(open => open.Equals(target));
         }
 
         private void OnDocumentSynchronizingWithCentral(object sender, DocumentSynchronizingWithCentralEventArgs e) {
