@@ -1,149 +1,186 @@
+using System.Collections.Generic;
 using System.Text;
 
 using PyRevitLabs.PyRevit.Runtime;
 
-namespace pyRevitExtensionParserTester;
-
-/// <summary>
-/// Covers the contract <c>readline</c> owes an interactive interpreter: a line with no trailing
-/// padding, and an empty string at end of input.
-///
-/// It drove <c>pdb</c> under CPython: a line came back padded with NULs, which pdb could not
-/// compile, and a closed output window returned 1024 NULs instead of "" - so pdb never saw
-/// end-of-input and looped until Revit died. #3686.
-/// </summary>
-[TestFixture]
-public class ScriptIoReadlineTests {
+namespace pyRevitExtensionParserTester
+{
     /// <summary>
-    /// Stands in for the output window. Mirrors the real <c>Read</c> handshake: a read that
-    /// returns a line raises a flag, and the next read consumes that flag and returns nothing.
-    /// <c>readline</c> depends on that handshake to consume one line per call.
+    /// The contract <c>readline</c> owes an interactive interpreter: the line it read, an empty
+    /// string at end of input, and a size limit that neither drops nor splits input.
+    ///
+    /// It drove <c>pdb</c> under CPython. A line came back padded with NULs, which pdb could not
+    /// compile, and a closed output window returned 1024 NULs instead of an empty string, so pdb
+    /// never saw end-of-input and looped until Revit died. #3686.
     /// </summary>
-    private sealed class ScriptIoWithQueuedInput : ScriptIO {
-        private readonly Queue<string> _pending = new();
-        private readonly int _eofResult;
-        private bool _inputReceived;
+    [TestFixture]
+    public class ScriptIoReadlineTests
+    {
+        /// <summary>
+        /// Stands in for the output window: hands out queued lines, or <c>null</c> once the queue
+        /// drains. Overriding only the line source means the stream's own handshake, size
+        /// handling and leftover buffering all run for real.
+        /// </summary>
+        private sealed class ScriptIoWithQueuedInput : ScriptIO
+        {
+            private readonly Queue<string> _pending = new Queue<string>();
 
-        public ScriptIoWithQueuedInput(int eofResult, params string[] lines)
-            : base((ScriptRuntime)null) {
-            _eofResult = eofResult;
-            foreach (string line in lines) {
-                _pending.Enqueue(line);
+            public ScriptIoWithQueuedInput(params string[] lines)
+                : base((ScriptRuntime)null)
+            {
+                foreach (string line in lines)
+                {
+                    _pending.Enqueue(line);
+                }
+            }
+
+            protected override string ReadNextLine()
+            {
+                return _pending.Count == 0 ? null : _pending.Dequeue();
             }
         }
 
-        public override int Read(byte[] buffer, int offset, int count) {
-            if (_inputReceived) {
-                _inputReceived = false;
-                return 0;
-            }
+        [Test]
+        public void Readline_ReturnsTheLineWithoutPadding()
+        {
+            var io = new ScriptIoWithQueuedInput("p x = 1");
 
-            if (_pending.Count == 0)
-                return _eofResult;
-
-            byte[] bytes = OutputEncoding.GetBytes(_pending.Dequeue());
-            _inputReceived = true;
-            int copyCount = Math.Min(bytes.Length, count);
-            Buffer.BlockCopy(bytes, 0, buffer, offset, copyCount);
-            return bytes.Length;
+            Assert.That(io.readline(), Is.EqualTo("p x = 1"));
         }
-    }
 
-    [Test]
-    public void Readline_ReturnsTheLineWithoutPadding() {
-        var io = new ScriptIoWithQueuedInput(0, "p x = 1");
+        [Test]
+        public void Readline_ReturnsTheLineExactly_NotTheWholeBuffer()
+        {
+            var io = new ScriptIoWithQueuedInput("n");
+            string line = io.readline();
 
-        Assert.That(io.readline(), Is.EqualTo("p x = 1"));
-    }
+            Assert.That(line, Is.EqualTo("n"));
+            Assert.That(line, Has.Length.EqualTo(1));
+        }
 
-    [Test]
-    public void Readline_ReturnsTheLineExactly_NotTheWholeBuffer() {
-        var io = new ScriptIoWithQueuedInput(0, "n");
+        [Test]
+        public void Readline_ReadsEachQueuedLineOnce()
+        {
+            var io = new ScriptIoWithQueuedInput("first", "second");
 
-        // A 1024-byte buffer is always allocated, so anything past the line is still NUL.
-        string line = io.readline();
+            Assert.Multiple(() => {
+                Assert.That(io.readline(), Is.EqualTo("first"));
+                Assert.That(io.readline(), Is.EqualTo("second"));
+            });
+        }
 
-        Assert.That(line, Is.EqualTo("n"));
-        Assert.That(line, Has.Length.EqualTo(1));
-    }
+        [Test]
+        public void Readline_ReturnsEmptyStringAtEndOfInput()
+        {
+            var io = new ScriptIoWithQueuedInput();
 
-    [Test]
-    public void Readline_ReadsEachQueuedLineOnce() {
-        var io = new ScriptIoWithQueuedInput(0, "first", "second");
-
-        Assert.Multiple(() => {
-            Assert.That(io.readline(), Is.EqualTo("first"));
-            Assert.That(io.readline(), Is.EqualTo("second"));
-        });
-    }
-
-    [Test]
-    public void Readline_ReturnsEmptyStringAtEndOfInput() {
-        var io = new ScriptIoWithQueuedInput(0);
-
-        // Only "" reads as end-of-input; anything else keeps an interactive prompt spinning.
-        Assert.That(io.readline(), Is.Empty);
-    }
-
-    [Test]
-    public void Readline_ReturnsEmptyStringAfterAClosedOutputWindow() {
-        var io = new ScriptIoWithQueuedInput(0, "disconnect");
-
-        Assert.Multiple(() => {
-            Assert.That(io.readline(), Is.EqualTo("disconnect"));
             Assert.That(io.readline(), Is.Empty);
-        });
-    }
+        }
 
-    [Test]
-    public void Readline_TreatsANegativeReadAsEndOfInput() {
-        var io = new ScriptIoWithQueuedInput(-1);
+        [Test]
+        public void Readline_ReturnsEmptyStringAfterTheLastLine()
+        {
+            var io = new ScriptIoWithQueuedInput("disconnect");
 
-        Assert.That(io.readline(), Is.Empty);
-    }
+            Assert.Multiple(() => {
+                Assert.That(io.readline(), Is.EqualTo("disconnect"));
+                Assert.That(io.readline(), Is.Empty);
+            });
+        }
 
-    [Test]
-    public void Readline_NeverReturnsNulCharacters() {
-        var io = new ScriptIoWithQueuedInput(0, "p self.args", "", "q");
+        [Test]
+        public void Readline_NeverReturnsNulCharacters()
+        {
+            var io = new ScriptIoWithQueuedInput("p self.args", "", "q");
 
-        string first = io.readline();
-        string empty = io.readline();
-        string last = io.readline();
+            string first = io.readline();
+            string empty = io.readline();
+            string last = io.readline();
 
-        Assert.Multiple(() => {
-            Assert.That(first, Does.Not.Contain('\0'));
-            Assert.That(empty, Does.Not.Contain('\0'));
-            Assert.That(last, Does.Not.Contain('\0'));
-        });
-    }
+            Assert.Multiple(() => {
+                Assert.That(first, Does.Not.Contain('\0'));
+                Assert.That(empty, Does.Not.Contain('\0'));
+                Assert.That(last, Does.Not.Contain('\0'));
+            });
+        }
 
-    [Test]
-    public void Readline_HandlesNonAsciiInput() {
-        var io = new ScriptIoWithQueuedInput(0, "réponse");
+        [Test]
+        public void Readline_HandlesNonAsciiInput()
+        {
+            var io = new ScriptIoWithQueuedInput("réponse");
 
-        string line = io.readline();
+            Assert.That(io.readline(), Is.EqualTo("réponse"));
+        }
 
-        Assert.That(line, Is.EqualTo("réponse"));
-    }
+        [Test]
+        public void Readline_WithASizeLargerThanTheLineIsUnaffected()
+        {
+            var io = new ScriptIoWithQueuedInput("hi");
 
-    [Test]
-    public void Readline_HonoursTheRequestedSize() {
-        var io = new ScriptIoWithQueuedInput(0, "abcdefghij");
+            Assert.That(io.readline(4096), Is.EqualTo("hi"));
+        }
 
-        Assert.That(io.readline(4), Is.EqualTo("abcd"));
-    }
+        [Test]
+        public void Readline_ZeroSizeReturnsEmptyAndConsumesNothing()
+        {
+            var io = new ScriptIoWithQueuedInput("abcdefghij");
 
-    [Test]
-    public void Readline_WithASizeLargerThanTheLineIsUnaffected() {
-        var io = new ScriptIoWithQueuedInput(0, "hi");
+            Assert.Multiple(() => {
+                Assert.That(io.readline(0), Is.Empty);
+                Assert.That(io.readline(), Is.EqualTo("abcdefghij"));
+            });
+        }
 
-        Assert.That(io.readline(4096), Is.EqualTo("hi"));
-    }
+        [Test]
+        public void Readline_SizeLimitsTheCharactersReturned()
+        {
+            var io = new ScriptIoWithQueuedInput("abcdefghij");
 
-    [Test]
-    public void Read_IsReadline() {
-        var io = new ScriptIoWithQueuedInput(0, "input()");
+            Assert.That(io.readline(4), Is.EqualTo("abcd"));
+        }
 
-        Assert.That(io.read(), Is.EqualTo("input()"));
+        [Test]
+        public void Readline_SizeLimitedReadKeepsTheRemainderForTheNextCall()
+        {
+            var io = new ScriptIoWithQueuedInput("abcdefghij", "next line");
+
+            Assert.Multiple(() => {
+                Assert.That(io.readline(4), Is.EqualTo("abcd"));
+                Assert.That(io.readline(3), Is.EqualTo("efg"));
+                Assert.That(io.readline(), Is.EqualTo("hij"));
+                Assert.That(io.readline(), Is.EqualTo("next line"));
+            });
+        }
+
+        [Test]
+        public void Readline_SizeNeverSplitsAMultiByteCharacter()
+        {
+            var io = new ScriptIoWithQueuedInput("éé");
+
+            Assert.Multiple(() => {
+                Assert.That(io.readline(1), Is.EqualTo("é"));
+                Assert.That(io.readline(), Is.EqualTo("é"));
+            });
+        }
+
+        [Test]
+        public void Readline_MixesWithRawReads()
+        {
+            var io = new ScriptIoWithQueuedInput("abcdefghij");
+            var buffer = new byte[64];
+
+            Assert.That(io.readline(4), Is.EqualTo("abcd"));
+
+            int read = io.Read(buffer, 0, buffer.Length);
+            Assert.That(Encoding.UTF8.GetString(buffer, 0, read), Is.EqualTo("efghij"));
+        }
+
+        [Test]
+        public void Read_IsReadline()
+        {
+            var io = new ScriptIoWithQueuedInput("input()");
+
+            Assert.That(io.read(), Is.EqualTo("input()"));
+        }
     }
 }

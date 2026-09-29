@@ -36,6 +36,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
         private readonly StringBuilder _partial = new StringBuilder();
         private readonly object _logLock = new object();
         private bool _inputReceived = false;
+        private string _bufferedInput = string.Empty;
         private bool _errored = false;
         private ScriptEngineType _erroredEngine;
         private bool _prefixAtLineStart = true;
@@ -615,22 +616,77 @@ namespace PyRevitLabs.PyRevit.Runtime {
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Reads the next line of script input, or <see cref="string.Empty"/> at end of input.
+        /// </summary>
+        /// <param name="size">
+        /// Maximum number of characters to return, or a negative value for the whole line.
+        /// Never splits a character: a limit that falls inside a multi-byte character returns
+        /// everything up to the last character that fits.
+        /// </param>
+        /// <remarks>
+        /// A limit narrower than the line leaves the remainder buffered, so the following call
+        /// continues it instead of consuming a new line. Mixing this with <see cref="Read(byte[], int, int)"/>
+        /// is safe: both draw from the same buffer.
+        ///
+        /// A non-positive <paramref name="size"/> returns nothing and consumes no input, which is
+        /// what a zero-length read means to a caller.
+        /// </remarks>
+        public string readline(int size = -1) {
+            if (size == 0)
+                return string.Empty;
+
+            var buffer = new byte[StreamChunkSize];
+            bool hadBufferedInput = HasBufferedInput;
+            int read = Read(buffer, 0, buffer.Length);
+            ConsumeHandshake(hadBufferedInput);
+
+            if (read <= 0)
+                return string.Empty;
+
+            string line = OutputEncoding.GetString(buffer, 0, Math.Min(read, buffer.Length));
+            return TakeCharacters(line, size);
+        }
+
+        /// <summary>
+        /// Reads the next line of script input, or <see cref="string.Empty"/> at end of input.
+        /// Alias of <see cref="readline"/>.
+        /// </summary>
         public string read(int size = -1) {
             return readline(size);
         }
 
-        public string readline(int size = -1) {
-            var buffer = new byte[1024];
-            int wanted = size > 0 ? Math.Min(size, buffer.Length) : buffer.Length;
-            int read = Read(buffer, 0, wanted);
-            // A read that returns a line flags it, and the next read consumes that flag.
-            // Without this the following readline replays the line just returned.
-            _ = Read(buffer, 0, 0);
-            if (read <= 0)
-                return string.Empty;
-            // Read reports the whole line it accepted, which can exceed what it copied when
-            // size capped the copy. Only the bytes we asked for are ours to decode.
-            return OutputEncoding.GetString(buffer, 0, Math.Min(read, wanted));
+        private bool HasBufferedInput {
+            get {
+                lock (this) {
+                    return _bufferedInput.Length > 0;
+                }
+            }
+        }
+
+        private void ConsumeHandshake(bool drainedBufferedInput) {
+            if (drainedBufferedInput)
+                return;
+
+            _ = Read(new byte[0], 0, 0);
+        }
+
+        private string TakeCharacters(string line, int size) {
+            if (size < 0 || line.Length <= size)
+                return line;
+
+            string head = line.Substring(0, size);
+            PrependToBuffer(line.Substring(size));
+            return head;
+        }
+
+        private void PrependToBuffer(string text) {
+            if (string.IsNullOrEmpty(text))
+                return;
+
+            lock (this) {
+                _bufferedInput = text + _bufferedInput;
+            }
         }
 
         public override int Read(byte[] buffer, int offset, int count) {
@@ -641,72 +697,118 @@ namespace PyRevitLabs.PyRevit.Runtime {
             if (offset + count > buffer.Length)
                 throw new IndexOutOfRangeException("The sum of offset and count is larger than the buffer length.");
 
-            var output = GetOutput();
-            if (output != null) {
-                if (output.ClosedByUser) {
-                    _gui = new WeakReference<ScriptConsole>(null);
-                    ClearPending();
-                    StopFlushTimer();
+            if (PrepareOutputForRead())
+                return 0;
+
+            lock (this) {
+                if (_bufferedInput.Length > 0)
+                    return DrainBufferedInput(buffer, offset, count);
+
+                if (_inputReceived) {
+                    _inputReceived = false;
                     return 0;
                 }
 
-                if (!output.IsVisible) {
-                    try {
-                        output.Show();
-                        output.Focus();
-                    }
-                    catch {
-                        return 0;
-                    }
-                }
+                string input = ReadNextLine();
+                if (input == null)
+                    return 0;
 
-                lock (this) {
-                    string input = string.Empty;
+                _inputReceived = true;
 
-                    if (_inputReceived) {
-                        _inputReceived = false;
-                        return 0;
-                    }
+                var inputBytes = OutputEncoding.GetBytes(input);
+                int copyCount = Math.Min(inputBytes.Length, count);
+                if (copyCount > 0)
+                    Buffer.BlockCopy(inputBytes, 0, buffer, offset, copyCount);
 
-                    input = output.GetInput();
-                    _inputReceived = true;
+                if (copyCount < inputBytes.Length)
+                    _bufferedInput = OutputEncoding.GetString(
+                        inputBytes, copyCount, inputBytes.Length - copyCount) + _bufferedInput;
 
-                    if (PrintDebugInfo) {
-                        try {
-                            output.AppendText(
-                                string.Format("<---- R offset: {0} count: {1} ---->", offset, count),
-                                ScriptConsoleConfigs.DefaultBlock);
-                        }
-                        catch (Exception ex) {
-                            System.Diagnostics.Debug.WriteLine(
-                                string.Format("[ScriptIO] Failed to append read diagnostics text (offset: {0}, count: {1}): {2}", offset, count, ex)
-                            );
-                        }
-                    }
+                ReportReadDiagnostics(buffer, offset, count, input, copyCount);
 
-                    var inputBytes = OutputEncoding.GetBytes(input);
-                    if (inputBytes.Length > 0) {
-                        int copyCount = Math.Min(inputBytes.Length, count);
-                        Buffer.BlockCopy(inputBytes, 0, buffer, offset, copyCount);
-                        if (PrintDebugInfo) {
-                            try {
-                                output.AppendText(
-                                    string.Format("<---- R copied: \"{0}\" size: {1} ---->", input, copyCount),
-                                    ScriptConsoleConfigs.DefaultBlock);
-                            }
-                            catch (Exception ex) {
-                                System.Diagnostics.Debug.WriteLine(
-                                    string.Format("[ScriptIO] Failed to append read copied diagnostics text (size: {0}): {1}", copyCount, ex)
-                                );
-                            }
-                        }
-                    }
+                return inputBytes.Length;
+            }
+        }
 
-                    return inputBytes.Length;
-                }
+        /// <summary>
+        /// Brings the output window forward for a read and reports whether the read must be
+        /// abandoned because there is no usable window.
+        /// </summary>
+        private bool PrepareOutputForRead() {
+            var output = GetOutput();
+            if (output == null)
+                return false;
+
+            if (output.ClosedByUser) {
+                _gui = new WeakReference<ScriptConsole>(null);
+                ClearPending();
+                StopFlushTimer();
+                return true;
             }
 
-            return 0;
+            if (output.IsVisible)
+                return false;
+
+            try {
+                output.Show();
+                output.Focus();
+            }
+            catch {
+                return true;
+            }
+
+            return false;
+        }
+
+        private void ReportReadDiagnostics(byte[] buffer, int offset, int count, string input, int copyCount) {
+            if (!PrintDebugInfo)
+                return;
+
+            var output = GetOutput();
+            if (output == null)
+                return;
+
+            try {
+                output.AppendText(
+                    string.Format("<---- R offset: {0} count: {1} ---->", offset, count),
+                    ScriptConsoleConfigs.DefaultBlock);
+                output.AppendText(
+                    string.Format("<---- R copied: \"{0}\" size: {1} ---->", input, copyCount),
+                    ScriptConsoleConfigs.DefaultBlock);
+            }
+            catch (Exception ex) {
+                System.Diagnostics.Debug.WriteLine(
+                    string.Format("[ScriptIO] Failed to append read diagnostics text (size: {0}): {1}", copyCount, ex)
+                );
+            }
+        }
+
+        /// <summary>
+        /// Obtains the next line of input from the output window, or <c>null</c> when there is no
+        /// input source or it has gone away.
+        /// </summary>
+        /// <remarks>
+        /// The single point where script input enters the stream. Every read path funnels through
+        /// here so the handshake, the size limit and the leftover buffer cannot drift apart.
+        /// </remarks>
+        protected virtual string ReadNextLine() {
+            var output = GetOutput();
+            if (output == null || output.ClosedByUser)
+                return null;
+
+            return output.GetInput();
+        }
+
+        /// <summary>
+        /// Copies from the input carried over from an earlier read, keeping whatever does not
+        /// fit for the next caller. Callers hold <c>this</c>.
+        /// </summary>
+        private int DrainBufferedInput(byte[] buffer, int offset, int count) {
+            byte[] pending = OutputEncoding.GetBytes(_bufferedInput);
+            int copyCount = Math.Min(pending.Length, count);
+            Buffer.BlockCopy(pending, 0, buffer, offset, copyCount);
+            _bufferedInput = OutputEncoding.GetString(pending, copyCount, pending.Length - copyCount);
+            return copyCount;
         }
 
         public override bool CanRead {
