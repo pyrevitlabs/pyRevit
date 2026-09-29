@@ -657,7 +657,8 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// Decoding happens over whole lines only, so a multi-byte character is never split
         /// between what this call returns and what a later one resumes from. The line is
         /// assembled in <see cref="_bufferedInput"/> first, which is what keeps a line longer
-        /// than one read chunk intact.
+        /// than one read chunk intact, and <see cref="AlignToCharacterBoundary"/> is what keeps
+        /// a raw read from leaving this buffer starting mid-character.
         /// </remarks>
         private string TakeWholeLine() {
             if (!HasBufferedInput) {
@@ -728,6 +729,22 @@ namespace PyRevitLabs.PyRevit.Runtime {
             }
         }
 
+        /// <summary>
+        /// Copies the next available script input into <paramref name="buffer"/> and returns the
+        /// number of bytes written.
+        /// </summary>
+        /// <remarks>
+        /// The return value is what was actually copied, never the length of the line behind it:
+        /// a <see cref="StreamReader"/> consumer reads the rest of the buffer up to it. A line
+        /// longer than <paramref name="count"/> is not lost either, because the remainder is
+        /// buffered and handed to the following read.
+        ///
+        /// The copy stops on a character boundary, so mixing raw reads with
+        /// <see cref="readline"/> cannot leave a half character behind for the next decoder to
+        /// turn into a replacement character. A <paramref name="count"/> too small to hold the
+        /// first character copies nothing and returns zero, since copying it would overrun the
+        /// caller's buffer.
+        /// </remarks>
         public override int Read(byte[] buffer, int offset, int count) {
             if (buffer == null)
                 throw new ArgumentNullException("buffer", "buffer is null");
@@ -755,7 +772,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
                 _inputReceived = true;
 
                 var inputBytes = OutputEncoding.GetBytes(input);
-                int copyCount = Math.Min(inputBytes.Length, count);
+                int copyCount = AlignToCharacterBoundary(inputBytes, count);
                 if (copyCount > 0)
                     Buffer.BlockCopy(inputBytes, 0, buffer, offset, copyCount);
 
@@ -767,7 +784,7 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
                 ReportReadDiagnostics(buffer, offset, count, input, copyCount);
 
-                return inputBytes.Length;
+                return copyCount;
             }
         }
 
@@ -845,12 +862,34 @@ namespace PyRevitLabs.PyRevit.Runtime {
         /// fit for the next caller. Callers hold <c>this</c>.
         /// </summary>
         private int DrainBufferedInput(byte[] buffer, int offset, int count) {
-            int copyCount = Math.Min(_bufferedInput.Length, count);
+            int copyCount = AlignToCharacterBoundary(_bufferedInput, count);
             Buffer.BlockCopy(_bufferedInput, 0, buffer, offset, copyCount);
             byte[] leftover = new byte[_bufferedInput.Length - copyCount];
             Buffer.BlockCopy(_bufferedInput, copyCount, leftover, 0, leftover.Length);
             _bufferedInput = leftover;
             return copyCount;
+        }
+
+        /// <summary>
+        /// Returns how many bytes of <paramref name="text"/> a read of <paramref name="count"/>
+        /// bytes may copy without splitting a character.
+        /// </summary>
+        /// <remarks>
+        /// <paramref name="text"/> is the whole remaining line, so a cut that lands on a
+        /// continuation byte is pulled back until the character it belongs to is whole, and that
+        /// character stays buffered for the next read rather than being decoded on its own.
+        ///
+        /// A cut inside the first character yields zero. Copying it would overrun the caller's
+        /// buffer, so nothing is copied and the line waits for a read with room for it.
+        /// </remarks>
+        private static int AlignToCharacterBoundary(byte[] text, int count) {
+            if (count >= text.Length)
+                return text.Length;
+
+            while (count > 0 && (text[count] & 0xC0) == 0x80)
+                count--;
+
+            return count;
         }
 
         public override bool CanRead {

@@ -201,16 +201,80 @@ namespace pyRevitExtensionParserTester
             });
         }
 
+        /// <summary>
+        /// A raw read that truncates must report what it copied, not the length of the line it
+        /// took from: a consumer reads up to the return value and would otherwise read its own
+        /// stale buffer, then get the same bytes again on the next read.
+        /// </summary>
         [Test]
         public void Read_ThenReadline_PreserveTheUnreadBytesExactly()
         {
             var io = new ScriptIoWithQueuedInput("héllo wörld");
             var oneByte = new byte[1];
 
-            io.Read(oneByte, 0, 1);
+            int read = io.Read(oneByte, 0, 1);
 
-            Assert.That(io.readline(), Is.EqualTo("éllo wörld"),
-                "the byte consumed by Read was lost from the line");
+            Assert.Multiple(() => {
+                Assert.That(read, Is.EqualTo(1));
+                Assert.That(io.readline(), Is.EqualTo("éllo wörld"),
+                    "the byte consumed by Read was lost from the line");
+            });
+        }
+
+        /// <summary>
+        /// Pinning the count the <see cref="ScriptIO.Read"/> contract promises: the number of
+        /// bytes written, never the size of the line behind them.
+        /// </summary>
+        [Test]
+        public void Read_TruncatedByCount_ReportsOnlyTheBytesItCopied()
+        {
+            var io = new ScriptIoWithQueuedInput("abcdefghij");
+            var buffer = new byte[64];
+
+            int read = io.Read(buffer, 0, 4);
+
+            Assert.Multiple(() => {
+                Assert.That(read, Is.EqualTo(4));
+                Assert.That(Encoding.UTF8.GetString(buffer, 0, read), Is.EqualTo("abcd"));
+                Assert.That(io.readline(), Is.EqualTo("efghij"));
+            });
+        }
+
+        /// <summary>
+        /// A raw read that would cut a multi-byte character in half stops short of the cut
+        /// instead, so the line it leaves behind still decodes whole.
+        /// </summary>
+        [Test]
+        public void Read_StoppingInsideACharacter_LeavesTheLineDecodable()
+        {
+            var io = new ScriptIoWithQueuedInput("aéb");
+            var buffer = new byte[64];
+
+            int read = io.Read(buffer, 0, 2);
+
+            Assert.Multiple(() => {
+                Assert.That(read, Is.EqualTo(1));
+                Assert.That(Encoding.UTF8.GetString(buffer, 0, read), Is.EqualTo("a"));
+                Assert.That(io.readline(), Is.EqualTo("éb"));
+            });
+        }
+
+        /// <summary>
+        /// A buffer too narrow for the first character cannot take it without overrunning, so
+        /// the read takes nothing and keeps the line rather than splitting the character.
+        /// </summary>
+        [Test]
+        public void Read_WithNoRoomForTheFirstCharacter_KeepsTheLineBuffered()
+        {
+            var io = new ScriptIoWithQueuedInput("é");
+            var oneByte = new byte[1];
+
+            int read = io.Read(oneByte, 0, 1);
+
+            Assert.Multiple(() => {
+                Assert.That(read, Is.EqualTo(0));
+                Assert.That(io.readline(), Is.EqualTo("é"));
+            });
         }
 
         [Test]
