@@ -250,13 +250,20 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <summary>
     /// A document other than the active one, watched for the length of one agent run.
     /// </summary>
+    /// <remarks>
+    /// Invariant: <see cref="HasOpenTransaction"/> reports only a transaction the run left
+    /// open. A document that already had one when tracking started, for example after an
+    /// earlier failure, must not fail every later run.
+    /// </remarks>
     internal sealed class AgentOtherDocument : IDisposable {
+        private readonly bool modifiableAtStart;
         private TransactionGroup group;
 
         public AgentOtherDocument(Document document, bool openedDuringRun) {
             Document = document;
             OpenedDuringRun = openedDuringRun;
             Title = document.Title;
+            modifiableAtStart = document.IsModifiable;
         }
 
         public Document Document { get; }
@@ -264,7 +271,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         public string Title { get; }
         public AgentChangeSet Changes { get; } = new AgentChangeSet();
 
-        public bool HasOpenTransaction => Document.IsValidObject && Document.IsModifiable;
+        public bool HasOpenTransaction => !modifiableAtStart && Document.IsValidObject && Document.IsModifiable;
 
         private bool HasOpenGroup => group != null && group.HasStarted() && !group.HasEnded();
 
