@@ -80,7 +80,9 @@ schedule.Export(folder, "doors.txt", options)
 - **Output:** a delimited text file. Tell the user where it is.
 - **Where to write:** only to folders the user named, or the run's own folder.
 
-## Checking the result
+## Before you report done
 
-- **Content:** read the schedule back after creating it, and compare the rows with a direct element query.
-- **Appearance:** `capture_view(view="Door Schedule")` shows how it looks.
+- [ ] The schedule's rows, read back, match a direct element query of the same category and filters.
+- [ ] Its fields, filters, sorting and totals, read back from `schedule.Definition`, are the ones asked for.
+- [ ] `capture_view(view="Door Schedule")` shows how it looks.
+- [ ] An exported file exists where the user asked, and you told them the path.

@@ -136,3 +136,12 @@ A failed or rejected stage leaves the earlier ones intact, and each committed st
 ## Materials
 
 - `query.get_types_by_class(DB.Material)`. Assign them through the element type's compound structure (`wall_type.GetCompoundStructure()`, change a layer's `MaterialId`, then `SetCompoundStructure`), or through material parameters.
+
+## Before you report done
+
+- [ ] Every stage's elements carry its Comments tag, and counting by tag shows no duplicates from re-runs.
+- [ ] Every room was placed (`create_room` raised for none), and room areas match the plan.
+- [ ] Each stage's measured numbers match the plan: wall heights, floor and roof areas, element counts.
+- [ ] `failures` in the last runs hold no unexplained warnings or errors.
+- [ ] Roofs are native roofs, and any DirectShape was explained to the user.
+- [ ] `capture_view(view="3d")` and a plan show the model you meant to build.

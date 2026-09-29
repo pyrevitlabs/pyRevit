@@ -60,10 +60,11 @@ Run these in `run_modify`, inside `with revit.Transaction("..."):`. Names are ma
 - `ui.zoom_to_elements(elements)` zooms the active view to elements; `ui.zoom_fit()` fits everything visible.
 - Or use `show_elements(ids, zoom=true)` on the active view.
 
-## Checking the result
+## Before you report done
 
-- After creating a view, call `capture_view(view="<its name>")`. An empty or tiny image means the crop or section box is wrong, or the view is on the wrong level.
-- Don't wrap view changes in `try/except: pass`. When a call fails for every category, the count you report looks like success.
+- [ ] Every new view has the name, type (`view.ViewType`) and level (`view.GenLevel`) that were asked for.
+- [ ] `capture_view(view="<its name>")` shows the content. An empty or tiny image means the crop or section box is wrong, or the view is on the wrong level.
+- [ ] Counts you report (hidden categories, framed elements) come from the model, not from a loop wrapped in `try/except: pass`, which reports success when every call failed.
 
 ## Raw API, when pyrevitlib doesn't cover it
 

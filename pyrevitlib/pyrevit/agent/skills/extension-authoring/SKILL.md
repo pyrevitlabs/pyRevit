@@ -163,3 +163,11 @@ result = {
 
 - **Change:** edit the files, then reload. Keep the folder names unless the user wants the button renamed.
 - **Remove:** after the user agrees, delete the button folder, or the whole extension folder, or remove its search path to keep the files. Then reload.
+
+## Before you report done
+
+- [ ] The user agreed to the names, the folder and any search path change before you wrote them.
+- [ ] Only your own extension changed; no shipped or user extension was edited.
+- [ ] After the reload, the check shows the tab visible and every new command listed.
+- [ ] The user clicked the button and told you what happened.
+- [ ] You told the user the extension's folder and how to remove it.

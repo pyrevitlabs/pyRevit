@@ -64,7 +64,9 @@ doc.Export(folder, List[DB.ElementId]([sheet.Id for sheet in sheets]), options)
 
 - **Where to write:** only to folders the user named. Tell them where the file is.
 
-## Checking the result
+## Before you report done
 
-- **Every new sheet and view:** use `capture_view(view="A101")`. Look for viewports outside the title block, overlapping tags, and empty views (a view outside its crop box or on the wrong level).
-- **Tag and dimension counts:** compare them with the element counts you intended.
+- [ ] `capture_view(view="A101")` for every new sheet and view shows no viewport outside the title block, no overlapping tags, and no empty view (a view outside its crop box or on the wrong level).
+- [ ] Tag and dimension counts match the element counts you intended.
+- [ ] Each view is on one sheet only; duplicates were made where a view is needed twice.
+- [ ] Every exported file exists in the folder the user named, and you told them the path.

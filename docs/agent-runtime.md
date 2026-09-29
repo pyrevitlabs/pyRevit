@@ -130,10 +130,34 @@ rebuild:
   shipped skill with the same name, so a firm can add its own standards.
 
 Agents read a skill with `get_skill(name)`, and other markdown files in its folder with
-`get_skill(name, file)`. `pyrevit-library/revit-utilities.md` maps Revit's static `...Utils` classes by task;
-its domains were checked against the map in
+`get_skill(name, file)`. `pyrevit-library/revit-utilities.md` maps Revit's static `...Utils`
+classes by task; its domains were checked against the map in
 [Nice3point/revit-skills](https://github.com/Nice3point/revit-skills) (MIT), and every entry
 was read from Revit's own API.
+
+#### Writing a skill
+
+The same rules apply to shipped skills and to a firm's own skills in
+`%APPDATA%\pyRevit\agent\skills`. The build checks the shipped ones.
+
+- **Front matter:** `name`, equal to the folder name, in lowercase kebab-case, and a
+  `description` of 20 to 1,024 characters.
+- **The description routes.** Agents see only the descriptions in the skill list, so say
+  what the skill covers and the requests it's for ("Use it for ... and similar tasks").
+  Don't list method names; they change.
+- **One task per skill,** for example drawings, not "everything about views and sheets".
+  Put rarely needed detail in another markdown file in the folder, and say in `SKILL.md`
+  when to read it.
+- **Size:** at most 500 lines. A skill over about 5,000 tokens takes context from the work;
+  split it.
+- **Ground every snippet.** Run it in Revit before writing it down, and check names with
+  `lookup_revit_api`. A snippet that doesn't run teaches the wrong API.
+- **End with "Before you report done":** a short checklist the agent can verify through the
+  API or `capture_view`.
+- **Links** point only to files inside the skill's own folder.
+
+The structure follows ideas from Nice3point/revit-skills: a routing description, one task
+per skill, a size budget and a closing checklist.
 
 ### Shared libraries
 

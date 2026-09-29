@@ -61,7 +61,9 @@ fm.SetFormula(param, "Width / 10")
 - **Direct API:** `doc.LoadFamily(path, FamilyLoaderOptionsHandler())` returns a tuple `(loaded, family)`.
 - **Before placing a loaded type**, activate it: `symbol.Activate()`, then `doc.Regenerate()`.
 
-## Checking the result
+## Before you report done
 
-- **Types and values:** query the family's types and their parameter values after loading, and compare them with what was asked.
-- **Geometry:** for a geometry change, place an instance in a scratch area, or view it, and check it with `capture_view`.
+- [ ] The family's types and parameter values, queried after loading, are the ones asked for.
+- [ ] A geometry change was checked on a placed instance or in a view with `capture_view`.
+- [ ] Every family document you opened is closed: it's no longer in `app.Documents`.
+- [ ] The family file on disk is unchanged unless the user asked to save it.
