@@ -147,14 +147,7 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
                     searchPathsList.Add(sitePackagesDir);
                 }
 
-                // The sources above overlap: the collected binary paths end with the bundle's own
-                // folder, which is also the script's directory, and a bundle can contribute the
-                // same lib/ folder twice through the hierarchy. Keep the first occurrence so the
-                // order the search relies on survives, and drop the repeats.
-                var orderedSearchPaths = searchPathsList
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .ToList();
-                string searchPaths = string.Join(";", orderedSearchPaths);
+                string searchPaths = string.Join(";", DedupeKeepingFirstOccurrence(searchPathsList));
                 string tooltip = cmd.Tooltip ?? string.Empty;
                 string bundle = string.IsNullOrEmpty(scriptDir) ? string.Empty : Path.GetFileName(scriptDir);
                 string extName = extension.Name;
@@ -246,6 +239,24 @@ namespace pyRevitAssemblyBuilder.AssemblyMaker
 
         private static string EscapeForVerbatim(string str) =>
             (str ?? string.Empty).Replace("\"", "\"\"");
+
+        /// <summary>
+        /// Collapses repeated folders, keeping the earliest occurrence.
+        /// </summary>
+        /// <remarks>
+        /// The search-path sources overlap by design and are not individually aware of each
+        /// other: the collected binary paths always end with the command's own directory, which
+        /// is also its script directory, and a component hierarchy can reach the same lib/ folder
+        /// by more than one route. Each collector dedupes only within itself, so the overlap has
+        /// to be resolved once the list is assembled.
+        ///
+        /// <b>Invariant:</b> order is the module-resolution priority, so a later duplicate must
+        /// never displace an earlier entry. Comparison is case-insensitive because Windows paths
+        /// are, and a folder differing only in case would otherwise resolve to a redundant scan.
+        /// </remarks>
+        private static IEnumerable<string> DedupeKeepingFirstOccurrence(IEnumerable<string> paths) =>
+            paths.Where(p => !string.IsNullOrEmpty(p))
+                 .Distinct(StringComparer.OrdinalIgnoreCase);
 
         private static string Escape(string str) =>
             (str ?? string.Empty)

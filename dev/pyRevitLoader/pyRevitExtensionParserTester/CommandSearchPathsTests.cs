@@ -21,32 +21,42 @@ namespace pyRevitExtensionParserTester
     {
         private const string Bundle = "DummyUi.extension/Dummy.tab/Smoke.panel/Check.pushbutton";
 
+        private const string ExtensionFolder = "DummyUi.extension";
+
+        private const string VerbatimStringArgument = "@\"((?:[^\"]|\"\")*)\"";
+
+        [SetUp]
+        public void ClearParserCaches()
+        {
+            ExtensionParser.ClearAllCaches();
+        }
+
         private static List<string> SearchPathsFrom(string generatedCode)
         {
-            // The search paths are the third argument of the ScriptCommand base call.
-            Match ctor = Regex.Match(
-                generatedCode,
-                @"public\s+\w+\(\)\s*:\s*base\(",
-                RegexOptions.None);
-            Assert.That(ctor.Success, Is.True, "no ScriptCommand constructor found in generated code");
+            Match baseCall = Regex.Match(generatedCode, @"public\s+\w+\(\)\s*:\s*base\(");
+            Assert.That(baseCall.Success, Is.True, "no ScriptCommand constructor found in generated code");
 
-            int close = generatedCode.IndexOf(')', ctor.Index + ctor.Length);
-            string args = generatedCode.Substring(ctor.Index + ctor.Length, close - ctor.Index - ctor.Length);
-
-            return Regex.Matches(args, "@\"((?:[^\"]|\"\")*)\"")
+            List<string> arguments = Regex.Matches(generatedCode, VerbatimStringArgument, RegexOptions.None)
                 .Cast<Match>()
+                .Where(m => m.Index >= baseCall.Index)
                 .Select(m => m.Groups[1].Value.Replace("\"\"", "\""))
-                .Skip(2)
-                .First()
+                .Take(3)
+                .ToList();
+            Assert.That(arguments.Count, Is.EqualTo(3),
+                "expected script path, config script path and search paths in the base call");
+
+            return arguments[2]
                 .Split(';')
                 .Where(p => !string.IsNullOrEmpty(p))
                 .ToList();
         }
 
-        private string Generate(string libraryExtensionDir = null)
+        private string Generate(string libraryExtensionDir = null, string extensionFolder = null)
         {
-            CreateFile(Bundle + "/script.py", "print(1)");
-            var uiDir = Path.Combine(TestTempDir, "DummyUi.extension");
+            string folder = extensionFolder ?? ExtensionFolder;
+            string bundle = folder + "/Dummy.tab/Smoke.panel/Check.pushbutton";
+            CreateFile(bundle + "/script.py", "print(1)");
+            var uiDir = Path.Combine(TestTempDir, folder);
             var ui = ParseInstalledExtensions(new[] { uiDir }).First();
             var libs = libraryExtensionDir == null
                 ? new ParsedExtension[0]
@@ -58,7 +68,7 @@ namespace pyRevitExtensionParserTester
         }
 
         private string BundleDir => Path.Combine(TestTempDir,
-            "DummyUi.extension", "Dummy.tab", "Smoke.panel", "Check.pushbutton");
+            ExtensionFolder, "Dummy.tab", "Smoke.panel", "Check.pushbutton");
 
         [Test]
         public void BundleFolderAppearsOnce()
@@ -67,6 +77,20 @@ namespace pyRevitExtensionParserTester
 
             int occurrences = paths.Count(p => p == BundleDir);
             Assert.That(occurrences, Is.EqualTo(1),
+                "bundle folder should appear exactly once, got: " + string.Join(" | ", paths));
+        }
+
+        [Test]
+        public void ExtractsSearchPathsWhenThePathContainsAParenthesis()
+        {
+            const string folderWithParenthesis = "Dummy(v2).extension";
+            var expectedBundle = Path.Combine(TestTempDir,
+                folderWithParenthesis, "Dummy.tab", "Smoke.panel", "Check.pushbutton");
+
+            var paths = SearchPathsFrom(Generate(extensionFolder: folderWithParenthesis));
+
+            Assert.That(paths[0], Is.EqualTo(expectedBundle));
+            Assert.That(paths.Count(p => p == expectedBundle), Is.EqualTo(1),
                 "bundle folder should appear exactly once, got: " + string.Join(" | ", paths));
         }
 
@@ -89,16 +113,12 @@ namespace pyRevitExtensionParserTester
         public void BundleFolderIsFirst()
         {
             var paths = SearchPathsFrom(Generate());
-
-            // Python puts the script's own directory first; the documented order depends on it.
             Assert.That(paths[0], Is.EqualTo(BundleDir));
         }
 
         [Test]
         public void KeepsTheBundleBinFolderAlongsideTheBundle()
         {
-            // A bundle that ships a bin/ folder needs both: bin/ for module DLLs, the bundle
-            // itself for the script's own modules. They are different folders, not a duplicate.
             Directory.CreateDirectory(Path.Combine(BundleDir, "bin"));
 
             var paths = SearchPathsFrom(Generate());
@@ -166,8 +186,6 @@ namespace pyRevitExtensionParserTester
         [Test]
         public void PreservesTheDocumentedOrder()
         {
-            // script dir, then lib folders, then bin folders, then library extensions,
-            // then pyrevitlib and site-packages.
             var extDir = Path.Combine(TestTempDir, "DummyUi.extension");
             Directory.CreateDirectory(Path.Combine(extDir, "lib"));
             var libRoot = CreateSubDirectory("DummyLib.lib");
