@@ -42,9 +42,11 @@ width = definition.AddField(fields["Width"])
 ```python
 definition.AddFilter(DB.ScheduleFilter(level.FieldId, DB.ScheduleFilterType.Equal, "Level 1"))
 definition.AddSortGroupField(DB.ScheduleSortGroupField(mark.FieldId))
-definition.IsItemized = False        # group identical rows
+definition.IsItemized = False
 definition.ShowGrandTotal = True
 ```
+
+- **Grouping identical rows:** `definition.IsItemized = False` merges rows with the same values; `True` lists every element.
 
 - **Filter values** must match the field's storage type: a string, a double in feet, an int, or an ElementId.
 - **Headers and footers:** grouping headers and footers are properties of `ScheduleSortGroupField` (`ShowHeader`, `ShowFooter`).

@@ -162,6 +162,12 @@ def connected(first, limit=10000):
     return members
 ```
 
+## Code style (strict)
+
+1. **No comments, ever.** No `#` comment lines, no comments at the end of a line, and no commented-out code, in run scripts and in workspace modules. Clear names and small functions carry the meaning; explanations go in your reply to the user. The only `#` lines allowed are the ones tools read: `#! python3` and `# -*- coding: utf-8 -*-`.
+2. **No docstrings.** No string literal as the first statement of a script, module, function or class.
+3. **Extensions are the one exception for docstrings.** Button scripts and modules in an extension's `lib\` may have them; the `extension-authoring` skill says how. Comments stay forbidden there too.
+
 ## Revit API essentials
 
 - **`OfCategory` takes a `BuiltInCategory`**, not a `Category` object.

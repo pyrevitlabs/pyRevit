@@ -10,15 +10,15 @@ Read `revit-scripting` first. Check API names with `lookup_revit_api`.
 ## Where the family lives
 
 - **Active document is a family** (`get_context.document.is_family` is true): `doc.FamilyManager` is available directly. Change it inside transactions on `doc`, as usual.
-- **Family used in a project:** open a family document from the project, edit it, and load it back:
+- **Family used in a project:** open a family document from the project, edit it, and load it back. `doc.EditFamily` takes a `DB.Family` and returns an in-memory family document; make your edits where this snippet adds a type:
 
   ```python
-  family = doc.GetElement(family_id)          # a DB.Family
-  fam_doc = doc.EditFamily(family)            # in-memory family document
+  family = doc.GetElement(family_id)
+  fam_doc = doc.EditFamily(family)
   try:
       t = DB.Transaction(fam_doc, "Edit family")
       t.Start()
-      # ... edit fam_doc.FamilyManager ...
+      fam_doc.FamilyManager.NewType("900 x 2100")
       t.Commit()
       from pyrevit.revit.db.create import FamilyLoaderOptionsHandler
       fam_doc.LoadFamily(doc, FamilyLoaderOptionsHandler())
@@ -40,7 +40,8 @@ The run guard, and the dry-run rollback, cover the **project** document only.
 
 ```python
 fm = fam_doc.FamilyManager
-param = fm.AddParameter("Frame Width", DB.GroupTypeId.Geometry, DB.SpecTypeId.Length, False)  # False = type parameter
+is_instance = False
+param = fm.AddParameter("Frame Width", DB.GroupTypeId.Geometry, DB.SpecTypeId.Length, is_instance)
 fm.SetFormula(param, "Width / 10")
 ```
 

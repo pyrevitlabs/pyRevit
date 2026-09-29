@@ -111,6 +111,7 @@ The names an agent run injects don't exist in a button script. Replace them:
 - **Selection:** `revit.get_selection()` returns the selected elements. Check it's not empty and tell the user what to select when it is.
 - **Failures:** let the button tell the user what went wrong with `forms.alert(...)` instead of raising, and keep every model change inside the transaction so a failure changes nothing.
 - **No `print` for results the user must act on:** printed text goes to the pyRevit output window, which the user may close without reading.
+- **Comments and docstrings:** no comments of any kind, as in every script (only the `#! python3` line is allowed). Docstrings are allowed in extensions, and only there. A module docstring at the top of `script.py` can become the button's tooltip, so keep it the same as `tooltip` in `bundle.yaml`. Functions and classes in the extension's `lib\` may have docstrings that state their contract: what they need, what they change, what they raise.
 
 Minimal button:
 
