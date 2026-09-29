@@ -63,12 +63,31 @@ The `engine` field of every run response confirms what actually ran. `"{}".forma
 - **ElementId values:** `element_id.Value` on Revit 2024 and later, `IntegerValue` before that. `Value` is a .NET Int64: use `str(element_id.Value)` or `"{}".format(...)` to build strings.
 - **Building ids:** `DB.ElementId(value)`.
 
+## Collecting elements
+
+Every element that reaches Python costs time, so let Revit filter before anything crosses over. On a 6,000-element model, native filters were 5-12 times faster than the same filter in Python on IronPython 3.4, and 10-30 times faster on CPython; the gap grows with the model.
+
+1. **Quick filters first:** `DB.FilteredElementCollector(doc)` (there is no `DB.Collector`), then `.OfClass(DB.Wall)` or `.OfCategory(DB.BuiltInCategory.OST_Doors)`, and `.WhereElementIsNotElementType()` or `.WhereElementIsElementType()`.
+2. **Parameter conditions in the database:** `.WherePasses(DB.ElementParameterFilter(rule))` with a rule from `DB.ParameterFilterRuleFactory`, or pyrevitlib's `query.get_elements_by_param_value`.
+3. **Native endings:** `.GetElementCount()` to count, `.FirstElement()` for one element, `.ToElementIds()` when ids are enough. Build Python lists only from what's left.
+
+```python
+walls_with_comments = (
+    DB.FilteredElementCollector(doc)
+    .OfClass(DB.Wall)
+    .WherePasses(DB.ElementParameterFilter(
+        DB.ParameterFilterRuleFactory.CreateNotEqualsRule(
+            DB.ElementId(DB.BuiltInParameter.ALL_MODEL_INSTANCE_COMMENTS), "")))
+    .ToElements()
+)
+```
+
+- **Slow:** `len(list(collector))` and `[e for e in collector if e.get_Parameter(...)...]` over a whole model. Fine on a short, already filtered list.
+- **`CreateHasValueParameterRule` isn't "not empty".** An empty text value counts as a value. For text, use `CreateNotEqualsRule(parameter_id, "")`.
+- **Filters change the collector itself.** `walls = everything.OfClass(DB.Wall)` returns the same object, so `everything` now holds only walls too. Start a new `FilteredElementCollector` for each query.
+
 ## Revit API essentials
 
-- **Collectors:** `DB.FilteredElementCollector(doc)`. There is no `DB.Collector`.
-  - Instances of a class: `.OfClass(DB.Wall)`.
-  - Instances in a category: `.OfCategory(DB.BuiltInCategory.OST_Doors).WhereElementIsNotElementType()`.
-  - Counting: `.GetElementCount()` is cheaper than `len(.ToElements())`.
 - **`OfCategory` takes a `BuiltInCategory`**, not a `Category` object.
 - **`OfClass` only accepts native classes.** For rooms, areas and spaces use `OfCategory(DB.BuiltInCategory.OST_Rooms)`, or `OfClass(DB.SpatialElement)` plus `isinstance()`.
 - **A category holds several classes.** `OST_Walls` also returns in-place walls as `FamilyInstance`. Filter with `OfClass` or `isinstance()` before using class members such as `Wall.WallType`.
@@ -103,7 +122,7 @@ The `engine` field of every run response confirms what actually ran. `"{}".forma
 
   A plain Python list fails; it must be `System.Array[System.Object]`. The pyrevitlib roof functions (`create.create_footprint_roof` and the gable, hip and shed variants) already do this.
 
-- **No LINQ:** collectors have no `FirstOrDefault` or `Where`. Use `.FirstElement()`, `.ToElements()` and list comprehensions.
+- **No LINQ:** collectors have no `FirstOrDefault` or `Where`. Use `.FirstElement()`, `.WherePasses(...)` and `.GetElementCount()`, as in [Collecting elements](#collecting-elements).
 - **No `import *`:** `from Autodesk.Revit.DB import *` skips enums on IronPython (`ViewType`, `StructuralType`). Use the injected `DB.` prefix. `Autodesk` itself isn't a name in the script; write `DB.GeometryObject`, not `Autodesk.Revit.DB.GeometryObject`.
 - **Fail loudly.** Use the `query.find_*` functions, which raise with the names that exist. In your own code, when a lookup by name finds nothing, `raise` with the names that do exist; don't carry on with `None`. When a filter matches no elements, raise too. Silent no-ops look like success in the change set.
 - **Never `except Exception: pass`.** Collect the error text and return it. A swallowed exception in a loop reports "0 changed" as if it were a result.
@@ -134,6 +153,7 @@ The `engine` field of every run response confirms what actually ran. `"{}".forma
 
 ## Finding the right API
 
+- **Static `...Utils` classes** hold much of the API (wall joins, face references, solid booleans, MEP caps, units). `get_skill("pyrevit-library", "revit-utilities.md")` maps them by task.
 - **`lookup_revit_api(name)`** reflects the exact Revit version that is running. Use it instead of guessing.
   - `found: false` means the name doesn't exist, even when the type does (`type_found: true`). Read `suggestions`, and for enums `in_other_enums`: a guessed `BuiltInCategory.LEVEL_PARAM_ROOF_OFFSET` suggests `BuiltInParameter.ROOF_LEVEL_OFFSET_PARAM`.
   - `lookup_revit_api("Wall")` gives signatures, the `namespace`, the `python_import` line, and a `creation` list (static factories and `doc.Create.New...` methods).
