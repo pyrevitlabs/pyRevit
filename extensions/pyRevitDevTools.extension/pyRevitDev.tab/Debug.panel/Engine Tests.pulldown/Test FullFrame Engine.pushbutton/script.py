@@ -9,7 +9,7 @@ directly made this test fail on the default engine. #3638.
 from pyrevit.compat import requests
 
 
-response = requests.get("http://www.x.com")
+response = requests.get("http://www.x.com", timeout=10)
 
 print("X.com responded with HTTP {}".format(response.status_code))
 print("X.com says: {}".format(response.text))
