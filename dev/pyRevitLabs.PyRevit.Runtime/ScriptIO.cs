@@ -621,9 +621,16 @@ namespace PyRevitLabs.PyRevit.Runtime {
 
         public string readline(int size = -1) {
             var buffer = new byte[1024];
-            var _ = Read(buffer, 0, 1024);
-            _ = Read(buffer, 0, 1024);
-            return OutputEncoding.GetString(buffer);
+            int wanted = size > 0 ? Math.Min(size, buffer.Length) : buffer.Length;
+            int read = Read(buffer, 0, wanted);
+            // A read that returns a line flags it, and the next read consumes that flag.
+            // Without this the following readline replays the line just returned.
+            _ = Read(buffer, 0, 0);
+            if (read <= 0)
+                return string.Empty;
+            // Read reports the whole line it accepted, which can exceed what it copied when
+            // size capped the copy. Only the bytes we asked for are ours to decode.
+            return OutputEncoding.GetString(buffer, 0, Math.Min(read, wanted));
         }
 
         public override int Read(byte[] buffer, int offset, int count) {
