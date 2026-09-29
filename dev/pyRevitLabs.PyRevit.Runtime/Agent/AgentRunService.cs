@@ -32,6 +32,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <item>With no document open, a run still executes, with <c>doc</c> and <c>uidoc</c> set
     /// to None, so a script can open or create a document. There is nothing to roll back, and
     /// the decision is <c>no_document</c>.</item>
+    /// <item>Background documents the run created or opened are closed without saving when it
+    /// ends, whatever its outcome, and listed in <c>closed_documents</c>. A script that needs
+    /// such a document on disk saves it within the run.</item>
     /// </list>
     /// Every run writes <c>script.py</c>, <c>request.json</c> and <c>response.json</c> under
     /// <c>%APPDATA%\pyRevit\agent\runs\</c>.
@@ -71,6 +74,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 ["title"] = request.Title,
             };
 
+            var openAtStart = AgentDocuments.Snapshot(app.Application);
             using (var guard = new AgentRunGuard(app, doc)) {
                 try {
                     guard.Arm("Agent: " + request.Title);
@@ -187,6 +191,16 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     logger.Error("Agent run {0}: {1}", runId, lostByRollback);
                     warnings.Add(lostByRollback);
                 }
+            }
+            try {
+                var leftovers = AgentDocuments.CloseLeftovers(app.Application, openAtStart);
+                response["closed_documents"] = leftovers["closed"];
+                if (((JArray)leftovers["failed"]).Count > 0)
+                    warnings.Add("Could not close background documents the run left open: "
+                        + string.Join(", ", leftovers["failed"].Values<string>()));
+            }
+            catch (Exception ex) {
+                logger.Warn("Agent run {0}: closing leftover documents failed: {1}", runId, ex.Message);
             }
             response["warnings"] = warnings;
 

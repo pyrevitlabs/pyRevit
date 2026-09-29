@@ -74,7 +74,7 @@ Run any of these commands without a value to print the current setting.
 |---|---|---|
 | `get_skill` | no | Task guidance in markdown (see [Skills](#skills)); the server's instructions tell agents which skill to read first |
 | `list_revit_instances` | no | Running Revit sessions with the agent host |
-| `get_context` | no | Revit and pyRevit versions, agent policy, `scripting` (engine and Python version scripts run on), document, active view, selection, levels |
+| `get_context` | no | Revit and pyRevit versions, agent policy, `scripting` (engine and Python version scripts run on), document, `open_documents`, active view, selection, levels |
 | `inspect_elements` | no | Class, category, type, level, location, bounding box and parameters of up to 50 elements |
 | `lookup_pyrevit_api` | no | Functions and classes of pyrevitlib and rpw, with signatures and docstrings, from the clone's source (see [Shared libraries](#shared-libraries)) |
 | `lookup_revit_api` | no | Signatures of a Revit API type or member, reflected from the running Revit. Also its namespace and Python import line, and a `creation` list: static factories and the `doc.Create.New…` methods that return the type. A missing member returns `found: false` with the closest names, including matching values of other enums |
@@ -227,6 +227,10 @@ Rules the host enforces:
   script can open or create a document. There is nothing to roll back, and the decision is
   `no_document`. The other tools (`capture_view`, `inspect_elements`, `show_elements`) still
   need an open document.
+- Background documents a run created or opened (no view in Revit, not linked, not open when
+  the run started) are closed without saving when the run ends, whatever its outcome, and
+  listed in `closed_documents`. Save a new document within the run that builds it.
+  `get_context.open_documents` lists every open document and marks the background ones.
 - A run in any mode that changes another open document fails with `other_document_modified`
   and is rolled back. `changes.other_documents` lists what changed. Documents the script opens
   itself during the run, such as a family from `EditFamily`, are reported there but don't fail

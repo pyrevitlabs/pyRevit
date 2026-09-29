@@ -53,6 +53,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     ["policy"] = PyRevitConfigs.GetAgentPolicy(),
                 },
                 ["scripting"] = AgentScripting.Describe(env, app.Application.VersionNumber),
+                ["open_documents"] = AgentDocuments.Describe(app),
                 ["document"] = null,
                 ["active_view"] = null,
                 ["selection"] = null,
