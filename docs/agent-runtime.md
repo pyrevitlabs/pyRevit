@@ -121,7 +121,9 @@ rebuild:
 - Each skill is a folder with a `SKILL.md` that starts with `name` and `description`
   front matter (the Agent Skills layout). `revit-scripting` covers the rules every
   script needs, and `pyrevit-library` maps the shared libraries; `modeling`, `views`,
-  `family-editing`, `scheduling` and `drawings` cover tasks.
+  `family-editing`, `scheduling` and `drawings` cover tasks. `extension-authoring` turns a
+  working script into a button in `%APPDATA%\pyRevit\Extensions`, after the user agrees
+  and with the user reloading pyRevit.
 - Skills in `%APPDATA%\pyRevit\agent\skills\<name>\SKILL.md` are added, and replace a
   shipped skill with the same name, so a firm can add its own standards.
 
