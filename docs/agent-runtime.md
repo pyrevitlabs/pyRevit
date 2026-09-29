@@ -314,6 +314,8 @@ Every run is recorded under `%APPDATA%\pyRevit\agent\runs\<timestamp>-<run_id>\`
 - `response.json`: status, decision, changes, failures, dialogs, output and result
 - `result.json`: present when the result was too large to return inline
 
+Run records and `capture_view` images older than 14 days are deleted when the host starts.
+
 ## Design
 
 ### Architecture
@@ -439,6 +441,9 @@ approves inside Revit, and the agent can't approve itself.
 Honest limits:
 
 - Rollback protects the model, not the file system or the network. There is no sandbox.
+- Revit serves one agent request at a time. While one session's run is executing, which can
+  last until its `timeout_s`, a second agent session can't connect and gets `revit_busy`
+  after the CLI's 10-second connect timeout. Keep runs short, and run one agent per Revit.
 - ExternalEvents only fire while Revit is idle, so a busy Revit returns `revit_busy`
   after 30 seconds. The error names Revit's open windows and whether an earlier agent
   request is still running: a modal dialog Revit shows while idle, such as the save

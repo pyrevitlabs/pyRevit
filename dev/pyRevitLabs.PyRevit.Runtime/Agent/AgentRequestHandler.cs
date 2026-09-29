@@ -18,6 +18,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     internal static class AgentRequestHandler {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
         private static readonly TimeSpan DefaultStartTimeout = TimeSpan.FromSeconds(30);
+        private const double MaxStartTimeoutSeconds = 3600;
 
         public static string Handle(string line) {
             JToken id = null;
@@ -108,6 +109,10 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var dispatcher = AgentHost.Dispatcher
                 ?? throw new AgentException("host_not_ready", "The agent host is not started.");
             var startTimeoutSeconds = parameters.Value<double?>("start_timeout_s");
+            if (startTimeoutSeconds.HasValue
+                && (double.IsNaN(startTimeoutSeconds.Value) || startTimeoutSeconds.Value <= 0 || startTimeoutSeconds.Value > MaxStartTimeoutSeconds))
+                throw new AgentException("invalid_params",
+                    $"'start_timeout_s' must be more than 0 and at most {MaxStartTimeoutSeconds}.");
             var startTimeout = startTimeoutSeconds.HasValue
                 ? TimeSpan.FromSeconds(startTimeoutSeconds.Value)
                 : DefaultStartTimeout;

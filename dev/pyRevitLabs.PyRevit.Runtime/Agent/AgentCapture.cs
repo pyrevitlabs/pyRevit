@@ -115,7 +115,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             if (doc.IsModifiable)
                 throw new AgentException("revit_busy", "Another transaction is open in the active document.");
 
-            var directory = Path.Combine(AgentPaths.RootDir, "captures");
+            var directory = AgentPaths.CapturesDir;
             Directory.CreateDirectory(directory);
             var baseName = DateTime.Now.ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString("N").Substring(0, 6);
 

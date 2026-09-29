@@ -132,6 +132,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 pipeServer = new AgentPipeServer(PipeName, AgentRequestHandler.Handle);
                 pipeServer.Start();
                 WriteInstanceFile(uiApp);
+                AgentPaths.PruneOldRecordsInBackground();
 
                 if (!exitHandlerRegistered) {
                     AppDomain.CurrentDomain.ProcessExit += (s, e) => DeleteInstanceFile();
@@ -186,10 +187,19 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         }
     }
 
+    /// <remarks>
+    /// Run records and captures older than <see cref="RecordRetention"/> are deleted when the
+    /// host starts, so a busy agent doesn't fill the user's profile; one night of evals wrote
+    /// about 140 runs.
+    /// </remarks>
     internal static class AgentPaths {
+        private static readonly Logger pathsLogger = LogManager.GetCurrentClassLogger();
+        public static readonly TimeSpan RecordRetention = TimeSpan.FromDays(14);
+
         public static string RootDir => Path.Combine(PyRevitLabsConsts.PyRevitPath, "agent");
         public static string InstancesDir => Path.Combine(RootDir, "instances");
         public static string RunsDir => Path.Combine(RootDir, "runs");
+        public static string CapturesDir => Path.Combine(RootDir, "captures");
         public static string InstanceFile =>
             Path.Combine(InstancesDir, Process.GetCurrentProcess().Id + ".json");
 
@@ -197,6 +207,37 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             var runDir = Path.Combine(RunsDir, DateTime.Now.ToString("yyyyMMdd-HHmmss") + "-" + runId);
             Directory.CreateDirectory(runDir);
             return runDir;
+        }
+
+        public static void PruneOldRecordsInBackground() {
+            System.Threading.Tasks.Task.Run(() => PruneOldRecords(DateTime.Now - RecordRetention));
+        }
+
+        private static void PruneOldRecords(DateTime cutoff) {
+            var removed = 0;
+            try {
+                if (Directory.Exists(RunsDir)) {
+                    foreach (var runDir in Directory.GetDirectories(RunsDir)) {
+                        if (Directory.GetLastWriteTime(runDir) >= cutoff)
+                            continue;
+                        Directory.Delete(runDir, recursive: true);
+                        removed++;
+                    }
+                }
+                if (Directory.Exists(CapturesDir)) {
+                    foreach (var capture in Directory.GetFiles(CapturesDir)) {
+                        if (File.GetLastWriteTime(capture) >= cutoff)
+                            continue;
+                        File.Delete(capture);
+                        removed++;
+                    }
+                }
+            }
+            catch (Exception ex) {
+                pathsLogger.Debug("Could not prune agent records: {0}", ex.Message);
+            }
+            if (removed > 0)
+                pathsLogger.Debug("Pruned {0} agent run records and captures older than {1:yyyy-MM-dd}", removed, cutoff);
         }
     }
 }
