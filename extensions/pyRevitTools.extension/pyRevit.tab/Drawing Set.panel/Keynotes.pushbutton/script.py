@@ -3276,6 +3276,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
             return
 
         self._update_full_tree()
+        self._select_keynote_by_key(other_key)
         self._update_status_bar()
 
     def _swap_keynote_refs(self, key_a, key_b):
@@ -3791,7 +3792,7 @@ class KeynoteManagerWindow(forms.WPFWindow):
         try:
             self.Dispatcher.BeginInvoke(
                 System.Action(
-                    ui_guard(lambda: self._place_after_shift_release(pending))
+                    ui_guard(lambda: self._place_when_clear(pending))
                 ),
                 Windows.Threading.DispatcherPriority.Background,
             )
