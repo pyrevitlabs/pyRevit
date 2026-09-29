@@ -29,6 +29,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
     /// <item>A script error always rolls back.</item>
     /// <item>A run that changes any document other than the active one fails and rolls back,
     /// whatever its mode and the policy.</item>
+    /// <item>With no document open, a run still executes, with <c>doc</c> and <c>uidoc</c> set
+    /// to None, so a script can open or create a document. There is nothing to roll back, and
+    /// the decision is <c>no_document</c>.</item>
     /// </list>
     /// Every run writes <c>script.py</c>, <c>request.json</c> and <c>response.json</c> under
     /// <c>%APPDATA%\pyRevit\agent\runs\</c>.
@@ -42,12 +45,11 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
         private const int MaxChangeSamples = 50;
 
         public static JToken Execute(UIApplication app, AgentRunRequest request) {
-            var uidoc = app.ActiveUIDocument
-                ?? throw new AgentException("no_active_document", "Revit has no active document.");
-            var doc = uidoc.Document;
-            if (doc.IsReadOnly && request.Mode != AgentRunMode.Query)
+            var uidoc = app.ActiveUIDocument;
+            var doc = uidoc?.Document;
+            if (doc != null && doc.IsReadOnly && request.Mode != AgentRunMode.Query)
                 throw new AgentException("document_read_only", "The active document is read-only.");
-            if (doc.IsModifiable)
+            if (doc != null && doc.IsModifiable)
                 throw new AgentException("revit_busy", "Another transaction is open in the active document.");
 
             var runId = Guid.NewGuid().ToString("N").Substring(0, 12);
@@ -56,7 +58,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
             File.WriteAllText(Path.Combine(runDir, "request.json"), request.ToJson().ToString(Formatting.Indented), Utf8);
 
             var warnings = new JArray();
-            var lostBefore = AgentCommitSentinel.Check(doc, afterRollback: false);
+            var lostBefore = doc == null ? null : AgentCommitSentinel.Check(doc, afterRollback: false);
             if (lostBefore != null)
                 warnings.Add(lostBefore);
 
@@ -74,7 +76,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                     guard.Arm("Agent: " + request.Title);
                     var exitCode = AgentScriptRunner.Execute(context, request, runDir, AgentHost.SearchPaths);
 
-                    var transactionLeftOpen = doc.IsModifiable || guard.LeftTransactionOpenInOtherDocument;
+                    var transactionLeftOpen = (doc != null && doc.IsModifiable) || guard.LeftTransactionOpenInOtherDocument;
                     if (guard.ErrorRollbacks > 0 && !context.HasError)
                         context.SetError(
                             "revit_failure",
@@ -82,7 +84,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                             + $"{guard.FirstErrorDescription} See 'failures' for every message. Fix the cause "
                             + "(for example an opening wider than its host wall) and run again.",
                             null);
-                    var changes = guard.Changes.Describe(doc, MaxChangeSamples);
+                    var changes = doc != null ? guard.Changes.Describe(doc, MaxChangeSamples) : guard.Changes.Summarize();
                     var otherDocuments = guard.DescribeOtherDocuments();
                     if (otherDocuments.Count > 0)
                         changes["other_documents"] = otherDocuments;
@@ -112,6 +114,9 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                             + "document; every change was rolled back. See 'changes.other_documents'.",
                             null);
                         guard.RollBack();
+                    }
+                    else if (doc == null) {
+                        decision = "no_document";
                     }
                     else if (request.Mode == AgentRunMode.Query) {
                         decision = "rolled_back";
@@ -176,7 +181,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 }
             }
 
-            if (response.Value<string>("decision") != "committed") {
+            if (doc != null && response.Value<string>("decision") != "committed") {
                 var lostByRollback = AgentCommitSentinel.Check(doc, afterRollback: true);
                 if (lostByRollback != null) {
                     logger.Error("Agent run {0}: {1}", runId, lostByRollback);

@@ -195,6 +195,10 @@ t.Commit()
 Rules the host enforces:
 
 - A query that changes the model fails with `query_modified_model` and is rolled back.
+- With no document open, a run still executes with `doc` and `uidoc` set to `None`, so a
+  script can open or create a document. There is nothing to roll back, and the decision is
+  `no_document`. The other tools (`capture_view`, `inspect_elements`, `show_elements`) still
+  need an open document.
 - A run in any mode that changes another open document fails with `other_document_modified`
   and is rolled back. `changes.other_documents` lists what changed. Documents the script opens
   itself during the run, such as a family from `EditFamily`, are reported there but don't fail

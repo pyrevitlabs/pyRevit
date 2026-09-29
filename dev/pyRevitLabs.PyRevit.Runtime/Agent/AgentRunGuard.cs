@@ -99,7 +99,7 @@ namespace PyRevitLabs.PyRevit.Runtime.Agent {
                 others.Add(tracked);
             }
 
-            if (doc.IsReadOnly)
+            if (doc == null || doc.IsReadOnly)
                 return;
 
             group = new TransactionGroup(doc, groupName);
