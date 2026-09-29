@@ -405,7 +405,6 @@ namespace PyRevitLabs.PyRevit.Runtime {
             this.ResizeMode = ResizeMode.CanResize;
 
             // setup auto-collapse
-            this.ShowActivated = false;
             this.Activated += ScriptOutput_GotFocus;
             this.Deactivated += ScriptOutput_LostFocus;
 
