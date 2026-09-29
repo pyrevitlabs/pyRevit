@@ -50,6 +50,7 @@ public static class PyRevitPaths
     public static string UsagePatterns => Path.Combine(DevPath, "pyRevitLabs", "pyRevitCLI", "Resources", "UsagePatterns.txt");
 
     public static string VersionFile => Path.Combine(Root, "pyrevitlib", "pyrevit", "version");
+    public static string AgentSkillsPath => Path.Combine(Root, "pyrevitlib", "pyrevit", "agent", "skills");
     public static string InstallVersionFile => Path.Combine(ReleasePath, "version");
     public static string ProductsTemplateFile => Path.Combine(ReleasePath, "pyrevit-products.json");
     public static string ProductsDataFile => Path.Combine(BinPath, "pyrevit-products.json");
